@@ -1,3 +1,9 @@
+# Qt Creator shadow build directory
+build-*
+
+# Qt Creator user files
+*.pro.user
+
 # Compiled Object files
 *.slo
 *.lo
