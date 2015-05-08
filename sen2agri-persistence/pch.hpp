@@ -2,6 +2,7 @@
 #include <QDBusAbstractAdaptor>
 #include <QDBusArgument>
 #include <QDBusConnection>
+#include <QDBusContext>
 #include <QDBusError>
 #include <QDBusMetaType>
 #include <QDebug>
