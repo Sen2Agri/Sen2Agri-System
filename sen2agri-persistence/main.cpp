@@ -6,6 +6,7 @@
 #include <QDBusError>
 
 #include "persistencemanager.hpp"
+#include "persistencemanager_adaptor.h"
 
 int main(int argc, char *argv[])
 {
@@ -13,11 +14,12 @@ int main(int argc, char *argv[])
 
     PersistenceManager::registerMetaTypes();
 
-    new PersistenceManager(&app);
+    PersistenceManager persistenceManager;
+    new PersistenceManagerAdaptor(&persistenceManager);
 
     try {
         QDBusConnection connection = QDBusConnection::systemBus();
-        if (!connection.registerObject("/", &app)) {
+        if (!connection.registerObject("/", &persistenceManager)) {
             throw std::runtime_error(connection.lastError().message().toStdString());
         }
 

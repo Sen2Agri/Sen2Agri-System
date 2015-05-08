@@ -5,6 +5,7 @@
     <method name="GetConfigurationParameters">
       <arg name="prefix" type="s" direction="in" />
       <arg name="result" type="(ss)" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationParameterList" />
     </method>
   </interface>
 </node>

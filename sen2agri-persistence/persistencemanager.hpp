@@ -2,14 +2,14 @@
 
 #include <QObject>
 #include <QDBusAbstractAdaptor>
+#include <QDBusContext>
 
 #include "dbprovider.hpp"
 #include "configurationparameter.hpp"
 
-class PersistenceManager : public QDBusAbstractAdaptor
+class PersistenceManager : public QObject, protected QDBusContext
 {
     Q_OBJECT
-    Q_CLASSINFO("D-Bus Interface", "org.esa.sen2agri.persistenceManager")
 
     DBProvider dbProvider;
 

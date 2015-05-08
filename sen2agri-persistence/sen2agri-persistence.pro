@@ -12,6 +12,11 @@ PRECOMPILED_HEADER = pch.hpp
 
 TEMPLATE = app
 
+adaptor.files = org.esa.sen2agri.persistenceManager.xml
+adaptor.header_flags = -i configurationparameter.hpp
+
+DBUS_ADAPTORS += adaptor
+
 SOURCES += main.cpp \
     persistencemanager.cpp \
     dbprovider.cpp \
