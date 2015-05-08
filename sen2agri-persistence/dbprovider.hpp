@@ -11,9 +11,7 @@
 
 class DBProvider
 {
-    QSqlDatabase db;
-
-    QSqlDatabaseRAII getDatabase();
+    QSqlDatabaseRAII getDatabase() const;
 
 public:
     DBProvider();
@@ -54,8 +52,7 @@ public:
                         retryDelay *= 2;
                     }
 
-                    warnRecoverableError(e, operation, retryDelay, txnRetryNumber,
-                                         maxTxnRetries);
+                    warnRecoverableError(e, operation, retryDelay, txnRetryNumber, maxTxnRetries);
 
                     QThread::msleep(retryDelay);
                 }

@@ -7,8 +7,6 @@
 
 #include "persistencemanager.hpp"
 
-using std::move;
-
 PersistenceManager::PersistenceManager(QDBusConnection &connection, QObject *parent)
     : QObject(parent), connection(connection)
 {

@@ -11,6 +11,9 @@
 using std::move;
 using std::runtime_error;
 
+// QSqlDatabase instances have thread affinity and can't be created without adding them to the
+// global registry.
+// Because of this, include the thread id in the connection name
 QSqlDatabaseRAII::QSqlDatabaseRAII()
     : db(QSqlDatabase::addDatabase(
           QStringLiteral("QPSQL"),
@@ -46,6 +49,7 @@ QSqlDatabaseRAII &QSqlDatabaseRAII::operator=(QSqlDatabaseRAII &&other)
 QSqlDatabaseRAII::~QSqlDatabaseRAII()
 {
     if (isInitialized) {
+        // It was open after the constructor, but that might have changed if an error occurred
         if (db.isOpen()) {
             db.close();
         }
@@ -56,6 +60,8 @@ QSqlDatabaseRAII::~QSqlDatabaseRAII()
 
 void QSqlDatabaseRAII::reset()
 {
+    // QSqlDatabase::removeDatabase() will complain if there are outstanding references to the
+    // QSqlDatabase instance, even if close() was called
     const auto &name = db.connectionName();
     db = QSqlDatabase();
     QSqlDatabase::removeDatabase(name);

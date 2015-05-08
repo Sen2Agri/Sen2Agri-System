@@ -10,7 +10,7 @@ DBProvider::DBProvider()
 
 ConfigurationParameterList DBProvider::GetConfigurationParameters(const QString &)
 {
-    QSqlDatabaseRAII db = getDatabase();
+    auto db = getDatabase();
 
     return handleTransactionRetry(QStringLiteral("GetConfigurationParameters"), [&]() {
         auto query = db.prepareQuery("select 'param1' as key, 'value1' as value");
@@ -33,7 +33,7 @@ ConfigurationParameterList DBProvider::GetConfigurationParameters(const QString 
     });
 }
 
-QSqlDatabaseRAII DBProvider::getDatabase()
+QSqlDatabaseRAII DBProvider::getDatabase() const
 {
     return QSqlDatabaseRAII();
 }
