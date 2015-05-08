@@ -1,16 +1,18 @@
 #pragma once
 
+#include <utility>
+
 #include <QString>
 #include <QtSql>
 
+#include "qsqldatabaseraii.hpp"
 #include "configurationparameter.hpp"
 
 class DBProvider
 {
     QSqlDatabase db;
 
-    QSqlQuery createQuery();
-    QSqlQuery prepareQuery(const QString &query);
+    QSqlDatabaseRAII getDatabase();
 
 public:
     DBProvider();

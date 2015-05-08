@@ -1,22 +1,18 @@
+#include <memory>
+
+#include <QThread>
+
 #include "dbprovider.hpp"
-#include "sql_error.hpp"
 
-static void throw_query_error(const QSqlQuery &query);
-
-DBProvider::DBProvider() : db(QSqlDatabase::addDatabase("QPSQL"))
+DBProvider::DBProvider()
 {
-    db.setHostName("sen2agri-dev");
-    db.setDatabaseName("sen2agri");
-    db.setUserName("admin");
-    db.setPassword("sen2agri");
-
-    bool ok = db.open();
-    qDebug() << ok;
 }
 
 ConfigurationParameterList DBProvider::GetConfigurationParameters(const QString &)
 {
-    auto query = prepareQuery("select 'param1' as key, 'value1' as value");
+    QSqlDatabaseRAII db = getDatabase();
+
+    auto query = db.prepareQuery("select 'param1' as key, 'value1' as value");
     query.setForwardOnly(true);
     if (!query.exec()) {
         throw_query_error(query);
@@ -35,23 +31,7 @@ ConfigurationParameterList DBProvider::GetConfigurationParameters(const QString 
     return result;
 }
 
-QSqlQuery DBProvider::createQuery()
+QSqlDatabaseRAII DBProvider::getDatabase()
 {
-    return QSqlQuery(db);
-}
-
-QSqlQuery DBProvider::prepareQuery(const QString &query)
-{
-    auto q = createQuery();
-
-    if (!q.prepare(query)) {
-        throw_query_error(q);
-    }
-
-    return q;
-}
-
-void throw_query_error(const QSqlQuery &query)
-{
-    throw sql_error(query.lastError());
+    return QSqlDatabaseRAII();
 }

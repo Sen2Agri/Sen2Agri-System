@@ -21,7 +21,8 @@ SOURCES += main.cpp \
     persistencemanager.cpp \
     dbprovider.cpp \
     configurationparameter.cpp \
-    sql_error.cpp
+    sql_error.cpp \
+    qsqldatabaseraii.cpp
 
 DISTFILES += \
     org.esa.sen2agri.persistenceManager.xml
@@ -31,4 +32,6 @@ HEADERS += \
     dbprovider.hpp \
     configurationparameter.hpp \
     sql_error.hpp \
-    pch.hpp
+    pch.hpp \
+    qsqldatabaseraii.hpp \
+    asyncdbustask.hpp

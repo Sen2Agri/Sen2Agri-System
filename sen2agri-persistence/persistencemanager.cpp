@@ -1,17 +1,24 @@
+#include <functional>
+
 #include <QtSql>
 #include <QDebug>
+#include <QDBusMessage>
+#include <QThreadPool>
 
 #include "persistencemanager.hpp"
 
-PersistenceManager::PersistenceManager(QObject *parent) : QObject(parent)
+using std::move;
+
+PersistenceManager::PersistenceManager(QDBusConnection &connection, QObject *parent)
+    : QObject(parent), connection(connection)
 {
 }
 
 ConfigurationParameterList PersistenceManager::GetConfigurationParameters(const QString &prefix)
 {
-    qDebug() << ':' << this->calledFromDBus();
+    RunAsync([=]() { return dbProvider.GetConfigurationParameters(prefix); });
 
-    return dbProvider.GetConfigurationParameters(prefix);
+    return {};
 }
 
 void PersistenceManager::registerMetaTypes()
