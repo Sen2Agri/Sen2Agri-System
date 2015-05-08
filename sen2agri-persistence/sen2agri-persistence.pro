@@ -3,8 +3,12 @@ QT -= gui
 
 TARGET = sen2agri-persistence
 
-CONFIG += console c++11
+DESTDIR = bin
+
+CONFIG += console c++11 precompile_header
 CONFIG -= app_bundle
+
+PRECOMPILED_HEADER = pch.hpp
 
 TEMPLATE = app
 
@@ -21,4 +25,5 @@ HEADERS += \
     persistencemanager.hpp \
     dbprovider.hpp \
     configurationparameter.hpp \
-    sql_error.hpp
+    sql_error.hpp \
+    pch.hpp
