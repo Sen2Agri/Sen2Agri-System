@@ -1,0 +1,10 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+                      "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node name="/org/esa/sen2agri/persistenceManager">
+  <interface name="org.esa.sen2agri.persistenceManager">
+    <method name="GetConfigurationParameters">
+      <arg name="prefix" type="s" direction="in" />
+      <arg name="result" type="(ss)" direction="out" />
+    </method>
+  </interface>
+</node>
