@@ -21,11 +21,6 @@ int main(int argc, char *argv[])
     PersistenceManager persistenceManager(connection);
 
     try {
-        ConfigurationParameterList foo;
-        foo.append({"key1", "value1"});
-        foo.append({"key3", "value3"});
-        persistenceManager.UpdateConfigurationParameters(foo);
-
         new PersistenceManagerAdaptor(&persistenceManager);
 
         if (!connection.registerObject("/", &persistenceManager)) {

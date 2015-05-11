@@ -7,14 +7,15 @@
 #include <QDBusMessage>
 
 #include "dbprovider.hpp"
-#include "configurationparameter.hpp"
 #include "asyncdbustask.hpp"
+#include "configurationparameter.hpp"
+#include "keyedmessage.hpp"
 
 class PersistenceManager : public QObject, protected QDBusContext
 {
     Q_OBJECT
 
-    DBProvider dbProvider;
+    PersistenceManagerDBProvider dbProvider;
     QDBusConnection connection;
 
     template <typename F>
@@ -23,6 +24,18 @@ class PersistenceManager : public QObject, protected QDBusContext
         setDelayedReply(true);
 
         if (auto task = makeAsyncDBusTask(message(), connection, std::forward<F>(f))) {
+            QThreadPool::globalInstance()->start(task);
+        } else {
+            sendErrorReply(QDBusError::NoMemory);
+        }
+    }
+
+    template <typename F>
+    void RunAsyncNoResult(F &&f)
+    {
+        setDelayedReply(true);
+
+        if (auto task = makeAsyncDBusTaskNoResult(message(), connection, std::forward<F>(f))) {
             QThreadPool::globalInstance()->start(task);
         } else {
             sendErrorReply(QDBusError::NoMemory);
@@ -38,5 +51,5 @@ signals:
 
 public slots:
     ConfigurationParameterList GetConfigurationParameters(const QString &prefix);
-    void UpdateConfigurationParameters(const ConfigurationParameterList &parameters);
+    KeyedMessageList UpdateConfigurationParameters(const ConfigurationParameterList &parameters);
 };

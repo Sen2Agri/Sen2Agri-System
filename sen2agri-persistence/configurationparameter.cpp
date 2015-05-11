@@ -1,6 +1,8 @@
 #include <utility>
 
 #include <QDBusMetaType>
+#include <QJsonDocument>
+#include <QJsonObject>
 
 #include "configurationparameter.hpp"
 
@@ -24,20 +26,29 @@ void ConfigurationParameter::registerMetaTypes()
     qDBusRegisterMetaType<ConfigurationParameterList>();
 }
 
-QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationParameter &message)
+QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationParameter &parameter)
 {
     argument.beginStructure();
-    argument << message.key << message.value;
+    argument << parameter.key << parameter.value;
     argument.endStructure();
 
     return argument;
 }
 
-const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationParameter &message)
+const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationParameter &parameter)
 {
     argument.beginStructure();
-    argument >> message.key >> message.value;
+    argument >> parameter.key >> parameter.value;
     argument.endStructure();
 
     return argument;
+}
+
+QString toJson(const ConfigurationParameterList &parameters)
+{
+    QJsonObject node;
+    for (const auto &p : parameters) {
+        node[p.key] = p.value;
+    }
+    return QString::fromUtf8(QJsonDocument(node).toJson());
 }

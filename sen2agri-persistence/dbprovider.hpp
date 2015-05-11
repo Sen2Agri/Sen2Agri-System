@@ -6,18 +6,16 @@
 #include <QtSql>
 
 #include "qsqldatabaseraii.hpp"
-#include "configurationparameter.hpp"
 #include "sql_error.hpp"
+#include "configurationparameter.hpp"
+#include "keyedmessage.hpp"
 
 class DBProvider
 {
-    QSqlDatabaseRAII getDatabase() const;
-
 public:
     DBProvider();
 
-    ConfigurationParameterList GetConfigurationParameters(const QString &prefix);
-    void UpdateConfigurationParameters(const ConfigurationParameterList &parameters);
+    QSqlDatabaseRAII getDatabase() const;
 
     bool shouldRetryTransaction(const sql_error &e);
     QString getErrorName(const sql_error &e);
@@ -60,4 +58,13 @@ public:
             }
         }
     }
+};
+
+class PersistenceManagerDBProvider
+{
+    DBProvider provider;
+
+public:
+    ConfigurationParameterList GetConfigurationParameters(const QString &prefix);
+    KeyedMessageList UpdateConfigurationParameters(const ConfigurationParameterList &parameters);
 };

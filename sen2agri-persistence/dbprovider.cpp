@@ -9,24 +9,25 @@ DBProvider::DBProvider()
 {
 }
 
-ConfigurationParameterList DBProvider::GetConfigurationParameters(const QString &)
+ConfigurationParameterList
+PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
 {
-    auto db = getDatabase();
+    auto db = provider.getDatabase();
 
-    return handleTransactionRetry(QStringLiteral("GetConfigurationParameters"), [&]() {
-        auto query = db.prepareQuery("select 'param1' as key, 'value1' as value");
+    return provider.handleTransactionRetry(QStringLiteral("GetConfigurationParameters"), [&]() {
+        auto query = db.prepareQuery("select * from sp_get_configuration_parameters(:prefix)");
+        query.bindValue(":prefix", prefix);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
             throw_query_error(query);
         }
 
-        ConfigurationParameterList result;
-
         auto dataRecord = query.record();
         auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
         auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
 
+        ConfigurationParameterList result;
         while (query.next()) {
             result.append({ query.value(keyCol).toString(), query.value(valueCol).toString() });
         }
@@ -35,25 +36,15 @@ ConfigurationParameterList DBProvider::GetConfigurationParameters(const QString 
     });
 }
 
-void DBProvider::UpdateConfigurationParameters(const ConfigurationParameterList &parameters)
+KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
+    const ConfigurationParameterList &parameters)
 {
-    auto db = getDatabase();
+    auto db = provider.getDatabase();
 
-    return handleTransactionRetry(QStringLiteral("UpdateConfigurationParameters"), [&]() {
-        //        auto query = db.prepareQuery("select
-        //        sp_update_configuration_parameters(:parameters)");
-        auto query = db.prepareQuery("select * from json_each_text(:parameters)");
-
-        //       QString parameterArrayString = QStringLiteral("'{");
-        QJsonObject doc;
-        for (const auto &p : parameters) {
-            doc[p.key] = p.value;
-            //           parameterArrayString += "(\"" + p.key + "\",\"" + p.value + "\"),";
-        }
-        //       parameterArrayString[parameterArrayString.size() - 1] = '}';
-        //       parameterArrayString += '\'';
-        query.bindValue(QStringLiteral(":parameters"),
-                        QString::fromUtf8(QJsonDocument(doc).toJson()));
+    return provider.handleTransactionRetry(QStringLiteral("UpdateConfigurationParameters"), [&]() {
+        auto query =
+            db.prepareQuery("select * from sp_update_configuration_parameters(:parameters)");
+        query.bindValue(QStringLiteral(":parameters"), toJson(parameters));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -62,12 +53,14 @@ void DBProvider::UpdateConfigurationParameters(const ConfigurationParameterList 
 
         auto dataRecord = query.record();
         auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
-        auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
+        auto errorCol = dataRecord.indexOf(QStringLiteral("error"));
 
+        KeyedMessageList result;
         while (query.next()) {
-            qDebug() << query.value(keyCol).toString() << query.value(valueCol).toString();
+            result.append({ query.value(keyCol).toString(), query.value(errorCol).toString() });
         }
-        qDebug() << query.executedQuery();
+
+        return result;
     });
 }
 

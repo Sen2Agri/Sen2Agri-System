@@ -21,5 +21,7 @@ typedef QList<ConfigurationParameter> ConfigurationParameterList;
 Q_DECLARE_METATYPE(ConfigurationParameter)
 Q_DECLARE_METATYPE(ConfigurationParameterList)
 
-QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationParameter &message);
-const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationParameter &message);
+QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationParameter &parameter);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationParameter &parameter);
+
+QString toJson(const ConfigurationParameterList &parameters);
