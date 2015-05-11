@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap-theme.min.css">
+
+    <script src="https://code.jquery.com/jquery-2.1.3.min.js"></script>
+    <script src="http://flotcharts.org/javascript/jquery.flot.min.js"></script>
+    <script src="http://flotcharts.org/javascript/jquery.time.min.js"></script>
+    <script src="http://www.flotcharts.org/flot/jquery.flot.time.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+    <script>
+     $(function() {
+       var datal3a = [[new Date(2015, 3, 4), 7], [new Date(2015, 3, 5), 2], [new Date(2015, 3, 6), 3], [new Date(2015, 3, 7), 5]];
+       var datal3b = [[new Date(2015, 3, 4), 23], [new Date(2015, 3, 5), 14], [new Date(2015, 3, 6), 22], [new Date(2015, 3, 7), 27]];
+       var datal4a = [[new Date(2015, 3, 4), 44], [new Date(2015, 3, 5), 25], [new Date(2015, 3, 6), 40], [new Date(2015, 3, 7), 30]];
+       var datal4b = [[new Date(2015, 3, 4), 6], [new Date(2015, 3, 5), 3], [new Date(2015, 3, 6), 16], [new Date(2015, 3, 7), 20]];
+
+       var series = [ { label: "L3A", data: datal3a },
+                      { label: "L3B", data: datal3b },
+                      { label: "L4A", data: datal4a },
+                      { label: "L4B", data: datal4b } ];
+       
+       var options = {
+         series: {
+           lines: {
+             show: true
+           },
+           points: {
+             show: true
+           }
+         },
+         xaxis: {
+           mode: "time",
+           timeformat: "%Y-%m-%d"
+         },
+         grid: { hoverable: true, clickable: true, autoHighlight: true },
+         legend: {
+           show: true
+         }
+       };
+       
+       $.plot($("#placeholder"),
+              series,
+              options);
+     });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12">
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <h3 class="panel-title">Performance Metrics</h3>
+            </div>
+            <div class="panel-body">
+              <div id="placeholder" class="container" style="width:600px; height:300px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <h3 class="panel-title">Current Products</h3>
+            </div>
+            <div class="panel-body">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th rowspan="2">Product Type</th>
+                    <th colspan="4">Tiles</th>
+                  </tr>
+                  <tr>
+                    <th>L3A</th>
+                    <th>L3B</th>
+                    <th>L4A</th>
+                    <th>L4B</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Default</td>
+                    <td>1000/1000</td>
+                    <td>0/1000</td>
+                    <td>0/1000</td>
+                    <td>0/1000</td>
+                  </tr>
+                  <tr>
+                    <td>On-demand</td>
+                    <td>1000/1000</td>
+                    <td>200/1000</td>
+                    <td>0/1000</td>
+                    <td>0/1000</td>
+                  </tr>
+                  <tr>
+                    <td>On-demand</td>
+                    <td>100/1000</td>
+                    <td>0/1000</td>
+                    <td>0/1000</td>
+                    <td>0/1000</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="panel panel-info">
+            <div class="panel-heading">
+              <h3 class="panel-title">Server Statistics</h3>
+            </div>
+            <div class="panel-body">
+              <table class="table">
+                <tbody>
+                  <tr>
+                    <td>CPU</td>
+                    <td>300%</td>
+                  </tr>
+                  <tr>
+                    <td>RAM</td>
+                    <td>2 GB / 6 GB</td>
+                  </tr>
+                  <tr>
+                    <td>Swap</td>
+                    <td>1 GB / 16 GB</td>
+                  </tr>
+                  <tr>
+                    <td>Disk</td>
+                    <td>100 GB / 1.7 TB</td>
+                  </tr>
+                  <tr>
+                    <td>Load</td>
+                    <td>4.01 / 4.52 / 4.36</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
