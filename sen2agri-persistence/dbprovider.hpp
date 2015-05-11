@@ -7,15 +7,11 @@
 
 #include "qsqldatabaseraii.hpp"
 #include "sql_error.hpp"
-#include "configurationparameter.hpp"
-#include "keyedmessage.hpp"
 
 class DBProvider
 {
 public:
-    DBProvider();
-
-    QSqlDatabaseRAII getDatabase() const;
+    SqlDatabaseRAII getDatabase(const QString &name) const;
 
     bool shouldRetryTransaction(const sql_error &e);
     QString getErrorName(const sql_error &e);
@@ -58,13 +54,4 @@ public:
             }
         }
     }
-};
-
-class PersistenceManagerDBProvider
-{
-    DBProvider provider;
-
-public:
-    ConfigurationParameterList GetConfigurationParameters(const QString &prefix);
-    KeyedMessageList UpdateConfigurationParameters(const ConfigurationParameterList &parameters);
 };

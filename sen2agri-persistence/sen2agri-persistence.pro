@@ -23,7 +23,8 @@ SOURCES += main.cpp \
     configurationparameter.cpp \
     sql_error.cpp \
     qsqldatabaseraii.cpp \
-    keyedmessage.cpp
+    keyedmessage.cpp \
+    persistencemanagerdbprovider.cpp
 
 DISTFILES += \
     org.esa.sen2agri.persistenceManager.xml
@@ -36,4 +37,5 @@ HEADERS += \
     pch.hpp \
     qsqldatabaseraii.hpp \
     asyncdbustask.hpp \
-    keyedmessage.hpp
+    keyedmessage.hpp \
+    persistencemanagerdbprovider.hpp

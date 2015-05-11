@@ -6,7 +6,7 @@
 #include <QDBusConnection>
 #include <QDBusMessage>
 
-#include "dbprovider.hpp"
+#include "persistencemanagerdbprovider.hpp"
 #include "asyncdbustask.hpp"
 #include "configurationparameter.hpp"
 #include "keyedmessage.hpp"

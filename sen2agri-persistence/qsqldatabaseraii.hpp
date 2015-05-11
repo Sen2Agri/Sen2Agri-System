@@ -1,7 +1,9 @@
+#pragma once
+
 #include <QSqlDatabase>
 #include <QSqlQuery>
 
-class QSqlDatabaseRAII
+class SqlDatabaseRAII
 {
     QSqlDatabase db;
     bool isInitialized;
@@ -9,12 +11,12 @@ class QSqlDatabaseRAII
     void reset();
 
 public:
-    QSqlDatabaseRAII();
-    QSqlDatabaseRAII(const QSqlDatabaseRAII &) = delete;
-    QSqlDatabaseRAII(QSqlDatabaseRAII &&other);
-    QSqlDatabaseRAII &operator=(const QSqlDatabaseRAII &) = delete;
-    QSqlDatabaseRAII &operator=(QSqlDatabaseRAII &&other);
-    ~QSqlDatabaseRAII();
+    SqlDatabaseRAII(const QString &name);
+    SqlDatabaseRAII(const SqlDatabaseRAII &) = delete;
+    SqlDatabaseRAII(SqlDatabaseRAII &&other);
+    SqlDatabaseRAII &operator=(const SqlDatabaseRAII &) = delete;
+    SqlDatabaseRAII &operator=(SqlDatabaseRAII &&other);
+    ~SqlDatabaseRAII();
 
     QSqlQuery createQuery();
     QSqlQuery prepareQuery(const QString &query);

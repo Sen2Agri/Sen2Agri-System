@@ -14,10 +14,10 @@ using std::runtime_error;
 // QSqlDatabase instances have thread affinity and can't be created without adding them to the
 // global registry.
 // Because of this, include the thread id in the connection name
-QSqlDatabaseRAII::QSqlDatabaseRAII()
+SqlDatabaseRAII::SqlDatabaseRAII(const QString &name)
     : db(QSqlDatabase::addDatabase(
           QStringLiteral("QPSQL"),
-          QStringLiteral("@") +
+          name + "@" +
               QString::number(reinterpret_cast<uintptr_t>(QThread::currentThreadId()), 16))),
       isInitialized(true)
 {
@@ -33,12 +33,12 @@ QSqlDatabaseRAII::QSqlDatabaseRAII()
     }
 }
 
-QSqlDatabaseRAII::QSqlDatabaseRAII(QSqlDatabaseRAII &&other) : db(move(other.db))
+SqlDatabaseRAII::SqlDatabaseRAII(SqlDatabaseRAII &&other) : db(move(other.db))
 {
     other.isInitialized = false;
 }
 
-QSqlDatabaseRAII &QSqlDatabaseRAII::operator=(QSqlDatabaseRAII &&other)
+SqlDatabaseRAII &SqlDatabaseRAII::operator=(SqlDatabaseRAII &&other)
 {
     db = move(other.db);
     other.isInitialized = false;
@@ -46,7 +46,7 @@ QSqlDatabaseRAII &QSqlDatabaseRAII::operator=(QSqlDatabaseRAII &&other)
     return *this;
 }
 
-QSqlDatabaseRAII::~QSqlDatabaseRAII()
+SqlDatabaseRAII::~SqlDatabaseRAII()
 {
     if (isInitialized) {
         // It was open after the constructor, but that might have changed if an error occurred
@@ -58,7 +58,7 @@ QSqlDatabaseRAII::~QSqlDatabaseRAII()
     }
 }
 
-void QSqlDatabaseRAII::reset()
+void SqlDatabaseRAII::reset()
 {
     // QSqlDatabase::removeDatabase() will complain if there are outstanding references to the
     // QSqlDatabase instance, even if close() was called
@@ -67,12 +67,12 @@ void QSqlDatabaseRAII::reset()
     QSqlDatabase::removeDatabase(name);
 }
 
-QSqlQuery QSqlDatabaseRAII::createQuery()
+QSqlQuery SqlDatabaseRAII::createQuery()
 {
     return QSqlQuery(db);
 }
 
-QSqlQuery QSqlDatabaseRAII::prepareQuery(const QString &query)
+QSqlQuery SqlDatabaseRAII::prepareQuery(const QString &query)
 {
     auto q = createQuery();
 
