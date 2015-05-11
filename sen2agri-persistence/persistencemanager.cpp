@@ -19,6 +19,12 @@ ConfigurationParameterList PersistenceManager::GetConfigurationParameters(const 
     return {};
 }
 
+void PersistenceManager::UpdateConfigurationParameters(const ConfigurationParameterList &parameters)
+{
+    return dbProvider.UpdateConfigurationParameters(parameters);
+    //RunAsync([=]() { return dbProvider.UpdateConfigurationParameters(parameters); });
+}
+
 void PersistenceManager::registerMetaTypes()
 {
     ConfigurationParameter::registerMetaTypes();

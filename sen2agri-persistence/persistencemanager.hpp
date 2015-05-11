@@ -38,4 +38,5 @@ signals:
 
 public slots:
     ConfigurationParameterList GetConfigurationParameters(const QString &prefix);
+    void UpdateConfigurationParameters(const ConfigurationParameterList &parameters);
 };

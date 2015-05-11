@@ -17,6 +17,7 @@ public:
     DBProvider();
 
     ConfigurationParameterList GetConfigurationParameters(const QString &prefix);
+    void UpdateConfigurationParameters(const ConfigurationParameterList &parameters);
 
     bool shouldRetryTransaction(const sql_error &e);
     QString getErrorName(const sql_error &e);

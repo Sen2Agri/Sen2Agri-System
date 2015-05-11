@@ -1,5 +1,6 @@
 #include <memory>
 
+#include <QJsonDocument>
 #include <QThread>
 
 #include "dbprovider.hpp"
@@ -14,6 +15,7 @@ ConfigurationParameterList DBProvider::GetConfigurationParameters(const QString 
 
     return handleTransactionRetry(QStringLiteral("GetConfigurationParameters"), [&]() {
         auto query = db.prepareQuery("select 'param1' as key, 'value1' as value");
+
         query.setForwardOnly(true);
         if (!query.exec()) {
             throw_query_error(query);
@@ -30,6 +32,42 @@ ConfigurationParameterList DBProvider::GetConfigurationParameters(const QString 
         }
 
         return result;
+    });
+}
+
+void DBProvider::UpdateConfigurationParameters(const ConfigurationParameterList &parameters)
+{
+    auto db = getDatabase();
+
+    return handleTransactionRetry(QStringLiteral("UpdateConfigurationParameters"), [&]() {
+        //        auto query = db.prepareQuery("select
+        //        sp_update_configuration_parameters(:parameters)");
+        auto query = db.prepareQuery("select * from json_each_text(:parameters)");
+
+        //       QString parameterArrayString = QStringLiteral("'{");
+        QJsonObject doc;
+        for (const auto &p : parameters) {
+            doc[p.key] = p.value;
+            //           parameterArrayString += "(\"" + p.key + "\",\"" + p.value + "\"),";
+        }
+        //       parameterArrayString[parameterArrayString.size() - 1] = '}';
+        //       parameterArrayString += '\'';
+        query.bindValue(QStringLiteral(":parameters"),
+                        QString::fromUtf8(QJsonDocument(doc).toJson()));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        auto dataRecord = query.record();
+        auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
+        auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
+
+        while (query.next()) {
+            qDebug() << query.value(keyCol).toString() << query.value(valueCol).toString();
+        }
+        qDebug() << query.executedQuery();
     });
 }
 
@@ -62,11 +100,8 @@ void DBProvider::warnRecoverableErrorAbort(const sql_error &e, const QString &op
                  .arg(operation));
 }
 
-void DBProvider::warnRecoverableError(const sql_error &e,
-                                      const QString &operation,
-                                      int retryDelay,
-                                      int retryNumber,
-                                      int maxRetries)
+void DBProvider::warnRecoverableError(
+    const sql_error &e, const QString &operation, int retryDelay, int retryNumber, int maxRetries)
 {
     Q_UNUSED(QStringLiteral("A recoverable error of type %1 has been detected for "
                             "operation %2. Retrying in %3 ms (%4/%5).")

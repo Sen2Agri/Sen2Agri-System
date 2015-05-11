@@ -2,10 +2,14 @@
                       "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
 <node name="/org/esa/sen2agri/persistenceManager">
   <interface name="org.esa.sen2agri.persistenceManager">
-    <method name="GetConfigurationParameters">
-      <arg name="prefix" type="s" direction="in" />
-      <arg name="result" type="(ss)" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationParameterList" />
-    </method>
+  <method name="GetConfigurationParameters">
+    <arg name="prefix" type="s" direction="in" />
+    <arg name="result" type="(ss)" direction="out" />
+    <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationParameterList" />
+  </method>
+  <method name="UpdateConfigurationParameters">
+    <arg name="Parameters" type="(ss)" direction="in" />
+    <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationParameterList" />
+  </method>
   </interface>
 </node>
