@@ -1,7 +1,7 @@
 #include <QMessageBox>
 #include <QProcess>
 
-#include "maindialog.h"
+#include "maindialog.hpp"
 #include "ui_maindialog.h"
 
 MainDialog::MainDialog(ConfigModel &configModel, QWidget *parent)

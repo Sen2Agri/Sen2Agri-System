@@ -2,7 +2,7 @@
 
 #include <QDialog>
 
-#include "configmodel.h"
+#include "configmodel.hpp"
 
 namespace Ui {
 class MainDialog;

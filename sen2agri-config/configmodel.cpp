@@ -1,4 +1,4 @@
-#include "configmodel.h"
+#include "configmodel.hpp"
 
 #include <QJsonObject>
 #include <QVariantMap>

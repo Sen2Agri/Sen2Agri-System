@@ -7,7 +7,8 @@
 #include <QFile>
 #include <QTextStream>
 #include <QDebug>
-#include "maindialog.h"
+
+#include "maindialog.hpp"
 
 using namespace std;
 
