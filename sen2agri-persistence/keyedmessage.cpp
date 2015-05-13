@@ -12,8 +12,7 @@ KeyedMessage::KeyedMessage()
 {
 }
 
-KeyedMessage::KeyedMessage(QString key, QString message)
-    : key(move(key)), text(move(message))
+KeyedMessage::KeyedMessage(QString key, QString message) : key(move(key)), text(move(message))
 {
 }
 

@@ -11,7 +11,8 @@ PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(QStringLiteral("GetConfigurationParameters"), [&]() {
-        auto query = db.prepareQuery("select * from sp_get_configuration_parameters(:prefix)");
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_configuration_parameters(:prefix)"));
         query.bindValue(":prefix", prefix);
 
         query.setForwardOnly(true);
@@ -38,8 +39,8 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(QStringLiteral("UpdateConfigurationParameters"), [&]() {
-        auto query =
-            db.prepareQuery("select * from sp_update_configuration_parameters(:parameters)");
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_update_configuration_parameters(:parameters)"));
         query.bindValue(QStringLiteral(":parameters"), toJson(parameters));
 
         query.setForwardOnly(true);
