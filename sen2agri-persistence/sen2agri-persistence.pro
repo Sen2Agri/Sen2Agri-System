@@ -10,32 +10,34 @@ CONFIG -= app_bundle
 
 PRECOMPILED_HEADER = pch.hpp
 
+INCLUDEPATH += ../dbus-model
+
 TEMPLATE = app
 
-adaptor.files = org.esa.sen2agri.persistenceManager.xml
-adaptor.header_flags = -i configurationparameter.hpp
+adaptor.files = ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
+adaptor.header_flags = -i ../dbus-model/configurationparameter.hpp -i ../dbus-model/keyedmessage.hpp
 
 DBUS_ADAPTORS += adaptor
 
 SOURCES += main.cpp \
     persistencemanager.cpp \
     dbprovider.cpp \
-    configurationparameter.cpp \
+    ../dbus-model/configurationparameter.cpp \
     sql_error.cpp \
     qsqldatabaseraii.cpp \
-    keyedmessage.cpp \
+    ../dbus-model/keyedmessage.cpp \
     persistencemanagerdbprovider.cpp
 
 DISTFILES += \
-    org.esa.sen2agri.persistenceManager.xml
+    ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
 
 HEADERS += \
     persistencemanager.hpp \
     dbprovider.hpp \
-    configurationparameter.hpp \
+    ../dbus-model/configurationparameter.hpp \
     sql_error.hpp \
     pch.hpp \
     qsqldatabaseraii.hpp \
     asyncdbustask.hpp \
-    keyedmessage.hpp \
+    ../dbus-model/keyedmessage.hpp \
     persistencemanagerdbprovider.hpp

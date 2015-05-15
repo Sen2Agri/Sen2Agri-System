@@ -12,6 +12,8 @@ class PersistenceManagerDBProvider
     SqlDatabaseRAII getDatabase() const;
 
 public:
-    ConfigurationParameterList GetConfigurationParameters(const QString &prefix);
-    KeyedMessageList UpdateConfigurationParameters(const ConfigurationParameterList &parameters);
+    ConfigurationSet GetConfigurationSet();
+    ConfigurationParameterValueList GetConfigurationParameters(const QString &prefix);
+    KeyedMessageList
+    UpdateConfigurationParameters(const ConfigurationParameterValueList &parameters);
 };

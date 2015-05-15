@@ -1,79 +1,52 @@
-#include <iostream>
-
-#include <unistd.h>
-
 #include <QApplication>
-#include <QCommandLineParser>
-#include <QFile>
-#include <QTextStream>
 #include <QDebug>
 
 #include "maindialog.hpp"
+#include "persistencemanager_interface.h"
 
 using namespace std;
 
 ConfigModel loadModel()
 {
-    QFile configFile("/etc/sen2agri.conf");
-    if (!configFile.open(QIODevice::ReadOnly)) {
-        return { "30", "true" };
-    }
-
-    return ConfigModel::deserialize(QJsonDocument::fromJson(configFile.readAll()));
+    return {};
 }
 
-int displayUI(QApplication &a)
+int main(int argc, char *argv[])
 {
-    auto model = loadModel();
+    QApplication a(argc, argv);
+
+    ConfigurationParameterInfo::registerMetaTypes();
+    ConfigurationParameterValue::registerMetaTypes();
+    ConfigurationCategory::registerMetaTypes();
+    ConfigurationSet::registerMetaTypes();
+    KeyedMessage::registerMetaTypes();
+
+    auto interface = new OrgEsaSen2agriPersistenceManagerInterface(
+        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(), QStringLiteral("/"),
+        QDBusConnection::systemBus());
+    auto foo = interface->GetConfigurationSet();
+    foo.waitForFinished();
+    ConfigurationParameterInfoList params;
+    if (foo.isValid()) {
+        params = foo.value();
+
+    } else if (foo.isError()) {
+        qDebug() << foo.error().message();
+    }
+
+    ConfigurationSet configuration;
+    configuration.categories.append({ 1, "General" });
+    configuration.categories.append({ 2, "Not used" });
+    configuration.categories.append({ 3, "L2A" });
+
+    configuration.parameters.append({ "test.foo", 1, "Foo", "string", "val 1", false });
+    configuration.parameters.append({ "test.bar", 1, "Boo", "string", "val 2", false });
+    configuration.parameters.append({ "test.baz", 3, "Baz", "string", "val 2", false });
+
+    ConfigModel model(configuration);
 
     MainDialog w(model);
     w.show();
 
     return a.exec();
-}
-
-int main(int argc, char *argv[])
-{
-    QCommandLineParser parser;
-    QStringList argList;
-    argList.reserve(argc);
-    for (int i = 0; i < argc; i++) {
-        argList << argv[i];
-    }
-
-    parser.addPositionalArgument(QStringLiteral("command"), QStringLiteral("command"));
-    parser.addPositionalArgument(QStringLiteral("file"), QStringLiteral("file"));
-    parser.process(argList);
-
-    const auto &args = parser.positionalArguments();
-    if (args.length() == 0) {
-        QApplication a(argc, argv);
-        return displayUI(a);
-    }
-
-    if (args.at(0) != QLatin1String("write")) {
-        QTextStream(stderr) << "invalid arguments";
-        return EXIT_FAILURE;
-    }
-
-    if (args.length() != 1) {
-        QTextStream(stderr) << "invalid arguments";
-        return EXIT_FAILURE;
-    }
-
-    QFile in;
-    if (!in.open(STDIN_FILENO, QIODevice::ReadOnly)) {
-        QTextStream(stderr) << "cannot open input";
-        return EXIT_FAILURE;
-    }
-
-    QJsonParseError error;
-    const auto &document = QJsonDocument::fromJson(in.readAll(), &error);
-
-    QFile out("/etc/sen2agri.conf");
-    if (!out.open(QIODevice::WriteOnly)) {
-        QTextStream(stderr) << "cannot open output file";
-        return EXIT_FAILURE;
-    }
-    out.write(document.toJson());
 }

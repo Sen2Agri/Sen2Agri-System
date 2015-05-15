@@ -5,7 +5,41 @@ SqlDatabaseRAII PersistenceManagerDBProvider::getDatabase() const
     return provider.getDatabase(QStringLiteral("PersistenceManager"));
 }
 
-ConfigurationParameterList
+ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(QStringLiteral("GetConfigurationSet"), [&]() {
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_configuration_set()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        auto dataRecord = query.record();
+        auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
+        auto categoryCol = dataRecord.indexOf(QStringLiteral("category"));
+        auto friendlyNameCol = dataRecord.indexOf(QStringLiteral("friendly_name"));
+        auto dataTypeCol = dataRecord.indexOf(QStringLiteral("data_type"));
+        auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
+        auto isAdvancedCol = dataRecord.indexOf(QStringLiteral("is_advanced"));
+
+        ConfigurationSet result;
+        while (query.next()) {
+            result.parameters.append({ query.value(keyCol).toString(),
+                                       query.value(categoryCol).toInt(),
+                                       query.value(friendlyNameCol).toString(),
+                                       query.value(dataTypeCol).toString(),
+                                       query.value(valueCol).toString(),
+                                       query.value(isAdvancedCol).toBool() });
+        }
+
+        return result;
+    });
+}
+
+ConfigurationParameterValueList
 PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
 {
     auto db = getDatabase();
@@ -24,7 +58,7 @@ PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
         auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
         auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
 
-        ConfigurationParameterList result;
+        ConfigurationParameterValueList result;
         while (query.next()) {
             result.append({ query.value(keyCol).toString(), query.value(valueCol).toString() });
         }
@@ -34,7 +68,7 @@ PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
 }
 
 KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
-    const ConfigurationParameterList &parameters)
+    const ConfigurationParameterValueList &parameters)
 {
     auto db = getDatabase();
 

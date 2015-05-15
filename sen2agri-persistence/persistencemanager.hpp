@@ -50,6 +50,8 @@ public:
 signals:
 
 public slots:
-    ConfigurationParameterList GetConfigurationParameters(const QString &prefix);
-    KeyedMessageList UpdateConfigurationParameters(const ConfigurationParameterList &parameters);
+    ConfigurationSet GetConfigurationSet();
+    ConfigurationParameterValueList GetConfigurationParameters(const QString &prefix);
+    KeyedMessageList
+    UpdateConfigurationParameters(const ConfigurationParameterValueList &parameters);
 };

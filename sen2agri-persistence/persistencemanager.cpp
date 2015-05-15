@@ -12,7 +12,15 @@ PersistenceManager::PersistenceManager(QDBusConnection &connection, QObject *par
 {
 }
 
-ConfigurationParameterList PersistenceManager::GetConfigurationParameters(const QString &prefix)
+ConfigurationSet PersistenceManager::GetConfigurationSet()
+{
+    RunAsync([=]() { return dbProvider.GetConfigurationSet(); });
+
+    return {};
+}
+
+ConfigurationParameterValueList
+PersistenceManager::GetConfigurationParameters(const QString &prefix)
 {
     RunAsync([=]() { return dbProvider.GetConfigurationParameters(prefix); });
 
@@ -20,7 +28,7 @@ ConfigurationParameterList PersistenceManager::GetConfigurationParameters(const 
 }
 
 KeyedMessageList
-PersistenceManager::UpdateConfigurationParameters(const ConfigurationParameterList &parameters)
+PersistenceManager::UpdateConfigurationParameters(const ConfigurationParameterValueList &parameters)
 {
     RunAsync([=]() { return dbProvider.UpdateConfigurationParameters(parameters); });
 
@@ -29,6 +37,9 @@ PersistenceManager::UpdateConfigurationParameters(const ConfigurationParameterLi
 
 void PersistenceManager::registerMetaTypes()
 {
-    ConfigurationParameter::registerMetaTypes();
+    ConfigurationParameterInfo::registerMetaTypes();
+    ConfigurationParameterValue::registerMetaTypes();
+    ConfigurationCategory::registerMetaTypes();
+    ConfigurationSet::registerMetaTypes();
     KeyedMessage::registerMetaTypes();
 }

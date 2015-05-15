@@ -4,7 +4,8 @@
 
 #include "configmodel.hpp"
 
-namespace Ui {
+namespace Ui
+{
 class MainDialog;
 }
 

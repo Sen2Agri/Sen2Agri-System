@@ -1,15 +1,19 @@
 #pragma once
 
 #include <QString>
-#include <QJsonDocument>
+#include <QMap>
+#include <QDate>
+
+#include "configurationparameter.hpp"
 
 class ConfigModel
 {
+    ConfigurationSet configuration;
+
 public:
-    QString value1;
-    QString value2;
+    ConfigModel();
+    ConfigModel(ConfigurationSet configuration);
 
-    QJsonDocument serialize() const;
-
-    static ConfigModel deserialize(const QJsonDocument &document);
+    const ConfigurationCategoryList &categories() const;
+    const ConfigurationParameterInfoList &parameters() const;
 };
