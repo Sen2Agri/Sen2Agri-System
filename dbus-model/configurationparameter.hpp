@@ -55,8 +55,6 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationParameterV
 const QDBusArgument &operator>>(const QDBusArgument &argument,
                                 ConfigurationParameterValue &parameter);
 
-QString toJson(const ConfigurationParameterValueList &parameters);
-
 class ConfigurationCategory
 {
 public:

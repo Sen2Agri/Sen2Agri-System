@@ -1,5 +1,9 @@
 #include "persistencemanagerdbprovider.hpp"
 
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+
 SqlDatabaseRAII PersistenceManagerDBProvider::getDatabase() const
 {
     return provider.getDatabase(QStringLiteral("PersistenceManager"));
@@ -10,7 +14,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(QStringLiteral("GetConfigurationSet"), [&]() {
-        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_configuration_set()"));
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_categories()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -18,6 +22,23 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
         }
 
         auto dataRecord = query.record();
+        auto idCol = dataRecord.indexOf(QStringLiteral("id"));
+        auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
+
+        ConfigurationSet result;
+        while (query.next()) {
+            result.categories.append(
+                { query.value(idCol).toInt(), query.value(nameCol).toString() });
+        }
+
+        query = db.prepareQuery(QStringLiteral("select * from sp_get_configuration_set()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        dataRecord = query.record();
         auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
         auto categoryCol = dataRecord.indexOf(QStringLiteral("category"));
         auto friendlyNameCol = dataRecord.indexOf(QStringLiteral("friendly_name"));
@@ -25,7 +46,6 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
         auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
         auto isAdvancedCol = dataRecord.indexOf(QStringLiteral("is_advanced"));
 
-        ConfigurationSet result;
         while (query.next()) {
             result.parameters.append({ query.value(keyCol).toString(),
                                        query.value(categoryCol).toInt(),
@@ -73,9 +93,18 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(QStringLiteral("UpdateConfigurationParameters"), [&]() {
-        auto query = db.prepareQuery(
-            QStringLiteral("select * from sp_update_configuration_parameters(:parameters)"));
-        query.bindValue(QStringLiteral(":parameters"), toJson(parameters));
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_upsert_parameters(:parameters)"));
+
+        QJsonArray array;
+        for (const auto &p : parameters) {
+            QJsonObject node;
+            node["key"] = p.key;
+            node["value"] = p.value;
+            array.append(node);
+        }
+        query.bindValue(QStringLiteral(":parameters"),
+                        QString::fromUtf8(QJsonDocument(array).toJson()));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -84,11 +113,12 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
 
         auto dataRecord = query.record();
         auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
-        auto errorCol = dataRecord.indexOf(QStringLiteral("error"));
+        auto errorMessageCol = dataRecord.indexOf(QStringLiteral("error_message"));
 
         KeyedMessageList result;
         while (query.next()) {
-            result.append({ query.value(keyCol).toString(), query.value(errorCol).toString() });
+            result.append(
+                { query.value(keyCol).toString(), query.value(errorMessageCol).toString() });
         }
 
         return result;

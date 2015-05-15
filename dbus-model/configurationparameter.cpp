@@ -95,15 +95,6 @@ const QDBusArgument &operator>>(const QDBusArgument &argument,
     return argument;
 }
 
-QString toJson(const ConfigurationParameterValueList &parameters)
-{
-    QJsonObject node;
-    for (const auto &p : parameters) {
-        node[p.key] = p.value;
-    }
-    return QString::fromUtf8(QJsonDocument(node).toJson());
-}
-
 ConfigurationCategory::ConfigurationCategory()
 {
 }
