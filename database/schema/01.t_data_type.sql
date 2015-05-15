@@ -1,4 +1,4 @@
-CREATE TYPE t_data_types AS ENUM
+﻿CREATE TYPE t_data_type AS ENUM
    ('bool',
     'date',
     'float',
