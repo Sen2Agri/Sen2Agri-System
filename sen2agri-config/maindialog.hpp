@@ -14,7 +14,7 @@ class MainDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit MainDialog(ConfigModel &configModel, QWidget *parent = 0);
+    explicit MainDialog(QWidget *parent = 0);
     ~MainDialog();
 
 private slots:
@@ -23,5 +23,5 @@ private slots:
 
 private:
     Ui::MainDialog *ui;
-    ConfigModel &configModel;
+    ConfigModel configModel;
 };

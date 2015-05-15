@@ -4,7 +4,7 @@
   <interface name="org.esa.sen2agri.persistenceManager">
   <method name="GetConfigurationSet">
     <arg name="result" type="(ss)" direction="out" />
-    <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationParameterInfoList" />
+    <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationSet" />
   </method>
   <method name="GetConfigurationParameters">
     <arg name="prefix" type="s" direction="in" />
