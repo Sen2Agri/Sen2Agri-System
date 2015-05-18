@@ -31,7 +31,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
                 { query.value(idCol).toInt(), query.value(nameCol).toString() });
         }
 
-        query = db.prepareQuery(QStringLiteral("select * from sp_get_configuration_set()"));
+        query = db.prepareQuery(QStringLiteral("select * from sp_get_parameter_set()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -40,11 +40,11 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 
         dataRecord = query.record();
         auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
-        auto categoryCol = dataRecord.indexOf(QStringLiteral("category"));
         auto friendlyNameCol = dataRecord.indexOf(QStringLiteral("friendly_name"));
-        auto dataTypeCol = dataRecord.indexOf(QStringLiteral("data_type"));
         auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
+        auto dataTypeCol = dataRecord.indexOf(QStringLiteral("type"));
         auto isAdvancedCol = dataRecord.indexOf(QStringLiteral("is_advanced"));
+        auto categoryCol = dataRecord.indexOf(QStringLiteral("config_category_id"));
 
         while (query.next()) {
             result.parameters.append({ query.value(keyCol).toString(),

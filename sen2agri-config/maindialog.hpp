@@ -5,6 +5,7 @@
 
 #include "configmodel.hpp"
 #include "parameterchangelistener.hpp"
+#include "persistencemanager_interface.h"
 
 namespace Ui
 {
@@ -28,7 +29,9 @@ private:
     Ui::MainDialog *ui;
     ConfigModel configModel;
     QList<ParameterChangeListener *> parameterChangeListeners;
+    OrgEsaSen2agriPersistenceManagerInterface clientInterface;
 
     void loadModel(const ConfigurationSet &configuration);
     QWidget *createWidgetForParameter(const ConfigurationParameterInfo &parameter, QWidget *parent);
+    void saveChanges();
 };

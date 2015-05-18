@@ -11,7 +11,6 @@
 
 #include "maindialog.hpp"
 #include "ui_maindialog.h"
-#include "persistencemanager_interface.h"
 #include "parameterchangelistener.hpp"
 
 using std::end;
@@ -37,15 +36,16 @@ static ConfigurationSet getStubConfiguration()
     return configuration;
 }
 
-MainDialog::MainDialog(QWidget *parent) : QDialog(parent), ui(new Ui::MainDialog)
+MainDialog::MainDialog(QWidget *parent)
+    : QDialog(parent),
+      ui(new Ui::MainDialog),
+      clientInterface(OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
+                      QStringLiteral("/"),
+                      QDBusConnection::systemBus())
 {
     ui->setupUi(this);
 
-    auto interface = new OrgEsaSen2agriPersistenceManagerInterface(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(), QStringLiteral("/"),
-        QDBusConnection::systemBus());
-
-    auto promise = interface->GetConfigurationSet();
+    auto promise = clientInterface.GetConfigurationSet();
     connect(new QDBusPendingCallWatcher(promise, this), &QDBusPendingCallWatcher::finished,
             [this, promise]() {
                 if (promise.isValid()) {
@@ -137,14 +137,35 @@ void MainDialog::done(int result)
         }
 
         if (isValid) {
-            QDialog::done(QDialog::Accepted);
+            saveChanges();
         } else {
             QMessageBox::warning(this, QStringLiteral("Error"),
                                  QStringLiteral("Please make sure that the parameters are valid"));
         }
     } else {
-        QDialog::done(result);
+        if (configModel.getNewValues().size() == 0 ||
+            QMessageBox::question(this, QStringLiteral("Save changes"),
+                                  QStringLiteral("Are you sure you want to close the "
+                                                 "application without saving the changes?"),
+                                  QMessageBox::Yes, QMessageBox::No) == QMessageBox::Yes) {
+            QDialog::done(result);
+        }
     }
+}
+
+void MainDialog::saveChanges()
+{
+    auto promise = clientInterface.UpdateConfigurationParameters(configModel.getChanges());
+    connect(new QDBusPendingCallWatcher(promise, this), &QDBusPendingCallWatcher::finished,
+            [this, promise]() {
+                if (promise.isValid()) {
+                    QDialog::done(QDialog::Accepted);
+                } else if (promise.isError()) {
+                    QMessageBox::warning(this, QStringLiteral("Error"),
+                                         QStringLiteral("Unable to save the changes: %1")
+                                             .arg(promise.error().message()));
+                }
+            });
 }
 
 void MainDialog::on_buttonBox_accepted()
@@ -184,7 +205,8 @@ QWidget *MainDialog::createWidgetForParameter(const ConfigurationParameterInfo &
         return widget;
     } else if (parameter.dataType == "bool") {
         auto widget = new QCheckBox();
-        if (parameter.value == "true") {
+        const auto &lc = parameter.value.toLower();
+        if (lc == "t" || lc == "true" || lc == "y" || lc == "yes" || lc == "on" || lc == "1") {
             widget->setCheckState(Qt::Checked);
             if (parameter.isAdvanced) {
                 makeWidgetReadOnly(widget);

@@ -5,6 +5,9 @@
 #include <QDBusError>
 #include <QDBusMessage>
 #include <QDebug>
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
 #include <QObject>
 #include <QRunnable>
 #include <QSqlDatabase>

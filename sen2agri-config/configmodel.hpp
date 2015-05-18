@@ -18,6 +18,7 @@ public:
 
     void setValue(const QString &key, const QString &value);
     ConfigurationParameterValueList getChanges() const;
+    const QMap<QString, QString> &getNewValues() const;
 
     const ConfigurationCategoryList &categories() const;
     const ConfigurationParameterInfoList &parameters() const;

@@ -41,6 +41,12 @@ ConfigurationParameterValueList ConfigModel::getChanges() const
 
     return result;
 }
+
+const QMap<QString, QString> &ConfigModel::getNewValues() const
+{
+    return newValues;
+}
+
 const ConfigurationCategoryList &ConfigModel::categories() const
 {
     return configuration.categories;
