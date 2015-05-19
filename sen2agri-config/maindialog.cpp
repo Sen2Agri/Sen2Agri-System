@@ -2,8 +2,10 @@
 
 #include <QMessageBox>
 #include <QProcess>
+#include <QFileDialog>
 #include <QLabel>
 #include <QCheckBox>
+#include <QPushButton>
 #include <QLineEdit>
 #include <QDateEdit>
 #include <QTableWidget>
@@ -24,7 +26,8 @@ static ConfigurationSet getStubConfiguration()
     configuration.categories.append({ 3, "L2A" });
 
     configuration.parameters.append({ "test.foo", 1, "Foo", "string", "val 1", false });
-    configuration.parameters.append({ "test.bar", 1, "Boo", "string", "val 2", false });
+    configuration.parameters.append({ "test.bar", 1, "Boo", "file", "val 2", false });
+    configuration.parameters.append({ "test.baz", 1, "Boo", "directory", "val 2", false });
     configuration.parameters.append({ "test.qux", 1, "Qux", "int", "42", false });
     configuration.parameters.append({ "test.date", 1, "Date", "date", "2014-02-03", false });
     configuration.parameters.append({ "test.date.ro", 1, "Date RO", "date", "2014-02-03", true });
@@ -186,7 +189,7 @@ QWidget *MainDialog::createWidgetForParameter(const ConfigurationParameterInfo &
                                               QWidget *parent)
 {
     if (parameter.dataType == "int" || parameter.dataType == "float" ||
-        parameter.dataType == "string" || parameter.dataType == "path") {
+        parameter.dataType == "string") {
         auto widget = new QLineEdit(parameter.value, parent);
         if (parameter.isAdvanced) {
             makeWidgetReadOnly(widget);
@@ -195,6 +198,31 @@ QWidget *MainDialog::createWidgetForParameter(const ConfigurationParameterInfo &
                 new ParameterChangeListener(configModel, parameter, widget, widget));
         }
         return widget;
+    } else if (parameter.dataType == "path" || parameter.dataType == "file" ||
+               parameter.dataType == "directory") {
+        if (parameter.isAdvanced) {
+            auto widget = new QLineEdit(parameter.value, parent);
+            makeWidgetReadOnly(widget);
+            return widget;
+        } else {
+            auto container = new QWidget(parent);
+            auto layout = new QGridLayout(container);
+            layout->setContentsMargins(0, 0, 0, 0);
+            auto widget = new QLineEdit(parameter.value, container);
+            layout->addWidget(widget, 0, 0);
+            auto button = new QPushButton("...", container);
+            layout->addWidget(button, 0, 1, Qt::AlignRight);
+            if (parameter.dataType == "file") {
+                connect(button, &QPushButton::clicked,
+                        [this, widget]() { widget->setText(QFileDialog::getOpenFileName(this)); });
+            } else {
+                connect(button, &QPushButton::clicked,
+                        [this, widget]() { widget->setText(QFileDialog::getExistingDirectory(this)); });
+            }
+            parameterChangeListeners.append(
+                new ParameterChangeListener(configModel, parameter, widget, widget));
+            return container;
+        }
     } else if (parameter.dataType == "date") {
         auto widget = new QDateEdit(QDate::fromString(parameter.value, Qt::ISODate), parent);
         if (parameter.isAdvanced) {

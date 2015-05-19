@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_validate_data_type_value(
+CREATE OR REPLACE FUNCTION sp_validate_data_type_value(
 IN _value VARCHAR,
 IN _type t_data_type) RETURNS VARCHAR AS $$
 DECLARE boolean_value boolean;
@@ -33,7 +33,7 @@ BEGIN
 			EXCEPTION WHEN OTHERS THEN
 				RETURN 'Invalid integer value: '||_value;
 			END;
-		WHEN 'path','string' THEN
+		WHEN 'file','directory','string' THEN
 			RETURN NULL; -- The _value is already a string.
 		ELSE
 			RETURN 'Data type validation not implemented';

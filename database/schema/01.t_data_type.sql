@@ -3,5 +3,6 @@
     'date',
     'float',
     'int',
-    'path',
+    'file',
+    'directory',
     'string');
