@@ -4,6 +4,7 @@
 #include "dbprovider.hpp"
 #include "configurationparameter.hpp"
 #include "keyedmessage.hpp"
+#include "settings.hpp"
 
 class PersistenceManagerDBProvider
 {
@@ -12,6 +13,8 @@ class PersistenceManagerDBProvider
     SqlDatabaseRAII getDatabase() const;
 
 public:
+    PersistenceManagerDBProvider(const Settings &settings);
+
     ConfigurationSet GetConfigurationSet();
     ConfigurationParameterValueList GetConfigurationParameters(const QString &prefix);
     KeyedMessageList

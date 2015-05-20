@@ -5,6 +5,7 @@
 #include <QDateEdit>
 #include <QDebug>
 #include <QDialog>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QFormLayout>
 #include <QJsonObject>
@@ -15,6 +16,7 @@
 #include <QMessageBox>
 #include <QObject>
 #include <QProcess>
+#include <QPushButton>
 #include <QString>
 #include <QTableWidget>
 #include <QVariantMap>

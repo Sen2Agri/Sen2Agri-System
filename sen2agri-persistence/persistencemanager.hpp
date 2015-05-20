@@ -10,6 +10,7 @@
 #include "asyncdbustask.hpp"
 #include "configurationparameter.hpp"
 #include "keyedmessage.hpp"
+#include "settings.hpp"
 
 class PersistenceManager : public QObject, protected QDBusContext
 {
@@ -43,7 +44,9 @@ class PersistenceManager : public QObject, protected QDBusContext
     }
 
 public:
-    explicit PersistenceManager(QDBusConnection &connection, QObject *parent = 0);
+    explicit PersistenceManager(QDBusConnection &connection,
+                                const Settings &settings,
+                                QObject *parent = 0);
 
     static void registerMetaTypes();
 

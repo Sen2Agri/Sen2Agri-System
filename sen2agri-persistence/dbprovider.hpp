@@ -7,10 +7,15 @@
 
 #include "qsqldatabaseraii.hpp"
 #include "sql_error.hpp"
+#include "settings.hpp"
 
 class DBProvider
 {
+    const Settings &settings;
+
 public:
+    DBProvider(const Settings &settings);
+
     SqlDatabaseRAII getDatabase(const QString &name) const;
 
     bool shouldRetryTransaction(const sql_error &e);

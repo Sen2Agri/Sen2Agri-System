@@ -7,8 +7,10 @@
 
 #include "persistencemanager.hpp"
 
-PersistenceManager::PersistenceManager(QDBusConnection &connection, QObject *parent)
-    : QObject(parent), connection(connection)
+PersistenceManager::PersistenceManager(QDBusConnection &connection,
+                                       const Settings &settings,
+                                       QObject *parent)
+    : QObject(parent), dbProvider(settings), connection(connection)
 {
 }
 

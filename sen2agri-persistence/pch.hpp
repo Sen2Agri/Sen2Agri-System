@@ -10,6 +10,7 @@
 #include <QJsonObject>
 #include <QObject>
 #include <QRunnable>
+#include <QSettings>
 #include <QSqlDatabase>
 #include <QSqlError>
 #include <QSqlQuery>
@@ -17,7 +18,9 @@
 #include <QThread>
 #include <QThreadPool>
 #include <QtSql>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <stdexcept>
+#include <type_traits>
 #include <utility>

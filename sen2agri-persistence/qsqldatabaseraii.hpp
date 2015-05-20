@@ -11,7 +11,11 @@ class SqlDatabaseRAII
     void reset();
 
 public:
-    SqlDatabaseRAII(const QString &name);
+    SqlDatabaseRAII(const QString &name,
+                    const QString &hostName,
+                    const QString &databaseName,
+                    const QString &userName,
+                    const QString &password);
     SqlDatabaseRAII(const SqlDatabaseRAII &) = delete;
     SqlDatabaseRAII(SqlDatabaseRAII &&other);
     SqlDatabaseRAII &operator=(const SqlDatabaseRAII &) = delete;

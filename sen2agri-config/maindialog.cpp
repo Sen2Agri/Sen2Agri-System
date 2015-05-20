@@ -54,7 +54,7 @@ MainDialog::MainDialog(QWidget *parent)
                 if (promise.isValid()) {
                     loadModel(promise.value());
                 } else if (promise.isError()) {
-#if 1
+#if 0
 
                     loadModel(getStubConfiguration());
 #else
@@ -215,8 +215,9 @@ QWidget *MainDialog::createWidgetForParameter(const ConfigurationParameterInfo &
                 connect(button, &QPushButton::clicked,
                         [this, widget]() { widget->setText(QFileDialog::getOpenFileName(this)); });
             } else {
-                connect(button, &QPushButton::clicked,
-                        [this, widget]() { widget->setText(QFileDialog::getExistingDirectory(this)); });
+                connect(button, &QPushButton::clicked, [this, widget]() {
+                    widget->setText(QFileDialog::getExistingDirectory(this));
+                });
             }
             parameterChangeListeners.append(
                 new ParameterChangeListener(configModel, parameter, widget, widget));

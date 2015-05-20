@@ -26,7 +26,8 @@ SOURCES += main.cpp \
     sql_error.cpp \
     qsqldatabaseraii.cpp \
     ../dbus-model/keyedmessage.cpp \
-    persistencemanagerdbprovider.cpp
+    persistencemanagerdbprovider.cpp \
+    settings.cpp
 
 DISTFILES += \
     ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
@@ -40,4 +41,6 @@ HEADERS += \
     qsqldatabaseraii.hpp \
     asyncdbustask.hpp \
     ../dbus-model/keyedmessage.hpp \
-    persistencemanagerdbprovider.hpp
+    persistencemanagerdbprovider.hpp \
+    settings.hpp \
+    make_unique.hpp

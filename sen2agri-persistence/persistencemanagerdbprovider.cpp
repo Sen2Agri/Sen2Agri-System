@@ -4,6 +4,11 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+PersistenceManagerDBProvider::PersistenceManagerDBProvider(const Settings &settings)
+    : provider(settings)
+{
+}
+
 SqlDatabaseRAII PersistenceManagerDBProvider::getDatabase() const
 {
     return provider.getDatabase(QStringLiteral("PersistenceManager"));

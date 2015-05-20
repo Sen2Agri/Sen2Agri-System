@@ -14,17 +14,21 @@ using std::runtime_error;
 // QSqlDatabase instances have thread affinity and can't be created without adding them to the
 // global registry.
 // Because of this, include the thread id in the connection name
-SqlDatabaseRAII::SqlDatabaseRAII(const QString &name)
+SqlDatabaseRAII::SqlDatabaseRAII(const QString &name,
+                                 const QString &hostName,
+                                 const QString &databaseName,
+                                 const QString &userName,
+                                 const QString &password)
     : db(QSqlDatabase::addDatabase(
           QStringLiteral("QPSQL"),
           name + "@" +
               QString::number(reinterpret_cast<uintptr_t>(QThread::currentThreadId()), 16))),
       isInitialized(true)
 {
-    db.setHostName("sen2agri-dev");
-    db.setDatabaseName("sen2agri");
-    db.setUserName("admin");
-    db.setPassword("sen2agri");
+    db.setHostName(hostName);
+    db.setDatabaseName(databaseName);
+    db.setUserName(userName);
+    db.setPassword(password);
 
     if (!db.open()) {
         reset();
