@@ -12,10 +12,7 @@ BEGIN
 		config_category_id int,
 		is_valid_error_message character varying) ON COMMIT DROP;
 
-	/*CREATE TEMP TABLE return_table (
-		key CHARACTER VARYING, 
-		error_message CHARACTER VARYING) ON COMMIT DROP;*/
-
+	-- Parse the JSON and fill the temporary table.
 	BEGIN
 		INSERT INTO params
 		SELECT * FROM json_populate_recordset(null::params, _parameters);
@@ -23,11 +20,13 @@ BEGIN
 		RAISE EXCEPTION 'JSON did not match expected format or incorrect values were found. Error: %', SQLERRM USING ERRCODE = 'UE001';
 	END;
 
+	-- Get the type from the table for those values that already exist.
 	UPDATE params 
 	SET type = config.type
 	FROM config
 	WHERE params.key = config.key AND params.type IS NULL;
-	
+
+	-- Validate the values against the expected data type.
 	UPDATE params
 	SET is_valid_error_message = sp_validate_data_type_value(value, type);
 
@@ -42,7 +41,7 @@ BEGIN
         WHERE config.key = params.key AND params.is_valid_error_message IS NULL;
 
 	-- Insert the ones that do not exist and are valid
-        INSERT INTO config(
+	INSERT INTO config(
 		key,
 		friendly_name,
 		value,
@@ -56,11 +55,11 @@ BEGIN
 		coalesce(params.type, 'string'),
 		coalesce(params.is_advanced, false),
 		coalesce(params.config_category_id, 1)
-        FROM params
-        WHERE params.key IS NOT NULL AND params.is_valid_error_message IS NULL AND
-        NOT EXISTS (SELECT * FROM config WHERE config.key = params.key);
+	FROM params
+	WHERE params.key IS NOT NULL AND params.is_valid_error_message IS NULL AND
+	NOT EXISTS (SELECT * FROM config WHERE config.key = params.key);
 
-        -- Report any possible errors
+	-- Report any possible errors
 	RETURN QUERY SELECT params.key as key, params.is_valid_error_message as error_message FROM params WHERE params.is_valid_error_message IS NOT NULL;
 	
 END;
