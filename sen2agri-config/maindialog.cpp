@@ -198,8 +198,7 @@ QWidget *MainDialog::createWidgetForParameter(const ConfigurationParameterInfo &
                 new ParameterChangeListener(configModel, parameter, widget, widget));
         }
         return widget;
-    } else if (parameter.dataType == "path" || parameter.dataType == "file" ||
-               parameter.dataType == "directory") {
+    } else if (parameter.dataType == "file" || parameter.dataType == "directory") {
         if (parameter.isAdvanced) {
             auto widget = new QLineEdit(parameter.value, parent);
             makeWidgetReadOnly(widget);
