@@ -32,7 +32,9 @@ SOURCES += main.cpp \
 
 DISTFILES += \
     ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml \
-    dist/org.esa.sen2agri.persistence-manager.conf
+    dist/org.esa.sen2agri.persistence-manager.conf \
+    dist/org.esa.sen2agri.persistence-manager.service \
+    dist/sen2agri-persistence.service
 
 HEADERS += \
     persistencemanager.hpp \

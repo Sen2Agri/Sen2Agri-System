@@ -1,0 +1,6 @@
+[Unit]
+Description=Persistence Layer for Sen2Agri
+
+[Service]
+BusName=org.esa.sen2agri.persistenceManager
+ExecStart=/usr/local/bin/sen2agri-persistence
