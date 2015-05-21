@@ -1,3 +1,5 @@
+#include <QCommandLineOption>
+#include <QCommandLineParser>
 #include <QCoreApplication>
 #include <QDBusAbstractAdaptor>
 #include <QDBusConnection>
@@ -5,10 +7,12 @@
 #include <QDBusError>
 #include <QDBusMessage>
 #include <QDebug>
+#include <QFileInfo>
 #include <QJsonArray>
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QObject>
+#include <QProcessEnvironment>
 #include <QRunnable>
 #include <QSettings>
 #include <QSqlDatabase>

@@ -19,8 +19,3 @@ Settings Settings::readSettings(const QString &path)
              settings.value("Database/UserName").toString(),
              settings.value("Database/Password").toString() };
 }
-
-QString getSettingsFilePath()
-{
-    return QStringLiteral("/etc/sen2agri.conf");
-}
