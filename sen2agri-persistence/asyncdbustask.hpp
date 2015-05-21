@@ -6,6 +6,8 @@
 #include <QDBusMessage>
 #include <QDBusConnection>
 
+#include "logger.hpp"
+
 template <typename F>
 class AsyncDBusTask : public QRunnable
 {
@@ -48,6 +50,8 @@ public:
             f();
             connection.send(message.createReply());
         } catch (const std::exception &e) {
+            Logger::error(e.what());
+
             connection.send(message.createErrorReply(QDBusError::Failed, e.what()));
         }
     }

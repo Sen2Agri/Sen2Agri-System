@@ -10,28 +10,44 @@ void Logger::initialize()
 
 void Logger::info(const QString &str)
 {
-    const auto &msg = str.toLocal8Bit();
-    fprintf(stderr, "%s\n", msg.constData());
-    syslog(LOG_INFO, "%s", msg.constData());
+    info(str.toLocal8Bit().constData());
 }
 
 void Logger::warn(const QString &str)
 {
-    const auto &msg = str.toLocal8Bit();
-    fprintf(stderr, "%s\n", msg.constData());
-    syslog(LOG_WARNING, "%s", msg.constData());
+    warn(str.toLocal8Bit().constData());
 }
 
 void Logger::error(const QString &str)
 {
-    const auto &msg = str.toLocal8Bit();
-    fprintf(stderr, "%s\n", msg.constData());
-    syslog(LOG_ERR, "%s", msg.constData());
+    error(str.toLocal8Bit().constData());
 }
 
 void Logger::fatal(const QString &str)
 {
-    const auto &msg = str.toLocal8Bit();
-    fprintf(stderr, "%s\n", msg.constData());
-    syslog(LOG_CRIT, "%s", msg.constData());
+    fatal(str.toLocal8Bit().constData());
+}
+
+void Logger::info(const char *str)
+{
+    fprintf(stderr, "%s\n", str);
+    syslog(LOG_INFO, "%s", str);
+}
+
+void Logger::warn(const char *str)
+{
+    fprintf(stderr, "%s\n", str);
+    syslog(LOG_WARNING, "%s", str);
+}
+
+void Logger::error(const char *str)
+{
+    fprintf(stderr, "%s\n", str);
+    syslog(LOG_ERR, "%s", str);
+}
+
+void Logger::fatal(const char *str)
+{
+    fprintf(stderr, "%s\n", str);
+    syslog(LOG_CRIT, "%s", str);
 }
