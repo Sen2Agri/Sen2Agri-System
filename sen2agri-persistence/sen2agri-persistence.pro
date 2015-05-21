@@ -31,7 +31,8 @@ SOURCES += main.cpp \
     logger.cpp
 
 DISTFILES += \
-    ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
+    ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml \
+    dist/org.esa.sen2agri.persistence-manager.conf
 
 HEADERS += \
     persistencemanager.hpp \
