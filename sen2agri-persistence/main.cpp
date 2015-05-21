@@ -12,6 +12,7 @@
 #include "persistencemanager.hpp"
 #include "persistencemanager_adaptor.h"
 #include "settings.hpp"
+#include "logger.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -69,7 +70,7 @@ int main(int argc, char *argv[])
 
         return app.exec();
     } catch (const std::exception &e) {
-        qDebug() << e.what();
+        Logger::fatal(e.what());
         return EXIT_FAILURE;
     }
 }

@@ -27,7 +27,8 @@ SOURCES += main.cpp \
     qsqldatabaseraii.cpp \
     ../dbus-model/keyedmessage.cpp \
     persistencemanagerdbprovider.cpp \
-    settings.cpp
+    settings.cpp \
+    logger.cpp
 
 DISTFILES += \
     ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
@@ -43,4 +44,5 @@ HEADERS += \
     ../dbus-model/keyedmessage.hpp \
     persistencemanagerdbprovider.hpp \
     settings.hpp \
-    make_unique.hpp
+    make_unique.hpp \
+    logger.hpp
