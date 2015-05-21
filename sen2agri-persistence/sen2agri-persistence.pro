@@ -31,10 +31,15 @@ SOURCES += main.cpp \
     logger.cpp
 
 DISTFILES += \
+# install to /usr/share/dbus-1/interfaces/org.esa.sen2agri.persistenceManager.xml
     ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml \
+# install to /etc/dbus-1/system.d/org.esa.sen2agri.persistence-manager.conf
     dist/org.esa.sen2agri.persistence-manager.conf \
+# install to /usr/share/dbus-1/system-services/org.esa.sen2agri.persistence-manager.service
     dist/org.esa.sen2agri.persistence-manager.service \
+# install to /etc/systemd/system/sen2agri-persistence.service
     dist/sen2agri-persistence.service \
+# install to /etc/sen2agri/sen2agri-persistence.conf
     dist/sen2agri-persistence.conf
 
 HEADERS += \
