@@ -161,12 +161,25 @@ void MainDialog::saveChanges()
     auto promise = clientInterface.UpdateConfigurationParameters(configModel.getChanges());
     connect(new QDBusPendingCallWatcher(promise, this), &QDBusPendingCallWatcher::finished,
             [this, promise]() {
-                if (promise.isValid()) {
-                    QDialog::done(QDialog::Accepted);
-                } else if (promise.isError()) {
+                if (promise.isError()) {
                     QMessageBox::warning(this, QStringLiteral("Error"),
                                          QStringLiteral("Unable to save the changes: %1")
                                              .arg(promise.error().message()));
+                } else if (promise.isValid()) {
+                    const auto &result = promise.value();
+                    if (result.empty()) {
+                        QDialog::done(QDialog::Accepted);
+                    } else {
+                        auto message = QStringLiteral("The following %1 could not be saved:\n\n")
+                                           .arg(result.size() == 1 ? QStringLiteral("parameter")
+                                                                   : QStringLiteral("parameters"));
+
+                        for (const auto &e : result) {
+                            message += QStringLiteral("%1: %2\n").arg(e.key, e.text);
+                        }
+
+                        QMessageBox::warning(this, QStringLiteral("Error"), message);
+                    }
                 }
             });
 }
