@@ -19,12 +19,16 @@
   </method>
   <method name="UpdateConfigurationParameters">
     <arg name="Parameters" type="(ss)" direction="in" />
+    <arg name="result" type="(ss)" direction="out" />
     <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationParameterValueList" />
+    <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="KeyedMessageList" />
   </method>
   <method name="UpdateJobConfigurationParameters">
     <arg name="jobId" type="i" direction="in" />
     <arg name="Parameters" type="(ss)" direction="in" />
+    <arg name="result" type="(ss)" direction="out" />
     <annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="ConfigurationParameterValueList" />
+    <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="KeyedMessageList" />
   </method>
   </interface>
 </node>
