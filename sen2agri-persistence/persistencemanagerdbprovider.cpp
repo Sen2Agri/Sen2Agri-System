@@ -92,6 +92,35 @@ PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
     });
 }
 
+ConfigurationParameterValueList
+PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QString &prefix)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(QStringLiteral("GetJobConfigurationParameters"), [&]() {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_subscription_parameters(:job_id, :prefix)"));
+        query.bindValue(":job_id", jobId);
+        query.bindValue(":prefix", prefix);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        auto dataRecord = query.record();
+        auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
+        auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
+
+        ConfigurationParameterValueList result;
+        while (query.next()) {
+            result.append({ query.value(keyCol).toString(), query.value(valueCol).toString() });
+        }
+
+        return result;
+    });
+}
+
 KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
     const ConfigurationParameterValueList &parameters)
 {
@@ -128,4 +157,44 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
 
         return result;
     });
+}
+
+KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
+    int jobId, const ConfigurationParameterValueList &parameters)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(
+        QStringLiteral("UpdateJobConfigurationParameters"), [&]() {
+            auto query = db.prepareQuery(QStringLiteral(
+                "select * from sp_upsert_subscription_parameters(:job_id, :parameters)"));
+
+            query.bindValue(QStringLiteral(":job_id"), jobId);
+            QJsonArray array;
+            for (const auto &p : parameters) {
+                QJsonObject node;
+                node["key"] = p.key;
+                node["value"] = p.value;
+                array.append(node);
+            }
+            query.bindValue(QStringLiteral(":parameters"),
+                            QString::fromUtf8(QJsonDocument(array).toJson()));
+
+            query.setForwardOnly(true);
+            if (!query.exec()) {
+                throw_query_error(query);
+            }
+
+            auto dataRecord = query.record();
+            auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
+            auto errorMessageCol = dataRecord.indexOf(QStringLiteral("error_message"));
+
+            KeyedMessageList result;
+            while (query.next()) {
+                result.append(
+                    { query.value(keyCol).toString(), query.value(errorMessageCol).toString() });
+            }
+
+            return result;
+        });
 }

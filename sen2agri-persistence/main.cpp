@@ -37,6 +37,11 @@ int main(int argc, char *argv[])
             configFile += QStringLiteral("/sen2agri-persistence.conf");
         }
 
+        QSettings::setPath(QSettings::IniFormat, QSettings::SystemScope, "/etc");
+        QSettings ss(QSettings::IniFormat, QSettings::SystemScope, "x", "y");
+        Logger::info("ss.fileName()");
+        Logger::info(ss.fileName());
+
         QSettings::setPath(QSettings::IniFormat, QSettings::SystemScope, configFile);
         if (!QFileInfo::exists(configFile)) {
             throw std::runtime_error(

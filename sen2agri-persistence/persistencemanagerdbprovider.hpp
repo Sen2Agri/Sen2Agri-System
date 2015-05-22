@@ -17,6 +17,9 @@ public:
 
     ConfigurationSet GetConfigurationSet();
     ConfigurationParameterValueList GetConfigurationParameters(const QString &prefix);
+    ConfigurationParameterValueList GetJobConfigurationParameters(int jobId, const QString &prefix);
     KeyedMessageList
     UpdateConfigurationParameters(const ConfigurationParameterValueList &parameters);
+    KeyedMessageList
+    UpdateJobConfigurationParameters(int jobId, const ConfigurationParameterValueList &parameters);
 };

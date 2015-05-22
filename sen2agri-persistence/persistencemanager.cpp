@@ -29,10 +29,26 @@ PersistenceManager::GetConfigurationParameters(const QString &prefix)
     return {};
 }
 
+ConfigurationParameterValueList
+PersistenceManager::GetJobConfigurationParameters(int jobId, const QString &prefix)
+{
+    RunAsync([=]() { return dbProvider.GetJobConfigurationParameters(jobId, prefix); });
+
+    return {};
+}
+
 KeyedMessageList
 PersistenceManager::UpdateConfigurationParameters(const ConfigurationParameterValueList &parameters)
 {
     RunAsync([=]() { return dbProvider.UpdateConfigurationParameters(parameters); });
+
+    return {};
+}
+
+KeyedMessageList PersistenceManager::UpdateJobConfigurationParameters(
+    int jobId, const ConfigurationParameterValueList &parameters)
+{
+    RunAsync([=]() { return dbProvider.UpdateJobConfigurationParameters(jobId, parameters); });
 
     return {};
 }
