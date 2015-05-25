@@ -9,7 +9,8 @@ BEGIN
 		value character varying,
 		type t_data_type,
 		is_advanced boolean,
-		config_category_id int,
+		config_category_id smallint,
+		site_id smallint,
 		is_valid_error_message character varying) ON COMMIT DROP;
 
 	-- Parse the JSON and fill the temporary table.
@@ -36,7 +37,8 @@ BEGIN
 		value = params.value,
 		type = coalesce(params.type, config.type),
 		is_advanced = coalesce(params.is_advanced, config.is_advanced),
-		config_category_id = coalesce(params.config_category_id, config.config_category_id)
+		config_category_id = coalesce(params.config_category_id, config.config_category_id),
+		site_id = coalesce(params.site_id, config.site_id)
 	FROM  params
         WHERE config.key = params.key AND params.is_valid_error_message IS NULL;
 
@@ -47,14 +49,16 @@ BEGIN
 		value,
 		type,
 		is_advanced,
-		config_category_id)
+		config_category_id,
+		site_id)
         SELECT 
 		params.key,
 		coalesce(params.friendly_name, ''),
 		params.value,
 		coalesce(params.type, 'string'),
 		coalesce(params.is_advanced, false),
-		coalesce(params.config_category_id, 1)
+		coalesce(params.config_category_id, 1),
+		site_id
 	FROM params
 	WHERE params.key IS NOT NULL AND params.is_valid_error_message IS NULL AND
 	NOT EXISTS (SELECT * FROM config WHERE config.key = params.key);

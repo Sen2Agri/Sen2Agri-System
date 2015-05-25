@@ -1,0 +1,1 @@
+﻿CREATE OR REPLACE VIEW v_get_categories AS SELECT config_category.id, config_category.name FROM config_category ORDER BY config_category.display_order;

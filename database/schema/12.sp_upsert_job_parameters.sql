@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_upsert_subscription_parameters(
+﻿CREATE OR REPLACE FUNCTION sp_upsert_job_parameters(
 IN _job_id INT,
 IN _parameters JSON) RETURNS 
 TABLE (key CHARACTER VARYING, error_message CHARACTER VARYING) AS $$
@@ -33,13 +33,13 @@ BEGIN
 	WHERE NOT EXISTS (SELECT * FROM config WHERE params.key = config.key);
 
 	-- Update the ones that do exist in the current table and are valid
-	UPDATE config_subscription SET
+	UPDATE config_job SET
 		value = params.value
 	FROM  params
-        WHERE config_subscription.key = params.key AND params.is_valid_error_message IS NULL;
+        WHERE config_job.key = params.key AND params.is_valid_error_message IS NULL;
 
 	-- Insert the ones that do not exist in the current table, that can be found in the main table and are also valid
-	INSERT INTO config_subscription(
+	INSERT INTO config_job(
 		key,
 		value)
         SELECT 
@@ -47,7 +47,7 @@ BEGIN
 		params.value
 	FROM params INNER JOIN config ON params.key = config.key
 	WHERE params.key IS NOT NULL AND params.is_valid_error_message IS NULL AND
-	NOT EXISTS (SELECT * FROM config_subscription WHERE config_subscription.key = params.key);
+	NOT EXISTS (SELECT * FROM config_job WHERE config_job.key = params.key);
 
 	-- Report any possible errors
 	RETURN QUERY SELECT params.key as key, params.is_valid_error_message as error_message FROM params WHERE params.is_valid_error_message IS NOT NULL;
