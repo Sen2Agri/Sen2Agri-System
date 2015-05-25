@@ -27,3 +27,8 @@ INSERT INTO config_category
 (name, display_order)
 VALUES 
 ('L4B Crop Type', 5);
+
+INSERT INTO config_category
+(name, display_order)
+VALUES 
+('Archiver', 6);
