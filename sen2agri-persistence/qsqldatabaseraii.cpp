@@ -33,7 +33,9 @@ SqlDatabaseRAII::SqlDatabaseRAII(const QString &name,
     if (!db.open()) {
         reset();
 
-        throw runtime_error(db.lastError().text().toStdString());
+        throw runtime_error(QStringLiteral("Unable to connect to the database: %1")
+                                .arg(db.lastError().text())
+                                .toStdString());
     }
 }
 
