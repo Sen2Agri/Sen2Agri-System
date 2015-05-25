@@ -15,7 +15,9 @@ INCLUDEPATH += ../dbus-model
 TEMPLATE = app
 
 adaptor.files = ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
-adaptor.header_flags = -i ../dbus-model/configurationparameter.hpp -i ../dbus-model/keyedmessage.hpp
+adaptor.header_flags = -i ../dbus-model/configurationparameter.hpp \
+                       -i ../dbus-model/keyedmessage.hpp \
+                       -i ../dbus-model/archiverparameter.hpp
 
 DBUS_ADAPTORS += adaptor
 
@@ -26,6 +28,7 @@ SOURCES += main.cpp \
     sql_error.cpp \
     qsqldatabaseraii.cpp \
     ../dbus-model/keyedmessage.cpp \
+    ../dbus-model/archiverparameter.cpp \
     persistencemanagerdbprovider.cpp \
     settings.cpp \
     logger.cpp
@@ -51,6 +54,7 @@ HEADERS += \
     qsqldatabaseraii.hpp \
     asyncdbustask.hpp \
     ../dbus-model/keyedmessage.hpp \
+    ../dbus-model/archiverparameter.hpp \
     persistencemanagerdbprovider.hpp \
     settings.hpp \
     make_unique.hpp \

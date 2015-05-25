@@ -55,9 +55,12 @@ KeyedMessageList PersistenceManager::UpdateJobConfigurationParameters(
 
 void PersistenceManager::registerMetaTypes()
 {
+    ConfigurationSet::registerMetaTypes();
+
     ConfigurationParameterInfo::registerMetaTypes();
     ConfigurationParameterValue::registerMetaTypes();
     ConfigurationCategory::registerMetaTypes();
-    ConfigurationSet::registerMetaTypes();
     KeyedMessage::registerMetaTypes();
+
+    ArchiverParameter::registerMetaTypes();
 }

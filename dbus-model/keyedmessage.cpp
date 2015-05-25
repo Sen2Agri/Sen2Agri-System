@@ -42,12 +42,3 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, KeyedMessage &mes
 
     return argument;
 }
-
-QString toJson(const KeyedMessageList &parameters)
-{
-    QJsonObject node;
-    for (const auto &p : parameters) {
-        node[p.key] = p.text;
-    }
-    return QString::fromUtf8(QJsonDocument(node).toJson());
-}

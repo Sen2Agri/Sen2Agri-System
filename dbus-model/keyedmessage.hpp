@@ -23,5 +23,3 @@ Q_DECLARE_METATYPE(KeyedMessageList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const KeyedMessage &message);
 const QDBusArgument &operator>>(const QDBusArgument &argument, KeyedMessage &message);
-
-QString toJson(const KeyedMessageList &parameters);

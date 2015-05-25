@@ -54,7 +54,7 @@ MainDialog::MainDialog(QWidget *parent)
                 if (promise.isValid()) {
                     loadModel(promise.value());
                 } else if (promise.isError()) {
-#if 0
+#if 1
 
                     loadModel(getStubConfiguration());
 #else
