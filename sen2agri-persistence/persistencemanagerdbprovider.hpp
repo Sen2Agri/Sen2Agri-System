@@ -1,6 +1,6 @@
 #pragma once
 
-#include "qsqldatabaseraii.hpp"
+#include "sqldatabaseraii.hpp"
 #include "dbprovider.hpp"
 #include "configurationparameter.hpp"
 #include "keyedmessage.hpp"

@@ -5,7 +5,7 @@
 #include <QSqlError>
 #include <QThread>
 
-#include "qsqldatabaseraii.hpp"
+#include "sqldatabaseraii.hpp"
 #include "sql_error.hpp"
 
 using std::move;
