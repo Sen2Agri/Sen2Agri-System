@@ -4,6 +4,10 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+static QString getConfigurationUpsertJson(const ConfigurationParameterValueList &parameters);
+static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query);
+static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query);
+
 PersistenceManagerDBProvider::PersistenceManagerDBProvider(const Settings &settings)
     : provider(settings)
 {
@@ -72,23 +76,14 @@ PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
     return provider.handleTransactionRetry(QStringLiteral("GetConfigurationParameters"), [&]() {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_get_configuration_parameters(:prefix)"));
-        query.bindValue(":prefix", prefix);
+        query.bindValue(QStringLiteral(":prefix"), prefix);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
             throw_query_error(query);
         }
 
-        auto dataRecord = query.record();
-        auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
-        auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
-
-        ConfigurationParameterValueList result;
-        while (query.next()) {
-            result.append({ query.value(keyCol).toString(), query.value(valueCol).toString() });
-        }
-
-        return result;
+        return mapConfigurationParameters(query);
     });
 }
 
@@ -100,24 +95,15 @@ PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QSt
     return provider.handleTransactionRetry(QStringLiteral("GetJobConfigurationParameters"), [&]() {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_get_subscription_parameters(:job_id, :prefix)"));
-        query.bindValue(":job_id", jobId);
-        query.bindValue(":prefix", prefix);
+        query.bindValue(QStringLiteral(":job_id"), jobId);
+        query.bindValue(QStringLiteral(":prefix"), prefix);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
             throw_query_error(query);
         }
 
-        auto dataRecord = query.record();
-        auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
-        auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
-
-        ConfigurationParameterValueList result;
-        while (query.next()) {
-            result.append({ query.value(keyCol).toString(), query.value(valueCol).toString() });
-        }
-
-        return result;
+        return mapConfigurationParameters(query);
     });
 }
 
@@ -130,32 +116,14 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
         auto query =
             db.prepareQuery(QStringLiteral("select * from sp_upsert_parameters(:parameters)"));
 
-        QJsonArray array;
-        for (const auto &p : parameters) {
-            QJsonObject node;
-            node["key"] = p.key;
-            node["value"] = p.value;
-            array.append(node);
-        }
-        query.bindValue(QStringLiteral(":parameters"),
-                        QString::fromUtf8(QJsonDocument(array).toJson()));
+        query.bindValue(QStringLiteral(":parameters"), getConfigurationUpsertJson(parameters));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
             throw_query_error(query);
         }
 
-        auto dataRecord = query.record();
-        auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
-        auto errorMessageCol = dataRecord.indexOf(QStringLiteral("error_message"));
-
-        KeyedMessageList result;
-        while (query.next()) {
-            result.append(
-                { query.value(keyCol).toString(), query.value(errorMessageCol).toString() });
-        }
-
-        return result;
+        return mapUpdateConfigurationResult(query);
     });
 }
 
@@ -170,31 +138,54 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
                 "select * from sp_upsert_subscription_parameters(:job_id, :parameters)"));
 
             query.bindValue(QStringLiteral(":job_id"), jobId);
-            QJsonArray array;
-            for (const auto &p : parameters) {
-                QJsonObject node;
-                node["key"] = p.key;
-                node["value"] = p.value;
-                array.append(node);
-            }
-            query.bindValue(QStringLiteral(":parameters"),
-                            QString::fromUtf8(QJsonDocument(array).toJson()));
+            query.bindValue(QStringLiteral(":parameters"), getConfigurationUpsertJson(parameters));
 
             query.setForwardOnly(true);
             if (!query.exec()) {
                 throw_query_error(query);
             }
 
-            auto dataRecord = query.record();
-            auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
-            auto errorMessageCol = dataRecord.indexOf(QStringLiteral("error_message"));
-
-            KeyedMessageList result;
-            while (query.next()) {
-                result.append(
-                    { query.value(keyCol).toString(), query.value(errorMessageCol).toString() });
-            }
-
-            return result;
+            return mapUpdateConfigurationResult(query);
         });
+}
+
+static QString getConfigurationUpsertJson(const ConfigurationParameterValueList &parameters)
+{
+    QJsonArray array;
+    for (const auto &p : parameters) {
+        QJsonObject node;
+        node[QStringLiteral("key")] = p.key;
+        node[QStringLiteral("value")] = p.value;
+        array.append(node);
+    }
+    return QString::fromUtf8(QJsonDocument(array).toJson());
+}
+
+static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query)
+{
+    auto dataRecord = query.record();
+    auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
+    auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
+
+    ConfigurationParameterValueList result;
+    while (query.next()) {
+        result.append({ query.value(keyCol).toString(), query.value(valueCol).toString() });
+    }
+
+    return result;
+}
+
+static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query)
+{
+    auto dataRecord = query.record();
+    auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
+    auto errorMessageCol = dataRecord.indexOf(QStringLiteral("error_message"));
+
+    KeyedMessageList result;
+    while (query.next()) {
+        result.append(
+            { query.value(keyCol).toString(), query.value(errorMessageCol).toString() });
+    }
+
+    return result;
 }
