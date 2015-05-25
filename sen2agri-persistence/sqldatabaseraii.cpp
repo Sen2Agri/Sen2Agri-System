@@ -31,9 +31,13 @@ SqlDatabaseRAII::SqlDatabaseRAII(const QString &name,
     db.setPassword(password);
 
     if (!db.open()) {
+        const auto &message = QStringLiteral("Unable to connect to the database: %1")
+                                  .arg(db.lastError().text())
+                                  .toStdString();
+
         reset();
 
-        throw runtime_error(db.lastError().text().toStdString());
+        throw runtime_error(message);
     }
 }
 

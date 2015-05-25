@@ -14,12 +14,14 @@ ConfigurationParameterInfo::ConfigurationParameterInfo()
 
 ConfigurationParameterInfo::ConfigurationParameterInfo(QString key,
                                                        int categoryId,
+                                                       std::experimental::optional<int> siteId,
                                                        QString friendlyName,
                                                        QString dataType,
                                                        QString value,
                                                        bool isAdvanced)
     : key(move(key)),
       categoryId(categoryId),
+      siteId(siteId),
       friendlyName(move(friendlyName)),
       dataType(dataType),
       value(move(value)),

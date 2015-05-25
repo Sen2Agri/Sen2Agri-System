@@ -8,6 +8,15 @@ static QString getConfigurationUpsertJson(const ConfigurationParameterValueList 
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query);
 static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query);
 
+template<typename T>
+std::experimental::optional<T> to_optional(const QVariant &v)
+{
+    if (v.isNull()) {
+        return std::experimental::nullopt;
+    }
+    return v.value<T>();
+}
+
 PersistenceManagerDBProvider::PersistenceManagerDBProvider(const Settings &settings)
     : provider(settings)
 {
@@ -54,10 +63,12 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
         auto dataTypeCol = dataRecord.indexOf(QStringLiteral("type"));
         auto isAdvancedCol = dataRecord.indexOf(QStringLiteral("is_advanced"));
         auto categoryCol = dataRecord.indexOf(QStringLiteral("config_category_id"));
+        auto siteIdCol = dataRecord.indexOf(QStringLiteral("site_id"));
 
         while (query.next()) {
             result.parameters.append({ query.value(keyCol).toString(),
                                        query.value(categoryCol).toInt(),
+                                       to_optional<int>(query.value(siteIdCol)),
                                        query.value(friendlyNameCol).toString(),
                                        query.value(dataTypeCol).toString(),
                                        query.value(valueCol).toString(),

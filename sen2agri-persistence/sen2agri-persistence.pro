@@ -26,7 +26,7 @@ SOURCES += main.cpp \
     dbprovider.cpp \
     ../dbus-model/configurationparameter.cpp \
     sql_error.cpp \
-    qsqldatabaseraii.cpp \
+    sqldatabaseraii.cpp \
     ../dbus-model/keyedmessage.cpp \
     ../dbus-model/archiverparameter.cpp \
     persistencemanagerdbprovider.cpp \
@@ -51,7 +51,7 @@ HEADERS += \
     ../dbus-model/configurationparameter.hpp \
     sql_error.hpp \
     pch.hpp \
-    qsqldatabaseraii.hpp \
+    sqldatabaseraii.hpp \
     asyncdbustask.hpp \
     ../dbus-model/keyedmessage.hpp \
     ../dbus-model/archiverparameter.hpp \
