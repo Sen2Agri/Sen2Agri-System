@@ -26,6 +26,8 @@ public:
         try {
             connection.send(message.createReply(qVariantFromValue(f())));
         } catch (const std::exception &e) {
+            Logger::error(e.what());
+
             connection.send(message.createErrorReply(QDBusError::Failed, e.what()));
         }
     }
