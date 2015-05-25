@@ -4,11 +4,14 @@
 #include <QDBusArgument>
 #include <QMetaType>
 
+#include "../Optional/optional.hpp"
+
 class ConfigurationParameterInfo
 {
 public:
     QString key;
     int categoryId;
+    std::experimental::optional<int> siteId;
     QString friendlyName;
     QString dataType;
     QString value;
@@ -17,6 +20,7 @@ public:
     ConfigurationParameterInfo();
     ConfigurationParameterInfo(QString key,
                                int categoryId,
+                               std::experimental::optional<int> siteId,
                                QString friendlyName,
                                QString dataType,
                                QString value,
