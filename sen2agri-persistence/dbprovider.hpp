@@ -5,7 +5,7 @@
 #include <QString>
 #include <QtSql>
 
-#include "qsqldatabaseraii.hpp"
+#include "sqldatabaseraii.hpp"
 #include "sql_error.hpp"
 #include "settings.hpp"
 
