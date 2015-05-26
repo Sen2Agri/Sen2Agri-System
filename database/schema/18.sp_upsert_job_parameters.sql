@@ -10,6 +10,7 @@ BEGIN
 		type t_data_type,
 		is_valid_error_message character varying) ON COMMIT DROP;
 
+	-- Parse the JSON and fill the temporary table.
 	BEGIN
 		INSERT INTO params
 		SELECT * FROM json_populate_recordset(null::params, _parameters);
@@ -19,9 +20,9 @@ BEGIN
 
 	-- Get the parameter types from the main table.
 	UPDATE params 
-	SET type = config.type
-	FROM config
-	WHERE params.key = config.key;
+	SET type = config_metadata.type
+	FROM config_metadata
+	WHERE params.key = config_metadata.key;
 
 	-- Validate the values against the expected data types.
 	UPDATE params
@@ -30,20 +31,23 @@ BEGIN
 	-- Use a proper message for the params not found in the main table
 	UPDATE params
 	SET is_valid_error_message = 'Parameter not found in config table.'
-	WHERE NOT EXISTS (SELECT * FROM config WHERE params.key = config.key);
+	WHERE NOT EXISTS (SELECT * FROM config_metadata WHERE params.key = config_metadata.key);
 
 	-- Update the ones that do exist in the current table and are valid
 	UPDATE config_job SET
-		value = params.value
+		value = params.value,
+		last_updated = now()
 	FROM  params
         WHERE config_job.key = params.key AND params.is_valid_error_message IS NULL;
 
 	-- Insert the ones that do not exist in the current table, that can be found in the main table and are also valid
 	INSERT INTO config_job(
 		key,
+		job_id,
 		value)
         SELECT 
 		params.key,
+		_job_id,
 		params.value
 	FROM params INNER JOIN config ON params.key = config.key
 	WHERE params.key IS NOT NULL AND params.is_valid_error_message IS NULL AND

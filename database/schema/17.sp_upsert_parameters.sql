@@ -5,12 +5,12 @@ BEGIN
 
 	CREATE TEMP TABLE params (
 		key character varying,
+		site_id smallint,
 		friendly_name character varying,
 		value character varying,
 		type t_data_type,
 		is_advanced boolean,
 		config_category_id smallint,
-		site_id smallint,
 		is_valid_error_message character varying) ON COMMIT DROP;
 
 	-- Parse the JSON and fill the temporary table.
@@ -23,45 +23,59 @@ BEGIN
 
 	-- Get the type from the table for those values that already exist.
 	UPDATE params 
-	SET type = config.type
-	FROM config
-	WHERE params.key = config.key AND params.type IS NULL;
+	SET type = config_metadata.type
+	FROM config_metadata
+	WHERE params.key = config_metadata.key AND params.type IS NULL;
 
 	-- Validate the values against the expected data type.
 	UPDATE params
 	SET is_valid_error_message = sp_validate_data_type_value(value, type);
 
-	-- Update the ones that do exist and are valid
+	-- Update the values for the params that do exist and are valid
 	UPDATE config SET
-		friendly_name = coalesce(params.friendly_name, config.friendly_name),
 		value = params.value,
+		last_updated = now()
+	FROM  params
+        WHERE config.key = params.key AND coalesce(config.site_id, 0) = coalesce(params.site_id, 0) AND params.is_valid_error_message IS NULL;
+
+	-- Update the metadata for the params that do exist and are valid
+        UPDATE config_metadata SET
+		friendly_name = coalesce(params.friendly_name, config.friendly_name),
 		type = coalesce(params.type, config.type),
 		is_advanced = coalesce(params.is_advanced, config.is_advanced),
-		config_category_id = coalesce(params.config_category_id, config.config_category_id),
-		site_id = coalesce(params.site_id, config.site_id)
+		config_category_id = coalesce(params.config_category_id, config.config_category_id)
 	FROM  params
-        WHERE config.key = params.key AND params.is_valid_error_message IS NULL;
+        WHERE config_metadata.key = params.key AND params.is_valid_error_message IS NULL;
 
-	-- Insert the ones that do not exist and are valid
+	-- Insert the values for the params that do not exist and are valid
 	INSERT INTO config(
 		key,
+		site_id,
+		value)
+        SELECT 
+		params.key,
+		params.site_id,
+		params.value		
+	FROM params
+	WHERE params.key IS NOT NULL AND params.is_valid_error_message IS NULL AND
+	NOT EXISTS (SELECT * FROM config WHERE config.key = params.key AND coalesce(config.site_id, 0) = coalesce(params.site_id, 0));
+
+	-- Insert the metadat for the params that do not exist and are valid
+	INSERT INTO config_metadata(
+		key,
 		friendly_name,
-		value,
 		type,
 		is_advanced,
-		config_category_id,
-		site_id)
+		config_category_id)
         SELECT 
 		params.key,
 		coalesce(params.friendly_name, ''),
-		params.value,
 		coalesce(params.type, 'string'),
 		coalesce(params.is_advanced, false),
-		coalesce(params.config_category_id, 1),
-		site_id
+		coalesce(params.config_category_id, 1)
 	FROM params
 	WHERE params.key IS NOT NULL AND params.is_valid_error_message IS NULL AND
-	NOT EXISTS (SELECT * FROM config WHERE config.key = params.key);
+	NOT EXISTS (SELECT * FROM config_metadata WHERE config_metadata.key = params.key);
 
 	-- Report any possible errors
 	RETURN QUERY SELECT params.key as key, params.is_valid_error_message as error_message FROM params WHERE params.is_valid_error_message IS NOT NULL;
