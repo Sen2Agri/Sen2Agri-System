@@ -25,16 +25,25 @@ static ConfigurationSet getStubConfiguration()
     configuration.categories.append({ 2, "Not used" });
     configuration.categories.append({ 3, "L2A" });
 
-    configuration.parameters.append({ "test.foo", 1, std::experimental::nullopt, "Foo", "string", "val 1", false });
-    configuration.parameters.append({ "test.bar", 1, std::experimental::nullopt, "Boo", "file", "val 2", false });
-    configuration.parameters.append({ "test.baz", 1, std::experimental::nullopt, "Boo", "directory", "val 2", false });
-    configuration.parameters.append({ "test.qux", 1, std::experimental::nullopt, "Qux", "int", "42", false });
-    configuration.parameters.append({ "test.date", 1, std::experimental::nullopt, "Date", "date", "2014-02-03", false });
-    configuration.parameters.append({ "test.date.ro", 1, std::experimental::nullopt, "Date RO", "date", "2014-02-03", true });
-    configuration.parameters.append({ "test.bool.rw", 1, std::experimental::nullopt, "Bool", "bool", "true", false });
-    configuration.parameters.append({ "test.bool.ro", 1, std::experimental::nullopt, "Bool", "bool", "true", true });
+    configuration.parameters.append(
+        { "test.foo", 1, std::experimental::nullopt, "Foo", "string", "val 1", false });
+    configuration.parameters.append(
+        { "test.bar", 1, std::experimental::nullopt, "Boo", "file", "val 2", false });
+    configuration.parameters.append(
+        { "test.baz", 1, std::experimental::nullopt, "Boo", "directory", "val 2", false });
+    configuration.parameters.append(
+        { "test.qux", 1, std::experimental::nullopt, "Qux", "int", "42", false });
+    configuration.parameters.append(
+        { "test.date", 1, std::experimental::nullopt, "Date", "date", "2014-02-03", false });
+    configuration.parameters.append(
+        { "test.date.ro", 1, std::experimental::nullopt, "Date RO", "date", "2014-02-03", true });
+    configuration.parameters.append(
+        { "test.bool.rw", 1, std::experimental::nullopt, "Bool", "bool", "true", false });
+    configuration.parameters.append(
+        { "test.bool.ro", 1, std::experimental::nullopt, "Bool", "bool", "true", true });
 
-    configuration.parameters.append({ "test.baz", 3, std::experimental::nullopt, "Baz", "string", "val 2", true });
+    configuration.parameters.append(
+        { "test.baz", 3, std::experimental::nullopt, "Baz", "string", "val 2", true });
 
     return configuration;
 }
@@ -54,7 +63,7 @@ MainDialog::MainDialog(QWidget *parent)
                 if (promise.isValid()) {
                     loadModel(promise.value());
                 } else if (promise.isError()) {
-#if 1
+#if 0
 
                     loadModel(getStubConfiguration());
 #else

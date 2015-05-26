@@ -160,34 +160,6 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
         });
 }
 
-ArchiverParameterList PersistenceManagerDBProvider::GetArchiverParameters()
-{
-    auto db = getDatabase();
-
-    return provider.handleTransactionRetry(QStringLiteral("GetArchiverParameters"), [&]() {
-        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_archiver_parameters()"));
-
-        query.setForwardOnly(true);
-        if (!query.exec()) {
-            throw_query_error(query);
-        }
-
-        auto dataRecord = query.record();
-        auto processorIdCol = dataRecord.indexOf(QStringLiteral("processor_id"));
-        auto productIdCol = dataRecord.indexOf(QStringLiteral("product_id"));
-        auto minAgeCol = dataRecord.indexOf(QStringLiteral("min_age"));
-
-        ArchiverParameterList result;
-        while (query.next()) {
-            result.append({ query.value(processorIdCol).toInt(),
-                            query.value(productIdCol).toInt(),
-                            query.value(minAgeCol).toInt() });
-        }
-
-        return result;
-    });
-}
-
 static QString getConfigurationUpsertJson(const ConfigurationParameterValueList &parameters)
 {
     QJsonArray array;

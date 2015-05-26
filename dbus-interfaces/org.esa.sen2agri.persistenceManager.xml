@@ -30,9 +30,5 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="ConfigurationParameterValueList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="KeyedMessageList" />
     </method>
-    <method name="GetArchiverParameters">
-      <arg name="result" type="(iii)" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ArchiverParameterList" />
-    </method>
   </interface>
 </node>

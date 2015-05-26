@@ -61,6 +61,4 @@ void PersistenceManager::registerMetaTypes()
     ConfigurationParameterValue::registerMetaTypes();
     ConfigurationCategory::registerMetaTypes();
     KeyedMessage::registerMetaTypes();
-
-    ArchiverParameter::registerMetaTypes();
 }

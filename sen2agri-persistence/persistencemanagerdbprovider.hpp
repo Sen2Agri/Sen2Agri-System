@@ -4,7 +4,6 @@
 #include "dbprovider.hpp"
 #include "configurationparameter.hpp"
 #include "keyedmessage.hpp"
-#include "archiverparameter.hpp"
 #include "settings.hpp"
 
 class PersistenceManagerDBProvider
@@ -25,6 +24,4 @@ public:
     UpdateConfigurationParameters(const ConfigurationParameterValueList &parameters);
     KeyedMessageList
     UpdateJobConfigurationParameters(int jobId, const ConfigurationParameterValueList &parameters);
-
-    ArchiverParameterList GetArchiverParameters();
 };
