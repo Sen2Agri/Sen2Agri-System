@@ -143,13 +143,49 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationCate
     return argument;
 }
 
+Site::Site()
+{
+}
+
+Site::Site(int siteId, QString name) : siteId(siteId), name(std::move(name))
+{
+}
+
+void Site::registerMetaTypes()
+{
+    qRegisterMetaType<Site>("Site");
+    qRegisterMetaType<SiteList>("SiteList");
+
+    qDBusRegisterMetaType<Site>();
+    qDBusRegisterMetaType<SiteList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const Site &site)
+{
+    argument.beginStructure();
+    argument << site.siteId << site.name;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, Site &site)
+{
+    argument.beginStructure();
+    argument >> site.siteId >> site.name;
+    argument.endStructure();
+
+    return argument;
+}
+
 ConfigurationSet::ConfigurationSet()
 {
 }
 
 ConfigurationSet::ConfigurationSet(ConfigurationCategoryList categories,
-                                   ConfigurationParameterInfoList parameters)
-    : categories(move(categories)), parameters(move(parameters))
+                                   ConfigurationParameterInfoList parameters,
+                                   SiteList sites)
+    : categories(std::move(categories)), parameters(std::move(parameters)), sites(std::move(sites))
 {
 }
 
@@ -163,7 +199,7 @@ void ConfigurationSet::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationSet &configuration)
 {
     argument.beginStructure();
-    argument << configuration.categories << configuration.parameters;
+    argument << configuration.categories << configuration.parameters << configuration.sites;
     argument.endStructure();
 
     return argument;
@@ -172,7 +208,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationSet &confi
 const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationSet &configuration)
 {
     argument.beginStructure();
-    argument >> configuration.categories >> configuration.parameters;
+    argument >> configuration.categories >> configuration.parameters >> configuration.sites;
     argument.endStructure();
 
     return argument;

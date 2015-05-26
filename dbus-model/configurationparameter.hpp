@@ -76,15 +76,37 @@ typedef QList<ConfigurationCategory> ConfigurationCategoryList;
 Q_DECLARE_METATYPE(ConfigurationCategory);
 Q_DECLARE_METATYPE(ConfigurationCategoryList);
 
+class Site
+{
+public:
+    int siteId;
+    QString name;
+
+    Site();
+    Site(int siteId, QString name);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<Site> SiteList;
+
+Q_DECLARE_METATYPE(Site);
+Q_DECLARE_METATYPE(SiteList);
+
+QDBusArgument &operator<<(QDBusArgument &argument, const Site &site);
+const QDBusArgument &operator>>(const QDBusArgument &argument, Site &site);
+
 class ConfigurationSet
 {
 public:
     ConfigurationCategoryList categories;
     ConfigurationParameterInfoList parameters;
+    SiteList sites;
 
     ConfigurationSet();
     ConfigurationSet(ConfigurationCategoryList categories,
-                     ConfigurationParameterInfoList parameters);
+                     ConfigurationParameterInfoList parameters,
+                     SiteList sites);
 
     static void registerMetaTypes();
 };

@@ -60,5 +60,7 @@ void PersistenceManager::registerMetaTypes()
     ConfigurationParameterInfo::registerMetaTypes();
     ConfigurationParameterValue::registerMetaTypes();
     ConfigurationCategory::registerMetaTypes();
+    Site::registerMetaTypes();
+
     KeyedMessage::registerMetaTypes();
 }
