@@ -13,8 +13,7 @@ INCLUDEPATH += ../dbus-model
 
 interface.files = ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
 interface.header_flags = -i ../dbus-model/configurationparameter.hpp \
-                         -i ../dbus-model/keyedmessage.hpp \
-                         -i ../dbus-model/archiverparameter.hpp
+                         -i ../dbus-model/keyedmessage.hpp
 
 DBUS_INTERFACES += interface
 
@@ -23,7 +22,6 @@ SOURCES += main.cpp\
     configmodel.cpp \
     ../dbus-model/configurationparameter.cpp \
     ../dbus-model/keyedmessage.cpp \
-    ../dbus-model/archiverparameter.cpp \
     parameterchangelistener.cpp
 
 HEADERS  += maindialog.hpp \
@@ -31,7 +29,6 @@ HEADERS  += maindialog.hpp \
     configmodel.hpp \
     ../dbus-model/configurationparameter.hpp \
     ../dbus-model/keyedmessage.hpp \
-    ../dbus-model/archiverparameter.hpp \
     parameterchangelistener.hpp
 
 FORMS    += maindialog.ui

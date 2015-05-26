@@ -8,7 +8,7 @@ static QString getConfigurationUpsertJson(const ConfigurationParameterValueList 
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query);
 static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query);
 
-template<typename T>
+template <typename T>
 std::experimental::optional<T> to_optional(const QVariant &v)
 {
     if (v.isNull()) {
@@ -32,7 +32,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(QStringLiteral("GetConfigurationSet"), [&]() {
-        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_categories()"));
+        auto query = db.prepareQuery(QStringLiteral("select * from v_get_categories"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -47,6 +47,21 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
         while (query.next()) {
             result.categories.append(
                 { query.value(idCol).toInt(), query.value(nameCol).toString() });
+        }
+
+        query = db.prepareQuery(QStringLiteral("select id, name from site"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        dataRecord = query.record();
+        idCol = dataRecord.indexOf(QStringLiteral("id"));
+        nameCol = dataRecord.indexOf(QStringLiteral("name"));
+
+        while (query.next()) {
+            result.sites.append({ query.value(idCol).toInt(), query.value(nameCol).toString() });
         }
 
         query = db.prepareQuery(QStringLiteral("select * from sp_get_parameter_set()"));
@@ -158,34 +173,6 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
 
             return mapUpdateConfigurationResult(query);
         });
-}
-
-ArchiverParameterList PersistenceManagerDBProvider::GetArchiverParameters()
-{
-    auto db = getDatabase();
-
-    return provider.handleTransactionRetry(QStringLiteral("GetArchiverParameters"), [&]() {
-        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_archiver_parameters()"));
-
-        query.setForwardOnly(true);
-        if (!query.exec()) {
-            throw_query_error(query);
-        }
-
-        auto dataRecord = query.record();
-        auto processorIdCol = dataRecord.indexOf(QStringLiteral("processor_id"));
-        auto productIdCol = dataRecord.indexOf(QStringLiteral("product_id"));
-        auto minAgeCol = dataRecord.indexOf(QStringLiteral("min_age"));
-
-        ArchiverParameterList result;
-        while (query.next()) {
-            result.append({ query.value(processorIdCol).toInt(),
-                            query.value(productIdCol).toInt(),
-                            query.value(minAgeCol).toInt() });
-        }
-
-        return result;
-    });
 }
 
 static QString getConfigurationUpsertJson(const ConfigurationParameterValueList &parameters)
