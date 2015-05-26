@@ -41,8 +41,9 @@ void ConfigurationParameterInfo::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationParameterInfo &parameterInfo)
 {
     argument.beginStructure();
-    argument << parameterInfo.key << parameterInfo.categoryId << parameterInfo.friendlyName
-             << parameterInfo.dataType << parameterInfo.value << parameterInfo.isAdvanced;
+    argument << parameterInfo.key << parameterInfo.categoryId << parameterInfo.siteId.value_or(0)
+             << parameterInfo.friendlyName << parameterInfo.dataType << parameterInfo.value
+             << parameterInfo.isAdvanced;
     argument.endStructure();
 
     return argument;
@@ -51,10 +52,19 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationParameterI
 const QDBusArgument &operator>>(const QDBusArgument &argument,
                                 ConfigurationParameterInfo &parameterInfo)
 {
+    int siteId;
+
     argument.beginStructure();
-    argument >> parameterInfo.key >> parameterInfo.categoryId >> parameterInfo.friendlyName >>
-        parameterInfo.dataType >> parameterInfo.value >> parameterInfo.isAdvanced;
+    argument >> parameterInfo.key >> parameterInfo.categoryId >> siteId >>
+        parameterInfo.friendlyName >> parameterInfo.dataType >> parameterInfo.value >>
+        parameterInfo.isAdvanced;
     argument.endStructure();
+
+    if (siteId) {
+        parameterInfo.siteId = siteId;
+    } else {
+        parameterInfo.siteId = std::experimental::nullopt;
+    }
 
     return argument;
 }
