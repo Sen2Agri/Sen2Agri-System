@@ -8,7 +8,7 @@ static QString getConfigurationUpsertJson(const ConfigurationParameterValueList 
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query);
 static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query);
 
-template<typename T>
+template <typename T>
 std::experimental::optional<T> to_optional(const QVariant &v)
 {
     if (v.isNull()) {
@@ -32,7 +32,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(QStringLiteral("GetConfigurationSet"), [&]() {
-        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_categories()"));
+        auto query = db.prepareQuery(QStringLiteral("select * from v_get_categories"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
