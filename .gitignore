@@ -5,6 +5,7 @@ build-*
 *.pro.user
 *.user.*
 *.user
+*.autosave
 
 # Compiled Object files
 *.slo
