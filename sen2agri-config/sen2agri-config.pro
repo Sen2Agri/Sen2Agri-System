@@ -22,13 +22,15 @@ SOURCES += main.cpp\
     configmodel.cpp \
     ../dbus-model/configurationparameter.cpp \
     ../dbus-model/keyedmessage.cpp \
-    parameterchangelistener.cpp
+    parameterchangelistener.cpp \
+    parameterkey.cpp
 
 HEADERS  += maindialog.hpp \
     pch.hpp \
     configmodel.hpp \
     ../dbus-model/configurationparameter.hpp \
     ../dbus-model/keyedmessage.hpp \
-    parameterchangelistener.hpp
+    parameterchangelistener.hpp \
+    parameterkey.hpp
 
 FORMS    += maindialog.ui

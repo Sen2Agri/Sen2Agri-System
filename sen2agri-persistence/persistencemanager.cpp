@@ -38,9 +38,9 @@ PersistenceManager::GetJobConfigurationParameters(int jobId, const QString &pref
 }
 
 KeyedMessageList
-PersistenceManager::UpdateConfigurationParameters(const ConfigurationParameterValueList &parameters)
+PersistenceManager::UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions)
 {
-    RunAsync([=]() { return dbProvider.UpdateConfigurationParameters(parameters); });
+    RunAsync([=]() { return dbProvider.UpdateConfigurationParameters(actions); });
 
     return {};
 }

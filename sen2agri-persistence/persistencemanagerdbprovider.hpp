@@ -21,7 +21,7 @@ public:
     ConfigurationParameterValueList GetJobConfigurationParameters(int jobId, const QString &prefix);
 
     KeyedMessageList
-    UpdateConfigurationParameters(const ConfigurationParameterValueList &parameters);
+    UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions);
     KeyedMessageList
     UpdateJobConfigurationParameters(int jobId, const ConfigurationParameterValueList &parameters);
 };

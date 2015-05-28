@@ -30,8 +30,24 @@ private:
     ConfigModel configModel;
     QList<ParameterChangeListener *> parameterChangeListeners;
     OrgEsaSen2agriPersistenceManagerInterface clientInterface;
+    std::vector<int> tabCategory;
 
     void loadModel(const ConfigurationSet &configuration);
-    QWidget *createWidgetForParameter(const ConfigurationParameterInfo &parameter, QWidget *parent);
+    void switchSite(std::experimental::optional<int> siteId, int categoryId, QWidget *parentWidget);
+
+    void toggleSiteSpecific(const ParameterKey &parameter, QPushButton *button, QWidget *widget);
+
+    void displayAsGlobal(QPushButton *button, QWidget *widget);
+    void displayAsSiteSpecific(QPushButton *button, QWidget *widget);
+
+    void applyValue(QWidget *editWidget,
+                    const QString &value);
+
+    QWidget *createFieldsWidget(std::experimental::optional<int> siteId,
+                                int categoryId,
+                                QWidget *parentWidget);
+    QWidget *createEditRow(const ConfigurationParameterInfo &parameter,
+                           const ParameterKey &parameterKey,
+                           QWidget *parent);
     void saveChanges();
 };

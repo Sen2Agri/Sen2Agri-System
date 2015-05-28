@@ -8,15 +8,31 @@
 
 #include "parameterchangelistener.hpp"
 
-using std::move;
+static bool validateInt(const QString &s);
+static bool validateFloat(const QString &s);
+static bool validatePath(const QString &s);
+static bool validateTrue(const QString &s);
 
 ParameterChangeListener::ParameterChangeListener(ConfigModel &model,
                                                  ConfigurationParameterInfo parameter,
-                                                 QWidget *widget,
-                                                 QObject *parent)
-    : QObject(parent), model(model), parameter(move(parameter)), widget(widget)
+                                                 ParameterKey parameterKey,
+                                                 QWidget *parent)
+    : QObject(parent),
+      model(model),
+      parameterKey(std::move(parameterKey)),
+      widget(parent)
 {
     isValid = true;
+
+    if (parameter.dataType == "int") {
+        validate = validateInt;
+    } else if (parameter.dataType == "float") {
+        validate = validateFloat;
+    } else if (parameter.dataType == "path") {
+        validate = validatePath;
+    } else {
+        validate = validateTrue;
+    }
 
     if (auto lineEdit = qobject_cast<QLineEdit *>(widget)) {
         connect(lineEdit, &QLineEdit::textChanged, this, &ParameterChangeListener::onTextChanged);
@@ -32,58 +48,45 @@ bool ParameterChangeListener::valid() const
     return isValid;
 }
 
-static bool validateInt(const QString &s);
-static bool validateFloat(const QString &s);
-static bool validatePath(const QString &s);
-
 void ParameterChangeListener::onTextChanged(const QString &newText)
 {
-    bool valid;
-    if (parameter.dataType == "int") {
-        valid = validateInt(newText);
-    } else if (parameter.dataType == "float") {
-        valid = validateFloat(newText);
-    } else if (parameter.dataType == "path") {
-        valid = validatePath(newText);
-    } else {
-        valid = true;
+    auto valid = validate(newText);
+
+    if (valid && widget->isEnabled()) {
+        model.setValue(parameterKey, newText);
     }
 
-    if (valid) {
-        model.setValue(parameter.key, newText);
+    if (valid != isValid) {
+        applyValidity(valid);
     }
-
-    applyValidity(valid);
 }
 
 void ParameterChangeListener::onDateChanged(const QDate &newDate)
 {
-    model.setValue(parameter.key, newDate.toString(Qt::ISODate));
+    model.setValue(parameterKey, newDate.toString(Qt::ISODate));
 }
 
 void ParameterChangeListener::onBoolChanged(int newState)
 {
     if (newState == Qt::Checked) {
-        model.setValue(parameter.key, "true");
+        model.setValue(parameterKey, "true");
     } else {
-        model.setValue(parameter.key, "false");
+        model.setValue(parameterKey, "false");
     }
 }
 
 void ParameterChangeListener::applyValidity(bool valid)
 {
-    if (valid != isValid) {
-        isValid = valid;
+    isValid = valid;
 
-        auto palette = widget->palette();
-        if (valid) {
-            palette.setColor(QPalette::Base, originalBaseColor);
-        } else {
-            originalBaseColor = palette.color(QPalette::Base);
-            palette.setColor(QPalette::Base, Qt::red);
-        }
-        widget->setPalette(palette);
+    auto palette = widget->palette();
+    if (valid) {
+        palette.setColor(QPalette::Base, originalBaseColor);
+    } else {
+        originalBaseColor = palette.color(QPalette::Base);
+        palette.setColor(QPalette::Base, Qt::red);
     }
+    widget->setPalette(palette);
 }
 
 static bool validateInt(const QString &s)
@@ -103,4 +106,9 @@ static bool validateFloat(const QString &s)
 static bool validatePath(const QString &s)
 {
     return QFileInfo::exists(s);
+}
+
+static bool validateTrue(const QString &)
+{
+    return true;
 }

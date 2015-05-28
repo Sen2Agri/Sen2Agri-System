@@ -11,20 +11,13 @@ class ConfigurationParameterInfo
 public:
     QString key;
     int categoryId;
-    std::experimental::optional<int> siteId;
     QString friendlyName;
     QString dataType;
-    QString value;
     bool isAdvanced;
 
     ConfigurationParameterInfo();
-    ConfigurationParameterInfo(QString key,
-                               int categoryId,
-                               std::experimental::optional<int> siteId,
-                               QString friendlyName,
-                               QString dataType,
-                               QString value,
-                               bool isAdvanced);
+    ConfigurationParameterInfo(
+        QString key, int categoryId, QString friendlyName, QString dataType, bool isAdvanced);
 
     static void registerMetaTypes();
 };
@@ -42,10 +35,13 @@ class ConfigurationParameterValue
 {
 public:
     QString key;
+    std::experimental::optional<int> siteId;
     QString value;
 
     ConfigurationParameterValue();
-    ConfigurationParameterValue(QString key, QString value);
+    ConfigurationParameterValue(QString key,
+                                std::experimental::optional<int> siteId,
+                                QString value);
 
     static void registerMetaTypes();
 };
@@ -100,12 +96,15 @@ class ConfigurationSet
 {
 public:
     ConfigurationCategoryList categories;
-    ConfigurationParameterInfoList parameters;
+    ConfigurationParameterInfoList parameterInfo;
+    ConfigurationParameterValueList parameterValues;
+
     SiteList sites;
 
     ConfigurationSet();
     ConfigurationSet(ConfigurationCategoryList categories,
-                     ConfigurationParameterInfoList parameters,
+                     ConfigurationParameterInfoList parameterInfo,
+                     ConfigurationParameterValueList parameterValues,
                      SiteList sites);
 
     static void registerMetaTypes();
@@ -115,3 +114,25 @@ Q_DECLARE_METATYPE(ConfigurationSet);
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationSet &parameter);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationSet &parameter);
+
+class ConfigurationUpdateAction
+{
+public:
+    QString key;
+    std::experimental::optional<int> siteId;
+    QString value;
+    bool isDelete;
+
+    ConfigurationUpdateAction();
+    ConfigurationUpdateAction(QString key, std::experimental::optional<int> siteId, QString value, bool isDelete);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<ConfigurationUpdateAction> ConfigurationUpdateActionList;
+
+Q_DECLARE_METATYPE(ConfigurationUpdateAction);
+Q_DECLARE_METATYPE(ConfigurationUpdateActionList);
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationUpdateAction &action);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationUpdateAction &action);

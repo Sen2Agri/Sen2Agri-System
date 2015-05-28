@@ -12,19 +12,12 @@ ConfigurationParameterInfo::ConfigurationParameterInfo()
 {
 }
 
-ConfigurationParameterInfo::ConfigurationParameterInfo(QString key,
-                                                       int categoryId,
-                                                       std::experimental::optional<int> siteId,
-                                                       QString friendlyName,
-                                                       QString dataType,
-                                                       QString value,
-                                                       bool isAdvanced)
+ConfigurationParameterInfo::ConfigurationParameterInfo(
+    QString key, int categoryId, QString friendlyName, QString dataType, bool isAdvanced)
     : key(move(key)),
       categoryId(categoryId),
-      siteId(siteId),
       friendlyName(move(friendlyName)),
       dataType(dataType),
-      value(move(value)),
       isAdvanced(isAdvanced)
 {
 }
@@ -41,9 +34,8 @@ void ConfigurationParameterInfo::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationParameterInfo &parameterInfo)
 {
     argument.beginStructure();
-    argument << parameterInfo.key << parameterInfo.categoryId << parameterInfo.siteId.value_or(0)
-             << parameterInfo.friendlyName << parameterInfo.dataType << parameterInfo.value
-             << parameterInfo.isAdvanced;
+    argument << parameterInfo.key << parameterInfo.categoryId << parameterInfo.friendlyName
+             << parameterInfo.dataType << parameterInfo.isAdvanced;
     argument.endStructure();
 
     return argument;
@@ -52,19 +44,10 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationParameterI
 const QDBusArgument &operator>>(const QDBusArgument &argument,
                                 ConfigurationParameterInfo &parameterInfo)
 {
-    int siteId;
-
     argument.beginStructure();
-    argument >> parameterInfo.key >> parameterInfo.categoryId >> siteId >>
-        parameterInfo.friendlyName >> parameterInfo.dataType >> parameterInfo.value >>
-        parameterInfo.isAdvanced;
+    argument >> parameterInfo.key >> parameterInfo.categoryId >> parameterInfo.friendlyName >>
+        parameterInfo.dataType >> parameterInfo.isAdvanced;
     argument.endStructure();
-
-    if (siteId) {
-        parameterInfo.siteId = siteId;
-    } else {
-        parameterInfo.siteId = std::experimental::nullopt;
-    }
 
     return argument;
 }
@@ -73,8 +56,10 @@ ConfigurationParameterValue::ConfigurationParameterValue()
 {
 }
 
-ConfigurationParameterValue::ConfigurationParameterValue(QString key, QString value)
-    : key(move(key)), value(move(value))
+ConfigurationParameterValue::ConfigurationParameterValue(QString key,
+                                                         std::experimental::optional<int> siteId,
+                                                         QString value)
+    : key(move(key)), siteId(siteId), value(move(value))
 {
 }
 
@@ -91,7 +76,7 @@ QDBusArgument &operator<<(QDBusArgument &argument,
                           const ConfigurationParameterValue &parameterValue)
 {
     argument.beginStructure();
-    argument << parameterValue.key << parameterValue.value;
+    argument << parameterValue.key << parameterValue.siteId.value_or(0) << parameterValue.value;
     argument.endStructure();
 
     return argument;
@@ -100,9 +85,17 @@ QDBusArgument &operator<<(QDBusArgument &argument,
 const QDBusArgument &operator>>(const QDBusArgument &argument,
                                 ConfigurationParameterValue &parameterValue)
 {
+    int siteId;
+
     argument.beginStructure();
-    argument >> parameterValue.key >> parameterValue.value;
+    argument >> parameterValue.key >> siteId >> parameterValue.value;
     argument.endStructure();
+
+    if (siteId) {
+        parameterValue.siteId = siteId;
+    } else {
+        parameterValue.siteId = std::experimental::nullopt;
+    }
 
     return argument;
 }
@@ -183,9 +176,13 @@ ConfigurationSet::ConfigurationSet()
 }
 
 ConfigurationSet::ConfigurationSet(ConfigurationCategoryList categories,
-                                   ConfigurationParameterInfoList parameters,
+                                   ConfigurationParameterInfoList parameterInfo,
+                                   ConfigurationParameterValueList parameterValues,
                                    SiteList sites)
-    : categories(std::move(categories)), parameters(std::move(parameters)), sites(std::move(sites))
+    : categories(std::move(categories)),
+      parameterInfo(std::move(parameterInfo)),
+      parameterValues(std::move(parameterValues)),
+      sites(std::move(sites))
 {
 }
 
@@ -199,7 +196,8 @@ void ConfigurationSet::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationSet &configuration)
 {
     argument.beginStructure();
-    argument << configuration.categories << configuration.parameters << configuration.sites;
+    argument << configuration.categories << configuration.parameterInfo
+             << configuration.parameterValues << configuration.sites;
     argument.endStructure();
 
     return argument;
@@ -208,8 +206,55 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationSet &confi
 const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationSet &configuration)
 {
     argument.beginStructure();
-    argument >> configuration.categories >> configuration.parameters >> configuration.sites;
+    argument >> configuration.categories >> configuration.parameterInfo >>
+        configuration.parameterValues >> configuration.sites;
     argument.endStructure();
+
+    return argument;
+}
+
+ConfigurationUpdateAction::ConfigurationUpdateAction() : isDelete()
+{
+}
+
+ConfigurationUpdateAction::ConfigurationUpdateAction(QString key,
+                                                     std::experimental::optional<int> siteId,
+                                                     QString value,
+                                                     bool isDelete)
+    : key(std::move(key)), siteId(siteId), value(value), isDelete(isDelete)
+{
+}
+
+void ConfigurationUpdateAction::registerMetaTypes()
+{
+    qRegisterMetaType<ConfigurationUpdateAction>("ConfigurationUpdateAction");
+    qRegisterMetaType<ConfigurationUpdateActionList>("ConfigurationUpdateActionList");
+
+    qDBusRegisterMetaType<ConfigurationUpdateAction>();
+    qDBusRegisterMetaType<ConfigurationUpdateActionList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationUpdateAction &action)
+{
+    argument.beginStructure();
+    argument << action.key << action.siteId.value_or(0) << action.value << action.isDelete;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationUpdateAction &action)
+{
+    int siteId;
+    argument.beginStructure();
+    argument >> action.key >> siteId >> action.value >> action.isDelete;
+    argument.endStructure();
+
+    if (siteId) {
+        action.siteId = siteId;
+    } else {
+        action.siteId = std::experimental::nullopt;
+    }
 
     return argument;
 }

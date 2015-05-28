@@ -4,7 +4,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
-static QString getConfigurationUpsertJson(const ConfigurationParameterValueList &parameters);
+static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions);
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query);
 static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query);
 
@@ -74,21 +74,28 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
         dataRecord = query.record();
         auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
         auto friendlyNameCol = dataRecord.indexOf(QStringLiteral("friendly_name"));
-        auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
         auto dataTypeCol = dataRecord.indexOf(QStringLiteral("type"));
         auto isAdvancedCol = dataRecord.indexOf(QStringLiteral("is_advanced"));
         auto categoryCol = dataRecord.indexOf(QStringLiteral("config_category_id"));
-        auto siteIdCol = dataRecord.indexOf(QStringLiteral("site_id"));
 
         while (query.next()) {
-            result.parameters.append({ query.value(keyCol).toString(),
-                                       query.value(categoryCol).toInt(),
-                                       to_optional<int>(query.value(siteIdCol)),
-                                       query.value(friendlyNameCol).toString(),
-                                       query.value(dataTypeCol).toString(),
-                                       query.value(valueCol).toString(),
-                                       query.value(isAdvancedCol).toBool() });
+            result.parameterInfo.append({ query.value(keyCol).toString(),
+                                          query.value(categoryCol).toInt(),
+                                          query.value(friendlyNameCol).toString(),
+                                          query.value(dataTypeCol).toString(),
+                                          query.value(isAdvancedCol).toBool() });
         }
+
+        query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_configuration_parameters(:prefix)"));
+        query.bindValue(QStringLiteral(":prefix"), QString());
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        mapConfigurationParameters(query);
 
         return result;
     });
@@ -134,7 +141,7 @@ PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QSt
 }
 
 KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
-    const ConfigurationParameterValueList &parameters)
+    const ConfigurationUpdateActionList &actions)
 {
     auto db = getDatabase();
 
@@ -142,7 +149,7 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
         auto query =
             db.prepareQuery(QStringLiteral("select * from sp_upsert_parameters(:parameters)"));
 
-        query.bindValue(QStringLiteral(":parameters"), getConfigurationUpsertJson(parameters));
+        query.bindValue(QStringLiteral(":parameters"), getConfigurationUpsertJson(actions));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -164,7 +171,9 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
                 "select * from sp_upsert_subscription_parameters(:job_id, :parameters)"));
 
             query.bindValue(QStringLiteral(":job_id"), jobId);
-            query.bindValue(QStringLiteral(":parameters"), getConfigurationUpsertJson(parameters));
+            // TODO
+            Q_UNUSED(parameters);
+//            query.bindValue(QStringLiteral(":parameters"), getConfigurationUpsertJson(parameters));
 
             query.setForwardOnly(true);
             if (!query.exec()) {
@@ -175,13 +184,16 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
         });
 }
 
-static QString getConfigurationUpsertJson(const ConfigurationParameterValueList &parameters)
+static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions)
 {
     QJsonArray array;
-    for (const auto &p : parameters) {
+    for (const auto &p : actions) {
         QJsonObject node;
         node[QStringLiteral("key")] = p.key;
+        // TODO
+        node[QStringLiteral("siteId")] = p.siteId.value_or(0);
         node[QStringLiteral("value")] = p.value;
+        node[QStringLiteral("delete")] = p.isDelete;
         array.append(node);
     }
     return QString::fromUtf8(QJsonDocument(array).toJson());
@@ -191,11 +203,14 @@ static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &que
 {
     auto dataRecord = query.record();
     auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
+    auto siteIdCol = dataRecord.indexOf(QStringLiteral("siteId"));
     auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
 
     ConfigurationParameterValueList result;
     while (query.next()) {
-        result.append({ query.value(keyCol).toString(), query.value(valueCol).toString() });
+        result.append({ query.value(keyCol).toString(),
+                        to_optional<int>(query.value(siteIdCol)),
+                        query.value(valueCol).toString() });
     }
 
     return result;

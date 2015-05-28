@@ -4,6 +4,7 @@
 #include <QProcess>
 #include <QFileDialog>
 #include <QLabel>
+#include <QComboBox>
 #include <QCheckBox>
 #include <QPushButton>
 #include <QLineEdit>
@@ -17,6 +18,26 @@
 
 using std::end;
 
+static void addParameter(ConfigurationSet &configuration,
+                         const ConfigurationParameterInfo &parameter,
+                         std::experimental::optional<int> siteId,
+                         const QString &value)
+{
+    auto found = false;
+    for (const auto &p : configuration.parameterInfo) {
+        if (p.key == parameter.key) {
+            found = true;
+            break;
+        }
+    }
+
+    if (!found) {
+        configuration.parameterInfo.append(parameter);
+    }
+
+    configuration.parameterValues.append({ parameter.key, siteId, value });
+}
+
 static ConfigurationSet getStubConfiguration()
 {
     ConfigurationSet configuration;
@@ -25,25 +46,29 @@ static ConfigurationSet getStubConfiguration()
     configuration.categories.append({ 2, "Not used" });
     configuration.categories.append({ 3, "L2A" });
 
-    configuration.parameters.append(
-        { "test.foo", 1, std::experimental::nullopt, "Foo", "string", "val 1", false });
-    configuration.parameters.append(
-        { "test.bar", 1, std::experimental::nullopt, "Boo", "file", "val 2", false });
-    configuration.parameters.append(
-        { "test.baz", 1, std::experimental::nullopt, "Boo", "directory", "val 2", false });
-    configuration.parameters.append(
-        { "test.qux", 1, std::experimental::nullopt, "Qux", "int", "42", false });
-    configuration.parameters.append(
-        { "test.date", 1, std::experimental::nullopt, "Date", "date", "2014-02-03", false });
-    configuration.parameters.append(
-        { "test.date.ro", 1, std::experimental::nullopt, "Date RO", "date", "2014-02-03", true });
-    configuration.parameters.append(
-        { "test.bool.rw", 1, std::experimental::nullopt, "Bool", "bool", "true", false });
-    configuration.parameters.append(
-        { "test.bool.ro", 1, std::experimental::nullopt, "Bool", "bool", "true", true });
+    addParameter(configuration, { "test.foo", 1, "Foo", "string", false },
+                 std::experimental::nullopt, "Foo value");
+    addParameter(configuration, { "test.foo", 1, "Foo", "string", false }, 1,
+                 "Foo value for site 1");
+    addParameter(configuration, { "test.bar", 1, "Bar", "file", false }, std::experimental::nullopt,
+                 "/etc/sen2agri/sen2agri-persistence.conf");
+    addParameter(configuration, { "test.baz", 1, "Baz", "directory", false },
+                 std::experimental::nullopt, "/etc/sen2agri");
+    addParameter(configuration, { "test.qux", 1, "Qux", "int", false }, std::experimental::nullopt,
+                 "12");
+    addParameter(configuration, { "test.date", 1, "Date", "date", false },
+                 std::experimental::nullopt, "2015-01-02");
+    addParameter(configuration, { "test.date.ro", 1, "Date RO", "date", true },
+                 std::experimental::nullopt, "2015-05-05");
+    addParameter(configuration, { "test.bool", 1, "Bool", "bool", false },
+                 std::experimental::nullopt, "false");
+    addParameter(configuration, { "test.bool.ro", 1, "Bool RO", "bool", true },
+                 std::experimental::nullopt, "true");
+    addParameter(configuration, { "test.quux", 3, "Quux", "string", true },
+                 std::experimental::nullopt, "hello");
 
-    configuration.parameters.append(
-        { "test.baz", 3, std::experimental::nullopt, "Baz", "string", "val 2", true });
+    configuration.sites.append({ 1, "Site 1" });
+    configuration.sites.append({ 2, "Site 2" });
 
     return configuration;
 }
@@ -63,7 +88,7 @@ MainDialog::MainDialog(QWidget *parent)
                 if (promise.isValid()) {
                     loadModel(promise.value());
                 } else if (promise.isError()) {
-#if 0
+#if 1
 
                     loadModel(getStubConfiguration());
 #else
@@ -106,25 +131,61 @@ void MainDialog::loadModel(const ConfigurationSet &configuration)
         usedCategories.insert(param.categoryId);
     }
 
-    QMap<int, QFormLayout *> tabs;
     for (const auto &cat : configModel.categories()) {
         if (usedCategories.contains(cat.categoryId)) {
             auto widget = new QWidget(ui->tabWidget);
-            auto layout = new QFormLayout(widget);
+            auto parentLayout = new QFormLayout(widget);
+            auto regionList = new QComboBox(widget);
+            regionList->addItem(QString("[Global]"), 0);
+            for (const auto &site : configModel.sites()) {
+                regionList->addItem(site.name, site.siteId);
+            }
+            connect(regionList,
+                    static_cast<void (QComboBox::*) (int) >(&QComboBox::currentIndexChanged),
+                    [this, regionList, widget](int) {
+                        std::experimental::optional<int> siteId;
+                        if (auto siteIdVal = regionList->currentData().toInt()) {
+                            siteId = siteIdVal;
+                        }
+
+                        auto categoryId = tabCategory[ui->tabWidget->currentIndex()];
+                        switchSite(siteId, categoryId, widget);
+                    });
+
+            parentLayout->addRow(new QLabel(QStringLiteral("Site"), widget), regionList);
+            parentLayout->addRow(
+                createFieldsWidget(std::experimental::nullopt, cat.categoryId, widget));
+
             ui->tabWidget->addTab(widget, cat.name);
-            tabs.insert(cat.categoryId, layout);
+            tabCategory.emplace_back(cat.categoryId);
         }
     }
+}
 
-    auto endTabs = end(tabs);
+void MainDialog::switchSite(std::experimental::optional<int> siteId,
+                            int categoryId,
+                            QWidget *parentWidget)
+{
+    auto layout = static_cast<QFormLayout *>(parentWidget->layout());
+    auto item = layout->itemAt(1, QFormLayout::SpanningRole);
+    layout->removeItem(item);
+    item->widget()->deleteLater();
+    delete item;
+    layout->setWidget(1, QFormLayout::SpanningRole,
+                      createFieldsWidget(siteId, categoryId, parentWidget));
+}
+
+QWidget *MainDialog::createFieldsWidget(std::experimental::optional<int> siteId,
+                                        int categoryId,
+                                        QWidget *parentWidget)
+{
+    auto fieldsWidget = new QWidget(parentWidget);
+    auto layout = new QFormLayout(fieldsWidget);
+
     for (const auto &param : configModel.parameters()) {
-        auto it = tabs.find(param.categoryId);
-        if (it != endTabs) {
-            auto layout = *it;
-
-            auto widget = layout->parentWidget();
-            if (auto editWidget = createWidgetForParameter(param, widget)) {
-                layout->addRow(new QLabel(param.friendlyName, widget), editWidget);
+        if (param.categoryId == categoryId) {
+            if (auto editWidget = createEditRow(param, { param.key, siteId }, fieldsWidget)) {
+                layout->addRow(new QLabel(param.friendlyName, fieldsWidget), editWidget);
             } else {
                 QMessageBox::warning(
                     this, QStringLiteral("Error"),
@@ -135,6 +196,8 @@ void MainDialog::loadModel(const ConfigurationSet &configuration)
             }
         }
     }
+
+    return fieldsWidget;
 }
 
 void MainDialog::done(int result)
@@ -155,7 +218,7 @@ void MainDialog::done(int result)
                                  QStringLiteral("Please make sure that the parameters are valid"));
         }
     } else {
-        if (configModel.getNewValues().size() == 0 ||
+        if (!configModel.hasChanges() ||
             QMessageBox::question(this, QStringLiteral("Save changes"),
                                   QStringLiteral("Are you sure you want to close the "
                                                  "application without saving the changes?"),
@@ -203,37 +266,42 @@ void MainDialog::on_buttonBox_rejected()
     reject();
 }
 
-static void makeWidgetReadOnly(QLineEdit *widget);
-static void makeWidgetReadOnly(QDateEdit *widget);
-static void makeWidgetReadOnly(QCheckBox *widget);
-
-QWidget *MainDialog::createWidgetForParameter(const ConfigurationParameterInfo &parameter,
-                                              QWidget *parent)
+QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
+                                   const ParameterKey &parameterKey,
+                                   QWidget *parent)
 {
-    if (parameter.dataType == "int" || parameter.dataType == "float" ||
-        parameter.dataType == "string") {
-        auto widget = new QLineEdit(parameter.value, parent);
+    auto container = new QWidget(parent);
+    auto layout = new QHBoxLayout(container);
+    QWidget *editWidget;
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->addStrut(QLineEdit().sizeHint().height());
+
+    if (parameter.dataType == QLatin1String("int") ||
+        parameter.dataType == QLatin1String("float") ||
+        parameter.dataType == QLatin1String("string")) {
+        auto widget = new QLineEdit(container);
+        editWidget = widget;
+        layout->addWidget(widget);
         if (parameter.isAdvanced) {
-            makeWidgetReadOnly(widget);
+            widget->setEnabled(false);
         } else {
             parameterChangeListeners.append(
-                new ParameterChangeListener(configModel, parameter, widget, widget));
+                new ParameterChangeListener(configModel, parameter, parameterKey, widget));
         }
-        return widget;
-    } else if (parameter.dataType == "file" || parameter.dataType == "directory") {
+    } else if (parameter.dataType == QLatin1String("file") ||
+               parameter.dataType == QLatin1String("directory")) {
         if (parameter.isAdvanced) {
-            auto widget = new QLineEdit(parameter.value, parent);
-            makeWidgetReadOnly(widget);
-            return widget;
+            auto widget = new QLineEdit(container);
+            editWidget = widget;
+            layout->addWidget(widget);
+            widget->setEnabled(false);
         } else {
-            auto container = new QWidget(parent);
-            auto layout = new QGridLayout(container);
-            layout->setContentsMargins(0, 0, 0, 0);
-            auto widget = new QLineEdit(parameter.value, container);
-            layout->addWidget(widget, 0, 0);
-            auto button = new QPushButton("...", container);
-            layout->addWidget(button, 0, 1, Qt::AlignRight);
-            if (parameter.dataType == "file") {
+            auto widget = new QLineEdit(container);
+            editWidget = widget;
+            layout->addWidget(widget);
+            auto button = new QPushButton(QStringLiteral("..."), container);
+            layout->addWidget(button);
+            if (parameter.dataType == QLatin1String("file")) {
                 connect(button, &QPushButton::clicked,
                         [this, widget]() { widget->setText(QFileDialog::getOpenFileName(this)); });
             } else {
@@ -242,61 +310,108 @@ QWidget *MainDialog::createWidgetForParameter(const ConfigurationParameterInfo &
                 });
             }
             parameterChangeListeners.append(
-                new ParameterChangeListener(configModel, parameter, widget, widget));
-            return container;
+                new ParameterChangeListener(configModel, parameter, parameterKey, widget));
         }
-    } else if (parameter.dataType == "date") {
-        auto widget = new QDateEdit(QDate::fromString(parameter.value, Qt::ISODate), parent);
+    } else if (parameter.dataType == QLatin1String("date")) {
+        auto widget = new QDateEdit(container);
+        editWidget = widget;
+        widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
+        layout->addWidget(widget);
         if (parameter.isAdvanced) {
-            makeWidgetReadOnly(widget);
+            widget->setEnabled(false);
         } else {
-            new ParameterChangeListener(configModel, parameter, widget, widget);
+            parameterChangeListeners.append(
+                new ParameterChangeListener(configModel, parameter, parameterKey, widget));
         }
-        return widget;
-    } else if (parameter.dataType == "bool") {
-        auto widget = new QCheckBox();
-        const auto &lc = parameter.value.toLower();
-        if (lc == "t" || lc == "true" || lc == "y" || lc == "yes" || lc == "on" || lc == "1") {
-            widget->setCheckState(Qt::Checked);
-            if (parameter.isAdvanced) {
-                makeWidgetReadOnly(widget);
-            } else {
-                new ParameterChangeListener(configModel, parameter, widget, widget);
-            }
+    } else if (parameter.dataType == QLatin1String("bool")) {
+        auto widget = new QCheckBox(container);
+        editWidget = widget;
+        layout->addWidget(widget);
+        if (parameter.isAdvanced) {
+            widget->setEnabled(false);
+        } else {
+            parameterChangeListeners.append(
+                new ParameterChangeListener(configModel, parameter, parameterKey, widget));
         }
-        return widget;
+    } else {
+        container->deleteLater();
+        return nullptr;
     }
 
-    return nullptr;
+    bool fromGlobal;
+    const auto &value = configModel.getValue(parameterKey, fromGlobal);
+
+    if (parameterKey.siteId() != std::experimental::nullopt && !parameter.isAdvanced) {
+        auto button = new QPushButton(container);
+
+        auto customizeString = QStringLiteral("Customize");
+        const auto &textSize = button->fontMetrics().size(Qt::TextShowMnemonic, customizeString);
+        QStyleOptionButton opt;
+        opt.initFrom(button);
+        opt.rect.setSize(textSize);
+        button->setMinimumSize(
+            button->style()->sizeFromContents(QStyle::CT_PushButton, &opt, textSize, button));
+
+        if (fromGlobal) {
+            displayAsGlobal(button, editWidget);
+        } else {
+            displayAsSiteSpecific(button, editWidget);
+        }
+
+        connect(button, &QPushButton::clicked, [this, parameterKey, button, editWidget]() {
+            toggleSiteSpecific(parameterKey, button, editWidget);
+        });
+
+        layout->addWidget(button, 0, Qt::AlignRight);
+    }
+
+    applyValue(editWidget, value);
+
+    return container;
 }
 
-static QColor getReadOnlyBackgroundColor()
+void MainDialog::toggleSiteSpecific(const ParameterKey &parameter,
+                                    QPushButton *button,
+                                    QWidget *widget)
 {
-    return QColor(230, 230, 230);
+    const auto &globalValue = configModel.getGlobalValue(parameter);
+
+    if (configModel.isSiteSpecific(parameter)) {
+        configModel.removeValue(parameter);
+
+        displayAsGlobal(button, widget);
+
+        applyValue(widget, globalValue);
+    } else {
+        configModel.setValue(parameter, globalValue);
+
+        displayAsSiteSpecific(button, widget);
+    }
 }
 
-static void setReadOnlyPalette(QWidget *widget)
+void MainDialog::displayAsGlobal(QPushButton *button, QWidget *widget)
 {
-    auto palette = widget->palette();
-    palette.setColor(QPalette::Base, getReadOnlyBackgroundColor());
-    widget->setPalette(palette);
-}
-
-static void makeWidgetReadOnly(QLineEdit *widget)
-{
-    //    widget->setDisabled(true);
-    widget->setReadOnly(true);
-    setReadOnlyPalette(widget);
-}
-
-static void makeWidgetReadOnly(QDateEdit *widget)
-{
-    widget->setReadOnly(true);
-    setReadOnlyPalette(widget);
-}
-
-static void makeWidgetReadOnly(QCheckBox *widget)
-{
+    button->setText(QStringLiteral("Customize"));
     widget->setEnabled(false);
-    setReadOnlyPalette(widget);
+}
+
+void MainDialog::displayAsSiteSpecific(QPushButton *button, QWidget *widget)
+{
+    button->setText(QStringLiteral("Reset"));
+    widget->setEnabled(true);
+}
+
+void MainDialog::applyValue(QWidget *editWidget, const QString &value)
+{
+    if (auto lineEdit = qobject_cast<QLineEdit *>(editWidget)) {
+        lineEdit->setText(value);
+    } else if (auto dateEdit = qobject_cast<QDateEdit *>(editWidget)) {
+        dateEdit->setDate(QDate::fromString(value, Qt::ISODate));
+    } else if (auto checkBox = qobject_cast<QCheckBox *>(editWidget)) {
+        const auto &lc = value.toLower();
+        auto checked = lc == QLatin1String("t") || lc == QLatin1String("true") ||
+                       lc == QLatin1String("y") || lc == QLatin1String("yes") ||
+                       lc == QLatin1String("on") || lc == QLatin1String("1");
+        checkBox->setCheckState(checked ? Qt::Checked : Qt::Unchecked);
+    }
 }

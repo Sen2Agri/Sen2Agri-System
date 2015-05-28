@@ -13,6 +13,7 @@ int main(int argc, char *argv[])
     ConfigurationParameterInfo::registerMetaTypes();
     ConfigurationParameterValue::registerMetaTypes();
     ConfigurationCategory::registerMetaTypes();
+    Site::registerMetaTypes();
     ConfigurationSet::registerMetaTypes();
     KeyedMessage::registerMetaTypes();
 
