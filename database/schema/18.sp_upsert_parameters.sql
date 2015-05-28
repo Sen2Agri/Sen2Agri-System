@@ -4,6 +4,7 @@ TABLE (key CHARACTER VARYING, error_message CHARACTER VARYING) AS $$
 BEGIN
 
 	CREATE TEMP TABLE params (
+		id int,
 		key character varying,
 		site_id smallint,
 		friendly_name character varying,
@@ -33,17 +34,19 @@ BEGIN
 
 	-- Update the values for the params that do exist and are valid
 	UPDATE config SET
+		key = params.key,
+		site_id = params.site_id,
 		value = params.value,
 		last_updated = now()
 	FROM  params
-        WHERE config.key = params.key AND coalesce(config.site_id, 0) = coalesce(params.site_id, 0) AND params.is_valid_error_message IS NULL;
+        WHERE config.id = params.id AND params.is_valid_error_message IS NULL;
 
 	-- Update the metadata for the params that do exist and are valid
         UPDATE config_metadata SET
-		friendly_name = coalesce(params.friendly_name, config.friendly_name),
-		type = coalesce(params.type, config.type),
-		is_advanced = coalesce(params.is_advanced, config.is_advanced),
-		config_category_id = coalesce(params.config_category_id, config.config_category_id)
+		friendly_name = coalesce(params.friendly_name, config_metadata.friendly_name),
+		type = coalesce(params.type, config_metadata.type),
+		is_advanced = coalesce(params.is_advanced, config_metadata.is_advanced),
+		config_category_id = coalesce(params.config_category_id, config_metadata.config_category_id)
 	FROM  params
         WHERE config_metadata.key = params.key AND params.is_valid_error_message IS NULL;
 
