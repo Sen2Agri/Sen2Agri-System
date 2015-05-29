@@ -28,7 +28,7 @@ BEGIN
 	UPDATE params
 	SET is_valid_error_message = sp_validate_data_type_value(value, type);
 
-	-- Use a proper message for the params not found in the main table
+	-- Use a proper message for the params not found in the config_metadata table
 	UPDATE params
 	SET is_valid_error_message = 'Parameter not found in config table.'
 	WHERE NOT EXISTS (SELECT * FROM config_metadata INNER JOIN config ON config_metadata.key = config.key
