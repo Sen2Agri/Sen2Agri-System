@@ -213,15 +213,14 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationSet 
     return argument;
 }
 
-ConfigurationUpdateAction::ConfigurationUpdateAction() : isDelete()
+ConfigurationUpdateAction::ConfigurationUpdateAction()
 {
 }
 
 ConfigurationUpdateAction::ConfigurationUpdateAction(QString key,
                                                      std::experimental::optional<int> siteId,
-                                                     QString value,
-                                                     bool isDelete)
-    : key(std::move(key)), siteId(siteId), value(value), isDelete(isDelete)
+                                                     std::experimental::optional<QString> value)
+    : key(std::move(key)), siteId(siteId), value(std::move(value))
 {
 }
 
@@ -237,7 +236,12 @@ void ConfigurationUpdateAction::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationUpdateAction &action)
 {
     argument.beginStructure();
-    argument << action.key << action.siteId.value_or(0) << action.value << action.isDelete;
+    argument << action.key << action.siteId.value_or(0);
+    if (action.value) {
+        argument << true << action.value.value();
+    } else {
+        argument << false << QString();
+    }
     argument.endStructure();
 
     return argument;
@@ -246,14 +250,23 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationUpdateActi
 const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationUpdateAction &action)
 {
     int siteId;
+    bool hasValue;
+    QString value;
+
     argument.beginStructure();
-    argument >> action.key >> siteId >> action.value >> action.isDelete;
+    argument >> action.key >> siteId >> hasValue >> value;
     argument.endStructure();
 
     if (siteId) {
         action.siteId = siteId;
     } else {
         action.siteId = std::experimental::nullopt;
+    }
+
+    if (hasValue) {
+        action.value = value;
+    } else {
+        action.value = std::experimental::nullopt;
     }
 
     return argument;

@@ -143,6 +143,8 @@ void MainDialog::loadModel(const ConfigurationSet &configuration)
             connect(regionList,
                     static_cast<void (QComboBox::*) (int) >(&QComboBox::currentIndexChanged),
                     [this, regionList, widget](int) {
+                        parameterChangeListeners.clear();
+
                         std::experimental::optional<int> siteId;
                         if (auto siteIdVal = regionList->currentData().toInt()) {
                             siteId = siteIdVal;
@@ -230,7 +232,7 @@ void MainDialog::done(int result)
 
 void MainDialog::saveChanges()
 {
-    auto promise = clientInterface.UpdateConfigurationParameters(configModel.getChanges());
+    auto promise = clientInterface.UpdateConfigurationParameters(configModel.getUpdateActions());
     connect(new QDBusPendingCallWatcher(promise, this), &QDBusPendingCallWatcher::finished,
             [this, promise]() {
                 if (promise.isError()) {

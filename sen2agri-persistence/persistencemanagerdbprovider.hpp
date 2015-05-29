@@ -23,5 +23,5 @@ public:
     KeyedMessageList
     UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions);
     KeyedMessageList
-    UpdateJobConfigurationParameters(int jobId, const ConfigurationParameterValueList &parameters);
+    UpdateJobConfigurationParameters(int jobId, const ConfigurationUpdateActionList &actions);
 };

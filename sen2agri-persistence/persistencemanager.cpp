@@ -46,7 +46,7 @@ PersistenceManager::UpdateConfigurationParameters(const ConfigurationUpdateActio
 }
 
 KeyedMessageList PersistenceManager::UpdateJobConfigurationParameters(
-    int jobId, const ConfigurationParameterValueList &parameters)
+    int jobId, const ConfigurationUpdateActionList &parameters)
 {
     RunAsync([=]() { return dbProvider.UpdateJobConfigurationParameters(jobId, parameters); });
 
@@ -61,6 +61,8 @@ void PersistenceManager::registerMetaTypes()
     ConfigurationParameterValue::registerMetaTypes();
     ConfigurationCategory::registerMetaTypes();
     Site::registerMetaTypes();
+
+    ConfigurationUpdateAction::registerMetaTypes();
 
     KeyedMessage::registerMetaTypes();
 }

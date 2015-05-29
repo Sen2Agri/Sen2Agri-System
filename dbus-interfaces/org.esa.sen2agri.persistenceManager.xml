@@ -3,7 +3,7 @@
 <node name="/org/esa/sen2agri/persistenceManager">
   <interface name="org.esa.sen2agri.persistenceManager">
     <method name="GetConfigurationSet">
-      <arg name="result" type="(ss)" direction="out" />
+      <arg name="result" type="(a(is)a(sissb)a(sis)a(is))" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationSet" />
     </method>
     <method name="GetConfigurationParameters">
@@ -18,9 +18,9 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationParameterValueList" />
     </method>
     <method name="UpdateConfigurationParameters">
-      <arg name="parameters" type="(ss)" direction="in" />
-      <arg name="result" type="(ss)" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationParameterValueList" />
+      <arg name="parameters" type="a(sibs)" direction="in" />
+      <arg name="result" type="a(ss)" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationUpdateActionList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="KeyedMessageList" />
     </method>
     <method name="UpdateJobConfigurationParameters">

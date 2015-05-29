@@ -84,10 +84,11 @@ ConfigurationUpdateActionList ConfigModel::getUpdateActions() const
 {
     ConfigurationUpdateActionList result;
 
+    auto originalValuesEnd = std::end(originalValues);
     for (const auto &p : values) {
         auto it = originalValues.find(p.first);
-        if (p.second != it->second) {
-            result.append({ p.first.key(), p.first.siteId(), p.second, false });
+        if (it == originalValuesEnd || p.second != it->second) {
+            result.append({ p.first.key(), p.first.siteId(), p.second });
         }
     }
 
@@ -95,7 +96,7 @@ ConfigurationUpdateActionList ConfigModel::getUpdateActions() const
     for (const auto &p : originalValues) {
         auto it = values.find(p.first);
         if (it == valuesEnd) {
-            result.append({ p.first.key(), p.first.siteId(), QString(), true });
+            result.append({ p.first.key(), p.first.siteId(), std::experimental::nullopt });
         }
     }
 

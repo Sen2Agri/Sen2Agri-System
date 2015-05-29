@@ -98,7 +98,6 @@ public:
     ConfigurationCategoryList categories;
     ConfigurationParameterInfoList parameterInfo;
     ConfigurationParameterValueList parameterValues;
-
     SiteList sites;
 
     ConfigurationSet();
@@ -120,11 +119,12 @@ class ConfigurationUpdateAction
 public:
     QString key;
     std::experimental::optional<int> siteId;
-    QString value;
-    bool isDelete;
+    std::experimental::optional<QString> value;
 
     ConfigurationUpdateAction();
-    ConfigurationUpdateAction(QString key, std::experimental::optional<int> siteId, QString value, bool isDelete);
+    ConfigurationUpdateAction(QString key,
+                              std::experimental::optional<int> siteId,
+                              std::experimental::optional<QString> value);
 
     static void registerMetaTypes();
 };

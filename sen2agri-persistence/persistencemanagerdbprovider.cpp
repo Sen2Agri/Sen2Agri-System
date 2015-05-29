@@ -49,7 +49,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
                 { query.value(idCol).toInt(), query.value(nameCol).toString() });
         }
 
-        query = db.prepareQuery(QStringLiteral("select id, name from site"));
+        query = db.prepareQuery(QStringLiteral("select * from v_get_sites"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -64,7 +64,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
             result.sites.append({ query.value(idCol).toInt(), query.value(nameCol).toString() });
         }
 
-        query = db.prepareQuery(QStringLiteral("select * from sp_get_parameter_set()"));
+        query = db.prepareQuery(QStringLiteral("select * from v_get_config_metadata order by key"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -86,8 +86,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
                                           query.value(isAdvancedCol).toBool() });
         }
 
-        query = db.prepareQuery(
-            QStringLiteral("select * from sp_get_configuration_parameters(:prefix)"));
+        query = db.prepareQuery(QStringLiteral("select * from sp_get_parameters(:prefix)"));
         query.bindValue(QStringLiteral(":prefix"), QString());
 
         query.setForwardOnly(true);
@@ -95,7 +94,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
             throw_query_error(query);
         }
 
-        mapConfigurationParameters(query);
+        result.parameterValues = mapConfigurationParameters(query);
 
         return result;
     });
@@ -127,7 +126,7 @@ PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QSt
 
     return provider.handleTransactionRetry(QStringLiteral("GetJobConfigurationParameters"), [&]() {
         auto query = db.prepareQuery(
-            QStringLiteral("select * from sp_get_subscription_parameters(:job_id, :prefix)"));
+            QStringLiteral("select * from sp_get_job_parameters(:job_id, :prefix)"));
         query.bindValue(QStringLiteral(":job_id"), jobId);
         query.bindValue(QStringLiteral(":prefix"), prefix);
 
@@ -161,19 +160,17 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
 }
 
 KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
-    int jobId, const ConfigurationParameterValueList &parameters)
+    int jobId, const ConfigurationUpdateActionList &parameters)
 {
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(
         QStringLiteral("UpdateJobConfigurationParameters"), [&]() {
-            auto query = db.prepareQuery(QStringLiteral(
-                "select * from sp_upsert_subscription_parameters(:job_id, :parameters)"));
+            auto query = db.prepareQuery(
+                QStringLiteral("select * from sp_upsert_job_parameters(:job_id, :parameters)"));
 
             query.bindValue(QStringLiteral(":job_id"), jobId);
-            // TODO
-            Q_UNUSED(parameters);
-//            query.bindValue(QStringLiteral(":parameters"), getConfigurationUpsertJson(parameters));
+            query.bindValue(QStringLiteral(":parameters"), getConfigurationUpsertJson(parameters));
 
             query.setForwardOnly(true);
             if (!query.exec()) {
@@ -190,10 +187,8 @@ static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &a
     for (const auto &p : actions) {
         QJsonObject node;
         node[QStringLiteral("key")] = p.key;
-        // TODO
-        node[QStringLiteral("siteId")] = p.siteId.value_or(0);
-        node[QStringLiteral("value")] = p.value;
-        node[QStringLiteral("delete")] = p.isDelete;
+        node[QStringLiteral("site_id")] = p.siteId ? QJsonValue(p.siteId.value()) : QJsonValue();
+        node[QStringLiteral("value")] = p.value ? QJsonValue(p.value.value()) : QJsonValue();
         array.append(node);
     }
     return QString::fromUtf8(QJsonDocument(array).toJson());
@@ -203,7 +198,7 @@ static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &que
 {
     auto dataRecord = query.record();
     auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
-    auto siteIdCol = dataRecord.indexOf(QStringLiteral("siteId"));
+    auto siteIdCol = dataRecord.indexOf(QStringLiteral("site_id"));
     auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
 
     ConfigurationParameterValueList result;

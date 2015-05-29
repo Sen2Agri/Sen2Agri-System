@@ -15,6 +15,9 @@ int main(int argc, char *argv[])
     ConfigurationCategory::registerMetaTypes();
     Site::registerMetaTypes();
     ConfigurationSet::registerMetaTypes();
+
+    ConfigurationUpdateAction::registerMetaTypes();
+
     KeyedMessage::registerMetaTypes();
 
     MainDialog w;
