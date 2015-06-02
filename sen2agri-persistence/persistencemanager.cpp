@@ -53,6 +53,13 @@ KeyedMessageList PersistenceManager::UpdateJobConfigurationParameters(
     return {};
 }
 
+ProductToArchiveList PersistenceManager::GetProductsToArchive()
+{
+    RunAsync([=]() { return dbProvider.GetProductsToArchive(); });
+
+    return {};
+}
+
 void PersistenceManager::registerMetaTypes()
 {
     ConfigurationSet::registerMetaTypes();
@@ -67,4 +74,5 @@ void PersistenceManager::registerMetaTypes()
     KeyedMessage::registerMetaTypes();
 
     Product::registerMetaTypes();
+    ProductToArchive::registerMetaTypes();
 }

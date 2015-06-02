@@ -181,6 +181,34 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
         });
 }
 
+ProductToArchiveList PersistenceManagerDBProvider::GetProductsToArchive()
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(QStringLiteral("GetProductsToArchive"), [&]() {
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_products_to_archive()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        auto dataRecord = query.record();
+        auto productIdCol = dataRecord.indexOf(QStringLiteral("productId"));
+        auto currentPathCol = dataRecord.indexOf(QStringLiteral("currentPath"));
+        auto archivePathCol = dataRecord.indexOf(QStringLiteral("archivePath"));
+
+        ProductToArchiveList result;
+        while (query.next()) {
+            result.append({ query.value(productIdCol).toInt(),
+                            query.value(currentPathCol).toString(),
+                            query.value(archivePathCol).toString() });
+        }
+
+        return result;
+    });
+}
+
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions)
 {
     QJsonArray array;
