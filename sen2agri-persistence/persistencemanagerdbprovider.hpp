@@ -2,8 +2,7 @@
 
 #include "sqldatabaseraii.hpp"
 #include "dbprovider.hpp"
-#include "configurationparameter.hpp"
-#include "keyedmessage.hpp"
+#include "model.hpp"
 #include "settings.hpp"
 
 class PersistenceManagerDBProvider
@@ -23,5 +22,5 @@ public:
     KeyedMessageList
     UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions);
     KeyedMessageList
-    UpdateJobConfigurationParameters(int jobId, const ConfigurationParameterValueList &parameters);
+    UpdateJobConfigurationParameters(int jobId, const ConfigurationUpdateActionList &actions);
 };

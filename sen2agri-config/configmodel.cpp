@@ -49,12 +49,6 @@ QString ConfigModel::getGlobalValue(const ParameterKey &parameter) const
 void ConfigModel::setValue(const ParameterKey &parameter, const QString &value)
 {
     values[parameter] = value;
-    //    const auto &t = std::make_tuple(siteId, key);
-    //    if (originalValues[t] != value) {
-    //        newValues[t] = value;
-    //    } else {
-    //        newValues.erase(t);
-    //    }
 }
 
 void ConfigModel::removeValue(const ParameterKey &parameter)
@@ -62,32 +56,25 @@ void ConfigModel::removeValue(const ParameterKey &parameter)
     values.erase(parameter);
 }
 
-ConfigurationParameterValueList ConfigModel::getChanges() const
+void ConfigModel::reset()
 {
-    ConfigurationParameterValueList result;
-
-    // TODO
-    for (const auto &p : values) {
-        result.append({ p.first.key(), p.first.siteId(), p.second });
-    }
-
-    return result;
+    originalValues = values;
 }
 
 bool ConfigModel::hasChanges() const
 {
-    // TODO
-    return true;
+    return !getChanges().empty();
 }
 
-ConfigurationUpdateActionList ConfigModel::getUpdateActions() const
+ConfigurationUpdateActionList ConfigModel::getChanges() const
 {
     ConfigurationUpdateActionList result;
 
+    auto originalValuesEnd = std::end(originalValues);
     for (const auto &p : values) {
         auto it = originalValues.find(p.first);
-        if (p.second != it->second) {
-            result.append({ p.first.key(), p.first.siteId(), p.second, false });
+        if (it == originalValuesEnd || p.second != it->second) {
+            result.append({ p.first.key(), p.first.siteId(), p.second });
         }
     }
 
@@ -95,7 +82,7 @@ ConfigurationUpdateActionList ConfigModel::getUpdateActions() const
     for (const auto &p : originalValues) {
         auto it = values.find(p.first);
         if (it == valuesEnd) {
-            result.append({ p.first.key(), p.first.siteId(), QString(), true });
+            result.append({ p.first.key(), p.first.siteId(), std::experimental::nullopt });
         }
     }
 

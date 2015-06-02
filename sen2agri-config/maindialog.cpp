@@ -143,6 +143,8 @@ void MainDialog::loadModel(const ConfigurationSet &configuration)
             connect(regionList,
                     static_cast<void (QComboBox::*) (int) >(&QComboBox::currentIndexChanged),
                     [this, regionList, widget](int) {
+                        parameterChangeListeners.clear();
+
                         std::experimental::optional<int> siteId;
                         if (auto siteIdVal = regionList->currentData().toInt()) {
                             siteId = siteIdVal;
@@ -230,9 +232,12 @@ void MainDialog::done(int result)
 
 void MainDialog::saveChanges()
 {
+    setEnabled(false);
     auto promise = clientInterface.UpdateConfigurationParameters(configModel.getChanges());
     connect(new QDBusPendingCallWatcher(promise, this), &QDBusPendingCallWatcher::finished,
             [this, promise]() {
+                setEnabled(true);
+
                 if (promise.isError()) {
                     QMessageBox::warning(this, QStringLiteral("Error"),
                                          QStringLiteral("Unable to save the changes: %1")
@@ -240,7 +245,10 @@ void MainDialog::saveChanges()
                 } else if (promise.isValid()) {
                     const auto &result = promise.value();
                     if (result.empty()) {
-                        QDialog::done(QDialog::Accepted);
+                        configModel.reset();
+                        QMessageBox::information(
+                            this, QStringLiteral("Information"),
+                            QStringLiteral("The changes were saved successfully"));
                     } else {
                         auto message = QStringLiteral("The following %1 could not be saved:\n\n")
                                            .arg(result.size() == 1 ? QStringLiteral("parameter")
@@ -302,11 +310,18 @@ QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
             auto button = new QPushButton(QStringLiteral("..."), container);
             layout->addWidget(button);
             if (parameter.dataType == QLatin1String("file")) {
-                connect(button, &QPushButton::clicked,
-                        [this, widget]() { widget->setText(QFileDialog::getOpenFileName(this)); });
+                connect(button, &QPushButton::clicked, [this, widget]() {
+                    const auto &file = QFileDialog::getOpenFileName(this);
+                    if (!file.isNull()) {
+                        widget->setText(file);
+                    }
+                });
             } else {
                 connect(button, &QPushButton::clicked, [this, widget]() {
-                    widget->setText(QFileDialog::getExistingDirectory(this));
+                    const auto &directory = QFileDialog::getExistingDirectory(this);
+                    if (!directory.isNull()) {
+                        widget->setText(directory);
+                    }
                 });
             }
             parameterChangeListeners.append(

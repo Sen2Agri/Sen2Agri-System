@@ -3,8 +3,9 @@
 #include <QString>
 #include <QDBusArgument>
 #include <QMetaType>
+#include <QDateTime>
 
-#include "../Optional/optional.hpp"
+#include "optional.hpp"
 
 class ConfigurationParameterInfo
 {
@@ -98,7 +99,6 @@ public:
     ConfigurationCategoryList categories;
     ConfigurationParameterInfoList parameterInfo;
     ConfigurationParameterValueList parameterValues;
-
     SiteList sites;
 
     ConfigurationSet();
@@ -120,11 +120,12 @@ class ConfigurationUpdateAction
 public:
     QString key;
     std::experimental::optional<int> siteId;
-    QString value;
-    bool isDelete;
+    std::experimental::optional<QString> value;
 
     ConfigurationUpdateAction();
-    ConfigurationUpdateAction(QString key, std::experimental::optional<int> siteId, QString value, bool isDelete);
+    ConfigurationUpdateAction(QString key,
+                              std::experimental::optional<int> siteId,
+                              std::experimental::optional<QString> value);
 
     static void registerMetaTypes();
 };
@@ -136,3 +137,47 @@ Q_DECLARE_METATYPE(ConfigurationUpdateActionList);
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationUpdateAction &action);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationUpdateAction &action);
+
+class KeyedMessage
+{
+public:
+    QString key;
+    QString text;
+
+    KeyedMessage();
+    KeyedMessage(QString key, QString text);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<KeyedMessage> KeyedMessageList;
+
+Q_DECLARE_METATYPE(KeyedMessage)
+Q_DECLARE_METATYPE(KeyedMessageList)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const KeyedMessage &message);
+const QDBusArgument &operator>>(const QDBusArgument &argument, KeyedMessage &message);
+
+class Product
+{
+public:
+    int productId;
+    int processorId;
+    int productTypeId;
+    int siteId;
+    QString fullPath;
+    QDateTime created;
+
+    Product();
+    Product(int productId, int processorId, int productTypeId, int siteId, QString fullPath, QDateTime created);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<Product> ProductList;
+
+Q_DECLARE_METATYPE(Product)
+Q_DECLARE_METATYPE(ProductList)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const Product &message);
+const QDBusArgument &operator>>(const QDBusArgument &argument, Product &message);

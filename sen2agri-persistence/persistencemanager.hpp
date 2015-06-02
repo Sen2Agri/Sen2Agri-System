@@ -8,8 +8,7 @@
 
 #include "persistencemanagerdbprovider.hpp"
 #include "asyncdbustask.hpp"
-#include "configurationparameter.hpp"
-#include "keyedmessage.hpp"
+#include "model.hpp"
 #include "settings.hpp"
 
 class PersistenceManager : public QObject, protected QDBusContext
@@ -59,5 +58,5 @@ public slots:
     KeyedMessageList
     UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions);
     KeyedMessageList
-    UpdateJobConfigurationParameters(int jobId, const ConfigurationParameterValueList &parameters);
+    UpdateJobConfigurationParameters(int jobId, const ConfigurationUpdateActionList &parameters);
 };

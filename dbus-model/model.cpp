@@ -4,7 +4,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
-#include "configurationparameter.hpp"
+#include "model.hpp"
 
 using std::move;
 
@@ -24,9 +24,6 @@ ConfigurationParameterInfo::ConfigurationParameterInfo(
 
 void ConfigurationParameterInfo::registerMetaTypes()
 {
-    qRegisterMetaType<ConfigurationParameterInfo>("ConfigurationParameterInfo");
-    qRegisterMetaType<ConfigurationParameterInfoList>("ConfigurationParameterInfoList");
-
     qDBusRegisterMetaType<ConfigurationParameterInfo>();
     qDBusRegisterMetaType<ConfigurationParameterInfoList>();
 }
@@ -65,9 +62,6 @@ ConfigurationParameterValue::ConfigurationParameterValue(QString key,
 
 void ConfigurationParameterValue::registerMetaTypes()
 {
-    qRegisterMetaType<ConfigurationParameterValue>("ConfigurationParameterValue");
-    qRegisterMetaType<ConfigurationParameterValueList>("ConfigurationParameterValueList");
-
     qDBusRegisterMetaType<ConfigurationParameterValue>();
     qDBusRegisterMetaType<ConfigurationParameterValueList>();
 }
@@ -111,9 +105,6 @@ ConfigurationCategory::ConfigurationCategory(int categoryId, QString name)
 
 void ConfigurationCategory::registerMetaTypes()
 {
-    qRegisterMetaType<ConfigurationCategory>("ConfigurationCategory");
-    qRegisterMetaType<ConfigurationCategoryList>("ConfigurationList");
-
     qDBusRegisterMetaType<ConfigurationCategory>();
     qDBusRegisterMetaType<ConfigurationCategoryList>();
 }
@@ -146,9 +137,6 @@ Site::Site(int siteId, QString name) : siteId(siteId), name(std::move(name))
 
 void Site::registerMetaTypes()
 {
-    qRegisterMetaType<Site>("Site");
-    qRegisterMetaType<SiteList>("SiteList");
-
     qDBusRegisterMetaType<Site>();
     qDBusRegisterMetaType<SiteList>();
 }
@@ -188,8 +176,6 @@ ConfigurationSet::ConfigurationSet(ConfigurationCategoryList categories,
 
 void ConfigurationSet::registerMetaTypes()
 {
-    qRegisterMetaType<ConfigurationSet>("ConfigurationSet");
-
     qDBusRegisterMetaType<ConfigurationSet>();
 }
 
@@ -213,23 +199,19 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationSet 
     return argument;
 }
 
-ConfigurationUpdateAction::ConfigurationUpdateAction() : isDelete()
+ConfigurationUpdateAction::ConfigurationUpdateAction()
 {
 }
 
 ConfigurationUpdateAction::ConfigurationUpdateAction(QString key,
                                                      std::experimental::optional<int> siteId,
-                                                     QString value,
-                                                     bool isDelete)
-    : key(std::move(key)), siteId(siteId), value(value), isDelete(isDelete)
+                                                     std::experimental::optional<QString> value)
+    : key(std::move(key)), siteId(siteId), value(std::move(value))
 {
 }
 
 void ConfigurationUpdateAction::registerMetaTypes()
 {
-    qRegisterMetaType<ConfigurationUpdateAction>("ConfigurationUpdateAction");
-    qRegisterMetaType<ConfigurationUpdateActionList>("ConfigurationUpdateActionList");
-
     qDBusRegisterMetaType<ConfigurationUpdateAction>();
     qDBusRegisterMetaType<ConfigurationUpdateActionList>();
 }
@@ -237,7 +219,12 @@ void ConfigurationUpdateAction::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationUpdateAction &action)
 {
     argument.beginStructure();
-    argument << action.key << action.siteId.value_or(0) << action.value << action.isDelete;
+    argument << action.key << action.siteId.value_or(0);
+    if (action.value) {
+        argument << true << action.value.value();
+    } else {
+        argument << false << QString();
+    }
     argument.endStructure();
 
     return argument;
@@ -246,8 +233,11 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationUpdateActi
 const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationUpdateAction &action)
 {
     int siteId;
+    bool hasValue;
+    QString value;
+
     argument.beginStructure();
-    argument >> action.key >> siteId >> action.value >> action.isDelete;
+    argument >> action.key >> siteId >> hasValue >> value;
     argument.endStructure();
 
     if (siteId) {
@@ -255,6 +245,90 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationUpda
     } else {
         action.siteId = std::experimental::nullopt;
     }
+
+    if (hasValue) {
+        action.value = value;
+    } else {
+        action.value = std::experimental::nullopt;
+    }
+
+    return argument;
+}
+
+KeyedMessage::KeyedMessage()
+{
+}
+
+KeyedMessage::KeyedMessage(QString key, QString message)
+    : key(std::move(key)), text(std::move(message))
+{
+}
+
+void KeyedMessage::registerMetaTypes()
+{
+    qDBusRegisterMetaType<KeyedMessage>();
+    qDBusRegisterMetaType<KeyedMessageList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const KeyedMessage &message)
+{
+    argument.beginStructure();
+    argument << message.key << message.text;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, KeyedMessage &message)
+{
+    argument.beginStructure();
+    argument >> message.key >> message.text;
+    argument.endStructure();
+
+    return argument;
+}
+
+Product::Product() : productId(), processorId(), productTypeId(), siteId()
+{
+}
+
+Product::Product(int productId,
+                 int processorId,
+                 int productTypeId,
+                 int siteId,
+                 QString fullPath,
+                 QDateTime created)
+    : productId(productId),
+      processorId(processorId),
+      productTypeId(productTypeId),
+      siteId(siteId),
+      fullPath(std::move(fullPath)),
+      created(std::move(created))
+{
+}
+
+void Product::registerMetaTypes()
+{
+    qDBusRegisterMetaType<Product>();
+    qDBusRegisterMetaType<ProductList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const Product &product)
+{
+    argument.beginStructure();
+    argument << product.productId << product.processorId << product.productTypeId << product.siteId
+             << product.fullPath << product.created;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, Product &product)
+{
+    argument.beginStructure();
+    argument >> product.productId >> product.processorId >> product.productTypeId >> product.siteId
+             >> product.fullPath >> product.created;
+    argument.endStructure();
 
     return argument;
 }
