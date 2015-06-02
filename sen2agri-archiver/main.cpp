@@ -1,8 +1,21 @@
 #include <QCoreApplication>
+#include "archivermanager.hpp"
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication a(argc, argv);
+    QCoreApplication app(argc, argv);
 
-    return a.exec();
+    ConfigurationParameterInfo::registerMetaTypes();
+    ConfigurationParameterValue::registerMetaTypes();
+    ConfigurationCategory::registerMetaTypes();
+    Site::registerMetaTypes();
+    ConfigurationSet::registerMetaTypes();
+
+    ConfigurationUpdateAction::registerMetaTypes();
+
+    KeyedMessage::registerMetaTypes();
+    Product::registerMetaTypes();
+    ArchiverManager arch;
+    arch.start(app);
+    return app.exec();
 }

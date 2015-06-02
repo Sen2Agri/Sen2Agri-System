@@ -107,7 +107,7 @@ PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
 
     return provider.handleTransactionRetry(QStringLiteral("GetConfigurationParameters"), [&]() {
         auto query = db.prepareQuery(
-            QStringLiteral("select * from sp_get_configuration_parameters(:prefix)"));
+            QStringLiteral("select * from sp_get_parameters(:prefix)"));
         query.bindValue(QStringLiteral(":prefix"), prefix);
 
         query.setForwardOnly(true);
