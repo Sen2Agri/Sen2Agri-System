@@ -7,7 +7,7 @@ AS $$
 BEGIN
     RETURN QUERY
         SELECT config_category.id,
-               config_category.name
+               config_categor.name
         FROM config_category
         ORDER BY config_category.display_order;
 END

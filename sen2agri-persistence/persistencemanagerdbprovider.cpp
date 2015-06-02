@@ -32,7 +32,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(QStringLiteral("GetConfigurationSet"), [&]() {
-        auto query = db.prepareQuery(QStringLiteral("select * from v_get_categories"));
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_categories()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -49,7 +49,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
                 { query.value(idCol).toInt(), query.value(nameCol).toString() });
         }
 
-        query = db.prepareQuery(QStringLiteral("select * from v_get_sites"));
+        query = db.prepareQuery(QStringLiteral("select * from sp_get_sites()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -64,7 +64,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
             result.sites.append({ query.value(idCol).toInt(), query.value(nameCol).toString() });
         }
 
-        query = db.prepareQuery(QStringLiteral("select * from v_get_config_metadata order by key"));
+        query = db.prepareQuery(QStringLiteral("select * from sp_get_config_metadata()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
