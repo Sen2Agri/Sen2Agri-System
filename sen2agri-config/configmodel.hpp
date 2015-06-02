@@ -26,10 +26,10 @@ public:
     void
     setValue(const ParameterKey &parameter, const QString &value);
     void removeValue(const ParameterKey &parameter);
+    void reset();
 
-    ConfigurationParameterValueList getChanges() const;
     bool hasChanges() const;
-    ConfigurationUpdateActionList getUpdateActions() const;
+    ConfigurationUpdateActionList getChanges() const;
 
     const ConfigurationCategoryList &categories() const;
     const SiteList &sites() const;
