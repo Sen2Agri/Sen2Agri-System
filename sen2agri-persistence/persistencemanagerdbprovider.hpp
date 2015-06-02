@@ -19,8 +19,9 @@ public:
     ConfigurationParameterValueList GetConfigurationParameters(const QString &prefix);
     ConfigurationParameterValueList GetJobConfigurationParameters(int jobId, const QString &prefix);
 
-    KeyedMessageList
-    UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions);
-    KeyedMessageList
-    UpdateJobConfigurationParameters(int jobId, const ConfigurationUpdateActionList &actions);
+    KeyedMessageList UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions);
+    KeyedMessageList UpdateJobConfigurationParameters(int jobId,
+                                                      const ConfigurationUpdateActionList &actions);
+
+    ProductToArchiveList GetProductsToArchive();
 };
