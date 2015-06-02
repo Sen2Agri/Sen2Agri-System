@@ -4,6 +4,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include <set>
+
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions);
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query);
 static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query);
@@ -96,6 +98,22 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 
         result.parameterValues = mapConfigurationParameters(query);
 
+        std::set<QString> globalValues;
+        for (const auto &value : result.parameterValues) {
+            if (!value.siteId) {
+                globalValues.emplace(value.key);
+            }
+        }
+
+        auto endGlobalValues = std::end(globalValues);
+        for (const auto &parameter : result.parameterInfo) {
+            if (globalValues.find(parameter.key) == endGlobalValues) {
+                throw std::runtime_error(QStringLiteral("Missing global value for parameter %1")
+                                             .arg(parameter.key)
+                                             .toStdString());
+            }
+        }
+
         return result;
     });
 }
@@ -106,8 +124,7 @@ PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(QStringLiteral("GetConfigurationParameters"), [&]() {
-        auto query = db.prepareQuery(
-            QStringLiteral("select * from sp_get_parameters(:prefix)"));
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_parameters(:prefix)"));
         query.bindValue(QStringLiteral(":prefix"), prefix);
 
         query.setForwardOnly(true);
