@@ -24,9 +24,6 @@ ConfigurationParameterInfo::ConfigurationParameterInfo(
 
 void ConfigurationParameterInfo::registerMetaTypes()
 {
-    qRegisterMetaType<ConfigurationParameterInfo>("ConfigurationParameterInfo");
-    qRegisterMetaType<ConfigurationParameterInfoList>("ConfigurationParameterInfoList");
-
     qDBusRegisterMetaType<ConfigurationParameterInfo>();
     qDBusRegisterMetaType<ConfigurationParameterInfoList>();
 }
@@ -65,9 +62,6 @@ ConfigurationParameterValue::ConfigurationParameterValue(QString key,
 
 void ConfigurationParameterValue::registerMetaTypes()
 {
-    qRegisterMetaType<ConfigurationParameterValue>("ConfigurationParameterValue");
-    qRegisterMetaType<ConfigurationParameterValueList>("ConfigurationParameterValueList");
-
     qDBusRegisterMetaType<ConfigurationParameterValue>();
     qDBusRegisterMetaType<ConfigurationParameterValueList>();
 }
@@ -111,9 +105,6 @@ ConfigurationCategory::ConfigurationCategory(int categoryId, QString name)
 
 void ConfigurationCategory::registerMetaTypes()
 {
-    qRegisterMetaType<ConfigurationCategory>("ConfigurationCategory");
-    qRegisterMetaType<ConfigurationCategoryList>("ConfigurationList");
-
     qDBusRegisterMetaType<ConfigurationCategory>();
     qDBusRegisterMetaType<ConfigurationCategoryList>();
 }
@@ -146,9 +137,6 @@ Site::Site(int siteId, QString name) : siteId(siteId), name(std::move(name))
 
 void Site::registerMetaTypes()
 {
-    qRegisterMetaType<Site>("Site");
-    qRegisterMetaType<SiteList>("SiteList");
-
     qDBusRegisterMetaType<Site>();
     qDBusRegisterMetaType<SiteList>();
 }
@@ -188,8 +176,6 @@ ConfigurationSet::ConfigurationSet(ConfigurationCategoryList categories,
 
 void ConfigurationSet::registerMetaTypes()
 {
-    qRegisterMetaType<ConfigurationSet>("ConfigurationSet");
-
     qDBusRegisterMetaType<ConfigurationSet>();
 }
 
@@ -226,9 +212,6 @@ ConfigurationUpdateAction::ConfigurationUpdateAction(QString key,
 
 void ConfigurationUpdateAction::registerMetaTypes()
 {
-    qRegisterMetaType<ConfigurationUpdateAction>("ConfigurationUpdateAction");
-    qRegisterMetaType<ConfigurationUpdateActionList>("ConfigurationUpdateActionList");
-
     qDBusRegisterMetaType<ConfigurationUpdateAction>();
     qDBusRegisterMetaType<ConfigurationUpdateActionList>();
 }
@@ -276,15 +259,13 @@ KeyedMessage::KeyedMessage()
 {
 }
 
-KeyedMessage::KeyedMessage(QString key, QString message) : key(std::move(key)), text(std::move(message))
+KeyedMessage::KeyedMessage(QString key, QString message)
+    : key(std::move(key)), text(std::move(message))
 {
 }
 
 void KeyedMessage::registerMetaTypes()
 {
-    qRegisterMetaType<KeyedMessage>("KeyedMessage");
-    qRegisterMetaType<KeyedMessageList>("KeyedMessageList");
-
     qDBusRegisterMetaType<KeyedMessage>();
     qDBusRegisterMetaType<KeyedMessageList>();
 }
@@ -302,6 +283,51 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, KeyedMessage &mes
 {
     argument.beginStructure();
     argument >> message.key >> message.text;
+    argument.endStructure();
+
+    return argument;
+}
+
+Product::Product() : productId(), processorId(), productTypeId(), siteId()
+{
+}
+
+Product::Product(int productId,
+                 int processorId,
+                 int productTypeId,
+                 int siteId,
+                 QString fullPath,
+                 QDateTime created)
+    : productId(productId),
+      processorId(processorId),
+      productTypeId(productTypeId),
+      siteId(siteId),
+      fullPath(std::move(fullPath)),
+      created(std::move(created))
+{
+}
+
+void Product::registerMetaTypes()
+{
+    qDBusRegisterMetaType<Product>();
+    qDBusRegisterMetaType<ProductList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const Product &product)
+{
+    argument.beginStructure();
+    argument << product.productId << product.processorId << product.productTypeId << product.siteId
+             << product.fullPath << product.created;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, Product &product)
+{
+    argument.beginStructure();
+    argument >> product.productId >> product.processorId >> product.productTypeId >> product.siteId
+             >> product.fullPath >> product.created;
     argument.endStructure();
 
     return argument;

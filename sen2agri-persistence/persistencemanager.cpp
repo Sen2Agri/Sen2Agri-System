@@ -65,4 +65,6 @@ void PersistenceManager::registerMetaTypes()
     ConfigurationUpdateAction::registerMetaTypes();
 
     KeyedMessage::registerMetaTypes();
+
+    Product::registerMetaTypes();
 }

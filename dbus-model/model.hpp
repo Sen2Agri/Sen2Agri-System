@@ -3,6 +3,7 @@
 #include <QString>
 #include <QDBusArgument>
 #include <QMetaType>
+#include <QDateTime>
 
 #include "optional.hpp"
 
@@ -159,5 +160,24 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, KeyedMessage &mes
 
 class Product
 {
+public:
+    int productId;
+    int processorId;
+    int productTypeId;
+    int siteId;
+    QString fullPath;
+    QDateTime created;
 
+    Product();
+    Product(int productId, int processorId, int productTypeId, int siteId, QString fullPath, QDateTime created);
+
+    static void registerMetaTypes();
 };
+
+typedef QList<Product> ProductList;
+
+Q_DECLARE_METATYPE(Product)
+Q_DECLARE_METATYPE(ProductList)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const Product &message);
+const QDBusArgument &operator>>(const QDBusArgument &argument, Product &message);
