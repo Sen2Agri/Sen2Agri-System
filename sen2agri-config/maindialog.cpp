@@ -310,11 +310,18 @@ QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
             auto button = new QPushButton(QStringLiteral("..."), container);
             layout->addWidget(button);
             if (parameter.dataType == QLatin1String("file")) {
-                connect(button, &QPushButton::clicked,
-                        [this, widget]() { widget->setText(QFileDialog::getOpenFileName(this)); });
+                connect(button, &QPushButton::clicked, [this, widget]() {
+                    const auto &file = QFileDialog::getOpenFileName(this);
+                    if (!file.isNull()) {
+                        widget->setText(file);
+                    }
+                });
             } else {
                 connect(button, &QPushButton::clicked, [this, widget]() {
-                    widget->setText(QFileDialog::getExistingDirectory(this));
+                    const auto &directory = QFileDialog::getExistingDirectory(this);
+                    if (!directory.isNull()) {
+                        widget->setText(directory);
+                    }
                 });
             }
             parameterChangeListeners.append(
