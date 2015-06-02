@@ -10,23 +10,21 @@ CONFIG -= app_bundle
 
 PRECOMPILED_HEADER = pch.hpp
 
-INCLUDEPATH += ../dbus-model
+INCLUDEPATH += ../dbus-model ../Optional
 
 TEMPLATE = app
 
 adaptor.files = ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
-adaptor.header_flags = -i ../dbus-model/configurationparameter.hpp \
-                       -i ../dbus-model/keyedmessage.hpp
+adaptor.header_flags = -i ../dbus-model/model.hpp
 
 DBUS_ADAPTORS += adaptor
 
 SOURCES += main.cpp \
     persistencemanager.cpp \
     dbprovider.cpp \
-    ../dbus-model/configurationparameter.cpp \
+    ../dbus-model/model.cpp \
     sql_error.cpp \
     sqldatabaseraii.cpp \
-    ../dbus-model/keyedmessage.cpp \
     persistencemanagerdbprovider.cpp \
     settings.cpp \
     logger.cpp
@@ -46,12 +44,11 @@ DISTFILES += \
 HEADERS += \
     persistencemanager.hpp \
     dbprovider.hpp \
-    ../dbus-model/configurationparameter.hpp \
+    ../dbus-model/model.hpp \
     sql_error.hpp \
     pch.hpp \
     sqldatabaseraii.hpp \
     asyncdbustask.hpp \
-    ../dbus-model/keyedmessage.hpp \
     persistencemanagerdbprovider.hpp \
     settings.hpp \
     make_unique.hpp \

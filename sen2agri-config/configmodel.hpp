@@ -6,7 +6,7 @@
 #include <QString>
 #include <QDate>
 
-#include "configurationparameter.hpp"
+#include "model.hpp"
 #include "parameterkey.hpp"
 
 class ConfigModel

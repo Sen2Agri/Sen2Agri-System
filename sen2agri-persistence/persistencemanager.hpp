@@ -8,8 +8,7 @@
 
 #include "persistencemanagerdbprovider.hpp"
 #include "asyncdbustask.hpp"
-#include "configurationparameter.hpp"
-#include "keyedmessage.hpp"
+#include "model.hpp"
 #include "settings.hpp"
 
 class PersistenceManager : public QObject, protected QDBusContext

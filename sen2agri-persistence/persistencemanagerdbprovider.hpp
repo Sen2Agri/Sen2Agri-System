@@ -2,8 +2,7 @@
 
 #include "sqldatabaseraii.hpp"
 #include "dbprovider.hpp"
-#include "configurationparameter.hpp"
-#include "keyedmessage.hpp"
+#include "model.hpp"
 #include "settings.hpp"
 
 class PersistenceManagerDBProvider

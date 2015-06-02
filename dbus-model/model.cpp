@@ -4,7 +4,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
-#include "configurationparameter.hpp"
+#include "model.hpp"
 
 using std::move;
 
@@ -268,6 +268,41 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationUpda
     } else {
         action.value = std::experimental::nullopt;
     }
+
+    return argument;
+}
+
+KeyedMessage::KeyedMessage()
+{
+}
+
+KeyedMessage::KeyedMessage(QString key, QString message) : key(std::move(key)), text(std::move(message))
+{
+}
+
+void KeyedMessage::registerMetaTypes()
+{
+    qRegisterMetaType<KeyedMessage>("KeyedMessage");
+    qRegisterMetaType<KeyedMessageList>("KeyedMessageList");
+
+    qDBusRegisterMetaType<KeyedMessage>();
+    qDBusRegisterMetaType<KeyedMessageList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const KeyedMessage &message)
+{
+    argument.beginStructure();
+    argument << message.key << message.text;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, KeyedMessage &message)
+{
+    argument.beginStructure();
+    argument >> message.key >> message.text;
+    argument.endStructure();
 
     return argument;
 }

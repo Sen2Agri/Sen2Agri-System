@@ -2,7 +2,6 @@
 #include <QDebug>
 
 #include "maindialog.hpp"
-#include "keyedmessage.hpp"
 
 using namespace std;
 

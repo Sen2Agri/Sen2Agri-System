@@ -9,28 +9,25 @@ CONFIG += c++11 precompile_header
 
 PRECOMPILED_HEADER = pch.hpp
 
-INCLUDEPATH += ../dbus-model
+INCLUDEPATH += ../dbus-model ../Optional
 
 interface.files = ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
-interface.header_flags = -i ../dbus-model/configurationparameter.hpp \
-                         -i ../dbus-model/keyedmessage.hpp
+interface.header_flags = -i ../dbus-model/model.hpp
 
 DBUS_INTERFACES += interface
 
 SOURCES += main.cpp\
     maindialog.cpp \
     configmodel.cpp \
-    ../dbus-model/configurationparameter.cpp \
-    ../dbus-model/keyedmessage.cpp \
     parameterchangelistener.cpp \
-    parameterkey.cpp
+    parameterkey.cpp \
+    ../dbus-model/model.cpp
 
 HEADERS  += maindialog.hpp \
     pch.hpp \
     configmodel.hpp \
-    ../dbus-model/configurationparameter.hpp \
-    ../dbus-model/keyedmessage.hpp \
     parameterchangelistener.hpp \
-    parameterkey.hpp
+    parameterkey.hpp \
+    ../dbus-model/model.hpp
 
 FORMS    += maindialog.ui
