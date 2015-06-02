@@ -367,3 +367,20 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProductToArchive 
 
     return argument;
 }
+
+void registerMetaTypes()
+{
+    ConfigurationSet::registerMetaTypes();
+
+    ConfigurationParameterInfo::registerMetaTypes();
+    ConfigurationParameterValue::registerMetaTypes();
+    ConfigurationCategory::registerMetaTypes();
+    Site::registerMetaTypes();
+
+    ConfigurationUpdateAction::registerMetaTypes();
+
+    KeyedMessage::registerMetaTypes();
+
+    Product::registerMetaTypes();
+    ProductToArchive::registerMetaTypes();
+}

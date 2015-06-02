@@ -207,3 +207,5 @@ Q_DECLARE_METATYPE(ProductToArchiveList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ProductToArchive &message);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ProductToArchive &message);
+
+void registerMetaTypes();

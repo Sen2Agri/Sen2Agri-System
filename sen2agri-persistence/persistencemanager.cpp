@@ -59,20 +59,3 @@ ProductToArchiveList PersistenceManager::GetProductsToArchive()
 
     return {};
 }
-
-void PersistenceManager::registerMetaTypes()
-{
-    ConfigurationSet::registerMetaTypes();
-
-    ConfigurationParameterInfo::registerMetaTypes();
-    ConfigurationParameterValue::registerMetaTypes();
-    ConfigurationCategory::registerMetaTypes();
-    Site::registerMetaTypes();
-
-    ConfigurationUpdateAction::registerMetaTypes();
-
-    KeyedMessage::registerMetaTypes();
-
-    Product::registerMetaTypes();
-    ProductToArchive::registerMetaTypes();
-}

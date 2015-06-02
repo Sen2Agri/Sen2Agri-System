@@ -47,8 +47,6 @@ public:
                                 const Settings &settings,
                                 QObject *parent = 0);
 
-    static void registerMetaTypes();
-
 signals:
 
 public slots:
