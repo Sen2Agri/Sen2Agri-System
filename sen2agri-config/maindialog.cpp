@@ -345,21 +345,23 @@ QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
         return nullptr;
     }
 
-    auto listener = new ParameterChangeListener(configModel, parameter, parameterKey,
-                                                parameter.friendlyName, editWidget);
-    connect(listener, &ParameterChangeListener::validityChanged, [this](bool isValid) {
-        if (isValid) {
-            if (!--invalidFields) {
-                regionLists[ui->tabWidget->currentIndex()]->setEnabled(true);
+    if (!parameter.isAdvanced) {
+        auto listener = new ParameterChangeListener(configModel, parameter, parameterKey,
+                                                    parameter.friendlyName, editWidget);
+        connect(listener, &ParameterChangeListener::validityChanged, [this](bool isValid) {
+            auto idx = ui->tabWidget->currentIndex();
+            if (isValid) {
+                if (!--invalidFields) {
+                    regionLists[idx]->setEnabled(true);
+                }
+            } else {
+                if (!invalidFields++) {
+                    regionLists[idx]->setEnabled(false);
+                }
             }
-        } else {
-            if (!invalidFields++) {
-                regionLists[ui->tabWidget->currentIndex()]->setEnabled(false);
-            }
-        }
-        //        regionList->setEnabled(isValid);
-    });
-    parameterChangeListeners.append(listener);
+        });
+        parameterChangeListeners.append(listener);
+    }
 
     bool fromGlobal;
     const auto &value = configModel.getValue(parameterKey, fromGlobal);
