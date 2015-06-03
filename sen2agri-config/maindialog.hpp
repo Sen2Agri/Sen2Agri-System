@@ -2,6 +2,7 @@
 
 #include <QDialog>
 #include <QList>
+#include <QComboBox>
 
 #include "configmodel.hpp"
 #include "parameterchangelistener.hpp"
@@ -31,6 +32,8 @@ private:
     QList<ParameterChangeListener *> parameterChangeListeners;
     OrgEsaSen2agriPersistenceManagerInterface clientInterface;
     std::vector<int> tabCategory;
+    std::vector<QComboBox *> regionLists;
+    int invalidFields;
 
     void loadModel(const ConfigurationSet &configuration);
     void switchSite(std::experimental::optional<int> siteId, int categoryId, QWidget *parentWidget);
@@ -40,8 +43,7 @@ private:
     void displayAsGlobal(QPushButton *button, QWidget *widget);
     void displayAsSiteSpecific(QPushButton *button, QWidget *widget);
 
-    void applyValue(QWidget *editWidget,
-                    const QString &value);
+    void applyValue(QWidget *editWidget, const QString &value);
 
     QWidget *createFieldsWidget(std::experimental::optional<int> siteId,
                                 int categoryId,
