@@ -34,5 +34,9 @@
       <arg name="result" type="a(iss)" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ProductToArchiveList" />
     </method>
+    <method name="MarkProductsArchived">
+      <arg name="result" type="a(is)" direction="in" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ArchivedProductList" />
+    </method>
   </interface>
 </node>
