@@ -4,6 +4,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 
+#include <set>
+
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions);
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query);
 static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query);
@@ -96,6 +98,22 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 
         result.parameterValues = mapConfigurationParameters(query);
 
+        std::set<QString> globalValues;
+        for (const auto &value : result.parameterValues) {
+            if (!value.siteId) {
+                globalValues.emplace(value.key);
+            }
+        }
+
+        auto endGlobalValues = std::end(globalValues);
+        for (const auto &parameter : result.parameterInfo) {
+            if (globalValues.find(parameter.key) == endGlobalValues) {
+                throw std::runtime_error(QStringLiteral("Missing global value for parameter %1")
+                                             .arg(parameter.key)
+                                             .toStdString());
+            }
+        }
+
         return result;
     });
 }
@@ -106,8 +124,7 @@ PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(QStringLiteral("GetConfigurationParameters"), [&]() {
-        auto query = db.prepareQuery(
-            QStringLiteral("select * from sp_get_configuration_parameters(:prefix)"));
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_parameters(:prefix)"));
         query.bindValue(QStringLiteral(":prefix"), prefix);
 
         query.setForwardOnly(true);
@@ -179,6 +196,34 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
 
             return mapUpdateConfigurationResult(query);
         });
+}
+
+ProductToArchiveList PersistenceManagerDBProvider::GetProductsToArchive()
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(QStringLiteral("GetProductsToArchive"), [&]() {
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_products_to_archive()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        auto dataRecord = query.record();
+        auto productIdCol = dataRecord.indexOf(QStringLiteral("productId"));
+        auto currentPathCol = dataRecord.indexOf(QStringLiteral("currentPath"));
+        auto archivePathCol = dataRecord.indexOf(QStringLiteral("archivePath"));
+
+        ProductToArchiveList result;
+        while (query.next()) {
+            result.append({ query.value(productIdCol).toInt(),
+                            query.value(currentPathCol).toString(),
+                            query.value(archivePathCol).toString() });
+        }
+
+        return result;
+    });
 }
 
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions)

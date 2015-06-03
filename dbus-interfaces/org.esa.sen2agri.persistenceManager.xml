@@ -30,5 +30,9 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="ConfigurationParameterValueList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="KeyedMessageList" />
     </method>
+    <method name="GetProductsToArchive">
+      <arg name="result" type="a(iss)" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ProductToArchiveList" />
+    </method>
   </interface>
 </node>

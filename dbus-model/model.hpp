@@ -169,7 +169,12 @@ public:
     QDateTime created;
 
     Product();
-    Product(int productId, int processorId, int productTypeId, int siteId, QString fullPath, QDateTime created);
+    Product(int productId,
+            int processorId,
+            int productTypeId,
+            int siteId,
+            QString fullPath,
+            QDateTime created);
 
     static void registerMetaTypes();
 };
@@ -181,3 +186,26 @@ Q_DECLARE_METATYPE(ProductList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const Product &message);
 const QDBusArgument &operator>>(const QDBusArgument &argument, Product &message);
+
+class ProductToArchive
+{
+public:
+    int productId;
+    QString currentPath;
+    QString archivePath;
+
+    ProductToArchive();
+    ProductToArchive(int productId, QString currentPath, QString archivePath);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<ProductToArchive> ProductToArchiveList;
+
+Q_DECLARE_METATYPE(ProductToArchive)
+Q_DECLARE_METATYPE(ProductToArchiveList)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ProductToArchive &message);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProductToArchive &message);
+
+void registerMetaTypes();

@@ -326,9 +326,61 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Product &product)
 const QDBusArgument &operator>>(const QDBusArgument &argument, Product &product)
 {
     argument.beginStructure();
-    argument >> product.productId >> product.processorId >> product.productTypeId >> product.siteId
-             >> product.fullPath >> product.created;
+    argument >> product.productId >> product.processorId >> product.productTypeId >>
+        product.siteId >> product.fullPath >> product.created;
     argument.endStructure();
 
     return argument;
+}
+
+ProductToArchive::ProductToArchive() : productId(), currentPath(), archivePath()
+{
+}
+
+ProductToArchive::ProductToArchive(int productId, QString currentPath, QString archivePath)
+    : productId(productId),
+      currentPath(std::move(currentPath)),
+      archivePath(std::move(archivePath))
+{
+}
+
+void ProductToArchive::registerMetaTypes()
+{
+    qDBusRegisterMetaType<ProductToArchive>();
+    qDBusRegisterMetaType<ProductToArchiveList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ProductToArchive &product)
+{
+    argument.beginStructure();
+    argument << product.productId << product.currentPath << product.archivePath;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProductToArchive &product)
+{
+    argument.beginStructure();
+    argument >> product.productId >> product.currentPath >> product.archivePath;
+    argument.endStructure();
+
+    return argument;
+}
+
+void registerMetaTypes()
+{
+    ConfigurationSet::registerMetaTypes();
+
+    ConfigurationParameterInfo::registerMetaTypes();
+    ConfigurationParameterValue::registerMetaTypes();
+    ConfigurationCategory::registerMetaTypes();
+    Site::registerMetaTypes();
+
+    ConfigurationUpdateAction::registerMetaTypes();
+
+    KeyedMessage::registerMetaTypes();
+
+    Product::registerMetaTypes();
+    ProductToArchive::registerMetaTypes();
 }

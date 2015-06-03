@@ -9,15 +9,7 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    ConfigurationParameterInfo::registerMetaTypes();
-    ConfigurationParameterValue::registerMetaTypes();
-    ConfigurationCategory::registerMetaTypes();
-    Site::registerMetaTypes();
-    ConfigurationSet::registerMetaTypes();
-
-    ConfigurationUpdateAction::registerMetaTypes();
-
-    KeyedMessage::registerMetaTypes();
+    registerMetaTypes();
 
     MainDialog w;
     w.show();

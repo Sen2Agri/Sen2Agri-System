@@ -46,7 +46,7 @@ int main(int argc, char *argv[])
 
         const auto &settings = Settings::readSettings(configFile);
 
-        PersistenceManager::registerMetaTypes();
+        registerMetaTypes();
 
         QDBusConnection connection = QDBusConnection::systemBus();
         PersistenceManager persistenceManager(connection, settings);

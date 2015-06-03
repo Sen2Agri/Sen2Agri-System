@@ -47,16 +47,15 @@ public:
                                 const Settings &settings,
                                 QObject *parent = 0);
 
-    static void registerMetaTypes();
-
 signals:
 
 public slots:
     ConfigurationSet GetConfigurationSet();
     ConfigurationParameterValueList GetConfigurationParameters(const QString &prefix);
     ConfigurationParameterValueList GetJobConfigurationParameters(int jobId, const QString &prefix);
-    KeyedMessageList
-    UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions);
+    KeyedMessageList UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions);
     KeyedMessageList
     UpdateJobConfigurationParameters(int jobId, const ConfigurationUpdateActionList &parameters);
+
+    ProductToArchiveList GetProductsToArchive();
 };
