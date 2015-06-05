@@ -246,7 +246,7 @@ public:
     JobStartType startType;
     QString inputPath;
     QString outputPath;
-    int tilesTotal;
+    int stepsTotal;
 
     NewJob();
     NewJob(int processorId,
@@ -255,7 +255,7 @@ public:
            JobStartType startType,
            QString inputPath,
            QString outputPath,
-           int tilesTotal);
+           int stepsTotal);
 
     static void registerMetaTypes();
 };

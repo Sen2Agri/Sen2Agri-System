@@ -430,7 +430,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobStartType &sta
     startType = static_cast<JobStartType>(startTypeValue);
 }
 
-NewJob::NewJob() : processorId(), productId(), siteId(), startType(), tilesTotal()
+NewJob::NewJob() : processorId(), productId(), siteId(), startType(), stepsTotal()
 {
 }
 
@@ -440,14 +440,14 @@ NewJob::NewJob(int processorId,
                JobStartType startType,
                QString inputPath,
                QString outputPath,
-               int tilesTotal)
+               int stepsTotal)
     : processorId(processorId),
       productId(productId),
       siteId(siteId),
       startType(startType),
       inputPath(std::move(inputPath)),
       outputPath(std::move(outputPath)),
-      tilesTotal(tilesTotal)
+      stepsTotal(stepsTotal)
 {
 }
 
@@ -459,11 +459,11 @@ void NewJob::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NewJob &job)
 {
     return argument << job.processorId << job.productId << job.siteId << job.startType
-                    << job.inputPath << job.outputPath << job.tilesTotal;
+                    << job.inputPath << job.outputPath << job.stepsTotal;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job)
 {
     return argument >> job.processorId >> job.productId >> job.siteId >> job.startType >>
-           job.inputPath >> job.outputPath >> job.tilesTotal;
+           job.inputPath >> job.outputPath >> job.stepsTotal;
 }
