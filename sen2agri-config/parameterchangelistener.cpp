@@ -16,10 +16,12 @@ static bool validateTrue(const QString &s);
 ParameterChangeListener::ParameterChangeListener(ConfigModel &model,
                                                  ConfigurationParameterInfo parameter,
                                                  ParameterKey parameterKey,
+                                                 QString friendlyName,
                                                  QWidget *parent)
     : QObject(parent),
       model(model),
       parameterKey(std::move(parameterKey)),
+      friendlyName(std::move(friendlyName)),
       widget(parent)
 {
     isValid = true;
@@ -57,6 +59,7 @@ void ParameterChangeListener::onTextChanged(const QString &newText)
     }
 
     if (valid != isValid) {
+        validityChanged(valid);
         applyValidity(valid);
     }
 }
@@ -87,6 +90,16 @@ void ParameterChangeListener::applyValidity(bool valid)
         palette.setColor(QPalette::Base, Qt::red);
     }
     widget->setPalette(palette);
+}
+
+const QString &ParameterChangeListener::parameterName() const
+{
+    return friendlyName;
+}
+
+const ParameterKey &ParameterChangeListener::key() const
+{
+    return parameterKey;
 }
 
 static bool validateInt(const QString &s)

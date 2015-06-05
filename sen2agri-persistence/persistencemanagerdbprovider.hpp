@@ -24,4 +24,5 @@ public:
                                                       const ConfigurationUpdateActionList &actions);
 
     ProductToArchiveList GetProductsToArchive();
+    void MarkProductsArchived(const ArchivedProductList &products);
 };

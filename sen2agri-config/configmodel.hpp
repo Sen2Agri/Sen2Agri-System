@@ -12,6 +12,7 @@
 class ConfigModel
 {
     ConfigurationSet configuration;
+    std::map<int, QString> siteMap;
     std::map<ParameterKey, QString> originalValues;
     std::map<ParameterKey, QString> values;
 
@@ -22,6 +23,7 @@ public:
     bool isSiteSpecific(const ParameterKey &parameter) const;
     QString getValue(const ParameterKey &parameter, bool &fromGlobal) const;
     QString getGlobalValue(const ParameterKey &parameter) const;
+    QString getSiteName(std::experimental::optional<int> siteId) const;
 
     void
     setValue(const ParameterKey &parameter, const QString &value);

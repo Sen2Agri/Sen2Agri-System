@@ -78,7 +78,8 @@ MainDialog::MainDialog(QWidget *parent)
       ui(new Ui::MainDialog),
       clientInterface(OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
                       QStringLiteral("/"),
-                      QDBusConnection::systemBus())
+                      QDBusConnection::systemBus()),
+      invalidFields()
 {
     ui->setupUi(this);
 
@@ -153,6 +154,7 @@ void MainDialog::loadModel(const ConfigurationSet &configuration)
                         auto categoryId = tabCategory[ui->tabWidget->currentIndex()];
                         switchSite(siteId, categoryId, widget);
                     });
+            regionLists.emplace_back(regionList);
 
             parentLayout->addRow(new QLabel(QStringLiteral("Site"), widget), regionList);
             parentLayout->addRow(
@@ -205,19 +207,20 @@ QWidget *MainDialog::createFieldsWidget(std::experimental::optional<int> siteId,
 void MainDialog::done(int result)
 {
     if (result == QDialog::Accepted) {
-        auto isValid = true;
+        QString errors;
         for (const auto *l : parameterChangeListeners) {
             if (!l->valid()) {
-                isValid = false;
-                break;
+                errors += QStringLiteral("%1\n").arg(l->parameterName());
             }
         }
 
-        if (isValid) {
+        if (errors.isEmpty()) {
             saveChanges();
         } else {
-            QMessageBox::warning(this, QStringLiteral("Error"),
-                                 QStringLiteral("Please make sure that the parameters are valid"));
+            QMessageBox::warning(
+                this, QStringLiteral("Error"),
+                QStringLiteral("Please make sure that the following parameters are valid:\n\n") +
+                    errors);
         }
     } else {
         if (!configModel.hasChanges() ||
@@ -292,9 +295,6 @@ QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
         layout->addWidget(widget);
         if (parameter.isAdvanced) {
             widget->setEnabled(false);
-        } else {
-            parameterChangeListeners.append(
-                new ParameterChangeListener(configModel, parameter, parameterKey, widget));
         }
     } else if (parameter.dataType == QLatin1String("file") ||
                parameter.dataType == QLatin1String("directory")) {
@@ -324,8 +324,6 @@ QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
                     }
                 });
             }
-            parameterChangeListeners.append(
-                new ParameterChangeListener(configModel, parameter, parameterKey, widget));
         }
     } else if (parameter.dataType == QLatin1String("date")) {
         auto widget = new QDateEdit(container);
@@ -334,9 +332,6 @@ QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
         layout->addWidget(widget);
         if (parameter.isAdvanced) {
             widget->setEnabled(false);
-        } else {
-            parameterChangeListeners.append(
-                new ParameterChangeListener(configModel, parameter, parameterKey, widget));
         }
     } else if (parameter.dataType == QLatin1String("bool")) {
         auto widget = new QCheckBox(container);
@@ -344,13 +339,28 @@ QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
         layout->addWidget(widget);
         if (parameter.isAdvanced) {
             widget->setEnabled(false);
-        } else {
-            parameterChangeListeners.append(
-                new ParameterChangeListener(configModel, parameter, parameterKey, widget));
         }
     } else {
         container->deleteLater();
         return nullptr;
+    }
+
+    if (!parameter.isAdvanced) {
+        auto listener = new ParameterChangeListener(configModel, parameter, parameterKey,
+                                                    parameter.friendlyName, editWidget);
+        connect(listener, &ParameterChangeListener::validityChanged, [this](bool isValid) {
+            auto idx = ui->tabWidget->currentIndex();
+            if (isValid) {
+                if (!--invalidFields) {
+                    regionLists[idx]->setEnabled(true);
+                }
+            } else {
+                if (!invalidFields++) {
+                    regionLists[idx]->setEnabled(false);
+                }
+            }
+        });
+        parameterChangeListeners.append(listener);
     }
 
     bool fromGlobal;

@@ -13,6 +13,7 @@ class ParameterChangeListener : public QObject
 
     ConfigModel &model;
     ParameterKey parameterKey;
+    QString friendlyName;
     QWidget *widget;
     QColor originalBaseColor;
     bool isValid;
@@ -22,10 +23,17 @@ public:
     explicit ParameterChangeListener(ConfigModel &model,
                                      ConfigurationParameterInfo parameter,
                                      ParameterKey parameterKey,
+                                     QString friendlyName,
                                      QWidget *parent);
 
     bool valid() const;
     void applyValidity(bool valid);
+
+    const QString &parameterName() const;
+    const ParameterKey &key() const;
+
+signals:
+    void validityChanged(bool isValid);
 
 public slots:
     void onTextChanged(const QString &newText);

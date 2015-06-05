@@ -1,0 +1,1 @@
+This folder will contain the binaries for all projects.

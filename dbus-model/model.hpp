@@ -7,6 +7,8 @@
 
 #include "optional.hpp"
 
+void registerMetaTypes();
+
 class ConfigurationParameterInfo
 {
 public:
@@ -208,4 +210,22 @@ Q_DECLARE_METATYPE(ProductToArchiveList)
 QDBusArgument &operator<<(QDBusArgument &argument, const ProductToArchive &message);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ProductToArchive &message);
 
-void registerMetaTypes();
+class ArchivedProduct
+{
+public:
+    int productId;
+    QString archivePath;
+
+    ArchivedProduct();
+    ArchivedProduct(int productId, QString archivePath);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<ArchivedProduct> ArchivedProductList;
+
+Q_DECLARE_METATYPE(ArchivedProduct);
+Q_DECLARE_METATYPE(ArchivedProductList);
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ArchivedProduct &message);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ArchivedProduct &message);

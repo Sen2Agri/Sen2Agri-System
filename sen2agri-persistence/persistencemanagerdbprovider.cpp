@@ -7,6 +7,8 @@
 #include <set>
 
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions);
+static QString getArchivedProductsJson(const ArchivedProductList &products);
+
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query);
 static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query);
 
@@ -226,6 +228,21 @@ ProductToArchiveList PersistenceManagerDBProvider::GetProductsToArchive()
     });
 }
 
+void PersistenceManagerDBProvider::MarkProductsArchived(const ArchivedProductList &products)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(QStringLiteral("MarkProductsArchived"), [&]() {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_products_archived(:products)"));
+        query.bindValue(QStringLiteral(":products"), getArchivedProductsJson(products));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions)
 {
     QJsonArray array;
@@ -234,7 +251,19 @@ static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &a
         node[QStringLiteral("key")] = p.key;
         node[QStringLiteral("site_id")] = p.siteId ? QJsonValue(p.siteId.value()) : QJsonValue();
         node[QStringLiteral("value")] = p.value ? QJsonValue(p.value.value()) : QJsonValue();
-        array.append(node);
+        array.append(std::move(node));
+    }
+    return QString::fromUtf8(QJsonDocument(array).toJson());
+}
+
+static QString getArchivedProductsJson(const ArchivedProductList &products)
+{
+    QJsonArray array;
+    for (const auto &p : products) {
+        QJsonObject node;
+        node[QStringLiteral("product_id")] = p.productId;
+        node[QStringLiteral("archive_path")] = p.archivePath;
+        array.append(std::move(node));
     }
     return QString::fromUtf8(QJsonDocument(array).toJson());
 }

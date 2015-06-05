@@ -20,6 +20,10 @@ ConfigModel::ConfigModel(ConfigurationSet configuration) : configuration(move(co
         values[{ p.key, p.siteId }] = p.value;
     }
 
+    for (const auto &s : this->configuration.sites) {
+        siteMap.emplace(s.siteId, s.name);
+    }
+
     originalValues = values;
 }
 
@@ -44,6 +48,15 @@ QString ConfigModel::getGlobalValue(const ParameterKey &parameter) const
 {
     // should always be present
     return values.find({ parameter.key(), std::experimental::nullopt })->second;
+}
+
+QString ConfigModel::getSiteName(std::experimental::optional<int> siteId) const
+{
+    if (!siteId) {
+        return QStringLiteral("Global");
+    }
+
+    return siteMap.find(siteId.value())->second;
 }
 
 void ConfigModel::setValue(const ParameterKey &parameter, const QString &value)

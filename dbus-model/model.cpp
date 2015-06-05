@@ -8,6 +8,23 @@
 
 using std::move;
 
+void registerMetaTypes()
+{
+    ConfigurationSet::registerMetaTypes();
+
+    ConfigurationParameterInfo::registerMetaTypes();
+    ConfigurationParameterValue::registerMetaTypes();
+    ConfigurationCategory::registerMetaTypes();
+    Site::registerMetaTypes();
+
+    ConfigurationUpdateAction::registerMetaTypes();
+
+    KeyedMessage::registerMetaTypes();
+
+    Product::registerMetaTypes();
+    ProductToArchive::registerMetaTypes();
+}
+
 ConfigurationParameterInfo::ConfigurationParameterInfo()
 {
 }
@@ -333,7 +350,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Product &product)
     return argument;
 }
 
-ProductToArchive::ProductToArchive() : productId(), currentPath(), archivePath()
+ProductToArchive::ProductToArchive() : productId()
 {
 }
 
@@ -368,19 +385,36 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProductToArchive 
     return argument;
 }
 
-void registerMetaTypes()
+ArchivedProduct::ArchivedProduct() : productId(), archivePath()
 {
-    ConfigurationSet::registerMetaTypes();
+}
 
-    ConfigurationParameterInfo::registerMetaTypes();
-    ConfigurationParameterValue::registerMetaTypes();
-    ConfigurationCategory::registerMetaTypes();
-    Site::registerMetaTypes();
+ArchivedProduct::ArchivedProduct(int productId, QString archivePath)
+    : productId(productId),
+      archivePath(std::move(archivePath))
+{
+}
 
-    ConfigurationUpdateAction::registerMetaTypes();
+void ArchivedProduct::registerMetaTypes()
+{
+    qDBusRegisterMetaType<ArchivedProduct>();
+    qDBusRegisterMetaType<ArchivedProductList>();
+}
 
-    KeyedMessage::registerMetaTypes();
+QDBusArgument &operator<<(QDBusArgument &argument, const ArchivedProduct &product)
+{
+    argument.beginStructure();
+    argument << product.productId << product.archivePath;
+    argument.endStructure();
 
-    Product::registerMetaTypes();
-    ProductToArchive::registerMetaTypes();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, ArchivedProduct &product)
+{
+    argument.beginStructure();
+    argument >> product.productId >> product.archivePath;
+    argument.endStructure();
+
+    return argument;
 }
