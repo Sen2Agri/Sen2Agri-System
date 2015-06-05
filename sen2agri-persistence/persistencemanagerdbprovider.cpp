@@ -243,6 +243,83 @@ void PersistenceManagerDBProvider::MarkProductsArchived(const ArchivedProductLis
     });
 }
 
+int PersistenceManagerDBProvider::SubmitJob(const NewJob &job)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(QStringLiteral("SubmitJob"), [&]() {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_submit_job(:processorId, :productId, :siteId, "
+                           ":startTypeId, :inputPath, :outputPath, :stepsTotal)"));
+        query.bindValue(QStringLiteral(":processorId"), job.processorId);
+        query.bindValue(QStringLiteral(":productId"), job.productId);
+        query.bindValue(QStringLiteral(":siteId"), job.siteId);
+        query.bindValue(QStringLiteral(":startTypeId"), static_cast<int>(job.startType));
+        query.bindValue(QStringLiteral(":inputPath"), job.inputPath);
+        query.bindValue(QStringLiteral(":outputPath"), job.outputPath);
+        query.bindValue(QStringLiteral(":stepsTotal"), job.stepsTotal);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        auto dataRecord = query.record();
+        auto jobIdCol = dataRecord.indexOf(QStringLiteral("job_id"));
+
+        if (query.next()) {
+            return query.value(jobIdCol).toInt();
+        } else {
+            throw std::runtime_error("Expecting a return value from sp_submit_job, but none found");
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::NotifyJobStepStarted(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(QStringLiteral("NotifyJobStepStarted"), [&]() {
+        auto query = db.prepareQuery(QStringLiteral("select sp_notify_job_started(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::NotifyJobStepFinished(int jobId /*, resources */)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(QStringLiteral("NotifyJobStepFinished"), [&]() {
+        auto query = db.prepareQuery(QStringLiteral("select sp_notify_job_step_finished(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::NotifyJobFinished(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(QStringLiteral("NotifyJobFinished"), [&]() {
+        auto query = db.prepareQuery(QStringLiteral("select sp_notify_job_finished(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions)
 {
     QJsonArray array;
