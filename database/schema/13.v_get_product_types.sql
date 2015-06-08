@@ -1,0 +1,1 @@
+﻿CREATE OR REPLACE VIEW v_get_product_types AS SELECT * FROM product_type;
