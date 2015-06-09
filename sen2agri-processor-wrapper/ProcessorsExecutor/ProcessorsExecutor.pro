@@ -4,9 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       += core
-QT       += dbus
-QT       += network
+QT       += core dbus network
 QT       -= gui
 
 TARGET = ProcessorsExecutor
@@ -16,6 +14,20 @@ CONFIG   -= app_bundle
 DEFINES += QT_SHARED
 
 TEMPLATE = app
+
+CONFIG += c++11 precompile_header
+
+INCLUDEPATH += ../../dbus-model ../../Optional
+
+dbus_interface.files = ../../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml
+dbus_interface.header_flags = -i ../../dbus-model/model.hpp
+
+DBUS_ADAPTORS += dbus_interface
+
+dbus_interface2.files = ../../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
+dbus_interface2.header_flags = -i ../../dbus-model/model.hpp
+
+DBUS_INTERFACES += dbus_interface2
 
 
 SOURCES += main.cpp \
@@ -31,8 +43,7 @@ SOURCES += main.cpp \
     processorwrapperfactory.cpp \
     configurationmgr.cpp \
     logger.cpp \
-    ProcessorsExecutorAdapter.cpp \
-    ProcessorsExecutorProxy.cpp
+    ../../dbus-model/model.cpp
 
 HEADERS += \
     abstractexecinfosprotsrv.h \
@@ -48,20 +59,13 @@ HEADERS += \
     processorwrapperfactory.h \
     configurationmgr.h \
     logger.h \
-    ProcessorsExecutorAdapter.h \
-    ProcessorsExecutorProxy.h
+    ../../dbus-model/model.hpp
 
-OTHER_FILES +=
+OTHER_FILES += \
+    ../../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml \
+    ../../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
 
 target.path = ../dist
 INSTALLS += target
 
-unix|win32: LIBS += -L$$PWD/../dist/ -lQJSon
-
-INCLUDEPATH += $$PWD/../QJSon/include
-DEPENDPATH += $$PWD/../QJSon/include
-
-win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../dist/ -lQJSon
-else:win32:CONFIG(debug, debug|release): LIBS += -L$$PWD/../dist/ -lQJSon
-else:unix: LIBS += -L$$PWD/../dist/ -lQJSon
 

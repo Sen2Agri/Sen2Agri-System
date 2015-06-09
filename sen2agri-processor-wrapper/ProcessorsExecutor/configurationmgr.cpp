@@ -1,11 +1,11 @@
-#include "configurationmgr.h"
 #include <QDir>
 #include <QDebug>
 
 #include <iostream>
 using namespace std;
 
-ConfigurationMgr *ConfigurationMgr::m_pInstance = NULL;
+#include "configurationmgr.h"
+
 
 ConfigurationMgr::ConfigurationMgr()
 {
@@ -13,39 +13,64 @@ ConfigurationMgr::ConfigurationMgr()
 
 ConfigurationMgr::~ConfigurationMgr()
 {
-    if(m_pSettings) {
-        delete m_pSettings;
-    }
 }
 
 /*static*/
-bool ConfigurationMgr::Initialize(QString &strCfgPath)
+bool ConfigurationMgr::Initialize(QString strCfgPath)
 {
-    if(m_pInstance)
-        return true;
-    m_pInstance = new ConfigurationMgr();
-    return m_pInstance->Init(strCfgPath);
+    ConfigurationMgr *pInstance = GetInstance();
+    return pInstance->Init(strCfgPath);
 }
 
 /*static*/
 ConfigurationMgr *ConfigurationMgr::GetInstance()
 {
-    return m_pInstance;
+    static ConfigurationMgr instance;
+    return &instance;
 }
 
 bool ConfigurationMgr::GetValue(QString &strKey, QString &strVal, QString strDefVal)
 {
-    strVal = m_pSettings->value(strKey, strDefVal).toString();
-    if(strVal == "") {
-        return false;
+    if (m_mapVals.contains(strKey))
+    {
+        strVal = m_mapVals.value(strKey).toString();
+        if(strVal != "")
+        {
+            return true;
+        }
     }
-    return true;
+
+    strVal = strDefVal;
+
+    return false;
+}
+
+void ConfigurationMgr::SetValue(const QString &strKey, const QString &strVal)
+{
+    // set the val for the given key
+    // overwrite the existing value if the key exists
+    m_mapVals[strKey] = strVal;
 }
 
 bool ConfigurationMgr::Init(QString &strCfgPath)
 {
-    // TODO: This configuration could be got from Persistence manager
-    m_pSettings = new QSettings(strCfgPath, QSettings::IniFormat);
+    m_mapVals.clear();
+
+    if(strCfgPath != "")
+    {
+        // If the ini file was provided, then use the configuration from here
+        QSettings settings(strCfgPath, QSettings::IniFormat);
+        QStringList keys = settings.childKeys();
+        QString strVal;
+        foreach (const QString &childKey, keys)
+        {
+            strVal = settings.value(childKey, "").toString();
+            if(strVal != "")
+            {
+                SetValue(childKey, strVal);
+            }
+        }
+    }
 
     return true;
 }

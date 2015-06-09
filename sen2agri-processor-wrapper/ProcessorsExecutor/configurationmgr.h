@@ -2,6 +2,8 @@
 #define CONFIGURATIONMGR_H
 
 #include <QSettings>
+#include <QVariantMap>
+
 #include <string>
 using namespace std;
 
@@ -11,14 +13,14 @@ public:
     ConfigurationMgr();
     ~ConfigurationMgr();
 
-    static bool Initialize(QString &strCfgPath);
+    static bool Initialize(QString strCfgPath = QString(""));
     static ConfigurationMgr *GetInstance();
 
     bool GetValue(QString &strKey, QString &strVal, QString strDefVal = "");
+    void SetValue(const QString &strKey, const QString &strVal);
 
 private:
-    QSettings *m_pSettings;
-    static ConfigurationMgr *m_pInstance;
+    QVariantMap m_mapVals;
     bool Init(QString &strCfgPath);
 };
 
