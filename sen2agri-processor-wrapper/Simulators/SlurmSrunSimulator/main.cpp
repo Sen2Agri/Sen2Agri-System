@@ -44,16 +44,13 @@ int main(int argc, char *argv[])
 
             /* The expected log is similar with the one below:
 
-                Jobid      Jobname    Partition Account    AllocCPUS  State     ExitCode
-                ---------- ---------- ---------- ---------- ------- ---------- --------
-                3          sja_init   andy       acct1            1 COMPLETED         0
-                4          sjaload    andy       acct1            2 COMPLETED         0
-                5          sja_scr1   andy       acct1            1 COMPLETED         0
-                6          sja_scr2   andy       acct1           18 COMPLETED         2
-                7          sja_scr3   andy       acct1           18 COMPLETED         0
-                8          sja_scr5   andy       acct1            2 COMPLETED         0
-                9          sja_scr7   andy       acct1           90 COMPLETED         1
-                10         endscript  andy       acct1          186 COMPLETED         0
+                JobID|JobName|AveCPU|AveVMSize|MaxVMSize
+                2|ls|00:00:00|0|0
+                3|ls|00:00:00|0|0
+                4|find|00:00:00|0|0
+                5|hostname|00:00:00|0|0
+                6|find|00:00:00|0|0
+                7|20150604144546391_CROP_TYPE|00:00:00|0|0
 
                 const char szJobIdStr[] = "jobid";
                 const char szJobNameStr[] = "jobname";
@@ -62,12 +59,13 @@ int main(int argc, char *argv[])
                 const char szMaxVmSizeStr[] = "maxvmsize";
             */
 
-            cout << "        Jobid      Jobname    AveCPU     AveVMSize  MaxVmSize  State     ExitCode" << endl;
-            cout << "        ---------- ---------- ---------- ---------- --------- ---------- --------" << endl;
-            cout << "        1          Jobname1    30         100        50        State      ExitCode" << endl;
-            cout << "        2          Jobname2    40         200        60        State      ExitCode" << endl;
-            cout << "        3          Jobname3    60         500        90        State      ExitCode" << endl;
-            cout << "        4          Jobname4    70         400        110       State      ExitCode" << endl;
+            cout << "JobID|JobName|AveCPU|AveVMSize|MaxVMSize" << endl;
+            cout << "2|ls|00:00:00|0|0" << endl;
+            cout << "3|ls|00:00:00|0|0" << endl;
+            cout << "4|find|00:00:00|0|0" << endl;
+            cout << "5|hostname|00:00:00|0|0" << endl;
+            cout << "6|find|00:00:00|0|0" << endl;
+            cout << "7|20150604144546391_CROP_TYPE|00:00:00|0|0" << endl;
 
             string line;
             ifstream myfile ("../../logs/slurm_last_job_name.txt");
@@ -76,9 +74,9 @@ int main(int argc, char *argv[])
                 int nLineCnt = 0;
                 while(getline(myfile,line))
                 {
-                  cout << "        "<< nLineCnt + 5     << "          " << line
-                       << "    "    << 80 + nLineCnt    << "         "  << 600 + nLineCnt
-                       << "        " << 120 + nLineCnt  << "       State      ExitCode"
+                  cout << nLineCnt + 8 << "|" << line
+                       << "|"<< 80 + nLineCnt << "|"  << 600 + nLineCnt
+                       << "|" << 120 + nLineCnt
                        << endl;
 
                   nLineCnt++;
