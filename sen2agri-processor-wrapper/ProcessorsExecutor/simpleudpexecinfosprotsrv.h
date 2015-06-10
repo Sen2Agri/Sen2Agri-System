@@ -1,8 +1,8 @@
 #ifndef SIMPLEUDPEXECINFOSPROTSRV_H
 #define SIMPLEUDPEXECINFOSPROTSRV_H
 
-#include "abstractexecinfosprotsrv.h"
 #include <QUdpSocket>
+#include "abstractexecinfosprotsrv.h"
 
 class SimpleUdpExecInfosProtSrv : public QObject, public AbstractExecInfosProtSrv
 {

@@ -229,3 +229,38 @@ Q_DECLARE_METATYPE(ArchivedProductList);
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ArchivedProduct &message);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ArchivedProduct &message);
+
+enum class JobStartType { Triggered = 1, Requested = 2, Scheduled = 3 };
+
+Q_DECLARE_METATYPE(JobStartType);
+
+QDBusArgument &operator<<(QDBusArgument &argument, JobStartType startType);
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobStartType &startType);
+
+class NewJob
+{
+public:
+    int processorId;
+    int productId;
+    int siteId;
+    JobStartType startType;
+    QString inputPath;
+    QString outputPath;
+    int stepsTotal;
+
+    NewJob();
+    NewJob(int processorId,
+           int productId,
+           int siteId,
+           JobStartType startType,
+           QString inputPath,
+           QString outputPath,
+           int stepsTotal);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(NewJob)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const NewJob &job);
+const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job);

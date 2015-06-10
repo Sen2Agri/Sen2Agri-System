@@ -24,6 +24,8 @@ void registerMetaTypes()
     Product::registerMetaTypes();
     ProductToArchive::registerMetaTypes();
     ArchivedProduct::registerMetaTypes();
+
+    qDBusRegisterMetaType<JobStartType>();
 }
 
 ConfigurationParameterInfo::ConfigurationParameterInfo()
@@ -356,9 +358,7 @@ ProductToArchive::ProductToArchive() : productId()
 }
 
 ProductToArchive::ProductToArchive(int productId, QString currentPath, QString archivePath)
-    : productId(productId),
-      currentPath(std::move(currentPath)),
-      archivePath(std::move(archivePath))
+    : productId(productId), currentPath(std::move(currentPath)), archivePath(std::move(archivePath))
 {
 }
 
@@ -391,8 +391,7 @@ ArchivedProduct::ArchivedProduct() : productId(), archivePath()
 }
 
 ArchivedProduct::ArchivedProduct(int productId, QString archivePath)
-    : productId(productId),
-      archivePath(std::move(archivePath))
+    : productId(productId), archivePath(std::move(archivePath))
 {
 }
 
@@ -418,4 +417,54 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ArchivedProduct &
     argument.endStructure();
 
     return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, JobStartType startType)
+{
+    return argument << static_cast<int>(startType);
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobStartType &startType)
+{
+    int startTypeValue;
+    return argument >> startType;
+    startType = static_cast<JobStartType>(startTypeValue);
+}
+
+NewJob::NewJob() : processorId(), productId(), siteId(), startType(), stepsTotal()
+{
+}
+
+NewJob::NewJob(int processorId,
+               int productId,
+               int siteId,
+               JobStartType startType,
+               QString inputPath,
+               QString outputPath,
+               int stepsTotal)
+    : processorId(processorId),
+      productId(productId),
+      siteId(siteId),
+      startType(startType),
+      inputPath(std::move(inputPath)),
+      outputPath(std::move(outputPath)),
+      stepsTotal(stepsTotal)
+{
+}
+
+void NewJob::registerMetaTypes()
+{
+    qDBusRegisterMetaType<NewJob>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const NewJob &job)
+{
+    return argument << job.processorId << job.productId << job.siteId << job.startType
+                    << job.inputPath << job.outputPath << job.stepsTotal;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job)
+{
+    return argument >> job.processorId >> job.productId >> job.siteId >> job.startType >>
+           job.inputPath >> job.outputPath >> job.stepsTotal;
 }

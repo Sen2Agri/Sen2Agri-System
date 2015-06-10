@@ -1,7 +1,6 @@
 #ifndef RESSOURCEMANAGERITF_H
 #define RESSOURCEMANAGERITF_H
 
-#include "iprocessorwrappermsgslistener.h"
 #include <QThread>
 #include <QList>
 #include <QMutex>
@@ -10,6 +9,7 @@
 #include <string>
 using namespace std;
 
+#include "iprocessorwrappermsgslistener.h"
 
 enum {PROCESSOR_ENDED = 1, PROCESSOR_INFO_MSG = 2, START_PROCESSOR_REQ = 3, STOP_PROCESSOR_REQ = 4};
 

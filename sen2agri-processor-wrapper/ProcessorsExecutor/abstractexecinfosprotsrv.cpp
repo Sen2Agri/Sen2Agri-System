@@ -1,7 +1,8 @@
-#include "abstractexecinfosprotsrv.h"
-
 #include <QVariantMap>
-#include "QJson/Parser"
+#include <QJsonDocument>
+#include <QJsonObject>
+
+#include "abstractexecinfosprotsrv.h"
 #include "iprocessorwrappermsgslistener.h"
 #include "logger.h"
 
@@ -38,17 +39,17 @@ void AbstractExecInfosProtSrv::StopCommunication()
 
 bool AbstractExecInfosProtSrv::HandleNewMessage(QByteArray &message)
 {
-    QJson::Parser parser;
-    bool ok;
-
-    QVariantMap msgVals = parser.parse (message, &ok).toMap();
-    if (!ok) {
-        Logger::GetInstance()->error("An error occurred during parsing message %s", QString(message).toStdString().c_str());
-        return false;
-    }
-
     if(m_pListener)
     {
+        QJsonParseError err;
+        QJsonDocument document = QJsonDocument::fromJson(message, &err);
+        if(err.error != QJsonParseError::NoError || !document.isObject())
+        {
+            Logger::GetInstance()->error("An error occurred during parsing message %s", QString(message).toStdString().c_str());
+            return false;
+        }
+
+        QVariantMap msgVals = document.object().toVariantMap();
         m_pListener->OnProcessorNewMsg(msgVals);
     }
 

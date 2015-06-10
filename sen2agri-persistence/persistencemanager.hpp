@@ -58,4 +58,10 @@ public slots:
     UpdateJobConfigurationParameters(int jobId, const ConfigurationUpdateActionList &parameters);
 
     ProductToArchiveList GetProductsToArchive();
+    void MarkProductsArchived(const ArchivedProductList &products);
+
+    int SubmitJob(const NewJob &job);
+    void NotifyJobStepStarted(int jobId);
+    void NotifyJobStepFinished(int jobId/*, resources */);
+    void NotifyJobFinished(int jobId);
 };

@@ -1,25 +1,26 @@
-#include "orchestratorrequestshandler.h"
-
 #include <QDebug>
+#include <QJsonDocument>
+#include <QJsonObject>
 
-#include "QJson/Parser"
+#include "orchestratorrequestshandler.h"
 #include "ressourcemanageritf.h"
+#include "logger.h"
 
 bool OrchestratorRequestsHandler::ExecuteProcessor(const QString &jsonCfgStr)
 {
     qDebug() << "Called  ExecuteProcessor with param 1# " << jsonCfgStr;
 
-    QJson::Parser parser;
-    bool ok;
+    QJsonParseError err;
     QByteArray ba(jsonCfgStr.toStdString().c_str());
-
-    QVariantMap result = parser.parse (ba, &ok).toMap();
-    if (!ok) {
-      qFatal("An error occurred during parsing");
-      return false;
+    QJsonDocument document = QJsonDocument::fromJson(ba, &err);
+    if(err.error != QJsonParseError::NoError || !document.isObject())
+    {
+        Logger::GetInstance()->error("An error occurred during parsing message %s", jsonCfgStr.toStdString().c_str());
+        return false;
     }
 
-    RessourceManagerItf::GetInstance()->StartProcessor(result);
+    QVariantMap msgVals = document.object().toVariantMap();
+    RessourceManagerItf::GetInstance()->StartProcessor(msgVals);
 
     return true;
 }

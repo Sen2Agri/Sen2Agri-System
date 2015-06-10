@@ -1,0 +1,1 @@
+﻿CREATE OR REPLACE VIEW v_get_config_metadata AS SELECT * FROM config_metadata;

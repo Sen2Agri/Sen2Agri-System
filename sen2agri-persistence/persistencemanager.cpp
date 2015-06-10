@@ -59,3 +59,30 @@ ProductToArchiveList PersistenceManager::GetProductsToArchive()
 
     return {};
 }
+
+void PersistenceManager::MarkProductsArchived(const ArchivedProductList &products)
+{
+    RunAsyncNoResult([=]() { return dbProvider.MarkProductsArchived(products); });
+}
+
+int PersistenceManager::SubmitJob(const NewJob &job)
+{
+    RunAsync([=]() { return dbProvider.SubmitJob(job); });
+
+    return {};
+}
+
+void PersistenceManager::NotifyJobStepStarted(int jobId)
+{
+    RunAsyncNoResult([=]() { return dbProvider.NotifyJobStepStarted(jobId); });
+}
+
+void PersistenceManager::NotifyJobStepFinished(int jobId /*, resources */)
+{
+    RunAsyncNoResult([=]() { return dbProvider.NotifyJobStepFinished(jobId); });
+}
+
+void PersistenceManager::NotifyJobFinished(int jobId)
+{
+    RunAsyncNoResult([=]() { return dbProvider.NotifyJobFinished(jobId); });
+}

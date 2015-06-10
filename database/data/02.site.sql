@@ -1,55 +1,54 @@
 ﻿INSERT INTO site
-(name)
+(name, short_name)
 VALUES 
-('Argentina, San Antonio de Areco');
-
-
-INSERT INTO site
-(name)
-VALUES 
-('Belgium');
+('Argentina, San Antonio de Areco', 'argentina');
 
 INSERT INTO site
-(name)
+(name, short_name)
 VALUES 
-('China, Shandong');
+('Belgium', 'belgium');
 
 INSERT INTO site
-(name)
+(name, short_name)
 VALUES 
-('Ukraine');
+('China, Shandong', 'china');
 
 INSERT INTO site
-(name)
+(name, short_name)
 VALUES 
-('South Africa');
+('Ukraine', 'ukraine');
 
 INSERT INTO site
-(name)
+(name, short_name)
 VALUES 
-('Madagascar, Antsirabe');
+('South Africa', 'south_africa');
 
 INSERT INTO site
-(name)
+(name, short_name)
 VALUES 
-('Morocco, CMaroc');
+('Madagascar, Antsirabe', 'madagascar');
 
 INSERT INTO site
-(name)
+(name, short_name)
 VALUES 
-('France, SudmipyO');
+('Morocco, CMaroc', 'morocco');
 
 INSERT INTO site
-(name)
+(name, short_name)
 VALUES 
-('Russia, Tula');
+('France, SudmipyO', 'france');
 
 INSERT INTO site
-(name)
+(name, short_name)
 VALUES 
-('Pakistan');
+('Russia, Tula', 'rusia');
 
 INSERT INTO site
-(name)
+(name, short_name)
 VALUES 
-('USA, Maricopa');
+('Pakistan', 'pakistan');
+
+INSERT INTO site
+(name, short_name)
+VALUES 
+('USA, Maricopa', 'usa');

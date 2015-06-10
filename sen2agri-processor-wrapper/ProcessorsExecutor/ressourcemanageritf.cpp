@@ -1,12 +1,12 @@
-#include "ressourcemanageritf.h"
-#include "commandinvoker.h"
+#include <stdio.h>
+#include <QDateTime>
+#include <QString>
+
 #include <string>
 using namespace std;
 
-#include <stdio.h>
-
-#include <QDateTime>
-#include <QString>
+#include "ressourcemanageritf.h"
+#include "commandinvoker.h"
 
 #include "slurmsacctresultparser.h"
 #include "processorexecutioninfos.h"
@@ -15,17 +15,15 @@ using namespace std;
 #include "configurationmgr.h"
 #include "persistenceitfmodule.h"
 
-#define TEST
+//#define TEST
 #ifdef TEST
 QString SRUN_CMD("../../dist/SlurmSrunSimulator --job-name");
 QString SACCT_CMD("../../dist/SlurmSrunSimulator --format=JobID,Jobname,CPUTimeRAW,TotalCPU,MaxVMSize");
-QString SSTAT_CMD("../../dist/SlurmSrunSimulator --format=JobID,Jobname,CPUTimeRAW,TotalCPU,MaxVMSize");
-QString SCANCEL_CMD("scancel");
+QString SCANCEL_CMD("scancel --name=");
 #else
 QString SRUN_CMD("srun --job-name");
-QString SACCT_CMD("sacct --format=JobID,Jobname,AveCPU,AveVMSize,MaxVMSize");
-QString SSTAT_CMD("sstat --format=JobID,Jobname,AveCPU,AveVMSize,MaxVMSize");
-QString SCANCEL_CMD("scancel");
+QString SACCT_CMD("sacct --parsable2 --format=JobID,Jobname,AveCPU,AveVMSize,MaxVMSize");
+QString SCANCEL_CMD("scancel --name=");
 #endif
 
 RessourceManagerItf::RessourceManagerItf()
@@ -197,17 +195,25 @@ bool RessourceManagerItf::HandleStartProcessor(QVariantMap &reqParams)
         strProcWrpExecStr.append(" PROC_PARAMS=\"").append(strParams).append("\"");
     }
 
-    // build the job name as yyyyMMddhhmmsszzz_PROCESSOR_NAME
-    QString formattedTime = QDateTime::currentDateTime().toString("yyyyMMddhhmmsszzz_");
-    QString strJobName = formattedTime.append(strProcName);
+    QString strJobName;
+    QString strStepId = reqParams["STEP_ID"].toString();
+    if(strStepId.isEmpty())
+    {
+        // if the step id was not provided, build the job name as yyyyMMddhhmmsszzz_PROCESSOR_NAME
+        QString formattedTime = QDateTime::currentDateTime().toString("yyyyMMddhhmmsszzz_");
+        strJobName = formattedTime.append(strProcName);
+    } else {
+        // use the provided step ID as the job name
+        strJobName = strStepId;
+    }
 
     strProcWrpExecStr.append(" JOB_NAME=\"").append(strJobName).append("\"");
 
     QString strIpVal;
     QString strPortVal;
-    str = QString("PROT_SRV_IP_ADDR");
+    str = QString("SRV_IP_ADDR");
     ConfigurationMgr::GetInstance()->GetValue(str, strIpVal);
-    str = QString("PROT_SRV_PORT");
+    str = QString("SRV_PORT_NO");
     ConfigurationMgr::GetInstance()->GetValue(str, strPortVal);
 
     strProcWrpExecStr.append(" SRV_IP_ADDR=\"").append(strIpVal).append("\"");
@@ -215,6 +221,8 @@ bool RessourceManagerItf::HandleStartProcessor(QVariantMap &reqParams)
 
     // Build the srun command to be executed in SLURM - no need to wait
     QString strSrunCmd = QString("%1 %2 %3 &").arg(SRUN_CMD, strJobName, strProcWrpExecStr);;
+
+    Logger::GetInstance()->debug("HandleStartProcessor: Executing command %s", strSrunCmd.toStdString().c_str());
 
     CommandInvoker cmdInvoker;
     if(!cmdInvoker.InvokeCommand(strSrunCmd, false))
@@ -230,7 +238,8 @@ bool RessourceManagerItf::HandleStartProcessor(QVariantMap &reqParams)
     QDateTime curDateTime = QDateTime::currentDateTime();
     QString strCurDate = curDateTime.toString("dd/MM/yyyy hh:mm:ss");
     infos.SetStartTime(strCurDate);
-    PersistenceItfModule::GetInstance()->SendProcessorStart(infos);
+    infos.SetJobStatus(ProcessorExecutionInfos::g_strRunning);
+    PersistenceItfModule::GetInstance()->SendProcessorExecInfos(infos);
 
     return true;
 }
@@ -240,33 +249,38 @@ bool RessourceManagerItf::HandleStartProcessor(QVariantMap &reqParams)
  */
 void RessourceManagerItf::HandleStopProcessor(QVariantMap &reqParams)
 {
-    // Get the job id based on the given job name
-    // The command sstat is used to extract the  jobid
+    QString strJobName = reqParams["PROC_JOB_NAME"].toString();
+    QString strCmd = QString("%1%2").arg(SCANCEL_CMD, strJobName);
+    CommandInvoker cmdScancelInvoker;
+
+    Logger::GetInstance()->debug("HandleStopProcessor: Executing command %s", strCmd.toStdString().c_str());
+
+    // run scancel command and wait for it to return
+    if(!cmdScancelInvoker.InvokeCommand(strCmd, false)) {
+        // Log the execution trace here
+        Logger::GetInstance()->error("Error executing SCANCEL command");
+    }
+
+    Logger::GetInstance()->debug("HandleStopProcessor: Executing command %s", SACCT_CMD.toStdString().c_str());
+
+    // Get statistic information about the executed job using SACCT
     CommandInvoker cmdInvoker;
-    if(cmdInvoker.InvokeCommand(SSTAT_CMD, false))
+    if(cmdInvoker.InvokeCommand(SACCT_CMD, false))
     {
         QString strLog = cmdInvoker.GetExecutionLog();
         SlurmSacctResultParser slurmSacctParser;
         QList<ProcessorExecutionInfos> procExecResults;
-        QString strJobName = reqParams["PROC_JOB_NAME"].toString();
         if(slurmSacctParser.ParseResults(strLog, procExecResults, &strJobName) > 0)
         {
             // Build the scancel command.
             // The jobId is then used for scancel
             ProcessorExecutionInfos infos = procExecResults.at(0);
-            QString strCmd = QString("%1 %2").arg(SCANCEL_CMD, infos.GetJobId());
-
-            CommandInvoker cmdScancelInvoker;
-            // run scancel command but without waiting
-            if(!cmdScancelInvoker.InvokeCommand(strCmd, true)) {
-                // Log the execution trace here
-                Logger::GetInstance()->error("Error executing SCANCEL command");
-            }
+            infos.SetJobStatus(ProcessorExecutionInfos::g_strCanceled);
             // Send the information about this job to the Persistence Manager
-            PersistenceItfModule::GetInstance()->SendProcessorCancel(infos);
+            PersistenceItfModule::GetInstance()->SendProcessorExecInfos(infos);
         }
     } else {
-        Logger::GetInstance()->error("Error executing SSTAT command");
+        Logger::GetInstance()->error("Error executing SACCT command");
     }
 }
 
@@ -279,7 +293,9 @@ bool RessourceManagerItf::HandleProcessorEndedMsg(QVariantMap &msgVals)
     // }
     // Get the job identifier
     QString jobName = msgVals["JOB_NAME"].toString();
-    QString executionTime = msgVals["EXEC_TIME"].toString();
+    QString executionDuration = msgVals["EXEC_TIME"].toString();
+
+    Logger::GetInstance()->debug("HandleProcessorEndedMsg: Executing command %s", SACCT_CMD.toStdString().c_str());
 
     CommandInvoker cmdInvoker;
     if(cmdInvoker.InvokeCommand(SACCT_CMD, false))
@@ -290,9 +306,10 @@ bool RessourceManagerItf::HandleProcessorEndedMsg(QVariantMap &msgVals)
         if(slurmSacctParser.ParseResults(strLog, procExecResults, &jobName) > 0)
         {
             ProcessorExecutionInfos jobExecInfos = procExecResults.at(0);
-            jobExecInfos.SetExecutionTime(executionTime);
+            jobExecInfos.SetExecutionDuration(executionDuration);
+            jobExecInfos.SetJobStatus(ProcessorExecutionInfos::g_strFinished);
             // Send the statistic infos to the persistence interface module
-            PersistenceItfModule::GetInstance()->SendProcessorEnd(jobExecInfos);
+            PersistenceItfModule::GetInstance()->SendProcessorExecInfos(jobExecInfos);
             return true;
         } else {
             Logger::GetInstance()->error("Unable to parse SACCT results for job name %s", jobName.toStdString().c_str());

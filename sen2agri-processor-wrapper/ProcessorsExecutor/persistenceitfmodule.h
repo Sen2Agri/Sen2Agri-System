@@ -1,6 +1,8 @@
 #ifndef PERSISTENCEITFMODULE_H
 #define PERSISTENCEITFMODULE_H
 
+#include "persistencemanager_interface.h"
+#include "processorexecutioninfos.h"
 
 /**
  * @brief The PersistenceItfModule class
@@ -10,21 +12,29 @@
  *
  */
 
-#include "processorexecutioninfos.h"
-
-class PersistenceItfModule
+class PersistenceItfModule : public QObject
 {
+    Q_OBJECT
+
 public:
     ~PersistenceItfModule();
 
     static PersistenceItfModule *GetInstance();
 
-    void SendProcessorStart(ProcessorExecutionInfos &execInfos);
-    void SendProcessorEnd(ProcessorExecutionInfos &execInfos);
-    void SendProcessorCancel(ProcessorExecutionInfos &execInfos);
+    void SendProcessorExecInfos(ProcessorExecutionInfos &execInfos);
+    void RequestConfiguration();
+
+signals:
+    void OnConfigurationReceived();
 
 private:
     PersistenceItfModule();
+    OrgEsaSen2agriPersistenceManagerInterface clientInterface;
+
+    bool GetProcessorPathForName(const ConfigurationParameterValueList &configuration,
+                                const QString &name, QString &path);
+    void SaveMainConfigKeys(const ConfigurationParameterValueList &configuration);
+    void SaveProcessorsConfigKeys(const ConfigurationParameterValueList &configuration);
 };
 
 #endif // PERSISTENCEITFMODULE_H

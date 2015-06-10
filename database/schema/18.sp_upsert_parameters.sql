@@ -4,7 +4,6 @@ TABLE (key CHARACTER VARYING, error_message CHARACTER VARYING) AS $$
 BEGIN
 
 	CREATE TEMP TABLE params (
-		id int,
 		key character varying,
 		site_id smallint,
 		friendly_name character varying,
@@ -32,25 +31,24 @@ BEGIN
 	UPDATE params
 	SET is_valid_error_message = sp_validate_data_type_value(value, type);
 
-	-- Update the values for the params that do exist and are valid
+	-- Update the values for the params that do exist, that are not to be deleted and that are valid
 	UPDATE config SET
 		key = params.key,
-		site_id = params.site_id,
 		value = params.value,
 		last_updated = now()
 	FROM  params
-        WHERE config.id = params.id AND params.is_valid_error_message IS NULL;
+        WHERE config.key = params.key AND config.site_id IS NOT DISTINCT FROM params.site_id AND params.value IS NOT NULL AND params.is_valid_error_message IS NULL;
 
-	-- Update the metadata for the params that do exist and are valid
+	-- Update the metadata for the params that do exist, that are not to be deleted and that are valid
         UPDATE config_metadata SET
 		friendly_name = coalesce(params.friendly_name, config_metadata.friendly_name),
 		type = coalesce(params.type, config_metadata.type),
 		is_advanced = coalesce(params.is_advanced, config_metadata.is_advanced),
 		config_category_id = coalesce(params.config_category_id, config_metadata.config_category_id)
 	FROM  params
-        WHERE config_metadata.key = params.key AND params.is_valid_error_message IS NULL;
+        WHERE config_metadata.key = params.key AND params.value IS NOT NULL AND params.is_valid_error_message IS NULL;
 
-	-- Insert the values for the params that do not exist and are valid
+	-- Insert the values for the params that do not exist, that are not to be deleted and that are valid
 	INSERT INTO config(
 		key,
 		site_id,
@@ -60,10 +58,10 @@ BEGIN
 		params.site_id,
 		params.value		
 	FROM params
-	WHERE params.key IS NOT NULL AND params.is_valid_error_message IS NULL AND
-	NOT EXISTS (SELECT * FROM config WHERE config.key = params.key AND coalesce(config.site_id, 0) = coalesce(params.site_id, 0));
+	WHERE params.key IS NOT NULL AND params.value IS NOT NULL AND params.is_valid_error_message IS NULL AND
+	NOT EXISTS (SELECT * FROM config WHERE config.key = params.key AND config.site_id IS NOT DISTINCT FROM params.site_id);
 
-	-- Insert the metadat for the params that do not exist and are valid
+	-- Insert the metadat for the params that do not exist, that are not to be deleted and that are valid
 	INSERT INTO config_metadata(
 		key,
 		friendly_name,
@@ -77,8 +75,12 @@ BEGIN
 		coalesce(params.is_advanced, false),
 		coalesce(params.config_category_id, 1)
 	FROM params
-	WHERE params.key IS NOT NULL AND params.is_valid_error_message IS NULL AND
+	WHERE params.key IS NOT NULL AND params.value IS NOT NULL AND params.is_valid_error_message IS NULL AND
 	NOT EXISTS (SELECT * FROM config_metadata WHERE config_metadata.key = params.key);
+
+	-- Delete the values that receive NULL as value since this is the marked for the delete action
+	DELETE FROM config
+	WHERE id IN (SELECT config.id FROM config INNER JOIN params ON config.key = params.key AND config.site_id IS NOT DISTINCT FROM params.site_id AND params.value IS NULL);
 
 	-- Report any possible errors
 	RETURN QUERY SELECT params.key as key, params.is_valid_error_message as error_message FROM params WHERE params.is_valid_error_message IS NOT NULL;
