@@ -23,6 +23,7 @@ void registerMetaTypes()
 
     Product::registerMetaTypes();
     ProductToArchive::registerMetaTypes();
+    ArchivedProduct::registerMetaTypes();
 }
 
 ConfigurationParameterInfo::ConfigurationParameterInfo()
