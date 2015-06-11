@@ -159,15 +159,16 @@ PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QSt
 }
 
 KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
-    const ConfigurationUpdateActionList &actions)
+    const ConfigurationUpdateActionList &actions, bool isAdmin)
 {
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(QStringLiteral("UpdateConfigurationParameters"), [&]() {
-        auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_upsert_parameters(:parameters)"));
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_upsert_parameters(:parameters, :isAdmin)"));
 
         query.bindValue(QStringLiteral(":parameters"), getConfigurationUpsertJson(actions));
+        query.bindValue(QStringLiteral(":isAdmin"), isAdmin);
 
         query.setForwardOnly(true);
         if (!query.exec()) {

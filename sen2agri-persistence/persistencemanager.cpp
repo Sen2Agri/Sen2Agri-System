@@ -115,7 +115,9 @@ PersistenceManager::GetJobConfigurationParameters(int jobId, const QString &pref
 KeyedMessageList
 PersistenceManager::UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions)
 {
-    RunAsync([=]() { return dbProvider.UpdateConfigurationParameters(actions); });
+    auto isCallerAdmin = IsCallerAdmin();
+
+    RunAsync([=]() { return dbProvider.UpdateConfigurationParameters(actions, isCallerAdmin); });
 
     return {};
 }

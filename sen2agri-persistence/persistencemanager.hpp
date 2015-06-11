@@ -44,8 +44,7 @@ class PersistenceManager : public QObject, protected QDBusContext
     bool IsCallerAdmin();
 
 public:
-    explicit PersistenceManager(const Settings &settings,
-                                QObject *parent = 0);
+    explicit PersistenceManager(const Settings &settings, QObject *parent = 0);
 
 signals:
 
@@ -62,6 +61,6 @@ public slots:
 
     int SubmitJob(const NewJob &job);
     void NotifyJobStepStarted(int jobId);
-    void NotifyJobStepFinished(int jobId/*, resources */);
+    void NotifyJobStepFinished(int jobId /*, resources */);
     void NotifyJobFinished(int jobId);
 };
