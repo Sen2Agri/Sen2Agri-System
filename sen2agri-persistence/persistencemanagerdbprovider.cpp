@@ -214,9 +214,9 @@ ProductToArchiveList PersistenceManagerDBProvider::GetProductsToArchive()
         }
 
         auto dataRecord = query.record();
-        auto productIdCol = dataRecord.indexOf(QStringLiteral("productId"));
-        auto currentPathCol = dataRecord.indexOf(QStringLiteral("currentPath"));
-        auto archivePathCol = dataRecord.indexOf(QStringLiteral("archivePath"));
+        auto productIdCol = dataRecord.indexOf(QStringLiteral("product_id"));
+        auto currentPathCol = dataRecord.indexOf(QStringLiteral("current_path"));
+        auto archivePathCol = dataRecord.indexOf(QStringLiteral("archive_path"));
 
         ProductToArchiveList result;
         while (query.next()) {
