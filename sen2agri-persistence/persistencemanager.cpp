@@ -12,8 +12,6 @@
 #include <QDBusMessage>
 #include <QThreadPool>
 
-#include <optional.hpp>
-
 #include "persistencemanager.hpp"
 #include "make_unique.hpp"
 
@@ -45,9 +43,9 @@ static bool getPasswordEntry(uid_t uid, passwd &pwd)
         throw std::runtime_error(QStringLiteral("Unable to get user information: %1")
                                      .arg(getSystemErrorMessage(r))
                                      .toStdString());
-    } else {
-        return result != nullptr;
     }
+
+    return result != nullptr;
 }
 
 static bool getGroupEntry(const char *name, group grp)
@@ -61,9 +59,9 @@ static bool getGroupEntry(const char *name, group grp)
         throw std::runtime_error(QStringLiteral("Unable to get group information: %1")
                                      .arg(getSystemErrorMessage(r))
                                      .toStdString());
-    } else {
-        return result != nullptr;
     }
+
+    return result != nullptr;
 }
 
 static bool isUserAdmin(uid_t uid)
