@@ -16,14 +16,13 @@ class PersistenceManager : public QObject, protected QDBusContext
     Q_OBJECT
 
     PersistenceManagerDBProvider dbProvider;
-    QDBusConnection connection;
 
     template <typename F>
     void RunAsync(F &&f)
     {
         setDelayedReply(true);
 
-        if (auto task = makeAsyncDBusTask(message(), connection, std::forward<F>(f))) {
+        if (auto task = makeAsyncDBusTask(message(), connection(), std::forward<F>(f))) {
             QThreadPool::globalInstance()->start(task);
         } else {
             sendErrorReply(QDBusError::NoMemory);
@@ -35,7 +34,7 @@ class PersistenceManager : public QObject, protected QDBusContext
     {
         setDelayedReply(true);
 
-        if (auto task = makeAsyncDBusTaskNoResult(message(), connection, std::forward<F>(f))) {
+        if (auto task = makeAsyncDBusTaskNoResult(message(), connection(), std::forward<F>(f))) {
             QThreadPool::globalInstance()->start(task);
         } else {
             sendErrorReply(QDBusError::NoMemory);
@@ -43,8 +42,7 @@ class PersistenceManager : public QObject, protected QDBusContext
     }
 
 public:
-    explicit PersistenceManager(QDBusConnection &connection,
-                                const Settings &settings,
+    explicit PersistenceManager(const Settings &settings,
                                 QObject *parent = 0);
 
 signals:

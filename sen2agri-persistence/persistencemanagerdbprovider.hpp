@@ -14,7 +14,7 @@ class PersistenceManagerDBProvider
 public:
     PersistenceManagerDBProvider(const Settings &settings);
 
-    ConfigurationSet GetConfigurationSet();
+    ConfigurationSet GetConfigurationSet(bool isAdmin);
 
     ConfigurationParameterValueList GetConfigurationParameters(const QString &prefix);
     ConfigurationParameterValueList GetJobConfigurationParameters(int jobId, const QString &prefix);

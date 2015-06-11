@@ -12,11 +12,11 @@ template <typename F>
 class AsyncDBusTask : public QRunnable
 {
     QDBusMessage message;
-    QDBusConnection &connection;
+    QDBusConnection connection;
     F f;
 
 public:
-    AsyncDBusTask(QDBusMessage message, QDBusConnection &connection, F &&f)
+    AsyncDBusTask(QDBusMessage message, QDBusConnection connection, F &&f)
         : message(std::move(message)), connection(connection), f(std::forward<F>(f))
     {
     }
@@ -37,11 +37,11 @@ template <typename F>
 class AsyncDBusTaskNoResult : public QRunnable
 {
     QDBusMessage message;
-    QDBusConnection &connection;
+    QDBusConnection connection;
     F f;
 
 public:
-    AsyncDBusTaskNoResult(QDBusMessage message, QDBusConnection &connection, F &&f)
+    AsyncDBusTaskNoResult(QDBusMessage message, QDBusConnection connection, F &&f)
         : message(std::move(message)), connection(connection), f(std::forward<F>(f))
     {
     }
