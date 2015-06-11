@@ -31,7 +31,7 @@ SqlDatabaseRAII PersistenceManagerDBProvider::getDatabase() const
     return provider.getDatabase(QStringLiteral("PersistenceManager"));
 }
 
-ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet(bool isAdmin)
+ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 {
     auto db = getDatabase();
 
@@ -68,9 +68,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet(bool isAdmin)
             result.sites.append({ query.value(idCol).toInt(), query.value(nameCol).toString() });
         }
 
-        query = db.prepareQuery(QStringLiteral("select * from sp_get_config_metadata(:isAdmin)"));
-
-        query.bindValue(":isAdmin", isAdmin);
+        query = db.prepareQuery(QStringLiteral("select * from sp_get_config_metadata()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {

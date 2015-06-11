@@ -102,12 +102,14 @@ public:
     ConfigurationParameterInfoList parameterInfo;
     ConfigurationParameterValueList parameterValues;
     SiteList sites;
+    bool isAdmin;
 
     ConfigurationSet();
     ConfigurationSet(ConfigurationCategoryList categories,
                      ConfigurationParameterInfoList parameterInfo,
                      ConfigurationParameterValueList parameterValues,
-                     SiteList sites);
+                     SiteList sites,
+                     bool isAdmin);
 
     static void registerMetaTypes();
 };
@@ -264,3 +266,46 @@ Q_DECLARE_METATYPE(NewJob)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewJob &job);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job);
+
+class NewTask
+{
+public:
+    int jobId;
+    int productId;
+    QString inputPath;
+    QString outputPath;
+
+    NewTask();
+    NewTask(int jobId, int productId, QString inputPath, QString outputPath);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<NewTask> NewTaskList;
+
+Q_DECLARE_METATYPE(NewTask);
+Q_DECLARE_METATYPE(NewTaskList);
+
+QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task);
+const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task);
+
+class NewStep
+{
+public:
+    int taskId;
+    QString inputPath;
+    QString outputPath;
+
+    NewStep();
+    NewStep(int taskId, QString inputPath, QString outputPath);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<NewStep> NewStepList;
+
+Q_DECLARE_METATYPE(NewStep);
+Q_DECLARE_METATYPE(NewStepList);
+
+QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step);
+const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step);

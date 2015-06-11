@@ -70,15 +70,28 @@ PersistenceManager::PersistenceManager(const Settings &settings, QObject *parent
 {
 }
 
-ConfigurationSet PersistenceManager::GetConfigurationSet()
+bool PersistenceManager::IsCallerAdmin()
 {
     const auto &reply = connection().interface()->serviceUid(message().service());
     if (!reply.isValid()) {
+        Logger::error(reply.error().message());
+
+        return false;
     }
 
-    auto isAdmin = isUserAdmin(reply.value());
+    return isUserAdmin(reply.value());
+}
 
-    RunAsync([=]() { return dbProvider.GetConfigurationSet(isAdmin); });
+ConfigurationSet PersistenceManager::GetConfigurationSet()
+{
+    auto isCallerAdmin = IsCallerAdmin();
+
+    RunAsync([=]() {
+        ConfigurationSet configuration = dbProvider.GetConfigurationSet();
+        configuration.isAdmin = isCallerAdmin;
+
+        return configuration;
+    });
 
     return {};
 }

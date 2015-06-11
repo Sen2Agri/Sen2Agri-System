@@ -79,7 +79,8 @@ MainDialog::MainDialog(QWidget *parent)
       clientInterface(OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
                       QStringLiteral("/"),
                       QDBusConnection::systemBus()),
-      invalidFields()
+      invalidFields(),
+      isAdmin()
 {
     ui->setupUi(this);
 
@@ -281,6 +282,8 @@ QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
                                    const ParameterKey &parameterKey,
                                    QWidget *parent)
 {
+    auto isDisabled = parameter.isAdvanced && !configModel.isAdmin();
+
     auto container = new QWidget(parent);
     auto layout = new QHBoxLayout(container);
     QWidget *editWidget;
@@ -293,12 +296,12 @@ QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
         auto widget = new QLineEdit(container);
         editWidget = widget;
         layout->addWidget(widget);
-        if (parameter.isAdvanced) {
+        if (isDisabled) {
             widget->setEnabled(false);
         }
     } else if (parameter.dataType == QLatin1String("file") ||
                parameter.dataType == QLatin1String("directory")) {
-        if (parameter.isAdvanced) {
+        if (isDisabled) {
             auto widget = new QLineEdit(container);
             editWidget = widget;
             layout->addWidget(widget);
@@ -330,14 +333,14 @@ QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
         editWidget = widget;
         widget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
         layout->addWidget(widget);
-        if (parameter.isAdvanced) {
+        if (isDisabled) {
             widget->setEnabled(false);
         }
     } else if (parameter.dataType == QLatin1String("bool")) {
         auto widget = new QCheckBox(container);
         editWidget = widget;
         layout->addWidget(widget);
-        if (parameter.isAdvanced) {
+        if (isDisabled) {
             widget->setEnabled(false);
         }
     } else {
@@ -345,7 +348,7 @@ QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
         return nullptr;
     }
 
-    if (!parameter.isAdvanced) {
+    if (!isDisabled) {
         auto listener = new ParameterChangeListener(configModel, parameter, parameterKey,
                                                     parameter.friendlyName, editWidget);
         connect(listener, &ParameterChangeListener::validityChanged, [this](bool isValid) {
@@ -366,7 +369,7 @@ QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
     bool fromGlobal;
     const auto &value = configModel.getValue(parameterKey, fromGlobal);
 
-    if (parameterKey.siteId() != std::experimental::nullopt && !parameter.isAdvanced) {
+    if (parameterKey.siteId() != std::experimental::nullopt && !isDisabled) {
         auto button = new QPushButton(container);
 
         auto customizeString = QStringLiteral("Customize");

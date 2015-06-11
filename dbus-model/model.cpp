@@ -25,6 +25,10 @@ void registerMetaTypes()
     ProductToArchive::registerMetaTypes();
     ArchivedProduct::registerMetaTypes();
 
+    NewJob::registerMetaTypes();
+    NewTask::registerMetaTypes();
+    NewStep::registerMetaTypes();
+
     qDBusRegisterMetaType<JobStartType>();
 }
 
@@ -186,11 +190,13 @@ ConfigurationSet::ConfigurationSet()
 ConfigurationSet::ConfigurationSet(ConfigurationCategoryList categories,
                                    ConfigurationParameterInfoList parameterInfo,
                                    ConfigurationParameterValueList parameterValues,
-                                   SiteList sites)
+                                   SiteList sites,
+                                   bool isAdmin)
     : categories(std::move(categories)),
       parameterInfo(std::move(parameterInfo)),
       parameterValues(std::move(parameterValues)),
-      sites(std::move(sites))
+      sites(std::move(sites)),
+      isAdmin(isAdmin)
 {
 }
 
@@ -203,7 +209,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationSet &confi
 {
     argument.beginStructure();
     argument << configuration.categories << configuration.parameterInfo
-             << configuration.parameterValues << configuration.sites;
+             << configuration.parameterValues << configuration.sites << configuration.isAdmin;
     argument.endStructure();
 
     return argument;
@@ -213,7 +219,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationSet 
 {
     argument.beginStructure();
     argument >> configuration.categories >> configuration.parameterInfo >>
-        configuration.parameterValues >> configuration.sites;
+        configuration.parameterValues >> configuration.sites >> configuration.isAdmin;
     argument.endStructure();
 
     return argument;
@@ -467,4 +473,57 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job)
 {
     return argument >> job.processorId >> job.productId >> job.siteId >> job.startType >>
            job.inputPath >> job.outputPath >> job.stepsTotal;
+}
+
+NewTask::NewTask() : jobId(), productId()
+{
+}
+
+NewTask::NewTask(int jobId, int productId, QString inputPath, QString outputPath)
+    : jobId(jobId),
+      productId(productId),
+      inputPath(std::move(inputPath)),
+      outputPath(std::move(outputPath))
+{
+}
+
+void NewTask::registerMetaTypes()
+{
+    qDBusRegisterMetaType<NewTask>();
+    qDBusRegisterMetaType<NewTaskList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
+{
+    return argument << task.jobId << task.productId << task.inputPath << task.outputPath;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task)
+{
+    return argument >> task.jobId >> task.productId >> task.inputPath >> task.outputPath;
+}
+
+NewStep::NewStep() : taskId()
+{
+}
+
+NewStep::NewStep(int taskId, QString inputPath, QString outputPath)
+    : taskId(taskId), inputPath(std::move(inputPath)), outputPath(std::move(outputPath))
+{
+}
+
+void NewStep::registerMetaTypes()
+{
+    qDBusRegisterMetaType<NewStep>();
+    qDBusRegisterMetaType<NewStepList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step)
+{
+    return argument << step.taskId << step.inputPath << step.outputPath;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step)
+{
+    return argument >> step.taskId >> step.inputPath >> step.outputPath;
 }

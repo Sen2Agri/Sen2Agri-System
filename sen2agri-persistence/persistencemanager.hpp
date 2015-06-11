@@ -41,6 +41,8 @@ class PersistenceManager : public QObject, protected QDBusContext
         }
     }
 
+    bool IsCallerAdmin();
+
 public:
     explicit PersistenceManager(const Settings &settings,
                                 QObject *parent = 0);
