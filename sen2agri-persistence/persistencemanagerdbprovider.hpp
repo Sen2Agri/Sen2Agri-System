@@ -28,6 +28,9 @@ public:
     void MarkProductsArchived(const ArchivedProductList &products);
 
     int SubmitJob(const NewJob &job);
+    int SubmitTask(const NewTask &task);
+    void SubmitSteps(const NewStepList &steps);
+
     void NotifyJobStepStarted(int jobId);
     void NotifyJobStepFinished(int jobId /*, resources */);
     void NotifyJobFinished(int jobId);

@@ -8,6 +8,7 @@
 
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions);
 static QString getArchivedProductsJson(const ArchivedProductList &products);
+static QString getNewStepsJson(const NewStepList &steps);
 
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query);
 static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query);
@@ -249,16 +250,15 @@ int PersistenceManagerDBProvider::SubmitJob(const NewJob &job)
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(QStringLiteral("SubmitJob"), [&]() {
-        auto query = db.prepareQuery(
-            QStringLiteral("select * from sp_submit_job(:processorId, :productId, :siteId, "
-                           ":startTypeId, :inputPath, :outputPath, :stepsTotal)"));
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_submit_job(:name, :description, "
+                                           ":processorId, :siteId, :startTypeId, :parameters)"));
+        query.bindValue(QStringLiteral(":name"), job.name);
+        query.bindValue(QStringLiteral(":description"), job.description);
         query.bindValue(QStringLiteral(":processorId"), job.processorId);
-        query.bindValue(QStringLiteral(":productId"), job.productId);
         query.bindValue(QStringLiteral(":siteId"), job.siteId);
         query.bindValue(QStringLiteral(":startTypeId"), static_cast<int>(job.startType));
-        query.bindValue(QStringLiteral(":inputPath"), job.inputPath);
-        query.bindValue(QStringLiteral(":outputPath"), job.outputPath);
-        query.bindValue(QStringLiteral(":stepsTotal"), job.stepsTotal);
+        query.bindValue(QStringLiteral(":parameters"), QString::fromUtf8(job.parameters.toJson()));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -272,6 +272,49 @@ int PersistenceManagerDBProvider::SubmitJob(const NewJob &job)
             return query.value(jobIdCol).toInt();
         } else {
             throw std::runtime_error("Expecting a return value from sp_submit_job, but none found");
+        }
+    });
+}
+
+int PersistenceManagerDBProvider::SubmitTask(const NewTask &task)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(QStringLiteral("SubmitTask"), [&]() {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_submit_task(:jobId, :moduleId, :parameters)"));
+        query.bindValue(QStringLiteral(":jobId"), task.jobId);
+        query.bindValue(QStringLiteral(":moduleId"), task.moduleId);
+        query.bindValue(QStringLiteral(":parameters"), task.parameters);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        auto dataRecord = query.record();
+        auto taskIdCol = dataRecord.indexOf(QStringLiteral("task_id"));
+
+        if (query.next()) {
+            return query.value(taskIdCol).toInt();
+        } else {
+            throw std::runtime_error(
+                "Expecting a return value from sp_submit_task, but none found");
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::SubmitSteps(const NewStepList &steps)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(QStringLiteral("SubmitSteps"), [&]() {
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_submit_steps(:steps)"));
+        query.bindValue(QStringLiteral(":steps"), getNewStepsJson(steps));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
         }
     });
 }
@@ -341,6 +384,19 @@ static QString getArchivedProductsJson(const ArchivedProductList &products)
         QJsonObject node;
         node[QStringLiteral("product_id")] = p.productId;
         node[QStringLiteral("archive_path")] = p.archivePath;
+        array.append(std::move(node));
+    }
+    return QString::fromUtf8(QJsonDocument(array).toJson());
+}
+
+static QString getNewStepsJson(const NewStepList &steps)
+{
+    QJsonArray array;
+    for (const auto &s : steps) {
+        QJsonObject node;
+        node[QStringLiteral("task_id")] = s.taskId;
+        node[QStringLiteral("name")] = s.name;
+        node[QStringLiteral("parameters")] = s.parameters.object();
         array.append(std::move(node));
     }
     return QString::fromUtf8(QJsonDocument(array).toJson());

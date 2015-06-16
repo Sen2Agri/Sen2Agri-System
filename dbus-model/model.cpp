@@ -30,6 +30,7 @@ void registerMetaTypes()
     NewStep::registerMetaTypes();
 
     qDBusRegisterMetaType<JobStartType>();
+    qDBusRegisterMetaType<QJsonDocument>();
 }
 
 ConfigurationParameterInfo::ConfigurationParameterInfo()
@@ -433,28 +434,40 @@ QDBusArgument &operator<<(QDBusArgument &argument, JobStartType startType)
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobStartType &startType)
 {
     int startTypeValue;
-    return argument >> startType;
+    argument >> startTypeValue;
     startType = static_cast<JobStartType>(startTypeValue);
+    return argument;
 }
 
-NewJob::NewJob() : processorId(), productId(), siteId(), startType(), stepsTotal()
+QDBusArgument &operator<<(QDBusArgument &argument, const QJsonDocument &document)
+{
+    return argument << document.toBinaryData();
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, QJsonDocument &document)
+{
+    QByteArray data;
+    argument >> data;
+    document = QJsonDocument::fromBinaryData(data);
+    return argument;
+}
+
+NewJob::NewJob() : processorId(), siteId(), startType()
 {
 }
 
-NewJob::NewJob(int processorId,
-               int productId,
+NewJob::NewJob(QString name,
+               QString description,
+               int processorId,
                int siteId,
                JobStartType startType,
-               QString inputPath,
-               QString outputPath,
-               int stepsTotal)
-    : processorId(processorId),
-      productId(productId),
+               QJsonDocument parameters)
+    : name(std::move(name)),
+      description(std::move(description)),
+      processorId(processorId),
       siteId(siteId),
       startType(startType),
-      inputPath(std::move(inputPath)),
-      outputPath(std::move(outputPath)),
-      stepsTotal(stepsTotal)
+      parameters(std::move(parameters))
 {
 }
 
@@ -465,25 +478,22 @@ void NewJob::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewJob &job)
 {
-    return argument << job.processorId << job.productId << job.siteId << job.startType
-                    << job.inputPath << job.outputPath << job.stepsTotal;
+    return argument << job.name << job.description << job.processorId << job.siteId << job.startType
+                    << job.parameters;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job)
 {
-    return argument >> job.processorId >> job.productId >> job.siteId >> job.startType >>
-           job.inputPath >> job.outputPath >> job.stepsTotal;
+    return argument >> job.name >> job.description >> job.processorId >> job.siteId >>
+           job.startType >> job.parameters;
 }
 
-NewTask::NewTask() : jobId(), productId()
+NewTask::NewTask() : jobId(), moduleId()
 {
 }
 
-NewTask::NewTask(int jobId, int productId, QString inputPath, QString outputPath)
-    : jobId(jobId),
-      productId(productId),
-      inputPath(std::move(inputPath)),
-      outputPath(std::move(outputPath))
+NewTask::NewTask(int jobId, int moduleId, QJsonDocument parameters)
+    : jobId(jobId), moduleId(moduleId), parameters(std::move(parameters))
 {
 }
 
@@ -495,20 +505,20 @@ void NewTask::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
 {
-    return argument << task.jobId << task.productId << task.inputPath << task.outputPath;
+    return argument << task.jobId << task.moduleId << task.parameters;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task)
 {
-    return argument >> task.jobId >> task.productId >> task.inputPath >> task.outputPath;
+    return argument >> task.jobId >> task.moduleId >> task.parameters;
 }
 
 NewStep::NewStep() : taskId()
 {
 }
 
-NewStep::NewStep(int taskId, QString inputPath, QString outputPath)
-    : taskId(taskId), inputPath(std::move(inputPath)), outputPath(std::move(outputPath))
+NewStep::NewStep(int taskId, QString name, QJsonDocument parameters)
+    : taskId(taskId), name(std::move(name)), parameters(std::move(parameters))
 {
 }
 
@@ -520,10 +530,10 @@ void NewStep::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step)
 {
-    return argument << step.taskId << step.inputPath << step.outputPath;
+    return argument << step.taskId << step.name << step.parameters;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step)
 {
-    return argument >> step.taskId >> step.inputPath >> step.outputPath;
+    return argument >> step.taskId >> step.name >> step.parameters;
 }

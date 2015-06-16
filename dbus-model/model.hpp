@@ -4,6 +4,7 @@
 #include <QDBusArgument>
 #include <QMetaType>
 #include <QDateTime>
+#include <QJsonDocument>
 
 #include "optional.hpp"
 
@@ -239,25 +240,28 @@ Q_DECLARE_METATYPE(JobStartType);
 QDBusArgument &operator<<(QDBusArgument &argument, JobStartType startType);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobStartType &startType);
 
+Q_DECLARE_METATYPE(QJsonDocument);
+
+QDBusArgument &operator<<(QDBusArgument &argument, const QJsonDocument &document);
+const QDBusArgument &operator>>(const QDBusArgument &argument, QJsonDocument &document);
+
 class NewJob
 {
 public:
+    QString name;
+    QString description;
     int processorId;
-    int productId;
     int siteId;
     JobStartType startType;
-    QString inputPath;
-    QString outputPath;
-    int stepsTotal;
+    QJsonDocument parameters;
 
     NewJob();
-    NewJob(int processorId,
-           int productId,
+    NewJob(QString name,
+           QString description,
+           int processorId,
            int siteId,
            JobStartType startType,
-           QString inputPath,
-           QString outputPath,
-           int stepsTotal);
+           QJsonDocument parameters);
 
     static void registerMetaTypes();
 };
@@ -271,12 +275,11 @@ class NewTask
 {
 public:
     int jobId;
-    int productId;
-    QString inputPath;
-    QString outputPath;
+    int moduleId;
+    QJsonDocument parameters;
 
     NewTask();
-    NewTask(int jobId, int productId, QString inputPath, QString outputPath);
+    NewTask(int jobId, int moduleId, QJsonDocument parameters);
 
     static void registerMetaTypes();
 };
@@ -293,11 +296,11 @@ class NewStep
 {
 public:
     int taskId;
-    QString inputPath;
-    QString outputPath;
+    QString name;
+    QJsonDocument parameters;
 
     NewStep();
-    NewStep(int taskId, QString inputPath, QString outputPath);
+    NewStep(int taskId, QString name, QJsonDocument parameters);
 
     static void registerMetaTypes();
 };
