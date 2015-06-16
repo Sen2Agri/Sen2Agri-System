@@ -23,12 +23,7 @@ void ArchiverManager::start(const QCoreApplication& app)
     connect(&mExitTimer, SIGNAL(timeout()), this, SLOT(exit()));
     signal(SIGINT, &ArchiverManager::signalHandler);
     signal(SIGTERM, &ArchiverManager::signalHandler);
-    //TODO: take parameters
-    //TODO create for each site a FILE_INFO obj insert it into files
 
-    //TODO: split in groups based on sites
-    //
-    /*
     auto promise = clientInterface.GetProductsToArchive();
     connect(new QDBusPendingCallWatcher(promise, this), &QDBusPendingCallWatcher::finished,
             [this, promise]() {
@@ -36,20 +31,9 @@ void ArchiverManager::start(const QCoreApplication& app)
                     productsToBeArchived(promise.value());
                 } else if (promise.isError()) {
                     qDebug() << promise.error().message();
+                    QTextStream(stdout) << promise.error().message();
                 }
             });
-            */
-    /* DEBUG ONLY: to be removed*/
-    ProductToArchiveList testList;
-    QString currPath = "/home/miradmin/prj/sen2agri/tests/test/";
-    QString archPath = "/home/miradmin/prj/sen2agri/tests/";
-    char sites[10][20] = {"africa/", "africa/", "africa/", "africa/", "europe/", "europe/", "australia/", "australia/", "australia/", "australia/"};
-    char products[10][20] = {"l2a/", "l3a/", "l3b/", "l4b/", "l2a/", "l3b/", "l3b/", "l2a/", "l4a/", "l4b/"};
-    for(auto i = 0; i< 10; i++) {
-        testList.append(ProductToArchive(i, currPath + "prod_" + QString::number(i) , archPath + sites[i] + products[i]));
-    }
-    productsToBeArchived(testList);
-    /* END OF DEBUG ONLY*/
 }
 
 void ArchiverManager::productsToBeArchived(const ProductToArchiveList &products)
@@ -58,29 +42,35 @@ void ArchiverManager::productsToBeArchived(const ProductToArchiveList &products)
     ArchivedProductList archivedProducts;
     for (const auto &product : products)
     {
-        QDir archiveRootPath;
-
         if(product.archivePath.isEmpty())
         {
             //TODO: add error in log
             qDebug() << "The archive path for product ID " << QString::number(product.productId) << " is empty ";
+            QTextStream(stdout) << "The archive path for product ID " << QString::number(product.productId) << " is empty " << endl;
             continue;
         }
         QString archivePathBase(product.archivePath);
         if(product.archivePath.startsWith("/"))
             archivePathBase = product.archivePath.mid(1, product.archivePath.length() - 1);
 
-        archiveRootPath.setCurrent("/");
+        QDir archiveRootPath("/");
         if(!QDir("/" + archivePathBase).exists() && !archiveRootPath.mkpath(archivePathBase)) {
             //TODO: add error in log
             qDebug() << "Error in creating path for archiving " << "/" + archivePathBase;
+            QTextStream(stdout) << "Error in creating path for archiving " << "/" + archivePathBase << endl;
             continue;
         }
-        archiveRootPath.setCurrent("/" + archivePathBase);
+        archiveRootPath.setPath("/" + archivePathBase);
         archiveRootPath.makeAbsolute();
+        if(!archiveRootPath.exists()) {
+            //TODO: add error in log
+            qDebug() << "Error in setting path for archiving " << "/" + archivePathBase;
+            QTextStream(stdout) << "Error in setting path for archiving " << "/" + archivePathBase << endl;
+            continue;
+        }
 
-        //QString currentPathBase(product.currentPath);
         QDirIterator itDir(product.currentPath, QDirIterator::Subdirectories);
+        bool bDeleteCurrentPath = true;
         while(itDir.hasNext())
         {
             itDir.next();
@@ -88,13 +78,18 @@ void ArchiverManager::productsToBeArchived(const ProductToArchiveList &products)
             if (prodFile.isFile())
             {
                 QString intermediaryPath(prodFile.absolutePath());
-                intermediaryPath.remove(product.currentPath);
+                intermediaryPath.remove(product.currentPath.endsWith("/") ?
+                                            product.currentPath.mid(0, product.currentPath.length() - 1) : product.currentPath);
+                if(intermediaryPath.length() > 0 && !intermediaryPath.startsWith("/"))
+                    intermediaryPath.insert(0, '/');
                 if(!QDir(archiveRootPath.absolutePath() + intermediaryPath).exists() && intermediaryPath.length() > 0 &&
                     !archiveRootPath.mkpath(intermediaryPath.mid(1, intermediaryPath.length()))) //eliminate the first /, otherwise qt will not create the path
                 {
-                        //TODO: add error in log
-                        qDebug() << "Error in creating path for archiving " << archiveRootPath.absolutePath() + intermediaryPath;
-                        continue;
+                    //TODO: add error in log
+                    qDebug() << "Error in creating path for archiving " << archiveRootPath.absolutePath() + intermediaryPath;
+                    QTextStream(stdout) << "Error in creating path for archiving " << archiveRootPath.absolutePath() + intermediaryPath << endl;
+                    bDeleteCurrentPath = false;
+                    continue;
                 }
                 QFile fileToBeCopied(prodFile.absoluteFilePath());
                 QString archivedFileName = archiveRootPath.absolutePath() +
@@ -104,50 +99,59 @@ void ArchiverManager::productsToBeArchived(const ProductToArchiveList &products)
                 if(QFile(archivedFileName).exists() &&
                     !QFile(archivedFileName).remove())
                 {
-                        //TODO: add error in log
-                        qDebug() << "Error in deleting the already existing file in archive path " << archivedFileName;
-                        continue;
+                    //TODO: add error in log
+                    qDebug() << "Error in deleting the already existing file in archive path " << archivedFileName;
+                    QTextStream(stdout) << "Error in deleting the already existing file in archive path " << archivedFileName << endl;
+                    bDeleteCurrentPath = false;
+                    continue;
                 }
                 if(!fileToBeCopied.copy(archivedFileName) ) {
                     //TODO: add error in log
                     qDebug() << "Error in copying file " << fileToBeCopied.fileName() << " to " << archivedFileName;
+                    QTextStream(stdout) << "Error in copying file " << fileToBeCopied.fileName() << " to " << archivedFileName << endl;
+                    bDeleteCurrentPath = false;
                 }
-                else {
-                    mFilesToBeDeleted.append(fileToBeCopied.fileName());
-                    archivedProducts.append(ArchivedProduct(product.productId, product.archivePath));
-                }
+                else
+                    archivedProducts.append(ArchivedProduct(product.productId, product.archivePath));                
             }
         }
+        if(bDeleteCurrentPath)
+            mFilesToBeDeleted.append(product.currentPath);
     }
 
     if(!archivedProducts.isEmpty()) {
-        auto promise = clientInterface.MarkProductsArchived(archivedProducts);
+        auto promise = clientInterface.MarkProductsArchived(ArchivedProductList()); //archivedProducts
         connect(new QDBusPendingCallWatcher(promise, this), &QDBusPendingCallWatcher::finished,
                 [this, promise]() {
-                    qDebug() << "test " << endl;
                     if (promise.isValid()) {
                         deleteFiles();
                     } else if (promise.isError()) {
                         qDebug() << promise.error().message();
+                        QTextStream(stdout) << promise.error().message();
                     }
                 });
     }
-    //QCoreApplication::quit();
-    //emit exitLocal();
+    else    
+        emit exitLocal();
 }
 
 void ArchiverManager::deleteFiles()
 {
-    for(const auto fileToBeDeleted : mFilesToBeDeleted) {
-        if(!QFile::remove(fileToBeDeleted))
-          qDebug() << "Error in deleting file " << fileToBeDeleted;
+    for(const auto pathToBeDeleted : mFilesToBeDeleted) {
+        QDir dirDel(pathToBeDeleted);
+        qDebug() << "Path to be deleted: " << pathToBeDeleted;
+        if(!dirDel.removeRecursively()) {
+            //TODO: add error in log
+            qDebug() << "Error in recursively deleting path " << pathToBeDeleted;
+            QTextStream(stdout) << "Error in recursively deleting path " << pathToBeDeleted <<  endl;
+        }
     }
-    mExitTimer.start(100);
+    emit exitLocal();
 }
 
 void ArchiverManager::signalHandler(int signal)
 {
-    qDebug() << "Signal " << QString::number(signal) << " caught" << endl;
+    qDebug() << "Signal " << QString::number(signal) << " caught";
     QCoreApplication::quit();
 }
 
