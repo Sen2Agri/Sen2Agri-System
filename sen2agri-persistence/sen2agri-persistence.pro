@@ -5,7 +5,7 @@ TARGET = sen2agri-persistence
 
 DESTDIR = bin
 
-CONFIG += console c++11 precompile_header
+CONFIG += c++11 precompile_header
 CONFIG -= app_bundle
 
 PRECOMPILED_HEADER = pch.hpp
