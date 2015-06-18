@@ -6,6 +6,8 @@
 
 #include <set>
 
+#include <optional_util.hpp>
+
 static QString toJsonString(const QJsonDocument &document);
 static QString toJsonString(const QJsonObject &document);
 static QString toJsonString(const QJsonArray &document);
@@ -17,15 +19,6 @@ static QString getExecutionStatisticsJson(const ExecutionStatistics &statistics)
 
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query);
 static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query);
-
-template <typename T>
-std::experimental::optional<T> to_optional(const QVariant &v)
-{
-    if (v.isNull()) {
-        return std::experimental::nullopt;
-    }
-    return v.value<T>();
-}
 
 PersistenceManagerDBProvider::PersistenceManagerDBProvider(const Settings &settings)
     : provider(settings)

@@ -20,4 +20,5 @@ HEADERS += \
     model.hpp \
     pch.hpp \
     logger.hpp \
-    make_unique.hpp
+    make_unique.hpp \
+    optional_util.hpp
