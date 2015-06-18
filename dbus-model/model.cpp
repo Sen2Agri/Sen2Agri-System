@@ -29,8 +29,21 @@ void registerMetaTypes()
     NewTask::registerMetaTypes();
     NewStep::registerMetaTypes();
 
-    qDBusRegisterMetaType<JobStartType>();
+    ExecutionStatistics::registerMetaTypes();
+
+    TaskFinishedEvent::registerMetaTypes();
+    ProductAvailableEvent::registerMetaTypes();
+    JobCancelledEvent::registerMetaTypes();
+    JobPausedEvent::registerMetaTypes();
+    JobResumedEvent::registerMetaTypes();
+
+    SerializedEvent::registerMetaTypes();
+
     qDBusRegisterMetaType<QJsonDocument>();
+
+    qDBusRegisterMetaType<JobStartType>();
+    qDBusRegisterMetaType<ExecutionStatus>();
+    qDBusRegisterMetaType<EventType>();
 }
 
 ConfigurationParameterInfo::ConfigurationParameterInfo()
@@ -500,7 +513,6 @@ NewTask::NewTask(int jobId, int moduleId, QJsonDocument parameters)
 void NewTask::registerMetaTypes()
 {
     qDBusRegisterMetaType<NewTask>();
-    qDBusRegisterMetaType<NewTaskList>();
 }
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
@@ -536,4 +548,320 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step)
 {
     return argument >> step.taskId >> step.name >> step.parameters;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, ExecutionStatus status)
+{
+    return argument << static_cast<int>(status);
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &status)
+{
+    int statusValue;
+    argument >> statusValue;
+    status = static_cast<ExecutionStatus>(statusValue);
+    return argument;
+}
+
+ExecutionStatistics::ExecutionStatistics()
+    : userCpu(), systemCpu(), duration(), maxRss(), maxVmSize(), diskRead(), diskWrite()
+{
+}
+
+ExecutionStatistics::ExecutionStatistics(QString node,
+                                         float userCpu,
+                                         float systemCpu,
+                                         float duration,
+                                         float maxRss,
+                                         float maxVmSize,
+                                         float diskRead,
+                                         float diskWrite)
+    : node(std::move(node)),
+      userCpu(userCpu),
+      systemCpu(systemCpu),
+      duration(duration),
+      maxRss(maxRss),
+      maxVmSize(maxVmSize),
+      diskRead(diskRead),
+      diskWrite(diskWrite)
+{
+}
+
+void ExecutionStatistics::registerMetaTypes()
+{
+    qDBusRegisterMetaType<ExecutionStatistics>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatistics &statistics)
+{
+    return argument << statistics.node << statistics.userCpu << statistics.systemCpu
+                    << statistics.duration << statistics.maxRss << statistics.maxVmSize
+                    << statistics.diskRead << statistics.diskWrite;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatistics &statistics)
+{
+    double userCpu;
+    double systemCpu;
+    double duration;
+    double maxRss;
+    double maxVmSize;
+    double diskRead;
+    double diskWrite;
+
+    argument >> statistics.node >> userCpu >> systemCpu >> duration >> maxRss >> maxVmSize >>
+        diskRead >> diskWrite;
+
+    statistics.userCpu = userCpu;
+    statistics.systemCpu = systemCpu;
+    statistics.duration = duration;
+    statistics.maxRss = maxRss;
+    statistics.maxVmSize = maxVmSize;
+    statistics.diskRead = diskRead;
+    statistics.diskWrite = diskWrite;
+
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, EventType event)
+{
+    return argument << static_cast<int>(event);
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, EventType &event)
+{
+    int eventValue;
+    argument >> eventValue;
+    event = static_cast<EventType>(eventValue);
+    return argument;
+}
+
+TaskFinishedEvent::TaskFinishedEvent() : taskId()
+{
+}
+
+TaskFinishedEvent::TaskFinishedEvent(int taskId) : taskId(taskId)
+{
+}
+
+QJsonDocument TaskFinishedEvent::toJson() const
+{
+    QJsonObject node;
+    node[QStringLiteral("task_id")] = taskId;
+
+    return QJsonDocument(node);
+}
+
+TaskFinishedEvent TaskFinishedEvent::fromJson(const QJsonDocument &json)
+{
+    const auto &object = json.object();
+    return { object.value(QStringLiteral("task_id")).toInt() };
+}
+
+void TaskFinishedEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<TaskFinishedEvent>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const TaskFinishedEvent &event)
+{
+    return argument << event.taskId;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, TaskFinishedEvent &event)
+{
+    return argument >> event.taskId;
+}
+
+ProductAvailableEvent::ProductAvailableEvent()
+{
+}
+
+QJsonDocument ProductAvailableEvent::toJson() const
+{
+    QJsonObject node;
+
+    return QJsonDocument(node);
+}
+
+ProductAvailableEvent ProductAvailableEvent::fromJson(const QJsonDocument &json)
+{
+    const auto &object = json.object();
+    return {};
+}
+
+void ProductAvailableEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<ProductAvailableEvent>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ProductAvailableEvent &)
+{
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProductAvailableEvent &)
+{
+    return argument;
+}
+
+JobCancelledEvent::JobCancelledEvent() : jobId()
+{
+}
+
+JobCancelledEvent::JobCancelledEvent(int jobId) : jobId(jobId)
+{
+}
+
+QJsonDocument JobCancelledEvent::toJson() const
+{
+    QJsonObject node;
+    node[QStringLiteral("job_id")] = jobId;
+
+    return QJsonDocument(node);
+}
+
+JobCancelledEvent JobCancelledEvent::fromJson(const QJsonDocument &json)
+{
+    const auto &object = json.object();
+    return { object.value(QStringLiteral("job_id")).toInt() };
+}
+
+void JobCancelledEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<JobCancelledEvent>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobCancelledEvent &event)
+{
+    return argument << event.jobId;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobCancelledEvent &event)
+{
+    return argument >> event.jobId;
+}
+
+JobPausedEvent::JobPausedEvent() : jobId()
+{
+}
+
+JobPausedEvent::JobPausedEvent(int jobId) : jobId(jobId)
+{
+}
+
+QJsonDocument JobPausedEvent::toJson() const
+{
+    QJsonObject node;
+    node[QStringLiteral("job_id")] = jobId;
+
+    return QJsonDocument(node);
+}
+
+JobPausedEvent JobPausedEvent::fromJson(const QJsonDocument &json)
+{
+    const auto &object = json.object();
+    return { object.value(QStringLiteral("job_id")).toInt() };
+}
+
+void JobPausedEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<JobPausedEvent>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobPausedEvent &event)
+{
+    return argument << event.jobId;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobPausedEvent &event)
+{
+    return argument >> event.jobId;
+}
+
+JobResumedEvent::JobResumedEvent() : jobId()
+{
+}
+
+JobResumedEvent::JobResumedEvent(int jobId) : jobId(jobId)
+{
+}
+
+QJsonDocument JobResumedEvent::toJson() const
+{
+    QJsonObject node;
+    node[QStringLiteral("job_id")] = jobId;
+
+    return QJsonDocument(node);
+}
+
+JobResumedEvent JobResumedEvent::fromJson(const QJsonDocument &json)
+{
+    const auto &object = json.object();
+    return { object.value(QStringLiteral("job_id")).toInt() };
+}
+
+void JobResumedEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<JobResumedEvent>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobResumedEvent &event)
+{
+    return argument << event.jobId;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobResumedEvent &event)
+{
+    return argument >> event.jobId;
+}
+
+SerializedEvent::SerializedEvent() : type()
+{
+}
+
+SerializedEvent::SerializedEvent(const TaskFinishedEvent &event)
+    : type(EventType::TaskFinished), data(event.toJson())
+{
+}
+
+SerializedEvent::SerializedEvent(const ProductAvailableEvent &event)
+    : type(EventType::ProductAvailable), data(event.toJson())
+{
+}
+
+SerializedEvent::SerializedEvent(const JobCancelledEvent &event)
+    : type(EventType::JobCancelled), data(event.toJson())
+{
+}
+
+SerializedEvent::SerializedEvent(const JobPausedEvent &event)
+    : type(EventType::JobPaused), data(event.toJson())
+{
+}
+
+SerializedEvent::SerializedEvent(const JobResumedEvent &event)
+    : type(EventType::JobResumed), data(event.toJson())
+{
+}
+
+SerializedEvent::SerializedEvent(EventType type, QJsonDocument data)
+    : type(type), data(std::move(data))
+{
+}
+
+void SerializedEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<SerializedEvent>();
+    qDBusRegisterMetaType<SerializedEventList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const SerializedEvent &event)
+{
+    return argument << event.type << event.data;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, SerializedEvent &event)
+{
+    return argument >> event.type >> event.data;
 }

@@ -73,8 +73,8 @@ public:
 
 typedef QList<ConfigurationCategory> ConfigurationCategoryList;
 
-Q_DECLARE_METATYPE(ConfigurationCategory);
-Q_DECLARE_METATYPE(ConfigurationCategoryList);
+Q_DECLARE_METATYPE(ConfigurationCategory)
+Q_DECLARE_METATYPE(ConfigurationCategoryList)
 
 class Site
 {
@@ -90,8 +90,8 @@ public:
 
 typedef QList<Site> SiteList;
 
-Q_DECLARE_METATYPE(Site);
-Q_DECLARE_METATYPE(SiteList);
+Q_DECLARE_METATYPE(Site)
+Q_DECLARE_METATYPE(SiteList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const Site &site);
 const QDBusArgument &operator>>(const QDBusArgument &argument, Site &site);
@@ -115,7 +115,7 @@ public:
     static void registerMetaTypes();
 };
 
-Q_DECLARE_METATYPE(ConfigurationSet);
+Q_DECLARE_METATYPE(ConfigurationSet)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationSet &parameter);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationSet &parameter);
@@ -137,8 +137,8 @@ public:
 
 typedef QList<ConfigurationUpdateAction> ConfigurationUpdateActionList;
 
-Q_DECLARE_METATYPE(ConfigurationUpdateAction);
-Q_DECLARE_METATYPE(ConfigurationUpdateActionList);
+Q_DECLARE_METATYPE(ConfigurationUpdateAction)
+Q_DECLARE_METATYPE(ConfigurationUpdateActionList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationUpdateAction &action);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationUpdateAction &action);
@@ -227,20 +227,20 @@ public:
 
 typedef QList<ArchivedProduct> ArchivedProductList;
 
-Q_DECLARE_METATYPE(ArchivedProduct);
-Q_DECLARE_METATYPE(ArchivedProductList);
+Q_DECLARE_METATYPE(ArchivedProduct)
+Q_DECLARE_METATYPE(ArchivedProductList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ArchivedProduct &message);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ArchivedProduct &message);
 
 enum class JobStartType { Triggered = 1, Requested = 2, Scheduled = 3 };
 
-Q_DECLARE_METATYPE(JobStartType);
+Q_DECLARE_METATYPE(JobStartType)
 
 QDBusArgument &operator<<(QDBusArgument &argument, JobStartType startType);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobStartType &startType);
 
-Q_DECLARE_METATYPE(QJsonDocument);
+Q_DECLARE_METATYPE(QJsonDocument)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const QJsonDocument &document);
 const QDBusArgument &operator>>(const QDBusArgument &argument, QJsonDocument &document);
@@ -284,10 +284,7 @@ public:
     static void registerMetaTypes();
 };
 
-typedef QList<NewTask> NewTaskList;
-
-Q_DECLARE_METATYPE(NewTask);
-Q_DECLARE_METATYPE(NewTaskList);
+Q_DECLARE_METATYPE(NewTask)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task);
@@ -307,8 +304,181 @@ public:
 
 typedef QList<NewStep> NewStepList;
 
-Q_DECLARE_METATYPE(NewStep);
-Q_DECLARE_METATYPE(NewStepList);
+Q_DECLARE_METATYPE(NewStep)
+Q_DECLARE_METATYPE(NewStepList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step);
+
+enum class ExecutionStatus { Submitted, NeedsInput, Running, Paused, Finished, Cancelled, Error };
+
+Q_DECLARE_METATYPE(ExecutionStatus)
+
+QDBusArgument &operator<<(QDBusArgument &argument, ExecutionStatus status);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &status);
+
+class ExecutionStatistics
+{
+public:
+    QString node;
+    float userCpu;
+    float systemCpu;
+    float duration;
+    float maxRss;
+    float maxVmSize;
+    float diskRead;
+    float diskWrite;
+
+    ExecutionStatistics();
+    ExecutionStatistics(QString node,
+                        float userCpu,
+                        float systemCpu,
+                        float duration,
+                        float maxRss,
+                        float maxVmSize,
+                        float diskRead,
+                        float diskWrite);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(ExecutionStatistics)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatistics &statistics);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatistics &statistics);
+
+enum class EventType {
+    TaskFinished,
+    ProductAvailable,
+    JobCancelled,
+    JobPaused,
+    JobResumed
+};
+
+Q_DECLARE_METATYPE(EventType)
+
+QDBusArgument &operator<<(QDBusArgument &argument, EventType event);
+const QDBusArgument &operator>>(const QDBusArgument &argument, EventType &event);
+
+class TaskFinishedEvent
+{
+public:
+    int taskId;
+
+    TaskFinishedEvent();
+    TaskFinishedEvent(int taskId);
+
+    QJsonDocument toJson() const;
+
+    static TaskFinishedEvent fromJson(const QJsonDocument &json);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(TaskFinishedEvent)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const TaskFinishedEvent &event);
+const QDBusArgument &operator>>(const QDBusArgument &argument, TaskFinishedEvent &event);
+
+class ProductAvailableEvent
+{
+public:
+    ProductAvailableEvent();
+
+    QJsonDocument toJson() const;
+
+    static ProductAvailableEvent fromJson(const QJsonDocument &json);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(ProductAvailableEvent)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ProductAvailableEvent &event);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProductAvailableEvent &event);
+
+class JobCancelledEvent
+{
+public:
+    int jobId;
+
+    JobCancelledEvent();
+    JobCancelledEvent(int jobId);
+
+    QJsonDocument toJson() const;
+
+    static JobCancelledEvent fromJson(const QJsonDocument &json);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(JobCancelledEvent)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobCancelledEvent &event);
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobCancelledEvent &event);
+
+class JobPausedEvent
+{
+public:
+    int jobId;
+
+    JobPausedEvent();
+    JobPausedEvent(int jobId);
+
+    QJsonDocument toJson() const;
+
+    static JobPausedEvent fromJson(const QJsonDocument &json);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(JobPausedEvent)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobPausedEvent &event);
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobPausedEvent &event);
+
+class JobResumedEvent
+{
+public:
+    int jobId;
+
+    JobResumedEvent();
+    JobResumedEvent(int jobId);
+
+    QJsonDocument toJson() const;
+
+    static JobResumedEvent fromJson(const QJsonDocument &json);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(JobResumedEvent)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobResumedEvent &event);
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobResumedEvent &event);
+
+class SerializedEvent
+{
+public:
+    EventType type;
+    QJsonDocument data;
+
+    SerializedEvent();
+    SerializedEvent(const TaskFinishedEvent &event);
+    SerializedEvent(const ProductAvailableEvent &event);
+    SerializedEvent(const JobCancelledEvent &event);
+    SerializedEvent(const JobPausedEvent &event);
+    SerializedEvent(const JobResumedEvent &event);
+
+    SerializedEvent(EventType type, QJsonDocument data);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<SerializedEvent> SerializedEventList;
+
+Q_DECLARE_METATYPE(SerializedEvent);
+Q_DECLARE_METATYPE(SerializedEventList);
+
+QDBusArgument &operator<<(QDBusArgument &argument, const SerializedEvent &event);
+const QDBusArgument &operator>>(const QDBusArgument &argument, SerializedEvent &event);

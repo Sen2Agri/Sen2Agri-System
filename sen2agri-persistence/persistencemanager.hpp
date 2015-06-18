@@ -60,7 +60,10 @@ public slots:
     void MarkProductsArchived(const ArchivedProductList &products);
 
     int SubmitJob(const NewJob &job);
-    void NotifyJobStepStarted(int jobId);
-    void NotifyJobStepFinished(int jobId /*, resources */);
-    void NotifyJobFinished(int jobId);
+    int SubmitTask(const NewTask &job);
+    void SubmitSteps(const NewStepList &job);
+
+    void MarkStepStarted(int taskId, const QString &name);
+    void MarkStepFinished(int taskId, const QString &name, const ExecutionStatistics &statistics);
+    void MarkJobFinished(int jobId);
 };

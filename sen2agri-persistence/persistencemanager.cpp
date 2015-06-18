@@ -188,17 +188,31 @@ int PersistenceManager::SubmitJob(const NewJob &job)
     return {};
 }
 
-void PersistenceManager::NotifyJobStepStarted(int jobId)
+int PersistenceManager::SubmitTask(const NewTask &task)
 {
-    RunAsyncNoResult([=]() { return dbProvider.NotifyJobStepStarted(jobId); });
+    RunAsync([=]() { return dbProvider.SubmitTask(task); });
+
+    return {};
 }
 
-void PersistenceManager::NotifyJobStepFinished(int jobId /*, resources */)
+void PersistenceManager::SubmitSteps(const NewStepList &steps)
 {
-    RunAsyncNoResult([=]() { return dbProvider.NotifyJobStepFinished(jobId); });
+    RunAsyncNoResult([=]() { dbProvider.SubmitSteps(steps); });
 }
 
-void PersistenceManager::NotifyJobFinished(int jobId)
+void PersistenceManager::MarkStepStarted(int taskId, const QString &name)
 {
-    RunAsyncNoResult([=]() { return dbProvider.NotifyJobFinished(jobId); });
+    RunAsyncNoResult([=]() { return dbProvider.MarkStepStarted(taskId, name); });
+}
+
+void PersistenceManager::MarkStepFinished(int taskId,
+                                          const QString &name,
+                                          const ExecutionStatistics &statistics)
+{
+    RunAsyncNoResult([=]() { return dbProvider.MarkStepFinished(taskId, name, statistics); });
+}
+
+void PersistenceManager::MarkJobFinished(int jobId)
+{
+    RunAsyncNoResult([=]() { return dbProvider.MarkJobFinished(jobId); });
 }
