@@ -125,7 +125,7 @@ ConfigurationSet PersistenceManager::GetConfigurationSet()
 {
     auto isCallerAdmin = IsCallerAdmin();
 
-    RunAsync([=]() {
+    RunAsync([this, isCallerAdmin]() {
         ConfigurationSet configuration = dbProvider.GetConfigurationSet();
         configuration.isAdmin = isCallerAdmin;
 
@@ -138,7 +138,7 @@ ConfigurationSet PersistenceManager::GetConfigurationSet()
 ConfigurationParameterValueList
 PersistenceManager::GetConfigurationParameters(const QString &prefix)
 {
-    RunAsync([=]() { return dbProvider.GetConfigurationParameters(prefix); });
+    RunAsync([this, prefix]() { return dbProvider.GetConfigurationParameters(prefix); });
 
     return {};
 }
@@ -146,7 +146,9 @@ PersistenceManager::GetConfigurationParameters(const QString &prefix)
 ConfigurationParameterValueList
 PersistenceManager::GetJobConfigurationParameters(int jobId, const QString &prefix)
 {
-    RunAsync([=]() { return dbProvider.GetJobConfigurationParameters(jobId, prefix); });
+    RunAsync([this, jobId, prefix]() {
+        return dbProvider.GetJobConfigurationParameters(jobId, prefix);
+    });
 
     return {};
 }
@@ -156,7 +158,9 @@ PersistenceManager::UpdateConfigurationParameters(const ConfigurationUpdateActio
 {
     auto isCallerAdmin = IsCallerAdmin();
 
-    RunAsync([=]() { return dbProvider.UpdateConfigurationParameters(actions, isCallerAdmin); });
+    RunAsync([this, actions, isCallerAdmin]() {
+        return dbProvider.UpdateConfigurationParameters(actions, isCallerAdmin);
+    });
 
     return {};
 }
@@ -164,87 +168,91 @@ PersistenceManager::UpdateConfigurationParameters(const ConfigurationUpdateActio
 KeyedMessageList PersistenceManager::UpdateJobConfigurationParameters(
     int jobId, const ConfigurationUpdateActionList &parameters)
 {
-    RunAsync([=]() { return dbProvider.UpdateJobConfigurationParameters(jobId, parameters); });
+    RunAsync([this, jobId, parameters]() {
+        return dbProvider.UpdateJobConfigurationParameters(jobId, parameters);
+    });
 
     return {};
 }
 
 ProductToArchiveList PersistenceManager::GetProductsToArchive()
 {
-    RunAsync([=]() { return dbProvider.GetProductsToArchive(); });
+    RunAsync([this]() { return dbProvider.GetProductsToArchive(); });
 
     return {};
 }
 
 void PersistenceManager::MarkProductsArchived(const ArchivedProductList &products)
 {
-    RunAsyncNoResult([=]() { return dbProvider.MarkProductsArchived(products); });
+    RunAsyncNoResult([this, products]() { return dbProvider.MarkProductsArchived(products); });
 }
 
 int PersistenceManager::SubmitJob(const NewJob &job)
 {
-    RunAsync([=]() { return dbProvider.SubmitJob(job); });
+    RunAsync([this, job]() { return dbProvider.SubmitJob(job); });
 
     return {};
 }
 
 int PersistenceManager::SubmitTask(const NewTask &task)
 {
-    RunAsync([=]() { return dbProvider.SubmitTask(task); });
+    RunAsync([this, task]() { return dbProvider.SubmitTask(task); });
 
     return {};
 }
 
 void PersistenceManager::SubmitSteps(const NewStepList &steps)
 {
-    RunAsyncNoResult([=]() { dbProvider.SubmitSteps(steps); });
+    RunAsyncNoResult([this, steps]() { dbProvider.SubmitSteps(steps); });
 }
 
 void PersistenceManager::MarkStepStarted(int taskId, const QString &name)
 {
-    RunAsyncNoResult([=]() { return dbProvider.MarkStepStarted(taskId, name); });
+    RunAsyncNoResult([this, taskId, name]() { return dbProvider.MarkStepStarted(taskId, name); });
 }
 
 void PersistenceManager::MarkStepFinished(int taskId,
                                           const QString &name,
                                           const ExecutionStatistics &statistics)
 {
-    RunAsyncNoResult([=]() { return dbProvider.MarkStepFinished(taskId, name, statistics); });
+    RunAsyncNoResult([this, taskId, name, statistics]() {
+        return dbProvider.MarkStepFinished(taskId, name, statistics);
+    });
 }
 
 void PersistenceManager::MarkJobFinished(int jobId)
 {
-    RunAsyncNoResult([=]() { return dbProvider.MarkJobFinished(jobId); });
+    RunAsyncNoResult([this, jobId]() { return dbProvider.MarkJobFinished(jobId); });
 }
 
 void PersistenceManager::InsertTaskFinishedEvent(const TaskFinishedEvent &event)
 {
-    RunAsyncNoResult([=]() { return dbProvider.InsertTaskFinishedEvent(event); });
+    RunAsyncNoResult([this, event]() { return dbProvider.InsertTaskFinishedEvent(event); });
 }
 
 void PersistenceManager::InsertProductAvailableEvent(const ProductAvailableEvent &event)
 {
-    RunAsyncNoResult([=]() { return dbProvider.InsertProductAvailableEvent(event); });
+    RunAsyncNoResult([this, event]() { return dbProvider.InsertProductAvailableEvent(event); });
 }
 
 void PersistenceManager::InsertJobCancelledEvent(const JobCancelledEvent &event)
 {
-    RunAsyncNoResult([=]() { return dbProvider.InsertJobCancelledEvent(event); });
+    RunAsyncNoResult([this, event]() { return dbProvider.InsertJobCancelledEvent(event); });
 }
 
 void PersistenceManager::InsertJobPausedEvent(const JobPausedEvent &event)
 {
-    RunAsyncNoResult([=]() { return dbProvider.InsertJobPausedEvent(event); });
+    RunAsyncNoResult([this, event]() { return dbProvider.InsertJobPausedEvent(event); });
 }
 
 void PersistenceManager::InsertJobResumedEvent(const JobResumedEvent &event)
 {
-    RunAsyncNoResult([=]() { return dbProvider.InsertJobResumedEvent(event); });
+    RunAsyncNoResult([this, event]() { return dbProvider.InsertJobResumedEvent(event); });
 }
 
 SerializedEventList PersistenceManager::GetNewEvents()
 {
-    RunAsync([=]() { return dbProvider.GetNewEvents(); });
+    RunAsync([this]() { return dbProvider.GetNewEvents(); });
 
     return {};
 }
