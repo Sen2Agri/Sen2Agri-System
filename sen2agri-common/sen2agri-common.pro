@@ -13,8 +13,11 @@ PRECOMPILED_HEADER = pch.hpp
 INCLUDEPATH += ../Optional
 
 SOURCES += \
-    model.cpp
+    model.cpp \
+    logger.cpp
 
 HEADERS += \
     model.hpp \
-    pch.hpp
+    pch.hpp \
+    logger.hpp \
+    make_unique.hpp

@@ -25,8 +25,7 @@ SOURCES += main.cpp \
     sql_error.cpp \
     sqldatabaseraii.cpp \
     persistencemanagerdbprovider.cpp \
-    settings.cpp \
-    logger.cpp
+    settings.cpp
 
 DISTFILES += \
 # install to /usr/share/dbus-1/interfaces/org.esa.sen2agri.persistenceManager.xml
@@ -48,9 +47,7 @@ HEADERS += \
     sqldatabaseraii.hpp \
     asyncdbustask.hpp \
     persistencemanagerdbprovider.hpp \
-    settings.hpp \
-    make_unique.hpp \
-    logger.hpp
+    settings.hpp
 
 LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
 
