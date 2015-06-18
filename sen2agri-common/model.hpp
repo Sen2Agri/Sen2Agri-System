@@ -321,23 +321,23 @@ class ExecutionStatistics
 {
 public:
     QString node;
-    float userCpu;
-    float systemCpu;
-    float duration;
-    float maxRss;
-    float maxVmSize;
-    float diskRead;
-    float diskWrite;
+    int64_t userCpuMs;
+    int64_t systemCpuMs;
+    int64_t durationMs;
+    int32_t maxRssKb;
+    int32_t maxVmSizeKb;
+    int64_t diskReadBytes;
+    int64_t diskWriteBytes;
 
     ExecutionStatistics();
     ExecutionStatistics(QString node,
-                        float userCpu,
-                        float systemCpu,
-                        float duration,
-                        float maxRss,
-                        float maxVmSize,
-                        float diskRead,
-                        float diskWrite);
+                        int64_t userCpuMs,
+                        int64_t systemCpuMs,
+                        int64_t durationMs,
+                        int32_t maxRssKb,
+                        int32_t maxVmSizeKb,
+                        int64_t diskReadBytes,
+                        int64_t diskWriteBytes);
 
     static void registerMetaTypes();
 };
@@ -347,13 +347,7 @@ Q_DECLARE_METATYPE(ExecutionStatistics)
 QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatistics &statistics);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatistics &statistics);
 
-enum class EventType {
-    TaskFinished,
-    ProductAvailable,
-    JobCancelled,
-    JobPaused,
-    JobResumed
-};
+enum class EventType { TaskFinished, ProductAvailable, JobCancelled, JobPaused, JobResumed };
 
 Q_DECLARE_METATYPE(EventType)
 
@@ -482,3 +476,9 @@ Q_DECLARE_METATYPE(SerializedEventList);
 
 QDBusArgument &operator<<(QDBusArgument &argument, const SerializedEvent &event);
 const QDBusArgument &operator>>(const QDBusArgument &argument, SerializedEvent &event);
+
+QDBusArgument &operator<<(QDBusArgument &argument, int64_t value);
+const QDBusArgument &operator>>(const QDBusArgument &argument, int64_t &value);
+
+QDBusArgument &operator<<(QDBusArgument &argument, uint64_t value);
+const QDBusArgument &operator>>(const QDBusArgument &argument, uint64_t &value);

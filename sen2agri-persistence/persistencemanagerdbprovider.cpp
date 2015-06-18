@@ -479,15 +479,17 @@ static QString getNewStepsJson(const NewStepList &steps)
 
 static QString getExecutionStatisticsJson(const ExecutionStatistics &statistics)
 {
+    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
+
     QJsonObject node;
     node[QStringLiteral("node")] = statistics.node;
-    node[QStringLiteral("user_cpu")] = statistics.userCpu;
-    node[QStringLiteral("system_cpu")] = statistics.systemCpu;
-    node[QStringLiteral("duration")] = statistics.duration;
-    node[QStringLiteral("max_rss")] = statistics.maxRss;
-    node[QStringLiteral("max_vm_size")] = statistics.maxVmSize;
-    node[QStringLiteral("disk_read")] = statistics.diskRead;
-    node[QStringLiteral("disk_write")] = statistics.diskWrite;
+    node[QStringLiteral("user_cpu_ms")] = qlonglong{ statistics.userCpuMs };
+    node[QStringLiteral("system_cpu_ms")] = qlonglong{ statistics.systemCpuMs };
+    node[QStringLiteral("duration_ms")] = qlonglong{ statistics.durationMs };
+    node[QStringLiteral("max_rss_kb")] = statistics.maxRssKb;
+    node[QStringLiteral("max_vm_size_kb")] = statistics.maxVmSizeKb;
+    node[QStringLiteral("disk_read_b")] = qlonglong{ statistics.diskReadBytes };
+    node[QStringLiteral("disk_write_b")] = qlonglong{ statistics.diskWriteBytes };
 
     return toJsonString(node);
 }

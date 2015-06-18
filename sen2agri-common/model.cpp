@@ -563,26 +563,32 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &
 }
 
 ExecutionStatistics::ExecutionStatistics()
-    : userCpu(), systemCpu(), duration(), maxRss(), maxVmSize(), diskRead(), diskWrite()
+    : userCpuMs(),
+      systemCpuMs(),
+      durationMs(),
+      maxRssKb(),
+      maxVmSizeKb(),
+      diskReadBytes(),
+      diskWriteBytes()
 {
 }
 
 ExecutionStatistics::ExecutionStatistics(QString node,
-                                         float userCpu,
-                                         float systemCpu,
-                                         float duration,
-                                         float maxRss,
-                                         float maxVmSize,
-                                         float diskRead,
-                                         float diskWrite)
+                                         int64_t userCpuMs,
+                                         int64_t systemCpuMs,
+                                         int64_t durationMs,
+                                         int32_t maxRssKb,
+                                         int32_t maxVmSizeKb,
+                                         int64_t diskReadBytes,
+                                         int64_t diskWriteBytes)
     : node(std::move(node)),
-      userCpu(userCpu),
-      systemCpu(systemCpu),
-      duration(duration),
-      maxRss(maxRss),
-      maxVmSize(maxVmSize),
-      diskRead(diskRead),
-      diskWrite(diskWrite)
+      userCpuMs(userCpuMs),
+      systemCpuMs(systemCpuMs),
+      durationMs(durationMs),
+      maxRssKb(maxRssKb),
+      maxVmSizeKb(maxVmSizeKb),
+      diskReadBytes(diskReadBytes),
+      diskWriteBytes(diskWriteBytes)
 {
 }
 
@@ -593,33 +599,16 @@ void ExecutionStatistics::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatistics &statistics)
 {
-    return argument << statistics.node << statistics.userCpu << statistics.systemCpu
-                    << statistics.duration << statistics.maxRss << statistics.maxVmSize
-                    << statistics.diskRead << statistics.diskWrite;
+    return argument << statistics.node << statistics.userCpuMs << statistics.systemCpuMs
+                    << statistics.durationMs << statistics.maxRssKb << statistics.maxVmSizeKb
+                    << statistics.diskReadBytes << statistics.diskWriteBytes;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatistics &statistics)
 {
-    double userCpu;
-    double systemCpu;
-    double duration;
-    double maxRss;
-    double maxVmSize;
-    double diskRead;
-    double diskWrite;
-
-    argument >> statistics.node >> userCpu >> systemCpu >> duration >> maxRss >> maxVmSize >>
-        diskRead >> diskWrite;
-
-    statistics.userCpu = userCpu;
-    statistics.systemCpu = systemCpu;
-    statistics.duration = duration;
-    statistics.maxRss = maxRss;
-    statistics.maxVmSize = maxVmSize;
-    statistics.diskRead = diskRead;
-    statistics.diskWrite = diskWrite;
-
-    return argument;
+    return argument >> statistics.node >> statistics.userCpuMs >> statistics.systemCpuMs >>
+           statistics.durationMs >> statistics.maxRssKb >> statistics.maxVmSizeKb >>
+           statistics.diskReadBytes >> statistics.diskWriteBytes;
 }
 
 QDBusArgument &operator<<(QDBusArgument &argument, EventType event)
@@ -863,4 +852,46 @@ QDBusArgument &operator<<(QDBusArgument &argument, const SerializedEvent &event)
 const QDBusArgument &operator>>(const QDBusArgument &argument, SerializedEvent &event)
 {
     return argument >> event.type >> event.data;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, int64_t value)
+{
+    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
+
+    qlonglong val{ value };
+
+    return argument << val;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, int64_t &value)
+{
+    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
+
+    qlonglong val;
+
+    argument >> val;
+    value = val;
+
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, uint64_t value)
+{
+    static_assert(sizeof(qulonglong) == sizeof(uint64_t), "qulonglong must be 64-bit");
+
+    qulonglong val{ value };
+
+    return argument << val;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, uint64_t &value)
+{
+    static_assert(sizeof(qulonglong) == sizeof(uint64_t), "qulonglong must be 64-bit");
+
+    qulonglong val;
+
+    argument >> val;
+    value = val;
+
+    return argument;
 }
