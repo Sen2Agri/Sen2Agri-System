@@ -216,3 +216,35 @@ void PersistenceManager::MarkJobFinished(int jobId)
 {
     RunAsyncNoResult([=]() { return dbProvider.MarkJobFinished(jobId); });
 }
+
+void PersistenceManager::InsertTaskFinishedEvent(const TaskFinishedEvent &event)
+{
+    RunAsyncNoResult([=]() { return dbProvider.InsertTaskFinishedEvent(event); });
+}
+
+void PersistenceManager::InsertProductAvailableEvent(const ProductAvailableEvent &event)
+{
+    RunAsyncNoResult([=]() { return dbProvider.InsertProductAvailableEvent(event); });
+}
+
+void PersistenceManager::InsertJobCancelledEvent(const JobCancelledEvent &event)
+{
+    RunAsyncNoResult([=]() { return dbProvider.InsertJobCancelledEvent(event); });
+}
+
+void PersistenceManager::InsertJobPausedEvent(const JobPausedEvent &event)
+{
+    RunAsyncNoResult([=]() { return dbProvider.InsertJobPausedEvent(event); });
+}
+
+void PersistenceManager::InsertJobResumedEvent(const JobResumedEvent &event)
+{
+    RunAsyncNoResult([=]() { return dbProvider.InsertJobResumedEvent(event); });
+}
+
+SerializedEventList PersistenceManager::GetNewEvents()
+{
+    RunAsync([=]() { return dbProvider.GetNewEvents(); });
+
+    return {};
+}

@@ -50,8 +50,10 @@ signals:
 
 public slots:
     ConfigurationSet GetConfigurationSet();
+
     ConfigurationParameterValueList GetConfigurationParameters(const QString &prefix);
     ConfigurationParameterValueList GetJobConfigurationParameters(int jobId, const QString &prefix);
+
     KeyedMessageList UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions);
     KeyedMessageList
     UpdateJobConfigurationParameters(int jobId, const ConfigurationUpdateActionList &parameters);
@@ -60,10 +62,18 @@ public slots:
     void MarkProductsArchived(const ArchivedProductList &products);
 
     int SubmitJob(const NewJob &job);
-    int SubmitTask(const NewTask &job);
-    void SubmitSteps(const NewStepList &job);
+    int SubmitTask(const NewTask &task);
+    void SubmitSteps(const NewStepList &steps);
 
     void MarkStepStarted(int taskId, const QString &name);
     void MarkStepFinished(int taskId, const QString &name, const ExecutionStatistics &statistics);
     void MarkJobFinished(int jobId);
+
+    void InsertTaskFinishedEvent(const TaskFinishedEvent &event);
+    void InsertProductAvailableEvent(const ProductAvailableEvent &event);
+    void InsertJobCancelledEvent(const JobCancelledEvent &event);
+    void InsertJobPausedEvent(const JobPausedEvent &event);
+    void InsertJobResumedEvent(const JobResumedEvent &event);
+
+    SerializedEventList GetNewEvents();
 };
