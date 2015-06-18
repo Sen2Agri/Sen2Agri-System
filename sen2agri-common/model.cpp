@@ -1,7 +1,6 @@
 #include <utility>
 
 #include <QDBusMetaType>
-#include <QJsonDocument>
 #include <QJsonObject>
 
 #include "model.hpp"
