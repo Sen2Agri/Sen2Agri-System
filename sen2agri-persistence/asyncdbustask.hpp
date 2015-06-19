@@ -16,8 +16,9 @@ class AsyncDBusTask : public QRunnable
     F f;
 
 public:
-    AsyncDBusTask(QDBusMessage message, QDBusConnection connection, F &&f)
-        : message(std::move(message)), connection(connection), f(std::forward<F>(f))
+    template <typename Func>
+    AsyncDBusTask(QDBusMessage message, QDBusConnection connection, Func &&f)
+        : message(std::move(message)), connection(connection), f(std::forward<Func>(f))
     {
     }
 
@@ -41,8 +42,9 @@ class AsyncDBusTaskNoResult : public QRunnable
     F f;
 
 public:
-    AsyncDBusTaskNoResult(QDBusMessage message, QDBusConnection connection, F &&f)
-        : message(std::move(message)), connection(connection), f(std::forward<F>(f))
+    template <typename Func>
+    AsyncDBusTaskNoResult(QDBusMessage message, QDBusConnection connection, Func &&f)
+        : message(std::move(message)), connection(connection), f(std::forward<Func>(f))
     {
     }
 
@@ -62,6 +64,7 @@ public:
 template <typename M, typename C, typename F>
 AsyncDBusTask<F> *makeAsyncDBusTask(M &&message, C &&connection, F &&f)
 {
+    // QThreadPool will free the task after it runs
     return new AsyncDBusTask<F>(std::forward<M>(message), std::forward<C>(connection),
                                 std::forward<F>(f));
 }
@@ -69,6 +72,7 @@ AsyncDBusTask<F> *makeAsyncDBusTask(M &&message, C &&connection, F &&f)
 template <typename M, typename C, typename F>
 AsyncDBusTaskNoResult<F> *makeAsyncDBusTaskNoResult(M &&message, C &&connection, F &&f)
 {
+    // QThreadPool will free the task after it runs
     return new AsyncDBusTaskNoResult<F>(std::forward<M>(message), std::forward<C>(connection),
                                         std::forward<F>(f));
 }
