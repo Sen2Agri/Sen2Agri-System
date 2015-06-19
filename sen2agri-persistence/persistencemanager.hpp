@@ -51,29 +51,29 @@ signals:
 public slots:
     ConfigurationSet GetConfigurationSet();
 
-    ConfigurationParameterValueList GetConfigurationParameters(const QString &prefix);
-    ConfigurationParameterValueList GetJobConfigurationParameters(int jobId, const QString &prefix);
+    ConfigurationParameterValueList GetConfigurationParameters(QString prefix);
+    ConfigurationParameterValueList GetJobConfigurationParameters(int jobId, QString prefix);
 
-    KeyedMessageList UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions);
-    KeyedMessageList
-    UpdateJobConfigurationParameters(int jobId, const ConfigurationUpdateActionList &parameters);
+    KeyedMessageList UpdateConfigurationParameters(ConfigurationUpdateActionList parameters);
+    KeyedMessageList UpdateJobConfigurationParameters(int jobId,
+                                                      ConfigurationUpdateActionList parameters);
 
     ProductToArchiveList GetProductsToArchive();
-    void MarkProductsArchived(const ArchivedProductList &products);
+    void MarkProductsArchived(ArchivedProductList products);
 
-    int SubmitJob(const NewJob &job);
-    int SubmitTask(const NewTask &task);
-    void SubmitSteps(const NewStepList &steps);
+    int SubmitJob(NewJob job);
+    int SubmitTask(NewTask task);
+    void SubmitSteps(NewStepList steps);
 
-    void MarkStepStarted(int taskId, const QString &name);
-    void MarkStepFinished(int taskId, const QString &name, const ExecutionStatistics &statistics);
+    void MarkStepStarted(int taskId, QString name);
+    void MarkStepFinished(int taskId, QString name, ExecutionStatistics statistics);
     void MarkJobFinished(int jobId);
 
-    void InsertTaskFinishedEvent(const TaskFinishedEvent &event);
-    void InsertProductAvailableEvent(const ProductAvailableEvent &event);
-    void InsertJobCancelledEvent(const JobCancelledEvent &event);
-    void InsertJobPausedEvent(const JobPausedEvent &event);
-    void InsertJobResumedEvent(const JobResumedEvent &event);
+    void InsertTaskFinishedEvent(TaskFinishedEvent event);
+    void InsertProductAvailableEvent(ProductAvailableEvent event);
+    void InsertJobCancelledEvent(JobCancelledEvent event);
+    void InsertJobPausedEvent(JobPausedEvent event);
+    void InsertJobResumedEvent(JobResumedEvent event);
 
     SerializedEventList GetNewEvents();
 };

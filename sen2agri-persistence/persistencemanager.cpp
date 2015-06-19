@@ -125,8 +125,8 @@ ConfigurationSet PersistenceManager::GetConfigurationSet()
 {
     auto isCallerAdmin = IsCallerAdmin();
 
-    RunAsync([this, isCallerAdmin]() {
-        ConfigurationSet configuration = dbProvider.GetConfigurationSet();
+    RunAsync([this, isCallerAdmin] {
+        auto configuration = dbProvider.GetConfigurationSet();
         configuration.isAdmin = isCallerAdmin;
 
         return configuration;
@@ -135,124 +135,163 @@ ConfigurationSet PersistenceManager::GetConfigurationSet()
     return {};
 }
 
-ConfigurationParameterValueList
-PersistenceManager::GetConfigurationParameters(const QString &prefix)
+ConfigurationParameterValueList PersistenceManager::GetConfigurationParameters(QString prefix)
 {
-    RunAsync([this, prefix]() { return dbProvider.GetConfigurationParameters(prefix); });
+    // a bit of overkill to avoid copying the argument
+    // using c++14 generalized capture would avoid the need to use std::bind
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const QString &prefix) {
+        return dbProvider.GetConfigurationParameters(prefix);
+    }, std::ref(dbProvider), std::move(prefix)));
 
     return {};
 }
 
-ConfigurationParameterValueList
-PersistenceManager::GetJobConfigurationParameters(int jobId, const QString &prefix)
+ConfigurationParameterValueList PersistenceManager::GetJobConfigurationParameters(int jobId,
+                                                                                  QString prefix)
 {
-    RunAsync([this, jobId, prefix]() {
-        return dbProvider.GetJobConfigurationParameters(jobId, prefix);
-    });
+    RunAsync(
+        std::bind([](PersistenceManagerDBProvider &dbProvider, int jobId, const QString &prefix) {
+            return dbProvider.GetJobConfigurationParameters(jobId, prefix);
+        }, std::ref(dbProvider), jobId, std::move(prefix)));
 
     return {};
 }
 
 KeyedMessageList
-PersistenceManager::UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions)
+PersistenceManager::UpdateConfigurationParameters(ConfigurationUpdateActionList parameters)
 {
-    auto isCallerAdmin = IsCallerAdmin();
-
-    RunAsync([this, actions, isCallerAdmin]() {
-        return dbProvider.UpdateConfigurationParameters(actions, isCallerAdmin);
-    });
+    RunAsync(std::bind(
+        [](PersistenceManagerDBProvider &dbProvider,
+           const ConfigurationUpdateActionList &parameters, bool isCallerAdmin) {
+            return dbProvider.UpdateConfigurationParameters(parameters, isCallerAdmin);
+        },
+        std::ref(dbProvider), std::move(parameters), IsCallerAdmin()));
 
     return {};
 }
 
-KeyedMessageList PersistenceManager::UpdateJobConfigurationParameters(
-    int jobId, const ConfigurationUpdateActionList &parameters)
+KeyedMessageList
+PersistenceManager::UpdateJobConfigurationParameters(int jobId,
+                                                     ConfigurationUpdateActionList parameters)
 {
-    RunAsync([this, jobId, parameters]() {
-        return dbProvider.UpdateJobConfigurationParameters(jobId, parameters);
-    });
+    RunAsync(std::bind(
+        [](PersistenceManagerDBProvider &dbProvider, int jobId,
+           const ConfigurationUpdateActionList &parameters) {
+            return dbProvider.UpdateJobConfigurationParameters(jobId, parameters);
+        },
+        std::ref(dbProvider), jobId, std::move(parameters)));
 
     return {};
 }
 
 ProductToArchiveList PersistenceManager::GetProductsToArchive()
 {
-    RunAsync([this]() { return dbProvider.GetProductsToArchive(); });
+    RunAsync([this] { return dbProvider.GetProductsToArchive(); });
 
     return {};
 }
 
-void PersistenceManager::MarkProductsArchived(const ArchivedProductList &products)
+void PersistenceManager::MarkProductsArchived(ArchivedProductList products)
 {
-    RunAsyncNoResult([this, products]() { return dbProvider.MarkProductsArchived(products); });
+    RunAsyncNoResult(std::bind(
+        [](PersistenceManagerDBProvider &dbProvider, const ArchivedProductList &products) {
+            dbProvider.MarkProductsArchived(products);
+        },
+        std::ref(dbProvider), std::move(products)));
 }
 
-int PersistenceManager::SubmitJob(const NewJob &job)
+int PersistenceManager::SubmitJob(NewJob job)
 {
-    RunAsync([this, job]() { return dbProvider.SubmitJob(job); });
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const NewJob &job) {
+        return dbProvider.SubmitJob(job);
+    }, std::ref(dbProvider), std::move(job)));
 
     return {};
 }
 
-int PersistenceManager::SubmitTask(const NewTask &task)
+int PersistenceManager::SubmitTask(NewTask task)
 {
-    RunAsync([this, task]() { return dbProvider.SubmitTask(task); });
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const NewTask &task) {
+        return dbProvider.SubmitTask(task);
+    }, std::ref(dbProvider), std::move(task)));
 
     return {};
 }
 
-void PersistenceManager::SubmitSteps(const NewStepList &steps)
+void PersistenceManager::SubmitSteps(NewStepList steps)
 {
-    RunAsyncNoResult([this, steps]() { dbProvider.SubmitSteps(steps); });
+    RunAsyncNoResult(
+        std::bind([](PersistenceManagerDBProvider &dbProvider, const NewStepList &steps) {
+            dbProvider.SubmitSteps(steps);
+        }, std::ref(dbProvider), std::move(steps)));
 }
 
-void PersistenceManager::MarkStepStarted(int taskId, const QString &name)
+void PersistenceManager::MarkStepStarted(int taskId, QString name)
 {
-    RunAsyncNoResult([this, taskId, name]() { return dbProvider.MarkStepStarted(taskId, name); });
+    RunAsyncNoResult(
+        std::bind([](PersistenceManagerDBProvider &dbProvider, int taskId, const QString &name) {
+            dbProvider.MarkStepStarted(taskId, name);
+        }, std::ref(dbProvider), taskId, std::move(name)));
 }
 
-void PersistenceManager::MarkStepFinished(int taskId,
-                                          const QString &name,
-                                          const ExecutionStatistics &statistics)
+void PersistenceManager::MarkStepFinished(int taskId, QString name, ExecutionStatistics statistics)
 {
-    RunAsyncNoResult([this, taskId, name, statistics]() {
-        return dbProvider.MarkStepFinished(taskId, name, statistics);
-    });
+    RunAsyncNoResult(std::bind(
+        [](PersistenceManagerDBProvider &dbProvider, int taskId, const QString &name,
+           const ExecutionStatistics &statistics) {
+            dbProvider.MarkStepFinished(taskId, name, statistics);
+        },
+        std::ref(dbProvider), taskId, std::move(name), std::move(statistics)));
 }
 
 void PersistenceManager::MarkJobFinished(int jobId)
 {
-    RunAsyncNoResult([this, jobId]() { return dbProvider.MarkJobFinished(jobId); });
+    RunAsyncNoResult([this, jobId]() { dbProvider.MarkJobFinished(jobId); });
 }
 
-void PersistenceManager::InsertTaskFinishedEvent(const TaskFinishedEvent &event)
+void PersistenceManager::InsertTaskFinishedEvent(TaskFinishedEvent event)
 {
-    RunAsyncNoResult([this, event]() { return dbProvider.InsertTaskFinishedEvent(event); });
+    RunAsyncNoResult(
+        std::bind([](PersistenceManagerDBProvider &dbProvider, const TaskFinishedEvent &event) {
+            dbProvider.InsertTaskFinishedEvent(event);
+        }, std::ref(dbProvider), std::move(event)));
 }
 
-void PersistenceManager::InsertProductAvailableEvent(const ProductAvailableEvent &event)
+void PersistenceManager::InsertProductAvailableEvent(ProductAvailableEvent event)
 {
-    RunAsyncNoResult([this, event]() { return dbProvider.InsertProductAvailableEvent(event); });
+    RunAsyncNoResult(
+        std::bind([](PersistenceManagerDBProvider &dbProvider, const ProductAvailableEvent &event) {
+            dbProvider.InsertProductAvailableEvent(event);
+        }, std::ref(dbProvider), std::move(event)));
 }
 
-void PersistenceManager::InsertJobCancelledEvent(const JobCancelledEvent &event)
+void PersistenceManager::InsertJobCancelledEvent(JobCancelledEvent event)
 {
-    RunAsyncNoResult([this, event]() { return dbProvider.InsertJobCancelledEvent(event); });
+    RunAsyncNoResult(
+        std::bind([](PersistenceManagerDBProvider &dbProvider, const JobCancelledEvent &event) {
+            dbProvider.InsertJobCancelledEvent(event);
+        }, std::ref(dbProvider), std::move(event)));
 }
 
-void PersistenceManager::InsertJobPausedEvent(const JobPausedEvent &event)
+void PersistenceManager::InsertJobPausedEvent(JobPausedEvent event)
 {
-    RunAsyncNoResult([this, event]() { return dbProvider.InsertJobPausedEvent(event); });
+    RunAsyncNoResult(
+        std::bind([](PersistenceManagerDBProvider &dbProvider, const JobPausedEvent &event) {
+            dbProvider.InsertJobPausedEvent(event);
+        }, std::ref(dbProvider), std::move(event)));
 }
 
-void PersistenceManager::InsertJobResumedEvent(const JobResumedEvent &event)
+void PersistenceManager::InsertJobResumedEvent(JobResumedEvent event)
 {
-    RunAsyncNoResult([this, event]() { return dbProvider.InsertJobResumedEvent(event); });
+    RunAsyncNoResult(
+        std::bind([](PersistenceManagerDBProvider &dbProvider, const JobResumedEvent &event) {
+            dbProvider.InsertJobResumedEvent(event);
+        }, std::ref(dbProvider), std::move(event)));
 }
 
 SerializedEventList PersistenceManager::GetNewEvents()
 {
-    RunAsync([this]() { return dbProvider.GetNewEvents(); });
+    RunAsync([this] { return dbProvider.GetNewEvents(); });
 
     return {};
 }
