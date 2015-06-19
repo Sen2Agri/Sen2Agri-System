@@ -3,8 +3,8 @@ IN _products JSON) RETURNS VOID AS $$
 BEGIN
 
 	CREATE TEMP TABLE products (
-		id int,
-		new_path varchar) ON COMMIT DROP;
+		product_id int,
+		archive_path varchar) ON COMMIT DROP;
 
 	-- Parse the JSON and fill the temporary table.
 	BEGIN
@@ -17,10 +17,10 @@ BEGIN
 	-- Update the table
 	UPDATE product
 	SET 
-	full_path = products.new_path,
+	full_path = products.archive_path,
 	is_archived = true,
-	archived = now()
-	FROM products WHERE product.id = products.id;
+	archived_timestamp = now()
+	FROM products WHERE product.id = products.product_id;
 
 END;
 $$ LANGUAGE plpgsql;
