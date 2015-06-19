@@ -13,6 +13,9 @@ class DBProvider
 {
     const Settings &settings;
 
+    DBProvider(const DBProvider &) = delete;
+    DBProvider &operator=(const DBProvider &) = delete;
+
 public:
     DBProvider(const Settings &settings);
 

@@ -13,6 +13,9 @@ class PersistenceManagerDBProvider
 
     void InsertEvent(const SerializedEvent &event);
 
+    PersistenceManagerDBProvider(const PersistenceManagerDBProvider &) = delete;
+    PersistenceManagerDBProvider & operator=(const PersistenceManagerDBProvider &) = delete;
+
 public:
     PersistenceManagerDBProvider(const Settings &settings);
 
