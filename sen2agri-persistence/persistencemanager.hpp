@@ -29,18 +29,6 @@ class PersistenceManager : public QObject, protected QDBusContext
         }
     }
 
-    template <typename F>
-    void RunAsyncNoResult(F &&f)
-    {
-        setDelayedReply(true);
-
-        if (auto task = makeAsyncDBusTaskNoResult(message(), connection(), std::forward<F>(f))) {
-            QThreadPool::globalInstance()->start(task);
-        } else {
-            sendErrorReply(QDBusError::NoMemory);
-        }
-    }
-
     bool IsCallerAdmin();
 
 public:

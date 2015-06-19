@@ -7,7 +7,6 @@
 #include <unistd.h>
 
 #include <QtSql>
-#include <QDebug>
 #include <QDBusConnectionInterface>
 #include <QDBusMessage>
 #include <QThreadPool>
@@ -193,7 +192,7 @@ ProductToArchiveList PersistenceManager::GetProductsToArchive()
 
 void PersistenceManager::MarkProductsArchived(ArchivedProductList products)
 {
-    RunAsyncNoResult(std::bind(
+    RunAsync(std::bind(
         [](PersistenceManagerDBProvider &dbProvider, const ArchivedProductList &products) {
             dbProvider.MarkProductsArchived(products);
         },
@@ -220,15 +219,14 @@ int PersistenceManager::SubmitTask(NewTask task)
 
 void PersistenceManager::SubmitSteps(NewStepList steps)
 {
-    RunAsyncNoResult(
-        std::bind([](PersistenceManagerDBProvider &dbProvider, const NewStepList &steps) {
-            dbProvider.SubmitSteps(steps);
-        }, std::ref(dbProvider), std::move(steps)));
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const NewStepList &steps) {
+        dbProvider.SubmitSteps(steps);
+    }, std::ref(dbProvider), std::move(steps)));
 }
 
 void PersistenceManager::MarkStepStarted(int taskId, QString name)
 {
-    RunAsyncNoResult(
+    RunAsync(
         std::bind([](PersistenceManagerDBProvider &dbProvider, int taskId, const QString &name) {
             dbProvider.MarkStepStarted(taskId, name);
         }, std::ref(dbProvider), taskId, std::move(name)));
@@ -236,7 +234,7 @@ void PersistenceManager::MarkStepStarted(int taskId, QString name)
 
 void PersistenceManager::MarkStepFinished(int taskId, QString name, ExecutionStatistics statistics)
 {
-    RunAsyncNoResult(std::bind(
+    RunAsync(std::bind(
         [](PersistenceManagerDBProvider &dbProvider, int taskId, const QString &name,
            const ExecutionStatistics &statistics) {
             dbProvider.MarkStepFinished(taskId, name, statistics);
@@ -246,12 +244,12 @@ void PersistenceManager::MarkStepFinished(int taskId, QString name, ExecutionSta
 
 void PersistenceManager::MarkJobFinished(int jobId)
 {
-    RunAsyncNoResult([this, jobId]() { dbProvider.MarkJobFinished(jobId); });
+    RunAsync([this, jobId]() { dbProvider.MarkJobFinished(jobId); });
 }
 
 void PersistenceManager::InsertTaskFinishedEvent(TaskFinishedEvent event)
 {
-    RunAsyncNoResult(
+    RunAsync(
         std::bind([](PersistenceManagerDBProvider &dbProvider, const TaskFinishedEvent &event) {
             dbProvider.InsertTaskFinishedEvent(event);
         }, std::ref(dbProvider), std::move(event)));
@@ -259,7 +257,7 @@ void PersistenceManager::InsertTaskFinishedEvent(TaskFinishedEvent event)
 
 void PersistenceManager::InsertProductAvailableEvent(ProductAvailableEvent event)
 {
-    RunAsyncNoResult(
+    RunAsync(
         std::bind([](PersistenceManagerDBProvider &dbProvider, const ProductAvailableEvent &event) {
             dbProvider.InsertProductAvailableEvent(event);
         }, std::ref(dbProvider), std::move(event)));
@@ -267,7 +265,7 @@ void PersistenceManager::InsertProductAvailableEvent(ProductAvailableEvent event
 
 void PersistenceManager::InsertJobCancelledEvent(JobCancelledEvent event)
 {
-    RunAsyncNoResult(
+    RunAsync(
         std::bind([](PersistenceManagerDBProvider &dbProvider, const JobCancelledEvent &event) {
             dbProvider.InsertJobCancelledEvent(event);
         }, std::ref(dbProvider), std::move(event)));
@@ -275,18 +273,16 @@ void PersistenceManager::InsertJobCancelledEvent(JobCancelledEvent event)
 
 void PersistenceManager::InsertJobPausedEvent(JobPausedEvent event)
 {
-    RunAsyncNoResult(
-        std::bind([](PersistenceManagerDBProvider &dbProvider, const JobPausedEvent &event) {
-            dbProvider.InsertJobPausedEvent(event);
-        }, std::ref(dbProvider), std::move(event)));
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const JobPausedEvent &event) {
+        dbProvider.InsertJobPausedEvent(event);
+    }, std::ref(dbProvider), std::move(event)));
 }
 
 void PersistenceManager::InsertJobResumedEvent(JobResumedEvent event)
 {
-    RunAsyncNoResult(
-        std::bind([](PersistenceManagerDBProvider &dbProvider, const JobResumedEvent &event) {
-            dbProvider.InsertJobResumedEvent(event);
-        }, std::ref(dbProvider), std::move(event)));
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const JobResumedEvent &event) {
+        dbProvider.InsertJobResumedEvent(event);
+    }, std::ref(dbProvider), std::move(event)));
 }
 
 SerializedEventList PersistenceManager::GetNewEvents()
