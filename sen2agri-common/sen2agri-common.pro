@@ -21,4 +21,5 @@ HEADERS += \
     pch.hpp \
     logger.hpp \
     make_unique.hpp \
-    optional_util.hpp
+    optional_util.hpp \
+    type_traits_ext.hpp
