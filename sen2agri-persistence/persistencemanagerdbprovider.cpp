@@ -34,7 +34,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(QStringLiteral("select * from sp_get_categories()"));
 
         query.setForwardOnly(true);
@@ -124,7 +124,7 @@ PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(QStringLiteral("select * from sp_get_parameters(:prefix)"));
         query.bindValue(QStringLiteral(":prefix"), prefix);
 
@@ -142,7 +142,7 @@ PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QSt
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(QStringLiteral("GetJobConfigurationParameters"), [&]() {
+    return provider.handleTransactionRetry(QStringLiteral("GetJobConfigurationParameters"), [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_get_job_parameters(:job_id, :prefix)"));
         query.bindValue(QStringLiteral(":job_id"), jobId);
@@ -162,7 +162,7 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_upsert_parameters(:parameters, :isAdmin)"));
 
@@ -183,7 +183,7 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_upsert_job_parameters(:job_id, :parameters)"));
 
@@ -203,7 +203,7 @@ ProductToArchiveList PersistenceManagerDBProvider::GetProductsToArchive()
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(QStringLiteral("select * from sp_get_products_to_archive()"));
 
         query.setForwardOnly(true);
@@ -231,7 +231,7 @@ void PersistenceManagerDBProvider::MarkProductsArchived(const ArchivedProductLis
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(QStringLiteral("select sp_mark_products_archived(:products)"));
         query.bindValue(QStringLiteral(":products"), getArchivedProductsJson(products));
 
@@ -246,7 +246,7 @@ int PersistenceManagerDBProvider::SubmitJob(const NewJob &job)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query =
             db.prepareQuery(QStringLiteral("select * from sp_submit_job(:name, :description, "
                                            ":processorId, :siteId, :startTypeId, :parameters)"));
@@ -277,7 +277,7 @@ int PersistenceManagerDBProvider::SubmitTask(const NewTask &task)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_submit_task(:jobId, :moduleId, :parameters)"));
         query.bindValue(QStringLiteral(":jobId"), task.jobId);
@@ -305,7 +305,7 @@ void PersistenceManagerDBProvider::SubmitSteps(const NewStepList &steps)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(QStringLiteral("select sp_submit_steps(:steps)"));
         query.bindValue(QStringLiteral(":steps"), getNewStepsJson(steps));
 
@@ -320,7 +320,7 @@ void PersistenceManagerDBProvider::MarkStepStarted(int taskId, const QString &na
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(QStringLiteral("select sp_mark_step_started(:taskId, :name)"));
         query.bindValue(QStringLiteral(":taskId"), taskId);
         query.bindValue(QStringLiteral(":name"), name);
@@ -338,7 +338,7 @@ void PersistenceManagerDBProvider::MarkStepFinished(int taskId,
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select sp_mark_step_finished(:taskId, :name, :statistics)"));
         query.bindValue(QStringLiteral(":taskId"), taskId);
@@ -356,7 +356,7 @@ void PersistenceManagerDBProvider::MarkJobFinished(int jobId)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_finished(:jobId)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
 
@@ -396,7 +396,7 @@ SerializedEventList PersistenceManagerDBProvider::GetNewEvents()
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(QStringLiteral("select * from sp_get_new_events()"));
 
         query.setForwardOnly(true);
@@ -423,7 +423,7 @@ void PersistenceManagerDBProvider::InsertEvent(const SerializedEvent &event)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query =
             db.prepareQuery(QStringLiteral("select sp_insert_event(:eventType, :eventData)"));
         query.bindValue(QStringLiteral(":eventType"), static_cast<int>(event.type));
