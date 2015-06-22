@@ -9,13 +9,12 @@
 #include <optional_util.hpp>
 
 static QString toJsonString(const QJsonDocument &document);
-static QString toJsonString(const QJsonObject &document);
+//static QString toJsonString(const QJsonObject &document);
 static QString toJsonString(const QJsonArray &document);
 
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions);
 static QString getArchivedProductsJson(const ArchivedProductList &products);
 static QString getNewStepsJson(const NewStepList &steps);
-static QString getExecutionStatisticsJson(const ExecutionStatistics &statistics);
 
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query);
 static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query);
@@ -336,14 +335,24 @@ void PersistenceManagerDBProvider::MarkStepFinished(int taskId,
                                                     const QString &name,
                                                     const ExecutionStatistics &statistics)
 {
+    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
+
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(
-            QStringLiteral("select sp_mark_step_finished(:taskId, :name, :statistics)"));
+        auto query = db.prepareQuery(QStringLiteral(
+            "select sp_mark_step_finished(:taskId, :name, :node, :userCpuMs, :systemCpuMs, "
+            ":durationMs, :maxRssKb, :maxVmSizeKb, :diskReadBytes, :diskWriteBytes)"));
         query.bindValue(QStringLiteral(":taskId"), taskId);
         query.bindValue(QStringLiteral(":name"), name);
-        query.bindValue(QStringLiteral(":statistics"), getExecutionStatisticsJson(statistics));
+        query.bindValue(QStringLiteral(":node"), statistics.node);
+        query.bindValue(QStringLiteral(":userCpuMs"), qlonglong{ statistics.userCpuMs });
+        query.bindValue(QStringLiteral(":systemCpuMs"), qlonglong{ statistics.systemCpuMs });
+        query.bindValue(QStringLiteral(":durationMs"), qlonglong{ statistics.durationMs });
+        query.bindValue(QStringLiteral(":maxRssKb"), statistics.maxRssKb);
+        query.bindValue(QStringLiteral(":maxVmSizeKb"), statistics.maxVmSizeKb);
+        query.bindValue(QStringLiteral(":diskReadBytes"), qlonglong{ statistics.diskReadBytes });
+        query.bindValue(QStringLiteral(":diskWriteBytes"), qlonglong{ statistics.diskWriteBytes });
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -436,6 +445,26 @@ void PersistenceManagerDBProvider::InsertEvent(const SerializedEvent &event)
     });
 }
 
+void PersistenceManagerDBProvider::InsertNodeStatistics(const NodeStatistics &statistics)
+{
+    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
+
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select sp_insert_node_statistics(:node, :freeRamKb, :freeDiskBytes)"));
+        query.bindValue(QStringLiteral(":node"), statistics.node);
+        query.bindValue(QStringLiteral(":freeRamKb"), statistics.freeRamKb);
+        query.bindValue(QStringLiteral(":freeDiskBytes"), qlonglong{ statistics.freeDiskBytes });
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions)
 {
     QJsonArray array;
@@ -477,23 +506,6 @@ static QString getNewStepsJson(const NewStepList &steps)
     return toJsonString(array);
 }
 
-static QString getExecutionStatisticsJson(const ExecutionStatistics &statistics)
-{
-    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
-
-    QJsonObject node;
-    node[QStringLiteral("node")] = statistics.node;
-    node[QStringLiteral("user_cpu_ms")] = qlonglong{ statistics.userCpuMs };
-    node[QStringLiteral("system_cpu_ms")] = qlonglong{ statistics.systemCpuMs };
-    node[QStringLiteral("duration_ms")] = qlonglong{ statistics.durationMs };
-    node[QStringLiteral("max_rss_kb")] = statistics.maxRssKb;
-    node[QStringLiteral("max_vm_size_kb")] = statistics.maxVmSizeKb;
-    node[QStringLiteral("disk_read_b")] = qlonglong{ statistics.diskReadBytes };
-    node[QStringLiteral("disk_write_b")] = qlonglong{ statistics.diskWriteBytes };
-
-    return toJsonString(node);
-}
-
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query)
 {
     auto dataRecord = query.record();
@@ -530,10 +542,12 @@ static QString toJsonString(const QJsonDocument &document)
     return QString::fromUtf8(document.toJson());
 }
 
+/*
 static QString toJsonString(const QJsonObject &object)
 {
     return toJsonString(QJsonDocument(object));
 }
+*/
 
 static QString toJsonString(const QJsonArray &array)
 {

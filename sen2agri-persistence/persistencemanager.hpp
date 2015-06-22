@@ -64,4 +64,6 @@ public slots:
     void InsertJobResumedEvent(JobResumedEvent event);
 
     SerializedEventList GetNewEvents();
+
+    void InsertNodeStatistics(const NodeStatistics &statistics);
 };

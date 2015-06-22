@@ -291,3 +291,10 @@ SerializedEventList PersistenceManager::GetNewEvents()
 
     return {};
 }
+
+void PersistenceManager::InsertNodeStatistics(const NodeStatistics &statistics)
+{
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const NodeStatistics &statistics) {
+        dbProvider.InsertNodeStatistics(statistics);
+    }, std::ref(dbProvider), std::move(statistics)));
+}

@@ -47,4 +47,6 @@ public:
     void InsertJobResumedEvent(const JobResumedEvent &event);
 
     SerializedEventList GetNewEvents();
+
+    void InsertNodeStatistics(const NodeStatistics &statistics);
 };

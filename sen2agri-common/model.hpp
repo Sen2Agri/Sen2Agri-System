@@ -471,8 +471,8 @@ public:
 
 typedef QList<SerializedEvent> SerializedEventList;
 
-Q_DECLARE_METATYPE(SerializedEvent);
-Q_DECLARE_METATYPE(SerializedEventList);
+Q_DECLARE_METATYPE(SerializedEvent)
+Q_DECLARE_METATYPE(SerializedEventList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const SerializedEvent &event);
 const QDBusArgument &operator>>(const QDBusArgument &argument, SerializedEvent &event);
@@ -482,3 +482,24 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, int64_t &value);
 
 QDBusArgument &operator<<(QDBusArgument &argument, uint64_t value);
 const QDBusArgument &operator>>(const QDBusArgument &argument, uint64_t &value);
+
+class NodeStatistics
+{
+public:
+    QString node;
+    int32_t freeRamKb;
+    int64_t freeDiskBytes;
+
+    NodeStatistics();
+    NodeStatistics(QString node, int32_t freeRamKb, int64_t freeDiskBytes);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<NodeStatistics> NodeStatisticsList;
+
+Q_DECLARE_METATYPE(NodeStatistics)
+Q_DECLARE_METATYPE(NodeStatisticsList)
+
+QDBusArgument &operator<<(QDBusArgument &argument, NodeStatistics statistics);
+const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &statistics);

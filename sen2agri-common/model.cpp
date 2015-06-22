@@ -38,6 +38,8 @@ void registerMetaTypes()
 
     SerializedEvent::registerMetaTypes();
 
+    NodeStatistics::registerMetaTypes();
+
     qDBusRegisterMetaType<QJsonDocument>();
 
     qDBusRegisterMetaType<JobStartType>();
@@ -672,9 +674,10 @@ QJsonDocument ProductAvailableEvent::toJson() const
     return QJsonDocument(node);
 }
 
-ProductAvailableEvent ProductAvailableEvent::fromJson(const QJsonDocument &json)
+ProductAvailableEvent ProductAvailableEvent::fromJson(const QJsonDocument &/*json*/)
 {
-    const auto &object = json.object();
+    // TODO figure out what we'll store here
+//    const auto &object = json.object();
     return {};
 }
 
@@ -894,4 +897,29 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, uint64_t &value)
     value = val;
 
     return argument;
+}
+
+NodeStatistics::NodeStatistics() : freeRamKb(), freeDiskBytes()
+{
+}
+
+NodeStatistics::NodeStatistics(QString node, int32_t freeRamKb, int64_t freeDiskBytes)
+    : node(std::move(node)), freeRamKb(freeRamKb), freeDiskBytes(freeDiskBytes)
+{
+}
+
+void NodeStatistics::registerMetaTypes()
+{
+    qDBusRegisterMetaType<NodeStatistics>();
+    qDBusRegisterMetaType<NodeStatisticsList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, NodeStatistics statistics)
+{
+    return argument << statistics.node << statistics.freeRamKb << statistics.freeDiskBytes;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &statistics)
+{
+    return argument >> statistics.node >> statistics.freeRamKb >> statistics.freeDiskBytes;
 }
