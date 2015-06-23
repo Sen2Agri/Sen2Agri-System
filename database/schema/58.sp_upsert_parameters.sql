@@ -1,5 +1,6 @@
-﻿CREATE OR REPLACE FUNCTION sp_upsert_parameters(
-IN _parameters JSON) RETURNS 
+CREATE OR REPLACE FUNCTION sp_upsert_parameters(
+IN _parameters JSON,
+IN _is_admin BOOLEAN) RETURNS
 TABLE (key CHARACTER VARYING, error_message CHARACTER VARYING) AS $$
 BEGIN
 
@@ -30,6 +31,14 @@ BEGIN
 	-- Validate the values against the expected data type.
 	UPDATE params
 	SET is_valid_error_message = sp_validate_data_type_value(value, type);
+
+        IF NOT _is_admin THEN
+            -- Make sure not to update advanced parameters if the caller is not an admin
+            UPDATE params
+            SET is_valid_error_message = 'Only an administrator can update this parameter'
+            FROM config_metadata
+            WHERE params.key = config_metadata.key and config_metadata.is_advanced;
+        END IF;
 
 	-- Update the values for the params that do exist, that are not to be deleted and that are valid
 	UPDATE config SET

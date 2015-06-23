@@ -20,6 +20,8 @@ public:
     ConfigModel();
     ConfigModel(ConfigurationSet configuration);
 
+    bool isAdmin() const;
+
     bool isSiteSpecific(const ParameterKey &parameter) const;
     QString getValue(const ParameterKey &parameter, bool &fromGlobal) const;
     QString getGlobalValue(const ParameterKey &parameter) const;

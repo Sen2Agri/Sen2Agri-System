@@ -5,29 +5,27 @@ TARGET = sen2agri-persistence
 
 DESTDIR = bin
 
-CONFIG += console c++11 precompile_header
+CONFIG += c++11 precompile_header
 CONFIG -= app_bundle
 
 PRECOMPILED_HEADER = pch.hpp
 
-INCLUDEPATH += ../dbus-model ../Optional
+INCLUDEPATH += ../Optional
 
 TEMPLATE = app
 
 adaptor.files = ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
-adaptor.header_flags = -i ../dbus-model/model.hpp
+adaptor.header_flags = -i ../sen2agri-common/model.hpp
 
 DBUS_ADAPTORS += adaptor
 
 SOURCES += main.cpp \
     persistencemanager.cpp \
     dbprovider.cpp \
-    ../dbus-model/model.cpp \
     sql_error.cpp \
     sqldatabaseraii.cpp \
     persistencemanagerdbprovider.cpp \
-    settings.cpp \
-    logger.cpp
+    settings.cpp
 
 DISTFILES += \
 # install to /usr/share/dbus-1/interfaces/org.esa.sen2agri.persistenceManager.xml
@@ -44,12 +42,16 @@ DISTFILES += \
 HEADERS += \
     persistencemanager.hpp \
     dbprovider.hpp \
-    ../dbus-model/model.hpp \
     sql_error.hpp \
     pch.hpp \
     sqldatabaseraii.hpp \
     asyncdbustask.hpp \
     persistencemanagerdbprovider.hpp \
-    settings.hpp \
-    make_unique.hpp \
-    logger.hpp
+    settings.hpp
+
+LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
+
+INCLUDEPATH += $$PWD/../sen2agri-common
+DEPENDPATH += $$PWD/../sen2agri-common
+
+PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a

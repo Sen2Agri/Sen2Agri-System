@@ -55,7 +55,7 @@ BEGIN
 	INNER JOIN processor ON unarchived_products.processor_id = processor.id
 	INNER JOIN product_type ON unarchived_products.product_type_id = product_type.id
 	INNER JOIN site ON unarchived_products.site_id = site.id
-	ORDER BY unarchived_products.created;
+	ORDER BY unarchived_products.created_timestamp;
 
 END;
 $$ LANGUAGE plpgsql;

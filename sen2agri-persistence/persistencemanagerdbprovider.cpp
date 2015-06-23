@@ -6,20 +6,19 @@
 
 #include <set>
 
+#include <optional_util.hpp>
+
+static QString toJsonString(const QJsonDocument &document);
+static QString toJsonString(const QJsonObject &document);
+static QString toJsonString(const QJsonArray &document);
+
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions);
 static QString getArchivedProductsJson(const ArchivedProductList &products);
+static QString getNewStepsJson(const NewStepList &steps);
+static QString getExecutionStatisticsJson(const ExecutionStatistics &statistics);
 
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query);
 static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query);
-
-template <typename T>
-std::experimental::optional<T> to_optional(const QVariant &v)
-{
-    if (v.isNull()) {
-        return std::experimental::nullopt;
-    }
-    return v.value<T>();
-}
 
 PersistenceManagerDBProvider::PersistenceManagerDBProvider(const Settings &settings)
     : provider(settings)
@@ -35,7 +34,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(QStringLiteral("GetConfigurationSet"), [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(QStringLiteral("select * from sp_get_categories()"));
 
         query.setForwardOnly(true);
@@ -125,7 +124,7 @@ PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(QStringLiteral("GetConfigurationParameters"), [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(QStringLiteral("select * from sp_get_parameters(:prefix)"));
         query.bindValue(QStringLiteral(":prefix"), prefix);
 
@@ -143,7 +142,7 @@ PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QSt
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(QStringLiteral("GetJobConfigurationParameters"), [&]() {
+    return provider.handleTransactionRetry(QStringLiteral("GetJobConfigurationParameters"), [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_get_job_parameters(:job_id, :prefix)"));
         query.bindValue(QStringLiteral(":job_id"), jobId);
@@ -159,15 +158,16 @@ PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QSt
 }
 
 KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
-    const ConfigurationUpdateActionList &actions)
+    const ConfigurationUpdateActionList &actions, bool isAdmin)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(QStringLiteral("UpdateConfigurationParameters"), [&]() {
-        auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_upsert_parameters(:parameters)"));
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_upsert_parameters(:parameters, :isAdmin)"));
 
         query.bindValue(QStringLiteral(":parameters"), getConfigurationUpsertJson(actions));
+        query.bindValue(QStringLiteral(":isAdmin"), isAdmin);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -183,28 +183,27 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(
-        QStringLiteral("UpdateJobConfigurationParameters"), [&]() {
-            auto query = db.prepareQuery(
-                QStringLiteral("select * from sp_upsert_job_parameters(:job_id, :parameters)"));
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_upsert_job_parameters(:job_id, :parameters)"));
 
-            query.bindValue(QStringLiteral(":job_id"), jobId);
-            query.bindValue(QStringLiteral(":parameters"), getConfigurationUpsertJson(parameters));
+        query.bindValue(QStringLiteral(":job_id"), jobId);
+        query.bindValue(QStringLiteral(":parameters"), getConfigurationUpsertJson(parameters));
 
-            query.setForwardOnly(true);
-            if (!query.exec()) {
-                throw_query_error(query);
-            }
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
 
-            return mapUpdateConfigurationResult(query);
-        });
+        return mapUpdateConfigurationResult(query);
+    });
 }
 
 ProductToArchiveList PersistenceManagerDBProvider::GetProductsToArchive()
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(QStringLiteral("GetProductsToArchive"), [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(QStringLiteral("select * from sp_get_products_to_archive()"));
 
         query.setForwardOnly(true);
@@ -213,9 +212,9 @@ ProductToArchiveList PersistenceManagerDBProvider::GetProductsToArchive()
         }
 
         auto dataRecord = query.record();
-        auto productIdCol = dataRecord.indexOf(QStringLiteral("productId"));
-        auto currentPathCol = dataRecord.indexOf(QStringLiteral("currentPath"));
-        auto archivePathCol = dataRecord.indexOf(QStringLiteral("archivePath"));
+        auto productIdCol = dataRecord.indexOf(QStringLiteral("product_id"));
+        auto currentPathCol = dataRecord.indexOf(QStringLiteral("current_path"));
+        auto archivePathCol = dataRecord.indexOf(QStringLiteral("archive_path"));
 
         ProductToArchiveList result;
         while (query.next()) {
@@ -232,7 +231,7 @@ void PersistenceManagerDBProvider::MarkProductsArchived(const ArchivedProductLis
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(QStringLiteral("MarkProductsArchived"), [&]() {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(QStringLiteral("select sp_mark_products_archived(:products)"));
         query.bindValue(QStringLiteral(":products"), getArchivedProductsJson(products));
 
@@ -247,17 +246,16 @@ int PersistenceManagerDBProvider::SubmitJob(const NewJob &job)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(QStringLiteral("SubmitJob"), [&]() {
-        auto query = db.prepareQuery(
-            QStringLiteral("select * from sp_submit_job(:processorId, :productId, :siteId, "
-                           ":startTypeId, :inputPath, :outputPath, :stepsTotal)"));
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_submit_job(:name, :description, "
+                                           ":processorId, :siteId, :startTypeId, :parameters)"));
+        query.bindValue(QStringLiteral(":name"), job.name);
+        query.bindValue(QStringLiteral(":description"), job.description);
         query.bindValue(QStringLiteral(":processorId"), job.processorId);
-        query.bindValue(QStringLiteral(":productId"), job.productId);
         query.bindValue(QStringLiteral(":siteId"), job.siteId);
         query.bindValue(QStringLiteral(":startTypeId"), static_cast<int>(job.startType));
-        query.bindValue(QStringLiteral(":inputPath"), job.inputPath);
-        query.bindValue(QStringLiteral(":outputPath"), job.outputPath);
-        query.bindValue(QStringLiteral(":stepsTotal"), job.stepsTotal);
+        query.bindValue(QStringLiteral(":parameters"), QString::fromUtf8(job.parameters.toJson()));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -275,12 +273,91 @@ int PersistenceManagerDBProvider::SubmitJob(const NewJob &job)
     });
 }
 
-void PersistenceManagerDBProvider::NotifyJobStepStarted(int jobId)
+int PersistenceManagerDBProvider::SubmitTask(const NewTask &task)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(QStringLiteral("NotifyJobStepStarted"), [&]() {
-        auto query = db.prepareQuery(QStringLiteral("select sp_notify_job_started(:jobId)"));
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_submit_task(:jobId, :moduleId, :parameters)"));
+        query.bindValue(QStringLiteral(":jobId"), task.jobId);
+        query.bindValue(QStringLiteral(":moduleId"), task.moduleId);
+        query.bindValue(QStringLiteral(":parameters"), task.parameters);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        auto dataRecord = query.record();
+        auto taskIdCol = dataRecord.indexOf(QStringLiteral("task_id"));
+
+        if (query.next()) {
+            return query.value(taskIdCol).toInt();
+        } else {
+            throw std::runtime_error(
+                "Expecting a return value from sp_submit_task, but none found");
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::SubmitSteps(const NewStepList &steps)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_submit_steps(:steps)"));
+        query.bindValue(QStringLiteral(":steps"), getNewStepsJson(steps));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkStepStarted(int taskId, const QString &name)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_step_started(:taskId, :name)"));
+        query.bindValue(QStringLiteral(":taskId"), taskId);
+        query.bindValue(QStringLiteral(":name"), name);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkStepFinished(int taskId,
+                                                    const QString &name,
+                                                    const ExecutionStatistics &statistics)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select sp_mark_step_finished(:taskId, :name, :statistics)"));
+        query.bindValue(QStringLiteral(":taskId"), taskId);
+        query.bindValue(QStringLiteral(":name"), name);
+        query.bindValue(QStringLiteral(":statistics"), getExecutionStatisticsJson(statistics));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkJobFinished(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_finished(:jobId)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
 
         query.setForwardOnly(true);
@@ -290,28 +367,67 @@ void PersistenceManagerDBProvider::NotifyJobStepStarted(int jobId)
     });
 }
 
-void PersistenceManagerDBProvider::NotifyJobStepFinished(int jobId /*, resources */)
+void PersistenceManagerDBProvider::InsertTaskFinishedEvent(const TaskFinishedEvent &event)
+{
+    InsertEvent(event);
+}
+
+void PersistenceManagerDBProvider::InsertProductAvailableEvent(const ProductAvailableEvent &event)
+{
+    InsertEvent(event);
+}
+
+void PersistenceManagerDBProvider::InsertJobCancelledEvent(const JobCancelledEvent &event)
+{
+    InsertEvent(event);
+}
+
+void PersistenceManagerDBProvider::InsertJobPausedEvent(const JobPausedEvent &event)
+{
+    InsertEvent(event);
+}
+
+void PersistenceManagerDBProvider::InsertJobResumedEvent(const JobResumedEvent &event)
+{
+    InsertEvent(event);
+}
+
+SerializedEventList PersistenceManagerDBProvider::GetNewEvents()
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(QStringLiteral("NotifyJobStepFinished"), [&]() {
-        auto query = db.prepareQuery(QStringLiteral("select sp_notify_job_step_finished(:jobId)"));
-        query.bindValue(QStringLiteral(":jobId"), jobId);
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_new_events()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
             throw_query_error(query);
         }
+
+        auto dataRecord = query.record();
+        auto eventTypeCol = dataRecord.indexOf(QStringLiteral("event_type"));
+        auto eventDataCol = dataRecord.indexOf(QStringLiteral("event_data"));
+
+        SerializedEventList result;
+        while (query.next()) {
+            result.append(
+                { static_cast<EventType>(query.value(eventTypeCol).toInt()),
+                  QJsonDocument::fromJson(query.value(eventDataCol).toString().toUtf8()) });
+        }
+
+        return result;
     });
 }
 
-void PersistenceManagerDBProvider::NotifyJobFinished(int jobId)
+void PersistenceManagerDBProvider::InsertEvent(const SerializedEvent &event)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(QStringLiteral("NotifyJobFinished"), [&]() {
-        auto query = db.prepareQuery(QStringLiteral("select sp_notify_job_finished(:jobId)"));
-        query.bindValue(QStringLiteral(":jobId"), jobId);
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select sp_insert_event(:eventType, :eventData)"));
+        query.bindValue(QStringLiteral(":eventType"), static_cast<int>(event.type));
+        query.bindValue(QStringLiteral(":eventData"), toJsonString(event.data));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -330,7 +446,8 @@ static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &a
         node[QStringLiteral("value")] = p.value ? QJsonValue(p.value.value()) : QJsonValue();
         array.append(std::move(node));
     }
-    return QString::fromUtf8(QJsonDocument(array).toJson());
+
+    return toJsonString(array);
 }
 
 static QString getArchivedProductsJson(const ArchivedProductList &products)
@@ -342,7 +459,39 @@ static QString getArchivedProductsJson(const ArchivedProductList &products)
         node[QStringLiteral("archive_path")] = p.archivePath;
         array.append(std::move(node));
     }
-    return QString::fromUtf8(QJsonDocument(array).toJson());
+
+    return toJsonString(array);
+}
+
+static QString getNewStepsJson(const NewStepList &steps)
+{
+    QJsonArray array;
+    for (const auto &s : steps) {
+        QJsonObject node;
+        node[QStringLiteral("task_id")] = s.taskId;
+        node[QStringLiteral("name")] = s.name;
+        node[QStringLiteral("parameters")] = s.parameters.object();
+        array.append(std::move(node));
+    }
+
+    return toJsonString(array);
+}
+
+static QString getExecutionStatisticsJson(const ExecutionStatistics &statistics)
+{
+    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
+
+    QJsonObject node;
+    node[QStringLiteral("node")] = statistics.node;
+    node[QStringLiteral("user_cpu_ms")] = qlonglong{ statistics.userCpuMs };
+    node[QStringLiteral("system_cpu_ms")] = qlonglong{ statistics.systemCpuMs };
+    node[QStringLiteral("duration_ms")] = qlonglong{ statistics.durationMs };
+    node[QStringLiteral("max_rss_kb")] = statistics.maxRssKb;
+    node[QStringLiteral("max_vm_size_kb")] = statistics.maxVmSizeKb;
+    node[QStringLiteral("disk_read_b")] = qlonglong{ statistics.diskReadBytes };
+    node[QStringLiteral("disk_write_b")] = qlonglong{ statistics.diskWriteBytes };
+
+    return toJsonString(node);
 }
 
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query)
@@ -374,4 +523,19 @@ static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query)
     }
 
     return result;
+}
+
+static QString toJsonString(const QJsonDocument &document)
+{
+    return QString::fromUtf8(document.toJson());
+}
+
+static QString toJsonString(const QJsonObject &object)
+{
+    return toJsonString(QJsonDocument(object));
+}
+
+static QString toJsonString(const QJsonArray &array)
+{
+    return toJsonString(QJsonDocument(array));
 }

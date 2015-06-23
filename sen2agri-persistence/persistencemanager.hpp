@@ -16,51 +16,52 @@ class PersistenceManager : public QObject, protected QDBusContext
     Q_OBJECT
 
     PersistenceManagerDBProvider dbProvider;
-    QDBusConnection connection;
 
     template <typename F>
     void RunAsync(F &&f)
     {
         setDelayedReply(true);
 
-        if (auto task = makeAsyncDBusTask(message(), connection, std::forward<F>(f))) {
+        if (auto task = makeAsyncDBusTask(message(), connection(), std::forward<F>(f))) {
             QThreadPool::globalInstance()->start(task);
         } else {
             sendErrorReply(QDBusError::NoMemory);
         }
     }
 
-    template <typename F>
-    void RunAsyncNoResult(F &&f)
-    {
-        setDelayedReply(true);
-
-        if (auto task = makeAsyncDBusTaskNoResult(message(), connection, std::forward<F>(f))) {
-            QThreadPool::globalInstance()->start(task);
-        } else {
-            sendErrorReply(QDBusError::NoMemory);
-        }
-    }
+    bool IsCallerAdmin();
 
 public:
-    explicit PersistenceManager(QDBusConnection &connection,
-                                const Settings &settings,
-                                QObject *parent = 0);
+    explicit PersistenceManager(const Settings &settings, QObject *parent = 0);
 
 signals:
 
 public slots:
     ConfigurationSet GetConfigurationSet();
-    ConfigurationParameterValueList GetConfigurationParameters(const QString &prefix);
-    ConfigurationParameterValueList GetJobConfigurationParameters(int jobId, const QString &prefix);
-    KeyedMessageList UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions);
-    KeyedMessageList
-    UpdateJobConfigurationParameters(int jobId, const ConfigurationUpdateActionList &parameters);
+
+    ConfigurationParameterValueList GetConfigurationParameters(QString prefix);
+    ConfigurationParameterValueList GetJobConfigurationParameters(int jobId, QString prefix);
+
+    KeyedMessageList UpdateConfigurationParameters(ConfigurationUpdateActionList parameters);
+    KeyedMessageList UpdateJobConfigurationParameters(int jobId,
+                                                      ConfigurationUpdateActionList parameters);
 
     ProductToArchiveList GetProductsToArchive();
+    void MarkProductsArchived(ArchivedProductList products);
 
-    int SubmitJob(const NewJob &job);
-    void NotifyJobStepStarted(int jobId);
-    void NotifyJobStepFinished(int jobId/*, resources */);
-    void NotifyJobFinished(int jobId);
+    int SubmitJob(NewJob job);
+    int SubmitTask(NewTask task);
+    void SubmitSteps(NewStepList steps);
+
+    void MarkStepStarted(int taskId, QString name);
+    void MarkStepFinished(int taskId, QString name, ExecutionStatistics statistics);
+    void MarkJobFinished(int jobId);
+
+    void InsertTaskFinishedEvent(TaskFinishedEvent event);
+    void InsertProductAvailableEvent(ProductAvailableEvent event);
+    void InsertJobCancelledEvent(JobCancelledEvent event);
+    void InsertJobPausedEvent(JobPausedEvent event);
+    void InsertJobResumedEvent(JobResumedEvent event);
+
+    SerializedEventList GetNewEvents();
 };

@@ -27,6 +27,11 @@ ConfigModel::ConfigModel(ConfigurationSet configuration) : configuration(move(co
     originalValues = values;
 }
 
+bool ConfigModel::isAdmin() const
+{
+    return configuration.isAdmin;
+}
+
 bool ConfigModel::isSiteSpecific(const ParameterKey &parameter) const
 {
     return values.find(parameter) != end(values);

@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
         registerMetaTypes();
 
         QDBusConnection connection = QDBusConnection::systemBus();
-        PersistenceManager persistenceManager(connection, settings);
+        PersistenceManager persistenceManager(settings);
 
         new PersistenceManagerAdaptor(&persistenceManager);
 

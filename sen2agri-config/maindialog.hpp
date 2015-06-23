@@ -34,6 +34,7 @@ private:
     std::vector<int> tabCategory;
     std::vector<QComboBox *> regionLists;
     int invalidFields;
+    bool isAdmin;
 
     void loadModel(const ConfigurationSet &configuration);
     void switchSite(std::experimental::optional<int> siteId, int categoryId, QWidget *parentWidget);

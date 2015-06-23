@@ -3,7 +3,7 @@
 <node name="/org/esa/sen2agri/persistenceManager">
   <interface name="org.esa.sen2agri.persistenceManager">
     <method name="GetConfigurationSet">
-      <arg name="result" type="(a(is)a(sissb)a(sis)a(is))" direction="out" />
+      <arg name="result" type="(a(is)a(sissb)a(sis)a(is)b)" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationSet" />
     </method>
     <method name="GetConfigurationParameters">

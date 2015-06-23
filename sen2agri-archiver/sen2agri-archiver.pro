@@ -17,19 +17,28 @@ DESTDIR = bin
 
 CONFIG += c++11 precompile_header
 
-INCLUDEPATH += ../dbus-model ../Optional
+PRECOMPILED_HEADER = pch.hpp
+
+INCLUDEPATH += ../Optional
 
 dbus_interface.files = ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
-dbus_interface.header_flags = -i ../dbus-model/model.hpp
+dbus_interface.header_flags = -i ../sen2agri-common/model.hpp
 
 DBUS_INTERFACES += dbus_interface
 
 SOURCES += main.cpp \
-    archivermanager.cpp \
-    ../dbus-model/model.cpp
+    archivermanager.cpp
 
 HEADERS += \
     archivermanager.hpp \
-    ../dbus-model/model.hpp
+    pch.hpp \
+    pch.hpp
 
 DISTFILES +=
+
+LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
+
+INCLUDEPATH += $$PWD/../sen2agri-common
+DEPENDPATH += $$PWD/../sen2agri-common
+
+PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a
