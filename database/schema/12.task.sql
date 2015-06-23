@@ -3,7 +3,7 @@
   id serial NOT NULL,
   job_id int NOT NULL,
   module_short_name character varying NOT NULL,
-  parameters character varying,
+  parameters json,
   submit_timestamp timestamp with time zone NOT NULL DEFAULT now(),
   start_timestamp timestamp with time zone,
   end_timestamp timestamp with time zone,

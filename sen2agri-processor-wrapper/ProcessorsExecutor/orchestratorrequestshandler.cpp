@@ -20,6 +20,7 @@ bool OrchestratorRequestsHandler::ExecuteProcessor(const QString &jsonCfgStr)
     }
 
     QVariantMap msgVals = document.object().toVariantMap();
+    mapVar["MSG_TYPE"] = START_PROCESSOR_REQ;
     RessourceManagerItf::GetInstance()->StartProcessor(msgVals);
 
     return true;

@@ -5,10 +5,7 @@
 #include <iostream>
 using namespace std;
 
-enum {PROCESSOR_ENDED = 1, PROCESSOR_INFO_MSG = 2, START_PROCESSOR_REQ = 3, STOP_PROCESSOR_REQ = 4};
-
 QString strStartRequest("{                 \
-   \"MSG_TYPE\":3,                         \
    \"PROC_NAME\" : \"CROP_TYPE\",          \
    \"PROC_ARGS\": \"crop args\",           \
    \"STEP_ID\": \"An_Unique_Step_ID\"      \

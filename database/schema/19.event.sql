@@ -2,7 +2,7 @@
 (
   id serial,
   type_id smallint NOT NULL,
-  data character varying,
+  data json,
   submitted_timestamp timestamp with time zone DEFAULT now(),
   processing_started_timestamp timestamp with time zone,
   processing_completed_timestamp timestamp with time zone,
