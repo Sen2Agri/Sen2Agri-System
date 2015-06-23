@@ -36,7 +36,7 @@ void registerMetaTypes()
     JobPausedEvent::registerMetaTypes();
     JobResumedEvent::registerMetaTypes();
 
-    SerializedEvent::registerMetaTypes();
+    UnprocessedEvent::registerMetaTypes();
 
     NodeStatistics::registerMetaTypes();
 
@@ -674,10 +674,10 @@ QJsonDocument ProductAvailableEvent::toJson() const
     return QJsonDocument(node);
 }
 
-ProductAvailableEvent ProductAvailableEvent::fromJson(const QJsonDocument &/*json*/)
+ProductAvailableEvent ProductAvailableEvent::fromJson(const QJsonDocument & /*json*/)
 {
     // TODO figure out what we'll store here
-//    const auto &object = json.object();
+    // const auto &object = json.object();
     return {};
 }
 
@@ -807,54 +807,55 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobResumedEvent &
     return argument >> event.jobId;
 }
 
-SerializedEvent::SerializedEvent() : type()
+UnprocessedEvent::UnprocessedEvent() : type()
 {
 }
 
-SerializedEvent::SerializedEvent(const TaskFinishedEvent &event)
-    : type(EventType::TaskFinished), data(event.toJson())
+UnprocessedEvent::UnprocessedEvent(EventType type,
+                                   QJsonDocument data,
+                                   QDateTime submittedTime,
+                                   std::experimental::optional<QDateTime> processingStartedTime)
+    : type(type),
+      data(std::move(data)),
+      submittedTime(std::move(submittedTime)),
+      processingStartedTime(std::move(processingStartedTime))
 {
 }
 
-SerializedEvent::SerializedEvent(const ProductAvailableEvent &event)
-    : type(EventType::ProductAvailable), data(event.toJson())
+void UnprocessedEvent::registerMetaTypes()
 {
+    qDBusRegisterMetaType<UnprocessedEvent>();
+    qDBusRegisterMetaType<UnprocessedEventList>();
 }
 
-SerializedEvent::SerializedEvent(const JobCancelledEvent &event)
-    : type(EventType::JobCancelled), data(event.toJson())
+QDBusArgument &operator<<(QDBusArgument &argument, const UnprocessedEvent &event)
 {
+    argument << event.type << event.data << event.submittedTime;
+
+    if (event.processingStartedTime) {
+        argument << true << *event.processingStartedTime;
+    } else {
+        argument << false << QDateTime();
+    }
+
+    return argument;
 }
 
-SerializedEvent::SerializedEvent(const JobPausedEvent &event)
-    : type(EventType::JobPaused), data(event.toJson())
+const QDBusArgument &operator>>(const QDBusArgument &argument, UnprocessedEvent &event)
 {
-}
+    bool hasProcessingStartedTime;
+    QDateTime processingStartedTime;
 
-SerializedEvent::SerializedEvent(const JobResumedEvent &event)
-    : type(EventType::JobResumed), data(event.toJson())
-{
-}
+    argument >> event.type >> event.data >> event.submittedTime >> hasProcessingStartedTime >>
+        processingStartedTime;
 
-SerializedEvent::SerializedEvent(EventType type, QJsonDocument data)
-    : type(type), data(std::move(data))
-{
-}
+    if (hasProcessingStartedTime) {
+        event.processingStartedTime = std::move(processingStartedTime);
+    } else {
+        event.processingStartedTime = std::experimental::nullopt;
+    }
 
-void SerializedEvent::registerMetaTypes()
-{
-    qDBusRegisterMetaType<SerializedEvent>();
-    qDBusRegisterMetaType<SerializedEventList>();
-}
-
-QDBusArgument &operator<<(QDBusArgument &argument, const SerializedEvent &event)
-{
-    return argument << event.type << event.data;
-}
-
-const QDBusArgument &operator>>(const QDBusArgument &argument, SerializedEvent &event)
-{
-    return argument >> event.type >> event.data;
+    return argument;
 }
 
 QDBusArgument &operator<<(QDBusArgument &argument, int64_t value)

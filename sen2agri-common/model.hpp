@@ -451,31 +451,30 @@ Q_DECLARE_METATYPE(JobResumedEvent)
 QDBusArgument &operator<<(QDBusArgument &argument, const JobResumedEvent &event);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobResumedEvent &event);
 
-class SerializedEvent
+class UnprocessedEvent
 {
 public:
     EventType type;
     QJsonDocument data;
+    QDateTime submittedTime;
+    std::experimental::optional<QDateTime> processingStartedTime;
 
-    SerializedEvent();
-    SerializedEvent(const TaskFinishedEvent &event);
-    SerializedEvent(const ProductAvailableEvent &event);
-    SerializedEvent(const JobCancelledEvent &event);
-    SerializedEvent(const JobPausedEvent &event);
-    SerializedEvent(const JobResumedEvent &event);
-
-    SerializedEvent(EventType type, QJsonDocument data);
+    UnprocessedEvent();
+    UnprocessedEvent(EventType type,
+                     QJsonDocument data,
+                     QDateTime submittedTime,
+                     std::experimental::optional<QDateTime> processingStartedTime);
 
     static void registerMetaTypes();
 };
 
-typedef QList<SerializedEvent> SerializedEventList;
+typedef QList<UnprocessedEvent> UnprocessedEventList;
 
-Q_DECLARE_METATYPE(SerializedEvent)
-Q_DECLARE_METATYPE(SerializedEventList)
+Q_DECLARE_METATYPE(UnprocessedEvent)
+Q_DECLARE_METATYPE(UnprocessedEventList)
 
-QDBusArgument &operator<<(QDBusArgument &argument, const SerializedEvent &event);
-const QDBusArgument &operator>>(const QDBusArgument &argument, SerializedEvent &event);
+QDBusArgument &operator<<(QDBusArgument &argument, const UnprocessedEvent &event);
+const QDBusArgument &operator>>(const QDBusArgument &argument, UnprocessedEvent &event);
 
 QDBusArgument &operator<<(QDBusArgument &argument, int64_t value);
 const QDBusArgument &operator>>(const QDBusArgument &argument, int64_t &value);

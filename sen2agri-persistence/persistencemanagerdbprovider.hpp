@@ -4,6 +4,7 @@
 #include "dbprovider.hpp"
 #include "model.hpp"
 #include "settings.hpp"
+#include "serializedevent.hpp"
 
 class PersistenceManagerDBProvider
 {
@@ -14,7 +15,7 @@ class PersistenceManagerDBProvider
     void InsertEvent(const SerializedEvent &event);
 
     PersistenceManagerDBProvider(const PersistenceManagerDBProvider &) = delete;
-    PersistenceManagerDBProvider & operator=(const PersistenceManagerDBProvider &) = delete;
+    PersistenceManagerDBProvider &operator=(const PersistenceManagerDBProvider &) = delete;
 
 public:
     PersistenceManagerDBProvider(const Settings &settings);
@@ -46,7 +47,7 @@ public:
     void InsertJobPausedEvent(const JobPausedEvent &event);
     void InsertJobResumedEvent(const JobResumedEvent &event);
 
-    SerializedEventList GetNewEvents();
+    UnprocessedEventList GetNewEvents();
 
     void InsertNodeStatistics(const NodeStatistics &statistics);
 };

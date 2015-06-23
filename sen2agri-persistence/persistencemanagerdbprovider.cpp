@@ -414,7 +414,7 @@ void PersistenceManagerDBProvider::InsertJobResumedEvent(const JobResumedEvent &
     InsertEvent(event);
 }
 
-SerializedEventList PersistenceManagerDBProvider::GetNewEvents()
+UnprocessedEventList PersistenceManagerDBProvider::GetNewEvents()
 {
     auto db = getDatabase();
 
@@ -427,14 +427,18 @@ SerializedEventList PersistenceManagerDBProvider::GetNewEvents()
         }
 
         auto dataRecord = query.record();
-        auto eventTypeCol = dataRecord.indexOf(QStringLiteral("event_type"));
-        auto eventDataCol = dataRecord.indexOf(QStringLiteral("event_data"));
+        auto eventTypeCol = dataRecord.indexOf(QStringLiteral("type_id"));
+        auto eventDataCol = dataRecord.indexOf(QStringLiteral("data"));
+        auto submittedCol = dataRecord.indexOf(QStringLiteral("submitted_timestamp"));
+        auto processingStartedCol =
+            dataRecord.indexOf(QStringLiteral("processing_started_timestamp"));
 
-        SerializedEventList result;
+        UnprocessedEventList result;
         while (query.next()) {
-            result.append(
-                { static_cast<EventType>(query.value(eventTypeCol).toInt()),
-                  QJsonDocument::fromJson(query.value(eventDataCol).toString().toUtf8()) });
+            result.append({ static_cast<EventType>(query.value(eventTypeCol).toInt()),
+                            QJsonDocument::fromJson(query.value(eventDataCol).toString().toUtf8()),
+                            query.value(submittedCol).toDateTime(),
+                            to_optional<QDateTime>(query.value(processingStartedCol)) });
         }
 
         return result;

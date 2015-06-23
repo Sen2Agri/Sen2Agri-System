@@ -285,7 +285,7 @@ void PersistenceManager::InsertJobResumedEvent(JobResumedEvent event)
     }, std::ref(dbProvider), std::move(event)));
 }
 
-SerializedEventList PersistenceManager::GetNewEvents()
+UnprocessedEventList PersistenceManager::GetNewEvents()
 {
     RunAsync([this] { return dbProvider.GetNewEvents(); });
 
@@ -294,7 +294,8 @@ SerializedEventList PersistenceManager::GetNewEvents()
 
 void PersistenceManager::InsertNodeStatistics(const NodeStatistics &statistics)
 {
-    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const NodeStatistics &statistics) {
-        dbProvider.InsertNodeStatistics(statistics);
-    }, std::ref(dbProvider), std::move(statistics)));
+    RunAsync(
+        std::bind([](PersistenceManagerDBProvider &dbProvider, const NodeStatistics &statistics) {
+            dbProvider.InsertNodeStatistics(statistics);
+        }, std::ref(dbProvider), std::move(statistics)));
 }

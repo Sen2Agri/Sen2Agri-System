@@ -63,7 +63,7 @@ public slots:
     void InsertJobPausedEvent(JobPausedEvent event);
     void InsertJobResumedEvent(JobResumedEvent event);
 
-    SerializedEventList GetNewEvents();
+    UnprocessedEventList GetNewEvents();
 
     void InsertNodeStatistics(const NodeStatistics &statistics);
 };
