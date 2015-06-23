@@ -427,6 +427,11 @@ void PersistenceManagerDBProvider::InsertJobResumedEvent(const JobResumedEvent &
     InsertEvent(event);
 }
 
+void PersistenceManagerDBProvider::InsertJobSubmittedEvent(const JobSubmittedEvent &event)
+{
+    InsertEvent(event);
+}
+
 UnprocessedEventList PersistenceManagerDBProvider::GetNewEvents()
 {
     auto db = getDatabase();

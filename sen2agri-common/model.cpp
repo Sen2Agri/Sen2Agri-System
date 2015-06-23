@@ -807,6 +807,43 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobResumedEvent &
     return argument >> event.jobId;
 }
 
+JobSubmittedEvent::JobSubmittedEvent() : jobId()
+{
+}
+
+JobSubmittedEvent::JobSubmittedEvent(int jobId) : jobId(jobId)
+{
+}
+
+QJsonDocument JobSubmittedEvent::toJson() const
+{
+    QJsonObject node;
+    node[QStringLiteral("job_id")] = jobId;
+
+    return QJsonDocument(node);
+}
+
+JobSubmittedEvent JobSubmittedEvent::fromJson(const QJsonDocument &json)
+{
+    const auto &object = json.object();
+    return { object.value(QStringLiteral("job_id")).toInt() };
+}
+
+void JobSubmittedEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<JobSubmittedEvent>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobSubmittedEvent &event)
+{
+    return argument << event.jobId;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobSubmittedEvent &event)
+{
+    return argument >> event.jobId;
+}
+
 UnprocessedEvent::UnprocessedEvent() : type()
 {
 }

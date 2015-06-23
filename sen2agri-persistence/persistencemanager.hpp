@@ -62,6 +62,7 @@ public slots:
     void InsertJobCancelledEvent(JobCancelledEvent event);
     void InsertJobPausedEvent(JobPausedEvent event);
     void InsertJobResumedEvent(JobResumedEvent event);
+    void InsertJobSubmittedEvent(JobSubmittedEvent event);
 
     UnprocessedEventList GetNewEvents();
 

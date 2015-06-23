@@ -285,6 +285,13 @@ void PersistenceManager::InsertJobResumedEvent(JobResumedEvent event)
     }, std::ref(dbProvider), std::move(event)));
 }
 
+void PersistenceManager::InsertJobSubmittedEvent(JobSubmittedEvent event)
+{
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const JobSubmittedEvent &event) {
+        dbProvider.InsertJobSubmittedEvent(event);
+    }, std::ref(dbProvider), std::move(event)));
+}
+
 UnprocessedEventList PersistenceManager::GetNewEvents()
 {
     RunAsync([this] { return dbProvider.GetNewEvents(); });

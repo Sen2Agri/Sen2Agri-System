@@ -10,11 +10,12 @@ public:
     EventType type;
     QJsonDocument data;
 
+    SerializedEvent(EventType type, QJsonDocument data);
+
     SerializedEvent(const TaskFinishedEvent &event);
     SerializedEvent(const ProductAvailableEvent &event);
     SerializedEvent(const JobCancelledEvent &event);
     SerializedEvent(const JobPausedEvent &event);
     SerializedEvent(const JobResumedEvent &event);
-
-    SerializedEvent(EventType type, QJsonDocument data);
+    SerializedEvent(const JobSubmittedEvent &event);
 };

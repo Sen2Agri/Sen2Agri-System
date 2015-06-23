@@ -347,7 +347,14 @@ Q_DECLARE_METATYPE(ExecutionStatistics)
 QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatistics &statistics);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatistics &statistics);
 
-enum class EventType { TaskFinished, ProductAvailable, JobCancelled, JobPaused, JobResumed };
+enum class EventType {
+    TaskFinished,
+    ProductAvailable,
+    JobCancelled,
+    JobPaused,
+    JobResumed,
+    JobSubmitted
+};
 
 Q_DECLARE_METATYPE(EventType)
 
@@ -450,6 +457,26 @@ Q_DECLARE_METATYPE(JobResumedEvent)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const JobResumedEvent &event);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobResumedEvent &event);
+
+class JobSubmittedEvent
+{
+public:
+    int jobId;
+
+    JobSubmittedEvent();
+    JobSubmittedEvent(int jobId);
+
+    QJsonDocument toJson() const;
+
+    static JobSubmittedEvent fromJson(const QJsonDocument &json);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(JobSubmittedEvent)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobSubmittedEvent &event);
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobSubmittedEvent &event);
 
 class UnprocessedEvent
 {

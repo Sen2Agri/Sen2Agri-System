@@ -46,6 +46,7 @@ public:
     void InsertJobCancelledEvent(const JobCancelledEvent &event);
     void InsertJobPausedEvent(const JobPausedEvent &event);
     void InsertJobResumedEvent(const JobResumedEvent &event);
+    void InsertJobSubmittedEvent(const JobSubmittedEvent &event);
 
     UnprocessedEventList GetNewEvents();
 

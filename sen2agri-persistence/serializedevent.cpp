@@ -1,5 +1,10 @@
 #include "serializedevent.hpp"
 
+SerializedEvent::SerializedEvent(EventType type, QJsonDocument data)
+    : type(type), data(std::move(data))
+{
+}
+
 SerializedEvent::SerializedEvent(const TaskFinishedEvent &event)
     : type(EventType::TaskFinished), data(event.toJson())
 {
@@ -25,7 +30,7 @@ SerializedEvent::SerializedEvent(const JobResumedEvent &event)
 {
 }
 
-SerializedEvent::SerializedEvent(EventType type, QJsonDocument data)
-    : type(type), data(std::move(data))
+SerializedEvent::SerializedEvent(const JobSubmittedEvent &event)
+    : type(EventType::JobSubmitted), data(event.toJson())
 {
 }
