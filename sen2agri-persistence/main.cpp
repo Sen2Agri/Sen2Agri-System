@@ -48,6 +48,8 @@ int main(int argc, char *argv[])
 
         registerMetaTypes();
 
+        qDebug() << QDBusMetaType::typeToSignature(qMetaTypeId<ConfigurationSet>());
+
         QDBusConnection connection = QDBusConnection::systemBus();
         PersistenceManager persistenceManager(settings);
 

@@ -402,36 +402,6 @@ void PersistenceManagerDBProvider::MarkJobFinished(int jobId)
     });
 }
 
-void PersistenceManagerDBProvider::InsertTaskFinishedEvent(const TaskFinishedEvent &event)
-{
-    InsertEvent(event);
-}
-
-void PersistenceManagerDBProvider::InsertProductAvailableEvent(const ProductAvailableEvent &event)
-{
-    InsertEvent(event);
-}
-
-void PersistenceManagerDBProvider::InsertJobCancelledEvent(const JobCancelledEvent &event)
-{
-    InsertEvent(event);
-}
-
-void PersistenceManagerDBProvider::InsertJobPausedEvent(const JobPausedEvent &event)
-{
-    InsertEvent(event);
-}
-
-void PersistenceManagerDBProvider::InsertJobResumedEvent(const JobResumedEvent &event)
-{
-    InsertEvent(event);
-}
-
-void PersistenceManagerDBProvider::InsertJobSubmittedEvent(const JobSubmittedEvent &event)
-{
-    InsertEvent(event);
-}
-
 UnprocessedEventList PersistenceManagerDBProvider::GetNewEvents()
 {
     auto db = getDatabase();

@@ -12,8 +12,6 @@ class PersistenceManagerDBProvider
 
     SqlDatabaseRAII getDatabase() const;
 
-    void InsertEvent(const SerializedEvent &event);
-
     PersistenceManagerDBProvider(const PersistenceManagerDBProvider &) = delete;
     PersistenceManagerDBProvider &operator=(const PersistenceManagerDBProvider &) = delete;
 
@@ -41,12 +39,7 @@ public:
     void MarkStepFinished(int taskId, const QString &name, const ExecutionStatistics &statistics);
     void MarkJobFinished(int jobId);
 
-    void InsertTaskFinishedEvent(const TaskFinishedEvent &event);
-    void InsertProductAvailableEvent(const ProductAvailableEvent &event);
-    void InsertJobCancelledEvent(const JobCancelledEvent &event);
-    void InsertJobPausedEvent(const JobPausedEvent &event);
-    void InsertJobResumedEvent(const JobResumedEvent &event);
-    void InsertJobSubmittedEvent(const JobSubmittedEvent &event);
+    void InsertEvent(const SerializedEvent &event);
 
     UnprocessedEventList GetNewEvents();
 
