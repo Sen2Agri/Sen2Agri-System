@@ -9,7 +9,7 @@
 #include <optional_util.hpp>
 
 static QString toJsonString(const QJsonDocument &document);
-//static QString toJsonString(const QJsonObject &document);
+// static QString toJsonString(const QJsonObject &document);
 static QString toJsonString(const QJsonArray &document);
 
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions);
@@ -340,7 +340,17 @@ void PersistenceManagerDBProvider::MarkStepFinished(int taskId,
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral(
+        db.transaction();
+
+        auto query =
+            db.prepareQuery(QStringLiteral("set transaction isolation level repeatable read"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        query = db.prepareQuery(QStringLiteral(
             "select sp_mark_step_finished(:taskId, :name, :node, :userCpuMs, :systemCpuMs, "
             ":durationMs, :maxRssKb, :maxVmSizeKb, :diskReadBytes, :diskWriteBytes)"));
         query.bindValue(QStringLiteral(":taskId"), taskId);
@@ -358,6 +368,9 @@ void PersistenceManagerDBProvider::MarkStepFinished(int taskId,
         if (!query.exec()) {
             throw_query_error(query);
         }
+        query.finish();
+
+        db.commit();
     });
 }
 
