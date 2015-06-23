@@ -91,6 +91,32 @@ QSqlQuery SqlDatabaseRAII::prepareQuery(const QString &query)
     return q;
 }
 
+void SqlDatabaseRAII::transaction()
+{
+    if (!db.transaction()) {
+        throw_db_error(db);
+    }
+}
+
+void SqlDatabaseRAII::commit()
+{
+    if (!db.commit()) {
+        throw_db_error(db);
+    }
+}
+
+void SqlDatabaseRAII::rollback()
+{
+    if (!db.rollback()) {
+        throw_db_error(db);
+    }
+}
+
+void throw_db_error(const QSqlDatabase &db)
+{
+    throw sql_error(db.lastError());
+}
+
 void throw_query_error(const QSqlQuery &query)
 {
     throw sql_error(query.lastError());
