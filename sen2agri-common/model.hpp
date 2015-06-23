@@ -481,13 +481,15 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobSubmittedEvent
 class UnprocessedEvent
 {
 public:
+    int eventId;
     EventType type;
     QJsonDocument data;
     QDateTime submittedTime;
     std::experimental::optional<QDateTime> processingStartedTime;
 
     UnprocessedEvent();
-    UnprocessedEvent(EventType type,
+    UnprocessedEvent(int eventId,
+                     EventType type,
                      QJsonDocument data,
                      QDateTime submittedTime,
                      std::experimental::optional<QDateTime> processingStartedTime);
@@ -502,12 +504,6 @@ Q_DECLARE_METATYPE(UnprocessedEventList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const UnprocessedEvent &event);
 const QDBusArgument &operator>>(const QDBusArgument &argument, UnprocessedEvent &event);
-
-QDBusArgument &operator<<(QDBusArgument &argument, int64_t value);
-const QDBusArgument &operator>>(const QDBusArgument &argument, int64_t &value);
-
-QDBusArgument &operator<<(QDBusArgument &argument, uint64_t value);
-const QDBusArgument &operator>>(const QDBusArgument &argument, uint64_t &value);
 
 class NodeStatistics
 {

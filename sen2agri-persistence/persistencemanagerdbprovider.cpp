@@ -415,6 +415,7 @@ UnprocessedEventList PersistenceManagerDBProvider::GetNewEvents()
         }
 
         auto dataRecord = query.record();
+        auto eventIdCol = dataRecord.indexOf(QStringLiteral("id"));
         auto eventTypeCol = dataRecord.indexOf(QStringLiteral("type_id"));
         auto eventDataCol = dataRecord.indexOf(QStringLiteral("data"));
         auto submittedCol = dataRecord.indexOf(QStringLiteral("submitted_timestamp"));
@@ -423,7 +424,8 @@ UnprocessedEventList PersistenceManagerDBProvider::GetNewEvents()
 
         UnprocessedEventList result;
         while (query.next()) {
-            result.append({ static_cast<EventType>(query.value(eventTypeCol).toInt()),
+            result.append({ query.value(eventIdCol).toInt(),
+                            static_cast<EventType>(query.value(eventTypeCol).toInt()),
                             QJsonDocument::fromJson(query.value(eventDataCol).toString().toUtf8()),
                             query.value(submittedCol).toDateTime(),
                             to_optional<QDateTime>(query.value(processingStartedCol)) });

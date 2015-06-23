@@ -7,6 +7,12 @@
 
 using std::move;
 
+QDBusArgument &operator<<(QDBusArgument &argument, int64_t value);
+const QDBusArgument &operator>>(const QDBusArgument &argument, int64_t &value);
+
+QDBusArgument &operator<<(QDBusArgument &argument, uint64_t value);
+const QDBusArgument &operator>>(const QDBusArgument &argument, uint64_t &value);
+
 void registerMetaTypes()
 {
     ConfigurationSet::registerMetaTypes();
@@ -844,15 +850,17 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobSubmittedEvent
     return argument >> event.jobId;
 }
 
-UnprocessedEvent::UnprocessedEvent() : type()
+UnprocessedEvent::UnprocessedEvent() : eventId(), type()
 {
 }
 
-UnprocessedEvent::UnprocessedEvent(EventType type,
+UnprocessedEvent::UnprocessedEvent(int eventId,
+                                   EventType type,
                                    QJsonDocument data,
                                    QDateTime submittedTime,
                                    std::experimental::optional<QDateTime> processingStartedTime)
-    : type(type),
+    : eventId(eventId),
+      type(type),
       data(std::move(data)),
       submittedTime(std::move(submittedTime)),
       processingStartedTime(std::move(processingStartedTime))
@@ -867,7 +875,7 @@ void UnprocessedEvent::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const UnprocessedEvent &event)
 {
-    argument << event.type << event.data << event.submittedTime;
+    argument << event.eventId << event.type << event.data << event.submittedTime;
 
     if (event.processingStartedTime) {
         argument << true << *event.processingStartedTime;
@@ -883,56 +891,14 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, UnprocessedEvent 
     bool hasProcessingStartedTime;
     QDateTime processingStartedTime;
 
-    argument >> event.type >> event.data >> event.submittedTime >> hasProcessingStartedTime >>
-        processingStartedTime;
+    argument >> event.eventId >> event.type >> event.data >> event.submittedTime >>
+        hasProcessingStartedTime >> processingStartedTime;
 
     if (hasProcessingStartedTime) {
         event.processingStartedTime = std::move(processingStartedTime);
     } else {
         event.processingStartedTime = std::experimental::nullopt;
     }
-
-    return argument;
-}
-
-QDBusArgument &operator<<(QDBusArgument &argument, int64_t value)
-{
-    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
-
-    qlonglong val{ value };
-
-    return argument << val;
-}
-
-const QDBusArgument &operator>>(const QDBusArgument &argument, int64_t &value)
-{
-    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
-
-    qlonglong val;
-
-    argument >> val;
-    value = val;
-
-    return argument;
-}
-
-QDBusArgument &operator<<(QDBusArgument &argument, uint64_t value)
-{
-    static_assert(sizeof(qulonglong) == sizeof(uint64_t), "qulonglong must be 64-bit");
-
-    qulonglong val{ value };
-
-    return argument << val;
-}
-
-const QDBusArgument &operator>>(const QDBusArgument &argument, uint64_t &value)
-{
-    static_assert(sizeof(qulonglong) == sizeof(uint64_t), "qulonglong must be 64-bit");
-
-    qulonglong val;
-
-    argument >> val;
-    value = val;
 
     return argument;
 }
@@ -960,4 +926,42 @@ QDBusArgument &operator<<(QDBusArgument &argument, NodeStatistics statistics)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &statistics)
 {
     return argument >> statistics.node >> statistics.freeRamKb >> statistics.freeDiskBytes;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, int64_t value)
+{
+    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
+
+    return argument << qlonglong{ value };
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, int64_t &value)
+{
+    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
+
+    qlonglong val;
+
+    argument >> val;
+    value = val;
+
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, uint64_t value)
+{
+    static_assert(sizeof(qulonglong) == sizeof(uint64_t), "qulonglong must be 64-bit");
+
+    return argument << qulonglong{ value };
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, uint64_t &value)
+{
+    static_assert(sizeof(qulonglong) == sizeof(uint64_t), "qulonglong must be 64-bit");
+
+    qulonglong val;
+
+    argument >> val;
+    value = val;
+
+    return argument;
 }
