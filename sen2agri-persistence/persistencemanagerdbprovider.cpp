@@ -320,7 +320,17 @@ void PersistenceManagerDBProvider::MarkStepStarted(int taskId, const QString &na
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral("select sp_mark_step_started(:taskId, :name)"));
+        db.transaction();
+
+        auto query =
+            db.prepareQuery(QStringLiteral("set transaction isolation level repeatable read"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        query = db.prepareQuery(QStringLiteral("select sp_mark_step_started(:taskId, :name)"));
         query.bindValue(QStringLiteral(":taskId"), taskId);
         query.bindValue(QStringLiteral(":name"), name);
 
@@ -328,6 +338,9 @@ void PersistenceManagerDBProvider::MarkStepStarted(int taskId, const QString &na
         if (!query.exec()) {
             throw_query_error(query);
         }
+        query.finish();
+
+        db.commit();
     });
 }
 
