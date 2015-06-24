@@ -8,6 +8,9 @@ QT       += core dbus network
 QT       -= gui
 
 TARGET = ProcessorsExecutor
+
+DESTDIR = bin
+
 CONFIG   += console
 CONFIG   -= app_bundle
 
@@ -17,15 +20,15 @@ TEMPLATE = app
 
 CONFIG += c++11 precompile_header
 
-INCLUDEPATH += ../../dbus-model ../../Optional
+INCLUDEPATH += ../Optional
 
 dbus_interface.files = ../../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml
-dbus_interface.header_flags = -i ../../dbus-model/model.hpp
+dbus_interface.header_flags = -i ../sen2agri-common/model.hpp
 
 DBUS_ADAPTORS += dbus_interface
 
 dbus_interface2.files = ../../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
-dbus_interface2.header_flags = -i ../../dbus-model/model.hpp
+dbus_interface2.header_flags = -i ../sen2agri-common/model.hpp
 
 DBUS_INTERFACES += dbus_interface2
 
@@ -42,8 +45,7 @@ SOURCES += main.cpp \
     processorexecutioninfos.cpp \
     processorwrapperfactory.cpp \
     configurationmgr.cpp \
-    logger.cpp \
-    ../../dbus-model/model.cpp
+    logger.cpp
 
 HEADERS += \
     abstractexecinfosprotsrv.h \
@@ -58,14 +60,18 @@ HEADERS += \
     processorexecutioninfos.h \
     processorwrapperfactory.h \
     configurationmgr.h \
-    logger.h \
-    ../../dbus-model/model.hpp
+    logger.h
 
 OTHER_FILES += \
     ../../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml \
     ../../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
 
-target.path = ../dist
-INSTALLS += target
+#target.path = ../dist
+#INSTALLS += target
 
+LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
 
+INCLUDEPATH += $$PWD/../sen2agri-common
+DEPENDPATH += $$PWD/../sen2agri-common
+
+PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a

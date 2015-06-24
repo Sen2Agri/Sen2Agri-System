@@ -22,7 +22,7 @@ QString SACCT_CMD("../../dist/SlurmSrunSimulator --format=JobID,Jobname,CPUTimeR
 QString SCANCEL_CMD("scancel --name=");
 #else
 QString SRUN_CMD("srun --job-name");
-QString SACCT_CMD("sacct --parsable2 --format=JobID,Jobname,AveCPU,AveVMSize,MaxVMSize");
+QString SACCT_CMD("sacct --parsable2 --format=JobID,JobName,NodeList,AveCPU,UserCPU,SystemCPU,AveVMSize,MaxRSS,MaxVMSize,MaxDiskRead,MaxDiskWrite");
 QString SCANCEL_CMD("scancel --name=");
 #endif
 
@@ -234,11 +234,11 @@ bool RessourceManagerItf::HandleStartProcessor(QVariantMap &reqParams)
 
     // send the name of the job and the time to the persistence manager
     ProcessorExecutionInfos infos;
-    infos.SetJobName(strJobName);
+    infos.strJobName = strJobName;
     QDateTime curDateTime = QDateTime::currentDateTime();
     QString strCurDate = curDateTime.toString("dd/MM/yyyy hh:mm:ss");
-    infos.SetStartTime(strCurDate);
-    infos.SetJobStatus(ProcessorExecutionInfos::g_strRunning);
+    infos.strStartTime = strCurDate;
+    infos.strJobStatus = ProcessorExecutionInfos::g_strRunning;
     PersistenceItfModule::GetInstance()->SendProcessorExecInfos(infos);
 
     return true;
@@ -275,7 +275,7 @@ void RessourceManagerItf::HandleStopProcessor(QVariantMap &reqParams)
             // Build the scancel command.
             // The jobId is then used for scancel
             ProcessorExecutionInfos infos = procExecResults.at(0);
-            infos.SetJobStatus(ProcessorExecutionInfos::g_strCanceled);
+            infos.strJobStatus = ProcessorExecutionInfos::g_strCanceled;
             // Send the information about this job to the Persistence Manager
             PersistenceItfModule::GetInstance()->SendProcessorExecInfos(infos);
         }
@@ -306,8 +306,8 @@ bool RessourceManagerItf::HandleProcessorEndedMsg(QVariantMap &msgVals)
         if(slurmSacctParser.ParseResults(strLog, procExecResults, &jobName) > 0)
         {
             ProcessorExecutionInfos jobExecInfos = procExecResults.at(0);
-            jobExecInfos.SetExecutionDuration(executionDuration);
-            jobExecInfos.SetJobStatus(ProcessorExecutionInfos::g_strFinished);
+            jobExecInfos.strExecutionDuration = executionDuration;
+            jobExecInfos.strJobStatus = ProcessorExecutionInfos::g_strFinished;
             // Send the statistic infos to the persistence interface module
             PersistenceItfModule::GetInstance()->SendProcessorExecInfos(jobExecInfos);
             return true;

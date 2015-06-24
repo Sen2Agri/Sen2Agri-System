@@ -571,7 +571,8 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &
 }
 
 ExecutionStatistics::ExecutionStatistics()
-    : userCpuMs(),
+    : exitCode(),
+      userCpuMs(),
       systemCpuMs(),
       durationMs(),
       maxRssKb(),
@@ -582,6 +583,7 @@ ExecutionStatistics::ExecutionStatistics()
 }
 
 ExecutionStatistics::ExecutionStatistics(QString node,
+                                         int32_t exitCode,
                                          int64_t userCpuMs,
                                          int64_t systemCpuMs,
                                          int64_t durationMs,
@@ -590,6 +592,7 @@ ExecutionStatistics::ExecutionStatistics(QString node,
                                          int64_t diskReadBytes,
                                          int64_t diskWriteBytes)
     : node(std::move(node)),
+      exitCode(exitCode),
       userCpuMs(userCpuMs),
       systemCpuMs(systemCpuMs),
       durationMs(durationMs),
@@ -607,16 +610,17 @@ void ExecutionStatistics::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatistics &statistics)
 {
-    return argument << statistics.node << statistics.userCpuMs << statistics.systemCpuMs
-                    << statistics.durationMs << statistics.maxRssKb << statistics.maxVmSizeKb
-                    << statistics.diskReadBytes << statistics.diskWriteBytes;
+    return argument << statistics.node << statistics.exitCode << statistics.userCpuMs
+                    << statistics.systemCpuMs << statistics.durationMs << statistics.maxRssKb
+                    << statistics.maxVmSizeKb << statistics.diskReadBytes
+                    << statistics.diskWriteBytes;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatistics &statistics)
 {
-    return argument >> statistics.node >> statistics.userCpuMs >> statistics.systemCpuMs >>
-           statistics.durationMs >> statistics.maxRssKb >> statistics.maxVmSizeKb >>
-           statistics.diskReadBytes >> statistics.diskWriteBytes;
+    return argument >> statistics.node >> statistics.exitCode >> statistics.userCpuMs >>
+           statistics.systemCpuMs >> statistics.durationMs >> statistics.maxRssKb >>
+           statistics.maxVmSizeKb >> statistics.diskReadBytes >> statistics.diskWriteBytes;
 }
 
 QDBusArgument &operator<<(QDBusArgument &argument, EventType event)

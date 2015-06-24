@@ -321,6 +321,7 @@ class ExecutionStatistics
 {
 public:
     QString node;
+    int32_t exitCode;
     int64_t userCpuMs;
     int64_t systemCpuMs;
     int64_t durationMs;
@@ -331,6 +332,7 @@ public:
 
     ExecutionStatistics();
     ExecutionStatistics(QString node,
+                        int32_t exitCode,
                         int64_t userCpuMs,
                         int64_t systemCpuMs,
                         int64_t durationMs,
@@ -353,7 +355,8 @@ enum class EventType {
     JobCancelled,
     JobPaused,
     JobResumed,
-    JobSubmitted
+    JobSubmitted,
+    StepFailed
 };
 
 Q_DECLARE_METATYPE(EventType)

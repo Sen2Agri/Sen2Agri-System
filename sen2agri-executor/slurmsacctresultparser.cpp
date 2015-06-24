@@ -1,4 +1,5 @@
 #include <QStringList>
+#include <QVector>
 
 #include "slurmsacctresultparser.h"
 #include "processorexecutioninfos.h"
@@ -8,11 +9,23 @@ QString SlurmSacctResultParser::g_strJobId("jobid");
 /*static*/
 QString SlurmSacctResultParser::g_strJobName("jobname");
 /*static*/
+QString SlurmSacctResultParser::g_strJobNode("nodelist");
+/*static*/
 QString SlurmSacctResultParser::g_strCpuTime("avecpu");
+/*static*/
+QString SlurmSacctResultParser::g_strUserTime("usercpu");
+/*static*/
+QString SlurmSacctResultParser::g_strSystemTime("systemcpu");
 /*static*/
 QString SlurmSacctResultParser::g_strAveVmSize("avevmsize");
 /*static*/
 QString SlurmSacctResultParser::g_strMaxVmSize("maxvmsize");
+/*static*/
+QString SlurmSacctResultParser::g_strMaxRss("maxrss");
+/*static*/
+QString SlurmSacctResultParser::g_strDiskRead("maxdiskread");
+/*static*/
+QString SlurmSacctResultParser::g_strDiskWrite("maxdiskwrite");
 
 SlurmSacctResultParser::SlurmSacctResultParser()
 {
@@ -22,8 +35,9 @@ SlurmSacctResultParser::SlurmSacctResultParser()
 
 SlurmSacctResultParser::~SlurmSacctResultParser()
 {
-
+    delete[] m_pPosArr;
 }
+
 int SlurmSacctResultParser::ParseResults(QString &strLog, QList<ProcessorExecutionInfos> &executionInfos, QString *pJobNameFilter)
 {
     /* The expected log is similar with the one below:
@@ -54,7 +68,7 @@ int SlurmSacctResultParser::ParseResults(QString &strLog, QList<ProcessorExecuti
                 if(ParseLine(curLine, procExecInfos))
                 {
                     if(pJobNameFilter) {
-                        if(procExecInfos.GetJobName() == *pJobNameFilter) {
+                        if(procExecInfos.strJobName == *pJobNameFilter) {
                             // add it and exit the loop
                             executionInfos.append(procExecInfos);
                             break;
@@ -86,12 +100,24 @@ int SlurmSacctResultParser::ParseColumnNames(QString &strColumnsLine)
                 m_pPosArr[curPos] = JOB_ID_POS;
             } else if(curColumn == g_strJobName) {
                 m_pPosArr[curPos] = JOB_NAME_POS;
+            } else if(curColumn == g_strJobNode) {
+                m_pPosArr[curPos] = JOB_NODE_POS;
             } else if(curColumn == g_strCpuTime) {
                 m_pPosArr[curPos] = JOB_CPU_TIME_POS;
+            } else if(curColumn == g_strUserTime) {
+                m_pPosArr[curPos] = JOB_USER_TIME_POS;
+            } else if(curColumn == g_strSystemTime) {
+                m_pPosArr[curPos] = JOB_SYSTEM_TIME_POS;
             } else if(curColumn == g_strAveVmSize) {
                 m_pPosArr[curPos] = JOB_AVE_VM_SIZE_POS;
+            } else if(curColumn == g_strMaxRss) {
+                m_pPosArr[curPos] = JOB_MAX_RSS_POS;
             } else if(curColumn == g_strMaxVmSize) {
                 m_pPosArr[curPos] = JOB_MAX_VM_SIZE_POS;
+            } else if(curColumn == g_strDiskRead) {
+                m_pPosArr[curPos] = JOB_DISK_READ_POS;
+            } else if(curColumn == g_strDiskWrite) {
+                m_pPosArr[curPos] = JOB_DISK_WRITE_POS;
             } else {
                 m_pPosArr[curPos] = -1;
             }
@@ -116,25 +142,49 @@ bool SlurmSacctResultParser::ParseLine(QString &strLine, ProcessorExecutionInfos
             int nPosId = m_pPosArr[curPos];
             switch (nPosId) {
                 case JOB_ID_POS:
-                    procExecInfos.SetJobId(curField);
+                    procExecInfos.strJobId = curField;
                     // clear the bit in the mask
-                    nMaskFieldsExtract &= ~(1 << JOB_ID_POS);
+                    nMaskFieldsExtract &= ~(1 << nPosId);
                     break;
                 case JOB_NAME_POS:
-                    procExecInfos.SetJobName(curField);
-                    nMaskFieldsExtract &= ~(1 << JOB_NAME_POS);
+                    procExecInfos.strJobName = curField;
+                    nMaskFieldsExtract &= ~(1 << nPosId);
+                    break;
+                case JOB_NODE_POS:
+                    procExecInfos.strJobNode = curField;
+                    nMaskFieldsExtract &= ~(1 << nPosId);
                     break;
                 case JOB_CPU_TIME_POS:
-                    procExecInfos.SetCpuTime(curField);
-                    nMaskFieldsExtract &= ~(1 << JOB_CPU_TIME_POS);
+                    procExecInfos.strCpuTime = curField;
+                    nMaskFieldsExtract &= ~(1 << nPosId);
+                    break;
+                case JOB_USER_TIME_POS:
+                    procExecInfos.strUserTime = curField;
+                    nMaskFieldsExtract &= ~(1 << nPosId);
+                    break;
+                case JOB_SYSTEM_TIME_POS:
+                    procExecInfos.strSystemTime = curField;
+                    nMaskFieldsExtract &= ~(1 << nPosId);
                     break;
                 case JOB_AVE_VM_SIZE_POS:
-                    procExecInfos.SetAveVmSize(curField);
-                    nMaskFieldsExtract &= ~(1 << JOB_AVE_VM_SIZE_POS);
+                    procExecInfos.strAveVmSize = curField;
+                    nMaskFieldsExtract &= ~(1 << nPosId);
+                    break;
+                case JOB_MAX_RSS_POS:
+                    procExecInfos.strMaxVmSize = curField;
+                    nMaskFieldsExtract &= ~(1 << nPosId);
                     break;
                 case JOB_MAX_VM_SIZE_POS:
-                    procExecInfos.SetMaxVmSize(curField);
-                    nMaskFieldsExtract &= ~(1 << JOB_MAX_VM_SIZE_POS);
+                    procExecInfos.strMaxVmSize = curField;
+                    nMaskFieldsExtract &= ~(1 << nPosId);
+                    break;
+                case JOB_DISK_READ_POS:
+                    procExecInfos.strMaxVmSize = curField;
+                    nMaskFieldsExtract &= ~(1 << nPosId);
+                    break;
+                case JOB_DISK_WRITE_POS:
+                    procExecInfos.strMaxVmSize = curField;
+                    nMaskFieldsExtract &= ~(1 << nPosId);
                     break;
                 default:
                     break;

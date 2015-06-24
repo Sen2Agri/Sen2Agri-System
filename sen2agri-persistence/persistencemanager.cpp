@@ -224,6 +224,14 @@ void PersistenceManager::SubmitSteps(NewStepList steps)
     }, std::ref(dbProvider), std::move(steps)));
 }
 
+void PersistenceManager::MarkStepSubmitted(int taskId, QString name)
+{
+//    RunAsync(
+//        std::bind([](PersistenceManagerDBProvider &dbProvider, int taskId, const QString &name) {
+//            dbProvider.MarkStepStarted(taskId, name);
+//        }, std::ref(dbProvider), taskId, std::move(name)));
+}
+
 void PersistenceManager::MarkStepStarted(int taskId, QString name)
 {
     RunAsync(

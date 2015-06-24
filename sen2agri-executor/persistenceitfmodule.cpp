@@ -27,17 +27,27 @@ PersistenceItfModule *PersistenceItfModule::GetInstance()
 void PersistenceItfModule::SendProcessorExecInfos(ProcessorExecutionInfos &execInfos)
 {
     cout << "---------------------------------------------------------------" << endl;
-    cout << "PersistenceItfModule : SendProcessorExecInfos called with status " << execInfos.GetJobStatus().toStdString().c_str() << endl;
+    cout << "PersistenceItfModule : SendProcessorExecInfos called with status " << execInfos.strJobStatus.toStdString().c_str() << endl;
     cout << "---------------------------------------------------------------" << endl;
-    ProcessorStatusInfo infos(execInfos.GetJobId(), execInfos.GetJobName(), execInfos.GetJobStatus(),
-                                  execInfos.GetStartTime(), execInfos.GetExecutionDuration(), execInfos.GetCpuTime(),
-                                  execInfos.GetAveVmSize(), execInfos.GetMaxVmSize());
-    KeyedMessageList ret = clientInterface.UpdateProcessorStatus(infos);
-    QList<KeyedMessage>::iterator i;
-    for (i = ret.begin(); i != ret.end(); i++) {
-        cout << (*i).key.toStdString().c_str() << "\n";
-        cout << (*i).text.toStdString().c_str() << "\n";
-    }
+    ExecutionStatistics infos(execInfos.strJobNode,
+                              0, /* exit code */
+                              execInfos.strUserTime.toInt(),
+                              execInfos.strSystemTime.toInt(),
+                              execInfos.strExecutionDuration.toInt(),
+                              execInfos.strMaxRss.toInt(),
+                              execInfos.strMaxVmSize.toInt(),
+                              execInfos.strDiskRead.toInt(),
+                              execInfos.strDiskWrite.toInt());
+//    ProcessorStatusInfo infos(execInfos.GetJobId(), execInfos.GetJobName(), execInfos.GetJobStatus(),
+//                                  execInfos.GetStartTime(), execInfos.GetExecutionDuration(), execInfos.GetCpuTime(),
+//                                  execInfos.GetAveVmSize(), execInfos.GetMaxVmSize());
+
+//    KeyedMessageList ret = clientInterface.UpdateProcessorStatus(infos);
+//    QList<KeyedMessage>::iterator i;
+//    for (i = ret.begin(); i != ret.end(); i++) {
+//        cout << (*i).key.toStdString().c_str() << "\n";
+//        cout << (*i).text.toStdString().c_str() << "\n";
+//    }
 }
 
 void PersistenceItfModule::RequestConfiguration()
