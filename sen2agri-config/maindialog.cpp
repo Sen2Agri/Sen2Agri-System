@@ -192,7 +192,7 @@ QWidget *MainDialog::createFieldsWidget(std::experimental::optional<int> siteId,
             if (auto editWidget = createEditRow(param, { param.key, siteId }, fieldsWidget)) {
                 layout->addRow(new QLabel(param.friendlyName, fieldsWidget), editWidget);
             } else {
-                QMessageBox::warning(
+                QMessageBox::critical(
                     this, QStringLiteral("Error"),
                     QStringLiteral(
                         "Unable to create editor widget for parameter %1 with data type %2")
@@ -218,7 +218,7 @@ void MainDialog::done(int result)
         if (errors.isEmpty()) {
             saveChanges();
         } else {
-            QMessageBox::warning(
+            QMessageBox::critical(
                 this, QStringLiteral("Error"),
                 QStringLiteral("Please make sure that the following parameters are valid:\n\n") +
                     errors);
@@ -243,9 +243,9 @@ void MainDialog::saveChanges()
                 setEnabled(true);
 
                 if (promise.isError()) {
-                    QMessageBox::warning(this, QStringLiteral("Error"),
-                                         QStringLiteral("Unable to save the changes: %1")
-                                             .arg(promise.error().message()));
+                    QMessageBox::critical(this, QStringLiteral("Error"),
+                                          QStringLiteral("Unable to save the changes: %1")
+                                              .arg(promise.error().message()));
                 } else if (promise.isValid()) {
                     const auto &result = promise.value();
                     if (result.empty()) {
@@ -262,7 +262,7 @@ void MainDialog::saveChanges()
                             message += QStringLiteral("%1: %2\n").arg(e.key, e.text);
                         }
 
-                        QMessageBox::warning(this, QStringLiteral("Error"), message);
+                        QMessageBox::critical(this, QStringLiteral("Error"), message);
                     }
                 }
             });
