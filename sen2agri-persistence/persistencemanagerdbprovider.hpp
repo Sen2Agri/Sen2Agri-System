@@ -35,8 +35,10 @@ public:
     int SubmitTask(const NewTask &task);
     void SubmitSteps(const NewStepList &steps);
 
+    void MarkStepSubmitted(int taskId, const QString &name);
     void MarkStepStarted(int taskId, const QString &name);
     void MarkStepFinished(int taskId, const QString &name, const ExecutionStatistics &statistics);
+    void MarkStepFailed(int taskId, const QString &name, const ExecutionStatistics &statistics);
     void MarkJobFinished(int jobId);
 
     void InsertEvent(const SerializedEvent &event);

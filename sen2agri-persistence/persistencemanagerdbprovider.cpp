@@ -16,6 +16,8 @@ static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &a
 static QString getArchivedProductsJson(const ArchivedProductList &products);
 static QString getNewStepsJson(const NewStepList &steps);
 
+static void bindStepExecutionStatistics(QSqlQuery &query, const ExecutionStatistics &statistics);
+
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query);
 static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query);
 
@@ -315,6 +317,23 @@ void PersistenceManagerDBProvider::SubmitSteps(const NewStepList &steps)
     });
 }
 
+void PersistenceManagerDBProvider::MarkStepSubmitted(int taskId, const QString &name)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select sp_mark_step_submitted(:taskId, :name)"));
+        query.bindValue(QStringLiteral(":taskId"), taskId);
+        query.bindValue(QStringLiteral(":name"), name);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
 void PersistenceManagerDBProvider::MarkStepStarted(int taskId, const QString &name)
 {
     auto db = getDatabase();
@@ -364,18 +383,49 @@ void PersistenceManagerDBProvider::MarkStepFinished(int taskId,
         }
 
         query = db.prepareQuery(QStringLiteral(
-            "select sp_mark_step_finished(:taskId, :name, :node, :userCpuMs, :systemCpuMs, "
-            ":durationMs, :maxRssKb, :maxVmSizeKb, :diskReadBytes, :diskWriteBytes)"));
+            "select sp_mark_step_finished(:taskId, :name, :node, :exitCode, :userCpuMs, "
+            ":systemCpuMs, :durationMs, :maxRssKb, :maxVmSizeKb, :diskReadBytes, "
+            ":diskWriteBytes)"));
         query.bindValue(QStringLiteral(":taskId"), taskId);
         query.bindValue(QStringLiteral(":name"), name);
-        query.bindValue(QStringLiteral(":node"), statistics.node);
-        query.bindValue(QStringLiteral(":userCpuMs"), qlonglong{ statistics.userCpuMs });
-        query.bindValue(QStringLiteral(":systemCpuMs"), qlonglong{ statistics.systemCpuMs });
-        query.bindValue(QStringLiteral(":durationMs"), qlonglong{ statistics.durationMs });
-        query.bindValue(QStringLiteral(":maxRssKb"), statistics.maxRssKb);
-        query.bindValue(QStringLiteral(":maxVmSizeKb"), statistics.maxVmSizeKb);
-        query.bindValue(QStringLiteral(":diskReadBytes"), qlonglong{ statistics.diskReadBytes });
-        query.bindValue(QStringLiteral(":diskWriteBytes"), qlonglong{ statistics.diskWriteBytes });
+        bindStepExecutionStatistics(query, statistics);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+        query.finish();
+
+        db.commit();
+    });
+}
+
+void PersistenceManagerDBProvider::MarkStepFailed(int taskId,
+                                                  const QString &name,
+                                                  const ExecutionStatistics &statistics)
+{
+    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
+
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        db.transaction();
+
+        auto query =
+            db.prepareQuery(QStringLiteral("set transaction isolation level repeatable read"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        query = db.prepareQuery(
+            QStringLiteral("select sp_mark_step_failed(:taskId, :name, :node, :exitCode, "
+                           ":userCpuMs, :systemCpuMs, :durationMs, :maxRssKb, :maxVmSizeKb, "
+                           ":diskReadBytes, :diskWriteBytes)"));
+        query.bindValue(QStringLiteral(":taskId"), taskId);
+        query.bindValue(QStringLiteral(":name"), name);
+        bindStepExecutionStatistics(query, statistics);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -511,6 +561,19 @@ static QString getNewStepsJson(const NewStepList &steps)
     }
 
     return toJsonString(array);
+}
+
+static void bindStepExecutionStatistics(QSqlQuery &query, const ExecutionStatistics &statistics)
+{
+    query.bindValue(QStringLiteral(":node"), statistics.node);
+    query.bindValue(QStringLiteral(":exitCode"), statistics.exitCode);
+    query.bindValue(QStringLiteral(":userCpuMs"), qlonglong{ statistics.userCpuMs });
+    query.bindValue(QStringLiteral(":systemCpuMs"), qlonglong{ statistics.systemCpuMs });
+    query.bindValue(QStringLiteral(":durationMs"), qlonglong{ statistics.durationMs });
+    query.bindValue(QStringLiteral(":maxRssKb"), statistics.maxRssKb);
+    query.bindValue(QStringLiteral(":maxVmSizeKb"), statistics.maxVmSizeKb);
+    query.bindValue(QStringLiteral(":diskReadBytes"), qlonglong{ statistics.diskReadBytes });
+    query.bindValue(QStringLiteral(":diskWriteBytes"), qlonglong{ statistics.diskWriteBytes });
 }
 
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query)

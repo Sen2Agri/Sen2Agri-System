@@ -245,7 +245,11 @@ void PersistenceManager::MarkStepFinished(int taskId, QString name, ExecutionSta
     RunAsync(std::bind(
         [](PersistenceManagerDBProvider &dbProvider, int taskId, const QString &name,
            const ExecutionStatistics &statistics) {
-            dbProvider.MarkStepFinished(taskId, name, statistics);
+            if (statistics.exitCode) {
+                dbProvider.MarkStepFailed(taskId, name, statistics);
+            } else {
+                dbProvider.MarkStepFinished(taskId, name, statistics);
+            }
         },
         std::ref(dbProvider), taskId, std::move(name), std::move(statistics)));
 }
