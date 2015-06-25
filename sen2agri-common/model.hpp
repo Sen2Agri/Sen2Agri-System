@@ -310,7 +310,16 @@ Q_DECLARE_METATYPE(NewStepList)
 QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step);
 
-enum class ExecutionStatus { Submitted, NeedsInput, Running, Paused, Finished, Cancelled, Error };
+enum class ExecutionStatus {
+    Submitted,
+    PendingStart,
+    NeedsInput,
+    Running,
+    Paused,
+    Finished,
+    Cancelled,
+    Error
+};
 
 Q_DECLARE_METATYPE(ExecutionStatus)
 
