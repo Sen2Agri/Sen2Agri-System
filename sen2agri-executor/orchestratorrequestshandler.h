@@ -28,8 +28,8 @@ public:
 
 
     // TODO implement
-    Q_INVOKABLE void SubmitSteps(const QList<SubmittedStep> &steps) { }
-    Q_INVOKABLE void CancelTask(int taskId) { }
+    Q_INVOKABLE void SubmitSteps(const QList<SubmittedStep> &steps) { Q_UNUSED(steps); }
+    Q_INVOKABLE void CancelTask(int taskId) { Q_UNUSED(taskId); }
 };
 
 #endif // ORCHESTRATORREQUESTSHANDLER_H
