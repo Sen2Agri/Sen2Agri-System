@@ -41,6 +41,8 @@ void registerMetaTypes()
     JobCancelledEvent::registerMetaTypes();
     JobPausedEvent::registerMetaTypes();
     JobResumedEvent::registerMetaTypes();
+    JobSubmittedEvent::registerMetaTypes();
+    StepFailedEvent::registerMetaTypes();
 
     UnprocessedEvent::registerMetaTypes();
 
@@ -852,6 +854,46 @@ QDBusArgument &operator<<(QDBusArgument &argument, const JobSubmittedEvent &even
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobSubmittedEvent &event)
 {
     return argument >> event.jobId;
+}
+
+StepFailedEvent::StepFailedEvent() : taskId()
+{
+}
+
+StepFailedEvent::StepFailedEvent(int taskId, QString stepName)
+    : taskId(taskId), stepName(std::move(stepName))
+{
+}
+
+QJsonDocument StepFailedEvent::toJson() const
+{
+    QJsonObject node;
+    node[QStringLiteral("task_id")] = taskId;
+    node[QStringLiteral("step_name")] = stepName;
+
+    return QJsonDocument(node);
+}
+
+StepFailedEvent StepFailedEvent::fromJson(const QJsonDocument &json)
+{
+    const auto &object = json.object();
+    return { object.value(QStringLiteral("task_id")).toInt(),
+             object.value(QStringLiteral("step_name")).toString() };
+}
+
+void StepFailedEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<StepFailedEvent>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const StepFailedEvent &event)
+{
+    return argument << event.taskId << event.stepName;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, StepFailedEvent &event)
+{
+    return argument >> event.taskId >> event.stepName;
 }
 
 UnprocessedEvent::UnprocessedEvent() : eventId(), type()

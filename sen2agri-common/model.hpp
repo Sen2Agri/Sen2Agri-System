@@ -490,6 +490,27 @@ Q_DECLARE_METATYPE(JobSubmittedEvent)
 QDBusArgument &operator<<(QDBusArgument &argument, const JobSubmittedEvent &event);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobSubmittedEvent &event);
 
+class StepFailedEvent
+{
+public:
+    int taskId;
+    QString stepName;
+
+    StepFailedEvent();
+    StepFailedEvent(int taskId, QString stepName);
+
+    QJsonDocument toJson() const;
+
+    static StepFailedEvent fromJson(const QJsonDocument &json);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(StepFailedEvent)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const StepFailedEvent &event);
+const QDBusArgument &operator>>(const QDBusArgument &argument, StepFailedEvent &event);
+
 class UnprocessedEvent
 {
 public:
