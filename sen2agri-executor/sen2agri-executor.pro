@@ -20,6 +20,8 @@ TEMPLATE = app
 
 CONFIG += c++11 precompile_header
 
+PRECOMPILED_HEADER = pch.hpp
+
 INCLUDEPATH += ../Optional
 
 dbus_interface.files = ../../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml
@@ -60,7 +62,8 @@ HEADERS += \
     processorexecutioninfos.h \
     processorwrapperfactory.h \
     configurationmgr.h \
-    logger.h
+    logger.h \
+    pch.hpp
 
 OTHER_FILES += \
     ../../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml \
