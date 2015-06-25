@@ -317,13 +317,13 @@ void PersistenceManagerDBProvider::SubmitSteps(const NewStepList &steps)
     });
 }
 
-void PersistenceManagerDBProvider::MarkStepSubmitted(int taskId, const QString &name)
+void PersistenceManagerDBProvider::MarkStepPendingStart(int taskId, const QString &name)
 {
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
         auto query =
-            db.prepareQuery(QStringLiteral("select sp_mark_step_submitted(:taskId, :name)"));
+            db.prepareQuery(QStringLiteral("select sp_mark_step_pending_start(:taskId, :name)"));
         query.bindValue(QStringLiteral(":taskId"), taskId);
         query.bindValue(QStringLiteral(":name"), name);
 
