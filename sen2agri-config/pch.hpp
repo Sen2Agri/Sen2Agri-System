@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QCheckBox>
 #include <QColor>
+#include <QComboBox>
 #include <QDate>
 #include <QDateEdit>
 #include <QDebug>
@@ -12,7 +13,6 @@
 #include <QLabel>
 #include <QLineEdit>
 #include <QList>
-#include <QMap>
 #include <QMessageBox>
 #include <QObject>
 #include <QProcess>
@@ -21,4 +21,6 @@
 #include <QTableWidget>
 #include <QVariantMap>
 #include <iterator>
+#include <map>
+#include <tuple>
 #include <utility>

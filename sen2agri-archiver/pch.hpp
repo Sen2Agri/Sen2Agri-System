@@ -1,4 +1,6 @@
 #include <QCoreApplication>
-#include <QTimer>
 #include <QMap>
 #include <QStringList>
+#include <QTextStream>
+#include <QTimer>
+#include <signal.h>
