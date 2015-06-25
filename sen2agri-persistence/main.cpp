@@ -50,7 +50,7 @@ int main(int argc, char *argv[])
 
         qDebug() << QDBusMetaType::typeToSignature(qMetaTypeId<ConfigurationSet>());
 
-        QDBusConnection connection = QDBusConnection::systemBus();
+        auto connection = QDBusConnection::systemBus();
         PersistenceManager persistenceManager(settings);
 
         new PersistenceManagerAdaptor(&persistenceManager);

@@ -1,0 +1,6 @@
+[Unit]
+Description=Orchestrator for Sen2Agri
+
+[Service]
+BusName=org.esa.sen2agri.orchestrator
+ExecStart=/usr/local/bin/sen2agri-orchestrator

@@ -11,5 +11,8 @@ grep -Rh "^#include <" ../sen2agri-config | LC_ALL=C sort -u > ../sen2agri-confi
 rm -f ../sen2agri-executor/pch.hpp
 grep -Rh "^#include <" ../sen2agri-executor | LC_ALL=C sort -u > ../sen2agri-executor/pch.hpp
 
+rm -f ../sen2agri-orchestrator/pch.hpp
+grep -Rh "^#include <" ../sen2agri-orchestrator | LC_ALL=C sort -u > ../sen2agri-orchestrator/pch.hpp
+
 rm -f ../sen2agri-persistence/pch.hpp
 grep -Rh "^#include <" ../sen2agri-persistence | LC_ALL=C sort -u > ../sen2agri-persistence/pch.hpp
