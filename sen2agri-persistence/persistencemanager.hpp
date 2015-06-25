@@ -50,8 +50,7 @@ public slots:
     void MarkProductsArchived(ArchivedProductList products);
 
     int SubmitJob(NewJob job);
-    int SubmitTask(NewTask task);
-    void SubmitSteps(NewStepList steps);
+    int SubmitTask(NewTask task, NewStepList steps);
 
     void MarkStepPendingStart(int taskId, QString name);
     void MarkStepStarted(int taskId, QString name);

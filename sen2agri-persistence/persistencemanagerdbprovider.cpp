@@ -274,16 +274,17 @@ int PersistenceManagerDBProvider::SubmitJob(const NewJob &job)
     });
 }
 
-int PersistenceManagerDBProvider::SubmitTask(const NewTask &task)
+int PersistenceManagerDBProvider::SubmitTask(const NewTask &task, const NewStepList &steps)
 {
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(
-            QStringLiteral("select * from sp_submit_task(:jobId, :moduleId, :parameters)"));
+            QStringLiteral("select * from sp_submit_task(:jobId, :moduleId, :parameters, :steps)"));
         query.bindValue(QStringLiteral(":jobId"), task.jobId);
         query.bindValue(QStringLiteral(":moduleId"), task.moduleId);
         query.bindValue(QStringLiteral(":parameters"), task.parameters);
+        query.bindValue(QStringLiteral(":steps"), getNewStepsJson(steps));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -298,21 +299,6 @@ int PersistenceManagerDBProvider::SubmitTask(const NewTask &task)
         } else {
             throw std::runtime_error(
                 "Expecting a return value from sp_submit_task, but none found");
-        }
-    });
-}
-
-void PersistenceManagerDBProvider::SubmitSteps(const NewStepList &steps)
-{
-    auto db = getDatabase();
-
-    return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral("select sp_submit_steps(:steps)"));
-        query.bindValue(QStringLiteral(":steps"), getNewStepsJson(steps));
-
-        query.setForwardOnly(true);
-        if (!query.exec()) {
-            throw_query_error(query);
         }
     });
 }
@@ -437,12 +423,72 @@ void PersistenceManagerDBProvider::MarkStepFailed(int taskId,
     });
 }
 
+void PersistenceManagerDBProvider::MarkJobCancelled(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_cancelled(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkJobPaused(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_paused(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
 void PersistenceManagerDBProvider::MarkJobFinished(int jobId)
 {
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_finished(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkJobFailed(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_failed(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkJobNeedsInput(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_needs_input(:jobId)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
 
         query.setForwardOnly(true);
@@ -554,7 +600,6 @@ static QString getNewStepsJson(const NewStepList &steps)
     QJsonArray array;
     for (const auto &s : steps) {
         QJsonObject node;
-        node[QStringLiteral("task_id")] = s.taskId;
         node[QStringLiteral("name")] = s.name;
         node[QStringLiteral("parameters")] = s.parameters.object();
         array.append(std::move(node));
