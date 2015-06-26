@@ -500,14 +500,22 @@ void NewJob::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewJob &job)
 {
-    return argument << job.name << job.description << job.processorId << job.siteId << job.startType
-                    << job.parameters;
+    argument.beginStructure();
+    argument << job.name << job.description << job.processorId << job.siteId << job.startType
+             << job.parameters;
+    argument.endStructure();
+
+    return argument;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job)
 {
-    return argument >> job.name >> job.description >> job.processorId >> job.siteId >>
-           job.startType >> job.parameters;
+    argument.beginStructure();
+    argument >> job.name >> job.description >> job.processorId >> job.siteId >> job.startType >>
+        job.parameters;
+    argument.endStructure();
+
+    return argument;
 }
 
 NewTask::NewTask() : jobId(), moduleId()
@@ -526,12 +534,20 @@ void NewTask::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
 {
-    return argument << task.jobId << task.moduleId << task.parameters;
+    argument.beginStructure();
+    argument << task.jobId << task.moduleId << task.parameters;
+    argument.endStructure();
+
+    return argument;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task)
 {
-    return argument >> task.jobId >> task.moduleId >> task.parameters;
+    argument.beginStructure();
+    argument >> task.jobId >> task.moduleId >> task.parameters;
+    argument.endStructure();
+
+    return argument;
 }
 
 NewStep::NewStep() : taskId()
@@ -551,12 +567,20 @@ void NewStep::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step)
 {
-    return argument << step.taskId << step.name << step.parameters;
+    argument.beginStructure();
+    argument << step.taskId << step.name << step.parameters;
+    argument.endStructure();
+
+    return argument;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step)
 {
-    return argument >> step.taskId >> step.name >> step.parameters;
+    argument.beginStructure();
+    argument >> step.taskId >> step.name >> step.parameters;
+    argument.endStructure();
+
+    return argument;
 }
 
 QDBusArgument &operator<<(QDBusArgument &argument, ExecutionStatus status)
@@ -612,17 +636,24 @@ void ExecutionStatistics::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatistics &statistics)
 {
-    return argument << statistics.node << statistics.exitCode << statistics.userCpuMs
-                    << statistics.systemCpuMs << statistics.durationMs << statistics.maxRssKb
-                    << statistics.maxVmSizeKb << statistics.diskReadBytes
-                    << statistics.diskWriteBytes;
+    argument.beginStructure();
+    argument << statistics.node << statistics.exitCode << statistics.userCpuMs
+             << statistics.systemCpuMs << statistics.durationMs << statistics.maxRssKb
+             << statistics.maxVmSizeKb << statistics.diskReadBytes << statistics.diskWriteBytes;
+    argument.endStructure();
+
+    return argument;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatistics &statistics)
 {
-    return argument >> statistics.node >> statistics.exitCode >> statistics.userCpuMs >>
-           statistics.systemCpuMs >> statistics.durationMs >> statistics.maxRssKb >>
-           statistics.maxVmSizeKb >> statistics.diskReadBytes >> statistics.diskWriteBytes;
+    argument.beginStructure();
+    argument >> statistics.node >> statistics.exitCode >> statistics.userCpuMs >>
+        statistics.systemCpuMs >> statistics.durationMs >> statistics.maxRssKb >>
+        statistics.maxVmSizeKb >> statistics.diskReadBytes >> statistics.diskWriteBytes;
+    argument.endStructure();
+
+    return argument;
 }
 
 QDBusArgument &operator<<(QDBusArgument &argument, EventType event)
@@ -667,30 +698,42 @@ void TaskFinishedEvent::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const TaskFinishedEvent &event)
 {
-    return argument << event.taskId;
+    argument.beginStructure();
+    argument << event.taskId;
+    argument.endStructure();
+
+    return argument;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, TaskFinishedEvent &event)
 {
-    return argument >> event.taskId;
+    argument.beginStructure();
+    argument >> event.taskId;
+    argument.endStructure();
+
+    return argument;
 }
 
-ProductAvailableEvent::ProductAvailableEvent()
+ProductAvailableEvent::ProductAvailableEvent() : productId()
+{
+}
+
+ProductAvailableEvent::ProductAvailableEvent(int productId) : productId(productId)
 {
 }
 
 QJsonDocument ProductAvailableEvent::toJson() const
 {
     QJsonObject node;
+    node[QStringLiteral("product_id")] = productId;
 
     return QJsonDocument(node);
 }
 
-ProductAvailableEvent ProductAvailableEvent::fromJson(const QJsonDocument & /*json*/)
+ProductAvailableEvent ProductAvailableEvent::fromJson(const QJsonDocument &json)
 {
-    // TODO figure out what we'll store here
-    // const auto &object = json.object();
-    return {};
+    const auto &object = json.object();
+    return { object.value(QStringLiteral("product_id")).toInt() };
 }
 
 void ProductAvailableEvent::registerMetaTypes()
@@ -698,13 +741,21 @@ void ProductAvailableEvent::registerMetaTypes()
     qDBusRegisterMetaType<ProductAvailableEvent>();
 }
 
-QDBusArgument &operator<<(QDBusArgument &argument, const ProductAvailableEvent &)
+QDBusArgument &operator<<(QDBusArgument &argument, const ProductAvailableEvent &event)
 {
+    argument.beginStructure();
+    argument << event.productId;
+    argument.endStructure();
+
     return argument;
 }
 
-const QDBusArgument &operator>>(const QDBusArgument &argument, ProductAvailableEvent &)
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProductAvailableEvent &event)
 {
+    argument.beginStructure();
+    argument >> event.productId;
+    argument.endStructure();
+
     return argument;
 }
 
@@ -737,12 +788,20 @@ void JobCancelledEvent::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const JobCancelledEvent &event)
 {
-    return argument << event.jobId;
+    argument.beginStructure();
+    argument << event.jobId;
+    argument.endStructure();
+
+    return argument;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobCancelledEvent &event)
 {
-    return argument >> event.jobId;
+    argument.beginStructure();
+    argument >> event.jobId;
+    argument.endStructure();
+
+    return argument;
 }
 
 JobPausedEvent::JobPausedEvent() : jobId()
@@ -774,12 +833,20 @@ void JobPausedEvent::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const JobPausedEvent &event)
 {
-    return argument << event.jobId;
+    argument.beginStructure();
+    argument << event.jobId;
+    argument.endStructure();
+
+    return argument;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobPausedEvent &event)
 {
-    return argument >> event.jobId;
+    argument.beginStructure();
+    argument >> event.jobId;
+    argument.endStructure();
+
+    return argument;
 }
 
 JobResumedEvent::JobResumedEvent() : jobId()
@@ -811,12 +878,20 @@ void JobResumedEvent::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const JobResumedEvent &event)
 {
-    return argument << event.jobId;
+    argument.beginStructure();
+    argument << event.jobId;
+    argument.endStructure();
+
+    return argument;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobResumedEvent &event)
 {
-    return argument >> event.jobId;
+    argument.beginStructure();
+    argument >> event.jobId;
+    argument.endStructure();
+
+    return argument;
 }
 
 JobSubmittedEvent::JobSubmittedEvent() : jobId()
@@ -848,12 +923,20 @@ void JobSubmittedEvent::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const JobSubmittedEvent &event)
 {
-    return argument << event.jobId;
+    argument.beginStructure();
+    argument << event.jobId;
+    argument.endStructure();
+
+    return argument;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobSubmittedEvent &event)
 {
-    return argument >> event.jobId;
+    argument.beginStructure();
+    argument >> event.jobId;
+    argument.endStructure();
+
+    return argument;
 }
 
 StepFailedEvent::StepFailedEvent() : taskId()
@@ -888,12 +971,20 @@ void StepFailedEvent::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const StepFailedEvent &event)
 {
-    return argument << event.taskId << event.stepName;
+    argument.beginStructure();
+    argument << event.taskId << event.stepName;
+    argument.endStructure();
+
+    return argument;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, StepFailedEvent &event)
 {
-    return argument >> event.taskId >> event.stepName;
+    argument.beginStructure();
+    argument >> event.taskId >> event.stepName;
+    argument.endStructure();
+
+    return argument;
 }
 
 UnprocessedEvent::UnprocessedEvent() : eventId(), type()
@@ -921,6 +1012,7 @@ void UnprocessedEvent::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, const UnprocessedEvent &event)
 {
+    argument.beginStructure();
     argument << event.eventId << event.type << event.data << event.submittedTime;
 
     if (event.processingStartedTime) {
@@ -928,6 +1020,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const UnprocessedEvent &event
     } else {
         argument << false << QDateTime();
     }
+    argument.endStructure();
 
     return argument;
 }
@@ -937,6 +1030,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, UnprocessedEvent 
     bool hasProcessingStartedTime;
     QDateTime processingStartedTime;
 
+    argument.beginStructure();
     argument >> event.eventId >> event.type >> event.data >> event.submittedTime >>
         hasProcessingStartedTime >> processingStartedTime;
 
@@ -945,6 +1039,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, UnprocessedEvent 
     } else {
         event.processingStartedTime = std::experimental::nullopt;
     }
+    argument.endStructure();
 
     return argument;
 }
@@ -966,12 +1061,20 @@ void NodeStatistics::registerMetaTypes()
 
 QDBusArgument &operator<<(QDBusArgument &argument, NodeStatistics statistics)
 {
-    return argument << statistics.node << statistics.freeRamKb << statistics.freeDiskBytes;
+    argument.beginStructure();
+    argument << statistics.node << statistics.freeRamKb << statistics.freeDiskBytes;
+    argument.endStructure();
+
+    return argument;
 }
 
 const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &statistics)
 {
-    return argument >> statistics.node >> statistics.freeRamKb >> statistics.freeDiskBytes;
+    argument.beginStructure();
+    argument >> statistics.node >> statistics.freeRamKb >> statistics.freeDiskBytes;
+    argument.endStructure();
+
+    return argument;
 }
 
 QDBusArgument &operator<<(QDBusArgument &argument, int64_t value)

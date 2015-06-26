@@ -396,7 +396,10 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, TaskFinishedEvent
 class ProductAvailableEvent
 {
 public:
+    int productId;
+
     ProductAvailableEvent();
+    ProductAvailableEvent(int productId);
 
     QJsonDocument toJson() const;
 
