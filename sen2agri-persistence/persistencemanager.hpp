@@ -68,5 +68,5 @@ public slots:
     void MarkEventProcessingStarted(int eventId);
     void MarkEventProcessingComplete(int eventId);
 
-    void InsertNodeStatistics(const NodeStatistics &statistics);
+    void InsertNodeStatistics(NodeStatistics statistics);
 };

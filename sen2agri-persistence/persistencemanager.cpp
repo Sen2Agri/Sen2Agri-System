@@ -315,7 +315,7 @@ void PersistenceManager::MarkEventProcessingComplete(int eventId)
     RunAsync([this, eventId] { return dbProvider.MarkEventProcessingComplete(eventId); });
 }
 
-void PersistenceManager::InsertNodeStatistics(const NodeStatistics &statistics)
+void PersistenceManager::InsertNodeStatistics(NodeStatistics statistics)
 {
     RunAsync(
         std::bind([](PersistenceManagerDBProvider &dbProvider, const NodeStatistics &statistics) {
