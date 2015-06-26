@@ -65,6 +65,8 @@ public slots:
     void InsertJobSubmittedEvent(JobSubmittedEvent event);
 
     UnprocessedEventList GetNewEvents();
+    void MarkEventProcessingStarted(int eventId);
+    void MarkEventProcessingComplete(int eventId);
 
     void InsertNodeStatistics(const NodeStatistics &statistics);
 };

@@ -531,6 +531,36 @@ UnprocessedEventList PersistenceManagerDBProvider::GetNewEvents()
     });
 }
 
+void PersistenceManagerDBProvider::MarkEventProcessingStarted(int eventId)
+{
+    auto db = getDatabase();
+
+    provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_event_processing_started(:eventId)"));
+        query.bindValue(QStringLiteral(":eventId"), eventId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkEventProcessingComplete(int eventId)
+{
+    auto db = getDatabase();
+
+    provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_event_processing_complete(:eventId)"));
+        query.bindValue(QStringLiteral(":eventId"), eventId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+    });
+}
+
 void PersistenceManagerDBProvider::InsertEvent(const SerializedEvent &event)
 {
     auto db = getDatabase();

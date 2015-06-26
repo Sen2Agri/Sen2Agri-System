@@ -48,6 +48,8 @@ public:
     void InsertEvent(const SerializedEvent &event);
 
     UnprocessedEventList GetNewEvents();
+    void MarkEventProcessingStarted(int eventId);
+    void MarkEventProcessingComplete(int eventId);
 
     void InsertNodeStatistics(const NodeStatistics &statistics);
 };

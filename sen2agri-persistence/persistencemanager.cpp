@@ -305,6 +305,16 @@ UnprocessedEventList PersistenceManager::GetNewEvents()
     return {};
 }
 
+void PersistenceManager::MarkEventProcessingStarted(int eventId)
+{
+    RunAsync([this, eventId] { return dbProvider.MarkEventProcessingStarted(eventId); });
+}
+
+void PersistenceManager::MarkEventProcessingComplete(int eventId)
+{
+    RunAsync([this, eventId] { return dbProvider.MarkEventProcessingComplete(eventId); });
+}
+
 void PersistenceManager::InsertNodeStatistics(const NodeStatistics &statistics)
 {
     RunAsync(
