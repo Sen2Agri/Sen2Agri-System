@@ -32,3 +32,19 @@ description)
 VALUES (
 'JobResumed',
 'Event triggered when a job has been resumed by the user.');
+
+INSERT INTO event_type(
+name, 
+description)
+VALUES (
+'JobSubmitted',
+'Event triggered when a job request has been submitted.');
+
+INSERT INTO event_type(
+name, 
+description)
+VALUES (
+'StepFailed',
+'Event triggered when the execution of a step has encountered an error.');
+
+

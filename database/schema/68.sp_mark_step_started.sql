@@ -10,22 +10,22 @@ BEGIN
 	END IF;
 
 	UPDATE step
-	SET status_id = 3, --Running
+	SET status_id = 4, --Running
 	status_timestamp = now()
 	WHERE name = _step_name AND task_id = _task_id 
-	AND status_id != 3; -- Prevent resetting the status on serialization error retries.
+	AND status_id != 4; -- Prevent resetting the status on serialization error retries.
 
 	UPDATE task
-	SET status_id = 3, --Running
+	SET status_id = 4, --Running
 	status_timestamp = now()
 	WHERE id = _task_id
-	AND status_id != 3; -- Prevent resetting the status on serialization error retries.
+	AND status_id != 4; -- Prevent resetting the status on serialization error retries.
 
 	UPDATE job
-	SET status_id = 3, --Running
+	SET status_id = 4, --Running
 	status_timestamp = now()
 	FROM task WHERE job.id = task.job_id
-	AND job.status_id != 3; -- Prevent resetting the status on serialization error retries.
+	AND job.status_id != 4; -- Prevent resetting the status on serialization error retries.
 
 END;
 $$ LANGUAGE plpgsql;

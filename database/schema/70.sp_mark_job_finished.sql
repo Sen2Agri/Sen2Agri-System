@@ -4,7 +4,7 @@ IN _job_id int
 BEGIN
 
 	UPDATE job
-	SET status_id = 5, --Finished
+	SET status_id = 6, --Finished
 	status_timestamp = now()
 	WHERE id = _job_id; 
 

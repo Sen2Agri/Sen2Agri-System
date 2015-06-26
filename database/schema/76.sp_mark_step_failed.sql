@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_mark_step_finished(
+﻿CREATE OR REPLACE FUNCTION sp_mark_step_failed(
 IN _task_id int,
 IN _step_name character varying,
 IN _node character varying,
@@ -10,7 +10,7 @@ IN _max_rss_kb int,
 IN _max_vm_size_kb int,
 IN _disk_read_b bigint,
 IN _disk_write_b bigint
-) RETURNS boolean AS $$
+) RETURNS void AS $$
 BEGIN
 
 	IF (SELECT current_setting('transaction_isolation') NOT ILIKE 'REPEATABLE READ') THEN
@@ -18,11 +18,11 @@ BEGIN
 	END IF;
 
 	UPDATE step
-	SET status_id = 6, --Finished
+	SET status_id = 8, --Error
 	status_timestamp = now(), 
 	exit_code = _exit_code
 	WHERE name = _step_name AND task_id = _task_id 
-	AND status_id != 6; -- Prevent resetting the status on serialization error retries.
+	AND status_id != 8; -- Prevent resetting the status on serialization error retries.
 
 	-- Make sure the statistics are inserted only once.
 	IF NOT EXISTS (SELECT * FROM step_resource_log WHERE step_name = _step_name AND task_id = _task_id) THEN
@@ -51,30 +51,20 @@ BEGIN
 		_disk_read_b, 
 		_disk_write_b);
 	END IF;
-
-	UPDATE task
-	SET status_id = 6, --Finished
-	status_timestamp = now()
-	WHERE id = _task_id
-	AND status_id != 6 -- Prevent resetting the status on serialization error retries.
-	AND NOT EXISTS (SELECT * FROM step WHERE task_id = _task_id AND status_id != 6); -- Check that all the steps have been finished.
 	
-	IF EXISTS (SELECT * FROM task WHERE id = _task_id AND status_id = 6) 
+	IF EXISTS (SELECT * FROM step WHERE task_id = _task_id AND name = _step_name AND status_id = 8) 
 	-- Make sure the task finished event is inserted only once.
-	AND NOT EXISTS (SELECT * FROM event WHERE type_id = 1 AND data::json->'task_id' = _task_id) THEN
+	AND NOT EXISTS (SELECT * FROM event WHERE type_id = 7 AND data::json->'task_id' = _task_id AND data::json->'step_name' = _step_name) THEN
 		INSERT INTO event(
 		type_id, 
 		data, 
 		submitted_timestamp)
 		VALUES (
-		1, -- TaskFinished
-		'{"task_id":' || _task_id || '}',
+		7, -- StepFailed
+		'{"task_id":' || _task_id || ',"step_name":' || _step_name || '}',
 		now()
 		);
 	END IF;
-
-	RETURN EXISTS (SELECT *
-	FROM task WHERE id = _task_id AND status_id = 6);
 
 END;
 $$ LANGUAGE plpgsql;
