@@ -5,6 +5,11 @@ VALUES (
 
 INSERT INTO activity_status(name, description)
 VALUES (
+'PendingStart',
+'The status of an activity that has been added to the resource manager''s execution queue.');
+
+INSERT INTO activity_status(name, description)
+VALUES (
 'NeedsInput',
 'The activity has been suspended due to lack of necessary input.');
 
