@@ -8,6 +8,11 @@ void Logger::initialize()
     openlog(NULL, LOG_CONS | LOG_PID, LOG_DAEMON);
 }
 
+void Logger::debug(const QString &str)
+{
+    debug(str.toLocal8Bit().constData());
+}
+
 void Logger::info(const QString &str)
 {
     info(str.toLocal8Bit().constData());
@@ -26,6 +31,12 @@ void Logger::error(const QString &str)
 void Logger::fatal(const QString &str)
 {
     fatal(str.toLocal8Bit().constData());
+}
+
+void Logger::debug(const char *str)
+{
+    fprintf(stderr, "%s\n", str);
+    syslog(LOG_DEBUG, "%s", str);
 }
 
 void Logger::info(const char *str)
@@ -50,4 +61,31 @@ void Logger::fatal(const char *str)
 {
     fprintf(stderr, "%s\n", str);
     syslog(LOG_CRIT, "%s", str);
+}
+
+void Logger::installMessageHandler()
+{
+    qInstallMessageHandler(&Logger::messageHandler);
+}
+
+void Logger::messageHandler(const QtMsgType type,
+                            const QMessageLogContext &context,
+                            const QString &message)
+{
+    const auto &msg = QStringLiteral("[%1:%2] %3").arg(context.file).arg(context.line).arg(message);
+
+    switch (type) {
+        case QtDebugMsg:
+            debug(msg);
+            break;
+        case QtWarningMsg:
+            warn(msg);
+            break;
+        case QtCriticalMsg:
+            error(msg);
+            break;
+        case QtFatalMsg:
+            fatal(msg);
+            break;
+    }
 }
