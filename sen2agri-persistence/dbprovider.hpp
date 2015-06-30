@@ -5,6 +5,7 @@
 #include <QString>
 #include <QtSql>
 
+#include <stopwatch.hpp>
 #include "sqldatabaseraii.hpp"
 #include "sql_error.hpp"
 #include "settings.hpp"
@@ -41,6 +42,9 @@ public:
         int txnRetryNumber = 0;
         while (true) {
             try {
+                Stopwatch sw(operation);
+                Q_UNUSED(sw);
+
                 return f();
             } catch (const sql_error &e) {
                 if (!shouldRetryTransaction(e)) {
