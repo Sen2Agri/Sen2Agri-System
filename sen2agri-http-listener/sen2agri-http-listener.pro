@@ -25,7 +25,12 @@ SOURCES += main.cpp \
     requestmapper.cpp \
     controller/dashboardcontroller.cpp
 
-LIBS += -L$$OUT_PWD/../QtWebApp/ -lQtWebAppd
+QTWEBAPP = -lQtWebApp
+CONFIG(debug, debug|release) {
+    QTWEBAPP = $$join(QTWEBAPP,,,d)
+}
+
+LIBS += -L$$OUT_PWD/../QtWebApp/ $$QTWEBAPP
 
 INCLUDEPATH += $$PWD/../QtWebApp
 DEPENDPATH += $$PWD/../QtWebApp
