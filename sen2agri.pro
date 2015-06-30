@@ -5,7 +5,9 @@ SUBDIRS += sen2agri-common \
     sen2agri-persistence \
     sen2agri-archiver \
     sen2agri-executor \
-    sen2agri-orchestrator
+    sen2agri-orchestrator \
+    QtWebApp \
+    sen2agri-http-listener
 
 sen2agri-config.depends = sen2agri-common
 sen2agri-persistence.depends = sen2agri-common
