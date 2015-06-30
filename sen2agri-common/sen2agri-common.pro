@@ -14,7 +14,8 @@ INCLUDEPATH += ../Optional
 
 SOURCES += \
     model.cpp \
-    logger.cpp
+    logger.cpp \
+    stopwatch.cpp
 
 HEADERS += \
     model.hpp \
@@ -22,4 +23,5 @@ HEADERS += \
     logger.hpp \
     make_unique.hpp \
     optional_util.hpp \
-    type_traits_ext.hpp
+    type_traits_ext.hpp \
+    stopwatch.hpp
