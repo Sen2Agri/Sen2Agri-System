@@ -1,8 +1,7 @@
 ﻿CREATE OR REPLACE FUNCTION sp_submit_task(
 IN _job_id int,
 IN _module_short_name character varying,
-IN _parameters json,
-IN _steps json
+IN _parameters json
 ) RETURNS int AS $$
 DECLARE return_id int;
 BEGIN
@@ -21,8 +20,6 @@ BEGIN
 	now(), 
 	1, -- Submitted
 	now()) RETURNING id INTO return_id;
-
-	SELECT sp_submit_steps(return_id, _steps);
 
 	RETURN return_id;
 

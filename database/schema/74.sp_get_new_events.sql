@@ -6,10 +6,9 @@
   processing_started_timestamp timestamp with time zone) AS $$
 BEGIN
 
-	SELECT id, type_id, data, submitted_timestamp,
-	processing_started_timestamp
-	FROM event WHERE processing_completed_timestamp IS NULL;
+	RETURN QUERY SELECT event.id, event.type_id, event.data, event.submitted_timestamp,
+	event.processing_started_timestamp
+	FROM event WHERE event.processing_completed_timestamp IS NULL;
 
 END;
 $$ LANGUAGE plpgsql;
-
