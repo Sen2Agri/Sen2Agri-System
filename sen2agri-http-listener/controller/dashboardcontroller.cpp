@@ -1,5 +1,6 @@
-#include "dashboardcontroller.h"
+#include <stopwatch.hpp>
 
+#include "dashboardcontroller.h"
 #include "persistencemanager_interface.h"
 
 DashboardController::DashboardController()
@@ -8,6 +9,8 @@ DashboardController::DashboardController()
 
 void DashboardController::service(HttpRequest &request, HttpResponse &response)
 {
+    START_STOPWATCH("DashboardController::service");
+
     const auto &path = request.getPath();
     const auto &action = path.mid(path.indexOf('/', 1) + 1);
 
