@@ -6,7 +6,7 @@
 #include <QDateTime>
 #include <QJsonDocument>
 
-#include "optional.hpp"
+#include <optional.hpp>
 
 void registerMetaTypes();
 
@@ -479,9 +479,10 @@ class JobSubmittedEvent
 {
 public:
     int jobId;
+    int processorId;
 
     JobSubmittedEvent();
-    JobSubmittedEvent(int jobId);
+    JobSubmittedEvent(int jobId, int processorId);
 
     QJsonDocument toJson() const;
 
