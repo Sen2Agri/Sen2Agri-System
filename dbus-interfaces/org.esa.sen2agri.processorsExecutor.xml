@@ -9,5 +9,13 @@
       <arg type="b" direction="out"/>
       <arg name="jobName" type="s" direction="in"/>
     </method>
+    <method name="SubmitSteps">
+      <arg name="steps" type="a(issas)" direction="in" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewExecutorStepList" />
+    </method>
+    <method name="CancelTasks">
+      <arg name="tasks" type="ai" direction="in" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="TaskIdList" />
+    </method>
   </interface>
 </node>

@@ -275,11 +275,11 @@ class NewTask
 {
 public:
     int jobId;
-    int moduleId;
+    QString module;
     QJsonDocument parameters;
 
     NewTask();
-    NewTask(int jobId, int moduleId, QJsonDocument parameters);
+    NewTask(int jobId, QString module, QJsonDocument parameters);
 
     static void registerMetaTypes();
 };
@@ -292,12 +292,11 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task);
 class NewStep
 {
 public:
-    int taskId;
     QString name;
     QJsonDocument parameters;
 
     NewStep();
-    NewStep(int taskId, QString name, QJsonDocument parameters);
+    NewStep(QString name, QJsonDocument parameters);
 
     static void registerMetaTypes();
 };
@@ -321,7 +320,10 @@ enum class ExecutionStatus {
     Error
 };
 
+typedef QList<ExecutionStatus> ExecutionStatusList;
+
 Q_DECLARE_METATYPE(ExecutionStatus)
+Q_DECLARE_METATYPE(ExecutionStatusList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, ExecutionStatus status);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &status);
@@ -496,11 +498,12 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobSubmittedEvent
 class StepFailedEvent
 {
 public:
+    int jobId;
     int taskId;
     QString stepName;
 
     StepFailedEvent();
-    StepFailedEvent(int taskId, QString stepName);
+    StepFailedEvent(int jobId, int taskId, QString stepName);
 
     QJsonDocument toJson() const;
 
@@ -559,5 +562,56 @@ typedef QList<NodeStatistics> NodeStatisticsList;
 Q_DECLARE_METATYPE(NodeStatistics)
 Q_DECLARE_METATYPE(NodeStatisticsList)
 
-QDBusArgument &operator<<(QDBusArgument &argument, NodeStatistics statistics);
+QDBusArgument &operator<<(QDBusArgument &argument, const NodeStatistics &statistics);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &statistics);
+
+typedef QString StepArgument;
+typedef QList<QString> StepArgumentList;
+
+struct NewExecutorStep
+{
+    int taskId;
+    QString processorPath;
+    QString stepName;
+    StepArgumentList arguments;
+
+    NewExecutorStep();
+    NewExecutorStep(int taskId, QString processorPath, QString stepName, StepArgumentList arguments);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<NewExecutorStep> NewExecutorStepList;
+
+Q_DECLARE_METATYPE(StepArgument)
+Q_DECLARE_METATYPE(StepArgumentList)
+Q_DECLARE_METATYPE(NewExecutorStep)
+Q_DECLARE_METATYPE(NewExecutorStepList)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const NewExecutorStep &step);
+const QDBusArgument &operator>>(const QDBusArgument &argument, NewExecutorStep &step);
+
+typedef QList<int> TaskIdList;
+
+Q_DECLARE_METATYPE(TaskIdList);
+
+struct JobStepToRun
+{
+    int taskId;
+    QString module;
+    QString stepName;
+    QJsonDocument parameters;
+
+    JobStepToRun();
+    JobStepToRun(int taskId, QString module, QString stepName, QJsonDocument parameters);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<JobStepToRun> JobStepToRunList;
+
+Q_DECLARE_METATYPE(JobStepToRun)
+Q_DECLARE_METATYPE(JobStepToRunList)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobStepToRun &step);
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobStepToRun &step);

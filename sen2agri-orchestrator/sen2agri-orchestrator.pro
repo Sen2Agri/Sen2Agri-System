@@ -19,13 +19,19 @@ adaptor.header_flags = -i ../sen2agri-common/model.hpp
 
 DBUS_ADAPTORS += adaptor
 
-interface.files = ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
-interface.header_flags = -i ../sen2agri-common/model.hpp
+persistence_manager_interface.files = ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
+persistence_manager_interface.header_flags = -i ../sen2agri-common/model.hpp
 
-DBUS_INTERFACES += interface
+processors_executor_interface.files = ../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml
+processors_executor_interface.header_flags = -i ../sen2agri-common/model.hpp
+
+DBUS_INTERFACES += persistence_manager_interface processors_executor_interface
 
 SOURCES += main.cpp \
-    orchestrator.cpp
+    orchestrator.cpp \
+    orchestratorworker.cpp \
+    eventprocessingcontext.cpp \
+    dbus_future_utils.cpp
 
 DISTFILES += \
 # install to /usr/share/dbus-1/interfaces/org.esa.sen2agri.orchestrator.xml
@@ -46,4 +52,7 @@ PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a
 
 HEADERS += \
     pch.hpp \
-    orchestrator.hpp
+    orchestrator.hpp \
+    orchestratorworker.hpp \
+    eventprocessingcontext.hpp \
+    dbus_future_utils.hpp

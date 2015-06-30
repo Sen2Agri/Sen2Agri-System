@@ -48,11 +48,20 @@ void registerMetaTypes()
 
     NodeStatistics::registerMetaTypes();
 
+    NewExecutorStep::registerMetaTypes();
+    JobStepToRun::registerMetaTypes();
+
     qDBusRegisterMetaType<QJsonDocument>();
 
     qDBusRegisterMetaType<JobStartType>();
     qDBusRegisterMetaType<ExecutionStatus>();
+    qDBusRegisterMetaType<ExecutionStatusList>();
     qDBusRegisterMetaType<EventType>();
+
+    qDBusRegisterMetaType<StepArgument>();
+    qDBusRegisterMetaType<StepArgumentList>();
+
+    qDBusRegisterMetaType<TaskIdList>();
 }
 
 ConfigurationParameterInfo::ConfigurationParameterInfo()
@@ -518,12 +527,12 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job)
     return argument;
 }
 
-NewTask::NewTask() : jobId(), moduleId()
+NewTask::NewTask() : jobId()
 {
 }
 
-NewTask::NewTask(int jobId, int moduleId, QJsonDocument parameters)
-    : jobId(jobId), moduleId(moduleId), parameters(std::move(parameters))
+NewTask::NewTask(int jobId, QString module, QJsonDocument parameters)
+    : jobId(jobId), module(std::move(module)), parameters(std::move(parameters))
 {
 }
 
@@ -535,7 +544,7 @@ void NewTask::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
 {
     argument.beginStructure();
-    argument << task.jobId << task.moduleId << task.parameters;
+    argument << task.jobId << task.module << task.parameters;
     argument.endStructure();
 
     return argument;
@@ -544,18 +553,18 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task)
 {
     argument.beginStructure();
-    argument >> task.jobId >> task.moduleId >> task.parameters;
+    argument >> task.jobId >> task.module >> task.parameters;
     argument.endStructure();
 
     return argument;
 }
 
-NewStep::NewStep() : taskId()
+NewStep::NewStep()
 {
 }
 
-NewStep::NewStep(int taskId, QString name, QJsonDocument parameters)
-    : taskId(taskId), name(std::move(name)), parameters(std::move(parameters))
+NewStep::NewStep(QString name, QJsonDocument parameters)
+    : name(std::move(name)), parameters(std::move(parameters))
 {
 }
 
@@ -568,7 +577,7 @@ void NewStep::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step)
 {
     argument.beginStructure();
-    argument << step.taskId << step.name << step.parameters;
+    argument << step.name << step.parameters;
     argument.endStructure();
 
     return argument;
@@ -577,7 +586,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step)
 {
     argument.beginStructure();
-    argument >> step.taskId >> step.name >> step.parameters;
+    argument >> step.name >> step.parameters;
     argument.endStructure();
 
     return argument;
@@ -939,18 +948,19 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobSubmittedEvent
     return argument;
 }
 
-StepFailedEvent::StepFailedEvent() : taskId()
+StepFailedEvent::StepFailedEvent() : jobId(), taskId()
 {
 }
 
-StepFailedEvent::StepFailedEvent(int taskId, QString stepName)
-    : taskId(taskId), stepName(std::move(stepName))
+StepFailedEvent::StepFailedEvent(int jobId, int taskId, QString stepName)
+    : jobId(jobId), taskId(taskId), stepName(std::move(stepName))
 {
 }
 
 QJsonDocument StepFailedEvent::toJson() const
 {
     QJsonObject node;
+    node[QStringLiteral("job_id")] = jobId;
     node[QStringLiteral("task_id")] = taskId;
     node[QStringLiteral("step_name")] = stepName;
 
@@ -960,7 +970,8 @@ QJsonDocument StepFailedEvent::toJson() const
 StepFailedEvent StepFailedEvent::fromJson(const QJsonDocument &json)
 {
     const auto &object = json.object();
-    return { object.value(QStringLiteral("task_id")).toInt(),
+    return { object.value(QStringLiteral("job_id")).toInt(),
+             object.value(QStringLiteral("task_id")).toInt(),
              object.value(QStringLiteral("step_name")).toString() };
 }
 
@@ -972,7 +983,7 @@ void StepFailedEvent::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const StepFailedEvent &event)
 {
     argument.beginStructure();
-    argument << event.taskId << event.stepName;
+    argument << event.jobId << event.taskId << event.stepName;
     argument.endStructure();
 
     return argument;
@@ -981,7 +992,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const StepFailedEvent &event)
 const QDBusArgument &operator>>(const QDBusArgument &argument, StepFailedEvent &event)
 {
     argument.beginStructure();
-    argument >> event.taskId >> event.stepName;
+    argument >> event.jobId >> event.taskId >> event.stepName;
     argument.endStructure();
 
     return argument;
@@ -1059,7 +1070,7 @@ void NodeStatistics::registerMetaTypes()
     qDBusRegisterMetaType<NodeStatisticsList>();
 }
 
-QDBusArgument &operator<<(QDBusArgument &argument, NodeStatistics statistics)
+QDBusArgument &operator<<(QDBusArgument &argument, const NodeStatistics &statistics)
 {
     argument.beginStructure();
     argument << statistics.node << statistics.freeRamKb << statistics.freeDiskBytes;
@@ -1072,6 +1083,83 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &s
 {
     argument.beginStructure();
     argument >> statistics.node >> statistics.freeRamKb >> statistics.freeDiskBytes;
+    argument.endStructure();
+
+    return argument;
+}
+
+NewExecutorStep::NewExecutorStep() : taskId()
+{
+}
+
+NewExecutorStep::NewExecutorStep(int taskId,
+                                 QString processorPath,
+                                 QString stepName,
+                                 StepArgumentList arguments)
+    : taskId(taskId),
+      processorPath(std::move(processorPath)),
+      stepName(std::move(stepName)),
+      arguments(std::move(arguments))
+{
+}
+
+void NewExecutorStep::registerMetaTypes()
+{
+    qDBusRegisterMetaType<StepArgument>();
+    qDBusRegisterMetaType<StepArgumentList>();
+    qDBusRegisterMetaType<NewExecutorStep>();
+    qDBusRegisterMetaType<NewExecutorStepList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const NewExecutorStep &step)
+{
+    argument.beginStructure();
+    argument << step.taskId << step.processorPath << step.stepName << step.arguments;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, NewExecutorStep &step)
+{
+    argument.beginStructure();
+    argument >> step.taskId >> step.processorPath >> step.stepName >> step.arguments;
+    argument.endStructure();
+
+    return argument;
+}
+
+JobStepToRun::JobStepToRun()
+{
+}
+
+JobStepToRun::JobStepToRun(int taskId, QString module, QString stepName, QJsonDocument parameters)
+    : taskId(taskId),
+      module(std::move(module)),
+      stepName(std::move(stepName)),
+      parameters(std::move(parameters))
+{
+}
+
+void JobStepToRun::registerMetaTypes()
+{
+    qDBusRegisterMetaType<JobStepToRun>();
+    qDBusRegisterMetaType<JobStepToRunList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobStepToRun &step)
+{
+    argument.beginStructure();
+    argument << step.taskId << step.module << step.stepName << step.parameters;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobStepToRun &step)
+{
+    argument.beginStructure();
+    argument >> step.taskId >> step.module >> step.stepName >> step.parameters;
     argument.endStructure();
 
     return argument;

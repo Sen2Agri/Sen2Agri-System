@@ -50,12 +50,22 @@ public slots:
     void MarkProductsArchived(ArchivedProductList products);
 
     int SubmitJob(NewJob job);
-    int SubmitTask(NewTask task, NewStepList steps);
+    int SubmitTask(NewTask task);
+    void SubmitSteps(int taskId, NewStepList steps);
 
     void MarkStepPendingStart(int taskId, QString name);
     void MarkStepStarted(int taskId, QString name);
-    void MarkStepFinished(int taskId, QString name, ExecutionStatistics statistics);
+    bool MarkStepFinished(int taskId, QString name, ExecutionStatistics statistics);
+
+    void MarkJobPaused(int jobId);
+    void MarkJobResumed(int jobId);
+    void MarkJobCancelled(int jobId);
     void MarkJobFinished(int jobId);
+    void MarkJobFailed(int jobId);
+    void MarkJobNeedsInput(int jobId);
+
+    TaskIdList GetJobTasksByStatus(int jobId, ExecutionStatusList statusList);
+    JobStepToRunList GetJobStepsForResume(int jobId);
 
     void InsertTaskFinishedEvent(TaskFinishedEvent event);
     void InsertProductAvailableEvent(ProductAvailableEvent event);

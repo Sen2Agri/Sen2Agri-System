@@ -208,13 +208,21 @@ int PersistenceManager::SubmitJob(NewJob job)
     return {};
 }
 
-int PersistenceManager::SubmitTask(NewTask task, NewStepList steps)
+int PersistenceManager::SubmitTask(NewTask task)
 {
-    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const NewTask &task,
-                          const NewStepList &steps) { return dbProvider.SubmitTask(task, steps); },
-                       std::ref(dbProvider), std::move(task), std::move(steps)));
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const NewTask &task) {
+        return dbProvider.SubmitTask(task);
+    }, std::ref(dbProvider), std::move(task)));
 
     return {};
+}
+
+void PersistenceManager::SubmitSteps(int taskId, NewStepList steps)
+{
+    RunAsync(
+        std::bind([](PersistenceManagerDBProvider &dbProvider, int taskId,
+                     const NewStepList &steps) { return dbProvider.SubmitSteps(taskId, steps); },
+                  std::ref(dbProvider), taskId, std::move(steps)));
 }
 
 void PersistenceManager::MarkStepPendingStart(int taskId, QString name)
@@ -233,23 +241,78 @@ void PersistenceManager::MarkStepStarted(int taskId, QString name)
         }, std::ref(dbProvider), taskId, std::move(name)));
 }
 
-void PersistenceManager::MarkStepFinished(int taskId, QString name, ExecutionStatistics statistics)
+bool PersistenceManager::MarkStepFinished(int taskId, QString name, ExecutionStatistics statistics)
 {
     RunAsync(std::bind(
         [](PersistenceManagerDBProvider &dbProvider, int taskId, const QString &name,
            const ExecutionStatistics &statistics) {
             if (statistics.exitCode) {
                 dbProvider.MarkStepFailed(taskId, name, statistics);
+                return true;
             } else {
-                dbProvider.MarkStepFinished(taskId, name, statistics);
+                return dbProvider.MarkStepFinished(taskId, name, statistics);
             }
         },
         std::ref(dbProvider), taskId, std::move(name), std::move(statistics)));
+
+    return {};
+}
+
+void MarkJobPaused(int jobId);
+void MarkJobCancelled(int jobId);
+void MarkJobFinished(int jobId);
+void MarkJobFailed(int jobId);
+void MarkJobNeedsInput(int jobId);
+
+void PersistenceManager::MarkJobPaused(int jobId)
+{
+    RunAsync([this, jobId]() { dbProvider.MarkJobPaused(jobId); });
+}
+
+void PersistenceManager::MarkJobResumed(int jobId)
+{
+    RunAsync([this, jobId]() { dbProvider.MarkJobResumed(jobId); });
+}
+
+void PersistenceManager::MarkJobCancelled(int jobId)
+{
+    RunAsync([this, jobId]() { dbProvider.MarkJobCancelled(jobId); });
 }
 
 void PersistenceManager::MarkJobFinished(int jobId)
 {
     RunAsync([this, jobId]() { dbProvider.MarkJobFinished(jobId); });
+}
+
+void PersistenceManager::MarkJobFailed(int jobId)
+{
+    RunAsync([this, jobId]() { dbProvider.MarkJobFailed(jobId); });
+}
+
+void PersistenceManager::MarkJobNeedsInput(int jobId)
+{
+    RunAsync([this, jobId]() { dbProvider.MarkJobNeedsInput(jobId); });
+}
+
+TaskIdList PersistenceManager::GetJobTasksByStatus(int jobId, ExecutionStatusList statusList)
+{
+    RunAsync(std::bind(
+        [](PersistenceManagerDBProvider &dbProvider, int jobId,
+           const ExecutionStatusList &statusList) {
+            return dbProvider.GetJobTasksByStatus(jobId, statusList);
+        },
+        std::ref(dbProvider), jobId, std::move(statusList)));
+
+    return {};
+}
+
+JobStepToRunList PersistenceManager::GetJobStepsForResume(int jobId)
+{
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, int jobId) {
+        return dbProvider.GetJobStepsForResume(jobId);
+    }, std::ref(dbProvider), jobId));
+
+    return {};
 }
 
 void PersistenceManager::InsertTaskFinishedEvent(TaskFinishedEvent event)

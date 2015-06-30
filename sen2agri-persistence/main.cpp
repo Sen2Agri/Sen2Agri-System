@@ -14,6 +14,13 @@
 #include "settings.hpp"
 #include "logger.hpp"
 
+template <typename T>
+void printSignature()
+{
+    qDebug() << QMetaType::typeName(qMetaTypeId<T>())
+             << QDBusMetaType::typeToSignature(qMetaTypeId<T>());
+}
+
 int main(int argc, char *argv[])
 {
     try {
@@ -48,7 +55,8 @@ int main(int argc, char *argv[])
 
         registerMetaTypes();
 
-        qDebug() << QDBusMetaType::typeToSignature(qMetaTypeId<ConfigurationSet>());
+        printSignature<NewExecutorStepList>();
+        printSignature<JobStepToRunList>();
 
         auto connection = QDBusConnection::systemBus();
         PersistenceManager persistenceManager(settings);

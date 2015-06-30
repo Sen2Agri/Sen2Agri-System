@@ -4,13 +4,7 @@
 #include <QString>
 #include <QObject>
 
-struct SubmittedStep
-{
-    int taskId;
-    QString processorName;
-    QString stepName;
-    QList<QString> arguments;
-};
+#include <model.hpp>
 
 /**
  * @brief The OrchestratorRequestsHandler class
@@ -28,8 +22,8 @@ public:
 
 
     // TODO implement
-    Q_INVOKABLE void SubmitSteps(const QList<SubmittedStep> &steps) { Q_UNUSED(steps); }
-    Q_INVOKABLE void CancelTask(int taskId) { Q_UNUSED(taskId); }
+    Q_INVOKABLE void SubmitSteps(const NewExecutorStepList &steps) { Q_UNUSED(steps); }
+    Q_INVOKABLE void CancelTasks(const TaskIdList &tasks) { Q_UNUSED(tasks); }
 };
 
 #endif // ORCHESTRATORREQUESTSHANDLER_H
