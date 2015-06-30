@@ -696,6 +696,29 @@ void PersistenceManagerDBProvider::InsertNodeStatistics(const NodeStatistics &st
     });
 }
 
+QString PersistenceManagerDBProvider::GetDashboardData(const QDate &since)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_data(:sinceTimestamp)"));
+        query.bindValue(QStringLiteral(":since"), since);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error(
+                "Expecting a return value from sp_get_dashboard_data, but none found");
+        }
+
+        return query.value(0).toString();
+    });
+}
+
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions)
 {
     QJsonArray array;

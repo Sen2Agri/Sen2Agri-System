@@ -79,4 +79,6 @@ public slots:
     void MarkEventProcessingComplete(int eventId);
 
     void InsertNodeStatistics(NodeStatistics statistics);
+
+    QString GetDashboardData(QDate since);
 };

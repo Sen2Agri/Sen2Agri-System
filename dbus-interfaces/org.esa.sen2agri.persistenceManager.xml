@@ -136,5 +136,10 @@
       <arg name="statistics" type="(six)" direction="in" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NodeStatistics" />
     </method>
+    <method name="GetDashboardData">
+      <arg name="since" type="(iii)" direction="in" />
+      <arg name="jsonData" type="s" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QDate" />
+    </method>
   </interface>
 </node>

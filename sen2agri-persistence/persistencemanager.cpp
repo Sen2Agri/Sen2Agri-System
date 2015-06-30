@@ -385,3 +385,13 @@ void PersistenceManager::InsertNodeStatistics(NodeStatistics statistics)
             dbProvider.InsertNodeStatistics(statistics);
         }, std::ref(dbProvider), std::move(statistics)));
 }
+
+QString PersistenceManager::GetDashboardData(QDate since)
+{
+    RunAsync(
+        std::bind([](PersistenceManagerDBProvider &dbProvider, const QDate &since) {
+            return dbProvider.GetDashboardData(since);
+        }, std::ref(dbProvider), std::move(since)));
+
+    return {};
+}

@@ -57,4 +57,6 @@ public:
     void MarkEventProcessingComplete(int eventId);
 
     void InsertNodeStatistics(const NodeStatistics &statistics);
+
+    QString GetDashboardData(const QDate &since);
 };
