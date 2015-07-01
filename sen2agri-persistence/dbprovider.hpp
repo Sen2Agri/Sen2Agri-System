@@ -5,7 +5,7 @@
 #include <QString>
 #include <QtSql>
 
-#include <stopwatch.hpp>
+#include "stopwatch.hpp"
 #include "sqldatabaseraii.hpp"
 #include "sql_error.hpp"
 #include "settings.hpp"

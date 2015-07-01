@@ -1,13 +1,10 @@
 #include <QCoreApplication>
 
-#include <logger.hpp>
 #include <httpserver/httplistener.h>
 #include <httpserver/staticfilecontroller.h>
 
-#include "requestmapper.h"
-
-HttpListener *listener;
-StaticFileController *staticFileController;
+#include "logger.hpp"
+#include "requestmapper.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -22,9 +19,12 @@ int main(int argc, char *argv[])
     QSettings listenerSettings;
     listenerSettings.setValue("port", 8080);
 
-    staticFileController = new StaticFileController(&fileSettings, &app);
+    StaticFileController staticFileController(&fileSettings);
 
-    listener = new HttpListener(&listenerSettings, new RequestMapper(&app), &app);
+    RequestMapper mapper(staticFileController);
+    HttpListener listener(&listenerSettings, &mapper);
+
+    Q_UNUSED(listener);
 
     return app.exec();
 }

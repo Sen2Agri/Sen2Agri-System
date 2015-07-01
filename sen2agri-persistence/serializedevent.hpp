@@ -2,7 +2,7 @@
 
 #include <QJsonDocument>
 
-#include <model.hpp>
+#include "model.hpp"
 
 class SerializedEvent
 {

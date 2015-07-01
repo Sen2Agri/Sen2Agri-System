@@ -3,10 +3,36 @@
 #include <QDebug>
 #include <QDBusPendingCallWatcher>
 
-#include <logger.hpp>
-
+#include "logger.hpp"
 #include "orchestratorworker.hpp"
 #include "dbus_future_utils.hpp"
+
+class ProcessorHandler
+{
+public:
+    void HandleJobSubmitted(EventProcessingContext &ctx, const JobSubmittedEvent &event);
+    void HandleTaskFinished(EventProcessingContext &ctx, const TaskFinishedEvent &event);
+
+private:
+    virtual ~ProcessorHandler();
+
+    virtual void HandleJobSubmittedImpl(EventProcessingContext &ctx,
+                                        const JobSubmittedEvent &event) = 0;
+    virtual void HandleTaskFinishedImpl(EventProcessingContext &ctx,
+                                        const TaskFinishedEvent &event) = 0;
+};
+
+void ProcessorHandler::HandleJobSubmitted(EventProcessingContext &ctx,
+                                          const JobSubmittedEvent &event)
+{
+    HandleJobSubmittedImpl(ctx, event);
+}
+
+void ProcessorHandler::HandleTaskFinished(EventProcessingContext &ctx,
+                                          const TaskFinishedEvent &event)
+{
+    HandleTaskFinishedImpl(ctx, event);
+}
 
 static std::map<QString, QString>
 GetModulePathMap(const ConfigurationParameterValueList &parameters)
@@ -120,9 +146,9 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskFin
     Q_UNUSED(event);
 
     // 1. using the task module, find the relevant processor/task handler and run it
-    // 2. submit the returned task and step list to the database
-    // 3. submit the steps to the executor
-    // 4. if no more steps are remaining, submit a product available event to self
+    // 2. the handler can choose to submit a new task and its steps
+    // 3. if a task was submitted, send its steps to the executor
+    // 4. otherwise submit a product available event to self
 
     // 5. pend an event queue rescan
     ctx.ScheduleRescan();

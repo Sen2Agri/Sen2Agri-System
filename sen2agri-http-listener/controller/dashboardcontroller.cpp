@@ -1,6 +1,5 @@
-#include <stopwatch.hpp>
-
-#include "dashboardcontroller.h"
+#include "stopwatch.hpp"
+#include "dashboardcontroller.hpp"
 #include "persistencemanager_interface.h"
 
 DashboardController::DashboardController()
@@ -23,13 +22,13 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
 
 void DashboardController::getDashboardData(HttpRequest &request, HttpResponse &response)
 {
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(), QStringLiteral("/"),
-        QDBusConnection::systemBus());
-
     const auto &value = request.getParameter("since");
     const auto &since = QDate::fromString(value, Qt::ISODate);
     qDebug() << since;
+
+    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
+        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(), QStringLiteral("/"),
+        QDBusConnection::systemBus());
 
     auto promise = persistenceManagerClient.GetDashboardData(since);
     promise.waitForFinished();

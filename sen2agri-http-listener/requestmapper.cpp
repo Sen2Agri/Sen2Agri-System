@@ -1,12 +1,11 @@
-#include <httpserver/staticfilecontroller.h>
-#include <stopwatch.hpp>
+#include <QByteArray>
 
-#include "requestmapper.h"
-#include "controller/dashboardcontroller.h"
+#include "stopwatch.hpp"
+#include "requestmapper.hpp"
+#include "controller/dashboardcontroller.hpp"
 
-extern StaticFileController *staticFileController;
-
-RequestMapper::RequestMapper(QObject *parent) : HttpRequestHandler(parent)
+RequestMapper::RequestMapper(StaticFileController &staticFileController, QObject *parent)
+    : HttpRequestHandler(parent), staticFileController(staticFileController)
 {
 }
 
@@ -14,11 +13,9 @@ void RequestMapper::service(HttpRequest &request, HttpResponse &response)
 {
     START_STOPWATCH("RequestMapper::service");
 
-    QByteArray path = request.getPath();
-
-    if (path.startsWith("/dashboard/")) {
+    if (request.getPath().startsWith("/dashboard/")) {
         DashboardController().service(request, response);
     } else {
-        staticFileController->service(request, response);
+        staticFileController.service(request, response);
     }
 }

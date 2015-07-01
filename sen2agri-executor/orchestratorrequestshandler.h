@@ -4,7 +4,7 @@
 #include <QString>
 #include <QObject>
 
-#include <model.hpp>
+#include "model.hpp"
 
 /**
  * @brief The OrchestratorRequestsHandler class

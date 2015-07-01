@@ -1,4 +1,13 @@
 #include <QCoreApplication>
-#include <logger.hpp>
-#include <model.hpp>
+#include <QDBusConnection>
+#include <QDBusContext>
+#include <QDBusMessage>
+#include <QDBusPendingCall>
+#include <QDBusPendingCallWatcher>
+#include <QDBusPendingReply>
+#include <QDebug>
+#include <QObject>
+#include <QThread>
+#include <map>
+#include <optional.hpp>
 #include <stdexcept>

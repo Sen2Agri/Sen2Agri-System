@@ -1,16 +1,14 @@
-#-------------------------------------------------
-#
-# Project created by QtCreator 2015-06-30T16:07:58
-#
-#-------------------------------------------------
-
-QT       += core network dbus
-
-QT       -= gui
+QT += core network dbus
+QT -= gui
 
 TARGET = sen2agri-http-listener
-CONFIG   += c++11 console
-CONFIG   -= app_bundle
+
+DESTDIR = bin
+
+CONFIG += c++11 precompile_header
+CONFIG -= app_bundle
+
+PRECOMPILED_HEADER = pch.hpp
 
 INCLUDEPATH += ../Optional
 
@@ -36,8 +34,9 @@ INCLUDEPATH += $$PWD/../QtWebApp
 DEPENDPATH += $$PWD/../QtWebApp
 
 HEADERS += \
-    requestmapper.h \
-    controller/dashboardcontroller.h
+    controller/dashboardcontroller.hpp \
+    requestmapper.hpp \
+    pch.hpp
 
 LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
 

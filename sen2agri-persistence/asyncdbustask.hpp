@@ -6,8 +6,7 @@
 #include <QDBusMessage>
 #include <QDBusConnection>
 
-#include <type_traits_ext.hpp>
-
+#include "type_traits_ext.hpp"
 #include "logger.hpp"
 
 template <typename F>

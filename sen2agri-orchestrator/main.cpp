@@ -3,8 +3,8 @@
 #include <QCoreApplication>
 #include <QDBusConnection>
 
-#include <model.hpp>
-#include <logger.hpp>
+#include "model.hpp"
+#include "logger.hpp"
 
 #include "orchestrator.hpp"
 #include "orchestrator_adaptor.h"
