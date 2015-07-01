@@ -1,1 +1,0 @@
-This folder will contain the build folders for all  Processor Wrapper and simulators projects.
