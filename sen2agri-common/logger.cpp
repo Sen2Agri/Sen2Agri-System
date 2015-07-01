@@ -72,7 +72,7 @@ void Logger::messageHandler(const QtMsgType type,
                             const QMessageLogContext &context,
                             const QString &message)
 {
-    const auto &msg = QStringLiteral("[%1:%2] %3").arg(context.file).arg(context.line).arg(message);
+    const auto &msg = qFormatLogMessage(type, context, message);
 
     switch (type) {
         case QtDebugMsg:
