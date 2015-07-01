@@ -27,8 +27,7 @@ public:
     QString getGlobalValue(const ParameterKey &parameter) const;
     QString getSiteName(std::experimental::optional<int> siteId) const;
 
-    void
-    setValue(const ParameterKey &parameter, const QString &value);
+    void setValue(const ParameterKey &parameter, const QString &value);
     void removeValue(const ParameterKey &parameter);
     void reset();
 

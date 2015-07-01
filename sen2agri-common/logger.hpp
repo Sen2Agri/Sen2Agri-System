@@ -22,5 +22,6 @@ public:
     static void installMessageHandler();
 
 private:
-    static void messageHandler(const QtMsgType type, const QMessageLogContext &context, const QString &message);
+    static void
+    messageHandler(const QtMsgType type, const QMessageLogContext &context, const QString &message);
 };
