@@ -44,6 +44,8 @@ int main(int argc, char *argv[])
             configFile += QStringLiteral("/sen2agri-persistence.conf");
         }
 
+        Logger::info(QStringLiteral("Reading settings from %1").arg(configFile));
+
         if (!QFileInfo::exists(configFile)) {
             throw std::runtime_error(
                 QStringLiteral("Configuration file %1 does not exist, exiting.")
@@ -80,6 +82,7 @@ int main(int argc, char *argv[])
         return app.exec();
     } catch (const std::exception &e) {
         Logger::fatal(e.what());
+
         return EXIT_FAILURE;
     }
 }
