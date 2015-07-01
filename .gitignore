@@ -7,6 +7,9 @@ build-*
 *.user
 *.autosave
 
+# VIM swap files
+*.swp
+
 # Compiled Object files
 *.slo
 *.lo
