@@ -31,38 +31,6 @@ static long getSysConf(int name, long fallback)
     return value;
 }
 
-static bool getPasswordEntry(uid_t uid, passwd &pwd)
-{
-    passwd *result;
-
-    auto buflen = getSysConf(_SC_GETPW_R_SIZE_MAX, 16384);
-    auto buf(std::make_unique<char[]>(buflen));
-
-    if (auto r = getpwuid_r(uid, &pwd, buf.get(), buflen, &result)) {
-        throw std::runtime_error(QStringLiteral("Unable to get user information: %1")
-                                     .arg(getSystemErrorMessage(r))
-                                     .toStdString());
-    }
-
-    return result != nullptr;
-}
-
-static bool getGroupEntry(const char *name, group grp)
-{
-    group *result;
-
-    auto buflen = getSysConf(_SC_GETGR_R_SIZE_MAX, 16384);
-    auto buf(std::make_unique<char[]>(buflen));
-
-    if (auto r = getgrnam_r(name, &grp, buf.get(), buflen, &result)) {
-        throw std::runtime_error(QStringLiteral("Unable to get group information: %1")
-                                     .arg(getSystemErrorMessage(r))
-                                     .toStdString());
-    }
-
-    return result != nullptr;
-}
-
 static bool isUserAdmin(uid_t uid)
 {
     // TODO what to do with this?
@@ -73,13 +41,33 @@ static bool isUserAdmin(uid_t uid)
         return true;
     }
 
+    auto pwdBufLen = getSysConf(_SC_GETPW_R_SIZE_MAX, 16384);
+    auto pwdBuf(std::make_unique<char[]>(pwdBufLen));
+
     passwd pwd;
-    if (!getPasswordEntry(uid, pwd)) {
+    passwd *pwdResult;
+    if (auto r = getpwuid_r(uid, &pwd, pwdBuf.get(), pwdBufLen, &pwdResult)) {
+        throw std::runtime_error(QStringLiteral("Unable to get user information: %1")
+                                     .arg(getSystemErrorMessage(r))
+                                     .toStdString());
+    }
+
+    if (!pwdResult) {
         return false;
     }
 
+    auto grpBufLen = getSysConf(_SC_GETGR_R_SIZE_MAX, 16384);
+    auto grpBuf(std::make_unique<char[]>(grpBufLen));
+
     group grp;
-    if (!getGroupEntry(adminGroupName, grp)) {
+    group *grpResult;
+    if (auto r = getgrnam_r(adminGroupName, &grp, grpBuf.get(), grpBufLen, &grpResult)) {
+        throw std::runtime_error(QStringLiteral("Unable to get group information: %1")
+                                     .arg(getSystemErrorMessage(r))
+                                     .toStdString());
+    }
+
+    if (!grpResult) {
         return false;
     }
 
