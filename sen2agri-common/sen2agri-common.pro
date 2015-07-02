@@ -15,7 +15,8 @@ INCLUDEPATH += ../Optional
 SOURCES += \
     model.cpp \
     logger.cpp \
-    stopwatch.cpp
+    stopwatch.cpp \
+    dbus_future_utils.cpp
 
 HEADERS += \
     model.hpp \
@@ -24,4 +25,5 @@ HEADERS += \
     make_unique.hpp \
     optional_util.hpp \
     type_traits_ext.hpp \
-    stopwatch.hpp
+    stopwatch.hpp \
+    dbus_future_utils.hpp
