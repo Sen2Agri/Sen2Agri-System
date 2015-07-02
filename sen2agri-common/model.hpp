@@ -76,6 +76,9 @@ typedef QList<ConfigurationCategory> ConfigurationCategoryList;
 Q_DECLARE_METATYPE(ConfigurationCategory)
 Q_DECLARE_METATYPE(ConfigurationCategoryList)
 
+QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationCategory &category);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationCategory &category);
+
 class Site
 {
 public:
