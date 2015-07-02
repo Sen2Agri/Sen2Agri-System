@@ -49,13 +49,11 @@ void registerMetaTypes()
 
     NodeStatistics::registerMetaTypes();
 
+    StepArgument::registerMetaTypes();
     NewExecutorStep::registerMetaTypes();
     JobStepToRun::registerMetaTypes();
 
-    qDBusRegisterMetaType<JobStartType>();
-    qDBusRegisterMetaType<ExecutionStatus>();
     qDBusRegisterMetaType<ExecutionStatusList>();
-    qDBusRegisterMetaType<EventType>();
 
     qDBusRegisterMetaType<StepArgument>();
     qDBusRegisterMetaType<StepArgumentList>();
@@ -591,6 +589,33 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &
     return argument;
 }
 
+QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatusList &statusList)
+{
+    argument.beginArray(qMetaTypeId<int>());
+    for (auto s : statusList) {
+        argument << s;
+    }
+    argument.endArray();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatusList &statusList)
+{
+    statusList.clear();
+
+    argument.beginArray();
+    while (!argument.atEnd()) {
+        ExecutionStatus s;
+        argument >> s;
+
+        statusList.push_back(s);
+    }
+    argument.endArray();
+
+    return argument;
+}
+
 ExecutionStatistics::ExecutionStatistics()
     : exitCode(),
       userCpuMs(),
@@ -1086,6 +1111,39 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &s
 {
     argument.beginStructure();
     argument >> statistics.node >> statistics.freeRamKb >> statistics.freeDiskBytes;
+    argument.endStructure();
+
+    return argument;
+}
+
+StepArgument::StepArgument()
+{
+}
+
+StepArgument::StepArgument(QString value)
+    : value(std::move(value))
+{
+}
+
+void StepArgument::registerMetaTypes()
+{
+    qDBusRegisterMetaType<StepArgument>();
+    qDBusRegisterMetaType<StepArgumentList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const StepArgument &stepArgument)
+{
+    argument.beginStructure();
+    argument << stepArgument.value;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, StepArgument &stepArgument)
+{
+    argument.beginStructure();
+    argument >> stepArgument.value;
     argument.endStructure();
 
     return argument;

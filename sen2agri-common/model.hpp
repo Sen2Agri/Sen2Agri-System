@@ -237,8 +237,6 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ArchivedProduct &
 
 enum class JobStartType { Triggered = 1, Requested = 2, Scheduled = 3 };
 
-Q_DECLARE_METATYPE(JobStartType)
-
 QDBusArgument &operator<<(QDBusArgument &argument, JobStartType startType);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobStartType &startType);
 
@@ -319,11 +317,13 @@ enum class ExecutionStatus {
 
 typedef QList<ExecutionStatus> ExecutionStatusList;
 
-Q_DECLARE_METATYPE(ExecutionStatus)
 Q_DECLARE_METATYPE(ExecutionStatusList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, ExecutionStatus status);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &status);
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatusList &statusList);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatusList &statusList);
 
 class ExecutionStatistics
 {
@@ -366,8 +366,6 @@ enum class EventType {
     JobSubmitted,
     StepFailed
 };
-
-Q_DECLARE_METATYPE(EventType)
 
 QDBusArgument &operator<<(QDBusArgument &argument, EventType event);
 const QDBusArgument &operator>>(const QDBusArgument &argument, EventType &event);
@@ -563,8 +561,24 @@ Q_DECLARE_METATYPE(NodeStatisticsList)
 QDBusArgument &operator<<(QDBusArgument &argument, const NodeStatistics &statistics);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &statistics);
 
-typedef QString StepArgument;
-typedef QList<QString> StepArgumentList;
+class StepArgument
+{
+public:
+    QString value;
+
+    StepArgument();
+    StepArgument(QString value);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<StepArgument> StepArgumentList;
+
+Q_DECLARE_METATYPE(StepArgument);
+Q_DECLARE_METATYPE(StepArgumentList);
+
+QDBusArgument &operator<<(QDBusArgument &argument, const StepArgument &stepArgument);
+const QDBusArgument &operator>>(const QDBusArgument &argument, StepArgument &stepArgument);
 
 class NewExecutorStep
 {
@@ -585,8 +599,6 @@ public:
 
 typedef QList<NewExecutorStep> NewExecutorStepList;
 
-Q_DECLARE_METATYPE(StepArgument)
-Q_DECLARE_METATYPE(StepArgumentList)
 Q_DECLARE_METATYPE(NewExecutorStep)
 Q_DECLARE_METATYPE(NewExecutorStepList)
 
