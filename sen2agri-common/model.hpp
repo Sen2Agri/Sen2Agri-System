@@ -572,7 +572,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &s
 typedef QString StepArgument;
 typedef QList<QString> StepArgumentList;
 
-struct NewExecutorStep {
+class NewExecutorStep
+{
+public:
     int taskId;
     QString processorPath;
     QString stepName;
@@ -601,7 +603,9 @@ typedef QList<int> TaskIdList;
 
 Q_DECLARE_METATYPE(TaskIdList);
 
-struct JobStepToRun {
+class JobStepToRun
+{
+public:
     int taskId;
     QString module;
     QString stepName;
