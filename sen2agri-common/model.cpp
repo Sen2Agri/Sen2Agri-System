@@ -61,7 +61,7 @@ void registerMetaTypes()
     qDBusRegisterMetaType<TaskIdList>();
 }
 
-ConfigurationParameterInfo::ConfigurationParameterInfo()
+ConfigurationParameterInfo::ConfigurationParameterInfo() : categoryId(), isAdvanced()
 {
 }
 
@@ -147,7 +147,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument,
     return argument;
 }
 
-ConfigurationCategory::ConfigurationCategory()
+ConfigurationCategory::ConfigurationCategory() : categoryId()
 {
 }
 
@@ -180,7 +180,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationCate
     return argument;
 }
 
-Site::Site()
+Site::Site() : siteId()
 {
 }
 
@@ -212,7 +212,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Site &site)
     return argument;
 }
 
-ConfigurationSet::ConfigurationSet()
+ConfigurationSet::ConfigurationSet() : isAdmin()
 {
 }
 
@@ -1120,8 +1120,7 @@ StepArgument::StepArgument()
 {
 }
 
-StepArgument::StepArgument(QString value)
-    : value(std::move(value))
+StepArgument::StepArgument(QString value) : value(std::move(value))
 {
 }
 
@@ -1190,7 +1189,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewExecutorStep &
     return argument;
 }
 
-JobStepToRun::JobStepToRun()
+JobStepToRun::JobStepToRun() : taskId()
 {
 }
 
