@@ -8,9 +8,9 @@ class SerializedEvent
 {
 public:
     EventType type;
-    QJsonDocument data;
+    QString data;
 
-    SerializedEvent(EventType type, QJsonDocument data);
+    SerializedEvent(EventType type, QString data);
 
     SerializedEvent(const TaskFinishedEvent &event);
     SerializedEvent(const ProductAvailableEvent &event);

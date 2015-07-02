@@ -99,31 +99,31 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
 
         switch (event.type) {
             case EventType::TaskFinished:
-                ProcessEvent(innerCtx, TaskFinishedEvent::fromJson(event.data));
+                ProcessEvent(innerCtx, TaskFinishedEvent::fromJson(event.dataJson));
                 break;
             case EventType::ProductAvailable:
-                ProcessEvent(innerCtx, ProductAvailableEvent::fromJson(event.data));
+                ProcessEvent(innerCtx, ProductAvailableEvent::fromJson(event.dataJson));
                 break;
             case EventType::JobCancelled:
-                ProcessEvent(innerCtx, JobCancelledEvent::fromJson(event.data));
+                ProcessEvent(innerCtx, JobCancelledEvent::fromJson(event.dataJson));
                 break;
             case EventType::JobPaused:
-                ProcessEvent(innerCtx, JobPausedEvent::fromJson(event.data));
+                ProcessEvent(innerCtx, JobPausedEvent::fromJson(event.dataJson));
                 break;
             case EventType::JobResumed:
-                ProcessEvent(innerCtx, JobResumedEvent::fromJson(event.data));
+                ProcessEvent(innerCtx, JobResumedEvent::fromJson(event.dataJson));
                 break;
             case EventType::JobSubmitted:
-                ProcessEvent(innerCtx, JobSubmittedEvent::fromJson(event.data));
+                ProcessEvent(innerCtx, JobSubmittedEvent::fromJson(event.dataJson));
                 break;
             case EventType::StepFailed:
-                ProcessEvent(innerCtx, StepFailedEvent::fromJson(event.data));
+                ProcessEvent(innerCtx, StepFailedEvent::fromJson(event.dataJson));
                 break;
             default:
                 throw std::runtime_error(
                     QStringLiteral("Unknown event type %1 for event id %2 with data %3")
                         .arg(static_cast<int>(event.type), event.eventId)
-                        .arg(QString::fromUtf8(event.data.toJson()))
+                        .arg(event.dataJson)
                         .toStdString());
         }
 
@@ -206,21 +206,22 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobResu
                                          .toStdString());
         }
 
-        if (!s.parameters.isObject()) {
+        const auto &parametersDoc = QJsonDocument::fromJson(s.parametersJson.toUtf8());
+        if (!parametersDoc.isObject()) {
             throw std::runtime_error(
                 QStringLiteral("Unexpected step parameter JSON schema: root node should be an "
                                "object. The parameters object  was: '%1'")
-                    .arg(QString::fromUtf8(s.parameters.toJson()))
+                    .arg(s.parametersJson)
                     .toStdString());
         }
 
-        const auto &argNode = s.parameters.object()[QStringLiteral("arguments")];
+        const auto &argNode = parametersDoc.object()[QStringLiteral("arguments")];
         if (!argNode.isArray()) {
             throw std::runtime_error(
                 QStringLiteral(
                     "Unexpected step parameter JSON schema: node 'arguments' should be an "
                     "array. The parameters object  was: '%1'")
-                    .arg(QString::fromUtf8(s.parameters.toJson()))
+                    .arg(s.parametersJson)
                     .toStdString());
         }
         const auto &argArray = argNode.toArray();
@@ -232,7 +233,7 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobResu
                 throw std::runtime_error(
                     QStringLiteral("Unexpected step parameter JSON schema: arguments should be "
                                    "strings. The parameters object was: '%1'")
-                        .arg(QString::fromUtf8(s.parameters.toJson()))
+                        .arg(s.parametersJson)
                         .toStdString());
             }
 

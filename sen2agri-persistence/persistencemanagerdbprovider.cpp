@@ -257,7 +257,7 @@ int PersistenceManagerDBProvider::SubmitJob(const NewJob &job)
         query.bindValue(QStringLiteral(":processorId"), job.processorId);
         query.bindValue(QStringLiteral(":siteId"), job.siteId);
         query.bindValue(QStringLiteral(":startTypeId"), static_cast<int>(job.startType));
-        query.bindValue(QStringLiteral(":parameters"), QString::fromUtf8(job.parameters.toJson()));
+        query.bindValue(QStringLiteral(":parameters"), job.parametersJson);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -281,7 +281,7 @@ int PersistenceManagerDBProvider::SubmitTask(const NewTask &task)
             QStringLiteral("select * from sp_submit_task(:jobId, :module, :parameters)"));
         query.bindValue(QStringLiteral(":jobId"), task.jobId);
         query.bindValue(QStringLiteral(":module"), task.module);
-        query.bindValue(QStringLiteral(":parameters"), task.parameters);
+        query.bindValue(QStringLiteral(":parameters"), task.parametersJson);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -558,7 +558,7 @@ UnprocessedEventList PersistenceManagerDBProvider::GetNewEvents()
         while (query.next()) {
             result.append({ query.value(eventIdCol).toInt(),
                             static_cast<EventType>(query.value(eventTypeCol).toInt()),
-                            QJsonDocument::fromJson(query.value(eventDataCol).toString().toUtf8()),
+                            query.value(eventDataCol).toString(),
                             query.value(submittedCol).toDateTime(),
                             to_optional<QDateTime>(query.value(processingStartedCol)) });
         }
@@ -648,11 +648,10 @@ JobStepToRunList PersistenceManagerDBProvider::GetJobStepsForResume(int jobId)
 
         JobStepToRunList result;
         while (query.next()) {
-            result.append(
-                { query.value(taskIdCol).toInt(),
-                  query.value(moduleCol).toString(),
-                  query.value(stepNameCol).toString(),
-                  QJsonDocument::fromJson(query.value(parametersCol).toString().toUtf8()) });
+            result.append({ query.value(taskIdCol).toInt(),
+                            query.value(moduleCol).toString(),
+                            query.value(stepNameCol).toString(),
+                            query.value(parametersCol).toString() });
         }
 
         return result;
@@ -667,7 +666,7 @@ void PersistenceManagerDBProvider::InsertEvent(const SerializedEvent &event)
         auto query =
             db.prepareQuery(QStringLiteral("select sp_insert_event(:eventType, :eventData)"));
         query.bindValue(QStringLiteral(":eventType"), static_cast<int>(event.type));
-        query.bindValue(QStringLiteral(":eventData"), toJsonString(event.data));
+        query.bindValue(QStringLiteral(":eventData"), event.data);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -752,7 +751,7 @@ static QString getNewStepsJson(const NewStepList &steps)
     for (const auto &s : steps) {
         QJsonObject node;
         node[QStringLiteral("name")] = s.name;
-        node[QStringLiteral("parameters")] = s.parameters.object();
+        node[QStringLiteral("parameters")] = QJsonDocument::fromJson(s.parametersJson.toUtf8()).object();
         array.append(std::move(node));
     }
 

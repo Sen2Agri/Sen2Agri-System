@@ -2,6 +2,7 @@
 
 #include <QDBusMetaType>
 #include <QJsonObject>
+#include <QJsonDocument>
 
 #include "model.hpp"
 
@@ -50,8 +51,6 @@ void registerMetaTypes()
 
     NewExecutorStep::registerMetaTypes();
     JobStepToRun::registerMetaTypes();
-
-    qDBusRegisterMetaType<QJsonDocument>();
 
     qDBusRegisterMetaType<JobStartType>();
     qDBusRegisterMetaType<ExecutionStatus>();
@@ -470,19 +469,6 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobStartType &sta
     return argument;
 }
 
-QDBusArgument &operator<<(QDBusArgument &argument, const QJsonDocument &document)
-{
-    return argument << document.toBinaryData();
-}
-
-const QDBusArgument &operator>>(const QDBusArgument &argument, QJsonDocument &document)
-{
-    QByteArray data;
-    argument >> data;
-    document = QJsonDocument::fromBinaryData(data);
-    return argument;
-}
-
 NewJob::NewJob() : processorId(), siteId(), startType()
 {
 }
@@ -492,13 +478,13 @@ NewJob::NewJob(QString name,
                int processorId,
                int siteId,
                JobStartType startType,
-               QJsonDocument parameters)
+               QString parametersJson)
     : name(std::move(name)),
       description(std::move(description)),
       processorId(processorId),
       siteId(siteId),
       startType(startType),
-      parameters(std::move(parameters))
+      parametersJson(std::move(parametersJson))
 {
 }
 
@@ -511,7 +497,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewJob &job)
 {
     argument.beginStructure();
     argument << job.name << job.description << job.processorId << job.siteId << job.startType
-             << job.parameters;
+             << job.parametersJson;
     argument.endStructure();
 
     return argument;
@@ -521,7 +507,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job)
 {
     argument.beginStructure();
     argument >> job.name >> job.description >> job.processorId >> job.siteId >> job.startType >>
-        job.parameters;
+        job.parametersJson;
     argument.endStructure();
 
     return argument;
@@ -531,8 +517,8 @@ NewTask::NewTask() : jobId()
 {
 }
 
-NewTask::NewTask(int jobId, QString module, QJsonDocument parameters)
-    : jobId(jobId), module(std::move(module)), parameters(std::move(parameters))
+NewTask::NewTask(int jobId, QString module, QString parametersJson)
+    : jobId(jobId), module(std::move(module)), parametersJson(std::move(parametersJson))
 {
 }
 
@@ -544,7 +530,7 @@ void NewTask::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
 {
     argument.beginStructure();
-    argument << task.jobId << task.module << task.parameters;
+    argument << task.jobId << task.module << task.parametersJson;
     argument.endStructure();
 
     return argument;
@@ -553,7 +539,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task)
 {
     argument.beginStructure();
-    argument >> task.jobId >> task.module >> task.parameters;
+    argument >> task.jobId >> task.module >> task.parametersJson;
     argument.endStructure();
 
     return argument;
@@ -563,8 +549,8 @@ NewStep::NewStep()
 {
 }
 
-NewStep::NewStep(QString name, QJsonDocument parameters)
-    : name(std::move(name)), parameters(std::move(parameters))
+NewStep::NewStep(QString name, QString parametersJson)
+    : name(std::move(name)), parametersJson(std::move(parametersJson))
 {
 }
 
@@ -577,7 +563,7 @@ void NewStep::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step)
 {
     argument.beginStructure();
-    argument << step.name << step.parameters;
+    argument << step.name << step.parametersJson;
     argument.endStructure();
 
     return argument;
@@ -586,7 +572,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step)
 {
     argument.beginStructure();
-    argument >> step.name >> step.parameters;
+    argument >> step.name >> step.parametersJson;
     argument.endStructure();
 
     return argument;
@@ -686,17 +672,19 @@ TaskFinishedEvent::TaskFinishedEvent(int taskId) : taskId(taskId)
 {
 }
 
-QJsonDocument TaskFinishedEvent::toJson() const
+QString TaskFinishedEvent::toJson() const
 {
     QJsonObject node;
     node[QStringLiteral("task_id")] = taskId;
 
-    return QJsonDocument(node);
+    return QString::fromUtf8(QJsonDocument(node).toJson());
 }
 
-TaskFinishedEvent TaskFinishedEvent::fromJson(const QJsonDocument &json)
+TaskFinishedEvent TaskFinishedEvent::fromJson(const QString &json)
 {
-    const auto &object = json.object();
+    const auto &doc = QJsonDocument::fromJson(json.toUtf8());
+    const auto &object = doc.object();
+
     return { object.value(QStringLiteral("task_id")).toInt() };
 }
 
@@ -731,17 +719,19 @@ ProductAvailableEvent::ProductAvailableEvent(int productId) : productId(productI
 {
 }
 
-QJsonDocument ProductAvailableEvent::toJson() const
+QString ProductAvailableEvent::toJson() const
 {
     QJsonObject node;
     node[QStringLiteral("product_id")] = productId;
 
-    return QJsonDocument(node);
+    return QString::fromUtf8(QJsonDocument(node).toJson());
 }
 
-ProductAvailableEvent ProductAvailableEvent::fromJson(const QJsonDocument &json)
+ProductAvailableEvent ProductAvailableEvent::fromJson(const QString &json)
 {
-    const auto &object = json.object();
+    const auto &doc = QJsonDocument::fromJson(json.toUtf8());
+    const auto &object = doc.object();
+
     return { object.value(QStringLiteral("product_id")).toInt() };
 }
 
@@ -776,17 +766,19 @@ JobCancelledEvent::JobCancelledEvent(int jobId) : jobId(jobId)
 {
 }
 
-QJsonDocument JobCancelledEvent::toJson() const
+QString JobCancelledEvent::toJson() const
 {
     QJsonObject node;
     node[QStringLiteral("job_id")] = jobId;
 
-    return QJsonDocument(node);
+    return QString::fromUtf8(QJsonDocument(node).toJson());
 }
 
-JobCancelledEvent JobCancelledEvent::fromJson(const QJsonDocument &json)
+JobCancelledEvent JobCancelledEvent::fromJson(const QString &json)
 {
-    const auto &object = json.object();
+    const auto &doc = QJsonDocument::fromJson(json.toUtf8());
+    const auto &object = doc.object();
+
     return { object.value(QStringLiteral("job_id")).toInt() };
 }
 
@@ -821,17 +813,19 @@ JobPausedEvent::JobPausedEvent(int jobId) : jobId(jobId)
 {
 }
 
-QJsonDocument JobPausedEvent::toJson() const
+QString JobPausedEvent::toJson() const
 {
     QJsonObject node;
     node[QStringLiteral("job_id")] = jobId;
 
-    return QJsonDocument(node);
+    return QString::fromUtf8(QJsonDocument(node).toJson());
 }
 
-JobPausedEvent JobPausedEvent::fromJson(const QJsonDocument &json)
+JobPausedEvent JobPausedEvent::fromJson(const QString &json)
 {
-    const auto &object = json.object();
+    const auto &doc = QJsonDocument::fromJson(json.toUtf8());
+    const auto &object = doc.object();
+
     return { object.value(QStringLiteral("job_id")).toInt() };
 }
 
@@ -866,17 +860,19 @@ JobResumedEvent::JobResumedEvent(int jobId) : jobId(jobId)
 {
 }
 
-QJsonDocument JobResumedEvent::toJson() const
+QString JobResumedEvent::toJson() const
 {
     QJsonObject node;
     node[QStringLiteral("job_id")] = jobId;
 
-    return QJsonDocument(node);
+    return QString::fromUtf8(QJsonDocument(node).toJson());
 }
 
-JobResumedEvent JobResumedEvent::fromJson(const QJsonDocument &json)
+JobResumedEvent JobResumedEvent::fromJson(const QString &json)
 {
-    const auto &object = json.object();
+    const auto &doc = QJsonDocument::fromJson(json.toUtf8());
+    const auto &object = doc.object();
+
     return { object.value(QStringLiteral("job_id")).toInt() };
 }
 
@@ -912,18 +908,20 @@ JobSubmittedEvent::JobSubmittedEvent(int jobId, int processorId)
 {
 }
 
-QJsonDocument JobSubmittedEvent::toJson() const
+QString JobSubmittedEvent::toJson() const
 {
     QJsonObject node;
     node[QStringLiteral("job_id")] = jobId;
     node[QStringLiteral("processor_id")] = jobId;
 
-    return QJsonDocument(node);
+    return QString::fromUtf8(QJsonDocument(node).toJson());
 }
 
-JobSubmittedEvent JobSubmittedEvent::fromJson(const QJsonDocument &json)
+JobSubmittedEvent JobSubmittedEvent::fromJson(const QString &json)
 {
-    const auto &object = json.object();
+    const auto &doc = QJsonDocument::fromJson(json.toUtf8());
+    const auto &object = doc.object();
+
     return { object.value(QStringLiteral("job_id")).toInt(),
              object.value(QStringLiteral("processor_id")).toInt() };
 }
@@ -960,19 +958,21 @@ StepFailedEvent::StepFailedEvent(int jobId, int taskId, QString stepName)
 {
 }
 
-QJsonDocument StepFailedEvent::toJson() const
+QString StepFailedEvent::toJson() const
 {
     QJsonObject node;
     node[QStringLiteral("job_id")] = jobId;
     node[QStringLiteral("task_id")] = taskId;
     node[QStringLiteral("step_name")] = stepName;
 
-    return QJsonDocument(node);
+    return QString::fromUtf8(QJsonDocument(node).toJson());
 }
 
-StepFailedEvent StepFailedEvent::fromJson(const QJsonDocument &json)
+StepFailedEvent StepFailedEvent::fromJson(const QString &json)
 {
-    const auto &object = json.object();
+    const auto &doc = QJsonDocument::fromJson(json.toUtf8());
+    const auto &object = doc.object();
+
     return { object.value(QStringLiteral("job_id")).toInt(),
              object.value(QStringLiteral("task_id")).toInt(),
              object.value(QStringLiteral("step_name")).toString() };
@@ -1007,12 +1007,12 @@ UnprocessedEvent::UnprocessedEvent() : eventId(), type()
 
 UnprocessedEvent::UnprocessedEvent(int eventId,
                                    EventType type,
-                                   QJsonDocument data,
+                                   QString dataJson,
                                    QDateTime submittedTime,
                                    std::experimental::optional<QDateTime> processingStartedTime)
     : eventId(eventId),
       type(type),
-      data(std::move(data)),
+      dataJson(std::move(dataJson)),
       submittedTime(std::move(submittedTime)),
       processingStartedTime(std::move(processingStartedTime))
 {
@@ -1027,7 +1027,7 @@ void UnprocessedEvent::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const UnprocessedEvent &event)
 {
     argument.beginStructure();
-    argument << event.eventId << event.type << event.data << event.submittedTime;
+    argument << event.eventId << event.type << event.dataJson << event.submittedTime;
 
     if (event.processingStartedTime) {
         argument << true << *event.processingStartedTime;
@@ -1045,7 +1045,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, UnprocessedEvent 
     QDateTime processingStartedTime;
 
     argument.beginStructure();
-    argument >> event.eventId >> event.type >> event.data >> event.submittedTime >>
+    argument >> event.eventId >> event.type >> event.dataJson >> event.submittedTime >>
         hasProcessingStartedTime >> processingStartedTime;
 
     if (hasProcessingStartedTime) {
@@ -1136,11 +1136,11 @@ JobStepToRun::JobStepToRun()
 {
 }
 
-JobStepToRun::JobStepToRun(int taskId, QString module, QString stepName, QJsonDocument parameters)
+JobStepToRun::JobStepToRun(int taskId, QString module, QString stepName, QString parametersJson)
     : taskId(taskId),
       module(std::move(module)),
       stepName(std::move(stepName)),
-      parameters(std::move(parameters))
+      parametersJson(std::move(parametersJson))
 {
 }
 
@@ -1153,7 +1153,7 @@ void JobStepToRun::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const JobStepToRun &step)
 {
     argument.beginStructure();
-    argument << step.taskId << step.module << step.stepName << step.parameters;
+    argument << step.taskId << step.module << step.stepName << step.parametersJson;
     argument.endStructure();
 
     return argument;
@@ -1162,7 +1162,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const JobStepToRun &step)
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobStepToRun &step)
 {
     argument.beginStructure();
-    argument >> step.taskId >> step.module >> step.stepName >> step.parameters;
+    argument >> step.taskId >> step.module >> step.stepName >> step.parametersJson;
     argument.endStructure();
 
     return argument;

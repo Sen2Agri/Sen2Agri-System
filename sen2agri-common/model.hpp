@@ -4,7 +4,6 @@
 #include <QDBusArgument>
 #include <QMetaType>
 #include <QDateTime>
-#include <QJsonDocument>
 
 #include <optional.hpp>
 
@@ -243,11 +242,6 @@ Q_DECLARE_METATYPE(JobStartType)
 QDBusArgument &operator<<(QDBusArgument &argument, JobStartType startType);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobStartType &startType);
 
-Q_DECLARE_METATYPE(QJsonDocument)
-
-QDBusArgument &operator<<(QDBusArgument &argument, const QJsonDocument &document);
-const QDBusArgument &operator>>(const QDBusArgument &argument, QJsonDocument &document);
-
 class NewJob
 {
 public:
@@ -256,7 +250,7 @@ public:
     int processorId;
     int siteId;
     JobStartType startType;
-    QJsonDocument parameters;
+    QString parametersJson;
 
     NewJob();
     NewJob(QString name,
@@ -264,7 +258,7 @@ public:
            int processorId,
            int siteId,
            JobStartType startType,
-           QJsonDocument parameters);
+           QString parametersJson);
 
     static void registerMetaTypes();
 };
@@ -279,10 +273,10 @@ class NewTask
 public:
     int jobId;
     QString module;
-    QJsonDocument parameters;
+    QString parametersJson;
 
     NewTask();
-    NewTask(int jobId, QString module, QJsonDocument parameters);
+    NewTask(int jobId, QString module, QString parametersJson);
 
     static void registerMetaTypes();
 };
@@ -296,10 +290,10 @@ class NewStep
 {
 public:
     QString name;
-    QJsonDocument parameters;
+    QString parametersJson;
 
     NewStep();
-    NewStep(QString name, QJsonDocument parameters);
+    NewStep(QString name, QString parametersJson);
 
     static void registerMetaTypes();
 };
@@ -386,9 +380,9 @@ public:
     TaskFinishedEvent();
     TaskFinishedEvent(int taskId);
 
-    QJsonDocument toJson() const;
+    QString toJson() const;
 
-    static TaskFinishedEvent fromJson(const QJsonDocument &json);
+    static TaskFinishedEvent fromJson(const QString &json);
 
     static void registerMetaTypes();
 };
@@ -406,9 +400,9 @@ public:
     ProductAvailableEvent();
     ProductAvailableEvent(int productId);
 
-    QJsonDocument toJson() const;
+    QString toJson() const;
 
-    static ProductAvailableEvent fromJson(const QJsonDocument &json);
+    static ProductAvailableEvent fromJson(const QString &json);
 
     static void registerMetaTypes();
 };
@@ -426,9 +420,9 @@ public:
     JobCancelledEvent();
     JobCancelledEvent(int jobId);
 
-    QJsonDocument toJson() const;
+    QString toJson() const;
 
-    static JobCancelledEvent fromJson(const QJsonDocument &json);
+    static JobCancelledEvent fromJson(const QString &json);
 
     static void registerMetaTypes();
 };
@@ -446,9 +440,9 @@ public:
     JobPausedEvent();
     JobPausedEvent(int jobId);
 
-    QJsonDocument toJson() const;
+    QString toJson() const;
 
-    static JobPausedEvent fromJson(const QJsonDocument &json);
+    static JobPausedEvent fromJson(const QString &json);
 
     static void registerMetaTypes();
 };
@@ -466,9 +460,9 @@ public:
     JobResumedEvent();
     JobResumedEvent(int jobId);
 
-    QJsonDocument toJson() const;
+    QString toJson() const;
 
-    static JobResumedEvent fromJson(const QJsonDocument &json);
+    static JobResumedEvent fromJson(const QString &json);
 
     static void registerMetaTypes();
 };
@@ -487,9 +481,9 @@ public:
     JobSubmittedEvent();
     JobSubmittedEvent(int jobId, int processorId);
 
-    QJsonDocument toJson() const;
+    QString toJson() const;
 
-    static JobSubmittedEvent fromJson(const QJsonDocument &json);
+    static JobSubmittedEvent fromJson(const QString &json);
 
     static void registerMetaTypes();
 };
@@ -509,9 +503,9 @@ public:
     StepFailedEvent();
     StepFailedEvent(int jobId, int taskId, QString stepName);
 
-    QJsonDocument toJson() const;
+    QString toJson() const;
 
-    static StepFailedEvent fromJson(const QJsonDocument &json);
+    static StepFailedEvent fromJson(const QString &json);
 
     static void registerMetaTypes();
 };
@@ -526,14 +520,14 @@ class UnprocessedEvent
 public:
     int eventId;
     EventType type;
-    QJsonDocument data;
+    QString dataJson;
     QDateTime submittedTime;
     std::experimental::optional<QDateTime> processingStartedTime;
 
     UnprocessedEvent();
     UnprocessedEvent(int eventId,
                      EventType type,
-                     QJsonDocument data,
+                     QString dataJson,
                      QDateTime submittedTime,
                      std::experimental::optional<QDateTime> processingStartedTime);
 
@@ -609,10 +603,10 @@ public:
     int taskId;
     QString module;
     QString stepName;
-    QJsonDocument parameters;
+    QString parametersJson;
 
     JobStepToRun();
-    JobStepToRun(int taskId, QString module, QString stepName, QJsonDocument parameters);
+    JobStepToRun(int taskId, QString module, QString stepName, QString parametersJson);
 
     static void registerMetaTypes();
 };
