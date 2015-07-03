@@ -6,7 +6,8 @@
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication a(argc, argv);
+    QCoreApplication app(argc, argv);
+    Q_UNUSED(app);
 
     Serialization tc;
     return QTest::qExec(&tc, argc, argv);
