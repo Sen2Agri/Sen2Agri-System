@@ -23,7 +23,7 @@ int main(int argc, char *argv[])
             QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
 
         const auto &params = WaitForResponseAndThrow(
-            persistenceManagerClient.GetConfigurationParameters("http-listener."));
+            persistenceManagerClient.GetConfigurationParameters(QStringLiteral("http-listener.")));
 
         std::experimental::optional<QString> root;
         std::experimental::optional<int> port;
