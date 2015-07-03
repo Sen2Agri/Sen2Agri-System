@@ -18,6 +18,8 @@ class PersistenceManagerDBProvider
 public:
     PersistenceManagerDBProvider(const Settings &settings);
 
+    void TestConnection();
+
     ConfigurationSet GetConfigurationSet();
 
     ConfigurationParameterValueList GetConfigurationParameters(const QString &prefix);

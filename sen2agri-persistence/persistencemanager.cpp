@@ -88,6 +88,7 @@ static bool isUserAdmin(uid_t uid)
 PersistenceManager::PersistenceManager(const Settings &settings, QObject *parent)
     : QObject(parent), dbProvider(settings)
 {
+    dbProvider.TestConnection();
 }
 
 bool PersistenceManager::IsCallerAdmin()

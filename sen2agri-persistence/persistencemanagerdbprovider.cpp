@@ -32,6 +32,11 @@ SqlDatabaseRAII PersistenceManagerDBProvider::getDatabase() const
     return provider.getDatabase(QStringLiteral("PersistenceManager"));
 }
 
+void PersistenceManagerDBProvider::TestConnection()
+{
+    getDatabase();
+}
+
 ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 {
     auto db = getDatabase();
