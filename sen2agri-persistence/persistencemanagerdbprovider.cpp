@@ -756,7 +756,8 @@ static QString getNewStepsJson(const NewStepList &steps)
     for (const auto &s : steps) {
         QJsonObject node;
         node[QStringLiteral("name")] = s.name;
-        node[QStringLiteral("parameters")] = QJsonDocument::fromJson(s.parametersJson.toUtf8()).object();
+        node[QStringLiteral("parameters")] =
+            QJsonDocument::fromJson(s.parametersJson.toUtf8()).object();
         array.append(std::move(node));
     }
 

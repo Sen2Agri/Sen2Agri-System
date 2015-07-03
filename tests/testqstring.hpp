@@ -3,7 +3,7 @@
 
 #include <QObject>
 
-class TestQString: public QObject
+class TestQString : public QObject
 {
     Q_OBJECT
 private slots:

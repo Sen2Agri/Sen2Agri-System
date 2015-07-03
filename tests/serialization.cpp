@@ -45,7 +45,8 @@ void Serialization::configurationParameterInfo()
     compare(WaitForResponseAndThrow(client->ReflectConfigurationParameterInfo(value)), value);
 
     ConfigurationParameterInfo emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectConfigurationParameterInfo(emptyValue)), emptyValue);
+    compare(WaitForResponseAndThrow(client->ReflectConfigurationParameterInfo(emptyValue)),
+            emptyValue);
 }
 
 void Serialization::configurationParameterInfoList()
@@ -54,7 +55,8 @@ void Serialization::configurationParameterInfoList()
     compare(WaitForResponseAndThrow(client->ReflectConfigurationParameterInfoList(value)), value);
 
     ConfigurationParameterInfoList emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectConfigurationParameterInfoList(emptyValue)), emptyValue);
+    compare(WaitForResponseAndThrow(client->ReflectConfigurationParameterInfoList(emptyValue)),
+            emptyValue);
 }
 
 void Serialization::configurationParameterValue()
@@ -63,7 +65,8 @@ void Serialization::configurationParameterValue()
     compare(WaitForResponseAndThrow(client->ReflectConfigurationParameterValue(value)), value);
 
     ConfigurationParameterValue emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectConfigurationParameterValue(emptyValue)), emptyValue);
+    compare(WaitForResponseAndThrow(client->ReflectConfigurationParameterValue(emptyValue)),
+            emptyValue);
 }
 
 void Serialization::configurationParameterValueList()
@@ -72,7 +75,8 @@ void Serialization::configurationParameterValueList()
     compare(WaitForResponseAndThrow(client->ReflectConfigurationParameterValueList(value)), value);
 
     ConfigurationParameterValueList emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectConfigurationParameterValueList(emptyValue)), emptyValue);
+    compare(WaitForResponseAndThrow(client->ReflectConfigurationParameterValueList(emptyValue)),
+            emptyValue);
 }
 
 void Serialization::configurationCategory()
@@ -90,7 +94,8 @@ void Serialization::configurationCategoryList()
     compare(WaitForResponseAndThrow(client->ReflectConfigurationCategoryList(value)), value);
 
     ConfigurationCategoryList emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectConfigurationCategoryList(emptyValue)), emptyValue);
+    compare(WaitForResponseAndThrow(client->ReflectConfigurationCategoryList(emptyValue)),
+            emptyValue);
 }
 
 void Serialization::site()
@@ -126,7 +131,8 @@ void Serialization::configurationUpdateAction()
     compare(WaitForResponseAndThrow(client->ReflectConfigurationUpdateAction(value)), value);
 
     ConfigurationUpdateAction emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectConfigurationUpdateAction(emptyValue)), emptyValue);
+    compare(WaitForResponseAndThrow(client->ReflectConfigurationUpdateAction(emptyValue)),
+            emptyValue);
 }
 
 void Serialization::configurationUpdateActionList()
@@ -135,7 +141,8 @@ void Serialization::configurationUpdateActionList()
     compare(WaitForResponseAndThrow(client->ReflectConfigurationUpdateActionList(value)), value);
 
     ConfigurationUpdateActionList emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectConfigurationUpdateActionList(emptyValue)), emptyValue);
+    compare(WaitForResponseAndThrow(client->ReflectConfigurationUpdateActionList(emptyValue)),
+            emptyValue);
 }
 
 void Serialization::keyedMessage()
@@ -398,4 +405,3 @@ void Serialization::jobStepToRunList()
     JobStepToRunList emptyValue;
     compare(WaitForResponseAndThrow(client->ReflectJobStepToRunList(emptyValue)), emptyValue);
 }
-

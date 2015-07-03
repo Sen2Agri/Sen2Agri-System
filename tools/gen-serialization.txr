@@ -168,8 +168,7 @@ template<typename T>
 struct maker;
 
 template<>
-struct maker<bool>
-{
+struct maker<bool> {
     static bool make()
     {
         return true;
@@ -177,8 +176,7 @@ struct maker<bool>
 };
 
 template<>
-struct maker<int>
-{
+struct maker<int> {
     static int make()
     {
         return 42;
@@ -186,8 +184,7 @@ struct maker<int>
 };
 
 template<>
-struct maker<int64_t>
-{
+struct maker<int64_t> {
     static int64_t make()
     {
         return 3000000000;
@@ -195,8 +192,7 @@ struct maker<int64_t>
 };
 
 template<>
-struct maker<QString>
-{
+struct maker<QString> {
     static QString make()
     {
         return "hello";
@@ -204,8 +200,7 @@ struct maker<QString>
 };
 
 template<>
-struct maker<QDateTime>
-{
+struct maker<QDateTime> {
     static QDateTime make()
     {
         return QDateTime::currentDateTime();
@@ -213,8 +208,7 @@ struct maker<QDateTime>
 };
 
 template<typename T>
-struct maker<std::experimental::optional<T>>
-{
+struct maker<std::experimental::optional<T>> {
     static std::experimental::optional<T> make()
     {
         return maker<T>::make();
@@ -222,8 +216,7 @@ struct maker<std::experimental::optional<T>>
 };
 
 template<typename T>
-struct maker<QList<T>>
-{
+struct maker<QList<T>> {
     static QList<T> make()
     {
         return QList<T> { maker<T>::make(), maker<T>::make(), maker<T>::make() };
@@ -231,8 +224,7 @@ struct maker<QList<T>>
 };
 
 template<>
-struct maker<JobStartType>
-{
+struct maker<JobStartType> {
     static JobStartType make()
     {
         return JobStartType::Scheduled;
@@ -240,8 +232,7 @@ struct maker<JobStartType>
 };
 
 template<>
-struct maker<EventType>
-{
+struct maker<EventType> {
     static EventType make()
     {
         return EventType::JobResumed;
@@ -249,8 +240,7 @@ struct maker<EventType>
 };
 
 template<>
-struct maker<ExecutionStatus>
-{
+struct maker<ExecutionStatus> {
     static ExecutionStatus make()
     {
         return ExecutionStatus::Finished;
@@ -259,8 +249,7 @@ struct maker<ExecutionStatus>
 
 @  (repeat)
 template<>
-struct maker<@name>
-{
+struct maker<@name> {
     static @name make()
     {
         return {

@@ -67,7 +67,8 @@ int main(int argc, char *argv[])
 
         new PersistenceManagerAdaptor(&persistenceManager);
 
-        if (!connection.registerObject(QStringLiteral("/org/esa/sen2agri/persistenceManager"), &persistenceManager)) {
+        if (!connection.registerObject(QStringLiteral("/org/esa/sen2agri/persistenceManager"),
+                                       &persistenceManager)) {
             throw std::runtime_error(
                 QStringLiteral("Error registering the object with D-Bus: %1, exiting.")
                     .arg(connection.lastError().message())

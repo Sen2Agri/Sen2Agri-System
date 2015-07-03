@@ -12,17 +12,24 @@ public:
     explicit Reflector(QObject *parent = 0);
 
 public slots:
-    ConfigurationParameterInfo ReflectConfigurationParameterInfo(const ConfigurationParameterInfo &value);
-    ConfigurationParameterInfoList ReflectConfigurationParameterInfoList(const ConfigurationParameterInfoList &value);
-    ConfigurationParameterValue ReflectConfigurationParameterValue(const ConfigurationParameterValue &value);
-    ConfigurationParameterValueList ReflectConfigurationParameterValueList(const ConfigurationParameterValueList &value);
+    ConfigurationParameterInfo
+    ReflectConfigurationParameterInfo(const ConfigurationParameterInfo &value);
+    ConfigurationParameterInfoList
+    ReflectConfigurationParameterInfoList(const ConfigurationParameterInfoList &value);
+    ConfigurationParameterValue
+    ReflectConfigurationParameterValue(const ConfigurationParameterValue &value);
+    ConfigurationParameterValueList
+    ReflectConfigurationParameterValueList(const ConfigurationParameterValueList &value);
     ConfigurationCategory ReflectConfigurationCategory(const ConfigurationCategory &value);
-    ConfigurationCategoryList ReflectConfigurationCategoryList(const ConfigurationCategoryList &value);
+    ConfigurationCategoryList
+    ReflectConfigurationCategoryList(const ConfigurationCategoryList &value);
     Site ReflectSite(const Site &value);
     SiteList ReflectSiteList(const SiteList &value);
     ConfigurationSet ReflectConfigurationSet(const ConfigurationSet &value);
-    ConfigurationUpdateAction ReflectConfigurationUpdateAction(const ConfigurationUpdateAction &value);
-    ConfigurationUpdateActionList ReflectConfigurationUpdateActionList(const ConfigurationUpdateActionList &value);
+    ConfigurationUpdateAction
+    ReflectConfigurationUpdateAction(const ConfigurationUpdateAction &value);
+    ConfigurationUpdateActionList
+    ReflectConfigurationUpdateActionList(const ConfigurationUpdateActionList &value);
     KeyedMessage ReflectKeyedMessage(const KeyedMessage &value);
     KeyedMessageList ReflectKeyedMessageList(const KeyedMessageList &value);
     Product ReflectProduct(const Product &value);

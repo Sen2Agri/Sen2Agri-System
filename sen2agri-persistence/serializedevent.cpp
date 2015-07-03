@@ -1,7 +1,6 @@
 #include "serializedevent.hpp"
 
-SerializedEvent::SerializedEvent(EventType type, QString data)
-    : type(type), data(std::move(data))
+SerializedEvent::SerializedEvent(EventType type, QString data) : type(type), data(std::move(data))
 {
 }
 

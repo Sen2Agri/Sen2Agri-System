@@ -4,22 +4,26 @@ Reflector::Reflector(QObject *parent) : QObject(parent)
 {
 }
 
-ConfigurationParameterInfo Reflector::ReflectConfigurationParameterInfo(const ConfigurationParameterInfo &value)
+ConfigurationParameterInfo
+Reflector::ReflectConfigurationParameterInfo(const ConfigurationParameterInfo &value)
 {
     return value;
 }
 
-ConfigurationParameterInfoList Reflector::ReflectConfigurationParameterInfoList(const ConfigurationParameterInfoList &value)
+ConfigurationParameterInfoList
+Reflector::ReflectConfigurationParameterInfoList(const ConfigurationParameterInfoList &value)
 {
     return value;
 }
 
-ConfigurationParameterValue Reflector::ReflectConfigurationParameterValue(const ConfigurationParameterValue &value)
+ConfigurationParameterValue
+Reflector::ReflectConfigurationParameterValue(const ConfigurationParameterValue &value)
 {
     return value;
 }
 
-ConfigurationParameterValueList Reflector::ReflectConfigurationParameterValueList(const ConfigurationParameterValueList &value)
+ConfigurationParameterValueList
+Reflector::ReflectConfigurationParameterValueList(const ConfigurationParameterValueList &value)
 {
     return value;
 }
@@ -29,7 +33,8 @@ ConfigurationCategory Reflector::ReflectConfigurationCategory(const Configuratio
     return value;
 }
 
-ConfigurationCategoryList Reflector::ReflectConfigurationCategoryList(const ConfigurationCategoryList &value)
+ConfigurationCategoryList
+Reflector::ReflectConfigurationCategoryList(const ConfigurationCategoryList &value)
 {
     return value;
 }
@@ -49,12 +54,14 @@ ConfigurationSet Reflector::ReflectConfigurationSet(const ConfigurationSet &valu
     return value;
 }
 
-ConfigurationUpdateAction Reflector::ReflectConfigurationUpdateAction(const ConfigurationUpdateAction &value)
+ConfigurationUpdateAction
+Reflector::ReflectConfigurationUpdateAction(const ConfigurationUpdateAction &value)
 {
     return value;
 }
 
-ConfigurationUpdateActionList Reflector::ReflectConfigurationUpdateActionList(const ConfigurationUpdateActionList &value)
+ConfigurationUpdateActionList
+Reflector::ReflectConfigurationUpdateActionList(const ConfigurationUpdateActionList &value)
 {
     return value;
 }
@@ -203,4 +210,3 @@ JobStepToRunList Reflector::ReflectJobStepToRunList(const JobStepToRunList &valu
 {
     return value;
 }
-

@@ -183,4 +183,3 @@ void compare(const JobStepToRun &v1, const JobStepToRun &v2)
     compare(v1.stepName, v2.stepName);
     compare(v1.parametersJson, v2.parametersJson);
 }
-
