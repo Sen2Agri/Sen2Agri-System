@@ -22,3 +22,6 @@ grep -Rh "^#include <" sen2agri-persistence | LC_ALL=C sort -u > sen2agri-persis
 
 rm -f sen2agri-processor-wrapper/pch.hpp
 grep -Rh "^#include <" sen2agri-processor-wrapper | LC_ALL=C sort -u > sen2agri-processor-wrapper/pch.hpp
+
+rm -f tests/pch.hpp
+grep -Rh "^#include <" tests | LC_ALL=C sort -u > tests/pch.hpp

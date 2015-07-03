@@ -1,5 +1,7 @@
 #include <QDBusArgument>
 #include <QDBusMetaType>
+#include <QDBusPendingCall>
+#include <QDBusPendingReply>
 #include <QDateTime>
 #include <QElapsedTimer>
 #include <QJsonDocument>

@@ -2,9 +2,7 @@
 #include <QDBusConnection>
 #include <QDBusContext>
 #include <QDBusMessage>
-#include <QDBusPendingCall>
 #include <QDBusPendingCallWatcher>
-#include <QDBusPendingReply>
 #include <QDebug>
 #include <QObject>
 #include <QThread>
