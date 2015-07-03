@@ -1,4 +1,5 @@
 #include "stopwatch.hpp"
+#include "logger.hpp"
 #include "dashboardcontroller.hpp"
 #include "persistencemanager_interface.h"
 
@@ -24,7 +25,6 @@ void DashboardController::getDashboardData(HttpRequest &request, HttpResponse &r
 {
     const auto &value = request.getParameter("since");
     const auto &since = QDate::fromString(value, Qt::ISODate);
-    qDebug() << since;
 
     OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
         OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(), QStringLiteral("/"),
@@ -36,7 +36,7 @@ void DashboardController::getDashboardData(HttpRequest &request, HttpResponse &r
     if (promise.isError()) {
         response.setStatus(500, "Internal Server Error");
 
-        qCritical() << promise.error().message();
+        Logger::error(promise.error().message());
     } else {
         response.setHeader("Content-Type", "application/json");
         response.write(promise.value().toUtf8(), true);
