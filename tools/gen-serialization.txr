@@ -1,0 +1,310 @@
+@(do
+   (defun lower_first (in)
+     (cat-str
+       (list
+         (downcase-str (sub-str in 0 1))
+         (sub-str in 1)))))
+@(next "../sen2agri-common/model.hpp")
+@(collect)
+@  (some)
+Q_DECLARE_METATYPE(@class)
+@    (bind lclass @(lower_first class))
+@  (or)
+class @name
+{
+@    (maybe)
+public:
+@    (end)
+@    (collect :vars (type field))
+    @type @{field/[a-zA-Z_][a-zA-Z_0-9]*/};
+@    (until)
+};
+@    (end)
+@    (skip)
+@  (end)
+@(end)
+@(output "../tests/reflector.hpp")
+#pragma once
+
+#include <QObject>
+
+#include "model.hpp"
+
+class Reflector : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit Reflector(QObject *parent = 0);
+
+public slots:
+@  (repeat)
+    @class Reflect@class(const @class &value);
+@  (end)
+};
+@(end)
+@(output "../tests/reflector.cpp")
+#include "reflector.hpp"
+
+Reflector::Reflector(QObject *parent) : QObject(parent)
+{
+}
+
+@  (repeat)
+@class Reflector::Reflect@class(const @class &value)
+{
+    return value;
+}
+
+@  (end)
+@(end)
+@(output "../tests/reflector.xml")
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+                      "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node name="/org/esa/sen2agri/reflector">
+  <interface name="org.esa.sen2agri.reflector">
+@  (repeat)
+    <method name="Reflect@class">
+      <arg name="value" type="@class" direction="in" />
+      <arg name="result" type="@class" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="@class" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="@class" />
+    </method>
+@  (end)
+  </interface>
+</node>
+@(end)
+@(output "../tests/serialization.hpp")
+#pragma once
+
+#include <memory>
+
+#include <QObject>
+#include <QString>
+
+#include "reflector_interface.h"
+
+class Serialization : public QObject
+{
+    Q_OBJECT
+
+private:
+    std::unique_ptr<OrgEsaSen2agriReflectorInterface> client;
+
+    static QString reflectorName;
+
+private slots:
+    void initTestCase();
+    void cleanupTestCase();
+
+@  (repeat)
+    void @lclass();
+@  (end)
+};
+@(end)
+@(output "../tests/serialization.cpp")
+#include <QTest>
+
+#include "make_unique.hpp"
+#include "dbus_future_utils.hpp"
+#include "serialization.hpp"
+#include "serialization-ops.hpp"
+#include "reflector.hpp"
+#include "reflector_adaptor.h"
+
+void Serialization::initTestCase()
+{
+    registerMetaTypes();
+
+    auto reflector = new Reflector(this);
+
+    new ReflectorAdaptor(reflector);
+
+    auto connection = QDBusConnection::sessionBus();
+    if (!connection.registerObject(QStringLiteral("/"), reflector)) {
+        QFAIL("Error registering the object with D-Bus: %1.");
+    }
+
+    if (!connection.registerService(OrgEsaSen2agriReflectorInterface::staticInterfaceName())) {
+        QFAIL("Error registering the service with D-Bus: %1.");
+    }
+
+    client = std::make_unique<OrgEsaSen2agriReflectorInterface>(
+        OrgEsaSen2agriReflectorInterface::staticInterfaceName(), QStringLiteral("/"), connection);
+}
+
+void Serialization::cleanupTestCase()
+{
+    client.reset();
+
+    auto connection = QDBusConnection::sessionBus();
+    connection.unregisterService(OrgEsaSen2agriReflectorInterface::staticInterfaceName());
+    connection.unregisterObject(reflectorName);
+}
+
+QString Serialization::reflectorName = QStringLiteral("org/esa/sen2agri/reflector");
+
+@  (repeat)
+void Serialization::@lclass()
+{
+    const auto &value = maker<@class>::make();
+    compare(WaitForResponseAndThrow(client->Reflect@class(value)), value);
+
+    @class emptyValue;
+    compare(WaitForResponseAndThrow(client->Reflect@class(emptyValue)), emptyValue);
+}
+
+@  (end)
+@(end)
+@(output "../tests/serialization-ops.hpp")
+#pragma once
+
+#include <QList>
+#include <QTest>
+
+#include "model.hpp"
+
+template<typename T>
+struct maker;
+
+template<>
+struct maker<bool>
+{
+    static bool make()
+    {
+        return true;
+    }
+};
+
+template<>
+struct maker<int>
+{
+    static int make()
+    {
+        return 42;
+    }
+};
+
+template<>
+struct maker<int64_t>
+{
+    static int64_t make()
+    {
+        return 3000000000;
+    }
+};
+
+template<>
+struct maker<QString>
+{
+    static QString make()
+    {
+        return "hello";
+    }
+};
+
+template<>
+struct maker<QDateTime>
+{
+    static QDateTime make()
+    {
+        return QDateTime::currentDateTime();
+    }
+};
+
+template<typename T>
+struct maker<std::experimental::optional<T>>
+{
+    static std::experimental::optional<T> make()
+    {
+        return maker<T>::make();
+    }
+};
+
+template<typename T>
+struct maker<QList<T>>
+{
+    static QList<T> make()
+    {
+        return QList<T> { maker<T>::make(), maker<T>::make(), maker<T>::make() };
+    }
+};
+
+template<>
+struct maker<JobStartType>
+{
+    static JobStartType make()
+    {
+        return JobStartType::Scheduled;
+    }
+};
+
+template<>
+struct maker<EventType>
+{
+    static EventType make()
+    {
+        return EventType::JobResumed;
+    }
+};
+
+template<>
+struct maker<ExecutionStatus>
+{
+    static ExecutionStatus make()
+    {
+        return ExecutionStatus::Finished;
+    }
+};
+
+@  (repeat)
+template<>
+struct maker<@name>
+{
+    static @name make()
+    {
+        return {
+@  (repeat)
+            maker<@type>::make(),
+@  (last)
+            maker<@type>::make()
+@  (end)
+        };
+    }
+};
+
+@  (end)
+template<typename T>
+void compare(const QList<T> &v1, const QList<T> &v2)
+{
+    QCOMPARE(v1.count(), v2.count());
+
+    auto n = v1.count();
+    for (int i = 0; i < n; i++) {
+        compare(v1.at(i), v2.at(i));
+    }
+}
+
+template<typename T>
+void compare(const T &v1, const T &v2)
+{
+    QCOMPARE(v1, v2);
+}
+
+@  (repeat)
+void compare(const @name &v1, const @name &v2);
+@  (end)
+@(end)
+@(output "../tests/serialization-ops.cpp")
+#include "serialization-ops.hpp"
+
+@  (repeat)
+void compare(const @name &v1, const @name &v2)
+{
+@    (repeat)
+    compare(v1.@field, v2.@field);
+@    (end)
+}
+
+@  (end)
+@(end)
