@@ -1,89 +1,13 @@
 #include <functional>
 
-#include <sys/types.h>
-#include <grp.h>
-#include <pwd.h>
-#include <limits>
-#include <unistd.h>
-
 #include <QtSql>
 #include <QDBusConnectionInterface>
 #include <QDBusMessage>
 #include <QThreadPool>
 
-#include "persistencemanager.hpp"
 #include "make_unique.hpp"
-
-static QString getSystemErrorMessage(int err)
-{
-    char buf[1024];
-    return strerror_r(err, buf, sizeof(buf));
-}
-
-static long getSysConf(int name, long fallback)
-{
-    auto value = sysconf(name);
-
-    if (value <= 0) {
-        value = fallback;
-    }
-
-    return value;
-}
-
-static bool isUserAdmin(uid_t uid)
-{
-    // TODO what to do with this?
-    static const char adminGroupName[] = "sen2agri-admin";
-
-    // don't check the group membership if the caller is root
-    if (!uid) {
-        return true;
-    }
-
-    auto pwdBufLen = getSysConf(_SC_GETPW_R_SIZE_MAX, 16384);
-    auto pwdBuf(std::make_unique<char[]>(pwdBufLen));
-
-    passwd pwd;
-    passwd *pwdResult;
-    if (auto r = getpwuid_r(uid, &pwd, pwdBuf.get(), pwdBufLen, &pwdResult)) {
-        throw std::runtime_error(QStringLiteral("Unable to get user information: %1")
-                                     .arg(getSystemErrorMessage(r))
-                                     .toStdString());
-    }
-
-    if (!pwdResult) {
-        return false;
-    }
-
-    auto grpBufLen = getSysConf(_SC_GETGR_R_SIZE_MAX, 16384);
-    auto grpBuf(std::make_unique<char[]>(grpBufLen));
-
-    group grp;
-    group *grpResult;
-    if (auto r = getgrnam_r(adminGroupName, &grp, grpBuf.get(), grpBufLen, &grpResult)) {
-        throw std::runtime_error(QStringLiteral("Unable to get group information: %1")
-                                     .arg(getSystemErrorMessage(r))
-                                     .toStdString());
-    }
-
-    if (!grpResult) {
-        return false;
-    }
-
-    int ngroups = getSysConf(_SC_NGROUPS_MAX, NGROUPS_MAX);
-    auto groups(std::make_unique<gid_t[]>(ngroups));
-
-    if (getgrouplist(pwd.pw_name, pwd.pw_gid, groups.get(), &ngroups) > 0) {
-        for (int i = 0; i < ngroups; i++) {
-            if (groups[i] == grp.gr_gid) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
+#include "credential_utils.hpp"
+#include "persistencemanager.hpp"
 
 PersistenceManager::PersistenceManager(const Settings &settings, QObject *parent)
     : QObject(parent), dbProvider(settings)
@@ -102,7 +26,10 @@ bool PersistenceManager::IsCallerAdmin()
     }
 
     try {
-        return isUserAdmin(reply.value());
+        // TODO what to do with this?
+        static const char adminGroupName[] = "sen2agri-admin";
+
+        return isUserInGroup(reply.value(), adminGroupName);
     } catch (const std::runtime_error &e) {
         Logger::error(e.what());
         return false;

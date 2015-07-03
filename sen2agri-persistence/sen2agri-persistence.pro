@@ -25,7 +25,8 @@ SOURCES += main.cpp \
     sqldatabaseraii.cpp \
     persistencemanagerdbprovider.cpp \
     settings.cpp \
-    serializedevent.cpp
+    serializedevent.cpp \
+    credential_utils.cpp
 
 DISTFILES += \
     ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml \
@@ -43,7 +44,8 @@ HEADERS += \
     asyncdbustask.hpp \
     persistencemanagerdbprovider.hpp \
     settings.hpp \
-    serializedevent.hpp
+    serializedevent.hpp \
+    credential_utils.hpp
 
 LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
 
