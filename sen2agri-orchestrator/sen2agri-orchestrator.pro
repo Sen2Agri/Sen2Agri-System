@@ -1,3 +1,5 @@
+include(../common.pri)
+
 QT -= gui
 QT += core dbus
 
@@ -5,10 +7,7 @@ TARGET = sen2agri-orchestrator
 
 DESTDIR = bin
 
-CONFIG += c++11 precompile_header
 CONFIG -= app_bundle
-
-PRECOMPILED_HEADER = pch.hpp
 
 INCLUDEPATH += ../Optional
 

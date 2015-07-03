@@ -1,3 +1,5 @@
+include(../common.pri)
+
 QT += core network dbus
 QT -= gui
 
@@ -5,10 +7,7 @@ TARGET = sen2agri-http-listener
 
 DESTDIR = bin
 
-CONFIG += c++11 precompile_header
 CONFIG -= app_bundle
-
-PRECOMPILED_HEADER = pch.hpp
 
 INCLUDEPATH += ../Optional
 

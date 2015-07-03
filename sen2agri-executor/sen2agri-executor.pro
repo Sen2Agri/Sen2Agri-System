@@ -1,8 +1,4 @@
-#-------------------------------------------------
-#
-# Project created by QtCreator 2015-05-21T18:21:01
-#
-#-------------------------------------------------
+include(../common.pri)
 
 QT       += core dbus network
 QT       -= gui
@@ -17,10 +13,6 @@ CONFIG   -= app_bundle
 DEFINES += QT_SHARED
 
 TEMPLATE = app
-
-CONFIG += c++11 precompile_header
-
-PRECOMPILED_HEADER = pch.hpp
 
 INCLUDEPATH += ../Optional
 

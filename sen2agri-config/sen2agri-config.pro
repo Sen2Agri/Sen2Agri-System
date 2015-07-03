@@ -1,13 +1,11 @@
+include(../common.pri)
+
 QT       += core gui widgets dbus
 
 TARGET = sen2agri-config
 TEMPLATE = app
 
 DESTDIR = bin
-
-CONFIG += c++11 precompile_header
-
-PRECOMPILED_HEADER = pch.hpp
 
 INCLUDEPATH += ../Optional
 

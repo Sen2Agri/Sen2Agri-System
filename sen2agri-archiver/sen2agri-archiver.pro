@@ -1,8 +1,4 @@
-#-------------------------------------------------
-#
-# Project created by QtCreator 2015-05-26T14:51:11
-#
-#-------------------------------------------------
+include(../common.pri)
 
 QT       += core dbus
 
@@ -13,11 +9,8 @@ CONFIG   += console
 CONFIG   -= app_bundle
 
 TEMPLATE = app
+
 DESTDIR = bin
-
-CONFIG += c++11 precompile_header
-
-PRECOMPILED_HEADER = pch.hpp
 
 INCLUDEPATH += ../Optional
 
