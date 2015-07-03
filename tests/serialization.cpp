@@ -16,7 +16,7 @@ void Serialization::initTestCase()
     new ReflectorAdaptor(reflector);
 
     auto connection = QDBusConnection::sessionBus();
-    if (!connection.registerObject(QStringLiteral("/"), reflector)) {
+    if (!connection.registerObject(reflectorName, reflector)) {
         QFAIL("Error registering the object with D-Bus: %1.");
     }
 
@@ -25,7 +25,7 @@ void Serialization::initTestCase()
     }
 
     client = std::make_unique<OrgEsaSen2agriReflectorInterface>(
-        OrgEsaSen2agriReflectorInterface::staticInterfaceName(), QStringLiteral("/"), connection);
+        OrgEsaSen2agriReflectorInterface::staticInterfaceName(), reflectorName, connection);
 }
 
 void Serialization::cleanupTestCase()
@@ -37,7 +37,7 @@ void Serialization::cleanupTestCase()
     connection.unregisterObject(reflectorName);
 }
 
-QString Serialization::reflectorName = QStringLiteral("org/esa/sen2agri/reflector");
+QString Serialization::reflectorName = QStringLiteral("/org/esa/sen2agri/reflector");
 
 void Serialization::configurationParameterInfo()
 {
