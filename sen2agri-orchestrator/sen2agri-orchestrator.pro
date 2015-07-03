@@ -31,14 +31,16 @@ SOURCES += main.cpp \
     orchestratorworker.cpp \
     eventprocessingcontext.cpp
 
+HEADERS += \
+    pch.hpp \
+    orchestrator.hpp \
+    orchestratorworker.hpp \
+    eventprocessingcontext.hpp
+
 DISTFILES += \
-# install to /usr/share/dbus-1/interfaces/org.esa.sen2agri.orchestrator.xml
     ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml \
-# install to /etc/dbus-1/system.d/org.esa.sen2agri.orchestrator.conf
     dist/org.esa.sen2agri.orchestrator.conf \
-# install to /usr/share/dbus-1/system-services/org.esa.sen2agri.orchestrator.service
     dist/org.esa.sen2agri.orchestrator.service \
-# install to /etc/systemd/system/sen2agri-orchestrator.service
     dist/sen2agri-orchestrator.service
 
 LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
@@ -48,8 +50,18 @@ DEPENDPATH += $$PWD/../sen2agri-common
 
 PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a
 
-HEADERS += \
-    pch.hpp \
-    orchestrator.hpp \
-    orchestratorworker.hpp \
-    eventprocessingcontext.hpp
+target.path = /usr/bin
+
+interface.path = /usr/share/dbus-1/interfaces
+interface.files = ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml
+
+dbus-policy.path = /etc/dbus-1/system.d
+dbus-policy.files = dist/org.esa.sen2agri.orchestrator.conf
+
+dbus-service.path = /usr/share/dbus-1/system-services
+dbus-service.files = dist/org.esa.sen2agri.orchestrator.service
+
+systemd-service.path = /usr/lib/systemd/system
+systemd-service.files = dist/sen2agri-orchestrator.service
+
+INSTALLS += target interface dbus-policy dbus-service systemd-service

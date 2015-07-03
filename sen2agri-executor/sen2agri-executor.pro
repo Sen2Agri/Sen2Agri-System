@@ -3,7 +3,7 @@ include(../common.pri)
 QT       += core dbus network
 QT       -= gui
 
-TARGET = ProcessorsExecutor
+TARGET = sen2agri-executor
 
 DESTDIR = bin
 
@@ -25,7 +25,6 @@ dbus_interface2.files = ../../dbus-interfaces/org.esa.sen2agri.persistenceManage
 dbus_interface2.header_flags = -i ../sen2agri-common/model.hpp
 
 DBUS_INTERFACES += dbus_interface2
-
 
 SOURCES += main.cpp \
     abstractexecinfosprotsrv.cpp \
@@ -59,10 +58,10 @@ HEADERS += \
 
 OTHER_FILES += \
     ../../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml \
-    ../../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
-
-#target.path = ../dist
-#INSTALLS += target
+    ../../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml \
+    dist/org.esa.sen2agri.processorsExecutor.conf \
+    dist/org.esa.sen2agri.processorsExecutor.service \
+    dist/sen2agri-executor.service
 
 LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
 
@@ -70,3 +69,7 @@ INCLUDEPATH += $$PWD/../sen2agri-common
 DEPENDPATH += $$PWD/../sen2agri-common
 
 PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a
+
+target.path = /usr/bin
+
+INSTALLS += target

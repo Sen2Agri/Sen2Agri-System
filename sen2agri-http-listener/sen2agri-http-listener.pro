@@ -46,3 +46,7 @@ INCLUDEPATH += $$PWD/../sen2agri-common
 DEPENDPATH += $$PWD/../sen2agri-common
 
 PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a
+
+target.path = /usr/bin
+
+INSTALLS += target
