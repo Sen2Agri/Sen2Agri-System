@@ -16,7 +16,10 @@ TEMPLATE = app
 persistence_manager_interface.files = ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
 persistence_manager_interface.header_flags = -i ../sen2agri-common/model.hpp
 
-DBUS_INTERFACES += persistence_manager_interface
+orchestrator_interface.files = ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml
+orchestrator_interface.header_flags = -i ../sen2agri-common/model.hpp
+
+DBUS_INTERFACES += persistence_manager_interface orchestrator_interface
 
 SOURCES += main.cpp \
     requestmapper.cpp \
