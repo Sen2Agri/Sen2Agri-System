@@ -24,7 +24,8 @@ int main(int argc, char *argv[])
 
         new OrchestratorAdaptor(&orchestrator);
 
-        if (!connection.registerObject(QStringLiteral("/"), &orchestrator)) {
+        if (!connection.registerObject(QStringLiteral("/org/esa/sen2agri/orchestrator"),
+                                       &orchestrator)) {
             throw std::runtime_error(
                 QStringLiteral("Error registering the object with D-Bus: %1, exiting.")
                     .arg(connection.lastError().message())
