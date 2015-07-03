@@ -10,7 +10,7 @@ Orchestrator::Orchestrator(QObject *parent)
                                QStringLiteral("/org/esa/sen2agri/persistenceManager"),
                                QDBusConnection::systemBus()),
       executorClient(OrgEsaSen2agriProcessorsExecutorInterface::staticInterfaceName(),
-                     QStringLiteral("/"),
+                     QStringLiteral("/org/esa/sen2agri/processorsexecutor"),
                      QDBusConnection::systemBus()),
       worker(persistenceManagerClient, executorClient)
 {
