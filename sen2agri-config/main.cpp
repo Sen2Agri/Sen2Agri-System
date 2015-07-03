@@ -1,18 +1,24 @@
 #include <QApplication>
 #include <QDebug>
 
+#include "logger.hpp"
 #include "maindialog.hpp"
-
-using namespace std;
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
+    try {
+        Logger::installMessageHandler();
 
-    registerMetaTypes();
+        QApplication a(argc, argv);
+        QApplication::setApplicationName(QStringLiteral("sen2agri-config"));
 
-    MainDialog w;
-    w.show();
+        registerMetaTypes();
 
-    return a.exec();
+        MainDialog w;
+        w.show();
+
+        return a.exec();
+    } catch (const std::exception &e) {
+        Logger::fatal(e.what());
+    }
 }

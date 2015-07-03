@@ -2,6 +2,8 @@
 #include <QCoreApplication>
 #include <QDBusError>
 
+#include "logger.h"
+
 #include "orchestratorrequestshandler.h"
 #include "ressourcemanageritf.h"
 #include "configurationmgr.h"

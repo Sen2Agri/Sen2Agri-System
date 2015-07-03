@@ -12,7 +12,10 @@
 int main(int argc, char *argv[])
 {
     try {
+        Logger::installMessageHandler();
+
         QCoreApplication app(argc, argv);
+        QCoreApplication::setApplicationName(QStringLiteral("sen2agri-orchestrator"));
 
         registerMetaTypes();
 
@@ -38,6 +41,7 @@ int main(int argc, char *argv[])
         return app.exec();
     } catch (const std::exception &e) {
         Logger::fatal(e.what());
+
         return EXIT_FAILURE;
     }
 }

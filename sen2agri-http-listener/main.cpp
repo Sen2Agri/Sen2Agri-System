@@ -14,7 +14,7 @@ int main(int argc, char *argv[])
         Logger::installMessageHandler();
 
         QCoreApplication app(argc, argv);
-        QCoreApplication::setApplicationName("sen2agri-http-listener");
+        QCoreApplication::setApplicationName(QStringLiteral("sen2agri-http-listener"));
 
         registerMetaTypes();
 
