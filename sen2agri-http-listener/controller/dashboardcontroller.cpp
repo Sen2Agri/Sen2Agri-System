@@ -41,7 +41,7 @@ void DashboardController::getDashboardData(HttpRequest &request, HttpResponse &r
     const auto &since = QDate::fromString(value, Qt::ISODate);
 
     OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(), QStringLiteral("/"),
+        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(), QStringLiteral("/org/esa/sen2agri/persistenceManager"),
         QDBusConnection::systemBus());
 
     const auto &data = WaitForResponseAndThrow(persistenceManagerClient.GetDashboardData(since));
@@ -64,7 +64,7 @@ void DashboardController::cancelJob(HttpRequest &request, HttpResponse &response
     }
 
     OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(), QStringLiteral("/"),
+        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(), QStringLiteral("/org/esa/sen2agri/persistenceManager"),
         QDBusConnection::systemBus());
 
     WaitForResponseAndThrow(persistenceManagerClient.InsertJobCancelledEvent({ jobId }));
@@ -86,7 +86,7 @@ void DashboardController::pauseJob(HttpRequest &request, HttpResponse &response)
     }
 
     OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(), QStringLiteral("/"),
+        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(), QStringLiteral("/org/esa/sen2agri/persistenceManager"),
         QDBusConnection::systemBus());
 
     WaitForResponseAndThrow(persistenceManagerClient.InsertJobPausedEvent({ jobId }));
@@ -108,7 +108,7 @@ void DashboardController::resumeJob(HttpRequest &request, HttpResponse &response
     }
 
     OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(), QStringLiteral("/"),
+        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(), QStringLiteral("/org/esa/sen2agri/persistenceManager"),
         QDBusConnection::systemBus());
 
     WaitForResponseAndThrow(persistenceManagerClient.InsertJobCancelledEvent({ jobId }));

@@ -4,7 +4,7 @@
 
 ArchiverManager::ArchiverManager() :
     clientInterface(OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-                                                  QStringLiteral("/"),
+                                                  QStringLiteral("/org/esa/sen2agri/persistenceManager"),
                                                   QDBusConnection::systemBus())
 {
 

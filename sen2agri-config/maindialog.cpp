@@ -77,7 +77,7 @@ MainDialog::MainDialog(QWidget *parent)
     : QDialog(parent),
       ui(new Ui::MainDialog),
       clientInterface(OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-                      QStringLiteral("/"),
+                      QStringLiteral("/org/esa/sen2agri/persistenceManager"),
                       QDBusConnection::systemBus()),
       invalidFields(),
       isAdmin()

@@ -7,7 +7,7 @@
 Orchestrator::Orchestrator(QObject *parent)
     : QObject(parent),
       persistenceManagerClient(OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-                               QStringLiteral("/"),
+                               QStringLiteral("/org/esa/sen2agri/persistenceManager"),
                                QDBusConnection::systemBus()),
       executorClient(OrgEsaSen2agriProcessorsExecutorInterface::staticInterfaceName(),
                      QStringLiteral("/"),

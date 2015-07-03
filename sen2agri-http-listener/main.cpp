@@ -19,8 +19,8 @@ int main(int argc, char *argv[])
         registerMetaTypes();
 
         OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-            OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(), QStringLiteral("/"),
-            QDBusConnection::systemBus());
+            OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
+            QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
 
         const auto &params = WaitForResponseAndThrow(
             persistenceManagerClient.GetConfigurationParameters("http-listener."));
