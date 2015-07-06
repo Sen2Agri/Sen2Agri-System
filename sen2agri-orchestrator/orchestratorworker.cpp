@@ -57,17 +57,18 @@ void OrchestratorWorker::RescanEvents()
     }
 
     try {
-        bool rescanRequested;
-        do {
+        while (true) {
             EventProcessingContext ctx(persistenceManagerClient);
 
             const auto &events = ctx.GetNewEvents();
+            if (events.empty()) {
+                break;
+            }
+
             for (const auto &event : events) {
                 DispatchEvent(ctx, event);
             }
-
-            rescanRequested = ctx.IsRescanRequested();
-        } while (rescanRequested);
+        }
     } catch (const std::exception &e) {
         Logger::error(QStringLiteral("Unable to retrieve new events: %1").arg(e.what()));
     }
@@ -118,10 +119,6 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
                         .arg(event.dataJson)
                         .toStdString());
         }
-
-        if (innerCtx.IsRescanRequested()) {
-            ctx.ScheduleRescan();
-        }
     } catch (const std::exception &e) {
         Logger::error(QStringLiteral("Unable to process event id %1: ").arg(e.what()));
     }
@@ -145,28 +142,24 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskAdd
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskFinishedEvent &event)
 {
+    Q_UNUSED(ctx);
     Q_UNUSED(event);
 
     // 1. using the task module, find the relevant processor/task handler and run it
     // 2. the handler can choose to submit a new task and its steps
     // 3. if a task was submitted, send its steps to the executor
     // 4. otherwise submit a product available event to self
-
-    // 5. pend an event queue rescan
-    ctx.ScheduleRescan();
 }
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx,
                                       const ProductAvailableEvent &event)
 {
+    Q_UNUSED(ctx);
     Q_UNUSED(event);
 
     // 1. determine what jobs need to be submitted (???)
     // 2. submit the new jobs to the database
     // 3. submit job sumbitted events to self
-
-    // 4. pend an event queue rescan
-    ctx.ScheduleRescan();
 }
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobCancelledEvent &event)

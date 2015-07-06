@@ -7,14 +7,9 @@
 class EventProcessingContext
 {
     OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient;
-    bool rescanRequested;
 
 public:
     EventProcessingContext(OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient);
-
-    void ScheduleRescan();
-    void CancelRescan();
-    bool IsRescanRequested() const;
 
     ConfigurationParameterValueList GetJobConfigurationParameters(int jobId, QString prefix);
 
