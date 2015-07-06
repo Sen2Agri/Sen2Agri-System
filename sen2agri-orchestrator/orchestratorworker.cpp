@@ -7,6 +7,12 @@
 #include "orchestratorworker.hpp"
 #include "dbus_future_utils.hpp"
 
+static std::map<QString, QString>
+getModulePathMap(const ConfigurationParameterValueList &parameters);
+static StepArgumentList getStepArguments(const JobStepToRun &step);
+static NewExecutorStepList
+getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps);
+
 class ProcessorHandler
 {
 public:
@@ -32,23 +38,6 @@ void ProcessorHandler::HandleTaskFinished(EventProcessingContext &ctx,
                                           const TaskFinishedEvent &event)
 {
     HandleTaskFinishedImpl(ctx, event);
-}
-
-static std::map<QString, QString>
-GetModulePathMap(const ConfigurationParameterValueList &parameters)
-{
-    std::map<QString, QString> modulePaths;
-    for (const auto &p : parameters) {
-        if (p.key.endsWith(QLatin1String(".path"))) {
-            auto firstPath = p.key.indexOf('.', p.key.indexOf('.') + 1) + 1;
-            auto lastDot = p.key.length() - 5;
-            const auto &path = p.key.mid(firstPath, lastDot - firstPath);
-
-            modulePaths.emplace(path, p.value);
-        }
-    }
-
-    return modulePaths;
 }
 
 OrchestratorWorker::OrchestratorWorker(
@@ -146,8 +135,12 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskAddedEvent &event)
 {
-    Q_UNUSED(ctx);
-    Q_UNUSED(event);
+    const auto &steps =
+        WaitForResponseAndThrow(persistenceManagerClient.GetTaskStepsForStart(event.taskId));
+
+    const auto &stepsToSubmit = getExecutorStepList(ctx, event.jobId, steps);
+
+    WaitForResponseAndThrow(executorClient.SubmitSteps(stepsToSubmit));
 }
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskFinishedEvent &event)
@@ -197,60 +190,10 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobPaus
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobResumedEvent &event)
 {
-    const auto &stepsPromise = persistenceManagerClient.GetJobStepsForResume(event.jobId);
+    const auto &steps =
+        WaitForResponseAndThrow(persistenceManagerClient.GetJobStepsForResume(event.jobId));
 
-    const auto &modulePaths = GetModulePathMap(
-        ctx.GetJobConfigurationParameters(event.jobId, QStringLiteral("executor.processor.")));
-
-    const auto &steps = WaitForResponseAndThrow(stepsPromise);
-
-    NewExecutorStepList stepsToSubmit;
-    stepsToSubmit.reserve(steps.size());
-    auto modulePathsEnd = std::end(modulePaths);
-    for (const auto &s : steps) {
-        auto it = modulePaths.find(s.module);
-        if (it == modulePathsEnd) {
-            throw std::runtime_error(QStringLiteral("Cannot find executable path for module %1")
-                                         .arg(s.module)
-                                         .toStdString());
-        }
-
-        const auto &parametersDoc = QJsonDocument::fromJson(s.parametersJson.toUtf8());
-        if (!parametersDoc.isObject()) {
-            throw std::runtime_error(
-                QStringLiteral("Unexpected step parameter JSON schema: root node should be an "
-                               "object. The parameters object  was: '%1'")
-                    .arg(s.parametersJson)
-                    .toStdString());
-        }
-
-        const auto &argNode = parametersDoc.object()[QStringLiteral("arguments")];
-        if (!argNode.isArray()) {
-            throw std::runtime_error(
-                QStringLiteral(
-                    "Unexpected step parameter JSON schema: node 'arguments' should be an "
-                    "array. The parameters object  was: '%1'")
-                    .arg(s.parametersJson)
-                    .toStdString());
-        }
-        const auto &argArray = argNode.toArray();
-
-        StepArgumentList arguments;
-        arguments.reserve(argArray.count());
-        for (const auto &arg : argArray) {
-            if (!arg.isString()) {
-                throw std::runtime_error(
-                    QStringLiteral("Unexpected step parameter JSON schema: arguments should be "
-                                   "strings. The parameters object was: '%1'")
-                        .arg(s.parametersJson)
-                        .toStdString());
-            }
-
-            arguments.append(arg.toString());
-        }
-
-        stepsToSubmit.append({ s.taskId, it->second, s.stepName, arguments });
-    }
+    const auto &stepsToSubmit = getExecutorStepList(ctx, event.jobId, steps);
 
     ctx.MarkJobResumed(event.jobId);
     WaitForResponseAndThrow(executorClient.SubmitSteps(stepsToSubmit));
@@ -272,4 +215,83 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const StepFai
 
     WaitForResponseAndThrow(executorClient.CancelTasks(tasks));
     ctx.MarkJobFailed(event.jobId);
+}
+
+static std::map<QString, QString>
+getModulePathMap(const ConfigurationParameterValueList &parameters)
+{
+    std::map<QString, QString> modulePaths;
+    for (const auto &p : parameters) {
+        if (p.key.endsWith(QLatin1String(".path"))) {
+            auto firstPath = p.key.indexOf('.', p.key.indexOf('.') + 1) + 1;
+            auto lastDot = p.key.length() - 5;
+            const auto &path = p.key.mid(firstPath, lastDot - firstPath);
+
+            modulePaths.emplace(path, p.value);
+        }
+    }
+
+    return modulePaths;
+}
+
+static StepArgumentList getStepArguments(const JobStepToRun &step)
+{
+    const auto &parametersDoc = QJsonDocument::fromJson(step.parametersJson.toUtf8());
+    if (!parametersDoc.isObject()) {
+        throw std::runtime_error(
+            QStringLiteral("Unexpected step parameter JSON schema: root node should be an "
+                           "object. The parameters object  was: '%1'")
+                .arg(step.parametersJson)
+                .toStdString());
+    }
+
+    const auto &argNode = parametersDoc.object()[QStringLiteral("arguments")];
+    if (!argNode.isArray()) {
+        throw std::runtime_error(
+            QStringLiteral("Unexpected step parameter JSON schema: node 'arguments' should be an "
+                           "array. The parameters object  was: '%1'")
+                .arg(step.parametersJson)
+                .toStdString());
+    }
+    const auto &argArray = argNode.toArray();
+
+    StepArgumentList arguments;
+    arguments.reserve(argArray.count());
+    for (const auto &arg : argArray) {
+        if (!arg.isString()) {
+            throw std::runtime_error(
+                QStringLiteral("Unexpected step parameter JSON schema: arguments should be "
+                               "strings. The parameters object was: '%1'")
+                    .arg(step.parametersJson)
+                    .toStdString());
+        }
+
+        arguments.append(arg.toString());
+    }
+
+    return arguments;
+}
+
+static NewExecutorStepList
+getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps)
+{
+    const auto &modulePaths = getModulePathMap(
+        ctx.GetJobConfigurationParameters(jobId, QStringLiteral("executor.processor.")));
+
+    NewExecutorStepList stepsToSubmit;
+    stepsToSubmit.reserve(steps.size());
+    auto modulePathsEnd = std::end(modulePaths);
+    for (const auto &s : steps) {
+        auto it = modulePaths.find(s.module);
+        if (it == modulePathsEnd) {
+            throw std::runtime_error(QStringLiteral("Cannot find executable path for module %1")
+                                         .arg(s.module)
+                                         .toStdString());
+        }
+
+        const auto &arguments = getStepArguments(s);
+        stepsToSubmit.append({ s.taskId, it->second, s.stepName, arguments });
+    }
+
+    return stepsToSubmit;
 }
