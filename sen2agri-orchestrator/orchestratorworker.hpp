@@ -1,5 +1,8 @@
 #pragma once
 
+#include <map>
+#include <memory>
+
 #include <QDBusConnection>
 #include <QDBusMessage>
 #include <QObject>
@@ -29,6 +32,7 @@ private:
     QThread workerThread;
     OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient;
     OrgEsaSen2agriProcessorsExecutorInterface &executorClient;
+    std::map<int, std::unique_ptr<ProcessorHandler>> handlerMap;
 
     OrchestratorWorker(const OrchestratorWorker &) = delete;
     OrchestratorWorker &operator=(const OrchestratorWorker &) = delete;
@@ -43,4 +47,6 @@ private:
     void ProcessEvent(EventProcessingContext &ctx, const JobResumedEvent &event);
     void ProcessEvent(EventProcessingContext &ctx, const JobSubmittedEvent &event);
     void ProcessEvent(EventProcessingContext &ctx, const StepFailedEvent &event);
+
+    ProcessorHandler &GetHandler(int processorId);
 };

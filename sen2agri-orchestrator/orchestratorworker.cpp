@@ -115,24 +115,15 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskAdd
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskFinishedEvent &event)
 {
-    Q_UNUSED(ctx);
-    Q_UNUSED(event);
-
-    // 1. using the task module, find the relevant processor/task handler and run it
-    // 2. the handler can choose to submit a new task and its steps
-    // 3. if a task was submitted, send its steps to the executor
-    // 4. otherwise submit a product available event to self
+    GetHandler(event.processorId).HandleTaskFinished(ctx, event);
 }
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx,
                                       const ProductAvailableEvent &event)
 {
-    Q_UNUSED(ctx);
-    Q_UNUSED(event);
-
-    // 1. determine what jobs need to be submitted (???)
-    // 2. submit the new jobs to the database
-    // 3. submit job sumbitted events to self
+    for (auto &&handler : handlerMap) {
+        handler.second->HandleProductAvailable(ctx, event);
+    }
 }
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobCancelledEvent &event)
@@ -165,14 +156,9 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobResu
     WaitForResponseAndThrow(executorClient.SubmitSteps(stepsToSubmit));
 }
 
-void OrchestratorWorker::ProcessEvent(EventProcessingContext &, const JobSubmittedEvent &event)
+void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobSubmittedEvent &event)
 {
-    Q_UNUSED(event);
-
-    // 1. get job information from db
-    // 2. find the relevant processor and run it
-    // 3. submit the returned task and step list to the database
-    // 4. submit the steps to the executor
+    GetHandler(event.processorId).HandleJobSubmitted(ctx, event);
 }
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const StepFailedEvent &event)
@@ -181,6 +167,18 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const StepFai
 
     WaitForResponseAndThrow(executorClient.CancelTasks(tasks));
     ctx.MarkJobFailed(event.jobId);
+}
+
+ProcessorHandler &OrchestratorWorker::GetHandler(int processorId)
+{
+    auto it = handlerMap.find(processorId);
+    if (it == std::end(handlerMap)) {
+        throw std::runtime_error(QStringLiteral("No handler present for processor id %1")
+                                     .arg(processorId)
+                                     .toStdString());
+    }
+
+    return *it->second;
 }
 
 static std::map<QString, QString>
