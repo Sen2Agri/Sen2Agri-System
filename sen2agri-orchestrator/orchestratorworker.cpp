@@ -13,33 +13,6 @@ static StepArgumentList getStepArguments(const JobStepToRun &step);
 static NewExecutorStepList
 getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps);
 
-class ProcessorHandler
-{
-public:
-    void HandleJobSubmitted(EventProcessingContext &ctx, const JobSubmittedEvent &event);
-    void HandleTaskFinished(EventProcessingContext &ctx, const TaskFinishedEvent &event);
-
-private:
-    virtual ~ProcessorHandler();
-
-    virtual void HandleJobSubmittedImpl(EventProcessingContext &ctx,
-                                        const JobSubmittedEvent &event) = 0;
-    virtual void HandleTaskFinishedImpl(EventProcessingContext &ctx,
-                                        const TaskFinishedEvent &event) = 0;
-};
-
-void ProcessorHandler::HandleJobSubmitted(EventProcessingContext &ctx,
-                                          const JobSubmittedEvent &event)
-{
-    HandleJobSubmittedImpl(ctx, event);
-}
-
-void ProcessorHandler::HandleTaskFinished(EventProcessingContext &ctx,
-                                          const TaskFinishedEvent &event)
-{
-    HandleTaskFinishedImpl(ctx, event);
-}
-
 OrchestratorWorker::OrchestratorWorker(
     OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient,
     OrgEsaSen2agriProcessorsExecutorInterface &executorClient)

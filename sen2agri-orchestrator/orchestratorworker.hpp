@@ -8,6 +8,7 @@
 #include <optional.hpp>
 
 #include "eventprocessingcontext.hpp"
+#include "processorhandler.hpp"
 #include "persistencemanager_interface.h"
 #include "processorsexecutor_interface.h"
 
