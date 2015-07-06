@@ -109,6 +109,11 @@ void compare(const ExecutionStatistics &v1, const ExecutionStatistics &v2)
     compare(v1.diskWriteBytes, v2.diskWriteBytes);
 }
 
+void compare(const TaskAddedEvent &v1, const TaskAddedEvent &v2)
+{
+    compare(v1.taskId, v2.taskId);
+}
+
 void compare(const TaskFinishedEvent &v1, const TaskFinishedEvent &v2)
 {
     compare(v1.taskId, v2.taskId);

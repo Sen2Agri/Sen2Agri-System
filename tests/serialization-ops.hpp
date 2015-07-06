@@ -217,6 +217,14 @@ struct maker<ExecutionStatistics> {
 };
 
 template <>
+struct maker<TaskAddedEvent> {
+    static TaskAddedEvent make()
+    {
+        return { maker<int>::make() };
+    }
+};
+
+template <>
 struct maker<TaskFinishedEvent> {
     static TaskFinishedEvent make()
     {
@@ -353,6 +361,7 @@ void compare(const NewJob &v1, const NewJob &v2);
 void compare(const NewTask &v1, const NewTask &v2);
 void compare(const NewStep &v1, const NewStep &v2);
 void compare(const ExecutionStatistics &v1, const ExecutionStatistics &v2);
+void compare(const TaskAddedEvent &v1, const TaskAddedEvent &v2);
 void compare(const TaskFinishedEvent &v1, const TaskFinishedEvent &v2);
 void compare(const ProductAvailableEvent &v1, const ProductAvailableEvent &v2);
 void compare(const JobCancelledEvent &v1, const JobCancelledEvent &v2);

@@ -271,6 +271,15 @@ void Serialization::executionStatistics()
     compare(WaitForResponseAndThrow(client->ReflectExecutionStatistics(emptyValue)), emptyValue);
 }
 
+void Serialization::taskAddedEvent()
+{
+    const auto &value = maker<TaskAddedEvent>::make();
+    compare(WaitForResponseAndThrow(client->ReflectTaskAddedEvent(value)), value);
+
+    TaskAddedEvent emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectTaskAddedEvent(emptyValue)), emptyValue);
+}
+
 void Serialization::taskFinishedEvent()
 {
     const auto &value = maker<TaskFinishedEvent>::make();

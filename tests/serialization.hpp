@@ -45,6 +45,7 @@ private slots:
     void newStepList();
     void executionStatusList();
     void executionStatistics();
+    void taskAddedEvent();
     void taskFinishedEvent();
     void productAvailableEvent();
     void jobCancelledEvent();
