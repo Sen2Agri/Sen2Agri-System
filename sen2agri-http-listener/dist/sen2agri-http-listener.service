@@ -1,0 +1,9 @@
+[Unit]
+Description=Sen2Agri HTTP Listener
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/sen2agri-http-listener
+
+[Install]
+WantedBy=multi-user.target
