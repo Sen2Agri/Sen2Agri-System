@@ -111,6 +111,7 @@ void compare(const ExecutionStatistics &v1, const ExecutionStatistics &v2)
 
 void compare(const TaskAddedEvent &v1, const TaskAddedEvent &v2)
 {
+    compare(v1.jobId, v2.jobId);
     compare(v1.taskId, v2.taskId);
 }
 

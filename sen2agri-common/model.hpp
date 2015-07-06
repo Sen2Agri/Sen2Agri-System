@@ -374,10 +374,11 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, EventType &event)
 class TaskAddedEvent
 {
 public:
+    int jobId;
     int taskId;
 
     TaskAddedEvent();
-    TaskAddedEvent(int taskId);
+    TaskAddedEvent(int jobId, int taskId);
 
     QString toJson() const;
 

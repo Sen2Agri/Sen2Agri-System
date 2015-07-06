@@ -220,7 +220,7 @@ template <>
 struct maker<TaskAddedEvent> {
     static TaskAddedEvent make()
     {
-        return { maker<int>::make() };
+        return { maker<int>::make(), maker<int>::make() };
     }
 };
 
