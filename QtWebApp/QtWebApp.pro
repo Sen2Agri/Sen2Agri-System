@@ -15,6 +15,12 @@ win32 {
    DEFINES += QTWEBAPPLIB_EXPORT
 }
 
+unix {
+    target.path = /usr/lib
+
+    INSTALLS += target
+}
+
 # Windows and Unix get the suffix "d" to indicate a debug version of the library.
 # Mac OS gets the suffix "_debug".
 CONFIG(debug, debug|release) {
