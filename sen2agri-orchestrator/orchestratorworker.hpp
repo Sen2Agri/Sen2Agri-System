@@ -20,7 +20,8 @@ class OrchestratorWorker : public QObject
     Q_OBJECT
 
 public:
-    OrchestratorWorker(OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient,
+    OrchestratorWorker(std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
+                       OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient,
                        OrgEsaSen2agriProcessorsExecutorInterface &executorClient);
 
 signals:
@@ -32,7 +33,7 @@ private:
     QThread workerThread;
     OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient;
     OrgEsaSen2agriProcessorsExecutorInterface &executorClient;
-    std::map<int, std::unique_ptr<ProcessorHandler>> handlerMap;
+    std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap;
 
     OrchestratorWorker(const OrchestratorWorker &) = delete;
     OrchestratorWorker &operator=(const OrchestratorWorker &) = delete;

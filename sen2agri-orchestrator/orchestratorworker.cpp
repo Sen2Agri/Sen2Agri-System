@@ -14,9 +14,12 @@ static NewExecutorStepList
 getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps);
 
 OrchestratorWorker::OrchestratorWorker(
+    std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
     OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient,
     OrgEsaSen2agriProcessorsExecutorInterface &executorClient)
-    : persistenceManagerClient(persistenceManagerClient), executorClient(executorClient)
+    : handlerMap(handlerMap),
+      persistenceManagerClient(persistenceManagerClient),
+      executorClient(executorClient)
 {
     moveToThread(&workerThread);
     workerThread.start();
