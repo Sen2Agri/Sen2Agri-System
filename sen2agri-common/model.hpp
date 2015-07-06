@@ -305,7 +305,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step);
 
 enum class ExecutionStatus {
-    Submitted,
+    Submitted = 1,
     PendingStart,
     NeedsInput,
     Running,
