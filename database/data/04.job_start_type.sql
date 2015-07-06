@@ -1,14 +1,14 @@
 ﻿INSERT INTO job_start_type
-(name, description)
+(id, name, description)
 VALUES 
-('Triggered', 'Launched when a new product has become available.');
+(1, 'Triggered', 'Launched when a new product has become available.');
 
 INSERT INTO job_start_type
-(name, description)
+(id, name, description)
 VALUES 
-('Requested', 'Launched as a result of a user request.');
+(2, 'Requested', 'Launched as a result of a user request.');
 
 INSERT INTO job_start_type
-(name, description)
+(id, name, description)
 VALUES 
-('Scheduled', 'Launched by a recurring event.');
+(3, 'Scheduled', 'Launched by a recurring event.');

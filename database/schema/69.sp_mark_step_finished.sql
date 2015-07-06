@@ -67,7 +67,7 @@ BEGIN
 		data, 
 		submitted_timestamp)
 		VALUES (
-		1, -- TaskFinished
+		2, -- TaskFinished
 		'{"task_id":' || _task_id || '}',
 		now()
 		);
@@ -78,4 +78,6 @@ BEGIN
 
 END;
 $$ LANGUAGE plpgsql;
+
+
 

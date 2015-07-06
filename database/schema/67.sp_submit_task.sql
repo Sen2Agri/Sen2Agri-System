@@ -21,6 +21,16 @@ BEGIN
 	1, -- Submitted
 	now()) RETURNING id INTO return_id;
 
+	INSERT INTO event(
+	type_id, 
+	data, 
+	submitted_timestamp)
+	VALUES (
+	1, -- TaskAdded
+	'{"job_id":' || _job_id || ', "task_id":' || return_id || '}',
+	now()
+	);
+
 	RETURN return_id;
 
 END;
