@@ -228,7 +228,7 @@ template <>
 struct maker<TaskFinishedEvent> {
     static TaskFinishedEvent make()
     {
-        return { maker<int>::make() };
+        return { maker<int>::make(), maker<int>::make(), maker<int>::make() };
     }
 };
 
