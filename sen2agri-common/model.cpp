@@ -37,6 +37,7 @@ void registerMetaTypes()
 
     ExecutionStatistics::registerMetaTypes();
 
+    TaskAddedEvent::registerMetaTypes();
     TaskFinishedEvent::registerMetaTypes();
     ProductAvailableEvent::registerMetaTypes();
     JobCancelledEvent::registerMetaTypes();
