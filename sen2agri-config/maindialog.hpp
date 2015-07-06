@@ -29,9 +29,9 @@ private slots:
 private:
     Ui::MainDialog *ui;
     ConfigModel configModel;
-    QList<ParameterChangeListener *> parameterChangeListeners;
     OrgEsaSen2agriPersistenceManagerInterface clientInterface;
     std::vector<int> tabCategory;
+    std::map<int, QList<ParameterChangeListener *>> parameterChangeListeners;
     std::vector<QComboBox *> regionLists;
     int invalidFields;
     bool isAdmin;
@@ -49,7 +49,8 @@ private:
     QWidget *createFieldsWidget(std::experimental::optional<int> siteId,
                                 int categoryId,
                                 QWidget *parentWidget);
-    QWidget *createEditRow(const ConfigurationParameterInfo &parameter,
+    QWidget *createEditRow(int categoryId,
+                           const ConfigurationParameterInfo &parameter,
                            const ParameterKey &parameterKey,
                            QWidget *parent);
     void saveChanges();

@@ -142,10 +142,13 @@ void MainDialog::loadModel(const ConfigurationSet &configuration)
             for (const auto &site : configModel.sites()) {
                 regionList->addItem(site.name, site.siteId);
             }
+
+            parameterChangeListeners.emplace(
+                std::make_pair(cat.categoryId, QList<ParameterChangeListener *>()));
+
             connect(regionList,
                     static_cast<void (QComboBox::*) (int) >(&QComboBox::currentIndexChanged),
                     [this, regionList, widget](int) {
-                        parameterChangeListeners.clear();
 
                         std::experimental::optional<int> siteId;
                         if (auto siteIdVal = regionList->currentData().toInt()) {
@@ -153,8 +156,10 @@ void MainDialog::loadModel(const ConfigurationSet &configuration)
                         }
 
                         auto categoryId = tabCategory[ui->tabWidget->currentIndex()];
+                        parameterChangeListeners[categoryId].clear();
                         switchSite(siteId, categoryId, widget);
                     });
+
             regionLists.emplace_back(regionList);
 
             parentLayout->addRow(new QLabel(QStringLiteral("Site"), widget), regionList);
@@ -189,7 +194,8 @@ QWidget *MainDialog::createFieldsWidget(std::experimental::optional<int> siteId,
 
     for (const auto &param : configModel.parameters()) {
         if (param.categoryId == categoryId) {
-            if (auto editWidget = createEditRow(param, { param.key, siteId }, fieldsWidget)) {
+            if (auto editWidget =
+                    createEditRow(categoryId, param, { param.key, siteId }, fieldsWidget)) {
                 layout->addRow(new QLabel(param.friendlyName, fieldsWidget), editWidget);
             } else {
                 QMessageBox::critical(
@@ -209,7 +215,8 @@ void MainDialog::done(int result)
 {
     if (result == QDialog::Accepted) {
         QString errors;
-        for (const auto *l : parameterChangeListeners) {
+        auto categoryId = tabCategory[ui->tabWidget->currentIndex()];
+        for (const auto *l : parameterChangeListeners[categoryId]) {
             if (!l->valid()) {
                 errors += QStringLiteral("%1\n").arg(l->parameterName());
             }
@@ -237,6 +244,7 @@ void MainDialog::done(int result)
 void MainDialog::saveChanges()
 {
     setEnabled(false);
+
     auto promise = clientInterface.UpdateConfigurationParameters(configModel.getChanges());
     connect(new QDBusPendingCallWatcher(promise, this), &QDBusPendingCallWatcher::finished,
             [this, promise] {
@@ -278,7 +286,8 @@ void MainDialog::on_buttonBox_rejected()
     reject();
 }
 
-QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
+QWidget *MainDialog::createEditRow(int categoryId,
+                                   const ConfigurationParameterInfo &parameter,
                                    const ParameterKey &parameterKey,
                                    QWidget *parent)
 {
@@ -353,6 +362,7 @@ QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
                                                     parameter.friendlyName, editWidget);
         connect(listener, &ParameterChangeListener::validityChanged, [this](bool isValid) {
             auto idx = ui->tabWidget->currentIndex();
+
             if (isValid) {
                 if (!--invalidFields) {
                     regionLists[idx]->setEnabled(true);
@@ -363,7 +373,7 @@ QWidget *MainDialog::createEditRow(const ConfigurationParameterInfo &parameter,
                 }
             }
         });
-        parameterChangeListeners.append(listener);
+        parameterChangeListeners[categoryId].append(listener);
     }
 
     bool fromGlobal;
