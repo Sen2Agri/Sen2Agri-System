@@ -231,6 +231,13 @@ JobStepToRunList PersistenceManager::GetJobStepsForResume(int jobId)
     return {};
 }
 
+void PersistenceManager::InsertTaskAddedEvent(TaskAddedEvent event)
+{
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const TaskAddedEvent &event) {
+        dbProvider.InsertEvent(event);
+    }, std::ref(dbProvider), std::move(event)));
+}
+
 void PersistenceManager::InsertTaskFinishedEvent(TaskFinishedEvent event)
 {
     RunAsync(

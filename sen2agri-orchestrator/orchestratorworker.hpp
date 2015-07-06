@@ -34,6 +34,7 @@ private:
 
     void DispatchEvent(EventProcessingContext &ctx, const UnprocessedEvent &event) noexcept;
 
+    void ProcessEvent(EventProcessingContext &ctx, const TaskAddedEvent &event);
     void ProcessEvent(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     void ProcessEvent(EventProcessingContext &ctx, const ProductAvailableEvent &event);
     void ProcessEvent(EventProcessingContext &ctx, const JobCancelledEvent &event);

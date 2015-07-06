@@ -98,6 +98,9 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
         EventProcessingContext innerCtx(persistenceManagerClient);
 
         switch (event.type) {
+            case EventType::TaskAdded:
+                ProcessEvent(innerCtx, TaskAddedEvent::fromJson(event.dataJson));
+                break;
             case EventType::TaskFinished:
                 ProcessEvent(innerCtx, TaskFinishedEvent::fromJson(event.dataJson));
                 break;
@@ -139,6 +142,12 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
     } catch (const std::exception &e) {
         Logger::error(QStringLiteral("Unable to mark event id %1 as complete: ").arg(e.what()));
     }
+}
+
+void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskAddedEvent &event)
+{
+    Q_UNUSED(ctx);
+    Q_UNUSED(event);
 }
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskFinishedEvent &event)

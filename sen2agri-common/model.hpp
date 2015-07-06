@@ -358,6 +358,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatistics &st
 const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatistics &statistics);
 
 enum class EventType {
+    TaskAdded,
     TaskFinished,
     ProductAvailable,
     JobCancelled,
@@ -369,6 +370,26 @@ enum class EventType {
 
 QDBusArgument &operator<<(QDBusArgument &argument, EventType event);
 const QDBusArgument &operator>>(const QDBusArgument &argument, EventType &event);
+
+class TaskAddedEvent
+{
+public:
+    int taskId;
+
+    TaskAddedEvent();
+    TaskAddedEvent(int taskId);
+
+    QString toJson() const;
+
+    static TaskAddedEvent fromJson(const QString &json);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(TaskAddedEvent)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const TaskAddedEvent &event);
+const QDBusArgument &operator>>(const QDBusArgument &argument, TaskAddedEvent &event);
 
 class TaskFinishedEvent
 {

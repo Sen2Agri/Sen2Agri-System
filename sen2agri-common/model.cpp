@@ -689,6 +689,53 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, EventType &event)
     return argument;
 }
 
+TaskAddedEvent::TaskAddedEvent() : taskId()
+{
+}
+
+TaskAddedEvent::TaskAddedEvent(int taskId) : taskId(taskId)
+{
+}
+
+QString TaskAddedEvent::toJson() const
+{
+    QJsonObject node;
+    node[QStringLiteral("task_id")] = taskId;
+
+    return QString::fromUtf8(QJsonDocument(node).toJson());
+}
+
+TaskAddedEvent TaskAddedEvent::fromJson(const QString &json)
+{
+    const auto &doc = QJsonDocument::fromJson(json.toUtf8());
+    const auto &object = doc.object();
+
+    return { object.value(QStringLiteral("task_id")).toInt() };
+}
+
+void TaskAddedEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<TaskAddedEvent>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const TaskAddedEvent &event)
+{
+    argument.beginStructure();
+    argument << event.taskId;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, TaskAddedEvent &event)
+{
+    argument.beginStructure();
+    argument >> event.taskId;
+    argument.endStructure();
+
+    return argument;
+}
+
 TaskFinishedEvent::TaskFinishedEvent() : taskId()
 {
 }
