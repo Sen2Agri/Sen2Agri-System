@@ -65,6 +65,7 @@ public slots:
     void MarkJobNeedsInput(int jobId);
 
     TaskIdList GetJobTasksByStatus(int jobId, ExecutionStatusList statusList);
+    JobStepToRunList GetTaskStepsForStart(int taskId);
     JobStepToRunList GetJobStepsForResume(int jobId);
 
     void InsertTaskAddedEvent(TaskAddedEvent event);

@@ -50,6 +50,7 @@ public:
     void MarkJobNeedsInput(int jobId);
 
     TaskIdList GetJobTasksByStatus(int jobId, const ExecutionStatusList &statusList);
+    JobStepToRunList GetTaskStepsForStart(int taskId);
     JobStepToRunList GetJobStepsForResume(int jobId);
 
     void InsertEvent(const SerializedEvent &event);

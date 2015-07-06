@@ -93,6 +93,11 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="ExecutionStatusList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="TaskIdList" />
     </method>
+    <method name="GetTaskStepsForStart">
+      <arg name="taskId" type="i" direction="in" />
+      <arg name="steps" type="a(issay)" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobStepToRunList" />
+    </method>
     <method name="GetJobStepsForResume">
       <arg name="jobId" type="i" direction="in" />
       <arg name="steps" type="a(issay)" direction="out" />

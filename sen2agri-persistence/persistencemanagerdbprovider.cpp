@@ -632,6 +632,37 @@ TaskIdList PersistenceManagerDBProvider::GetJobTasksByStatus(int jobId,
     });
 }
 
+JobStepToRunList PersistenceManagerDBProvider::GetTaskStepsForStart(int taskId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_get_task_steps_for_start(:taskId)"));
+        query.bindValue(QStringLiteral(":taskId"), taskId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        auto dataRecord = query.record();
+        auto taskIdCol = dataRecord.indexOf(QStringLiteral("task_id"));
+        auto moduleCol = dataRecord.indexOf(QStringLiteral("module_short_name"));
+        auto stepNameCol = dataRecord.indexOf(QStringLiteral("step_name"));
+        auto parametersCol = dataRecord.indexOf(QStringLiteral("parameters"));
+
+        JobStepToRunList result;
+        while (query.next()) {
+            result.append({ query.value(taskIdCol).toInt(),
+                            query.value(moduleCol).toString(),
+                            query.value(stepNameCol).toString(),
+                            query.value(parametersCol).toString() });
+        }
+
+        return result;
+    });
+}
+
 JobStepToRunList PersistenceManagerDBProvider::GetJobStepsForResume(int jobId)
 {
     auto db = getDatabase();

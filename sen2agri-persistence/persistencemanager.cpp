@@ -174,12 +174,6 @@ bool PersistenceManager::MarkStepFinished(int taskId, QString name, ExecutionSta
     return {};
 }
 
-void MarkJobPaused(int jobId);
-void MarkJobCancelled(int jobId);
-void MarkJobFinished(int jobId);
-void MarkJobFailed(int jobId);
-void MarkJobNeedsInput(int jobId);
-
 void PersistenceManager::MarkJobPaused(int jobId)
 {
     RunAsync([this, jobId]() { dbProvider.MarkJobPaused(jobId); });
@@ -222,11 +216,16 @@ TaskIdList PersistenceManager::GetJobTasksByStatus(int jobId, ExecutionStatusLis
     return {};
 }
 
+JobStepToRunList PersistenceManager::GetTaskStepsForStart(int taskId)
+{
+    RunAsync([this, taskId] { return dbProvider.GetTaskStepsForStart(taskId); });
+
+    return {};
+}
+
 JobStepToRunList PersistenceManager::GetJobStepsForResume(int jobId)
 {
-    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, int jobId) {
-        return dbProvider.GetJobStepsForResume(jobId);
-    }, std::ref(dbProvider), jobId));
+    RunAsync([this, jobId] { return dbProvider.GetJobStepsForResume(jobId); });
 
     return {};
 }
