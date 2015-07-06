@@ -358,7 +358,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatistics &st
 const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatistics &statistics);
 
 enum class EventType {
-    TaskAdded,
+    TaskAdded = 1,
     TaskFinished,
     ProductAvailable,
     JobCancelled,
