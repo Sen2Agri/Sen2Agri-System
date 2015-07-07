@@ -31,8 +31,8 @@ private:
     ConfigModel configModel;
     OrgEsaSen2agriPersistenceManagerInterface clientInterface;
     std::vector<int> tabCategory;
-    std::map<int, QList<ParameterChangeListener *>> parameterChangeListeners;
-    std::vector<QComboBox *> regionLists;
+    std::map<int, std::vector<ParameterChangeListener *>> parameterChangeListeners;
+    std::vector<QComboBox *> siteLists;
     int invalidFields;
     bool isAdmin;
 
@@ -46,6 +46,7 @@ private:
 
     void applyValue(QWidget *editWidget, const QString &value);
 
+    QComboBox *createSiteList(int categoryId, QWidget *parent);
     QWidget *createFieldsWidget(std::experimental::optional<int> siteId,
                                 int categoryId,
                                 QWidget *parentWidget);

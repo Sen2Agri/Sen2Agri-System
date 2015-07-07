@@ -139,32 +139,15 @@ void MainDialog::loadModel(const ConfigurationSet &configuration)
         if (usedCategories.contains(cat.categoryId)) {
             auto widget = new QWidget(ui->tabWidget);
             auto parentLayout = new QFormLayout(widget);
-            auto regionList = new QComboBox(widget);
-            regionList->addItem(QString("[Global]"), 0);
-            for (const auto &site : configModel.sites()) {
-                regionList->addItem(site.name, site.siteId);
+
+            if (cat.allowPerSiteCustomization) {
+                auto siteList = createSiteList(cat.categoryId, widget);
+                parentLayout->addRow(new QLabel(QStringLiteral("Site"), widget), siteList);
+                siteLists.emplace_back(siteList);
+            } else {
+                siteLists.emplace_back(nullptr);
             }
 
-            parameterChangeListeners.emplace(
-                std::make_pair(cat.categoryId, QList<ParameterChangeListener *>()));
-
-            connect(regionList,
-                    static_cast<void (QComboBox::*) (int) >(&QComboBox::currentIndexChanged),
-                    [this, regionList, widget](int) {
-
-                        std::experimental::optional<int> siteId;
-                        if (auto siteIdVal = regionList->currentData().toInt()) {
-                            siteId = siteIdVal;
-                        }
-
-                        auto categoryId = tabCategory[ui->tabWidget->currentIndex()];
-                        parameterChangeListeners[categoryId].clear();
-                        switchSite(siteId, categoryId, widget);
-                    });
-
-            regionLists.emplace_back(regionList);
-
-            parentLayout->addRow(new QLabel(QStringLiteral("Site"), widget), regionList);
             parentLayout->addRow(
                 createFieldsWidget(std::experimental::nullopt, cat.categoryId, widget));
 
@@ -172,6 +155,34 @@ void MainDialog::loadModel(const ConfigurationSet &configuration)
             tabCategory.emplace_back(cat.categoryId);
         }
     }
+}
+
+QComboBox *MainDialog::createSiteList(int categoryId, QWidget *parent)
+{
+    auto siteList = new QComboBox(parent);
+    siteList->addItem(QString("[Global]"), 0);
+    for (const auto &site : configModel.sites()) {
+        siteList->addItem(site.name, site.siteId);
+    }
+
+    parameterChangeListeners.emplace(
+        std::make_pair(categoryId, std::vector<ParameterChangeListener *>()));
+
+    connect(siteList, static_cast<void (QComboBox::*) (int) >(&QComboBox::currentIndexChanged),
+            [this, siteList](int) {
+                std::experimental::optional<int> siteId;
+                if (auto siteIdVal = siteList->currentData().toInt()) {
+                    siteId = siteIdVal;
+                }
+
+                auto categoryId = tabCategory[ui->tabWidget->currentIndex()];
+                parameterChangeListeners[categoryId].clear();
+
+                auto widget = ui->tabWidget->currentWidget();
+                switchSite(siteId, categoryId, widget);
+            });
+
+    return siteList;
 }
 
 void MainDialog::switchSite(std::experimental::optional<int> siteId,
@@ -388,15 +399,15 @@ QWidget *MainDialog::createEditRow(int categoryId,
 
             if (isValid) {
                 if (!--invalidFields) {
-                    regionLists[idx]->setEnabled(true);
+                    siteLists[idx]->setEnabled(true);
                 }
             } else {
                 if (!invalidFields++) {
-                    regionLists[idx]->setEnabled(false);
+                    siteLists[idx]->setEnabled(false);
                 }
             }
         });
-        parameterChangeListeners[categoryId].append(listener);
+        parameterChangeListeners[categoryId].emplace_back(listener);
     }
 
     bool fromGlobal;
