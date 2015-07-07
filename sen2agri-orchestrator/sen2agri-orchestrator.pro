@@ -29,13 +29,15 @@ DBUS_INTERFACES += persistence_manager_interface processors_executor_interface
 SOURCES += main.cpp \
     orchestrator.cpp \
     orchestratorworker.cpp \
-    eventprocessingcontext.cpp
+    eventprocessingcontext.cpp \
+    processorhandler.cpp
 
 HEADERS += \
     pch.hpp \
     orchestrator.hpp \
     orchestratorworker.hpp \
-    eventprocessingcontext.hpp
+    eventprocessingcontext.hpp \
+    processorhandler.hpp
 
 DISTFILES += \
     ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml \

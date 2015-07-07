@@ -152,6 +152,12 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ExecutionStatistics" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ExecutionStatistics" />
     </method>
+    <method name="ReflectTaskAddedEvent">
+      <arg name="value" type="TaskAddedEvent" direction="in" />
+      <arg name="result" type="TaskAddedEvent" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="TaskAddedEvent" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="TaskAddedEvent" />
+    </method>
     <method name="ReflectTaskFinishedEvent">
       <arg name="value" type="TaskFinishedEvent" direction="in" />
       <arg name="result" type="TaskFinishedEvent" direction="out" />

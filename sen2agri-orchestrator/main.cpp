@@ -19,11 +19,12 @@ int main(int argc, char *argv[])
 
         registerMetaTypes();
 
-        auto connection = QDBusConnection::systemBus();
-        Orchestrator orchestrator;
+        std::map<int, std::unique_ptr<ProcessorHandler>> handlers;
+        Orchestrator orchestrator(handlers);
 
         new OrchestratorAdaptor(&orchestrator);
 
+        auto connection = QDBusConnection::systemBus();
         if (!connection.registerObject(QStringLiteral("/org/esa/sen2agri/orchestrator"),
                                        &orchestrator)) {
             throw std::runtime_error(

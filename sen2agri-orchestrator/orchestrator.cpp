@@ -4,7 +4,8 @@
 
 #include "orchestrator.hpp"
 
-Orchestrator::Orchestrator(QObject *parent)
+Orchestrator::Orchestrator(std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
+                           QObject *parent)
     : QObject(parent),
       persistenceManagerClient(OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
                                QStringLiteral("/org/esa/sen2agri/persistenceManager"),
@@ -12,7 +13,7 @@ Orchestrator::Orchestrator(QObject *parent)
       executorClient(OrgEsaSen2agriProcessorsExecutorInterface::staticInterfaceName(),
                      QStringLiteral("/org/esa/sen2agri/processorsexecutor"),
                      QDBusConnection::systemBus()),
-      worker(persistenceManagerClient, executorClient)
+      worker(handlerMap, persistenceManagerClient, executorClient)
 {
     worker.RescanEvents();
 }

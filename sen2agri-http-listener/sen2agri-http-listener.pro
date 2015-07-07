@@ -25,6 +25,13 @@ SOURCES += main.cpp \
     requestmapper.cpp \
     controller/dashboardcontroller.cpp
 
+HEADERS += \
+    controller/dashboardcontroller.hpp \
+    requestmapper.hpp \
+    pch.hpp
+
+DISTFILES += dist/sen2agri-http-listener.service
+
 QTWEBAPP = -lQtWebApp
 CONFIG(debug, debug|release) {
     QTWEBAPP = $$join(QTWEBAPP,,,d)
@@ -35,11 +42,6 @@ LIBS += -L$$OUT_PWD/../QtWebApp/ $$QTWEBAPP
 INCLUDEPATH += $$PWD/../QtWebApp
 DEPENDPATH += $$PWD/../QtWebApp
 
-HEADERS += \
-    controller/dashboardcontroller.hpp \
-    requestmapper.hpp \
-    pch.hpp
-
 LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
 
 INCLUDEPATH += $$PWD/../sen2agri-common
@@ -49,4 +51,7 @@ PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a
 
 target.path = /usr/bin
 
-INSTALLS += target
+systemd-service.path = /usr/lib/systemd/system
+systemd-service.files = dist/sen2agri-http-listener.service
+
+INSTALLS += target systemd-service

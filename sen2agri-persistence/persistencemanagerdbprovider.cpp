@@ -52,11 +52,14 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
         auto dataRecord = query.record();
         auto idCol = dataRecord.indexOf(QStringLiteral("id"));
         auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
+        auto allowPerSiteCusomizationCol =
+            dataRecord.indexOf(QStringLiteral("allow_per_site_customization"));
 
         ConfigurationSet result;
         while (query.next()) {
-            result.categories.append(
-                { query.value(idCol).toInt(), query.value(nameCol).toString() });
+            result.categories.append({ query.value(idCol).toInt(),
+                                       query.value(nameCol).toString(),
+                                       query.value(allowPerSiteCusomizationCol).toBool() });
         }
 
         query = db.prepareQuery(QStringLiteral("select * from sp_get_sites()"));
@@ -626,6 +629,37 @@ TaskIdList PersistenceManagerDBProvider::GetJobTasksByStatus(int jobId,
         TaskIdList result;
         while (query.next()) {
             result.append({ query.value(taskIdCol).toInt() });
+        }
+
+        return result;
+    });
+}
+
+JobStepToRunList PersistenceManagerDBProvider::GetTaskStepsForStart(int taskId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_get_task_steps_for_start(:taskId)"));
+        query.bindValue(QStringLiteral(":taskId"), taskId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        auto dataRecord = query.record();
+        auto taskIdCol = dataRecord.indexOf(QStringLiteral("task_id"));
+        auto moduleCol = dataRecord.indexOf(QStringLiteral("module_short_name"));
+        auto stepNameCol = dataRecord.indexOf(QStringLiteral("step_name"));
+        auto parametersCol = dataRecord.indexOf(QStringLiteral("parameters"));
+
+        JobStepToRunList result;
+        while (query.next()) {
+            result.append({ query.value(taskIdCol).toInt(),
+                            query.value(moduleCol).toString(),
+                            query.value(stepNameCol).toString(),
+                            query.value(parametersCol).toString() });
         }
 
         return result;

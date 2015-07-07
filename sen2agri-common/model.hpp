@@ -63,9 +63,10 @@ class ConfigurationCategory
 public:
     int categoryId;
     QString name;
+    bool allowPerSiteCustomization;
 
     ConfigurationCategory();
-    ConfigurationCategory(int categoryId, QString name);
+    ConfigurationCategory(int categoryId, QString name, bool allowPerSiteCustomization);
 
     static void registerMetaTypes();
 };
@@ -305,7 +306,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step);
 
 enum class ExecutionStatus {
-    Submitted,
+    Submitted = 1,
     PendingStart,
     NeedsInput,
     Running,
@@ -358,6 +359,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatistics &st
 const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatistics &statistics);
 
 enum class EventType {
+    TaskAdded = 1,
     TaskFinished,
     ProductAvailable,
     JobCancelled,
@@ -370,13 +372,36 @@ enum class EventType {
 QDBusArgument &operator<<(QDBusArgument &argument, EventType event);
 const QDBusArgument &operator>>(const QDBusArgument &argument, EventType &event);
 
+class TaskAddedEvent
+{
+public:
+    int jobId;
+    int taskId;
+
+    TaskAddedEvent();
+    TaskAddedEvent(int jobId, int taskId);
+
+    QString toJson() const;
+
+    static TaskAddedEvent fromJson(const QString &json);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(TaskAddedEvent)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const TaskAddedEvent &event);
+const QDBusArgument &operator>>(const QDBusArgument &argument, TaskAddedEvent &event);
+
 class TaskFinishedEvent
 {
 public:
+    int processorId;
+    int jobId;
     int taskId;
 
     TaskFinishedEvent();
-    TaskFinishedEvent(int taskId);
+    TaskFinishedEvent(int processorId, int jobId, int taskId);
 
     QString toJson() const;
 

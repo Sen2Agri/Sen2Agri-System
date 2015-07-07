@@ -7,54 +7,19 @@
 #include "orchestratorworker.hpp"
 #include "dbus_future_utils.hpp"
 
-class ProcessorHandler
-{
-public:
-    void HandleJobSubmitted(EventProcessingContext &ctx, const JobSubmittedEvent &event);
-    void HandleTaskFinished(EventProcessingContext &ctx, const TaskFinishedEvent &event);
-
-private:
-    virtual ~ProcessorHandler();
-
-    virtual void HandleJobSubmittedImpl(EventProcessingContext &ctx,
-                                        const JobSubmittedEvent &event) = 0;
-    virtual void HandleTaskFinishedImpl(EventProcessingContext &ctx,
-                                        const TaskFinishedEvent &event) = 0;
-};
-
-void ProcessorHandler::HandleJobSubmitted(EventProcessingContext &ctx,
-                                          const JobSubmittedEvent &event)
-{
-    HandleJobSubmittedImpl(ctx, event);
-}
-
-void ProcessorHandler::HandleTaskFinished(EventProcessingContext &ctx,
-                                          const TaskFinishedEvent &event)
-{
-    HandleTaskFinishedImpl(ctx, event);
-}
-
 static std::map<QString, QString>
-GetModulePathMap(const ConfigurationParameterValueList &parameters)
-{
-    std::map<QString, QString> modulePaths;
-    for (const auto &p : parameters) {
-        if (p.key.endsWith(QLatin1String(".path"))) {
-            auto firstPath = p.key.indexOf('.', p.key.indexOf('.') + 1) + 1;
-            auto lastDot = p.key.length() - 5;
-            const auto &path = p.key.mid(firstPath, lastDot - firstPath);
-
-            modulePaths.emplace(path, p.value);
-        }
-    }
-
-    return modulePaths;
-}
+getModulePathMap(const ConfigurationParameterValueList &parameters);
+static StepArgumentList getStepArguments(const JobStepToRun &step);
+static NewExecutorStepList
+getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps);
 
 OrchestratorWorker::OrchestratorWorker(
+    std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
     OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient,
     OrgEsaSen2agriProcessorsExecutorInterface &executorClient)
-    : persistenceManagerClient(persistenceManagerClient), executorClient(executorClient)
+    : handlerMap(handlerMap),
+      persistenceManagerClient(persistenceManagerClient),
+      executorClient(executorClient)
 {
     moveToThread(&workerThread);
     workerThread.start();
@@ -68,17 +33,18 @@ void OrchestratorWorker::RescanEvents()
     }
 
     try {
-        bool rescanRequested;
-        do {
+        while (true) {
             EventProcessingContext ctx(persistenceManagerClient);
 
             const auto &events = ctx.GetNewEvents();
+            if (events.empty()) {
+                break;
+            }
+
             for (const auto &event : events) {
                 DispatchEvent(ctx, event);
             }
-
-            rescanRequested = ctx.IsRescanRequested();
-        } while (rescanRequested);
+        }
     } catch (const std::exception &e) {
         Logger::error(QStringLiteral("Unable to retrieve new events: %1").arg(e.what()));
     }
@@ -98,6 +64,9 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
         EventProcessingContext innerCtx(persistenceManagerClient);
 
         switch (event.type) {
+            case EventType::TaskAdded:
+                ProcessEvent(innerCtx, TaskAddedEvent::fromJson(event.dataJson));
+                break;
             case EventType::TaskFinished:
                 ProcessEvent(innerCtx, TaskFinishedEvent::fromJson(event.dataJson));
                 break;
@@ -126,10 +95,6 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
                         .arg(event.dataJson)
                         .toStdString());
         }
-
-        if (innerCtx.IsRescanRequested()) {
-            ctx.ScheduleRescan();
-        }
     } catch (const std::exception &e) {
         Logger::error(QStringLiteral("Unable to process event id %1: ").arg(e.what()));
     }
@@ -141,30 +106,27 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
     }
 }
 
+void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskAddedEvent &event)
+{
+    const auto &steps =
+        WaitForResponseAndThrow(persistenceManagerClient.GetTaskStepsForStart(event.taskId));
+
+    const auto &stepsToSubmit = getExecutorStepList(ctx, event.jobId, steps);
+
+    WaitForResponseAndThrow(executorClient.SubmitSteps(stepsToSubmit));
+}
+
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskFinishedEvent &event)
 {
-    Q_UNUSED(event);
-
-    // 1. using the task module, find the relevant processor/task handler and run it
-    // 2. the handler can choose to submit a new task and its steps
-    // 3. if a task was submitted, send its steps to the executor
-    // 4. otherwise submit a product available event to self
-
-    // 5. pend an event queue rescan
-    ctx.ScheduleRescan();
+    GetHandler(event.processorId).HandleTaskFinished(ctx, event);
 }
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx,
                                       const ProductAvailableEvent &event)
 {
-    Q_UNUSED(event);
-
-    // 1. determine what jobs need to be submitted (???)
-    // 2. submit the new jobs to the database
-    // 3. submit job sumbitted events to self
-
-    // 4. pend an event queue rescan
-    ctx.ScheduleRescan();
+    for (auto &&handler : handlerMap) {
+        handler.second->HandleProductAvailable(ctx, event);
+    }
 }
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobCancelledEvent &event)
@@ -188,12 +150,100 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobPaus
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobResumedEvent &event)
 {
-    const auto &stepsPromise = persistenceManagerClient.GetJobStepsForResume(event.jobId);
+    const auto &steps =
+        WaitForResponseAndThrow(persistenceManagerClient.GetJobStepsForResume(event.jobId));
 
-    const auto &modulePaths = GetModulePathMap(
-        ctx.GetJobConfigurationParameters(event.jobId, QStringLiteral("executor.processor.")));
+    const auto &stepsToSubmit = getExecutorStepList(ctx, event.jobId, steps);
 
-    const auto &steps = WaitForResponseAndThrow(stepsPromise);
+    ctx.MarkJobResumed(event.jobId);
+    WaitForResponseAndThrow(executorClient.SubmitSteps(stepsToSubmit));
+}
+
+void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobSubmittedEvent &event)
+{
+    GetHandler(event.processorId).HandleJobSubmitted(ctx, event);
+}
+
+void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const StepFailedEvent &event)
+{
+    const auto &tasks = ctx.GetJobTasksByStatus(event.jobId, { ExecutionStatus::Running });
+
+    WaitForResponseAndThrow(executorClient.CancelTasks(tasks));
+    ctx.MarkJobFailed(event.jobId);
+}
+
+ProcessorHandler &OrchestratorWorker::GetHandler(int processorId)
+{
+    auto it = handlerMap.find(processorId);
+    if (it == std::end(handlerMap)) {
+        throw std::runtime_error(QStringLiteral("No handler present for processor id %1")
+                                     .arg(processorId)
+                                     .toStdString());
+    }
+
+    return *it->second;
+}
+
+static std::map<QString, QString>
+getModulePathMap(const ConfigurationParameterValueList &parameters)
+{
+    std::map<QString, QString> modulePaths;
+    for (const auto &p : parameters) {
+        if (p.key.endsWith(QLatin1String(".path"))) {
+            auto firstPath = p.key.indexOf('.', p.key.indexOf('.') + 1) + 1;
+            auto lastDot = p.key.length() - 5;
+            const auto &path = p.key.mid(firstPath, lastDot - firstPath);
+
+            modulePaths.emplace(path, p.value);
+        }
+    }
+
+    return modulePaths;
+}
+
+static StepArgumentList getStepArguments(const JobStepToRun &step)
+{
+    const auto &parametersDoc = QJsonDocument::fromJson(step.parametersJson.toUtf8());
+    if (!parametersDoc.isObject()) {
+        throw std::runtime_error(
+            QStringLiteral("Unexpected step parameter JSON schema: root node should be an "
+                           "object. The parameters object  was: '%1'")
+                .arg(step.parametersJson)
+                .toStdString());
+    }
+
+    const auto &argNode = parametersDoc.object()[QStringLiteral("arguments")];
+    if (!argNode.isArray()) {
+        throw std::runtime_error(
+            QStringLiteral("Unexpected step parameter JSON schema: node 'arguments' should be an "
+                           "array. The parameters object  was: '%1'")
+                .arg(step.parametersJson)
+                .toStdString());
+    }
+    const auto &argArray = argNode.toArray();
+
+    StepArgumentList arguments;
+    arguments.reserve(argArray.count());
+    for (const auto &arg : argArray) {
+        if (!arg.isString()) {
+            throw std::runtime_error(
+                QStringLiteral("Unexpected step parameter JSON schema: arguments should be "
+                               "strings. The parameters object was: '%1'")
+                    .arg(step.parametersJson)
+                    .toStdString());
+        }
+
+        arguments.append(arg.toString());
+    }
+
+    return arguments;
+}
+
+static NewExecutorStepList
+getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps)
+{
+    const auto &modulePaths = getModulePathMap(
+        ctx.GetJobConfigurationParameters(jobId, QStringLiteral("executor.processor.")));
 
     NewExecutorStepList stepsToSubmit;
     stepsToSubmit.reserve(steps.size());
@@ -206,61 +256,9 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobResu
                                          .toStdString());
         }
 
-        const auto &parametersDoc = QJsonDocument::fromJson(s.parametersJson.toUtf8());
-        if (!parametersDoc.isObject()) {
-            throw std::runtime_error(
-                QStringLiteral("Unexpected step parameter JSON schema: root node should be an "
-                               "object. The parameters object  was: '%1'")
-                    .arg(s.parametersJson)
-                    .toStdString());
-        }
-
-        const auto &argNode = parametersDoc.object()[QStringLiteral("arguments")];
-        if (!argNode.isArray()) {
-            throw std::runtime_error(
-                QStringLiteral(
-                    "Unexpected step parameter JSON schema: node 'arguments' should be an "
-                    "array. The parameters object  was: '%1'")
-                    .arg(s.parametersJson)
-                    .toStdString());
-        }
-        const auto &argArray = argNode.toArray();
-
-        StepArgumentList arguments;
-        arguments.reserve(argArray.count());
-        for (const auto &arg : argArray) {
-            if (!arg.isString()) {
-                throw std::runtime_error(
-                    QStringLiteral("Unexpected step parameter JSON schema: arguments should be "
-                                   "strings. The parameters object was: '%1'")
-                        .arg(s.parametersJson)
-                        .toStdString());
-            }
-
-            arguments.append(arg.toString());
-        }
-
+        const auto &arguments = getStepArguments(s);
         stepsToSubmit.append({ s.taskId, it->second, s.stepName, arguments });
     }
 
-    ctx.MarkJobResumed(event.jobId);
-    WaitForResponseAndThrow(executorClient.SubmitSteps(stepsToSubmit));
-}
-
-void OrchestratorWorker::ProcessEvent(EventProcessingContext &, const JobSubmittedEvent &event)
-{
-    Q_UNUSED(event);
-
-    // 1. get job information from db
-    // 2. find the relevant processor and run it
-    // 3. submit the returned task and step list to the database
-    // 4. submit the steps to the executor
-}
-
-void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const StepFailedEvent &event)
-{
-    const auto &tasks = ctx.GetJobTasksByStatus(event.jobId, { ExecutionStatus::Running });
-
-    WaitForResponseAndThrow(executorClient.CancelTasks(tasks));
-    ctx.MarkJobFailed(event.jobId);
+    return stepsToSubmit;
 }

@@ -20,6 +20,7 @@ void compare(const ConfigurationCategory &v1, const ConfigurationCategory &v2)
 {
     compare(v1.categoryId, v2.categoryId);
     compare(v1.name, v2.name);
+    compare(v1.allowPerSiteCustomization, v2.allowPerSiteCustomization);
 }
 
 void compare(const Site &v1, const Site &v2)
@@ -109,8 +110,16 @@ void compare(const ExecutionStatistics &v1, const ExecutionStatistics &v2)
     compare(v1.diskWriteBytes, v2.diskWriteBytes);
 }
 
+void compare(const TaskAddedEvent &v1, const TaskAddedEvent &v2)
+{
+    compare(v1.jobId, v2.jobId);
+    compare(v1.taskId, v2.taskId);
+}
+
 void compare(const TaskFinishedEvent &v1, const TaskFinishedEvent &v2)
 {
+    compare(v1.processorId, v2.processorId);
+    compare(v1.jobId, v2.jobId);
     compare(v1.taskId, v2.taskId);
 }
 

@@ -3,23 +3,8 @@
 
 EventProcessingContext::EventProcessingContext(
     OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient)
-    : persistenceManagerClient(persistenceManagerClient), rescanRequested()
+    : persistenceManagerClient(persistenceManagerClient)
 {
-}
-
-void EventProcessingContext::ScheduleRescan()
-{
-    rescanRequested = true;
-}
-
-void EventProcessingContext::CancelRescan()
-{
-    rescanRequested = false;
-}
-
-bool EventProcessingContext::IsRescanRequested() const
-{
-    return rescanRequested;
 }
 
 ConfigurationParameterValueList

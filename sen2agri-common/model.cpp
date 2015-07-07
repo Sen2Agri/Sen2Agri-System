@@ -37,6 +37,7 @@ void registerMetaTypes()
 
     ExecutionStatistics::registerMetaTypes();
 
+    TaskAddedEvent::registerMetaTypes();
     TaskFinishedEvent::registerMetaTypes();
     ProductAvailableEvent::registerMetaTypes();
     JobCancelledEvent::registerMetaTypes();
@@ -147,12 +148,14 @@ const QDBusArgument &operator>>(const QDBusArgument &argument,
     return argument;
 }
 
-ConfigurationCategory::ConfigurationCategory() : categoryId()
+ConfigurationCategory::ConfigurationCategory() : categoryId(), allowPerSiteCustomization()
 {
 }
 
-ConfigurationCategory::ConfigurationCategory(int categoryId, QString name)
-    : categoryId(move(categoryId)), name(move(name))
+ConfigurationCategory::ConfigurationCategory(int categoryId,
+                                             QString name,
+                                             bool allowPerSiteCustomization)
+    : categoryId(categoryId), name(move(name)), allowPerSiteCustomization(allowPerSiteCustomization)
 {
 }
 
@@ -165,7 +168,7 @@ void ConfigurationCategory::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationCategory &category)
 {
     argument.beginStructure();
-    argument << category.categoryId << category.name;
+    argument << category.categoryId << category.name << category.allowPerSiteCustomization;
     argument.endStructure();
 
     return argument;
@@ -174,7 +177,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationCategory &
 const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationCategory &category)
 {
     argument.beginStructure();
-    argument >> category.categoryId >> category.name;
+    argument >> category.categoryId >> category.name >> category.allowPerSiteCustomization;
     argument.endStructure();
 
     return argument;
@@ -689,17 +692,69 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, EventType &event)
     return argument;
 }
 
-TaskFinishedEvent::TaskFinishedEvent() : taskId()
+TaskAddedEvent::TaskAddedEvent() : jobId(), taskId()
 {
 }
 
-TaskFinishedEvent::TaskFinishedEvent(int taskId) : taskId(taskId)
+TaskAddedEvent::TaskAddedEvent(int jobId, int taskId) : jobId(jobId), taskId(taskId)
+{
+}
+
+QString TaskAddedEvent::toJson() const
+{
+    QJsonObject node;
+    node[QStringLiteral("job_id")] = jobId;
+    node[QStringLiteral("task_id")] = taskId;
+
+    return QString::fromUtf8(QJsonDocument(node).toJson());
+}
+
+TaskAddedEvent TaskAddedEvent::fromJson(const QString &json)
+{
+    const auto &doc = QJsonDocument::fromJson(json.toUtf8());
+    const auto &object = doc.object();
+
+    return { object.value(QStringLiteral("job_id")).toInt(),
+             object.value(QStringLiteral("task_id")).toInt() };
+}
+
+void TaskAddedEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<TaskAddedEvent>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const TaskAddedEvent &event)
+{
+    argument.beginStructure();
+    argument << event.jobId << event.taskId;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, TaskAddedEvent &event)
+{
+    argument.beginStructure();
+    argument >> event.jobId >> event.taskId;
+    argument.endStructure();
+
+    return argument;
+}
+
+TaskFinishedEvent::TaskFinishedEvent() : processorId(), jobId(), taskId()
+{
+}
+
+TaskFinishedEvent::TaskFinishedEvent(int processorId, int jobId, int taskId)
+    : processorId(processorId), jobId(jobId), taskId(taskId)
 {
 }
 
 QString TaskFinishedEvent::toJson() const
 {
     QJsonObject node;
+    node[QStringLiteral("processor_id")] = processorId;
+    node[QStringLiteral("job_id")] = jobId;
     node[QStringLiteral("task_id")] = taskId;
 
     return QString::fromUtf8(QJsonDocument(node).toJson());
@@ -710,7 +765,9 @@ TaskFinishedEvent TaskFinishedEvent::fromJson(const QString &json)
     const auto &doc = QJsonDocument::fromJson(json.toUtf8());
     const auto &object = doc.object();
 
-    return { object.value(QStringLiteral("task_id")).toInt() };
+    return { object.value(QStringLiteral("processor_id")).toInt(),
+             object.value(QStringLiteral("job_id")).toInt(),
+             object.value(QStringLiteral("task_id")).toInt() };
 }
 
 void TaskFinishedEvent::registerMetaTypes()
@@ -721,7 +778,7 @@ void TaskFinishedEvent::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const TaskFinishedEvent &event)
 {
     argument.beginStructure();
-    argument << event.taskId;
+    argument << event.processorId << event.jobId << event.taskId;
     argument.endStructure();
 
     return argument;
@@ -730,7 +787,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const TaskFinishedEvent &even
 const QDBusArgument &operator>>(const QDBusArgument &argument, TaskFinishedEvent &event)
 {
     argument.beginStructure();
-    argument >> event.taskId;
+    argument >> event.processorId >> event.jobId >> event.taskId;
     argument.endStructure();
 
     return argument;

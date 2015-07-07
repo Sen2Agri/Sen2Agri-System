@@ -37,4 +37,5 @@ public:
     const ConfigurationCategoryList &categories() const;
     const SiteList &sites() const;
     const ConfigurationParameterInfoList &parameters() const;
+    const ConfigurationSet &configurationSet() const;
 };

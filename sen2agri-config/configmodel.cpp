@@ -121,3 +121,8 @@ const ConfigurationParameterInfoList &ConfigModel::parameters() const
 {
     return configuration.parameterInfo;
 }
+
+const ConfigurationSet &ConfigModel::configurationSet() const
+{
+    return configuration;
+}

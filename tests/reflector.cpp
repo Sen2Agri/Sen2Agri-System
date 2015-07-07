@@ -136,6 +136,11 @@ ExecutionStatistics Reflector::ReflectExecutionStatistics(const ExecutionStatist
     return value;
 }
 
+TaskAddedEvent Reflector::ReflectTaskAddedEvent(const TaskAddedEvent &value)
+{
+    return value;
+}
+
 TaskFinishedEvent Reflector::ReflectTaskFinishedEvent(const TaskFinishedEvent &value)
 {
     return value;
