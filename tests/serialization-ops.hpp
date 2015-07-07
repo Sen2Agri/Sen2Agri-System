@@ -114,7 +114,7 @@ template <>
 struct maker<ConfigurationCategory> {
     static ConfigurationCategory make()
     {
-        return { maker<int>::make(), maker<QString>::make() };
+        return { maker<int>::make(), maker<QString>::make(), maker<bool>::make() };
     }
 };
 

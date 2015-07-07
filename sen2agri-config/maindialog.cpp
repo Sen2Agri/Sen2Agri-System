@@ -44,9 +44,9 @@ static ConfigurationSet getStubConfiguration()
 {
     ConfigurationSet configuration;
 
-    configuration.categories.append({ 1, "General" });
-    configuration.categories.append({ 2, "Not used" });
-    configuration.categories.append({ 3, "L2A" });
+    configuration.categories.append({ 1, "General", true });
+    configuration.categories.append({ 2, "Not used", true });
+    configuration.categories.append({ 3, "L2A", true });
 
     addParameter(configuration, { "test.foo", 1, "Foo", "string", false },
                  std::experimental::nullopt, "Foo value");

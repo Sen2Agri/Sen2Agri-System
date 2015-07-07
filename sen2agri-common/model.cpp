@@ -148,12 +148,14 @@ const QDBusArgument &operator>>(const QDBusArgument &argument,
     return argument;
 }
 
-ConfigurationCategory::ConfigurationCategory() : categoryId()
+ConfigurationCategory::ConfigurationCategory() : categoryId(), allowPerSiteCustomization()
 {
 }
 
-ConfigurationCategory::ConfigurationCategory(int categoryId, QString name)
-    : categoryId(move(categoryId)), name(move(name))
+ConfigurationCategory::ConfigurationCategory(int categoryId,
+                                             QString name,
+                                             bool allowPerSiteCustomization)
+    : categoryId(categoryId), name(move(name)), allowPerSiteCustomization(allowPerSiteCustomization)
 {
 }
 
@@ -166,7 +168,7 @@ void ConfigurationCategory::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationCategory &category)
 {
     argument.beginStructure();
-    argument << category.categoryId << category.name;
+    argument << category.categoryId << category.name << category.allowPerSiteCustomization;
     argument.endStructure();
 
     return argument;
@@ -175,7 +177,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationCategory &
 const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationCategory &category)
 {
     argument.beginStructure();
-    argument >> category.categoryId >> category.name;
+    argument >> category.categoryId >> category.name >> category.allowPerSiteCustomization;
     argument.endStructure();
 
     return argument;

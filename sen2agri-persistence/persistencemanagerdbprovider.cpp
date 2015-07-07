@@ -52,11 +52,14 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
         auto dataRecord = query.record();
         auto idCol = dataRecord.indexOf(QStringLiteral("id"));
         auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
+        auto allowPerSiteCusomizationCol =
+            dataRecord.indexOf(QStringLiteral("allow_per_site_customization"));
 
         ConfigurationSet result;
         while (query.next()) {
-            result.categories.append(
-                { query.value(idCol).toInt(), query.value(nameCol).toString() });
+            result.categories.append({ query.value(idCol).toInt(),
+                                       query.value(nameCol).toString(),
+                                       query.value(allowPerSiteCusomizationCol).toBool() });
         }
 
         query = db.prepareQuery(QStringLiteral("select * from sp_get_sites()"));

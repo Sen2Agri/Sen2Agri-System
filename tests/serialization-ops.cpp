@@ -20,6 +20,7 @@ void compare(const ConfigurationCategory &v1, const ConfigurationCategory &v2)
 {
     compare(v1.categoryId, v2.categoryId);
     compare(v1.name, v2.name);
+    compare(v1.allowPerSiteCustomization, v2.allowPerSiteCustomization);
 }
 
 void compare(const Site &v1, const Site &v2)

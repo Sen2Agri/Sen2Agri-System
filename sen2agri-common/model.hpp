@@ -63,9 +63,10 @@ class ConfigurationCategory
 public:
     int categoryId;
     QString name;
+    bool allowPerSiteCustomization;
 
     ConfigurationCategory();
-    ConfigurationCategory(int categoryId, QString name);
+    ConfigurationCategory(int categoryId, QString name, bool allowPerSiteCustomization);
 
     static void registerMetaTypes();
 };
