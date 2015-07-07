@@ -64,7 +64,7 @@ BEGIN
 		data, 
 		submitted_timestamp)
 		VALUES (
-		7, -- StepFailed
+		8, -- StepFailed
 		'{"job_id":' || job_id || ',"task_id":' || _task_id || ',"step_name":' || _step_name || '}',
 		now()
 		);
