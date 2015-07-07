@@ -12,6 +12,8 @@
 #include <QTableWidget>
 #include <QFormLayout>
 
+#include <optional.hpp>
+
 #include "maindialog.hpp"
 #include "ui_maindialog.h"
 #include "parameterchangelistener.hpp"
@@ -215,16 +217,37 @@ void MainDialog::done(int result)
 {
     if (result == QDialog::Accepted) {
         QString errors;
-        auto categoryId = tabCategory[ui->tabWidget->currentIndex()];
-        for (const auto *l : parameterChangeListeners[categoryId]) {
-            if (!l->valid()) {
-                errors += QStringLiteral("%1\n").arg(l->parameterName());
+
+        std::experimental::optional<int> errorTab;
+
+        auto currentTab = ui->tabWidget->currentIndex();
+        auto currentTabHasErrors = false;
+
+        auto tabCount = ui->tabWidget->count();
+        for (int i = 0; i < tabCount; i++) {
+            auto categoryId = tabCategory[i];
+            for (const auto *l : parameterChangeListeners[categoryId]) {
+                if (!l->valid()) {
+                    errors += QStringLiteral("%1\n").arg(l->parameterName());
+
+                    if (!errorTab) {
+                        errorTab = i;
+                    }
+
+                    if (i == currentTab) {
+                        currentTabHasErrors = true;
+                    }
+                }
             }
         }
 
         if (errors.isEmpty()) {
             saveChanges();
         } else {
+            if (errorTab && !currentTabHasErrors) {
+                ui->tabWidget->setCurrentIndex(*errorTab);
+            }
+
             QMessageBox::critical(
                 this, QStringLiteral("Error"),
                 QStringLiteral("Please make sure that the following parameters are valid:\n\n") +
