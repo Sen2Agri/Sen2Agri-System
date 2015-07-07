@@ -86,14 +86,43 @@ MainDialog::MainDialog(QWidget *parent)
 {
     ui->setupUi(this);
 
+    loadConfiguration(0, 0);
+}
+
+MainDialog::~MainDialog()
+{
+    delete ui;
+}
+
+void MainDialog::loadConfiguration(int currentTab, int currentSite)
+{
+    setEnabled(false);
+    ui->tabWidget->clear();
+
     auto promise = clientInterface.GetConfigurationSet();
     connect(new QDBusPendingCallWatcher(promise, this), &QDBusPendingCallWatcher::finished,
-            [this, promise] {
+            [this, promise, currentTab, currentSite] {
+                setEnabled(true);
+
                 if (promise.isValid()) {
                     loadModel(promise.value());
+
+                    if (currentTab < ui->tabWidget->count()) {
+                        ui->tabWidget->setCurrentIndex(currentTab);
+
+                        if (currentSite) {
+                            auto siteList = siteLists[currentTab];
+                            auto siteCount = siteList->count();
+                            for (int i = 0; i < siteCount; i++) {
+                                if (siteList->itemData(i).toInt() == currentSite) {
+                                    siteList->setCurrentIndex(i);
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 } else if (promise.isError()) {
 #if 1
-
                     loadModel(getStubConfiguration());
 #else
                     ui->innerLayout->removeWidget(ui->tabWidget);
@@ -121,13 +150,12 @@ MainDialog::MainDialog(QWidget *parent)
             });
 }
 
-MainDialog::~MainDialog()
-{
-    delete ui;
-}
-
 void MainDialog::loadModel(const ConfigurationSet &configuration)
 {
+    tabCategory.clear();
+    parameterChangeListeners.clear();
+    siteLists.clear();
+
     configModel = { configuration };
 
     QSet<int> usedCategories;
@@ -176,6 +204,9 @@ QComboBox *MainDialog::createSiteList(int categoryId, QWidget *parent)
                 }
 
                 auto categoryId = tabCategory[ui->tabWidget->currentIndex()];
+                for (const auto l : parameterChangeListeners[categoryId]) {
+                    delete l;
+                }
                 parameterChangeListeners[categoryId].clear();
 
                 auto widget = ui->tabWidget->currentWidget();
@@ -279,9 +310,16 @@ void MainDialog::saveChanges()
 {
     setEnabled(false);
 
+    auto currentTab = ui->tabWidget->currentIndex();
+    auto siteList = siteLists[currentTab];
+    int currentSite = 0;
+    if (siteList) {
+        currentSite = siteList->currentData().toInt();
+    }
+
     auto promise = clientInterface.UpdateConfigurationParameters(configModel.getChanges());
     connect(new QDBusPendingCallWatcher(promise, this), &QDBusPendingCallWatcher::finished,
-            [this, promise] {
+            [this, promise, currentTab, currentSite] {
                 setEnabled(true);
 
                 if (promise.isError()) {
@@ -291,7 +329,8 @@ void MainDialog::saveChanges()
                 } else if (promise.isValid()) {
                     const auto &result = promise.value();
                     if (result.empty()) {
-                        configModel.reset();
+                        loadConfiguration(currentTab, currentSite);
+
                         QMessageBox::information(
                             this, QStringLiteral("Information"),
                             QStringLiteral("The changes were saved successfully"));

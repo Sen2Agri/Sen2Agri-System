@@ -36,6 +36,7 @@ private:
     int invalidFields;
     bool isAdmin;
 
+    void loadConfiguration(int currentTab, int currentSite);
     void loadModel(const ConfigurationSet &configuration);
     void switchSite(std::experimental::optional<int> siteId, int categoryId, QWidget *parentWidget);
 
