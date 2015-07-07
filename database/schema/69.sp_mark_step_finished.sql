@@ -66,11 +66,11 @@ BEGIN
 		type_id, 
 		data, 
 		submitted_timestamp)
-		VALUES (
+		SELECT
 		2, -- TaskFinished
-		'{"task_id":' || _task_id || '}',
+		'{"job_id":' || job.id || ', "processor_id":' || job.processor_id || ', "task_id":' || _task_id || '}',
 		now()
-		);
+		FROM job INNER JOIN task ON job.id = task.job_id WHERE task.id = _task_id;
 	END IF;
 
 	RETURN EXISTS (SELECT *

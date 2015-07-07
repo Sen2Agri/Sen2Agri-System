@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION sp_upsert_parameters(
+﻿CREATE OR REPLACE FUNCTION sp_upsert_parameters(
 IN _parameters JSON,
 IN _is_admin BOOLEAN) RETURNS
 TABLE (key CHARACTER VARYING, error_message CHARACTER VARYING) AS $$
@@ -31,6 +31,11 @@ BEGIN
 	-- Validate the values against the expected data type.
 	UPDATE params
 	SET is_valid_error_message = sp_validate_data_type_value(value, type);
+
+	-- Make sure that integers and floats are formatted corectly.
+	UPDATE params
+	SET value = sp_convert_data_type_value(value, type)
+	WHERE is_valid_error_message IS NULL;
 
         IF NOT _is_admin THEN
             -- Make sure not to update advanced parameters if the caller is not an admin
