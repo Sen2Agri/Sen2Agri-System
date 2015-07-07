@@ -399,9 +399,10 @@ public:
     int processorId;
     int jobId;
     int taskId;
+    QString module;
 
     TaskFinishedEvent();
-    TaskFinishedEvent(int processorId, int jobId, int taskId);
+    TaskFinishedEvent(int processorId, int jobId, int taskId, QString module);
 
     QString toJson() const;
 

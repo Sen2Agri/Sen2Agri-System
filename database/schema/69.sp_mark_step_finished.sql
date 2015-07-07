@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_mark_step_finished(
+CREATE OR REPLACE FUNCTION sp_mark_step_finished(
 IN _task_id int,
 IN _step_name character varying,
 IN _node character varying,
@@ -68,7 +68,7 @@ BEGIN
 		submitted_timestamp)
 		SELECT
 		2, -- TaskFinished
-		'{"job_id":' || job.id || ', "processor_id":' || job.processor_id || ', "task_id":' || _task_id || '}',
+		'{"job_id":' || job.id || ', "processor_id":' || job.processor_id || ', "task_id":' || _task_id || ', "module_short_name":"' || task.module_short_name || '"}',
 		now()
 		FROM job INNER JOIN task ON job.id = task.job_id WHERE task.id = _task_id;
 	END IF;

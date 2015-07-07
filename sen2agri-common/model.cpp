@@ -745,8 +745,8 @@ TaskFinishedEvent::TaskFinishedEvent() : processorId(), jobId(), taskId()
 {
 }
 
-TaskFinishedEvent::TaskFinishedEvent(int processorId, int jobId, int taskId)
-    : processorId(processorId), jobId(jobId), taskId(taskId)
+TaskFinishedEvent::TaskFinishedEvent(int processorId, int jobId, int taskId, QString module)
+    : processorId(processorId), jobId(jobId), taskId(taskId), module(std::move(module))
 {
 }
 
@@ -756,6 +756,7 @@ QString TaskFinishedEvent::toJson() const
     node[QStringLiteral("processor_id")] = processorId;
     node[QStringLiteral("job_id")] = jobId;
     node[QStringLiteral("task_id")] = taskId;
+    node[QStringLiteral("module_short_name")] = module;
 
     return QString::fromUtf8(QJsonDocument(node).toJson());
 }
@@ -767,7 +768,8 @@ TaskFinishedEvent TaskFinishedEvent::fromJson(const QString &json)
 
     return { object.value(QStringLiteral("processor_id")).toInt(),
              object.value(QStringLiteral("job_id")).toInt(),
-             object.value(QStringLiteral("task_id")).toInt() };
+             object.value(QStringLiteral("task_id")).toInt(),
+             object.value(QStringLiteral("module_short_name")).toString() };
 }
 
 void TaskFinishedEvent::registerMetaTypes()
@@ -778,7 +780,7 @@ void TaskFinishedEvent::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const TaskFinishedEvent &event)
 {
     argument.beginStructure();
-    argument << event.processorId << event.jobId << event.taskId;
+    argument << event.processorId << event.jobId << event.taskId << event.module;
     argument.endStructure();
 
     return argument;
@@ -787,7 +789,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const TaskFinishedEvent &even
 const QDBusArgument &operator>>(const QDBusArgument &argument, TaskFinishedEvent &event)
 {
     argument.beginStructure();
-    argument >> event.processorId >> event.jobId >> event.taskId;
+    argument >> event.processorId >> event.jobId >> event.taskId >> event.module;
     argument.endStructure();
 
     return argument;

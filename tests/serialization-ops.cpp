@@ -121,6 +121,7 @@ void compare(const TaskFinishedEvent &v1, const TaskFinishedEvent &v2)
     compare(v1.processorId, v2.processorId);
     compare(v1.jobId, v2.jobId);
     compare(v1.taskId, v2.taskId);
+    compare(v1.module, v2.module);
 }
 
 void compare(const ProductAvailableEvent &v1, const ProductAvailableEvent &v2)
