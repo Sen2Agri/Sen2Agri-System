@@ -155,8 +155,8 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobResu
 
     const auto &stepsToSubmit = getExecutorStepList(ctx, event.jobId, steps);
 
-    ctx.MarkJobResumed(event.jobId);
     WaitForResponseAndThrow(executorClient.SubmitSteps(stepsToSubmit));
+    ctx.MarkJobResumed(event.jobId);
 }
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobSubmittedEvent &event)
