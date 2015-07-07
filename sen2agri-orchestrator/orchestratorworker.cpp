@@ -17,9 +17,9 @@ OrchestratorWorker::OrchestratorWorker(
     std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
     OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient,
     OrgEsaSen2agriProcessorsExecutorInterface &executorClient)
-    : handlerMap(handlerMap),
-      persistenceManagerClient(persistenceManagerClient),
-      executorClient(executorClient)
+    : persistenceManagerClient(persistenceManagerClient),
+      executorClient(executorClient),
+      handlerMap(handlerMap)
 {
     moveToThread(&workerThread);
     workerThread.start();
