@@ -188,7 +188,7 @@ void MainDialog::loadModel(const ConfigurationSet &configuration)
 QComboBox *MainDialog::createSiteList(int categoryId, QWidget *parent)
 {
     auto siteList = new QComboBox(parent);
-    siteList->addItem(QString("[Global]"), 0);
+    siteList->addItem(QStringLiteral("[Global]"), 0);
     for (const auto &site : configModel.sites()) {
         siteList->addItem(site.name, site.siteId);
     }
