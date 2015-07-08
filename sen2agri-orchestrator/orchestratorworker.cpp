@@ -207,7 +207,7 @@ static StepArgumentList getStepArguments(const JobStepToRun &step)
     if (!parametersDoc.isObject()) {
         throw std::runtime_error(
             QStringLiteral("Unexpected step parameter JSON schema: root node should be an "
-                           "object. The parameters object  was: '%1'")
+                           "object. The parameter JSON was: '%1'")
                 .arg(step.parametersJson)
                 .toStdString());
     }
@@ -216,7 +216,7 @@ static StepArgumentList getStepArguments(const JobStepToRun &step)
     if (!argNode.isArray()) {
         throw std::runtime_error(
             QStringLiteral("Unexpected step parameter JSON schema: node 'arguments' should be an "
-                           "array. The parameters object  was: '%1'")
+                           "array. The parameter JSON was: '%1'")
                 .arg(step.parametersJson)
                 .toStdString());
     }
@@ -228,7 +228,7 @@ static StepArgumentList getStepArguments(const JobStepToRun &step)
         if (!arg.isString()) {
             throw std::runtime_error(
                 QStringLiteral("Unexpected step parameter JSON schema: arguments should be "
-                               "strings. The parameters object was: '%1'")
+                               "strings. The parameter JSON object was: '%1'")
                     .arg(step.parametersJson)
                     .toStdString());
         }
