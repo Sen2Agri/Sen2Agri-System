@@ -148,6 +148,7 @@ void compare(const JobSubmittedEvent &v1, const JobSubmittedEvent &v2)
 {
     compare(v1.jobId, v2.jobId);
     compare(v1.processorId, v2.processorId);
+    compare(v1.parametersJson, v2.parametersJson);
 }
 
 void compare(const StepFailedEvent &v1, const StepFailedEvent &v2)

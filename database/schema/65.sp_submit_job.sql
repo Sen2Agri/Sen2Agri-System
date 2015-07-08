@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_submit_job(
+CREATE OR REPLACE FUNCTION sp_submit_job(
 IN _name character varying,
 IN _description character varying,
 IN _processor_id smallint,
@@ -25,6 +25,16 @@ BEGIN
 	now(), 
 	1, -- Submitted
 	now()) RETURNING id INTO return_id;
+
+	INSERT INTO event(
+	type_id,
+	data,
+	submitted_timestamp)
+	VALUES (
+	7, -- JobSubmitted
+	('{"job_id":' || return_id || ', "processor_id":' || _processor_id || ', "parameters":' || _parameters || '}') :: json,
+	now()
+	);
 
 	RETURN return_id;
 

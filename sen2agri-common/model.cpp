@@ -987,8 +987,8 @@ JobSubmittedEvent::JobSubmittedEvent() : jobId(), processorId()
 {
 }
 
-JobSubmittedEvent::JobSubmittedEvent(int jobId, int processorId)
-    : jobId(jobId), processorId(processorId)
+JobSubmittedEvent::JobSubmittedEvent(int jobId, int processorId, QString parametersJson)
+    : jobId(jobId), processorId(processorId), parametersJson(std::move(parametersJson))
 {
 }
 
@@ -996,7 +996,8 @@ QString JobSubmittedEvent::toJson() const
 {
     QJsonObject node;
     node[QStringLiteral("job_id")] = jobId;
-    node[QStringLiteral("processor_id")] = jobId;
+    node[QStringLiteral("processor_id")] = processorId;
+    node[QStringLiteral("parameters")] = parametersJson;
 
     return QString::fromUtf8(QJsonDocument(node).toJson());
 }
@@ -1007,7 +1008,8 @@ JobSubmittedEvent JobSubmittedEvent::fromJson(const QString &json)
     const auto &object = doc.object();
 
     return { object.value(QStringLiteral("job_id")).toInt(),
-             object.value(QStringLiteral("processor_id")).toInt() };
+             object.value(QStringLiteral("processor_id")).toInt(),
+             object.value(QStringLiteral("parameters")).toString() };
 }
 
 void JobSubmittedEvent::registerMetaTypes()
@@ -1018,7 +1020,7 @@ void JobSubmittedEvent::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const JobSubmittedEvent &event)
 {
     argument.beginStructure();
-    argument << event.jobId << event.processorId;
+    argument << event.jobId << event.processorId << event.parametersJson;
     argument.endStructure();
 
     return argument;
@@ -1027,7 +1029,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const JobSubmittedEvent &even
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobSubmittedEvent &event)
 {
     argument.beginStructure();
-    argument >> event.jobId >> event.processorId;
+    argument >> event.jobId >> event.processorId >> event.parametersJson;
     argument.endStructure();
 
     return argument;

@@ -270,7 +270,7 @@ template <>
 struct maker<JobSubmittedEvent> {
     static JobSubmittedEvent make()
     {
-        return { maker<int>::make(), maker<int>::make() };
+        return { maker<int>::make(), maker<int>::make(), maker<QString>::make() };
     }
 };
 

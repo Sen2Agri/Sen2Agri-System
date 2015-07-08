@@ -501,9 +501,10 @@ class JobSubmittedEvent
 public:
     int jobId;
     int processorId;
+    QString parametersJson;
 
     JobSubmittedEvent();
-    JobSubmittedEvent(int jobId, int processorId);
+    JobSubmittedEvent(int jobId, int processorId, QString parametersJson);
 
     QString toJson() const;
 
