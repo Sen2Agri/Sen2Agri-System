@@ -26,11 +26,12 @@ ParameterChangeListener::ParameterChangeListener(ConfigModel &model,
 {
     isValid = true;
 
-    if (parameter.dataType == "int") {
+    if (parameter.dataType == QLatin1String("int")) {
         validate = validateInt;
-    } else if (parameter.dataType == "float") {
+    } else if (parameter.dataType == QLatin1String("float")) {
         validate = validateFloat;
-    } else if (parameter.dataType == "path") {
+    } else if (parameter.dataType == QLatin1String("file") ||
+               parameter.dataType == QLatin1String("directory")) {
         validate = validatePath;
     } else {
         validate = validateTrue;
