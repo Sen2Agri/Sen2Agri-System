@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+
+<!-- Bootstrap settings -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- CSS files are placed at top of the page to be downloaded before the rest of the content and avoid flickering. -->
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+<link rel="stylesheet"
+	href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+<link rel="stylesheet" href="styles.css">
+
+</head>
+<body>
+	<noscript>
+		<h1>This website requires javascript to function properly</h1>
+	</noscript>
+
+	<div class="container">
+
+		<ul id="tab_control" class="nav nav-tabs">
+			<li class="active"><a href="#tab_system" data-toggle="tab">System
+					Overview</a></li>
+			<li><a href="#tab_l2a" data-toggle="tab">L2A Processor</a></li>
+			<li><a href="#tab_l3a" data-toggle="tab">L3A Processor</a></li>
+			<li><a href="#tab_l3b" data-toggle="tab">L3B Processor</a></li>
+			<li><a href="#tab_l4a" data-toggle="tab">L4A Processor</a></li>
+			<li><a href="#tab_l4b" data-toggle="tab">L4B Processor</a></li>
+			<li><a href="#tab_products" data-toggle="tab">Product
+					Availability</a></li>
+		</ul>
+
+		<div id="tab_control_content" class="tab-content">
+			<!-- System Overview ----------------------------------------------------------------------------------------------------------------------- -->
+			<div class="tab-pane fade in active" id="tab_system">
+			
+				<div id="pnl_current_jobs_container"> 
+					<div class="panel panel-default" id="pnl_current_jobs">
+						<div class="panel-heading">Current Jobs</div>
+						<table class="table full_width">
+							<tr>
+								<th rowspan="2">Id</th>
+								<th rowspan="2">Processor</th>
+								<th rowspan="2">Site</th>
+								<th rowspan="2">Triggered By</th>
+								<th rowspan="2">Triggered On</th>
+								<th rowspan="2">Status</th>
+								<th rowspan="2">Tasks Completed/Running</th>
+								<th colspan="2">Current Task</th>
+								<th rowspan="2">Actions</th>
+							</tr>
+							<tr>
+								<th>Module</th>
+								<th>Tiles Completed/Running</th>
+							</tr>
+							<tr>
+								<td>1</td>
+								<td>2</td>
+								<td>3</td>
+								<td>4</td>
+								<td>5</td>
+								<td>6</td>
+								<td>7</td>
+								<td>8</td>
+								<td>9</td>
+								<td>10</td>
+							</tr>
+							<tr>
+								<td>1</td>
+								<td>2</td>
+								<td>3</td>
+								<td>4</td>
+								<td>5</td>
+								<td>6</td>
+								<td>7</td>
+								<td>8</td>
+								<td>9</td>
+								<td>10</td>
+							</tr>
+						</table>
+					</div>
+				</div>
+				
+				<div id="pnl_server_resources_container">	
+					<div class="panel panel-default"  id="pnl_server_resources">
+						<div class="panel-heading">Server Resources</div>
+						<table class="table server_resources_table">
+							<tr>
+								<th colspan="3">Node 1</th>
+							</tr>
+							<tr>
+								<th>CPU</th>
+								<td>15%</td>
+								<td>Graph</td>
+							</tr>
+							<tr>
+								<th>RAM</th>
+								<td>15%</td>
+								<td>Graph</td>
+							</tr>
+							<tr>
+								<th>Swap</th>
+								<td>15%</td>
+								<td>Graph</td>
+							</tr>
+							<tr>
+								<th>Disk</th>
+							</tr>
+							<tr>
+								<th>Load</th>
+							</tr>
+							<tr>
+								<td></td>
+							</tr>
+						</table>
+						<table class="table server_resources_table">
+							<tr>
+								<th colspan="3">Node 2</th>
+							</tr>
+							<tr>
+								<th>CPU</th>
+								<td>15%</td>
+								<td>Graph</td>
+							</tr>
+							<tr>
+								<th>RAM</th>
+								<td>15%</td>
+								<td>Graph</td>
+							</tr>
+							<tr>
+								<th>Swap</th>
+								<td>15%</td>
+								<td>Graph</td>
+							</tr>
+							<tr>
+								<th>Disk</th>
+							</tr>
+							<tr>
+								<th>Load</th>
+							</tr>
+							<tr>
+								<td></td>
+							</tr>
+						</table>
+					</div>
+				</div>
+			
+			</div>
+
+			<!-- L2A Processor ----------------------------------------------------------------------------------------------------------------------- -->
+			<div class="tab-pane fade" id="tab_l2a">
+					<div class="panel_resources_and_output_container" id="pnl_l2a_resources_and_output_container">
+						
+						<div class="panel_resources_container" id="pnl_l2a_resources_container">
+							<div class="panel panel-default panel_resources" id="pnl_l2a_resources">
+								<div class="panel-heading">Resource Utilization</div>
+								<table class="table full_width default_panel_style">
+									<tr>
+										<th>Last Run On</th>
+										<td>2015-07-09 18:26:15</td>
+									</tr>
+									<tr>
+										<th>Average Duration</th>
+										<td>03:12:57</td>
+									</tr>
+									<tr>
+										<th>Average User CPU</th>
+										<td>03:02:17</td>
+									</tr>
+									<tr>
+										<th>Average System CPU</th>
+										<td>00:27:06</td>
+									</tr>
+									<tr>
+										<th>Average Maximum RSS</th>
+										<td>893 MB</td>
+									</tr>
+									<tr>
+										<th>Average Maximum VM</th>
+										<td>1245 MB</td>
+									</tr>
+									<tr>
+										<th>Average Disk Read</th>
+										<td>563 MB</td>
+									</tr>
+									<tr>
+										<th>Average Disk Write</th>
+										<td>1563 MB</td>
+									</tr>
+								</table>
+							</div>
+						</div>
+						
+						<div class="panel_output_container" id="pnl_l2a_output_container">
+							<div class="panel panel-default panel_output" id="pnl_l2a_output">
+								<div class="panel-heading">Output</div>
+								<table class="table full_width default_panel_style">
+								<tr>
+									<th>Number of Products</th>
+									<td>23</td>
+								</tr>
+								<tr>
+									<th>Average Tiles per Product</th>
+									<td>6</td>
+								</tr>
+								<tr>
+									<th>Average Processing Time per Tile</th>
+									<td>00:32:51</td>
+								</tr>
+							</table>
+							</div>
+						</div>
+						
+					</div>
+					
+					<div class="panel_configuration_container" id="pnl_l2a_configuration_container">
+						<div class="panel panel-default panel_configuration" id="pnl_l2a_configuration">
+							<div class="panel-heading">Default Configuration</div>
+							<table class="table full_width default_panel_style">
+								<tr>
+									<th>Param 1</th>
+									<td>Value 1</td>
+								</tr>
+								<tr>
+									<th>Param 2</th>
+									<td>Value 2</td>
+								</tr>
+							</table>
+						</div>
+					</div>
+			</div>
+
+			<!-- L3A Processor ----------------------------------------------------------------------------------------------------------------------- -->
+			<div class="tab-pane fade" id="tab_l3a">
+					<div class="panel_resources_and_output_container" id="pnl_l3a_resources_and_output_container">
+						
+						<div class="panel_resources_container" id="pnl_l3a_resources_container">
+							<div class="panel panel-default panel_resources" id="pnl_l3a_resources">
+								<div class="panel-heading">Resource Utilization</div>
+								<table class="table full_width default_panel_style">
+									<tr>
+										<th>Last Run On</th>
+										<td>2015-07-09 18:26:15</td>
+									</tr>
+									<tr>
+										<th>Average Duration</th>
+										<td>03:12:57</td>
+									</tr>
+									<tr>
+										<th>Average User CPU</th>
+										<td>03:02:17</td>
+									</tr>
+									<tr>
+										<th>Average System CPU</th>
+										<td>00:27:06</td>
+									</tr>
+									<tr>
+										<th>Average Maximum RSS</th>
+										<td>893 MB</td>
+									</tr>
+									<tr>
+										<th>Average Maximum VM</th>
+										<td>1245 MB</td>
+									</tr>
+									<tr>
+										<th>Average Disk Read</th>
+										<td>563 MB</td>
+									</tr>
+									<tr>
+										<th>Average Disk Write</th>
+										<td>1563 MB</td>
+									</tr>
+								</table>
+							</div>
+						</div>
+						
+						<div class="panel_output_container" id="pnl_l3a_output_container">
+							<div class="panel panel-default panel_output" id="pnl_l3a_output">
+								<div class="panel-heading">Output</div>
+								<table class="table full_width default_panel_style">
+								<tr>
+									<th>Number of Products</th>
+									<td>23</td>
+								</tr>
+								<tr>
+									<th>Average Tiles per Product</th>
+									<td>6</td>
+								</tr>
+								<tr>
+									<th>Average Processing Time per Tile</th>
+									<td>00:32:51</td>
+								</tr>
+							</table>
+							</div>
+						</div>
+						
+					</div>
+					
+					<div class="panel_configuration_container" id="pnl_l3a_configuration_container">
+						<div class="panel panel-default panel_configuration" id="pnl_l3a_configuration">
+							<div class="panel-heading">Default Configuration</div>
+							<table class="table full_width default_panel_style">
+								<tr>
+									<th>Param 1</th>
+									<td>Value 1</td>
+								</tr>
+								<tr>
+									<th>Param 2</th>
+									<td>Value 2</td>
+								</tr>
+							</table>
+						</div>
+					</div>
+			</div>
+
+			<!-- L3B Processor ----------------------------------------------------------------------------------------------------------------------- -->
+			<div class="tab-pane fade" id="tab_l3b">
+					<div class="panel_resources_and_output_container" id="pnl_l3b_resources_and_output_container">
+						
+						<div class="panel_resources_container" id="pnl_l3b_resources_container">
+							<div class="panel panel-default panel_resources" id="pnl_l3b_resources">
+								<div class="panel-heading">Resource Utilization</div>
+								<table class="table full_width default_panel_style">
+									<tr>
+										<th>Last Run On</th>
+										<td>2015-07-09 18:26:15</td>
+									</tr>
+									<tr>
+										<th>Average Duration</th>
+										<td>03:12:57</td>
+									</tr>
+									<tr>
+										<th>Average User CPU</th>
+										<td>03:02:17</td>
+									</tr>
+									<tr>
+										<th>Average System CPU</th>
+										<td>00:27:06</td>
+									</tr>
+									<tr>
+										<th>Average Maximum RSS</th>
+										<td>893 MB</td>
+									</tr>
+									<tr>
+										<th>Average Maximum VM</th>
+										<td>1245 MB</td>
+									</tr>
+									<tr>
+										<th>Average Disk Read</th>
+										<td>563 MB</td>
+									</tr>
+									<tr>
+										<th>Average Disk Write</th>
+										<td>1563 MB</td>
+									</tr>
+								</table>
+							</div>
+						</div>
+						
+						<div class="panel_output_container" id="pnl_l3b_output_container">
+							<div class="panel panel-default panel_output" id="pnl_l3b_output">
+								<div class="panel-heading">Output</div>
+								<table class="table full_width default_panel_style">
+								<tr>
+									<th>Number of Products</th>
+									<td>23</td>
+								</tr>
+								<tr>
+									<th>Average Tiles per Product</th>
+									<td>6</td>
+								</tr>
+								<tr>
+									<th>Average Processing Time per Tile</th>
+									<td>00:32:51</td>
+								</tr>
+							</table>
+							</div>
+						</div>
+						
+					</div>
+					
+					<div class="panel_configuration_container" id="pnl_l3b_configuration_container">
+						<div class="panel panel-default panel_configuration" id="pnl_l3b_configuration">
+							<div class="panel-heading">Default Configuration</div>
+							<table class="table full_width default_panel_style">
+								<tr>
+									<th>Param 1</th>
+									<td>Value 1</td>
+								</tr>
+								<tr>
+									<th>Param 2</th>
+									<td>Value 2</td>
+								</tr>
+							</table>
+						</div>
+					</div>
+			</div>
+
+			<!-- L4A Processor ----------------------------------------------------------------------------------------------------------------------- -->
+			<div class="tab-pane fade" id="tab_l4a">
+					<div class="panel_resources_and_output_container" id="pnl_l4a_resources_and_output_container">
+						
+						<div class="panel_resources_container" id="pnl_l4a_resources_container">
+							<div class="panel panel-default panel_resources" id="pnl_l4a_resources">
+								<div class="panel-heading">Resource Utilization</div>
+								<table class="table full_width default_panel_style">
+									<tr>
+										<th>Last Run On</th>
+										<td>2015-07-09 18:26:15</td>
+									</tr>
+									<tr>
+										<th>Average Duration</th>
+										<td>03:12:57</td>
+									</tr>
+									<tr>
+										<th>Average User CPU</th>
+										<td>03:02:17</td>
+									</tr>
+									<tr>
+										<th>Average System CPU</th>
+										<td>00:27:06</td>
+									</tr>
+									<tr>
+										<th>Average Maximum RSS</th>
+										<td>893 MB</td>
+									</tr>
+									<tr>
+										<th>Average Maximum VM</th>
+										<td>1245 MB</td>
+									</tr>
+									<tr>
+										<th>Average Disk Read</th>
+										<td>563 MB</td>
+									</tr>
+									<tr>
+										<th>Average Disk Write</th>
+										<td>1563 MB</td>
+									</tr>
+								</table>
+							</div>
+						</div>
+						
+						<div class="panel_output_container" id="pnl_l4a_output_container">
+							<div class="panel panel-default panel_output" id="pnl_l4a_output">
+								<div class="panel-heading">Output</div>
+								<table class="table full_width default_panel_style">
+								<tr>
+									<th>Number of Products</th>
+									<td>23</td>
+								</tr>
+								<tr>
+									<th>Average Tiles per Product</th>
+									<td>6</td>
+								</tr>
+								<tr>
+									<th>Average Processing Time per Tile</th>
+									<td>00:32:51</td>
+								</tr>
+							</table>
+							</div>
+						</div>
+						
+					</div>
+					
+					<div class="panel_configuration_container" id="pnl_l4a_configuration_container">
+						<div class="panel panel-default panel_configuration" id="pnl_l4a_configuration">
+							<div class="panel-heading">Default Configuration</div>
+							<table class="table full_width default_panel_style">
+								<tr>
+									<th>Param 1</th>
+									<td>Value 1</td>
+								</tr>
+								<tr>
+									<th>Param 2</th>
+									<td>Value 2</td>
+								</tr>
+							</table>
+						</div>
+					</div>
+			</div>
+
+			<!-- L4B Processor ----------------------------------------------------------------------------------------------------------------------- -->
+			<div class="tab-pane fade" id="tab_l4b">
+					<div class="panel_resources_and_output_container" id="pnl_l4b_resources_and_output_container">
+						
+						<div class="panel_resources_container" id="pnl_l4b_resources_container">
+							<div class="panel panel-default panel_resources" id="pnl_l4b_resources">
+								<div class="panel-heading">Resource Utilization</div>
+								<table class="table full_width default_panel_style">
+									<tr>
+										<th>Last Run On</th>
+										<td>2015-07-09 18:26:15</td>
+									</tr>
+									<tr>
+										<th>Average Duration</th>
+										<td>03:12:57</td>
+									</tr>
+									<tr>
+										<th>Average User CPU</th>
+										<td>03:02:17</td>
+									</tr>
+									<tr>
+										<th>Average System CPU</th>
+										<td>00:27:06</td>
+									</tr>
+									<tr>
+										<th>Average Maximum RSS</th>
+										<td>893 MB</td>
+									</tr>
+									<tr>
+										<th>Average Maximum VM</th>
+										<td>1245 MB</td>
+									</tr>
+									<tr>
+										<th>Average Disk Read</th>
+										<td>563 MB</td>
+									</tr>
+									<tr>
+										<th>Average Disk Write</th>
+										<td>1563 MB</td>
+									</tr>
+								</table>
+							</div>
+						</div>
+						
+						<div class="panel_output_container" id="pnl_l4b_output_container">
+							<div class="panel panel-default panel_output" id="pnl_l4b_output">
+								<div class="panel-heading">Output</div>
+								<table class="table full_width default_panel_style">
+								<tr>
+									<th>Number of Products</th>
+									<td>23</td>
+								</tr>
+								<tr>
+									<th>Average Tiles per Product</th>
+									<td>6</td>
+								</tr>
+								<tr>
+									<th>Average Processing Time per Tile</th>
+									<td>00:32:51</td>
+								</tr>
+							</table>
+							</div>
+						</div>
+						
+					</div>
+					
+					<div class="panel_configuration_container" id="pnl_l4b_configuration_container">
+						<div class="panel panel-default panel_configuration" id="pnl_l4b_configuration">
+							<div class="panel-heading">Default Configuration</div>
+							<table class="table full_width default_panel_style">
+								<tr>
+									<th>Param 1</th>
+									<td>Value 1</td>
+								</tr>
+								<tr>
+									<th>Param 2</th>
+									<td>Value 2</td>
+								</tr>
+							</table>
+						</div>
+					</div>
+			</div>
+
+			<!-- Product Availability ----------------------------------------------------------------------------------------------------------------------- -->
+			<div class="tab-pane fade" id="tab_products">
+				<p>Product Availability</p>
+			</div>
+		</div>
+	</div>
+
+	<!-- Scripts are placed at the bottom of the page to be downloaded after the rest of the content and avoid delays in page loading. -->
+	<script
+		src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js"></script>
+	<script
+		src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+	<!-- <script src="http://flotcharts.org/javascript/jquery.flot.min.js"></script> -->
+	<!-- <script src="http://flotcharts.org/javascript/jquery.time.min.js"></script> -->
+	<!-- <script src="http://www.flotcharts.org/flot/jquery.flot.time.js"></script> -->
+
+</body>
+</html>
