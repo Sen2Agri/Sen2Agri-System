@@ -105,5 +105,5 @@ QString EventProcessingContext::GetScratchPath(int jobId)
 
     Q_ASSERT(parameters.size() == 1);
 
-    return QDir::cleanPath(parameters.front().value + '/');
+    return QDir::cleanPath(parameters.front().value) + QDir::separator();
 }

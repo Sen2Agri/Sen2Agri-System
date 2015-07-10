@@ -41,12 +41,14 @@ public:
                                      const QString &pattern,
                                      F &&f)
     {
+        const auto &input = QDir::cleanPath(inputPath) + QDir::separator();
+
         NewStepList steps;
         for (const auto &file : GetProductFiles(inputPath, pattern)) {
 
-            steps.push_back({ QFileInfo(file).baseName(),
-                              QString::fromUtf8(QJsonDocument(f(inputPath + file,
-                                                                outputPath + file)).toJson()) });
+            steps.push_back(
+                { QFileInfo(file).baseName(),
+                  QString::fromUtf8(QJsonDocument(f(input + file, outputPath + file)).toJson()) });
         }
 
         return steps;
