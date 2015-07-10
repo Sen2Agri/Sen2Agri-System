@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_convert_data_type_value(
+CREATE OR REPLACE FUNCTION sp_convert_data_type_value(
 IN _value VARCHAR,
 IN _type t_data_type) RETURNS VARCHAR AS $$
 DECLARE boolean_value boolean;
@@ -24,10 +24,10 @@ BEGIN
 				RETURN 'Invalid integer value: '||_value;
 			END;
 		ELSE
-			RETURN 'Data type validation not implemented';
+		    BEGIN
+                RETURN _value;
+		    END;
 	END CASE;
-
-	RETURN NULL;
 
 END;
 $$ LANGUAGE plpgsql;
