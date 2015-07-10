@@ -4,6 +4,7 @@
 #include <QJsonObject>
 #include <QJsonDocument>
 
+#include "json_conversions.hpp"
 #include "model.hpp"
 
 using std::move;
@@ -1009,7 +1010,7 @@ JobSubmittedEvent JobSubmittedEvent::fromJson(const QString &json)
 
     return { object.value(QStringLiteral("job_id")).toInt(),
              object.value(QStringLiteral("processor_id")).toInt(),
-             object.value(QStringLiteral("parameters")).toString() };
+             jsonToString(object.value(QStringLiteral("parameters")).toObject()) };
 }
 
 void JobSubmittedEvent::registerMetaTypes()
