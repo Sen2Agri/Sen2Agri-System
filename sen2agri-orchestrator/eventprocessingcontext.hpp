@@ -1,7 +1,9 @@
 #pragma once
 
-#include "model.hpp"
+#include <vector>
+#include <QFileInfo>
 
+#include "model.hpp"
 #include "persistencemanager_interface.h"
 
 class EventProcessingContext
@@ -29,4 +31,27 @@ public:
     UnprocessedEventList GetNewEvents();
     void MarkEventProcessingStarted(int eventId);
     void MarkEventProcessingComplete(int eventId);
+
+    std::vector<QString> GetProductFiles(const QString &path, const QString &pattern) const;
+    QString GetOutputPath(int jobId, int taskId);
+
+    template <typename F>
+    NewStepList CreateStepsFromInput(const QString &inputPath,
+                                     const QString &outputPath,
+                                     const QString &pattern,
+                                     F &&f)
+    {
+        NewStepList steps;
+        for (const auto &file : GetProductFiles(inputPath, pattern)) {
+
+            steps.push_back({ QFileInfo(file).baseName(),
+                              QString::fromUtf8(QJsonDocument(f(inputPath + file,
+                                                                outputPath + file)).toJson()) });
+        }
+
+        return steps;
+    }
+
+private:
+    QString GetScratchPath(int jobId);
 };

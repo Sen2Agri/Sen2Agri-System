@@ -1,3 +1,6 @@
+#include <QFile>
+#include <QString>
+
 #include "eventprocessingcontext.hpp"
 #include "dbus_future_utils.hpp"
 
@@ -73,4 +76,34 @@ void EventProcessingContext::MarkEventProcessingStarted(int eventId)
 void EventProcessingContext::MarkEventProcessingComplete(int eventId)
 {
     WaitForResponseAndThrow(persistenceManagerClient.MarkEventProcessingComplete(eventId));
+}
+
+std::vector<QString> EventProcessingContext::GetProductFiles(const QString &path,
+                                                             const QString &pattern) const
+{
+    const auto &files = QDir(path).entryList(QStringList() << pattern, QDir::Files);
+    return { files.begin(), files.end() };
+}
+
+QString EventProcessingContext::GetOutputPath(int jobId, int taskId)
+{
+    return GetScratchPath(jobId)
+        .replace(QLatin1String("{job_id}"), QString::number(jobId))
+        .replace(QLatin1String("{task_id}"), QString::number(taskId));
+}
+
+QString EventProcessingContext::GetScratchPath(int jobId)
+{
+    const auto &parameters =
+        WaitForResponseAndThrow(persistenceManagerClient.GetJobConfigurationParameters(
+            jobId, QStringLiteral("general.scratch-path")));
+
+    if (parameters.empty()) {
+        throw std::runtime_error("Please configure the \"general.scratch-path\" parameter with the "
+                                 "temporary file path");
+    }
+
+    Q_ASSERT(parameters.size() == 1);
+
+    return QDir::cleanPath(parameters.front().value + '/');
 }
