@@ -20,6 +20,10 @@ public slots:
     ReflectConfigurationParameterValue(const ConfigurationParameterValue &value);
     ConfigurationParameterValueList
     ReflectConfigurationParameterValueList(const ConfigurationParameterValueList &value);
+    JobConfigurationParameterValue
+    ReflectJobConfigurationParameterValue(const JobConfigurationParameterValue &value);
+    JobConfigurationParameterValueList
+    ReflectJobConfigurationParameterValueList(const JobConfigurationParameterValueList &value);
     ConfigurationCategory ReflectConfigurationCategory(const ConfigurationCategory &value);
     ConfigurationCategoryList
     ReflectConfigurationCategoryList(const ConfigurationCategoryList &value);
@@ -30,6 +34,10 @@ public slots:
     ReflectConfigurationUpdateAction(const ConfigurationUpdateAction &value);
     ConfigurationUpdateActionList
     ReflectConfigurationUpdateActionList(const ConfigurationUpdateActionList &value);
+    JobConfigurationUpdateAction
+    ReflectJobConfigurationUpdateAction(const JobConfigurationUpdateAction &value);
+    JobConfigurationUpdateActionList
+    ReflectJobConfigurationUpdateActionList(const JobConfigurationUpdateActionList &value);
     KeyedMessage ReflectKeyedMessage(const KeyedMessage &value);
     KeyedMessageList ReflectKeyedMessageList(const KeyedMessageList &value);
     Product ReflectProduct(const Product &value);

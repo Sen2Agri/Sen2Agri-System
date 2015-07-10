@@ -13,7 +13,7 @@ class EventProcessingContext
 public:
     EventProcessingContext(OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient);
 
-    ConfigurationParameterValueList GetJobConfigurationParameters(int jobId, QString prefix);
+    JobConfigurationParameterValueList GetJobConfigurationParameters(int jobId, QString prefix);
 
     int SubmitTask(const NewTask &task);
     void SubmitSteps(int taskId, const NewStepList &steps);

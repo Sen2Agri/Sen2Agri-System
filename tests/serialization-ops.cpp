@@ -16,6 +16,12 @@ void compare(const ConfigurationParameterValue &v1, const ConfigurationParameter
     compare(v1.value, v2.value);
 }
 
+void compare(const JobConfigurationParameterValue &v1, const JobConfigurationParameterValue &v2)
+{
+    compare(v1.key, v2.key);
+    compare(v1.value, v2.value);
+}
+
 void compare(const ConfigurationCategory &v1, const ConfigurationCategory &v2)
 {
     compare(v1.categoryId, v2.categoryId);
@@ -42,6 +48,12 @@ void compare(const ConfigurationUpdateAction &v1, const ConfigurationUpdateActio
 {
     compare(v1.key, v2.key);
     compare(v1.siteId, v2.siteId);
+    compare(v1.value, v2.value);
+}
+
+void compare(const JobConfigurationUpdateAction &v1, const JobConfigurationUpdateAction &v2)
+{
+    compare(v1.key, v2.key);
     compare(v1.value, v2.value);
 }
 
@@ -82,6 +94,7 @@ void compare(const NewJob &v1, const NewJob &v2)
     compare(v1.siteId, v2.siteId);
     compare(v1.startType, v2.startType);
     compare(v1.parametersJson, v2.parametersJson);
+    compare(v1.configuration, v2.configuration);
 }
 
 void compare(const NewTask &v1, const NewTask &v2)

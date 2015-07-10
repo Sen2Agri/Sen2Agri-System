@@ -10,7 +10,7 @@ EventProcessingContext::EventProcessingContext(
 {
 }
 
-ConfigurationParameterValueList
+JobConfigurationParameterValueList
 EventProcessingContext::GetJobConfigurationParameters(int jobId, QString prefix)
 {
     return WaitForResponseAndThrow(

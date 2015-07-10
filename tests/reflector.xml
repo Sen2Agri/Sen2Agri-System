@@ -26,6 +26,18 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationParameterValueList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationParameterValueList" />
     </method>
+    <method name="ReflectJobConfigurationParameterValue">
+      <arg name="value" type="JobConfigurationParameterValue" direction="in" />
+      <arg name="result" type="JobConfigurationParameterValue" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobConfigurationParameterValue" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobConfigurationParameterValue" />
+    </method>
+    <method name="ReflectJobConfigurationParameterValueList">
+      <arg name="value" type="JobConfigurationParameterValueList" direction="in" />
+      <arg name="result" type="JobConfigurationParameterValueList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobConfigurationParameterValueList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobConfigurationParameterValueList" />
+    </method>
     <method name="ReflectConfigurationCategory">
       <arg name="value" type="ConfigurationCategory" direction="in" />
       <arg name="result" type="ConfigurationCategory" direction="out" />
@@ -67,6 +79,18 @@
       <arg name="result" type="ConfigurationUpdateActionList" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationUpdateActionList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationUpdateActionList" />
+    </method>
+    <method name="ReflectJobConfigurationUpdateAction">
+      <arg name="value" type="JobConfigurationUpdateAction" direction="in" />
+      <arg name="result" type="JobConfigurationUpdateAction" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobConfigurationUpdateAction" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobConfigurationUpdateAction" />
+    </method>
+    <method name="ReflectJobConfigurationUpdateActionList">
+      <arg name="value" type="JobConfigurationUpdateActionList" direction="in" />
+      <arg name="result" type="JobConfigurationUpdateActionList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobConfigurationUpdateActionList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobConfigurationUpdateActionList" />
     </method>
     <method name="ReflectKeyedMessage">
       <arg name="value" type="KeyedMessage" direction="in" />

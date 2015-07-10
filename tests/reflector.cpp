@@ -28,6 +28,18 @@ Reflector::ReflectConfigurationParameterValueList(const ConfigurationParameterVa
     return value;
 }
 
+JobConfigurationParameterValue
+Reflector::ReflectJobConfigurationParameterValue(const JobConfigurationParameterValue &value)
+{
+    return value;
+}
+
+JobConfigurationParameterValueList Reflector::ReflectJobConfigurationParameterValueList(
+    const JobConfigurationParameterValueList &value)
+{
+    return value;
+}
+
 ConfigurationCategory Reflector::ReflectConfigurationCategory(const ConfigurationCategory &value)
 {
     return value;
@@ -62,6 +74,18 @@ Reflector::ReflectConfigurationUpdateAction(const ConfigurationUpdateAction &val
 
 ConfigurationUpdateActionList
 Reflector::ReflectConfigurationUpdateActionList(const ConfigurationUpdateActionList &value)
+{
+    return value;
+}
+
+JobConfigurationUpdateAction
+Reflector::ReflectJobConfigurationUpdateAction(const JobConfigurationUpdateAction &value)
+{
+    return value;
+}
+
+JobConfigurationUpdateActionList
+Reflector::ReflectJobConfigurationUpdateActionList(const JobConfigurationUpdateActionList &value)
 {
     return value;
 }

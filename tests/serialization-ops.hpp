@@ -111,6 +111,14 @@ struct maker<ConfigurationParameterValue> {
 };
 
 template <>
+struct maker<JobConfigurationParameterValue> {
+    static JobConfigurationParameterValue make()
+    {
+        return { maker<QString>::make(), maker<QString>::make() };
+    }
+};
+
+template <>
 struct maker<ConfigurationCategory> {
     static ConfigurationCategory make()
     {
@@ -145,6 +153,14 @@ struct maker<ConfigurationUpdateAction> {
         return { maker<QString>::make(),
                  maker<std::experimental::optional<int>>::make(),
                  maker<std::experimental::optional<QString>>::make() };
+    }
+};
+
+template <>
+struct maker<JobConfigurationUpdateAction> {
+    static JobConfigurationUpdateAction make()
+    {
+        return { maker<QString>::make(), maker<QString>::make() };
     }
 };
 
@@ -185,8 +201,10 @@ template <>
 struct maker<NewJob> {
     static NewJob make()
     {
-        return { maker<QString>::make(), maker<QString>::make(),      maker<int>::make(),
-                 maker<int>::make(),     maker<JobStartType>::make(), maker<QString>::make() };
+        return { maker<QString>::make(),                         maker<QString>::make(),
+                 maker<int>::make(),                             maker<int>::make(),
+                 maker<JobStartType>::make(),                    maker<QString>::make(),
+                 maker<JobConfigurationUpdateActionList>::make() };
     }
 };
 
@@ -351,10 +369,12 @@ void compare(const T &v1, const T &v2)
 
 void compare(const ConfigurationParameterInfo &v1, const ConfigurationParameterInfo &v2);
 void compare(const ConfigurationParameterValue &v1, const ConfigurationParameterValue &v2);
+void compare(const JobConfigurationParameterValue &v1, const JobConfigurationParameterValue &v2);
 void compare(const ConfigurationCategory &v1, const ConfigurationCategory &v2);
 void compare(const Site &v1, const Site &v2);
 void compare(const ConfigurationSet &v1, const ConfigurationSet &v2);
 void compare(const ConfigurationUpdateAction &v1, const ConfigurationUpdateAction &v2);
+void compare(const JobConfigurationUpdateAction &v1, const JobConfigurationUpdateAction &v2);
 void compare(const KeyedMessage &v1, const KeyedMessage &v2);
 void compare(const Product &v1, const Product &v2);
 void compare(const ProductToArchive &v1, const ProductToArchive &v2);

@@ -10,6 +10,7 @@
 #include "json_conversions.hpp"
 
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions);
+static QString getJobConfigurationUpsertJson(const JobConfigurationUpdateActionList &actions);
 static QString getArchivedProductsJson(const ArchivedProductList &products);
 static QString getNewStepsJson(const NewStepList &steps);
 static QString getExecutionStatusListJson(const ExecutionStatusList &statusList);
@@ -144,7 +145,7 @@ PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
     });
 }
 
-ConfigurationParameterValueList
+JobConfigurationParameterValueList
 PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QString &prefix)
 {
     auto db = getDatabase();
@@ -160,7 +161,16 @@ PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QSt
             throw_query_error(query);
         }
 
-        return mapConfigurationParameters(query);
+        auto dataRecord = query.record();
+        auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
+        auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
+
+        JobConfigurationParameterValueList result;
+        while (query.next()) {
+            result.append({ query.value(keyCol).toString(), query.value(valueCol).toString() });
+        }
+
+        return result;
     });
 }
 
@@ -186,7 +196,7 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
 }
 
 KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
-    int jobId, const ConfigurationUpdateActionList &parameters)
+    int jobId, const JobConfigurationUpdateActionList &parameters)
 {
     auto db = getDatabase();
 
@@ -195,7 +205,7 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
             QStringLiteral("select * from sp_upsert_job_parameters(:job_id, :parameters)"));
 
         query.bindValue(QStringLiteral(":job_id"), jobId);
-        query.bindValue(QStringLiteral(":parameters"), getConfigurationUpsertJson(parameters));
+        query.bindValue(QStringLiteral(":parameters"), getJobConfigurationUpsertJson(parameters));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -254,15 +264,17 @@ int PersistenceManagerDBProvider::SubmitJob(const NewJob &job)
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_submit_job(:name, :description, "
-                                           ":processorId, :siteId, :startTypeId, :parameters)"));
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_submit_job(:name, :description, "
+                           ":processorId, :siteId, :startTypeId, :parameters, :configuration)"));
         query.bindValue(QStringLiteral(":name"), job.name);
         query.bindValue(QStringLiteral(":description"), job.description);
         query.bindValue(QStringLiteral(":processorId"), job.processorId);
         query.bindValue(QStringLiteral(":siteId"), job.siteId);
         query.bindValue(QStringLiteral(":startTypeId"), static_cast<int>(job.startType));
         query.bindValue(QStringLiteral(":parameters"), job.parametersJson);
+        query.bindValue(QStringLiteral(":configuration"),
+                        getJobConfigurationUpsertJson(job.configuration));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -762,6 +774,19 @@ static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &a
         node[QStringLiteral("key")] = p.key;
         node[QStringLiteral("site_id")] = p.siteId ? QJsonValue(p.siteId.value()) : QJsonValue();
         node[QStringLiteral("value")] = p.value ? QJsonValue(p.value.value()) : QJsonValue();
+        array.append(std::move(node));
+    }
+
+    return jsonToString(array);
+}
+
+static QString getJobConfigurationUpsertJson(const JobConfigurationUpdateActionList &actions)
+{
+    QJsonArray array;
+    for (const auto &p : actions) {
+        QJsonObject node;
+        node[QStringLiteral("key")] = p.key;
+        node[QStringLiteral("value")] = p.value;
         array.append(std::move(node));
     }
 

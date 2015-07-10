@@ -24,6 +24,8 @@ private slots:
     void configurationParameterInfoList();
     void configurationParameterValue();
     void configurationParameterValueList();
+    void jobConfigurationParameterValue();
+    void jobConfigurationParameterValueList();
     void configurationCategory();
     void configurationCategoryList();
     void site();
@@ -31,6 +33,8 @@ private slots:
     void configurationSet();
     void configurationUpdateAction();
     void configurationUpdateActionList();
+    void jobConfigurationUpdateAction();
+    void jobConfigurationUpdateActionList();
     void keyedMessage();
     void keyedMessageList();
     void product();

@@ -40,11 +40,11 @@ public slots:
     ConfigurationSet GetConfigurationSet();
 
     ConfigurationParameterValueList GetConfigurationParameters(QString prefix);
-    ConfigurationParameterValueList GetJobConfigurationParameters(int jobId, QString prefix);
+    JobConfigurationParameterValueList GetJobConfigurationParameters(int jobId, QString prefix);
 
     KeyedMessageList UpdateConfigurationParameters(ConfigurationUpdateActionList parameters);
     KeyedMessageList UpdateJobConfigurationParameters(int jobId,
-                                                      ConfigurationUpdateActionList parameters);
+                                                      JobConfigurationUpdateActionList parameters);
 
     ProductToArchiveList GetProductsToArchive();
     void MarkProductsArchived(ArchivedProductList products);

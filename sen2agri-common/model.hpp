@@ -58,6 +58,27 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationParameterV
 const QDBusArgument &operator>>(const QDBusArgument &argument,
                                 ConfigurationParameterValue &parameter);
 
+class JobConfigurationParameterValue
+{
+public:
+    QString key;
+    QString value;
+
+    JobConfigurationParameterValue();
+    JobConfigurationParameterValue(QString key, QString value);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<JobConfigurationParameterValue> JobConfigurationParameterValueList;
+
+Q_DECLARE_METATYPE(JobConfigurationParameterValue)
+Q_DECLARE_METATYPE(JobConfigurationParameterValueList)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobConfigurationParameterValue &parameter);
+const QDBusArgument &operator>>(const QDBusArgument &argument,
+                                JobConfigurationParameterValue &parameter);
+
 class ConfigurationCategory
 {
 public:
@@ -271,6 +292,7 @@ public:
     int siteId;
     JobStartType startType;
     QString parametersJson;
+    JobConfigurationUpdateActionList configuration;
 
     NewJob();
     NewJob(QString name,
@@ -278,7 +300,8 @@ public:
            int processorId,
            int siteId,
            JobStartType startType,
-           QString parametersJson);
+           QString parametersJson,
+           JobConfigurationUpdateActionList configuration);
 
     static void registerMetaTypes();
 };

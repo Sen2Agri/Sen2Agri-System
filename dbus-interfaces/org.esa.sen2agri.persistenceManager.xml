@@ -15,7 +15,7 @@
       <arg name="jobId" type="i" direction="in" />
       <arg name="prefix" type="s" direction="in" />
       <arg name="parameters" type="(ss)" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationParameterValueList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobConfigurationParameterValueList" />
     </method>
     <method name="UpdateConfigurationParameters">
       <arg name="parameters" type="a(sibs)" direction="in" />
@@ -27,7 +27,7 @@
       <arg name="jobId" type="i" direction="in" />
       <arg name="parameters" type="(ss)" direction="in" />
       <arg name="messages" type="(ss)" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="ConfigurationParameterValueList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="JobConfigurationUpdateActionList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="KeyedMessageList" />
     </method>
     <method name="GetProductsToArchive">

@@ -61,8 +61,8 @@ ConfigurationParameterValueList PersistenceManager::GetConfigurationParameters(Q
     return {};
 }
 
-ConfigurationParameterValueList PersistenceManager::GetJobConfigurationParameters(int jobId,
-                                                                                  QString prefix)
+JobConfigurationParameterValueList PersistenceManager::GetJobConfigurationParameters(int jobId,
+                                                                                     QString prefix)
 {
     RunAsync(
         std::bind([](PersistenceManagerDBProvider &dbProvider, int jobId, const QString &prefix) {
@@ -87,11 +87,11 @@ PersistenceManager::UpdateConfigurationParameters(ConfigurationUpdateActionList 
 
 KeyedMessageList
 PersistenceManager::UpdateJobConfigurationParameters(int jobId,
-                                                     ConfigurationUpdateActionList parameters)
+                                                     JobConfigurationUpdateActionList parameters)
 {
     RunAsync(std::bind(
         [](PersistenceManagerDBProvider &dbProvider, int jobId,
-           const ConfigurationUpdateActionList &parameters) {
+           const JobConfigurationUpdateActionList &parameters) {
             return dbProvider.UpdateJobConfigurationParameters(jobId, parameters);
         },
         std::ref(dbProvider), jobId, std::move(parameters)));

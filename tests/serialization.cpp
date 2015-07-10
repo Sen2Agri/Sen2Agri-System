@@ -79,6 +79,27 @@ void Serialization::configurationParameterValueList()
             emptyValue);
 }
 
+void Serialization::jobConfigurationParameterValue()
+{
+    const auto &value = maker<JobConfigurationParameterValue>::make();
+    compare(WaitForResponseAndThrow(client->ReflectJobConfigurationParameterValue(value)), value);
+
+    JobConfigurationParameterValue emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectJobConfigurationParameterValue(emptyValue)),
+            emptyValue);
+}
+
+void Serialization::jobConfigurationParameterValueList()
+{
+    const auto &value = maker<JobConfigurationParameterValueList>::make();
+    compare(WaitForResponseAndThrow(client->ReflectJobConfigurationParameterValueList(value)),
+            value);
+
+    JobConfigurationParameterValueList emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectJobConfigurationParameterValueList(emptyValue)),
+            emptyValue);
+}
+
 void Serialization::configurationCategory()
 {
     const auto &value = maker<ConfigurationCategory>::make();
@@ -142,6 +163,26 @@ void Serialization::configurationUpdateActionList()
 
     ConfigurationUpdateActionList emptyValue;
     compare(WaitForResponseAndThrow(client->ReflectConfigurationUpdateActionList(emptyValue)),
+            emptyValue);
+}
+
+void Serialization::jobConfigurationUpdateAction()
+{
+    const auto &value = maker<JobConfigurationUpdateAction>::make();
+    compare(WaitForResponseAndThrow(client->ReflectJobConfigurationUpdateAction(value)), value);
+
+    JobConfigurationUpdateAction emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectJobConfigurationUpdateAction(emptyValue)),
+            emptyValue);
+}
+
+void Serialization::jobConfigurationUpdateActionList()
+{
+    const auto &value = maker<JobConfigurationUpdateActionList>::make();
+    compare(WaitForResponseAndThrow(client->ReflectJobConfigurationUpdateActionList(value)), value);
+
+    JobConfigurationUpdateActionList emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectJobConfigurationUpdateActionList(emptyValue)),
             emptyValue);
 }
 

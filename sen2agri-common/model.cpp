@@ -19,8 +19,10 @@ void registerMetaTypes()
 {
     ConfigurationSet::registerMetaTypes();
 
-    ConfigurationParameterInfo::registerMetaTypes();
     ConfigurationParameterValue::registerMetaTypes();
+    JobConfigurationParameterValue::registerMetaTypes();
+
+    ConfigurationParameterInfo::registerMetaTypes();
     ConfigurationCategory::registerMetaTypes();
     Site::registerMetaTypes();
 
@@ -146,6 +148,41 @@ const QDBusArgument &operator>>(const QDBusArgument &argument,
     } else {
         parameterValue.siteId = std::experimental::nullopt;
     }
+
+    return argument;
+}
+
+JobConfigurationParameterValue::JobConfigurationParameterValue()
+{
+}
+
+JobConfigurationParameterValue::JobConfigurationParameterValue(QString key, QString value)
+    : key(move(key)), value(move(value))
+{
+}
+
+void JobConfigurationParameterValue::registerMetaTypes()
+{
+    qDBusRegisterMetaType<JobConfigurationParameterValue>();
+    qDBusRegisterMetaType<JobConfigurationParameterValueList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument,
+                          const JobConfigurationParameterValue &parameterValue)
+{
+    argument.beginStructure();
+    argument << parameterValue.key << parameterValue.value;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument,
+                                JobConfigurationParameterValue &parameterValue)
+{
+    argument.beginStructure();
+    argument >> parameterValue.key >> parameterValue.value;
+    argument.endStructure();
 
     return argument;
 }
@@ -514,13 +551,15 @@ NewJob::NewJob(QString name,
                int processorId,
                int siteId,
                JobStartType startType,
-               QString parametersJson)
+               QString parametersJson,
+               JobConfigurationUpdateActionList configurationOverrides)
     : name(std::move(name)),
       description(std::move(description)),
       processorId(processorId),
       siteId(siteId),
       startType(startType),
-      parametersJson(std::move(parametersJson))
+      parametersJson(std::move(parametersJson)),
+      configuration(std::move(configurationOverrides))
 {
 }
 
@@ -533,7 +572,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewJob &job)
 {
     argument.beginStructure();
     argument << job.name << job.description << job.processorId << job.siteId << job.startType
-             << job.parametersJson;
+             << job.parametersJson << job.configuration;
     argument.endStructure();
 
     return argument;
@@ -543,7 +582,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job)
 {
     argument.beginStructure();
     argument >> job.name >> job.description >> job.processorId >> job.siteId >> job.startType >>
-        job.parametersJson;
+        job.parametersJson >> job.configuration;
     argument.endStructure();
 
     return argument;
