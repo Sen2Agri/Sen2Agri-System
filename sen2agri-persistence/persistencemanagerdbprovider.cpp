@@ -320,7 +320,7 @@ void PersistenceManagerDBProvider::SubmitSteps(int taskId, const NewStepList &st
 
     return provider.handleTransactionRetry(__func__, [&] {
         auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_submit_steps(:taskId, :steps)"));
+            db.prepareQuery(QStringLiteral("select sp_submit_steps(:taskId, :steps)"));
         query.bindValue(QStringLiteral(":taskId"), taskId);
         query.bindValue(QStringLiteral(":steps"), getNewStepsJson(steps));
 
