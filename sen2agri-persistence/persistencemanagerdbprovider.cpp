@@ -7,10 +7,7 @@
 #include <set>
 
 #include "optional_util.hpp"
-
-static QString toJsonString(const QJsonDocument &document);
-// static QString toJsonString(const QJsonObject &document);
-static QString toJsonString(const QJsonArray &document);
+#include "json_conversions.hpp"
 
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions);
 static QString getArchivedProductsJson(const ArchivedProductList &products);
@@ -768,7 +765,7 @@ static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &a
         array.append(std::move(node));
     }
 
-    return toJsonString(array);
+    return jsonToString(array);
 }
 
 static QString getArchivedProductsJson(const ArchivedProductList &products)
@@ -781,7 +778,7 @@ static QString getArchivedProductsJson(const ArchivedProductList &products)
         array.append(std::move(node));
     }
 
-    return toJsonString(array);
+    return jsonToString(array);
 }
 
 static QString getNewStepsJson(const NewStepList &steps)
@@ -795,7 +792,7 @@ static QString getNewStepsJson(const NewStepList &steps)
         array.append(std::move(node));
     }
 
-    return toJsonString(array);
+    return jsonToString(array);
 }
 
 static QString getExecutionStatusListJson(const ExecutionStatusList &statusList)
@@ -805,7 +802,7 @@ static QString getExecutionStatusListJson(const ExecutionStatusList &statusList)
         array.append(static_cast<int>(s));
     }
 
-    return toJsonString(array);
+    return jsonToString(array);
 }
 
 static void bindStepExecutionStatistics(QSqlQuery &query, const ExecutionStatistics &statistics)
@@ -850,21 +847,4 @@ static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query)
     }
 
     return result;
-}
-
-static QString toJsonString(const QJsonDocument &document)
-{
-    return QString::fromUtf8(document.toJson());
-}
-
-/*
-static QString toJsonString(const QJsonObject &object)
-{
-    return toJsonString(QJsonDocument(object));
-}
-*/
-
-static QString toJsonString(const QJsonArray &array)
-{
-    return toJsonString(QJsonDocument(array));
 }

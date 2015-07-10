@@ -14,7 +14,8 @@ SOURCES += \
     model.cpp \
     logger.cpp \
     stopwatch.cpp \
-    dbus_future_utils.cpp
+    dbus_future_utils.cpp \
+    json_conversions.cpp
 
 HEADERS += \
     model.hpp \
@@ -24,4 +25,5 @@ HEADERS += \
     optional_util.hpp \
     type_traits_ext.hpp \
     stopwatch.hpp \
-    dbus_future_utils.hpp
+    dbus_future_utils.hpp \
+    json_conversions.hpp
