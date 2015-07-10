@@ -623,7 +623,7 @@ TaskIdList PersistenceManagerDBProvider::GetJobTasksByStatus(int jobId,
 
     return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(
-            QStringLiteral("select sp_get_job_tasks_by_status(:jobId, :statusList)"));
+            QStringLiteral("select * from sp_get_job_tasks_by_status(:jobId, :statusList)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
         query.bindValue(QStringLiteral(":statusList"), getExecutionStatusListJson(statusList));
 
@@ -649,7 +649,8 @@ JobStepToRunList PersistenceManagerDBProvider::GetTaskStepsForStart(int taskId)
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral("select sp_get_task_steps_for_start(:taskId)"));
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_task_steps_for_start(:taskId)"));
         query.bindValue(QStringLiteral(":taskId"), taskId);
 
         query.setForwardOnly(true);
@@ -680,7 +681,8 @@ JobStepToRunList PersistenceManagerDBProvider::GetJobStepsForResume(int jobId)
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral("select sp_get_job_steps_for_resume(:jobId)"));
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_job_steps_for_resume(:jobId)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
 
         query.setForwardOnly(true);
