@@ -192,13 +192,7 @@ getModulePathMap(const ConfigurationParameterValueList &parameters)
 {
     std::map<QString, QString> modulePaths;
     for (const auto &p : parameters) {
-        if (p.key.endsWith(QLatin1String(".path"))) {
-            auto firstPath = p.key.indexOf('.', p.key.indexOf('.') + 1) + 1;
-            auto lastDot = p.key.length() - 5;
-            const auto &path = p.key.mid(firstPath, lastDot - firstPath);
-
-            modulePaths.emplace(path, p.value);
-        }
+        modulePaths.emplace(p.key.mid(p.key.lastIndexOf('.') + 1), p.value);
     }
 
     return modulePaths;
@@ -246,7 +240,7 @@ static NewExecutorStepList
 getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps)
 {
     const auto &modulePaths = getModulePathMap(
-        ctx.GetJobConfigurationParameters(jobId, QStringLiteral("executor.processor.")));
+        ctx.GetJobConfigurationParameters(jobId, QStringLiteral("executor.module.path.")));
 
     NewExecutorStepList stepsToSubmit;
     stepsToSubmit.reserve(steps.size());
