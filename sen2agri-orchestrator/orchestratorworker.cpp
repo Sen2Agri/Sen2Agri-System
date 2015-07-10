@@ -8,7 +8,7 @@
 #include "dbus_future_utils.hpp"
 
 static std::map<QString, QString>
-getModulePathMap(const ConfigurationParameterValueList &parameters);
+getModulePathMap(const JobConfigurationParameterValueList &parameters);
 static StepArgumentList getStepArguments(const JobStepToRun &step);
 static NewExecutorStepList
 getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps);
@@ -188,7 +188,7 @@ ProcessorHandler &OrchestratorWorker::GetHandler(int processorId)
 }
 
 static std::map<QString, QString>
-getModulePathMap(const ConfigurationParameterValueList &parameters)
+getModulePathMap(const JobConfigurationParameterValueList &parameters)
 {
     std::map<QString, QString> modulePaths;
     for (const auto &p : parameters) {
