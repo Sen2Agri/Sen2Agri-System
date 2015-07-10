@@ -597,7 +597,7 @@ void PersistenceManagerDBProvider::MarkEventProcessingComplete(int eventId)
 
     provider.handleTransactionRetry(__func__, [&] {
         auto query =
-            db.prepareQuery(QStringLiteral("select sp_mark_event_processing_complete(:eventId)"));
+            db.prepareQuery(QStringLiteral("select sp_mark_event_processing_completed(:eventId)"));
         query.bindValue(QStringLiteral(":eventId"), eventId);
 
         query.setForwardOnly(true);
