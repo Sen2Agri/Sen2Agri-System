@@ -68,7 +68,7 @@ BEGIN
 		submitted_timestamp)
 		SELECT
 		2, -- TaskFinished
-		'{"job_id":' || job.id || ', "processor_id":' || job.processor_id || ', "task_id":' || _task_id || ', "module_short_name":"' || task.module_short_name || '"}',
+		('{"job_id":' || job.id || ', "processor_id":' || job.processor_id || ', "task_id":' || _task_id || ', "module_short_name":"' || task.module_short_name || '"}') :: json,
 		now()
 		FROM job INNER JOIN task ON job.id = task.job_id WHERE task.id = _task_id;
 	END IF;

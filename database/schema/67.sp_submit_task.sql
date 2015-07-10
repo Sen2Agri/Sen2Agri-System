@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_submit_task(
+CREATE OR REPLACE FUNCTION sp_submit_task(
 IN _job_id int,
 IN _module_short_name character varying,
 IN _parameters json
@@ -27,7 +27,7 @@ BEGIN
 	submitted_timestamp)
 	VALUES (
 	1, -- TaskAdded
-	'{"job_id":' || _job_id || ', "task_id":' || return_id || '}',
+	('{"job_id":' || _job_id || ', "task_id":' || return_id || '}') :: json,
 	now()
 	);
 

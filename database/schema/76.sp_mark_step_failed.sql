@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_mark_step_failed(
+CREATE OR REPLACE FUNCTION sp_mark_step_failed(
 IN _task_id int,
 IN _step_name character varying,
 IN _node character varying,
@@ -65,7 +65,7 @@ BEGIN
 		submitted_timestamp)
 		VALUES (
 		8, -- StepFailed
-		'{"job_id":' || job_id || ',"task_id":' || _task_id || ',"step_name":' || _step_name || '}',
+		('{"job_id":' || job_id || ',"task_id":' || _task_id || ',"step_name":' || _step_name || '}') :: json,
 		now()
 		);
 	END IF;
