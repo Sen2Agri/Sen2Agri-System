@@ -2,7 +2,7 @@
 
 QString jsonToString(const QJsonDocument &doc)
 {
-    return QString::fromUtf8(doc.toJson());
+    return QString::fromUtf8(doc.toJson(QJsonDocument::Compact));
 }
 
 QString jsonToString(const QJsonObject &obj)
