@@ -96,13 +96,16 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
                         .toStdString());
         }
     } catch (const std::exception &e) {
-        Logger::error(QStringLiteral("Unable to process event id %1: ").arg(e.what()));
+        Logger::error(
+            QStringLiteral("Unable to process event id %1: %2").arg(event.eventId).arg(e.what()));
     }
 
     try {
         ctx.MarkEventProcessingComplete(event.eventId);
     } catch (const std::exception &e) {
-        Logger::error(QStringLiteral("Unable to mark event id %1 as complete: ").arg(e.what()));
+        Logger::error(QStringLiteral("Unable to mark event id %1 as complete: %2")
+                          .arg(event.eventId)
+                          .arg(e.what()));
     }
 }
 
