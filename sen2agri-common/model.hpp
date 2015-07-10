@@ -146,6 +146,27 @@ Q_DECLARE_METATYPE(ConfigurationUpdateActionList)
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationUpdateAction &action);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationUpdateAction &action);
 
+class JobConfigurationUpdateAction
+{
+public:
+    QString key;
+    QString value;
+
+    JobConfigurationUpdateAction();
+    JobConfigurationUpdateAction(QString key, QString value);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<JobConfigurationUpdateAction> JobConfigurationUpdateActionList;
+
+Q_DECLARE_METATYPE(JobConfigurationUpdateAction)
+Q_DECLARE_METATYPE(JobConfigurationUpdateActionList)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobConfigurationUpdateAction &action);
+const QDBusArgument &operator>>(const QDBusArgument &argument,
+                                JobConfigurationUpdateAction &action);
+
 class KeyedMessage
 {
 public:

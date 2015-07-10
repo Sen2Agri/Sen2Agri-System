@@ -25,6 +25,7 @@ void registerMetaTypes()
     Site::registerMetaTypes();
 
     ConfigurationUpdateAction::registerMetaTypes();
+    JobConfigurationUpdateAction::registerMetaTypes();
 
     KeyedMessage::registerMetaTypes();
 
@@ -310,6 +311,39 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationUpda
     } else {
         action.value = std::experimental::nullopt;
     }
+
+    return argument;
+}
+
+JobConfigurationUpdateAction::JobConfigurationUpdateAction()
+{
+}
+
+JobConfigurationUpdateAction::JobConfigurationUpdateAction(QString key, QString value)
+    : key(std::move(key)), value(std::move(value))
+{
+}
+
+void JobConfigurationUpdateAction::registerMetaTypes()
+{
+    qDBusRegisterMetaType<JobConfigurationUpdateAction>();
+    qDBusRegisterMetaType<JobConfigurationUpdateActionList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobConfigurationUpdateAction &action)
+{
+    argument.beginStructure();
+    argument << action.key << action.value;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobConfigurationUpdateAction &action)
+{
+    argument.beginStructure();
+    argument >> action.key >> action.value;
+    argument.endStructure();
 
     return argument;
 }
