@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_get_categories()
+CREATE OR REPLACE FUNCTION sp_get_categories()
 RETURNS TABLE (
     id config_category.id%TYPE,
     name config_category.name%TYPE,
@@ -15,4 +15,4 @@ BEGIN
 END
 $$
 LANGUAGE plpgsql
-VOLATILE;
+STABLE;
