@@ -6,6 +6,7 @@
 #ifndef LOGGER_H
 #define LOGGER_H
 
+#include <QObject>
 #include <QtGlobal>
 #include <QThreadStorage>
 #include <QHash>
