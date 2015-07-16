@@ -645,8 +645,8 @@ public:
 
 typedef QList<StepArgument> StepArgumentList;
 
-Q_DECLARE_METATYPE(StepArgument);
-Q_DECLARE_METATYPE(StepArgumentList);
+Q_DECLARE_METATYPE(StepArgument)
+Q_DECLARE_METATYPE(StepArgumentList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const StepArgument &stepArgument);
 const QDBusArgument &operator>>(const QDBusArgument &argument, StepArgument &stepArgument);
@@ -678,7 +678,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewExecutorStep &
 
 typedef QList<int> TaskIdList;
 
-Q_DECLARE_METATYPE(TaskIdList);
+Q_DECLARE_METATYPE(TaskIdList)
 
 class JobStepToRun
 {
@@ -701,3 +701,32 @@ Q_DECLARE_METATYPE(JobStepToRunList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const JobStepToRun &step);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobStepToRun &step);
+
+enum class ProductType {};
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ProductType &productType);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProductType &productType);
+
+class NewProduct
+{
+public:
+    ProductType productType;
+    int processorId;
+    int taskId;
+    QString fullPath;
+    QDateTime createdTimestamp;
+
+    NewProduct();
+    NewProduct(ProductType productType,
+               int processorId,
+               int taskId,
+               QString fullPath,
+               QDateTime createdTimestamp);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(NewProduct)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const NewProduct &product);
+const QDBusArgument &operator>>(const QDBusArgument &argument, NewProduct &product);

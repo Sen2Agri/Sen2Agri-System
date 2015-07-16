@@ -420,6 +420,24 @@ void Serialization::nodeStatisticsList()
     compare(WaitForResponseAndThrow(client->ReflectNodeStatisticsList(emptyValue)), emptyValue);
 }
 
+void Serialization::stepArgument()
+{
+    const auto &value = maker<StepArgument>::make();
+    compare(WaitForResponseAndThrow(client->ReflectStepArgument(value)), value);
+
+    StepArgument emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectStepArgument(emptyValue)), emptyValue);
+}
+
+void Serialization::stepArgumentList()
+{
+    const auto &value = maker<StepArgumentList>::make();
+    compare(WaitForResponseAndThrow(client->ReflectStepArgumentList(value)), value);
+
+    StepArgumentList emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectStepArgumentList(emptyValue)), emptyValue);
+}
+
 void Serialization::newExecutorStep()
 {
     const auto &value = maker<NewExecutorStep>::make();
@@ -438,6 +456,15 @@ void Serialization::newExecutorStepList()
     compare(WaitForResponseAndThrow(client->ReflectNewExecutorStepList(emptyValue)), emptyValue);
 }
 
+void Serialization::taskIdList()
+{
+    const auto &value = maker<TaskIdList>::make();
+    compare(WaitForResponseAndThrow(client->ReflectTaskIdList(value)), value);
+
+    TaskIdList emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectTaskIdList(emptyValue)), emptyValue);
+}
+
 void Serialization::jobStepToRun()
 {
     const auto &value = maker<JobStepToRun>::make();
@@ -454,4 +481,13 @@ void Serialization::jobStepToRunList()
 
     JobStepToRunList emptyValue;
     compare(WaitForResponseAndThrow(client->ReflectJobStepToRunList(emptyValue)), emptyValue);
+}
+
+void Serialization::newProduct()
+{
+    const auto &value = maker<NewProduct>::make();
+    compare(WaitForResponseAndThrow(client->ReflectNewProduct(value)), value);
+
+    NewProduct emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectNewProduct(emptyValue)), emptyValue);
 }

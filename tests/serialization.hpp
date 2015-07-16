@@ -61,8 +61,12 @@ private slots:
     void unprocessedEventList();
     void nodeStatistics();
     void nodeStatisticsList();
+    void stepArgument();
+    void stepArgumentList();
     void newExecutorStep();
     void newExecutorStepList();
+    void taskIdList();
     void jobStepToRun();
     void jobStepToRunList();
+    void newProduct();
 };

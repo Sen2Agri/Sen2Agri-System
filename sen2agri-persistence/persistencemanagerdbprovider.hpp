@@ -63,4 +63,6 @@ public:
     void InsertNodeStatistics(const NodeStatistics &statistics);
 
     QString GetDashboardData(const QDate &since);
+
+    int InsertProduct(const NewProduct &product);
 };

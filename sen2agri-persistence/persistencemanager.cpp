@@ -316,3 +316,12 @@ QString PersistenceManager::GetDashboardData(QDate since)
 
     return {};
 }
+
+int PersistenceManager::InsertProduct(NewProduct product)
+{
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const NewProduct &product) {
+        return dbProvider.InsertProduct(product);
+    }, std::ref(dbProvider), std::move(product)));
+
+    return {};
+}

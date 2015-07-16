@@ -207,3 +207,12 @@ void compare(const JobStepToRun &v1, const JobStepToRun &v2)
     compare(v1.stepName, v2.stepName);
     compare(v1.parametersJson, v2.parametersJson);
 }
+
+void compare(const NewProduct &v1, const NewProduct &v2)
+{
+    compare(v1.productType, v2.productType);
+    compare(v1.processorId, v2.processorId);
+    compare(v1.taskId, v2.taskId);
+    compare(v1.fullPath, v2.fullPath);
+    compare(v1.createdTimestamp, v2.createdTimestamp);
+}

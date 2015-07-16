@@ -89,6 +89,14 @@ struct maker<ExecutionStatus> {
 };
 
 template <>
+struct maker<ProductType> {
+    static ProductType make()
+    {
+        return static_cast<ProductType>(1);
+    }
+};
+
+template <>
 struct maker<ConfigurationParameterInfo> {
     static ConfigurationParameterInfo make()
     {
@@ -350,6 +358,21 @@ struct maker<JobStepToRun> {
     }
 };
 
+template <>
+struct maker<NewProduct> {
+    static NewProduct make()
+    {
+        return { maker<ProductType>::make(),
+                 maker<int>::make(),
+                 maker<int>::make(),
+                 maker<QString>::make(),
+                 maker<QDateTime>::make() };
+    }
+};
+
+template <typename T>
+void compare(const T &v1, const T &v2);
+
 template <typename T>
 void compare(const QList<T> &v1, const QList<T> &v2)
 {
@@ -396,3 +419,4 @@ void compare(const NodeStatistics &v1, const NodeStatistics &v2);
 void compare(const StepArgument &v1, const StepArgument &v2);
 void compare(const NewExecutorStep &v1, const NewExecutorStep &v2);
 void compare(const JobStepToRun &v1, const JobStepToRun &v2);
+void compare(const NewProduct &v1, const NewProduct &v2);

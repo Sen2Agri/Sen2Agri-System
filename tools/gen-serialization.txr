@@ -7,7 +7,7 @@
 @(next "../sen2agri-common/model.hpp")
 @(collect)
 @  (some)
-Q_DECLARE_METATYPE(@class)
+Q_DECLARE_METATYPE(@class)@(maybe);@(end)
 @    (bind lclass @(lower_first class))
 @  (or)
 class @name
@@ -247,6 +247,14 @@ struct maker<ExecutionStatus> {
     }
 };
 
+template<>
+struct maker<ProductType> {
+    static ProductType make()
+    {
+        return static_cast<ProductType>(1);
+    }
+};
+
 @  (repeat)
 template<>
 struct maker<@name> {
@@ -263,6 +271,9 @@ struct maker<@name> {
 };
 
 @  (end)
+template<typename T>
+void compare(const T &v1, const T &v2);
+
 template<typename T>
 void compare(const QList<T> &v1, const QList<T> &v2)
 {

@@ -220,6 +220,16 @@ NodeStatisticsList Reflector::ReflectNodeStatisticsList(const NodeStatisticsList
     return value;
 }
 
+StepArgument Reflector::ReflectStepArgument(const StepArgument &value)
+{
+    return value;
+}
+
+StepArgumentList Reflector::ReflectStepArgumentList(const StepArgumentList &value)
+{
+    return value;
+}
+
 NewExecutorStep Reflector::ReflectNewExecutorStep(const NewExecutorStep &value)
 {
     return value;
@@ -230,12 +240,22 @@ NewExecutorStepList Reflector::ReflectNewExecutorStepList(const NewExecutorStepL
     return value;
 }
 
+TaskIdList Reflector::ReflectTaskIdList(const TaskIdList &value)
+{
+    return value;
+}
+
 JobStepToRun Reflector::ReflectJobStepToRun(const JobStepToRun &value)
 {
     return value;
 }
 
 JobStepToRunList Reflector::ReflectJobStepToRunList(const JobStepToRunList &value)
+{
+    return value;
+}
+
+NewProduct Reflector::ReflectNewProduct(const NewProduct &value)
 {
     return value;
 }

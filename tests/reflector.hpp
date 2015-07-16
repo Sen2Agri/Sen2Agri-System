@@ -64,8 +64,12 @@ public slots:
     UnprocessedEventList ReflectUnprocessedEventList(const UnprocessedEventList &value);
     NodeStatistics ReflectNodeStatistics(const NodeStatistics &value);
     NodeStatisticsList ReflectNodeStatisticsList(const NodeStatisticsList &value);
+    StepArgument ReflectStepArgument(const StepArgument &value);
+    StepArgumentList ReflectStepArgumentList(const StepArgumentList &value);
     NewExecutorStep ReflectNewExecutorStep(const NewExecutorStep &value);
     NewExecutorStepList ReflectNewExecutorStepList(const NewExecutorStepList &value);
+    TaskIdList ReflectTaskIdList(const TaskIdList &value);
     JobStepToRun ReflectJobStepToRun(const JobStepToRun &value);
     JobStepToRunList ReflectJobStepToRunList(const JobStepToRunList &value);
+    NewProduct ReflectNewProduct(const NewProduct &value);
 };

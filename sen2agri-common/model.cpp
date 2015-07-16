@@ -58,6 +58,8 @@ void registerMetaTypes()
     NewExecutorStep::registerMetaTypes();
     JobStepToRun::registerMetaTypes();
 
+    NewProduct::registerMetaTypes();
+
     qDBusRegisterMetaType<ExecutionStatusList>();
 
     qDBusRegisterMetaType<StepArgument>();
@@ -1355,6 +1357,61 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobStepToRun &ste
 {
     argument.beginStructure();
     argument >> step.taskId >> step.module >> step.stepName >> step.parametersJson;
+    argument.endStructure();
+
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ProductType &productType)
+{
+    return argument << static_cast<int>(productType);
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProductType &productType)
+{
+    int productTypeValue;
+    argument >> productTypeValue;
+    productType = static_cast<ProductType>(productTypeValue);
+    return argument;
+}
+
+NewProduct::NewProduct() : productType(), processorId(), taskId()
+{
+}
+
+NewProduct::NewProduct(ProductType productType,
+                       int processorId,
+                       int taskId,
+                       QString fullPath,
+                       QDateTime createdTimestamp)
+    : productType(productType),
+      processorId(processorId),
+      taskId(taskId),
+      fullPath(std::move(fullPath)),
+      createdTimestamp(std::move(createdTimestamp))
+{
+}
+
+void NewProduct::registerMetaTypes()
+{
+    qDBusRegisterMetaType<NewProduct>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const NewProduct &product)
+{
+    argument.beginStructure();
+    argument << product.productType << product.processorId << product.taskId << product.fullPath
+             << product.createdTimestamp;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, NewProduct &product)
+{
+    argument.beginStructure();
+    argument >> product.productType >> product.processorId >> product.taskId >> product.fullPath >>
+        product.createdTimestamp;
     argument.endStructure();
 
     return argument;

@@ -319,8 +319,7 @@ void PersistenceManagerDBProvider::SubmitSteps(int taskId, const NewStepList &st
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query =
-            db.prepareQuery(QStringLiteral("select sp_submit_steps(:taskId, :steps)"));
+        auto query = db.prepareQuery(QStringLiteral("select sp_submit_steps(:taskId, :steps)"));
         query.bindValue(QStringLiteral(":taskId"), taskId);
         query.bindValue(QStringLiteral(":steps"), getNewStepsJson(steps));
 
@@ -765,6 +764,34 @@ QString PersistenceManagerDBProvider::GetDashboardData(const QDate &since)
         }
 
         return query.value(0).toString();
+    });
+}
+
+int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_insert_product(:productType, "
+                                           ":processorId, :taskId, :fullPath, :createdTimestamp)"));
+        query.bindValue(QStringLiteral(":productType"), static_cast<int>(product.productType));
+        query.bindValue(QStringLiteral(":processorId"), product.processorId);
+        query.bindValue(QStringLiteral(":taskId"), product.taskId);
+        query.bindValue(QStringLiteral(":fullPath"), product.fullPath);
+        query.bindValue(QStringLiteral(":createdTimestamp"), product.createdTimestamp);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error(
+                "Expecting a return value from sp_submit_task, but none found");
+        }
+
+        return query.value(0).toInt();
     });
 }
 

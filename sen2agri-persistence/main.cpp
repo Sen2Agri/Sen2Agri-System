@@ -59,8 +59,7 @@ int main(int argc, char *argv[])
 
         registerMetaTypes();
 
-        printSignature<NewExecutorStepList>();
-        printSignature<JobStepToRunList>();
+        printSignature<NewProduct>();
 
         auto connection = QDBusConnection::systemBus();
         PersistenceManager persistenceManager(settings);

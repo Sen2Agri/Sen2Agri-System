@@ -146,5 +146,9 @@
       <arg name="jsonData" type="s" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QDate" />
     </method>
+    <method name="InsertProduct">
+      <arg name="product" type="(iiis((iii)(iiii)i))" direction="in" />
+      <arg name="productId" type="i" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewProduct" />
   </interface>
 </node>

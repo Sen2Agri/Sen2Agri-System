@@ -83,4 +83,6 @@ public slots:
     void InsertNodeStatistics(NodeStatistics statistics);
 
     QString GetDashboardData(QDate since);
+
+    int InsertProduct(NewProduct product);
 };
