@@ -1,3 +1,5 @@
+/* This file contains the styles for the dashboard page. */
+
 html, body {
     height: 100%;
 }
@@ -11,6 +13,7 @@ html, body {
     margin-top: 10px;
     margin-bottom: 0;
     font-weight: bold;
+    min-width: 80vw;
 }
 
 .tab-content {
@@ -22,6 +25,7 @@ html, body {
     margin-bottom: 10px;
     font-size: 12px;
     height: 93vh;
+    min-width: 80vw;
 }
 
 .tab-pane {
@@ -34,6 +38,10 @@ div.panel {
 
 div.panel-heading {
     font-weight: bold;
+}
+
+div.panel-heading.smaller_padding {
+    padding: 2px 15px;
 }
 
 div.panel table.full_width {
@@ -129,15 +137,20 @@ div.panel table.server_resources_table tr td:nth-child(3) {
     width: 70%;
 }
 
-div.float-left {
+div.panel table.server_resources_table div.server_resources_table_graph {
+    height: 90%;
+    width: 100%;
+}
+
+div.float_left {
     float: left;
 }
 
-div.full-height {
+div.full_height {
     height: 100%;
 }
 
-div.full-width {
+div.full_width {
     width: 100%;
 }
 
@@ -152,6 +165,14 @@ div.full-width {
     width: 100%;
     overflow: auto;
     bottom: 2%;
+}
+
+#pnl_current_jobs table:first-of-type tr td {
+    padding: 8px 2px;
+}
+
+#pnl_current_jobs table:first-of-type tr td:last-of-type {
+    min-width: 190px;
 }
 
 #pnl_server_resources_container {
