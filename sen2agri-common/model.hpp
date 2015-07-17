@@ -702,7 +702,7 @@ Q_DECLARE_METATYPE(JobStepToRunList)
 QDBusArgument &operator<<(QDBusArgument &argument, const JobStepToRun &step);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobStepToRun &step);
 
-enum class ProductType {};
+enum class ProductType { TestProduct = 1 };
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ProductType &productType);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ProductType &productType);
