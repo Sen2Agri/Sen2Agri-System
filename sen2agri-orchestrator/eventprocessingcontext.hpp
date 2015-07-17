@@ -32,6 +32,8 @@ public:
     void MarkEventProcessingStarted(int eventId);
     void MarkEventProcessingComplete(int eventId);
 
+    int InsertProduct(const NewProduct &product);
+
     std::vector<QString> GetProductFiles(const QString &path, const QString &pattern) const;
     QString GetOutputPath(int jobId, int taskId);
 

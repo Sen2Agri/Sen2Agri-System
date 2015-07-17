@@ -78,6 +78,11 @@ void EventProcessingContext::MarkEventProcessingComplete(int eventId)
     WaitForResponseAndThrow(persistenceManagerClient.MarkEventProcessingComplete(eventId));
 }
 
+int EventProcessingContext::InsertProduct(const NewProduct &product)
+{
+    return WaitForResponseAndThrow(persistenceManagerClient.InsertProduct(product));
+}
+
 std::vector<QString> EventProcessingContext::GetProductFiles(const QString &path,
                                                              const QString &pattern) const
 {
