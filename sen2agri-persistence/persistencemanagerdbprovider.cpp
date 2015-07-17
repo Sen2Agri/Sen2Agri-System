@@ -788,7 +788,7 @@ int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
 
         if (!query.next()) {
             throw std::runtime_error(
-                "Expecting a return value from sp_submit_task, but none found");
+                "Expecting a return value from sp_insert_product, but none found");
         }
 
         return query.value(0).toInt();
