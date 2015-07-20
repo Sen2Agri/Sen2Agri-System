@@ -17,6 +17,8 @@ Monitor::Monitor(const Settings &settings, QObject *parent)
     timer.setSingleShot(true);
     timer.setInterval(scanInterval);
 
+    Logger::info(QStringLiteral("Endpoint address is %1").arg(serviceUrl));
+
     connect(&timer, &QTimer::timeout, this, &Monitor::timerFired);
 
     getConfiguration();
@@ -56,7 +58,7 @@ void Monitor::configurationRead()
     reply->deleteLater();
 
     if (reply->error() != QNetworkReply::NoError) {
-        Logger::error(reply->errorString());
+        Logger::error(QStringLiteral("Unable to read configuration: %1").arg(reply->errorString()));
 
         timer.start();
     } else {
@@ -74,6 +76,9 @@ void Monitor::configurationRead()
         }
         isConfigured = true;
 
+        Logger::info(QStringLiteral("Monitoring disk space on %1").arg(diskPath));
+        Logger::info(QStringLiteral("Scan interval is %1 ms").arg(scanInterval));
+
         sendStatistics();
     }
 }
@@ -84,7 +89,8 @@ void Monitor::sendFinished()
     reply->deleteLater();
 
     if (reply->error() != QNetworkReply::NoError) {
-        Logger::error(reply->errorString());
+        Logger::error(
+            QStringLiteral("Unable to submit the statistics: %1").arg(reply->errorString()));
     }
 
     timer.start();
