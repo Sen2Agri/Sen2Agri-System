@@ -8,7 +8,8 @@ CREATE OR REPLACE FUNCTION sp_insert_node_statistics(
     _load_avg_5m node_resource_log.load_avg_5m%TYPE,
     _load_avg_15m node_resource_log.load_avg_15m%TYPE,
     _disk_total_bytes node_resource_log.disk_total_bytes%TYPE,
-    _disk_used_bytes node_resource_log.disk_used_bytes%TYPE
+    _disk_used_bytes node_resource_log.disk_used_bytes%TYPE,
+    _timestamp node_resource_log.timestamp%TYPE
 )
 RETURNS VOID
 AS $$
@@ -23,7 +24,8 @@ BEGIN
         load_avg_5m,
         load_avg_15m,
         disk_total_bytes,
-        disk_used_bytes
+        disk_used_bytes,
+        "timestamp"
     )
     VALUES (
         _node_name,
@@ -35,7 +37,8 @@ BEGIN
         _load_avg_5m,
         _load_avg_15m,
         _disk_total_bytes,
-        _disk_used_bytes
+        _disk_used_bytes,
+        current_timestamp
     );
 END;
 $$

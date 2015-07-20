@@ -746,6 +746,7 @@ void PersistenceManagerDBProvider::InsertNodeStatistics(const NodeStatistics &st
         query.bindValue(QStringLiteral(":loadAvg15"), static_cast<int16_t>(lrint(100.0 * statistics.loadAvg15)));
         query.bindValue(QStringLiteral(":diskTotalBytes"), qlonglong{ statistics.diskTotalBytes });
         query.bindValue(QStringLiteral(":diskUsedBytes"), qlonglong{ statistics.diskUsedBytes });
+        query.bindValue(QStringLiteral(":timestamp"), QDateTime::currentDateTimeUtc());
 
         query.setForwardOnly(true);
         if (!query.exec()) {
