@@ -9,7 +9,6 @@ int main(int argc, char *argv[])
         Logger::installMessageHandler();
 
         QCoreApplication app(argc, argv);
-        QCoreApplication::setApplicationName(QStringLiteral("sen2agri-archiver"));
 
         registerMetaTypes();
 
