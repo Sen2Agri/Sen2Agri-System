@@ -7,9 +7,9 @@
 #include "stats.hpp"
 #include "logger.hpp"
 
-Monitor::Monitor(const QSettings &settings, QObject *parent)
+Monitor::Monitor(const Settings &settings, QObject *parent)
     : QObject(parent),
-      serviceUrl(settings.value(QStringLiteral("ServiceUrl")).toString()),
+      serviceUrl(settings.serviceUrl),
       diskPath(defaultDiskPath),
       scanInterval(defaultScanInterval),
       isConfigured()

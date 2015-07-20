@@ -13,12 +13,16 @@ TEMPLATE = app
 
 SOURCES += main.cpp \
     stats.cpp \
-    monitor.cpp
+    monitor.cpp \
+    settings.cpp
 
 HEADERS += \
     pch.hpp \
     stats.hpp \
-    monitor.hpp
+    monitor.hpp \
+    settings.hpp
+
+DISTFILES += dist/sen2agri-monitor-agent.conf
 
 LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
 

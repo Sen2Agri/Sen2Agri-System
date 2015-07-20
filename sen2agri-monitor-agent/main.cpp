@@ -8,6 +8,7 @@
 #include "logger.hpp"
 #include "configuration.hpp"
 
+#include "settings.hpp"
 #include "monitor.hpp"
 
 int main(int argc, char *argv[])
@@ -17,11 +18,7 @@ int main(int argc, char *argv[])
 
         QCoreApplication app(argc, argv);
 
-        const auto &configFile = getConfigurationFile(app);
-
-        QSettings settings;
-        settings.setValue(QStringLiteral("serviceUrl"),
-                          QStringLiteral("http://127.0.0.1:8080/statistics/"));
+        const auto &settings = Settings::readSettings(getConfigurationFile(app));
 
         Monitor monitor(settings);
         Q_UNUSED(monitor);

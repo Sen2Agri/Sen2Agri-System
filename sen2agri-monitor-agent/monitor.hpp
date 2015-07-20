@@ -4,7 +4,8 @@
 #include <QString>
 #include <QTimer>
 #include <QNetworkAccessManager>
-#include <QSettings>
+
+#include "settings.hpp"
 
 class Monitor : public QObject
 {
@@ -18,7 +19,7 @@ class Monitor : public QObject
     bool isConfigured;
 
 public:
-    explicit Monitor(const QSettings &settings, QObject *parent = 0);
+    explicit Monitor(const Settings &settings, QObject *parent = 0);
 
 private:
     void getConfiguration();
