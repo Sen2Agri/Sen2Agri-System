@@ -54,6 +54,8 @@ void Monitor::timerFired()
 void Monitor::configurationRead()
 {
     auto reply = qobject_cast<QNetworkReply *>(sender());
+    Q_ASSERT(reply);
+
     reply->deleteLater();
 
     if (reply->error() != QNetworkReply::NoError) {
@@ -87,6 +89,8 @@ void Monitor::configurationRead()
 void Monitor::sendFinished()
 {
     auto reply = qobject_cast<QNetworkReply *>(sender());
+    Q_ASSERT(reply);
+
     reply->deleteLater();
 
     if (reply->error() != QNetworkReply::NoError) {
