@@ -1,0 +1,10 @@
+[Unit]
+Description=Monitoring Agent for Sen2Agri
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/sen2agri-monitor-agent
+User=sen2agri-service
+
+[Install]
+WantedBy=multi-user.target
