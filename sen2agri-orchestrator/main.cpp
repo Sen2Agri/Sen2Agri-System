@@ -3,11 +3,14 @@
 #include <QCoreApplication>
 #include <QDBusConnection>
 
+#include "make_unique.hpp"
 #include "model.hpp"
 #include "logger.hpp"
 
 #include "orchestrator.hpp"
 #include "orchestrator_adaptor.h"
+
+#include "processor/dummyprocessorhandler.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -19,6 +22,8 @@ int main(int argc, char *argv[])
         registerMetaTypes();
 
         std::map<int, std::unique_ptr<ProcessorHandler>> handlers;
+        handlers.emplace(6, std::make_unique<DummyProcessorHandler>());
+
         Orchestrator orchestrator(handlers);
 
         new OrchestratorAdaptor(&orchestrator);
