@@ -6,6 +6,8 @@
 
 #include <set>
 
+#include <math.h>
+
 #include "optional_util.hpp"
 #include "json_conversions.hpp"
 
@@ -739,9 +741,9 @@ void PersistenceManagerDBProvider::InsertNodeStatistics(const NodeStatistics &st
         query.bindValue(QStringLiteral(":memUsedKb"), qlonglong{ statistics.memUsedKb });
         query.bindValue(QStringLiteral(":swapTotalKb"), qlonglong{ statistics.swapTotalKb });
         query.bindValue(QStringLiteral(":swapUsedKb"), qlonglong{ statistics.swapUsedKb });
-        query.bindValue(QStringLiteral(":loadAvg1"), statistics.loadAvg1);
-        query.bindValue(QStringLiteral(":loadAvg5"), statistics.loadAvg5);
-        query.bindValue(QStringLiteral(":loadAvg15"), statistics.loadAvg15);
+        query.bindValue(QStringLiteral(":loadAvg1"), static_cast<int16_t>(lrint(100.0 * statistics.loadAvg1)));
+        query.bindValue(QStringLiteral(":loadAvg5"), static_cast<int16_t>(lrint(100.0 * statistics.loadAvg5)));
+        query.bindValue(QStringLiteral(":loadAvg15"), static_cast<int16_t>(lrint(100.0 * statistics.loadAvg15)));
         query.bindValue(QStringLiteral(":diskTotalBytes"), qlonglong{ statistics.diskTotalBytes });
         query.bindValue(QStringLiteral(":diskUsedBytes"), qlonglong{ statistics.diskUsedBytes });
 
