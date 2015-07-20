@@ -176,8 +176,8 @@ void MainDialog::loadModel(const ConfigurationSet &configuration)
                 siteLists.emplace_back(nullptr);
             }
 
-            parentLayout->addRow(
-                createFieldsWidget(std::experimental::nullopt, cat.categoryId, widget));
+            parentLayout->addRow(createFieldsWidget(std::experimental::nullopt, cat.categoryId,
+                                                    siteLists.back(), widget));
 
             ui->tabWidget->addTab(widget, cat.name);
             tabCategory.emplace_back(cat.categoryId);
@@ -210,7 +210,7 @@ QComboBox *MainDialog::createSiteList(int categoryId, QWidget *parent)
                 parameterChangeListeners[categoryId].clear();
 
                 auto widget = ui->tabWidget->currentWidget();
-                switchSite(siteId, categoryId, widget);
+                switchSite(siteId, categoryId, siteList, widget);
             });
 
     return siteList;
@@ -218,6 +218,7 @@ QComboBox *MainDialog::createSiteList(int categoryId, QWidget *parent)
 
 void MainDialog::switchSite(std::experimental::optional<int> siteId,
                             int categoryId,
+                            QComboBox *siteList,
                             QWidget *parentWidget)
 {
     auto layout = static_cast<QFormLayout *>(parentWidget->layout());
@@ -226,11 +227,12 @@ void MainDialog::switchSite(std::experimental::optional<int> siteId,
     item->widget()->deleteLater();
     delete item;
     layout->setWidget(1, QFormLayout::SpanningRole,
-                      createFieldsWidget(siteId, categoryId, parentWidget));
+                      createFieldsWidget(siteId, categoryId, siteList, parentWidget));
 }
 
 QWidget *MainDialog::createFieldsWidget(std::experimental::optional<int> siteId,
                                         int categoryId,
+                                        QComboBox *siteList,
                                         QWidget *parentWidget)
 {
     auto fieldsWidget = new QWidget(parentWidget);
@@ -238,8 +240,8 @@ QWidget *MainDialog::createFieldsWidget(std::experimental::optional<int> siteId,
 
     for (const auto &param : configModel.parameters()) {
         if (param.categoryId == categoryId) {
-            if (auto editWidget =
-                    createEditRow(categoryId, param, { param.key, siteId }, fieldsWidget)) {
+            if (auto editWidget = createEditRow(categoryId, param, { param.key, siteId }, siteList,
+                                                fieldsWidget)) {
                 layout->addRow(new QLabel(param.friendlyName, fieldsWidget), editWidget);
             } else {
                 QMessageBox::critical(
@@ -362,6 +364,7 @@ void MainDialog::on_buttonBox_rejected()
 QWidget *MainDialog::createEditRow(int categoryId,
                                    const ConfigurationParameterInfo &parameter,
                                    const ParameterKey &parameterKey,
+                                   QComboBox *siteList,
                                    QWidget *parent)
 {
     auto isDisabled = parameter.isAdvanced && !configModel.isAdmin();
@@ -433,19 +436,19 @@ QWidget *MainDialog::createEditRow(int categoryId,
     if (!isDisabled) {
         auto listener = new ParameterChangeListener(configModel, parameter, parameterKey,
                                                     parameter.friendlyName, editWidget);
-        connect(listener, &ParameterChangeListener::validityChanged, [this](bool isValid) {
-            auto idx = ui->tabWidget->currentIndex();
-
-            if (isValid) {
-                if (!--invalidFields) {
-                    siteLists[idx]->setEnabled(true);
-                }
-            } else {
-                if (!invalidFields++) {
-                    siteLists[idx]->setEnabled(false);
-                }
-            }
-        });
+        if (siteList) {
+            connect(listener, &ParameterChangeListener::validityChanged,
+                    [this, siteList](bool isValid) {
+                        if (isValid) {
+                            if (!--invalidFields) {
+                                siteList->setEnabled(true);
+                            }
+                        } else {
+                            invalidFields++;
+                            siteList->setEnabled(false);
+                        }
+                    });
+        }
         parameterChangeListeners[categoryId].emplace_back(listener);
     }
 
