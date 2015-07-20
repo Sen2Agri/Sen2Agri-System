@@ -1,8 +1,10 @@
+#include <QFileInfo>
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 #include <QProcessEnvironment>
 
 #include "configuration.hpp"
+#include "logger.hpp"
 
 QString getConfigurationFile(const QCoreApplication &app)
 {
@@ -26,6 +28,15 @@ QString getConfigurationFile(const QCoreApplication &app)
         configFile = QProcessEnvironment::systemEnvironment().value(
             QStringLiteral("SEN2AGRI_CONFIG_DIR"), QStringLiteral("/etc/sen2agri"));
         configFile += QStringLiteral("/%1.conf").arg(appName);
+    }
+
+    Logger::info(QStringLiteral("Reading settings from %1").arg(configFile));
+
+    if (!QFileInfo::exists(configFile)) {
+        throw std::runtime_error(
+            QStringLiteral("Configuration file %1 does not exist, exiting.")
+                .arg(configFile)
+                .toStdString());
     }
 
     return configFile;

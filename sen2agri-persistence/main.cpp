@@ -29,18 +29,7 @@ int main(int argc, char *argv[])
 
         QCoreApplication app(argc, argv);
 
-        const auto &configFile = getConfigurationFile(app);
-
-        Logger::info(QStringLiteral("Reading settings from %1").arg(configFile));
-
-        if (!QFileInfo::exists(configFile)) {
-            throw std::runtime_error(
-                QStringLiteral("Configuration file %1 does not exist, exiting.")
-                    .arg(configFile)
-                    .toStdString());
-        }
-
-        const auto &settings = Settings::readSettings(configFile);
+        const auto &settings = Settings::readSettings(getConfigurationFile(app));
 
         registerMetaTypes();
 
