@@ -11,11 +11,10 @@ Monitor::Monitor(const Settings &settings, QObject *parent)
     : QObject(parent),
       serviceUrl(settings.serviceUrl),
       diskPath(defaultDiskPath),
-      scanInterval(defaultScanInterval),
       isConfigured()
 {
     timer.setSingleShot(true);
-    timer.setInterval(scanInterval);
+    timer.setInterval(defaultScanInterval);
 
     Logger::info(QStringLiteral("Endpoint address is %1").arg(serviceUrl));
 
@@ -64,7 +63,7 @@ void Monitor::configurationRead()
     } else {
         const auto &obj = QJsonDocument::fromJson(reply->readAll()).object();
         diskPath = obj[QStringLiteral("monitor-agent.disk-path")].toString();
-        scanInterval = obj[QStringLiteral("monitor-agent.scan-interval")].toString().toInt();
+        auto scanInterval = obj[QStringLiteral("monitor-agent.scan-interval")].toString().toInt();
 
         if (diskPath.isEmpty()) {
             Logger::error("Please configure monitor-agent.disk-path");
@@ -75,6 +74,8 @@ void Monitor::configurationRead()
             scanInterval = defaultScanInterval;
         }
         isConfigured = true;
+
+        timer.setInterval(scanInterval);
 
         Logger::info(QStringLiteral("Monitoring disk space on %1").arg(diskPath));
         Logger::info(QStringLiteral("Scan interval is %1 ms").arg(scanInterval));

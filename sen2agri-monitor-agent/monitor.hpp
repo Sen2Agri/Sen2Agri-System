@@ -15,7 +15,6 @@ class Monitor : public QObject
     QTimer timer;
     QString serviceUrl;
     QString diskPath;
-    int scanInterval;
     bool isConfigured;
 
 public:
