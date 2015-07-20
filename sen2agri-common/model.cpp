@@ -1220,25 +1220,54 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, UnprocessedEvent 
     return argument;
 }
 
-NodeStatistics::NodeStatistics() : freeRamKb(), freeDiskBytes()
+NodeStatistics::NodeStatistics()
+    : memTotalKb(),
+      memUsedKb(),
+      swapTotalKb(),
+      swapUsedKb(),
+      loadAvg1(),
+      loadAvg5(),
+      loadAvg15(),
+      diskTotalBytes(),
+      diskUsedBytes()
 {
 }
 
-NodeStatistics::NodeStatistics(QString node, int32_t freeRamKb, int64_t freeDiskBytes)
-    : node(std::move(node)), freeRamKb(freeRamKb), freeDiskBytes(freeDiskBytes)
+NodeStatistics::NodeStatistics(QString node,
+                               int64_t memTotalKb,
+                               int64_t memUsedKb,
+                               int64_t swapTotalKb,
+                               int64_t swapUsedKb,
+                               double loadAvg1,
+                               double loadAvg5,
+                               double loadAvg15,
+                               int64_t diskTotalBytes,
+                               int64_t diskUsedBytes)
+    : node(std::move(node)),
+      memTotalKb(memTotalKb),
+      memUsedKb(memUsedKb),
+      swapTotalKb(swapTotalKb),
+      swapUsedKb(swapUsedKb),
+      loadAvg1(loadAvg1),
+      loadAvg5(loadAvg5),
+      loadAvg15(loadAvg15),
+      diskTotalBytes(diskTotalBytes),
+      diskUsedBytes(diskUsedBytes)
 {
 }
 
 void NodeStatistics::registerMetaTypes()
 {
     qDBusRegisterMetaType<NodeStatistics>();
-    qDBusRegisterMetaType<NodeStatisticsList>();
 }
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NodeStatistics &statistics)
 {
     argument.beginStructure();
-    argument << statistics.node << statistics.freeRamKb << statistics.freeDiskBytes;
+    argument << statistics.node << statistics.memTotalKb << statistics.memUsedKb
+             << statistics.swapTotalKb << statistics.swapUsedKb << statistics.loadAvg1
+             << statistics.loadAvg5 << statistics.loadAvg15 << statistics.diskTotalBytes
+             << statistics.diskUsedBytes;
     argument.endStructure();
 
     return argument;
@@ -1247,7 +1276,10 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NodeStatistics &statist
 const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &statistics)
 {
     argument.beginStructure();
-    argument >> statistics.node >> statistics.freeRamKb >> statistics.freeDiskBytes;
+    argument >> statistics.node >> statistics.memTotalKb >> statistics.memUsedKb >>
+        statistics.swapTotalKb >> statistics.swapUsedKb >> statistics.loadAvg1 >>
+        statistics.loadAvg5 >> statistics.loadAvg15 >> statistics.diskTotalBytes >>
+        statistics.diskUsedBytes;
     argument.endStructure();
 
     return argument;

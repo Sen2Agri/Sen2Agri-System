@@ -215,11 +215,6 @@ NodeStatistics Reflector::ReflectNodeStatistics(const NodeStatistics &value)
     return value;
 }
 
-NodeStatisticsList Reflector::ReflectNodeStatisticsList(const NodeStatisticsList &value)
-{
-    return value;
-}
-
 StepArgument Reflector::ReflectStepArgument(const StepArgument &value)
 {
     return value;

@@ -192,6 +192,14 @@ struct maker<int64_t> {
 };
 
 template<>
+struct maker<double> {
+    static float make()
+    {
+        return 42.12;
+    }
+};
+
+template<>
 struct maker<QString> {
     static QString make()
     {

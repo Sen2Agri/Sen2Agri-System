@@ -731,11 +731,19 @@ void PersistenceManagerDBProvider::InsertNodeStatistics(const NodeStatistics &st
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(
-            QStringLiteral("select sp_insert_node_statistics(:node, :freeRamKb, :freeDiskBytes)"));
+        auto query = db.prepareQuery(QStringLiteral(
+            "select sp_insert_node_statistics(:node, :memTotalKb, :memUsedKb, :swapTotalKb, "
+            ":swapUsedKb, :loadAvg1, :loadAvg5, :loadAvg15, :diskTotalBytes, :diskUsedBytes)"));
         query.bindValue(QStringLiteral(":node"), statistics.node);
-        query.bindValue(QStringLiteral(":freeRamKb"), statistics.freeRamKb);
-        query.bindValue(QStringLiteral(":freeDiskBytes"), qlonglong{ statistics.freeDiskBytes });
+        query.bindValue(QStringLiteral(":memTotalKb"), qlonglong{ statistics.memTotalKb });
+        query.bindValue(QStringLiteral(":memUsedKb"), qlonglong{ statistics.memUsedKb });
+        query.bindValue(QStringLiteral(":swapTotalKb"), qlonglong{ statistics.swapTotalKb });
+        query.bindValue(QStringLiteral(":swapUsedKb"), qlonglong{ statistics.swapUsedKb });
+        query.bindValue(QStringLiteral(":loadAvg1"), statistics.loadAvg1);
+        query.bindValue(QStringLiteral(":loadAvg5"), statistics.loadAvg5);
+        query.bindValue(QStringLiteral(":loadAvg15"), statistics.loadAvg15);
+        query.bindValue(QStringLiteral(":diskTotalBytes"), qlonglong{ statistics.diskTotalBytes });
+        query.bindValue(QStringLiteral(":diskUsedBytes"), qlonglong{ statistics.diskUsedBytes });
 
         query.setForwardOnly(true);
         if (!query.exec()) {

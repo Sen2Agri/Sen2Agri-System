@@ -138,7 +138,7 @@
       <arg name="eventId" type="i" direction="in" />
     </method>
     <method name="InsertNodeStatistics">
-      <arg name="statistics" type="(six)" direction="in" />
+      <arg name="statistics" type="(sxxxxdddxx)" direction="in" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NodeStatistics" />
     </method>
     <method name="GetDashboardData">

@@ -242,12 +242,6 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NodeStatistics" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NodeStatistics" />
     </method>
-    <method name="ReflectNodeStatisticsList">
-      <arg name="value" type="NodeStatisticsList" direction="in" />
-      <arg name="result" type="NodeStatisticsList" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NodeStatisticsList" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NodeStatisticsList" />
-    </method>
     <method name="ReflectStepArgument">
       <arg name="value" type="StepArgument" direction="in" />
       <arg name="result" type="StepArgument" direction="out" />

@@ -411,15 +411,6 @@ void Serialization::nodeStatistics()
     compare(WaitForResponseAndThrow(client->ReflectNodeStatistics(emptyValue)), emptyValue);
 }
 
-void Serialization::nodeStatisticsList()
-{
-    const auto &value = maker<NodeStatisticsList>::make();
-    compare(WaitForResponseAndThrow(client->ReflectNodeStatisticsList(value)), value);
-
-    NodeStatisticsList emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectNodeStatisticsList(emptyValue)), emptyValue);
-}
-
 void Serialization::stepArgument()
 {
     const auto &value = maker<StepArgument>::make();

@@ -60,7 +60,6 @@ private slots:
     void unprocessedEvent();
     void unprocessedEventList();
     void nodeStatistics();
-    void nodeStatisticsList();
     void stepArgument();
     void stepArgumentList();
     void newExecutorStep();

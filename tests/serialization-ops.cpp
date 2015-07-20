@@ -183,8 +183,15 @@ void compare(const UnprocessedEvent &v1, const UnprocessedEvent &v2)
 void compare(const NodeStatistics &v1, const NodeStatistics &v2)
 {
     compare(v1.node, v2.node);
-    compare(v1.freeRamKb, v2.freeRamKb);
-    compare(v1.freeDiskBytes, v2.freeDiskBytes);
+    compare(v1.memTotalKb, v2.memTotalKb);
+    compare(v1.memUsedKb, v2.memUsedKb);
+    compare(v1.swapTotalKb, v2.swapTotalKb);
+    compare(v1.swapUsedKb, v2.swapUsedKb);
+    compare(v1.loadAvg1, v2.loadAvg1);
+    compare(v1.loadAvg5, v2.loadAvg5);
+    compare(v1.loadAvg15, v2.loadAvg15);
+    compare(v1.diskTotalBytes, v2.diskTotalBytes);
+    compare(v1.diskUsedBytes, v2.diskUsedBytes);
 }
 
 void compare(const StepArgument &v1, const StepArgument &v2)

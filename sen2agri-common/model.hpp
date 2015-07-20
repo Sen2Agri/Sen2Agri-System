@@ -615,19 +615,32 @@ class NodeStatistics
 {
 public:
     QString node;
-    int32_t freeRamKb;
-    int64_t freeDiskBytes;
+    int64_t memTotalKb;
+    int64_t memUsedKb;
+    int64_t swapTotalKb;
+    int64_t swapUsedKb;
+    double loadAvg1;
+    double loadAvg5;
+    double loadAvg15;
+    int64_t diskTotalBytes;
+    int64_t diskUsedBytes;
 
     NodeStatistics();
-    NodeStatistics(QString node, int32_t freeRamKb, int64_t freeDiskBytes);
+    NodeStatistics(QString node,
+                   int64_t memTotalKb,
+                   int64_t memUsedKb,
+                   int64_t swapTotalKb,
+                   int64_t swapUsedKb,
+                   double loadAvg1,
+                   double loadAvg5,
+                   double loadAvg15,
+                   int64_t diskTotalBytes,
+                   int64_t diskUsedBytes);
 
     static void registerMetaTypes();
 };
 
-typedef QList<NodeStatistics> NodeStatisticsList;
-
 Q_DECLARE_METATYPE(NodeStatistics)
-Q_DECLARE_METATYPE(NodeStatisticsList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NodeStatistics &statistics);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &statistics);
