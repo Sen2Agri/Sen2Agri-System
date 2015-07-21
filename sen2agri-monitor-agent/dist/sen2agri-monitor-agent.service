@@ -1,5 +1,7 @@
 [Unit]
 Description=Monitoring Agent for Sen2Agri
+Wants=network-online.target
+After=network-online.target
 
 [Service]
 Type=simple
