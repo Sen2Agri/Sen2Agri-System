@@ -33,10 +33,9 @@ QString getConfigurationFile(const QCoreApplication &app)
     Logger::info(QStringLiteral("Reading settings from %1").arg(configFile));
 
     if (!QFileInfo::exists(configFile)) {
-        throw std::runtime_error(
-            QStringLiteral("Configuration file %1 does not exist, exiting.")
-                .arg(configFile)
-                .toStdString());
+        throw std::runtime_error(QStringLiteral("Configuration file %1 does not exist, exiting.")
+                                     .arg(configFile)
+                                     .toStdString());
     }
 
     return configFile;
