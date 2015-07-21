@@ -256,6 +256,7 @@
 	<!-- Scripts are placed at the bottom of the page to be downloaded after the rest of the content and avoid delays in page loading. -->
 	<script	src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js"></script>
 	<script	src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
 	<script src="flot-0.8.3/jquery.flot.min.js"></script>
 	<script src="flot-0.8.3/jquery.flot.time.min.js"></script>
 	<script src="nvd3-1.8.1/nv.d3.min.js"></script>
@@ -355,6 +356,38 @@
 					"resources": [ ["Last Run On", "2015-07-20 16:11:23"], ["Average Duration", "03.12:22"]],
 					"output": [["Number Of Products", 23], ["Average Tile per Product", 6]],
 					"configuration": [["Param 1", "Value 1"], ["Param 2", "Value 2"]]
+				},
+				"products" : {
+				    key: 'Products',
+				    values: [
+				      {
+				        key: "L2A Products",
+				        values: [
+				          {
+				          	name: "Product 1",
+				            date: gd(2015,07,16,14,29,30),
+				            info: ["Info 1", "Info 2", "Info 3"]
+				          },
+				          {
+				        	name: "Product 2",
+					      	date: gd(2015,07,16,14,29,30),
+					        info: ["Info 1", "Info 2", "Info 3"] 
+				          }]
+				      },
+				      {
+				        key: "L3A Products",
+				        values: [
+				          {
+				          	name: "Product 3",
+				            date: gd(2015,07,16,14,29,30),
+				            info: ["Info 1", "Info 2", "Info 3"]
+				          },
+				          {
+				        	name: "Product 4",
+					      	date: gd(2015,07,16,14,29,30),
+					        info: ["Info 1", "Info 2", "Info 3"] 
+				          }]
+				      }]
 				}
 			};	
 	

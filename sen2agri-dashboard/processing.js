@@ -406,3 +406,10 @@ function update_l4b_statistics(json_data)
 	update_key_value_table("#pnl_l4b_output", json_data.l4b_statistics.output);
 	update_key_value_table("#pnl_l4b_configuration", json_data.l4b_statistics.configuration);
 }
+
+//Update product availability --------------------------------------------------------------------------------------------------------------------------
+
+function update_product_availability(json_data)
+{
+	
+}
