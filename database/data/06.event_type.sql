@@ -4,8 +4,8 @@ name,
 description)
 VALUES (
 1,
-'TaskAdded',
-'Event triggered when the processing of a module is started.');
+'TaskRunnable',
+'Event triggered when the processing of a module can be started.');
 
 INSERT INTO event_type(
 id,

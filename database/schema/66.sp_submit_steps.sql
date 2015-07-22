@@ -1,10 +1,10 @@
-CREATE OR REPLACE FUNCTION sp_submit_steps(
+﻿CREATE OR REPLACE FUNCTION sp_submit_steps(
 IN _steps json
 ) RETURNS void AS $$
 BEGIN
 
 	CREATE TEMP TABLE steps (
-        task_id INT NOT NULL,
+		task_id INT NOT NULL,
 		name character varying NOT NULL,
 		parameters json) ON COMMIT DROP;
 
