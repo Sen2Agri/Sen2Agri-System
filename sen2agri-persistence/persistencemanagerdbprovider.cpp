@@ -6,6 +6,8 @@
 
 #include <set>
 
+#include <math.h>
+
 #include "optional_util.hpp"
 #include "json_conversions.hpp"
 
@@ -295,10 +297,11 @@ int PersistenceManagerDBProvider::SubmitTask(const NewTask &task)
 
     return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(
-            QStringLiteral("select * from sp_submit_task(:jobId, :module, :parameters)"));
+            QStringLiteral("select * from sp_submit_task(:jobId, :module, :parameters, :status)"));
         query.bindValue(QStringLiteral(":jobId"), task.jobId);
         query.bindValue(QStringLiteral(":module"), task.module);
         query.bindValue(QStringLiteral(":parameters"), task.parametersJson);
+        query.bindValue(QStringLiteral(":status"), static_cast<int>(task.status));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -314,13 +317,12 @@ int PersistenceManagerDBProvider::SubmitTask(const NewTask &task)
     });
 }
 
-void PersistenceManagerDBProvider::SubmitSteps(int taskId, const NewStepList &steps)
+void PersistenceManagerDBProvider::SubmitSteps(const NewStepList &steps)
 {
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral("select sp_submit_steps(:taskId, :steps)"));
-        query.bindValue(QStringLiteral(":taskId"), taskId);
+        auto query = db.prepareQuery(QStringLiteral("select sp_submit_steps(:steps)"));
         query.bindValue(QStringLiteral(":steps"), getNewStepsJson(steps));
 
         query.setForwardOnly(true);
@@ -731,11 +733,23 @@ void PersistenceManagerDBProvider::InsertNodeStatistics(const NodeStatistics &st
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(
-            QStringLiteral("select sp_insert_node_statistics(:node, :freeRamKb, :freeDiskBytes)"));
+        auto query = db.prepareQuery(QStringLiteral(
+            "select sp_insert_node_statistics(:node, :memTotalKb, :memUsedKb, :swapTotalKb, "
+            ":swapUsedKb, :loadAvg1, :loadAvg5, :loadAvg15, :diskTotalBytes, :diskUsedBytes)"));
         query.bindValue(QStringLiteral(":node"), statistics.node);
-        query.bindValue(QStringLiteral(":freeRamKb"), statistics.freeRamKb);
-        query.bindValue(QStringLiteral(":freeDiskBytes"), qlonglong{ statistics.freeDiskBytes });
+        query.bindValue(QStringLiteral(":memTotalKb"), qlonglong{ statistics.memTotalKb });
+        query.bindValue(QStringLiteral(":memUsedKb"), qlonglong{ statistics.memUsedKb });
+        query.bindValue(QStringLiteral(":swapTotalKb"), qlonglong{ statistics.swapTotalKb });
+        query.bindValue(QStringLiteral(":swapUsedKb"), qlonglong{ statistics.swapUsedKb });
+        query.bindValue(QStringLiteral(":loadAvg1"),
+                        static_cast<int16_t>(lrint(100.0 * statistics.loadAvg1)));
+        query.bindValue(QStringLiteral(":loadAvg5"),
+                        static_cast<int16_t>(lrint(100.0 * statistics.loadAvg5)));
+        query.bindValue(QStringLiteral(":loadAvg15"),
+                        static_cast<int16_t>(lrint(100.0 * statistics.loadAvg15)));
+        query.bindValue(QStringLiteral(":diskTotalBytes"), qlonglong{ statistics.diskTotalBytes });
+        query.bindValue(QStringLiteral(":diskUsedBytes"), qlonglong{ statistics.diskUsedBytes });
+        query.bindValue(QStringLiteral(":timestamp"), QDateTime::currentDateTimeUtc());
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -788,7 +802,7 @@ int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
 
         if (!query.next()) {
             throw std::runtime_error(
-                "Expecting a return value from sp_submit_task, but none found");
+                "Expecting a return value from sp_insert_product, but none found");
         }
 
         return query.value(0).toInt();

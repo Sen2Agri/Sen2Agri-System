@@ -258,6 +258,15 @@ void Serialization::archivedProductList()
     compare(WaitForResponseAndThrow(client->ReflectArchivedProductList(emptyValue)), emptyValue);
 }
 
+void Serialization::executionStatusList()
+{
+    const auto &value = maker<ExecutionStatusList>::make();
+    compare(WaitForResponseAndThrow(client->ReflectExecutionStatusList(value)), value);
+
+    ExecutionStatusList emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectExecutionStatusList(emptyValue)), emptyValue);
+}
+
 void Serialization::newJob()
 {
     const auto &value = maker<NewJob>::make();
@@ -292,15 +301,6 @@ void Serialization::newStepList()
 
     NewStepList emptyValue;
     compare(WaitForResponseAndThrow(client->ReflectNewStepList(emptyValue)), emptyValue);
-}
-
-void Serialization::executionStatusList()
-{
-    const auto &value = maker<ExecutionStatusList>::make();
-    compare(WaitForResponseAndThrow(client->ReflectExecutionStatusList(value)), value);
-
-    ExecutionStatusList emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectExecutionStatusList(emptyValue)), emptyValue);
 }
 
 void Serialization::executionStatistics()
@@ -409,15 +409,6 @@ void Serialization::nodeStatistics()
 
     NodeStatistics emptyValue;
     compare(WaitForResponseAndThrow(client->ReflectNodeStatistics(emptyValue)), emptyValue);
-}
-
-void Serialization::nodeStatisticsList()
-{
-    const auto &value = maker<NodeStatisticsList>::make();
-    compare(WaitForResponseAndThrow(client->ReflectNodeStatisticsList(value)), value);
-
-    NodeStatisticsList emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectNodeStatisticsList(emptyValue)), emptyValue);
 }
 
 void Serialization::stepArgument()

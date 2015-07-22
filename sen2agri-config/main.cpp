@@ -9,15 +9,14 @@ int main(int argc, char *argv[])
     try {
         Logger::installMessageHandler();
 
-        QApplication a(argc, argv);
-        QApplication::setApplicationName(QStringLiteral("sen2agri-config"));
+        QApplication app(argc, argv);
 
         registerMetaTypes();
 
         MainDialog w;
         w.show();
 
-        return a.exec();
+        return app.exec();
     } catch (const std::exception &e) {
         Logger::fatal(e.what());
     }

@@ -30,14 +30,16 @@ SOURCES += main.cpp \
     orchestrator.cpp \
     orchestratorworker.cpp \
     eventprocessingcontext.cpp \
-    processorhandler.cpp
+    processorhandler.cpp \
+    processor/dummyprocessorhandler.cpp
 
 HEADERS += \
     pch.hpp \
     orchestrator.hpp \
     orchestratorworker.hpp \
     eventprocessingcontext.hpp \
-    processorhandler.hpp
+    processorhandler.hpp \
+    processor/dummyprocessorhandler.hpp
 
 DISTFILES += \
     ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml \

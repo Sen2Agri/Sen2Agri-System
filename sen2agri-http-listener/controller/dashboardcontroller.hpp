@@ -9,10 +9,10 @@ class DashboardController : public HttpRequestHandler
     Q_OBJECT
     Q_DISABLE_COPY(DashboardController)
 
-    void getDashboardData(HttpRequest &request, HttpResponse &response);
-    void cancelJob(HttpRequest &request, HttpResponse &response);
-    void pauseJob(HttpRequest &request, HttpResponse &response);
-    void resumeJob(HttpRequest &request, HttpResponse &response);
+    void getDashboardData(const HttpRequest &request, HttpResponse &response);
+    void cancelJob(const HttpRequest &request, HttpResponse &response);
+    void pauseJob(const HttpRequest &request, HttpResponse &response);
+    void resumeJob(const HttpRequest &request, HttpResponse &response);
 
     void notifyOrchestrator();
 

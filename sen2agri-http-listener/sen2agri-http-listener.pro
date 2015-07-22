@@ -23,10 +23,12 @@ DBUS_INTERFACES += persistence_manager_interface orchestrator_interface
 
 SOURCES += main.cpp \
     requestmapper.cpp \
-    controller/dashboardcontroller.cpp
+    controller/dashboardcontroller.cpp \
+    controller/statisticscontroller.cpp
 
 HEADERS += \
     controller/dashboardcontroller.hpp \
+    controller/statisticscontroller.hpp \
     requestmapper.hpp \
     pch.hpp
 

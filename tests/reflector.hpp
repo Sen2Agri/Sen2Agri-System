@@ -46,11 +46,11 @@ public slots:
     ProductToArchiveList ReflectProductToArchiveList(const ProductToArchiveList &value);
     ArchivedProduct ReflectArchivedProduct(const ArchivedProduct &value);
     ArchivedProductList ReflectArchivedProductList(const ArchivedProductList &value);
+    ExecutionStatusList ReflectExecutionStatusList(const ExecutionStatusList &value);
     NewJob ReflectNewJob(const NewJob &value);
     NewTask ReflectNewTask(const NewTask &value);
     NewStep ReflectNewStep(const NewStep &value);
     NewStepList ReflectNewStepList(const NewStepList &value);
-    ExecutionStatusList ReflectExecutionStatusList(const ExecutionStatusList &value);
     ExecutionStatistics ReflectExecutionStatistics(const ExecutionStatistics &value);
     TaskAddedEvent ReflectTaskAddedEvent(const TaskAddedEvent &value);
     TaskFinishedEvent ReflectTaskFinishedEvent(const TaskFinishedEvent &value);
@@ -63,7 +63,6 @@ public slots:
     UnprocessedEvent ReflectUnprocessedEvent(const UnprocessedEvent &value);
     UnprocessedEventList ReflectUnprocessedEventList(const UnprocessedEventList &value);
     NodeStatistics ReflectNodeStatistics(const NodeStatistics &value);
-    NodeStatisticsList ReflectNodeStatisticsList(const NodeStatisticsList &value);
     StepArgument ReflectStepArgument(const StepArgument &value);
     StepArgumentList ReflectStepArgumentList(const StepArgumentList &value);
     NewExecutorStep ReflectNewExecutorStep(const NewExecutorStep &value);

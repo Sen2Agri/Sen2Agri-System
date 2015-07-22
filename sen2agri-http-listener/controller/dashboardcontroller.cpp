@@ -11,7 +11,8 @@ DashboardController::DashboardController()
 
 void DashboardController::service(HttpRequest &request, HttpResponse &response)
 {
-    START_STOPWATCH("DashboardController::service");
+    Stopwatch sw(__func__);
+    Q_UNUSED(sw);
 
     try {
         const auto &path = request.getPath();
@@ -35,7 +36,7 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
     }
 }
 
-void DashboardController::getDashboardData(HttpRequest &request, HttpResponse &response)
+void DashboardController::getDashboardData(const HttpRequest &request, HttpResponse &response)
 {
     const auto &value = request.getParameter("since");
     const auto &since = QDate::fromString(value, Qt::ISODate);
@@ -50,7 +51,7 @@ void DashboardController::getDashboardData(HttpRequest &request, HttpResponse &r
     response.write(data.toUtf8(), true);
 }
 
-void DashboardController::cancelJob(HttpRequest &request, HttpResponse &response)
+void DashboardController::cancelJob(const HttpRequest &request, HttpResponse &response)
 {
     const auto &jobIdStr = request.getParameter("jobId");
     bool ok;
@@ -72,7 +73,7 @@ void DashboardController::cancelJob(HttpRequest &request, HttpResponse &response
     notifyOrchestrator();
 }
 
-void DashboardController::pauseJob(HttpRequest &request, HttpResponse &response)
+void DashboardController::pauseJob(const HttpRequest &request, HttpResponse &response)
 {
     const auto &jobIdStr = request.getParameter("jobId");
     bool ok;
@@ -94,7 +95,7 @@ void DashboardController::pauseJob(HttpRequest &request, HttpResponse &response)
     notifyOrchestrator();
 }
 
-void DashboardController::resumeJob(HttpRequest &request, HttpResponse &response)
+void DashboardController::resumeJob(const HttpRequest &request, HttpResponse &response)
 {
     const auto &jobIdStr = request.getParameter("jobId");
     bool ok;

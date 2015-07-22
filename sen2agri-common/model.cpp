@@ -544,6 +544,30 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobStartType &sta
     return argument;
 }
 
+QDBusArgument &operator<<(QDBusArgument &argument, ExecutionStatus status)
+{
+    return argument << static_cast<int>(status);
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &status)
+{
+    int statusValue;
+    argument >> statusValue;
+    status = static_cast<ExecutionStatus>(statusValue);
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatusList &statusList)
+{
+    argument.beginArray(qMetaTypeId<int>());
+    for (auto s : statusList) {
+        argument << s;
+    }
+    argument.endArray();
+
+    return argument;
+}
+
 NewJob::NewJob() : processorId(), siteId(), startType()
 {
 }
@@ -590,12 +614,15 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job)
     return argument;
 }
 
-NewTask::NewTask() : jobId()
+NewTask::NewTask() : jobId(), status()
 {
 }
 
-NewTask::NewTask(int jobId, QString module, QString parametersJson)
-    : jobId(jobId), module(std::move(module)), parametersJson(std::move(parametersJson))
+NewTask::NewTask(int jobId, QString module, QString parametersJson, ExecutionStatus status)
+    : jobId(jobId),
+      module(std::move(module)),
+      parametersJson(std::move(parametersJson)),
+      status(status)
 {
 }
 
@@ -607,7 +634,7 @@ void NewTask::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
 {
     argument.beginStructure();
-    argument << task.jobId << task.module << task.parametersJson;
+    argument << task.jobId << task.module << task.parametersJson << task.status;
     argument.endStructure();
 
     return argument;
@@ -616,18 +643,18 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task)
 {
     argument.beginStructure();
-    argument >> task.jobId >> task.module >> task.parametersJson;
+    argument >> task.jobId >> task.module >> task.parametersJson >> task.status;
     argument.endStructure();
 
     return argument;
 }
 
-NewStep::NewStep()
+NewStep::NewStep() : taskId()
 {
 }
 
-NewStep::NewStep(QString name, QString parametersJson)
-    : name(std::move(name)), parametersJson(std::move(parametersJson))
+NewStep::NewStep(int taskId, QString name, QString parametersJson)
+    : taskId(taskId), name(std::move(name)), parametersJson(std::move(parametersJson))
 {
 }
 
@@ -640,7 +667,7 @@ void NewStep::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step)
 {
     argument.beginStructure();
-    argument << step.name << step.parametersJson;
+    argument << step.taskId << step.name << step.parametersJson;
     argument.endStructure();
 
     return argument;
@@ -649,32 +676,8 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step)
 {
     argument.beginStructure();
-    argument >> step.name >> step.parametersJson;
+    argument >> step.taskId >> step.name >> step.parametersJson;
     argument.endStructure();
-
-    return argument;
-}
-
-QDBusArgument &operator<<(QDBusArgument &argument, ExecutionStatus status)
-{
-    return argument << static_cast<int>(status);
-}
-
-const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &status)
-{
-    int statusValue;
-    argument >> statusValue;
-    status = static_cast<ExecutionStatus>(statusValue);
-    return argument;
-}
-
-QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatusList &statusList)
-{
-    argument.beginArray(qMetaTypeId<int>());
-    for (auto s : statusList) {
-        argument << s;
-    }
-    argument.endArray();
 
     return argument;
 }
@@ -1220,25 +1223,54 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, UnprocessedEvent 
     return argument;
 }
 
-NodeStatistics::NodeStatistics() : freeRamKb(), freeDiskBytes()
+NodeStatistics::NodeStatistics()
+    : memTotalKb(),
+      memUsedKb(),
+      swapTotalKb(),
+      swapUsedKb(),
+      loadAvg1(),
+      loadAvg5(),
+      loadAvg15(),
+      diskTotalBytes(),
+      diskUsedBytes()
 {
 }
 
-NodeStatistics::NodeStatistics(QString node, int32_t freeRamKb, int64_t freeDiskBytes)
-    : node(std::move(node)), freeRamKb(freeRamKb), freeDiskBytes(freeDiskBytes)
+NodeStatistics::NodeStatistics(QString node,
+                               int64_t memTotalKb,
+                               int64_t memUsedKb,
+                               int64_t swapTotalKb,
+                               int64_t swapUsedKb,
+                               double loadAvg1,
+                               double loadAvg5,
+                               double loadAvg15,
+                               int64_t diskTotalBytes,
+                               int64_t diskUsedBytes)
+    : node(std::move(node)),
+      memTotalKb(memTotalKb),
+      memUsedKb(memUsedKb),
+      swapTotalKb(swapTotalKb),
+      swapUsedKb(swapUsedKb),
+      loadAvg1(loadAvg1),
+      loadAvg5(loadAvg5),
+      loadAvg15(loadAvg15),
+      diskTotalBytes(diskTotalBytes),
+      diskUsedBytes(diskUsedBytes)
 {
 }
 
 void NodeStatistics::registerMetaTypes()
 {
     qDBusRegisterMetaType<NodeStatistics>();
-    qDBusRegisterMetaType<NodeStatisticsList>();
 }
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NodeStatistics &statistics)
 {
     argument.beginStructure();
-    argument << statistics.node << statistics.freeRamKb << statistics.freeDiskBytes;
+    argument << statistics.node << statistics.memTotalKb << statistics.memUsedKb
+             << statistics.swapTotalKb << statistics.swapUsedKb << statistics.loadAvg1
+             << statistics.loadAvg5 << statistics.loadAvg15 << statistics.diskTotalBytes
+             << statistics.diskUsedBytes;
     argument.endStructure();
 
     return argument;
@@ -1247,7 +1279,10 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NodeStatistics &statist
 const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &statistics)
 {
     argument.beginStructure();
-    argument >> statistics.node >> statistics.freeRamKb >> statistics.freeDiskBytes;
+    argument >> statistics.node >> statistics.memTotalKb >> statistics.memUsedKb >>
+        statistics.swapTotalKb >> statistics.swapUsedKb >> statistics.loadAvg1 >>
+        statistics.loadAvg5 >> statistics.loadAvg15 >> statistics.diskTotalBytes >>
+        statistics.diskUsedBytes;
     argument.endStructure();
 
     return argument;

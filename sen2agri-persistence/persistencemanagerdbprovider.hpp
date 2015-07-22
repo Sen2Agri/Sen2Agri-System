@@ -36,7 +36,7 @@ public:
 
     int SubmitJob(const NewJob &job);
     int SubmitTask(const NewTask &task);
-    void SubmitSteps(int taskId, const NewStepList &steps);
+    void SubmitSteps(const NewStepList &steps);
 
     void MarkStepPendingStart(int taskId, const QString &name);
     void MarkStepStarted(int taskId, const QString &name);

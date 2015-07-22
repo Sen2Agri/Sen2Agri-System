@@ -33,6 +33,14 @@ struct maker<int64_t> {
 };
 
 template <>
+struct maker<double> {
+    static float make()
+    {
+        return 42.12;
+    }
+};
+
+template <>
 struct maker<QString> {
     static QString make()
     {
@@ -220,7 +228,10 @@ template <>
 struct maker<NewTask> {
     static NewTask make()
     {
-        return { maker<int>::make(), maker<QString>::make(), maker<QString>::make() };
+        return { maker<int>::make(),
+                 maker<QString>::make(),
+                 maker<QString>::make(),
+                 maker<ExecutionStatus>::make() };
     }
 };
 
@@ -228,7 +239,7 @@ template <>
 struct maker<NewStep> {
     static NewStep make()
     {
-        return { maker<QString>::make(), maker<QString>::make() };
+        return { maker<int>::make(), maker<QString>::make(), maker<QString>::make() };
     }
 };
 
@@ -324,7 +335,10 @@ template <>
 struct maker<NodeStatistics> {
     static NodeStatistics make()
     {
-        return { maker<QString>::make(), maker<int32_t>::make(), maker<int64_t>::make() };
+        return { maker<QString>::make(), maker<int64_t>::make(), maker<int64_t>::make(),
+                 maker<int64_t>::make(), maker<int64_t>::make(), maker<double>::make(),
+                 maker<double>::make(),  maker<double>::make(),  maker<int64_t>::make(),
+                 maker<int64_t>::make() };
     }
 };
 

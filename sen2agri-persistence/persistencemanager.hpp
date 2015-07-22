@@ -51,7 +51,7 @@ public slots:
 
     int SubmitJob(NewJob job);
     int SubmitTask(NewTask task);
-    void SubmitSteps(int taskId, NewStepList steps);
+    void SubmitSteps(NewStepList steps);
 
     void MarkStepPendingStart(int taskId, QString name);
     void MarkStepStarted(int taskId, QString name);

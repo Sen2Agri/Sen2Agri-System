@@ -130,6 +130,11 @@ ArchivedProductList Reflector::ReflectArchivedProductList(const ArchivedProductL
     return value;
 }
 
+ExecutionStatusList Reflector::ReflectExecutionStatusList(const ExecutionStatusList &value)
+{
+    return value;
+}
+
 NewJob Reflector::ReflectNewJob(const NewJob &value)
 {
     return value;
@@ -146,11 +151,6 @@ NewStep Reflector::ReflectNewStep(const NewStep &value)
 }
 
 NewStepList Reflector::ReflectNewStepList(const NewStepList &value)
-{
-    return value;
-}
-
-ExecutionStatusList Reflector::ReflectExecutionStatusList(const ExecutionStatusList &value)
 {
     return value;
 }
@@ -211,11 +211,6 @@ UnprocessedEventList Reflector::ReflectUnprocessedEventList(const UnprocessedEve
 }
 
 NodeStatistics Reflector::ReflectNodeStatistics(const NodeStatistics &value)
-{
-    return value;
-}
-
-NodeStatisticsList Reflector::ReflectNodeStatisticsList(const NodeStatisticsList &value)
 {
     return value;
 }

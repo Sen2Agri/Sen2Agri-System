@@ -11,6 +11,7 @@
 
 #include "persistencemanager.hpp"
 #include "persistencemanager_adaptor.h"
+#include "configuration.hpp"
 #include "settings.hpp"
 #include "logger.hpp"
 
@@ -27,35 +28,8 @@ int main(int argc, char *argv[])
         Logger::installMessageHandler();
 
         QCoreApplication app(argc, argv);
-        QCoreApplication::setApplicationName(QStringLiteral("sen2agri-persistence"));
 
-        QCommandLineParser parser;
-        QCommandLineOption configFileOption(QStringLiteral("f"),
-                                            QStringLiteral("Use this config file"),
-                                            QStringLiteral("config file"));
-        parser.addOption(configFileOption);
-        parser.addHelpOption();
-        parser.process(app);
-
-        QString configFile;
-        if (parser.isSet(configFileOption)) {
-            configFile = parser.value(configFileOption);
-        } else {
-            configFile = QProcessEnvironment::systemEnvironment().value(
-                QStringLiteral("SEN2AGRI_CONFIG_DIR"), QStringLiteral("/etc/sen2agri"));
-            configFile += QStringLiteral("/sen2agri-persistence.conf");
-        }
-
-        Logger::info(QStringLiteral("Reading settings from %1").arg(configFile));
-
-        if (!QFileInfo::exists(configFile)) {
-            throw std::runtime_error(
-                QStringLiteral("Configuration file %1 does not exist, exiting.")
-                    .arg(configFile)
-                    .toStdString());
-        }
-
-        const auto &settings = Settings::readSettings(configFile);
+        const auto &settings = Settings::readSettings(getConfigurationFile(app));
 
         registerMetaTypes();
 

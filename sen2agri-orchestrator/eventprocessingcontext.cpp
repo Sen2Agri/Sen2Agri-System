@@ -22,9 +22,9 @@ int EventProcessingContext::SubmitTask(const NewTask &task)
     return WaitForResponseAndThrow(persistenceManagerClient.SubmitTask(task));
 }
 
-void EventProcessingContext::SubmitSteps(int taskId, const NewStepList &steps)
+void EventProcessingContext::SubmitSteps(const NewStepList &steps)
 {
-    WaitForResponseAndThrow(persistenceManagerClient.SubmitSteps(taskId, steps));
+    WaitForResponseAndThrow(persistenceManagerClient.SubmitSteps(steps));
 }
 
 void EventProcessingContext::MarkJobPaused(int jobId)
@@ -76,6 +76,11 @@ void EventProcessingContext::MarkEventProcessingStarted(int eventId)
 void EventProcessingContext::MarkEventProcessingComplete(int eventId)
 {
     WaitForResponseAndThrow(persistenceManagerClient.MarkEventProcessingComplete(eventId));
+}
+
+int EventProcessingContext::InsertProduct(const NewProduct &product)
+{
+    return WaitForResponseAndThrow(persistenceManagerClient.InsertProduct(product));
 }
 
 std::vector<QString> EventProcessingContext::GetProductFiles(const QString &path,

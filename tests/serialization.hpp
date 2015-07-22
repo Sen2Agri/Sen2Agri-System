@@ -43,11 +43,11 @@ private slots:
     void productToArchiveList();
     void archivedProduct();
     void archivedProductList();
+    void executionStatusList();
     void newJob();
     void newTask();
     void newStep();
     void newStepList();
-    void executionStatusList();
     void executionStatistics();
     void taskAddedEvent();
     void taskFinishedEvent();
@@ -60,7 +60,6 @@ private slots:
     void unprocessedEvent();
     void unprocessedEventList();
     void nodeStatistics();
-    void nodeStatisticsList();
     void stepArgument();
     void stepArgumentList();
     void newExecutorStep();
