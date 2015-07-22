@@ -29,8 +29,10 @@ void DummyProcessorHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                 .toStdString());
     }
 
-    auto taskId =
-        ctx.SubmitTask({ event.jobId, QStringLiteral("dummy-module"), QStringLiteral("null") });
+    auto taskId = ctx.SubmitTask({ event.jobId,
+                                   QStringLiteral("dummy-module"),
+                                   QStringLiteral("null"),
+                                   ExecutionStatus::Submitted });
 
     const auto &outputPath = ctx.GetOutputPath(event.jobId, taskId);
 

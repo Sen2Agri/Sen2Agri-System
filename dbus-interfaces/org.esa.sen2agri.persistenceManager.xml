@@ -44,7 +44,7 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewJob" />
     </method>
     <method name="SubmitTask">
-      <arg name="task" type="(iss)" direction="in" />
+      <arg name="task" type="(issi)" direction="in" />
       <arg name="taskId" type="i" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewTask" />
     </method>

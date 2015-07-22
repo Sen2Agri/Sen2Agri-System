@@ -228,7 +228,10 @@ template <>
 struct maker<NewTask> {
     static NewTask make()
     {
-        return { maker<int>::make(), maker<QString>::make(), maker<QString>::make() };
+        return { maker<int>::make(),
+                 maker<QString>::make(),
+                 maker<QString>::make(),
+                 maker<ExecutionStatus>::make() };
     }
 };
 

@@ -614,12 +614,15 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job)
     return argument;
 }
 
-NewTask::NewTask() : jobId()
+NewTask::NewTask() : jobId(), status()
 {
 }
 
-NewTask::NewTask(int jobId, QString module, QString parametersJson)
-    : jobId(jobId), module(std::move(module)), parametersJson(std::move(parametersJson))
+NewTask::NewTask(int jobId, QString module, QString parametersJson, ExecutionStatus status)
+    : jobId(jobId),
+      module(std::move(module)),
+      parametersJson(std::move(parametersJson)),
+      status(status)
 {
 }
 
@@ -631,7 +634,7 @@ void NewTask::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
 {
     argument.beginStructure();
-    argument << task.jobId << task.module << task.parametersJson;
+    argument << task.jobId << task.module << task.parametersJson << task.status;
     argument.endStructure();
 
     return argument;
@@ -640,7 +643,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task)
 {
     argument.beginStructure();
-    argument >> task.jobId >> task.module >> task.parametersJson;
+    argument >> task.jobId >> task.module >> task.parametersJson >> task.status;
     argument.endStructure();
 
     return argument;

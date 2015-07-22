@@ -338,9 +338,10 @@ public:
     int jobId;
     QString module;
     QString parametersJson;
+    ExecutionStatus status;
 
     NewTask();
-    NewTask(int jobId, QString module, QString parametersJson);
+    NewTask(int jobId, QString module, QString parametersJson, ExecutionStatus status);
 
     static void registerMetaTypes();
 };

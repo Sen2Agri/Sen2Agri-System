@@ -297,10 +297,11 @@ int PersistenceManagerDBProvider::SubmitTask(const NewTask &task)
 
     return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(
-            QStringLiteral("select * from sp_submit_task(:jobId, :module, :parameters)"));
+            QStringLiteral("select * from sp_submit_task(:jobId, :module, :parameters, :status)"));
         query.bindValue(QStringLiteral(":jobId"), task.jobId);
         query.bindValue(QStringLiteral(":module"), task.module);
         query.bindValue(QStringLiteral(":parameters"), task.parametersJson);
+        query.bindValue(QStringLiteral(":status"), static_cast<int>(task.status));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
