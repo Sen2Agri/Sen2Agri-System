@@ -16,7 +16,7 @@ public:
     JobConfigurationParameterValueList GetJobConfigurationParameters(int jobId, QString prefix);
 
     int SubmitTask(const NewTask &task);
-    void SubmitSteps(int taskId, const NewStepList &steps);
+    void SubmitSteps(const NewStepList &steps);
 
     void MarkJobPaused(int jobId);
     void MarkJobResumed(int jobId);
@@ -38,7 +38,8 @@ public:
     QString GetOutputPath(int jobId, int taskId);
 
     template <typename F>
-    NewStepList CreateStepsFromInput(const QString &inputPath,
+    NewStepList CreateStepsFromInput(int taskId,
+                                     const QString &inputPath,
                                      const QString &outputPath,
                                      const QString &pattern,
                                      F &&f)
@@ -49,7 +50,8 @@ public:
         for (const auto &file : GetProductFiles(inputPath, pattern)) {
 
             steps.push_back(
-                { QFileInfo(file).baseName(),
+                { taskId,
+                  QFileInfo(file).baseName(),
                   QString::fromUtf8(QJsonDocument(f(input + file, outputPath + file)).toJson()) });
         }
 

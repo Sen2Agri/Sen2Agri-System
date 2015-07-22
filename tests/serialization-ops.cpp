@@ -106,6 +106,7 @@ void compare(const NewTask &v1, const NewTask &v2)
 
 void compare(const NewStep &v1, const NewStep &v2)
 {
+    compare(v1.taskId, v2.taskId);
     compare(v1.name, v2.name);
     compare(v1.parametersJson, v2.parametersJson);
 }

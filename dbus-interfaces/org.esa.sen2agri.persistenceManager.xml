@@ -49,9 +49,8 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewTask" />
     </method>
     <method name="SubmitSteps">
-      <arg name="taskId" type="i" direction="in" />
-      <arg name="steps" type="a(say)" direction="in" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="NewStepList" />
+      <arg name="steps" type="a(iss)" direction="in" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewStepList" />
     </method>
     <method name="MarkStepPendingStart">
       <arg name="taskId" type="i" direction="in" />

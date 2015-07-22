@@ -283,6 +283,27 @@ enum class JobStartType { Triggered = 1, Requested = 2, Scheduled = 3 };
 QDBusArgument &operator<<(QDBusArgument &argument, JobStartType startType);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobStartType &startType);
 
+enum class ExecutionStatus {
+    Submitted = 1,
+    PendingStart,
+    NeedsInput,
+    Running,
+    Paused,
+    Finished,
+    Cancelled,
+    Error
+};
+
+typedef QList<ExecutionStatus> ExecutionStatusList;
+
+Q_DECLARE_METATYPE(ExecutionStatusList)
+
+QDBusArgument &operator<<(QDBusArgument &argument, ExecutionStatus status);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &status);
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatusList &statusList);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatusList &statusList);
+
 class NewJob
 {
 public:
@@ -332,11 +353,12 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task);
 class NewStep
 {
 public:
+    int taskId;
     QString name;
     QString parametersJson;
 
     NewStep();
-    NewStep(QString name, QString parametersJson);
+    NewStep(int taskId, QString name, QString parametersJson);
 
     static void registerMetaTypes();
 };
@@ -348,27 +370,6 @@ Q_DECLARE_METATYPE(NewStepList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step);
-
-enum class ExecutionStatus {
-    Submitted = 1,
-    PendingStart,
-    NeedsInput,
-    Running,
-    Paused,
-    Finished,
-    Cancelled,
-    Error
-};
-
-typedef QList<ExecutionStatus> ExecutionStatusList;
-
-Q_DECLARE_METATYPE(ExecutionStatusList)
-
-QDBusArgument &operator<<(QDBusArgument &argument, ExecutionStatus status);
-const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &status);
-
-QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatusList &statusList);
-const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatusList &statusList);
 
 class ExecutionStatistics
 {

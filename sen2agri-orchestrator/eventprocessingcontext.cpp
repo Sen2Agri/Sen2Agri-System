@@ -22,9 +22,9 @@ int EventProcessingContext::SubmitTask(const NewTask &task)
     return WaitForResponseAndThrow(persistenceManagerClient.SubmitTask(task));
 }
 
-void EventProcessingContext::SubmitSteps(int taskId, const NewStepList &steps)
+void EventProcessingContext::SubmitSteps(const NewStepList &steps)
 {
-    WaitForResponseAndThrow(persistenceManagerClient.SubmitSteps(taskId, steps));
+    WaitForResponseAndThrow(persistenceManagerClient.SubmitSteps(steps));
 }
 
 void EventProcessingContext::MarkJobPaused(int jobId)

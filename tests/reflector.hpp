@@ -46,11 +46,11 @@ public slots:
     ProductToArchiveList ReflectProductToArchiveList(const ProductToArchiveList &value);
     ArchivedProduct ReflectArchivedProduct(const ArchivedProduct &value);
     ArchivedProductList ReflectArchivedProductList(const ArchivedProductList &value);
+    ExecutionStatusList ReflectExecutionStatusList(const ExecutionStatusList &value);
     NewJob ReflectNewJob(const NewJob &value);
     NewTask ReflectNewTask(const NewTask &value);
     NewStep ReflectNewStep(const NewStep &value);
     NewStepList ReflectNewStepList(const NewStepList &value);
-    ExecutionStatusList ReflectExecutionStatusList(const ExecutionStatusList &value);
     ExecutionStatistics ReflectExecutionStatistics(const ExecutionStatistics &value);
     TaskAddedEvent ReflectTaskAddedEvent(const TaskAddedEvent &value);
     TaskFinishedEvent ReflectTaskFinishedEvent(const TaskFinishedEvent &value);

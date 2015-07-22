@@ -35,7 +35,7 @@ void DummyProcessorHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &outputPath = ctx.GetOutputPath(event.jobId, taskId);
 
     const auto &steps = ctx.CreateStepsFromInput(
-        inputPath, outputPath, QStringLiteral("*.*"),
+        taskId, inputPath, outputPath, QStringLiteral("*.*"),
         [](const QString &inputFile, const QString &outputFile) {
             QJsonObject node;
             node[QStringLiteral("arguments")] = QJsonArray{ inputFile, outputFile };
@@ -43,7 +43,7 @@ void DummyProcessorHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
             return node;
         });
 
-    ctx.SubmitSteps(taskId, steps);
+    ctx.SubmitSteps(steps);
 }
 
 void DummyProcessorHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,

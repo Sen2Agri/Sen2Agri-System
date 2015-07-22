@@ -133,12 +133,11 @@ int PersistenceManager::SubmitTask(NewTask task)
     return {};
 }
 
-void PersistenceManager::SubmitSteps(int taskId, NewStepList steps)
+void PersistenceManager::SubmitSteps(NewStepList steps)
 {
-    RunAsync(
-        std::bind([](PersistenceManagerDBProvider &dbProvider, int taskId,
-                     const NewStepList &steps) { return dbProvider.SubmitSteps(taskId, steps); },
-                  std::ref(dbProvider), taskId, std::move(steps)));
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const NewStepList &steps) {
+        return dbProvider.SubmitSteps(steps);
+    }, std::ref(dbProvider), std::move(steps)));
 }
 
 void PersistenceManager::MarkStepPendingStart(int taskId, QString name)

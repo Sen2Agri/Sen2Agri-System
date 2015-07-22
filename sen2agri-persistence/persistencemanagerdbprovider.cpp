@@ -316,13 +316,12 @@ int PersistenceManagerDBProvider::SubmitTask(const NewTask &task)
     });
 }
 
-void PersistenceManagerDBProvider::SubmitSteps(int taskId, const NewStepList &steps)
+void PersistenceManagerDBProvider::SubmitSteps(const NewStepList &steps)
 {
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral("select sp_submit_steps(:taskId, :steps)"));
-        query.bindValue(QStringLiteral(":taskId"), taskId);
+        auto query = db.prepareQuery(QStringLiteral("select sp_submit_steps(:steps)"));
         query.bindValue(QStringLiteral(":steps"), getNewStepsJson(steps));
 
         query.setForwardOnly(true);

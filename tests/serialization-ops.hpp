@@ -236,7 +236,7 @@ template <>
 struct maker<NewStep> {
     static NewStep make()
     {
-        return { maker<QString>::make(), maker<QString>::make() };
+        return { maker<int>::make(), maker<QString>::make(), maker<QString>::make() };
     }
 };
 

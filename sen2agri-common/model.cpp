@@ -544,6 +544,30 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobStartType &sta
     return argument;
 }
 
+QDBusArgument &operator<<(QDBusArgument &argument, ExecutionStatus status)
+{
+    return argument << static_cast<int>(status);
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &status)
+{
+    int statusValue;
+    argument >> statusValue;
+    status = static_cast<ExecutionStatus>(statusValue);
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatusList &statusList)
+{
+    argument.beginArray(qMetaTypeId<int>());
+    for (auto s : statusList) {
+        argument << s;
+    }
+    argument.endArray();
+
+    return argument;
+}
+
 NewJob::NewJob() : processorId(), siteId(), startType()
 {
 }
@@ -622,12 +646,12 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task)
     return argument;
 }
 
-NewStep::NewStep()
+NewStep::NewStep() : taskId()
 {
 }
 
-NewStep::NewStep(QString name, QString parametersJson)
-    : name(std::move(name)), parametersJson(std::move(parametersJson))
+NewStep::NewStep(int taskId, QString name, QString parametersJson)
+    : taskId(taskId), name(std::move(name)), parametersJson(std::move(parametersJson))
 {
 }
 
@@ -640,7 +664,7 @@ void NewStep::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step)
 {
     argument.beginStructure();
-    argument << step.name << step.parametersJson;
+    argument << step.taskId << step.name << step.parametersJson;
     argument.endStructure();
 
     return argument;
@@ -649,32 +673,8 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step)
 {
     argument.beginStructure();
-    argument >> step.name >> step.parametersJson;
+    argument >> step.taskId >> step.name >> step.parametersJson;
     argument.endStructure();
-
-    return argument;
-}
-
-QDBusArgument &operator<<(QDBusArgument &argument, ExecutionStatus status)
-{
-    return argument << static_cast<int>(status);
-}
-
-const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &status)
-{
-    int statusValue;
-    argument >> statusValue;
-    status = static_cast<ExecutionStatus>(statusValue);
-    return argument;
-}
-
-QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatusList &statusList)
-{
-    argument.beginArray(qMetaTypeId<int>());
-    for (auto s : statusList) {
-        argument << s;
-    }
-    argument.endArray();
 
     return argument;
 }
