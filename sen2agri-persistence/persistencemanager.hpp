@@ -68,7 +68,7 @@ public slots:
     JobStepToRunList GetTaskStepsForStart(int taskId);
     JobStepToRunList GetJobStepsForResume(int jobId);
 
-    void InsertTaskAddedEvent(TaskAddedEvent event);
+    void InsertTaskAddedEvent(TaskRunnableEvent event);
     void InsertTaskFinishedEvent(TaskFinishedEvent event);
     void InsertProductAvailableEvent(ProductAvailableEvent event);
     void InsertJobCancelledEvent(JobCancelledEvent event);

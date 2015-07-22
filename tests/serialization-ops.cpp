@@ -125,7 +125,7 @@ void compare(const ExecutionStatistics &v1, const ExecutionStatistics &v2)
     compare(v1.diskWriteBytes, v2.diskWriteBytes);
 }
 
-void compare(const TaskAddedEvent &v1, const TaskAddedEvent &v2)
+void compare(const TaskRunnableEvent &v1, const TaskRunnableEvent &v2)
 {
     compare(v1.jobId, v2.jobId);
     compare(v1.taskId, v2.taskId);

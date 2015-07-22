@@ -53,7 +53,7 @@ public slots:
     NewStep ReflectNewStep(const NewStep &value);
     NewStepList ReflectNewStepList(const NewStepList &value);
     ExecutionStatistics ReflectExecutionStatistics(const ExecutionStatistics &value);
-    TaskAddedEvent ReflectTaskAddedEvent(const TaskAddedEvent &value);
+    TaskRunnableEvent ReflectTaskRunnableEvent(const TaskRunnableEvent &value);
     TaskFinishedEvent ReflectTaskFinishedEvent(const TaskFinishedEvent &value);
     ProductAvailableEvent ReflectProductAvailableEvent(const ProductAvailableEvent &value);
     JobCancelledEvent ReflectJobCancelledEvent(const JobCancelledEvent &value);

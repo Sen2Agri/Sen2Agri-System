@@ -321,13 +321,13 @@ void Serialization::executionStatistics()
     compare(WaitForResponseAndThrow(client->ReflectExecutionStatistics(emptyValue)), emptyValue);
 }
 
-void Serialization::taskAddedEvent()
+void Serialization::taskRunnableEvent()
 {
-    const auto &value = maker<TaskAddedEvent>::make();
-    compare(WaitForResponseAndThrow(client->ReflectTaskAddedEvent(value)), value);
+    const auto &value = maker<TaskRunnableEvent>::make();
+    compare(WaitForResponseAndThrow(client->ReflectTaskRunnableEvent(value)), value);
 
-    TaskAddedEvent emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectTaskAddedEvent(emptyValue)), emptyValue);
+    TaskRunnableEvent emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectTaskRunnableEvent(emptyValue)), emptyValue);
 }
 
 void Serialization::taskFinishedEvent()

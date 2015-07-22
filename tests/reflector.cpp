@@ -165,7 +165,7 @@ ExecutionStatistics Reflector::ReflectExecutionStatistics(const ExecutionStatist
     return value;
 }
 
-TaskAddedEvent Reflector::ReflectTaskAddedEvent(const TaskAddedEvent &value)
+TaskRunnableEvent Reflector::ReflectTaskRunnableEvent(const TaskRunnableEvent &value)
 {
     return value;
 }
