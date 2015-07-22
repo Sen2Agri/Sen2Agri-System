@@ -140,6 +140,11 @@ NewJob Reflector::ReflectNewJob(const NewJob &value)
     return value;
 }
 
+TaskIdList Reflector::ReflectTaskIdList(const TaskIdList &value)
+{
+    return value;
+}
+
 NewTask Reflector::ReflectNewTask(const NewTask &value)
 {
     return value;
@@ -231,11 +236,6 @@ NewExecutorStep Reflector::ReflectNewExecutorStep(const NewExecutorStep &value)
 }
 
 NewExecutorStepList Reflector::ReflectNewExecutorStepList(const NewExecutorStepList &value)
-{
-    return value;
-}
-
-TaskIdList Reflector::ReflectTaskIdList(const TaskIdList &value)
 {
     return value;
 }

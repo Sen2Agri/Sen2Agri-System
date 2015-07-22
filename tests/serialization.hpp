@@ -45,6 +45,7 @@ private slots:
     void archivedProductList();
     void executionStatusList();
     void newJob();
+    void taskIdList();
     void newTask();
     void newStep();
     void newStepList();
@@ -64,7 +65,6 @@ private slots:
     void stepArgumentList();
     void newExecutorStep();
     void newExecutorStepList();
-    void taskIdList();
     void jobStepToRun();
     void jobStepToRunList();
     void newProduct();

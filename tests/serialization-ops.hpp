@@ -231,7 +231,7 @@ struct maker<NewTask> {
         return { maker<int>::make(),
                  maker<QString>::make(),
                  maker<QString>::make(),
-                 maker<ExecutionStatus>::make() };
+                 maker<TaskIdList>::make() };
     }
 };
 

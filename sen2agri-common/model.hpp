@@ -332,16 +332,20 @@ Q_DECLARE_METATYPE(NewJob)
 QDBusArgument &operator<<(QDBusArgument &argument, const NewJob &job);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job);
 
+typedef QList<int> TaskIdList;
+
+Q_DECLARE_METATYPE(TaskIdList)
+
 class NewTask
 {
 public:
     int jobId;
     QString module;
     QString parametersJson;
-    ExecutionStatus status;
+    TaskIdList parentTasks;
 
     NewTask();
-    NewTask(int jobId, QString module, QString parametersJson, ExecutionStatus status);
+    NewTask(int jobId, QString module, QString parametersJson, TaskIdList parentTasks);
 
     static void registerMetaTypes();
 };
@@ -690,10 +694,6 @@ Q_DECLARE_METATYPE(NewExecutorStepList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewExecutorStep &step);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewExecutorStep &step);
-
-typedef QList<int> TaskIdList;
-
-Q_DECLARE_METATYPE(TaskIdList)
 
 class JobStepToRun
 {

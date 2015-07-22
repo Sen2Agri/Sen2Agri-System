@@ -152,6 +152,12 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewJob" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NewJob" />
     </method>
+    <method name="ReflectTaskIdList">
+      <arg name="value" type="TaskIdList" direction="in" />
+      <arg name="result" type="TaskIdList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="TaskIdList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="TaskIdList" />
+    </method>
     <method name="ReflectNewTask">
       <arg name="value" type="NewTask" direction="in" />
       <arg name="result" type="NewTask" direction="out" />
@@ -265,12 +271,6 @@
       <arg name="result" type="NewExecutorStepList" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewExecutorStepList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NewExecutorStepList" />
-    </method>
-    <method name="ReflectTaskIdList">
-      <arg name="value" type="TaskIdList" direction="in" />
-      <arg name="result" type="TaskIdList" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="TaskIdList" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="TaskIdList" />
     </method>
     <method name="ReflectJobStepToRun">
       <arg name="value" type="JobStepToRun" direction="in" />

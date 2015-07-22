@@ -102,7 +102,7 @@ void compare(const NewTask &v1, const NewTask &v2)
     compare(v1.jobId, v2.jobId);
     compare(v1.module, v2.module);
     compare(v1.parametersJson, v2.parametersJson);
-    compare(v1.status, v2.status);
+    compare(v1.parentTasks, v2.parentTasks);
 }
 
 void compare(const NewStep &v1, const NewStep &v2)
