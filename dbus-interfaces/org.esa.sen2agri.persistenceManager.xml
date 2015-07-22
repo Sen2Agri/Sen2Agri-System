@@ -39,12 +39,12 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ArchivedProductList" />
     </method>
     <method name="SubmitJob">
-      <arg name="job" type="(ssiiiay)" direction="in" />
+      <arg name="job" type="(ssiiis)" direction="in" />
       <arg name="jobId" type="i" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewJob" />
     </method>
     <method name="SubmitTask">
-      <arg name="task" type="(isay)" direction="in" />
+      <arg name="task" type="(iss)" direction="in" />
       <arg name="taskId" type="i" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewTask" />
     </method>
@@ -95,12 +95,12 @@
     </method>
     <method name="GetTaskStepsForStart">
       <arg name="taskId" type="i" direction="in" />
-      <arg name="steps" type="a(issay)" direction="out" />
+      <arg name="steps" type="a(isss)" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobStepToRunList" />
     </method>
     <method name="GetJobStepsForResume">
       <arg name="jobId" type="i" direction="in" />
-      <arg name="steps" type="a(issay)" direction="out" />
+      <arg name="steps" type="a(isss)" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobStepToRunList" />
     </method>
     <method name="InsertTaskFinishedEvent">
@@ -128,7 +128,7 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobSubmittedEvent" />
     </method>
     <method name="GetNewEvents">
-      <arg name="events" type="a(iiay((iii)(iiii)i)b((iii)(iiii)i))" direction="out" />
+      <arg name="events" type="a(iis((iii)(iiii)i)b((iii)(iiii)i))" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="UnprocessedEventList" />
     </method>
     <method name="MarkEventProcessingStarted">
