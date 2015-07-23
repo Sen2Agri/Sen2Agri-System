@@ -4,37 +4,34 @@
 
 #include "orchestratorrequestshandler.h"
 #include "ressourcemanageritf.h"
-#include "logger.h"
+#include "requestparamssubmitsteps.h"
+#include "requestparamscanceltasks.h"
 
-bool OrchestratorRequestsHandler::ExecuteProcessor(const QString &jsonCfgStr)
+void OrchestratorRequestsHandler::SubmitSteps(const NewExecutorStepList &steps)
 {
-    qDebug() << "Called  ExecuteProcessor with param 1# " << jsonCfgStr;
+    QList<NewExecutorStep>::const_iterator stepIt;
+    QList<StepArgument>::const_iterator stepArgIt;
 
-    QJsonParseError err;
-    QByteArray ba(jsonCfgStr.toStdString().c_str());
-    QJsonDocument document = QJsonDocument::fromJson(ba, &err);
-    if(err.error != QJsonParseError::NoError || !document.isObject())
-    {
-        Logger::GetInstance()->error("An error occurred during parsing message %s", jsonCfgStr.toStdString().c_str());
-        return false;
+    RequestParamsSubmitSteps *pReqParams = new RequestParamsSubmitSteps();
+
+    for (stepIt = steps.begin(); stepIt != steps.end(); stepIt++) {
+        ExecutionStep& execStep = pReqParams->AddExecutionStep((*stepIt).taskId, (*stepIt).stepName, (*stepIt).processorPath);
+        for (stepArgIt = (*stepIt).arguments.begin(); stepArgIt != (*stepIt).arguments.end(); stepArgIt++) {
+            execStep.AddArgument((*stepArgIt).value);
+        }
     }
-
-    QVariantMap msgVals = document.object().toVariantMap();
-    msgVals["MSG_TYPE"] = START_PROCESSOR_REQ;
-    RessourceManagerItf::GetInstance()->StartProcessor(msgVals);
-
-    return true;
+    RessourceManagerItf::GetInstance()->StartProcessor(pReqParams);
 }
 
-bool OrchestratorRequestsHandler::StopProcessorJob(const QString &jobName)
+void OrchestratorRequestsHandler::CancelTasks(const TaskIdList &tasks)
 {
-    QVariantMap mapVar;
-
-    mapVar["MSG_TYPE"] = STOP_PROCESSOR_REQ;
-    mapVar["PROC_JOB_NAME"] = jobName;
-
-    return RessourceManagerItf::GetInstance()->StopProcessor(mapVar);
+    RequestParamsCancelTasks *pReq = new RequestParamsCancelTasks();
+    QList<int> taskIds;
+    QList<int>::const_iterator idIt;
+    for (idIt = tasks.begin(); idIt != tasks.end(); idIt++) {
+        taskIds.append(*idIt);
+    }
+    pReq->SetTaskIdsToCancel(taskIds);
+    RessourceManagerItf::GetInstance()->CancelTasks(pReq);
 }
 
-//TODO: Add here also the function:
-// GetRunningProcessorJobs

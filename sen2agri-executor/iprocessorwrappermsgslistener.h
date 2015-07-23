@@ -1,7 +1,7 @@
 #ifndef IPROCESSORWRAPPERMSGSLISTENER_H
 #define IPROCESSORWRAPPERMSGSLISTENER_H
 
-#include <QVariantMap>
+#include "requestparamsbase.h"
 
 class IProcessorWrapperMsgsListener
 {
@@ -9,7 +9,7 @@ public:
     IProcessorWrapperMsgsListener() {}
     virtual ~IProcessorWrapperMsgsListener(){}
 
-    virtual void OnProcessorNewMsg(QVariantMap &msgVals) = 0;
+    virtual void OnProcessorNewMsg(RequestParamsBase *pReq) = 0;
 };
 
 #endif // IPROCESSORWRAPPERMSGSLISTENER_H

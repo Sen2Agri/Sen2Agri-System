@@ -1,9 +1,13 @@
-include(../common.pri)
+#-------------------------------------------------
+#
+# Project created by QtCreator 2015-05-21T18:21:01
+#
+#-------------------------------------------------
 
 QT       += core dbus network
 QT       -= gui
 
-TARGET = sen2agri-executor
+TARGET = ProcessorsExecutor
 
 DESTDIR = bin
 
@@ -13,6 +17,10 @@ CONFIG   -= app_bundle
 DEFINES += QT_SHARED
 
 TEMPLATE = app
+
+CONFIG += c++11 precompile_header
+
+PRECOMPILED_HEADER = pch.hpp
 
 INCLUDEPATH += ../Optional
 
@@ -26,6 +34,7 @@ dbus_interface2.header_flags = -i ../sen2agri-common/model.hpp
 
 DBUS_INTERFACES += dbus_interface2
 
+
 SOURCES += main.cpp \
     abstractexecinfosprotsrv.cpp \
     execinfosprotsrvfactory.cpp \
@@ -38,10 +47,7 @@ SOURCES += main.cpp \
     processorexecutioninfos.cpp \
     processorwrapperfactory.cpp \
     configurationmgr.cpp \
-    requestparamsbase.cpp \
-    requestparamscanceltasks.cpp \
-    requestparamssubmitsteps.cpp \
-    requestparamsexecutioninfos.cpp
+    logger.cpp
 
 HEADERS += \
     abstractexecinfosprotsrv.h \
@@ -56,18 +62,15 @@ HEADERS += \
     processorexecutioninfos.h \
     processorwrapperfactory.h \
     configurationmgr.h \
-    pch.hpp \
-    requestparamsbase.h \
-    requestparamscanceltasks.h \
-    requestparamssubmitsteps.h \
-    requestparamsexecutioninfos.h
+    logger.h \
+    pch.hpp
 
 OTHER_FILES += \
     ../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml \
-    ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml \
-    dist/org.esa.sen2agri.processorsExecutor.conf \
-    dist/org.esa.sen2agri.processorsExecutor.service \
-    dist/sen2agri-executor.service
+    ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
+
+#target.path = ../dist
+#INSTALLS += target
 
 LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
 
@@ -75,7 +78,3 @@ INCLUDEPATH += $$PWD/../sen2agri-common
 DEPENDPATH += $$PWD/../sen2agri-common
 
 PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a
-
-target.path = /usr/bin
-
-INSTALLS += target interface dbus-policy dbus-service systemd-service conf

@@ -16,14 +16,8 @@ class OrchestratorRequestsHandler : public QObject
     Q_OBJECT
 
 public:
-    // TODO remove
-    Q_INVOKABLE bool ExecuteProcessor(const QString &jsonCfgStr);
-    Q_INVOKABLE bool StopProcessorJob(const QString &jobName);
-
-
-    // TODO implement
-    Q_INVOKABLE void SubmitSteps(const NewExecutorStepList &steps) { Q_UNUSED(steps); }
-    Q_INVOKABLE void CancelTasks(const TaskIdList &tasks) { Q_UNUSED(tasks); }
+    Q_INVOKABLE void SubmitSteps(const NewExecutorStepList &steps);
+    Q_INVOKABLE void CancelTasks(const TaskIdList &tasks);
 };
 
 #endif // ORCHESTRATORREQUESTSHANDLER_H

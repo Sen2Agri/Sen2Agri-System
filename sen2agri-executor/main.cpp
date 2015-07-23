@@ -2,8 +2,6 @@
 #include <QCoreApplication>
 #include <QDBusError>
 
-#include "logger.h"
-
 #include "orchestratorrequestshandler.h"
 #include "ressourcemanageritf.h"
 #include "configurationmgr.h"
@@ -11,7 +9,7 @@
 #include "processorsexecutor_adaptor.h"
 #include "persistenceitfmodule.h"
 
-#define SERVICE_NAME "org.esa.sen2agri.processorsexecutor"
+#define SERVICE_NAME "org.esa.sen2agri.processorsExecutor"
 
 int main(int argc, char *argv[])
 {
@@ -21,10 +19,6 @@ int main(int argc, char *argv[])
     qDebug() << "Current execution path: " << QDir::currentPath();
 
     registerMetaTypes();
-
-    // Initialize the configuration manager
-    //str = QString("../../config/ProcessorsExecutorCfg.ini");
-    ConfigurationMgr::Initialize(/*str*/);
 
     // Create the QEventLoop
     QEventLoop pause;
@@ -57,14 +51,14 @@ int main(int argc, char *argv[])
 
     QDBusConnection connection = QDBusConnection::sessionBus();
 
-    if (!connection.registerObject("/org/esa/sen2agri/processorsexecutor", &orchestratorReqHandler)) {
+    if (!connection.registerObject("/org/esa/sen2agri/processorsExecutor", &orchestratorReqHandler)) {
         QString str = QString("Error registering the object with D-Bus: %1, exiting.")
                 .arg(connection.lastError().message());
 
         throw std::runtime_error(str.toStdString());
     }
 
-    if (!connection.registerService("org.esa.sen2agri.processorsexecutor")) {
+    if (!connection.registerService(SERVICE_NAME)) {
         QString str = QString("Error registering the object with D-Bus: %1, exiting.")
                 .arg(connection.lastError().message());
 
