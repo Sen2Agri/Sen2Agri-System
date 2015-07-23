@@ -44,6 +44,19 @@ div.panel-heading.smaller_padding {
     padding: 2px 15px;
 }
 
+div.panel div.full_width {
+    width: 98%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+div.panel div.full_height {
+    height: 95%;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+
 div.panel table.full_width {
     width: 98%;
     margin-left: auto;
