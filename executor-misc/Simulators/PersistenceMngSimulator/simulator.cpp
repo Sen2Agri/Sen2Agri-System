@@ -12,7 +12,7 @@ Simulator::Simulator()
     m_pPersistenceMng = new PersistenceManager();
     new PersistenceManagerAdaptor(m_pPersistenceMng);
 
-    if (!connection.registerObject("/org/esa/sen2agri/persistencemanager", m_pPersistenceMng)) {
+    if (!connection.registerObject("/org/esa/sen2agri/persistenceManager", m_pPersistenceMng)) {
         throw std::runtime_error(
             QStringLiteral("Error registering the object with D-Bus: %1, exiting.")
                 .arg(connection.lastError().message())
