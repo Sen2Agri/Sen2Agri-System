@@ -4,8 +4,8 @@ SerializedEvent::SerializedEvent(EventType type, QString data) : type(type), dat
 {
 }
 
-SerializedEvent::SerializedEvent(const TaskAddedEvent &event)
-    : type(EventType::TaskAdded), data(event.toJson())
+SerializedEvent::SerializedEvent(const TaskRunnableEvent &event)
+    : type(EventType::TaskRunnable), data(event.toJson())
 {
 }
 

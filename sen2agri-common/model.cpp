@@ -41,7 +41,7 @@ void registerMetaTypes()
 
     ExecutionStatistics::registerMetaTypes();
 
-    TaskAddedEvent::registerMetaTypes();
+    TaskRunnableEvent::registerMetaTypes();
     TaskFinishedEvent::registerMetaTypes();
     ProductAvailableEvent::registerMetaTypes();
     JobCancelledEvent::registerMetaTypes();
@@ -614,15 +614,15 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job)
     return argument;
 }
 
-NewTask::NewTask() : jobId(), status()
+NewTask::NewTask() : jobId()
 {
 }
 
-NewTask::NewTask(int jobId, QString module, QString parametersJson, ExecutionStatus status)
+NewTask::NewTask(int jobId, QString module, QString parametersJson, TaskIdList parentTasks)
     : jobId(jobId),
       module(std::move(module)),
       parametersJson(std::move(parametersJson)),
-      status(status)
+      parentTasks(std::move(parentTasks))
 {
 }
 
@@ -634,7 +634,7 @@ void NewTask::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
 {
     argument.beginStructure();
-    argument << task.jobId << task.module << task.parametersJson << task.status;
+    argument << task.jobId << task.module << task.parametersJson << task.parentTasks;
     argument.endStructure();
 
     return argument;
@@ -643,7 +643,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task)
 {
     argument.beginStructure();
-    argument >> task.jobId >> task.module >> task.parametersJson >> task.status;
+    argument >> task.jobId >> task.module >> task.parametersJson >> task.parentTasks;
     argument.endStructure();
 
     return argument;
@@ -771,15 +771,15 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, EventType &event)
     return argument;
 }
 
-TaskAddedEvent::TaskAddedEvent() : jobId(), taskId()
+TaskRunnableEvent::TaskRunnableEvent() : jobId(), taskId()
 {
 }
 
-TaskAddedEvent::TaskAddedEvent(int jobId, int taskId) : jobId(jobId), taskId(taskId)
+TaskRunnableEvent::TaskRunnableEvent(int jobId, int taskId) : jobId(jobId), taskId(taskId)
 {
 }
 
-QString TaskAddedEvent::toJson() const
+QString TaskRunnableEvent::toJson() const
 {
     QJsonObject node;
     node[QStringLiteral("job_id")] = jobId;
@@ -788,7 +788,7 @@ QString TaskAddedEvent::toJson() const
     return QString::fromUtf8(QJsonDocument(node).toJson());
 }
 
-TaskAddedEvent TaskAddedEvent::fromJson(const QString &json)
+TaskRunnableEvent TaskRunnableEvent::fromJson(const QString &json)
 {
     const auto &doc = QJsonDocument::fromJson(json.toUtf8());
     const auto &object = doc.object();
@@ -797,12 +797,12 @@ TaskAddedEvent TaskAddedEvent::fromJson(const QString &json)
              object.value(QStringLiteral("task_id")).toInt() };
 }
 
-void TaskAddedEvent::registerMetaTypes()
+void TaskRunnableEvent::registerMetaTypes()
 {
-    qDBusRegisterMetaType<TaskAddedEvent>();
+    qDBusRegisterMetaType<TaskRunnableEvent>();
 }
 
-QDBusArgument &operator<<(QDBusArgument &argument, const TaskAddedEvent &event)
+QDBusArgument &operator<<(QDBusArgument &argument, const TaskRunnableEvent &event)
 {
     argument.beginStructure();
     argument << event.jobId << event.taskId;
@@ -811,7 +811,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const TaskAddedEvent &event)
     return argument;
 }
 
-const QDBusArgument &operator>>(const QDBusArgument &argument, TaskAddedEvent &event)
+const QDBusArgument &operator>>(const QDBusArgument &argument, TaskRunnableEvent &event)
 {
     argument.beginStructure();
     argument >> event.jobId >> event.taskId;

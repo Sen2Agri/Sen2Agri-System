@@ -102,7 +102,7 @@ void compare(const NewTask &v1, const NewTask &v2)
     compare(v1.jobId, v2.jobId);
     compare(v1.module, v2.module);
     compare(v1.parametersJson, v2.parametersJson);
-    compare(v1.status, v2.status);
+    compare(v1.parentTasks, v2.parentTasks);
 }
 
 void compare(const NewStep &v1, const NewStep &v2)
@@ -125,7 +125,7 @@ void compare(const ExecutionStatistics &v1, const ExecutionStatistics &v2)
     compare(v1.diskWriteBytes, v2.diskWriteBytes);
 }
 
-void compare(const TaskAddedEvent &v1, const TaskAddedEvent &v2)
+void compare(const TaskRunnableEvent &v1, const TaskRunnableEvent &v2)
 {
     compare(v1.jobId, v2.jobId);
     compare(v1.taskId, v2.taskId);

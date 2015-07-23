@@ -64,8 +64,8 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
         EventProcessingContext innerCtx(persistenceManagerClient);
 
         switch (event.type) {
-            case EventType::TaskAdded:
-                ProcessEvent(innerCtx, TaskAddedEvent::fromJson(event.dataJson));
+            case EventType::TaskRunnable:
+                ProcessEvent(innerCtx, TaskRunnableEvent::fromJson(event.dataJson));
                 break;
             case EventType::TaskFinished:
                 ProcessEvent(innerCtx, TaskFinishedEvent::fromJson(event.dataJson));
@@ -109,7 +109,7 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
     }
 }
 
-void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskAddedEvent &event)
+void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskRunnableEvent &event)
 {
     const auto &steps =
         WaitForResponseAndThrow(persistenceManagerClient.GetTaskStepsForStart(event.taskId));

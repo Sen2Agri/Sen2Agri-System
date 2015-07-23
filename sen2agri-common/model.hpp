@@ -332,16 +332,20 @@ Q_DECLARE_METATYPE(NewJob)
 QDBusArgument &operator<<(QDBusArgument &argument, const NewJob &job);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job);
 
+typedef QList<int> TaskIdList;
+
+Q_DECLARE_METATYPE(TaskIdList)
+
 class NewTask
 {
 public:
     int jobId;
     QString module;
     QString parametersJson;
-    ExecutionStatus status;
+    TaskIdList parentTasks;
 
     NewTask();
-    NewTask(int jobId, QString module, QString parametersJson, ExecutionStatus status);
+    NewTask(int jobId, QString module, QString parametersJson, TaskIdList parentTasks);
 
     static void registerMetaTypes();
 };
@@ -405,7 +409,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatistics &st
 const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatistics &statistics);
 
 enum class EventType {
-    TaskAdded = 1,
+    TaskRunnable = 1,
     TaskFinished,
     ProductAvailable,
     JobCancelled,
@@ -418,26 +422,26 @@ enum class EventType {
 QDBusArgument &operator<<(QDBusArgument &argument, EventType event);
 const QDBusArgument &operator>>(const QDBusArgument &argument, EventType &event);
 
-class TaskAddedEvent
+class TaskRunnableEvent
 {
 public:
     int jobId;
     int taskId;
 
-    TaskAddedEvent();
-    TaskAddedEvent(int jobId, int taskId);
+    TaskRunnableEvent();
+    TaskRunnableEvent(int jobId, int taskId);
 
     QString toJson() const;
 
-    static TaskAddedEvent fromJson(const QString &json);
+    static TaskRunnableEvent fromJson(const QString &json);
 
     static void registerMetaTypes();
 };
 
-Q_DECLARE_METATYPE(TaskAddedEvent)
+Q_DECLARE_METATYPE(TaskRunnableEvent)
 
-QDBusArgument &operator<<(QDBusArgument &argument, const TaskAddedEvent &event);
-const QDBusArgument &operator>>(const QDBusArgument &argument, TaskAddedEvent &event);
+QDBusArgument &operator<<(QDBusArgument &argument, const TaskRunnableEvent &event);
+const QDBusArgument &operator>>(const QDBusArgument &argument, TaskRunnableEvent &event);
 
 class TaskFinishedEvent
 {
@@ -690,10 +694,6 @@ Q_DECLARE_METATYPE(NewExecutorStepList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewExecutorStep &step);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewExecutorStep &step);
-
-typedef QList<int> TaskIdList;
-
-Q_DECLARE_METATYPE(TaskIdList)
 
 class JobStepToRun
 {
