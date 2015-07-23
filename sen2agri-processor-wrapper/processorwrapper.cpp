@@ -9,8 +9,6 @@
 #include <iostream>
 using namespace std;
 
-enum {PROCESSOR_ENDED = 1, PROCESSOR_INFO_MSG = 2, START_PROCESSOR_REQ = 3, STOP_PROCESSOR_REQ = 4};
-
 ProcessorWrapper::ProcessorWrapper()
 {
     m_pUdpClient = NULL;
@@ -52,9 +50,23 @@ bool ProcessorWrapper::ExecuteProcessor()
 
     cout << QDir::currentPath().toStdString().c_str() << endl;
 
-    QString strCmd = QString("%1 %2").arg(m_strProcPath, m_strProcParams);
+    QString strCmd = QString("\"%1\" \"%2\"").arg(m_strProcPath, m_strProcParams);
     QDateTime dateTime;
     qint64 startTime = dateTime.currentMSecsSinceEpoch();
+    // send a message that the execution of the processor is started
+    if(m_pUdpClient)
+    {
+        // A json message will be sent with the following format:
+        // {
+        //      JOB_NAME : <name of the slurm job as originally created>,
+        //      EXEC_TIME : <duration of the execution of the processor>,
+        //      STATUS: <OK/FAIL>
+        // }
+        QString strJSon = QString("{\"MSG_TYPE\":\"%1\",\"JOB_NAME\":\"%2\"}").arg(
+                    "STARTED", m_strJobName);
+        m_pUdpClient->SendMessage(strJSon);
+    }
+
     bool bRet = cmdInvoker.InvokeCommand(strCmd, false);
     qint64 endTime = dateTime.currentMSecsSinceEpoch();
 
@@ -67,7 +79,7 @@ bool ProcessorWrapper::ExecuteProcessor()
         //      STATUS: <OK/FAIL>
         // }
         QString strJSon = QString("{\"MSG_TYPE\":\"%1\",\"JOB_NAME\":\"%2\",\"EXEC_TIME\":\"%3\",\"STATUS\":\"%4\"}").arg(
-                    QString::number(PROCESSOR_ENDED), m_strJobName, QString::number(endTime-startTime), bRet?"OK":"FAILED");
+                    "ENDED", m_strJobName, QString::number(endTime-startTime), bRet?"OK":"FAILED");
         m_pUdpClient->SendMessage(strJSon);
     }
 
@@ -87,8 +99,8 @@ void ProcessorWrapper::OnNewMessage(QString &strMsg)
         //      JOB_NAME : <name of the slurm job as originally created>
         //      LOG : <the log message>
         // }
-        QString strJSon = QString("{\"MSG_TYPE\":\"%1\",\"JOB_NAME\":\"%2\",\"LOG\":\"%3\"}").arg(
-                    QString::number(PROCESSOR_INFO_MSG), m_strJobName, strMsg);
+        QString strJSon = QString("{\"MSG_TYPE\":\"%1\",\"JOB_NAME\":\"%2\",\"LOG_MSG\":\"%3\"}").arg(
+                    "LOG", m_strJobName, strMsg);
         m_pUdpClient->SendMessage(strJSon);
     }
 }
