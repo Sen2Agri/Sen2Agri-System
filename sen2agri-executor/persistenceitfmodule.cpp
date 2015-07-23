@@ -7,7 +7,7 @@ using namespace std;
 PersistenceItfModule::PersistenceItfModule() :
     clientInterface(OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
                                                   QStringLiteral("/org/esa/sen2agri/persistencemanager"),
-                                                  QDBusConnection::sessionBus())
+                                                  QDBusConnection::systemBus())
 {
 
 }

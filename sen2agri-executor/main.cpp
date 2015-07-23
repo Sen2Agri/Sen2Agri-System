@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     OrchestratorRequestsHandler orchestratorReqHandler;
     new ProcessorsExecutorAdaptor(&orchestratorReqHandler);
 
-    QDBusConnection connection = QDBusConnection::sessionBus();
+    QDBusConnection connection = QDBusConnection::systemBus();
 
     if (!connection.registerObject("/org/esa/sen2agri/processorsExecutor", &orchestratorReqHandler)) {
         QString str = QString("Error registering the object with D-Bus: %1, exiting.")
