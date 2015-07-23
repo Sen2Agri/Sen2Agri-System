@@ -19,31 +19,26 @@ TEMPLATE = app
 CONFIG += c++11 precompile_header
 
 dbus_interface.files = ../../../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml
-dbus_interface.header_flags = -i ../../../dbus-model/model.hpp
+dbus_interface.header_flags = -i ../../../sen2agri-common/model.hpp
 
 DBUS_INTERFACES += dbus_interface
 
-
-adaptor.files = ../../../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
-adaptor.header_flags = -i ../../../dbus-model/model.hpp
-
-DBUS_ADAPTORS += adaptor
-
-INCLUDEPATH += ../../../dbus-model ../../../Optional
+INCLUDEPATH += ../../../sen2agri-common ../../../Optional
 
 SOURCES += main.cpp \
-    persistencemanager.cpp \
-    ../../../dbus-model/model.cpp \
-    ApplicationClosingListener.cpp
+    ../../../sen2agri-common/model.cpp \
+    ../../../sen2agri-common/json_conversions.cpp \
+    ApplicationClosingListener.cpp \
+    simulator.cpp
 
 HEADERS += \
     ApplicationClosingListener.h \
-    persistencemanager.h \
-    ../../../dbus-model/model.hpp
+    ../../../sen2agri-common/model.hpp \
+    ../../../sen2agri-common/json_conversions.hpp \
+    simulator.h
 
 target.path = ../../dist
-INSTALLS += target
+INSTALLS += target interface dbus-policy dbus-service systemd-service conf
 
 OTHER_FILES += \
-    ../../../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml \
-    ../../../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
+    ../../../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml

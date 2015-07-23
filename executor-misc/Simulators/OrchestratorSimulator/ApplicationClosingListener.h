@@ -2,9 +2,8 @@
 #define APPLICATIONCLOSINGLISTENER_H
 
 #include <QObject>
-
-#include "processorsexecutor_interface.h"
-#include "persistencemanager.h"
+#include <QTimer>
+#include "simulator.h"
 
 class ApplicationClosingListener : public QObject
 {
@@ -12,35 +11,16 @@ class ApplicationClosingListener : public QObject
 public:
     ApplicationClosingListener(QObject *parent = 0);
 
-    void SetPersistenceManager(PersistenceManager *pPersistenceMng)
-    {
-        m_pPersistenceMng = pPersistenceMng;
-    }
-
 public slots:
-    void run()
-    {
-        // Do processing here
-        emit finished();
-    }
-    void SendExecuteProcessor()
-    {
-        HandleSendExecuteProcessor();
-    }
-
-    void SendCancelProcessor()
-    {
-        HandleSendCancelProcessor();
-    }
+    void run();
+    void SendExecuteProcessor();
+    void SendCancelProcessor();
 
 signals:
     void finished();
 
 private:
-    void HandleSendExecuteProcessor();
-    void HandleSendCancelProcessor();
-    org::esa::sen2agri::processorsExecutor *m_pProcessorExecutor;
-    PersistenceManager *m_pPersistenceMng;
+    Simulator *m_pSimulator;
 };
 
 #endif // APPLICATIONCLOSINGLISTENER_H
