@@ -85,4 +85,16 @@ PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a
 
 target.path = /usr/bin
 
-INSTALLS += target interface dbus-policy dbus-service systemd-service conf
+interface.path = /usr/share/dbus-1/interfaces
+interface.files = ../dbus-interfaces/org.esa.sen2agri.executor.xml
+
+dbus-policy.path = /etc/dbus-1/system.d
+dbus-policy.files = dist/org.esa.sen2agri.processorsExecutor.conf
+
+dbus-service.path = /usr/share/dbus-1/system-services
+dbus-service.files = dist/org.esa.sen2agri.processorsExecutor.service
+
+systemd-service.path = /usr/lib/systemd/system
+systemd-service.files = dist/sen2agri-executor.service
+
+INSTALLS += target interface dbus-policy dbus-service systemd-service
