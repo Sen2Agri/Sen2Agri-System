@@ -26,6 +26,11 @@ dbus_interface2.header_flags = -i ../sen2agri-common/model.hpp
 
 DBUS_INTERFACES += dbus_interface2
 
+dbus_interface3.files = ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml
+dbus_interface3.header_flags = -i ../sen2agri-common/model.hpp
+
+DBUS_INTERFACES += dbus_interface3
+
 SOURCES += main.cpp \
     abstractexecinfosprotsrv.cpp \
     execinfosprotsrvfactory.cpp \
@@ -41,7 +46,8 @@ SOURCES += main.cpp \
     requestparamsbase.cpp \
     requestparamscanceltasks.cpp \
     requestparamssubmitsteps.cpp \
-    requestparamsexecutioninfos.cpp
+    requestparamsexecutioninfos.cpp \
+    orchestratorclient.cpp
 
 HEADERS += \
     abstractexecinfosprotsrv.h \
@@ -60,7 +66,8 @@ HEADERS += \
     requestparamsbase.h \
     requestparamscanceltasks.h \
     requestparamssubmitsteps.h \
-    requestparamsexecutioninfos.h
+    requestparamsexecutioninfos.h \
+    orchestratorclient.h
 
 OTHER_FILES += \
     ../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml \
