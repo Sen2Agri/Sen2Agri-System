@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 
         registerMetaTypes();
 
-        printSignature<NewProduct>();
+        printSignature<QDateTime>();
 
         auto connection = QDBusConnection::systemBus();
         PersistenceManager persistenceManager(settings);

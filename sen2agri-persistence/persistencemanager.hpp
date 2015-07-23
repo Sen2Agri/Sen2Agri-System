@@ -82,7 +82,9 @@ public slots:
 
     void InsertNodeStatistics(NodeStatistics statistics);
 
-    QString GetDashboardData(QDate since);
-
     int InsertProduct(NewProduct product);
+
+    QString GetDashboardSystemOverviewData();
+    QString GetDashboardProcessorStatistics();
+    QString GetDashboardProductAvailability(const QDateTime since);
 };
