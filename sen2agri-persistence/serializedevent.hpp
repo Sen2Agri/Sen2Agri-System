@@ -12,7 +12,7 @@ public:
 
     SerializedEvent(EventType type, QString data);
 
-    SerializedEvent(const TaskAddedEvent &event);
+    SerializedEvent(const TaskRunnableEvent &event);
     SerializedEvent(const TaskFinishedEvent &event);
     SerializedEvent(const ProductAvailableEvent &event);
     SerializedEvent(const JobCancelledEvent &event);

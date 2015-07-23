@@ -9,5 +9,6 @@
   end_timestamp timestamp with time zone,
   status_id smallint NOT NULL,
   status_timestamp timestamp with time zone NOT NULL DEFAULT now(),
+  preceding_task_ids int[],
   CONSTRAINT task_pkey PRIMARY KEY (id)
 )

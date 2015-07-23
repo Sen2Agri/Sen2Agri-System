@@ -130,7 +130,17 @@ ArchivedProductList Reflector::ReflectArchivedProductList(const ArchivedProductL
     return value;
 }
 
+ExecutionStatusList Reflector::ReflectExecutionStatusList(const ExecutionStatusList &value)
+{
+    return value;
+}
+
 NewJob Reflector::ReflectNewJob(const NewJob &value)
+{
+    return value;
+}
+
+TaskIdList Reflector::ReflectTaskIdList(const TaskIdList &value)
 {
     return value;
 }
@@ -150,17 +160,12 @@ NewStepList Reflector::ReflectNewStepList(const NewStepList &value)
     return value;
 }
 
-ExecutionStatusList Reflector::ReflectExecutionStatusList(const ExecutionStatusList &value)
-{
-    return value;
-}
-
 ExecutionStatistics Reflector::ReflectExecutionStatistics(const ExecutionStatistics &value)
 {
     return value;
 }
 
-TaskAddedEvent Reflector::ReflectTaskAddedEvent(const TaskAddedEvent &value)
+TaskRunnableEvent Reflector::ReflectTaskRunnableEvent(const TaskRunnableEvent &value)
 {
     return value;
 }
@@ -215,11 +220,6 @@ NodeStatistics Reflector::ReflectNodeStatistics(const NodeStatistics &value)
     return value;
 }
 
-NodeStatisticsList Reflector::ReflectNodeStatisticsList(const NodeStatisticsList &value)
-{
-    return value;
-}
-
 StepArgument Reflector::ReflectStepArgument(const StepArgument &value)
 {
     return value;
@@ -236,11 +236,6 @@ NewExecutorStep Reflector::ReflectNewExecutorStep(const NewExecutorStep &value)
 }
 
 NewExecutorStepList Reflector::ReflectNewExecutorStepList(const NewExecutorStepList &value)
-{
-    return value;
-}
-
-TaskIdList Reflector::ReflectTaskIdList(const TaskIdList &value)
 {
     return value;
 }

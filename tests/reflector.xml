@@ -140,11 +140,23 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ArchivedProductList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ArchivedProductList" />
     </method>
+    <method name="ReflectExecutionStatusList">
+      <arg name="value" type="ExecutionStatusList" direction="in" />
+      <arg name="result" type="ExecutionStatusList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ExecutionStatusList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ExecutionStatusList" />
+    </method>
     <method name="ReflectNewJob">
       <arg name="value" type="NewJob" direction="in" />
       <arg name="result" type="NewJob" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewJob" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NewJob" />
+    </method>
+    <method name="ReflectTaskIdList">
+      <arg name="value" type="TaskIdList" direction="in" />
+      <arg name="result" type="TaskIdList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="TaskIdList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="TaskIdList" />
     </method>
     <method name="ReflectNewTask">
       <arg name="value" type="NewTask" direction="in" />
@@ -164,23 +176,17 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewStepList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NewStepList" />
     </method>
-    <method name="ReflectExecutionStatusList">
-      <arg name="value" type="ExecutionStatusList" direction="in" />
-      <arg name="result" type="ExecutionStatusList" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ExecutionStatusList" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ExecutionStatusList" />
-    </method>
     <method name="ReflectExecutionStatistics">
       <arg name="value" type="ExecutionStatistics" direction="in" />
       <arg name="result" type="ExecutionStatistics" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ExecutionStatistics" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ExecutionStatistics" />
     </method>
-    <method name="ReflectTaskAddedEvent">
-      <arg name="value" type="TaskAddedEvent" direction="in" />
-      <arg name="result" type="TaskAddedEvent" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="TaskAddedEvent" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="TaskAddedEvent" />
+    <method name="ReflectTaskRunnableEvent">
+      <arg name="value" type="TaskRunnableEvent" direction="in" />
+      <arg name="result" type="TaskRunnableEvent" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="TaskRunnableEvent" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="TaskRunnableEvent" />
     </method>
     <method name="ReflectTaskFinishedEvent">
       <arg name="value" type="TaskFinishedEvent" direction="in" />
@@ -242,12 +248,6 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NodeStatistics" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NodeStatistics" />
     </method>
-    <method name="ReflectNodeStatisticsList">
-      <arg name="value" type="NodeStatisticsList" direction="in" />
-      <arg name="result" type="NodeStatisticsList" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NodeStatisticsList" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NodeStatisticsList" />
-    </method>
     <method name="ReflectStepArgument">
       <arg name="value" type="StepArgument" direction="in" />
       <arg name="result" type="StepArgument" direction="out" />
@@ -271,12 +271,6 @@
       <arg name="result" type="NewExecutorStepList" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewExecutorStepList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NewExecutorStepList" />
-    </method>
-    <method name="ReflectTaskIdList">
-      <arg name="value" type="TaskIdList" direction="in" />
-      <arg name="result" type="TaskIdList" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="TaskIdList" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="TaskIdList" />
     </method>
     <method name="ReflectJobStepToRun">
       <arg name="value" type="JobStepToRun" direction="in" />

@@ -283,6 +283,27 @@ enum class JobStartType { Triggered = 1, Requested = 2, Scheduled = 3 };
 QDBusArgument &operator<<(QDBusArgument &argument, JobStartType startType);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobStartType &startType);
 
+enum class ExecutionStatus {
+    Submitted = 1,
+    PendingStart,
+    NeedsInput,
+    Running,
+    Paused,
+    Finished,
+    Cancelled,
+    Error
+};
+
+typedef QList<ExecutionStatus> ExecutionStatusList;
+
+Q_DECLARE_METATYPE(ExecutionStatusList)
+
+QDBusArgument &operator<<(QDBusArgument &argument, ExecutionStatus status);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &status);
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatusList &statusList);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatusList &statusList);
+
 class NewJob
 {
 public:
@@ -311,15 +332,20 @@ Q_DECLARE_METATYPE(NewJob)
 QDBusArgument &operator<<(QDBusArgument &argument, const NewJob &job);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job);
 
+typedef QList<int> TaskIdList;
+
+Q_DECLARE_METATYPE(TaskIdList)
+
 class NewTask
 {
 public:
     int jobId;
     QString module;
     QString parametersJson;
+    TaskIdList parentTasks;
 
     NewTask();
-    NewTask(int jobId, QString module, QString parametersJson);
+    NewTask(int jobId, QString module, QString parametersJson, TaskIdList parentTasks);
 
     static void registerMetaTypes();
 };
@@ -332,11 +358,12 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task);
 class NewStep
 {
 public:
+    int taskId;
     QString name;
     QString parametersJson;
 
     NewStep();
-    NewStep(QString name, QString parametersJson);
+    NewStep(int taskId, QString name, QString parametersJson);
 
     static void registerMetaTypes();
 };
@@ -348,27 +375,6 @@ Q_DECLARE_METATYPE(NewStepList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewStep &step);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewStep &step);
-
-enum class ExecutionStatus {
-    Submitted = 1,
-    PendingStart,
-    NeedsInput,
-    Running,
-    Paused,
-    Finished,
-    Cancelled,
-    Error
-};
-
-typedef QList<ExecutionStatus> ExecutionStatusList;
-
-Q_DECLARE_METATYPE(ExecutionStatusList)
-
-QDBusArgument &operator<<(QDBusArgument &argument, ExecutionStatus status);
-const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatus &status);
-
-QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatusList &statusList);
-const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatusList &statusList);
 
 class ExecutionStatistics
 {
@@ -403,7 +409,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatistics &st
 const QDBusArgument &operator>>(const QDBusArgument &argument, ExecutionStatistics &statistics);
 
 enum class EventType {
-    TaskAdded = 1,
+    TaskRunnable = 1,
     TaskFinished,
     ProductAvailable,
     JobCancelled,
@@ -416,26 +422,26 @@ enum class EventType {
 QDBusArgument &operator<<(QDBusArgument &argument, EventType event);
 const QDBusArgument &operator>>(const QDBusArgument &argument, EventType &event);
 
-class TaskAddedEvent
+class TaskRunnableEvent
 {
 public:
     int jobId;
     int taskId;
 
-    TaskAddedEvent();
-    TaskAddedEvent(int jobId, int taskId);
+    TaskRunnableEvent();
+    TaskRunnableEvent(int jobId, int taskId);
 
     QString toJson() const;
 
-    static TaskAddedEvent fromJson(const QString &json);
+    static TaskRunnableEvent fromJson(const QString &json);
 
     static void registerMetaTypes();
 };
 
-Q_DECLARE_METATYPE(TaskAddedEvent)
+Q_DECLARE_METATYPE(TaskRunnableEvent)
 
-QDBusArgument &operator<<(QDBusArgument &argument, const TaskAddedEvent &event);
-const QDBusArgument &operator>>(const QDBusArgument &argument, TaskAddedEvent &event);
+QDBusArgument &operator<<(QDBusArgument &argument, const TaskRunnableEvent &event);
+const QDBusArgument &operator>>(const QDBusArgument &argument, TaskRunnableEvent &event);
 
 class TaskFinishedEvent
 {
@@ -615,19 +621,32 @@ class NodeStatistics
 {
 public:
     QString node;
-    int32_t freeRamKb;
-    int64_t freeDiskBytes;
+    int64_t memTotalKb;
+    int64_t memUsedKb;
+    int64_t swapTotalKb;
+    int64_t swapUsedKb;
+    double loadAvg1;
+    double loadAvg5;
+    double loadAvg15;
+    int64_t diskTotalBytes;
+    int64_t diskUsedBytes;
 
     NodeStatistics();
-    NodeStatistics(QString node, int32_t freeRamKb, int64_t freeDiskBytes);
+    NodeStatistics(QString node,
+                   int64_t memTotalKb,
+                   int64_t memUsedKb,
+                   int64_t swapTotalKb,
+                   int64_t swapUsedKb,
+                   double loadAvg1,
+                   double loadAvg5,
+                   double loadAvg15,
+                   int64_t diskTotalBytes,
+                   int64_t diskUsedBytes);
 
     static void registerMetaTypes();
 };
 
-typedef QList<NodeStatistics> NodeStatisticsList;
-
 Q_DECLARE_METATYPE(NodeStatistics)
-Q_DECLARE_METATYPE(NodeStatisticsList)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NodeStatistics &statistics);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &statistics);
@@ -676,10 +695,6 @@ Q_DECLARE_METATYPE(NewExecutorStepList)
 QDBusArgument &operator<<(QDBusArgument &argument, const NewExecutorStep &step);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewExecutorStep &step);
 
-typedef QList<int> TaskIdList;
-
-Q_DECLARE_METATYPE(TaskIdList)
-
 class JobStepToRun
 {
 public:
@@ -702,7 +717,7 @@ Q_DECLARE_METATYPE(JobStepToRunList)
 QDBusArgument &operator<<(QDBusArgument &argument, const JobStepToRun &step);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobStepToRun &step);
 
-enum class ProductType {};
+enum class ProductType { TestProduct = 1 };
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ProductType &productType);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ProductType &productType);

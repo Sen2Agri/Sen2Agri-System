@@ -258,6 +258,15 @@ void Serialization::archivedProductList()
     compare(WaitForResponseAndThrow(client->ReflectArchivedProductList(emptyValue)), emptyValue);
 }
 
+void Serialization::executionStatusList()
+{
+    const auto &value = maker<ExecutionStatusList>::make();
+    compare(WaitForResponseAndThrow(client->ReflectExecutionStatusList(value)), value);
+
+    ExecutionStatusList emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectExecutionStatusList(emptyValue)), emptyValue);
+}
+
 void Serialization::newJob()
 {
     const auto &value = maker<NewJob>::make();
@@ -265,6 +274,15 @@ void Serialization::newJob()
 
     NewJob emptyValue;
     compare(WaitForResponseAndThrow(client->ReflectNewJob(emptyValue)), emptyValue);
+}
+
+void Serialization::taskIdList()
+{
+    const auto &value = maker<TaskIdList>::make();
+    compare(WaitForResponseAndThrow(client->ReflectTaskIdList(value)), value);
+
+    TaskIdList emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectTaskIdList(emptyValue)), emptyValue);
 }
 
 void Serialization::newTask()
@@ -294,15 +312,6 @@ void Serialization::newStepList()
     compare(WaitForResponseAndThrow(client->ReflectNewStepList(emptyValue)), emptyValue);
 }
 
-void Serialization::executionStatusList()
-{
-    const auto &value = maker<ExecutionStatusList>::make();
-    compare(WaitForResponseAndThrow(client->ReflectExecutionStatusList(value)), value);
-
-    ExecutionStatusList emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectExecutionStatusList(emptyValue)), emptyValue);
-}
-
 void Serialization::executionStatistics()
 {
     const auto &value = maker<ExecutionStatistics>::make();
@@ -312,13 +321,13 @@ void Serialization::executionStatistics()
     compare(WaitForResponseAndThrow(client->ReflectExecutionStatistics(emptyValue)), emptyValue);
 }
 
-void Serialization::taskAddedEvent()
+void Serialization::taskRunnableEvent()
 {
-    const auto &value = maker<TaskAddedEvent>::make();
-    compare(WaitForResponseAndThrow(client->ReflectTaskAddedEvent(value)), value);
+    const auto &value = maker<TaskRunnableEvent>::make();
+    compare(WaitForResponseAndThrow(client->ReflectTaskRunnableEvent(value)), value);
 
-    TaskAddedEvent emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectTaskAddedEvent(emptyValue)), emptyValue);
+    TaskRunnableEvent emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectTaskRunnableEvent(emptyValue)), emptyValue);
 }
 
 void Serialization::taskFinishedEvent()
@@ -411,15 +420,6 @@ void Serialization::nodeStatistics()
     compare(WaitForResponseAndThrow(client->ReflectNodeStatistics(emptyValue)), emptyValue);
 }
 
-void Serialization::nodeStatisticsList()
-{
-    const auto &value = maker<NodeStatisticsList>::make();
-    compare(WaitForResponseAndThrow(client->ReflectNodeStatisticsList(value)), value);
-
-    NodeStatisticsList emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectNodeStatisticsList(emptyValue)), emptyValue);
-}
-
 void Serialization::stepArgument()
 {
     const auto &value = maker<StepArgument>::make();
@@ -454,15 +454,6 @@ void Serialization::newExecutorStepList()
 
     NewExecutorStepList emptyValue;
     compare(WaitForResponseAndThrow(client->ReflectNewExecutorStepList(emptyValue)), emptyValue);
-}
-
-void Serialization::taskIdList()
-{
-    const auto &value = maker<TaskIdList>::make();
-    compare(WaitForResponseAndThrow(client->ReflectTaskIdList(value)), value);
-
-    TaskIdList emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectTaskIdList(emptyValue)), emptyValue);
 }
 
 void Serialization::jobStepToRun()

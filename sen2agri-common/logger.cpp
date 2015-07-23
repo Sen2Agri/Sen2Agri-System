@@ -78,6 +78,9 @@ void Logger::messageHandler(const QtMsgType type,
         case QtDebugMsg:
             debug(msg);
             break;
+        case QtInfoMsg:
+            info(msg);
+            break;
         case QtWarningMsg:
             warn(msg);
             break;

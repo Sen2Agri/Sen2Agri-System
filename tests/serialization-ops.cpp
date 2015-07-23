@@ -102,10 +102,12 @@ void compare(const NewTask &v1, const NewTask &v2)
     compare(v1.jobId, v2.jobId);
     compare(v1.module, v2.module);
     compare(v1.parametersJson, v2.parametersJson);
+    compare(v1.parentTasks, v2.parentTasks);
 }
 
 void compare(const NewStep &v1, const NewStep &v2)
 {
+    compare(v1.taskId, v2.taskId);
     compare(v1.name, v2.name);
     compare(v1.parametersJson, v2.parametersJson);
 }
@@ -123,7 +125,7 @@ void compare(const ExecutionStatistics &v1, const ExecutionStatistics &v2)
     compare(v1.diskWriteBytes, v2.diskWriteBytes);
 }
 
-void compare(const TaskAddedEvent &v1, const TaskAddedEvent &v2)
+void compare(const TaskRunnableEvent &v1, const TaskRunnableEvent &v2)
 {
     compare(v1.jobId, v2.jobId);
     compare(v1.taskId, v2.taskId);
@@ -183,8 +185,15 @@ void compare(const UnprocessedEvent &v1, const UnprocessedEvent &v2)
 void compare(const NodeStatistics &v1, const NodeStatistics &v2)
 {
     compare(v1.node, v2.node);
-    compare(v1.freeRamKb, v2.freeRamKb);
-    compare(v1.freeDiskBytes, v2.freeDiskBytes);
+    compare(v1.memTotalKb, v2.memTotalKb);
+    compare(v1.memUsedKb, v2.memUsedKb);
+    compare(v1.swapTotalKb, v2.swapTotalKb);
+    compare(v1.swapUsedKb, v2.swapUsedKb);
+    compare(v1.loadAvg1, v2.loadAvg1);
+    compare(v1.loadAvg5, v2.loadAvg5);
+    compare(v1.loadAvg15, v2.loadAvg15);
+    compare(v1.diskTotalBytes, v2.diskTotalBytes);
+    compare(v1.diskUsedBytes, v2.diskUsedBytes);
 }
 
 void compare(const StepArgument &v1, const StepArgument &v2)
