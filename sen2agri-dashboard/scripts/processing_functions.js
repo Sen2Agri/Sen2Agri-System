@@ -1,6 +1,6 @@
 //This file contains the javascript processing functions that update the page on the client side.
 
-//Update current jobs --------------------------------------------------------------------------------------------------------------------------
+//Update current jobs and server resources --------------------------------------------------------------------------------------------------------------------------
 
 function update_current_jobs(json_data)
 {
@@ -46,8 +46,6 @@ function update_current_jobs(json_data)
 	});
 
 }
-
-//Update server resources --------------------------------------------------------------------------------------------------------------------------
 
 //Hashmap to hold the plos objects.
 var plots = {};
@@ -325,9 +323,49 @@ function update_plot(element_id, series_data, series_idxs)
 
 }
 
+var server_resources_need_new_layout = true;
+
+function get_system_overview_data()
+{
+	/*var get_system_overview_data_callback_pointer = function() {
+		
+		return 
+	};*/
+	
+	$.ajax({
+		url: get_system_overview_data_url,
+        type: "get",
+        cache: false,
+        crosDomain: true,
+        dataType: "json",
+		success: function(result)
+		{
+			var json_data = JSON.parse(result);
+			
+			update_current_jobs(json_data);
+			
+			if(server_resources_need_new_layout)
+			{
+				update_server_resources_layout(json_data);
+				server_resources_need_new_layout = false;
+			}
+			
+			update_server_resources(json_data);
+		},
+		error: function (responseData, textStatus, errorThrown) {
+	        alert('Failed.')
+	    }
+	});
+}
+
+function set_system_overview_refresh()
+{
+	setInterval(get_system_overview_data, get_system_overview_data_interval);
+}
+
 //Update l2a statistics --------------------------------------------------------------------------------------------------------------------------
 
-function update_key_value_table(panel, list)
+function fill_key_value_table(panel, list)
 {
 	list.forEach(function(item) {
 		var new_row = "<tr class=\"to_be_refreshed\">" +
@@ -346,9 +384,9 @@ function update_l2a_statistics(json_data)
 	$("#pnl_l2a_output table:first tr.to_be_refreshed").remove();
 	$("#pnl_l2a_configuration table:first tr.to_be_refreshed").remove();
 
-	update_key_value_table("#pnl_l2a_resources", json_data.l2a_statistics.resources);
-	update_key_value_table("#pnl_l2a_output", json_data.l2a_statistics.output);
-	update_key_value_table("#pnl_l2a_configuration", json_data.l2a_statistics.configuration);
+	fill_key_value_table("#pnl_l2a_resources", json_data.l2a_statistics.resources);
+	fill_key_value_table("#pnl_l2a_output", json_data.l2a_statistics.output);
+	fill_key_value_table("#pnl_l2a_configuration", json_data.l2a_statistics.configuration);
 }
 
 //Update l3a statistics --------------------------------------------------------------------------------------------------------------------------
@@ -360,9 +398,9 @@ function update_l3a_statistics(json_data)
 	$("#pnl_l3a_output table:first tr.to_be_refreshed").remove();
 	$("#pnl_l3a_configuration table:first tr.to_be_refreshed").remove();
 
-	update_key_value_table("#pnl_l3a_resources", json_data.l3a_statistics.resources);
-	update_key_value_table("#pnl_l3a_output", json_data.l3a_statistics.output);
-	update_key_value_table("#pnl_l3a_configuration", json_data.l3a_statistics.configuration);
+	fill_key_value_table("#pnl_l3a_resources", json_data.l3a_statistics.resources);
+	fill_key_value_table("#pnl_l3a_output", json_data.l3a_statistics.output);
+	fill_key_value_table("#pnl_l3a_configuration", json_data.l3a_statistics.configuration);
 }
 
 //Update l3b statistics --------------------------------------------------------------------------------------------------------------------------
@@ -374,9 +412,9 @@ function update_l3b_statistics(json_data)
 	$("#pnl_l3b_output table:first tr.to_be_refreshed").remove();
 	$("#pnl_l3b_configuration table:first tr.to_be_refreshed").remove();
 
-	update_key_value_table("#pnl_l3b_resources", json_data.l3b_statistics.resources);
-	update_key_value_table("#pnl_l3b_output", json_data.l3b_statistics.output);
-	update_key_value_table("#pnl_l3b_configuration", json_data.l3b_statistics.configuration);
+	fill_key_value_table("#pnl_l3b_resources", json_data.l3b_statistics.resources);
+	fill_key_value_table("#pnl_l3b_output", json_data.l3b_statistics.output);
+	fill_key_value_table("#pnl_l3b_configuration", json_data.l3b_statistics.configuration);
 }
 
 //Update l4a statistics --------------------------------------------------------------------------------------------------------------------------
@@ -388,9 +426,9 @@ function update_l4a_statistics(json_data)
 	$("#pnl_l4a_output table:first tr.to_be_refreshed").remove();
 	$("#pnl_l4a_configuration table:first tr.to_be_refreshed").remove();
 
-	update_key_value_table("#pnl_l4a_resources", json_data.l4a_statistics.resources);
-	update_key_value_table("#pnl_l4a_output", json_data.l4a_statistics.output);
-	update_key_value_table("#pnl_l4a_configuration", json_data.l4a_statistics.configuration);
+	fill_key_value_table("#pnl_l4a_resources", json_data.l4a_statistics.resources);
+	fill_key_value_table("#pnl_l4a_output", json_data.l4a_statistics.output);
+	fill_key_value_table("#pnl_l4a_configuration", json_data.l4a_statistics.configuration);
 }
 
 //Update l4b statistics --------------------------------------------------------------------------------------------------------------------------
@@ -402,9 +440,9 @@ function update_l4b_statistics(json_data)
 	$("#pnl_l4b_output table:first tr.to_be_refreshed").remove();
 	$("#pnl_l4b_configuration table:first tr.to_be_refreshed").remove();
 
-	update_key_value_table("#pnl_l4b_resources", json_data.l4b_statistics.resources);
-	update_key_value_table("#pnl_l4b_output", json_data.l4b_statistics.output);
-	update_key_value_table("#pnl_l4b_configuration", json_data.l4b_statistics.configuration);
+	fill_key_value_table("#pnl_l4b_resources", json_data.l4b_statistics.resources);
+	fill_key_value_table("#pnl_l4b_output", json_data.l4b_statistics.output);
+	fill_key_value_table("#pnl_l4b_configuration", json_data.l4b_statistics.configuration);
 }
 
 //Update product availability --------------------------------------------------------------------------------------------------------------------------
