@@ -338,10 +338,8 @@ function get_system_overview_data()
         cache: false,
         crosDomain: true,
         dataType: "json",
-		success: function(result)
+		success: function(json_data)
 		{
-			var json_data = JSON.parse(result);
-			
 			update_current_jobs(json_data);
 			
 			if(server_resources_need_new_layout)
