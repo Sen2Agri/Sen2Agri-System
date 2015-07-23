@@ -84,9 +84,9 @@ int main(int argc, char *argv[])
             */
 
             cout << "JobID|JobName|NodeList|AveCPU|UserCPU|SystemCPU|ExitCode|AveVMSize|MaxRSS|MaxVMSize|MaxDiskRead|MaxDiskWrite" << endl;
-            cout << "3|ls|sen2agri-dev|00:00:00|00:00:00|00:00.002|0:0|0|0|0|0|0" << endl;
-            cout << "4|find|sen2agri-dev|00:00:00|00:00.297|00:00.413|1:0|0|0|0|0|0" << endl;
-            cout << "5|hostname|sen2agri-dev|00:00:00|00:00.005|00:00.008|0:0|0|0|0|0|0" << endl;
+            cout << "3|ls|sen2agri-dev|01:02:03|04:05:06.007|00:00.002|0:0|0|0|0|0|0" << endl;
+            cout << "4|find|sen2agri-dev|22-11:12:13|22-14:15:16.297|00:00.413|1:0|0|0|0|0|0" << endl;
+            cout << "5|hostname|sen2agri-dev|00:00|00.005|00:00.008|0:0|0|0|0|0|0" << endl;
             cout << "6|find|sen2agri-dev|00:00:00|00:00.299|00:00.344|1:0|0|0|0|0|0" << endl;
             cout << "7|20150604144546391_CROP_TYPE|sen2agri-dev|00:00:00|00:00.004|00:00.003|0:0|0|0|0|0|0" << endl;
             cout << "20|An_Unique_Step_ID|sen2agri-dev|00:00:00|00:00:00|00:00.001|2:0|0|0|0|0|0" << endl;
@@ -100,7 +100,7 @@ int main(int argc, char *argv[])
                 while(getline(myfile,line))
                 {
                   cout << "3|ls|sen2agri-dev|00:00:00|00:00:00|00:00.002|0:0|0|0|0|0|0" << endl;
-                  cout << nLineCnt + 21 << "|" << line << "|sen2agri-dev|00:00:00|00:00:00|00:00.002|0:0|0|0"
+                  cout << nLineCnt + 21 << "|" << line << "|sen2agri-dev|02-01:02:03.004|04:00:00|00:04.002|0:0|0|0"
                        << "|"<< 80 + nLineCnt << "|"  << 600 + nLineCnt
                        << "|" << 120 + nLineCnt
                        << endl;
