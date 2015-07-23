@@ -1,2 +1,8 @@
-var get_system_overview_data_url = "192.168.60.160:8080/dashboard/GetDashboardSystemOverviewData";
-var get_system_overview_data_interval = 10000;
+var get_system_overview_data_url = "/dashboard/GetDashboardSystemOverviewData";
+var get_system_overview_data_interval = 1000;
+
+var get_processor_statistics_url = "/dashboard/GetDashboardProcessorStatistics";
+var get_processor_statistics_interval = 60000;
+
+var get_product_availability_data_url = "/dashboard/GetDashboardProductAvailability";
+var get_product_availability_data_interval = 60000;

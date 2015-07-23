@@ -323,15 +323,8 @@ function update_plot(element_id, series_data, series_idxs)
 
 }
 
-var server_resources_need_new_layout = true;
-
 function get_system_overview_data()
 {
-	/*var get_system_overview_data_callback_pointer = function() {
-		
-		return 
-	};*/
-	
 	$.ajax({
 		url: get_system_overview_data_url,
         type: "get",
@@ -341,27 +334,28 @@ function get_system_overview_data()
 		success: function(json_data)
 		{
 			update_current_jobs(json_data);
-			
-			if(server_resources_need_new_layout)
+
+			if($("#pnl_server_resources table.to_be_refreshed_when_needed").length != json_data.server_resources.length)
 			{
 				update_server_resources_layout(json_data);
-				server_resources_need_new_layout = false;
 			}
 			
 			update_server_resources(json_data);
 		},
 		error: function (responseData, textStatus, errorThrown) {
-	        alert('Failed.')
+	        console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
 	    }
 	});
 }
 
 function set_system_overview_refresh()
 {
+	// Run the get function now and schedule the next executions.
+	get_system_overview_data();
 	setInterval(get_system_overview_data, get_system_overview_data_interval);
 }
 
-//Update l2a statistics --------------------------------------------------------------------------------------------------------------------------
+//Update processor statistics --------------------------------------------------------------------------------------------------------------------------
 
 function fill_key_value_table(panel, list)
 {
@@ -387,8 +381,6 @@ function update_l2a_statistics(json_data)
 	fill_key_value_table("#pnl_l2a_configuration", json_data.l2a_statistics.configuration);
 }
 
-//Update l3a statistics --------------------------------------------------------------------------------------------------------------------------
-
 function update_l3a_statistics(json_data)
 {
 	//Remove the old rows
@@ -400,8 +392,6 @@ function update_l3a_statistics(json_data)
 	fill_key_value_table("#pnl_l3a_output", json_data.l3a_statistics.output);
 	fill_key_value_table("#pnl_l3a_configuration", json_data.l3a_statistics.configuration);
 }
-
-//Update l3b statistics --------------------------------------------------------------------------------------------------------------------------
 
 function update_l3b_statistics(json_data)
 {
@@ -415,8 +405,6 @@ function update_l3b_statistics(json_data)
 	fill_key_value_table("#pnl_l3b_configuration", json_data.l3b_statistics.configuration);
 }
 
-//Update l4a statistics --------------------------------------------------------------------------------------------------------------------------
-
 function update_l4a_statistics(json_data)
 {
 	//Remove the old rows
@@ -429,8 +417,6 @@ function update_l4a_statistics(json_data)
 	fill_key_value_table("#pnl_l4a_configuration", json_data.l4a_statistics.configuration);
 }
 
-//Update l4b statistics --------------------------------------------------------------------------------------------------------------------------
-
 function update_l4b_statistics(json_data)
 {
 	//Remove the old rows
@@ -441,6 +427,35 @@ function update_l4b_statistics(json_data)
 	fill_key_value_table("#pnl_l4b_resources", json_data.l4b_statistics.resources);
 	fill_key_value_table("#pnl_l4b_output", json_data.l4b_statistics.output);
 	fill_key_value_table("#pnl_l4b_configuration", json_data.l4b_statistics.configuration);
+}
+
+function get_processor_statistics()
+{
+	$.ajax({
+		url: get_processor_statistics_url,
+        type: "get",
+        cache: false,
+        crosDomain: true,
+        dataType: "json",
+		success: function(json_data)
+		{
+			update_l2a_statistics(json_data);
+			update_l3a_statistics(json_data);
+			update_l3b_statistics(json_data);
+			update_l4a_statistics(json_data);
+			update_l4b_statistics(json_data);
+		},
+		error: function (responseData, textStatus, errorThrown) {
+	        console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+	    }
+	});
+}
+
+function set_processor_statistics_refresh()
+{
+	// Run the get function now and schedule the next executions.
+	get_processor_statistics();
+	setInterval(get_processor_statistics, get_processor_statistics_interval);
 }
 
 //Update product availability --------------------------------------------------------------------------------------------------------------------------
@@ -474,4 +489,32 @@ function update_product_availability(json_data)
 
 		return tree;
 	});
+}
+
+function get_product_availability_data()
+{
+	$.ajax({
+		url: get_product_availability_data_url,
+        type: "get",
+        cache: false,
+        crosDomain: true,
+        dataType: "json",
+        data: {
+        	since: "2015-07-01T00:00:00"
+        },
+		success: function(json_data)
+		{
+			update_product_availability(json_data);
+		},
+		error: function (responseData, textStatus, errorThrown) {
+	        console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+	    }
+	});
+}
+
+function set_product_availability_data_refresh()
+{
+	// Run the get function now and schedule the next executions.
+	get_product_availability_data();
+	setInterval(get_product_availability_data, get_product_availability_data_interval);
 }
