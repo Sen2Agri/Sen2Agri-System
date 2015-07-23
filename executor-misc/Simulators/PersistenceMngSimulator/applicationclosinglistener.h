@@ -2,7 +2,7 @@
 #define APPLICATIONCLOSINGLISTENER_H
 
 #include <QObject>
-#include <QTimer>
+
 #include "simulator.h"
 
 class ApplicationClosingListener : public QObject
@@ -12,10 +12,11 @@ public:
     ApplicationClosingListener(QObject *parent = 0);
 
 public slots:
-    void run();
-    void SendExecuteProcessor();
-    void SendCancelProcessor();
-
+    void run()
+    {
+        // Do processing here
+        //emit finished();
+    }
 signals:
     void finished();
 

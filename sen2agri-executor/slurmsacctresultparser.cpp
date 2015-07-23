@@ -17,6 +17,8 @@ QString SlurmSacctResultParser::g_strUserTime("usercpu");
 /*static*/
 QString SlurmSacctResultParser::g_strSystemTime("systemcpu");
 /*static*/
+QString SlurmSacctResultParser::g_strExitCode("exitcode");
+/*static*/
 QString SlurmSacctResultParser::g_strAveVmSize("avevmsize");
 /*static*/
 QString SlurmSacctResultParser::g_strMaxVmSize("maxvmsize");
@@ -35,7 +37,11 @@ SlurmSacctResultParser::SlurmSacctResultParser()
 
 SlurmSacctResultParser::~SlurmSacctResultParser()
 {
-    delete[] m_pPosArr;
+    if(m_pPosArr)
+    {
+        delete[] m_pPosArr;
+    }
+    m_pPosArr = NULL;
 }
 
 int SlurmSacctResultParser::ParseResults(QString &strLog, QList<ProcessorExecutionInfos> &executionInfos, QString *pJobNameFilter)
@@ -91,6 +97,8 @@ int SlurmSacctResultParser::ParseColumnNames(QString &strColumnsLine)
     m_nPosCnt = strColNames.size();
     if(m_nPosCnt > 0)
     {
+        if(m_pPosArr)
+            delete[] m_pPosArr;
         m_pPosArr = new int[m_nPosCnt];
         QListIterator<QString> itr (strColNames);
         int curPos = 0;
@@ -108,6 +116,8 @@ int SlurmSacctResultParser::ParseColumnNames(QString &strColumnsLine)
                 m_pPosArr[curPos] = JOB_USER_TIME_POS;
             } else if(curColumn == g_strSystemTime) {
                 m_pPosArr[curPos] = JOB_SYSTEM_TIME_POS;
+            } else if(curColumn == g_strExitCode) {
+                m_pPosArr[curPos] = JOB_EXIT_CODE_POS;
             } else if(curColumn == g_strAveVmSize) {
                 m_pPosArr[curPos] = JOB_AVE_VM_SIZE_POS;
             } else if(curColumn == g_strMaxRss) {
@@ -166,12 +176,16 @@ bool SlurmSacctResultParser::ParseLine(QString &strLine, ProcessorExecutionInfos
                     procExecInfos.strSystemTime = curField;
                     nMaskFieldsExtract &= ~(1 << nPosId);
                     break;
+                case JOB_EXIT_CODE_POS:
+                    procExecInfos.strExitCode = curField;
+                    nMaskFieldsExtract &= ~(1 << nPosId);
+                    break;
                 case JOB_AVE_VM_SIZE_POS:
                     procExecInfos.strAveVmSize = curField;
                     nMaskFieldsExtract &= ~(1 << nPosId);
                     break;
                 case JOB_MAX_RSS_POS:
-                    procExecInfos.strMaxVmSize = curField;
+                    procExecInfos.strMaxRss = curField;
                     nMaskFieldsExtract &= ~(1 << nPosId);
                     break;
                 case JOB_MAX_VM_SIZE_POS:
@@ -179,11 +193,11 @@ bool SlurmSacctResultParser::ParseLine(QString &strLine, ProcessorExecutionInfos
                     nMaskFieldsExtract &= ~(1 << nPosId);
                     break;
                 case JOB_DISK_READ_POS:
-                    procExecInfos.strMaxVmSize = curField;
+                    procExecInfos.strDiskRead = curField;
                     nMaskFieldsExtract &= ~(1 << nPosId);
                     break;
                 case JOB_DISK_WRITE_POS:
-                    procExecInfos.strMaxVmSize = curField;
+                    procExecInfos.strDiskWrite = curField;
                     nMaskFieldsExtract &= ~(1 << nPosId);
                     break;
                 default:

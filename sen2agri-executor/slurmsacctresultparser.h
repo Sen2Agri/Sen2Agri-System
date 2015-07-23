@@ -18,6 +18,7 @@ public:
         JOB_CPU_TIME_POS,
         JOB_USER_TIME_POS,
         JOB_SYSTEM_TIME_POS,
+        JOB_EXIT_CODE_POS,
         JOB_AVE_VM_SIZE_POS,
         JOB_MAX_RSS_POS,
         JOB_MAX_VM_SIZE_POS,
@@ -38,6 +39,7 @@ private:
     static QString g_strCpuTime;
     static QString g_strUserTime;
     static QString g_strSystemTime;
+    static QString g_strExitCode;
     static QString g_strAveVmSize;
     static QString g_strMaxRss;
     static QString g_strMaxVmSize;

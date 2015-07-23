@@ -13,7 +13,6 @@ public:
     ConfigurationMgr();
     ~ConfigurationMgr();
 
-    static bool Initialize(QString strCfgPath = QString(""));
     static ConfigurationMgr *GetInstance();
 
     bool GetValue(QString &strKey, QString &strVal, QString strDefVal = "");
@@ -21,7 +20,6 @@ public:
 
 private:
     QVariantMap m_mapVals;
-    bool Init(QString &strCfgPath);
 };
 
 #endif // CONFIGURATIONMGR_H

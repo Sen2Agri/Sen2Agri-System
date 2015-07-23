@@ -1,6 +1,6 @@
 #include "processorwrapperfactory.h"
 #include "configurationmgr.h"
-#include "logger.h"
+#include "logger.hpp"
 
 ProcessorWrapperFactory::ProcessorWrapperFactory()
 {
@@ -18,7 +18,7 @@ ProcessorWrapperFactory::ProcessorWrapperFactory()
     bool bOk = ConfigurationMgr::GetInstance()->GetValue(strKey, strVal);
     int nProcsCnt = strVal.toInt();
     if(!bOk || nProcsCnt == 0) {
-        Logger::GetInstance()->error("No processor was defined in configuration (key PROCESSORS_NUMBER was not defined or is 0)!!!");
+        Logger::error("No processor was defined in configuration (key PROCESSORS_NUMBER was not defined or is 0)!!!");
     }
     for(int i = 1; i < nProcsCnt+1; i++) {
         bOk = true;
@@ -32,7 +32,7 @@ ProcessorWrapperFactory::ProcessorWrapperFactory()
         if(bOk) {
             Register(strName, strPath, strDescr);
         } else {
-            Logger::GetInstance()->error("Error loading the configuration for processor with index %d!!!", i);
+            Logger::error(QString("Error loading the configuration for processor with index %1!!!").arg(i));
         }
     }
 }

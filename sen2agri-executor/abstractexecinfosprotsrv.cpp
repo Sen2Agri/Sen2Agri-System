@@ -4,7 +4,8 @@
 
 #include "abstractexecinfosprotsrv.h"
 #include "iprocessorwrappermsgslistener.h"
-#include "logger.h"
+#include "logger.hpp"
+#include "requestparamsexecutioninfos.h"
 
 AbstractExecInfosProtSrv::AbstractExecInfosProtSrv()
 {
@@ -41,16 +42,14 @@ bool AbstractExecInfosProtSrv::HandleNewMessage(QByteArray &message)
 {
     if(m_pListener)
     {
-        QJsonParseError err;
-        QJsonDocument document = QJsonDocument::fromJson(message, &err);
-        if(err.error != QJsonParseError::NoError || !document.isObject())
+        RequestParamsExecutionInfos *pReqParams = new RequestParamsExecutionInfos();
+        if(!pReqParams->ParseMessage(message))
         {
-            Logger::GetInstance()->error("An error occurred during parsing message %s", QString(message).toStdString().c_str());
+            Logger::error(QString("An error occurred during parsing message %1").arg(QString(message)));
             return false;
         }
 
-        QVariantMap msgVals = document.object().toVariantMap();
-        m_pListener->OnProcessorNewMsg(msgVals);
+        m_pListener->OnProcessorNewMsg(pReqParams);
     }
 
     return true;
