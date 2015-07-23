@@ -24,6 +24,10 @@ public:
     void SendProcessorExecInfos(ProcessorExecutionInfos &execInfos);
     void RequestConfiguration();
 
+    void MarkStepPendingStart(int taskId, QString &name);
+    void MarkStepStarted(int taskId, QString &name);
+    bool MarkStepFinished(int taskId, QString &name, ProcessorExecutionInfos &statistics);
+
 signals:
     void OnConfigurationReceived();
 
@@ -35,6 +39,7 @@ private:
                                 const QString &name, QString &path);
     void SaveMainConfigKeys(const ConfigurationParameterValueList &configuration);
     void SaveProcessorsConfigKeys(const ConfigurationParameterValueList &configuration);
+    long ParseTimeStr(QString &strTime);
 };
 
 #endif // PERSISTENCEITFMODULE_H

@@ -308,20 +308,34 @@ void PersistenceManager::InsertNodeStatistics(NodeStatistics statistics)
         }, std::ref(dbProvider), std::move(statistics)));
 }
 
-QString PersistenceManager::GetDashboardData(QDate since)
-{
-    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const QDate &since) {
-        return dbProvider.GetDashboardData(since);
-    }, std::ref(dbProvider), std::move(since)));
-
-    return {};
-}
-
 int PersistenceManager::InsertProduct(NewProduct product)
 {
     RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const NewProduct &product) {
         return dbProvider.InsertProduct(product);
     }, std::ref(dbProvider), std::move(product)));
+
+    return {};
+}
+
+QString PersistenceManager::GetDashboardSystemOverviewData()
+{
+    RunAsync([this] { return dbProvider.GetDashboardSystemOverviewData(); });
+
+    return {};
+}
+
+QString PersistenceManager::GetDashboardProcessorStatistics()
+{
+    RunAsync([this] { return dbProvider.GetDashboardProcessorStatistics(); });
+
+    return {};
+}
+
+QString PersistenceManager::GetDashboardProductAvailability(QDateTime since)
+{
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const QDateTime &since) {
+        return dbProvider.GetDashboardProductAvailability(since);
+    }, std::ref(dbProvider), std::move(since)));
 
     return {};
 }

@@ -13,6 +13,7 @@ public:
     QString strJobId;
     QString strJobName;
     QString strJobNode;
+    QString strExitCode;
     QString strJobStatus;
     QString strStartTime;
     QString strExecutionDuration;

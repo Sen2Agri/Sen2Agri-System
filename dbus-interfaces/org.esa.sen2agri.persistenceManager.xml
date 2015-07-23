@@ -140,14 +140,21 @@
       <arg name="statistics" type="(sxxxxdddxx)" direction="in" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NodeStatistics" />
     </method>
-    <method name="GetDashboardData">
-      <arg name="since" type="(iii)" direction="in" />
-      <arg name="jsonData" type="s" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QDate" />
-    </method>
     <method name="InsertProduct">
       <arg name="product" type="(iiis((iii)(iiii)i))" direction="in" />
       <arg name="productId" type="i" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewProduct" />
+    </method>
+    <method name="GetDashboardSystemOverviewData">
+      <arg name="jsonData" type="s" direction="out" />
+    </method>
+    <method name="GetDashboardProcessorStatistics">
+      <arg name="jsonData" type="s" direction="out" />
+    </method>
+    <method name="GetDashboardProductAvailability">
+      <arg name="since" type="((iii)(iiii)i)" direction="in" />
+      <arg name="jsonData" type="s" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QDateTime" />
+    </method>
   </interface>
 </node>

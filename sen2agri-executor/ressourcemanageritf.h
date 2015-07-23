@@ -10,8 +10,10 @@
 using namespace std;
 
 #include "iprocessorwrappermsgslistener.h"
-
-enum {PROCESSOR_ENDED = 1, PROCESSOR_INFO_MSG = 2, START_PROCESSOR_REQ = 3, STOP_PROCESSOR_REQ = 4};
+#include "requestparamssubmitsteps.h"
+#include "requestparamscanceltasks.h"
+#include "requestparamsexecutioninfos.h"
+#include "processorexecutioninfos.h"
 
 
 /**
@@ -31,10 +33,10 @@ public:
     bool Start();
     void Stop();
 
-    bool StartProcessor(QVariantMap &reqParams);
-    bool StopProcessor(QVariantMap &strJobName);
+    void StartProcessor(RequestParamsSubmitSteps *pReqParams);
+    void CancelTasks(RequestParamsCancelTasks *pReqParams);
 
-    virtual void OnProcessorNewMsg(QVariantMap &msgVals);
+    virtual void OnProcessorNewMsg(RequestParamsBase *pReq);
 
 private:
     RessourceManagerItf();
@@ -42,17 +44,26 @@ private:
     bool m_bStop;
     bool m_bStarted;
 
-    QList<QVariantMap> m_msgQueue;
+    QList<RequestParamsBase*> m_msgQueue;
     QMutex m_syncMutex;
     QWaitCondition m_condition;
 
-    void AddRequestToQueue(QVariantMap &req);
+    void AddRequestToQueue(RequestParamsBase *pReq);
 
-    bool HandleStartProcessor(QVariantMap &reqParams);
-    void HandleStopProcessor(QVariantMap &strJobName);
+    bool HandleStartProcessor(RequestParamsSubmitSteps *pReqParams);
+    void HandleStopProcessor(RequestParamsCancelTasks *pReqParams);
 
-    bool HandleProcessorEndedMsg(QVariantMap &msgVals);
-    bool HandleProcessorInfosMsg(QVariantMap &msgVals);
+    void HandleProcessorInfosMsg(RequestParamsExecutionInfos *pReqParams);
+    // particular implementations for HandleProcessorInfosMsg
+    void HandleProcessorExecutionStartedMsg(RequestParamsExecutionInfos *pReqParams);
+    void HandleProcessorEndedMsg(RequestParamsExecutionInfos *pReqParams);
+    void HandleProcessorInfosLogMsg(RequestParamsExecutionInfos *pReqParams);
+
+    bool GetSacctResults(QString &sacctCmd, QList<ProcessorExecutionInfos> &procExecResults);
+    QString BuildJobName(int nTaskId, QString &stepName, int idx);
+    bool ParseJobName(const QString &jobName, int &nTaskId, QString &strStepName, int &nStepIdx);
+    QString BuildParamsString(QStringList &listParams);
+
 };
 
 #endif // RESSOURCEMANAGERITF_H

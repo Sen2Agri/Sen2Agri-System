@@ -6,33 +6,14 @@
 #include <QDBusConnection>
 #include <QDBusMessage>
 
-#include "persistencemanagerdbprovider.hpp"
-#include "asyncdbustask.hpp"
 #include "model.hpp"
-#include "settings.hpp"
 
 class PersistenceManager : public QObject, protected QDBusContext
 {
     Q_OBJECT
 
-    PersistenceManagerDBProvider dbProvider;
-
-    template <typename F>
-    void RunAsync(F &&f)
-    {
-        setDelayedReply(true);
-
-        if (auto task = makeAsyncDBusTask(message(), connection(), std::forward<F>(f))) {
-            QThreadPool::globalInstance()->start(task);
-        } else {
-            sendErrorReply(QDBusError::NoMemory);
-        }
-    }
-
-    bool IsCallerAdmin();
-
 public:
-    explicit PersistenceManager(const Settings &settings, QObject *parent = 0);
+    explicit PersistenceManager(QObject *parent = 0);
 
 signals:
 
@@ -51,7 +32,7 @@ public slots:
 
     int SubmitJob(NewJob job);
     int SubmitTask(NewTask task);
-    void SubmitSteps(NewStepList steps);
+    void SubmitSteps(int taskId, NewStepList steps);
 
     void MarkStepPendingStart(int taskId, QString name);
     void MarkStepStarted(int taskId, QString name);
@@ -68,7 +49,6 @@ public slots:
     JobStepToRunList GetTaskStepsForStart(int taskId);
     JobStepToRunList GetJobStepsForResume(int jobId);
 
-    void InsertTaskAddedEvent(TaskRunnableEvent event);
     void InsertTaskFinishedEvent(TaskFinishedEvent event);
     void InsertProductAvailableEvent(ProductAvailableEvent event);
     void InsertJobCancelledEvent(JobCancelledEvent event);
@@ -82,9 +62,5 @@ public slots:
 
     void InsertNodeStatistics(NodeStatistics statistics);
 
-    int InsertProduct(NewProduct product);
-
-    QString GetDashboardSystemOverviewData();
-    QString GetDashboardProcessorStatistics();
-    QString GetDashboardProductAvailability(const QDateTime since);
+    QString GetDashboardData(QDate since);
 };

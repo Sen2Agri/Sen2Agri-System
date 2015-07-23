@@ -5,7 +5,7 @@
 
 #include <sys/types.h>
 #include <grp.h>
-#include <limits>
+#include <limits.h>
 #include <unistd.h>
 
 #include "credential_utils.hpp"

@@ -16,13 +16,6 @@ ConfigurationMgr::~ConfigurationMgr()
 }
 
 /*static*/
-bool ConfigurationMgr::Initialize(QString strCfgPath)
-{
-    ConfigurationMgr *pInstance = GetInstance();
-    return pInstance->Init(strCfgPath);
-}
-
-/*static*/
 ConfigurationMgr *ConfigurationMgr::GetInstance()
 {
     static ConfigurationMgr instance;
@@ -52,25 +45,3 @@ void ConfigurationMgr::SetValue(const QString &strKey, const QString &strVal)
     m_mapVals[strKey] = strVal;
 }
 
-bool ConfigurationMgr::Init(QString &strCfgPath)
-{
-    m_mapVals.clear();
-
-    if(strCfgPath != "")
-    {
-        // If the ini file was provided, then use the configuration from here
-        QSettings settings(strCfgPath, QSettings::IniFormat);
-        QStringList keys = settings.childKeys();
-        QString strVal;
-        foreach (const QString &childKey, keys)
-        {
-            strVal = settings.value(childKey, "").toString();
-            if(strVal != "")
-            {
-                SetValue(childKey, strVal);
-            }
-        }
-    }
-
-    return true;
-}

@@ -7,7 +7,7 @@ using namespace std;
 PersistenceItfModule::PersistenceItfModule() :
     clientInterface(OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
                                                   QStringLiteral("/org/esa/sen2agri/persistencemanager"),
-                                                  QDBusConnection::sessionBus())
+                                                  QDBusConnection::systemBus())
 {
 
 }
@@ -24,30 +24,32 @@ PersistenceItfModule *PersistenceItfModule::GetInstance()
     return &instance;
 }
 
-void PersistenceItfModule::SendProcessorExecInfos(ProcessorExecutionInfos &execInfos)
-{
-    cout << "---------------------------------------------------------------" << endl;
-    cout << "PersistenceItfModule : SendProcessorExecInfos called with status " << execInfos.strJobStatus.toStdString().c_str() << endl;
-    cout << "---------------------------------------------------------------" << endl;
-    ExecutionStatistics infos(execInfos.strJobNode,
-                              0, /* exit code */
-                              execInfos.strUserTime.toInt(),
-                              execInfos.strSystemTime.toInt(),
-                              execInfos.strExecutionDuration.toInt(),
-                              execInfos.strMaxRss.toInt(),
-                              execInfos.strMaxVmSize.toInt(),
-                              execInfos.strDiskRead.toInt(),
-                              execInfos.strDiskWrite.toInt());
-//    ProcessorStatusInfo infos(execInfos.GetJobId(), execInfos.GetJobName(), execInfos.GetJobStatus(),
-//                                  execInfos.GetStartTime(), execInfos.GetExecutionDuration(), execInfos.GetCpuTime(),
-//                                  execInfos.GetAveVmSize(), execInfos.GetMaxVmSize());
 
-//    KeyedMessageList ret = clientInterface.UpdateProcessorStatus(infos);
-//    QList<KeyedMessage>::iterator i;
-//    for (i = ret.begin(); i != ret.end(); i++) {
-//        cout << (*i).key.toStdString().c_str() << "\n";
-//        cout << (*i).text.toStdString().c_str() << "\n";
-//    }
+void PersistenceItfModule::MarkStepPendingStart(int taskId, QString& name)
+{
+    clientInterface.MarkStepPendingStart(taskId, name);
+}
+
+void PersistenceItfModule::MarkStepStarted(int taskId, QString& name)
+{
+    clientInterface.MarkStepStarted(taskId, name);
+}
+
+bool PersistenceItfModule::MarkStepFinished(int taskId, QString &name, ProcessorExecutionInfos &statistics)
+{
+    // Convert ProcessorExecutionInfos to ExecutionStatistics
+    ExecutionStatistics newStats;
+    newStats.diskReadBytes = statistics.strDiskRead.toLong();
+    newStats.diskWriteBytes = statistics.strDiskWrite.toLong();
+    newStats.durationMs = ParseTimeStr(statistics.strCpuTime);
+    newStats.exitCode = statistics.strExitCode.toInt();
+    newStats.maxRssKb = statistics.strMaxRss.toInt();
+    newStats.maxVmSizeKb = statistics.strMaxVmSize.toInt();
+    newStats.node = statistics.strJobNode;
+    newStats.systemCpuMs = ParseTimeStr(statistics.strSystemTime);
+    newStats.userCpuMs = ParseTimeStr(statistics.strUserTime);
+
+    return clientInterface.MarkStepFinished(taskId, name, newStats);
 }
 
 void PersistenceItfModule::RequestConfiguration()
@@ -56,19 +58,12 @@ void PersistenceItfModule::RequestConfiguration()
     connect(new QDBusPendingCallWatcher(mainKeys, this), &QDBusPendingCallWatcher::finished,
             [this, mainKeys]() {
                 if (mainKeys.isValid()) {
-                    SaveMainConfigKeys(mainKeys.value());
+                    ConfigurationParameterValueList keys = mainKeys.value();
+                    SaveMainConfigKeys(keys);
+                    //SaveProcessorsConfigKeys(keys);
+                    emit OnConfigurationReceived();
                 } else if (mainKeys.isError()) {
                     qDebug() << mainKeys.error().message();
-                }
-    });
-
-    auto processorsKeys = clientInterface.GetConfigurationParameters("executor.processor.");
-    connect(new QDBusPendingCallWatcher(processorsKeys, this), &QDBusPendingCallWatcher::finished,
-            [this, processorsKeys]() {
-                if (processorsKeys.isValid()) {
-                    SaveProcessorsConfigKeys(processorsKeys.value());
-                } else if (processorsKeys.isError()) {
-                    qDebug() << processorsKeys.error().message();
                 }
     });
 }
@@ -125,8 +120,6 @@ void PersistenceItfModule::SaveProcessorsConfigKeys(const ConfigurationParameter
         QString strVal = QString::number(nCurProc);
         ConfigurationMgr::GetInstance()->SetValue(strKey, strVal);
     }
-
-    emit OnConfigurationReceived();
 }
 
 bool PersistenceItfModule::GetProcessorPathForName(const ConfigurationParameterValueList &configuration,
@@ -144,5 +137,51 @@ bool PersistenceItfModule::GetProcessorPathForName(const ConfigurationParameterV
     return false;
 }
 
+long PersistenceItfModule::ParseTimeStr(QString &strTime)
+{
+    // This function expects a string like [DD-[hh:]]mm:ss.mss
+    QString strDays;
+    QString strHours;
+    QString strMinutes;
+    QString strSeconds;
+    QString strMillis;
 
+    QStringList list = strTime.split(':');
+    int listSize = list.size();
+    QString firstElem = list.at(0);
+    QStringList listDate = firstElem.split('-');
+    if(listDate.size() > 1) {
+        strDays = listDate.at(0);
+        strHours = listDate.at(1);
+        strMinutes = list.at(1);
+        strSeconds = list.at(2);
+    } else {
+        // we have no separator for the days
+        if(listSize == 3) {
+            strHours = list.at(0);
+            strMinutes = list.at(1);
+            strSeconds = list.at(2);
+        } else if (listSize == 2) {
+            strMinutes = list.at(0);
+            strSeconds = list.at(1);
+        } else {
+            // unknown format
+            return -1;
+        }
+    }
+    QStringList listSS = strSeconds.split('.');
+    if(listSS.size() == 2) {
+        strSeconds = listSS.at(0);
+        strMillis = listSS.at(1);
+    } else if (listSS.size() != 1) {
+        // unknown format
+        return -1;
+    }
+    long millis = (strDays.toLong()*86400 +
+            strHours.toLong()*3600 +
+            strMinutes.toLong()*60 +
+            strSeconds.toLong()) * 1000 +
+            strMillis.toLong();
+    return millis;
+}
 

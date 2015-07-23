@@ -18,8 +18,12 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
         const auto &path = request.getPath();
         const auto &action = path.mid(path.indexOf('/', 1) + 1);
 
-        if (action == "GetDashboardData") {
-            getDashboardData(request, response);
+        if (action == "GetDashboardSystemOverviewData") {
+            getDashboardSystemOverviewData(request, response);
+        } else if (action == "GetDashboardProcessorStatistics") {
+            getDashboardProcessorStatistics(request, response);
+        } else if (action == "GetDashboardProductAvailability") {
+            getDashboardProductAvailability(request, response);
         } else if (action == "CancelJob") {
             cancelJob(request, response);
         } else if (action == "PauseJob") {
@@ -36,16 +40,46 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
     }
 }
 
-void DashboardController::getDashboardData(const HttpRequest &request, HttpResponse &response)
+void DashboardController::getDashboardSystemOverviewData(const HttpRequest &,
+                                                         HttpResponse &response)
+{
+    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
+        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
+        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
+
+    const auto &data =
+        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardSystemOverviewData());
+
+    response.setHeader("Content-Type", "application/json");
+    response.write(data.toUtf8(), true);
+}
+
+void DashboardController::getDashboardProcessorStatistics(const HttpRequest &,
+                                                          HttpResponse &response)
+{
+    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
+        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
+        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
+
+    const auto &data =
+        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardProcessorStatistics());
+
+    response.setHeader("Content-Type", "application/json");
+    response.write(data.toUtf8(), true);
+}
+
+void DashboardController::getDashboardProductAvailability(const HttpRequest &request,
+                                                          HttpResponse &response)
 {
     const auto &value = request.getParameter("since");
-    const auto &since = QDate::fromString(value, Qt::ISODate);
+    const auto &since = QDateTime::fromString(value, Qt::ISODate);
 
     OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
         OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
         QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
 
-    const auto &data = WaitForResponseAndThrow(persistenceManagerClient.GetDashboardData(since));
+    const auto &data =
+        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardProductAvailability(since));
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
