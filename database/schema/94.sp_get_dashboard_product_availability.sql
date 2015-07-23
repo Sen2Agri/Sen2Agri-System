@@ -12,12 +12,12 @@ BEGIN
 				"_values": [
 				  {
 					"key": "Product 1",
-					"date": gd(2015,07,16,14,29,30),
+					"date": ' || extract(epoch from '2015-07-16 14:29:30'::timestamp) || ',
 					"info": ["Info 1", "Info 2", "Info 3"]
 				  },
 				  {
 					"key": "Product 2",
-					"date": gd(2015,07,16,14,29,30),
+					"date": ' || extract(epoch from '2015-07-16 14:29:30'::timestamp) || ',
 					"info": ["Info 1", "Info 2", "Info 3"] 
 				  }]
 			  },
@@ -26,12 +26,12 @@ BEGIN
 				"_values": [
 				  {
 					"key": "Product 3",
-					"date": gd(2015,07,16,14,29,30),
+					"date": ' || extract(epoch from '2015-07-16 14:29:30'::timestamp) || ',
 					"info": ["Info 1", "Info 2", "Info 3"]
 				  },
 				  {
 					"key": "Product 4",
-					"date": gd(2015,07,16,14,29,30),
+					"date": ' || extract(epoch from '2015-07-16 14:29:30'::timestamp) || ',
 					"info": ["Info 1", "Info 2", "Info 3"] 
 				  }]
 			  }]

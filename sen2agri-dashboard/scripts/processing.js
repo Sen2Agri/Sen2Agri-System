@@ -127,7 +127,7 @@ var json_data = {
 	};	
 
 $(document).ready(function() {			
-	update_current_jobs(json_data);
+	/*update_current_jobs(json_data);
 	update_server_resources_layout(json_data);
 	update_server_resources(json_data);
 	update_l2a_statistics(json_data);
@@ -135,5 +135,7 @@ $(document).ready(function() {
 	update_l3b_statistics(json_data);
 	update_l4a_statistics(json_data);
 	update_l4b_statistics(json_data);
-	update_product_availability(json_data);
+	update_product_availability(json_data);*/
+	
+	set_system_overview_refresh();
 })
