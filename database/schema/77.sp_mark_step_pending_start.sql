@@ -1,6 +1,6 @@
-﻿CREATE OR REPLACE FUNCTION sp_mark_step_pending_start(
-IN _step_name character varying,
-IN _task_id int
+CREATE OR REPLACE FUNCTION sp_mark_step_pending_start(
+IN _task_id int,
+IN _step_name character varying
 ) RETURNS void AS $$
 BEGIN
 
@@ -11,4 +11,3 @@ BEGIN
 
 END;
 $$ LANGUAGE plpgsql;
-
