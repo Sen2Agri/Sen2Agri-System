@@ -112,7 +112,8 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskRunnableEvent &event)
 {
     Logger::info(QStringLiteral("Processing task runnable event with task id %1 and job id %2")
-                     .arg(event.taskId, event.jobId));
+                     .arg(event.taskId)
+                     .arg(event.jobId));
 
     const auto &steps =
         WaitForResponseAndThrow(persistenceManagerClient.GetTaskStepsForStart(event.taskId));
@@ -125,7 +126,8 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskRun
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskFinishedEvent &event)
 {
     Logger::info(QStringLiteral("Processing task finished event with task id %1 and job id %2")
-                     .arg(event.taskId, event.jobId));
+                     .arg(event.taskId)
+                     .arg(event.jobId));
 
     GetHandler(event.processorId).HandleTaskFinished(ctx, event);
 }
@@ -180,7 +182,8 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobResu
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobSubmittedEvent &event)
 {
     Logger::info(QStringLiteral("Processing job submitted event with job id %1 and processor id %2")
-                     .arg(event.jobId, event.processorId));
+                     .arg(event.jobId)
+                     .arg(event.processorId));
 
     GetHandler(event.processorId).HandleJobSubmitted(ctx, event);
 }
@@ -188,7 +191,8 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobSubm
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const StepFailedEvent &event)
 {
     Logger::info(QStringLiteral("Processing step failed event with task id %1 and job id %2")
-                     .arg(event.taskId, event.jobId));
+                     .arg(event.taskId)
+                     .arg(event.jobId));
 
     const auto &tasks = ctx.GetJobTasksByStatus(event.jobId, { ExecutionStatus::Running });
 
