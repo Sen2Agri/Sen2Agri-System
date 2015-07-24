@@ -1,7 +1,7 @@
-﻿CREATE OR REPLACE FUNCTION sp_mark_step_finished(
+CREATE OR REPLACE FUNCTION sp_mark_step_finished(
 IN _task_id int,
 IN _step_name character varying,
-IN _node character varying,
+IN _node_name character varying,
 IN _exit_code int,
 IN _user_cpu_ms bigint,
 IN _system_cpu_ms bigint,
@@ -21,36 +21,36 @@ BEGIN
 
 	UPDATE step
 	SET status_id = 6, --Finished
-	status_timestamp = now(), 
+	status_timestamp = now(),
 	exit_code = _exit_code
-	WHERE name = _step_name AND task_id = _task_id 
+	WHERE name = _step_name AND task_id = _task_id
 	AND status_id != 6; -- Prevent resetting the status on serialization error retries.
 
 	-- Make sure the statistics are inserted only once.
 	IF NOT EXISTS (SELECT * FROM step_resource_log WHERE step_name = _step_name AND task_id = _task_id) THEN
 		INSERT INTO step_resource_log(
-		step_name, 
-		task_id, 
-		node_name, 
-		entry_timestamp, 
-		duration_ms, 
-		user_cpu_ms, 
-		system_cpu_ms, 
-		max_rss_kb, 
-		max_vm_size_kb, 
-		disk_read_b, 
+		step_name,
+		task_id,
+		node_name,
+		entry_timestamp,
+		duration_ms,
+		user_cpu_ms,
+		system_cpu_ms,
+		max_rss_kb,
+		max_vm_size_kb,
+		disk_read_b,
 		disk_write_b)
 		VALUES (
-		_step_name, 
-		_task_id, 
-		_node_name, 
-		now(), 
-		_duration_ms, 
-		_user_cpu_ms, 
-		_system_cpu_ms, 
-		_max_rss_kb, 
-		_max_vm_size_kb, 
-		_disk_read_b, 
+		_step_name,
+		_task_id,
+		_node_name,
+		now(),
+		_duration_ms,
+		_user_cpu_ms,
+		_system_cpu_ms,
+		_max_rss_kb,
+		_max_vm_size_kb,
+		_disk_read_b,
 		_disk_write_b);
 	END IF;
 
@@ -60,13 +60,13 @@ BEGIN
 	WHERE id = _task_id
 	AND status_id != 6 -- Prevent resetting the status on serialization error retries.
 	AND NOT EXISTS (SELECT * FROM step WHERE task_id = _task_id AND status_id != 6); -- Check that all the steps have been finished.
-	
-	IF EXISTS (SELECT * FROM task WHERE id = _task_id AND status_id = 6) 
+
+	IF EXISTS (SELECT * FROM task WHERE id = _task_id AND status_id = 6)
 	-- Make sure the task finished event is inserted only once.
-	AND NOT EXISTS (SELECT * FROM event WHERE type_id = 2 AND data::json->'task_id' = _task_id) THEN
+	AND NOT EXISTS (SELECT * FROM event WHERE type_id = 2 AND (data->>'task_id')::INT = _task_id) THEN
 		INSERT INTO event(
-		type_id, 
-		data, 
+		type_id,
+		data,
 		submitted_timestamp)
 		SELECT
 		2, -- TaskFinished
@@ -84,21 +84,21 @@ BEGIN
 		-- From the list of tasks determined above, get the list of tasks whose preceding tasks have all been completed and store the ids of the runnable tasks into an array
 		SELECT array_agg(tasks_preceded.id) INTO runnable_task_ids FROM tasks_preceded
 		WHERE NOT EXISTS (SELECT * FROM task WHERE task.id = ANY (tasks_preceded.preceding_task_ids) AND task.status_id != 6 /*Finished*/ );
-		
+
 		-- Update the tasks that can be run
 		UPDATE task SET
 			status_id = 1, --Submitted
 			status_timestamp = now()
-		WHERE task.id = ANY(runnable_task_ids);	
-		
+		WHERE task.id = ANY(runnable_task_ids);
+
 		-- Add events for all the runnable tasks
 		FOREACH runnable_task_id IN ARRAY runnable_task_ids
 		LOOP
 			-- Make sure the task runnable event is inserted only once.
 			IF NOT EXISTS (SELECT * FROM event WHERE type_id = 1 AND data::json->'task_id' = _task_id AND processing_started_timestamp = NULL) THEN
 				INSERT INTO event(
-				type_id, 
-				data, 
+				type_id,
+				data,
 				submitted_timestamp)
 				SELECT
 				1, -- TaskRunnable
@@ -115,6 +115,3 @@ BEGIN
 
 END;
 $$ LANGUAGE plpgsql;
-
-
-
