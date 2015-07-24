@@ -909,6 +909,7 @@ static QString getNewStepsJson(const NewStepList &steps)
     QJsonArray array;
     for (const auto &s : steps) {
         QJsonObject node;
+        node[QStringLiteral("task_id")] = s.taskId;
         node[QStringLiteral("name")] = s.name;
         node[QStringLiteral("parameters")] =
             QJsonDocument::fromJson(s.parametersJson.toUtf8()).object();
