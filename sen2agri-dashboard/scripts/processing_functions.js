@@ -48,16 +48,8 @@ function update_current_jobs(json_data)
 		for (idx = 1; idx < job.current_tasks.length; idx++)
 		{
 			new_row = "<tr class=\"to_be_refreshed\">" +
-			"<td></td>" +
-			"<td></td>" +
-			"<td></td>" +
-			"<td></td>" +
-			"<td></td>" +
-			"<td></td>" +
-			"<td></td>" +
 			"<td>" + job.current_tasks[idx].current_task_module + "</td>" +
 			"<td>" + job.current_tasks[idx].current_task_steps_completed + " / " + job.current_tasks[idx].current_task_steps_remaining + "</td>" +
-			"<td></td>" +
 			"</tr>";
 			
 			$("#pnl_current_jobs table:first").append(new_row);
