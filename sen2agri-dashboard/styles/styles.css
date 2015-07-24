@@ -56,6 +56,9 @@ div.panel div.full_height {
     margin-bottom: auto;
 }
 
+div.panel table {
+    border-collapse: initial
+}
 
 div.panel table.full_width {
     width: 98%;

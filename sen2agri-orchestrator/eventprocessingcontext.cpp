@@ -1,3 +1,4 @@
+#include <QDir>
 #include <QFile>
 #include <QString>
 
@@ -19,7 +20,11 @@ EventProcessingContext::GetJobConfigurationParameters(int jobId, QString prefix)
 
 int EventProcessingContext::SubmitTask(const NewTask &task)
 {
-    return WaitForResponseAndThrow(persistenceManagerClient.SubmitTask(task));
+    auto taskId = WaitForResponseAndThrow(persistenceManagerClient.SubmitTask(task));
+
+    QDir::root().mkpath(GetOutputPath(task.jobId, taskId));
+
+    return taskId;
 }
 
 void EventProcessingContext::SubmitSteps(const NewStepList &steps)

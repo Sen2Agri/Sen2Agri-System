@@ -12,9 +12,18 @@ BEGIN
 			"status": "Running",
 			"tasks_completed": 0,
 			"tasks_remaining": 4,
-			"current_task_module": "Test module 3",
-			"current_task_steps_completed": 17,
-			"current_task_steps_remaining": 144,
+			"current_tasks": [{
+				"current_task_module": "Test module 3",
+				"current_task_steps_completed": 17,
+				"current_task_steps_remaining": 144
+				},{
+				"current_task_module": "Test module 3",
+				"current_task_steps_completed": 17,
+				"current_task_steps_remaining": 144}
+				,{
+				"current_task_module": "Test module 3",
+				"current_task_steps_completed": 17,
+				"current_task_steps_remaining": 144}],
 			"actions": [1, 3, 4]
 		}, {
 			"id": 96345,
@@ -25,9 +34,62 @@ BEGIN
 			"status": "Needs Input",
 			"tasks_completed": 5,
 			"tasks_remaining": 15,
-			"current_task_module": "Test module with long name",
-			"current_task_steps_completed": 0,
-			"current_task_steps_remaining": 1,
+			"current_tasks": [{
+				"current_task_module": "Test module with long name",
+				"current_task_steps_completed": 0,
+				"current_task_steps_remaining": 1
+				},{
+				"current_task_module": "Test module with long name",
+				"current_task_steps_completed": 0,
+				"current_task_steps_remaining": 1}
+				,{
+				"current_task_module": "Test module with long name",
+				"current_task_steps_completed": 0,
+				"current_task_steps_remaining": 1}],
+			"actions": [2, 3, 4]
+		}, {
+			"id": 96345,
+			"processor": "L3B Vegetation Status",
+			"site": "Madagascar, Antsirabe",
+			"triggered_by": "Scheduler",
+			"triggered_on": "2015-07-13 12:23:45",
+			"status": "Needs Input",
+			"tasks_completed": 5,
+			"tasks_remaining": 15,
+			"current_tasks": [{
+				"current_task_module": "Test module with long name",
+				"current_task_steps_completed": 0,
+				"current_task_steps_remaining": 1
+				},{
+				"current_task_module": "Test module with long name",
+				"current_task_steps_completed": 0,
+				"current_task_steps_remaining": 1}
+				,{
+				"current_task_module": "Test module with long name",
+				"current_task_steps_completed": 0,
+				"current_task_steps_remaining": 1}],
+			"actions": [2, 3, 4]
+		}, {
+			"id": 96345,
+			"processor": "L3B Vegetation Status",
+			"site": "Madagascar, Antsirabe",
+			"triggered_by": "Scheduler",
+			"triggered_on": "2015-07-13 12:23:45",
+			"status": "Needs Input",
+			"tasks_completed": 5,
+			"tasks_remaining": 15,
+			"current_tasks": [{
+				"current_task_module": "Test module with long name",
+				"current_task_steps_completed": 0,
+				"current_task_steps_remaining": 1
+				},{
+				"current_task_module": "Test module with long name",
+				"current_task_steps_completed": 0,
+				"current_task_steps_remaining": 1}
+				,{
+				"current_task_module": "Test module with long name",
+				"current_task_steps_completed": 0,
+				"current_task_steps_remaining": 1}],
 			"actions": [2, 3, 4]
 		}],
 		"server_resources" : [{

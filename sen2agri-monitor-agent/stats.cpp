@@ -99,12 +99,12 @@ MemInfo getMemInfo()
     QByteArray contents = file.readAll();
     file.close();
 
-    uint64_t memTotal;
-    uint64_t memFree;
-    uint64_t buffers;
-    uint64_t cached;
-    uint64_t swapTotal;
-    uint64_t swapFree;
+    uint64_t memTotal = 0;
+    uint64_t memFree = 0;
+    uint64_t buffers = 0;
+    uint64_t cached = 0;
+    uint64_t swapTotal = 0;
+    uint64_t swapFree = 0;
 
     static QRegularExpression rex(QStringLiteral("(\\d+)"));
     QRegularExpression re(rex);
