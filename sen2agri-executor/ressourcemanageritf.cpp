@@ -26,7 +26,12 @@ QString SACCT_CMD("./SlurmSrunSimulator "
                   "MaxRSS,MaxVMSize,MaxDiskRead,MaxDiskWrite");
 QString SCANCEL_CMD("scancel --name=");
 #else
-QString SRUN_CMD("srun --job-name");
+
+QString SRUN_FULL_CMD("srun --job-name");
+
+QString SRUN_CMD("srun");
+QString SRUN_PARAM("--job-name");
+
 QString SACCT_CMD("sacct --parsable2 "
                   "--format=JobID,JobName,NodeList,AveCPU,UserCPU,SystemCPU,ExitCode,AveVMSize,"
                   "MaxRSS,MaxVMSize,MaxDiskRead,MaxDiskWrite");
@@ -188,6 +193,8 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
 
         QStringList listParams;
         QString strParam;
+        listParams.push_back(SRUN_PARAM);
+        listParams.push_back(strJobName);
         listParams.push_back(strProcWrpExecStr);
 
         strParam = QString("%1=%2").arg("SRV_IP_ADDR", strIpVal);
@@ -203,20 +210,18 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
         listParams.push_back(strParam);
 
         if (!executionStep.GetArgumentsList().isEmpty()) {
-            QString paramsStr = BuildParamsString(executionStep.GetArgumentsList());
-            paramsStr.replace("\"", "\"\"");
-            str = QString("PROC_PARAMS=\"%1\"").arg(paramsStr);
-            listParams.push_back(str);
+            listParams.push_back("PROC_PARAMS");
+            listParams.append(executionStep.GetArgumentsList());
         }
 
         QString paramsStr = BuildParamsString(listParams);
         // Build the srun command to be executed in SLURM - no need to wait
-        QString strSrunCmd = QString("%1 %2 %3").arg(SRUN_CMD, strJobName, paramsStr);
+        //QString strSrunCmd = QString("%1 %2 %3").arg(SRUN_CMD, strJobName, paramsStr);
 
-        Logger::debug(QString("HandleStartProcessor: Executing command %1").arg(strSrunCmd));
+        Logger::debug(QString("HandleStartProcessor: Executing command %1 with params %2").arg(SRUN_CMD, paramsStr));
 
         CommandInvoker cmdInvoker;
-        if (!cmdInvoker.InvokeCommand(strSrunCmd, /* listParams,*/ false)) {
+        if (!cmdInvoker.InvokeCommand(SRUN_CMD, listParams, false)) {
             Logger::error(QString("Unable to execute SLURM srun command for the processor %1")
                               .arg(executionStep.GetProcessorPath()));
             return false;
