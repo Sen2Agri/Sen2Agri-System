@@ -12,28 +12,19 @@ int main(int argc, char *argv[])
     QCoreApplication a(argc, argv);
 
     qDebug() << argc;
-    QVariantMap mapArgs;
+    QStringList listParams;
     for(int i = 1; i < argc; i++) {
         qDebug() << argv[i];
-        QString curArg(argv[i]);
-        int nArgLen = curArg.length();
-        int nEqPos = curArg.indexOf("=");
-        if(nEqPos > 0 && nEqPos < (nArgLen-1)) {
-            QString strKey = curArg.left(nEqPos);
-            QString strVal = curArg.right(nArgLen-nEqPos-1);
-            if(strKey.length() > 0 && strVal.length() > 0) {
-                mapArgs[strKey] = strVal;
-            }
-        }
+        listParams.append(argv[i]);
     }
 
     // Task parented to the application so that it
     // will be deleted by the application.
     ProcessorWrapper procWrp;
 
-    if(mapArgs.size() > 0)
+    if(listParams.size() > 0)
     {
-        if(procWrp.Initialize(mapArgs))
+        if(procWrp.Initialize(listParams))
         {
             if(!procWrp.ExecuteProcessor())
             {

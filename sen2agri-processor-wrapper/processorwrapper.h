@@ -15,7 +15,7 @@ public:
     ProcessorWrapper();
     ~ProcessorWrapper();
 
-    bool Initialize(QVariantMap &params);
+    bool Initialize(QStringList &listParams);
     virtual void OnNewMessage(QString &strMsg);
 
     bool ExecuteProcessor();
@@ -27,6 +27,7 @@ private:
     QString m_strJobName;
 
     AbstractExecInfosProtClient *m_pUdpClient;
+    QStringList m_listProcParams;
 };
 
 #endif // PROCESSORWRAPPER_H

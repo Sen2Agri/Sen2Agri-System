@@ -21,23 +21,68 @@ ProcessorWrapper::~ProcessorWrapper()
     }
 }
 
-bool ProcessorWrapper::Initialize(QVariantMap &params)
+bool ProcessorWrapper::Initialize(QStringList &listParams)
 {
-    m_strProcPath = params["PROC_PATH"].toString();
-    if(m_strProcPath.isNull() || m_strProcPath.isEmpty()) {
-        qCritical() << "Error during initialization: No processor execution command was received!";
-        return false;
-    }
-    m_strProcParams = params["PROC_PARAMS"].toString();
-    m_strJobName = params["JOB_NAME"].toString();
+    bool bProcParam = false;
+    QString strSrvIpAddr;
+    QString strPortNo;
 
-    QString strSrvIpAddr = params["SRV_IP_ADDR"].toString();
-    int nPortNo = params["SRV_PORT_NO"].toInt();
-
-    if(!strSrvIpAddr.isNull() && !strSrvIpAddr.isEmpty())
+    m_listProcParams.clear();
+    for (QStringList::iterator it = listParams.begin(); it != listParams.end(); ++it)
     {
-        m_pUdpClient = new SimpleUdpInfosClient();
-        m_pUdpClient->Initialize(strSrvIpAddr, nPortNo);
+        QString &curParam = (*it);
+        if(bProcParam)
+        {
+            // we found PROC_PARAMS so we just add this param to the list of proc params
+            m_listProcParams.append(curParam);
+        } else {
+            int nEqPos = curParam.indexOf("=");
+            if(nEqPos > 0)
+            {
+                QString strKey = curParam.left(nEqPos);
+                QString strVal = curParam.right(curParam.size()-nEqPos-1);
+                if(strKey == "PROC_PATH") {
+                    if(strVal.isNull() || strVal.isEmpty()) {
+                        qCritical() << "Error during initialization: No processor execution command was received!";
+                        return false;
+                    }
+                    m_strProcPath = strVal;
+                } else if (strKey == "PROC_PARAMS") {
+                    if(strVal.size() > 0) {
+                        m_listProcParams.append(strVal);
+                    }
+                    bProcParam = true;
+                } else if (strKey == "JOB_NAME") {
+                    if(strVal.isNull() || strVal.isEmpty()) {
+                        qCritical() << "Error during initialization: No processor job name was received!";
+                        return false;
+                    }
+                    m_strJobName = strVal;
+                } else if (strKey == "SRV_IP_ADDR") {
+                    strSrvIpAddr = strVal;
+                } else if (strKey == "SRV_PORT_NO") {
+                    strPortNo = strVal;
+                }
+            } else if (curParam == "PROC_PARAMS") {
+                bProcParam = true;
+            } // otherwise ignore this parameter
+        }
+    }
+
+    if(!strSrvIpAddr.isNull() && !strSrvIpAddr.isEmpty() &&
+            !strPortNo.isNull() && !strPortNo.isEmpty())
+    {
+        int nPortNo = strPortNo.toInt();
+        if(nPortNo > 0) {
+            m_pUdpClient = new SimpleUdpInfosClient();
+            m_pUdpClient->Initialize(strSrvIpAddr, nPortNo);
+        } else {
+            qCritical() << "Error during initialization: No valid server port was received!";
+            return false;
+        }
+    } else {
+        qCritical() << "Error during initialization: No valid server configuration was received!";
+        return false;
     }
 
     return true;
@@ -67,7 +112,13 @@ bool ProcessorWrapper::ExecuteProcessor()
         m_pUdpClient->SendMessage(strJSon);
     }
 
-    bool bRet = cmdInvoker.InvokeCommand(strCmd, false);
+    bool bRet;
+    if(m_listProcParams.size() > 0)
+    {
+        bRet = cmdInvoker.InvokeCommand(strCmd, m_listProcParams, false);
+    } else {
+        bRet = cmdInvoker.InvokeCommand(strCmd, false);
+    }
     qint64 endTime = dateTime.currentMSecsSinceEpoch();
 
     if(m_pUdpClient)

@@ -17,11 +17,21 @@ void CommandInvoker::SetListener(ICommandInvokerListener *pListener)
 
 bool CommandInvoker::InvokeCommand(QString &strCmd, bool bIsAsync)
 {
+    QStringList listParams;
+    return InvokeCommand(strCmd, listParams, bIsAsync);
+}
+
+bool CommandInvoker::InvokeCommand(QString &strCmd, QStringList &listParams, bool bIsAsync)
+{
     bool bRet = true;
     QString outputStr;
 
     m_logStr.clear();
-    m_process.start(strCmd);
+    if(listParams.isEmpty()) {
+        m_process.start(strCmd);
+    } else {
+        m_process.start(strCmd, listParams);
+    }
     if (m_process.waitForStarted(-1)) {
         if(!bIsAsync) {
             while(m_process.waitForReadyRead(-1)) {
