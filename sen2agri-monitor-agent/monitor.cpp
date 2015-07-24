@@ -8,10 +8,7 @@
 #include "logger.hpp"
 
 Monitor::Monitor(const Settings &settings, QObject *parent)
-    : QObject(parent),
-      serviceUrl(settings.serviceUrl),
-      diskPath(defaultDiskPath),
-      isConfigured()
+    : QObject(parent), serviceUrl(settings.serviceUrl), diskPath(defaultDiskPath), isConfigured()
 {
     timer.setSingleShot(true);
     timer.setInterval(defaultScanInterval);
@@ -65,7 +62,8 @@ void Monitor::configurationRead()
     } else {
         const auto &obj = QJsonDocument::fromJson(reply->readAll()).object();
         diskPath = obj[QStringLiteral("monitor-agent.disk-path")].toString();
-        auto scanInterval = obj[QStringLiteral("monitor-agent.scan-interval")].toString().toInt();
+        auto scanInterval =
+            obj[QStringLiteral("monitor-agent.scan-interval")].toString().toInt() * 1000;
 
         if (diskPath.isEmpty()) {
             Logger::error("Please configure monitor-agent.disk-path");
