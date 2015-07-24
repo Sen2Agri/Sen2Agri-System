@@ -18,6 +18,8 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
         const auto &path = request.getPath();
         const auto &action = path.mid(path.indexOf('/', 1) + 1);
 
+        response.setHeader("Access-Control-Allow-Origin", "*");
+
         if (action == "GetDashboardSystemOverviewData") {
             getDashboardSystemOverviewData(request, response);
         } else if (action == "GetDashboardProcessorStatistics") {
