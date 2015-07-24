@@ -11,22 +11,23 @@ function update_current_jobs(json_data)
 
 		var action_buttons = "<div class=\"btn-group\">";
 		job.actions.forEach(function(action)
+			{
+				switch(action) 
 				{
-			switch(action) {
-			case 1:
-				action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\">Pause</button>";
-				break;
-			case 2:
-				action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\">Resume</button>";
-				break;
-			case 3:
-				action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\">Cancel</button>";
-				break;
-			case 4:
-				action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\">View Config</button>";
-				break;
-			} 
-				});
+					case 1:
+						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\">Pause</button>";
+						break;
+					case 2:
+						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\">Resume</button>";
+						break;
+					case 3:
+						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\">Cancel</button>";
+						break;
+					case 4:
+						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\">View Config</button>";
+						break;
+				} 
+			});
 		action_buttons += "</div>";
 
 		var new_row = "<tr class=\"to_be_refreshed\">" +
@@ -43,7 +44,7 @@ function update_current_jobs(json_data)
 		"</tr>";
 
 		$("#pnl_current_jobs table:first").append(new_row);
-		
+
 		// For the rest of the current tasks, add their own row
 		for (idx = 1; idx < job.current_tasks.length; idx++)
 		{
@@ -51,7 +52,7 @@ function update_current_jobs(json_data)
 			"<td>" + job.current_tasks[idx].current_task_module + "</td>" +
 			"<td>" + job.current_tasks[idx].current_task_steps_completed + " / " + job.current_tasks[idx].current_task_steps_remaining + "</td>" +
 			"</tr>";
-			
+
 			$("#pnl_current_jobs table:first").append(new_row);
 		}
 	});
@@ -338,10 +339,10 @@ function get_system_overview_data()
 {
 	$.ajax({
 		url: get_system_overview_data_url,
-        type: "get",
-        cache: false,
-        crosDomain: true,
-        dataType: "json",
+		type: "get",
+		cache: false,
+		crosDomain: true,
+		dataType: "json",
 		success: function(json_data)
 		{
 			update_current_jobs(json_data);
@@ -350,12 +351,12 @@ function get_system_overview_data()
 			{
 				update_server_resources_layout(json_data);
 			}
-			
+
 			update_server_resources(json_data);
 		},
 		error: function (responseData, textStatus, errorThrown) {
-	        console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
-	    }
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+		}
 	});
 }
 
@@ -444,10 +445,10 @@ function get_processor_statistics()
 {
 	$.ajax({
 		url: get_processor_statistics_url,
-        type: "get",
-        cache: false,
-        crosDomain: true,
-        dataType: "json",
+		type: "get",
+		cache: false,
+		crosDomain: true,
+		dataType: "json",
 		success: function(json_data)
 		{
 			update_l2a_statistics(json_data);
@@ -457,8 +458,8 @@ function get_processor_statistics()
 			update_l4b_statistics(json_data);
 		},
 		error: function (responseData, textStatus, errorThrown) {
-	        console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
-	    }
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+		}
 	});
 }
 
@@ -506,20 +507,20 @@ function get_product_availability_data()
 {
 	$.ajax({
 		url: get_product_availability_data_url,
-        type: "get",
-        cache: false,
-        crosDomain: true,
-        dataType: "json",
-        data: {
-        	since: "2015-07-01T00:00:00"
-        },
+		type: "get",
+		cache: false,
+		crosDomain: true,
+		dataType: "json",
+		data: {
+			since: "2015-07-01T00:00:00"
+		},
 		success: function(json_data)
 		{
 			update_product_availability(json_data);
 		},
 		error: function (responseData, textStatus, errorThrown) {
-	        console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
-	    }
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+		}
 	});
 }
 
