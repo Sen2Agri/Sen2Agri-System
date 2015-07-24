@@ -78,9 +78,11 @@ void Logger::messageHandler(const QtMsgType type,
         case QtDebugMsg:
             debug(msg);
             break;
-        case QtInfoMsg:
+#if QT_VERSION >= QT_VERSION_CHECK(5, 5, 0)
+    case QtInfoMsg:
             info(msg);
             break;
+#endif
         case QtWarningMsg:
             warn(msg);
             break;
