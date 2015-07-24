@@ -30,19 +30,38 @@ function update_current_jobs(json_data)
 		action_buttons += "</div>";
 
 		var new_row = "<tr class=\"to_be_refreshed\">" +
-		"<td>"+ job.id + "</td>" +
-		"<td>"+ job.processor + "</td>" +
-		"<td>"+ job.site + "</td>" +
-		"<td>"+ job.triggered_by + "</td>" +
-		"<td>"+ job.triggered_on + "</td>" +
-		"<td>"+ job.status + "</td>" +
-		"<td>"+ job.tasks_completed + " / " + job.tasks_remaining + "</td>" +
-		"<td>"+ job.current_task_module + "</td>" +
-		"<td>"+ job.current_task_steps_completed + " / " + job.current_task_steps_remaining + "</td>" +
-		"<td>"+ action_buttons + "</td>" +
+		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.id + "</td>" +
+		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.processor + "</td>" +
+		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.site + "</td>" +
+		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.triggered_by + "</td>" +
+		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.triggered_on + "</td>" +
+		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.status + "</td>" +
+		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.tasks_completed + " / " + job.tasks_remaining + "</td>" +
+		"<td>" + job.current_tasks[0].current_task_module + "</td>" +
+		"<td>" + job.current_tasks[0].current_task_steps_completed + " / " + job.current_tasks[0].current_task_steps_remaining + "</td>" +
+		"<td rowspan=\"" + job.current_tasks.length + "\">" + action_buttons + "</td>" +
 		"</tr>";
 
 		$("#pnl_current_jobs table:first").append(new_row);
+		
+		// For the rest of the current tasks, add their own row
+		for (idx = 1; idx < job.current_tasks.length; idx++)
+		{
+			new_row = "<tr class=\"to_be_refreshed\">" +
+			"<td></td>" +
+			"<td></td>" +
+			"<td></td>" +
+			"<td></td>" +
+			"<td></td>" +
+			"<td></td>" +
+			"<td></td>" +
+			"<td>" + job.current_tasks[idx].current_task_module + "</td>" +
+			"<td>" + job.current_tasks[idx].current_task_steps_completed + " / " + job.current_tasks[idx].current_task_steps_remaining + "</td>" +
+			"<td></td>" +
+			"</tr>";
+			
+			$("#pnl_current_jobs table:first").append(new_row);
+		}
 	});
 
 }
