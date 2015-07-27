@@ -42,24 +42,19 @@ void StatisticsController::saveDashboardData(const HttpRequest &request, HttpRes
         OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
         QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
 
-    {
-        Stopwatch sw("Calling InsertNodeStatistics");
-        Q_UNUSED(sw);
-
-        WaitForResponseAndThrow(persistenceManagerClient.InsertNodeStatistics(
-            { obj[QStringLiteral("hostname")].toString(),
-              obj[QStringLiteral("cpu_user")].toDouble(),
-              obj[QStringLiteral("cpu_system")].toDouble(),
-              static_cast<int64_t>(obj[QStringLiteral("mem_total_kb")].toDouble()),
-              static_cast<int64_t>(obj[QStringLiteral("mem_used_kb")].toDouble()),
-              static_cast<int64_t>(obj[QStringLiteral("swap_total_kb")].toDouble()),
-              static_cast<int64_t>(obj[QStringLiteral("swap_used_kb")].toDouble()),
-              obj[QStringLiteral("load_avg_1m")].toDouble(),
-              obj[QStringLiteral("load_avg_5m")].toDouble(),
-              obj[QStringLiteral("load_avg_15m")].toDouble(),
-              static_cast<int64_t>(obj[QStringLiteral("disk_total_bytes")].toDouble()),
-              static_cast<int64_t>(obj[QStringLiteral("disk_used_bytes")].toDouble()) }));
-    }
+    WaitForResponseAndThrow(persistenceManagerClient.InsertNodeStatistics(
+        { obj[QStringLiteral("hostname")].toString(),
+          obj[QStringLiteral("cpu_user")].toDouble(),
+          obj[QStringLiteral("cpu_system")].toDouble(),
+          static_cast<int64_t>(obj[QStringLiteral("mem_total_kb")].toDouble()),
+          static_cast<int64_t>(obj[QStringLiteral("mem_used_kb")].toDouble()),
+          static_cast<int64_t>(obj[QStringLiteral("swap_total_kb")].toDouble()),
+          static_cast<int64_t>(obj[QStringLiteral("swap_used_kb")].toDouble()),
+          obj[QStringLiteral("load_avg_1m")].toDouble(),
+          obj[QStringLiteral("load_avg_5m")].toDouble(),
+          obj[QStringLiteral("load_avg_15m")].toDouble(),
+          static_cast<int64_t>(obj[QStringLiteral("disk_total_bytes")].toDouble()),
+          static_cast<int64_t>(obj[QStringLiteral("disk_used_bytes")].toDouble()) }));
 }
 
 void StatisticsController::getMonitorAgentParameters(const HttpRequest &, HttpResponse &response)
