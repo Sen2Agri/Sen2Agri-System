@@ -20,6 +20,7 @@ BEGIN
 
 	UPDATE step
 	SET status_id = 8, --Error
+	end_timestamp = now(),
 	status_timestamp = now(), 
 	exit_code = _exit_code
 	WHERE name = _step_name AND task_id = _task_id 
