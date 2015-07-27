@@ -20,8 +20,10 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
 
         response.setHeader("Access-Control-Allow-Origin", "*");
 
-        if (action == "GetDashboardSystemOverviewData") {
-            getDashboardSystemOverviewData(request, response);
+        if (action == "GetDashboardCurrentJobData") {
+            getDashboardCurrentJobData(request, response);
+        } else if (action == "GetDashboardServerResourceData") {
+            getDashboardServerResourceData(request, response);
         } else if (action == "GetDashboardProcessorStatistics") {
             getDashboardProcessorStatistics(request, response);
         } else if (action == "GetDashboardProductAvailability") {
@@ -42,7 +44,20 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
     }
 }
 
-void DashboardController::getDashboardSystemOverviewData(const HttpRequest &,
+void DashboardController::getDashboardCurrentJobData(const HttpRequest &, HttpResponse &response)
+{
+    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
+        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
+        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
+
+    const auto &data =
+        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardCurrentJobData());
+
+    response.setHeader("Content-Type", "application/json");
+    response.write(data.toUtf8(), true);
+}
+
+void DashboardController::getDashboardServerResourceData(const HttpRequest &,
                                                          HttpResponse &response)
 {
     OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
@@ -50,7 +65,7 @@ void DashboardController::getDashboardSystemOverviewData(const HttpRequest &,
         QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
 
     const auto &data =
-        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardSystemOverviewData());
+        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardServerResourceData());
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);

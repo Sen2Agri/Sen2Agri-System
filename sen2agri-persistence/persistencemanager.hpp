@@ -84,7 +84,8 @@ public slots:
 
     int InsertProduct(NewProduct product);
 
-    QString GetDashboardSystemOverviewData();
+    QString GetDashboardCurrentJobData();
+    QString GetDashboardServerResourceData();
     QString GetDashboardProcessorStatistics();
     QString GetDashboardProductAvailability(const QDateTime since);
 };

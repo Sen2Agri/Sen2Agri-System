@@ -317,9 +317,16 @@ int PersistenceManager::InsertProduct(NewProduct product)
     return {};
 }
 
-QString PersistenceManager::GetDashboardSystemOverviewData()
+QString PersistenceManager::GetDashboardCurrentJobData()
 {
-    RunAsync([this] { return dbProvider.GetDashboardSystemOverviewData(); });
+    RunAsync([this] { return dbProvider.GetDashboardCurrentJobData(); });
+
+    return {};
+}
+
+QString PersistenceManager::GetDashboardServerResourceData()
+{
+    RunAsync([this] { return dbProvider.GetDashboardServerResourceData(); });
 
     return {};
 }

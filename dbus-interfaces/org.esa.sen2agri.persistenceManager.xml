@@ -145,7 +145,10 @@
       <arg name="productId" type="i" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewProduct" />
     </method>
-    <method name="GetDashboardSystemOverviewData">
+    <method name="GetDashboardCurrentJobData">
+      <arg name="jsonData" type="s" direction="out" />
+    </method>
+    <method name="GetDashboardServerResourceData">
       <arg name="jsonData" type="s" direction="out" />
     </method>
     <method name="GetDashboardProcessorStatistics">
