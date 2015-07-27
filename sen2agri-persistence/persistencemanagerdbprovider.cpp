@@ -357,11 +357,10 @@ void PersistenceManagerDBProvider::MarkStepStarted(int taskId, const QString &na
     return provider.handleTransactionRetry(__func__, [&] {
         db.transaction();
 
-        auto query =
-            db.prepareQuery(QStringLiteral("set transaction isolation level repeatable read"));
+        auto query = db.createQuery();
 
         query.setForwardOnly(true);
-        if (!query.exec()) {
+        if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
             throw_query_error(query);
         }
 
@@ -390,11 +389,10 @@ bool PersistenceManagerDBProvider::MarkStepFinished(int taskId,
     return provider.handleTransactionRetry(__func__, [&] {
         db.transaction();
 
-        auto query =
-            db.prepareQuery(QStringLiteral("set transaction isolation level repeatable read"));
+        auto query = db.createQuery();
 
         query.setForwardOnly(true);
-        if (!query.exec()) {
+        if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
             throw_query_error(query);
         }
 
@@ -437,11 +435,10 @@ void PersistenceManagerDBProvider::MarkStepFailed(int taskId,
     return provider.handleTransactionRetry(__func__, [&] {
         db.transaction();
 
-        auto query =
-            db.prepareQuery(QStringLiteral("set transaction isolation level repeatable read"));
+        auto query = db.createQuery();
 
         query.setForwardOnly(true);
-        if (!query.exec()) {
+        if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
             throw_query_error(query);
         }
 
@@ -814,8 +811,8 @@ QString PersistenceManagerDBProvider::GetDashboardProcessorStatistics()
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_processor_statistics()"));
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_dashboard_processor_statistics()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -823,8 +820,8 @@ QString PersistenceManagerDBProvider::GetDashboardProcessorStatistics()
         }
 
         if (!query.next()) {
-            throw std::runtime_error(
-                "Expecting a return value from sp_get_dashboard_processor_statistics, but none found");
+            throw std::runtime_error("Expecting a return value from "
+                                     "sp_get_dashboard_processor_statistics, but none found");
         }
 
         return query.value(0).toString();
@@ -836,8 +833,8 @@ QString PersistenceManagerDBProvider::GetDashboardProductAvailability(const QDat
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_product_availability(:since)"));
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_dashboard_product_availability(:since)"));
         query.bindValue(QStringLiteral(":since"), since);
 
         query.setForwardOnly(true);
@@ -846,8 +843,8 @@ QString PersistenceManagerDBProvider::GetDashboardProductAvailability(const QDat
         }
 
         if (!query.next()) {
-            throw std::runtime_error(
-                "Expecting a return value from sp_get_dashboard_product_availability, but none found");
+            throw std::runtime_error("Expecting a return value from "
+                                     "sp_get_dashboard_product_availability, but none found");
         }
 
         return query.value(0).toString();
