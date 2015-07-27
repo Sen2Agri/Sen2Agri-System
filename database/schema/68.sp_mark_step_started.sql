@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_mark_step_started(
+CREATE OR REPLACE FUNCTION sp_mark_step_started(
 IN _task_id int,
 IN _step_name character varying
 ) RETURNS void AS $$
@@ -11,8 +11,9 @@ BEGIN
 
 	UPDATE step
 	SET status_id = 4, --Running
+	start_timestamp = now(),
 	status_timestamp = now()
-	WHERE name = _step_name AND task_id = _task_id 
+	WHERE name = _step_name AND task_id = _task_id
 	AND status_id != 4; -- Prevent resetting the status on serialization error retries.
 
 	UPDATE task
