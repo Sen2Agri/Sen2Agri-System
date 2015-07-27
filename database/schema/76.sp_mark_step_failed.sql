@@ -56,7 +56,7 @@ BEGIN
 	
 	IF EXISTS (SELECT * FROM step WHERE task_id = _task_id AND name = _step_name AND status_id = 8) 
 	-- Make sure the task finished event is inserted only once.
-	AND NOT EXISTS (SELECT * FROM event WHERE type_id = 7 AND data::json->'task_id' = _task_id AND data::json->'step_name' = _step_name) THEN
+	AND NOT EXISTS (SELECT * FROM event WHERE type_id = 7 AND (data::json->>'task_id')::INT = _task_id AND data::json->>'step_name' = _step_name) THEN
 		
 		SELECT task.job_id INTO job_id FROM task WHERE task.id = _task_id;
 	

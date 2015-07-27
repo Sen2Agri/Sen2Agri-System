@@ -96,7 +96,7 @@ BEGIN
 		FOREACH runnable_task_id IN ARRAY runnable_task_ids
 		LOOP
 			-- Make sure the task runnable event is inserted only once.
-			IF NOT EXISTS (SELECT * FROM event WHERE type_id = 1 AND data::json->'task_id' = _task_id AND processing_started_timestamp = NULL) THEN
+			IF NOT EXISTS (SELECT * FROM event WHERE type_id = 1 AND (data::json->>'task_id')::INT = _task_id AND processing_started_timestamp = NULL) THEN
 				INSERT INTO event(
 				type_id,
 				data,
