@@ -119,19 +119,19 @@ function update_server_resources_layout(json_data)
 		$("#pnl_server_resources").append(table);
 
 		//Add the CPU chart
-		var cpu_history_series = [{data: []}];
+		var cpu_history_series = [{label: "System", data: [], color: "rgba(46, 199, 35, 0.6)"}, {label: "User", data: [], color: "rgba(35, 199, 188, 0.6)"}];
 		var cpu_history_options = {
 				series: {
+					stack: true,
 					lines: {
 						show: true,
 						fill: true,
-						lineWidth: 0.1,
-						fillColor: { colors: ["rgba(46, 199, 35, 0.4)", "rgba(46, 199, 35, 0.9)"]}
+						lineWidth: 0.1
 					}
 				},
 				xaxis: {
 					mode: "time",
-					tickSize: [5, "second"],
+					tickSize: [1, "minute"],
 					timeformat: ""
 				},
 				yaxis: {
@@ -142,6 +142,15 @@ function update_server_resources_layout(json_data)
 						return v + "%";			           
 					},
 					labelWidth: 30
+				},
+				legend: {
+					noColumns: 0,
+					position: "nw",
+					backgroundOpacity: 0.5,
+					margin: [0, 0],
+					labelFormatter: function(label, series) {
+						return "<span style=\"margin-right: 5px\">" + label + "</span>";
+					}
 				}
 		};
 
@@ -161,7 +170,7 @@ function update_server_resources_layout(json_data)
 				},
 				xaxis: {
 					mode: "time",
-					tickSize: [5, "second"],
+					tickSize: [1, "minute"],
 					timeformat: ""
 				},
 				yaxis: {
@@ -169,7 +178,7 @@ function update_server_resources_layout(json_data)
 					max: server.ram_available,        
 					tickSize: server.ram_available / 2,
 					tickFormatter: function (v, axis) {
-						return v + " GB";
+						return  Math.ceil(v) + " " + server.ram_unit;
 					},
 					labelWidth: 30
 				}
@@ -191,7 +200,7 @@ function update_server_resources_layout(json_data)
 				},
 				xaxis: {
 					mode: "time",
-					tickSize: [5, "second"],
+					tickSize: [1, "minute"],
 					timeformat: ""
 				},
 				yaxis: {
@@ -199,7 +208,7 @@ function update_server_resources_layout(json_data)
 					max: server.swap_available,        
 					tickSize: server.swap_available / 2,
 					tickFormatter: function (v, axis) {
-						return v + " GB";
+						return Math.ceil(v) + " " + server.swap_unit;
 					},
 					labelWidth: 30
 				}
@@ -227,7 +236,7 @@ function update_server_resources_layout(json_data)
 					min: 0,
 					max: server.disk_available,
 					tickFormatter: function (v, axis) {
-						return  parseFloat(v).toFixed(2) + " TB";
+						return  Math.ceil(v) + " " + server.disk_unit;
 					},
 					labelWidth: 40
 				},
@@ -254,7 +263,7 @@ function update_server_resources_layout(json_data)
 				},
 				xaxis: {
 					mode: "time",
-					tickSize: [5, "second"],
+					tickSize: [1, "minute"],
 					timeformat: ""
 				},
 				yaxis: {
@@ -286,22 +295,26 @@ function update_server_resources(json_data)
 	json_data.server_resources.forEach(function(server) {
 
 		var element_id = "#server_resources_table_" + counter + "_cpu";
-		$(element_id).html(server.cpu_now + '%');
+		$(element_id).html("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"CPU Used by System\" >" + server.cpu_system_now + " %</span> " + 
+				"/ <span data-toggle=\"tooltip\" data-placement=\"top\" title=\"CPU Used by User\" >" + server.cpu_user_now + " %</span> ");
 		element_id = "#server_resources_table_" + counter + "_cpu_history";
-		update_plot(element_id, [server.cpu_history], [0]); 
+		update_plot(element_id, [server.cpu_system_history, server.cpu_user_history], [0,1]); 
 
 		element_id = "#server_resources_table_" + counter + "_ram";
-		$(element_id).html(server.ram_now + ' GB / ' + server.ram_available + ' GB');
+		$(element_id).html("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"RAM Used\" >" + server.ram_now + " " + server.ram_unit + "</span> / " 
+				+ "<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"RAM Available\" >" + server.ram_available + " " + server.ram_unit + "</span>");
 		element_id = "#server_resources_table_" + counter + "_ram_history";
 		update_plot(element_id, [server.ram_history], [0]); 
 
 		element_id = "#server_resources_table_" + counter + "_swap";
-		$(element_id).html(server.swap_now + ' GB / ' + server.swap_available + ' GB');
+		$(element_id).html("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"Swap Used\" >" + server.swap_now + " " + server.swap_unit + "</span> / " 
+				+ "<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"Swap Available\" >" + server.swap_available + " " + server.swap_unit + "</span>");
 		element_id = "#server_resources_table_" + counter + "_swap_history";
 		update_plot(element_id, [server.swap_history], [0]);
 
 		element_id = "#server_resources_table_" + counter + "_disk";
-		$(element_id).html(server.disk_used + " TB / " + server.disk_available + ' TB');
+		$(element_id).html("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"Disk Used\" >" + server.disk_used+ " " + server.disk_unit + "</span> / " 
+				+ "<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"Disk Available\" >" + server.disk_available + " " + server.disk_unit + "</span>");
 		element_id = "#server_resources_table_" + counter + "_disk_percentage";
 		var disk_series = [[ server.disk_used, 0 ]];
 		update_plot(element_id, [disk_series], [0]);
@@ -335,10 +348,10 @@ function update_plot(element_id, series_data, series_idxs)
 
 }
 
-function get_system_overview_data()
+function get_current_job_data()
 {
 	$.ajax({
-		url: get_system_overview_data_url,
+		url: get_current_job_data_url,
 		type: "get",
 		cache: false,
 		crosDomain: true,
@@ -346,7 +359,30 @@ function get_system_overview_data()
 		success: function(json_data)
 		{
 			update_current_jobs(json_data);
+		},
+		error: function (responseData, textStatus, errorThrown) {
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+		}
+	});
+}
 
+function set_current_job_refresh()
+{
+	// Run the get function now and schedule the next executions.
+	get_current_job_data();
+	setInterval(get_current_job_data, get_current_job_data_interval);
+}
+
+function get_server_resource_data()
+{
+	$.ajax({
+		url: get_server_resource_data_url,
+		type: "get",
+		cache: false,
+		crosDomain: true,
+		dataType: "json",
+		success: function(json_data)
+		{
 			if($("#pnl_server_resources table.to_be_refreshed_when_needed").length != json_data.server_resources.length)
 			{
 				update_server_resources_layout(json_data);
@@ -360,11 +396,11 @@ function get_system_overview_data()
 	});
 }
 
-function set_system_overview_refresh()
+function set_server_resource_refresh()
 {
 	// Run the get function now and schedule the next executions.
-	get_system_overview_data();
-	setInterval(get_system_overview_data, get_system_overview_data_interval);
+	get_server_resource_data();
+	setInterval(get_server_resource_data, get_server_resource_data_interval);
 }
 
 //Update processor statistics --------------------------------------------------------------------------------------------------------------------------
