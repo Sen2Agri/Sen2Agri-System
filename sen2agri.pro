@@ -8,8 +8,8 @@ SUBDIRS += sen2agri-common \
     sen2agri-orchestrator \
     sen2agri-http-listener \
     sen2agri-monitor-agent \
-    QtWebApp \
     sen2agri-processor-wrapper \
+    QtWebApp \
     tests
 
 sen2agri-config.depends = sen2agri-common

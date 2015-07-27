@@ -25,3 +25,7 @@ HEADERS += \
     processorwrapper.h \
     simpleudpinfosclient.h \
     pch.hpp
+
+target.path = /usr/bin
+
+INSTALLS += target
