@@ -1,5 +1,7 @@
 CREATE OR REPLACE FUNCTION sp_insert_node_statistics(
     _node_name node_resource_log.node_name%TYPE,
+    _cpu_user node_resource_log.cpu_user%TYPE,
+    _cpu_system node_resource_log.cpu_system%TYPE,
     _mem_total_kb node_resource_log.mem_total_kb%TYPE,
     _mem_used_kb node_resource_log.mem_used_kb%TYPE,
     _swap_total_kb node_resource_log.swap_total_kb%TYPE,
@@ -16,6 +18,8 @@ AS $$
 BEGIN
     INSERT INTO node_resource_log(
         node_name,
+        cpu_user,
+        cpu_system,
         mem_total_kb,
         mem_used_kb,
         swap_total_kb,
@@ -29,6 +33,8 @@ BEGIN
     )
     VALUES (
         _node_name,
+        _cpu_user,
+        _cpu_system,
         _mem_total_kb,
         _mem_used_kb,
         _swap_total_kb,
@@ -38,7 +44,7 @@ BEGIN
         _load_avg_15m,
         _disk_total_bytes,
         _disk_used_bytes,
-        current_timestamp
+        now()
     );
 END;
 $$

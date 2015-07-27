@@ -1,6 +1,8 @@
 CREATE TABLE node_resource_log
 (
   node_name character varying NOT NULL,
+  cpu_user SMALLINT NOT NULL,
+  cpu_system SMALLINT NOT NULL,
   mem_total_kb INT NOT NULL,
   mem_used_kb INT NOT NULL,
   swap_total_kb INT NOT NULL,

@@ -1224,7 +1224,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, UnprocessedEvent 
 }
 
 NodeStatistics::NodeStatistics()
-    : memTotalKb(),
+    : cpuUser(),
+      cpuSystem(),
+      memTotalKb(),
       memUsedKb(),
       swapTotalKb(),
       swapUsedKb(),
@@ -1237,6 +1239,8 @@ NodeStatistics::NodeStatistics()
 }
 
 NodeStatistics::NodeStatistics(QString node,
+                               double cpuUser,
+                               double cpuSystem,
                                int64_t memTotalKb,
                                int64_t memUsedKb,
                                int64_t swapTotalKb,
@@ -1247,6 +1251,8 @@ NodeStatistics::NodeStatistics(QString node,
                                int64_t diskTotalBytes,
                                int64_t diskUsedBytes)
     : node(std::move(node)),
+      cpuUser(cpuUser),
+      cpuSystem(cpuSystem),
       memTotalKb(memTotalKb),
       memUsedKb(memUsedKb),
       swapTotalKb(swapTotalKb),
@@ -1267,10 +1273,10 @@ void NodeStatistics::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NodeStatistics &statistics)
 {
     argument.beginStructure();
-    argument << statistics.node << statistics.memTotalKb << statistics.memUsedKb
-             << statistics.swapTotalKb << statistics.swapUsedKb << statistics.loadAvg1
-             << statistics.loadAvg5 << statistics.loadAvg15 << statistics.diskTotalBytes
-             << statistics.diskUsedBytes;
+    argument << statistics.node << statistics.cpuUser << statistics.cpuSystem
+             << statistics.memTotalKb << statistics.memUsedKb << statistics.swapTotalKb
+             << statistics.swapUsedKb << statistics.loadAvg1 << statistics.loadAvg5
+             << statistics.loadAvg15 << statistics.diskTotalBytes << statistics.diskUsedBytes;
     argument.endStructure();
 
     return argument;
@@ -1279,10 +1285,10 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NodeStatistics &statist
 const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &statistics)
 {
     argument.beginStructure();
-    argument >> statistics.node >> statistics.memTotalKb >> statistics.memUsedKb >>
-        statistics.swapTotalKb >> statistics.swapUsedKb >> statistics.loadAvg1 >>
-        statistics.loadAvg5 >> statistics.loadAvg15 >> statistics.diskTotalBytes >>
-        statistics.diskUsedBytes;
+    argument >> statistics.node >> statistics.cpuUser >> statistics.cpuSystem >>
+        statistics.memTotalKb >> statistics.memUsedKb >> statistics.swapTotalKb >>
+        statistics.swapUsedKb >> statistics.loadAvg1 >> statistics.loadAvg5 >>
+        statistics.loadAvg15 >> statistics.diskTotalBytes >> statistics.diskUsedBytes;
     argument.endStructure();
 
     return argument;

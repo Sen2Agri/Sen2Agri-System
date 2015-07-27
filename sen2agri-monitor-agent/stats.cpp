@@ -8,6 +8,7 @@
 #include <QDebug>
 #include <QRegularExpression>
 #include <QJsonObject>
+#include <QThread>
 
 #include "logger.hpp"
 #include "stats.hpp"
@@ -76,16 +77,19 @@ class SystemInfo
 {
 public:
     QString hostname;
+    double cpuUser;
+    double cpuSystem;
 
     SystemInfo();
-    SystemInfo(QString hostname);
+    SystemInfo(QString hostname, double cpuUser, double cpuSystem);
 };
 
-SystemInfo::SystemInfo()
+SystemInfo::SystemInfo() : cpuUser(), cpuSystem()
 {
 }
 
-SystemInfo::SystemInfo(QString hostname) : hostname(std::move(hostname))
+SystemInfo::SystemInfo(QString hostname, double cpuUser, double cpuSystem)
+    : hostname(std::move(hostname)), cpuUser(cpuUser), cpuSystem(cpuSystem)
 {
 }
 
@@ -140,7 +144,7 @@ CpuInfo getCpuInfo()
         throw std::runtime_error(file.errorString().toStdString());
     }
 
-    QByteArray contents = file.readAll();
+    auto contents = file.readAll();
     file.close();
 
     QTextStream in(&contents);
@@ -162,6 +166,59 @@ DiskInfo getDiskInfo(const QString &path)
     return { buf.f_bsize * buf.f_blocks, buf.f_bsize * (buf.f_blocks - buf.f_bfree) };
 }
 
+QList<int64_t> getCpuStats()
+{
+    QFile file(QStringLiteral("/proc/stat"));
+    if (!file.open(QIODevice::ReadOnly)) {
+        throw std::runtime_error(file.errorString().toStdString());
+    }
+
+    auto contents = file.readAll();
+    file.close();
+
+    QTextStream in(&contents);
+
+    const auto &values = in.readLine().split(' ', QString::SkipEmptyParts);
+
+    QList<int64_t> result;
+    auto sz = values.size();
+    result.reserve(sz - 1);
+    for (int i = 1; i < sz; i++) {
+        result.push_back(values.at(i).toLongLong());
+    }
+
+    return result;
+}
+
+struct CpuUsage {
+    int64_t user;
+    int64_t system;
+    int64_t total;
+};
+
+CpuUsage getCpuUsage()
+{
+    // cpu user nice system idle iowait irq softirq steal guest guest_nice
+    // compute total
+    // compute tuser as user + nice
+    // compute tsystem as total - user - nice - idle
+    const auto &values = getCpuStats();
+
+    int64_t total = 0;
+    for (auto val : values) {
+        total += val;
+    }
+
+    auto user = values[0];
+    auto nice = values[1];
+    auto idle = values[3];
+
+    auto tuser = user + nice;
+    auto tsystem = total - tuser - idle;
+
+    return { tuser, tsystem, total };
+}
+
 SystemInfo getSystemInfo()
 {
     char buf[HOST_NAME_MAX];
@@ -170,7 +227,20 @@ SystemInfo getSystemInfo()
     }
     buf[sizeof(buf) - 1] = 0;
 
-    return { buf };
+    auto cpuUsageOld = getCpuUsage();
+    QThread::sleep(1);
+    auto cpuUsageNew = getCpuUsage();
+
+    // compute total_diff, user_diff, system_diff
+    // compute user_cpu as user_diff / total_diff
+    auto diff = CpuUsage{ cpuUsageNew.user - cpuUsageOld.user,
+                          cpuUsageNew.system - cpuUsageOld.system,
+                          cpuUsageNew.total - cpuUsageOld.total };
+
+    double cpuUser = static_cast<double>(diff.user) / diff.total;
+    double cpuSystem = static_cast<double>(diff.system) / diff.total;
+
+    return { buf, cpuUser, cpuSystem };
 }
 
 QJsonDocument getStatsJson(const QString &diskPath) noexcept
@@ -207,6 +277,8 @@ QJsonDocument getStatsJson(const QString &diskPath) noexcept
 
     QJsonObject obj;
     obj[QStringLiteral("hostname")] = systemInfo.hostname;
+    obj[QStringLiteral("cpu_user")] = systemInfo.cpuUser;
+    obj[QStringLiteral("cpu_system")] = systemInfo.cpuSystem;
 
     obj[QStringLiteral("mem_total_kb")] = static_cast<double>(memInfo.memTotalKb);
     obj[QStringLiteral("mem_used_kb")] = static_cast<double>(memInfo.memUsedKb);

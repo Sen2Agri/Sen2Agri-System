@@ -44,6 +44,8 @@ void StatisticsController::saveDashboardData(const HttpRequest &request, HttpRes
 
     WaitForResponseAndThrow(persistenceManagerClient.InsertNodeStatistics(
         { obj[QStringLiteral("hostname")].toString(),
+          obj[QStringLiteral("cpu_user")].toDouble(),
+          obj[QStringLiteral("cpu_system")].toDouble(),
           static_cast<int64_t>(obj[QStringLiteral("mem_total_kb")].toDouble()),
           static_cast<int64_t>(obj[QStringLiteral("mem_used_kb")].toDouble()),
           static_cast<int64_t>(obj[QStringLiteral("swap_total_kb")].toDouble()),

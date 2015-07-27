@@ -731,10 +731,15 @@ void PersistenceManagerDBProvider::InsertNodeStatistics(const NodeStatistics &st
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral(
-            "select sp_insert_node_statistics(:node, :memTotalKb, :memUsedKb, :swapTotalKb, "
-            ":swapUsedKb, :loadAvg1, :loadAvg5, :loadAvg15, :diskTotalBytes, :diskUsedBytes)"));
+        auto query = db.prepareQuery(
+            QStringLiteral("select sp_insert_node_statistics(:node, :cpuUser, :cpuSystem, "
+                           ":memTotalKb, :memUsedKb, :swapTotalKb, :swapUsedKb, :loadAvg1, "
+                           ":loadAvg5, :loadAvg15, :diskTotalBytes, :diskUsedBytes, :timestamp)"));
         query.bindValue(QStringLiteral(":node"), statistics.node);
+        query.bindValue(QStringLiteral(":cpuUser"),
+                        static_cast<int16_t>(lrint(1000.0 * statistics.cpuUser)));
+        query.bindValue(QStringLiteral(":cpuSystem"),
+                        static_cast<int16_t>(lrint(1000.0 * statistics.cpuSystem)));
         query.bindValue(QStringLiteral(":memTotalKb"), qlonglong{ statistics.memTotalKb });
         query.bindValue(QStringLiteral(":memUsedKb"), qlonglong{ statistics.memUsedKb });
         query.bindValue(QStringLiteral(":swapTotalKb"), qlonglong{ statistics.swapTotalKb });

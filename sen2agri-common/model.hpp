@@ -621,6 +621,8 @@ class NodeStatistics
 {
 public:
     QString node;
+    double cpuUser;
+    double cpuSystem;
     int64_t memTotalKb;
     int64_t memUsedKb;
     int64_t swapTotalKb;
@@ -633,6 +635,8 @@ public:
 
     NodeStatistics();
     NodeStatistics(QString node,
+                   double cpuUser,
+                   double cpuSystem,
                    int64_t memTotalKb,
                    int64_t memUsedKb,
                    int64_t swapTotalKb,

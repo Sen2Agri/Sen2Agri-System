@@ -335,10 +335,10 @@ template <>
 struct maker<NodeStatistics> {
     static NodeStatistics make()
     {
-        return { maker<QString>::make(), maker<int64_t>::make(), maker<int64_t>::make(),
-                 maker<int64_t>::make(), maker<int64_t>::make(), maker<double>::make(),
-                 maker<double>::make(),  maker<double>::make(),  maker<int64_t>::make(),
-                 maker<int64_t>::make() };
+        return { maker<QString>::make(), maker<double>::make(),  maker<double>::make(),
+                 maker<int64_t>::make(), maker<int64_t>::make(), maker<int64_t>::make(),
+                 maker<int64_t>::make(), maker<double>::make(),  maker<double>::make(),
+                 maker<double>::make(),  maker<int64_t>::make(), maker<int64_t>::make() };
     }
 };
 

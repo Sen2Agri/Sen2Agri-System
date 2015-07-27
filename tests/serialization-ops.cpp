@@ -185,6 +185,8 @@ void compare(const UnprocessedEvent &v1, const UnprocessedEvent &v2)
 void compare(const NodeStatistics &v1, const NodeStatistics &v2)
 {
     compare(v1.node, v2.node);
+    compare(v1.cpuUser, v2.cpuUser);
+    compare(v1.cpuSystem, v2.cpuSystem);
     compare(v1.memTotalKb, v2.memTotalKb);
     compare(v1.memUsedKb, v2.memUsedKb);
     compare(v1.swapTotalKb, v2.swapTotalKb);
