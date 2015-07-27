@@ -71,17 +71,17 @@ void PersistenceItfModule::RequestConfiguration()
 void PersistenceItfModule::SaveMainConfigKeys(const ConfigurationParameterValueList &configuration)
 {
     for (const auto &p : configuration) {
-        if(p.key == "executor.listen_ip")
+        if(p.key == "executor.listen-ip")
         {
             QString strKey("SRV_IP_ADDR");
             ConfigurationMgr::GetInstance()->SetValue(strKey, p.value);
         }
-        if(p.key == "executor.listen_port")
+        if(p.key == "executor.listen-port")
         {
             QString strKey("SRV_PORT_NO");
             ConfigurationMgr::GetInstance()->SetValue(strKey, p.value);
         }
-        if(p.key == "executor.wrapper_path")
+        if(p.key == "executor.wrapper-path")
         {
             QString strKey("PROCESSOR_WRAPPER_PATH");
             ConfigurationMgr::GetInstance()->SetValue(strKey, p.value);

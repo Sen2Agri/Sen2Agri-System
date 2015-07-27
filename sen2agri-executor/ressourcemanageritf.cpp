@@ -27,15 +27,18 @@ QString SACCT_CMD("./SlurmSrunSimulator "
 QString SCANCEL_CMD("scancel --name=");
 #else
 
-QString SRUN_FULL_CMD("srun --job-name");
-
 QString SRUN_CMD("srun");
 QString SRUN_PARAM("--job-name");
 
-QString SACCT_CMD("sacct --parsable2 "
-                  "--format=JobID,JobName,NodeList,AveCPU,UserCPU,SystemCPU,ExitCode,AveVMSize,"
-                  "MaxRSS,MaxVMSize,MaxDiskRead,MaxDiskWrite");
-QString SCANCEL_CMD("scancel --name=");
+QString SACCT_CMD("sacct");
+
+QString SACCT_CMD_ARG1("--parsable2");
+QString
+    SACCT_CMD_ARG2("--format=JobID,JobName,NodeList,AveCPU,UserCPU,SystemCPU,ExitCode,AveVMSize,"
+                   "MaxRSS,MaxVMSize,MaxDiskRead,MaxDiskWrite");
+
+QString SCANCEL_CMD("scancel");
+QString SCANCEL_CMD_ARGS("--name");
 #endif
 
 RessourceManagerItf::RessourceManagerItf()
@@ -216,9 +219,10 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
 
         QString paramsStr = BuildParamsString(listParams);
         // Build the srun command to be executed in SLURM - no need to wait
-        //QString strSrunCmd = QString("%1 %2 %3").arg(SRUN_CMD, strJobName, paramsStr);
+        // QString strSrunCmd = QString("%1 %2 %3").arg(SRUN_CMD, strJobName, paramsStr);
 
-        Logger::debug(QString("HandleStartProcessor: Executing command %1 with params %2").arg(SRUN_CMD, paramsStr));
+        Logger::debug(QString("HandleStartProcessor: Executing command %1 with params %2")
+                          .arg(SRUN_CMD, paramsStr));
 
         CommandInvoker cmdInvoker;
         if (!cmdInvoker.InvokeCommand(SRUN_CMD, listParams, false)) {
@@ -251,13 +255,17 @@ void RessourceManagerItf::HandleStopProcessor(RequestParamsCancelTasks *pReqPara
             for (procInfosIt = procExecResults.begin(); procInfosIt != procExecResults.end();
                  procInfosIt++) {
                 if ((*procInfosIt).strJobName.startsWith(stepId)) {
-                    QString strCmd = QString("%1%2").arg(SCANCEL_CMD, (*procInfosIt).strJobName);
                     CommandInvoker cmdScancelInvoker;
 
-                    Logger::debug(QString("HandleStopProcessor: Executing command %1").arg(strCmd));
-
                     // run scancel command and wait for it to return
-                    if (!cmdScancelInvoker.InvokeCommand(strCmd, false)) {
+                    QStringList args;
+                    args << SCANCEL_CMD_ARGS << (*procInfosIt).strJobName;
+
+                    Logger::debug(QString("HandleStopProcessor: Executing command %1 %2")
+                                      .arg(SCANCEL_CMD)
+                                      .arg(args.join(' ')));
+
+                    if (!cmdScancelInvoker.InvokeCommand(SCANCEL_CMD, args, false)) {
                         // Log the execution trace here
                         Logger::error("Error executing SCANCEL command");
                     }
@@ -311,10 +319,15 @@ void RessourceManagerItf::HandleProcessorEndedMsg(RequestParamsExecutionInfos *p
 
     // check if it a correct job name and extract the information from it
     if (ParseJobName(strJobName, nTaskId, strStepName, nStepIdx)) {
-        Logger::debug(QString("HandleProcessorEndedMsg: Executing command %1").arg(SACCT_CMD));
-
         CommandInvoker cmdInvoker;
-        if (cmdInvoker.InvokeCommand(SACCT_CMD, false)) {
+        QStringList args;
+        args << SACCT_CMD_ARG1 << SACCT_CMD_ARG2;
+
+        Logger::debug(QString("HandleProcessorEndedMsg: Executing command %1 %2")
+                          .arg(SACCT_CMD)
+                          .arg(args.join(' ')));
+
+        if (cmdInvoker.InvokeCommand(SACCT_CMD, args, false)) {
             QString strLog = cmdInvoker.GetExecutionLog();
             SlurmSacctResultParser slurmSacctParser;
             QList<ProcessorExecutionInfos> procExecResults;
@@ -350,7 +363,11 @@ bool RessourceManagerItf::GetSacctResults(QString &sacctCmd,
                                           QList<ProcessorExecutionInfos> &procExecResults)
 {
     CommandInvoker cmdInvoker;
-    if (cmdInvoker.InvokeCommand(sacctCmd, false)) {
+
+    QStringList args;
+    args << SACCT_CMD_ARG1 << SACCT_CMD_ARG2;
+
+    if (cmdInvoker.InvokeCommand(sacctCmd, args, false)) {
         QString strLog = cmdInvoker.GetExecutionLog();
         SlurmSacctResultParser slurmSacctParser;
         if (slurmSacctParser.ParseResults(strLog, procExecResults, NULL) > 0) {

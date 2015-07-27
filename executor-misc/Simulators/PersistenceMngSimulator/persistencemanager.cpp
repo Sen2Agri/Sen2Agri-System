@@ -30,9 +30,9 @@ ConfigurationParameterValueList PersistenceManager::GetConfigurationParameters(Q
     cout << "PREFIX : " << prefix.toStdString().c_str() << endl;
     cout << "----------------------------------------------------" << endl;
     ConfigurationParameterValueList retList(
-        {ConfigurationParameterValue("executor.listen_ip", 0, strIp),
-         ConfigurationParameterValue("executor.listen_port", 0, strPort),
-         ConfigurationParameterValue("executor.wrapper_path", 0, strWrapperPath)
+        {ConfigurationParameterValue("executor.listen-ip", 0, strIp),
+         ConfigurationParameterValue("executor.listen-port", 0, strPort),
+         ConfigurationParameterValue("executor.wrapper-path", 0, strWrapperPath)
 /*         ConfigurationParameterValue("executor.processor.l2a.name", 0, m_pSettings->value("PROCESSOR_1_NAME", "CROP_TYPE").toString()),
          ConfigurationParameterValue("executor.processor.l2a.path", 0, m_pSettings->value("PROCESSOR_1_PATH", "./DummyProcessor").toString()),
          ConfigurationParameterValue("executor.processor.l3a.name", 0, "ATM_CORR"),
