@@ -95,7 +95,6 @@ bool ProcessorWrapper::ExecuteProcessor()
 
     cout << QDir::currentPath().toStdString().c_str() << endl;
 
-    QString strCmd = QString("\"%1\" \"%2\"").arg(m_strProcPath, m_strProcParams);
     QDateTime dateTime;
     qint64 startTime = dateTime.currentMSecsSinceEpoch();
     // send a message that the execution of the processor is started
@@ -113,12 +112,8 @@ bool ProcessorWrapper::ExecuteProcessor()
     }
 
     bool bRet;
-    if(m_listProcParams.size() > 0)
-    {
-        bRet = cmdInvoker.InvokeCommand(strCmd, m_listProcParams, false);
-    } else {
-        bRet = cmdInvoker.InvokeCommand(strCmd, false);
-    }
+    bRet = cmdInvoker.InvokeCommand(m_strProcPath, m_listProcParams, false);
+
     qint64 endTime = dateTime.currentMSecsSinceEpoch();
 
     if(m_pUdpClient)

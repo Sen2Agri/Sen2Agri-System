@@ -15,12 +15,6 @@ void CommandInvoker::SetListener(ICommandInvokerListener *pListener)
     m_pListener = pListener;
 }
 
-bool CommandInvoker::InvokeCommand(QString &strCmd, bool bIsAsync)
-{
-    QStringList listParams;
-    return InvokeCommand(strCmd, listParams, bIsAsync);
-}
-
 bool CommandInvoker::InvokeCommand(QString &strCmd, QStringList &listParams, bool bIsAsync)
 {
     bool bRet = true;
