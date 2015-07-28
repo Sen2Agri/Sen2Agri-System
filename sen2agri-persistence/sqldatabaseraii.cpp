@@ -130,6 +130,13 @@ void throw_db_error(const QSqlDatabase &db)
 
 void throw_query_error(SqlDatabaseRAII &db, const QSqlQuery &query)
 {
+    // NOTE: Postgres doesn't roll back aborted transactions, but won't execute anything else until
+    // the end of the transaction block.
+    // NOTE: normally we'd handle the abort in handle_transaction_retry(), but the QSqlQuery
+    // destructor would deallocate the prepared statement before the transaction rollback, making
+    // Postgres complain in the log. To avoid confusing any sysadmins, we roll back the transaction
+    // before unwinding the stack. In any case, it's good hygiene to use check for errors using this
+    // function and most of the callers don't care about transactions.
     db.rollback();
 
     throw sql_error(query.lastError());
