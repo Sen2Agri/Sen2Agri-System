@@ -32,7 +32,7 @@ public:
                               int maxNetries);
 
     template <typename F>
-    auto handleTransactionRetry(const QString &operation, SqlDatabaseRAII &db, F &&f)
+    auto handleTransactionRetry(const QString &operation, F &&f)
         -> decltype(f())
     {
         static const int maxTxnRetries = 10;
@@ -60,8 +60,6 @@ public:
                         retryDelay *= 2;
                     }
                     warnRecoverableError(e, operation, retryDelay, txnRetryNumber, maxTxnRetries);
-
-                    Q_UNUSED(db);
 
                     QThread::msleep(retryDelay);
                 }
