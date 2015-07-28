@@ -794,7 +794,8 @@ QString PersistenceManagerDBProvider::GetDashboardCurrentJobData()
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_current_job_data()"));
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_current_job_data()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -815,7 +816,8 @@ QString PersistenceManagerDBProvider::GetDashboardServerResourceData()
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_server_resource_data()"));
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_dashboard_server_resource_data()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -823,8 +825,8 @@ QString PersistenceManagerDBProvider::GetDashboardServerResourceData()
         }
 
         if (!query.next()) {
-            throw std::runtime_error(
-                "Expecting a return value from sp_get_dashboard_server_resource_data, but none found");
+            throw std::runtime_error("Expecting a return value from "
+                                     "sp_get_dashboard_server_resource_data, but none found");
         }
 
         return query.value(0).toString();

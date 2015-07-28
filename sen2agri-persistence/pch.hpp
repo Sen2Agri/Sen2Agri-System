@@ -25,7 +25,9 @@
 #include <QtSql>
 #include <functional>
 #include <grp.h>
-#include <limits>
+#include <limits.h>
+#include <make_unique.hpp>
+#include <math.h>
 #include <memory>
 #include <pwd.h>
 #include <set>

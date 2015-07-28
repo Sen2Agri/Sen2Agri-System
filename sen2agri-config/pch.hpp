@@ -22,5 +22,6 @@
 #include <QVariantMap>
 #include <iterator>
 #include <map>
+#include <optional.hpp>
 #include <tuple>
 #include <utility>

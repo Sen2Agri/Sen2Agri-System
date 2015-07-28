@@ -19,7 +19,6 @@
 #include <QVariantMap>
 #include <QVector>
 #include <QWaitCondition>
-#include <cstdarg>
 #include <iostream>
 #include <map>
 #include <stdexcept>
