@@ -32,13 +32,6 @@ BEGIN
 		temp_json := json_build_array(extract(epoch from previous_timestamp)::bigint * 1000, null);
 		temp_array := array_prepend(temp_json, temp_array);
 	END LOOP;
-	
-	/*
-	WHILE previous_timestamp >= _since LOOP
-		
-
-		RAISE NOTICE 'LOOP Previous timestamp: %        Since timestamp: %', previous_timestamp, _since;
-	END LOOP;*/
 
 	temp_json := array_to_json(temp_array);
 

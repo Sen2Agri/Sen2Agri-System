@@ -6,6 +6,11 @@ function update_current_jobs(json_data)
 {
 	//Remove the old rows
 	$("#pnl_current_jobs table:first tr.to_be_refreshed").remove();
+	
+	if(!json_data.current_jobs)
+	{
+		return;
+	}
 
 	json_data.current_jobs.forEach(function(job) {
 
@@ -29,6 +34,12 @@ function update_current_jobs(json_data)
 				} 
 			});
 		action_buttons += "</div>";
+		
+		if(!job.current_tasks)
+		{	
+			// Break if there aren't any tasks; should not happen in 'real life'
+			return;
+		}
 
 		var new_row = "<tr class=\"to_be_refreshed\">" +
 		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.id + "</td>" +
@@ -407,6 +418,11 @@ function set_server_resource_refresh()
 
 function fill_key_value_table(panel, list)
 {
+	if (!list)
+	{
+		return;
+	}
+	
 	list.forEach(function(item) {
 		var new_row = "<tr class=\"to_be_refreshed\">" +
 		"<th>" + item[0] + "</th>" +
