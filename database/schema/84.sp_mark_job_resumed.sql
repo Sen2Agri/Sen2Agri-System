@@ -41,21 +41,23 @@ BEGIN
 	WHERE id = ANY (runnable_task_ids)
 	AND step.status_id = 5; --Paused
 
-	-- Add events for all the runnable tasks
-	FOREACH runnable_task_id IN ARRAY runnable_task_ids
-	LOOP
-		-- Make sure the task runnable event is inserted only once.
-		IF NOT EXISTS (SELECT * FROM event WHERE type_id = 1 AND (data::json->>'task_id')::INT = _task_id AND processing_started_timestamp = NULL) THEN
-			INSERT INTO event(
-			type_id, 
-			data, 
-			submitted_timestamp)
-			VALUES (
-			1, -- TaskRunnable
-			('{"job_id":' || _job_id || ', "task_id":' || runnable_task_id || '}') :: json,
-			now());
-		END IF;
-	END LOOP;
+    IF runnable_task_ids IS NOT NULL THEN
+        -- Add events for all the runnable tasks
+        FOREACH runnable_task_id IN ARRAY runnable_task_ids
+        LOOP
+            -- Make sure the task runnable event is inserted only once.
+            IF NOT EXISTS (SELECT * FROM event WHERE type_id = 1 AND (data::json->>'task_id')::INT = _task_id AND processing_started_timestamp = NULL) THEN
+                INSERT INTO event(
+                type_id,
+                data,
+                submitted_timestamp)
+                VALUES (
+                1, -- TaskRunnable
+                ('{"job_id":' || _job_id || ', "task_id":' || runnable_task_id || '}') :: json,
+                now());
+            END IF;
+        END LOOP;
+    END IF;
 
 	UPDATE job
 	SET status_id = CASE WHEN EXISTS (SELECT * FROM task WHERE task.job_id = job.id AND step.status_id IN (4,6)) THEN 4 --Running

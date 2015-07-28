@@ -92,22 +92,24 @@ BEGIN
 			status_timestamp = now()
 		WHERE task.id = ANY(runnable_task_ids);
 
-		-- Add events for all the runnable tasks
-		FOREACH runnable_task_id IN ARRAY runnable_task_ids
-		LOOP
-			-- Make sure the task runnable event is inserted only once.
-			IF NOT EXISTS (SELECT * FROM event WHERE type_id = 1 AND (data::json->>'task_id')::INT = _task_id AND processing_started_timestamp = NULL) THEN
-				INSERT INTO event(
-				type_id,
-				data,
-				submitted_timestamp)
-				SELECT
-				1, -- TaskRunnable
-				('{"job_id":' || job_id || ', "task_id":' || runnable_task_id || '}') :: json,
-				now()
-				FROM job INNER JOIN task ON job.id = task.job_id WHERE task.id = runnable_task_id;
-			END IF;
-		END LOOP;
+        IF runnable_task_ids IS NOT NULL THEN
+            -- Add events for all the runnable tasks
+            FOREACH runnable_task_id IN ARRAY runnable_task_ids
+            LOOP
+                -- Make sure the task runnable event is inserted only once.
+                IF NOT EXISTS (SELECT * FROM event WHERE type_id = 1 AND (data::json->>'task_id')::INT = _task_id AND processing_started_timestamp = NULL) THEN
+                    INSERT INTO event(
+                    type_id,
+                    data,
+                    submitted_timestamp)
+                    SELECT
+                    1, -- TaskRunnable
+                    ('{"job_id":' || job_id || ', "task_id":' || runnable_task_id || '}') :: json,
+                    now()
+                    FROM job INNER JOIN task ON job.id = task.job_id WHERE task.id = runnable_task_id;
+                END IF;
+            END LOOP;
+        END IF;
 
 	END IF;
 
