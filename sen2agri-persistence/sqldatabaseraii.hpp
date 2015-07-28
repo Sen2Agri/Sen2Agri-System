@@ -29,10 +29,7 @@ public:
     void transaction();
     void commit();
     void rollback();
-
-    QSqlError lastError() const;
 };
 
-void throw_db_error(const SqlDatabaseRAII &db);
 void throw_db_error(const QSqlDatabase &db);
 void throw_query_error(SqlDatabaseRAII &db, const QSqlQuery &query);

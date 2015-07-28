@@ -123,16 +123,6 @@ void SqlDatabaseRAII::rollback()
     }
 }
 
-QSqlError SqlDatabaseRAII::lastError() const
-{
-    return db.lastError();
-}
-
-void throw_db_error(const SqlDatabaseRAII &db)
-{
-    throw sql_error(db.lastError());
-}
-
 void throw_db_error(const QSqlDatabase &db)
 {
     throw sql_error(db.lastError());
