@@ -32,7 +32,8 @@ public:
                               int maxNetries);
 
     template <typename F>
-    auto handleTransactionRetry(const QString &operation, F &&f) -> decltype(f())
+    auto handleTransactionRetry(const QString &operation, F &&f)
+        -> decltype(f())
     {
         static const int maxTxnRetries = 10;
         static const int initialRetryDelay = 1000;
@@ -58,7 +59,6 @@ public:
                     } else if (retryDelay * 2 <= maxRetryDelay) {
                         retryDelay *= 2;
                     }
-
                     warnRecoverableError(e, operation, retryDelay, txnRetryNumber, maxTxnRetries);
 
                     QThread::msleep(retryDelay);

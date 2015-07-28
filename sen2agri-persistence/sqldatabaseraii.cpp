@@ -23,7 +23,8 @@ SqlDatabaseRAII::SqlDatabaseRAII(const QString &name,
           QStringLiteral("QPSQL"),
           name + "@" +
               QString::number(reinterpret_cast<uintptr_t>(QThread::currentThreadId()), 16))),
-      isInitialized(true)
+      isInitialized(true),
+      inTransaction()
 {
     db.setHostName(hostName);
     db.setDatabaseName(databaseName);
@@ -41,13 +42,17 @@ SqlDatabaseRAII::SqlDatabaseRAII(const QString &name,
     }
 }
 
-SqlDatabaseRAII::SqlDatabaseRAII(SqlDatabaseRAII &&other) : db(move(other.db))
+SqlDatabaseRAII::SqlDatabaseRAII(SqlDatabaseRAII &&other)
+    : db(move(other.db)), isInitialized(other.isInitialized), inTransaction(other.inTransaction)
 {
     other.isInitialized = false;
 }
 
 SqlDatabaseRAII &SqlDatabaseRAII::operator=(SqlDatabaseRAII &&other)
 {
+    isInitialized = other.isInitialized;
+    inTransaction = other.inTransaction;
+
     db = move(other.db);
     other.isInitialized = false;
 
@@ -85,7 +90,7 @@ QSqlQuery SqlDatabaseRAII::prepareQuery(const QString &query)
     auto q = createQuery();
 
     if (!q.prepare(query)) {
-        throw_query_error(q);
+        throw_query_error(*this, q);
     }
 
     return q;
@@ -96,6 +101,8 @@ void SqlDatabaseRAII::transaction()
     if (!db.transaction()) {
         throw_db_error(db);
     }
+
+    inTransaction = true;
 }
 
 void SqlDatabaseRAII::commit()
@@ -103,11 +110,15 @@ void SqlDatabaseRAII::commit()
     if (!db.commit()) {
         throw_db_error(db);
     }
+
+    inTransaction = false;
 }
 
 void SqlDatabaseRAII::rollback()
 {
-    if (!db.rollback()) {
+    if (inTransaction && !db.rollback()) {
+        inTransaction = false;
+
         throw_db_error(db);
     }
 }
@@ -117,7 +128,16 @@ void throw_db_error(const QSqlDatabase &db)
     throw sql_error(db.lastError());
 }
 
-void throw_query_error(const QSqlQuery &query)
+void throw_query_error(SqlDatabaseRAII &db, const QSqlQuery &query)
 {
+    // NOTE: Postgres doesn't roll back aborted transactions, but won't execute anything else until
+    // the end of the transaction block.
+    // NOTE: normally we'd handle the abort in handle_transaction_retry(), but the QSqlQuery
+    // destructor would deallocate the prepared statement before the transaction rollback, making
+    // Postgres complain in the log. To avoid confusing any sysadmins, we roll back the transaction
+    // before unwinding the stack. In any case, it's good hygiene to use check for errors using this
+    // function and most of the callers don't care about transactions.
+    db.rollback();
+
     throw sql_error(query.lastError());
 }

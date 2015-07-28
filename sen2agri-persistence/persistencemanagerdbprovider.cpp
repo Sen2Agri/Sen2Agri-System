@@ -47,7 +47,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         auto dataRecord = query.record();
@@ -67,7 +67,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         dataRecord = query.record();
@@ -82,7 +82,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         dataRecord = query.record();
@@ -105,7 +105,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         result.parameterValues = mapConfigurationParameters(query);
@@ -141,7 +141,7 @@ PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         return mapConfigurationParameters(query);
@@ -153,7 +153,7 @@ PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QSt
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(QStringLiteral("GetJobConfigurationParameters"), [&] {
+    return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_get_job_parameters(:job_id, :prefix)"));
         query.bindValue(QStringLiteral(":job_id"), jobId);
@@ -161,7 +161,7 @@ PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QSt
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         auto dataRecord = query.record();
@@ -191,7 +191,7 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         return mapUpdateConfigurationResult(query);
@@ -212,7 +212,7 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         return mapUpdateConfigurationResult(query);
@@ -228,7 +228,7 @@ ProductToArchiveList PersistenceManagerDBProvider::GetProductsToArchive()
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         auto dataRecord = query.record();
@@ -257,7 +257,7 @@ void PersistenceManagerDBProvider::MarkProductsArchived(const ArchivedProductLis
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -281,7 +281,7 @@ int PersistenceManagerDBProvider::SubmitJob(const NewJob &job)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {
@@ -306,7 +306,7 @@ int PersistenceManagerDBProvider::SubmitTask(const NewTask &task)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {
@@ -328,7 +328,7 @@ void PersistenceManagerDBProvider::SubmitSteps(const NewStepList &steps)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -345,7 +345,7 @@ void PersistenceManagerDBProvider::MarkStepPendingStart(int taskId, const QStrin
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -361,7 +361,7 @@ void PersistenceManagerDBProvider::MarkStepStarted(int taskId, const QString &na
 
         query.setForwardOnly(true);
         if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         query = db.prepareQuery(QStringLiteral("select sp_mark_step_started(:taskId, :name)"));
@@ -370,7 +370,7 @@ void PersistenceManagerDBProvider::MarkStepStarted(int taskId, const QString &na
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
         query.finish();
 
@@ -393,7 +393,7 @@ bool PersistenceManagerDBProvider::MarkStepFinished(int taskId,
 
         query.setForwardOnly(true);
         if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         query = db.prepareQuery(QStringLiteral(
@@ -406,7 +406,7 @@ bool PersistenceManagerDBProvider::MarkStepFinished(int taskId,
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {
@@ -439,7 +439,7 @@ void PersistenceManagerDBProvider::MarkStepFailed(int taskId,
 
         query.setForwardOnly(true);
         if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         query = db.prepareQuery(
@@ -452,7 +452,7 @@ void PersistenceManagerDBProvider::MarkStepFailed(int taskId,
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
         query.finish();
 
@@ -470,7 +470,7 @@ void PersistenceManagerDBProvider::MarkJobCancelled(int jobId)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -485,7 +485,7 @@ void PersistenceManagerDBProvider::MarkJobPaused(int jobId)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -500,7 +500,7 @@ void PersistenceManagerDBProvider::MarkJobResumed(int jobId)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -515,7 +515,7 @@ void PersistenceManagerDBProvider::MarkJobFinished(int jobId)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -530,7 +530,7 @@ void PersistenceManagerDBProvider::MarkJobFailed(int jobId)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -545,7 +545,7 @@ void PersistenceManagerDBProvider::MarkJobNeedsInput(int jobId)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -559,7 +559,7 @@ UnprocessedEventList PersistenceManagerDBProvider::GetNewEvents()
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         auto dataRecord = query.record();
@@ -594,7 +594,7 @@ void PersistenceManagerDBProvider::MarkEventProcessingStarted(int eventId)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -610,7 +610,7 @@ void PersistenceManagerDBProvider::MarkEventProcessingComplete(int eventId)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -628,7 +628,7 @@ TaskIdList PersistenceManagerDBProvider::GetJobTasksByStatus(int jobId,
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         auto dataRecord = query.record();
@@ -654,7 +654,7 @@ JobStepToRunList PersistenceManagerDBProvider::GetTaskStepsForStart(int taskId)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         auto dataRecord = query.record();
@@ -686,7 +686,7 @@ JobStepToRunList PersistenceManagerDBProvider::GetJobStepsForResume(int jobId)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         auto dataRecord = query.record();
@@ -719,7 +719,7 @@ void PersistenceManagerDBProvider::InsertEvent(const SerializedEvent &event)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -756,7 +756,7 @@ void PersistenceManagerDBProvider::InsertNodeStatistics(const NodeStatistics &st
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -777,7 +777,7 @@ int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {
@@ -798,7 +798,7 @@ QString PersistenceManagerDBProvider::GetDashboardCurrentJobData()
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {
@@ -819,7 +819,7 @@ QString PersistenceManagerDBProvider::GetDashboardServerResourceData()
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {
@@ -841,7 +841,7 @@ QString PersistenceManagerDBProvider::GetDashboardProcessorStatistics()
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {
@@ -864,7 +864,7 @@ QString PersistenceManagerDBProvider::GetDashboardProductAvailability(const QDat
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {

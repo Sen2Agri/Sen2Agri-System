@@ -7,6 +7,7 @@ class SqlDatabaseRAII
 {
     QSqlDatabase db;
     bool isInitialized;
+    bool inTransaction;
 
     void reset();
 
@@ -31,4 +32,4 @@ public:
 };
 
 void throw_db_error(const QSqlDatabase &db);
-void throw_query_error(const QSqlQuery &query);
+void throw_query_error(SqlDatabaseRAII &db, const QSqlQuery &query);
