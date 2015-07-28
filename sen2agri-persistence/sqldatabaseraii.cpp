@@ -23,7 +23,8 @@ SqlDatabaseRAII::SqlDatabaseRAII(const QString &name,
           QStringLiteral("QPSQL"),
           name + "@" +
               QString::number(reinterpret_cast<uintptr_t>(QThread::currentThreadId()), 16))),
-      isInitialized(true)
+      isInitialized(true),
+      inTransaction()
 {
     db.setHostName(hostName);
     db.setDatabaseName(databaseName);
@@ -41,13 +42,17 @@ SqlDatabaseRAII::SqlDatabaseRAII(const QString &name,
     }
 }
 
-SqlDatabaseRAII::SqlDatabaseRAII(SqlDatabaseRAII &&other) : db(move(other.db))
+SqlDatabaseRAII::SqlDatabaseRAII(SqlDatabaseRAII &&other)
+    : db(move(other.db)), isInitialized(other.isInitialized), inTransaction(other.inTransaction)
 {
     other.isInitialized = false;
 }
 
 SqlDatabaseRAII &SqlDatabaseRAII::operator=(SqlDatabaseRAII &&other)
 {
+    isInitialized = other.isInitialized;
+    inTransaction = other.inTransaction;
+
     db = move(other.db);
     other.isInitialized = false;
 
@@ -85,7 +90,7 @@ QSqlQuery SqlDatabaseRAII::prepareQuery(const QString &query)
     auto q = createQuery();
 
     if (!q.prepare(query)) {
-        throw_query_error(q);
+        throw_query_error(*this, q);
     }
 
     return q;
@@ -96,6 +101,8 @@ void SqlDatabaseRAII::transaction()
     if (!db.transaction()) {
         throw_db_error(db);
     }
+
+    inTransaction = true;
 }
 
 void SqlDatabaseRAII::commit()
@@ -103,13 +110,27 @@ void SqlDatabaseRAII::commit()
     if (!db.commit()) {
         throw_db_error(db);
     }
+
+    inTransaction = false;
 }
 
 void SqlDatabaseRAII::rollback()
 {
-    if (!db.rollback()) {
+    if (inTransaction && !db.rollback()) {
+        inTransaction = false;
+
         throw_db_error(db);
     }
+}
+
+QSqlError SqlDatabaseRAII::lastError() const
+{
+    return db.lastError();
+}
+
+void throw_db_error(const SqlDatabaseRAII &db)
+{
+    throw sql_error(db.lastError());
 }
 
 void throw_db_error(const QSqlDatabase &db)
@@ -117,7 +138,9 @@ void throw_db_error(const QSqlDatabase &db)
     throw sql_error(db.lastError());
 }
 
-void throw_query_error(const QSqlQuery &query)
+void throw_query_error(SqlDatabaseRAII &db, const QSqlQuery &query)
 {
+    db.rollback();
+
     throw sql_error(query.lastError());
 }

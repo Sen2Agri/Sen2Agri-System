@@ -42,12 +42,12 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral("select * from sp_get_categories()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         auto dataRecord = query.record();
@@ -67,7 +67,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         dataRecord = query.record();
@@ -82,7 +82,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         dataRecord = query.record();
@@ -105,7 +105,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         result.parameterValues = mapConfigurationParameters(query);
@@ -135,13 +135,13 @@ PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral("select * from sp_get_parameters(:prefix)"));
         query.bindValue(QStringLiteral(":prefix"), prefix);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         return mapConfigurationParameters(query);
@@ -153,7 +153,7 @@ PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QSt
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(QStringLiteral("GetJobConfigurationParameters"), [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_get_job_parameters(:job_id, :prefix)"));
         query.bindValue(QStringLiteral(":job_id"), jobId);
@@ -161,7 +161,7 @@ PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QSt
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         auto dataRecord = query.record();
@@ -182,7 +182,7 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_upsert_parameters(:parameters, :isAdmin)"));
 
@@ -191,7 +191,7 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         return mapUpdateConfigurationResult(query);
@@ -203,7 +203,7 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_upsert_job_parameters(:job_id, :parameters)"));
 
@@ -212,7 +212,7 @@ KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         return mapUpdateConfigurationResult(query);
@@ -223,12 +223,12 @@ ProductToArchiveList PersistenceManagerDBProvider::GetProductsToArchive()
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral("select * from sp_get_products_to_archive()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         auto dataRecord = query.record();
@@ -251,13 +251,13 @@ void PersistenceManagerDBProvider::MarkProductsArchived(const ArchivedProductLis
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral("select sp_mark_products_archived(:products)"));
         query.bindValue(QStringLiteral(":products"), getArchivedProductsJson(products));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -266,7 +266,7 @@ int PersistenceManagerDBProvider::SubmitJob(const NewJob &job)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_submit_job(:name, :description, "
                            ":processorId, :siteId, :startTypeId, :parameters, :configuration)"));
@@ -281,7 +281,7 @@ int PersistenceManagerDBProvider::SubmitJob(const NewJob &job)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {
@@ -296,7 +296,7 @@ int PersistenceManagerDBProvider::SubmitTask(const NewTask &task)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral(
             "select * from sp_submit_task(:jobId, :module, :parameters, :parentTasks)"));
         query.bindValue(QStringLiteral(":jobId"), task.jobId);
@@ -306,7 +306,7 @@ int PersistenceManagerDBProvider::SubmitTask(const NewTask &task)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {
@@ -322,13 +322,13 @@ void PersistenceManagerDBProvider::SubmitSteps(const NewStepList &steps)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral("select sp_submit_steps(:steps)"));
         query.bindValue(QStringLiteral(":steps"), getNewStepsJson(steps));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -337,7 +337,7 @@ void PersistenceManagerDBProvider::MarkStepPendingStart(int taskId, const QStrin
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query =
             db.prepareQuery(QStringLiteral("select sp_mark_step_pending_start(:taskId, :name)"));
         query.bindValue(QStringLiteral(":taskId"), taskId);
@@ -345,7 +345,7 @@ void PersistenceManagerDBProvider::MarkStepPendingStart(int taskId, const QStrin
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -354,14 +354,14 @@ void PersistenceManagerDBProvider::MarkStepStarted(int taskId, const QString &na
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         db.transaction();
 
         auto query = db.createQuery();
 
         query.setForwardOnly(true);
         if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         query = db.prepareQuery(QStringLiteral("select sp_mark_step_started(:taskId, :name)"));
@@ -370,7 +370,7 @@ void PersistenceManagerDBProvider::MarkStepStarted(int taskId, const QString &na
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
         query.finish();
 
@@ -386,14 +386,14 @@ bool PersistenceManagerDBProvider::MarkStepFinished(int taskId,
 
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         db.transaction();
 
         auto query = db.createQuery();
 
         query.setForwardOnly(true);
         if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         query = db.prepareQuery(QStringLiteral(
@@ -406,7 +406,7 @@ bool PersistenceManagerDBProvider::MarkStepFinished(int taskId,
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {
@@ -432,14 +432,14 @@ void PersistenceManagerDBProvider::MarkStepFailed(int taskId,
 
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         db.transaction();
 
         auto query = db.createQuery();
 
         query.setForwardOnly(true);
         if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         query = db.prepareQuery(
@@ -452,7 +452,7 @@ void PersistenceManagerDBProvider::MarkStepFailed(int taskId,
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
         query.finish();
 
@@ -464,13 +464,13 @@ void PersistenceManagerDBProvider::MarkJobCancelled(int jobId)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_cancelled(:jobId)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -479,13 +479,13 @@ void PersistenceManagerDBProvider::MarkJobPaused(int jobId)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_paused(:jobId)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -494,13 +494,13 @@ void PersistenceManagerDBProvider::MarkJobResumed(int jobId)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_resumed(:jobId)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -509,13 +509,13 @@ void PersistenceManagerDBProvider::MarkJobFinished(int jobId)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_finished(:jobId)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -524,13 +524,13 @@ void PersistenceManagerDBProvider::MarkJobFailed(int jobId)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_failed(:jobId)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -539,13 +539,13 @@ void PersistenceManagerDBProvider::MarkJobNeedsInput(int jobId)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_needs_input(:jobId)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -554,12 +554,12 @@ UnprocessedEventList PersistenceManagerDBProvider::GetNewEvents()
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral("select * from sp_get_new_events()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         auto dataRecord = query.record();
@@ -587,14 +587,14 @@ void PersistenceManagerDBProvider::MarkEventProcessingStarted(int eventId)
 {
     auto db = getDatabase();
 
-    provider.handleTransactionRetry(__func__, [&] {
+    provider.handleTransactionRetry(__func__, db, [&] {
         auto query =
             db.prepareQuery(QStringLiteral("select sp_mark_event_processing_started(:eventId)"));
         query.bindValue(QStringLiteral(":eventId"), eventId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -603,14 +603,14 @@ void PersistenceManagerDBProvider::MarkEventProcessingComplete(int eventId)
 {
     auto db = getDatabase();
 
-    provider.handleTransactionRetry(__func__, [&] {
+    provider.handleTransactionRetry(__func__, db, [&] {
         auto query =
             db.prepareQuery(QStringLiteral("select sp_mark_event_processing_completed(:eventId)"));
         query.bindValue(QStringLiteral(":eventId"), eventId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -620,7 +620,7 @@ TaskIdList PersistenceManagerDBProvider::GetJobTasksByStatus(int jobId,
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_get_job_tasks_by_status(:jobId, :statusList)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
@@ -628,7 +628,7 @@ TaskIdList PersistenceManagerDBProvider::GetJobTasksByStatus(int jobId,
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         auto dataRecord = query.record();
@@ -647,14 +647,14 @@ JobStepToRunList PersistenceManagerDBProvider::GetTaskStepsForStart(int taskId)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query =
             db.prepareQuery(QStringLiteral("select * from sp_get_task_steps_for_start(:taskId)"));
         query.bindValue(QStringLiteral(":taskId"), taskId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         auto dataRecord = query.record();
@@ -679,14 +679,14 @@ JobStepToRunList PersistenceManagerDBProvider::GetJobStepsForResume(int jobId)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query =
             db.prepareQuery(QStringLiteral("select * from sp_get_job_steps_for_resume(:jobId)"));
         query.bindValue(QStringLiteral(":jobId"), jobId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         auto dataRecord = query.record();
@@ -711,7 +711,7 @@ void PersistenceManagerDBProvider::InsertEvent(const SerializedEvent &event)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query =
             db.prepareQuery(QStringLiteral("select sp_insert_event(:eventType, :eventData)"));
         query.bindValue(QStringLiteral(":eventType"), static_cast<int>(event.type));
@@ -719,7 +719,7 @@ void PersistenceManagerDBProvider::InsertEvent(const SerializedEvent &event)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -730,7 +730,7 @@ void PersistenceManagerDBProvider::InsertNodeStatistics(const NodeStatistics &st
 
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select sp_insert_node_statistics(:node, :cpuUser, :cpuSystem, "
                            ":memTotalKb, :memUsedKb, :swapTotalKb, :swapUsedKb, :loadAvg1, "
@@ -756,7 +756,7 @@ void PersistenceManagerDBProvider::InsertNodeStatistics(const NodeStatistics &st
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
     });
 }
@@ -765,7 +765,7 @@ int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query =
             db.prepareQuery(QStringLiteral("select * from sp_insert_product(:productType, "
                                            ":processorId, :taskId, :fullPath, :createdTimestamp)"));
@@ -777,7 +777,7 @@ int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {
@@ -793,12 +793,12 @@ QString PersistenceManagerDBProvider::GetDashboardCurrentJobData()
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_current_job_data()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {
@@ -814,12 +814,12 @@ QString PersistenceManagerDBProvider::GetDashboardServerResourceData()
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_server_resource_data()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {
@@ -835,13 +835,13 @@ QString PersistenceManagerDBProvider::GetDashboardProcessorStatistics()
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_get_dashboard_processor_statistics()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {
@@ -857,14 +857,14 @@ QString PersistenceManagerDBProvider::GetDashboardProductAvailability(const QDat
 {
     auto db = getDatabase();
 
-    return provider.handleTransactionRetry(__func__, [&] {
+    return provider.handleTransactionRetry(__func__, db, [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_get_dashboard_product_availability(:since)"));
         query.bindValue(QStringLiteral(":since"), since);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
-            throw_query_error(query);
+            throw_query_error(db, query);
         }
 
         if (!query.next()) {

@@ -22,7 +22,8 @@ int EventProcessingContext::SubmitTask(const NewTask &task)
 {
     auto taskId = WaitForResponseAndThrow(persistenceManagerClient.SubmitTask(task));
 
-    QDir::root().mkpath(GetOutputPath(task.jobId, taskId));
+    const auto &path = GetOutputPath(task.jobId, taskId);
+    QDir::root().mkpath(path);
 
     return taskId;
 }
