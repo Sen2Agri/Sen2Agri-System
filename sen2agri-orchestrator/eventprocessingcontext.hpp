@@ -34,7 +34,7 @@ public:
 
     int InsertProduct(const NewProduct &product);
 
-    std::vector<QString> GetProductFiles(const QString &path, const QString &pattern) const;
+    QStringList GetProductFiles(const QString &path, const QString &pattern) const;
     QString GetOutputPath(int jobId, int taskId);
 
     template <typename F>
@@ -48,7 +48,6 @@ public:
 
         NewStepList steps;
         for (const auto &file : GetProductFiles(inputPath, pattern)) {
-
             steps.push_back(
                 { taskId,
                   QFileInfo(file).baseName(),

@@ -89,11 +89,10 @@ int EventProcessingContext::InsertProduct(const NewProduct &product)
     return WaitForResponseAndThrow(persistenceManagerClient.InsertProduct(product));
 }
 
-std::vector<QString> EventProcessingContext::GetProductFiles(const QString &path,
-                                                             const QString &pattern) const
+QStringList EventProcessingContext::GetProductFiles(const QString &path,
+                                                    const QString &pattern) const
 {
-    const auto &files = QDir(path).entryList(QStringList() << pattern, QDir::Files);
-    return { files.begin(), files.end() };
+    return QDir(path).entryList(QStringList() << pattern, QDir::Files);
 }
 
 QString EventProcessingContext::GetOutputPath(int jobId, int taskId)
