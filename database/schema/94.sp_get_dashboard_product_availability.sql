@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_get_dashboard_product_availability(
+﻿CREATE OR REPLACE FUNCTION sp_get_dashboard_product_availability2(
 IN _since_timestamp timestamp without time zone DEFAULT null) 
 RETURNS json AS $$
 BEGIN

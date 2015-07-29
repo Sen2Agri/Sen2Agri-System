@@ -9,20 +9,20 @@ DECLARE temp_array2 json[];
 DECLARE return_string text;
 BEGIN
 
-	CREATE TEMP TABLE processor_statistics (
+	CREATE TEMP TABLE processors (
 		id smallint,
 		name character varying
 		) ON COMMIT DROP;
 
 	-- Get the list of processors to return the resources for
-	INSERT INTO processor_statistics (id, name)
+	INSERT INTO processors (id, name)
 	SELECT id, short_name
 	FROM processor ORDER BY name;
 
 	return_string := '{';
 
 	-- Go through the processors and compute their data
-	FOR current_processor IN SELECT * FROM processor_statistics ORDER BY name LOOP
+	FOR current_processor IN SELECT * FROM processors ORDER BY name LOOP
 
 		IF return_string != '{' THEN
 			return_string := return_string || ',';
@@ -92,7 +92,6 @@ BEGIN
 	END LOOP;
 
 	return_string := return_string || '}';
-	RAISE NOTICE '%', return_string;
 	RETURN return_string::json;
 
 END;
