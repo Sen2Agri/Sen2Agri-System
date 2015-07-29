@@ -44,7 +44,7 @@ BEGIN
 	SELECT array_to_json(array_agg(product_type_details.products)) INTO temp_json
 	FROM (SELECT products FROM product_types) AS product_type_details;
 
-	temp_json2 := json_build_object('products', json_build_object('key', 'Products', '_values', temp_json));
+	temp_json2 := json_build_object('products', array_to_json(array[json_build_object('key', 'Products', '_values', temp_json)]));
 
 	RETURN temp_json2;
 

@@ -555,6 +555,9 @@ function update_product_availability(json_data)
 	});
 }
 
+var product_availability_interval_pointer;
+var product_availability_since = (new Date()).toISOString();
+
 function get_product_availability_data()
 {
 	$.ajax({
@@ -564,7 +567,7 @@ function get_product_availability_data()
 		crosDomain: true,
 		dataType: "json",
 		data: {
-			since: "2015-07-01T00:00:00"
+			since: product_availability_since
 		},
 		success: function(json_data)
 		{
@@ -578,7 +581,46 @@ function get_product_availability_data()
 
 function set_product_availability_data_refresh()
 {
+	$("#cbo_products_since li a").click(function(){
+			  var selText = $(this).text();
+			  $("#cbo_products_since_selection").html(selText+'<span class="caret"></span>');
+			  
+			  var since = new Date();
+			  
+			  switch(this.id)
+			  {
+			  	case "products_since_1_hour":
+			  		since.setHours(since.getHours() - 1); 
+			  		break;
+			  	case "products_since_6_hours":
+			  		since.setHours(since.getHours() - 6);
+			  		break;
+			  	case "products_since_12_hours":
+			  		since.setHours(since.getHours() - 12);
+			  		break;
+		  		case "products_since_1_day":
+		  			since.setDate(since.getDate() - 1);
+			  		break;
+		  		case "products_since_7_days":
+		  			since.setDate(since.getDate() - 7);
+			  		break;
+		  		case "products_since_14_days":
+		  			since.setDate(since.getDate() - 14);
+			  		break;
+		  		case "products_since_30_days":
+		  			since.setDate(since.getDate() - 30);
+			  		break;
+			  }
+			  
+			  product_availability_since = since.toISOString();
+
+			  // Clear the old schedules, run the get function now and schedule the next executions.
+			  clearInterval(product_availability_interval_pointer);
+    		  get_product_availability_data();
+			  product_availability_interval_pointer = setInterval(get_product_availability_data, get_product_availability_data_interval);
+		});
+	
 	// Run the get function now and schedule the next executions.
 	get_product_availability_data();
-	setInterval(get_product_availability_data, get_product_availability_data_interval);
+	product_availability_interval_pointer = setInterval(get_product_availability_data, get_product_availability_data_interval);
 }
