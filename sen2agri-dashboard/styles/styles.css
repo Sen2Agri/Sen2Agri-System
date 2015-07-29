@@ -248,5 +248,7 @@ div.panel_configuration {
     margin-left: 2%;
 }
 
-
+div.dropdown .btn .caret {
+    margin-left: 3px;
+}
 

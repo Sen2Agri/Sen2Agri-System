@@ -4645,13 +4645,17 @@ nv.models.indentedTree = function() {
 			  childrenCount.count = 0;
 			  
 			  function countChildren(parent) {
-				  if(parent.values && parent.values.length)
+				  if(parent.hasOwnProperty('values') || parent.hasOwnProperty('_values'))
 				  {
-					  parent.values.forEach(function(child) { countChildren(child)});
-				  } 
-				  else if(parent._values && parent._values.length)
-				  {
-					  parent._values.forEach(function(child) { countChildren(child)});
+					  if(parent.values && parent.values.length)
+					  {
+						parent.values.forEach(function(child) { countChildren(child)});
+					  }
+				  
+					  if(parent._values && parent._values.length)
+					  {
+						parent._values.forEach(function(child) { countChildren(child)});
+					  }
 				  }
 				  else
 				  {
@@ -4664,7 +4668,7 @@ nv.models.indentedTree = function() {
 			  countChildren(d);
 			  
 			  // Only nodes that are not leaves should show the count
-			  if((d.values && d.values.length) || (d._values && d._values.length))
+			  if(d.hasOwnProperty('values') || d.hasOwnProperty('_values'))
 			  {
 				  return '(' + childrenCount.count + ')';
 			  }
