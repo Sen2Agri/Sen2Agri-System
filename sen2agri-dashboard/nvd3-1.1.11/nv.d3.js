@@ -4645,15 +4645,13 @@ nv.models.indentedTree = function() {
 			  childrenCount.count = 0;
 			  
 			  function countChildren(parent) {
-				  if(parent.hasOwnProperty('values'))
+				  if(parent.hasOwnProperty('values') || parent.hasOwnProperty('_values'))
 				  {
 					  if(parent.values && parent.values.length)
 					  {
 						parent.values.forEach(function(child) { countChildren(child)});
 					  }
-				  } 
-				  else if(parent.hasOwnProperty('_values'))
-				  {
+				  
 					  if(parent._values && parent._values.length)
 					  {
 						parent._values.forEach(function(child) { countChildren(child)});

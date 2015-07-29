@@ -55,6 +55,8 @@ BEGIN
 		']' INTO temp_json
 		FROM job_resources;
 
+		temp_json := coalesce(temp_json, '[["Last Run On","never"],["Average Duration","00:00:00.000"],["Average User CPU","00:00:00.000"],["Average System CPU","00:00:00.000"],["Average Max RSS","0.00 MB"],["Average Max VM","0.00 MB"],["Average Disk Read","0.00 MB"],["Average Disk Write","0.00 MB"]]');
+
 		-- Next compute the output statistics
 		temp_array := array[]::json[];
 		SELECT json_build_array('Number of Products', count(*)) INTO temp_json2 FROM product WHERE processor_id = current_processor.id;
@@ -68,7 +70,7 @@ BEGIN
 		INNER JOIN task ON step_resource_log.task_id = task.id
 		INNER JOIN job ON task.job_id = job.id AND job.processor_id = current_processor.id
 		GROUP BY job.id)
-		SELECT array[json_build_array('Average Tiles per Product',round(avg(no_of_tiles),2)), json_build_array('Average Duration per Tile',round(avg(average_duration_per_tile),2))]
+		SELECT array[json_build_array('Average Tiles per Product', coalesce(round(avg(no_of_tiles),2), 0)), json_build_array('Average Duration per Tile', coalesce(to_char(avg(average_duration_per_tile) / 1000 * INTERVAL '1 second', 'HH24:MI:SS.MS'), '00:00:00.000'))]
 		INTO temp_array2
 		FROM step_statistics;
 
