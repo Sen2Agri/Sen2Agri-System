@@ -131,6 +131,15 @@ BEGIN
 		load_5min_history_json := sp_pad_left_json_history_array(load_5min_history_json, since, '1 minute');
 		load_15min_history_json := sp_pad_left_json_history_array(load_15min_history_json, since, '1 minute');
 
+		-- Make sure that there are entries added in the arrays even if there isn't data up to now
+		cpu_user_history_json := sp_pad_right_json_history_array(cpu_user_history_json, since, '1 minute');
+		cpu_system_history_json := sp_pad_right_json_history_array(cpu_system_history_json, since, '1 minute');
+		ram_history_json := sp_pad_right_json_history_array(ram_history_json, since, '1 minute');
+		swap_history_json := sp_pad_right_json_history_array(swap_history_json, since, '1 minute');
+		load_1min_history_json := sp_pad_right_json_history_array(load_1min_history_json, since, '1 minute');
+		load_5min_history_json := sp_pad_right_json_history_array(load_5min_history_json, since, '1 minute');
+		load_15min_history_json := sp_pad_right_json_history_array(load_15min_history_json, since, '1 minute');
+
 		UPDATE current_nodes
 		SET 
 			cpu_user_history = cpu_user_history_json,
