@@ -32,13 +32,20 @@ std::string outTotalWeight10M("/media/sf_2_Sen2Agri/8_ProductSamples/4_WeightTot
 std::string outTotalWeight20M("/media/sf_2_Sen2Agri/8_ProductSamples/4_WeightTotal_20M.tiff");
 
 void TestWeightOnAOT();
-void TestComputeCloudWeight();
+void TestComputeCloudWeight(bool bDebug);
 void TestTotalWeight();
 
 int main(int argc, char* argv[])
 {
+    bool debug = false;
+    if(argc > 1) {
+        if(strcmp(argv[1], "-d") == 0)
+        {
+            debug = true;
+        }
+    }
     TestWeightOnAOT();
-    TestComputeCloudWeight();
+    TestComputeCloudWeight(debug);
     TestTotalWeight();
 }
 
@@ -67,7 +74,7 @@ void TestWeightOnAOT()
     weightOnAot20M.WriteToOutputFile();
 }
 
-void TestComputeCloudWeight()
+void TestComputeCloudWeight(bool bDebug)
 {
     int inputCloudMaskResolution = 10;
     int coarseResolution = 240;
@@ -78,7 +85,9 @@ void TestComputeCloudWeight()
     cloudMaskBinarization.SetInputFileName(inFile);
     cloudMaskBinarization.SetOutputFileName(outFileBinarize);
     cloudMaskBinarization.Update();
-    cloudMaskBinarization.WriteToOutputFile();
+    if(bDebug) {
+        cloudMaskBinarization.WriteToOutputFile();
+    }
 
     // perform undersampling to lower resolution
     CloudsInterpolation underSampler;
@@ -92,7 +101,9 @@ void TestComputeCloudWeight()
     //undersampler.SetInterpolator(Interpolator_BCO);
     //undersampler.SetBicubicInterpolatorRadius(2);
     underSampler.Update();
-    underSampler.WriteToOutputFile();
+    if(bDebug) {
+        underSampler.WriteToOutputFile();
+    }
 
     // Compute the DistLargeCloud, Low Res
     GaussianFilter gaussianFilterSmallCloud;
@@ -102,7 +113,9 @@ void TestComputeCloudWeight()
     gaussianFilterSmallCloud.SetSigma(sigmaSmallCloud);
     gaussianFilterSmallCloud.SetOutputFileName(outFileGaussianSmallCld);
     gaussianFilterSmallCloud.Update();
-    gaussianFilterSmallCloud.WriteToOutputFile();
+    if(bDebug) {
+        gaussianFilterSmallCloud.WriteToOutputFile();
+    }
 
     GaussianFilter gaussianFilterLargeCloud;
     //gaussianFilter2.SetInputFileName(inTest2);
@@ -111,7 +124,9 @@ void TestComputeCloudWeight()
     gaussianFilterLargeCloud.SetSigma(sigmaLargeCloud);
     gaussianFilterLargeCloud.SetOutputFileName(outFileGaussianLargeCld);
     gaussianFilterLargeCloud.Update();
-    gaussianFilterLargeCloud.WriteToOutputFile();
+    if(bDebug) {
+        gaussianFilterLargeCloud.WriteToOutputFile();
+    }
 
     // Resample at full resolution of 10m and 20m
     for(int res = 10; res < 22; res++) {
@@ -125,7 +140,9 @@ void TestComputeCloudWeight()
         overSamplerSmallCloud.SetOutputResolution(res);
         overSamplerSmallCloud.SetInterpolator(Interpolator_Linear);
         overSamplerSmallCloud.Update();
-        overSamplerSmallCloud.WriteToOutputFile();
+        if(bDebug) {
+            overSamplerSmallCloud.WriteToOutputFile();
+        }
 
         // resample at the current small resolution (10 or 20) the large cloud large resolution image
         CloudsInterpolation overSamplerLargeCloud;
@@ -137,7 +154,9 @@ void TestComputeCloudWeight()
         overSamplerLargeCloud.SetOutputResolution(res);
         overSamplerLargeCloud.SetInterpolator(Interpolator_Linear);
         overSamplerLargeCloud.Update();
-        overSamplerLargeCloud.WriteToOutputFile();
+        if(bDebug) {
+            overSamplerLargeCloud.WriteToOutputFile();
+        }
 
         // compute the weight on clouds
         CloudWeightComputation cloudWeightComputation;
@@ -147,7 +166,9 @@ void TestComputeCloudWeight()
         cloudWeightComputation.SetInputImageReader2(overSamplerLargeCloud.GetOutputImageSource());
         cloudWeightComputation.SetOutputFileName(res == 10 ? outWeightOnClouds10M : outWeightOnClouds20M);
         cloudWeightComputation.Update();
-        cloudWeightComputation.WriteToOutputFile();
+        if(bDebug) {
+            cloudWeightComputation.WriteToOutputFile();
+        }
 
         res += 10;
     }
