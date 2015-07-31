@@ -81,7 +81,6 @@ void GaussianFilter::Update()
     indexSelectionFilter->Update();
 */
     m_gaussianFilter = DiscreteGaussianFilterType::New();
-    //filter->SetInput(indexSelectionFilter->GetOutput());
     m_gaussianFilter->SetInput(m_inputReader->GetOutput());
     m_gaussianFilter->SetVariance(m_fSigma);
     m_gaussianFilter->SetMaximumKernelWidth(32);
@@ -101,10 +100,10 @@ void GaussianFilter::Update()
     //outMax.Fill( 255 );
 
     // TODO: Not sure if rescaling is really needed
-//    m_rescaler = RescaleFilterType::New();
-//    m_rescaler->SetOutputMinimum(0/*itk::NumericTraits< OutputPixelType >::min()*/);
-//    m_rescaler->SetOutputMaximum( 1/* itk::NumericTraits< OutputPixelType >::max()*/);
-//    m_rescaler->SetInput(filter->GetOutput());
+    //m_rescaler = RescaleFilterType::New();
+    //m_rescaler->SetOutputMinimum(0/*itk::NumericTraits< OutputPixelType >::min()*/);
+    //m_rescaler->SetOutputMaximum( 1/* itk::NumericTraits< OutputPixelType >::max()*/);
+    //m_rescaler->SetInput(m_gaussianFilter->GetOutput());
 
 }
 
@@ -119,6 +118,24 @@ void GaussianFilter::WriteToOutputFile()
         try
         {
             writer->Update();
+            m_inputImage = m_inputReader->GetOutput();
+            ImageType::SpacingType spacing = m_inputImage->GetSpacing();
+            ImageType::PointType origin = m_inputImage->GetOrigin();
+            std::cout << "=================================" << std::endl;
+            std::cout << "Origin : " << origin[0] << " " << origin[1] << std::endl;
+            std::cout << "Spacing : " << spacing[0] << " " << spacing[1] << std::endl;
+            std::cout << "Size : " << m_inputImage->GetLargestPossibleRegion().GetSize()[0] << " " <<
+                         m_inputImage->GetLargestPossibleRegion().GetSize()[1] << std::endl;
+
+            ImageType::SpacingType outspacing = m_gaussianFilter->GetOutput()->GetSpacing();
+            ImageType::PointType outorigin = v->GetOutput()->GetOrigin();
+            std::cout << "Output Origin : " << outorigin[0] << " " << outorigin[1] << std::endl;
+            std::cout << "Output Spacing : " << outspacing[0] << " " << outspacing[1] << std::endl;
+            std::cout << "Size : " << m_gaussianFilter->GetOutput()->GetLargestPossibleRegion().GetSize()[0] << " " <<
+                         m_gaussianFilter->GetOutput()->GetLargestPossibleRegion().GetSize()[1] << std::endl;
+
+            std::cout  << "=================================" << std::endl;
+            std::cout << std::endl;
         }
         catch (itk::ExceptionObject& err)
         {

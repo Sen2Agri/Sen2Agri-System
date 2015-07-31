@@ -149,7 +149,7 @@ void CloudsInterpolation::Update()
 
     IdentityTransformType::Pointer transform = IdentityTransformType::New();
 
-    m_Resampler->SetOutputParametersFromImage( m_inputReader->GetOutput() );
+    m_Resampler->SetOutputParametersFromImage( m_inputImage );
     // Scale Transform
     float scaleXY = ((float)m_inputRes)/((float)m_outputRes);
 
@@ -158,20 +158,20 @@ void CloudsInterpolation::Update()
     scale[1] = 1.0 / scaleXY;
 
     // Evaluate spacing
-//    ImageType::SpacingType spacing = m_inputImage->GetSpacing();
+    ImageType::SpacingType spacing = m_inputImage->GetSpacing();
     //NOTE: If computation is performed with spacing and scale we might have
     //      a model pixel scale tag of 9.9999 instead of 10 that can result in
     //      different number of pixels
     ImageType::SpacingType OutputSpacing;
-    OutputSpacing[0] = m_outputRes; //spacing[0] * scale[0];
-    OutputSpacing[1] = m_outputRes; //spacing[1] * scale[1];
+    OutputSpacing[0] = spacing[0] * scale[0];
+    OutputSpacing[1] = spacing[1] * scale[1];
 
     m_Resampler->SetOutputSpacing(OutputSpacing);
 
     ImageType::PointType origin = m_inputImage->GetOrigin();
     ImageType::PointType outputOrigin;
-    outputOrigin[0] = origin[0] + 0.5 * m_outputRes/*spacing[0]*/ * (scale[0] - 1.0);
-    outputOrigin[1] = origin[1] + 0.5 * m_outputRes/*spacing[1]*/ * (scale[1] - 1.0);
+    outputOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale[0] - 1.0);
+    outputOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0);
 
     m_Resampler->SetOutputOrigin(outputOrigin);
     m_Resampler->SetTransform(transform);
@@ -205,6 +205,24 @@ void CloudsInterpolation::WriteToOutputFile()
         try
         {
             writer->Update();
+            m_inputImage = m_inputReader->GetOutput();
+            ImageType::SpacingType spacing = m_inputImage->GetSpacing();
+            ImageType::PointType origin = m_inputImage->GetOrigin();
+            std::cout << "=================================" << std::endl;
+            std::cout << "Origin : " << origin[0] << " " << origin[1] << std::endl;
+            std::cout << "Spacing : " << spacing[0] << " " << spacing[1] << std::endl;
+            std::cout << "Size : " << m_inputImage->GetLargestPossibleRegion().GetSize()[0] << " " <<
+                         m_inputImage->GetLargestPossibleRegion().GetSize()[1] << std::endl;
+
+            ImageType::SpacingType outspacing = m_Resampler->GetOutput()->GetSpacing();
+            ImageType::PointType outorigin = m_Resampler->GetOutput()->GetOrigin();
+            std::cout << "Output Origin : " << outorigin[0] << " " << outorigin[1] << std::endl;
+            std::cout << "Output Spacing : " << outspacing[0] << " " << outspacing[1] << std::endl;
+            std::cout << "Size : " << m_Resampler->GetOutput()->GetLargestPossibleRegion().GetSize()[0] << " " <<
+                         m_Resampler->GetOutput()->GetLargestPossibleRegion().GetSize()[1] << std::endl;
+
+            std::cout  << "=================================" << std::endl;
+            std::cout << std::endl;
         }
         catch (itk::ExceptionObject& err)
         {

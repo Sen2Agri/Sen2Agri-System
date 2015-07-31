@@ -32,25 +32,35 @@ std::string outTotalWeight10M("/media/sf_2_Sen2Agri/8_ProductSamples/4_WeightTot
 std::string outTotalWeight20M("/media/sf_2_Sen2Agri/8_ProductSamples/4_WeightTotal_20M.tiff");
 
 void TestWeightOnAOT();
-void TestComputeCloudWeight(bool bDebug);
+void TestComputeCloudWeight();
 void TestTotalWeight();
+
+bool g_bDebug = false;
+bool g_allResolutions = false;
 
 int main(int argc, char* argv[])
 {
-    bool debug = false;
     if(argc > 1) {
         if(strcmp(argv[1], "-d") == 0)
         {
-            debug = true;
+            g_bDebug = true;
+            if(argc > 2)
+            {
+                if(strcmp(argv[2], "all") == 0)
+                {
+                    g_allResolutions = true;
+                }
+            }
         }
     }
     TestWeightOnAOT();
-    TestComputeCloudWeight(debug);
+    TestComputeCloudWeight();
     TestTotalWeight();
 }
 
 void TestWeightOnAOT()
 {
+    std::cout << "Computing WeightAOT 10m" << std::endl;
     WeightOnAOT weightOnAot10M;
     weightOnAot10M.SetInputFileName(inAotFile10M);
     weightOnAot10M.SetOutputFileName(outAOTWeight10M);
@@ -62,34 +72,41 @@ void TestWeightOnAOT()
     weightOnAot10M.Update();
     weightOnAot10M.WriteToOutputFile();
 
-    WeightOnAOT weightOnAot20M;
-    weightOnAot20M.SetInputFileName(inAotFile20M);
-    weightOnAot20M.SetOutputFileName(outAOTWeight20M);
-    weightOnAot20M.SetBand(2);
-    weightOnAot20M.SetAotQuantificationValue(0.005);
-    weightOnAot20M.SetAotMaxValue(50);
-    weightOnAot20M.SetMinAotWeight(0.33);
-    weightOnAot20M.SetMaxAotWeight(1);
-    weightOnAot20M.Update();
-    weightOnAot20M.WriteToOutputFile();
+    if(g_allResolutions)
+    {
+        std::cout << "Computing WeightAOT 20m" << std::endl;
+        WeightOnAOT weightOnAot20M;
+        weightOnAot20M.SetInputFileName(inAotFile20M);
+        weightOnAot20M.SetOutputFileName(outAOTWeight20M);
+        weightOnAot20M.SetBand(2);
+        weightOnAot20M.SetAotQuantificationValue(0.005);
+        weightOnAot20M.SetAotMaxValue(50);
+        weightOnAot20M.SetMinAotWeight(0.33);
+        weightOnAot20M.SetMaxAotWeight(1);
+        weightOnAot20M.Update();
+        weightOnAot20M.WriteToOutputFile();
+    }
 }
 
-void TestComputeCloudWeight(bool bDebug)
+void TestComputeCloudWeight()
 {
     int inputCloudMaskResolution = 10;
     int coarseResolution = 240;
     float sigmaSmallCloud = 10.0;
     float sigmaLargeCloud = 100.0;
 
+    std::cout << "Performing CloudMaskBinarization " << std::endl;
     CloudMaskBinarization cloudMaskBinarization;
     cloudMaskBinarization.SetInputFileName(inFile);
     cloudMaskBinarization.SetOutputFileName(outFileBinarize);
     cloudMaskBinarization.Update();
-    if(bDebug) {
+    if(g_bDebug) {
         cloudMaskBinarization.WriteToOutputFile();
     }
 
+
     // perform undersampling to lower resolution
+    std::cout << "Performing Undersampling " << std::endl;
     CloudsInterpolation underSampler;
     //underSampler.SetInputFileName(inFile);
     //underSampler.SetInputImage(cloudMaskBinarization.GetProducedImage());
@@ -101,36 +118,39 @@ void TestComputeCloudWeight(bool bDebug)
     //undersampler.SetInterpolator(Interpolator_BCO);
     //undersampler.SetBicubicInterpolatorRadius(2);
     underSampler.Update();
-    if(bDebug) {
+    if(g_bDebug) {
         underSampler.WriteToOutputFile();
     }
 
     // Compute the DistLargeCloud, Low Res
     GaussianFilter gaussianFilterSmallCloud;
+    std::cout << "Performing GaussianFilterSmallCloud " << std::endl;
     //gaussianFilterSmallCloud.SetInputImage(underSampler.GetProducedImage());
     gaussianFilterSmallCloud.SetInputImageReader(underSampler.GetOutputImageSource());
     //gaussianFilter1.SetInputFileName(inTest1);
     gaussianFilterSmallCloud.SetSigma(sigmaSmallCloud);
     gaussianFilterSmallCloud.SetOutputFileName(outFileGaussianSmallCld);
     gaussianFilterSmallCloud.Update();
-    if(bDebug) {
+    if(g_bDebug) {
         gaussianFilterSmallCloud.WriteToOutputFile();
     }
 
     GaussianFilter gaussianFilterLargeCloud;
+    std::cout << "Performing GaussianFilterLargeCloud " << std::endl;
     //gaussianFilter2.SetInputFileName(inTest2);
     //gaussianFilterLargeCloud.SetInputImage(underSampler.GetProducedImage());
     gaussianFilterLargeCloud.SetInputImageReader(underSampler.GetOutputImageSource());
     gaussianFilterLargeCloud.SetSigma(sigmaLargeCloud);
     gaussianFilterLargeCloud.SetOutputFileName(outFileGaussianLargeCld);
     gaussianFilterLargeCloud.Update();
-    if(bDebug) {
+    if(g_bDebug) {
         gaussianFilterLargeCloud.WriteToOutputFile();
     }
 
     // Resample at full resolution of 10m and 20m
     for(int res = 10; res < 22; res++) {
         // resample at the current small resolution (10 or 20) the small cloud large resolution image
+        std::cout << "Performing Resampling at " << ((res == 10) ? "10m" : "20m") << std::endl;
         CloudsInterpolation overSamplerSmallCloud;
         //overSamplerSmallCloud.SetInputImage(gaussianFilterSmallCloud.GetProducedImage());
         //overSampler1.SetInputFileName(outFileInt2);
@@ -140,10 +160,11 @@ void TestComputeCloudWeight(bool bDebug)
         overSamplerSmallCloud.SetOutputResolution(res);
         overSamplerSmallCloud.SetInterpolator(Interpolator_Linear);
         overSamplerSmallCloud.Update();
-        if(bDebug) {
+        if(g_bDebug) {
             overSamplerSmallCloud.WriteToOutputFile();
         }
 
+        std::cout << "Performing Resampling at " << ((res == 10) ? "10m" : "20m") << std::endl;
         // resample at the current small resolution (10 or 20) the large cloud large resolution image
         CloudsInterpolation overSamplerLargeCloud;
         //overSamplerLargeCloud.SetInputImage(gaussianFilterLargeCloud.GetProducedImage());
@@ -154,11 +175,12 @@ void TestComputeCloudWeight(bool bDebug)
         overSamplerLargeCloud.SetOutputResolution(res);
         overSamplerLargeCloud.SetInterpolator(Interpolator_Linear);
         overSamplerLargeCloud.Update();
-        if(bDebug) {
+        if(g_bDebug) {
             overSamplerLargeCloud.WriteToOutputFile();
         }
 
         // compute the weight on clouds
+        std::cout << "Performing CloudWeightComputation at " << ((res == 10) ? "10m" : "20m") << std::endl;
         CloudWeightComputation cloudWeightComputation;
         //weightOnClouds.SetInput1(overSamplerSmallCloud.GetProducedImage());
         //weightOnClouds.SetInput2(overSamplerLargeCloud.GetProducedImage());
@@ -166,11 +188,16 @@ void TestComputeCloudWeight(bool bDebug)
         cloudWeightComputation.SetInputImageReader2(overSamplerLargeCloud.GetOutputImageSource());
         cloudWeightComputation.SetOutputFileName(res == 10 ? outWeightOnClouds10M : outWeightOnClouds20M);
         cloudWeightComputation.Update();
-        if(bDebug) {
+        if(g_bDebug) {
             cloudWeightComputation.WriteToOutputFile();
         }
 
         res += 10;
+        // if not all resolutions, exit the loop after the first one
+        if(!g_allResolutions)
+        {
+            break;
+        }
     }
 
 }
@@ -184,6 +211,7 @@ void TestTotalWeight()
     int halfSynthesis = 50;
     float weightOnDateMin = 0.10;
 
+    std::cout << "Performing TotalWeightComputation at 10m" << std::endl;
     TotalWeightComputation totalWeightComputation10M;
     // weight on sensor parameters
     totalWeightComputation10M.SetInputProductName(inProdFileName);
@@ -201,21 +229,24 @@ void TestTotalWeight()
     totalWeightComputation10M.Update();
     totalWeightComputation10M.WriteToOutputFile();
 
-    TotalWeightComputation totalWeightComputation20M;
-    // weight on sensor parameters
-    totalWeightComputation20M.SetInputProductName(inProdFileName);
-    totalWeightComputation20M.SetWeightOnSensor(weightSensor);
-    // weight on date parameters
-    totalWeightComputation20M.SetL2ADateAsDays(l2aDate);
-    totalWeightComputation20M.SetL3ADateAsDays(l3aDate);
-    totalWeightComputation20M.SetHalfSynthesisPeriodAsDays(halfSynthesis);
-    totalWeightComputation20M.SetWeightOnDateMin(weightOnDateMin);
-    // Weights for AOT and Clouds
-    totalWeightComputation20M.SetAotWeightFile(outAOTWeight20M);
-    totalWeightComputation20M.SetCloudsWeightFile(outWeightOnClouds20M);
-    // The output file name
-    totalWeightComputation20M.SetTotalWeightOutputFileName(outTotalWeight20M);
-    totalWeightComputation20M.Update();
-    totalWeightComputation20M.WriteToOutputFile();
-
+    if(!g_allResolutions)
+    {
+        std::cout << "Performing TotalWeightComputation at 20m" << std::endl;
+        TotalWeightComputation totalWeightComputation20M;
+        // weight on sensor parameters
+        totalWeightComputation20M.SetInputProductName(inProdFileName);
+        totalWeightComputation20M.SetWeightOnSensor(weightSensor);
+        // weight on date parameters
+        totalWeightComputation20M.SetL2ADateAsDays(l2aDate);
+        totalWeightComputation20M.SetL3ADateAsDays(l3aDate);
+        totalWeightComputation20M.SetHalfSynthesisPeriodAsDays(halfSynthesis);
+        totalWeightComputation20M.SetWeightOnDateMin(weightOnDateMin);
+        // Weights for AOT and Clouds
+        totalWeightComputation20M.SetAotWeightFile(outAOTWeight20M);
+        totalWeightComputation20M.SetCloudsWeightFile(outWeightOnClouds20M);
+        // The output file name
+        totalWeightComputation20M.SetTotalWeightOutputFileName(outTotalWeight20M);
+        totalWeightComputation20M.Update();
+        totalWeightComputation20M.WriteToOutputFile();
+    }
 }

@@ -116,6 +116,24 @@ void CloudWeightComputation::WriteToOutputFile()
         try
         {
             writer->Update();
+            m_image1 = m_inputReader1->GetOutput();
+            ImageType::SpacingType spacing = m_image1->GetSpacing();
+            ImageType::PointType origin = m_image1->GetOrigin();
+            std::cout << "=================================" << std::endl;
+            std::cout << "Origin : " << origin[0] << " " << origin[1] << std::endl;
+            std::cout << "Spacing : " << spacing[0] << " " << spacing[1] << std::endl;
+            ImageType::SpacingType outspacing = m_filter->GetOutput()->GetSpacing();
+            std::cout << "Size : " << m_image1->GetLargestPossibleRegion().GetSize()[0] << " " <<
+                         m_image1->GetLargestPossibleRegion().GetSize()[1] << std::endl;
+
+            ImageType::PointType outorigin = m_filter->GetOutput()->GetOrigin();
+            std::cout << "Output Origin : " << outorigin[0] << " " << outorigin[1] << std::endl;
+            std::cout << "Output Spacing : " << outspacing[0] << " " << outspacing[1] << std::endl;
+            std::cout << "Size : " << m_filter->GetOutput()->GetLargestPossibleRegion().GetSize()[0] << " " <<
+                         m_filter->GetOutput()->GetLargestPossibleRegion().GetSize()[1] << std::endl;
+
+            std::cout  << "=================================" << std::endl;
+            std::cout << std::endl;
         }
         catch (itk::ExceptionObject& err)
         {
