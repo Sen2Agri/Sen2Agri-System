@@ -49,6 +49,13 @@ void ArchiverManager::productsToBeArchived(const ProductToArchiveList &products)
             QTextStream(stdout) << "The archive path for product ID " << QString::number(product.productId) << " is empty " << endl;
             continue;
         }
+        if(product.currentPath.isEmpty())
+        {
+            //TODO: add error in log
+            qDebug() << "The current path for product ID " << QString::number(product.productId) << " is empty ";
+            QTextStream(stdout) << "The current path for product ID " << QString::number(product.productId) << " is empty " << endl;
+            continue;
+        }
         QString archivePathBase(product.archivePath);
         if(product.archivePath.startsWith("/"))
             archivePathBase = product.archivePath.mid(1, product.archivePath.length() - 1);
