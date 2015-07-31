@@ -1,6 +1,13 @@
 #ifndef UPDATESYNTHESIS_H
 #define UPDATESYNTHESIS_H
 
+typedef enum {SENSOR_S2, SENSOR_L8} SensorType;
+typedef enum {RES_10M, RES_20M} ResolutionType;
+
+typedef enum {LAND=1, WATER,SNOW,CLOUD,CLOUD_SHADOW} FlagType;
+
+#define MAX_WEIGHTED_REFLECTANCES 6
+
 template< class TInput, class TOutput>
 class UpdateSynthesisFunctor
 {
@@ -22,22 +29,14 @@ public:
 //    void SetPreviousL3AProduct();
 //    void SetCurrentResolution();
 
+    void Initialize(SensorType sensorType, ResolutionType resolution, int nTotalBands);
     void SetReflectanceQuantificationValue(float fQuantifVal);
-    void SetTotalNbOfBands(int nBandsNo);
-    void SetCloudMaskBandIndex(int nIndex);
-    void SetCloudShadowMaskBandIndex(int nIndex);
-    void SetSnowMaskBandIndex(int nIndex);
-    void SetWaterMaskBandIndex(int nIndex);
-    void SetPrevWeightBandIndex(int nIndex);
-    void SetWeightedAvDateBandIndex(int nIndex);
-    void SetWeightedAvReflectanceBandIndex(int nIndex);
-    void SetPixelStatusBandIndex(int nIndex);
-    void SetRedBandIndex(int nIndex);
-    void SetNbOfReflectanceBands(int nReflectanceBandNo);
+    void SetCurrentDate(int nDate);
 
 private:
     void ResetCurrentPixelValues();
-    float ComputeReflectanceForPixelVal(float fPixelVal);
+    int GetAbsoluteL2ABandIndex(int index);
+    float GetReflectanceForPixelVal(float fPixelVal);
     void HandleLandPixel(const TInput & A);
     void HandleSnowOrWaterPixel(const TInput & A);
     void HandleCloudOrShadowPixel(const TInput & A);
@@ -47,33 +46,39 @@ private:
     bool IsWaterPixel(const TInput & A);
     bool IsCloudPixel(const TInput & A);
     bool IsCloudShadowPixel(const TInput & A);
+    bool IsRedBand(int index);
 
     float GetPrevWeightValue(const TInput & A);
     float GetPrevWeightedAvDateValue(const TInput & A);
-    float GetPrevWeightedAvReflectanceValue(const TInput & A);
-    float GetPixelStatusValue(const TInput & A);
+    float GetPrevReflectanceValue(const TInput & A);
+    float GetPrevPixelFlagValue(const TInput & A);
+    int GetBlueBandIndex();
 
 private:
+    SensorType m_sensorType;
+    ResolutionType m_resolution;
+
     float m_fQuantificationValue;
+    int m_nCurrentDate;
     int m_nTotalNbOfBands;
+    int m_nNbOfReflectanceBands;
+    int m_nNbL2ABands;
+
     int m_nCloudMaskBandIndex;
     int m_nCloudShadowMaskBandIndex;
     int m_nSnowMaskBandIndex;
     int m_nWaterMaskBandIndex;
     int m_nPrevWeightBandIndex;
     int m_nPrevWeightedAvDateBandIndex;
-    int m_nPrevWeightedAvReflectanceBandIndex;
-    int m_nPrevPixelStatusBandIndex;
+    int m_nPrevReflectanceBandIndex;
+    int m_nPrevPixelFlagBandIndex;
     int m_nRedBandIndex;
-    int m_nNbOfReflectanceBands;
 
     // output pixel values
-    float m_fCurrentPixelWeight;
-    float m_fCurrentPixelReflectance;
+    float m_CurrentWeightedReflectances[MAX_WEIGHTED_REFLECTANCES];
+    float m_CurrentPixelWeights[MAX_WEIGHTED_REFLECTANCES];
     float m_fCurrentPixelFlag;
     float m_fCurrentPixelWeightedDate;
-
-
 };
 
 #endif // UPDATESYNTHESIS_H
