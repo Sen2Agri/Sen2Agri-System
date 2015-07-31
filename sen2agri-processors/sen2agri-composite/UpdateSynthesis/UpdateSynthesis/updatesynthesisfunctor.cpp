@@ -1,77 +1,21 @@
 #include "updatesynthesisfunctor.h"
 
-#define FLAG_NO_DATA -1.0f
-#define DATE_NO_DATA -1.0f
-#define REFLECTANCE_NO_DATA -1.0f
-#define WEIGHT_NO_DATA -1.0f
-
-
-#define S2_L2A_10M_BANDS_NO     4
-#define L8_L2A_10M_BANDS_NO     3
-#define WEIGHTED_REFLECTANCE_10M_BANDS_NO   S2_L2A_10M_BANDS_NO
-
-#define S2_L2A_10M_BANDS_START_IDX      0
-#define S2_L2A_10M_CLD_MASK_IDX         4
-#define S2_L2A_10M_WATER_MASK_IDX       5
-#define S2_L2A_10M_SNOW_MASK_IDX        6
-#define S2_L2A_10M_TOTAL_WEIGHT_IDX     7
-#define S2_L2A_10M_L3A_WEIGHT_START_IDX 8
-#define S2_L2A_10M_L3A_W_AV_DATE_IDX    12
-#define S2_L2A_10M_L3A_REFL_START_IDX   13
-#define S2_L2A_10M_L3A_PIXEL_STATUS_IDX 17
-
-#define L8_L2A_10M_BANDS_START_IDX      0
-#define L8_L2A_10M_CLD_MASK_IDX         3
-#define L8_L2A_10M_WATER_MASK_IDX       4
-#define L8_L2A_10M_SNOW_MASK_IDX        5
-#define L8_L2A_10M_TOTAL_WEIGHT_IDX     6
-#define L8_L2A_10M_L3A_WEIGHT_START_IDX 7
-#define L8_L2A_10M_L3A_W_AV_DATE_IDX    11
-#define L8_L2A_10M_L3A_REFL_START_IDX   12
-#define L8_L2A_10M_L3A_PIXEL_STATUS_IDX 16
-
-// 20M Positions Definition
-#define S2_L2A_20M_BANDS_NO     6
-#define L8_L2A_20M_BANDS_NO     3
-#define WEIGHTED_REFLECTANCE_20M_BANDS_NO   S2_L2A_20M_BANDS_NO
-
-#define S2_L2A_20M_BANDS_START_IDX      0
-#define S2_L2A_20M_CLD_MASK_IDX         6
-#define S2_L2A_20M_WATER_MASK_IDX       7
-#define S2_L2A_20M_SNOW_MASK_IDX        8
-#define S2_L2A_20M_TOTAL_WEIGHT_IDX     9
-#define S2_L2A_20M_L3A_WEIGHT_START_IDX 10
-#define S2_L2A_20M_L3A_W_AV_DATE_IDX    16
-#define S2_L2A_20M_L3A_REFL_START_IDX   17
-#define S2_L2A_20M_L3A_PIXEL_STATUS_IDX 23
-
-#define L8_L2A_20M_BANDS_START_IDX      0
-#define L8_L2A_20M_CLD_MASK_IDX         3
-#define L8_L2A_20M_WATER_MASK_IDX       4
-#define L8_L2A_20M_SNOW_MASK_IDX        5
-#define L8_L2A_20M_TOTAL_WEIGHT_IDX     6
-#define L8_L2A_20M_L3A_WEIGHT_START_IDX 7
-#define L8_L2A_20M_L3A_W_AV_DATE_IDX    13
-#define L8_L2A_20M_L3A_REFL_START_IDX   14
-#define L8_L2A_20M_L3A_PIXEL_STATUS_IDX 20
-
-
 template< class TInput, class TOutput>
 UpdateSynthesisFunctor<TInput,TOutput>::UpdateSynthesisFunctor()
 {
-    //TODO: initialize m_CurrentWeightedReflectances
-
     m_fQuantificationValue = -1;
     m_bPrevL3ABandsAvailable = false;
+    m_nL2ABandStartIndex = 0;
     m_nCloudMaskBandIndex = -1;
     m_nSnowMaskBandIndex = -1;
     m_nWaterMaskBandIndex = -1;
-    m_nPrevWeightBandIndex = -1;
-    m_nPrevWeightedAvDateBandIndex = -1;
-    m_nPrevReflectanceBandIndex = -1;
-    m_nPrevPixelFlagBandIndex = -1;
+    m_nCurrentL2AWeightBandIndex = -1;
+    m_nPrevL3AWeightBandStartIndex = -1;
+    m_nPrevL3AWeightedAvDateBandIndex = -1;
+    m_nPrevL3AReflectanceBandStartIndex = -1;
+    m_nPrevL3APixelFlagBandIndex = -1;
     m_nRedBandIndex = -1;
-    m_nNbOfReflectanceBands = 0;
+    m_nNbOfL3AReflectanceBands = 0;
 }
 
 template< class TInput, class TOutput>
@@ -82,98 +26,72 @@ void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, R
     m_resolution = resolution;
     m_bPrevL3ABandsAvailable = bPrevL3ABandsAvailable;
     if(resolution == RES_10M) {
-        m_nNbOfReflectanceBands = WEIGHTED_REFLECTANCE_10M_BANDS_NO;
+        m_nNbOfL3AReflectanceBands = WEIGHTED_REFLECTANCE_10M_BANDS_NO;
         if(sensorType == SENSOR_S2)
         {
-#define S2_L2A_10M_BANDS_START_IDX      0
-#define S2_L2A_10M_CLD_MASK_IDX         4
-#define S2_L2A_10M_WATER_MASK_IDX       5
-#define S2_L2A_10M_SNOW_MASK_IDX        6
-#define S2_L2A_10M_TOTAL_WEIGHT_IDX     7
-#define S2_L2A_10M_L3A_WEIGHT_START_IDX 8
-#define S2_L2A_10M_L3A_W_AV_DATE_IDX    12
-#define S2_L2A_10M_L3A_REFL_START_IDX   13
-#define S2_L2A_10M_L3A_PIXEL_STATUS_IDX 17
-
             m_nNbL2ABands = S2_L2A_10M_BANDS_NO;
+            m_nL2ABandStartIndex = S2_L2A_10M_BANDS_START_IDX;
             m_nCloudMaskBandIndex = S2_L2A_10M_CLD_MASK_IDX;
             m_nSnowMaskBandIndex = S2_L2A_10M_SNOW_MASK_IDX;
             m_nWaterMaskBandIndex = S2_L2A_10M_WATER_MASK_IDX;
-            m_nPrevWeightBandIndex = -1;
-            m_nPrevWeightedAvDateBandIndex = -1;
-            m_nPrevReflectanceBandIndex = -1;
-            m_nPrevPixelFlagBandIndex = -1;
-            m_nRedBandIndex = -1;
+            m_nCurrentL2AWeightBandIndex = S2_L2A_10M_TOTAL_WEIGHT_IDX;
+            m_nPrevL3AWeightBandStartIndex = S2_L2A_10M_L3A_WEIGHT_START_IDX;
+            m_nPrevL3AWeightedAvDateBandIndex = S2_L2A_10M_L3A_W_AV_DATE_IDX;
+            m_nPrevL3AReflectanceBandStartIndex = S2_L2A_10M_L3A_REFL_START_IDX;
+            m_nPrevL3APixelFlagBandIndex = S2_L2A_10M_L3A_PIXEL_STATUS_IDX;
+            m_nRedBandIndex = S2_L2A_10M_RED_BAND_IDX;
+            m_nBlueBandIndex = S2_L2A_10M_BLUE_BAND_IDX;
+
         } else if (sensorType == SENSOR_L8) {
+
+            m_nNbL2ABands = L8_L2A_10M_BANDS_NO;
+            m_nL2ABandStartIndex = L8_L2A_10M_BANDS_START_IDX;
+            m_nCloudMaskBandIndex = L8_L2A_10M_CLD_MASK_IDX;
+            m_nSnowMaskBandIndex = L8_L2A_10M_SNOW_MASK_IDX;
+            m_nWaterMaskBandIndex = L8_L2A_10M_WATER_MASK_IDX;
+            m_nCurrentL2AWeightBandIndex = L8_L2A_10M_TOTAL_WEIGHT_IDX;
+            m_nPrevL3AWeightBandStartIndex = L8_L2A_10M_L3A_WEIGHT_START_IDX;
+            m_nPrevL3AWeightedAvDateBandIndex = L8_L2A_10M_L3A_W_AV_DATE_IDX;
+            m_nPrevL3AReflectanceBandStartIndex = L8_L2A_10M_L3A_REFL_START_IDX;
+            m_nPrevL3APixelFlagBandIndex = L8_L2A_10M_L3A_PIXEL_STATUS_IDX;
+            m_nRedBandIndex = L8_L2A_10M_RED_BAND_IDX;
+            m_nBlueBandIndex = L8_L2A_10M_BLUE_BAND_IDX;
 
         } else {
             // TODO: Throw an error
         }
     } else if(resolution == RES_20M) {
+        m_nNbOfL3AReflectanceBands = WEIGHTED_REFLECTANCE_20M_BANDS_NO;
         if(sensorType == SENSOR_S2)
         {
+            m_nNbL2ABands = S2_L2A_20M_BANDS_NO;
+            m_nL2ABandStartIndex = S2_L2A_20M_BANDS_START_IDX;
+            m_nCloudMaskBandIndex = S2_L2A_20M_CLD_MASK_IDX;
+            m_nSnowMaskBandIndex = S2_L2A_20M_SNOW_MASK_IDX;
+            m_nWaterMaskBandIndex = S2_L2A_20M_WATER_MASK_IDX;
+            m_nCurrentL2AWeightBandIndex = S2_L2A_20M_TOTAL_WEIGHT_IDX;
+            m_nPrevL3AWeightBandStartIndex = S2_L2A_20M_L3A_WEIGHT_START_IDX;
+            m_nPrevL3AWeightedAvDateBandIndex = S2_L2A_20M_L3A_W_AV_DATE_IDX;
+            m_nPrevL3AReflectanceBandStartIndex = S2_L2A_20M_L3A_REFL_START_IDX;
+            m_nPrevL3APixelFlagBandIndex = S2_L2A_20M_L3A_PIXEL_STATUS_IDX;
+            m_nRedBandIndex = S2_L2A_20M_RED_BAND_IDX;
+            m_nBlueBandIndex = S2_L2A_20M_BLUE_BAND_IDX;
+
         } else if (sensorType == SENSOR_L8) {
 
-        } else {
-            // TODO: Throw an error
-        }
-    } else {
-        // TODO: Throw an error
-    }
+            m_nNbL2ABands = L8_L2A_20M_BANDS_NO;
+            m_nL2ABandStartIndex = L8_L2A_20M_BANDS_START_IDX;
+            m_nCloudMaskBandIndex = L8_L2A_20M_CLD_MASK_IDX;
+            m_nSnowMaskBandIndex = L8_L2A_20M_SNOW_MASK_IDX;
+            m_nWaterMaskBandIndex = L8_L2A_20M_WATER_MASK_IDX;
+            m_nCurrentL2AWeightBandIndex = L8_L2A_20M_TOTAL_WEIGHT_IDX;
+            m_nPrevL3AWeightBandStartIndex = L8_L2A_20M_L3A_WEIGHT_START_IDX;
+            m_nPrevL3AWeightedAvDateBandIndex = L8_L2A_20M_L3A_W_AV_DATE_IDX;
+            m_nPrevL3AReflectanceBandStartIndex = L8_L2A_20M_L3A_REFL_START_IDX;
+            m_nPrevL3APixelFlagBandIndex = L8_L2A_20M_L3A_PIXEL_STATUS_IDX;
+            m_nRedBandIndex = L8_L2A_20M_RED_BAND_IDX;
+            m_nBlueBandIndex = L8_L2A_20M_BLUE_BAND_IDX;
 
-    if(sensorType == SENSOR_S2)
-    {
-        if(resolution == RES_10M) {
-            m_nNbOfReflectanceBands = WEIGHTED_REFLECTANCE_10M_BANDS_NO;
-            m_nNbL2ABands = S2_L2A_10M_BANDS_NO;
-            m_nCloudMaskBandIndex = -1;
-            m_nSnowMaskBandIndex = -1;
-            m_nWaterMaskBandIndex = -1;
-            m_nPrevWeightBandIndex = -1;
-            m_nPrevWeightedAvDateBandIndex = -1;
-            m_nPrevReflectanceBandIndex = -1;
-            m_nPrevPixelFlagBandIndex = -1;
-            m_nRedBandIndex = -1;
-        } else if(resolution == RES_20M) {
-            m_nNbOfReflectanceBands = WEIGHTED_REFLECTANCE_20M_BANDS_NO;
-            m_nNbL2ABands = S2_L2A_20M_BANDS_NO;
-
-            m_nCloudMaskBandIndex = -1;
-            m_nSnowMaskBandIndex = -1;
-            m_nWaterMaskBandIndex = -1;
-            m_nPrevWeightBandIndex = -1;
-            m_nPrevWeightedAvDateBandIndex = -1;
-            m_nPrevReflectanceBandIndex = -1;
-            m_nPrevPixelFlagBandIndex = -1;
-            m_nRedBandIndex = -1;
-        } else {
-            // TODO: Throw an error
-        }
-    } else if (sensorType == SENSOR_L8) {
-        if(resolution == RES_10M) {
-            m_nNbOfReflectanceBands = 0;
-            m_nNbL2ABands = 4;
-
-            m_nCloudMaskBandIndex = -1;
-            m_nSnowMaskBandIndex = -1;
-            m_nWaterMaskBandIndex = -1;
-            m_nPrevWeightBandIndex = -1;
-            m_nPrevWeightedAvDateBandIndex = -1;
-            m_nPrevReflectanceBandIndex = -1;
-            m_nPrevPixelFlagBandIndex = -1;
-            m_nRedBandIndex = -1;
-        } else if(resolution == RES_20M) {
-            m_nNbOfReflectanceBands = 0;
-            m_nNbL2ABands = 4;
-
-            m_nCloudMaskBandIndex = -1;
-            m_nSnowMaskBandIndex = -1;
-            m_nWaterMaskBandIndex = -1;
-            m_nPrevWeightBandIndex = -1;
-            m_nPrevWeightedAvDateBandIndex = -1;
-            m_nPrevReflectanceBandIndex = -1;
-            m_nPrevPixelFlagBandIndex = -1;
-            m_nRedBandIndex = -1;
         } else {
             // TODO: Throw an error
         }
@@ -212,15 +130,15 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A ) c
         }
     }
 
-    TOutput var(m_nNbOfReflectanceBands + 3);
-    var.SetSize(m_nNbOfReflectanceBands + 3);
+    TOutput var(m_nNbOfL3AReflectanceBands + 3);
+    var.SetSize(m_nNbOfL3AReflectanceBands + 3);
     int i;
     int cnt = 0;
-    for(i = 0; i < m_nNbOfReflectanceBands; i++)
+    for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
         var[cnt++] = m_CurrentWeightedReflectances[i];
     }
-    for(i = 0; i < m_nNbOfReflectanceBands; i++)
+    for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
         var[cnt++] = m_CurrentPixelWeights[i];
     }
@@ -235,7 +153,7 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A ) c
 template< class TInput, class TOutput>
 void UpdateSynthesisFunctor<TInput,TOutput>::ResetCurrentPixelValues()
 {
-    for(int i = 0; i<m_nNbOfReflectanceBands; i++)
+    for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
     {
         m_CurrentPixelWeights[i] = WEIGHT_NO_DATA;
         m_CurrentWeightedReflectances[i] = REFLECTANCE_NO_DATA;
@@ -249,12 +167,12 @@ int UpdateSynthesisFunctor<TInput,TOutput>::GetAbsoluteL2ABandIndex(int index)
 {
     // we know that the L2A bands are always the first bands
     if(index < m_nNbL2ABands)
-        return index;
+        return (m_nL2ABandStartIndex + index);
     return -1;
 }
 
 template< class TInput, class TOutput>
-float UpdateSynthesisFunctor<TInput,TOutput>::GetReflectanceForPixelVal(float fPixelVal)
+float UpdateSynthesisFunctor<TInput,TOutput>::GetL2AReflectanceForPixelVal(float fPixelVal)
 {
     return (fPixelVal/m_fQuantificationValue);
 }
@@ -299,66 +217,74 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::IsCloudPixel(const TInput & A)
 template< class TInput, class TOutput>
 bool UpdateSynthesisFunctor<TInput,TOutput>::IsRedBand(int index)
 {
-    if((m_resolution == RES_10M) && (index == 2)) {
+    if((m_nRedBandIndex != -1) && (index == m_nRedBandIndex)) {
         return true;
     }
     return false;
 }
 
 template< class TInput, class TOutput>
-float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevWeightValue(const TInput & A)
+float UpdateSynthesisFunctor<TInput,TOutput>::GetCurrentL2AWeightValue(const TInput & A)
 {
-    if(m_nPrevWeightBandIndex == -1)
+    // TODO: Normally, this should not happen so we should log this error and maybe throw an exception
+    if(m_nCurrentL2AWeightBandIndex == -1)
         return WEIGHT_NO_DATA;
 
-    int val = (int)static_cast<float>(A[m_nPrevWeightBandIndex]);
+    int val = (int)static_cast<float>(A[m_nCurrentL2AWeightBandIndex]);
     return (val != 0);
 }
 
 template< class TInput, class TOutput>
-float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevWeightedAvDateValue(const TInput & A)
+float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AWeightValue(const TInput & A, int offset)
 {
-    if(m_nPrevWeightedAvDateBandIndex == -1)
+    if(m_nPrevL3AWeightBandStartIndex == -1)
+        return WEIGHT_NO_DATA;
+
+    int val = (int)static_cast<float>(A[m_nPrevL3AWeightBandStartIndex+offset]);
+    return (val != 0);
+}
+
+template< class TInput, class TOutput>
+float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AWeightedAvDateValue(const TInput & A)
+{
+    if(m_nPrevL3AWeightedAvDateBandIndex == -1)
         return DATE_NO_DATA;
 
-    int val = (int)static_cast<float>(A[m_nPrevWeightedAvDateBandIndex]);
+    int val = (int)static_cast<float>(A[m_nPrevL3AWeightedAvDateBandIndex]);
     return (val != 0);
 }
 
 template< class TInput, class TOutput>
-float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevReflectanceValue(const TInput & A)
+float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AReflectanceValue(const TInput & A, int offset)
 {
-    if(m_nPrevReflectanceBandIndex == -1)
+    if(m_nPrevL3AReflectanceBandStartIndex == -1)
         return REFLECTANCE_NO_DATA;
 
-    int val = (int)static_cast<float>(A[m_nPrevReflectanceBandIndex]);
+    int val = (int)static_cast<float>(A[m_nPrevL3AReflectanceBandStartIndex + offset]);
     return (val != 0);
 }
 
 template< class TInput, class TOutput>
-float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevPixelFlagValue(const TInput & A)
+float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3APixelFlagValue(const TInput & A)
 {
-    if(m_nPrevPixelFlagBandIndex == -1)
+    if(m_nPrevL3APixelFlagBandIndex == -1)
         return FLAG_NO_DATA;
 
-    int val = (int)static_cast<float>(A[m_nPrevPixelFlagBandIndex]);
+    int val = (int)static_cast<float>(A[m_nPrevL3APixelFlagBandIndex]);
     return (val != 0);
 }
 
 template< class TInput, class TOutput>
 int UpdateSynthesisFunctor<TInput,TOutput>::GetBlueBandIndex()
 {
-    if(m_resolution == RES_10M) {
-        return 0;
-    }
-    return -1;
+    return m_nBlueBandIndex;
 }
 
 template< class TInput, class TOutput>
 void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A)
 {
     // we assume that the reflectance bands start from index 0
-    for(int i = 0; i<m_nNbOfReflectanceBands; i++)
+    for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
     {
         m_fCurrentPixelFlag = LAND;
 
@@ -368,11 +294,11 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A)
         if(nCurrentBandIndex != -1)
         {
             // "if band is available in the case of LANDSAT 8, some bands are not available\"
-            float fCurReflectance = GetReflectanceForPixelVal(A[nCurrentBandIndex]);
-            float fPrevReflect = GetPrevReflectance(A);
-            float fPrevWeight = GetPrevWeightValue(A);
+            float fCurReflectance = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
+            float fPrevReflect = GetPrevL3AReflectanceValue(A, i);
+            float fPrevWeight = GetPrevL3AWeightValue(A, i);
             float fCurrentWeight = GetCurrentWeight(A);
-            float fPrevWeightedDate = GetPrevWeightedAvDateValue(A);
+            float fPrevWeightedDate = GetPrevL3AWeightedAvDateValue(A);
             m_CurrentWeightedReflectances[i] = (fPrevWeight * fPrevReflect + fCurrentWeight * fCurReflectance) /
                     (fPrevWeight + fCurrentWeight);
             m_fCurrentPixelWeightedDate = (fPrevWeight * fPrevWeightedDate + fCurrentWeight * m_nCurrentDate) /
@@ -381,11 +307,11 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A)
 
         } else {
             // L2A band missing - as for LANDSAT 8
-            m_CurrentWeightedReflectances[i] = GetPrevReflectance(A);
-            m_CurrentPixelWeights[i] = GetPrevWeightValue(A);
+            m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
+            m_CurrentPixelWeights[i] = GetPrevL3AWeightValue(A, i);
             if(IsRedBand(i))
             {
-                m_fCurrentPixelWeightedDate = GetPrevWeightedAvDateValue(A);
+                m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
             }
         }
     }
@@ -399,16 +325,16 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
     } else {
         m_fCurrentPixelFlag = SNOW;
     }
-    for(int i = 0; i<m_nNbOfReflectanceBands; i++)
+    for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
     {
         int nCurrentBandIndex = GetAbsoluteL2ABandIndex(i);
         // band available
         if(nCurrentBandIndex != -1)
         {
-            float fPrevWeight = GetPrevWeightValue(A);
+            float fPrevWeight = GetPrevL3AWeightValue(A, i);
             // if pixel never observed without cloud, water or snow
             if(fPrevWeight == 0) {
-                m_CurrentWeightedReflectances[i] = GetPrevReflectance(A);
+                m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
                 m_CurrentPixelWeights[i] = 0;
                 if(IsRedBand(i))
                 {
@@ -416,19 +342,19 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
                 }
             } else {
                 // pixel already observed cloud free, keep the previous weighted average
-                m_CurrentWeightedReflectances[i] = GetPrevReflectance(A);
+                m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
                 m_CurrentPixelWeights[i] = fPrevWeight;
                 if(IsRedBand(i))
                 {
-                    m_fCurrentPixelWeightedDate = GetPrevWeightedAvDateValue(A);
+                    m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
                     m_fCurrentPixelFlag = LAND;
                 }
 
             }
         } else {
             // band not available, keep previous values
-            m_CurrentWeightedReflectances[i] = GetPrevReflectance(A);
-            m_CurrentPixelWeights[i] = GetPrevWeightValue(A);
+            m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
+            m_CurrentPixelWeights[i] = GetPrevL3AWeightValue(A, i);
             // TODO: In algorithm says nothing about WDate
         }
     }
@@ -440,13 +366,13 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
     // if flagN-1 is no-data => replace nodata with cloud
     if(m_fCurrentPixelFlag == FLAG_NO_DATA)
     {
-        for(int i = 0; i<m_nNbOfReflectanceBands; i++)
+        for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
         {
             int nCurrentBandIndex = GetAbsoluteL2ABandIndex(i);
             // band available
             if(nCurrentBandIndex != -1)
             {
-                m_CurrentWeightedReflectances[i] = GetReflectanceForPixelVal(A[nCurrentBandIndex]);;
+                m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);;
                 m_CurrentPixelWeights[i] = 0;
                 if(IsRedBand(i))
                 {
@@ -467,17 +393,18 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
             // only for 10m resolution
             if(nBlueBandIdx != -1)
             {
-                float fBlueReflectance = GetReflectanceForPixelVal(A[nBlueBandIdx]);
-                float fCurReflectance = GetPrevReflectance(A);
-                if(fBlueReflectance < fCurReflectance)
+                float fBlueReflectance = GetL2AReflectanceForPixelVal(A[nBlueBandIdx]);
+                for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
                 {
-                    for(int i = 0; i<m_nNbOfReflectanceBands; i++)
+                    float fCurReflectance = GetPrevL3AReflectanceValue(A, i);
+                    if(fBlueReflectance < fCurReflectance)
                     {
+
                         int nCurrentBandIndex = GetAbsoluteL2ABandIndex(i);
                         // band available
                         if(nCurrentBandIndex != -1)
                         {
-                            m_CurrentWeightedReflectances[i] = GetReflectanceForPixelVal(A[nCurrentBandIndex]);
+                            m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
                             m_CurrentPixelWeights[i] = 0;
                             if(IsRedBand(i))
                             {
@@ -485,18 +412,18 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                                 m_fCurrentPixelFlag = CLOUD;
                             }
                         } else {
-                            m_CurrentWeightedReflectances[i] = GetPrevReflectance(A);
+                            m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
                             m_CurrentPixelWeights[i] = 0;
                         }
                     }
                 }
             }
         } else {
-            m_fCurrentPixelFlag = GetPrevPixelFlagValue(A);
-            for(int i = 0; i<m_nNbOfReflectanceBands; i++)
+            m_fCurrentPixelFlag = GetPrevL3APixelFlagValue(A);
+            for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
             {
-                m_CurrentWeightedReflectances[i] = GetPrevReflectance(A);
-                m_fCurrentPixelWeightedDate = GetPrevWeightedAvDateValue(A);
+                m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
+                m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
                 m_CurrentPixelWeights[i] = 0;
             }
 
