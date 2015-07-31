@@ -29,7 +29,7 @@ public:
 //    void SetPreviousL3AProduct();
 //    void SetCurrentResolution();
 
-    void Initialize(SensorType sensorType, ResolutionType resolution, int nTotalBands);
+    void Initialize(SensorType sensorType, ResolutionType resolution, bool bPrevL3ABandsAvailable);
     void SetReflectanceQuantificationValue(float fQuantifVal);
     void SetCurrentDate(int nDate);
 
@@ -60,7 +60,7 @@ private:
 
     float m_fQuantificationValue;
     int m_nCurrentDate;
-    int m_nTotalNbOfBands;
+    bool m_bPrevL3ABandsAvailable;
     int m_nNbOfReflectanceBands;
     int m_nNbL2ABands;
 

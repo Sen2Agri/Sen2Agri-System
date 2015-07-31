@@ -11,7 +11,7 @@ UpdateSynthesisFunctor<TInput,TOutput>::UpdateSynthesisFunctor()
     //TODO: initialize m_CurrentWeightedReflectances
 
     m_fQuantificationValue = -1;
-    m_nTotalNbOfBands = 0;
+    m_bPrevL3ABandsAvailable = false;
     m_nCloudShadowMaskBandIndex = -1;
     m_nSnowMaskBandIndex = -1;
     m_nWaterMaskBandIndex = -1;
@@ -24,11 +24,11 @@ UpdateSynthesisFunctor<TInput,TOutput>::UpdateSynthesisFunctor()
 }
 
 template< class TInput, class TOutput>
-void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, ResolutionType resolution, int nTotalBands)
+void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, ResolutionType resolution, bool bPrevL3ABandsAvailable)
 {
     m_sensorType = sensorType;
     m_resolution = resolution;
-    m_nTotalNbOfBands = nTotalBands;
+    m_bPrevL3ABandsAvailable = bPrevL3ABandsAvailable;
     if(sensorType == SENSOR_S2)
     {
         if(resolution == RES_10M) {
