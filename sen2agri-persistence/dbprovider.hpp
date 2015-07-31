@@ -5,6 +5,7 @@
 #include <QString>
 #include <QtSql>
 
+#include "stopwatch.hpp"
 #include "sqldatabaseraii.hpp"
 #include "sql_error.hpp"
 #include "settings.hpp"
@@ -12,6 +13,9 @@
 class DBProvider
 {
     const Settings &settings;
+
+    DBProvider(const DBProvider &) = delete;
+    DBProvider &operator=(const DBProvider &) = delete;
 
 public:
     DBProvider(const Settings &settings);
@@ -38,6 +42,9 @@ public:
         int txnRetryNumber = 0;
         while (true) {
             try {
+                Stopwatch sw(operation);
+                Q_UNUSED(sw);
+
                 return f();
             } catch (const sql_error &e) {
                 if (!shouldRetryTransaction(e)) {
@@ -51,7 +58,6 @@ public:
                     } else if (retryDelay * 2 <= maxRetryDelay) {
                         retryDelay *= 2;
                     }
-
                     warnRecoverableError(e, operation, retryDelay, txnRetryNumber, maxTxnRetries);
 
                     QThread::msleep(retryDelay);

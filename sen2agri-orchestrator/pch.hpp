@@ -1,0 +1,17 @@
+#include <QCoreApplication>
+#include <QDBusConnection>
+#include <QDBusContext>
+#include <QDBusMessage>
+#include <QDBusPendingCallWatcher>
+#include <QDebug>
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QObject>
+#include <QString>
+#include <QThread>
+#include <map>
+#include <memory>
+#include <optional.hpp>
+#include <stdexcept>
+#include <vector>

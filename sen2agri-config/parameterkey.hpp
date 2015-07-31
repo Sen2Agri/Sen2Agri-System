@@ -12,7 +12,7 @@ class ParameterKey
 public:
     ParameterKey(QString key, std::experimental::optional<int> siteId);
 
-    const QString & key() const;
+    const QString &key() const;
     std::experimental::optional<int> siteId() const;
 };
 

@@ -3,40 +3,161 @@
 <node name="/org/esa/sen2agri/persistenceManager">
   <interface name="org.esa.sen2agri.persistenceManager">
     <method name="GetConfigurationSet">
-      <arg name="result" type="(a(is)a(sissb)a(sis)a(is)b)" direction="out" />
+      <arg name="configuration" type="(a(is)a(sissb)a(sis)a(is)b)" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationSet" />
     </method>
     <method name="GetConfigurationParameters">
       <arg name="prefix" type="s" direction="in" />
-      <arg name="result" type="(ss)" direction="out" />
+      <arg name="parameters" type="(ss)" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationParameterValueList" />
     </method>
     <method name="GetJobConfigurationParameters">
       <arg name="jobId" type="i" direction="in" />
       <arg name="prefix" type="s" direction="in" />
-      <arg name="result" type="(ss)" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationParameterValueList" />
+      <arg name="parameters" type="(ss)" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobConfigurationParameterValueList" />
     </method>
     <method name="UpdateConfigurationParameters">
       <arg name="parameters" type="a(sibs)" direction="in" />
-      <arg name="result" type="a(ss)" direction="out" />
+      <arg name="messages" type="a(ss)" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationUpdateActionList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="KeyedMessageList" />
     </method>
     <method name="UpdateJobConfigurationParameters">
       <arg name="jobId" type="i" direction="in" />
       <arg name="parameters" type="(ss)" direction="in" />
-      <arg name="result" type="(ss)" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="ConfigurationParameterValueList" />
+      <arg name="messages" type="(ss)" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="JobConfigurationUpdateActionList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="KeyedMessageList" />
     </method>
     <method name="GetProductsToArchive">
-      <arg name="result" type="a(iss)" direction="out" />
+      <arg name="products" type="a(iss)" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ProductToArchiveList" />
     </method>
     <method name="MarkProductsArchived">
-      <arg name="result" type="a(is)" direction="in" />
+      <arg name="products" type="a(is)" direction="in" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ArchivedProductList" />
+    </method>
+    <method name="SubmitJob">
+      <arg name="job" type="(ssiiis)" direction="in" />
+      <arg name="jobId" type="i" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewJob" />
+    </method>
+    <method name="SubmitTask">
+      <arg name="task" type="(issi)" direction="in" />
+      <arg name="taskId" type="i" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewTask" />
+    </method>
+    <method name="SubmitSteps">
+      <arg name="steps" type="a(iss)" direction="in" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewStepList" />
+    </method>
+    <method name="MarkStepPendingStart">
+      <arg name="taskId" type="i" direction="in" />
+      <arg name="name" type="s" direction="in" />
+    </method>
+    <method name="MarkStepStarted">
+      <arg name="taskId" type="i" direction="in" />
+      <arg name="name" type="s" direction="in" />
+    </method>
+    <method name="MarkStepFinished">
+      <arg name="taskId" type="i" direction="in" />
+      <arg name="name" type="s" direction="in" />
+      <arg name="statistics" type="(sixxxiixx)" direction="in" />
+      <arg name="shouldNotifyOrchestrator" type="b" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In2" value="ExecutionStatistics" />
+    </method>
+    <method name="MarkJobPaused">
+      <arg name="jobId" type="i" direction="in" />
+    </method>
+    <method name="MarkJobResumed">
+      <arg name="jobId" type="i" direction="in" />
+    </method>
+    <method name="MarkJobCancelled">
+      <arg name="jobId" type="i" direction="in" />
+    </method>
+    <method name="MarkJobFinished">
+      <arg name="jobId" type="i" direction="in" />
+    </method>
+    <method name="MarkJobFailed">
+      <arg name="jobId" type="i" direction="in" />
+    </method>
+    <method name="MarkJobNeedsInput">
+      <arg name="jobId" type="i" direction="in" />
+    </method>
+    <method name="GetJobTasksByStatus">
+      <arg name="jobId" type="i" direction="in" />
+      <arg name="statusList" type="ai" direction="in" />
+      <arg name="taskIdList" type="ai" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In1" value="ExecutionStatusList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="TaskIdList" />
+    </method>
+    <method name="GetTaskStepsForStart">
+      <arg name="taskId" type="i" direction="in" />
+      <arg name="steps" type="a(isss)" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobStepToRunList" />
+    </method>
+    <method name="GetJobStepsForResume">
+      <arg name="jobId" type="i" direction="in" />
+      <arg name="steps" type="a(isss)" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobStepToRunList" />
+    </method>
+    <method name="InsertTaskFinishedEvent">
+      <arg name="event" type="(i)" direction="in" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="TaskFinishedEvent" />
+    </method>
+    <method name="InsertProductAvailableEvent">
+      <arg name="event" type="(i)" direction="in" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ProductAvailableEvent" />
+    </method>
+    <method name="InsertJobCancelledEvent">
+      <arg name="event" type="(i)" direction="in" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobCancelledEvent" />
+    </method>
+    <method name="InsertJobPausedEvent">
+      <arg name="event" type="(i)" direction="in" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobPausedEvent" />
+    </method>
+    <method name="InsertJobResumedEvent">
+      <arg name="event" type="(i)" direction="in" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobResumedEvent" />
+    </method>
+    <method name="InsertJobSubmittedEvent">
+      <arg name="event" type="(i)" direction="in" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobSubmittedEvent" />
+    </method>
+    <method name="GetNewEvents">
+      <arg name="events" type="a(iis((iii)(iiii)i)b((iii)(iiii)i))" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="UnprocessedEventList" />
+    </method>
+    <method name="MarkEventProcessingStarted">
+      <arg name="eventId" type="i" direction="in" />
+    </method>
+    <method name="MarkEventProcessingComplete">
+      <arg name="eventId" type="i" direction="in" />
+    </method>
+    <method name="InsertNodeStatistics">
+      <arg name="statistics" type="(sxxxxdddxx)" direction="in" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NodeStatistics" />
+    </method>
+    <method name="InsertProduct">
+      <arg name="product" type="(iiis((iii)(iiii)i))" direction="in" />
+      <arg name="productId" type="i" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewProduct" />
+    </method>
+    <method name="GetDashboardCurrentJobData">
+      <arg name="jsonData" type="s" direction="out" />
+    </method>
+    <method name="GetDashboardServerResourceData">
+      <arg name="jsonData" type="s" direction="out" />
+    </method>
+    <method name="GetDashboardProcessorStatistics">
+      <arg name="jsonData" type="s" direction="out" />
+    </method>
+    <method name="GetDashboardProductAvailability">
+      <arg name="since" type="((iii)(iiii)i)" direction="in" />
+      <arg name="jsonData" type="s" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QDateTime" />
     </method>
   </interface>
 </node>

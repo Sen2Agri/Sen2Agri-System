@@ -1,13 +1,13 @@
 <!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN" "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
 <node>
-  <interface name="org.esa.sen2agri.processorsExecutor" dest="org.esa.sen2agri.processorsexecutor" path="/org/esa/sen2agri/processorsexecutor" gen-namespace="Sen2Agri" orig-namespace="Sen2Agri">
-    <method name="ExecuteProcessor">
-      <arg type="b" direction="out"/>
-      <arg name="jsonCfgStr" type="s" direction="in"/>
+  <interface name="org.esa.sen2agri.processorsExecutor" dest="org.esa.sen2agri.processorsExecutor" path="/org/esa/sen2agri/processorsExecutor" gen-namespace="Sen2Agri" orig-namespace="Sen2Agri">
+    <method name="SubmitSteps">
+      <arg name="steps" type="a(issas)" direction="in" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewExecutorStepList" />
     </method>
-    <method name="StopProcessorJob">
-      <arg type="b" direction="out"/>
-      <arg name="jobName" type="s" direction="in"/>
+    <method name="CancelTasks">
+      <arg name="tasks" type="ai" direction="in" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="TaskIdList" />
     </method>
   </interface>
 </node>

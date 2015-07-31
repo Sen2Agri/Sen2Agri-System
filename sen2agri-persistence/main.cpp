@@ -11,49 +11,37 @@
 
 #include "persistencemanager.hpp"
 #include "persistencemanager_adaptor.h"
+#include "configuration.hpp"
 #include "settings.hpp"
 #include "logger.hpp"
+
+template <typename T>
+void printSignature()
+{
+    qDebug() << QMetaType::typeName(qMetaTypeId<T>())
+             << QDBusMetaType::typeToSignature(qMetaTypeId<T>());
+}
 
 int main(int argc, char *argv[])
 {
     try {
+        Logger::installMessageHandler();
+
         QCoreApplication app(argc, argv);
-        QCoreApplication::setApplicationName(QStringLiteral("sen2agri-persistence"));
 
-        QCommandLineParser parser;
-        QCommandLineOption configFileOption(QStringLiteral("f"),
-                                            QStringLiteral("Use this config file"),
-                                            QStringLiteral("config file"));
-        parser.addOption(configFileOption);
-        parser.addHelpOption();
-        parser.process(app);
-
-        QString configFile;
-        if (parser.isSet(configFileOption)) {
-            configFile = parser.value(configFileOption);
-        } else {
-            configFile = QProcessEnvironment::systemEnvironment().value(
-                QStringLiteral("SEN2AGRI_CONFIG_DIR"), QStringLiteral("/etc/sen2agri"));
-            configFile += QStringLiteral("/sen2agri-persistence.conf");
-        }
-
-        if (!QFileInfo::exists(configFile)) {
-            throw std::runtime_error(
-                QStringLiteral("Configuration file %1 does not exist, exiting.")
-                    .arg(configFile)
-                    .toStdString());
-        }
-
-        const auto &settings = Settings::readSettings(configFile);
+        const auto &settings = Settings::readSettings(getConfigurationFile(app));
 
         registerMetaTypes();
 
-        QDBusConnection connection = QDBusConnection::systemBus();
+        printSignature<QDateTime>();
+
+        auto connection = QDBusConnection::systemBus();
         PersistenceManager persistenceManager(settings);
 
         new PersistenceManagerAdaptor(&persistenceManager);
 
-        if (!connection.registerObject(QStringLiteral("/"), &persistenceManager)) {
+        if (!connection.registerObject(QStringLiteral("/org/esa/sen2agri/persistenceManager"),
+                                       &persistenceManager)) {
             throw std::runtime_error(
                 QStringLiteral("Error registering the object with D-Bus: %1, exiting.")
                     .arg(connection.lastError().message())
@@ -70,6 +58,7 @@ int main(int argc, char *argv[])
         return app.exec();
     } catch (const std::exception &e) {
         Logger::fatal(e.what());
+
         return EXIT_FAILURE;
     }
 }

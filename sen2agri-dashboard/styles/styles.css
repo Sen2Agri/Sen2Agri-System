@@ -1,0 +1,254 @@
+/* This file contains the styles for the dashboard page. */
+
+html, body {
+    height: 100%;
+}
+
+.container {
+    height: 100%;
+    display: table;
+}
+
+.nav-tabs {
+    margin-top: 10px;
+    margin-bottom: 0;
+    font-weight: bold;
+    min-width: 80vw;
+}
+
+.tab-content {
+    border-left: 1px solid #ddd;
+    border-right: 1px solid #ddd;
+    border-bottom: 1px solid #ddd;
+    border-radius: 0px 0px 5px 5px;
+    padding: 10px;
+    margin-bottom: 10px;
+    font-size: 12px;
+    height: 93vh;
+    min-width: 80vw;
+}
+
+.tab-pane {
+    height: 100%;
+}
+
+div.panel {
+    margin-bottom: 10px;
+}
+
+div.panel-heading {
+    font-weight: bold;
+}
+
+div.panel-heading.smaller_padding {
+    padding: 2px 15px;
+}
+
+div.panel div.full_width {
+    width: 98%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+div.panel div.full_height {
+    height: 95%;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+div.panel table {
+    border-collapse: initial
+}
+
+div.panel table.full_width {
+    width: 98%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+div.panel table.full_height {
+    height: 95%;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+div.panel table.table th {
+    margin: auto;
+    vertical-align: middle;
+    text-align: center;
+}
+
+div.panel table.table td {
+    margin: auto;
+    vertical-align: middle;
+    text-align: center;
+    font-size: 10px;
+}
+
+div.panel table.default_panel_style th, div.panel table.default_panel_style td {
+    padding: 13px 5px;
+    text-align: left;
+}
+
+div.panel table.default_panel_style tr :nth-child(1) {
+    padding-left: 10%;
+    width: 50%;
+}
+
+div.panel table.default_panel_style tr :nth-child(2) {
+}
+
+
+div.panel table.server_resources_table {
+    height: 87%;
+    width: 48%;
+    display: inline-block;
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    box-sizing: border-box;
+}
+
+
+div.panel table.server_resources_table tbody{
+    display: table;
+    height: 100%;
+    width: 100%;
+}
+
+div.panel table.server_resources_table tr {
+    display: table-row;
+    height: 18%;
+}
+
+div.panel table.server_resources_table tr:first-child {
+    display: table-row;
+    height: 10%;
+}
+
+div.panel table.server_resources_table tr:last-child {
+    display: table-row;
+    height: 0%;
+}
+
+div.panel table.server_resources_table th:nth-child(1) {
+    text-align: left;
+}
+
+div.panel table.server_resources_table tr td{
+    display: table-cell;
+    padding: 0px;
+}
+
+div.panel table.server_resources_table tr td:nth-child(1) {
+    width: 10%;
+}
+
+div.panel table.server_resources_table tr td:nth-child(2) {
+    width: 20%;
+}
+
+div.panel table.server_resources_table tr td:nth-child(3) {
+    width: 70%;
+}
+
+div.panel table.server_resources_table div.server_resources_table_graph {
+    height: 90%;
+    width: 100%;
+}
+
+div.float_left {
+    float: left;
+}
+
+div.full_height {
+    height: 100%;
+}
+
+div.full_width {
+    width: 100%;
+}
+
+
+#pnl_current_jobs_container {
+    height: 50%;
+    width: 100%;
+}
+
+#pnl_current_jobs {
+    height: 98%;
+    width: 100%;
+    overflow: auto;
+    bottom: 2%;
+}
+
+#pnl_current_jobs table:first-of-type tr td {
+    padding: 8px 2px;
+}
+
+#pnl_current_jobs table:first-of-type tr td:last-of-type {
+    min-width: 190px;
+}
+
+#pnl_server_resources_container {
+    height: 50%;
+    width: 100%;
+}
+
+#pnl_server_resources {
+    height: 100%;
+    width: 100%;
+    overflow: auto;
+    margin-bottom: 0px;
+}
+
+
+div.panel_resources_and_output_container {
+    height: 100%;
+    width: 50%;
+    float: left;
+}
+
+div.panel_resources_container {
+    height: 50%;
+    width: 100%;
+}
+
+div.panel_resources {
+    height: 98%;
+    width: 100%;
+    overflow: auto;
+    bottom: 2%;
+}
+
+div.panel_output_container {
+    height: 50%;
+    width: 100%;
+}
+
+div.panel_output {
+    height: 100%;
+    width: 100%;
+    overflow: auto;
+    margin-bottom: 0px;
+}
+
+div.panel_configuration_container {
+    height: 100%;
+    width: 50%;
+    float: left;
+}
+
+div.panel_configuration {
+    height: 100%;
+    width: 98%;
+    overflow: auto;
+    margin-bottom: 0px;
+    margin-left: 2%;
+}
+
+div.dropdown .btn .caret {
+    margin-left: 3px;
+}
+

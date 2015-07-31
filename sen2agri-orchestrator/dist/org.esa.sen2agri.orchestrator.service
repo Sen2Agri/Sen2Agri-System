@@ -1,0 +1,5 @@
+[D-BUS Service]
+Name=org.esa.sen2agri.orchestrator
+Exec=/usr/bin/sen2agri-orchestrator
+User=sen2agri-service
+SystemdService=sen2agri-orchestrator.service

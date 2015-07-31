@@ -1,0 +1,294 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+                      "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node name="/org/esa/sen2agri/reflector">
+  <interface name="org.esa.sen2agri.reflector">
+    <method name="ReflectConfigurationParameterInfo">
+      <arg name="value" type="ConfigurationParameterInfo" direction="in" />
+      <arg name="result" type="ConfigurationParameterInfo" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationParameterInfo" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationParameterInfo" />
+    </method>
+    <method name="ReflectConfigurationParameterInfoList">
+      <arg name="value" type="ConfigurationParameterInfoList" direction="in" />
+      <arg name="result" type="ConfigurationParameterInfoList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationParameterInfoList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationParameterInfoList" />
+    </method>
+    <method name="ReflectConfigurationParameterValue">
+      <arg name="value" type="ConfigurationParameterValue" direction="in" />
+      <arg name="result" type="ConfigurationParameterValue" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationParameterValue" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationParameterValue" />
+    </method>
+    <method name="ReflectConfigurationParameterValueList">
+      <arg name="value" type="ConfigurationParameterValueList" direction="in" />
+      <arg name="result" type="ConfigurationParameterValueList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationParameterValueList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationParameterValueList" />
+    </method>
+    <method name="ReflectJobConfigurationParameterValue">
+      <arg name="value" type="JobConfigurationParameterValue" direction="in" />
+      <arg name="result" type="JobConfigurationParameterValue" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobConfigurationParameterValue" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobConfigurationParameterValue" />
+    </method>
+    <method name="ReflectJobConfigurationParameterValueList">
+      <arg name="value" type="JobConfigurationParameterValueList" direction="in" />
+      <arg name="result" type="JobConfigurationParameterValueList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobConfigurationParameterValueList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobConfigurationParameterValueList" />
+    </method>
+    <method name="ReflectConfigurationCategory">
+      <arg name="value" type="ConfigurationCategory" direction="in" />
+      <arg name="result" type="ConfigurationCategory" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationCategory" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationCategory" />
+    </method>
+    <method name="ReflectConfigurationCategoryList">
+      <arg name="value" type="ConfigurationCategoryList" direction="in" />
+      <arg name="result" type="ConfigurationCategoryList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationCategoryList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationCategoryList" />
+    </method>
+    <method name="ReflectSite">
+      <arg name="value" type="Site" direction="in" />
+      <arg name="result" type="Site" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="Site" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="Site" />
+    </method>
+    <method name="ReflectSiteList">
+      <arg name="value" type="SiteList" direction="in" />
+      <arg name="result" type="SiteList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="SiteList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="SiteList" />
+    </method>
+    <method name="ReflectConfigurationSet">
+      <arg name="value" type="ConfigurationSet" direction="in" />
+      <arg name="result" type="ConfigurationSet" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationSet" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationSet" />
+    </method>
+    <method name="ReflectConfigurationUpdateAction">
+      <arg name="value" type="ConfigurationUpdateAction" direction="in" />
+      <arg name="result" type="ConfigurationUpdateAction" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationUpdateAction" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationUpdateAction" />
+    </method>
+    <method name="ReflectConfigurationUpdateActionList">
+      <arg name="value" type="ConfigurationUpdateActionList" direction="in" />
+      <arg name="result" type="ConfigurationUpdateActionList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ConfigurationUpdateActionList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ConfigurationUpdateActionList" />
+    </method>
+    <method name="ReflectJobConfigurationUpdateAction">
+      <arg name="value" type="JobConfigurationUpdateAction" direction="in" />
+      <arg name="result" type="JobConfigurationUpdateAction" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobConfigurationUpdateAction" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobConfigurationUpdateAction" />
+    </method>
+    <method name="ReflectJobConfigurationUpdateActionList">
+      <arg name="value" type="JobConfigurationUpdateActionList" direction="in" />
+      <arg name="result" type="JobConfigurationUpdateActionList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobConfigurationUpdateActionList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobConfigurationUpdateActionList" />
+    </method>
+    <method name="ReflectKeyedMessage">
+      <arg name="value" type="KeyedMessage" direction="in" />
+      <arg name="result" type="KeyedMessage" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="KeyedMessage" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="KeyedMessage" />
+    </method>
+    <method name="ReflectKeyedMessageList">
+      <arg name="value" type="KeyedMessageList" direction="in" />
+      <arg name="result" type="KeyedMessageList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="KeyedMessageList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="KeyedMessageList" />
+    </method>
+    <method name="ReflectProduct">
+      <arg name="value" type="Product" direction="in" />
+      <arg name="result" type="Product" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="Product" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="Product" />
+    </method>
+    <method name="ReflectProductList">
+      <arg name="value" type="ProductList" direction="in" />
+      <arg name="result" type="ProductList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ProductList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ProductList" />
+    </method>
+    <method name="ReflectProductToArchive">
+      <arg name="value" type="ProductToArchive" direction="in" />
+      <arg name="result" type="ProductToArchive" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ProductToArchive" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ProductToArchive" />
+    </method>
+    <method name="ReflectProductToArchiveList">
+      <arg name="value" type="ProductToArchiveList" direction="in" />
+      <arg name="result" type="ProductToArchiveList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ProductToArchiveList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ProductToArchiveList" />
+    </method>
+    <method name="ReflectArchivedProduct">
+      <arg name="value" type="ArchivedProduct" direction="in" />
+      <arg name="result" type="ArchivedProduct" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ArchivedProduct" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ArchivedProduct" />
+    </method>
+    <method name="ReflectArchivedProductList">
+      <arg name="value" type="ArchivedProductList" direction="in" />
+      <arg name="result" type="ArchivedProductList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ArchivedProductList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ArchivedProductList" />
+    </method>
+    <method name="ReflectExecutionStatusList">
+      <arg name="value" type="ExecutionStatusList" direction="in" />
+      <arg name="result" type="ExecutionStatusList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ExecutionStatusList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ExecutionStatusList" />
+    </method>
+    <method name="ReflectNewJob">
+      <arg name="value" type="NewJob" direction="in" />
+      <arg name="result" type="NewJob" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewJob" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NewJob" />
+    </method>
+    <method name="ReflectTaskIdList">
+      <arg name="value" type="TaskIdList" direction="in" />
+      <arg name="result" type="TaskIdList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="TaskIdList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="TaskIdList" />
+    </method>
+    <method name="ReflectNewTask">
+      <arg name="value" type="NewTask" direction="in" />
+      <arg name="result" type="NewTask" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewTask" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NewTask" />
+    </method>
+    <method name="ReflectNewStep">
+      <arg name="value" type="NewStep" direction="in" />
+      <arg name="result" type="NewStep" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewStep" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NewStep" />
+    </method>
+    <method name="ReflectNewStepList">
+      <arg name="value" type="NewStepList" direction="in" />
+      <arg name="result" type="NewStepList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewStepList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NewStepList" />
+    </method>
+    <method name="ReflectExecutionStatistics">
+      <arg name="value" type="ExecutionStatistics" direction="in" />
+      <arg name="result" type="ExecutionStatistics" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ExecutionStatistics" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ExecutionStatistics" />
+    </method>
+    <method name="ReflectTaskRunnableEvent">
+      <arg name="value" type="TaskRunnableEvent" direction="in" />
+      <arg name="result" type="TaskRunnableEvent" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="TaskRunnableEvent" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="TaskRunnableEvent" />
+    </method>
+    <method name="ReflectTaskFinishedEvent">
+      <arg name="value" type="TaskFinishedEvent" direction="in" />
+      <arg name="result" type="TaskFinishedEvent" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="TaskFinishedEvent" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="TaskFinishedEvent" />
+    </method>
+    <method name="ReflectProductAvailableEvent">
+      <arg name="value" type="ProductAvailableEvent" direction="in" />
+      <arg name="result" type="ProductAvailableEvent" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ProductAvailableEvent" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="ProductAvailableEvent" />
+    </method>
+    <method name="ReflectJobCancelledEvent">
+      <arg name="value" type="JobCancelledEvent" direction="in" />
+      <arg name="result" type="JobCancelledEvent" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobCancelledEvent" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobCancelledEvent" />
+    </method>
+    <method name="ReflectJobPausedEvent">
+      <arg name="value" type="JobPausedEvent" direction="in" />
+      <arg name="result" type="JobPausedEvent" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobPausedEvent" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobPausedEvent" />
+    </method>
+    <method name="ReflectJobResumedEvent">
+      <arg name="value" type="JobResumedEvent" direction="in" />
+      <arg name="result" type="JobResumedEvent" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobResumedEvent" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobResumedEvent" />
+    </method>
+    <method name="ReflectJobSubmittedEvent">
+      <arg name="value" type="JobSubmittedEvent" direction="in" />
+      <arg name="result" type="JobSubmittedEvent" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobSubmittedEvent" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobSubmittedEvent" />
+    </method>
+    <method name="ReflectStepFailedEvent">
+      <arg name="value" type="StepFailedEvent" direction="in" />
+      <arg name="result" type="StepFailedEvent" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="StepFailedEvent" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="StepFailedEvent" />
+    </method>
+    <method name="ReflectUnprocessedEvent">
+      <arg name="value" type="UnprocessedEvent" direction="in" />
+      <arg name="result" type="UnprocessedEvent" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="UnprocessedEvent" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="UnprocessedEvent" />
+    </method>
+    <method name="ReflectUnprocessedEventList">
+      <arg name="value" type="UnprocessedEventList" direction="in" />
+      <arg name="result" type="UnprocessedEventList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="UnprocessedEventList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="UnprocessedEventList" />
+    </method>
+    <method name="ReflectNodeStatistics">
+      <arg name="value" type="NodeStatistics" direction="in" />
+      <arg name="result" type="NodeStatistics" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NodeStatistics" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NodeStatistics" />
+    </method>
+    <method name="ReflectStepArgument">
+      <arg name="value" type="StepArgument" direction="in" />
+      <arg name="result" type="StepArgument" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="StepArgument" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="StepArgument" />
+    </method>
+    <method name="ReflectStepArgumentList">
+      <arg name="value" type="StepArgumentList" direction="in" />
+      <arg name="result" type="StepArgumentList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="StepArgumentList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="StepArgumentList" />
+    </method>
+    <method name="ReflectNewExecutorStep">
+      <arg name="value" type="NewExecutorStep" direction="in" />
+      <arg name="result" type="NewExecutorStep" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewExecutorStep" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NewExecutorStep" />
+    </method>
+    <method name="ReflectNewExecutorStepList">
+      <arg name="value" type="NewExecutorStepList" direction="in" />
+      <arg name="result" type="NewExecutorStepList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewExecutorStepList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NewExecutorStepList" />
+    </method>
+    <method name="ReflectJobStepToRun">
+      <arg name="value" type="JobStepToRun" direction="in" />
+      <arg name="result" type="JobStepToRun" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobStepToRun" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobStepToRun" />
+    </method>
+    <method name="ReflectJobStepToRunList">
+      <arg name="value" type="JobStepToRunList" direction="in" />
+      <arg name="result" type="JobStepToRunList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobStepToRunList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobStepToRunList" />
+    </method>
+    <method name="ReflectNewProduct">
+      <arg name="value" type="NewProduct" direction="in" />
+      <arg name="result" type="NewProduct" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewProduct" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NewProduct" />
+    </method>
+  </interface>
+</node>

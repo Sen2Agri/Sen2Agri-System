@@ -3,6 +3,7 @@
 #include <QCoreApplication>
 #include <QDBusAbstractAdaptor>
 #include <QDBusConnection>
+#include <QDBusConnectionInterface>
 #include <QDBusContext>
 #include <QDBusError>
 #include <QDBusMessage>
@@ -22,9 +23,15 @@
 #include <QThread>
 #include <QThreadPool>
 #include <QtSql>
-#include <cstddef>
 #include <functional>
+#include <grp.h>
+#include <limits.h>
+#include <make_unique.hpp>
+#include <math.h>
 #include <memory>
+#include <pwd.h>
+#include <set>
 #include <stdexcept>
-#include <type_traits>
+#include <sys/types.h>
+#include <unistd.h>
 #include <utility>

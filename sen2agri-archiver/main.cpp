@@ -1,13 +1,21 @@
 #include <QCoreApplication>
+
+#include "logger.hpp"
 #include "archivermanager.hpp"
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication app(argc, argv);
+    try {
+        Logger::installMessageHandler();
 
-    registerMetaTypes();
+        QCoreApplication app(argc, argv);
 
-    ArchiverManager arch;
-    arch.start(app);
-    return app.exec();
+        registerMetaTypes();
+
+        ArchiverManager arch;
+        arch.start(app);
+        return app.exec();
+    } catch (const std::exception &e) {
+        Logger::fatal(e.what());
+    }
 }

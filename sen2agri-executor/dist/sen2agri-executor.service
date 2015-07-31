@@ -1,0 +1,7 @@
+[Unit]
+Description=Executor for Sen2Agri
+
+[Service]
+BusName=org.esa.sen2agri.processorsExecutor
+ExecStart=/usr/bin/sen2agri-executor
+User=sen2agri-service

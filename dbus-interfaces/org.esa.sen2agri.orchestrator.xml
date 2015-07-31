@@ -1,0 +1,8 @@
+<!DOCTYPE node PUBLIC "-//freedesktop//DTD D-BUS Object Introspection 1.0//EN"
+                      "http://www.freedesktop.org/standards/dbus/1.0/introspect.dtd">
+<node name="/org/esa/sen2agri/orchestrator">
+  <interface name="org.esa.sen2agri.orchestrator">
+    <method name="NotifyEventsAvailable">
+    </method>
+  </interface>
+</node>

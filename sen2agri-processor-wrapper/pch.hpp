@@ -1,0 +1,15 @@
+#include <QCoreApplication>
+#include <QDateTime>
+#include <QDebug>
+#include <QDir>
+#include <QList>
+#include <QMutex>
+#include <QObject>
+#include <QProcess>
+#include <QString>
+#include <QThread>
+#include <QTimer>
+#include <QUdpSocket>
+#include <QVariantMap>
+#include <QWaitCondition>
+#include <iostream>
