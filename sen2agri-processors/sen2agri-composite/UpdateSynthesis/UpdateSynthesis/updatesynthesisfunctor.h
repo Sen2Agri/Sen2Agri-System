@@ -65,7 +65,6 @@ private:
     int m_nNbL2ABands;
 
     int m_nCloudMaskBandIndex;
-    int m_nCloudShadowMaskBandIndex;
     int m_nSnowMaskBandIndex;
     int m_nWaterMaskBandIndex;
     int m_nPrevWeightBandIndex;

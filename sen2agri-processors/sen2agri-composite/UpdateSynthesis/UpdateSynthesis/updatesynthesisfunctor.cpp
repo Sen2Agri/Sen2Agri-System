@@ -5,6 +5,57 @@
 #define REFLECTANCE_NO_DATA -1.0f
 #define WEIGHT_NO_DATA -1.0f
 
+
+#define S2_L2A_10M_BANDS_NO     4
+#define L8_L2A_10M_BANDS_NO     3
+#define WEIGHTED_REFLECTANCE_10M_BANDS_NO   S2_L2A_10M_BANDS_NO
+
+#define S2_L2A_10M_BANDS_START_IDX      0
+#define S2_L2A_10M_CLD_MASK_IDX         4
+#define S2_L2A_10M_WATER_MASK_IDX       5
+#define S2_L2A_10M_SNOW_MASK_IDX        6
+#define S2_L2A_10M_TOTAL_WEIGHT_IDX     7
+#define S2_L2A_10M_L3A_WEIGHT_START_IDX 8
+#define S2_L2A_10M_L3A_W_AV_DATE_IDX    12
+#define S2_L2A_10M_L3A_REFL_START_IDX   13
+#define S2_L2A_10M_L3A_PIXEL_STATUS_IDX 17
+
+#define L8_L2A_10M_BANDS_START_IDX      0
+#define L8_L2A_10M_CLD_MASK_IDX         3
+#define L8_L2A_10M_WATER_MASK_IDX       4
+#define L8_L2A_10M_SNOW_MASK_IDX        5
+#define L8_L2A_10M_TOTAL_WEIGHT_IDX     6
+#define L8_L2A_10M_L3A_WEIGHT_START_IDX 7
+#define L8_L2A_10M_L3A_W_AV_DATE_IDX    11
+#define L8_L2A_10M_L3A_REFL_START_IDX   12
+#define L8_L2A_10M_L3A_PIXEL_STATUS_IDX 16
+
+// 20M Positions Definition
+#define S2_L2A_20M_BANDS_NO     6
+#define L8_L2A_20M_BANDS_NO     3
+#define WEIGHTED_REFLECTANCE_20M_BANDS_NO   S2_L2A_20M_BANDS_NO
+
+#define S2_L2A_20M_BANDS_START_IDX      0
+#define S2_L2A_20M_CLD_MASK_IDX         6
+#define S2_L2A_20M_WATER_MASK_IDX       7
+#define S2_L2A_20M_SNOW_MASK_IDX        8
+#define S2_L2A_20M_TOTAL_WEIGHT_IDX     9
+#define S2_L2A_20M_L3A_WEIGHT_START_IDX 10
+#define S2_L2A_20M_L3A_W_AV_DATE_IDX    16
+#define S2_L2A_20M_L3A_REFL_START_IDX   17
+#define S2_L2A_20M_L3A_PIXEL_STATUS_IDX 23
+
+#define L8_L2A_20M_BANDS_START_IDX      0
+#define L8_L2A_20M_CLD_MASK_IDX         3
+#define L8_L2A_20M_WATER_MASK_IDX       4
+#define L8_L2A_20M_SNOW_MASK_IDX        5
+#define L8_L2A_20M_TOTAL_WEIGHT_IDX     6
+#define L8_L2A_20M_L3A_WEIGHT_START_IDX 7
+#define L8_L2A_20M_L3A_W_AV_DATE_IDX    13
+#define L8_L2A_20M_L3A_REFL_START_IDX   14
+#define L8_L2A_20M_L3A_PIXEL_STATUS_IDX 20
+
+
 template< class TInput, class TOutput>
 UpdateSynthesisFunctor<TInput,TOutput>::UpdateSynthesisFunctor()
 {
@@ -12,7 +63,7 @@ UpdateSynthesisFunctor<TInput,TOutput>::UpdateSynthesisFunctor()
 
     m_fQuantificationValue = -1;
     m_bPrevL3ABandsAvailable = false;
-    m_nCloudShadowMaskBandIndex = -1;
+    m_nCloudMaskBandIndex = -1;
     m_nSnowMaskBandIndex = -1;
     m_nWaterMaskBandIndex = -1;
     m_nPrevWeightBandIndex = -1;
@@ -24,18 +75,58 @@ UpdateSynthesisFunctor<TInput,TOutput>::UpdateSynthesisFunctor()
 }
 
 template< class TInput, class TOutput>
-void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, ResolutionType resolution, bool bPrevL3ABandsAvailable)
+void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, ResolutionType resolution,
+                                                        bool bPrevL3ABandsAvailable)
 {
     m_sensorType = sensorType;
     m_resolution = resolution;
     m_bPrevL3ABandsAvailable = bPrevL3ABandsAvailable;
+    if(resolution == RES_10M) {
+        m_nNbOfReflectanceBands = WEIGHTED_REFLECTANCE_10M_BANDS_NO;
+        if(sensorType == SENSOR_S2)
+        {
+#define S2_L2A_10M_BANDS_START_IDX      0
+#define S2_L2A_10M_CLD_MASK_IDX         4
+#define S2_L2A_10M_WATER_MASK_IDX       5
+#define S2_L2A_10M_SNOW_MASK_IDX        6
+#define S2_L2A_10M_TOTAL_WEIGHT_IDX     7
+#define S2_L2A_10M_L3A_WEIGHT_START_IDX 8
+#define S2_L2A_10M_L3A_W_AV_DATE_IDX    12
+#define S2_L2A_10M_L3A_REFL_START_IDX   13
+#define S2_L2A_10M_L3A_PIXEL_STATUS_IDX 17
+
+            m_nNbL2ABands = S2_L2A_10M_BANDS_NO;
+            m_nCloudMaskBandIndex = S2_L2A_10M_CLD_MASK_IDX;
+            m_nSnowMaskBandIndex = S2_L2A_10M_SNOW_MASK_IDX;
+            m_nWaterMaskBandIndex = S2_L2A_10M_WATER_MASK_IDX;
+            m_nPrevWeightBandIndex = -1;
+            m_nPrevWeightedAvDateBandIndex = -1;
+            m_nPrevReflectanceBandIndex = -1;
+            m_nPrevPixelFlagBandIndex = -1;
+            m_nRedBandIndex = -1;
+        } else if (sensorType == SENSOR_L8) {
+
+        } else {
+            // TODO: Throw an error
+        }
+    } else if(resolution == RES_20M) {
+        if(sensorType == SENSOR_S2)
+        {
+        } else if (sensorType == SENSOR_L8) {
+
+        } else {
+            // TODO: Throw an error
+        }
+    } else {
+        // TODO: Throw an error
+    }
+
     if(sensorType == SENSOR_S2)
     {
         if(resolution == RES_10M) {
-            m_nNbOfReflectanceBands = 0;
-            m_nNbL2ABands = 4;
-
-            m_nCloudShadowMaskBandIndex = -1;
+            m_nNbOfReflectanceBands = WEIGHTED_REFLECTANCE_10M_BANDS_NO;
+            m_nNbL2ABands = S2_L2A_10M_BANDS_NO;
+            m_nCloudMaskBandIndex = -1;
             m_nSnowMaskBandIndex = -1;
             m_nWaterMaskBandIndex = -1;
             m_nPrevWeightBandIndex = -1;
@@ -44,10 +135,10 @@ void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, R
             m_nPrevPixelFlagBandIndex = -1;
             m_nRedBandIndex = -1;
         } else if(resolution == RES_20M) {
-            m_nNbOfReflectanceBands = 0;
-            m_nNbL2ABands = 4;
+            m_nNbOfReflectanceBands = WEIGHTED_REFLECTANCE_20M_BANDS_NO;
+            m_nNbL2ABands = S2_L2A_20M_BANDS_NO;
 
-            m_nCloudShadowMaskBandIndex = -1;
+            m_nCloudMaskBandIndex = -1;
             m_nSnowMaskBandIndex = -1;
             m_nWaterMaskBandIndex = -1;
             m_nPrevWeightBandIndex = -1;
@@ -63,7 +154,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, R
             m_nNbOfReflectanceBands = 0;
             m_nNbL2ABands = 4;
 
-            m_nCloudShadowMaskBandIndex = -1;
+            m_nCloudMaskBandIndex = -1;
             m_nSnowMaskBandIndex = -1;
             m_nWaterMaskBandIndex = -1;
             m_nPrevWeightBandIndex = -1;
@@ -75,7 +166,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, R
             m_nNbOfReflectanceBands = 0;
             m_nNbL2ABands = 4;
 
-            m_nCloudShadowMaskBandIndex = -1;
+            m_nCloudMaskBandIndex = -1;
             m_nSnowMaskBandIndex = -1;
             m_nWaterMaskBandIndex = -1;
             m_nPrevWeightBandIndex = -1;
@@ -206,24 +297,10 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::IsCloudPixel(const TInput & A)
 }
 
 template< class TInput, class TOutput>
-bool UpdateSynthesisFunctor<TInput,TOutput>::IsCloudShadowPixel(const TInput & A)
-{
-    if(m_nCloudShadowMaskBandIndex == -1)
-        return false;
-
-    int val = (int)static_cast<float>(A[m_nCloudShadowMaskBandIndex]);
-    return (val != 0);
-}
-
-template< class TInput, class TOutput>
 bool UpdateSynthesisFunctor<TInput,TOutput>::IsRedBand(int index)
 {
-    if((m_resolution == RES_10M) && (index == 4)) {
-        // TODO: here we should consider that for L8 we have no RED band
-        //      Should we return TRUE in this case???
-        if(m_sensorType == SENSOR_S2) {
-            return true;
-        }
+    if((m_resolution == RES_10M) && (index == 2)) {
+        return true;
     }
     return false;
 }
