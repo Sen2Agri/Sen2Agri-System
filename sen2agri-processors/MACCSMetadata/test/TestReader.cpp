@@ -86,6 +86,9 @@ int main()
 
     m = reader->ReadMetadata("S2A_OPER_SSC_L2VALD_15SVD____20091211.HDR");
 
+    assert(m.InstanceId.NickName == "15SVD___");
+    assert(m.InstanceId.AcquisitionDate == "20091211");
+
     assert(m.ImageInformation.Resolutions.size() == 2);
     assert(m.ImageInformation.Resolutions[0].Id == "10");
     assert(m.ImageInformation.Resolutions[0].Size.Lines == "10980");
@@ -134,4 +137,55 @@ int main()
     assert(m.ImageInformation.Resolutions[1].Bands[4].Name == "B11");
     assert(m.ImageInformation.Resolutions[1].Bands[5].Id == "6");
     assert(m.ImageInformation.Resolutions[1].Bands[5].Name == "B12");
+
+    assert(m.ProductOrganization.ImageFiles.size() == 3);
+    assert(m.ProductOrganization.ImageFiles[0].Nature == "SSC_PDTIMG");
+    assert(m.ProductOrganization.ImageFiles[0].FileLocation == "./S2A_OPER_SSC_L2VALD_15SVD____20091211.DBL.DIR/S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_FRE_R2.HDR");
+    assert(m.ProductOrganization.ImageFiles[0].LogicalName == "S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_FRE_R2");
+    assert(m.ProductOrganization.ImageFiles[1].Nature == "SSC_PDTIMG");
+    assert(m.ProductOrganization.ImageFiles[1].FileLocation == "./S2A_OPER_SSC_L2VALD_15SVD____20091211.DBL.DIR/S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_SRE_R2.HDR");
+    assert(m.ProductOrganization.ImageFiles[1].LogicalName == "S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_SRE_R2");
+    assert(m.ProductOrganization.ImageFiles[2].Nature == "SSC_PDTIMG");
+    assert(m.ProductOrganization.ImageFiles[2].FileLocation == "./S2A_OPER_SSC_L2VALD_15SVD____20091211.DBL.DIR/S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_SRE_R1.HDR");
+    assert(m.ProductOrganization.ImageFiles[2].LogicalName == "S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_SRE_R1");
+
+    assert(m.ProductOrganization.QuickLookFiles.size() == 1);
+    assert(m.ProductOrganization.QuickLookFiles[0].Nature == "SSC_PDTQLK");
+    assert(m.ProductOrganization.QuickLookFiles[0].FileLocation == "./S2A_OPER_SSC_L2VALD_15SVD____20091211.DBL.DIR/S2A_OPER_SSC_PDTQLK_L2VALD_15SVD____20091211.HDR");
+    assert(m.ProductOrganization.QuickLookFiles[0].LogicalName == "S2A_OPER_SSC_PDTQLK_L2VALD_15SVD____20091211");
+
+    assert(m.ProductOrganization.AnnexFiles.size() == 8);
+    assert(m.ProductOrganization.AnnexFiles[0].Id == "MSK");
+    assert(m.ProductOrganization.AnnexFiles[0].File.Nature == "SSC_PDTANX");
+    assert(m.ProductOrganization.AnnexFiles[0].File.FileLocation == "./S2A_OPER_SSC_L2VALD_15SVD____20091211.DBL.DIR/S2A_OPER_SSC_PDTANX_L2VALD_15SVD____20091211_MSK_R1.HDR");
+    assert(m.ProductOrganization.AnnexFiles[0].File.LogicalName == "S2A_OPER_SSC_PDTANX_L2VALD_15SVD____20091211_MSK_R1");
+
+    m = reader->ReadMetadata("L8_TEST_L8C_L2VALD_198030_20130626.HDR");
+
+    assert(m.ImageInformation.Bands.size() == 7);
+    assert(m.ImageInformation.Bands[0].Id == "1");
+    assert(m.ImageInformation.Bands[0].Name == "B1");
+    assert(m.ImageInformation.Bands[1].Id == "2");
+    assert(m.ImageInformation.Bands[1].Name == "B2");
+    assert(m.ImageInformation.Bands[6].Id == "7");
+    assert(m.ImageInformation.Bands[6].Name == "B7");
+
+    assert(m.ProductOrganization.ImageFiles.size() == 2);
+    assert(m.ProductOrganization.ImageFiles[0].Nature == "L8C_PDTIMG");
+    assert(m.ProductOrganization.ImageFiles[0].FileLocation == "./L8_TEST_L8C_L2VALD_198030_20130626.DBL.DIR/L8_TEST_L8C_PDTIMG_L2VALD_198030_20130626_FRE.HDR");
+    assert(m.ProductOrganization.ImageFiles[0].LogicalName == "L8_TEST_L8C_PDTIMG_L2VALD_198030_20130626_FRE");
+    assert(m.ProductOrganization.ImageFiles[1].Nature == "L8C_PDTIMG");
+    assert(m.ProductOrganization.ImageFiles[1].FileLocation == "./L8_TEST_L8C_L2VALD_198030_20130626.DBL.DIR/L8_TEST_L8C_PDTIMG_L2VALD_198030_20130626_SRE.HDR");
+    assert(m.ProductOrganization.ImageFiles[1].LogicalName == "L8_TEST_L8C_PDTIMG_L2VALD_198030_20130626_SRE");
+
+    assert(m.ProductOrganization.QuickLookFiles.size() == 1);
+    assert(m.ProductOrganization.QuickLookFiles[0].Nature == "L8C_PDTQLK");
+    assert(m.ProductOrganization.QuickLookFiles[0].FileLocation == "./L8_TEST_L8C_L2VALD_198030_20130626.DBL.DIR/L8_TEST_L8C_PDTQLK_L2VALD_198030_20130626.HDR");
+    assert(m.ProductOrganization.QuickLookFiles[0].LogicalName == "L8_TEST_L8C_PDTQLK_L2VALD_198030_20130626");
+
+    assert(m.ProductOrganization.AnnexFiles.size() == 4);
+    assert(m.ProductOrganization.AnnexFiles[0].Id == "MSK");
+    assert(m.ProductOrganization.AnnexFiles[0].File.Nature == "L8C_PDTANX");
+    assert(m.ProductOrganization.AnnexFiles[0].File.FileLocation == "./L8_TEST_L8C_L2VALD_198030_20130626.DBL.DIR/L8_TEST_L8C_PDTANX_L2VALD_198030_20130626_MSK.HDR");
+    assert(m.ProductOrganization.AnnexFiles[0].File.LogicalName == "L8_TEST_L8C_PDTANX_L2VALD_198030_20130626_MSK");
 }
