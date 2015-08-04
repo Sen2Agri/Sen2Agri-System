@@ -298,7 +298,7 @@ private:
   void PocessLandsatImage(ImageDescriptorPairType meta) {
       // The Landsat8 images contains only one resolution described in one file.
       // load the file in a reader
-      std::string imageFile = getImageFileName(meta.first, meta.second.ImageInformation.ProductOrganization.ImageFiles, "_SRE");
+      std::string imageFile = getImageFileName(meta.first, meta.second.ProductOrganization.ImageFiles, "_SRE");
       ImageReaderType::Pointer reader = getReader(imageFile);
 
       // the required bands are:
