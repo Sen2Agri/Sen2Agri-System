@@ -91,6 +91,31 @@ struct MACCSResolution
     std::vector<MACCSBand> Bands;
 };
 
+struct MACCSImageInformation
+{
+    std::string ElementName;
+    std::string Format;
+    std::string BinaryEncoding;
+    std::string DataType;
+    std::string NumberOfSignificantBits;
+    std::string NoDataValue;
+    std::string VAPNoDataValue;
+    std::string VAPQuantificationValue;
+    std::string AOTNoDataValue;
+    std::string AOTQuantificationValue;
+    MACCSSize Size;
+    std::string ImageCompactingTool;
+    std::vector<MACCSResolution> Resolutions;
+    std::vector<MACCSBand> Bands;
+    std::string SubSamplingFactor;
+    std::string SubSamplingFactorLine;
+    std::string SubSamplingFactorColumn;
+    std::string ValuesUnit;
+    std::string QuantificationBitValue;
+    std::string ColorSpace;
+    std::string BandsOrder;
+};
+
 struct MACCSFileInformation
 {
     std::string Nature;
@@ -107,34 +132,8 @@ struct MACCSAnnexInformation
 struct MACCSProductOrganization
 {
     std::vector<MACCSFileInformation> ImageFiles;
-    MACCSFileInformation QuickLookFile;
+    std::vector<MACCSFileInformation> QuickLookFiles;
     std::vector<MACCSAnnexInformation> AnnexFiles;
-};
-
-struct MACCSImageInformation
-{
-    std::string ElementName;
-    std::string Format;
-    std::string BinaryEncoding;
-    std::string DataType;
-    std::string NumberOfSignificantBits;
-    std::string NoDataValue;
-    std::string VAPNoDataValue;
-    std::string VAPQuantificationValue;
-    std::string AOTNoDataValue;
-    std::string AOTQuantificationValue;
-    MACCSSize Size;
-    std::string ImageCompactingTool;
-    std::vector<MACCSResolution> Resolutions;
-    MACCSProductOrganization ProductOrganization;
-    std::vector<MACCSBand> Bands;
-    std::string SubSamplingFactor;
-    std::string SubSamplingFactorLine;
-    std::string SubSamplingFactorColumn;
-    std::string ValuesUnit;
-    std::string QuantificationBitValue;
-    std::string ColorSpace;
-    std::string BandsOrder;
 };
 
 struct MACCSFileMetadata
@@ -145,4 +144,5 @@ struct MACCSFileMetadata
     std::string ReferenceProductHeaderId;
     std::string AnnexCompleteName;
     MACCSImageInformation ImageInformation;
+    MACCSProductOrganization ProductOrganization;
 };

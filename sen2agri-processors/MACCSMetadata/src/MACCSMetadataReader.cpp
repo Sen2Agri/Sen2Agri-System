@@ -289,6 +289,97 @@ std::vector<MACCSResolution> ReadResolutions(const TiXmlElement *el)
     return result;
 }
 
+MACCSFileInformation ReadFileInformation(const TiXmlElement *el)
+{
+    MACCSFileInformation result;
+
+    if (!el) {
+        return result;
+    }
+
+    result.Nature = GetChildText(el, "Nature");
+    result.FileLocation = GetChildText(el, "File_Location");
+    result.LogicalName = GetChildText(el, "Logical_Name");
+
+    return result;
+}
+
+MACCSAnnexInformation ReadAnnexInformation(const TiXmlElement *el)
+{
+    MACCSAnnexInformation result;
+
+    if (!el) {
+        return result;
+    }
+
+    result.Id = GetAttribute(el, "sk");
+    result.File = ReadFileInformation(el);
+
+    return result;
+}
+
+std::vector<MACCSAnnexInformation> ReadAnnexes(const TiXmlElement *el)
+{
+    std::vector<MACCSAnnexInformation> result;
+
+    if (!el) {
+        return result;
+    }
+
+    if (auto countStr = el->Attribute("count")) {
+        size_t count;
+        bool countValid;
+        try
+        {
+            count = std::stoi(countStr);
+            countValid = true;
+        }
+        catch (const std::runtime_error &e)
+        {
+            countValid = false;
+
+            otbMsgDevMacro("Invalid annex count value: " << countStr);
+            otbMsgDevMacro(<< e.what());
+        }
+        if (countValid) {
+            result.reserve(count);
+        }
+
+        for (auto annexEl = el->FirstChildElement("Annex_File"); annexEl;
+             annexEl = annexEl->NextSiblingElement("Annex_File")) {
+
+            result.emplace_back(ReadAnnexInformation(annexEl));
+        }
+    }
+
+    return result;
+}
+
+MACCSProductOrganization ReadProductOrganization(const TiXmlElement *el)
+{
+    MACCSProductOrganization result;
+
+    if (!el) {
+        return result;
+    }
+
+    for (auto fileEl = el->FirstChildElement("Image_File"); fileEl;
+         fileEl = fileEl->NextSiblingElement("Image_File")) {
+
+        result.ImageFiles.emplace_back(ReadFileInformation(fileEl));
+    }
+
+    for (auto fileEl = el->FirstChildElement("Quicklook_File"); fileEl;
+         fileEl = fileEl->NextSiblingElement("Quicklook_File")) {
+
+        result.QuickLookFiles.emplace_back(ReadFileInformation(fileEl));
+    }
+
+    result.AnnexFiles = ReadAnnexes(el->FirstChildElement("List_of_Annex_Files"));
+
+    return result;
+}
+
 MACCSFileMetadata MACCSMetadataReader::ReadMetadataXml(const TiXmlDocument &doc)
 {
     MACCSFileMetadata file;
@@ -339,7 +430,8 @@ MACCSFileMetadata MACCSMetadataReader::ReadMetadataXml(const TiXmlDocument &doc)
                     GetChildText(imgInfEl, "Number_of_Significant_Bits");
                 file.ImageInformation.NoDataValue = GetChildText(imgInfEl, "Nodata_Value");
 
-                file.ImageInformation.Resolutions = ReadResolutions(imgInfEl->FirstChildElement("List_of_Resolutions"));
+                file.ImageInformation.Resolutions =
+                    ReadResolutions(imgInfEl->FirstChildElement("List_of_Resolutions"));
 
                 file.ImageInformation.VAPNoDataValue = GetChildText(imgInfEl, "VAP_Nodata_Value");
                 file.ImageInformation.VAPQuantificationValue =
@@ -376,6 +468,8 @@ MACCSFileMetadata MACCSMetadataReader::ReadMetadataXml(const TiXmlDocument &doc)
                 file.ImageInformation.ColorSpace = GetChildText(imgInfEl, "Colorspace");
                 file.ImageInformation.BandsOrder = GetChildText(imgInfEl, "Bands_Order");
             }
+
+            file.ProductOrganization = ReadProductOrganization(specHdrEl->FirstChildElement("Product_Organization"));
         }
     }
 
