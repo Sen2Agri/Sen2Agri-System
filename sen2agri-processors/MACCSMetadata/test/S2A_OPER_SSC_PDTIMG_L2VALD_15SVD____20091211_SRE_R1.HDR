@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="DISPLAY/display.xsl"?>
+<Earth_Explorer_Header xmlns="http://eop-cfi.esa.int/CFI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" schema_version="1.00" xsi:schemaLocation="http://eop-cfi.esa.int/CFI ./SSC_PDTIMG_ImageProduct.xsd" xsi:type="PDTIMG_Header_Type">
+    <Fixed_Header>
+        <File_Name>S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_SRE_R1</File_Name>
+        <File_Description>ImageProduct</File_Description>
+        <Notes>L2 note</Notes>
+        <Mission>SENTINEL-2A</Mission>
+        <File_Class>OPER</File_Class>
+        <File_Type>SSC_PDTIMG</File_Type>
+        <Validity_Period>
+            <Validity_Start>UTC=2015-04-28T00:00:00</Validity_Start>
+            <Validity_Stop>UTC=2009-12-11T00:00:00</Validity_Stop>
+        </Validity_Period>
+        <File_Version>0003</File_Version>
+        <Source>
+            <System>MACCS</System>
+            <Creator>MACCS_L2_INIT_CHAIN</Creator>
+            <Creator_Version>0.0.0</Creator_Version>
+            <Creation_Date>UTC=2015-06-30T17:26:29</Creation_Date>
+        </Source>
+    </Fixed_Header>
+    <Variable_Header>
+        <Main_Product_Header>
+            <List_of_Consumers count="0" />
+            <List_of_Extensions count="0" />
+        </Main_Product_Header>
+        <Specific_Product_Header>
+            <Instance_Id>
+                <Reference_Product_Semantic>L2VALD</Reference_Product_Semantic>
+                <Reference_Product_Instance>15SVD____20091211</Reference_Product_Instance>
+            </Instance_Id>
+            <Reference_Product_Header_Id>S2A_OPER_SSC_L2VALD_15SVD____20091211</Reference_Product_Header_Id>
+            <Image_Information>
+                <Format>GEOTIFF</Format>
+                <Binary_Encoding>LITTLE_ENDIAN</Binary_Encoding>
+                <Data_Type>SIGNED_SHORT</Data_Type>
+                <Number_of_Significant_Bits>16</Number_of_Significant_Bits>
+                <Nodata_Value>-10000</Nodata_Value>
+                <Size>
+                    <Lines>10980</Lines>
+                    <Columns>10980</Columns>
+                    <Bands>4</Bands>
+                </Size>
+                <Image_Compacting_Tool>NO</Image_Compacting_Tool>
+                <List_of_Bands count="4">
+                    <Band sn="1">B2</Band>
+                    <Band sn="2">B3</Band>
+                    <Band sn="3">B4</Band>
+                    <Band sn="4">B8</Band>
+                </List_of_Bands>
+            </Image_Information>
+        </Specific_Product_Header>
+    </Variable_Header>
+</Earth_Explorer_Header>

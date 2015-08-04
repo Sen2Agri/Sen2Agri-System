@@ -128,7 +128,7 @@ void GaussianFilter::WriteToOutputFile()
                          m_inputImage->GetLargestPossibleRegion().GetSize()[1] << std::endl;
 
             ImageType::SpacingType outspacing = m_gaussianFilter->GetOutput()->GetSpacing();
-            ImageType::PointType outorigin = v->GetOutput()->GetOrigin();
+            ImageType::PointType outorigin = m_gaussianFilter->GetOutput()->GetOrigin();
             std::cout << "Output Origin : " << outorigin[0] << " " << outorigin[1] << std::endl;
             std::cout << "Output Spacing : " << outspacing[0] << " " << outspacing[1] << std::endl;
             std::cout << "Size : " << m_gaussianFilter->GetOutput()->GetLargestPossibleRegion().GetSize()[0] << " " <<

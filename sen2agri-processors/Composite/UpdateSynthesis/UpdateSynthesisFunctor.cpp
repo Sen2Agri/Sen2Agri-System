@@ -1,4 +1,4 @@
-#include "updatesynthesisfunctor.h"
+#include "UpdateSynthesisFunctor.h"
 
 template< class TInput, class TOutput>
 UpdateSynthesisFunctor<TInput,TOutput>::UpdateSynthesisFunctor()
