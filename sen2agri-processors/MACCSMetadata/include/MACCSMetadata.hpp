@@ -13,11 +13,8 @@ struct MACCSExtension
 {
 };
 
-struct MACCSHeaderMetadata
+struct MACCSFixedHeader
 {
-    std::string SchemaVersion;
-    std::string SchemaLocation;
-    std::string Type;
     std::string FileName;
     std::string FileDescription;
     std::string Notes;
@@ -33,11 +30,34 @@ struct MACCSHeaderMetadata
     std::string CreationDate;
 };
 
+struct MACCSMainProductHeader
+{
+    std::vector<MACCSConsumer> Consumers;
+    std::vector<MACCSExtension> Extensions;
+};
+
+struct MACCSHeaderMetadata
+{
+    std::string SchemaVersion;
+    std::string SchemaLocation;
+    std::string Type;
+    MACCSFixedHeader FixedHeader;
+};
+
 struct MACCSInstanceId
 {
     std::string ReferenceProductSemantic;
     std::string ReferenceProductInstance;
     std::string AnnexCode;
+    std::string NickName;
+    std::string AcquisitionDate;
+};
+
+struct MACCSSize
+{
+    std::string Lines;
+    std::string Columns;
+    std::string Bands;
 };
 
 struct MACCSBand
@@ -46,9 +66,54 @@ struct MACCSBand
     std::string Name;
 };
 
+struct MACCSGeoPosition
+{
+    std::string UnitLengthX;
+    std::string UnitLengthY;
+    std::string DimensionX;
+    std::string DimensionY;
+};
+
+struct MACCSProductSampling
+{
+    std::string ByLineUnit;
+    std::string ByLineValue;
+    std::string ByColumnUnit;
+    std::string ByColumnValue;
+};
+
+struct MACCSResolution
+{
+    std::string Id;
+    MACCSSize Size;
+    MACCSGeoPosition GeoPosition;
+    MACCSProductSampling ProductSampling;
+    std::vector<MACCSBand> Bands;
+};
+
+struct MACCSFileInformation
+{
+    std::string Nature;
+    std::string FileLocation;
+    std::string LogicalName;
+};
+
+struct MACCSAnnexInformation
+{
+    std::string Id;
+    MACCSFileInformation File;
+};
+
+struct MACCSProductOrganization
+{
+    std::vector<MACCSFileInformation> ImageFiles;
+    MACCSFileInformation QuickLookFile;
+    std::vector<MACCSAnnexInformation> AnnexFiles;
+};
+
 struct MACCSImageInformation
 {
-    std::string ElementName; //
+    std::string ElementName;
     std::string Format;
     std::string BinaryEncoding;
     std::string DataType;
@@ -58,16 +123,16 @@ struct MACCSImageInformation
     std::string VAPQuantificationValue;
     std::string AOTNoDataValue;
     std::string AOTQuantificationValue;
-    std::string SizeLines;
-    std::string SizeColumns;
-    std::string SizeBands;
+    MACCSSize Size;
     std::string ImageCompactingTool;
+    std::vector<MACCSResolution> Resolutions;
+    MACCSProductOrganization ProductOrganization;
     std::vector<MACCSBand> Bands;
     std::string SubSamplingFactor;
     std::string SubSamplingFactorLine;
     std::string SubSamplingFactorColumn;
     std::string ValuesUnit;
-    std::string QuantificationBitValue; //
+    std::string QuantificationBitValue;
     std::string ColorSpace;
     std::string BandsOrder;
 };
@@ -75,8 +140,7 @@ struct MACCSImageInformation
 struct MACCSFileMetadata
 {
     MACCSHeaderMetadata Header;
-    std::vector<MACCSConsumer> Consumers;
-    std::vector<MACCSExtension> Extensions;
+    MACCSMainProductHeader MainProductHeader;
     MACCSInstanceId InstanceId;
     std::string ReferenceProductHeaderId;
     std::string AnnexCompleteName;

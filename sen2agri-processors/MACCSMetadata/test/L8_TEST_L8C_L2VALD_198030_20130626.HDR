@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="DISPLAY/display.xsl"?>
+<Earth_Explorer_Header xmlns="http://eop-cfi.esa.int/CFI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" schema_version="1.00" xsi:schemaLocation="http://eop-cfi.esa.int/CFI ./PDT_L2_L2PublishedProduct.xsd" xsi:type="VSC_PDT_L2_Header_Type">
+    <Fixed_Header>
+        <File_Name>L8_TEST_L8C_L2VALD_198030_20130626</File_Name>
+        <File_Description>L2PublishedProduct</File_Description>
+        <Notes>L2 note</Notes>
+        <Mission>LANDSAT_8</Mission>
+        <File_Class>TEST</File_Class>
+        <File_Type>L8C_L2VALD</File_Type>
+        <Validity_Period>
+            <Validity_Start>UTC=2013-06-26T10:38:11</Validity_Start>
+            <Validity_Stop>UTC=2013-06-26T10:38:11</Validity_Stop>
+        </Validity_Period>
+        <File_Version>0001</File_Version>
+        <Source>
+            <System>MACCS</System>
+            <Creator>MACCS_L2_INIT_CHAIN</Creator>
+            <Creator_Version>0.0.0</Creator_Version>
+            <Creation_Date>UTC=2015-07-05T23:52:53</Creation_Date>
+        </Source>
+    </Fixed_Header>
+    <Variable_Header>
+        <Main_Product_Header>
+            <List_of_Consumers count="0" />
+            <List_of_Extensions count="0" />
+        </Main_Product_Header>
+        <Specific_Product_Header>
+            <Instance_Id>
+                <Nick_Name>198030</Nick_Name>
+                <Acquisition_Date>20130626</Acquisition_Date>
+            </Instance_Id>
+            <Product_Information>
+                <Product_Level>L2</Product_Level>
+                <Acquisition_Date_Time>UTC=2013-06-26T10:38:11</Acquisition_Date_Time>
+                <Processing_Information>
+                    <Date_Time>UTC=2015-07-05T23:52:53</Date_Time>
+                    <List_of_GIPP_Files count="9">
+                        <GIPP_File sn="1">
+                            <Nature>GIP_CKEXTL</Nature>
+                            <File_Location>NIL=OTHER:EXTERNAL</File_Location>
+                            <Logical_Name>L8_TEST_GIP_CKEXTL_S_EU93056200A00B_50001_00000000_99999999</Logical_Name>
+                        </GIPP_File>
+                        <GIPP_File sn="2">
+                            <Nature>GIP_CKQLTL</Nature>
+                            <File_Location>NIL=OTHER:EXTERNAL</File_Location>
+                            <Logical_Name>L8_TEST_GIP_CKQLTL_S_EU93056200A00B_50001_00000000_99999999</Logical_Name>
+                        </GIPP_File>
+                        <GIPP_File sn="3">
+                            <Nature>GIP_L2ALBD</Nature>
+                            <File_Location>NIL=OTHER:EXTERNAL</File_Location>
+                            <Logical_Name>L8_TEST_GIP_L2ALBD_L_CONTINEN_50001_00000000_99999999</Logical_Name>
+                        </GIPP_File>
+                        <GIPP_File sn="4">
+                            <Nature>GIP_L2COMM</Nature>
+                            <File_Location>NIL=OTHER:EXTERNAL</File_Location>
+                            <Logical_Name>L8_TEST_GIP_L2COMM_L_ALLSITES_50001_00000000_99999999</Logical_Name>
+                        </GIPP_File>
+                        <GIPP_File sn="5">
+                            <Nature>GIP_L2DIFT</Nature>
+                            <File_Location>NIL=OTHER:EXTERNAL</File_Location>
+                            <Logical_Name>L8_TEST_GIP_L2DIFT_L_CONTINEN_50001_00000000_99999999</Logical_Name>
+                        </GIPP_File>
+                        <GIPP_File sn="6">
+                            <Nature>GIP_L2DIRT</Nature>
+                            <File_Location>NIL=OTHER:EXTERNAL</File_Location>
+                            <Logical_Name>L8_TEST_GIP_L2DIRT_L_CONTINEN_50001_00000000_99999999</Logical_Name>
+                        </GIPP_File>
+                        <GIPP_File sn="7">
+                            <Nature>GIP_L2SITE</Nature>
+                            <File_Location>NIL=OTHER:EXTERNAL</File_Location>
+                            <Logical_Name>L8_TEST_GIP_L2SITE_S_EU93056200A00B_50001_00000000_99999999</Logical_Name>
+                        </GIPP_File>
+                        <GIPP_File sn="8">
+                            <Nature>GIP_L2SMAC</Nature>
+                            <File_Location>NIL=OTHER:EXTERNAL</File_Location>
+                            <Logical_Name>L8_TEST_GIP_L2SMAC_L_ALLSITES_50001_00000000_99999999</Logical_Name>
+                        </GIPP_File>
+                        <GIPP_File sn="9">
+                            <Nature>GIP_L2TOCR</Nature>
+                            <File_Location>NIL=OTHER:EXTERNAL</File_Location>
+                            <Logical_Name>L8_TEST_GIP_L2TOCR_L_CONTINEN_50001_00000000_99999999</Logical_Name>
+                        </GIPP_File>
+                    </List_of_GIPP_Files>
+                </Processing_Information>
+                <Web_Site_URL></Web_Site_URL>
+                <List_of_Quality_Indexes count="4">
+                    <Quality_Index sn="1">
+                        <Code>RAIN_DETECTED</Code>
+                        <Value>FALSE</Value>
+                    </Quality_Index>
+                    <Quality_Index sn="2">
+                        <Code>HOT_SPOT_DETECTED</Code>
+                        <Value>FALSE</Value>
+                    </Quality_Index>
+                    <Quality_Index sn="3">
+                        <Code>SUN_GLINT_DETECTED</Code>
+                        <Value>TRUE</Value>
+                    </Quality_Index>
+                    <Quality_Index sn="4">
+                        <Code>CIRRUS_DETECTED</Code>
+                        <Value>FALSE</Value>
+                    </Quality_Index>
+                </List_of_Quality_Indexes>
+                <Geometry>
+                    <Projection>UTM31</Projection>
+                    <Resolution>30.00</Resolution>
+                    <Pixel_Size_x>30.00</Pixel_Size_x>
+                    <Pixel_Size_y>-30.00</Pixel_Size_y>
+                    <Origin_x>285431.58</Origin_x>
+                    <Origin_y>4884950.51</Origin_y>
+                </Geometry>
+                <Image_Geo_Coverage>
+                    <Upper_Left_Corner>
+                        <Long unit="deg">0.384680000</Long>
+                        <Lat unit="deg">44.097900000</Lat>
+                    </Upper_Left_Corner>
+                    <Upper_Right_Corner>
+                        <Long unit="deg">3.125800000</Long>
+                        <Lat unit="deg">44.097900000</Lat>
+                    </Upper_Right_Corner>
+                    <Lower_Left_Corner>
+                        <Long unit="deg">0.384680000</Long>
+                        <Lat unit="deg">42.275100000</Lat>
+                    </Lower_Left_Corner>
+                    <Lower_Right_Corner>
+                        <Long unit="deg">3.125800000</Long>
+                        <Lat unit="deg">42.275100000</Lat>
+                    </Lower_Right_Corner>
+                </Image_Geo_Coverage>
+                <List_of_Band_Central_Wavelength count="7">
+                    <Band_Central_Wavelength sk="B1" unit="nanometer">443</Band_Central_Wavelength>
+                    <Band_Central_Wavelength sk="B2" unit="nanometer">482</Band_Central_Wavelength>
+                    <Band_Central_Wavelength sk="B3" unit="nanometer">561</Band_Central_Wavelength>
+                    <Band_Central_Wavelength sk="B4" unit="nanometer">654</Band_Central_Wavelength>
+                    <Band_Central_Wavelength sk="B5" unit="nanometer">865</Band_Central_Wavelength>
+                    <Band_Central_Wavelength sk="B6" unit="nanometer">1608</Band_Central_Wavelength>
+                    <Band_Central_Wavelength sk="B7" unit="nanometer">2195</Band_Central_Wavelength>
+                </List_of_Band_Central_Wavelength>
+                <Mean_Solar_Angles>
+                    <Azimuth unit="deg">134.622944850</Azimuth>
+                    <Zenith unit="deg">25.354126880</Zenith>
+                </Mean_Solar_Angles>
+                <Mean_Viewing_Angles>
+                    <Azimuth unit="deg">0.000000000</Azimuth>
+                    <Zenith unit="deg">0.000000000</Zenith>
+                </Mean_Viewing_Angles>
+                <Reference_SiteDefinition_Id>UNKNOWN</Reference_SiteDefinition_Id>
+                <Cloud_Percentage>5</Cloud_Percentage>
+                <Snow_Percentage>1</Snow_Percentage>
+                <Used_DEM>
+                    <DEM_Reference>LOCAL=L8_TEST_AUX_REFDE2_198030_0001</DEM_Reference>
+                    <Statistics>
+                        <Min unit="m">-6.328287601</Min>
+                        <Max unit="m">3379.521973</Max>
+                        <Average unit="m">655.3735386</Average>
+                        <Standard_Deviation unit="m">648.8204484</Standard_Deviation>
+                    </Statistics>
+                </Used_DEM>
+                <Reflectance_Quantification_Value>0.001</Reflectance_Quantification_Value>
+                <Absolute_Coefficient></Absolute_Coefficient>
+                <Processing_Flags_And_Modes>
+                    <Processing_Mode>INIT_MODE</Processing_Mode>
+                    <Adjacency_Effects_And_Slope_Correction>true</Adjacency_Effects_And_Slope_Correction>
+                </Processing_Flags_And_Modes>
+                <List_of_Used_Product_Ids count="1">
+                    <Used_Product_Id sn="1">LC81980302013177LGN01_MTL</Used_Product_Id>
+                </List_of_Used_Product_Ids>
+            </Product_Information>
+            <Image_Information>
+                <Format>GEOTIFF</Format>
+                <Binary_Encoding>LITTLE_ENDIAN</Binary_Encoding>
+                <Data_Type>SIGNED_SHORT</Data_Type>
+                <Number_of_Significant_Bits>16</Number_of_Significant_Bits>
+                <Nodata_Value>-10000</Nodata_Value>
+                <Size>
+                    <Lines>6818</Lines>
+                    <Columns>7490</Columns>
+                    <Bands>4</Bands>
+                </Size>
+                <Image_Compacting_Tool>NO</Image_Compacting_Tool>
+                <List_of_Bands count="7">
+                    <Band sn="1">B1</Band>
+                    <Band sn="2">B2</Band>
+                    <Band sn="3">B3</Band>
+                    <Band sn="4">B4</Band>
+                    <Band sn="5">B5</Band>
+                    <Band sn="6">B6</Band>
+                    <Band sn="7">B7</Band>
+                </List_of_Bands>
+            </Image_Information>
+            <Product_Organization>
+                <Image_File>
+                    <Nature>L8C_PDTIMG</Nature>
+                    <File_Location>./L8_TEST_L8C_L2VALD_198030_20130626.DBL.DIR/L8_TEST_L8C_PDTIMG_L2VALD_198030_20130626_FRE.HDR</File_Location>
+                    <Logical_Name>L8_TEST_L8C_PDTIMG_L2VALD_198030_20130626_FRE</Logical_Name>
+                </Image_File>
+                <Image_File>
+                    <Nature>L8C_PDTIMG</Nature>
+                    <File_Location>./L8_TEST_L8C_L2VALD_198030_20130626.DBL.DIR/L8_TEST_L8C_PDTIMG_L2VALD_198030_20130626_SRE.HDR</File_Location>
+                    <Logical_Name>L8_TEST_L8C_PDTIMG_L2VALD_198030_20130626_SRE</Logical_Name>
+                </Image_File>
+                <Quicklook_File>
+                    <Nature>L8C_PDTQLK</Nature>
+                    <File_Location>./L8_TEST_L8C_L2VALD_198030_20130626.DBL.DIR/L8_TEST_L8C_PDTQLK_L2VALD_198030_20130626.HDR</File_Location>
+                    <Logical_Name>L8_TEST_L8C_PDTQLK_L2VALD_198030_20130626</Logical_Name>
+                </Quicklook_File>
+                <List_of_Annex_Files count="4">
+                    <Annex_File sk="MSK">
+                        <Nature>L8C_PDTANX</Nature>
+                        <File_Location>./L8_TEST_L8C_L2VALD_198030_20130626.DBL.DIR/L8_TEST_L8C_PDTANX_L2VALD_198030_20130626_MSK.HDR</File_Location>
+                        <Logical_Name>L8_TEST_L8C_PDTANX_L2VALD_198030_20130626_MSK</Logical_Name>
+                    </Annex_File>
+                    <Annex_File sk="QLT">
+                        <Nature>L8C_PDTANX</Nature>
+                        <File_Location>./L8_TEST_L8C_L2VALD_198030_20130626.DBL.DIR/L8_TEST_L8C_PDTANX_L2VALD_198030_20130626_QLT.HDR</File_Location>
+                        <Logical_Name>L8_TEST_L8C_PDTANX_L2VALD_198030_20130626_QLT</Logical_Name>
+                    </Annex_File>
+                    <Annex_File sk="ATB">
+                        <Nature>L8C_PDTANX</Nature>
+                        <File_Location>./L8_TEST_L8C_L2VALD_198030_20130626.DBL.DIR/L8_TEST_L8C_PDTANX_L2VALD_198030_20130626_ATB.HDR</File_Location>
+                        <Logical_Name>L8_TEST_L8C_PDTANX_L2VALD_198030_20130626_ATB</Logical_Name>
+                    </Annex_File>
+                    <Annex_File sk="CLD">
+                        <Nature>L8C_PDTANX</Nature>
+                        <File_Location>./L8_TEST_L8C_L2VALD_198030_20130626.DBL.DIR/L8_TEST_L8C_PDTANX_L2VALD_198030_20130626_CLD.HDR</File_Location>
+                        <Logical_Name>L8_TEST_L8C_PDTANX_L2VALD_198030_20130626_CLD</Logical_Name>
+                    </Annex_File>
+                </List_of_Annex_Files>
+                <Private_Data_File>
+                    <Nature>TEC_L2VALD</Nature>
+                    <File_Location>./PRIVATE/L8_TEST_TEC_L2VALD_198030_20130626.EEF</File_Location>
+                    <Logical_Name>L8_TEST_TEC_L2VALD_198030_20130626</Logical_Name>
+                </Private_Data_File>
+            </Product_Organization>
+        </Specific_Product_Header>
+    </Variable_Header>
+</Earth_Explorer_Header>

@@ -13,11 +13,3 @@ add_definitions(-DVCL_CAN_STATIC_CONST_INIT_FLOAT=0)
 
 add_subdirectory(MACCSMetadata)
 add_subdirectory(Composite)
-add_subdirectory(Runner)
-
-
-get_target_property(RUNNER_OUT Runner RUNTIME_OUTPUT_DIRECTORY)
-message(${RUNNER_OUT})
-set_target_properties(MACCSMetadata PROPERTIES RUNTIME_OUTPUT_DIRECTORY Hello)
-
-add_dependencies(Runner MACCSMetadata)

@@ -2,6 +2,63 @@
 
 namespace itk
 {
+XElement Format(const MACCSFixedHeader &fixedHeader)
+{
+    return XElement("Fixed_Header",
+                    XElement("File_Name", fixedHeader.FileName),
+                    XElement("File_Description", fixedHeader.FileDescription),
+                    XElement("Notes", fixedHeader.Notes),
+                    XElement("Mission", fixedHeader.Mission),
+                    XElement("File_Class", fixedHeader.FileClass),
+                    XElement("File_Type", fixedHeader.FileType),
+                    XElement("Validity_Period",
+                             XElement("Validity_Start", fixedHeader.ValidityStart),
+                             XElement("Validity_Stop", fixedHeader.ValidityStop)),
+                    XElement("File_Version", fixedHeader.FileVersion),
+                    XElement("Source",
+                             XElement("System", fixedHeader.SourceSystem),
+                             XElement("Creator", fixedHeader.Creator),
+                             XElement("Creator_Version", fixedHeader.CreatorVersion),
+                             XElement("Creation_Date", fixedHeader.CreationDate)));
+}
+
+XElement Format(const MACCSMainProductHeader &header)
+{
+    return XElement("Main_Product_Header",
+                    // NOTE: we don't know the schema, so we can't emit these
+                    XElement("List_of_Consumers", XAttribute("count", "0")),
+                    XElement("List_of_Extensions", XAttribute("count", "0")));
+}
+
+XElement Format(const MACCSInstanceId &instanceId)
+{
+    return XElement("Instance_Id",
+                    XElement("Reference_Product_Semantic", instanceId.ReferenceProductSemantic),
+                    XElement("Reference_Product_Instance", instanceId.ReferenceProductInstance),
+                    XElement("Annex_Code", instanceId.AnnexCode),
+                    XElement("Nick_Name", instanceId.NickName),
+                    XElement("Acquisition_Date", instanceId.AcquisitionDate));
+}
+
+XElement Format(const MACCSSize &size)
+{
+    return XElement("Size",
+                    XElement("Lines", size.Lines),
+                    XElement("Columns", size.Columns),
+                    XElement("Bands", size.Bands));
+}
+
+XElement Format(const std::vector<MACCSBand> &bands)
+{
+    XElement bandsEl("List_of_Bands", XAttribute("count", std::to_string(bands.size())));
+
+    for (const auto &band : bands) {
+        bandsEl.Append(XElement("Band", XAttribute("sn", band.Id), XText(band.Name)));
+    }
+
+    return bandsEl;
+}
+
 XDocument MACCSMetadataWriter::CreateMetadataXml(const MACCSFileMetadata &metadata)
 {
     XDocument doc(XDeclaration("1.0", "UTF-8", ""),
@@ -13,43 +70,14 @@ XDocument MACCSMetadataWriter::CreateMetadataXml(const MACCSFileMetadata &metada
                   XAttribute("schema_version", metadata.Header.SchemaVersion),
                   XAttribute("xsi:schemaLocation", metadata.Header.SchemaLocation),
                   XAttribute("xsi:type", metadata.Header.Type),
-                  XElement("Fixed_Header",
-                           XElement("File_Name", metadata.Header.FileName),
-                           XElement("File_Description", metadata.Header.FileDescription),
-                           XElement("Notes", metadata.Header.Notes),
-                           XElement("Mission", metadata.Header.Mission),
-                           XElement("File_Class", metadata.Header.FileClass),
-                           XElement("File_Type", metadata.Header.FileType),
-                           XElement("Validity_Period",
-                                    XElement("Validity_Start", metadata.Header.ValidityStart),
-                                    XElement("Validity_Stop", metadata.Header.ValidityStop)),
-                           XElement("File_Version", metadata.Header.FileVersion),
-                           XElement("Source",
-                                    XElement("System", metadata.Header.SourceSystem),
-                                    XElement("Creator", metadata.Header.Creator),
-                                    XElement("Creator_Version", metadata.Header.CreatorVersion),
-                                    XElement("Creation_Date", metadata.Header.CreationDate))));
-
-    XElement bands("List_of_Bands",
-                   XAttribute("count", std::to_string(metadata.ImageInformation.Bands.size())));
-    for (const auto &band : metadata.ImageInformation.Bands) {
-        bands.Append(XElement("Band", XAttribute("sn", band.Id), XText(band.Name)));
-    }
+                  Format(metadata.Header.FixedHeader));
 
     root.Append(XElement(
         "Variable_Header",
-        XElement("Main_Product_Header",
-                 // NOTE: we don't know the schema, so we can't emit these
-                 XElement("List_of_Consumers", XAttribute("count", "0")),
-                 XElement("List_of_Extensions", XAttribute("count", "0"))),
+        Format(metadata.MainProductHeader),
         XElement(
             "Specific_Product_Header",
-            XElement("Instance_Id",
-                     XElement("Reference_Product_Semantic",
-                              metadata.InstanceId.ReferenceProductSemantic),
-                     XElement("Reference_Product_Instance",
-                              metadata.InstanceId.ReferenceProductInstance),
-                     XElement("Annex_Code", metadata.InstanceId.AnnexCode)),
+            Format(metadata.InstanceId),
             XElement("Reference_Product_Header_Id", metadata.ReferenceProductHeaderId),
             XElement("Annex_Complete_Name", metadata.AnnexCompleteName),
             XElement(
@@ -66,12 +94,9 @@ XDocument MACCSMetadataWriter::CreateMetadataXml(const MACCSFileMetadata &metada
                 XElement("AOT_Nodata_Value", metadata.ImageInformation.AOTNoDataValue),
                 XElement("AOT_Quantification_Value",
                          metadata.ImageInformation.AOTQuantificationValue),
-                XElement("Size",
-                         XElement("Lines", metadata.ImageInformation.SizeLines),
-                         XElement("Columns", metadata.ImageInformation.SizeColumns),
-                         XElement("Bands", metadata.ImageInformation.SizeBands)),
+                Format(metadata.ImageInformation.Size),
                 XElement("Image_Compacting_Tool", metadata.ImageInformation.ImageCompactingTool),
-                std::move(bands),
+                Format(metadata.ImageInformation.Bands),
                 XElement("Subsampling_Factor",
                          XElement("By_Line", metadata.ImageInformation.SubSamplingFactorLine),
                          XElement("By_Column", metadata.ImageInformation.SubSamplingFactorColumn),
