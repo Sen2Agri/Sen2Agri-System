@@ -10,6 +10,9 @@ build-*
 # VIM swap files
 *.swp
 
+# Editor backup files
+*~
+
 # Compiled Object files
 *.slo
 *.lo
