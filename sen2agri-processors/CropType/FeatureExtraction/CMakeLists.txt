@@ -1,4 +1,3 @@
-
 otb_create_application(
   NAME           FeatureExtraction
   SOURCES        FeatureExtraction.cpp

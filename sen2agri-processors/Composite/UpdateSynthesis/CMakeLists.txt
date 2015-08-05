@@ -1,5 +1,3 @@
-project(Composite)
-
 otb_create_application(
   NAME           UpdateSynthesis
   SOURCES        UpdateSynthesis.cpp

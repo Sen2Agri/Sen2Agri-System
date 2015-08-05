@@ -1,4 +1,3 @@
-
 otb_create_application(
   NAME           TemporalResampling
   SOURCES        TemporalResampling.cpp TemporalResampling.hxx

@@ -1,3 +1,3 @@
-project(Composite)
-
-subdirs(ComputeNDVI UpdateSynthesis WeightCalculation)
+add_subdirectory(ComputeNDVI)
+add_subdirectory(UpdateSynthesis)
+add_subdirectory(WeightCalculation)

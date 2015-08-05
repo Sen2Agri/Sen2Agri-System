@@ -1,4 +1,3 @@
-
 otb_create_application(
   NAME           BandsExtractor
   SOURCES        BandsExtractor.cpp

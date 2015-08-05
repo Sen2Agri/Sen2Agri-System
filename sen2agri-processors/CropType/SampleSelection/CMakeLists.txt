@@ -1,4 +1,3 @@
-
 otb_create_application(
   NAME           SampleSelection
   SOURCES        SampleSelection.cpp

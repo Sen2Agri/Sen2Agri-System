@@ -1,5 +1,3 @@
-include_directories(../include)
-
 file(COPY
     S2A_OPER_SSC_PDTANX_L2VALD_15SVD____20091211_ATB_R1.HDR
     S2A_OPER_SSC_PDTANX_L2VALD_15SVD____20091211_ATB_R2.HDR
@@ -27,9 +25,13 @@ file(COPY
     ${CMAKE_CURRENT_BINARY_DIR})
 
 add_executable(TestReader TestReader.cpp)
+target_link_libraries(TestReader
+    MACCSMetadata)
 add_test(TestReader TestReader)
 
 add_executable(TestRoundTrip TestRoundTrip.cpp)
+target_link_libraries(TestRoundTrip
+    MACCSMetadata)
 add_test(TestRoundTripS2A01 TestRoundTrip S2A_OPER_SSC_PDTANX_L2VALD_15SVD____20091211_ATB_R1.HDR)
 add_test(TestRoundTripS2A02 TestRoundTrip S2A_OPER_SSC_PDTANX_L2VALD_15SVD____20091211_ATB_R2.HDR)
 add_test(TestRoundTripS2A03 TestRoundTrip S2A_OPER_SSC_PDTANX_L2VALD_15SVD____20091211_CLD_R1.HDR)
@@ -50,9 +52,3 @@ add_test(TestRoundTripL804 TestRoundTrip L8_TEST_L8C_PDTANX_L2VALD_198030_201306
 add_test(TestRoundTripL805 TestRoundTrip L8_TEST_L8C_PDTIMG_L2VALD_198030_20130626_FRE.HDR)
 add_test(TestRoundTripL806 TestRoundTrip L8_TEST_L8C_PDTIMG_L2VALD_198030_20130626_SRE.HDR)
 add_test(TestRoundTripL807 TestRoundTrip L8_TEST_L8C_PDTQLK_L2VALD_198030_20130626.HDR)
-
-target_link_libraries(TestReader
-    MACCSMetadata)
-
-target_link_libraries(TestRoundTrip
-    MACCSMetadata)
