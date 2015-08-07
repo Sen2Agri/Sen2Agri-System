@@ -32,7 +32,9 @@
 
 //  Software Guide : BeginCodeSnippet
 #include <iostream>
+#include <fstream>
 #include <string>
+#include <time.h>
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 #include "TemporalResampling.hxx"
@@ -148,10 +150,10 @@ private:
 
     AddParameter(ParameterType_InputImage, "tocr", "S2 L2A surface reflectances");
     AddParameter(ParameterType_InputImage, "mask", "Validity masks for each acquisition date");
-    AddParameter(ParameterType_StringList, "ind", "Dates of each image acquisition");
+    AddParameter(ParameterType_InputFilename, "ind", "Dates of each image acquisition");
     AddParameter(ParameterType_Int, "sp", "Temporal sampling rate");
-    AddParameter(ParameterType_Int, "t0", "Starting sampling date");
-    AddParameter(ParameterType_Int, "tend", "Last date");
+    AddParameter(ParameterType_String, "t0", "Starting sampling date");
+    AddParameter(ParameterType_String, "tend", "Last date");
     AddParameter(ParameterType_Int, "radius", "Radius of the temporal window ");
 
     AddParameter(ParameterType_OutputImage, "rtocr", "Resampled S2 L2A surface reflectances");
@@ -168,10 +170,13 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-//    SetDocExampleParameterValue("tocr", "reference_polygons.shp");
-//    SetDocExampleParameterValue("ratio", "0.75");
-//    SetDocExampleParameterValue("tp", "training_polygons.shp");
-//    SetDocExampleParameterValue("vp", "validation_polygons.shp");
+    SetDocExampleParameterValue("tocr", "tocr.tif");
+    SetDocExampleParameterValue("mask", "mask.tif");
+    SetDocExampleParameterValue("ind", "dates.txt");
+    SetDocExampleParameterValue("sp", "5");
+    SetDocExampleParameterValue("t0", "20130501");
+    SetDocExampleParameterValue("tend", "20130601");
+    SetDocExampleParameterValue("radius", "15");
     //  Software Guide : EndCodeSnippet
   }
 
@@ -205,21 +210,27 @@ private:
       imgReader->GetOutput()->UpdateOutputInformation();
       maskReader->GetOutput()->UpdateOutputInformation();
 
-      // the input dates are expressed as number of days from the disrt image of the series.
-      // The parameter is a list of strings which must be converted to a list of integers
-      std::vector<std::string> inDatesStr = GetParameterStringList("ind");
-      std::vector<int> inDates;
-      // convert to vector of integers
-      for (std::vector<std::string>::iterator it = inDatesStr.begin(); it != inDatesStr.end(); it++) {
-          std::stringstream parser(*it);
-          int x = 0;
-          parser >> x;
-          inDates.push_back(x);
+      // Get the file that contains the dates
+      std::string datesFileName = GetParameterString("ind");
+      std::ifstream datesFile;
+      datesFile.open(datesFileName);
+      if (!datesFile.is_open()) {
+          itkExceptionMacro("Can't open dates file for reading!");
       }
 
+      // read the file and save the dates as second from Epoch to a vector
+      std::vector<int> inDates;
+      std::string value;
+      while (std::getline(datesFile, value)) {
+          inDates.push_back(getDaysFromEpoch(value));
+      }
+      // close the file
+      datesFile.close();
+
+      // get the interval used for the output images
       int sp = GetParameterInt("sp");
-      int t0 = GetParameterInt("t0");
-      int tend = GetParameterInt("tend");
+      int t0 = getDaysFromEpoch(GetParameterString("t0"));
+      int tend = getDaysFromEpoch(GetParameterString("tend"));
       int radius = GetParameterInt("radius");
 
       // compute the output dates vector
@@ -247,6 +258,14 @@ private:
 private:
   ReaderType::Pointer imgReader;
   ReaderType::Pointer maskReader;
+
+  inline int getDaysFromEpoch(const std::string& date) {
+      struct tm tm;
+      if (strptime(date.c_str(), "%Y%m%d", &tm) == NULL) {
+          itkExceptionMacro("Invalid value for a date: " + date);
+      }
+      return mktime(&tm) / 86400;
+  }
 };
 }
 }

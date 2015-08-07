@@ -299,7 +299,7 @@ private:
   void PocessLandsatImage(const ImageDescriptorPairType& meta) {
       // The Landsat8 images contains only one resolution described in one file.
       // load the file in a reader
-      std::string imageFile = getImageFileName(meta.first, meta.second.ProductOrganization.ImageFiles, "_SRE");
+      std::string imageFile = getImageFileName(meta.first, meta.second.ProductOrganization.ImageFiles, "_FRE");
       ImageReaderType::Pointer reader = getReader(imageFile);
 
       // the required bands are:
@@ -329,7 +329,7 @@ private:
       // The Spot4 images contains only one resolution described in one file.
       // No filtering is required.
       // load the file in a reader
-      std::string imageFile = getImageFileName(meta.first, meta.second.ProductOrganization.ImageFiles, "_SRE");
+      std::string imageFile = getImageFileName(meta.first, meta.second.ProductOrganization.ImageFiles, "_FRE");
       ImageReaderType::Pointer reader = getReader(imageFile);
 
       // the required bands are:
@@ -359,7 +359,7 @@ private:
       // The 20m resolution file contains the SWIR band which must be resampled.
 
       //Extract the first 3 bands form the first file. No resampling needed
-      std::string imageFile1 = getImageFileName(meta.first, meta.second.ProductOrganization.ImageFiles, "_SRE_R1");
+      std::string imageFile1 = getImageFileName(meta.first, meta.second.ProductOrganization.ImageFiles, "_FRE_R1");
       ImageReaderType::Pointer reader1 = getReader(imageFile1);
 
       // Extract Green band
@@ -396,7 +396,7 @@ private:
       m_ImageList->PushBack( nirExtractor->GetOutput() );
 
       //Extract the last band form the second file. Resampling needed.
-      std::string imageFile2 = getImageFileName(meta.first, meta.second.ProductOrganization.ImageFiles, "_SRE_R2");
+      std::string imageFile2 = getImageFileName(meta.first, meta.second.ProductOrganization.ImageFiles, "_FRE_R2");
       ImageReaderType::Pointer reader2 = getReader(imageFile2);
 
       // Extract SWIR band
@@ -440,7 +440,7 @@ private:
   std::string getImageFileName(const std::string& descriptor, const std::vector<MACCSFileInformation>& imageFiles, const std::string& ending) {
 
       std::string folder;
-      int pos = descriptor.find_last_of("/\\");
+      size_t pos = descriptor.find_last_of("/\\");
       if (pos == std::string::npos) {
           folder = "";
       }

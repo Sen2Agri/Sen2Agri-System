@@ -49,7 +49,7 @@
 #include "itkBinaryFunctorImageFilter.h"
 #include "itkVariableLengthVector.h"
 #include <vector>
-#include "updatesynthesisfunctor.h"
+#include "UpdateSynthesisFunctor.h"
 
 #define FLAG_NO_DATA 1
 #define DATE_NO_DATA 1
