@@ -22,7 +22,7 @@ XElement Format(const MACCSFixedHeader &fixedHeader)
                              XElement("Creation_Date", fixedHeader.CreationDate)));
 }
 
-XElement Format(const MACCSMainProductHeader &header)
+XElement Format(const MACCSMainProductHeader &)
 {
     return XElement("Main_Product_Header",
                     // NOTE: we don't know the schema, so we can't emit these

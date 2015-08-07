@@ -53,6 +53,34 @@ struct MACCSInstanceId
     std::string AcquisitionDate;
 };
 
+struct MACCSAngleList
+{
+    std::string ColumnUnit;
+    std::string ColumnStep;
+    std::string RowUnit;
+    std::string RowStep;
+    std::vector<std::vector<double>> Values;
+};
+
+struct MACCSAngles
+{
+    MACCSAngleList Zenith;
+    MACCSAngleList Azimuth;
+};
+
+struct MACCSViewingAnglesGrid
+{
+    std::string BandId;
+    std::string DetectorId;
+    MACCSAngles Angles;
+};
+
+struct MACCSProductInformation
+{
+    MACCSAngles SolarAngles;
+    std::vector<MACCSViewingAnglesGrid> ViewingAngles;
+};
+
 struct MACCSSize
 {
     std::string Lines;
@@ -143,6 +171,7 @@ struct MACCSFileMetadata
     MACCSInstanceId InstanceId;
     std::string ReferenceProductHeaderId;
     std::string AnnexCompleteName;
+    MACCSProductInformation ProductInformation;
     MACCSImageInformation ImageInformation;
     MACCSProductOrganization ProductOrganization;
 };

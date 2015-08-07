@@ -1,3 +1,5 @@
+#include <limits>
+
 #include "otbMacro.h"
 
 #include "MACCSMetadataReader.hpp"
@@ -5,8 +7,8 @@
 static std::string GetAttribute(const TiXmlElement *element, const char *attributeName);
 static std::string GetText(const TiXmlElement *element);
 static std::string GetChildText(const TiXmlElement *element, const char *childName);
-static std::string
-GetChildAttribute(const TiXmlElement *element, const char *childName, const char *attributeName);
+// static std::string
+// GetChildAttribute(const TiXmlElement *element, const char *childName, const char *attributeName);
 
 namespace itk
 {
@@ -128,6 +130,127 @@ MACCSInstanceId ReadInstanceId(const TiXmlElement *el)
     result.AnnexCode = GetChildText(el, "Annex_Code");
     result.NickName = GetChildText(el, "Nick_Name");
     result.AcquisitionDate = GetChildText(el, "Acquisition_Date");
+
+    return result;
+}
+
+double ReadDouble(const std::string &s)
+{
+    try
+    {
+        return std::stod(s);
+    }
+    catch (const std::exception &e)
+    {
+        otbMsgDevMacro("Invalid double value " << s << ": " << e.what());
+
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+}
+
+std::vector<double> ReadDoubleList(const std::string &s)
+{
+    std::vector<double> result;
+
+    std::istringstream is(s);
+    std::string value;
+    while (is >> value) {
+        result.emplace_back(ReadDouble(value));
+    }
+
+    return result;
+}
+
+MACCSAngleList ReadAngleList(const TiXmlElement *el)
+{
+    MACCSAngleList result;
+
+    if (!el) {
+        return result;
+    }
+
+    if (auto colStepEl = el->FirstChildElement("COL_STEP")) {
+        result.ColumnUnit = GetAttribute(colStepEl, "unit");
+        result.ColumnStep = GetText(colStepEl);
+    }
+
+    if (auto rowStepEl = el->FirstChildElement("ROW_STEP")) {
+        result.RowUnit = GetAttribute(rowStepEl, "unit");
+        result.RowStep = GetText(rowStepEl);
+    }
+
+    if (auto valuesListEl = el->FirstChildElement("Values_List")) {
+        for (auto valuesEl = valuesListEl->FirstChildElement("VALUES"); valuesEl;
+             valuesEl = valuesEl->NextSiblingElement("VALUES")) {
+
+            result.Values.emplace_back(ReadDoubleList(GetText(valuesEl)));
+        }
+    }
+
+    return result;
+}
+
+MACCSAngles ReadAngles(const TiXmlElement *el)
+{
+    MACCSAngles result;
+
+    if (!el) {
+        return result;
+    }
+
+    if (auto zenithEl = el->FirstChildElement("Zenith")) {
+        result.Zenith = ReadAngleList(zenithEl);
+    }
+
+    if (auto azimuthEl = el->FirstChildElement("Azimuth")) {
+        result.Azimuth = ReadAngleList(azimuthEl);
+    }
+
+    return result;
+}
+
+MACCSViewingAnglesGrid ReadViewingAnglesGrid(const TiXmlElement *el)
+{
+    MACCSViewingAnglesGrid result;
+
+    if (!el) {
+        return result;
+    }
+
+    result.BandId = GetAttribute(el, "bandId");
+    result.DetectorId = GetAttribute(el, "detectorId");
+    result.Angles = ReadAngles(el);
+
+    return result;
+}
+
+std::vector<MACCSViewingAnglesGrid> ReadViewingAnglesGridList(const TiXmlElement *el)
+{
+    std::vector<MACCSViewingAnglesGrid> result;
+
+    if (!el) {
+        return result;
+    }
+
+    for (auto gridsEl = el->FirstChildElement("Viewing_Incidence_Angles_Grids"); gridsEl;
+         gridsEl = gridsEl->NextSiblingElement("Viewing_Incidence_Angles_Grids")) {
+        result.emplace_back(ReadViewingAnglesGrid(gridsEl));
+    }
+
+    return result;
+}
+
+MACCSProductInformation ReadProductInformation(const TiXmlElement *el)
+{
+    MACCSProductInformation result;
+
+    if (!el) {
+        return result;
+    }
+
+    result.SolarAngles = ReadAngles(el->FirstChildElement("Solar_Angles"));
+    result.ViewingAngles =
+        ReadViewingAnglesGridList(el->FirstChildElement("List_of_Viewing_Angles"));
 
     return result;
 }
@@ -289,6 +412,54 @@ std::vector<MACCSResolution> ReadResolutions(const TiXmlElement *el)
     return result;
 }
 
+MACCSImageInformation ReadImageInformation(const TiXmlElement *el)
+{
+    MACCSImageInformation result;
+
+    if (!el) {
+        return result;
+    }
+
+    result.ElementName = el->Value();
+
+    result.Format = GetChildText(el, "Format");
+    result.BinaryEncoding = GetChildText(el, "Binary_Encoding");
+    result.DataType = GetChildText(el, "Data_Type");
+    result.NumberOfSignificantBits = GetChildText(el, "Number_of_Significant_Bits");
+    result.NoDataValue = GetChildText(el, "Nodata_Value");
+
+    result.Resolutions = ReadResolutions(el->FirstChildElement("List_of_Resolutions"));
+
+    result.VAPNoDataValue = GetChildText(el, "VAP_Nodata_Value");
+    result.VAPQuantificationValue = GetChildText(el, "VAP_Quantification_Value");
+    result.AOTNoDataValue = GetChildText(el, "AOT_Nodata_Value");
+    result.AOTQuantificationValue = GetChildText(el, "AOT_Quantification_Value");
+
+    result.Size = ReadSize(el->FirstChildElement("Size"));
+
+    result.ImageCompactingTool = GetChildText(el, "Image_Compacting_Tool");
+
+    result.Bands = ReadBands(el->FirstChildElement("List_of_Bands"));
+
+    if (auto subsampEl = el->FirstChildElement("Subsampling_Factor")) {
+        result.SubSamplingFactorLine = GetChildText(subsampEl, "By_Line");
+        result.SubSamplingFactorColumn = GetChildText(subsampEl, "By_Column");
+
+        if (result.SubSamplingFactorLine.empty() && result.SubSamplingFactorColumn.empty()) {
+            if (auto factor = subsampEl->GetText()) {
+                result.SubSamplingFactor = factor;
+            }
+        }
+    }
+
+    result.ValuesUnit = GetChildText(el, "Values_Unit");
+    result.QuantificationBitValue = GetChildText(el, "Quantification_Bit_Value");
+    result.ColorSpace = GetChildText(el, "Colorspace");
+    result.BandsOrder = GetChildText(el, "Bands_Order");
+
+    return result;
+}
+
 MACCSFileInformation ReadFileInformation(const TiXmlElement *el)
 {
     MACCSFileInformation result;
@@ -413,6 +584,9 @@ MACCSFileMetadata MACCSMetadataReader::ReadMetadataXml(const TiXmlDocument &doc)
             file.ReferenceProductHeaderId = GetChildText(specHdrEl, "Reference_Product_Header_Id");
             file.AnnexCompleteName = GetChildText(specHdrEl, "Annex_Complete_Name");
 
+            file.ProductInformation =
+                ReadProductInformation(specHdrEl->FirstChildElement("Product_Information"));
+
             auto imgInfEl = specHdrEl->FirstChildElement("Image_Information");
             if (!imgInfEl) {
                 imgInfEl = specHdrEl->FirstChildElement("Annex_Information");
@@ -420,56 +594,11 @@ MACCSFileMetadata MACCSMetadataReader::ReadMetadataXml(const TiXmlDocument &doc)
             if (!imgInfEl) {
                 imgInfEl = specHdrEl->FirstChildElement("Quick_Look_Information");
             }
-            if (imgInfEl) {
-                file.ImageInformation.ElementName = imgInfEl->Value();
 
-                file.ImageInformation.Format = GetChildText(imgInfEl, "Format");
-                file.ImageInformation.BinaryEncoding = GetChildText(imgInfEl, "Binary_Encoding");
-                file.ImageInformation.DataType = GetChildText(imgInfEl, "Data_Type");
-                file.ImageInformation.NumberOfSignificantBits =
-                    GetChildText(imgInfEl, "Number_of_Significant_Bits");
-                file.ImageInformation.NoDataValue = GetChildText(imgInfEl, "Nodata_Value");
+            file.ImageInformation = ReadImageInformation(imgInfEl);
 
-                file.ImageInformation.Resolutions =
-                    ReadResolutions(imgInfEl->FirstChildElement("List_of_Resolutions"));
-
-                file.ImageInformation.VAPNoDataValue = GetChildText(imgInfEl, "VAP_Nodata_Value");
-                file.ImageInformation.VAPQuantificationValue =
-                    GetChildText(imgInfEl, "VAP_Quantification_Value");
-                file.ImageInformation.AOTNoDataValue = GetChildText(imgInfEl, "AOT_Nodata_Value");
-                file.ImageInformation.AOTQuantificationValue =
-                    GetChildText(imgInfEl, "AOT_Quantification_Value");
-
-                file.ImageInformation.Size = ReadSize(imgInfEl->FirstChildElement("Size"));
-
-                file.ImageInformation.ImageCompactingTool =
-                    GetChildText(imgInfEl, "Image_Compacting_Tool");
-
-                file.ImageInformation.Bands =
-                    ReadBands(imgInfEl->FirstChildElement("List_of_Bands"));
-
-                if (auto subsampEl = imgInfEl->FirstChildElement("Subsampling_Factor")) {
-                    file.ImageInformation.SubSamplingFactorLine =
-                        GetChildText(subsampEl, "By_Line");
-                    file.ImageInformation.SubSamplingFactorColumn =
-                        GetChildText(subsampEl, "By_Column");
-
-                    if (file.ImageInformation.SubSamplingFactorLine.empty() &&
-                        file.ImageInformation.SubSamplingFactorColumn.empty()) {
-                        if (auto factor = subsampEl->GetText()) {
-                            file.ImageInformation.SubSamplingFactor = factor;
-                        }
-                    }
-                }
-
-                file.ImageInformation.ValuesUnit = GetChildText(imgInfEl, "Values_Unit");
-                file.ImageInformation.QuantificationBitValue =
-                    GetChildText(imgInfEl, "Quantification_Bit_Value");
-                file.ImageInformation.ColorSpace = GetChildText(imgInfEl, "Colorspace");
-                file.ImageInformation.BandsOrder = GetChildText(imgInfEl, "Bands_Order");
-            }
-
-            file.ProductOrganization = ReadProductOrganization(specHdrEl->FirstChildElement("Product_Organization"));
+            file.ProductOrganization =
+                ReadProductOrganization(specHdrEl->FirstChildElement("Product_Organization"));
         }
     }
 
@@ -505,14 +634,14 @@ static std::string GetChildText(const TiXmlElement *element, const char *childNa
     return std::string();
 }
 
-static std::string
-GetChildAttribute(const TiXmlElement *element, const char *childName, const char *attributeName)
-{
-    if (auto el = element->FirstChildElement(childName)) {
-        if (const char *at = el->Attribute(attributeName)) {
-            return at;
-        }
-    }
+// static std::string
+// GetChildAttribute(const TiXmlElement *element, const char *childName, const char *attributeName)
+//{
+//    if (auto el = element->FirstChildElement(childName)) {
+//        if (const char *at = el->Attribute(attributeName)) {
+//            return at;
+//        }
+//    }
 
-    return std::string();
-}
+//    return std::string();
+//}
