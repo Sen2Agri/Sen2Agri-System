@@ -1,4 +1,5 @@
 #include <cassert>
+#include <cmath>
 
 #include "MACCSMetadataReader.hpp"
 
@@ -88,6 +89,30 @@ int main()
 
     assert(m.InstanceId.NickName == "15SVD___");
     assert(m.InstanceId.AcquisitionDate == "20091211");
+
+    assert(m.ProductInformation.SolarAngles.Zenith.ColumnUnit == "m");
+    assert(m.ProductInformation.SolarAngles.Zenith.ColumnStep == "5000");
+    assert(m.ProductInformation.SolarAngles.Zenith.RowUnit == "m");
+    assert(m.ProductInformation.SolarAngles.Zenith.RowStep == "5000");
+
+    assert(m.ProductInformation.SolarAngles.Zenith.Values.size() == 23);
+    assert(m.ProductInformation.SolarAngles.Zenith.Values[0].size() == 23);
+    assert(m.ProductInformation.SolarAngles.Zenith.Values[0][0] == 64.777785);
+
+    assert(m.ProductInformation.SolarAngles.Azimuth.ColumnUnit == "m");
+    assert(m.ProductInformation.SolarAngles.Azimuth.ColumnStep == "5000");
+    assert(m.ProductInformation.SolarAngles.Azimuth.RowUnit == "m");
+    assert(m.ProductInformation.SolarAngles.Azimuth.RowStep == "5000");
+
+    assert(m.ProductInformation.SolarAngles.Azimuth.Values[0][0] == 161.865766); // HACK
+
+    assert(m.ProductInformation.ViewingAngles.size() == 91);
+    assert(m.ProductInformation.ViewingAngles[0].BandId == "0");
+    assert(m.ProductInformation.ViewingAngles[0].DetectorId == "2");
+    assert(m.ProductInformation.ViewingAngles[0].Angles.Zenith.Values.size() == 23);
+    assert(m.ProductInformation.ViewingAngles[0].Angles.Zenith.Values[0].size() == 23);
+    assert(m.ProductInformation.ViewingAngles[0].Angles.Zenith.Values[0][0] == 8.612239); // HACK
+    assert(std::isnan(m.ProductInformation.ViewingAngles[0].Angles.Zenith.Values[0][5]));
 
     assert(m.ImageInformation.Resolutions.size() == 2);
     assert(m.ImageInformation.Resolutions[0].Id == "10");
