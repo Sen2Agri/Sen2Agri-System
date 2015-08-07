@@ -146,10 +146,10 @@ private:
       }
 
       return indeces;
-  };
+  }
 
   // Get the date index of the first valid pixel or -1 if none found
-  int getPixelDateIndex(int startIndex, int endIndex, int band, PixelType mask) const {
+  int getPixelDateIndex(int startIndex, int endIndex, int band, const PixelType& mask) const {
 
       if (startIndex == -1 || endIndex == -1) {
           return -1;
@@ -200,14 +200,18 @@ public:
   typedef itk::SmartPointer<const Self> ConstPointer;
 
   /** Method for creation through the object factory. */
-  itkNewMacro(Self);
+  itkNewMacro(Self)
+  ;
 
   /** Macro defining the type*/
-  itkTypeMacro(BinaryFunctorImageFilterWithNBands, SuperClass);
+  itkTypeMacro(BinaryFunctorImageFilterWithNBands, SuperClass)
+  ;
 
   /** Accessors for the number of bands*/
-  itkSetMacro(NumberOfOutputBands, unsigned int);
-  itkGetConstMacro(NumberOfOutputBands, unsigned int);
+  itkSetMacro(NumberOfOutputBands, unsigned int)
+  ;
+  itkGetConstMacro(NumberOfOutputBands, unsigned int)
+  ;
 
 protected:
   BinaryFunctorImageFilterWithNBands() {}
