@@ -10,6 +10,7 @@ int main()
 
     assert(m);
 
+    assert(m->Header.Ident == "SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000");
     assert(m->Header.DatePdv == "2013-03-18 09:54:26");
     assert(m->Header.DateProd == "2014-03-05 03:45:20.328949");
 
@@ -22,6 +23,10 @@ int main()
     assert(m->Files.MaskGapSlc == "");
     assert(m->Files.MaskN2 == "MASK");
     assert(m->Files.Prive == "PRIVE");
+
+    assert(m->Geometry.Resolution == "20.0");
+    assert(m->Geometry.NbCols == "4500");
+    assert(m->Geometry.NbRows == "4000");
 
     assert(m->Radiometry.Bands.size() == 4);
     assert(m->Radiometry.Bands[0] == "XS1");

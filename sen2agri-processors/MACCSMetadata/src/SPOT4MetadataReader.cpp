@@ -9,6 +9,7 @@
 
 static SPOT4Header ReadHeader(const TiXmlElement *el);
 static SPOT4Files ReadFiles(const TiXmlElement *el);
+static SPOT4Geometry ReadGeometry(const TiXmlElement *el);
 static SPOT4Radiometry ReadRadiometry(const TiXmlElement *el);
 
 namespace itk
@@ -36,6 +37,7 @@ std::unique_ptr<SPOT4Metadata> SPOT4MetadataReader::ReadMetadataXml(const TiXmlD
     auto metadata = std::unique_ptr<SPOT4Metadata>(new SPOT4Metadata);
     metadata->Header = ReadHeader(root->FirstChildElement("HEADER"));
     metadata->Files = ReadFiles(root->FirstChildElement("FILES"));
+    metadata->Geometry = ReadGeometry(root->FirstChildElement("GEOMETRY"));
     metadata->Radiometry = ReadRadiometry(root->FirstChildElement("RADIOMETRY"));
 
     return metadata;
@@ -50,6 +52,7 @@ static SPOT4Header ReadHeader(const TiXmlElement *el)
         return result;
     }
 
+    result.Ident = GetChildText(el, "IDENT");
     result.DatePdv = GetChildText(el, "DATE_PDV");
     result.DateProd = GetChildText(el, "DATE_PROD");
 
@@ -73,6 +76,21 @@ static SPOT4Files ReadFiles(const TiXmlElement *el)
     result.MaskGapSlc = GetChildText(el, "MASK_GAP_SLC");
     result.MaskN2 = GetChildText(el, "MASK_N2");
     result.Prive = GetChildText(el, "PRIVE");
+
+    return result;
+}
+
+static SPOT4Geometry ReadGeometry(const TiXmlElement *el)
+{
+    SPOT4Geometry result;
+
+    if (!el) {
+        return result;
+    }
+
+    result.Resolution = GetChildText(el, "RESOLUTION");
+    result.NbCols = GetChildText(el, "NB_COLS");
+    result.NbRows = GetChildText(el, "NB_ROWS");
 
     return result;
 }

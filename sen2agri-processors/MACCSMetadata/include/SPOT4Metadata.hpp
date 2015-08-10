@@ -5,6 +5,7 @@
 
 struct SPOT4Header
 {
+    std::string Ident;
     std::string DatePdv;
     std::string DateProd;
 };
@@ -22,6 +23,13 @@ struct SPOT4Files
     std::string Prive;
 };
 
+struct SPOT4Geometry
+{
+    std::string Resolution;
+    std::string NbCols;
+    std::string NbRows;
+};
+
 struct SPOT4Radiometry
 {
     std::vector<std::string> Bands;
@@ -31,5 +39,6 @@ struct SPOT4Metadata
 {
     SPOT4Header Header;
     SPOT4Files Files;
+    SPOT4Geometry Geometry;
     SPOT4Radiometry Radiometry;
 };
