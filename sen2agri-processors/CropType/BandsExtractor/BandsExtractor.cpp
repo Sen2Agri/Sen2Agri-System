@@ -243,9 +243,12 @@ private:
 
       MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
       for (const std::string& desc : descriptors) {
-          MACCSFileMetadata meta = maccsMetadataReader->ReadMetadata(desc);
-          // add the information to the list
-          m_DescriptorsList.push_back(ImageDescriptorPairType(desc, meta));
+          if (auto meta = maccsMetadataReader->ReadMetadata(desc)) {
+              // add the information to the list
+              m_DescriptorsList.push_back(ImageDescriptorPairType(desc, *meta));
+          } else {
+              itkExceptionMacro("Unable to read metadata from " << desc);
+          }
       }
 
       // sort the descriptors after the aquisition date

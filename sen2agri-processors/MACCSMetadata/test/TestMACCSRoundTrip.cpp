@@ -21,7 +21,9 @@ int main(int argc, char *argv[])
     std::ostringstream original, ours;
 
     original << doc;
-    ours << writer->CreateMetadataXml(reader->ReadMetadataXml(doc));
+    auto m = reader->ReadMetadataXml(doc);
+    assert(m);
+    ours << writer->CreateMetadataXml(*m);
 
     std::cerr << original.str() << '\n' << ours.str() << '\n';
     assert(original.str() == ours.str());

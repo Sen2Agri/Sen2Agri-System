@@ -3,16 +3,11 @@
 #include "otbMacro.h"
 
 #include "MACCSMetadataReader.hpp"
-
-static std::string GetAttribute(const TiXmlElement *element, const char *attributeName);
-static std::string GetText(const TiXmlElement *element);
-static std::string GetChildText(const TiXmlElement *element, const char *childName);
-// static std::string
-// GetChildAttribute(const TiXmlElement *element, const char *childName, const char *attributeName);
+#include "tinyxml_utils.hpp"
 
 namespace itk
 {
-MACCSFileMetadata MACCSMetadataReader::ReadMetadata(const std::string &path)
+std::unique_ptr<MACCSFileMetadata> MACCSMetadataReader::ReadMetadata(const std::string &path)
 {
     TiXmlDocument doc(path);
     if (!doc.LoadFile()) {
@@ -551,40 +546,38 @@ MACCSProductOrganization ReadProductOrganization(const TiXmlElement *el)
     return result;
 }
 
-MACCSFileMetadata MACCSMetadataReader::ReadMetadataXml(const TiXmlDocument &doc)
+std::unique_ptr<MACCSFileMetadata> MACCSMetadataReader::ReadMetadataXml(const TiXmlDocument &doc)
 {
-    MACCSFileMetadata file;
     TiXmlHandle hDoc(const_cast<TiXmlDocument *>(&doc));
 
     // BUG: TinyXML can't properly read stylesheet declarations, see
     // http://sourceforge.net/p/tinyxml/patches/37/
     // Our files start with one, but we can't read it in.
-    TiXmlHandle root = hDoc.FirstChildElement();
-    auto rootElement = root.ToElement();
+    auto rootElement = hDoc.FirstChildElement("Earth_Explorer_Header").ToElement();
 
     if (!rootElement) {
-        return file;
+        return nullptr;
     }
 
-    auto &header = file.Header;
+    auto file = std::unique_ptr<MACCSFileMetadata>(new MACCSFileMetadata);
 
-    header.SchemaVersion = GetAttribute(rootElement, "schema_version");
-    header.SchemaLocation = GetAttribute(rootElement, "xsi:schemaLocation");
-    header.Type = GetAttribute(rootElement, "xsi:type");
+    file->Header.SchemaVersion = GetAttribute(rootElement, "schema_version");
+    file->Header.SchemaLocation = GetAttribute(rootElement, "xsi:schemaLocation");
+    file->Header.Type = GetAttribute(rootElement, "xsi:type");
 
-    header.FixedHeader = ReadFixedHeader(root.FirstChildElement("Fixed_Header").ToElement());
+    file->Header.FixedHeader = ReadFixedHeader(rootElement->FirstChildElement("Fixed_Header"));
 
-    if (auto element = root.FirstChildElement("Variable_Header").ToElement()) {
-        file.MainProductHeader =
+    if (auto element = rootElement->FirstChildElement("Variable_Header")) {
+        file->MainProductHeader =
             ReadMainProductHeader(element->FirstChildElement("Main_Product_Header"));
 
         if (auto specHdrEl = element->FirstChildElement("Specific_Product_Header")) {
-            file.InstanceId = ReadInstanceId(specHdrEl->FirstChildElement("Instance_Id"));
+            file->InstanceId = ReadInstanceId(specHdrEl->FirstChildElement("Instance_Id"));
 
-            file.ReferenceProductHeaderId = GetChildText(specHdrEl, "Reference_Product_Header_Id");
-            file.AnnexCompleteName = GetChildText(specHdrEl, "Annex_Complete_Name");
+            file->ReferenceProductHeaderId = GetChildText(specHdrEl, "Reference_Product_Header_Id");
+            file->AnnexCompleteName = GetChildText(specHdrEl, "Annex_Complete_Name");
 
-            file.ProductInformation =
+            file->ProductInformation =
                 ReadProductInformation(specHdrEl->FirstChildElement("Product_Information"));
 
             auto imgInfEl = specHdrEl->FirstChildElement("Image_Information");
@@ -595,9 +588,9 @@ MACCSFileMetadata MACCSMetadataReader::ReadMetadataXml(const TiXmlDocument &doc)
                 imgInfEl = specHdrEl->FirstChildElement("Quick_Look_Information");
             }
 
-            file.ImageInformation = ReadImageInformation(imgInfEl);
+            file->ImageInformation = ReadImageInformation(imgInfEl);
 
-            file.ProductOrganization =
+            file->ProductOrganization =
                 ReadProductOrganization(specHdrEl->FirstChildElement("Product_Organization"));
         }
     }
@@ -605,43 +598,3 @@ MACCSFileMetadata MACCSMetadataReader::ReadMetadataXml(const TiXmlDocument &doc)
     return file;
 }
 }
-
-static std::string GetAttribute(const TiXmlElement *element, const char *attributeName)
-{
-    if (const char *at = element->Attribute(attributeName)) {
-        return at;
-    }
-
-    return std::string();
-}
-
-static std::string GetText(const TiXmlElement *element)
-{
-    if (const char *text = element->GetText()) {
-        return text;
-    }
-
-    return std::string();
-}
-
-static std::string GetChildText(const TiXmlElement *element, const char *childName)
-{
-    if (auto el = element->FirstChildElement(childName)) {
-        if (const char *text = el->GetText())
-            return text;
-    }
-
-    return std::string();
-}
-
-// static std::string
-// GetChildAttribute(const TiXmlElement *element, const char *childName, const char *attributeName)
-//{
-//    if (auto el = element->FirstChildElement(childName)) {
-//        if (const char *at = el->Attribute(attributeName)) {
-//            return at;
-//        }
-//    }
-
-//    return std::string();
-//}

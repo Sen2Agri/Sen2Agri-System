@@ -1,6 +1,9 @@
 #pragma once
 
+#include <memory>
+
 #include "itkObjectFactory.h"
+#include "otb_tinyxml.h"
 
 #include "MACCSMetadata.hpp"
 
@@ -19,7 +22,7 @@ public:
 
     itkTypeMacro(MACCSMetadataReader, itk::LightObject)
 
-    MACCSFileMetadata ReadMetadataXml(const TiXmlDocument &doc);
-    MACCSFileMetadata ReadMetadata(const std::string &path);
+    std::unique_ptr<MACCSFileMetadata> ReadMetadataXml(const TiXmlDocument &doc);
+    std::unique_ptr<MACCSFileMetadata> ReadMetadata(const std::string &path);
 };
 }
