@@ -40,6 +40,33 @@ std::unique_ptr<SPOT4Metadata> SPOT4MetadataReader::ReadMetadataXml(const TiXmlD
     metadata->Geometry = ReadGeometry(root->FirstChildElement("GEOMETRY"));
     metadata->Radiometry = ReadRadiometry(root->FirstChildElement("RADIOMETRY"));
 
+    // SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000_DIV.TIF
+
+    if (metadata->Files.OrthoSurfAOT.empty()) {
+        auto s = metadata->Header.Ident;
+        auto pos = s.find("N2A_");
+        if (pos != std::string::npos) {
+            s.replace(pos, 4, "N2A_AOT_");
+        }
+
+        metadata->Files.OrthoSurfAOT = std::move(s) + ".TIF";
+    }
+
+    if (metadata->Files.MaskDiv.empty()) {
+        metadata->Files.MaskDiv =
+            metadata->Files.MaskN2 + '/' + metadata->Header.Ident + "_DIV.TIF";
+    }
+
+    if (metadata->Files.MaskNua.empty()) {
+        metadata->Files.MaskNua =
+            metadata->Files.MaskN2 + '/' + metadata->Header.Ident + "_NUA.TIF";
+    }
+
+    if (metadata->Files.MaskSaturation.empty()) {
+        metadata->Files.MaskSaturation =
+            metadata->Files.MaskN2 + '/' + metadata->Header.Ident + "_SAT.TIF";
+    }
+
     return metadata;
 }
 }

@@ -17,6 +17,8 @@ struct SPOT4Files
     std::string OrthoSurfCorrEnv;
     std::string OrthoSurfCorrPente;
     std::string OrthoVapEau;
+    std::string MaskDiv;
+    std::string MaskNua;
     std::string MaskSaturation;
     std::string MaskGapSlc;
     std::string MaskN2;

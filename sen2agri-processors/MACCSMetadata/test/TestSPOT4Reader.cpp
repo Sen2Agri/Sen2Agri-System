@@ -15,10 +15,12 @@ int main()
     assert(m->Header.DateProd == "2014-03-05 03:45:20.328949");
 
     assert(m->Files.GeoTIFF == "");
-    assert(m->Files.OrthoSurfAOT == "");
+    assert(m->Files.OrthoSurfAOT == "SPOT4_HRVIR1_XS_20130318_N2A_AOT_EBelgiumD0000B0000.TIF");
     assert(m->Files.OrthoSurfCorrEnv == "SPOT4_HRVIR1_XS_20130318_N2A_ORTHO_SURF_CORR_ENV_EBelgiumD0000B0000.TIF");
     assert(m->Files.OrthoSurfCorrPente == "SPOT4_HRVIR1_XS_20130318_N2A_ORTHO_SURF_CORR_PENTE_EBelgiumD0000B0000.TIF");
     assert(m->Files.OrthoVapEau == "");
+    assert(m->Files.MaskDiv == "MASK/SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000_DIV.TIF");
+    assert(m->Files.MaskNua == "MASK/SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000_NUA.TIF");
     assert(m->Files.MaskSaturation == "MASK/SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000_SAT.TIF");
     assert(m->Files.MaskGapSlc == "");
     assert(m->Files.MaskN2 == "MASK");
