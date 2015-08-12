@@ -34,6 +34,7 @@
 #include "otbWrapperApplicationFactory.h"
 
 #include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
+#include "../../MACCSMetadata/include/SPOT4MetadataReader.hpp"
 
 #include "otbVectorImage.h"
 #include "otbImageList.h"
@@ -49,8 +50,9 @@
 
 #define LANDSAT    "LANDSAT"
 #define SENTINEL   "SENTINEL"
-#define SPOT       "SPOT"
 
+#define TYPE_MACCS  0
+#define TYPE_SPOT4  1
 
 typedef otb::VectorImage<short, 2>                                 ImageType;
 typedef otb::Image<short, 2>                                       InternalImageType;
@@ -68,7 +70,7 @@ typedef otb::ImageFileReader<ImageType>                            ImageReaderTy
 typedef otb::ObjectList<ImageReaderType>                           ImageReaderListType;
 
 typedef itk::MACCSMetadataReader                                   MACCSMetadataReaderType;
-typedef std::pair<std::string, MACCSFileMetadata>                  ImageDescriptorPairType;
+typedef itk::SPOT4MetadataReader                                   SPOT4MetadataReaderType;
 
 typedef otb::StreamingResampleImageFilter<InternalImageType, InternalImageType, double>    ResampleFilterType;
 typedef otb::ObjectList<ResampleFilterType>                           ResampleFilterListType;
@@ -77,6 +79,26 @@ typedef itk::LinearInterpolateImageFunction<InternalImageType,
 typedef itk::IdentityTransform<double, InternalImageType::ImageDimension>      IdentityTransformType;
 typedef itk::ScalableAffineTransform<double, InternalImageType::ImageDimension> ScalableTransformType;
 typedef ScalableTransformType::OutputVectorType                         OutputVectorType;
+
+struct SourceImageMetadata {
+    MACCSFileMetadata  msccsFileMetadata;
+    SPOT4Metadata      spot4Metadata;
+};
+
+struct ImageDescriptor {
+    // the descriptor file
+    std::string filename;
+    // the aquisition date in format YYYYMMDD
+    std::string aquisitionDate;
+    // the format of the metadata
+    unsigned char type;
+    // the metadata
+    SourceImageMetadata metadata;
+};
+
+// define shortcut accessors
+#define maccsDescriptor   metadata.msccsFileMetadata
+#define spot4Descriptor   metadata.spot4Metadata
 
 //  Software Guide : EndCodeSnippet
 
@@ -182,7 +204,9 @@ private:
     // Software Guide : EndLatex
 
     m_Concatener = ListConcatenerFilterType::New();
+    m_Masks = ListConcatenerFilterType::New();
     m_ImageList = InternalImageListType::New();
+    m_MasksList = InternalImageListType::New();
     m_ResamplersList = ResampleFilterListType::New();
     m_ExtractorList = ExtractROIFilterListType::New();
     m_ImageReaderList = ImageReaderListType::New();
@@ -191,6 +215,7 @@ private:
     AddParameter(ParameterType_InputFilenameList, "il", "The xml files");
 
     AddParameter(ParameterType_OutputImage, "out", "The concatenated images");
+    AddParameter(ParameterType_OutputImage, "mask", "The concatenated masks");
     AddParameter(ParameterType_OutputFilename, "outdate", "The file containing the dates for the images");
 
      //  Software Guide : EndCodeSnippet
@@ -203,6 +228,7 @@ private:
     //  Software Guide : BeginCodeSnippet
     SetDocExampleParameterValue("il", "image1.xml image2.xml");
     SetDocExampleParameterValue("out", "fts.tif");
+    SetDocExampleParameterValue("mask", "mask.tif");
     SetDocExampleParameterValue("outdate", "dates.txt");
     //  Software Guide : EndCodeSnippet
   }
@@ -216,7 +242,9 @@ private:
   {
       // Reinitialize the object
       m_Concatener = ListConcatenerFilterType::New();
+      m_Masks = ListConcatenerFilterType::New();
       m_ImageList = InternalImageListType::New();
+      m_MasksList = InternalImageListType::New();
       m_ExtractorList = ExtractROIFilterListType::New();
       m_ResamplersList = ResampleFilterListType::New();
       m_ImageReaderList = ImageReaderListType::New();
@@ -242,10 +270,25 @@ private:
       // load all descriptors
 
       MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
+      SPOT4MetadataReaderType::Pointer spot4MetadataReader = SPOT4MetadataReaderType::New();
       for (const std::string& desc : descriptors) {
+          ImageDescriptor id;
           if (auto meta = maccsMetadataReader->ReadMetadata(desc)) {
               // add the information to the list
-              m_DescriptorsList.push_back(ImageDescriptorPairType(desc, *meta));
+              id.filename = desc;
+              id.type = TYPE_MACCS;
+              id.aquisitionDate = meta->InstanceId.AcquisitionDate;
+              id.maccsDescriptor = *meta;
+
+              m_DescriptorsList.push_back(id);
+          }else if (auto meta = spot4MetadataReader->ReadMetadata(desc)) {
+              // add the information to the list
+              id.filename = desc;
+              id.type = TYPE_SPOT4;
+              id.aquisitionDate = formatSPOT4Date(meta->Header.DatePdv);
+              id.spot4Descriptor = *meta;
+
+              m_DescriptorsList.push_back(id);
           } else {
               itkExceptionMacro("Unable to read metadata from " << desc);
           }
@@ -265,44 +308,50 @@ private:
       }
 
       // interpret the descriptors and extract the required bands from the atached images
-      for (const ImageDescriptorPairType& metaPair : m_DescriptorsList) {
+      for (const ImageDescriptor& desc : m_DescriptorsList) {
           // write the date to the output file
-          datesFile << metaPair.second.InstanceId.AcquisitionDate << std::endl;
+          datesFile << desc.aquisitionDate << std::endl;
 
-          if (metaPair.second.Header.FixedHeader.Mission.find(LANDSAT) != std::string::npos) {
-              // Interpret landsat image
-              PocessLandsatImage(metaPair);
-          } else if (metaPair.second.Header.FixedHeader.Mission.find(SENTINEL) != std::string::npos) {
-              // Interpret sentinel image
-              PocessSentinelImage(metaPair);
-          } else if (metaPair.second.Header.FixedHeader.Mission.find(SPOT) != std::string::npos) {
-              // Interpret sentinel image
-              PocessSpotImage(metaPair);
-          } else {
-              itkExceptionMacro("Unknown mission: " + metaPair.second.Header.FixedHeader.Mission);
+          if (desc.type == TYPE_MACCS) {
+              if (desc.maccsDescriptor.Header.FixedHeader.Mission.find(LANDSAT) != std::string::npos) {
+                  // Interpret landsat image
+                  PocessLandsatImage(desc);
+              } else if (desc.maccsDescriptor.Header.FixedHeader.Mission.find(SENTINEL) != std::string::npos) {
+                  // Interpret sentinel image
+                  PocessSentinelImage(desc);
+              } else {
+                  itkExceptionMacro("Unknown mission: " + desc.maccsDescriptor.Header.FixedHeader.Mission);
+              }
+          } else if (desc.type == TYPE_SPOT4) {
+              PocessSpot4Image(desc);
           }
-
       }
 
       // close the dates file
       datesFile.close();
 
       m_Concatener->SetInput( m_ImageList );
+      m_Masks->SetInput(m_MasksList);
 
       SetParameterOutputImage("out", m_Concatener->GetOutput());
+      SetParameterOutputImage("mask", m_Masks->GetOutput());
   }
   //  Software Guide :EndCodeSnippet
 
   // Sort the descriptors based on the aquisition date
-  static bool SortMetadata(const ImageDescriptorPairType& o1, const ImageDescriptorPairType& o2) {
-      return o1.second.InstanceId.AcquisitionDate.compare(o2.second.InstanceId.AcquisitionDate) < 0 ? true : false;
+  static bool SortMetadata(const ImageDescriptor& o1, const ImageDescriptor& o2) {
+      return o1.aquisitionDate.compare(o2.aquisitionDate) < 0;
   }
 
-  // Process a Landsat8 image
-  void PocessLandsatImage(const ImageDescriptorPairType& meta) {
+  // Process a Landsat8 image.
+  void PocessLandsatImage(const ImageDescriptor& meta) {
+      // Only MACCS format is supported
+      if (meta.type != TYPE_MACCS) {
+          itkExceptionMacro("Unsupported LANDSAT8 image format for descritor: " + meta.filename);
+      }
       // The Landsat8 images contains only one resolution described in one file.
       // load the file in a reader
-      std::string imageFile = getImageFileName(meta.first, meta.second.ProductOrganization.ImageFiles, "_FRE");
+      std::string imageFile = getMACCSImageFileName(meta.filename, meta.maccsDescriptor.ProductOrganization.ImageFiles, "_FRE");
       ImageReaderType::Pointer reader = getReader(imageFile);
 
       // the required bands are:
@@ -312,7 +361,7 @@ private:
       // b6 - SWIR (Name B6)
       for (int i = 3; i <= 6; i++) {
           std::string bandName = "B" + std::to_string(i);
-          int index = getBandIndex(meta.second.ImageInformation.Bands, bandName);
+          int index = getBandIndex(meta.maccsDescriptor.ImageInformation.Bands, bandName);
 
           ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
           extractor->SetInput( reader->GetOutput() );
@@ -325,14 +374,29 @@ private:
 
           m_ImageList->PushBack( resampler->GetOutput() );
       }
+
+      // create the mask
+      std::string maskFile = getMACCSImageFileName(meta.filename, meta.maccsDescriptor.ProductOrganization.AnnexFiles, "_MSK");
+      ImageReaderType::Pointer maskReader = getReader(maskFile);
+      ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
+      extractor->SetInput( maskReader->GetOutput() );
+      extractor->SetChannel( 1 );
+      extractor->UpdateOutputInformation();
+      m_ExtractorList->PushBack( extractor );
+
+
+      // resample from 30m to 10m
+      ResampleFilterType::Pointer maskResampler = getResampler(extractor->GetOutput(), 3.0);
+      m_MasksList->PushBack(maskResampler->GetOutput());
   }
 
+
   // Process a Spot4 image
-  void PocessSpotImage(const ImageDescriptorPairType& meta) {
+  void PocessSpot4Image(const ImageDescriptor& meta) {
       // The Spot4 images contains only one resolution described in one file.
       // No filtering is required.
       // load the file in a reader
-      std::string imageFile = getImageFileName(meta.first, meta.second.ProductOrganization.ImageFiles, "_FRE");
+      std::string imageFile = getSPOT4ImageFileName(meta);
       ImageReaderType::Pointer reader = getReader(imageFile);
 
       // the required bands are:
@@ -341,32 +405,44 @@ private:
       // b3 - NIR (Name B5)
       // b4 - SWIR (Name B6)
       for (int i = 1; i <= 4; i++) {
-          std::string bandName = "B" + std::to_string(i);
-          int index = getBandIndex(meta.second.ImageInformation.Bands, bandName);
 
           ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
           extractor->SetInput( reader->GetOutput() );
-          extractor->SetChannel( index );
+          extractor->SetChannel( i );
           extractor->UpdateOutputInformation();
           m_ExtractorList->PushBack( extractor );
 
           m_ImageList->PushBack( extractor->GetOutput() );
       }
+
+      // create the mask
+      std::string maskFile = getSPOT4MaskFileName(meta);
+      ImageReaderType::Pointer maskReader = getReader(maskFile);
+      ExtractROIFilterType::Pointer maskExtractor = ExtractROIFilterType::New();
+      maskExtractor->SetInput( maskReader->GetOutput() );
+      maskExtractor->SetChannel( 1 );
+      maskExtractor->UpdateOutputInformation();
+      m_ExtractorList->PushBack( maskExtractor );
+
+      m_MasksList->PushBack(maskExtractor->GetOutput());
   }
 
-
   // Process a Sentinel2 image
-  void PocessSentinelImage(const ImageDescriptorPairType& meta) {
+  void PocessSentinelImage(const ImageDescriptor& meta) {
+      // Only MACCS format is supported
+      if (meta.type != TYPE_MACCS) {
+          itkExceptionMacro("Unsupported Sentinel2 image format for descritor: " + meta.filename);
+      }
       // The Sentinel2 images are described in 2 files, one with 10m resolution and one with 20m resolution
       // The 10m resolution file contains the G, R and NIR bands which can be used unmodified
       // The 20m resolution file contains the SWIR band which must be resampled.
 
       //Extract the first 3 bands form the first file. No resampling needed
-      std::string imageFile1 = getImageFileName(meta.first, meta.second.ProductOrganization.ImageFiles, "_FRE_R1");
+      std::string imageFile1 = getMACCSImageFileName(meta.filename, meta.maccsDescriptor.ProductOrganization.ImageFiles, "_FRE_R1");
       ImageReaderType::Pointer reader1 = getReader(imageFile1);
 
       // Extract Green band
-      int gIndex = getBandIndex(meta.second.ImageInformation.Resolutions[0].Bands, "B3");
+      int gIndex = getBandIndex(meta.maccsDescriptor.ImageInformation.Resolutions[0].Bands, "B3");
 
       ExtractROIFilterType::Pointer gExtractor = ExtractROIFilterType::New();
       gExtractor->SetInput( reader1->GetOutput() );
@@ -377,7 +453,7 @@ private:
       m_ImageList->PushBack( gExtractor->GetOutput() );
 
       // Extract Red band
-      int rIndex = getBandIndex(meta.second.ImageInformation.Resolutions[0].Bands, "B4");
+      int rIndex = getBandIndex(meta.maccsDescriptor.ImageInformation.Resolutions[0].Bands, "B4");
 
       ExtractROIFilterType::Pointer rExtractor = ExtractROIFilterType::New();
       rExtractor->SetInput( reader1->GetOutput() );
@@ -388,7 +464,7 @@ private:
       m_ImageList->PushBack( rExtractor->GetOutput() );
 
       // Extract NIR band
-      int nirIndex = getBandIndex(meta.second.ImageInformation.Resolutions[0].Bands, "B8");
+      int nirIndex = getBandIndex(meta.maccsDescriptor.ImageInformation.Resolutions[0].Bands, "B8");
 
       ExtractROIFilterType::Pointer nirExtractor = ExtractROIFilterType::New();
       nirExtractor->SetInput( reader1->GetOutput() );
@@ -399,11 +475,11 @@ private:
       m_ImageList->PushBack( nirExtractor->GetOutput() );
 
       //Extract the last band form the second file. Resampling needed.
-      std::string imageFile2 = getImageFileName(meta.first, meta.second.ProductOrganization.ImageFiles, "_FRE_R2");
+      std::string imageFile2 = getMACCSImageFileName(meta.filename, meta.maccsDescriptor.ProductOrganization.ImageFiles, "_FRE_R2");
       ImageReaderType::Pointer reader2 = getReader(imageFile2);
 
       // Extract SWIR band
-      int swirIndex = getBandIndex(meta.second.ImageInformation.Resolutions[1].Bands, "B11");
+      int swirIndex = getBandIndex(meta.maccsDescriptor.ImageInformation.Resolutions[1].Bands, "B11");
 
       ExtractROIFilterType::Pointer swirExtractor = ExtractROIFilterType::New();
       swirExtractor->SetInput( reader2->GetOutput() );
@@ -415,6 +491,17 @@ private:
       ResampleFilterType::Pointer resampler = getResampler(swirExtractor->GetOutput(), 2.0);
 
       m_ImageList->PushBack( resampler->GetOutput() );
+
+      // create the mask
+      std::string maskFile = getMACCSImageFileName(meta.filename, meta.maccsDescriptor.ProductOrganization.AnnexFiles, "_MSK");
+      ImageReaderType::Pointer maskReader = getReader(maskFile);
+      ExtractROIFilterType::Pointer maskExtractor = ExtractROIFilterType::New();
+      maskExtractor->SetInput( maskReader->GetOutput() );
+      maskExtractor->SetChannel( 1 );
+      maskExtractor->UpdateOutputInformation();
+      m_ExtractorList->PushBack( maskExtractor );
+
+      m_MasksList->PushBack(maskExtractor->GetOutput());
   }
 
   // Get the id of the band. Return -1 if band not found.
@@ -440,15 +527,15 @@ private:
   }
 
   // Return the path to a file for which the name end in the ending
-  std::string getImageFileName(const std::string& descriptor, const std::vector<MACCSFileInformation>& imageFiles, const std::string& ending) {
+  std::string getMACCSImageFileName(const std::string& descriptor, const std::vector<MACCSFileInformation>& imageFiles, const std::string& ending) {
 
       std::string folder;
       size_t pos = descriptor.find_last_of("/\\");
       if (pos == std::string::npos) {
           folder = "";
+      } else {
+          folder = descriptor.substr(0, pos);
       }
-
-      folder = descriptor.substr(0, pos);
 
       for (const MACCSFileInformation& fileInfo : imageFiles) {
           if (fileInfo.LogicalName.length() >= ending.length() &&
@@ -458,6 +545,54 @@ private:
 
       }
       return "";
+  }
+
+
+  // Return the path to a file for which the name end in the ending
+  std::string getMACCSImageFileName(const std::string& descriptor, const std::vector<MACCSAnnexInformation>& maskFiles, const std::string& ending) {
+
+      std::string folder;
+      size_t pos = descriptor.find_last_of("/\\");
+      if (pos == std::string::npos) {
+          folder = "";
+      } else {
+          folder = descriptor.substr(0, pos);
+      }
+
+      for (const MACCSAnnexInformation& fileInfo : maskFiles) {
+          if (fileInfo.File.LogicalName.length() >= ending.length() &&
+                  0 == fileInfo.File.LogicalName.compare (fileInfo.File.LogicalName.length() - ending.length(), ending.length(), ending)) {
+              return folder + "/" + fileInfo.File.FileLocation.substr(0, fileInfo.File.FileLocation.find_last_of('.')) + ".DBL.TIF";
+          }
+
+      }
+      return "";
+  }
+
+  // Return the path to a file for which the name end in the ending
+  std::string getSPOT4ImageFileName(const ImageDescriptor& desc) {
+
+      std::string folder;
+      size_t pos = desc.filename.find_last_of("/\\");
+      if (pos == std::string::npos) {
+          return desc.spot4Descriptor.Files.OrthoSurfCorrPente;
+      }
+
+      folder = desc.filename.substr(0, pos);
+      return folder + "/" + desc.spot4Descriptor.Files.OrthoSurfCorrPente;
+  }
+
+  // Return the path to a file for which the name end in the ending
+  std::string getSPOT4MaskFileName(const ImageDescriptor& desc) {
+
+      std::string folder;
+      size_t pos = desc.filename.find_last_of("/\\");
+      if (pos == std::string::npos) {
+          return desc.spot4Descriptor.Files.MaskNua;
+      }
+
+      folder = desc.filename.substr(0, pos);
+      return folder + "/" + desc.spot4Descriptor.Files.MaskNua;
   }
 
   ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const float& ratio) {
@@ -504,12 +639,18 @@ private:
        return resampler;
   }
 
+  inline std::string formatSPOT4Date(const std::string& date) {
+      return date.substr(0,4) + date.substr(5,2) + date.substr(8,2);
+  }
+
   ListConcatenerFilterType::Pointer     m_Concatener;
+  ListConcatenerFilterType::Pointer     m_Masks;
   ExtractROIFilterListType::Pointer     m_ExtractorList;
   ResampleFilterListType::Pointer       m_ResamplersList;
   InternalImageListType::Pointer        m_ImageList;
+  InternalImageListType::Pointer        m_MasksList;
   ImageReaderListType::Pointer          m_ImageReaderList;
-  std::vector<ImageDescriptorPairType>  m_DescriptorsList;
+  std::vector<ImageDescriptor>          m_DescriptorsList;
 
 
 };

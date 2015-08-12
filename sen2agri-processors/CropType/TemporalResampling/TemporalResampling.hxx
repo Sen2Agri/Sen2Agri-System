@@ -53,7 +53,7 @@ public:
 
             if (beforeId == -1 && afterId == -1) {
                 // if no valid pixel then set a default value (0.0)
-                result[outPixelId] = 0.0;
+                result[outPixelId] = -10000.0;
             } else if (beforeId == -1) {
                 // use only the after value
                 result[outPixelId] = pix[afterId * bands + band];

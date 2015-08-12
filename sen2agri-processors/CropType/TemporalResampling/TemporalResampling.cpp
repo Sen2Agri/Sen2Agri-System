@@ -244,7 +244,7 @@ private:
 
 
       // Create the instance of the filter which will perform all computations
-      BinaryFunctorImageFilterWithNBands::Pointer filter = BinaryFunctorImageFilterWithNBands::New();
+      filter = BinaryFunctorImageFilterWithNBands::New();
       filter->SetNumberOfOutputBands(imageBands * outDates.size());
       filter->SetFunctor(GapFillingFunctor<ImageType::PixelType>(inDates, outDates, radius, imageBands));
 
@@ -258,9 +258,10 @@ private:
 private:
   ReaderType::Pointer imgReader;
   ReaderType::Pointer maskReader;
+  BinaryFunctorImageFilterWithNBands::Pointer filter;
 
   inline int getDaysFromEpoch(const std::string& date) {
-      struct tm tm;
+      struct tm tm = {};
       if (strptime(date.c_str(), "%Y%m%d", &tm) == NULL) {
           itkExceptionMacro("Invalid value for a date: " + date);
       }

@@ -178,9 +178,6 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoUpdateParameters()
   {
-      //Get the type of the images
-      std::string type = GetParameterString("type");
-
       bandsPerImage = 4;
 
       // The expressions correspond to the case where a list of images is passes to the BandMath filter
