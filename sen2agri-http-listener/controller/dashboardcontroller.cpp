@@ -16,26 +16,33 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
 
     try {
         const auto &path = request.getPath();
+        const auto &method = request.getMethod();
         const auto &action = path.mid(path.indexOf('/', 1) + 1);
 
         response.setHeader("Access-Control-Allow-Origin", "*");
 
-        if (action == "GetDashboardCurrentJobData") {
-            getDashboardCurrentJobData(request, response);
-        } else if (action == "GetDashboardServerResourceData") {
-            getDashboardServerResourceData(request, response);
-        } else if (action == "GetDashboardProcessorStatistics") {
-            getDashboardProcessorStatistics(request, response);
-        } else if (action == "GetDashboardProductAvailability") {
-            getDashboardProductAvailability(request, response);
-        } else if (action == "CancelJob") {
-            cancelJob(request, response);
-        } else if (action == "PauseJob") {
-            pauseJob(request, response);
-        } else if (action == "ResumeJob") {
-            resumeJob(request, response);
-        } else {
-            response.setStatus(400, "Bad Request");
+        if (method == "GET") {
+            if (action == "GetDashboardCurrentJobData") {
+                getDashboardCurrentJobData(request, response);
+            } else if (action == "GetDashboardServerResourceData") {
+                getDashboardServerResourceData(request, response);
+            } else if (action == "GetDashboardProcessorStatistics") {
+                getDashboardProcessorStatistics(request, response);
+            } else if (action == "GetDashboardProductAvailability") {
+                getDashboardProductAvailability(request, response);
+            } else {
+                response.setStatus(400, "Bad Request");
+            }
+        } else if (method == "POST") {
+            if (action == "CancelJob") {
+                cancelJob(request, response);
+            } else if (action == "PauseJob") {
+                pauseJob(request, response);
+            } else if (action == "ResumeJob") {
+                resumeJob(request, response);
+            } else {
+                response.setStatus(400, "Bad Request");
+            }
         }
     } catch (const std::exception &e) {
         response.setStatus(500, "Internal Server Error");

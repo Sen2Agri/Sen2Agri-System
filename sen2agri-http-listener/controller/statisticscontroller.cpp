@@ -18,14 +18,21 @@ void StatisticsController::service(HttpRequest &request, HttpResponse &response)
 
     try {
         const auto &path = request.getPath();
+        const auto &method = request.getMethod();
         const auto &action = path.mid(path.indexOf('/', 1) + 1);
 
-        if (action == "SaveStatistics") {
-            saveDashboardData(request, response);
-        } else if (action == "GetMonitorAgentParameters") {
-            getMonitorAgentParameters(request, response);
-        } else {
-            response.setStatus(400, "Bad Request");
+        if (method == "GET") {
+            if (action == "GetMonitorAgentParameters") {
+                getMonitorAgentParameters(request, response);
+            } else {
+                response.setStatus(400, "Bad Request");
+            }
+        } else if (method == "POST") {
+            if (action == "SaveStatistics") {
+                saveDashboardData(request, response);
+            } else {
+                response.setStatus(400, "Bad Request");
+            }
         }
     } catch (const std::exception &e) {
         response.setStatus(500, "Internal Server Error");

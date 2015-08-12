@@ -1,3 +1,6 @@
+#include <QJsonDocument>
+#include <QJsonObject>
+
 #include "dummyprocessorhandler.hpp"
 
 void DummyProcessorHandler::HandleProductAvailableImpl(EventProcessingContext &ctx,
@@ -5,6 +8,13 @@ void DummyProcessorHandler::HandleProductAvailableImpl(EventProcessingContext &c
 {
     Q_UNUSED(ctx);
     Q_UNUSED(event);
+}
+
+static QString getStepJson(const QStringList &arguments)
+{
+    QJsonObject node;
+    node[QStringLiteral("arguments")] = QJsonArray::fromStringList(arguments);
+    return QString::fromUtf8(QJsonDocument(std::move(node)).toJson());
 }
 
 void DummyProcessorHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
@@ -20,8 +30,7 @@ void DummyProcessorHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
 
     const auto &parametersObj = parametersDoc.object();
-    const auto &inputPath = parametersObj[QStringLiteral("input_path")].toString();
-
+    auto inputPath = parametersObj[QStringLiteral("input_path")].toString();
     if (inputPath.isEmpty()) {
         throw std::runtime_error(
             QStringLiteral("Missing job input path. The parameter JSON was: '%1'")
@@ -29,19 +38,33 @@ void DummyProcessorHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                 .toStdString());
     }
 
-    auto taskId =
+    inputPath = QDir::cleanPath(inputPath) + QDir::separator();
+
+    auto task1Id =
         ctx.SubmitTask({ event.jobId, QStringLiteral("dummy-module"), QStringLiteral("null"), {} });
+    auto task2Id =
+        ctx.SubmitTask({ event.jobId, QStringLiteral("dummy-module"), QStringLiteral("null"), {} });
+    auto task3Id = ctx.SubmitTask({ event.jobId,
+                                    QStringLiteral("dummy-module"),
+                                    QStringLiteral("null"),
+                                    { task1Id, task2Id } });
 
-    const auto &outputPath = ctx.GetOutputPath(event.jobId, taskId);
+    const auto &output1Path = ctx.GetOutputPath(event.jobId, task1Id);
+    const auto &output2Path = ctx.GetOutputPath(event.jobId, task2Id);
+    const auto &output3Path = ctx.GetOutputPath(event.jobId, task3Id);
 
-    const auto &steps = ctx.CreateStepsFromInput(
-        taskId, inputPath, outputPath, QStringLiteral("*.*"),
-        [](const QString &inputFile, const QString &outputFile) {
-            QJsonObject node;
-            node[QStringLiteral("arguments")] = QJsonArray{ inputFile, outputFile };
-
-            return node;
-        });
+    NewStepList steps;
+    for (const auto &file : ctx.GetProductFiles(inputPath, "*.*")) {
+        steps.push_back({ task1Id,
+                          QFileInfo(file).baseName(),
+                          getStepJson({ inputPath + file, output1Path + file }) });
+        steps.push_back({ task2Id,
+                          QFileInfo(file).baseName(),
+                          getStepJson({ inputPath + file, output2Path + file }) });
+        steps.push_back({ task3Id,
+                          QFileInfo(file).baseName(),
+                          getStepJson({ inputPath + file, output3Path + file }) });
+    }
 
     ctx.SubmitSteps(steps);
 }
