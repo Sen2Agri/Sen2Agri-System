@@ -209,6 +209,7 @@ private:
       // read all features frm the source fiel and add them to the multimap
       for (int i = 0; i < featureCount; i++) {
           ogr::Feature feature = sourceLayer.GetFeature(i);
+          OGRFeature a = feature.ogr();
           featuresMap.insert(std::pair<int, ogr::Feature>(feature.ogr().GetFieldAsInteger("CODE"), feature));
       }
 
