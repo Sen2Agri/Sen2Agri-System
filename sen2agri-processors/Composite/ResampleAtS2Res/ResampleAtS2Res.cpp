@@ -235,9 +235,10 @@ private:
     // using BandMathFilter
     void DoExecute()
     {
-        char tmp[400];
-        strncpy(tmp, GetParameterAsString("xml").c_str(), 399);
-        m_DirName = std::string(dirname(tmp));
+        const std::string &tmp = GetParameterAsString("xml");
+        std::vector<char> buf(tmp.begin(), tmp.end());
+        m_DirName = std::string(dirname(buf.data()));
+
         auto maccsReader = itk::MACCSMetadataReader::New();
         if (auto m = maccsReader->ReadMetadata(GetParameterAsString("xml")))
         {
