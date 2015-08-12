@@ -51,10 +51,6 @@
 #include <vector>
 #include "UpdateSynthesisFunctor.h"
 
-#define FLAG_NO_DATA 1
-#define DATE_NO_DATA 1
-#define REFLECTANCE_NO_DATA 1
-#define WEIGHT_NO_DATA 1
 
 //  Software Guide : EndCodeSnippet
 
@@ -234,7 +230,7 @@ private:
         //not mandatory
 
         AddParameter(ParameterType_InputImage, "prevl3a", "Previous l3a product");
-        MandatoryOff("prevw");
+        MandatoryOff("prevl3a");
         /*
         AddParameter(ParameterType_InputImage, "prevw", "Weight for each pixel obtained so far");
         MandatoryOff("prevw");
@@ -373,12 +369,12 @@ private:
         //TODO: get resolution from local XML
         ResolutionType resType = RES_10M;
 
-
-        m_UpdateSynthesisFunctor = FunctorFilterType::New();
+        m_Concat->SetInput(m_ImageList);
         m_Functor.Initialize(sensorType, resType, l3aExist);
+        m_UpdateSynthesisFunctor = FunctorFilterType::New();
         m_UpdateSynthesisFunctor->SetFunctor(m_Functor);
         m_UpdateSynthesisFunctor->SetInput(m_Concat->GetOutput());
-        m_UpdateSynthesisFunctor->UpdateOutputInformation();
+        //m_UpdateSynthesisFunctor->UpdateOutputInformation();
         if(sensorType == SENSOR_S2)
             m_UpdateSynthesisFunctor->GetOutput()->SetNumberOfComponentsPerPixel(10);
         else
@@ -386,111 +382,6 @@ private:
 
 
         SetParameterOutputImage("out", m_UpdateSynthesisFunctor->GetOutput());
-
-
-#if(0)
-        for(j=0; j < m_PrevWeightPixel->GetNumberOfComponentsPerPixel(); j++)
-        {
-            ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-            extractor->SetInput( m_PrevWeightPixel );
-            extractor->SetChannel( j+1 );
-            extractor->UpdateOutputInformation();
-            m_ExtractorList->PushBack( extractor );
-            m_ImageList->PushBack( extractor->GetOutput() );
-        }
-
-        if(HasValue("prevw"))
-            m_PrevWeightPixel = GetParameterFloatVectorImage("prevw");
-        else {
-            m_PrevWeightPixel = FloatVectorImageType::New();
-            //TODO: fill with no-data !!! Allocate with one band and fill all the pixels
-        }
-
-        for(j=0; j < m_PrevWeightPixel->GetNumberOfComponentsPerPixel(); j++)
-        {
-            ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-            extractor->SetInput( m_PrevWeightPixel );
-            extractor->SetChannel( j+1 );
-            extractor->UpdateOutputInformation();
-            m_ExtractorList->PushBack( extractor );
-            m_ImageList->PushBack( extractor->GetOutput() );
-        }
-
-        if(HasValue("wavgdate"))
-            m_WeightAvgDate = GetParameterFloatVectorImage("wavgdate");
-        else {
-            m_WeightAvgDate = FloatVectorImageType::New();
-            //TODO: fill with no-data !!! Allocate with one band and fill all the pixels
-        }
-
-        for(j=0; j < m_WeightAvgDate->GetNumberOfComponentsPerPixel(); j++)
-        {
-            ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-            extractor->SetInput( m_WeightAvgDate );
-            extractor->SetChannel( j+1 );
-            extractor->UpdateOutputInformation();
-            m_ExtractorList->PushBack( extractor );
-            m_ImageList->PushBack( extractor->GetOutput() );
-        }
-
-        if(HasValue("wavgref"))
-            m_WeightAvgRef = GetParameterFloatVectorImage("wavgref");
-        else {
-            m_WeightAvgRef = FloatVectorImageType::New();
-            //TODO: fill with no-data !!! Allocate with one band and fill all the pixels
-        }
-
-        for(j=0; j < m_WeightAvgRef->GetNumberOfComponentsPerPixel(); j++)
-        {
-            ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-            extractor->SetInput( m_WeightAvgRef );
-            extractor->SetChannel( j+1 );
-            extractor->UpdateOutputInformation();
-            m_ExtractorList->PushBack( extractor );
-            m_ImageList->PushBack( extractor->GetOutput() );
-        }
-
-        if(HasValue("pixstat"))
-            m_PixelStat = GetParameterFloatVectorImage("pixstat");
-        else {
-            m_PixelStat = FloatVectorImageType::New();
-            //TODO: fill with no-data !!! Allocate with one band and fill all the pixels
-        }
-
-        for(j=0; j < m_PixelStat->GetNumberOfComponentsPerPixel(); j++)
-        {
-            ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-            extractor->SetInput( m_PixelStat );
-            extractor->SetChannel( j+1 );
-            extractor->UpdateOutputInformation();
-            m_ExtractorList->PushBack( extractor );
-            m_ImageList->PushBack( extractor->GetOutput() );
-        }
-#endif
-
-
-
-
-
-
-
-        //inImage1->UpdateOutputInformation();
-        //inImage2->UpdateOutputInformation();
-        //InputProcessXMLParameter::Pointer inputXML = GetParameterAsString();
-
-/*
-        filter = FilterType::New();
-        //binaryFilter = BinaryFilterType::New();
-
-        filter->SetInput(inImage1);
-        filter->UpdateOutputInformation();
-        filter->GetOutput()->SetNumberOfComponentsPerPixel(2);
-
-        //filter->SetInput1(inImage1);
-        //filter->SetInput2(inImage2);
-        //filter->UpdateLargestPossibleRegion();
-        SetParameterOutputImage("out" , filter->GetOutput());
-*/
 
         return;
     }

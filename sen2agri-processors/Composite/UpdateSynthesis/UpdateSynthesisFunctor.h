@@ -384,9 +384,26 @@ public:
         m_nNbOfL3AReflectanceBands = 0;
     }
 
-    bool operator!=( const UpdateSynthesisFunctor & ) const
+    UpdateSynthesisFunctor& operator =(const UpdateSynthesisFunctor& copy)
     {
-        return false;
+        m_fQuantificationValue = copy.m_fQuantificationValue;
+        m_bPrevL3ABandsAvailable = copy.m_bPrevL3ABandsAvailable;
+        m_nL2ABandStartIndex = copy.m_nL2ABandStartIndex;
+        m_nCloudMaskBandIndex = copy.m_nCloudMaskBandIndex;
+        m_nSnowMaskBandIndex = copy.m_nSnowMaskBandIndex;
+        m_nWaterMaskBandIndex = copy.m_nWaterMaskBandIndex;
+        m_nCurrentL2AWeightBandIndex = copy.m_nCurrentL2AWeightBandIndex;
+        m_nPrevL3AWeightBandStartIndex = copy.m_nPrevL3AWeightBandStartIndex;
+        m_nPrevL3AWeightedAvDateBandIndex = copy.m_nPrevL3AWeightedAvDateBandIndex;
+        m_nPrevL3AReflectanceBandStartIndex = copy.m_nPrevL3AReflectanceBandStartIndex;
+        m_nPrevL3APixelFlagBandIndex = copy.m_nPrevL3APixelFlagBandIndex;
+        m_nRedBandIndex = copy.m_nRedBandIndex;
+        m_nNbOfL3AReflectanceBands = copy.m_nNbOfL3AReflectanceBands;
+    }
+
+    bool operator!=( const UpdateSynthesisFunctor & other) const
+    {
+        return true;
     }
     bool operator==( const UpdateSynthesisFunctor & other ) const
     {
