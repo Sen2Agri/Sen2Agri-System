@@ -31,7 +31,8 @@ SOURCES += main.cpp \
     orchestratorworker.cpp \
     eventprocessingcontext.cpp \
     processorhandler.cpp \
-    processor/dummyprocessorhandler.cpp
+    processor/dummyprocessorhandler.cpp \
+    processor/croptypehandler.cpp
 
 HEADERS += \
     pch.hpp \
@@ -39,7 +40,8 @@ HEADERS += \
     orchestratorworker.hpp \
     eventprocessingcontext.hpp \
     processorhandler.hpp \
-    processor/dummyprocessorhandler.hpp
+    processor/dummyprocessorhandler.hpp \
+    processor/croptypehandler.hpp
 
 DISTFILES += \
     ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml \
