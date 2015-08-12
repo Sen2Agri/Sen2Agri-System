@@ -192,35 +192,33 @@ private:
       // Create the reader over the reference file
       ogrRef = otb::ogr::DataSource::New(GetParameterString("ref"), otb::ogr::DataSource::Modes::Read);
       if (ogrRef->GetLayersCount() < 1) {
-          // TODO: decide what happens
-          return;
+          itkExceptionMacro("The source file must contain at least one layer");
       }
 
       // get the required sampling ratio
       const float ratio = GetParameterFloat("ratio");
 
       // Create the writers over the outut files
-      ogrTp = otb::ogr::DataSource::New(GetParameterString("tp"), otb::ogr::DataSource::Modes::Update_LayerOverwrite);
-      ogrVp = otb::ogr::DataSource::New(GetParameterString("vp"), otb::ogr::DataSource::Modes::Update_LayerOverwrite);
+      ogrTp = otb::ogr::DataSource::New(GetParameterString("tp"), otb::ogr::DataSource::Modes::Overwrite);
+      ogrVp = otb::ogr::DataSource::New(GetParameterString("vp"), otb::ogr::DataSource::Modes::Overwrite);
 
       // read the layer of the reference file
       otb::ogr::Layer sourceLayer = ogrRef->GetLayer(0);
+      if (sourceLayer.GetGeomType() != wkbPolygon) {
+          itkExceptionMacro("The first layer must contain polygons!");
+      }
       int featureCount = sourceLayer.GetFeatureCount(true);
       // read all features frm the source fiel and add them to the multimap
       for (int i = 0; i < featureCount; i++) {
           ogr::Feature feature = sourceLayer.GetFeature(i);
-          OGRFeature a = feature.ogr();
-          featuresMap.insert(std::pair<int, ogr::Feature>(feature.ogr().GetFieldAsInteger("CODE"), feature));
+          featuresMap.insert(std::pair<int, ogr::Feature>(feature.ogr().GetFieldAsInteger("CODE"), feature.Clone()));
       }
 
       // create the layers for the target files
-      ogrTp->CreateLayer(sourceLayer.GetName(), (OGRSpatialReference*)sourceLayer.GetSpatialRef(), sourceLayer.GetGeomType());
-      ogrVp->CreateLayer(sourceLayer.GetName(), (OGRSpatialReference*)sourceLayer.GetSpatialRef(), sourceLayer.GetGeomType());
-      otb::ogr::Layer tpLayer = ogrTp->GetLayer(0);
-      otb::ogr::Layer vpLayer = ogrVp->GetLayer(0);
+      otb::ogr::Layer tpLayer = ogrTp->CreateLayer(sourceLayer.GetName(), sourceLayer.GetSpatialRef()->Clone(), sourceLayer.GetGeomType());
+      otb::ogr::Layer vpLayer = ogrVp->CreateLayer(sourceLayer.GetName(), sourceLayer.GetSpatialRef()->Clone(), sourceLayer.GetGeomType());
 
       int lastKey = -1;
-      int tpFeatures = 0, vpFeatures = 0;
       // Loop through the entries
       std::multimap<int,ogr::Feature>::iterator it;
       for (it=featuresMap.begin(); it!=featuresMap.end(); ++it) {
@@ -232,17 +230,15 @@ private:
           }
 
           // get the feature
-          ogr::Feature f = it->second;
+          ogr::Feature &f = it->second;
 
           // generate a random number and convert it to the [0..1] interval
           float random = (float) std::rand() / (float)RAND_MAX;
 
           // select the target file for this feature
           if (random <= ratio) {
-              tpFeatures++;
               tpLayer.CreateFeature(f);
           } else {
-              vpFeatures++;
               vpLayer.CreateFeature(f);
           }
       }
@@ -254,7 +250,7 @@ private:
       ogrTp->SyncToDisk();
       ogrVp->SyncToDisk();
 
-      std::cout << "total features: " << featureCount << ", Training features: " << tpFeatures << ", Validation features: " << vpFeatures << std::endl;
+      std::cout << "total features: " << featureCount << ", Training features: " << tpLayer.GetFeatureCount(true) << ", Validation features: " << vpLayer.GetFeatureCount(true) << std::endl;
   }
   //  Software Guide :EndCodeSnippet
 
