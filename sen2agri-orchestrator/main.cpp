@@ -10,6 +10,7 @@
 #include "orchestrator.hpp"
 #include "orchestrator_adaptor.h"
 
+#include "processor/croptypehandler.hpp"
 #include "processor/dummyprocessorhandler.hpp"
 
 int main(int argc, char *argv[])
@@ -22,6 +23,7 @@ int main(int argc, char *argv[])
         registerMetaTypes();
 
         std::map<int, std::unique_ptr<ProcessorHandler>> handlers;
+        handlers.emplace(5, std::make_unique<CropTypeHandler>());
         handlers.emplace(6, std::make_unique<DummyProcessorHandler>());
 
         Orchestrator orchestrator(handlers);
