@@ -196,7 +196,7 @@ private:
 
         AddParameter(ParameterType_InputFilename, "xml", "Xml description");
 
-        //AddParameter(ParameterType_OutputImage, "outres10", "Out Image");
+        AddParameter(ParameterType_OutputImage, "outres10", "Out Image");
         AddParameter(ParameterType_OutputImage, "outres20", "Out Image");
         AddParameter(ParameterType_OutputImage, "outcmres10", "Out Image");
         AddParameter(ParameterType_OutputImage, "outwmres10", "Out Image");
@@ -256,7 +256,7 @@ private:
         }
         m_ConcatenerRes10->SetInput( m_ImageListRes10 );
 
-        //SetParameterOutputImage("outres10", m_ConcatenerRes10->GetOutput());
+        SetParameterOutputImage("outres10", m_ConcatenerRes10->GetOutput());
 
         m_ConcatenerRes20->SetInput( m_ImageListRes20 );
 

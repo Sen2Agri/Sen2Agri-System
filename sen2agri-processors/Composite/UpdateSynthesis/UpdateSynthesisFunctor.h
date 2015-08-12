@@ -399,6 +399,7 @@ public:
         m_nPrevL3APixelFlagBandIndex = copy.m_nPrevL3APixelFlagBandIndex;
         m_nRedBandIndex = copy.m_nRedBandIndex;
         m_nNbOfL3AReflectanceBands = copy.m_nNbOfL3AReflectanceBands;
+        return *this;
     }
 
     bool operator!=( const UpdateSynthesisFunctor & other) const
