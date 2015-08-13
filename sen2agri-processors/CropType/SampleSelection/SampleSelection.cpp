@@ -207,16 +207,31 @@ private:
       if (sourceLayer.GetGeomType() != wkbPolygon) {
           itkExceptionMacro("The first layer must contain polygons!");
       }
+
+      sourceLayer.ogr().SetAttributeFilter("CROP=1");
+
       int featureCount = sourceLayer.GetFeatureCount(true);
+
       // read all features frm the source fiel and add them to the multimap
-      for (int i = 0; i < featureCount; i++) {
-          ogr::Feature feature = sourceLayer.GetFeature(i);
+      for (ogr::Feature& feature : sourceLayer) {
           featuresMap.insert(std::pair<int, ogr::Feature>(feature.ogr().GetFieldAsInteger("CODE"), feature.Clone()));
       }
 
       // create the layers for the target files
       otb::ogr::Layer tpLayer = ogrTp->CreateLayer(sourceLayer.GetName(), sourceLayer.GetSpatialRef()->Clone(), sourceLayer.GetGeomType());
       otb::ogr::Layer vpLayer = ogrVp->CreateLayer(sourceLayer.GetName(), sourceLayer.GetSpatialRef()->Clone(), sourceLayer.GetGeomType());
+
+      // add the fields
+      OGRFeatureDefn* layerDefn = sourceLayer.ogr().GetLayerDefn();
+
+      for (int i = 0; i < layerDefn->GetFieldCount(); i++ ) {
+          OGRFieldDefn* fieldDefn = layerDefn->GetFieldDefn(i);
+          tpLayer.ogr().CreateField(fieldDefn);
+          vpLayer.ogr().CreateField(fieldDefn);
+      }
+
+      OGRFeatureDefn* tpLayerDefn = tpLayer.ogr().GetLayerDefn();
+      OGRFeatureDefn* vpLayerDefn = sourceLayer.ogr().GetLayerDefn();
 
       int lastKey = -1;
       // Loop through the entries
@@ -237,9 +252,29 @@ private:
 
           // select the target file for this feature
           if (random <= ratio) {
-              tpLayer.CreateFeature(f);
+              ogr::Feature feat(*tpLayerDefn);
+              // Add field values from input Layer
+              for (int i = 0; i < tpLayerDefn->GetFieldCount(); i++) {
+                  OGRFieldDefn* fieldDefn = tpLayerDefn->GetFieldDefn(i);
+                  feat.ogr().SetField(fieldDefn->GetNameRef(), f.ogr().GetRawFieldRef(i));
+              }
+
+              // Set the geometry
+              feat.ogr().SetGeometry(f.ogr().GetGeometryRef()->clone());
+
+              tpLayer.CreateFeature(feat);
           } else {
-              vpLayer.CreateFeature(f);
+              ogr::Feature feat(*vpLayerDefn);
+              // Add field values from input Layer
+              for (int i = 0; i < vpLayerDefn->GetFieldCount(); i++) {
+                  OGRFieldDefn* fieldDefn = vpLayerDefn->GetFieldDefn(i);
+                  feat.ogr().SetField(fieldDefn->GetNameRef(), f.ogr().GetRawFieldRef(i));
+              }
+
+              // Set the geometry
+              feat.ogr().SetGeometry(f.ogr().GetGeometryRef()->clone());
+
+              vpLayer.CreateFeature(feat);
           }
       }
 
