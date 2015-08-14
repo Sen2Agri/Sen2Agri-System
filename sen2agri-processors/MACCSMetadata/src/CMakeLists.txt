@@ -21,3 +21,5 @@ target_link_libraries(MACCSMetadata
     "${OTBITK_LIBRARIES}")
 
 target_include_directories(MACCSMetadata PUBLIC ../include)
+
+install(TARGETS MACCSMetadata DESTINATION lib)
