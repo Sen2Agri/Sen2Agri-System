@@ -19,9 +19,17 @@ BEGIN
 	END IF;
 
 	UPDATE step
-	SET status_id = 8, --Error
+	SET status_id = CASE status_id
+                        WHEN 2 THEN 8 -- PendingStart -> Error
+                        WHEN 4 THEN 8 -- Running -> Error
+                        ELSE status_id
+                    END,
 	end_timestamp = now(),
-	status_timestamp = now(), 
+	status_timestamp = CASE status_id
+                           WHEN 2 THEN now()
+                           WHEN 4 THEN now()
+                           ELSE status_timestamp
+                       END,
 	exit_code = _exit_code
 	WHERE name = _step_name AND task_id = _task_id 
 	AND status_id != 8; -- Prevent resetting the status on serialization error retries.

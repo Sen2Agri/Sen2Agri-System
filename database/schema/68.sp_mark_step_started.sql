@@ -10,21 +10,39 @@ BEGIN
 	END IF;
 
 	UPDATE step
-	SET status_id = 4, --Running
+    SET status_id = CASE status_id
+                        WHEN 2 THEN 4 -- PendingStart -> Running
+                        ELSE status_id
+                    END,
 	start_timestamp = now(),
-	status_timestamp = now()
+	status_timestamp = CASE status_id
+                           WHEN 2 THEN now()
+                           ELSE status_timestamp
+                       END
 	WHERE name = _step_name AND task_id = _task_id
 	AND status_id != 4; -- Prevent resetting the status on serialization error retries.
 
 	UPDATE task
-	SET status_id = 4, --Running
-	status_timestamp = now()
+	SET status_id = CASE status_id
+                        WHEN 1 THEN 4 -- Submitted -> Running
+                        ELSE status_id
+                    END,
+	status_timestamp = CASE status_id
+                           WHEN 1 THEN now()
+                           ELSE status_timestamp
+                       END
 	WHERE id = _task_id
 	AND status_id != 4; -- Prevent resetting the status on serialization error retries.
 
 	UPDATE job
-	SET status_id = 4, --Running
-	status_timestamp = now()
+	SET status_id = CASE job.status_id
+                        WHEN 1 THEN 4 -- Submitted -> Running
+                        ELSE job.status_id
+                    END,
+	status_timestamp = CASE job.status_id
+                           WHEN 1 THEN now()
+                           ELSE job.status_timestamp
+                       END
 	FROM task WHERE job.id = task.job_id
 	AND job.status_id != 4; -- Prevent resetting the status on serialization error retries.
 

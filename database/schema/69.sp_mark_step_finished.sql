@@ -20,9 +20,17 @@ BEGIN
 	END IF;
 
 	UPDATE step
-	SET status_id = 6, --Finished
+	SET status_id = CASE status_id
+                        WHEN 2 THEN 6 -- PendingStart -> Finished
+                        WHEN 4 THEN 6 -- Running -> Finished
+                        ELSE status_id
+                    END,
 	end_timestamp = now(),
-	status_timestamp = now(),
+	status_timestamp = CASE status_id
+                           WHEN 2 THEN now()
+                           WHEN 4 THEN now()
+                           ELSE status_timestamp
+                       END,
 	exit_code = _exit_code
 	WHERE name = _step_name AND task_id = _task_id
 	AND status_id != 6; -- Prevent resetting the status on serialization error retries.
@@ -56,8 +64,16 @@ BEGIN
 	END IF;
 
 	UPDATE task
-	SET status_id = 6, --Finished
-	status_timestamp = now()
+	SET status_id = CASE status_id
+                        WHEN 1 THEN 6 -- Submitted -> Finished
+                        WHEN 4 THEN 6 -- Running -> Finished
+                        ELSE status_id
+                    END,
+	status_timestamp = CASE status_id
+                           WHEN 1 THEN now()
+                           WHEN 4 THEN now()
+                           ELSE status_timestamp
+                       END
 	WHERE id = _task_id
 	AND status_id != 6 -- Prevent resetting the status on serialization error retries.
 	AND NOT EXISTS (SELECT * FROM step WHERE task_id = _task_id AND status_id != 6); -- Check that all the steps have been finished.
@@ -88,8 +104,14 @@ BEGIN
 
 		-- Update the tasks that can be run
 		UPDATE task SET
-			status_id = 1, --Submitted
-			status_timestamp = now()
+			status_id = CASE status_id
+                            WHEN 3 THEN 1 -- NeedsInput -> Submitted
+                            ELSE status_id
+                        END,
+			status_timestamp = CASE status_id
+                                   WHEN 3 THEN now()
+                                   ELSE status_timestamp
+                               END
 		WHERE task.id = ANY(runnable_task_ids);
 
         IF runnable_task_ids IS NOT NULL THEN
