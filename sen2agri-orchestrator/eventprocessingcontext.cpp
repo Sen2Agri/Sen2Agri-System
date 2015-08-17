@@ -2,8 +2,9 @@
 #include <QFile>
 #include <QString>
 
-#include "eventprocessingcontext.hpp"
 #include "dbus_future_utils.hpp"
+
+#include "eventprocessingcontext.hpp"
 
 EventProcessingContext::EventProcessingContext(
     OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient)
@@ -22,7 +23,7 @@ int EventProcessingContext::SubmitTask(const NewTask &task)
 {
     auto taskId = WaitForResponseAndThrow(persistenceManagerClient.SubmitTask(task));
 
-    const auto &path = GetOutputPath(task.jobId, taskId);
+    const auto &path = GetOutputPath(task.jobId, taskId, task.module);
     QDir::root().mkpath(path);
 
     return taskId;
@@ -95,11 +96,12 @@ QStringList EventProcessingContext::GetProductFiles(const QString &path,
     return QDir(path).entryList(QStringList() << pattern, QDir::Files);
 }
 
-QString EventProcessingContext::GetOutputPath(int jobId, int taskId)
+QString EventProcessingContext::GetOutputPath(int jobId, int taskId, const QString &module)
 {
     return GetScratchPath(jobId)
         .replace(QLatin1String("{job_id}"), QString::number(jobId))
-        .replace(QLatin1String("{task_id}"), QString::number(taskId));
+        .replace(QLatin1String("{task_id}"), QString::number(taskId))
+        .replace(QLatin1String("{module}"), module);
 }
 
 QString EventProcessingContext::GetScratchPath(int jobId)
@@ -116,4 +118,29 @@ QString EventProcessingContext::GetScratchPath(int jobId)
     Q_ASSERT(parameters.size() == 1);
 
     return QDir::cleanPath(parameters.front().value) + QDir::separator();
+}
+
+void EventProcessingContext::SubmitTasks(int jobId,
+                                         const QList<std::reference_wrapper<TaskToSubmit>> &tasks)
+{
+    for (auto taskRef : tasks) {
+        auto &task = taskRef.get();
+
+        QList<int> parentTaskIds;
+        parentTaskIds.reserve(task.parentTasks.size());
+        for (auto parentTaskRef : task.parentTasks) {
+            auto &parentTask = parentTaskRef.get();
+
+            if (!parentTask.taskId) {
+                throw std::runtime_error(
+                    "Please sort the tasks according to their execution order");
+            }
+
+            parentTaskIds.append(parentTask.taskId);
+        }
+
+        task.taskId = SubmitTask({ jobId, task.moduleName, QStringLiteral("null"), parentTaskIds });
+
+        task.outputPath = GetOutputPath(jobId, task.taskId, task.moduleName);
+    }
 }
