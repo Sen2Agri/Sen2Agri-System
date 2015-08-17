@@ -41,22 +41,34 @@ static QString findProductMetadata(const QString &path)
 void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                              const JobSubmittedEvent &event)
 {
+    QMap<QString, QString> configParameters;
+    for (const auto &p : ctx.GetJobConfigurationParameters(event.jobId, "crop-type.")) {
+        configParameters.insert(p.key, p.value);
+    }
+
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
     const auto &referencePolygons = parameters["reference_polygons"].toString();
-    const auto &sampleRatio = parameters["sample_ratio"].toString();
 
     const auto &inputProducts = parameters["input_products"].toArray();
 
-    const auto &samplingRate = parameters["sampling_rate"].toString();
     const auto &dateStart = parameters["date_start"].toString();
     const auto &dateEnd = parameters["date_end"].toString();
-    const auto &radius = parameters["radius"].toString();
-
-    const auto &classifier = parameters["classifier"].toString();
-    const auto &fieldName = parameters["field_name"].toString();
 
     const auto &cropMask = parameters["crop_mask"].toString();
+
+    const auto &samplingRate = configParameters["crop-type.sampling-rate"];
+    const auto &sampleRatio = parameters["crop-type.sample-ratio"].toString();
+
+    const auto &classifier = configParameters["crop-type.classifier"];
+    const auto &fieldName = configParameters["crop-type.classifier.field"];
+
+    const auto &classifierRfNbTrees = configParameters["crop-type.classifier.rf.nbtrees"];
+    const auto &classifierRfMinSamples = configParameters["crop-type.classifier.rf.min"];
+    const auto &classifierRfMaxDepth = configParameters["crop-type.classifier.rf.max"];
+
+    const auto &classifierSvmKernel = configParameters["crop-type.classifier.svm.k"];
+    const auto &classifierSvmOptimize = configParameters["crop-type.classifier.svm.opt"];
 
     TaskToSubmit sampleSelection{ "sample-selection", {} };
     TaskToSubmit bandsExtractor{ "bands-extractor", {} };
@@ -134,16 +146,16 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 
     if (classifier == "rf") {
         trainImagesClassifierArgs.append("-classifier.rf.nbtrees");
-        trainImagesClassifierArgs.append("100");
+        trainImagesClassifierArgs.append(classifierRfNbTrees);
         trainImagesClassifierArgs.append("-classifier.rf.min");
-        trainImagesClassifierArgs.append("5");
+        trainImagesClassifierArgs.append(classifierRfMinSamples);
         trainImagesClassifierArgs.append("-classifier.rf.max");
-        trainImagesClassifierArgs.append("25");
+        trainImagesClassifierArgs.append(classifierRfMaxDepth);
     } else {
         trainImagesClassifierArgs.append("-classifier.svm.k");
-        trainImagesClassifierArgs.append("rbf");
+        trainImagesClassifierArgs.append(classifierSvmKernel);
         trainImagesClassifierArgs.append("-classifier.svm.opt");
-        trainImagesClassifierArgs.append("1");
+        trainImagesClassifierArgs.append(classifierSvmOptimize);
     }
 
     QStringList imageClassifierArgs = { "-in",    feFts, "-imstat", statistics,
@@ -177,8 +189,6 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                                               dateStart,
                                                               "-tend",
                                                               dateEnd,
-                                                              "-radius",
-                                                              radius,
                                                               "-rtocr",
                                                               rtocr }),
         featureExtraction.CreateStep("FeatureExtraction",
