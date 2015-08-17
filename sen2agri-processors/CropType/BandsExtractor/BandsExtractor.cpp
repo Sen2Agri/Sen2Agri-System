@@ -40,6 +40,7 @@
 #include "otbImageList.h"
 #include "otbImageListToVectorImageFilter.h"
 #include "otbMultiToMonoChannelExtractROI.h"
+#include "otbBandMathImageFilter.h"
 
 #include "otbStreamingResampleImageFilter.h"
 
@@ -53,6 +54,11 @@
 
 #define TYPE_MACCS  0
 #define TYPE_SPOT4  1
+
+#define MASK_TYPE_NUA   0
+#define MASK_TYPE_SAT   1
+#define MASK_TYPE_DIV   2
+
 
 typedef otb::VectorImage<short, 2>                                 ImageType;
 typedef otb::Image<short, 2>                                       InternalImageType;
@@ -79,6 +85,10 @@ typedef itk::LinearInterpolateImageFunction<InternalImageType,
 typedef itk::IdentityTransform<double, InternalImageType::ImageDimension>      IdentityTransformType;
 typedef itk::ScalableAffineTransform<double, InternalImageType::ImageDimension> ScalableTransformType;
 typedef ScalableTransformType::OutputVectorType                         OutputVectorType;
+
+typedef otb::BandMathImageFilter<InternalImageType>                 BandMathImageFilterType;
+typedef otb::ObjectList<BandMathImageFilterType>                    BandMathImageFilterListType;
+
 
 struct SourceImageMetadata {
     MACCSFileMetadata  msccsFileMetadata;
@@ -210,6 +220,7 @@ private:
     m_ResamplersList = ResampleFilterListType::New();
     m_ExtractorList = ExtractROIFilterListType::New();
     m_ImageReaderList = ImageReaderListType::New();
+    m_BandMathList = BandMathImageFilterListType::New();
 
     //  Software Guide : BeginCodeSnippet
     AddParameter(ParameterType_InputFilenameList, "il", "The xml files");
@@ -248,6 +259,13 @@ private:
       m_ExtractorList = ExtractROIFilterListType::New();
       m_ResamplersList = ResampleFilterListType::New();
       m_ImageReaderList = ImageReaderListType::New();
+      m_BandMathList = BandMathImageFilterListType::New();
+
+#ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
+      m_maskExpression = "((b3 != 1) && (b1 == 0) && (b2 == 0) ? 0 : 1)";
+#else
+      m_maskExpression = "if(b3==1,1,if(b1==0,if(b2==0,0,1),1))";
+#endif
   }
   //  Software Guide : EndCodeSnippet
 
@@ -416,15 +434,48 @@ private:
       }
 
       // create the mask
-      std::string maskFile = getSPOT4MaskFileName(meta);
-      ImageReaderType::Pointer maskReader = getReader(maskFile);
-      ExtractROIFilterType::Pointer maskExtractor = ExtractROIFilterType::New();
-      maskExtractor->SetInput( maskReader->GetOutput() );
-      maskExtractor->SetChannel( 1 );
-      maskExtractor->UpdateOutputInformation();
-      m_ExtractorList->PushBack( maskExtractor );
+      std::string maskFileNua = getSPOT4MaskFileName(meta, MASK_TYPE_NUA);
+      ImageReaderType::Pointer maskReaderNua = getReader(maskFileNua);
+      std::string maskFileSat = getSPOT4MaskFileName(meta, MASK_TYPE_SAT);
+      ImageReaderType::Pointer maskReaderSat = getReader(maskFileSat);
+      std::string maskFileDiv = getSPOT4MaskFileName(meta, MASK_TYPE_DIV);
+      ImageReaderType::Pointer maskReaderDiv = getReader(maskFileDiv);
 
-      m_MasksList->PushBack(maskExtractor->GetOutput());
+      BandMathImageFilterType::Pointer maskMath = BandMathImageFilterType::New();
+
+      ExtractROIFilterType::Pointer nuaMaskExtractor = ExtractROIFilterType::New();
+      nuaMaskExtractor->SetInput( maskReaderNua->GetOutput() );
+      nuaMaskExtractor->SetChannel( 1 );
+      nuaMaskExtractor->UpdateOutputInformation();
+      m_ExtractorList->PushBack( nuaMaskExtractor );
+
+      ExtractROIFilterType::Pointer satMaskExtractor = ExtractROIFilterType::New();
+      satMaskExtractor->SetInput( maskReaderSat->GetOutput() );
+      satMaskExtractor->SetChannel( 1 );
+      satMaskExtractor->UpdateOutputInformation();
+      m_ExtractorList->PushBack( satMaskExtractor );
+
+      ExtractROIFilterType::Pointer divMaskExtractor = ExtractROIFilterType::New();
+      divMaskExtractor->SetInput( maskReaderDiv->GetOutput() );
+      divMaskExtractor->SetChannel( 1 );
+      divMaskExtractor->UpdateOutputInformation();
+      m_ExtractorList->PushBack( divMaskExtractor );
+
+
+      maskMath->SetNthInput(0, nuaMaskExtractor->GetOutput());
+      maskMath->SetNthInput(1, satMaskExtractor->GetOutput());
+      maskMath->SetNthInput(2, divMaskExtractor->GetOutput());
+      maskMath->SetExpression(m_maskExpression);
+
+      m_BandMathList->PushBack(maskMath);
+
+//      ExtractROIFilterType::Pointer maskExtractor = ExtractROIFilterType::New();
+//      maskExtractor->SetInput( maskMath->GetOutput() );
+//      maskExtractor->SetChannel( 1 );
+//      maskExtractor->UpdateOutputInformation();
+//      m_ExtractorList->PushBack( maskExtractor );
+
+      m_MasksList->PushBack(maskMath->GetOutput());
   }
 
   // Process a Sentinel2 image
@@ -583,16 +634,30 @@ private:
   }
 
   // Return the path to a file for which the name end in the ending
-  std::string getSPOT4MaskFileName(const ImageDescriptor& desc) {
+  std::string getSPOT4MaskFileName(const ImageDescriptor& desc, const unsigned char maskType) {
+
+      std::string file;
+      switch (maskType) {
+      case MASK_TYPE_NUA:
+          file = desc.spot4Descriptor.Files.MaskNua;
+          break;
+      case MASK_TYPE_DIV:
+          file = desc.spot4Descriptor.Files.MaskDiv;
+          break;
+      case MASK_TYPE_SAT:
+      default:
+          file = desc.spot4Descriptor.Files.MaskSaturation;
+          break;
+      }
 
       std::string folder;
       size_t pos = desc.filename.find_last_of("/\\");
       if (pos == std::string::npos) {
-          return desc.spot4Descriptor.Files.MaskNua;
+          return file;
       }
 
       folder = desc.filename.substr(0, pos);
-      return folder + "/" + desc.spot4Descriptor.Files.MaskNua;
+      return folder + "/" + file;
   }
 
   ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const float& ratio) {
@@ -651,8 +716,8 @@ private:
   InternalImageListType::Pointer        m_MasksList;
   ImageReaderListType::Pointer          m_ImageReaderList;
   std::vector<ImageDescriptor>          m_DescriptorsList;
-
-
+  BandMathImageFilterListType::Pointer  m_BandMathList;
+  std::string                           m_maskExpression;
 };
 }
 }
