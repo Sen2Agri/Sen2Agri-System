@@ -4,6 +4,8 @@
 #include "itkBinaryFunctorImageFilter.h"
 #include "otbVectorImage.h"
 
+#define NOVALUEPIXEL    0.0
+
 typedef otb::VectorImage<float, 2> ImageType;
 
 typedef struct _Indeces {
@@ -46,14 +48,14 @@ public:
             int outPixelId = outDateIndex * bands + band;
 
             // get the id of the first valid date before or equal to the output date
-            int beforeId = getPixelDateIndex(ind.maxLo, ind.minLo, band, mask);
+            int beforeId = getPixelDateIndex(ind.maxLo, ind.minLo, band, mask, pix);
 
             // get the id of the first valid date after or equal to the output date
-            int afterId = getPixelDateIndex(ind.minHi, ind.maxHi, band, mask);
+            int afterId = getPixelDateIndex(ind.minHi, ind.maxHi, band, mask, pix);
 
             if (beforeId == -1 && afterId == -1) {
                 // if no valid pixel then set a default value (0.0)
-                result[outPixelId] = -10000.0;
+                result[outPixelId] = NOVALUEPIXEL;
             } else if (beforeId == -1) {
                 // use only the after value
                 result[outPixelId] = pix[afterId * bands + band];
@@ -149,7 +151,7 @@ private:
   }
 
   // Get the date index of the first valid pixel or -1 if none found
-  int getPixelDateIndex(int startIndex, int endIndex, int band, const PixelType& mask) const {
+  int getPixelDateIndex(int startIndex, int endIndex, int band, const PixelType& mask, const PixelType& pix) const {
 
       if (startIndex == -1 || endIndex == -1) {
           return -1;
@@ -162,8 +164,8 @@ private:
           // compute the id of the required pixel
           int pixelId = index * bands + band;
 
-          // if the pixel is invalid then continue
-          if (mask[pixelId] != 0.0) {
+          // if the pixel is masked or nodata then continue
+          if (mask[index] != 0.0 || pix[pixelId] < 0.0) {
               // if it was the last index then stop and return -1
               if (index == endIndex) {
                   index = -1;

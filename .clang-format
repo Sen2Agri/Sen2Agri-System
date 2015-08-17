@@ -7,10 +7,9 @@ ColumnLimit: 100
 BreakBeforeBraces: Linux
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 IndentCaseLabels: true
-AllowShortFunctionsOnASingleLine: false
+#AllowShortFunctionsOnASingleLine: false
 Cpp11BracedListStyle: false
-SpaceAfterCStyleCast: true
+#SpaceAfterCStyleCast: true
 BinPackParameters: false
 AlwaysBreakTemplateDeclarations: true
 ...
-
