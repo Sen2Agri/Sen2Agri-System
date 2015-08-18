@@ -1,4 +1,5 @@
 #include <QJsonDocument>
+#include <QJsonArray>
 #include <QJsonObject>
 
 #include "dummyprocessorhandler.hpp"
@@ -10,27 +11,12 @@ void DummyProcessorHandler::HandleProductAvailableImpl(EventProcessingContext &c
     Q_UNUSED(event);
 }
 
-static QString getStepJson(const QStringList &arguments)
-{
-    QJsonObject node;
-    node[QStringLiteral("arguments")] = QJsonArray::fromStringList(arguments);
-    return QString::fromUtf8(QJsonDocument(std::move(node)).toJson());
-}
-
 void DummyProcessorHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                                    const JobSubmittedEvent &event)
 {
-    const auto &parametersDoc = QJsonDocument::fromJson(event.parametersJson.toUtf8());
-    if (!parametersDoc.isObject()) {
-        throw std::runtime_error(
-            QStringLiteral("Unexpected step parameter JSON schema: root node should be an "
-                           "object. The parameter JSON was: '%1'")
-                .arg(event.parametersJson)
-                .toStdString());
-    }
+    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
-    const auto &parametersObj = parametersDoc.object();
-    auto inputPath = parametersObj[QStringLiteral("input_path")].toString();
+    auto inputPath = parameters["input_path"].toString();
     if (inputPath.isEmpty()) {
         throw std::runtime_error(
             QStringLiteral("Missing job input path. The parameter JSON was: '%1'")
@@ -40,30 +26,20 @@ void DummyProcessorHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 
     inputPath = QDir::cleanPath(inputPath) + QDir::separator();
 
-    auto task1Id =
-        ctx.SubmitTask({ event.jobId, QStringLiteral("dummy-module"), QStringLiteral("null"), {} });
-    auto task2Id =
-        ctx.SubmitTask({ event.jobId, QStringLiteral("dummy-module"), QStringLiteral("null"), {} });
-    auto task3Id = ctx.SubmitTask({ event.jobId,
-                                    QStringLiteral("dummy-module"),
-                                    QStringLiteral("null"),
-                                    { task1Id, task2Id } });
+    TaskToSubmit task1{ QStringLiteral("dummy-module"), {} };
+    TaskToSubmit task2{ QStringLiteral("dummy-module"), {} };
+    TaskToSubmit task3{ QStringLiteral("dummy-module"), { task1, task2 } };
 
-    const auto &output1Path = ctx.GetOutputPath(event.jobId, task1Id);
-    const auto &output2Path = ctx.GetOutputPath(event.jobId, task2Id);
-    const auto &output3Path = ctx.GetOutputPath(event.jobId, task3Id);
+    ctx.SubmitTasks(event.jobId, { task1, task2, task3 });
 
     NewStepList steps;
     for (const auto &file : ctx.GetProductFiles(inputPath, "*.*")) {
-        steps.push_back({ task1Id,
-                          QFileInfo(file).baseName(),
-                          getStepJson({ inputPath + file, output1Path + file }) });
-        steps.push_back({ task2Id,
-                          QFileInfo(file).baseName(),
-                          getStepJson({ inputPath + file, output2Path + file }) });
-        steps.push_back({ task3Id,
-                          QFileInfo(file).baseName(),
-                          getStepJson({ inputPath + file, output3Path + file }) });
+        const auto &inputFile = inputPath + file;
+        const auto &stepName = QFileInfo(file).baseName();
+
+        steps.push_back(task1.CreateStep(stepName, { inputFile, task1.GetFilePath(file) }));
+        steps.push_back(task2.CreateStep(stepName, { inputFile, task2.GetFilePath(file) }));
+        steps.push_back(task3.CreateStep(stepName, { inputFile, task3.GetFilePath(file) }));
     }
 
     ctx.SubmitSteps(steps);
@@ -75,6 +51,6 @@ void DummyProcessorHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     ctx.InsertProduct({ ProductType::TestProduct,
                         event.processorId,
                         event.taskId,
-                        ctx.GetOutputPath(event.jobId, event.taskId),
+                        ctx.GetOutputPath(event.jobId, event.taskId, event.module),
                         QDateTime::currentDateTimeUtc() });
 }

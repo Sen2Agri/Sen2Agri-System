@@ -38,7 +38,7 @@ void AbstractExecInfosProtSrv::StopCommunication()
     m_bServerStarted = false;
 }
 
-bool AbstractExecInfosProtSrv::HandleNewMessage(QByteArray &message)
+bool AbstractExecInfosProtSrv::HandleNewMessage(const QByteArray &message)
 {
     if(m_pListener)
     {

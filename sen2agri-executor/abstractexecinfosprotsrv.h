@@ -27,7 +27,7 @@ public:
 protected:
     virtual int StartServer(QString &strSrvAddr, int nPort) = 0;
     virtual void StopServer() = 0;
-    virtual bool HandleNewMessage(QByteArray &message);
+    virtual bool HandleNewMessage(const QByteArray &message);
 
 protected:
     IProcessorWrapperMsgsListener *m_pListener;

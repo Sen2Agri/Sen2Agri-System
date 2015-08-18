@@ -9,3 +9,11 @@ var get_processor_statistics_interval = 60000;
 
 var get_product_availability_data_url = "http://sen2agri-dev:8080/dashboard/GetDashboardProductAvailability";
 var get_product_availability_data_interval = 60000;
+
+var pause_job_url = "http://sen2agri-dev:8080/dashboard/PauseJob";
+
+var resume_job_url = "http://sen2agri-dev:8080/dashboard/ResumeJob";
+
+var cancel_job_url = "http://sen2agri-dev:8080/dashboard/CancelJob";
+
+var get_job_config_data_url = "http://sen2agri-dev:8080/dashboard/GetJobConfig";

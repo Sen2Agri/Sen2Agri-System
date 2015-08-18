@@ -1,10 +1,12 @@
 #include "execinfosprotsrvfactory.h"
 #include "abstractexecinfosprotsrv.h"
 #include "simpleudpexecinfosprotsrv.h"
+#include "simpletcpexecinfosprotsrv.h"
 
 ExecInfosProtSrvFactory::ExecInfosProtSrvFactory()
 {
     Register(SIMPLE_UDP, &SimpleUdpExecInfosProtSrv::Create);
+    Register(SIMPLE_TCP, &SimpleTcpExecInfosProtSrv::Create);
     //TODO
     //Register(HTTP_SRV, &HttpExecInfosProtSrv::Create);
 }

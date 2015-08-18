@@ -4,16 +4,16 @@
 #include "itkBinaryFunctorImageFilter.h"
 #include "otbVectorImage.h"
 
-#define NOVALUEPIXEL    0.0
+#define NOVALUEPIXEL    -10000.0
 
 typedef otb::VectorImage<float, 2> ImageType;
 
-typedef struct _Indeces {
+struct Indeces {
     int minLo;
     int maxLo;
     int minHi;
     int maxHi;
-} Indeces;
+};
 
 
 template <typename PixelType>
@@ -75,7 +75,7 @@ public:
                 float a = (y1 - y2) / (x1 - x2);
                 float b = y1 - a * x1;
 
-                result[outPixelId] = a * outDate + b;
+                result[outPixelId] = (a * outDate + b);
             }
 
         }
@@ -146,6 +146,8 @@ private:
               indeces.maxHi = i;
           }
       }
+      indeces.minLo = 0;
+      indeces.maxHi = id.size() - 1;
 
       return indeces;
   }
@@ -165,7 +167,7 @@ private:
           int pixelId = index * bands + band;
 
           // if the pixel is masked or nodata then continue
-          if (mask[index] != 0.0 || pix[pixelId] < 0.0) {
+          if (mask[index] != 0 || pix[pixelId] < 0.0) {
               // if it was the last index then stop and return -1
               if (index == endIndex) {
                   index = -1;

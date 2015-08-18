@@ -26,7 +26,7 @@ private:
 
     QString m_strJobName;
 
-    AbstractExecInfosProtClient *m_pUdpClient;
+    AbstractExecInfosProtClient *m_pClient;
     QStringList m_listProcParams;
 };
 

@@ -7,7 +7,7 @@ class RequestParamsExecutionInfos : public RequestParamsBase
 {
 public:
     RequestParamsExecutionInfos();
-    bool ParseMessage(QByteArray &message);
+    bool ParseMessage(const QByteArray &message);
 
     bool IsExecutionStarted();
     bool IsExecutionEnded();
