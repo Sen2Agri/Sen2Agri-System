@@ -253,6 +253,19 @@
 					
 			</div>
 		</div>
+	</div>
+	
+	<div id="popup_content_parent" class="parent_for_pop_up">
+		<div id="popup_content" class="pop_up">
+			<img id="close_button" src="icons/close_x.png" class="hand_cursor"
+				 onclick="toggleMultipleAdditionalContent([$('#popup_content_parent'), $('#popup_content')], [false, false])"
+				 title="Close"/>
+			<div id="popup_content_container">
+				<table class="table full_width default_panel_style">
+				</table>
+			</div>
+		</div>
+	</div>
 
 	<!-- Scripts are placed at the bottom of the page to be downloaded after the rest of the content and avoid delays in page loading. -->
 	<script	src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js"></script>
@@ -263,6 +276,7 @@
 	<script src="flot-0.8.3/jquery.flot.stack.min.js"></script>
 	<script src="nvd3-1.1.11/nv.d3.js"></script>
 	<script src="scripts/config.js"></script>
+	<script src="scripts/helpers.js"></script>
 	<script src="scripts/processing_functions.js"></script>
 	<script src="scripts/processing.js"></script>
 
