@@ -7,6 +7,9 @@
 #include "simpletcpinfosclient.h"
 
 #include <iostream>
+
+#include "logger.hpp"
+
 using namespace std;
 
 ProcessorWrapper::ProcessorWrapper()
@@ -43,7 +46,7 @@ bool ProcessorWrapper::Initialize(QStringList &listParams)
                 QString strVal = curParam.right(curParam.size()-nEqPos-1);
                 if(strKey == "PROC_PATH") {
                     if(strVal.isNull() || strVal.isEmpty()) {
-                        qCritical() << "Error during initialization: No processor execution command was received!";
+                        Logger::fatal("Error during initialization: No processor execution command was received!");
                         return false;
                     }
                     m_strProcPath = strVal;
@@ -54,7 +57,7 @@ bool ProcessorWrapper::Initialize(QStringList &listParams)
                     bProcParam = true;
                 } else if (strKey == "JOB_NAME") {
                     if(strVal.isNull() || strVal.isEmpty()) {
-                        qCritical() << "Error during initialization: No processor job name was received!";
+                        Logger::fatal("Error during initialization: No processor job name was received!");
                         return false;
                     }
                     m_strJobName = strVal;
@@ -77,11 +80,11 @@ bool ProcessorWrapper::Initialize(QStringList &listParams)
             m_pClient = new SimpleTcpInfosClient();
             m_pClient->Initialize(strSrvIpAddr, nPortNo);
         } else {
-            qCritical() << "Error during initialization: No valid server port was received!";
+            Logger::fatal("Error during initialization: No valid server port was received!");
             return false;
         }
     } else {
-        qCritical() << "Error during initialization: No valid server configuration was received!";
+        Logger::fatal("Error during initialization: No valid server configuration was received!");
         return false;
     }
 
@@ -93,7 +96,7 @@ bool ProcessorWrapper::ExecuteProcessor()
     CommandInvoker cmdInvoker;
     cmdInvoker.SetListener(this);
 
-    cout << QDir::currentPath().toStdString().c_str() << endl;
+    Logger::debug(QDir::currentPath());
 
     QDateTime dateTime;
     qint64 startTime = dateTime.currentMSecsSinceEpoch();
@@ -108,11 +111,18 @@ bool ProcessorWrapper::ExecuteProcessor()
         // }
         QString strJSon = QString("{\"MSG_TYPE\":\"%1\",\"JOB_NAME\":\"%2\"}").arg(
                     "STARTED", m_strJobName);
+        Logger::debug(QStringLiteral("Sending message %1").arg(strJSon));
         m_pClient->SendMessage(strJSon);
+    }
+    else
+    {
+        Logger::error("No client instance?!");
     }
 
     bool bRet;
     bRet = cmdInvoker.InvokeCommand(m_strProcPath, m_listProcParams, false);
+
+    Logger::info("Processor execution finished");
 
     qint64 endTime = dateTime.currentMSecsSinceEpoch();
 
@@ -126,7 +136,12 @@ bool ProcessorWrapper::ExecuteProcessor()
         // }
         QString strJSon = QString("{\"MSG_TYPE\":\"%1\",\"JOB_NAME\":\"%2\",\"EXEC_TIME\":\"%3\",\"STATUS\":\"%4\"}").arg(
                     "ENDED", m_strJobName, QString::number(endTime-startTime), bRet?"OK":"FAILED");
+        Logger::debug(QStringLiteral("Sending message %1").arg(strJSon));
         m_pClient->SendMessage(strJSon);
+    }
+    else
+    {
+        Logger::error("No client instance?!");
     }
 
     return bRet;
@@ -134,8 +149,8 @@ bool ProcessorWrapper::ExecuteProcessor()
 
 void ProcessorWrapper::OnNewMessage(QString &strMsg)
 {
-    // first, print it to default output (console)
-    cout << strMsg.toStdString().c_str() << endl;
+    // first, print it
+    Logger::info(strMsg);
 
     // send it also to a server if available
     if(m_pClient)
@@ -150,4 +165,3 @@ void ProcessorWrapper::OnNewMessage(QString &strMsg)
         m_pClient->SendMessage(strJSon);
     }
 }
-

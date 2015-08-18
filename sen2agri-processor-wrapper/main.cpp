@@ -3,6 +3,8 @@
 #include <QVariantMap>
 #include <QTimer>
 
+#include "logger.hpp"
+
 #include "processorwrapper.h"
 #include "applicationclosinglistener.h"
 #include "simpleudpinfosclient.h"
@@ -11,10 +13,10 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-    qDebug() << argc;
+    Logger::debug(QString::number(argc));
     QStringList listParams;
     for(int i = 1; i < argc; i++) {
-        qDebug() << argv[i];
+        Logger::debug(argv[i]);
         listParams.append(argv[i]);
     }
 
@@ -28,11 +30,11 @@ int main(int argc, char *argv[])
         {
             if(!procWrp.ExecuteProcessor())
             {
-                qDebug() << "Execution of the processor FAILED!";
+                Logger::error("Execution of the processor FAILED!");
             }
             else
             {
-                qDebug() << "Execution of the processor SUCEEDED!";
+                Logger::info("Execution of the processor SUCEEDED!");
             }
         }
     }

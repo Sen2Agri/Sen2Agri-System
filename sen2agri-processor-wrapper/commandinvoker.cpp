@@ -1,3 +1,5 @@
+#include "logger.hpp"
+
 #include "commandinvoker.h"
 
 CommandInvoker::CommandInvoker()
@@ -37,6 +39,7 @@ bool CommandInvoker::InvokeCommand(QString &strCmd, QStringList &listParams, boo
             }
         }
     } else {
+        Logger::error(QStringLiteral("Unable to start process: %1").arg(m_process.errorString()));
         bRet = false;
     }
 
