@@ -9,7 +9,7 @@ CompositeNamingHelperFactory::CompositeNamingHelperFactory()
 CompositeNamingHelperFactory::~CompositeNamingHelperFactory()
 {
     for(size_t i = 0; i<m_registreredHelpers.size(); i++) {
-        CompositeNamingHelper* pHelper = m_registreredHelpers.at(i);
+        CompositeNamingHelper* pHelper = m_registreredHelpers[i];
         if(pHelper)
             delete pHelper;
     }
@@ -24,7 +24,7 @@ void CompositeNamingHelperFactory::RegisterHelper(CompositeNamingHelper *pHelper
 CompositeNamingHelper* CompositeNamingHelperFactory::GetNamingHelper(std::string& metadataFileName, int nRes)
 {
     for(size_t i = 0; i < m_registreredHelpers.size(); i++) {
-        CompositeNamingHelper* pHelper = m_registreredHelpers.at(i);
+        CompositeNamingHelper* pHelper = m_registreredHelpers[i];
         if(pHelper->LoadMetadataFile(metadataFileName, nRes))
             return pHelper;
     }
