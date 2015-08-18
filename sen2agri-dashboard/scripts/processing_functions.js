@@ -128,6 +128,15 @@ function update_server_resources_layout(json_data)
 		"</table>";
 
 		$("#pnl_server_resources").append(table);
+			      
+	    if(window.navigator.userAgent.indexOf ( "MSIE " ) > 0)
+	    {		
+			$("#server_resources_table_" + counter + "_cpu_history").height($("#server_resources_table_0_cpu_history").parent().height() * 90 / 100);
+			$("#server_resources_table_" + counter + "_ram_history").height($("#server_resources_table_0_cpu_history").parent().height() * 90 / 100);
+			$("#server_resources_table_" + counter + "_swap_history").height($("#server_resources_table_0_cpu_history").parent().height() * 90 / 100);
+			$("#server_resources_table_" + counter + "_disk_percentage").height($("#server_resources_table_0_cpu_history").parent().height() * 90 / 100);
+			$("#server_resources_table_" + counter + "_load_history").height($("#server_resources_table_0_cpu_history").parent().height() * 90 / 100);
+	    }
 
 		//Add the CPU chart
 		var cpu_history_series = [{label: "System", data: [], color: "rgba(46, 199, 35, 0.6)"}, {label: "User", data: [], color: "rgba(35, 199, 188, 0.6)"}];

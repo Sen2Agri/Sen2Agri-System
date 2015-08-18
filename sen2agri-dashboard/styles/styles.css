@@ -137,7 +137,6 @@ div.panel table.server_resources_table th:nth-child(1) {
 }
 
 div.panel table.server_resources_table tr td{
-    display: table-cell;
     padding: 0px;
 }
 
@@ -154,6 +153,7 @@ div.panel table.server_resources_table tr td:nth-child(3) {
 }
 
 div.panel table.server_resources_table div.server_resources_table_graph {
+    display: inline-block;
     height: 90%;
     width: 100%;
 }
