@@ -14,11 +14,11 @@ bool SimpleTcpInfosClient::Initialize(QString &strIpAddr, int nPortNo)
 bool SimpleTcpInfosClient::SendMessage(QString &strMsg)
 {
     m_socket.connectToHost(m_hostAddrStr, m_nPortNo);
-    if (m_socket.waitForConnected()) {
+    if (!m_socket.waitForConnected()) {
         Logger::error(QStringLiteral("Unable to connect to %1:%2: %3")
                           .arg(m_hostAddrStr)
                           .arg(m_nPortNo)
-                          .arg(m_socket.error()));
+                          .arg(m_socket.errorString()));
         return false;
     }
 
