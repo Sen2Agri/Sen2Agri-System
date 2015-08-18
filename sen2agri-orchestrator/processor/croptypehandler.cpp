@@ -43,6 +43,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 {
     QMap<QString, QString> configParameters;
     for (const auto &p : ctx.GetJobConfigurationParameters(event.jobId, "crop-type.")) {
+        qDebug() << p.key << p.value;
         configParameters.insert(p.key, p.value);
     }
 
@@ -58,7 +59,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &cropMask = parameters["crop_mask"].toString();
 
     const auto &samplingRate = configParameters["crop-type.sampling-rate"];
-    const auto &sampleRatio = parameters["crop-type.sample-ratio"].toString();
+    const auto &sampleRatio = configParameters["crop-type.sample-ratio"];
 
     const auto &classifier = configParameters["crop-type.classifier"];
     const auto &fieldName = configParameters["crop-type.classifier.field"];
