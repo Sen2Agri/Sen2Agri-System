@@ -68,9 +68,11 @@ std::string Spot4CompositeNamingHelper::DeriveFileNameFromImageFileName(const SP
     std::string orthoSurf = spot4Metadata.Files.OrthoSurfCorrPente;
     if(orthoSurf.empty()) {
         orthoSurf = spot4Metadata.Files.OrthoSurfCorrEnv;
-        int nPos = orthoSurf.find("ORTHO_SURF_CORR_ENV");
-        orthoSurf.replace(nPos, strlen("ORTHO_SURF_CORR_ENV"), replacement);
-        fileName = orthoSurf;
+        if(!orthoSurf.empty()) {
+            int nPos = orthoSurf.find("ORTHO_SURF_CORR_ENV");
+            orthoSurf.replace(nPos, strlen("ORTHO_SURF_CORR_ENV"), replacement);
+            fileName = orthoSurf;
+        }
     } else {
         int nPos = orthoSurf.find("ORTHO_SURF_CORR_PENTE");
         orthoSurf.replace(nPos, strlen("ORTHO_SURF_CORR_PENTE"), replacement);
