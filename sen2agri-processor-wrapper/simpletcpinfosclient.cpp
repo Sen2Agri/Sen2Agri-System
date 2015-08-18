@@ -14,7 +14,7 @@ bool SimpleTcpInfosClient::Initialize(QString &strIpAddr, int nPortNo)
 bool SimpleTcpInfosClient::SendMessage(QString &strMsg)
 {
     m_socket.connectToHost(m_hostAddrStr, m_nPortNo);
-    if (!m_socket.waitForConnected()) {
+    if (m_socket.state() != QAbstractSocket::ConnectedState && !m_socket.waitForConnected()) {
         Logger::error(QStringLiteral("Unable to connect to %1:%2: %3")
                           .arg(m_hostAddrStr)
                           .arg(m_nPortNo)
@@ -27,7 +27,7 @@ bool SimpleTcpInfosClient::SendMessage(QString &strMsg)
     for (auto size = ba.size(); size;) {
         auto len = m_socket.write(start, size);
         if (len <= 0) { // can write() return 0?
-            Logger::error(QStringLiteral("Unable to send message: %1").arg(m_socket.error()));
+            Logger::error(QStringLiteral("Unable to send message: %1").arg(m_socket.errorString()));
             return false;
         }
         start += len;
@@ -35,13 +35,13 @@ bool SimpleTcpInfosClient::SendMessage(QString &strMsg)
     }
 
     if (!m_socket.waitForBytesWritten()) {
-        Logger::error(QStringLiteral("Unable to send message: %1").arg(m_socket.error()));
-        return false;
+        Logger::error(QStringLiteral("Unable to send message: %1").arg(m_socket.errorString()));
     }
 
     m_socket.disconnectFromHost();
-    if (!m_socket.waitForDisconnected()) {
-        Logger::error(QStringLiteral("Unable to disconnect from host: %1").arg(m_socket.error()));
+    if (m_socket.state() != QAbstractSocket::UnconnectedState && !m_socket.waitForDisconnected()) {
+        Logger::error(
+            QStringLiteral("Unable to disconnect from host: %1").arg(m_socket.errorString()));
         return false;
     }
 
