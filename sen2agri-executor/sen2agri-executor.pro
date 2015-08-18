@@ -47,7 +47,9 @@ SOURCES += main.cpp \
     requestparamscanceltasks.cpp \
     requestparamssubmitsteps.cpp \
     requestparamsexecutioninfos.cpp \
-    orchestratorclient.cpp
+    orchestratorclient.cpp \
+    simpletcpexecinfosprotsrv.cpp \
+    simpletcpexecinfoconnection.cpp
 
 HEADERS += \
     abstractexecinfosprotsrv.h \
@@ -67,7 +69,9 @@ HEADERS += \
     requestparamscanceltasks.h \
     requestparamssubmitsteps.h \
     requestparamsexecutioninfos.h \
-    orchestratorclient.h
+    orchestratorclient.h \
+    simpletcpexecinfosprotsrv.h \
+    simpletcpexecinfoconnection.h
 
 OTHER_FILES += \
     ../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml \

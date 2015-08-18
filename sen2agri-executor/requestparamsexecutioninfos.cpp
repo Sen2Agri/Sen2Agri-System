@@ -6,7 +6,7 @@ RequestParamsExecutionInfos::RequestParamsExecutionInfos()
 
 }
 
-bool RequestParamsExecutionInfos::ParseMessage(QByteArray &message)
+bool RequestParamsExecutionInfos::ParseMessage(const QByteArray &message)
 {
     QJsonParseError err;
     QJsonDocument document = QJsonDocument::fromJson(message, &err);

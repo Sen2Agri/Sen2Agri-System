@@ -4,20 +4,20 @@
 #include <QDateTime>
 #include <QDebug>
 #include <QDir>
-#include "simpleudpinfosclient.h"
+#include "simpletcpinfosclient.h"
 
 #include <iostream>
 using namespace std;
 
 ProcessorWrapper::ProcessorWrapper()
 {
-    m_pUdpClient = NULL;
+    m_pClient = NULL;
 }
 
 ProcessorWrapper::~ProcessorWrapper()
 {
-    if(m_pUdpClient) {
-        delete m_pUdpClient;
+    if(m_pClient) {
+        delete m_pClient;
     }
 }
 
@@ -74,8 +74,8 @@ bool ProcessorWrapper::Initialize(QStringList &listParams)
     {
         int nPortNo = strPortNo.toInt();
         if(nPortNo > 0) {
-            m_pUdpClient = new SimpleUdpInfosClient();
-            m_pUdpClient->Initialize(strSrvIpAddr, nPortNo);
+            m_pClient = new SimpleTcpInfosClient();
+            m_pClient->Initialize(strSrvIpAddr, nPortNo);
         } else {
             qCritical() << "Error during initialization: No valid server port was received!";
             return false;
@@ -98,7 +98,7 @@ bool ProcessorWrapper::ExecuteProcessor()
     QDateTime dateTime;
     qint64 startTime = dateTime.currentMSecsSinceEpoch();
     // send a message that the execution of the processor is started
-    if(m_pUdpClient)
+    if(m_pClient)
     {
         // A json message will be sent with the following format:
         // {
@@ -108,7 +108,7 @@ bool ProcessorWrapper::ExecuteProcessor()
         // }
         QString strJSon = QString("{\"MSG_TYPE\":\"%1\",\"JOB_NAME\":\"%2\"}").arg(
                     "STARTED", m_strJobName);
-        m_pUdpClient->SendMessage(strJSon);
+        m_pClient->SendMessage(strJSon);
     }
 
     bool bRet;
@@ -116,7 +116,7 @@ bool ProcessorWrapper::ExecuteProcessor()
 
     qint64 endTime = dateTime.currentMSecsSinceEpoch();
 
-    if(m_pUdpClient)
+    if(m_pClient)
     {
         // A json message will be sent with the following format:
         // {
@@ -126,7 +126,7 @@ bool ProcessorWrapper::ExecuteProcessor()
         // }
         QString strJSon = QString("{\"MSG_TYPE\":\"%1\",\"JOB_NAME\":\"%2\",\"EXEC_TIME\":\"%3\",\"STATUS\":\"%4\"}").arg(
                     "ENDED", m_strJobName, QString::number(endTime-startTime), bRet?"OK":"FAILED");
-        m_pUdpClient->SendMessage(strJSon);
+        m_pClient->SendMessage(strJSon);
     }
 
     return bRet;
@@ -138,7 +138,7 @@ void ProcessorWrapper::OnNewMessage(QString &strMsg)
     cout << strMsg.toStdString().c_str() << endl;
 
     // send it also to a server if available
-    if(m_pUdpClient)
+    if(m_pClient)
     {
         // A json message will be sent with the following format:
         // {
@@ -147,7 +147,7 @@ void ProcessorWrapper::OnNewMessage(QString &strMsg)
         // }
         QString strJSon = QString("{\"MSG_TYPE\":\"%1\",\"JOB_NAME\":\"%2\",\"LOG_MSG\":\"%3\"}").arg(
                     "LOG", m_strJobName, strMsg);
-        m_pUdpClient->SendMessage(strJSon);
+        m_pClient->SendMessage(strJSon);
     }
 }
 

@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
         QString strPortVal;
         AbstractExecInfosProtSrv *pExecInfosSrv =
             ExecInfosProtSrvFactory::GetInstance()->CreateExecInfosProtSrv(
-                ExecInfosProtSrvFactory::SIMPLE_UDP);
+                ExecInfosProtSrvFactory::SIMPLE_TCP);
         str = QString("SRV_IP_ADDR");
         ConfigurationMgr::GetInstance()->GetValue(str, strIpVal);
         str = QString("SRV_PORT_NO");

@@ -12,7 +12,7 @@ class ExecInfosProtSrvFactory
 public:
     ~ExecInfosProtSrvFactory();
 
-    enum {SIMPLE_UDP, HTTP_SRV};
+    enum {SIMPLE_UDP, SIMPLE_TCP, HTTP_SRV};
 
 private:
     ExecInfosProtSrvFactory();
