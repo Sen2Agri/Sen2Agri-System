@@ -20,16 +20,16 @@ function update_current_jobs(json_data)
 				switch(action) 
 				{
 					case 1:
-						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\">Pause</button>";
+						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action(pause_job_url, " + job.id + ")\">Pause</button>";
 						break;
 					case 2:
-						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\">Resume</button>";
+						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action(resume_job_url, " + job.id + ")\">Resume</button>";
 						break;
 					case 3:
-						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\">Cancel</button>";
+						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action(cancel_job_url, " + job.id + ")\">Cancel</button>";
 						break;
 					case 4:
-						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\">View Config</button>";
+						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"get_job_config(" + job.id + ")\">View Config</button>";
 						break;
 				} 
 			});
@@ -414,9 +414,61 @@ function set_server_resource_refresh()
 	setInterval(get_server_resource_data, get_server_resource_data_interval);
 }
 
+function perform_job_action(action_url, job_id)
+{
+	$.ajax({
+		url: action_url,
+		type: "get",
+		cache: false,
+		crosDomain: true,
+		data: {
+			jobId: job_id
+		},
+		success: function()
+		{
+			get_current_job_data();
+		},
+		error: function (responseData, textStatus, errorThrown) {
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+		}
+	});
+}
+
+function get_job_config(job_id)
+{
+	$.ajax({
+		url: get_job_config_data_url,
+		type: "get",
+		cache: false,
+		crosDomain: true,
+		data: {
+			jobId: job_id
+		},
+		success: function(json_data)
+		{
+			show_job_config(json_data);
+		},
+		error: function (responseData, textStatus, errorThrown) {
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+		}
+	});
+}
+
+function show_job_config(json_data)
+{
+	//Remove the old rows
+	$("#popup_content_container table:first tr.to_be_refreshed").remove();
+	// First show the configuration parameters
+	fill_key_value_table("#popup_content_container", json_data.configuration);
+	// Next show the input parameters
+	fill_key_value_table("#popup_content_container", json_data.input);
+	
+	toggleMultipleAdditionalContent([$('#popup_content_parent'), $('#popup_content')], [true, true]);
+}
+
 //Update processor statistics --------------------------------------------------------------------------------------------------------------------------
 
-function fill_key_value_table(panel, list)
+function fill_key_value_table(parent, list)
 {
 	if (!list)
 	{
@@ -429,7 +481,7 @@ function fill_key_value_table(panel, list)
 		"<td>" + item[1] + "</td>" +
 		"</tr>";
 
-		$(panel + " table:first").append(new_row);
+		$(parent + " table:first").append(new_row);
 	});
 }
 
