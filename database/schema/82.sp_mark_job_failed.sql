@@ -5,10 +5,10 @@ BEGIN
 
 
 	UPDATE task
-	SET status_id = 8, -- Error
+	SET status_id = 7, -- Cancelled
 	status_timestamp = now()
 	WHERE job_id = _job_id
-	AND status_id NOT IN (6, 7); -- Finished or cancelled tasks can't be failed
+	AND status_id NOT IN (6, 7, 8); -- Finished, cancelled or failed tasks can't be cancelled
 
 	UPDATE job
 	SET status_id = 8, -- Error
