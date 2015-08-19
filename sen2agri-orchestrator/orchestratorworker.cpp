@@ -151,7 +151,12 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobCanc
         event.jobId,
         { ExecutionStatus::Submitted, ExecutionStatus::Running, ExecutionStatus::Paused });
 
-    WaitForResponseAndThrow(executorClient.CancelTasks(tasks));
+    try {
+        WaitForResponseAndThrow(executorClient.CancelTasks(tasks));
+    } catch (const std::exception &e) {
+        Logger::error(e.what());
+    }
+
     ctx.MarkJobCancelled(event.jobId);
 }
 
@@ -162,7 +167,12 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobPaus
     const auto &tasks = ctx.GetJobTasksByStatus(
         event.jobId, { ExecutionStatus::Submitted, ExecutionStatus::Running });
 
-    WaitForResponseAndThrow(executorClient.CancelTasks(tasks));
+    try {
+        WaitForResponseAndThrow(executorClient.CancelTasks(tasks));
+    } catch (const std::exception &e) {
+        Logger::error(e.what());
+    }
+
     ctx.MarkJobPaused(event.jobId);
 }
 
