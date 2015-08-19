@@ -3,7 +3,7 @@
 #include "logger.hpp"
 #include "simpletcpinfosclient.h"
 
-bool SimpleTcpInfosClient::Initialize(QString &strIpAddr, int nPortNo)
+bool SimpleTcpInfosClient::Initialize(const QString &strIpAddr, int nPortNo)
 {
     m_hostAddrStr = strIpAddr;
     m_nPortNo = nPortNo;
@@ -11,7 +11,7 @@ bool SimpleTcpInfosClient::Initialize(QString &strIpAddr, int nPortNo)
     return true;
 }
 
-bool SimpleTcpInfosClient::SendMessage(QString &strMsg)
+bool SimpleTcpInfosClient::SendMessage(const QString &strMsg)
 {
     m_socket.connectToHost(m_hostAddrStr, m_nPortNo);
     if (m_socket.state() != QAbstractSocket::ConnectedState && !m_socket.waitForConnected()) {

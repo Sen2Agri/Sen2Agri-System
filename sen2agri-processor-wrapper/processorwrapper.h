@@ -16,7 +16,7 @@ public:
     ~ProcessorWrapper();
 
     bool Initialize(QStringList &listParams);
-    virtual void OnNewMessage(QString &strMsg);
+    virtual void OnNewMessage(const QString &strMsg);
 
     bool ExecuteProcessor();
 

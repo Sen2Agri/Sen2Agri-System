@@ -194,10 +194,16 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const StepFai
                      .arg(event.taskId)
                      .arg(event.jobId));
 
-    const auto &tasks = ctx.GetJobTasksByStatus(event.jobId, { ExecutionStatus::Running });
+    const auto &tasks = ctx.GetJobTasksByStatus(
+        event.jobId,
+        { ExecutionStatus::Running, ExecutionStatus::Error, ExecutionStatus::Submitted });
 
-    // TODO race here?
-    WaitForResponseAndThrow(executorClient.CancelTasks(tasks));
+    try {
+        WaitForResponseAndThrow(executorClient.CancelTasks(tasks));
+    } catch (const std::exception &e) {
+        Logger::error(e.what());
+    }
+
     ctx.MarkJobFailed(event.jobId);
 }
 

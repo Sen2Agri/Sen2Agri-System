@@ -1,4 +1,10 @@
+#include <QByteArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+
 #include "requestparamsexecutioninfos.h"
+
+#include "logger.hpp"
 
 RequestParamsExecutionInfos::RequestParamsExecutionInfos()
     : RequestParamsBase(PROCESSOR_EXECUTION_INFO_MSG)
@@ -11,19 +17,16 @@ bool RequestParamsExecutionInfos::ParseMessage(const QByteArray &message)
     QJsonParseError err;
     QJsonDocument document = QJsonDocument::fromJson(message, &err);
     if(err.error != QJsonParseError::NoError || !document.isObject()) {
+        Logger::error(QStringLiteral("Invalid JSON message: %1").arg(QString::fromUtf8(message)));
         return false;
     }
 
-    m_msgVals = document.object().toVariantMap();
-    if (m_msgVals.contains("JOB_NAME"))
-        m_strJobName = m_msgVals.value("JOB_NAME").toString();
-    else
-        m_strJobName = "";
-
-    if (m_msgVals.contains("MSG_TYPE"))
-        m_strMsgType = m_msgVals.value("MSG_TYPE").toString();
-    else
-        m_strMsgType = "";
+    const auto &obj = document.object();
+    m_strJobName = obj["JOB_NAME"].toString();
+    m_strMsgType = obj["MSG_TYPE"].toString();
+    // no longer used
+    m_strLogMsg = obj["LOG_MSG"].toString();
+    m_strExecTime = obj["EXEC_TIME"].toString();
     return true;
 }
 
@@ -49,23 +52,27 @@ bool RequestParamsExecutionInfos::IsLogMsg()
     return false;
 }
 
-const QString& RequestParamsExecutionInfos::GetJobName()
+const QString& RequestParamsExecutionInfos::GetJobName() const
 {
     return m_strJobName;
 }
 
-const QString RequestParamsExecutionInfos::GetLogMsg()
+const QString& RequestParamsExecutionInfos::GetLogMsg() const
 {
-    if (m_msgVals.contains("LOG_MSG"))
-        return m_msgVals.value("LOG_MSG").toString();
-    return "";
+    return m_strLogMsg;
 }
 
-const QString RequestParamsExecutionInfos::GetExecutionTime()
+const QString& RequestParamsExecutionInfos::GetExecutionTime() const
 {
-    if (m_msgVals.contains("EXEC_TIME"))
-        return m_msgVals.value("EXEC_TIME").toString();
-    return "";
+    return m_strExecTime;
 }
 
+const QString& RequestParamsExecutionInfos::GetStdOutText() const
+{
+    return m_strStdOutText;
+}
 
+const QString& RequestParamsExecutionInfos::GetStdErrText() const
+{
+    return m_strStdErrText;
+}

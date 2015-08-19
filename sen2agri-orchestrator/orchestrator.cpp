@@ -18,12 +18,6 @@ Orchestrator::Orchestrator(std::map<int, std::unique_ptr<ProcessorHandler>> &han
     worker.RescanEvents();
 }
 
-void Orchestrator::NotifyEventsAvailable()
-{
-    RescanEvents();
-}
+void Orchestrator::NotifyEventsAvailable() { RescanEvents(); }
 
-void Orchestrator::RescanEvents()
-{
-    worker.RescanEvents();
-}
+void Orchestrator::RescanEvents() { worker.RescanEvents(); }

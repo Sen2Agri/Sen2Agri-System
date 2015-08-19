@@ -80,10 +80,7 @@ void SqlDatabaseRAII::reset()
     QSqlDatabase::removeDatabase(name);
 }
 
-QSqlQuery SqlDatabaseRAII::createQuery()
-{
-    return QSqlQuery(db);
-}
+QSqlQuery SqlDatabaseRAII::createQuery() { return QSqlQuery(db); }
 
 QSqlQuery SqlDatabaseRAII::prepareQuery(const QString &query)
 {
@@ -123,10 +120,7 @@ void SqlDatabaseRAII::rollback()
     }
 }
 
-void throw_db_error(const QSqlDatabase &db)
-{
-    throw sql_error(db.lastError());
-}
+void throw_db_error(const QSqlDatabase &db) { throw sql_error(db.lastError()); }
 
 void throw_query_error(SqlDatabaseRAII &db, const QSqlQuery &query)
 {

@@ -1,8 +1,6 @@
 #include "processorhandler.hpp"
 
-ProcessorHandler::~ProcessorHandler()
-{
-}
+ProcessorHandler::~ProcessorHandler() {}
 
 void ProcessorHandler::HandleProductAvailable(EventProcessingContext &ctx,
                                               const ProductAvailableEvent &event)

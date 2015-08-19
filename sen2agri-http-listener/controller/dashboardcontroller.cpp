@@ -5,9 +5,7 @@
 #include "persistencemanager_interface.h"
 #include "orchestrator_interface.h"
 
-DashboardController::DashboardController()
-{
-}
+DashboardController::DashboardController() {}
 
 void DashboardController::service(HttpRequest &request, HttpResponse &response)
 {

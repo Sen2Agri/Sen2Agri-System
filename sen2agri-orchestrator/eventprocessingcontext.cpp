@@ -24,7 +24,10 @@ int EventProcessingContext::SubmitTask(const NewTask &task)
     auto taskId = WaitForResponseAndThrow(persistenceManagerClient.SubmitTask(task));
 
     const auto &path = GetOutputPath(task.jobId, taskId, task.module);
-    QDir::root().mkpath(path);
+    if (!QDir::root().mkpath(path)) {
+        throw std::runtime_error(
+            QStringLiteral("Unable to create job output path %1").arg(path).toStdString());
+    }
 
     return taskId;
 }

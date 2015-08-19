@@ -9,7 +9,9 @@ IN _duration_ms bigint,
 IN _max_rss_kb int,
 IN _max_vm_size_kb int,
 IN _disk_read_b bigint,
-IN _disk_write_b bigint
+IN _disk_write_b bigint,
+IN _stdout_text CHARACTER VARYING,
+IN _stderr_text CHARACTER VARYING
 ) RETURNS boolean AS $$
 DECLARE runnable_task_ids int[];
 DECLARE runnable_task_id int;
@@ -48,7 +50,9 @@ BEGIN
 		max_rss_kb,
 		max_vm_size_kb,
 		disk_read_b,
-		disk_write_b)
+		disk_write_b,
+		stdout_text,
+		stderr_text)
 		VALUES (
 		_step_name,
 		_task_id,
@@ -60,7 +64,9 @@ BEGIN
 		_max_rss_kb,
 		_max_vm_size_kb,
 		_disk_read_b,
-		_disk_write_b);
+		_disk_write_b,
+		_stdout_text,
+		_stderr_text);
 	END IF;
 
 	UPDATE task

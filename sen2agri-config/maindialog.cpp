@@ -89,10 +89,7 @@ MainDialog::MainDialog(QWidget *parent)
     loadConfiguration(0, 0);
 }
 
-MainDialog::~MainDialog()
-{
-    delete ui;
-}
+MainDialog::~MainDialog() { delete ui; }
 
 void MainDialog::loadConfiguration(int currentTab, int currentSite)
 {
@@ -196,7 +193,7 @@ QComboBox *MainDialog::createSiteList(int categoryId, QWidget *parent)
     parameterChangeListeners.emplace(
         std::make_pair(categoryId, std::vector<ParameterChangeListener *>()));
 
-    connect(siteList, static_cast<void (QComboBox::*) (int) >(&QComboBox::currentIndexChanged),
+    connect(siteList, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             [this, siteList](int) {
                 std::experimental::optional<int> siteId;
                 if (auto siteIdVal = siteList->currentData().toInt()) {
@@ -351,15 +348,9 @@ void MainDialog::saveChanges()
             });
 }
 
-void MainDialog::on_buttonBox_accepted()
-{
-    accept();
-}
+void MainDialog::on_buttonBox_accepted() { accept(); }
 
-void MainDialog::on_buttonBox_rejected()
-{
-    reject();
-}
+void MainDialog::on_buttonBox_rejected() { reject(); }
 
 QWidget *MainDialog::createEditRow(int categoryId,
                                    const ConfigurationParameterInfo &parameter,

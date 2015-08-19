@@ -46,10 +46,7 @@ ParameterChangeListener::ParameterChangeListener(ConfigModel &model,
     }
 }
 
-bool ParameterChangeListener::valid() const
-{
-    return isValid;
-}
+bool ParameterChangeListener::valid() const { return isValid; }
 
 void ParameterChangeListener::onTextChanged(const QString &newText)
 {
@@ -93,15 +90,9 @@ void ParameterChangeListener::applyValidity(bool valid)
     widget->setPalette(palette);
 }
 
-const QString &ParameterChangeListener::parameterName() const
-{
-    return friendlyName;
-}
+const QString &ParameterChangeListener::parameterName() const { return friendlyName; }
 
-const ParameterKey &ParameterChangeListener::key() const
-{
-    return parameterKey;
-}
+const ParameterKey &ParameterChangeListener::key() const { return parameterKey; }
 
 static bool validateInt(const QString &s)
 {
@@ -117,12 +108,6 @@ static bool validateFloat(const QString &s)
     return ok;
 }
 
-static bool validatePath(const QString &s)
-{
-    return QFileInfo::exists(s);
-}
+static bool validatePath(const QString &s) { return QFileInfo::exists(s); }
 
-static bool validateTrue(const QString &)
-{
-    return true;
-}
+static bool validateTrue(const QString &) { return true; }

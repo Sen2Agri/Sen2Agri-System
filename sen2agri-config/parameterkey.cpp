@@ -7,15 +7,9 @@ ParameterKey::ParameterKey(QString key, std::experimental::optional<int> siteId)
 {
 }
 
-const QString &ParameterKey::key() const
-{
-    return key_;
-}
+const QString &ParameterKey::key() const { return key_; }
 
-std::experimental::optional<int> ParameterKey::siteId() const
-{
-    return siteId_;
-}
+std::experimental::optional<int> ParameterKey::siteId() const { return siteId_; }
 
 bool operator<(const ParameterKey &p1, const ParameterKey &p2)
 {

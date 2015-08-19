@@ -5,10 +5,7 @@
 #include "stopwatch.hpp"
 #include "logger.hpp"
 
-Stopwatch::Stopwatch(QString operation) : operation_(std::move(operation))
-{
-    timer_.start();
-}
+Stopwatch::Stopwatch(QString operation) : operation_(std::move(operation)) { timer_.start(); }
 
 Stopwatch::~Stopwatch()
 {

@@ -43,7 +43,6 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 {
     QMap<QString, QString> configParameters;
     for (const auto &p : ctx.GetJobConfigurationParameters(event.jobId, "crop-type.")) {
-        qDebug() << p.key << p.value;
         configParameters.insert(p.key, p.value);
     }
 

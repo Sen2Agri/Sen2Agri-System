@@ -12,8 +12,8 @@ public:
     SimpleUdpInfosClient();
     ~SimpleUdpInfosClient();
 
-    virtual bool Initialize(QString &strIpAddr, int nPortNo);
-    virtual bool SendMessage(QString &strMsg);
+    virtual bool Initialize(const QString &strIpAddr, int nPortNo);
+    virtual bool SendMessage(const QString &strMsg);
 
 private:
     QHostAddress m_hostAddr;

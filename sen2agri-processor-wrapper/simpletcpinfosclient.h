@@ -13,6 +13,6 @@ class SimpleTcpInfosClient : public AbstractExecInfosProtClient
     QTcpSocket m_socket;
 
 public:
-    bool Initialize(QString &strIpAddr, int nPortNo);
-    bool SendMessage(QString &strMsg);
+    bool Initialize(const QString &strIpAddr, int nPortNo);
+    bool SendMessage(const QString &strMsg);
 };

@@ -1,4 +1,4 @@
-﻿CREATE TABLE step_resource_log
+CREATE TABLE step_resource_log
 (
   step_name character varying NOT NULL,
   task_id int NOT NULL,
@@ -11,5 +11,7 @@
   max_vm_size_kb int,
   disk_read_b bigint,
   disk_write_b bigint,
+  stdout_text CHARACTER VARYING NOT NULL,
+  stderr_text CHARACTER VARYING NOT NULL,
   CONSTRAINT step_resource_log_pkey PRIMARY KEY (step_name, task_id)
-)
+);

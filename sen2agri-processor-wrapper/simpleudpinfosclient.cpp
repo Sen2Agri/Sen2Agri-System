@@ -6,7 +6,7 @@ SimpleUdpInfosClient::SimpleUdpInfosClient() {}
 
 SimpleUdpInfosClient::~SimpleUdpInfosClient() {}
 
-bool SimpleUdpInfosClient::Initialize(QString &strIpAddr, int nPortNo)
+bool SimpleUdpInfosClient::Initialize(const QString &strIpAddr, int nPortNo)
 {
     m_hostAddr = QHostAddress(strIpAddr);
     m_nPortNo = nPortNo;
@@ -19,7 +19,7 @@ bool SimpleUdpInfosClient::Initialize(QString &strIpAddr, int nPortNo)
     return true;
 }
 
-bool SimpleUdpInfosClient::SendMessage(QString &strMsg)
+bool SimpleUdpInfosClient::SendMessage(const QString &strMsg)
 {
     if (!m_hostAddr.isNull()) {
         QByteArray ba = strMsg.toLatin1();

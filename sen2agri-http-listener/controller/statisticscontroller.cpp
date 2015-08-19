@@ -7,9 +7,7 @@
 #include "persistencemanager_interface.h"
 #include "orchestrator_interface.h"
 
-StatisticsController::StatisticsController()
-{
-}
+StatisticsController::StatisticsController() {}
 
 void StatisticsController::service(HttpRequest &request, HttpResponse &response)
 {
