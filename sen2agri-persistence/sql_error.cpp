@@ -8,7 +8,4 @@ sql_error::sql_error(const QSqlError &error)
 {
 }
 
-const string &sql_error::error_code() const
-{
-    return error_code_;
-}
+const string &sql_error::error_code() const { return error_code_; }

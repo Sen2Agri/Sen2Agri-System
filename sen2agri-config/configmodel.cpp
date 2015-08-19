@@ -10,9 +10,7 @@ using std::begin;
 using std::end;
 using std::move;
 
-ConfigModel::ConfigModel()
-{
-}
+ConfigModel::ConfigModel() {}
 
 ConfigModel::ConfigModel(ConfigurationSet configuration) : configuration(move(configuration))
 {
@@ -27,10 +25,7 @@ ConfigModel::ConfigModel(ConfigurationSet configuration) : configuration(move(co
     originalValues = values;
 }
 
-bool ConfigModel::isAdmin() const
-{
-    return configuration.isAdmin;
-}
+bool ConfigModel::isAdmin() const { return configuration.isAdmin; }
 
 bool ConfigModel::isSiteSpecific(const ParameterKey &parameter) const
 {
@@ -69,20 +64,11 @@ void ConfigModel::setValue(const ParameterKey &parameter, const QString &value)
     values[parameter] = value;
 }
 
-void ConfigModel::removeValue(const ParameterKey &parameter)
-{
-    values.erase(parameter);
-}
+void ConfigModel::removeValue(const ParameterKey &parameter) { values.erase(parameter); }
 
-void ConfigModel::reset()
-{
-    originalValues = values;
-}
+void ConfigModel::reset() { originalValues = values; }
 
-bool ConfigModel::hasChanges() const
-{
-    return !getChanges().empty();
-}
+bool ConfigModel::hasChanges() const { return !getChanges().empty(); }
 
 ConfigurationUpdateActionList ConfigModel::getChanges() const
 {
@@ -112,17 +98,11 @@ const ConfigurationCategoryList &ConfigModel::categories() const
     return configuration.categories;
 }
 
-const SiteList &ConfigModel::sites() const
-{
-    return configuration.sites;
-}
+const SiteList &ConfigModel::sites() const { return configuration.sites; }
 
 const ConfigurationParameterInfoList &ConfigModel::parameters() const
 {
     return configuration.parameterInfo;
 }
 
-const ConfigurationSet &ConfigModel::configurationSet() const
-{
-    return configuration;
-}
+const ConfigurationSet &ConfigModel::configurationSet() const { return configuration; }

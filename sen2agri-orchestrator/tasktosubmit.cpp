@@ -14,10 +14,7 @@ TaskToSubmit::TaskToSubmit(QString moduleName,
 {
 }
 
-QString TaskToSubmit::GetFilePath(const QString &file)
-{
-    return outputPath + file;
-}
+QString TaskToSubmit::GetFilePath(const QString &file) { return outputPath + file; }
 
 NewStep TaskToSubmit::CreateStep(QString name, const QStringList &arguments)
 {

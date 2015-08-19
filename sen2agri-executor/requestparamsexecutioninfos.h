@@ -13,14 +13,20 @@ public:
     bool IsExecutionEnded();
     bool IsLogMsg();
 
-    const QString &GetJobName();
-    const QString GetLogMsg();
-    const QString GetExecutionTime();
+    const QString &GetJobName() const;
+    const QString &GetLogMsg() const;
+    const QString &GetExecutionTime() const;
+    const QString &GetStdOutText() const;
+    const QString &GetStdErrText() const;
 
 private:
-    QVariantMap m_msgVals;
     QString m_strJobName;
     QString m_strMsgType;
+    // no longer used
+    QString m_strLogMsg;
+    QString m_strExecTime;
+    QString m_strStdOutText;
+    QString m_strStdErrText;
 };
 
 #endif // REQUESTPARAMSEXECUTIONINFOS_H

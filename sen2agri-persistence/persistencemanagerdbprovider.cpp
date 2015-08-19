@@ -33,10 +33,7 @@ SqlDatabaseRAII PersistenceManagerDBProvider::getDatabase() const
     return provider.getDatabase(QStringLiteral("PersistenceManager"));
 }
 
-void PersistenceManagerDBProvider::TestConnection()
-{
-    getDatabase();
-}
+void PersistenceManagerDBProvider::TestConnection() { getDatabase(); }
 
 ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 {
@@ -399,7 +396,7 @@ bool PersistenceManagerDBProvider::MarkStepFinished(int taskId,
         query = db.prepareQuery(QStringLiteral(
             "select sp_mark_step_finished(:taskId, :name, :node, :exitCode, :userCpuMs, "
             ":systemCpuMs, :durationMs, :maxRssKb, :maxVmSizeKb, :diskReadBytes, "
-            ":diskWriteBytes)"));
+            ":diskWriteBytes, :stdOutText, :stdErrText)"));
         query.bindValue(QStringLiteral(":taskId"), taskId);
         query.bindValue(QStringLiteral(":name"), name);
         bindStepExecutionStatistics(query, statistics);
@@ -445,7 +442,7 @@ void PersistenceManagerDBProvider::MarkStepFailed(int taskId,
         query = db.prepareQuery(
             QStringLiteral("select sp_mark_step_failed(:taskId, :name, :node, :exitCode, "
                            ":userCpuMs, :systemCpuMs, :durationMs, :maxRssKb, :maxVmSizeKb, "
-                           ":diskReadBytes, :diskWriteBytes)"));
+                           ":diskReadBytes, :diskWriteBytes, :stdOutText, :stdErrText)"));
         query.bindValue(QStringLiteral(":taskId"), taskId);
         query.bindValue(QStringLiteral(":name"), name);
         bindStepExecutionStatistics(query, statistics);
@@ -964,6 +961,8 @@ static void bindStepExecutionStatistics(QSqlQuery &query, const ExecutionStatist
     query.bindValue(QStringLiteral(":maxVmSizeKb"), statistics.maxVmSizeKb);
     query.bindValue(QStringLiteral(":diskReadBytes"), qlonglong{ statistics.diskReadBytes });
     query.bindValue(QStringLiteral(":diskWriteBytes"), qlonglong{ statistics.diskWriteBytes });
+    query.bindValue(QStringLiteral(":stdOutText"), statistics.stdOutText);
+    query.bindValue(QStringLiteral(":stdErrText"), statistics.stdErrText);
 }
 
 static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query)

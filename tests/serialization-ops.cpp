@@ -123,6 +123,8 @@ void compare(const ExecutionStatistics &v1, const ExecutionStatistics &v2)
     compare(v1.maxVmSizeKb, v2.maxVmSizeKb);
     compare(v1.diskReadBytes, v2.diskReadBytes);
     compare(v1.diskWriteBytes, v2.diskWriteBytes);
+    compare(v1.stdOutText, v2.stdOutText);
+    compare(v1.stdErrText, v2.stdErrText);
 }
 
 void compare(const TaskRunnableEvent &v1, const TaskRunnableEvent &v2)
@@ -149,15 +151,9 @@ void compare(const JobCancelledEvent &v1, const JobCancelledEvent &v2)
     compare(v1.jobId, v2.jobId);
 }
 
-void compare(const JobPausedEvent &v1, const JobPausedEvent &v2)
-{
-    compare(v1.jobId, v2.jobId);
-}
+void compare(const JobPausedEvent &v1, const JobPausedEvent &v2) { compare(v1.jobId, v2.jobId); }
 
-void compare(const JobResumedEvent &v1, const JobResumedEvent &v2)
-{
-    compare(v1.jobId, v2.jobId);
-}
+void compare(const JobResumedEvent &v1, const JobResumedEvent &v2) { compare(v1.jobId, v2.jobId); }
 
 void compare(const JobSubmittedEvent &v1, const JobSubmittedEvent &v2)
 {
@@ -198,10 +194,7 @@ void compare(const NodeStatistics &v1, const NodeStatistics &v2)
     compare(v1.diskUsedBytes, v2.diskUsedBytes);
 }
 
-void compare(const StepArgument &v1, const StepArgument &v2)
-{
-    compare(v1.value, v2.value);
-}
+void compare(const StepArgument &v1, const StepArgument &v2) { compare(v1.value, v2.value); }
 
 void compare(const NewExecutorStep &v1, const NewExecutorStep &v2)
 {

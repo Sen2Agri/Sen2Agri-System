@@ -388,6 +388,8 @@ public:
     int32_t maxVmSizeKb;
     int64_t diskReadBytes;
     int64_t diskWriteBytes;
+    QString stdOutText;
+    QString stdErrText;
 
     ExecutionStatistics();
     ExecutionStatistics(QString node,
@@ -398,7 +400,9 @@ public:
                         int32_t maxRssKb,
                         int32_t maxVmSizeKb,
                         int64_t diskReadBytes,
-                        int64_t diskWriteBytes);
+                        int64_t diskWriteBytes,
+                        QString stdOutText,
+                        QString stdErrText);
 
     static void registerMetaTypes();
 };

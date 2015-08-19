@@ -25,6 +25,9 @@ public:
     QString strMaxVmSize;
     QString strDiskRead;
     QString strDiskWrite;
+
+    QString strStdOutText;
+    QString strStdErrText;
 };
 
 #endif // PROCESSOREXECUTIONINFOS_H

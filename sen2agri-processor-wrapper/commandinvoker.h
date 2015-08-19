@@ -14,12 +14,14 @@ public:
 
     bool InvokeCommand(QString &strCmd, QStringList &listParams, bool bIsAsync);
     void StopCurCmdExec();
-    QString& GetExecutionLog();
+    const QString& GetStandardOutputLog() const;
+    const QString& GetStandardErrorLog() const;
     void SetListener(ICommandInvokerListener *pListener);
 
 private:
     QProcess m_process;
-    QString m_logStr;
+    QString m_stdOutText;
+    QString m_stdErrText;
     ICommandInvokerListener *m_pListener;
 };
 

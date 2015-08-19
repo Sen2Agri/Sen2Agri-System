@@ -3,35 +3,17 @@
 
 #include "logger.hpp"
 
-void Logger::initialize()
-{
-    openlog(NULL, LOG_CONS | LOG_PID, LOG_DAEMON);
-}
+void Logger::initialize() { openlog(NULL, LOG_CONS | LOG_PID, LOG_DAEMON); }
 
-void Logger::debug(const QString &str)
-{
-    debug(str.toLocal8Bit().constData());
-}
+void Logger::debug(const QString &str) { debug(str.toLocal8Bit().constData()); }
 
-void Logger::info(const QString &str)
-{
-    info(str.toLocal8Bit().constData());
-}
+void Logger::info(const QString &str) { info(str.toLocal8Bit().constData()); }
 
-void Logger::warn(const QString &str)
-{
-    warn(str.toLocal8Bit().constData());
-}
+void Logger::warn(const QString &str) { warn(str.toLocal8Bit().constData()); }
 
-void Logger::error(const QString &str)
-{
-    error(str.toLocal8Bit().constData());
-}
+void Logger::error(const QString &str) { error(str.toLocal8Bit().constData()); }
 
-void Logger::fatal(const QString &str)
-{
-    fatal(str.toLocal8Bit().constData());
-}
+void Logger::fatal(const QString &str) { fatal(str.toLocal8Bit().constData()); }
 
 void Logger::debug(const char *str)
 {
@@ -63,10 +45,7 @@ void Logger::fatal(const char *str)
     syslog(LOG_CRIT, "%s", str);
 }
 
-void Logger::installMessageHandler()
-{
-    qInstallMessageHandler(&Logger::messageHandler);
-}
+void Logger::installMessageHandler() { qInstallMessageHandler(&Logger::messageHandler); }
 
 void Logger::messageHandler(const QtMsgType type,
                             const QMessageLogContext &context,

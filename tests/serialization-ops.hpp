@@ -10,58 +10,37 @@ struct maker;
 
 template <>
 struct maker<bool> {
-    static bool make()
-    {
-        return true;
-    }
+    static bool make() { return true; }
 };
 
 template <>
 struct maker<int> {
-    static int make()
-    {
-        return 42;
-    }
+    static int make() { return 42; }
 };
 
 template <>
 struct maker<int64_t> {
-    static int64_t make()
-    {
-        return 3000000000;
-    }
+    static int64_t make() { return 3000000000; }
 };
 
 template <>
 struct maker<double> {
-    static float make()
-    {
-        return 42.12;
-    }
+    static float make() { return 42.12; }
 };
 
 template <>
 struct maker<QString> {
-    static QString make()
-    {
-        return "hello";
-    }
+    static QString make() { return "hello"; }
 };
 
 template <>
 struct maker<QDateTime> {
-    static QDateTime make()
-    {
-        return QDateTime::currentDateTime();
-    }
+    static QDateTime make() { return QDateTime::currentDateTime(); }
 };
 
 template <typename T>
 struct maker<std::experimental::optional<T>> {
-    static std::experimental::optional<T> make()
-    {
-        return maker<T>::make();
-    }
+    static std::experimental::optional<T> make() { return maker<T>::make(); }
 };
 
 template <typename T>
@@ -74,34 +53,22 @@ struct maker<QList<T>> {
 
 template <>
 struct maker<JobStartType> {
-    static JobStartType make()
-    {
-        return JobStartType::Scheduled;
-    }
+    static JobStartType make() { return JobStartType::Scheduled; }
 };
 
 template <>
 struct maker<EventType> {
-    static EventType make()
-    {
-        return EventType::JobResumed;
-    }
+    static EventType make() { return EventType::JobResumed; }
 };
 
 template <>
 struct maker<ExecutionStatus> {
-    static ExecutionStatus make()
-    {
-        return ExecutionStatus::Finished;
-    }
+    static ExecutionStatus make() { return ExecutionStatus::Finished; }
 };
 
 template <>
 struct maker<ProductType> {
-    static ProductType make()
-    {
-        return static_cast<ProductType>(1);
-    }
+    static ProductType make() { return static_cast<ProductType>(1); }
 };
 
 template <>
@@ -144,10 +111,7 @@ struct maker<ConfigurationCategory> {
 
 template <>
 struct maker<Site> {
-    static Site make()
-    {
-        return { maker<int>::make(), maker<QString>::make() };
-    }
+    static Site make() { return { maker<int>::make(), maker<QString>::make() }; }
 };
 
 template <>
@@ -182,10 +146,7 @@ struct maker<JobConfigurationUpdateAction> {
 
 template <>
 struct maker<KeyedMessage> {
-    static KeyedMessage make()
-    {
-        return { maker<QString>::make(), maker<QString>::make() };
-    }
+    static KeyedMessage make() { return { maker<QString>::make(), maker<QString>::make() }; }
 };
 
 template <>
@@ -207,10 +168,7 @@ struct maker<ProductToArchive> {
 
 template <>
 struct maker<ArchivedProduct> {
-    static ArchivedProduct make()
-    {
-        return { maker<int>::make(), maker<QString>::make() };
-    }
+    static ArchivedProduct make() { return { maker<int>::make(), maker<QString>::make() }; }
 };
 
 template <>
@@ -249,16 +207,14 @@ struct maker<ExecutionStatistics> {
     {
         return { maker<QString>::make(), maker<int32_t>::make(), maker<int64_t>::make(),
                  maker<int64_t>::make(), maker<int64_t>::make(), maker<int32_t>::make(),
-                 maker<int32_t>::make(), maker<int64_t>::make(), maker<int64_t>::make() };
+                 maker<int32_t>::make(), maker<int64_t>::make(), maker<int64_t>::make(),
+                 maker<QString>::make(), maker<QString>::make() };
     }
 };
 
 template <>
 struct maker<TaskRunnableEvent> {
-    static TaskRunnableEvent make()
-    {
-        return { maker<int>::make(), maker<int>::make() };
-    }
+    static TaskRunnableEvent make() { return { maker<int>::make(), maker<int>::make() }; }
 };
 
 template <>
@@ -273,34 +229,22 @@ struct maker<TaskFinishedEvent> {
 
 template <>
 struct maker<ProductAvailableEvent> {
-    static ProductAvailableEvent make()
-    {
-        return { maker<int>::make() };
-    }
+    static ProductAvailableEvent make() { return { maker<int>::make() }; }
 };
 
 template <>
 struct maker<JobCancelledEvent> {
-    static JobCancelledEvent make()
-    {
-        return { maker<int>::make() };
-    }
+    static JobCancelledEvent make() { return { maker<int>::make() }; }
 };
 
 template <>
 struct maker<JobPausedEvent> {
-    static JobPausedEvent make()
-    {
-        return { maker<int>::make() };
-    }
+    static JobPausedEvent make() { return { maker<int>::make() }; }
 };
 
 template <>
 struct maker<JobResumedEvent> {
-    static JobResumedEvent make()
-    {
-        return { maker<int>::make() };
-    }
+    static JobResumedEvent make() { return { maker<int>::make() }; }
 };
 
 template <>
@@ -344,10 +288,7 @@ struct maker<NodeStatistics> {
 
 template <>
 struct maker<StepArgument> {
-    static StepArgument make()
-    {
-        return { maker<QString>::make() };
-    }
+    static StepArgument make() { return { maker<QString>::make() }; }
 };
 
 template <>

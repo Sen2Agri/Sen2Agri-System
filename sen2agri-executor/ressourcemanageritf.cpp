@@ -335,6 +335,10 @@ void RessourceManagerItf::HandleProcessorEndedMsg(RequestParamsExecutionInfos *p
                 ProcessorExecutionInfos jobExecInfos = procExecResults.at(0);
                 jobExecInfos.strExecutionDuration = executionDuration;
                 jobExecInfos.strJobStatus = ProcessorExecutionInfos::g_strFinished;
+
+                jobExecInfos.strStdOutText = pReqParams->GetStdOutText();
+                jobExecInfos.strStdErrText = pReqParams->GetStdErrText();
+
                 // Send the statistic infos to the persistence interface module
                 if (PersistenceItfModule::GetInstance()->MarkStepFinished(nTaskId, strStepName,
                                                                           jobExecInfos)) {

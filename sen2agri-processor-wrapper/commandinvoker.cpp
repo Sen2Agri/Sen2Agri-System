@@ -11,27 +11,31 @@ void CommandInvoker::SetListener(ICommandInvokerListener *pListener) { m_pListen
 bool CommandInvoker::InvokeCommand(QString &strCmd, QStringList &listParams, bool bIsAsync)
 {
     bool bRet = true;
-    QString outputStr;
 
-    m_logStr.clear();
-    if (listParams.isEmpty()) {
-        m_process.start(strCmd);
-    } else {
-        m_process.start(strCmd, listParams);
-    }
+    m_stdOutText.clear();
+    m_stdErrText.clear();
+
+    m_process.start(strCmd, listParams);
     if (m_process.waitForStarted(-1)) {
         if (!bIsAsync) {
             if (!m_process.waitForFinished(-1)) {
                 Logger::error(QStringLiteral("Unable to wait for process to finish: %1")
                                   .arg(m_process.errorString()));
+
+                // NOTE: this uses the default timeout.
+                // we don't know what happened, but reading the standard output can't hurt
+                m_process.waitForReadyRead();
             }
 
-            while (m_process.waitForReadyRead(-1)) {
-                QByteArray ba = m_process.readAllStandardOutput();
-                outputStr = QString(ba);
-                m_logStr += outputStr;
-                if (m_pListener)
-                    m_pListener->OnNewMessage(outputStr);
+            const auto &stdOut = m_process.readAllStandardOutput();
+            const auto &stdErr = m_process.readAllStandardError();
+
+            m_stdOutText = QString::fromLocal8Bit(stdOut);
+            m_stdErrText = QString::fromLocal8Bit(stdErr);
+
+            if (m_pListener) {
+                m_pListener->OnNewMessage(m_stdOutText);
+                m_pListener->OnNewMessage(m_stdErrText);
             }
         }
     } else {
@@ -50,4 +54,6 @@ void CommandInvoker::StopCurCmdExec()
     }
 }
 
-QString &CommandInvoker::GetExecutionLog() { return m_logStr; }
+const QString &CommandInvoker::GetStandardOutputLog() const { return m_stdOutText; }
+
+const QString &CommandInvoker::GetStandardErrorLog() const { return m_stdErrText; }

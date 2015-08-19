@@ -5,9 +5,7 @@
 #include "dbprovider.hpp"
 #include "logger.hpp"
 
-DBProvider::DBProvider(const Settings &settings) : settings(settings)
-{
-}
+DBProvider::DBProvider(const Settings &settings) : settings(settings) {}
 
 SqlDatabaseRAII DBProvider::getDatabase(const QString &name) const
 {
