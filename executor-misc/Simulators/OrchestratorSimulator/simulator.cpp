@@ -12,7 +12,7 @@ Simulator::Simulator()
     m_pProcessorExecutor =
             new OrgEsaSen2agriProcessorsExecutorInterface(OrgEsaSen2agriProcessorsExecutorInterface::staticInterfaceName(),
                                                        QStringLiteral("/org/esa/sen2agri/processorsExecutor"),
-                                                       QDBusConnection::sessionBus());
+                                                       QDBusConnection::systemBus());
 }
 
 void Simulator::HandleSendExecuteProcessor()
