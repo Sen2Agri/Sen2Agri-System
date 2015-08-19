@@ -16,8 +16,8 @@ void CloudWeightComputation::SetInputFileName1(std::string &inputImageStr)
     reader->SetFileName(inputImageStr);
     try
     {
-        reader->Update();
-        m_image1 = reader->GetOutput();
+        //reader->Update();
+        //m_image1 = reader->GetOutput();
         m_inputReader1 = reader;
     }
     catch (itk::ExceptionObject& err)
@@ -40,8 +40,7 @@ void CloudWeightComputation::SetInputFileName2(std::string &inputImageStr)
     reader->SetFileName(inputImageStr);
     try
     {
-        reader->Update();
-        m_image2 = reader->GetOutput();
+        //reader->Update();
         m_inputReader2 = reader;
     }
     catch (itk::ExceptionObject& err)
@@ -50,16 +49,6 @@ void CloudWeightComputation::SetInputFileName2(std::string &inputImageStr)
         std::cout << err << std::endl;
         itkExceptionMacro("Error reading input");
     }
-}
-
-void CloudWeightComputation::SetInput1(ImageType::Pointer image)
-{
-    m_image1 = image;
-}
-
-void CloudWeightComputation::SetInput2(ImageType::Pointer image)
-{
-    m_image2 = image;
 }
 
 void CloudWeightComputation::SetInputImageReader1(CloudWeightComputation::ImageSource::Pointer inputReader)
@@ -87,22 +76,17 @@ void CloudWeightComputation::SetOutputFileName(std::string &outFile)
     m_outputFileName = outFile;
 }
 
-CloudWeightComputation::ImageType::Pointer CloudWeightComputation::GetProducedImage()
-{
-    return m_filter->GetOutput();
-}
-
 CloudWeightComputation::OutImageSource::Pointer CloudWeightComputation::GetOutputImageSource()
 {
+    BuildOutputImageSource();
     return (OutImageSource::Pointer)m_filter;
 }
 
-void CloudWeightComputation::Update()
+void CloudWeightComputation::BuildOutputImageSource()
 {
     m_filter = FilterType::New();
     m_filter->SetInput1(m_inputReader1->GetOutput());
     m_filter->SetInput2(m_inputReader2->GetOutput());
-    //m_filter->Update();
 }
 
 void CloudWeightComputation::WriteToOutputFile()
@@ -112,19 +96,19 @@ void CloudWeightComputation::WriteToOutputFile()
         WriterType::Pointer writer;
         writer = WriterType::New();
         writer->SetFileName(m_outputFileName);
-        writer->SetInput(m_filter->GetOutput());
+        writer->SetInput(GetOutputImageSource()->GetOutput());
         try
         {
             writer->Update();
-            m_image1 = m_inputReader1->GetOutput();
-            ImageType::SpacingType spacing = m_image1->GetSpacing();
-            ImageType::PointType origin = m_image1->GetOrigin();
+            ImageType::Pointer image1 = m_inputReader1->GetOutput();
+            ImageType::SpacingType spacing = image1->GetSpacing();
+            ImageType::PointType origin = image1->GetOrigin();
             std::cout << "=================================" << std::endl;
             std::cout << "Origin : " << origin[0] << " " << origin[1] << std::endl;
             std::cout << "Spacing : " << spacing[0] << " " << spacing[1] << std::endl;
             ImageType::SpacingType outspacing = m_filter->GetOutput()->GetSpacing();
-            std::cout << "Size : " << m_image1->GetLargestPossibleRegion().GetSize()[0] << " " <<
-                         m_image1->GetLargestPossibleRegion().GetSize()[1] << std::endl;
+            std::cout << "Size : " << image1->GetLargestPossibleRegion().GetSize()[0] << " " <<
+                         image1->GetLargestPossibleRegion().GetSize()[1] << std::endl;
 
             ImageType::PointType outorigin = m_filter->GetOutput()->GetOrigin();
             std::cout << "Output Origin : " << outorigin[0] << " " << outorigin[1] << std::endl;

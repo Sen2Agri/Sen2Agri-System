@@ -6,23 +6,39 @@ TARGET = TestWeightCalculation
 CONFIG   += console
 CONFIG   -= app_bundle
 
+CONFIG += c++11
+
 TEMPLATE = app
+
+DEFINES += VCL_CAN_STATIC_CONST_INIT_FLOAT=0
 
 
 SOURCES += \
-    cloudsinterpolation.cpp \
-    gaussianfilter.cpp \
-    totalweightcomputation.cpp \
-    cloudmaskbinarization.cpp \
-    cloudweightcomputation.cpp \
-    totalweightapp.cpp \
-    weightonaot.cpp \
-    testWeightCalculation.cpp
+    TotalWeight/testWeightCalculation.cpp \
+    TotalWeight/totalweightcomputation.cpp \
+    WeightAOT/weightonaot.cpp \
+    WeightOnClouds/cloudmaskbinarization.cpp \
+    WeightOnClouds/cloudsinterpolation.cpp \
+    WeightOnClouds/cloudweightcomputation.cpp \
+    WeightOnClouds/gaussianfilter.cpp \
+    ../../MACCSMetadata/src/tinyxml_utils.cpp\
+    ../../MACCSMetadata/src/FluentXML.cpp \
+    ../../MACCSMetadata/src/MACCSMetadataReader.cpp \
+    ../../MACCSMetadata/src/MACCSMetadataWriter.cpp \
+    ../../MACCSMetadata/src/SPOT4MetadataReader.cpp \
+    ../Common/MetadataHelper.cpp \
+    ../Common/Spot4MetadataHelper.cpp \
+    ../Common/MetadataHelperFactory.cpp \
+    ../Common/MACCSMetadataHelper.cpp \
+    WeightAOT/weightaotapp.cpp \
+    WeightOnClouds/weightoncloudsapp.cpp \
+    TotalWeight/totalweightapp.cpp
 
-INCLUDEPATH += -I /usr/local/include -I /usr/local/include/OTB-5.0 -I /usr/local/include/ITK-4.7
+INCLUDEPATH += -I /usr/include -I /usr/local/include -I /usr/local/include/OTB-5.0 -I /usr/local/include/ITK-4.7 -I TotalWeight -I WeightAOT -I WeightOnClouds -I ../../MACCSMetadata/include
 
 
-LIBS += -L/usr/local/lib -lfftw3f -lfftw3f_threads -lfftw3 -lfftw3_threads -lgdal -lgeos_c -lgeos -lgeotiff -lITKBiasCorrection-4.7 \
+LIBS += -L/usr/lib/x86_64-linux-gnu/ -ltinyxml  \
+        -L/usr/local/lib -lfftw3f -lfftw3f_threads -lfftw3 -lfftw3_threads -lgdal -lgeos_c -lgeos -lgeotiff -lITKBiasCorrection-4.7 \
         -lITKCommon-4.7 -litkdouble-conversion-4.7 -lITKFFT-4.7 \
         -lITKIOImageBase-4.7 -lITKKLMRegionGrowing-4.7 -lITKLabelMap-4.7 \
         -lITKMesh-4.7 -lITKMetaIO-4.7 -litkNetlibSlatec-4.7 -lITKOptimizers-4.7 \
@@ -46,15 +62,27 @@ LIBS += -L/usr/local/lib -lfftw3f -lfftw3f_threads -lfftw3 -lfftw3_threads -lgda
         -lOTBSimulation-5.0 -lOTBStreaming-5.0 -lOTBSupervised-5.0                  \
         -lOTBSVMLearning-5.0 -lOTBTestKernel-5.0 -lOTBTransform-5.0                 \
         -lOTBVectorDataBase-5.0 -lOTBVectorDataIO-5.0                               \
-        -lOTBVectorDataRendering-5.0 -lOTBWavelet-5.0 -lproj -lsqlite3 -ltiff -ltiffxx -ltinyxml
+        -lOTBVectorDataRendering-5.0 -lOTBWavelet-5.0 -lproj -lsqlite3 -ltiff -ltiffxx
+
 
 #-lOTBIOJPEG2000-5.0
 #HEADERS +=
 
 HEADERS += \
-    cloudsinterpolation.h \
-    gaussianfilter.h \
-    totalweightcomputation.h \
-    cloudmaskbinarization.h \
-    cloudweightcomputation.h \
-    weightonaot.h
+    TotalWeight/totalweightcomputation.h \
+    WeightAOT/weightonaot.h \
+    WeightOnClouds/cloudmaskbinarization.h \
+    WeightOnClouds/cloudsinterpolation.h \
+    WeightOnClouds/cloudweightcomputation.h \
+    WeightOnClouds/gaussianfilter.h \
+    ../../MACCSMetadata/include/FluentXML.hpp \
+    ../../MACCSMetadata/include/MACCSMetadata.hpp \
+    ../../MACCSMetadata/include/MACCSMetadataReader.hpp \
+    ../../MACCSMetadata/include/MACCSMetadataWriter.hpp \
+    ../../MACCSMetadata/include/SPOT4Metadata.hpp \
+    ../../MACCSMetadata/include/SPOT4MetadataReader.hpp \
+    ../../MACCSMetadata/include/tinyxml_utils.hpp \
+    ../Common/MetadataHelper.h \
+    ../Common/Spot4MetadataHelper.h \
+    ../Common/MetadataHelperFactory.h \
+    ../Common/MACCSMetadataHelper.h

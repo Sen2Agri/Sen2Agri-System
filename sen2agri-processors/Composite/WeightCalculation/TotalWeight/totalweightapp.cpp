@@ -137,7 +137,7 @@ private:
 
 
     // Set the output image
-    SetParameterOutputImage("out_total_weight", m_totalWeightComputation.GetOutputImageSource()->GetOutput());
+    SetParameterOutputImage("outtotalweight", m_totalWeightComputation.GetOutputImageSource()->GetOutput());
   }
 
   TotalWeightComputation m_totalWeightComputation;

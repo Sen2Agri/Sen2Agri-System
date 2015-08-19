@@ -45,21 +45,22 @@ public:
     void SetInputFileName(std::string &inputImageStr);
     void SetOutputFileName(std::string &outFile);
     void SetInputImageReader(ImageSource::Pointer inputReader);
-    void SetInputImage(const ImageType::Pointer inputImage);
     void SetInputResolution(int inputRes);
     void SetOutputResolution(int outputRes);
+
+    void SetOutputForcedSize(long forcedWidth, long forcedHeight);
+    void GetInputImageDimension(long &width, long &height);
+
     void SetInterpolator(Interpolator_Type interpolator);
     void SetBicubicInterpolatorRadius(int bcoRadius);
 
     const char *GetNameOfClass() { return "CloudsInterpolation";}
-    const ImageType::Pointer GetProducedImage();
     OutImageSource::Pointer GetOutputImageSource();
 
-    void Update();
     void WriteToOutputFile();
 
 private:
-
+    void BuildOutputImageSource();
     ImageType::Pointer m_inputImage;
     ImageSource::Pointer m_inputReader;
     int m_inputRes;
@@ -69,5 +70,9 @@ private:
     ResampleFilterType::Pointer m_Resampler;
 
     std::string m_outputFileName;
+
+    // during resampling at higher resolutions it might be needed to return with a specified dimension
+    long m_outForcedWidth;
+    long m_outForcedHeight;
 };
 #endif // CLOUDSINTERPOLATION_H

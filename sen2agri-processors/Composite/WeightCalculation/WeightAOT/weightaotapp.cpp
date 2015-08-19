@@ -20,6 +20,7 @@
 #include "otbWrapperApplicationFactory.h"
 
 #include "weightonaot.h"
+#include "../Common/MetadataHelperFactory.h"
 
 namespace otb
 {
@@ -59,14 +60,11 @@ private:
     AddParameter(ParameterType_String,  "in",   "Input image");
     SetParameterDescription("in", "Image containing AOT.");
 
-    AddParameter(ParameterType_Int, "band", "Expression");
-    SetParameterDescription("band", "The AOT band from the input image.");
+    AddParameter(ParameterType_String,  "inxml",   "XML metadata file");
+    SetParameterDescription("in", "XML metadata file for the product.");
 
     AddParameter(ParameterType_OutputImage, "out", "Output Image");
     SetParameterDescription("out","Output image.");
-
-    AddParameter(ParameterType_Float, "qaot", "AOTQuantificationValue");
-    SetParameterDescription("qaot", "AOT quantification value");
 
     AddParameter(ParameterType_Float, "waotmin", "WeightAOTMin");
     SetParameterDescription("waotmin", "min weight depending on AOT");
@@ -82,8 +80,7 @@ private:
 
     // Doc example parameter settings
     SetDocExampleParameterValue("in", "verySmallFSATSW_r.tif");
-    SetDocExampleParameterValue("band", "2");
-    SetDocExampleParameterValue("qaot", "0.005");
+    SetDocExampleParameterValue("inxml", "metadata.xml");
     SetDocExampleParameterValue("waotmin", "0.33");
     SetDocExampleParameterValue("waotmax", "1");
     SetDocExampleParameterValue("aotmax", "50");
@@ -103,19 +100,26 @@ private:
         itkExceptionMacro("No input Image set...; please set the input image");
     }
 
-    int nBand = GetParameterInt("band");
-    float fAotQuantificationVal = GetParameterFloat("qaot");
+    std::string inMetadataXml = GetParameterString("inxml");
+    if (inMetadataXml.empty())
+    {
+        itkExceptionMacro("No input metadata XML set...; please set the input image");
+    }
+
     int nAotMax = GetParameterInt("aotmax");
     float fWaotMin = GetParameterFloat("waotmin");
     float fWaotMax = GetParameterFloat("waotmax");
 
     m_weightOnAot.SetInputFileName(inImgStr);
+    MetadataHelper *pHelper = MetadataHelperFactory::GetInstance()->GetMetadataHelper(
+                inMetadataXml, m_weightOnAot.GetInputImageResolution());
+    float fAotQuantificationVal = pHelper->GetAotQuantificationValue();
+    int nBand = pHelper->GetAotBandIndex();
     m_weightOnAot.SetBand(nBand);
     m_weightOnAot.SetAotQuantificationValue(fAotQuantificationVal);
     m_weightOnAot.SetAotMaxValue(nAotMax);
     m_weightOnAot.SetMinAotWeight(fWaotMin);
     m_weightOnAot.SetMaxAotWeight(fWaotMax);
-    m_weightOnAot.Update();
 
     // Set the output image
     SetParameterOutputImage("out", m_weightOnAot.GetOutputImageSource()->GetOutput());

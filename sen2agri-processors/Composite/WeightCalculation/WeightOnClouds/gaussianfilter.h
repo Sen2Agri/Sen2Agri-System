@@ -28,23 +28,19 @@ public:
 
     void SetInputFileName(std::string &inputImageStr);
     void SetOutputFileName(std::string &outFile);
-    void SetInputImage(ImageType::Pointer inputImage);
     void SetInputImageReader(ImageSource::Pointer inputReader);
     void SetSigma(float fSigma);
 
     const char* GetNameOfClass() { return "GaussianFilter"; }
-    ImageType::Pointer GetProducedImage();
     OutImageSource::Pointer GetOutputImageSource();
-
-    void Update();
     void WriteToOutputFile();
 
 private:
+    void BuildOutputImageSource();
     float m_fSigma;
     std::string m_outputFileName;
     RescaleFilterType::Pointer m_rescaler;
     DiscreteGaussianFilterType::Pointer m_gaussianFilter;
-    ImageType::Pointer m_inputImage;
     ImageSource::Pointer m_inputReader;
 };
 

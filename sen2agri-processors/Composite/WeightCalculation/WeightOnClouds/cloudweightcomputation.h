@@ -53,22 +53,16 @@ public:
 
     void SetInputFileName1(std::string &inputImageStr);
     void SetInputFileName2(std::string &inputImageStr);
-    void SetInput1(ImageType::Pointer image);
-    void SetInput2(ImageType::Pointer image);
     void SetInputImageReader1(ImageSource::Pointer inputReader);
     void SetInputImageReader2(ImageSource::Pointer inputReader);
     void SetOutputFileName(std::string &outFile);
 
     const char *GetNameOfClass() { return "WeightOnClouds";}
-    ImageType::Pointer GetProducedImage();
     OutImageSource::Pointer GetOutputImageSource();
-
-    void Update();
     void WriteToOutputFile();
 
 private:
-    ImageType::Pointer m_image1;
-    ImageType::Pointer m_image2;
+    void BuildOutputImageSource();
     ImageSource::Pointer m_inputReader1;
     ImageSource::Pointer m_inputReader2;
     std::string m_outputFileName;

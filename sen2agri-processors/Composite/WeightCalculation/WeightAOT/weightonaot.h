@@ -32,7 +32,6 @@ public:
     WeightOnAOT();
 
     void SetInputFileName(std::string &inputImageStr);
-    void SetInputImage(ImageType::Pointer image);
     void SetInputImageReader(ImageSource::Pointer inputReader);
     void SetOutputFileName(std::string &outFile);
 
@@ -43,15 +42,14 @@ public:
     void SetMaxAotWeight(float fMaxWeightAot);
 
     const char *GetNameOfClass() { return "CloudMaskBinarization";}
-    OutImageType::Pointer GetProducedImage();
     OutImageSource::Pointer GetOutputImageSource();
+    int GetInputImageResolution();
 
-    void Update();
     void WriteToOutputFile();
 
 private:
+    void BuildOutputImageSource();
     ImageSource::Pointer m_inputReader;
-    ImageType::Pointer m_image;
     std::string m_outputFileName;
     ExtractROIFilterType::Pointer     m_ExtractROIFilter;
     ExtractROIFilterListType::Pointer m_ChannelExtractorList;
@@ -62,7 +60,6 @@ private:
     int m_nAotMax;
     float m_fMinWeightAot;
     float m_fMaxWeightAot;
-
 };
 
 #endif // WEIGHTONAOT_H

@@ -64,7 +64,8 @@ private:
     SetParameterDescription("incldmsk", "Image containing the cloud mask.");
 
     AddParameter(ParameterType_Int, "incldmskres", "Input cloud mask resolution");
-    SetParameterDescription("incldmskres", "The resolution of the input cloud mask image.");
+    SetParameterDescription("incldmskres", "The resolution of the input cloud mask image. It is optional and if not set, then the resolution from the input file will be used");
+    SetDefaultParameterInt("incldmskres", -1);
 
     AddParameter(ParameterType_Int, "coarseres", "Coarse resolution");
     SetParameterDescription("coarseres", "The resolution for the undersampling.");
@@ -77,7 +78,8 @@ private:
     SetParameterDescription("sigmalargecld", "Sigma value for the large cloud gaussian filter.");
 
     AddParameter(ParameterType_Int, "outres", "Resolution of the output image");
-    SetParameterDescription("coarseres", "The resolution at which the output will be produced.");
+    SetParameterDescription("outres", "The resolution at which the output will be produced.");
+    SetDefaultParameterInt("outres", -1);
 
     AddParameter(ParameterType_OutputImage, "outcldweight", "Output Cloud Weight Image");
     SetParameterDescription("outcldweight","The output image containg the computed cloud weight for each pixel.");
@@ -111,40 +113,40 @@ private:
     int outputResolution = GetParameterInt("outres");
 
     m_cloudMaskBinarization.SetInputFileName(inCldFileName);
-    m_cloudMaskBinarization.Update();
+    if(outputResolution < 0) {
+        outputResolution = m_cloudMaskBinarization.GetInputImageResolution();
+    }
 
     m_underSampler.SetInputImageReader(m_cloudMaskBinarization.GetOutputImageSource());
     m_underSampler.SetInputResolution(inputCloudMaskResolution);
     m_underSampler.SetOutputResolution(coarseResolution);
-    m_underSampler.Update();
+    long inImageWidth, inImageHeight;
+    m_underSampler.GetInputImageDimension(inImageWidth, inImageHeight);
 
     // Compute the DistLargeCloud, Low Res
     m_gaussianFilterSmallCloud.SetInputImageReader(m_underSampler.GetOutputImageSource());
     m_gaussianFilterSmallCloud.SetSigma(sigmaSmallCloud);
-    m_gaussianFilterSmallCloud.Update();
 
     m_gaussianFilterLargeCloud.SetInputImageReader(m_underSampler.GetOutputImageSource());
     m_gaussianFilterLargeCloud.SetSigma(sigmaLargeCloud);
-    m_gaussianFilterLargeCloud.Update();
 
     // resample at the current small resolution (10 or 20) the small cloud large resolution image
     m_overSamplerSmallCloud.SetInputImageReader(m_gaussianFilterSmallCloud.GetOutputImageSource());
     m_overSamplerSmallCloud.SetInputResolution(coarseResolution);
     m_overSamplerSmallCloud.SetOutputResolution(outputResolution);
     m_overSamplerSmallCloud.SetInterpolator(Interpolator_Linear);
-    m_overSamplerSmallCloud.Update();
+    m_overSamplerSmallCloud.SetOutputForcedSize(inImageWidth, inImageHeight);
 
     // resample at the current small resolution (10 or 20) the large cloud large resolution image
     m_overSamplerLargeCloud.SetInputImageReader(m_gaussianFilterLargeCloud.GetOutputImageSource());
     m_overSamplerLargeCloud.SetInputResolution(coarseResolution);
     m_overSamplerLargeCloud.SetOutputResolution(outputResolution);
     m_overSamplerLargeCloud.SetInterpolator(Interpolator_Linear);
-    m_overSamplerLargeCloud.Update();
+    m_overSamplerLargeCloud.SetOutputForcedSize(inImageWidth, inImageHeight);
 
     // compute the weight on clouds
     m_cloudWeightComputation.SetInputImageReader1(m_overSamplerSmallCloud.GetOutputImageSource());
     m_cloudWeightComputation.SetInputImageReader2(m_overSamplerLargeCloud.GetOutputImageSource());
-    m_cloudWeightComputation.Update();
 
     // Set the output image
     SetParameterOutputImage("outcldweight", m_cloudWeightComputation.GetOutputImageSource()->GetOutput());

@@ -16,8 +16,8 @@ void WeightOnAOT::SetInputFileName(std::string &inputImageStr)
     reader->SetFileName(inputImageStr);
     try
     {
-        reader->Update();
-        m_image = reader->GetOutput();
+        //reader->Update();
+        //m_image = reader->GetOutput();
         m_inputReader = reader;
     }
     catch (itk::ExceptionObject& err)
@@ -26,11 +26,6 @@ void WeightOnAOT::SetInputFileName(std::string &inputImageStr)
         std::cout << err << std::endl;
         itkExceptionMacro("Error reading input");
     }
-}
-
-void WeightOnAOT::SetInputImage(ImageType::Pointer image)
-{
-    m_image = image;
 }
 
 void WeightOnAOT::SetInputImageReader(ImageSource::Pointer inputReader)
@@ -73,39 +68,39 @@ void WeightOnAOT::SetMaxAotWeight(float fMaxWeightAot)
     m_fMaxWeightAot = fMaxWeightAot;
 }
 
-WeightOnAOT::OutImageType::Pointer WeightOnAOT::GetProducedImage()
-{
-    return m_Filter->GetOutput();
-}
-
 WeightOnAOT::OutImageSource::Pointer WeightOnAOT::GetOutputImageSource()
 {
+    BuildOutputImageSource();
     return (OutImageSource::Pointer)m_Filter;
 }
 
-void WeightOnAOT::Update()
+int WeightOnAOT::GetInputImageResolution()
 {
-    // Get the input image list
-    if (m_image.IsNull())
-    {
-        m_inputReader->Update();
-        m_image = m_inputReader->GetOutput();
-    }
+   m_inputReader->UpdateOutputInformation();
+   ImageType::Pointer inputImage = m_inputReader->GetOutput();
+   return inputImage->GetSpacing()[0];
+}
+
+
+void WeightOnAOT::BuildOutputImageSource()
+{
+    ImageType::Pointer image;
+    image = m_inputReader->GetOutput();
+
+    image->UpdateOutputInformation();
+
+    std::cout << "Input Image has " << image->GetNumberOfComponentsPerPixel() << " components" << std::endl;
 
     m_ChannelExtractorList = ExtractROIFilterListType::New();
     m_Filter               = BandMathImageFilterType::New();
 
-    m_image->UpdateOutputInformation();
-
-    std::cout << "Input Image has " << m_image->GetNumberOfComponentsPerPixel() << " components" << std::endl;
-
-    for (unsigned int j = 0; j < m_image->GetNumberOfComponentsPerPixel(); j++)
+    for (unsigned int j = 0; j < image->GetNumberOfComponentsPerPixel(); j++)
     {
         std::ostringstream tmpParserVarName;
         tmpParserVarName << "im1" << "b" << j + 1;
 
         m_ExtractROIFilter = ExtractROIFilterType::New();
-        m_ExtractROIFilter->SetInput(m_image);
+        m_ExtractROIFilter->SetInput(m_inputReader->GetOutput());
         m_ExtractROIFilter->SetChannel(j + 1);
         m_ExtractROIFilter->GetOutput()->UpdateOutputInformation();
         m_ChannelExtractorList->PushBack(m_ExtractROIFilter);
@@ -152,7 +147,7 @@ void WeightOnAOT::WriteToOutputFile()
             WriterType::Pointer writer;
             writer = WriterType::New();
             writer->SetFileName(m_outputFileName);
-            writer->SetInput(m_Filter->GetOutput());
+            writer->SetInput(GetOutputImageSource()->GetOutput());
             try
             {
                 writer->Update();

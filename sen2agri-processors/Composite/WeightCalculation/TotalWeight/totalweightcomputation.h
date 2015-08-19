@@ -72,7 +72,6 @@ public:
     const char *GetNameOfClass() { return "TotalWeightComputation";}
     OutImageSource::Pointer GetOutputImageSource();
 
-    void Update();
     void WriteToOutputFile();
 
 protected:
@@ -85,6 +84,8 @@ protected:
     float m_fWeightOnDate;
 
 private:
+    void BuildOutputImageSource();
+
     SensorType m_sensorType;
     int m_nL2ADays;
     int m_nL3ADays;

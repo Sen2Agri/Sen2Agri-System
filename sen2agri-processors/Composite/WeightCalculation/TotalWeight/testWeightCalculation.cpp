@@ -4,6 +4,12 @@
 #include "gaussianfilter.h"
 #include "cloudweightcomputation.h"
 #include "totalweightcomputation.h"
+#include "../Common/MetadataHelperFactory.h"
+
+
+std::string l8GenXmlFile ("/media/sf_2_Sen2Agri/8_ProductSamples/2_FromMACCS/L8_TEST_L8C_L2VALD_198030_20130626.HDR");
+std::string s2GenXmlFile ("/media/sf_2_Sen2Agri/8_ProductSamples/2_FromMACCS/S2A_OPER_SSC_L2VALD_15SVD____20091211.HDR");
+std::string spotXmlFile ("/media/sf_2_Sen2Agri/8_ProductSamples/3_Spot4/SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000/SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000.xml");
 
 std::string inFile ("/media/sf_2_Sen2Agri/8_ProductSamples/2_FromMACCS/S2A_OPER_SSC_L2VALD_15SVD____20091211.DBL.DIR/S2A_OPER_SSC_PDTANX_L2VALD_15SVD____20091211_CLD_R1.DBL.TIF");
 //std::string inTest1 ("/media/sf_2_Sen2Agri/8_ProductSamples/2_FromMACCS/S2A_OPER_SSC_L2VALD_15SVD____20091211.DBL.DIR/S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_FRE_R1.DBL.TIF");
@@ -31,6 +37,7 @@ std::string outWeightOnClouds20M("/media/sf_2_Sen2Agri/8_ProductSamples/3_Weight
 std::string outTotalWeight10M("/media/sf_2_Sen2Agri/8_ProductSamples/4_WeightTotal_10M.tiff");
 std::string outTotalWeight20M("/media/sf_2_Sen2Agri/8_ProductSamples/4_WeightTotal_20M.tiff");
 
+void TestXmlLoading();
 void TestWeightOnAOT();
 void TestComputeCloudWeight();
 void TestTotalWeight();
@@ -53,9 +60,59 @@ int main(int argc, char* argv[])
             }
         }
     }
+    TestXmlLoading();
     TestWeightOnAOT();
     TestComputeCloudWeight();
     TestTotalWeight();
+}
+
+void TestXmlLoading()
+{
+    MetadataHelper *pHelper;
+    std::cout << "Loading AOT from XML " << l8GenXmlFile << std::endl;
+    pHelper = MetadataHelperFactory::GetInstance()->GetMetadataHelper(l8GenXmlFile, 10);
+    std::cout << "======================" << std::endl;
+    std::cout << "AOT Image File 10m " << pHelper->GetAotImageFileName() << std::endl;
+    std::cout << "AOT Band No " << pHelper->GetAotBandIndex() << std::endl;
+    std::cout << "AOT Quantification Value " << pHelper->GetAotQuantificationValue() << std::endl;
+    std::cout << "AOT No data value " << pHelper->GetAotNoDataValue() << std::endl;
+
+    pHelper = MetadataHelperFactory::GetInstance()->GetMetadataHelper(l8GenXmlFile, 20);
+    std::cout << "======================" << std::endl;
+    std::cout << "AOT Image File 20m " << pHelper->GetAotImageFileName() << std::endl;
+    std::cout << "AOT Band No " << pHelper->GetAotBandIndex() << std::endl;
+    std::cout << "AOT Quantification Value " << pHelper->GetAotQuantificationValue() << std::endl;
+    std::cout << "AOT No data value " << pHelper->GetAotNoDataValue() << std::endl;
+
+    std::cout << std::endl << "Loading AOT from XML " << s2GenXmlFile << std::endl;
+    pHelper = MetadataHelperFactory::GetInstance()->GetMetadataHelper(s2GenXmlFile, 10);
+    std::cout << "======================" << std::endl;
+    std::cout << "AOT Image File 10m " << pHelper->GetAotImageFileName() << std::endl;
+    std::cout << "AOT Band No " << pHelper->GetAotBandIndex() << std::endl;
+    std::cout << "AOT Quantification Value " << pHelper->GetAotQuantificationValue() << std::endl;
+    std::cout << "AOT No data value " << pHelper->GetAotNoDataValue() << std::endl;
+
+    pHelper = MetadataHelperFactory::GetInstance()->GetMetadataHelper(s2GenXmlFile, 20);
+    std::cout << "======================" << std::endl;
+    std::cout << "AOT Image File 20m " << pHelper->GetAotImageFileName() << std::endl;
+    std::cout << "AOT Band No " << pHelper->GetAotBandIndex() << std::endl;
+    std::cout << "AOT Quantification Value " << pHelper->GetAotQuantificationValue() << std::endl;
+    std::cout << "AOT No data value " << pHelper->GetAotNoDataValue() << std::endl;
+
+    std::cout << std::endl << "Loading AOT from XML " << spotXmlFile << std::endl;
+    pHelper = MetadataHelperFactory::GetInstance()->GetMetadataHelper(spotXmlFile, 10);
+    std::cout << "======================" << std::endl;
+    std::cout << "AOT Image File 10m " << pHelper->GetAotImageFileName() << std::endl;
+    std::cout << "AOT Band No " << pHelper->GetAotBandIndex() << std::endl;
+    std::cout << "AOT Quantification Value " << pHelper->GetAotQuantificationValue() << std::endl;
+    std::cout << "AOT No data value " << pHelper->GetAotNoDataValue() << std::endl;
+
+    pHelper = MetadataHelperFactory::GetInstance()->GetMetadataHelper(spotXmlFile, 20);
+    std::cout << "======================" << std::endl;
+    std::cout << "AOT Image File 20m " << pHelper->GetAotImageFileName() << std::endl;
+    std::cout << "AOT Band No " << pHelper->GetAotBandIndex() << std::endl;
+    std::cout << "AOT Quantification Value " << pHelper->GetAotQuantificationValue() << std::endl;
+    std::cout << "AOT No data value " << pHelper->GetAotNoDataValue() << std::endl;
 }
 
 void TestWeightOnAOT()
@@ -69,7 +126,6 @@ void TestWeightOnAOT()
     weightOnAot10M.SetAotMaxValue(50);
     weightOnAot10M.SetMinAotWeight(0.33);
     weightOnAot10M.SetMaxAotWeight(1);
-    weightOnAot10M.Update();
     weightOnAot10M.WriteToOutputFile();
 
     if(g_allResolutions)
@@ -83,7 +139,6 @@ void TestWeightOnAOT()
         weightOnAot20M.SetAotMaxValue(50);
         weightOnAot20M.SetMinAotWeight(0.33);
         weightOnAot20M.SetMaxAotWeight(1);
-        weightOnAot20M.Update();
         weightOnAot20M.WriteToOutputFile();
     }
 }
@@ -94,16 +149,16 @@ void TestComputeCloudWeight()
     int coarseResolution = 240;
     float sigmaSmallCloud = 10.0;
     float sigmaLargeCloud = 100.0;
+    long inImageWidth, inImageHeight;
 
     std::cout << "Performing CloudMaskBinarization " << std::endl;
     CloudMaskBinarization cloudMaskBinarization;
     cloudMaskBinarization.SetInputFileName(inFile);
     cloudMaskBinarization.SetOutputFileName(outFileBinarize);
-    cloudMaskBinarization.Update();
+    std::cout << "Input Cloud image Resolution is: " << cloudMaskBinarization.GetInputImageResolution() << std::endl;
     if(g_bDebug) {
         cloudMaskBinarization.WriteToOutputFile();
     }
-
 
     // perform undersampling to lower resolution
     std::cout << "Performing Undersampling " << std::endl;
@@ -114,10 +169,10 @@ void TestComputeCloudWeight()
     underSampler.SetInputResolution(inputCloudMaskResolution);
     underSampler.SetOutputResolution(coarseResolution);
     underSampler.SetOutputFileName(outFileUndersample240M);
+    underSampler.GetInputImageDimension(inImageWidth, inImageHeight);
     // By default, the undersampler is using the Bicubic interpolator with a radius of 2
     //undersampler.SetInterpolator(Interpolator_BCO);
     //undersampler.SetBicubicInterpolatorRadius(2);
-    underSampler.Update();
     if(g_bDebug) {
         underSampler.WriteToOutputFile();
     }
@@ -130,7 +185,6 @@ void TestComputeCloudWeight()
     //gaussianFilter1.SetInputFileName(inTest1);
     gaussianFilterSmallCloud.SetSigma(sigmaSmallCloud);
     gaussianFilterSmallCloud.SetOutputFileName(outFileGaussianSmallCld);
-    gaussianFilterSmallCloud.Update();
     if(g_bDebug) {
         gaussianFilterSmallCloud.WriteToOutputFile();
     }
@@ -142,7 +196,6 @@ void TestComputeCloudWeight()
     gaussianFilterLargeCloud.SetInputImageReader(underSampler.GetOutputImageSource());
     gaussianFilterLargeCloud.SetSigma(sigmaLargeCloud);
     gaussianFilterLargeCloud.SetOutputFileName(outFileGaussianLargeCld);
-    gaussianFilterLargeCloud.Update();
     if(g_bDebug) {
         gaussianFilterLargeCloud.WriteToOutputFile();
     }
@@ -159,7 +212,7 @@ void TestComputeCloudWeight()
         overSamplerSmallCloud.SetInputResolution(coarseResolution);
         overSamplerSmallCloud.SetOutputResolution(res);
         overSamplerSmallCloud.SetInterpolator(Interpolator_Linear);
-        overSamplerSmallCloud.Update();
+        overSamplerSmallCloud.SetOutputForcedSize(inImageWidth, inImageHeight);
         if(g_bDebug) {
             overSamplerSmallCloud.WriteToOutputFile();
         }
@@ -174,7 +227,7 @@ void TestComputeCloudWeight()
         overSamplerLargeCloud.SetInputResolution(coarseResolution);
         overSamplerLargeCloud.SetOutputResolution(res);
         overSamplerLargeCloud.SetInterpolator(Interpolator_Linear);
-        overSamplerLargeCloud.Update();
+        overSamplerLargeCloud.SetOutputForcedSize(inImageWidth, inImageHeight);
         if(g_bDebug) {
             overSamplerLargeCloud.WriteToOutputFile();
         }
@@ -187,10 +240,7 @@ void TestComputeCloudWeight()
         cloudWeightComputation.SetInputImageReader1(overSamplerSmallCloud.GetOutputImageSource());
         cloudWeightComputation.SetInputImageReader2(overSamplerLargeCloud.GetOutputImageSource());
         cloudWeightComputation.SetOutputFileName(res == 10 ? outWeightOnClouds10M : outWeightOnClouds20M);
-        cloudWeightComputation.Update();
-        if(g_bDebug) {
-            cloudWeightComputation.WriteToOutputFile();
-        }
+        cloudWeightComputation.WriteToOutputFile();
 
         res += 10;
         // if not all resolutions, exit the loop after the first one
@@ -226,10 +276,9 @@ void TestTotalWeight()
     totalWeightComputation10M.SetCloudsWeightFile(outWeightOnClouds10M);
     // The output file name
     totalWeightComputation10M.SetTotalWeightOutputFileName(outTotalWeight10M);
-    totalWeightComputation10M.Update();
     totalWeightComputation10M.WriteToOutputFile();
 
-    if(!g_allResolutions)
+    if(g_allResolutions)
     {
         std::cout << "Performing TotalWeightComputation at 20m" << std::endl;
         TotalWeightComputation totalWeightComputation20M;
@@ -246,7 +295,6 @@ void TestTotalWeight()
         totalWeightComputation20M.SetCloudsWeightFile(outWeightOnClouds20M);
         // The output file name
         totalWeightComputation20M.SetTotalWeightOutputFileName(outTotalWeight20M);
-        totalWeightComputation20M.Update();
         totalWeightComputation20M.WriteToOutputFile();
     }
 }

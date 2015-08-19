@@ -54,19 +54,16 @@ public:
     CloudMaskBinarization();
 
     void SetInputFileName(std::string &inputImageStr);
-    void SetInputImage(ImageType::Pointer image);
     void SetInputImageReader(ImageSource::Pointer inputReader);
     void SetOutputFileName(std::string &outFile);
 
     const char *GetNameOfClass() { return "CloudMaskBinarization";}
-    OutImageType::Pointer GetProducedImage();
     OutImageSource::Pointer GetOutputImageSource();
-
-    void Update();
+    int GetInputImageResolution();
     void WriteToOutputFile();
 
 private:
-    ImageType::Pointer m_image;
+    void BuildOutputImageSource();
     ImageSource::Pointer m_inputReader;
     std::string m_outputFileName;
     FilterType::Pointer m_filter;

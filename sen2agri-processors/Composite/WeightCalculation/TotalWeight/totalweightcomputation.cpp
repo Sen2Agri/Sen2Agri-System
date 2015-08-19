@@ -68,10 +68,11 @@ void TotalWeightComputation::SetTotalWeightOutputFileName(std::string &outFileNa
 
 TotalWeightComputation::OutImageSource::Pointer TotalWeightComputation::GetOutputImageSource()
 {
+    BuildOutputImageSource();
     return (OutImageSource::Pointer)m_filter;
 }
 
-void TotalWeightComputation::Update()
+void TotalWeightComputation::BuildOutputImageSource()
 {
     ComputeTotalWeight();
 }
@@ -117,7 +118,7 @@ void TotalWeightComputation::WriteToOutputFile()
         WriterType::Pointer writer;
         writer = WriterType::New();
         writer->SetFileName(m_strOutFileName);
-        writer->SetInput(m_filter->GetOutput());
+        writer->SetInput(GetOutputImageSource()->GetOutput());
         try
         {
             writer->Update();

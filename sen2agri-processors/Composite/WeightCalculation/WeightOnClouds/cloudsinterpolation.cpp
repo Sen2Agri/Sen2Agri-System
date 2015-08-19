@@ -6,6 +6,10 @@ CloudsInterpolation::CloudsInterpolation()
 {
     m_interpolator = Interpolator_BCO;
     m_BCORadius = 2;
+    m_outForcedWidth = -1;
+    m_outForcedHeight = -1;
+    m_inputRes = -1;
+    m_outputRes = -1;
 }
 
 void CloudsInterpolation::SetInputFileName(std::string &inputImageStr)
@@ -20,8 +24,6 @@ void CloudsInterpolation::SetInputFileName(std::string &inputImageStr)
     reader->SetFileName(inputImageStr);
     try
     {
-        reader->Update();
-        m_inputImage = reader->GetOutput();
         m_inputReader = reader;
     }
     catch (itk::ExceptionObject& err)
@@ -37,16 +39,6 @@ void CloudsInterpolation::SetOutputFileName(std::string &outFile)
     m_outputFileName = outFile;
 }
 
-void CloudsInterpolation::SetInputImage(CloudsInterpolation::ImageType::Pointer inputImage)
-{
-    if (inputImage.IsNull())
-    {
-        std::cout << "No input Image set...; please set the input image!" << std::endl;
-        itkExceptionMacro("No input Image set...; please set the input image");
-    }
-    m_inputImage = inputImage;
-}
-
 void CloudsInterpolation::SetInputImageReader(ImageSource::Pointer inputReader)
 {
     if (inputReader.IsNull())
@@ -57,29 +49,6 @@ void CloudsInterpolation::SetInputImageReader(ImageSource::Pointer inputReader)
     m_inputReader = inputReader;
 }
 
-/*
-void CloudsInterpolation::SetInputImage(ScalarImageType::Pointer inputImage)
-{
-    if (inputImage.IsNull())
-    {
-        itkExceptionMacro("No input Image set...; please set the input image");
-    }
-    m_inputImage = FloatImageType::New();
-    m_inputImage->CopyInformation( inputImage );
-    m_inputImage->SetRegions(inputImage->GetRequestedRegion());
-    m_inputImage->SetVectorLength(1);
-    m_inputImage->Allocate();
-    m_inputImage->Update();
-/*
-    typedef itk::ComposeImageFilter<ScalarImageType> ImageToVectorImageFilterType;
-    ImageToVectorImageFilterType::Pointer imageToVectorImageFilter = ImageToVectorImageFilterType::New();
-    imageToVectorImageFilter->SetInput(0, inputImage);
-    imageToVectorImageFilter->Update();
-    //m_inputImage = imageToVectorImageFilter->GetOutput();
-//    m_inputImage = static_cast< FloatVectorImageType >(imageToVectorImageFilter->GetOutput());
-*/
-/*}*/
-
 void CloudsInterpolation::SetInputResolution(int inputRes)
 {
     m_inputRes = inputRes;
@@ -88,6 +57,23 @@ void CloudsInterpolation::SetInputResolution(int inputRes)
 void CloudsInterpolation::SetOutputResolution(int outputRes)
 {
     m_outputRes = outputRes;
+}
+
+void CloudsInterpolation::GetInputImageDimension(long &width, long &height)
+{
+   m_inputReader->UpdateOutputInformation();
+   ImageType::Pointer inputImage = m_inputReader->GetOutput();
+   width = inputImage->GetLargestPossibleRegion().GetSize()[0];
+   height = inputImage->GetLargestPossibleRegion().GetSize()[1];
+}
+
+void CloudsInterpolation::SetOutputForcedSize(long forcedWidth, long forcedHeight)
+{
+    if((forcedWidth > 0) && (forcedHeight > 0))
+    {
+        m_outForcedWidth = forcedWidth;
+        m_outForcedHeight = forcedHeight;
+    }
 }
 
 void CloudsInterpolation::SetInterpolator(Interpolator_Type interpolator)
@@ -100,23 +86,26 @@ void CloudsInterpolation::SetBicubicInterpolatorRadius(int bcoRadius)
     m_BCORadius = bcoRadius;
 }
 
-const CloudsInterpolation::ImageType::Pointer CloudsInterpolation::GetProducedImage()
-{
-    return m_Resampler->GetOutput();
-}
-
 CloudsInterpolation::OutImageSource::Pointer CloudsInterpolation::GetOutputImageSource()
 {
+    BuildOutputImageSource();
     return (OutImageSource::Pointer)m_Resampler;
 }
 
-
-void CloudsInterpolation::Update()
+void CloudsInterpolation::BuildOutputImageSource()
 {
+    if(m_outputRes < 0) {
+        itkExceptionMacro("Invalid output resolution " << m_outputRes);
+    }
+
+    m_inputReader->UpdateOutputInformation();
+    ImageType::Pointer inputImage = m_inputReader->GetOutput();
     m_Resampler = ResampleFilterType::New();
-    m_Resampler->SetInput(m_inputReader->GetOutput());
-    m_inputReader->Update();
-    m_inputImage = m_inputReader->GetOutput();
+    m_Resampler->SetInput(inputImage);
+
+    if(m_inputRes < 0) {
+        m_inputRes = abs(inputImage->GetSpacing()[0]);
+    }
 
     // Get Interpolator
     switch ( m_interpolator )
@@ -149,7 +138,7 @@ void CloudsInterpolation::Update()
 
     IdentityTransformType::Pointer transform = IdentityTransformType::New();
 
-    m_Resampler->SetOutputParametersFromImage( m_inputImage );
+    m_Resampler->SetOutputParametersFromImage( inputImage );
     // Scale Transform
     float scaleXY = ((float)m_inputRes)/((float)m_outputRes);
 
@@ -158,7 +147,8 @@ void CloudsInterpolation::Update()
     scale[1] = 1.0 / scaleXY;
 
     // Evaluate spacing
-    ImageType::SpacingType spacing = m_inputImage->GetSpacing();
+    ImageType::SpacingType spacing = inputImage->GetSpacing();
+
     //NOTE: If computation is performed with spacing and scale we might have
     //      a model pixel scale tag of 9.9999 instead of 10 that can result in
     //      different number of pixels
@@ -168,7 +158,7 @@ void CloudsInterpolation::Update()
 
     m_Resampler->SetOutputSpacing(OutputSpacing);
 
-    ImageType::PointType origin = m_inputImage->GetOrigin();
+    ImageType::PointType origin = inputImage->GetOrigin();
     ImageType::PointType outputOrigin;
     outputOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale[0] - 1.0);
     outputOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0);
@@ -178,14 +168,20 @@ void CloudsInterpolation::Update()
 
     // Evaluate size
     ResampleFilterType::SizeType recomputedSize;
-    recomputedSize[0] = m_inputImage->GetLargestPossibleRegion().GetSize()[0] / scale[0];
-    recomputedSize[1] = m_inputImage->GetLargestPossibleRegion().GetSize()[1] / scale[1];
+    if((m_outForcedWidth != -1) && (m_outForcedHeight != -1))
+    {
+        recomputedSize[0] = m_outForcedWidth;
+        recomputedSize[1] = m_outForcedHeight;
+    } else {
+        recomputedSize[0] = inputImage->GetLargestPossibleRegion().GetSize()[0] / scale[0];
+        recomputedSize[1] = inputImage->GetLargestPossibleRegion().GetSize()[1] / scale[1];
+    }
 
     m_Resampler->SetOutputSize(recomputedSize);
     //otbAppLogINFO( << "Output image size : " << recomputedSize );
 
     ImageType::PixelType defaultValue;
-    itk::NumericTraits<ImageType::PixelType>::SetLength(defaultValue, m_inputImage->GetNumberOfComponentsPerPixel());
+    itk::NumericTraits<ImageType::PixelType>::SetLength(defaultValue, inputImage->GetNumberOfComponentsPerPixel());
     m_Resampler->SetEdgePaddingValue(defaultValue);
 
     //m_Resampler->UpdateOutputInformation();
@@ -201,18 +197,18 @@ void CloudsInterpolation::WriteToOutputFile()
         WriterType::Pointer writer;
         writer = WriterType::New();
         writer->SetFileName(m_outputFileName);
-        writer->SetInput(m_Resampler->GetOutput());
+        writer->SetInput(GetOutputImageSource()->GetOutput());
         try
         {
             writer->Update();
-            m_inputImage = m_inputReader->GetOutput();
-            ImageType::SpacingType spacing = m_inputImage->GetSpacing();
-            ImageType::PointType origin = m_inputImage->GetOrigin();
+            ImageType::Pointer inputImage = m_inputReader->GetOutput();
+            ImageType::SpacingType spacing = inputImage->GetSpacing();
+            ImageType::PointType origin = inputImage->GetOrigin();
             std::cout << "=================================" << std::endl;
             std::cout << "Origin : " << origin[0] << " " << origin[1] << std::endl;
             std::cout << "Spacing : " << spacing[0] << " " << spacing[1] << std::endl;
-            std::cout << "Size : " << m_inputImage->GetLargestPossibleRegion().GetSize()[0] << " " <<
-                         m_inputImage->GetLargestPossibleRegion().GetSize()[1] << std::endl;
+            std::cout << "Size : " << inputImage->GetLargestPossibleRegion().GetSize()[0] << " " <<
+                         inputImage->GetLargestPossibleRegion().GetSize()[1] << std::endl;
 
             ImageType::SpacingType outspacing = m_Resampler->GetOutput()->GetSpacing();
             ImageType::PointType outorigin = m_Resampler->GetOutput()->GetOrigin();

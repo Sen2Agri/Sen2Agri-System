@@ -5,7 +5,6 @@
 
 GaussianFilter::GaussianFilter()
 {
-
 }
 
 void GaussianFilter::SetInputFileName(std::string &inputImageStr)
@@ -19,8 +18,8 @@ void GaussianFilter::SetInputFileName(std::string &inputImageStr)
     reader->SetFileName(inputImageStr);
     try
     {
-        reader->Update();
-        m_inputImage = reader->GetOutput();
+        //reader->Update();
+        //m_inputImage = reader->GetOutput();
         m_inputReader = reader;
     }
     catch (itk::ExceptionObject& err)
@@ -34,16 +33,6 @@ void GaussianFilter::SetInputFileName(std::string &inputImageStr)
 void GaussianFilter::SetOutputFileName(std::string &outFile)
 {
     m_outputFileName = outFile;
-}
-
-void GaussianFilter::SetInputImage(GaussianFilter::ImageType::Pointer inputImage)
-{
-    if (inputImage.IsNull())
-    {
-        std::cout << "No input Image set...; please set the input image!" << std::endl;
-        itkExceptionMacro("No input Image set...; please set the input image");
-    }
-    m_inputImage = inputImage;
 }
 
 void GaussianFilter::SetInputImageReader(ImageSource::Pointer inputReader)
@@ -62,17 +51,13 @@ void GaussianFilter::SetSigma(float fSigma)
     m_fSigma = fSigma;
 }
 
-GaussianFilter::ImageType::Pointer GaussianFilter::GetProducedImage()
-{
-    return m_gaussianFilter->GetOutput();
-}
-
 GaussianFilter::OutImageSource::Pointer GaussianFilter::GetOutputImageSource()
 {
+    BuildOutputImageSource();
     return (OutImageSource::Pointer)m_gaussianFilter;
 }
 
-void GaussianFilter::Update()
+void GaussianFilter::BuildOutputImageSource()
 {
 /*    typedef itk::VectorIndexSelectionCastImageFilter<FloatVectorImageType, ScalarImageType> IndexSelectionType;
     IndexSelectionType::Pointer indexSelectionFilter = IndexSelectionType::New();
@@ -114,18 +99,18 @@ void GaussianFilter::WriteToOutputFile()
         WriterType::Pointer writer;
         writer = WriterType::New();
         writer->SetFileName(m_outputFileName);
-        writer->SetInput(m_gaussianFilter->GetOutput());
+        writer->SetInput(GetOutputImageSource()->GetOutput());
         try
         {
             writer->Update();
-            m_inputImage = m_inputReader->GetOutput();
-            ImageType::SpacingType spacing = m_inputImage->GetSpacing();
-            ImageType::PointType origin = m_inputImage->GetOrigin();
+            ImageType::Pointer inputImage = m_inputReader->GetOutput();
+            ImageType::SpacingType spacing = inputImage->GetSpacing();
+            ImageType::PointType origin = inputImage->GetOrigin();
             std::cout << "=================================" << std::endl;
             std::cout << "Origin : " << origin[0] << " " << origin[1] << std::endl;
             std::cout << "Spacing : " << spacing[0] << " " << spacing[1] << std::endl;
-            std::cout << "Size : " << m_inputImage->GetLargestPossibleRegion().GetSize()[0] << " " <<
-                         m_inputImage->GetLargestPossibleRegion().GetSize()[1] << std::endl;
+            std::cout << "Size : " << inputImage->GetLargestPossibleRegion().GetSize()[0] << " " <<
+                         inputImage->GetLargestPossibleRegion().GetSize()[1] << std::endl;
 
             ImageType::SpacingType outspacing = m_gaussianFilter->GetOutput()->GetSpacing();
             ImageType::PointType outorigin = m_gaussianFilter->GetOutput()->GetOrigin();
