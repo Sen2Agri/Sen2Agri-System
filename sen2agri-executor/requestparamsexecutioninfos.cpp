@@ -27,6 +27,9 @@ bool RequestParamsExecutionInfos::ParseMessage(const QByteArray &message)
     // no longer used
     m_strLogMsg = obj["LOG_MSG"].toString();
     m_strExecTime = obj["EXEC_TIME"].toString();
+    m_strStdOutText = obj["STDOUT_TEXT"].toString();
+    m_strStdErrText = obj["STDERR_TEXT"].toString();
+
     return true;
 }
 
