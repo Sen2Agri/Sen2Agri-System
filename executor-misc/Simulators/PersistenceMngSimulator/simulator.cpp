@@ -7,7 +7,7 @@ Simulator::Simulator()
 {
     registerMetaTypes();
 
-    QDBusConnection connection = QDBusConnection::sessionBus();
+    QDBusConnection connection = QDBusConnection::systemBus();
 
     m_pPersistenceMng = new PersistenceManager();
     new PersistenceManagerAdaptor(m_pPersistenceMng);
