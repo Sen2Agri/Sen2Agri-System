@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION sp_mark_step_finished(
+﻿CREATE OR REPLACE FUNCTION sp_mark_step_finished(
 IN _task_id int,
 IN _step_name character varying,
 IN _node_name character varying,
@@ -78,9 +78,7 @@ BEGIN
 	AND status_id != 6 -- Prevent resetting the status on serialization error retries.
 	AND NOT EXISTS (SELECT * FROM step WHERE task_id = _task_id AND status_id != 6); -- Check that all the steps have been finished.
 
-	IF EXISTS (SELECT * FROM task WHERE id = _task_id AND status_id = 6)
-	-- Make sure the task finished event is inserted only once.
-	AND NOT EXISTS (SELECT * FROM event WHERE type_id = 2 AND (data->>'task_id')::INT = _task_id) THEN
+	IF EXISTS (SELECT * FROM task WHERE id = _task_id AND status_id = 6) THEN
 		INSERT INTO event(
 		type_id,
 		data,
@@ -90,9 +88,7 @@ BEGIN
 		('{"job_id":' || job.id || ', "processor_id":' || job.processor_id || ', "task_id":' || _task_id || ', "module_short_name":"' || task.module_short_name || '"}') :: json,
 		now()
 		FROM job INNER JOIN task ON job.id = task.job_id WHERE task.id = _task_id;
-	END IF;
-
-	IF EXISTS (SELECT * FROM task WHERE id = _task_id AND status_id = 6) THEN
+	
 		-- Get the list of tasks that depended on this one and were in status 3 NeedsInput
 		WITH tasks_preceded AS (
 			SELECT id, preceding_task_ids  FROM task WHERE
@@ -117,19 +113,16 @@ BEGIN
         IF runnable_task_ids IS NOT NULL THEN
             -- Add events for all the runnable tasks
             FOREACH runnable_task_id IN ARRAY runnable_task_ids
-            LOOP
-                -- Make sure the task runnable event is inserted only once.
-                IF NOT EXISTS (SELECT * FROM event WHERE type_id = 1 AND (data::json->>'task_id')::INT = _task_id AND processing_started_timestamp = NULL) THEN
-                    INSERT INTO event(
-                    type_id,
-                    data,
-                    submitted_timestamp)
-                    SELECT
-                    1, -- TaskRunnable
-                    ('{"job_id":' || job_id || ', "task_id":' || runnable_task_id || '}') :: json,
-                    now()
-                    FROM job INNER JOIN task ON job.id = task.job_id WHERE task.id = runnable_task_id;
-                END IF;
+            LOOP            
+		    INSERT INTO event(
+		    type_id,
+		    data,
+		    submitted_timestamp)
+		    SELECT
+		    1, -- TaskRunnable
+		    ('{"job_id":' || job_id || ', "task_id":' || runnable_task_id || '}') :: json,
+		    now()
+		    FROM job INNER JOIN task ON job.id = task.job_id WHERE task.id = runnable_task_id;
             END LOOP;
         END IF;
 

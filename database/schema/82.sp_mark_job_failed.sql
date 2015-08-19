@@ -2,8 +2,7 @@
 IN _job_id int
 ) RETURNS void AS $$
 BEGIN
-
-
+	-- Remaining tasks should be cancelled; the task that has failed has already been marked as failed.
 	UPDATE task
 	SET status_id = 7, -- Cancelled
 	status_timestamp = now()
