@@ -81,8 +81,8 @@ private:
     SetParameterDescription("outres", "The resolution at which the output will be produced.");
     SetDefaultParameterInt("outres", -1);
 
-    AddParameter(ParameterType_OutputImage, "outcldweight", "Output Cloud Weight Image");
-    SetParameterDescription("outcldweight","The output image containg the computed cloud weight for each pixel.");
+    AddParameter(ParameterType_OutputImage, "out", "Output Cloud Weight Image");
+    SetParameterDescription("out","The output image containg the computed cloud weight for each pixel.");
 
     // Doc example parameter settings
     SetDocExampleParameterValue("incldmsk", "verySmallFSATSW_r.tif");
@@ -91,7 +91,7 @@ private:
     SetDocExampleParameterValue("sigmasmallcld", "10.0");
     SetDocExampleParameterValue("sigmalargecld", "50.0");
     SetDocExampleParameterValue("outres", "10");
-    SetDocExampleParameterValue("outcldweight", "apAOTWeightOutput.tif");
+    SetDocExampleParameterValue("out", "apAOTWeightOutput.tif");
   }
 
   void DoUpdateParameters()
@@ -113,8 +113,11 @@ private:
     int outputResolution = GetParameterInt("outres");
 
     m_cloudMaskBinarization.SetInputFileName(inCldFileName);
+    if(inputCloudMaskResolution == -1) {
+        inputCloudMaskResolution = m_cloudMaskBinarization.GetInputImageResolution();
+    }
     if(outputResolution < 0) {
-        outputResolution = m_cloudMaskBinarization.GetInputImageResolution();
+        outputResolution = inputCloudMaskResolution;
     }
 
     m_underSampler.SetInputImageReader(m_cloudMaskBinarization.GetOutputImageSource());
@@ -149,7 +152,7 @@ private:
     m_cloudWeightComputation.SetInputImageReader2(m_overSamplerLargeCloud.GetOutputImageSource());
 
     // Set the output image
-    SetParameterOutputImage("outcldweight", m_cloudWeightComputation.GetOutputImageSource()->GetOutput());
+    SetParameterOutputImage("out", m_cloudWeightComputation.GetOutputImageSource()->GetOutput());
   }
 
   CloudMaskBinarization m_cloudMaskBinarization;
