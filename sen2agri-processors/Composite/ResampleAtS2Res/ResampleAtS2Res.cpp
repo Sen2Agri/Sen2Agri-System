@@ -242,10 +242,7 @@ private:
         auto maccsReader = itk::MACCSMetadataReader::New();
         if (auto m = maccsReader->ReadMetadata(GetParameterAsString("xml")))
         {
-            for (const auto &band : m->ImageInformation.Bands)
-            {
-                // band.Name
-            }
+            ProcessLANDSAT8(m);
         }
         else
         {
@@ -337,6 +334,107 @@ private:
 
     }
 
+    bool ProcessLANDSAT8(const std::unique_ptr<MACCSFileMetadata>& meta)
+    {
+        if(meta->ImageInformation.Bands.size() != 8) {
+            itkExceptionMacro("Wrong number of bands for LANDSAT: " + meta->ImageInformation.Bands.size() );
+            return false;
+        }
+        std::string imageXMLFile("");
+        std::string cloudXMLFile("");
+        std::string waterXMLFile("");
+        for(auto fileInf = meta->ProductOrganization.ImageFiles.begin(); fileInf != meta->ProductOrganization.ImageFiles.end(); fileInf++)
+        {
+            if(fileInf->LogicalName.substr(fileInf->LogicalName.size() - 4, 4).compare("_FRE") == 0 && fileInf->FileLocation.size() > 0)
+                imageXMLFile = m_DirName + "/" + fileInf->FileLocation;
+            else
+            if(fileInf->LogicalName.substr(fileInf->LogicalName.size() - 4, 4).compare("_CLD") == 0 && fileInf->FileLocation.size() > 0)
+                cloudXMLFile = m_DirName + "/" + fileInf->FileLocation;
+            else
+            if(fileInf->LogicalName.substr(fileInf->LogicalName.size() - 4, 4).compare("_WAT") == 0 && fileInf->FileLocation.size() > 0)
+                waterXMLFile = m_DirName + "/" + fileInf->FileLocation;
+
+
+        }
+        if(imageXMLFile.empty()) //TODO add error msg
+            return false;
+
+        auto maccsImageReader = itk::MACCSMetadataReader::New();
+        std::unique_ptr<MACCSFileMetadata> imageMeta = nullptr;
+
+        if ((imageMeta = maccsImageReader->ReadMetadata(imageXMLFile)) == nullptr) //TODO add error msg
+            return false;
+
+        if(imageMeta->ImageInformation.Bands.size() != 8) //TODO add error msg
+            return false;
+
+        //creates image filename
+        std::string imageFile = imageXMLFile;
+        imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
+
+        ImageReaderType::Pointer reader = getReader(imageFile);
+
+        std::vector<MACCSBand>::iterator it;
+        int i = 0;
+        ResampleFilterType::Pointer resampler;
+        ExtractROIFilterType::Pointer extractor;
+        for (it = imageMeta->ImageInformation.Bands.begin(), i = 1; it != imageMeta->ImageInformation.Bands.end(); it++, i++)
+        {
+            extractor = ExtractROIFilterType::New();
+            extractor->SetInput( reader->GetOutput() );
+            extractor->SetChannel( i );
+            extractor->UpdateOutputInformation();
+            m_ExtractorList->PushBack( extractor );
+            if((*it).Name.compare("B2") == 0 || (*it).Name.compare("B3") == 0 || (*it).Name.compare("B4") == 0) {
+                // resample from 30m to 10m
+                resampler = getResampler(extractor->GetOutput(), 3.0, false);
+
+                m_ImageListRes10->PushBack(resampler->GetOutput());
+            }
+            else
+                if((*it).Name.compare("B5") == 0 || (*it).Name.compare("B7") == 0 || (*it).Name.compare("B8") == 0) {
+                    // resample from 30m to 20m
+                    resampler = getResampler(extractor->GetOutput(), 1.5, false);
+                    m_ImageListRes20->PushBack(extractor->GetOutput());
+                }
+        }
+
+        imageFile = cloudXMLFile;
+        imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
+
+        ImageReaderType::Pointer readerCloud = getReader(imageFile);
+
+        extractor = ExtractROIFilterType::New();
+        extractor->SetInput( readerCloud->GetOutput() );
+        extractor->SetChannel( 1 );
+        extractor->UpdateOutputInformation();
+        m_ExtractorList->PushBack( extractor );
+
+        resampler = getResampler(extractor->GetOutput(), 3.0, true);
+        m_ImageCloudRes10 = resampler->GetOutput();
+        resampler = getResampler(extractor->GetOutput(), 2.0, true);
+        m_ImageCloudRes20 = extractor->GetOutput();
+
+        imageFile = waterXMLFile;
+        imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
+
+        ImageReaderType::Pointer readerWater = getReader(imageFile);
+
+        extractor = ExtractROIFilterType::New();
+        extractor->SetInput( readerWater->GetOutput() );
+        extractor->SetChannel( 1 );
+        extractor->UpdateOutputInformation();
+        m_ExtractorList->PushBack( extractor );
+
+        resampler = getResampler(extractor->GetOutput(), 3.0, true);
+        m_ImageWaterRes10 = resampler->GetOutput();
+        resampler = getResampler(extractor->GetOutput(), 2.0, true);
+        m_ImageWaterRes20 = extractor->GetOutput();
+
+        return true;
+
+    }
+
     ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const float& ratio, bool isMask) {
          ResampleFilterType::Pointer resampler = ResampleFilterType::New();
          resampler->SetInput(image);
@@ -378,7 +476,7 @@ private:
 
          // Evaluate size
          ResampleFilterType::SizeType recomputedSize;
-         recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
+         recomputedSize[0] = 4;//image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
          recomputedSize[1] = image->GetLargestPossibleRegion().GetSize()[1] / scale[1];
 
          resampler->SetOutputSize(recomputedSize);

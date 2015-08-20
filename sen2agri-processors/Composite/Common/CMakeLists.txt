@@ -1,0 +1,20 @@
+set(MetadataHelper_HEADERS
+    MACCSMetadataHelper.h
+    MetadataHelperFactory.h
+    MetadataHelper.h
+    Spot4MetadataHelper.h)
+
+set(MetadataHelper_SOURCES
+    MetadataHelper.cpp
+    MetadataHelperFactory.cpp
+    Spot4MetadataHelper.cpp
+    MACCSMetadataHelper.cpp)
+
+add_library(MetadataHelper SHARED ${MetadataHelper_HEADERS} ${MetadataHelper_SOURCES})
+target_link_libraries(MetadataHelper
+    "${OTBCommon_LIBRARIES}"
+    "${OTBITK_LIBRARIES}")
+
+target_include_directories(MetadataHelper PUBLIC .)
+
+install(TARGETS MetadataHelper DESTINATION lib)

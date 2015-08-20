@@ -20,7 +20,7 @@
 #include "otbWrapperApplicationFactory.h"
 
 #include "weightonaot.h"
-#include "../Common/MetadataHelperFactory.h"
+#include "MetadataHelperFactory.h"
 
 namespace otb
 {
