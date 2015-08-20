@@ -48,6 +48,8 @@ bool PersistenceItfModule::MarkStepFinished(int taskId, QString &name, Processor
     newStats.node = statistics.strJobNode;
     newStats.systemCpuMs = ParseTimeStr(statistics.strSystemTime);
     newStats.userCpuMs = ParseTimeStr(statistics.strUserTime);
+    newStats.stdOutText = statistics.strStdOutText;
+    newStats.stdErrText = statistics.strStdErrText;
 
     return clientInterface.MarkStepFinished(taskId, name, newStats);
 }
