@@ -111,7 +111,8 @@ private:
     float fWaotMax = GetParameterFloat("waotmax");
 
     m_weightOnAot.SetInputFileName(inImgStr);
-    MetadataHelper *pHelper = MetadataHelperFactory::GetInstance()->GetMetadataHelper(
+    auto factory = MetadataHelperFactory::New();
+    auto pHelper = factory->GetMetadataHelper(
                 inMetadataXml, m_weightOnAot.GetInputImageResolution());
     float fAotQuantificationVal = pHelper->GetAotQuantificationValue();
     int nBand = pHelper->GetAotBandIndex();
