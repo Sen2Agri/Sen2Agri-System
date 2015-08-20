@@ -27,6 +27,8 @@ bool MACCSMetadataHelper::DoLoadMetadata()
             itkExceptionMacro("Unknown mission: " + maccsMetadata.Header.FixedHeader.Mission);
         }
 
+        m_Mission = maccsMetadata.Header.FixedHeader.Mission;
+
         // compute the Image file name
         m_ImageFileName = getImageFileName(maccsMetadata);
 
@@ -38,6 +40,8 @@ bool MACCSMetadataHelper::DoLoadMetadata()
         m_WaterFileName = getWaterFileName(maccsMetadata);
         // compute the Snow file name
         m_SnowFileName = getSnowFileName(maccsMetadata);
+        // set the acquisition date
+        m_AcquisitionDate = maccsMetadata.InstanceId.AcquisitionDate;
 
         return true;
     }

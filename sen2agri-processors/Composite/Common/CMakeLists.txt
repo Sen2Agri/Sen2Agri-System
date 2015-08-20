@@ -13,7 +13,7 @@ set(MetadataHelper_SOURCES
 add_library(MetadataHelper SHARED ${MetadataHelper_HEADERS} ${MetadataHelper_SOURCES})
 target_link_libraries(MetadataHelper
     "${OTBCommon_LIBRARIES}"
-    "${OTBITK_LIBRARIES}")
+    "${OTBITK_LIBRARIES}" MACCSMetadata)
 
 target_include_directories(MetadataHelper PUBLIC .)
 

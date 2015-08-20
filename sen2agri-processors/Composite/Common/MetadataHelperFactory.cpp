@@ -2,36 +2,17 @@
 #include "Spot4MetadataHelper.h"
 #include "MACCSMetadataHelper.h"
 
-MetadataHelperFactory::MetadataHelperFactory()
+std::unique_ptr<MetadataHelper> MetadataHelperFactory::GetMetadataHelper(std::string& metadataFileName, int nResolution)
 {
-    RegisterHelper(new Spot4MetadataHelper());
-    RegisterHelper(new MACCSMetadataHelper());
-}
+    std::unique_ptr<MetadataHelper> spot4MetadataHelper(new Spot4MetadataHelper);
+    if (spot4MetadataHelper->LoadMetadataFile(metadataFileName, nResolution))
+        return spot4MetadataHelper;
 
-MetadataHelperFactory::~MetadataHelperFactory()
-{
-    for(size_t i = 0; i<m_registreredHelpers.size(); i++) {
-        MetadataHelper* pHelper = m_registreredHelpers[i];
-        if(pHelper)
-            delete pHelper;
-    }
-    m_registreredHelpers.clear();
-}
+    std::unique_ptr<MetadataHelper> maccsMetadataHelper(new MACCSMetadataHelper);
+    if (maccsMetadataHelper->LoadMetadataFile(metadataFileName, nResolution))
+        return maccsMetadataHelper;
 
-void MetadataHelperFactory::RegisterHelper(MetadataHelper *pHelper)
-{
-    m_registreredHelpers.push_back(pHelper);
-}
-
-MetadataHelper* MetadataHelperFactory::GetMetadataHelper(std::string& metadataFileName, int nResolution)
-{
-    for(size_t i = 0; i < m_registreredHelpers.size(); i++) {
-        MetadataHelper* pHelper = m_registreredHelpers[i];
-        if(pHelper->LoadMetadataFile(metadataFileName, nResolution))
-            return pHelper;
-    }
     itkExceptionMacro("Unable to read metadata from " << metadataFileName);
 
     return NULL;
 }
-
