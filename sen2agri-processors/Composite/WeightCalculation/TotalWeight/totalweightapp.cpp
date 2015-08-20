@@ -20,6 +20,7 @@
 #include "otbWrapperApplicationFactory.h"
 
 #include "totalweightcomputation.h"
+#include "MetadataHelperFactory.h"
 
 namespace otb
 {
@@ -27,12 +28,12 @@ namespace otb
 namespace Wrapper
 {
 
-class TotalWeightApp : public Application
+class TotalWeight : public Application
 {
 
 public:
   /** Standard class typedefs. */
-  typedef TotalWeightApp                      Self;
+  typedef TotalWeight                      Self;
   typedef Application                   Superclass;
   typedef itk::SmartPointer<Self>       Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
@@ -40,7 +41,7 @@ public:
   /** Standard macro */
   itkNewMacro(Self);
 
-  itkTypeMacro(TotalWeightApp, otb::Application);
+  itkTypeMacro(TotalWeight, otb::Application);
 
 private:
   void DoInit()
@@ -56,16 +57,19 @@ private:
     SetDocSeeAlso(" ");
     AddDocTag("Util");
 
-    AddParameter(ParameterType_String,  "in",   "Input product file name");
-    SetParameterDescription("in", "The product file name used to determine the sensor type.");
+    AddParameter(ParameterType_String,  "inxml",   "The input metadata xml");
+    SetParameterDescription("inxml", "The XML file containing the L2A metadata.");
+
+    AddParameter(ParameterType_String,  "waotfile",   "Input AOT weight file name");
+    SetParameterDescription("waotfile", "The file name of the image containing the AOT weigth for each pixel.");
+
+    AddParameter(ParameterType_String,  "wcldfile",   "Input cloud weight file name");
+    SetParameterDescription("wcldfile", "The file name of the image containing the cloud weigth for each pixel.");
 
     AddParameter(ParameterType_Float, "wsensor", "Weight for the given sensor type");
     SetParameterDescription("wsensor", "The weight to be used for the given sensor type.");
 
-    AddParameter(ParameterType_Int, "l2adate", "L2A date, expressed in days");
-    SetParameterDescription("l2adate", "The L2A date extracted from metadata, expressed in days.");
-
-    AddParameter(ParameterType_Int, "l3adate", "L3A date, expressed in days");
+    AddParameter(ParameterType_String, "l3adate", "L3A date, expressed in days");
     SetParameterDescription("l3adate", "The L3A date extracted from metadata, expressed in days.");
 
     AddParameter(ParameterType_Int, "halfsynthesis", "Delta max");
@@ -75,25 +79,18 @@ private:
     SetParameterDescription("wdatemin", "Minimum weight at edge of synthesis time window.");
     SetDefaultParameterFloat("wdatemin", 0.5);
 
-    AddParameter(ParameterType_String,  "waotfile",   "Input AOT weight file name");
-    SetParameterDescription("waotfile", "The file name of the image containing the AOT weigth for each pixel.");
-
-    AddParameter(ParameterType_String,  "wcldfile",   "Input cloud weight file name");
-    SetParameterDescription("wcldfile", "The file name of the image containing the cloud weigth for each pixel.");
-
-    AddParameter(ParameterType_OutputImage, "outtotalweight", "Output Total Weight Image");
-    SetParameterDescription("outtotalweight","The output image containg the computed total weight for each pixel.");
+    AddParameter(ParameterType_OutputImage, "out", "Output Total Weight Image");
+    SetParameterDescription("out","The output image containg the computed total weight for each pixel.");
 
     // Doc example parameter settings
-    SetDocExampleParameterValue("in", "example1.tif");
+    SetDocExampleParameterValue("inxml", "example1.xml");
     SetDocExampleParameterValue("waotfile", "example2.tif");
     SetDocExampleParameterValue("wcldfile", "example3.tif");
     SetDocExampleParameterValue("wsensor", "0.33");
-    SetDocExampleParameterValue("l2adate", "10");
-    SetDocExampleParameterValue("l3adate", "20");
+    SetDocExampleParameterValue("l3adate", "20140502");
     SetDocExampleParameterValue("halfsynthesis", "50");
     SetDocExampleParameterValue("wdatemin", "0.10");
-    SetDocExampleParameterValue("outtotalweight", "apTotalWeightOutput.tif");
+    SetDocExampleParameterValue("out", "apTotalWeightOutput.tif");
   }
 
   void DoUpdateParameters()
@@ -103,14 +100,17 @@ private:
   void DoExecute()
   {
     // Get the input image list
-    std::string inProdFileName = GetParameterString("in");
-    if (inProdFileName.empty())
+    std::string inXml = GetParameterString("inxml");
+    if (inXml.empty())
     {
-        itkExceptionMacro("No input Image set...; please set the input image");
+        itkExceptionMacro("No xml file given...; please set the input xml");
     }
+
     float weightSensor = GetParameterFloat("wsensor");
-    int l2aDate = GetParameterInt("l2adate");
-    int l3aDate = GetParameterInt("l3adate");
+    auto factory = MetadataHelperFactory::New();
+    auto pHelper = factory->GetMetadataHelper(inXml);
+    std::string l2aDate = pHelper->GetAcquisitionDate();
+    std::string l3aDate = GetParameterString("l3adate");
     int halfSynthesis = GetParameterInt("halfsynthesis");
     float weightOnDateMin = GetParameterFloat("wdatemin");
 
@@ -118,12 +118,12 @@ private:
     std::string inCloudFileName = GetParameterString("wcldfile");
 
     // weight on sensor parameters
-    m_totalWeightComputation.SetInputProductName(inProdFileName);
+    std::string missionName = pHelper->GetMissionName();
+    m_totalWeightComputation.SetMissionName(missionName);
     m_totalWeightComputation.SetWeightOnSensor(weightSensor);
 
     // weight on date parameters
-    m_totalWeightComputation.SetL2ADateAsDays(l2aDate);
-    m_totalWeightComputation.SetL3ADateAsDays(l3aDate);
+    m_totalWeightComputation.SetDates(l2aDate, l3aDate);
     m_totalWeightComputation.SetHalfSynthesisPeriodAsDays(halfSynthesis);
     m_totalWeightComputation.SetWeightOnDateMin(weightOnDateMin);
 
@@ -132,12 +132,8 @@ private:
     m_totalWeightComputation.SetAotWeightFile(inAotFileName);
     m_totalWeightComputation.SetCloudsWeightFile(inCloudFileName);
 
-    // The output file name
-    //m_totalWeightComputation.SetTotalWeightOutputFileName();
-
-
     // Set the output image
-    SetParameterOutputImage("outtotalweight", m_totalWeightComputation.GetOutputImageSource()->GetOutput());
+    SetParameterOutputImage("out", m_totalWeightComputation.GetOutputImageSource()->GetOutput());
   }
 
   TotalWeightComputation m_totalWeightComputation;
@@ -146,5 +142,5 @@ private:
 } // namespace Wrapper
 } // namespace otb
 
-OTB_APPLICATION_EXPORT(otb::Wrapper::TotalWeightApp)
+OTB_APPLICATION_EXPORT(otb::Wrapper::TotalWeight)
 
