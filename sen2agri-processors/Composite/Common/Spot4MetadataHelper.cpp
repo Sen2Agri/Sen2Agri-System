@@ -17,6 +17,8 @@ bool Spot4MetadataHelper::DoLoadMetadata()
         m_fAotNoDataVal = 0;
         m_nAotBandIndex = 1;
 
+        m_ReflQuantifVal = 1000.0;
+
         SPOT4Metadata spot4Metadata = *meta;
         m_Mission = "SPOT4";
         // compute the Image file name

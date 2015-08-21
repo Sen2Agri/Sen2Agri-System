@@ -3,6 +3,11 @@
 
 #include <string>
 
+#define LANDSAT_MISSION_STR    "LANDSAT"
+#define SENTINEL_MISSION_STR   "SENTINEL"
+#define SPOT4_MISSION_STR      "SPOT4"
+
+
 class MetadataHelper
 {
 public:
@@ -21,7 +26,9 @@ public:
 
     // returns the acquisition date in the format YYYYMMDD
     virtual std::string GetAcquisitionDate() { return m_AcquisitionDate; }
+    virtual int GetAcquisitionDateInDays();
 
+    virtual double GetReflectanceQuantificationValue() {return m_ReflQuantifVal; }
     virtual float GetAotQuantificationValue() { return m_fAotQuantificationValue; }
     virtual float GetAotNoDataValue() { return m_fAotNoDataVal; }
     virtual int GetAotBandIndex() { return m_nAotBandIndex; }
@@ -39,6 +46,8 @@ protected:
     std::string m_SnowFileName;
     std::string m_ImageFileName;
     std::string m_AcquisitionDate;
+
+    double m_ReflQuantifVal;
 
     float m_fAotQuantificationValue;
     float m_fAotNoDataVal;

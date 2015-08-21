@@ -1,11 +1,9 @@
 #include "MACCSMetadataHelper.h"
 
-#define LANDSAT_STR    "LANDSAT"
-#define SENTINEL_STR   "SENTINEL"
-
 MACCSMetadataHelper::MACCSMetadataHelper()
 {
     m_missionType = S2;
+    m_ReflQuantifVal = 1;
 }
 
 bool MACCSMetadataHelper::DoLoadMetadata()
@@ -17,10 +15,10 @@ bool MACCSMetadataHelper::DoLoadMetadata()
     if (auto metadata = maccsMetadataReader->ReadMetadata(m_inputMetadataFileName)) {
         MACCSFileMetadata maccsMetadata = *metadata;
 
-        if (maccsMetadata.Header.FixedHeader.Mission.find(LANDSAT_STR) != std::string::npos) {
+        if (maccsMetadata.Header.FixedHeader.Mission.find(LANDSAT_MISSION_STR) != std::string::npos) {
             m_missionType = LANDSAT;
             UpdateValuesForLandsat(maccsMetadata);
-        } else if (maccsMetadata.Header.FixedHeader.Mission.find(SENTINEL_STR) != std::string::npos) {
+        } else if (maccsMetadata.Header.FixedHeader.Mission.find(SENTINEL_MISSION_STR) != std::string::npos) {
             m_missionType = S2;
             UpdateValuesForSentinel(maccsMetadata);
         } else {
@@ -28,6 +26,7 @@ bool MACCSMetadataHelper::DoLoadMetadata()
         }
 
         m_Mission = maccsMetadata.Header.FixedHeader.Mission;
+        //m_ReflQuantifVal = std::stod(maccsMetadata.ProductInformation.ReflectanceQuantificationValue);
 
         // compute the Image file name
         m_ImageFileName = getImageFileName(maccsMetadata);
