@@ -246,6 +246,7 @@ MACCSProductInformation ReadProductInformation(const TiXmlElement *el)
     result.SolarAngles = ReadAngles(el->FirstChildElement("Solar_Angles"));
     result.ViewingAngles =
         ReadViewingAnglesGridList(el->FirstChildElement("List_of_Viewing_Angles"));
+    result.ReflectanceQuantificationValue = GetChildText(el, "Reflectance_Quantification_Value");
 
     return result;
 }
