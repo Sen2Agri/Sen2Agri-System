@@ -176,4 +176,14 @@ JobStepToRun Reflector::ReflectJobStepToRun(const JobStepToRun &value) { return 
 
 JobStepToRunList Reflector::ReflectJobStepToRunList(const JobStepToRunList &value) { return value; }
 
+StepConsoleOutput Reflector::ReflectStepConsoleOutput(const StepConsoleOutput &value)
+{
+    return value;
+}
+
+StepConsoleOutputList Reflector::ReflectStepConsoleOutputList(const StepConsoleOutputList &value)
+{
+    return value;
+}
+
 NewProduct Reflector::ReflectNewProduct(const NewProduct &value) { return value; }

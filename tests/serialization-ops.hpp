@@ -314,6 +314,17 @@ struct maker<JobStepToRun> {
 };
 
 template <>
+struct maker<StepConsoleOutput> {
+    static StepConsoleOutput make()
+    {
+        return { maker<int>::make(),
+                 maker<QString>::make(),
+                 maker<QString>::make(),
+                 maker<QString>::make() };
+    }
+};
+
+template <>
 struct maker<NewProduct> {
     static NewProduct make()
     {
@@ -374,4 +385,5 @@ void compare(const NodeStatistics &v1, const NodeStatistics &v2);
 void compare(const StepArgument &v1, const StepArgument &v2);
 void compare(const NewExecutorStep &v1, const NewExecutorStep &v2);
 void compare(const JobStepToRun &v1, const JobStepToRun &v2);
+void compare(const StepConsoleOutput &v1, const StepConsoleOutput &v2);
 void compare(const NewProduct &v1, const NewProduct &v2);

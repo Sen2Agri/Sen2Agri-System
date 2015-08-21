@@ -73,6 +73,21 @@ TaskIdList EventProcessingContext::GetJobTasksByStatus(int jobId,
     return WaitForResponseAndThrow(persistenceManagerClient.GetJobTasksByStatus(jobId, statusList));
 }
 
+JobStepToRunList EventProcessingContext::GetTaskStepsForStart(int taskId)
+{
+    return WaitForResponseAndThrow(persistenceManagerClient.GetTaskStepsForStart(taskId));
+}
+
+JobStepToRunList EventProcessingContext::GetJobStepsForResume(int jobId)
+{
+    return WaitForResponseAndThrow(persistenceManagerClient.GetJobStepsForResume(jobId));
+}
+
+StepConsoleOutputList EventProcessingContext::GetTaskConsoleOutputs(int taskId)
+{
+    return WaitForResponseAndThrow(persistenceManagerClient.GetTaskConsoleOutputs(taskId));
+}
+
 UnprocessedEventList EventProcessingContext::GetNewEvents()
 {
     return WaitForResponseAndThrow(persistenceManagerClient.GetNewEvents());
