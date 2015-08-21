@@ -1,5 +1,8 @@
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QRegularExpression>
+
+#include "logger.hpp"
 
 #include "croptypehandler.hpp"
 
@@ -215,7 +218,34 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
-    if (event.module == QLatin1String("ComputeImagesStatistics")) {
+    Logger::info(event.module);
+    if (event.module == "compute-confusion-matrix") {
+        const auto &outputs = ctx.GetTaskConsoleOutputs(event.taskId);
+        for (const auto &output : outputs) {
+            QRegularExpression reK("Kappa index: (\\d+(?:\\.\\d*)?)");
+            QRegularExpression reAcc("Overall accuracy index: (\\d+(?:\\.\\d*)?)");
+
+            const auto &mK = reK.match(output.stdOutText);
+            const auto &mAcc = reAcc.match(output.stdOutText);
+
+            const auto &statisticsPath =
+                ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "/statistics.txt";
+            QFile file(statisticsPath);
+            if (!file.open(QIODevice::WriteOnly)) {
+                throw std::runtime_error(QStringLiteral("Unable to open %1")
+                                             .arg(statisticsPath)
+                                             .arg(file.errorString())
+                                             .toStdString());
+            }
+
+            QTextStream s(&file);
+            s << mK.captured(1) << ' ' << mAcc.captured(1);
+
+            Logger::info(output.stdOutText);
+            Logger::info(mK.captured(1));
+            Logger::info(mAcc.captured(1));
+        }
+
         ctx.MarkJobFinished(event.jobId);
     }
 
