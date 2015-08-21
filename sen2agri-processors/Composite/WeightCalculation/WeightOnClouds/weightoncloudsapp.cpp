@@ -66,10 +66,12 @@ private:
     AddParameter(ParameterType_Int, "incldmskres", "Input cloud mask resolution");
     SetParameterDescription("incldmskres", "The resolution of the input cloud mask image. It is optional and if not set, then the resolution from the input file will be used");
     SetDefaultParameterInt("incldmskres", -1);
+    MandatoryOff("incldmskres");
 
     AddParameter(ParameterType_Int, "coarseres", "Coarse resolution");
     SetParameterDescription("coarseres", "The resolution for the undersampling.");
     SetDefaultParameterInt("coarseres", 240);
+    MandatoryOff("coarseres");
 
     AddParameter(ParameterType_Float, "sigmasmallcld", "Small cloud sigma");
     SetParameterDescription("sigmasmallcld", "Sigma value for the small cloud gaussian filter.");
@@ -80,6 +82,7 @@ private:
     AddParameter(ParameterType_Int, "outres", "Resolution of the output image");
     SetParameterDescription("outres", "The resolution at which the output will be produced.");
     SetDefaultParameterInt("outres", -1);
+    MandatoryOff("outres");
 
     AddParameter(ParameterType_OutputImage, "out", "Output Cloud Weight Image");
     SetParameterDescription("out","The output image containg the computed cloud weight for each pixel.");
