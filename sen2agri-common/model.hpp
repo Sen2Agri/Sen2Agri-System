@@ -725,6 +725,28 @@ Q_DECLARE_METATYPE(JobStepToRunList)
 QDBusArgument &operator<<(QDBusArgument &argument, const JobStepToRun &step);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobStepToRun &step);
 
+class StepConsoleOutput
+{
+public:
+    int taskId;
+    QString stepName;
+    QString stdOutText;
+    QString stdErrText;
+
+    StepConsoleOutput();
+    StepConsoleOutput(int taskId, QString stepName, QString stdOutText, QString stdErrText);
+
+    static void registerMetaTypes();
+};
+
+typedef QList<StepConsoleOutput> StepConsoleOutputList;
+
+Q_DECLARE_METATYPE(StepConsoleOutput)
+Q_DECLARE_METATYPE(StepConsoleOutputList)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const StepConsoleOutput &stepOutput);
+const QDBusArgument &operator>>(const QDBusArgument &argument, StepConsoleOutput &stepOutput);
+
 enum class ProductType { TestProduct = 1 };
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ProductType &productType);

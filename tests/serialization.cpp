@@ -474,6 +474,24 @@ void Serialization::jobStepToRunList()
     compare(WaitForResponseAndThrow(client->ReflectJobStepToRunList(emptyValue)), emptyValue);
 }
 
+void Serialization::stepConsoleOutput()
+{
+    const auto &value = maker<StepConsoleOutput>::make();
+    compare(WaitForResponseAndThrow(client->ReflectStepConsoleOutput(value)), value);
+
+    StepConsoleOutput emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectStepConsoleOutput(emptyValue)), emptyValue);
+}
+
+void Serialization::stepConsoleOutputList()
+{
+    const auto &value = maker<StepConsoleOutputList>::make();
+    compare(WaitForResponseAndThrow(client->ReflectStepConsoleOutputList(value)), value);
+
+    StepConsoleOutputList emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectStepConsoleOutputList(emptyValue)), emptyValue);
+}
+
 void Serialization::newProduct()
 {
     const auto &value = maker<NewProduct>::make();

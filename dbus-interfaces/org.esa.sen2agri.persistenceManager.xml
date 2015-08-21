@@ -102,6 +102,11 @@
       <arg name="steps" type="a(isss)" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobStepToRunList" />
     </method>
+    <method name="GetTaskConsoleOutputs">
+      <arg name="taskId" type="i" direction="in" />
+      <arg name="stepOutputs" type="a(isss)" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="StepConsoleOutputList" />
+    </method>
     <method name="InsertTaskFinishedEvent">
       <arg name="event" type="(i)" direction="in" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="TaskFinishedEvent" />

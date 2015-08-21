@@ -67,5 +67,7 @@ private slots:
     void newExecutorStepList();
     void jobStepToRun();
     void jobStepToRunList();
+    void stepConsoleOutput();
+    void stepConsoleOutputList();
     void newProduct();
 };

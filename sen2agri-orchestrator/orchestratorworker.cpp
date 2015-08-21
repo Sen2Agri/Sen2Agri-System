@@ -115,8 +115,7 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskRun
                      .arg(event.taskId)
                      .arg(event.jobId));
 
-    const auto &steps =
-        WaitForResponseAndThrow(persistenceManagerClient.GetTaskStepsForStart(event.taskId));
+    const auto &steps = ctx.GetTaskStepsForStart(event.taskId);
 
     const auto &stepsToSubmit = getExecutorStepList(ctx, event.jobId, steps);
 
@@ -180,8 +179,7 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobResu
 {
     Logger::info(QStringLiteral("Processing job resumed event with job id %1").arg(event.jobId));
 
-    const auto &steps =
-        WaitForResponseAndThrow(persistenceManagerClient.GetJobStepsForResume(event.jobId));
+    const auto &steps = ctx.GetJobStepsForResume(event.jobId);
 
     const auto &stepsToSubmit = getExecutorStepList(ctx, event.jobId, steps);
 

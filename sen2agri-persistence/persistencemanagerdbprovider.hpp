@@ -54,6 +54,8 @@ public:
     JobStepToRunList GetTaskStepsForStart(int taskId);
     JobStepToRunList GetJobStepsForResume(int jobId);
 
+    StepConsoleOutputList GetTaskConsoleOutputs(int taskId);
+
     void InsertEvent(const SerializedEvent &event);
 
     UnprocessedEventList GetNewEvents();

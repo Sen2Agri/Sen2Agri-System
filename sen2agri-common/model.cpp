@@ -57,6 +57,7 @@ void registerMetaTypes()
     StepArgument::registerMetaTypes();
     NewExecutorStep::registerMetaTypes();
     JobStepToRun::registerMetaTypes();
+    StepConsoleOutput::registerMetaTypes();
 
     NewProduct::registerMetaTypes();
 
@@ -1297,6 +1298,45 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobStepToRun &ste
 {
     argument.beginStructure();
     argument >> step.taskId >> step.module >> step.stepName >> step.parametersJson;
+    argument.endStructure();
+
+    return argument;
+}
+
+StepConsoleOutput::StepConsoleOutput() : taskId() {}
+
+StepConsoleOutput::StepConsoleOutput(int taskId,
+                                     QString stepName,
+                                     QString stdOutText,
+                                     QString stdErrText)
+    : taskId(taskId),
+      stepName(std::move(stepName)),
+      stdOutText(std::move(stdOutText)),
+      stdErrText(std::move(stdErrText))
+{
+}
+
+void StepConsoleOutput::registerMetaTypes()
+{
+    qDBusRegisterMetaType<StepConsoleOutput>();
+    qDBusRegisterMetaType<StepConsoleOutputList>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const StepConsoleOutput &stepOutput)
+{
+    argument.beginStructure();
+    argument << stepOutput.taskId << stepOutput.stepName << stepOutput.stdOutText
+             << stepOutput.stdErrText;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, StepConsoleOutput &stepOutput)
+{
+    argument.beginStructure();
+    argument >> stepOutput.taskId >> stepOutput.stepName >> stepOutput.stdOutText >>
+        stepOutput.stdErrText;
     argument.endStructure();
 
     return argument;

@@ -284,6 +284,18 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="JobStepToRunList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobStepToRunList" />
     </method>
+    <method name="ReflectStepConsoleOutput">
+      <arg name="value" type="StepConsoleOutput" direction="in" />
+      <arg name="result" type="StepConsoleOutput" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="StepConsoleOutput" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="StepConsoleOutput" />
+    </method>
+    <method name="ReflectStepConsoleOutputList">
+      <arg name="value" type="StepConsoleOutputList" direction="in" />
+      <arg name="result" type="StepConsoleOutputList" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="StepConsoleOutputList" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="StepConsoleOutputList" />
+    </method>
     <method name="ReflectNewProduct">
       <arg name="value" type="NewProduct" direction="in" />
       <arg name="result" type="NewProduct" direction="out" />

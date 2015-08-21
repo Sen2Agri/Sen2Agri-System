@@ -704,6 +704,38 @@ JobStepToRunList PersistenceManagerDBProvider::GetJobStepsForResume(int jobId)
     });
 }
 
+StepConsoleOutputList PersistenceManagerDBProvider::GetTaskConsoleOutputs(int taskId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_task_console_outputs(:taskId)"));
+        query.bindValue(QStringLiteral(":taskId"), taskId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto taskIdCol = dataRecord.indexOf(QStringLiteral("task_id"));
+        auto stepNameCol = dataRecord.indexOf(QStringLiteral("step_name"));
+        auto stdOutTextCol = dataRecord.indexOf(QStringLiteral("stdout_text"));
+        auto stdErrTextCol = dataRecord.indexOf(QStringLiteral("stderr_text"));
+
+        StepConsoleOutputList result;
+        while (query.next()) {
+            result.append({ query.value(taskIdCol).toInt(),
+                            query.value(stepNameCol).toString(),
+                            query.value(stdOutTextCol).toString(),
+                            query.value(stdErrTextCol).toString() });
+        }
+
+        return result;
+    });
+}
+
 void PersistenceManagerDBProvider::InsertEvent(const SerializedEvent &event)
 {
     auto db = getDatabase();

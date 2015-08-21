@@ -70,5 +70,7 @@ public slots:
     NewExecutorStepList ReflectNewExecutorStepList(const NewExecutorStepList &value);
     JobStepToRun ReflectJobStepToRun(const JobStepToRun &value);
     JobStepToRunList ReflectJobStepToRunList(const JobStepToRunList &value);
+    StepConsoleOutput ReflectStepConsoleOutput(const StepConsoleOutput &value);
+    StepConsoleOutputList ReflectStepConsoleOutputList(const StepConsoleOutputList &value);
     NewProduct ReflectNewProduct(const NewProduct &value);
 };

@@ -229,6 +229,13 @@ JobStepToRunList PersistenceManager::GetJobStepsForResume(int jobId)
     return {};
 }
 
+StepConsoleOutputList PersistenceManager::GetTaskConsoleOutputs(int taskId)
+{
+    RunAsync([this, taskId] { return dbProvider.GetTaskConsoleOutputs(taskId); });
+
+    return {};
+}
+
 void PersistenceManager::InsertTaskAddedEvent(TaskRunnableEvent event)
 {
     RunAsync(
