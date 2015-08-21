@@ -1,34 +1,3 @@
-/*=========================================================================
-
-  Program:   ORFEO Toolbox
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-
-  Copyright (c) Centre National d'Etudes Spatiales. All rights reserved.
-  See OTBCopyright.txt for details.
-
-
-     This software is distributed WITHOUT ANY WARRANTY; without even
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-
-
-//  Software Guide : BeginCommandLineArgs
-//    INPUTS: {input image}, {xml file desc}
-//    OUTPUTS: {output image NDVI}
-//  Software Guide : EndCommandLineArgs
-
-
-//  Software Guide : BeginLatex
-//
-//
-//  Software Guide : EndLatex
-
-//  Software Guide : BeginCodeSnippet
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 #include "otbBandMathImageFilter.h"
@@ -49,31 +18,14 @@
 #include "itkVariableLengthVector.h"
 #include <vector>
 #include "UpdateSynthesisFunctor.h"
-#include "MACCSMetadataReader.hpp"
-#include "SPOT4MetadataReader.hpp"
-
-
-//  Software Guide : EndCodeSnippet
+#include "MetadataHelperFactory.h"
 
 namespace otb
 {
 
-//  Software Guide : BeginLatex
-//  Application class is defined in Wrapper namespace.
-//
-//  Software Guide : EndLatex
-
-//  Software Guide : BeginCodeSnippet
 namespace Wrapper
 {
-//  Software Guide : EndCodeSnippet
 
-
-//  Software Guide : BeginLatex
-//
-//  UpdateSynthesis class is derived from Application class.
-//
-//  Software Guide : EndLatex
 template< class TPixel>
 class CustomFunctor
 {
@@ -99,9 +51,7 @@ public:
     return var;
   }
 };
-//  Software Guide : BeginCodeSnippet
 class UpdateSynthesis : public Application
-//  Software Guide : EndCodeSnippet
 {
 public:
     typedef enum flagVal {
@@ -112,26 +62,14 @@ public:
         water
     } FLAG_VALUE;
 
-    //  Software Guide : BeginLatex
-    // The \code{ITK} public types for the class, the superclass and smart pointers.
-    // Software Guide : EndLatex
-
-    //  Software Guide : BeginCodeSnippet
     typedef UpdateSynthesis Self;
     typedef Application Superclass;
     typedef itk::SmartPointer<Self> Pointer;
     typedef itk::SmartPointer<const Self> ConstPointer;
-    // Software Guide : EndCodeSnippet
 
-    //  Software Guide : BeginLatex
-    //  Invoke the macros necessary to respect ITK object factory mechanisms.
-    //  Software Guide : EndLatex
-
-    //  Software Guide : BeginCodeSnippet
     itkNewMacro(Self)
 
     itkTypeMacro(UpdateSynthesis, otb::Application)
-    //  Software Guide : EndCodeSnippet
 
     typedef float                                   PixelType;
     typedef short                                   PixelShortType;
@@ -157,70 +95,33 @@ public:
 
 private:
 
-    //  Software Guide : BeginLatex
-    //  \code{DoInit()} method contains class information and description, parameter set up, and example values.
-    //  Software Guide : EndLatex
-
-
-
-
-
     void DoInit()
     {
-
-        // Software Guide : BeginLatex
-        // Application name and description are set using following methods :
-        // \begin{description}
-        // \item[\code{SetName()}] Name of the application.
-        // \item[\code{SetDescription()}] Set the short description of the class.
-        // \item[\code{SetDocName()}] Set long name of the application (that can be displayed \dots).
-        // \item[\code{SetDocLongDescription()}] This methods is used to describe the class.
-        // \item[\code{SetDocLimitations()}] Set known limitations (threading, invalid pixel type \dots) or bugs.
-        // \item[\code{SetDocAuthors()}] Set the application Authors. Author List. Format : "John Doe, Winnie the Pooh" \dots
-        // \item[\code{SetDocSeeAlso()}] If the application is related to one another, it can be mentioned.
-        // \end{description}
-        // Software Guide : EndLatex
-
-        //  Software Guide : BeginCodeSnippet
         SetName("UpdateSynthesis");
-        SetDescription("Computes NDVI from RED and NIR bands");
+        SetDescription("Update synthesis using the recurrent expression of the weighted average.");
 
         SetDocName("UpdateSynthesis");
         SetDocLongDescription("long description");
         SetDocLimitations("None");
         SetDocAuthors("AG");
         SetDocSeeAlso(" ");
-        //  Software Guide : EndCodeSnippet
-
-
-        // Software Guide : BeginLatex
-        // \code{AddDocTag()} method categorize the application using relevant tags.
-        // \code{Code/ApplicationEngine/otbWrapperTags.h} contains some predefined tags defined in \code{Tags} namespace.
-        // Software Guide : EndLatex
-
-        //  Software Guide : BeginCodeSnippet
         AddDocTag(Tags::Vector);
-        //  Software Guide : EndCodeSnippet
 
-        // Software Guide : BeginLatex
-        // The input parameters:
-        // - input_img: Input image filename with bands for RED and NIR
-        // - xml: Input xml filename with description for input image
-        // The output parameters:
-        // - output_img: Vector file containing reference data for training
-        // Software Guide : EndLatex
-
-        //  Software Guide : BeginCodeSnippet
-        AddParameter(ParameterType_InputImage, "in", "L2A MACSS product");
+        AddParameter(ParameterType_InputImage, "in", "L2A input product");
         AddParameter(ParameterType_Int, "res", "Input current L2A XML");
+        SetDefaultParameterInt("res", -1);
+        MandatoryOff("res");
         AddParameter(ParameterType_InputFilename, "xml", "Input general L2A XML");
-        // AddParameter(ParameterType_InputImage, "ref", "Reflectance raster"); -> TODO: compute it
         AddParameter(ParameterType_InputImage, "csm", "Cloud-Shadow Mask");
         AddParameter(ParameterType_InputImage, "wm", "Water Mask");
         AddParameter(ParameterType_InputImage, "sm", "Snow Mask");
         AddParameter(ParameterType_InputImage, "wl2a", "Weights of L2A product for date N");
 
         //not mandatory
+        //TODO: see if these parameters are optional or not. In this moment is set this condition
+        // in order to be possible to test
+        MandatoryOff("wm");
+        MandatoryOff("sm");
 
         AddParameter(ParameterType_InputImage, "prevl3a", "Previous l3a product");
         MandatoryOff("prevl3a");
@@ -243,34 +144,13 @@ private:
         */
 
         //test only
-        AddParameter(ParameterType_OutputImage, "out", "Out weight counter for each pixel and for each band");
+        AddParameter(ParameterType_OutputImage, "out", "Out image containing 10 or 14 bands according to resolution");
 
         m_ImageList = ImageListType::New();
         m_Concat = ListConcatenerFilterType::New();
         m_ExtractorList = ExtractROIFilterListType::New();
-
-        // Set default value for parameters
-        //SetDefaultParameterFloat("ratio", 0.75);
-         //  Software Guide : EndCodeSnippet
-
-        // Software Guide : BeginLatex
-        // An example commandline is automatically generated. Method \code{SetDocExampleParameterValue()} is
-        // used to set parameters. Dataset should be located in  \code{OTB-Data/Examples} directory.
-        // Software Guide : EndLatex
-
-        //  Software Guide : BeginCodeSnippet
-        //SetDocExampleParameterValue("in1", "/path/to/input_image_1.tif");
-        //SetDocExampleParameterValue("in2", "/path/to/input_image_2.tif");
-        //SetDocExampleParameterValue("out", "/path/to/output_image.tif");
-        //SetDocExampleParameterValue("vp", "validation_polygons.shp");
-        //  Software Guide : EndCodeSnippet
     }
 
-    // Software Guide : BeginLatex
-    // \code{DoUpdateParameters()} is called as soon as a parameter value change. Section \ref{sec:appDoUpdateParameters}
-    // gives a complete description of this method.
-    // Software Guide : EndLatex
-    //  Software Guide :BeginCodeSnippet
     void DoUpdateParameters()
     {
       // Nothing to do.
@@ -280,16 +160,30 @@ private:
     // using BandMathFilter
     void DoExecute()
     {
-        int resType = GetParameterInt("res");
+        int resolution = GetParameterInt("res");
+        std::string inXml = GetParameterAsString("xml");
 
         m_L2AIn = GetParameterFloatVectorImage("in");
-        //m_L2AIn->UpdateOutputInformation();
+        m_L2AIn->UpdateOutputInformation();
+        if(resolution == -1) {
+            resolution = m_L2AIn->GetSpacing()[0];
+        }
         m_CSM = GetParameterFloatVectorImage("csm");
-        //m_CSM->UpdateOutputInformation();
-        m_WM = GetParameterFloatVectorImage("wm");
-        //m_WM->UpdateOutputInformation();
-        m_SM = GetParameterFloatVectorImage("sm");
-        //m_SM->UpdateOutputInformation();
+
+        //TODO: see if these parameters are optional or not. In this moment is set this condition
+        // in order to be possible to test
+        if(HasValue("wm"))
+            m_WM = GetParameterFloatVectorImage("wm");
+        else
+            m_WM = m_CSM;
+
+        //TODO: see if these parameters are optional or not. In this moment is set this condition
+        // in order to be possible to test
+        if(HasValue("sm"))
+            m_SM = GetParameterFloatVectorImage("sm");
+        else
+            m_SM = m_CSM;
+
         m_WeightsL2A = GetParameterFloatVectorImage("wl2a");
         //Int16VectorImageType::Pointer inImage2 = GetParameterInt16VectorImage("in2");
 
@@ -359,24 +253,31 @@ private:
             }
         }
 
-        SensorType sensorType = SENSOR_S2;
-        auto maccsReader = itk::MACCSMetadataReader::New();
-        if (auto m = maccsReader->ReadMetadata(GetParameterAsString("xml")))
-            sensorType = SENSOR_S2;//m->ProductInformation
-        else
-        {
-            auto spot4Reader = itk::SPOT4MetadataReader::New();
-            if (auto m = spot4Reader->ReadMetadata(GetParameterAsString("xml")))
-                sensorType = SENSOR_L8;
+        m_Concat->SetInput(m_ImageList);
+
+        auto factory = MetadataHelperFactory::New();
+        auto pHelper = factory->GetMetadataHelper(inXml, resolution);
+        SensorType sensorType;
+        std::string missionName = pHelper->GetMissionName();
+        otbAppLogINFO( << "Mission name" << missionName << std::endl );
+
+        if(missionName.find(SENTINEL_MISSION_STR) != std::string::npos) {
+            sensorType = SENSOR_S2;
+        } else if (missionName.find(LANDSAT_MISSION_STR) != std::string::npos) {
+            sensorType = SENSOR_LANDSAT8;
+        } else if (missionName.find(SPOT4_MISSION_STR) != std::string::npos) {
+            sensorType = SENSOR_SPOT4;
         }
 
-        m_Concat->SetInput(m_ImageList);
-        m_Functor.Initialize(sensorType, (resType == 10 ? RES_10M : RES_20M), l3aExist);
+        m_Functor.Initialize(sensorType, (resolution == 10 ? RES_10M : RES_20M), l3aExist);
+        int productDate = pHelper->GetAcquisitionDateInDays();
+        m_Functor.SetCurrentDate(productDate);
+        m_Functor.SetReflectanceQuantificationValue(pHelper->GetReflectanceQuantificationValue());
         m_UpdateSynthesisFunctor = FunctorFilterType::New();
         m_UpdateSynthesisFunctor->SetFunctor(m_Functor);
         m_UpdateSynthesisFunctor->SetInput(m_Concat->GetOutput());
         m_UpdateSynthesisFunctor->UpdateOutputInformation();
-        if(sensorType == SENSOR_S2)
+        if(resolution == 10)
             m_UpdateSynthesisFunctor->GetOutput()->SetNumberOfComponentsPerPixel(10);
         else
             m_UpdateSynthesisFunctor->GetOutput()->SetNumberOfComponentsPerPixel(14);
@@ -400,11 +301,6 @@ private:
 }
 }
 
-// Software Guide : BeginLatex
-// Finally \code{OTB\_APPLICATION\_EXPORT} is called.
-// Software Guide : EndLatex
-//  Software Guide :BeginCodeSnippet
 OTB_APPLICATION_EXPORT(otb::Wrapper::UpdateSynthesis)
-//  Software Guide :EndCodeSnippet
 
 
