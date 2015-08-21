@@ -218,7 +218,6 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
-    Logger::info(event.module);
     if (event.module == "compute-confusion-matrix") {
         const auto &outputs = ctx.GetTaskConsoleOutputs(event.taskId);
         for (const auto &output : outputs) {
@@ -240,10 +239,6 @@ void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 
             QTextStream s(&file);
             s << mK.captured(1) << ' ' << mAcc.captured(1);
-
-            Logger::info(output.stdOutText);
-            Logger::info(mK.captured(1));
-            Logger::info(mAcc.captured(1));
         }
 
         ctx.MarkJobFinished(event.jobId);
