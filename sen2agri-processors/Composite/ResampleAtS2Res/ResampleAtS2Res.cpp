@@ -110,8 +110,6 @@ public:
     typedef otb::ImageList<InternalImageType>          InternalImageListType;
     typedef otb::ImageFileWriter<ImageType>            WriterType;
 
-    typedef otb::VectorImageToImageListFilter<FloatVectorImageType, ImageListType>  VectorImageToImageListType;
-
     typedef otb::MultiToMonoChannelExtractROI<ImageType::InternalPixelType,
                                               InternalImageType::PixelType>     ExtractROIFilterType;
     typedef otb::ObjectList<ExtractROIFilterType>                               ExtractROIFilterListType;
@@ -194,7 +192,9 @@ private:
 
         //  Software Guide : BeginCodeSnippet
 
-        AddParameter(ParameterType_InputFilename, "xml", "Xml description");
+        AddParameter(ParameterType_String, "xml", "Xml description");
+        AddParameter(ParameterType_String, "spotmask", "Image with 3 bands as masks, cloud, water snow for SPOT only");
+        MandatoryOff("spotmask");
 
         AddParameter(ParameterType_OutputImage, "outres10", "Out Image");
         AddParameter(ParameterType_OutputImage, "outres20", "Out Image");
@@ -308,6 +308,33 @@ private:
         }
         imageFile = m_DirName + "/" +meta->Files.MaskNua;
 
+        if(!HasValue("spotmask")) {
+            itkExceptionMacro("The mask file for SPOT was not provided, do set 'spotmask' flag ");
+            return false;
+        }
+        ImageReaderType::Pointer spotMasks = getReader(GetParameterAsString("spotmask"));
+
+        extractor = ExtractROIFilterType::New();
+        extractor->SetInput( spotMasks->GetOutput() );
+        extractor->SetChannel( 1 );
+        extractor->UpdateOutputInformation();
+        m_ExtractorList->PushBack( extractor );
+        m_ImageCloudRes20 = extractor->GetOutput();
+        resampler = getResampler(extractor->GetOutput(), 2.0, true);
+        m_ImageCloudRes10 = resampler->GetOutput();
+
+        extractor = ExtractROIFilterType::New();
+        extractor->SetInput( spotMasks->GetOutput() );
+        extractor->SetChannel( 2 );
+        extractor->UpdateOutputInformation();
+        m_ExtractorList->PushBack( extractor );
+        m_ImageWaterRes20 = extractor->GetOutput();
+        resampler = getResampler(extractor->GetOutput(), 2.0, true);
+        m_ImageWaterRes10 = resampler->GetOutput();
+
+
+
+/*
         ImageReaderType::Pointer readerCloud = getReader(m_DirName + "/" + meta->Files.MaskNua);
 
         extractor = ExtractROIFilterType::New();
@@ -329,7 +356,7 @@ private:
         m_ImageWaterRes20 = extractor->GetOutput();
         resampler = getResampler(extractor->GetOutput(), 2.0, true);
         m_ImageWaterRes10 = resampler->GetOutput();
-
+*/
         return true;
 
     }

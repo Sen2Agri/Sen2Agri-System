@@ -8,7 +8,8 @@ find_package(OTB REQUIRED)
 
 include(${OTB_USE_FILE})
 
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-missing-field-initializers")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -Wall -Wextra -Wno-missing-field-initializers -fsanitize=address -g3")
+
 add_definitions(-DVCL_CAN_STATIC_CONST_INIT_FLOAT=0)
 
 add_subdirectory(MACCSMetadata)
