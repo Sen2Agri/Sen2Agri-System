@@ -57,8 +57,8 @@ private:
     SetDocSeeAlso(" ");
     AddDocTag("Util");
 
-    AddParameter(ParameterType_String,  "inxml",   "The input metadata xml");
-    SetParameterDescription("inxml", "The XML file containing the L2A metadata.");
+    AddParameter(ParameterType_String,  "xml",   "The input metadata xml");
+    SetParameterDescription("xml", "The XML file containing the L2A metadata.");
 
     AddParameter(ParameterType_String,  "waotfile",   "Input AOT weight file name");
     SetParameterDescription("waotfile", "The file name of the image containing the AOT weigth for each pixel.");
@@ -78,12 +78,13 @@ private:
     AddParameter(ParameterType_Float, "wdatemin", "Minimum date weight");
     SetParameterDescription("wdatemin", "Minimum weight at edge of synthesis time window.");
     SetDefaultParameterFloat("wdatemin", 0.5);
+    MandatoryOff("wdatemin");
 
     AddParameter(ParameterType_OutputImage, "out", "Output Total Weight Image");
     SetParameterDescription("out","The output image containg the computed total weight for each pixel.");
 
     // Doc example parameter settings
-    SetDocExampleParameterValue("inxml", "example1.xml");
+    SetDocExampleParameterValue("xml", "example1.xml");
     SetDocExampleParameterValue("waotfile", "example2.tif");
     SetDocExampleParameterValue("wcldfile", "example3.tif");
     SetDocExampleParameterValue("wsensor", "0.33");
@@ -100,7 +101,7 @@ private:
   void DoExecute()
   {
     // Get the input image list
-    std::string inXml = GetParameterString("inxml");
+    std::string inXml = GetParameterString("xml");
     if (inXml.empty())
     {
         itkExceptionMacro("No xml file given...; please set the input xml");

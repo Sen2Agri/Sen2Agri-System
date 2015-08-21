@@ -25,14 +25,6 @@ void TotalWeightComputation::SetWeightOnSensor(float fWeight)
 
 void TotalWeightComputation::SetDates(std::string& L2ADate, std::string& L3ADate)
 {
-    // strptime does not handles correctly the strings in the format YYYYMMDD
-    // when MM or DD start with 0
-//    std::string formattedL2ADate = L2ADate.substr(0,4) + "-" +
-//                                   L2ADate.substr(4,2) + "-" +
-//                                   L2ADate.substr(6,2);
-//    std::string formattedL3ADate = L3ADate.substr(0,4) + "-" +
-//                                   L3ADate.substr(4,2) + "-" +
-//                                   L3ADate.substr(6,2);
     struct tm tmTime = {};
     strptime(L2ADate.c_str(), "%Y%m%d", &tmTime);
     time_t ttL2ATime = mktime(&tmTime);

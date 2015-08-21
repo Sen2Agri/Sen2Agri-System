@@ -68,16 +68,17 @@ int main(int argc, char* argv[])
 
 void TestXmlLoading()
 {
-    MetadataHelper *pHelper;
+    //auto pHelper;
     std::cout << "Loading AOT from XML " << l8GenXmlFile << std::endl;
-    pHelper = MetadataHelperFactory::GetInstance()->GetMetadataHelper(l8GenXmlFile, 10);
+    auto factory = new MetadataHelperFactory();
+    auto pHelper = factory->GetMetadataHelper(l8GenXmlFile, 10);
     std::cout << "======================" << std::endl;
     std::cout << "AOT Image File 10m " << pHelper->GetAotImageFileName() << std::endl;
     std::cout << "AOT Band No " << pHelper->GetAotBandIndex() << std::endl;
     std::cout << "AOT Quantification Value " << pHelper->GetAotQuantificationValue() << std::endl;
     std::cout << "AOT No data value " << pHelper->GetAotNoDataValue() << std::endl;
 
-    pHelper = MetadataHelperFactory::GetInstance()->GetMetadataHelper(l8GenXmlFile, 20);
+    pHelper = factory->GetMetadataHelper(l8GenXmlFile, 20);
     std::cout << "======================" << std::endl;
     std::cout << "AOT Image File 20m " << pHelper->GetAotImageFileName() << std::endl;
     std::cout << "AOT Band No " << pHelper->GetAotBandIndex() << std::endl;
@@ -85,14 +86,14 @@ void TestXmlLoading()
     std::cout << "AOT No data value " << pHelper->GetAotNoDataValue() << std::endl;
 
     std::cout << std::endl << "Loading AOT from XML " << s2GenXmlFile << std::endl;
-    pHelper = MetadataHelperFactory::GetInstance()->GetMetadataHelper(s2GenXmlFile, 10);
+    pHelper = factory->GetMetadataHelper(s2GenXmlFile, 10);
     std::cout << "======================" << std::endl;
     std::cout << "AOT Image File 10m " << pHelper->GetAotImageFileName() << std::endl;
     std::cout << "AOT Band No " << pHelper->GetAotBandIndex() << std::endl;
     std::cout << "AOT Quantification Value " << pHelper->GetAotQuantificationValue() << std::endl;
     std::cout << "AOT No data value " << pHelper->GetAotNoDataValue() << std::endl;
 
-    pHelper = MetadataHelperFactory::GetInstance()->GetMetadataHelper(s2GenXmlFile, 20);
+    pHelper = factory->GetMetadataHelper(s2GenXmlFile, 20);
     std::cout << "======================" << std::endl;
     std::cout << "AOT Image File 20m " << pHelper->GetAotImageFileName() << std::endl;
     std::cout << "AOT Band No " << pHelper->GetAotBandIndex() << std::endl;
@@ -100,14 +101,14 @@ void TestXmlLoading()
     std::cout << "AOT No data value " << pHelper->GetAotNoDataValue() << std::endl;
 
     std::cout << std::endl << "Loading AOT from XML " << spotXmlFile << std::endl;
-    pHelper = MetadataHelperFactory::GetInstance()->GetMetadataHelper(spotXmlFile, 10);
+    pHelper = factory->GetMetadataHelper(spotXmlFile, 10);
     std::cout << "======================" << std::endl;
     std::cout << "AOT Image File 10m " << pHelper->GetAotImageFileName() << std::endl;
     std::cout << "AOT Band No " << pHelper->GetAotBandIndex() << std::endl;
     std::cout << "AOT Quantification Value " << pHelper->GetAotQuantificationValue() << std::endl;
     std::cout << "AOT No data value " << pHelper->GetAotNoDataValue() << std::endl;
 
-    pHelper = MetadataHelperFactory::GetInstance()->GetMetadataHelper(spotXmlFile, 20);
+    pHelper = factory->GetMetadataHelper(spotXmlFile, 20);
     std::cout << "======================" << std::endl;
     std::cout << "AOT Image File 20m " << pHelper->GetAotImageFileName() << std::endl;
     std::cout << "AOT Band No " << pHelper->GetAotBandIndex() << std::endl;
