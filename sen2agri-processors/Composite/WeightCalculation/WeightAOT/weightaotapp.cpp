@@ -60,8 +60,8 @@ private:
     AddParameter(ParameterType_String,  "in",   "Input image");
     SetParameterDescription("in", "Image containing AOT.");
 
-    AddParameter(ParameterType_String,  "inxml",   "XML metadata file");
-    SetParameterDescription("in", "XML metadata file for the product.");
+    AddParameter(ParameterType_String,  "xml",   "XML metadata file");
+    SetParameterDescription("xml", "XML metadata file for the product.");
 
     AddParameter(ParameterType_OutputImage, "out", "Output Image");
     SetParameterDescription("out","Output image.");
@@ -80,7 +80,7 @@ private:
 
     // Doc example parameter settings
     SetDocExampleParameterValue("in", "verySmallFSATSW_r.tif");
-    SetDocExampleParameterValue("inxml", "metadata.xml");
+    SetDocExampleParameterValue("xml", "metadata.xml");
     SetDocExampleParameterValue("waotmin", "0.33");
     SetDocExampleParameterValue("waotmax", "1");
     SetDocExampleParameterValue("aotmax", "50");
@@ -100,7 +100,7 @@ private:
         itkExceptionMacro("No input Image set...; please set the input image");
     }
 
-    std::string inMetadataXml = GetParameterString("inxml");
+    std::string inMetadataXml = GetParameterString("xml");
     if (inMetadataXml.empty())
     {
         itkExceptionMacro("No input metadata XML set...; please set the input image");
