@@ -18,6 +18,7 @@ bool Spot4MetadataHelper::DoLoadMetadata()
         m_nAotBandIndex = 1;
 
         SPOT4Metadata spot4Metadata = *meta;
+        m_Mission = "SPOT4";
         // compute the Image file name
         m_ImageFileName = getImageFileName(spot4Metadata);
 
@@ -29,6 +30,10 @@ bool Spot4MetadataHelper::DoLoadMetadata()
         m_WaterFileName = getWaterFileName(spot4Metadata);
         // compute the Snow file name
         m_SnowFileName = getSnowFileName(spot4Metadata);
+
+        // extract the acquisition date
+        m_AcquisitionDate = spot4Metadata.Header.DatePdv.substr(0,4) +
+                spot4Metadata.Header.DatePdv.substr(5,2) + spot4Metadata.Header.DatePdv.substr(8,2);
 
         return true;
     }
@@ -89,18 +94,12 @@ std::string Spot4MetadataHelper::getAotFileName(const SPOT4Metadata& spot4Metada
 
 std::string Spot4MetadataHelper::getCloudFileName(const SPOT4Metadata& spot4Metadata)
 {
-    if(spot4Metadata.Files.MaskNua != "")
-        return spot4Metadata.Files.MaskNua;
-    std::string fileName = spot4Metadata.Header.Ident + "_NUA.TIF";
-    return buildFullPath(fileName);
+    return buildFullPath(spot4Metadata.Files.MaskNua);
 }
 
 std::string Spot4MetadataHelper::getWaterFileName(const SPOT4Metadata& spot4Metadata)
 {
-    if(spot4Metadata.Files.MaskDiv != "")
-        return spot4Metadata.Files.MaskDiv;
-    std::string fileName = spot4Metadata.Header.Ident + "_DIV.TIF";
-    return buildFullPath(fileName);
+    return buildFullPath(spot4Metadata.Files.MaskDiv);
 }
 
 std::string Spot4MetadataHelper::getSnowFileName(const SPOT4Metadata& spot4Metadata)

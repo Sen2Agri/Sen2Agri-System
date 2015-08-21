@@ -77,6 +77,7 @@ struct MACCSProductInformation
 {
     MACCSAngles SolarAngles;
     std::vector<MACCSViewingAnglesGrid> ViewingAngles;
+    std::string ReflectanceQuantificationValue;
 };
 
 struct MACCSSize

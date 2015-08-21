@@ -59,10 +59,9 @@ public:
 public:
     TotalWeightComputation();
 
-    void SetInputProductName(std::string &inputProductName);
+    void SetMissionName(std::string &missionName);
     void SetWeightOnSensor(float fWeight);
-    void SetL2ADateAsDays(int nL2ADays);
-    void SetL3ADateAsDays(int nL3ADays);
+    void SetDates(std::string &L2ADate, std::string &L3ADate);
     void SetHalfSynthesisPeriodAsDays(int deltaMax);
     void SetWeightOnDateMin(float fMinWeight);
     void SetAotWeightFile(std::string &aotWeightFileName);
@@ -87,8 +86,7 @@ private:
     void BuildOutputImageSource();
 
     SensorType m_sensorType;
-    int m_nL2ADays;
-    int m_nL3ADays;
+    int m_nDaysTimeInterval;
     int m_nDeltaMax;
     float m_fWeightOnDateMin;
     std::string m_strOutFileName;

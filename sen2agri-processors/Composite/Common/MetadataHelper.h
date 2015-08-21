@@ -9,13 +9,18 @@ public:
     MetadataHelper();
     virtual ~MetadataHelper();
 
-    bool LoadMetadataFile(const std::string& file, int nResolution);
+    bool LoadMetadataFile(const std::string& file, int nResolution = -1);
+
+    virtual std::string GetMissionName() { return m_Mission; }
 
     virtual std::string GetAotImageFileName() { return m_AotFileName; }
     virtual std::string GetCloudImageFileName() { return m_CloudFileName; }
     virtual std::string GetWaterImageFileName() { return m_WaterFileName; }
     virtual std::string GetSnowImageFileName() { return m_SnowFileName; }
     virtual std::string GetImageFileName() { return m_ImageFileName; }
+
+    // returns the acquisition date in the format YYYYMMDD
+    virtual std::string GetAcquisitionDate() { return m_AcquisitionDate; }
 
     virtual float GetAotQuantificationValue() { return m_fAotQuantificationValue; }
     virtual float GetAotNoDataValue() { return m_fAotNoDataVal; }
@@ -26,11 +31,14 @@ protected:
     void Reset();
 
 protected:
+    std::string m_Mission;
+
     std::string m_AotFileName;
     std::string m_CloudFileName;
     std::string m_WaterFileName;
     std::string m_SnowFileName;
     std::string m_ImageFileName;
+    std::string m_AcquisitionDate;
 
     float m_fAotQuantificationValue;
     float m_fAotNoDataVal;

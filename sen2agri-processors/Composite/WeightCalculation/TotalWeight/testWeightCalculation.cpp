@@ -254,21 +254,20 @@ void TestComputeCloudWeight()
 
 void TestTotalWeight()
 {
-    std::string inProdFileName("S2A_BLA");
+    std::string missionName("SENTINEL-2A");
     float weightSensor = 0.33;
-    int l2aDate = 10;
-    int l3aDate = 20;
+    std::string l2aDate = "20140103";
+    std::string l3aDate = "20141110";
     int halfSynthesis = 50;
     float weightOnDateMin = 0.10;
 
     std::cout << "Performing TotalWeightComputation at 10m" << std::endl;
     TotalWeightComputation totalWeightComputation10M;
     // weight on sensor parameters
-    totalWeightComputation10M.SetInputProductName(inProdFileName);
+    totalWeightComputation10M.SetMissionName(missionName);
     totalWeightComputation10M.SetWeightOnSensor(weightSensor);
     // weight on date parameters
-    totalWeightComputation10M.SetL2ADateAsDays(l2aDate);
-    totalWeightComputation10M.SetL3ADateAsDays(l3aDate);
+    totalWeightComputation10M.SetDates(l2aDate, l3aDate);
     totalWeightComputation10M.SetHalfSynthesisPeriodAsDays(halfSynthesis);
     totalWeightComputation10M.SetWeightOnDateMin(weightOnDateMin);
     // Weights for AOT and Clouds
@@ -283,11 +282,10 @@ void TestTotalWeight()
         std::cout << "Performing TotalWeightComputation at 20m" << std::endl;
         TotalWeightComputation totalWeightComputation20M;
         // weight on sensor parameters
-        totalWeightComputation20M.SetInputProductName(inProdFileName);
+        totalWeightComputation20M.SetMissionName(missionName);
         totalWeightComputation20M.SetWeightOnSensor(weightSensor);
         // weight on date parameters
-        totalWeightComputation20M.SetL2ADateAsDays(l2aDate);
-        totalWeightComputation20M.SetL3ADateAsDays(l3aDate);
+        totalWeightComputation20M.SetDates(l2aDate, l3aDate);
         totalWeightComputation20M.SetHalfSynthesisPeriodAsDays(halfSynthesis);
         totalWeightComputation20M.SetWeightOnDateMin(weightOnDateMin);
         // Weights for AOT and Clouds

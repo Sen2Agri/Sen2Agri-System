@@ -1,26 +1,26 @@
 #ifndef COMPOSITENAMINGHELPERFACTORY_H
 #define COMPOSITENAMINGHELPERFACTORY_H
 
+#include "itkLightObject.h"
+#include "itkObjectFactory.h"
 
 #include "MetadataHelper.h"
 #include <vector>
+#include <memory>
 
-class MetadataHelperFactory
+class MetadataHelperFactory : public itk::LightObject
 {
 public:
-    ~MetadataHelperFactory();
-    MetadataHelper *GetMetadataHelper(std::string& metadataFileName, int nResolution);
-    static MetadataHelperFactory *GetInstance()
-    {
-            static MetadataHelperFactory instance;
-            return &instance;
-    }
+    typedef MetadataHelperFactory Self;
+    typedef itk::LightObject Superclass;
+    typedef itk::SmartPointer<Self> Pointer;
+    typedef itk::SmartPointer<const Self> ConstPointer;
 
-    const char * GetNameOfClass() { return "MetadataHelperFactory";}
-private:
-    MetadataHelperFactory();
-    void RegisterHelper(MetadataHelper *pHelper);
-    std::vector<MetadataHelper*> m_registreredHelpers;
+    itkNewMacro(Self)
+
+    itkTypeMacro(MetadataHelperFactory, itk::LightObject)
+
+    std::unique_ptr<MetadataHelper> GetMetadataHelper(std::string& metadataFileName, int nResolution = -1);
 };
 
 #endif // COMPOSITENAMINGHELPERFACTORY_H

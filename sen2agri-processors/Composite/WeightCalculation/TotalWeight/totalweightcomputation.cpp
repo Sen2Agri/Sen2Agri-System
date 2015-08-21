@@ -7,15 +7,11 @@ TotalWeightComputation::TotalWeightComputation()
 }
 
 
-void TotalWeightComputation::SetInputProductName(std::string &inputProductName)
+void TotalWeightComputation::SetMissionName(std::string &missionName)
 {
-    std::string strPrefix;
-    if(inputProductName.size() > 3) {
-        strPrefix = inputProductName.substr(3);
-    }
-    if(strPrefix == "S2A") {
+    if(missionName == "SENTINEL-2A") {
         m_sensorType = S2A;
-    } else if(strPrefix == "S2B") {
+    } else if(missionName == "SENTINEL-2B") {
         m_sensorType = S2B;
     } else {
         m_sensorType = L8;
@@ -27,15 +23,26 @@ void TotalWeightComputation::SetWeightOnSensor(float fWeight)
     m_fWeightOnSensor = fWeight;
 }
 
-void TotalWeightComputation::SetL2ADateAsDays(int nL2ADays)
+void TotalWeightComputation::SetDates(std::string& L2ADate, std::string& L3ADate)
 {
-    m_nL2ADays = nL2ADays;
+    // strptime does not handles correctly the strings in the format YYYYMMDD
+    // when MM or DD start with 0
+//    std::string formattedL2ADate = L2ADate.substr(0,4) + "-" +
+//                                   L2ADate.substr(4,2) + "-" +
+//                                   L2ADate.substr(6,2);
+//    std::string formattedL3ADate = L3ADate.substr(0,4) + "-" +
+//                                   L3ADate.substr(4,2) + "-" +
+//                                   L3ADate.substr(6,2);
+    struct tm tmTime = {};
+    strptime(L2ADate.c_str(), "%Y%m%d", &tmTime);
+    time_t ttL2ATime = mktime(&tmTime);
+    strptime(L3ADate.c_str(), "%Y%m%d", &tmTime);
+    time_t ttL3ATime = mktime(&tmTime);
+    double seconds = fabs(difftime(ttL2ATime, ttL3ATime));
+    // compute the time difference as the number of days
+    m_nDaysTimeInterval = (int)(seconds / (3600 *24));
 }
 
-void TotalWeightComputation::SetL3ADateAsDays(int nL3ADays)
-{
-    m_nL3ADays = nL3ADays;
-}
 
 void TotalWeightComputation::SetHalfSynthesisPeriodAsDays(int deltaMax)
 {
@@ -97,7 +104,7 @@ void TotalWeightComputation::ComputeWeightOnSensor()
 
 void TotalWeightComputation::ComputeWeightOnDate()
 {
-    m_fWeightOnDate = 1 - (abs(m_nL2ADays - m_nL3ADays)/m_nDeltaMax) * (1-m_fWeightOnDateMin);
+    m_fWeightOnDate = 1 - (abs(m_nDaysTimeInterval)/m_nDeltaMax) * (1-m_fWeightOnDateMin);
 }
 
 void TotalWeightComputation::ComputeTotalWeight()

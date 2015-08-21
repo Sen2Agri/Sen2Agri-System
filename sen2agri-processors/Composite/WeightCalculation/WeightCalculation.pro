@@ -29,10 +29,7 @@ SOURCES += \
     ../Common/MetadataHelper.cpp \
     ../Common/Spot4MetadataHelper.cpp \
     ../Common/MetadataHelperFactory.cpp \
-    ../Common/MACCSMetadataHelper.cpp \
-    WeightAOT/weightaotapp.cpp \
-    WeightOnClouds/weightoncloudsapp.cpp \
-    TotalWeight/totalweightapp.cpp
+    ../Common/MACCSMetadataHelper.cpp
 
 INCLUDEPATH += -I /usr/include -I /usr/local/include -I /usr/local/include/OTB-5.0 -I /usr/local/include/ITK-4.7 -I TotalWeight -I WeightAOT -I WeightOnClouds -I ../../MACCSMetadata/include
 
@@ -85,4 +82,5 @@ HEADERS += \
     ../Common/MetadataHelper.h \
     ../Common/Spot4MetadataHelper.h \
     ../Common/MetadataHelperFactory.h \
-    ../Common/MACCSMetadataHelper.h
+    ../Common/MACCSMetadataHelper.h \
+    TotalWeightCalculationFilter.h
