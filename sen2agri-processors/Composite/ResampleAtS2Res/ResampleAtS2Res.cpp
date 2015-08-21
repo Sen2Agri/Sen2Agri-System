@@ -503,7 +503,7 @@ private:
 
          // Evaluate size
          ResampleFilterType::SizeType recomputedSize;
-         recomputedSize[0] = 4;//image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
+         recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
          recomputedSize[1] = image->GetLargestPossibleRegion().GetSize()[1] / scale[1];
 
          resampler->SetOutputSize(recomputedSize);
