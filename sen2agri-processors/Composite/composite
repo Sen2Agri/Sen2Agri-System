@@ -12,5 +12,5 @@ if [[ $# -ne 2 ]]; then
     echo "The xml file with full path for the SPOT product should be given. The output directory should be given" 1>&2
     exit 1
 fi
-try otbcli SpotMaskHandler /home/agrosu/sen2agri-processors-build/Composite/SpotMaskHandler/ -xml $1 -out $2/cws.tif
-try otbcli ResampleAtS2Res /home/agrosu/sen2agri-processors-build/Composite/ResampleAtS2Res/ -xml $1 -spotmask $2/cws.tif -outres10 $2/res10.tif -outres20 $2/res20.tif -outcmres10 $2/cloud_res10.tif -outwmres10 $2/water_res10.tif -outcmres20 $2/cloud_res20.tif -outwmres20 $2/water_res20.tif 
+try otbcli SpotMaskHandler ../../sen2agri-processors-build/Composite/SpotMaskHandler/ -xml $1 -out $2/cws.tif
+try otbcli ResampleAtS2Res ../../sen2agri-processors-build/Composite/ResampleAtS2Res/ -xml $1 -spotmask $2/cws.tif -outres10 $2/res10.tif -outres20 $2/res20.tif -outcmres10 $2/cloud_res10.tif -outwmres10 $2/water_res10.tif -outcmres20 $2/cloud_res20.tif -outwmres20 $2/water_res20.tif 
