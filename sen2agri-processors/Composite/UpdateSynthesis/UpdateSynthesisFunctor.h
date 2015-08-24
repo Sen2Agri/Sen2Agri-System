@@ -108,6 +108,15 @@ typedef enum {LAND=1, WATER,SNOW,CLOUD,CLOUD_SHADOW} FlagType;
 enum {B2_MSK=1, B3_MSK=2, B4_MSK=4, B8_MSK=8, ALL_10M_MSK=0x0F};
 enum {B5_MSK=1, B6_MSK=2, B7_MSK=4, B8A_MSK=8, B11_MSK=16, B12_MSK=32, ALL_20M_MSK=0x3F};
 
+class OutFunctorInfos
+{
+public:
+    float m_CurrentWeightedReflectances[L3A_WEIGHTED_REFLECTANCES_MAX_NO];
+    float m_CurrentPixelWeights[L3A_WEIGHTED_REFLECTANCES_MAX_NO];
+    float m_fCurrentPixelFlag;
+    float m_fCurrentPixelWeightedDate;
+} ;
+
 template< class TInput, class TOutput>
 class UpdateSynthesisFunctor
 {
@@ -124,12 +133,12 @@ public:
     const char * GetNameOfClass() { return "UpdateSynthesisFunctor"; }
 
 private:
-    void ResetCurrentPixelValues();
+    void ResetCurrentPixelValues(OutFunctorInfos& outInfos);
     int GetAbsoluteL2ABandIndex(int index);
     float GetL2AReflectanceForPixelVal(float fPixelVal);
-    void HandleLandPixel(const TInput & A);
-    void HandleSnowOrWaterPixel(const TInput & A);
-    void HandleCloudOrShadowPixel(const TInput & A);
+    void HandleLandPixel(const TInput & A, OutFunctorInfos& outInfos);
+    void HandleSnowOrWaterPixel(const TInput & A, OutFunctorInfos& outInfos);
+    void HandleCloudOrShadowPixel(const TInput & A, OutFunctorInfos& outInfos);
     bool IsSnowPixel(const TInput & A);
     bool IsWaterPixel(const TInput & A);
     bool IsCloudPixel(const TInput & A);
@@ -167,12 +176,6 @@ private:
     int m_nPrevL3APixelFlagBandIndex;
     int m_nRedBandIndex;
     int m_nBlueBandIndex;
-
-    // output pixel values
-    float m_CurrentWeightedReflectances[L3A_WEIGHTED_REFLECTANCES_MAX_NO];
-    float m_CurrentPixelWeights[L3A_WEIGHTED_REFLECTANCES_MAX_NO];
-    float m_fCurrentPixelFlag;
-    float m_fCurrentPixelWeightedDate;
 
 };
 
