@@ -141,6 +141,7 @@ private:
     //  Software Guide : BeginCodeSnippet
     AddParameter(ParameterType_InputFilename, "ref", "Reference Polygons");
     AddParameter(ParameterType_Float, "ratio", "Sample Ratio");
+    AddParameter(ParameterType_Int, "seed", "Seed for the random number generation");
 
     AddParameter(ParameterType_OutputFilename, "tp", "Training Polygons");
     AddParameter(ParameterType_OutputFilename, "vp", "Validation Polygons");
@@ -148,6 +149,7 @@ private:
 
     // Set default value for parameters
     SetDefaultParameterFloat("ratio", 0.75);
+    SetDefaultParameterInt("seed", std::time(0));
      //  Software Guide : EndCodeSnippet
 
     // Software Guide : BeginLatex
@@ -158,6 +160,7 @@ private:
     //  Software Guide : BeginCodeSnippet
     SetDocExampleParameterValue("ref", "reference_polygons.shp");
     SetDocExampleParameterValue("ratio", "0.75");
+    SetDocExampleParameterValue("seed", "0");
     SetDocExampleParameterValue("tp", "training_polygons.shp");
     SetDocExampleParameterValue("vp", "validation_polygons.shp");
     //  Software Guide : EndCodeSnippet
@@ -197,6 +200,8 @@ private:
 
       // get the required sampling ratio
       const float ratio = GetParameterFloat("ratio");
+      // get the random seed
+      const int seed = GetParameterInt("seed");
 
       // Create the writers over the outut files
       ogrTp = otb::ogr::DataSource::New(GetParameterString("tp"), otb::ogr::DataSource::Modes::Overwrite);
@@ -233,17 +238,11 @@ private:
       OGRFeatureDefn* tpLayerDefn = tpLayer.ogr().GetLayerDefn();
       OGRFeatureDefn* vpLayerDefn = sourceLayer.ogr().GetLayerDefn();
 
-      int lastKey = -1;
+      // initialise the random number generator
+      std::srand(seed);
       // Loop through the entries
       std::multimap<int,ogr::Feature>::iterator it;
       for (it=featuresMap.begin(); it!=featuresMap.end(); ++it) {
-          // check if the key is changed
-          if (lastKey != it->first) {
-              lastKey = it->first;
-              // initialise the random number generator
-              std::srand(std::time(0) + lastKey);
-          }
-
           // get the feature
           ogr::Feature &f = it->second;
 
