@@ -85,9 +85,10 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     TaskToSubmit computeConfusionMatrix{ "compute-confusion-matrix", { imageClassifier } };
 
     ctx.SubmitTasks(event.jobId,
-                    { sampleSelection,   bandsExtractor,          temporalResampling,
-                      featureExtraction, computeImagesStatistics, trainImagesClassifier,
-                      imageClassifier,   computeConfusionMatrix });
+                    { bandsExtractor,          clipPolys,             clipRaster,
+                      sampleSelection,         temporalResampling,    featureExtraction,
+                      computeImagesStatistics, trainImagesClassifier, imageClassifier,
+                      computeConfusionMatrix });
 
     const auto &trainingPolys = sampleSelection.GetFilePath("training_polygons.shp");
     const auto &validationPolys = sampleSelection.GetFilePath("validation_polygons.shp");
@@ -167,7 +168,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                      trainingPolys,     "-vp",       validationPolys }),
         temporalResampling.CreateStep(
             "TemporalResampling",
-            { "TemporalResampling", "-tocr", tocr,   "-mask", mask, "-ind",   dates, "-sp",
+            { "TemporalResampling", "-tocr", tocr,      "-mask", mask,    "-ind",   dates, "-sp",
               samplingRate,         "-t0",   dateStart, "-tend", dateEnd, "-rtocr", rtocr }),
         featureExtraction.CreateStep("FeatureExtraction",
                                      { "FeatureExtraction", "-rtocr", rtocr, "-fts", feFts }),
