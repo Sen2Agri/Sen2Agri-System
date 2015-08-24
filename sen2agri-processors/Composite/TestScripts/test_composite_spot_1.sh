@@ -9,7 +9,8 @@ fi
 INPUT_SPOT_XML_FILE=$1
 OUT_FOLDER=$2
 
-COMPOSITE_OTB_LIBS_ROOT="../../../sen2agri-processors-build/Composite"
+COMPOSITE_OTB_LIBS_ROOT="/home/agrosu/sen2agri-processors-build/Composite"
+
 WEIGHT_OTB_LIBS_ROOT="$COMPOSITE_OTB_LIBS_ROOT/WeightCalculation"
 
 OUT_SPOT_MASKS="$OUT_FOLDER/spot_masks.tif"
@@ -59,15 +60,15 @@ MY_PWD=`pwd`
 #    exit 1
 #fi
 
-otbcli SpotMaskHandler $COMPOSITE_OTB_LIBS_ROOT/SpotMaskHandler/ -xml $INPUT_SPOT_XML_FILE -out $OUT_SPOT_MASKS
-otbcli ResampleAtS2Res $COMPOSITE_OTB_LIBS_ROOT/ResampleAtS2Res/ -xml $INPUT_SPOT_XML_FILE -spotmask $OUT_SPOT_MASKS -outres10 $OUT_IMG_10M -outres20 $OUT_IMG_20M -outcmres10 $OUT_CLD_10M -outwmres10 $OUT_WAT_10M -outsmres10 $OUT_SNOW_10M -outaotres10 $OUT_AOT_10M -outcmres20 $OUT_CLD_20M -outwmres20 $OUT_WAT_20M -outsmres20 $OUT_SNOW_20M -outaotres20 $OUT_AOT_20M 
+#otbcli SpotMaskHandler $COMPOSITE_OTB_LIBS_ROOT/SpotMaskHandler/ -xml $INPUT_SPOT_XML_FILE -out $OUT_SPOT_MASKS
+#otbcli ResampleAtS2Res $COMPOSITE_OTB_LIBS_ROOT/ResampleAtS2Res/ -xml $INPUT_SPOT_XML_FILE -spotmask $OUT_SPOT_MASKS -outres10 $OUT_IMG_10M -outres20 $OUT_IMG_20M -outcmres10 $OUT_CLD_10M -outwmres10 $OUT_WAT_10M -outsmres10 $OUT_SNOW_10M -outaotres10 $OUT_AOT_10M -outcmres20 $OUT_CLD_20M -outwmres20 $OUT_WAT_20M -outsmres20 $OUT_SNOW_20M -outaotres20 $OUT_AOT_20M 
 
 echo "Executing from $MY_PWD"
 
-otbcli WeightAOT $WEIGHT_OTB_LIBS_ROOT/WeightAOT/ -in $OUT_AOT_10M -xml $INPUT_SPOT_XML_FILE -waotmin $WEIGHT_AOT_MIN -waotmax $WEIGHT_AOT_MAX -aotmax $AOT_MAX -out $OUT_WEIGHT_AOT_FILE
+#otbcli WeightAOT $WEIGHT_OTB_LIBS_ROOT/WeightAOT/ -in $OUT_AOT_10M -xml $INPUT_SPOT_XML_FILE -waotmin $WEIGHT_AOT_MIN -waotmax $WEIGHT_AOT_MAX -aotmax $AOT_MAX -out $OUT_WEIGHT_AOT_FILE
 
-otbcli WeightOnClouds $WEIGHT_OTB_LIBS_ROOT/WeightOnClouds/ -incldmsk $OUT_CLD_10M -coarseres $COARSE_RES -sigmasmallcld $SIGMA_SMALL_CLD -sigmalargecld $SIGMA_LARGE_CLD -out $OUT_WEIGHT_CLOUD_FILE
+#otbcli WeightOnClouds $WEIGHT_OTB_LIBS_ROOT/WeightOnClouds/ -incldmsk $OUT_CLD_10M -coarseres $COARSE_RES -sigmasmallcld $SIGMA_SMALL_CLD -sigmalargecld $SIGMA_LARGE_CLD -out $OUT_WEIGHT_CLOUD_FILE
 
-otbcli TotalWeight $WEIGHT_OTB_LIBS_ROOT/TotalWeight/ -xml $INPUT_SPOT_XML_FILE -waotfile $OUT_WEIGHT_AOT_FILE -wcldfile $OUT_WEIGHT_CLOUD_FILE -wsensor $WEIGHT_SENSOR -l3adate $L3A_DATE -halfsynthesis $HALF_SYNTHESIS -wdatemin $WEIGHT_DATE_MIN -out $OUT_TOTAL_WEIGHT_FILE
+#otbcli TotalWeight $WEIGHT_OTB_LIBS_ROOT/TotalWeight/ -xml $INPUT_SPOT_XML_FILE -waotfile $OUT_WEIGHT_AOT_FILE -wcldfile $OUT_WEIGHT_CLOUD_FILE -wsensor $WEIGHT_SENSOR -l3adate $L3A_DATE -halfsynthesis $HALF_SYNTHESIS -wdatemin $WEIGHT_DATE_MIN -out $OUT_TOTAL_WEIGHT_FILE
 
-otbcli UpdateSynthesis $COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/ -in $OUT_IMG_10M -res 10 -xml $INPUT_SPOT_XML_FILE -csm $OUT_CLD_10M -wm $OUT_WAT_10M -sm $OUT_SNOW_10M -wl2a $OUT_TOTAL_WEIGHT_FILE -out $OUT_L3A_FILE
+echo otbcli UpdateSynthesis $COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/ -in $OUT_IMG_10M -res 10 -xml $INPUT_SPOT_XML_FILE -csm $OUT_CLD_10M -wm $OUT_WAT_10M -sm $OUT_SNOW_10M -wl2a $OUT_TOTAL_WEIGHT_FILE -out $OUT_L3A_FILE
