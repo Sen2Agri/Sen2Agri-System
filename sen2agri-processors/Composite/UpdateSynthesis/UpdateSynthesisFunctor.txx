@@ -185,18 +185,20 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::operator==( const UpdateSynthesisFu
 template< class TInput, class TOutput>
 TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
 {
-    ResetCurrentPixelValues();
+    OutFunctorInfos outInfos;
+
+    ResetCurrentPixelValues(outInfos);
     if(IsLandPixel(A))
     {
-        HandleLandPixel(A);
+        HandleLandPixel(A, outInfos);
     } else {
         if(IsSnowPixel(A) || IsWaterPixel(A))
         {
             // if pixel is snow or water *replace the reflectance value
-            HandleSnowOrWaterPixel(A);
+            HandleSnowOrWaterPixel(A, outInfos);
         } else {
             // if pixel is cloud or shadow *pixel never observed cloud snow or water free
-            HandleCloudOrShadowPixel(A);
+            HandleCloudOrShadowPixel(A, outInfos);
         }
     }
 
@@ -215,17 +217,17 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
     // Weighted Average Reflectances
     for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
-        var[cnt++] = m_CurrentPixelWeights[i];
+        var[cnt++] = outInfos.m_CurrentPixelWeights[i];
     }
     // Weighted Average Date L3A
-    var[cnt++] = m_fCurrentPixelWeightedDate;
+    var[cnt++] = outInfos.m_fCurrentPixelWeightedDate;
     // Weight for B2 for L3A
     for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
-        var[cnt++] = m_CurrentWeightedReflectances[i];
+        var[cnt++] = outInfos.m_CurrentWeightedReflectances[i];
     }
     // Pixel status
-    var[cnt++] = m_fCurrentPixelFlag;
+    var[cnt++] = outInfos.m_fCurrentPixelFlag;
 
     return var;
 }
@@ -243,15 +245,15 @@ void UpdateSynthesisFunctor<TInput,TOutput>::SetCurrentDate(int nDate)
 }
 
 template< class TInput, class TOutput>
-void UpdateSynthesisFunctor<TInput,TOutput>::ResetCurrentPixelValues()
+void UpdateSynthesisFunctor<TInput,TOutput>::ResetCurrentPixelValues(OutFunctorInfos& outInfos)
 {
     for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
     {
-        m_CurrentPixelWeights[i] = WEIGHT_NO_DATA;
-        m_CurrentWeightedReflectances[i] = REFLECTANCE_NO_DATA;
+        outInfos.m_CurrentPixelWeights[i] = WEIGHT_NO_DATA;
+        outInfos.m_CurrentWeightedReflectances[i] = REFLECTANCE_NO_DATA;
     }
-    m_fCurrentPixelFlag = FLAG_NO_DATA;
-    m_fCurrentPixelWeightedDate = DATE_NO_DATA;
+    outInfos.m_fCurrentPixelFlag = FLAG_NO_DATA;
+    outInfos.m_fCurrentPixelWeightedDate = DATE_NO_DATA;
 }
 
 template< class TInput, class TOutput>
@@ -273,12 +275,12 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetL2AReflectanceForPixelVal(float
 }
 
 template< class TInput, class TOutput>
-void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A)
+void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, OutFunctorInfos& outInfos)
 {
     // we assume that the reflectance bands start from index 0
     for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
     {
-        m_fCurrentPixelFlag = LAND;
+        outInfos.m_fCurrentPixelFlag = LAND;
 
         // we will always have as output the number of reflectances equal or greater than
         // the number of bands in the current L2A raster for the current resolution
@@ -291,31 +293,31 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A)
             float fPrevWeight = GetPrevL3AWeightValue(A, i);
             float fCurrentWeight = GetCurrentL2AWeightValue(A);
             float fPrevWeightedDate = GetPrevL3AWeightedAvDateValue(A);
-            m_CurrentWeightedReflectances[i] = (fPrevWeight * fPrevReflect + fCurrentWeight * fCurReflectance) /
+            outInfos.m_CurrentWeightedReflectances[i] = (fPrevWeight * fPrevReflect + fCurrentWeight * fCurReflectance) /
                     (fPrevWeight + fCurrentWeight);
-            m_fCurrentPixelWeightedDate = (fPrevWeight * fPrevWeightedDate + fCurrentWeight * m_nCurrentDate) /
+            outInfos.m_fCurrentPixelWeightedDate = (fPrevWeight * fPrevWeightedDate + fCurrentWeight * m_nCurrentDate) /
                     (fPrevWeight + fCurrentWeight);
-            m_CurrentPixelWeights[i] = (fPrevWeight + fCurrentWeight);
+            outInfos.m_CurrentPixelWeights[i] = (fPrevWeight + fCurrentWeight);
 
         } else {
             // L2A band missing - as for LANDSAT 8
-            m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
-            m_CurrentPixelWeights[i] = GetPrevL3AWeightValue(A, i);
+            outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
+            outInfos.m_CurrentPixelWeights[i] = GetPrevL3AWeightValue(A, i);
             if(IsRedBand(i))
             {
-                m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
+                outInfos.m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
             }
         }
     }
 }
 
 template< class TInput, class TOutput>
-void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput & A)
+void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput & A, OutFunctorInfos& outInfos)
 {
     if(IsWaterPixel(A)) {
-        m_fCurrentPixelFlag = WATER;
+        outInfos.m_fCurrentPixelFlag = WATER;
     } else {
-        m_fCurrentPixelFlag = SNOW;
+       outInfos. m_fCurrentPixelFlag = SNOW;
     }
     for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
     {
@@ -326,37 +328,37 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
             float fPrevWeight = GetPrevL3AWeightValue(A, i);
             // if pixel never observed without cloud, water or snow
             if(fPrevWeight == 0) {
-                m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
-                m_CurrentPixelWeights[i] = 0;
+                outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
+                outInfos.m_CurrentPixelWeights[i] = 0;
                 if(IsRedBand(i))
                 {
-                    m_fCurrentPixelWeightedDate = m_nCurrentDate;
+                    outInfos.m_fCurrentPixelWeightedDate = m_nCurrentDate;
                 }
             } else {
                 // pixel already observed cloud free, keep the previous weighted average
-                m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
-                m_CurrentPixelWeights[i] = fPrevWeight;
+                outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
+                outInfos.m_CurrentPixelWeights[i] = fPrevWeight;
                 if(IsRedBand(i))
                 {
-                    m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
-                    m_fCurrentPixelFlag = LAND;
+                    outInfos.m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
+                    outInfos.m_fCurrentPixelFlag = LAND;
                 }
 
             }
         } else {
             // band not available, keep previous values
-            m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
-            m_CurrentPixelWeights[i] = GetPrevL3AWeightValue(A, i);
+            outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
+            outInfos.m_CurrentPixelWeights[i] = GetPrevL3AWeightValue(A, i);
             // TODO: In algorithm says nothing about WDate
         }
     }
 }
 
 template< class TInput, class TOutput>
-void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInput & A)
+void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInput & A, OutFunctorInfos& outInfos)
 {
     // if flagN-1 is no-data => replace nodata with cloud
-    if(m_fCurrentPixelFlag == FLAG_NO_DATA)
+    if(outInfos.m_fCurrentPixelFlag == FLAG_NO_DATA)
     {
         for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
         {
@@ -364,20 +366,20 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
             // band available
             if(nCurrentBandIndex != -1)
             {
-                m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);;
-                m_CurrentPixelWeights[i] = 0;
+                outInfos.m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);;
+                outInfos.m_CurrentPixelWeights[i] = 0;
                 if(IsRedBand(i))
                 {
-                    m_fCurrentPixelWeightedDate = m_nCurrentDate;
-                    m_fCurrentPixelFlag = CLOUD;
+                    outInfos.m_fCurrentPixelWeightedDate = m_nCurrentDate;
+                    outInfos.m_fCurrentPixelFlag = CLOUD;
                 }
             } else {
-                m_CurrentWeightedReflectances[i] = WEIGHT_NO_DATA;
-                m_CurrentPixelWeights[i] = 0;
+                outInfos.m_CurrentWeightedReflectances[i] = WEIGHT_NO_DATA;
+                outInfos.m_CurrentPixelWeights[i] = 0;
             }
         }
     } else {
-        if((m_fCurrentPixelFlag == CLOUD) || (m_fCurrentPixelFlag == CLOUD_SHADOW))
+        if((outInfos.m_fCurrentPixelFlag == CLOUD) || (outInfos.m_fCurrentPixelFlag == CLOUD_SHADOW))
         {
             // get the blue band index
             int nBlueBandIdx = GetBlueBandIndex();
@@ -396,27 +398,27 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                         // band available
                         if(nCurrentBandIndex != -1)
                         {
-                            m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
-                            m_CurrentPixelWeights[i] = 0;
+                            outInfos.m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
+                            outInfos.m_CurrentPixelWeights[i] = 0;
                             if(IsRedBand(i))
                             {
-                                m_fCurrentPixelWeightedDate = m_nCurrentDate;
-                                m_fCurrentPixelFlag = CLOUD;
+                                outInfos.m_fCurrentPixelWeightedDate = m_nCurrentDate;
+                                outInfos.m_fCurrentPixelFlag = CLOUD;
                             }
                         } else {
-                            m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
-                            m_CurrentPixelWeights[i] = 0;
+                            outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
+                            outInfos.m_CurrentPixelWeights[i] = 0;
                         }
                     }
                 }
             }
         } else {
-            m_fCurrentPixelFlag = GetPrevL3APixelFlagValue(A);
+            outInfos.m_fCurrentPixelFlag = GetPrevL3APixelFlagValue(A);
             for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
             {
-                m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
-                m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
-                m_CurrentPixelWeights[i] = 0;
+                outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
+                outInfos.m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
+                outInfos.m_CurrentPixelWeights[i] = 0;
             }
 
         }
