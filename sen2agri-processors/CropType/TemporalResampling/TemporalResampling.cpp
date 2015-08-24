@@ -158,7 +158,6 @@ private:
 
     AddParameter(ParameterType_OutputImage, "rtocr", "Resampled S2 L2A surface reflectances");
 
-
     // Set default value for parameters
     SetDefaultParameterInt("sp", 5);
     SetDefaultParameterInt("radius", 15);
@@ -247,7 +246,6 @@ private:
       filter = BinaryFunctorImageFilterWithNBands::New();
       filter->SetNumberOfOutputBands(imageBands * outDates.size());
       filter->SetFunctor(GapFillingFunctor<ImageType::PixelType>(inDates, outDates, radius, imageBands));
-
 
       filter->SetInput(0, imgReader->GetOutput());
       filter->SetInput(1, maskReader->GetOutput());

@@ -43,11 +43,16 @@
 #include "otbBandMathImageFilter.h"
 
 #include "otbStreamingResampleImageFilter.h"
+#include "otbStreamingStatisticsImageFilter.h"
+#include "otbLabelImageToVectorDataFilter.h"
 
 //Transform
 #include "itkScalableAffineTransform.h"
 #include "itkIdentityTransform.h"
 #include "itkScaleTransform.h"
+
+#include "otbOGRIOHelper.h"
+
 
 #define LANDSAT    "LANDSAT"
 #define SENTINEL   "SENTINEL"
@@ -89,6 +94,8 @@ typedef ScalableTransformType::OutputVectorType                         OutputVe
 typedef otb::BandMathImageFilter<InternalImageType>                 BandMathImageFilterType;
 typedef otb::ObjectList<BandMathImageFilterType>                    BandMathImageFilterListType;
 
+typedef otb::StreamingStatisticsImageFilter<InternalImageType> StreamingStatisticsImageFilterType;
+typedef otb::LabelImageToVectorDataFilter<InternalImageType>   LabelImageToVectorDataFilterType;
 
 struct SourceImageMetadata {
     MACCSFileMetadata  msccsFileMetadata;
@@ -221,13 +228,25 @@ private:
     m_ExtractorList = ExtractROIFilterListType::New();
     m_ImageReaderList = ImageReaderListType::New();
     m_BandMathList = BandMathImageFilterListType::New();
+    m_VldMaskList = InternalImageListType::New();
+    m_borderMask = BandMathImageFilterType::New();
+    m_ShapeBuilder = LabelImageToVectorDataFilterType::New();
+
+#ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
+      m_maskExpression = "(b3 == 1) && (b1 == 0) && (b2 == 0) ? 0 : 1";
+#else
+      m_maskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 1), 0, 1)";
+#endif
 
     //  Software Guide : BeginCodeSnippet
     AddParameter(ParameterType_InputFilenameList, "il", "The xml files");
 
     AddParameter(ParameterType_OutputImage, "out", "The concatenated images");
     AddParameter(ParameterType_OutputImage, "mask", "The concatenated masks");
+
     AddParameter(ParameterType_OutputFilename, "outdate", "The file containing the dates for the images");
+    AddParameter(ParameterType_OutputVectorData, "shape", "The file containing the border shape");
+
 
      //  Software Guide : EndCodeSnippet
 
@@ -241,6 +260,7 @@ private:
     SetDocExampleParameterValue("out", "fts.tif");
     SetDocExampleParameterValue("mask", "mask.tif");
     SetDocExampleParameterValue("outdate", "dates.txt");
+    SetDocExampleParameterValue("shape", "shape.shp");
     //  Software Guide : EndCodeSnippet
   }
 
@@ -260,12 +280,10 @@ private:
       m_ResamplersList = ResampleFilterListType::New();
       m_ImageReaderList = ImageReaderListType::New();
       m_BandMathList = BandMathImageFilterListType::New();
+      m_VldMaskList = InternalImageListType::New();
+      m_borderMask = BandMathImageFilterType::New();
+      m_ShapeBuilder = LabelImageToVectorDataFilterType::New();
 
-#ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
-      m_maskExpression = "((b3 != 1) && (b1 == 0) && (b2 == 0) ? 0 : 1)";
-#else
-      m_maskExpression = "if(b3==1,1,if(b1==0,if(b2==0,0,1),1))";
-#endif
   }
   //  Software Guide : EndCodeSnippet
 
@@ -315,6 +333,8 @@ private:
       // sort the descriptors after the aquisition date
       std::sort(m_DescriptorsList.begin(), m_DescriptorsList.end(), BandsExtractor::SortMetadata);
 
+      ExtractMasks();
+
       // get the name of the file where the dates are written
       std::string datesFileName = GetParameterString("outdate");
 
@@ -324,6 +344,7 @@ private:
       if (!datesFile.is_open()) {
           itkExceptionMacro("Can't open dates file for writing!");
       }
+
 
       // interpret the descriptors and extract the required bands from the atached images
       for (const ImageDescriptor& desc : m_DescriptorsList) {
@@ -353,8 +374,249 @@ private:
 
       SetParameterOutputImage("out", m_Concatener->GetOutput());
       SetParameterOutputImage("mask", m_Masks->GetOutput());
+
+      SetParameterOutputVectorData("shape", m_ShapeBuilder->GetOutput());
   }
   //  Software Guide :EndCodeSnippet
+
+
+  void ExtractMasks() {
+
+      // Extract the validity masks
+      ExtractValidityMasks();
+
+      // Compute the border mask
+      float sum = 0.0;
+      std::string expression = "(0";
+      int counter = 0;
+      for (float i : m_MeanPixels) {
+          sum += i;
+          m_borderMask->SetNthInput(counter, m_VldMaskList->GetNthElement(counter));
+          expression += "+b" + std::to_string(++counter);
+      }
+
+      int threshold = (int)sum;
+      expression += ") >= " + std::to_string(threshold) + " ? 1 : 0";
+
+      m_borderMask->SetExpression(expression);
+
+      // polygonize the border mask
+      m_ShapeBuilder->SetInput(m_borderMask->GetOutput());
+      m_ShapeBuilder->SetInputMask(m_borderMask->GetOutput());
+
+//      m_ShapeBuilder->Update();
+
+//      LabelImageToVectorDataFilterType::VectorDataPointerType vd = m_ShapeBuilder->GetOutput();
+
+//      // Get the projection ref of the current VectorData
+//      std::string projectionRefWkt = vd->GetProjectionRef();
+//      bool        projectionInformationAvailable = !projectionRefWkt.empty();
+//      OGRSpatialReference * oSRS = NULL;
+
+//      if (projectionInformationAvailable)
+//        {
+//        oSRS = static_cast<OGRSpatialReference *>(OSRNewSpatialReference(projectionRefWkt.c_str()));
+//        }
+//      else
+//        {
+//        otbMsgDevMacro(<< "Projection information unavailable");
+//        }
+
+//      // Retrieving root node
+//      auto tree = vd->GetDataTree();
+
+//      // Get the input tree root
+//      OGRIOHelper::InternalTreeNodeType * inputRoot = const_cast<OGRIOHelper::InternalTreeNodeType *>(tree->GetRoot());
+
+//      // Iterative method to build the layers from a VectorData
+//      OGRRegisterAll();
+//      OGRLayer *   ogrCurrentLayer = NULL;
+//      std::vector<OGRLayer *> ogrLayerVector;
+//      otb::OGRIOHelper::Pointer IOConversion = otb::OGRIOHelper::New();
+
+//      // The method ConvertDataTreeNodeToOGRLayers create the
+//      // OGRDataSource but don t release it. Destruction is done in the
+//      // desctructor
+//      OGRDataSource* OGRDataSourcePointer = NULL;
+//      ogrLayerVector = IOConversion->ConvertDataTreeNodeToOGRLayers(inputRoot,
+//                                                                    OGRDataSourcePointer,
+//                                                                    ogrCurrentLayer,
+//                                                                    oSRS);
+
+//      //get the extent of the first layer
+//      OGREnvelope extent;
+//      ogrLayerVector[0]->GetExtent(&extent);
+
+//      // get the name of the file where the dates are written
+//      std::string datesFileName = GetParameterString("extent");
+
+//      //open the file
+//      std::ofstream extentFile;
+//      extentFile.open(datesFileName);
+//      if (!extentFile.is_open()) {
+//          itkExceptionMacro("Can't open extent file for writing!");
+//      }
+
+//      // write the data
+//      extentFile << extent.MinX << " " << extent.MinY<< " " << extent.MaxX << " " << extent.MaxY << " " << std::endl;
+
+//      // close the file
+//      extentFile.close();
+
+//      // destroy the data source
+//      OGRDataSource::DestroyDataSource(OGRDataSourcePointer);
+
+      // interpret the descriptors and extract the required bands from the atached images
+      for (const ImageDescriptor& desc : m_DescriptorsList) {
+
+          if (desc.type == TYPE_MACCS) {
+              if (desc.maccsDescriptor.Header.FixedHeader.Mission.find(LANDSAT) != std::string::npos) {
+                  // Interpret landsat masks
+                  PocessLandsatMasks(desc);
+              } else if (desc.maccsDescriptor.Header.FixedHeader.Mission.find(SENTINEL) != std::string::npos) {
+                  // Interpret sentinel masks
+                  PocessSentinelMasks(desc);
+              } else {
+                  itkExceptionMacro("Unknown mission: " + desc.maccsDescriptor.Header.FixedHeader.Mission);
+              }
+          } else if (desc.type == TYPE_SPOT4) {
+              PocessSpot4Masks(desc);
+          }
+      }
+  }
+
+  // Loop through all descriptors and extract the pixel validity masks as 0 for invalid pixel and 1 for valid pixel
+  void ExtractValidityMasks() {
+      for (const ImageDescriptor& desc : m_DescriptorsList) {
+
+          if (desc.type == TYPE_MACCS) {
+              if (desc.maccsDescriptor.Header.FixedHeader.Mission.find(LANDSAT) != std::string::npos) {
+                  // Interpret landsat masks
+                  ExtractLandsatValidityMask(desc);
+              } else if (desc.maccsDescriptor.Header.FixedHeader.Mission.find(SENTINEL) != std::string::npos) {
+                  // Interpret sentinel masks
+                  ExtractSentinelValidityMask(desc);
+              } else {
+                  itkExceptionMacro("Unknown mission: " + desc.maccsDescriptor.Header.FixedHeader.Mission);
+              }
+          } else if (desc.type == TYPE_SPOT4) {
+              ExtractSpot4ValidityMask(desc);
+          }
+      }
+  }
+
+  void ExtractLandsatValidityMask(const ImageDescriptor& meta) {
+      //TODO: To implement
+  }
+
+  void ExtractSentinelValidityMask(const ImageDescriptor& meta) {
+      //TODO: To implement
+  }
+
+  void ExtractSpot4ValidityMask(const ImageDescriptor& meta) {
+      std::string maskFileDiv = getSPOT4MaskFileName(meta, MASK_TYPE_DIV);
+      ImageReaderType::Pointer maskReaderDiv = getReader(maskFileDiv);
+
+      ExtractROIFilterType::Pointer divMaskExtractor = ExtractROIFilterType::New();
+      divMaskExtractor->SetInput( maskReaderDiv->GetOutput() );
+      divMaskExtractor->SetChannel( 1 );
+      divMaskExtractor->UpdateOutputInformation();
+      m_ExtractorList->PushBack( divMaskExtractor );
+
+      BandMathImageFilterType::Pointer maskMath = BandMathImageFilterType::New();
+      maskMath->SetNthInput(0, divMaskExtractor->GetOutput());
+      maskMath->SetExpression("((b1 == 0) || (b1-rint(b1/2-0.01) == 0)) ? 1 : 0 ");
+      m_BandMathList->PushBack(maskMath);
+
+      // compute mean value
+      StreamingStatisticsImageFilterType::Pointer statsEstimator = StreamingStatisticsImageFilterType::New();
+      statsEstimator->SetInput(maskMath->GetOutput());
+      statsEstimator->Update();
+
+      m_MeanPixels.push_back(statsEstimator->GetMean());
+
+      m_VldMaskList->PushBack(maskMath->GetOutput());
+
+  }
+
+  void PocessSpot4Masks(const ImageDescriptor& meta) {
+      // create the mask
+      std::string maskFileNua = getSPOT4MaskFileName(meta, MASK_TYPE_NUA);
+      ImageReaderType::Pointer maskReaderNua = getReader(maskFileNua);
+      std::string maskFileSat = getSPOT4MaskFileName(meta, MASK_TYPE_SAT);
+      ImageReaderType::Pointer maskReaderSat = getReader(maskFileSat);
+      std::string maskFileDiv = getSPOT4MaskFileName(meta, MASK_TYPE_DIV);
+      ImageReaderType::Pointer maskReaderDiv = getReader(maskFileDiv);
+
+      BandMathImageFilterType::Pointer maskMath = BandMathImageFilterType::New();
+
+      ExtractROIFilterType::Pointer nuaMaskExtractor = ExtractROIFilterType::New();
+      nuaMaskExtractor->SetInput( maskReaderNua->GetOutput() );
+      nuaMaskExtractor->SetChannel( 1 );
+      nuaMaskExtractor->UpdateOutputInformation();
+      m_ExtractorList->PushBack( nuaMaskExtractor );
+
+      ExtractROIFilterType::Pointer satMaskExtractor = ExtractROIFilterType::New();
+      satMaskExtractor->SetInput( maskReaderSat->GetOutput() );
+      satMaskExtractor->SetChannel( 1 );
+      satMaskExtractor->UpdateOutputInformation();
+      m_ExtractorList->PushBack( satMaskExtractor );
+
+      ExtractROIFilterType::Pointer divMaskExtractor = ExtractROIFilterType::New();
+      divMaskExtractor->SetInput( maskReaderDiv->GetOutput() );
+      divMaskExtractor->SetChannel( 1 );
+      divMaskExtractor->UpdateOutputInformation();
+      m_ExtractorList->PushBack( divMaskExtractor );
+
+      maskMath->SetNthInput(0, nuaMaskExtractor->GetOutput());
+      maskMath->SetNthInput(1, satMaskExtractor->GetOutput());
+      maskMath->SetNthInput(2, divMaskExtractor->GetOutput());
+      maskMath->SetNthInput(3, m_borderMask->GetOutput());
+
+#ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
+      m_maskExpression = "(b1 == 0) && (b2 == 0) && (b3 == 0) && (b4 == 1) ? 0 : 1";
+#else
+      m_maskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 0) and (b4 == 1), 0, 1)";
+#endif
+
+      maskMath->SetExpression(m_maskExpression);
+
+      m_BandMathList->PushBack(maskMath);
+
+      m_MasksList->PushBack(maskMath->GetOutput());
+  }
+
+  void PocessLandsatMasks(const ImageDescriptor& meta) {
+      //TODO: To implement
+      // create the mask
+      std::string maskFile = getMACCSImageFileName(meta.filename, meta.maccsDescriptor.ProductOrganization.AnnexFiles, "_MSK");
+      ImageReaderType::Pointer maskReader = getReader(maskFile);
+      ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
+      extractor->SetInput( maskReader->GetOutput() );
+      extractor->SetChannel( 1 );
+      extractor->UpdateOutputInformation();
+      m_ExtractorList->PushBack( extractor );
+
+
+      // resample from 30m to 10m
+      ResampleFilterType::Pointer maskResampler = getResampler(extractor->GetOutput(), 3.0);
+      m_MasksList->PushBack(maskResampler->GetOutput());
+
+  }
+
+  void PocessSentinelMasks(const ImageDescriptor& meta) {
+      //TODO: To implement
+      // create the mask
+      std::string maskFile = getMACCSImageFileName(meta.filename, meta.maccsDescriptor.ProductOrganization.AnnexFiles, "_MSK");
+      ImageReaderType::Pointer maskReader = getReader(maskFile);
+      ExtractROIFilterType::Pointer maskExtractor = ExtractROIFilterType::New();
+      maskExtractor->SetInput( maskReader->GetOutput() );
+      maskExtractor->SetChannel( 1 );
+      maskExtractor->UpdateOutputInformation();
+      m_ExtractorList->PushBack( maskExtractor );
+
+      m_MasksList->PushBack(maskExtractor->GetOutput());
+  }
 
   // Sort the descriptors based on the aquisition date
   static bool SortMetadata(const ImageDescriptor& o1, const ImageDescriptor& o2) {
@@ -392,20 +654,6 @@ private:
 
           m_ImageList->PushBack( resampler->GetOutput() );
       }
-
-      // create the mask
-      std::string maskFile = getMACCSImageFileName(meta.filename, meta.maccsDescriptor.ProductOrganization.AnnexFiles, "_MSK");
-      ImageReaderType::Pointer maskReader = getReader(maskFile);
-      ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-      extractor->SetInput( maskReader->GetOutput() );
-      extractor->SetChannel( 1 );
-      extractor->UpdateOutputInformation();
-      m_ExtractorList->PushBack( extractor );
-
-
-      // resample from 30m to 10m
-      ResampleFilterType::Pointer maskResampler = getResampler(extractor->GetOutput(), 3.0);
-      m_MasksList->PushBack(maskResampler->GetOutput());
   }
 
 
@@ -432,50 +680,6 @@ private:
 
           m_ImageList->PushBack( extractor->GetOutput() );
       }
-
-      // create the mask
-      std::string maskFileNua = getSPOT4MaskFileName(meta, MASK_TYPE_NUA);
-      ImageReaderType::Pointer maskReaderNua = getReader(maskFileNua);
-      std::string maskFileSat = getSPOT4MaskFileName(meta, MASK_TYPE_SAT);
-      ImageReaderType::Pointer maskReaderSat = getReader(maskFileSat);
-      std::string maskFileDiv = getSPOT4MaskFileName(meta, MASK_TYPE_DIV);
-      ImageReaderType::Pointer maskReaderDiv = getReader(maskFileDiv);
-
-      BandMathImageFilterType::Pointer maskMath = BandMathImageFilterType::New();
-
-      ExtractROIFilterType::Pointer nuaMaskExtractor = ExtractROIFilterType::New();
-      nuaMaskExtractor->SetInput( maskReaderNua->GetOutput() );
-      nuaMaskExtractor->SetChannel( 1 );
-      nuaMaskExtractor->UpdateOutputInformation();
-      m_ExtractorList->PushBack( nuaMaskExtractor );
-
-      ExtractROIFilterType::Pointer satMaskExtractor = ExtractROIFilterType::New();
-      satMaskExtractor->SetInput( maskReaderSat->GetOutput() );
-      satMaskExtractor->SetChannel( 1 );
-      satMaskExtractor->UpdateOutputInformation();
-      m_ExtractorList->PushBack( satMaskExtractor );
-
-      ExtractROIFilterType::Pointer divMaskExtractor = ExtractROIFilterType::New();
-      divMaskExtractor->SetInput( maskReaderDiv->GetOutput() );
-      divMaskExtractor->SetChannel( 1 );
-      divMaskExtractor->UpdateOutputInformation();
-      m_ExtractorList->PushBack( divMaskExtractor );
-
-
-      maskMath->SetNthInput(0, nuaMaskExtractor->GetOutput());
-      maskMath->SetNthInput(1, satMaskExtractor->GetOutput());
-      maskMath->SetNthInput(2, divMaskExtractor->GetOutput());
-      maskMath->SetExpression(m_maskExpression);
-
-      m_BandMathList->PushBack(maskMath);
-
-//      ExtractROIFilterType::Pointer maskExtractor = ExtractROIFilterType::New();
-//      maskExtractor->SetInput( maskMath->GetOutput() );
-//      maskExtractor->SetChannel( 1 );
-//      maskExtractor->UpdateOutputInformation();
-//      m_ExtractorList->PushBack( maskExtractor );
-
-      m_MasksList->PushBack(maskMath->GetOutput());
   }
 
   // Process a Sentinel2 image
@@ -543,16 +747,6 @@ private:
 
       m_ImageList->PushBack( resampler->GetOutput() );
 
-      // create the mask
-      std::string maskFile = getMACCSImageFileName(meta.filename, meta.maccsDescriptor.ProductOrganization.AnnexFiles, "_MSK");
-      ImageReaderType::Pointer maskReader = getReader(maskFile);
-      ExtractROIFilterType::Pointer maskExtractor = ExtractROIFilterType::New();
-      maskExtractor->SetInput( maskReader->GetOutput() );
-      maskExtractor->SetChannel( 1 );
-      maskExtractor->UpdateOutputInformation();
-      m_ExtractorList->PushBack( maskExtractor );
-
-      m_MasksList->PushBack(maskExtractor->GetOutput());
   }
 
   // Get the id of the band. Return -1 if band not found.
@@ -718,6 +912,12 @@ private:
   std::vector<ImageDescriptor>          m_DescriptorsList;
   BandMathImageFilterListType::Pointer  m_BandMathList;
   std::string                           m_maskExpression;
+
+  InternalImageListType::Pointer        m_VldMaskList;
+  std::vector<float>                    m_MeanPixels;
+  BandMathImageFilterType::Pointer      m_borderMask;
+
+  LabelImageToVectorDataFilterType::Pointer m_ShapeBuilder;
 };
 }
 }

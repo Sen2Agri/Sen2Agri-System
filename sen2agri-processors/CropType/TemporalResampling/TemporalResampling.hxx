@@ -4,7 +4,7 @@
 #include "itkBinaryFunctorImageFilter.h"
 #include "otbVectorImage.h"
 
-#define NOVALUEPIXEL    -10000.0
+#define NOVALUEPIXEL    0.0
 
 typedef otb::VectorImage<float, 2> ImageType;
 
@@ -42,16 +42,16 @@ public:
         // get the indeces intervals
         ind = getDateIndeces(ind.minLo, outDate);
 
+        // get the id of the first valid date before or equal to the output date
+        int beforeId = getPixelDateIndex(ind.maxLo, ind.minLo, mask);
+
+        // get the id of the first valid date after or equal to the output date
+        int afterId = getPixelDateIndex(ind.minHi, ind.maxHi, mask);
+
         // for each band
         for (int band = 0; band < bands; band++) {
             // compute the id of the output pixel
             int outPixelId = outDateIndex * bands + band;
-
-            // get the id of the first valid date before or equal to the output date
-            int beforeId = getPixelDateIndex(ind.maxLo, ind.minLo, band, mask, pix);
-
-            // get the id of the first valid date after or equal to the output date
-            int afterId = getPixelDateIndex(ind.minHi, ind.maxHi, band, mask, pix);
 
             if (beforeId == -1 && afterId == -1) {
                 // if no valid pixel then set a default value (0.0)
@@ -153,7 +153,7 @@ private:
   }
 
   // Get the date index of the first valid pixel or -1 if none found
-  int getPixelDateIndex(int startIndex, int endIndex, int band, const PixelType& mask, const PixelType& pix) const {
+  int getPixelDateIndex(int startIndex, int endIndex, const PixelType& mask) const {
 
       if (startIndex == -1 || endIndex == -1) {
           return -1;
@@ -163,11 +163,8 @@ private:
       bool done = false;
 
       while (!done) {
-          // compute the id of the required pixel
-          int pixelId = index * bands + band;
-
-          // if the pixel is masked or nodata then continue
-          if (mask[index] != 0 || pix[pixelId] < 0.0) {
+          // if the pixel is masked then continue
+          if (mask[index] != 0) {
               // if it was the last index then stop and return -1
               if (index == endIndex) {
                   index = -1;
