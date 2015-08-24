@@ -13,4 +13,4 @@ if [[ $# -ne 2 ]]; then
     exit 1
 fi
 try otbcli SpotMaskHandler ../../sen2agri-processors-build/Composite/SpotMaskHandler/ -xml $1 -out $2/cws.tif
-try otbcli ResampleAtS2Res ../../sen2agri-processors-build/Composite/ResampleAtS2Res/ -xml $1 -spotmask $2/cws.tif -outres10 $2/res10.tif -outres20 $2/res20.tif -outcmres10 $2/cloud_res10.tif -outwmres10 $2/water_res10.tif -outcmres20 $2/cloud_res20.tif -outwmres20 $2/water_res20.tif 
+try otbcli ResampleAtS2Res ../../sen2agri-processors-build/Composite/ResampleAtS2Res/ -xml $1 -spotmask $2/cws.tif -outres10 $2/res10.tif -outres20 $2/res20.tif -outcmres10 $2/cloud_res10.tif -outwmres10 $2/water_res10.tif -outsmres10 $2/snow_res10.tif -outaotres10 $2/aot_res10.tif -outcmres20 $2/cloud_res20.tif -outwmres20 $2/water_res20.tif -outsmres20 $2/snow_res20.tif -outaotres20 $2/aot_res20.tif 
