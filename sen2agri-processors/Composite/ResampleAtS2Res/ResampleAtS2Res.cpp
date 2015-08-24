@@ -196,12 +196,17 @@ private:
         AddParameter(ParameterType_String, "spotmask", "Image with 3 bands as masks, cloud, water snow for SPOT only");
         MandatoryOff("spotmask");
 
-        AddParameter(ParameterType_OutputImage, "outres10", "Out Image");
-        AddParameter(ParameterType_OutputImage, "outres20", "Out Image");
-        AddParameter(ParameterType_OutputImage, "outcmres10", "Out Image");
-        AddParameter(ParameterType_OutputImage, "outwmres10", "Out Image");
-        AddParameter(ParameterType_OutputImage, "outcmres20", "Out Image");
-        AddParameter(ParameterType_OutputImage, "outwmres20", "Out Image");
+        AddParameter(ParameterType_OutputImage, "outres10", "Out Image at 10m resolution");
+        AddParameter(ParameterType_OutputImage, "outres20", "Out Image at 10m resolution");
+        AddParameter(ParameterType_OutputImage, "outcmres10", "Out cloud mask image at 10m resolution");
+        AddParameter(ParameterType_OutputImage, "outwmres10", "Out water mask image at 10m resolution");
+        AddParameter(ParameterType_OutputImage, "outsmres10", "Out snow mask image at 10m resolution");
+        AddParameter(ParameterType_OutputImage, "outaotres10", "Out snow mask image at 10m resolution");
+        AddParameter(ParameterType_OutputImage, "outcmres20", "Out cloud mask image at 20m resolution");
+        AddParameter(ParameterType_OutputImage, "outwmres20", "Out water mask image at 20m resolution");
+        AddParameter(ParameterType_OutputImage, "outsmres20", "Out snow mask image at 20m resolution");
+        AddParameter(ParameterType_OutputImage, "outaotres20", "Out snow mask image at 20m resolution");
+        //TODO: ADD ALSO AOT
 
 
         // Set default value for parameters
@@ -264,9 +269,17 @@ private:
 
         SetParameterOutputImage("outwmres10", m_ImageWaterRes10.GetPointer());
 
+        SetParameterOutputImage("outsmres10", m_ImageSnowRes10.GetPointer());
+
+        SetParameterOutputImage("outaotres10", m_ImageAotRes10.GetPointer());
+
         SetParameterOutputImage("outcmres20", m_ImageCloudRes20.GetPointer());
 
         SetParameterOutputImage("outwmres20", m_ImageWaterRes20.GetPointer());
+
+        SetParameterOutputImage("outsmres20", m_ImageSnowRes20.GetPointer());
+
+        SetParameterOutputImage("outaotres20", m_ImageAotRes20.GetPointer());
     }
 
 
@@ -332,6 +345,27 @@ private:
         resampler = getResampler(extractor->GetOutput(), 2.0, true);
         m_ImageWaterRes10 = resampler->GetOutput();
 
+        extractor = ExtractROIFilterType::New();
+        extractor->SetInput( spotMasks->GetOutput() );
+        extractor->SetChannel( 3 );
+        extractor->UpdateOutputInformation();
+        m_ExtractorList->PushBack( extractor );
+        m_ImageSnowRes20 = extractor->GetOutput();
+        resampler = getResampler(extractor->GetOutput(), 2.0, true);
+        m_ImageSnowRes10 = resampler->GetOutput();
+
+        // resample the AOT
+        std::string aotFileName = getSpot4AotFileName(meta);
+        otbAppLogINFO( << "AOT file name" << aotFileName << std::endl );
+        ImageReaderType::Pointer aotImage = getReader(aotFileName);
+        extractor = ExtractROIFilterType::New();
+        extractor->SetInput( aotImage->GetOutput() );
+        extractor->SetChannel( 1 );
+        extractor->UpdateOutputInformation();
+        m_ExtractorList->PushBack( extractor );
+        m_ImageAotRes20 = extractor->GetOutput();
+        resampler = getResampler(extractor->GetOutput(), 2.0, true);
+        m_ImageAotRes10 = resampler->GetOutput();
 
 
 /*
@@ -370,6 +404,7 @@ private:
         std::string imageXMLFile("");
         std::string cloudXMLFile("");
         std::string waterXMLFile("");
+        std::string snowXMLFile("");
         for(auto fileInf = meta->ProductOrganization.ImageFiles.begin(); fileInf != meta->ProductOrganization.ImageFiles.end(); fileInf++)
         {
             if(fileInf->LogicalName.substr(fileInf->LogicalName.size() - 4, 4).compare("_FRE") == 0 && fileInf->FileLocation.size() > 0)
@@ -380,9 +415,13 @@ private:
             else
             if(fileInf->LogicalName.substr(fileInf->LogicalName.size() - 4, 4).compare("_WAT") == 0 && fileInf->FileLocation.size() > 0)
                 waterXMLFile = m_DirName + "/" + fileInf->FileLocation;
-
-
+            else
+            if(fileInf->LogicalName.substr(fileInf->LogicalName.size() - 4, 4).compare("_SNW") == 0 && fileInf->FileLocation.size() > 0)
+                snowXMLFile = m_DirName + "/" + fileInf->FileLocation;
         }
+
+        // TODO: create also the snow and the AOT rasters
+
         if(imageXMLFile.empty()) //TODO add error msg
             return false;
 
@@ -458,6 +497,22 @@ private:
         resampler = getResampler(extractor->GetOutput(), 2.0, true);
         m_ImageWaterRes20 = extractor->GetOutput();
 
+        imageFile = snowXMLFile;
+        imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
+
+        ImageReaderType::Pointer readerSnow = getReader(imageFile);
+
+        extractor = ExtractROIFilterType::New();
+        extractor->SetInput( readerWater->GetOutput() );
+        extractor->SetChannel( 1 );
+        extractor->UpdateOutputInformation();
+        m_ExtractorList->PushBack( extractor );
+
+        resampler = getResampler(extractor->GetOutput(), 3.0, true);
+        m_ImageSnowRes10 = resampler->GetOutput();
+        resampler = getResampler(extractor->GetOutput(), 2.0, true);
+        m_ImageSnowRes20 = extractor->GetOutput();
+
         return true;
 
     }
@@ -524,6 +579,33 @@ private:
         return reader;
     }
 
+    std::string getSpot4AotFileName(const std::unique_ptr<SPOT4Metadata>& meta)
+    {
+        // Return the path to a the AOT file computed from ORTHO_SURF_CORR_PENTE or ORTHO_SURF_CORR_ENV
+        // if the key is not present in the XML
+        std::string fileName;
+        if(meta->Files.OrthoSurfAOT == "") {
+            std::string orthoSurf = meta->Files.OrthoSurfCorrPente;
+            if(orthoSurf.empty()) {
+                orthoSurf = meta->Files.OrthoSurfCorrEnv;
+                if(!orthoSurf.empty()) {
+                    int nPos = orthoSurf.find("ORTHO_SURF_CORR_ENV");
+                    orthoSurf.replace(nPos, strlen("ORTHO_SURF_CORR_ENV"), "AOT");
+                    fileName = orthoSurf;
+                }
+            } else {
+                int nPos = orthoSurf.find("ORTHO_SURF_CORR_PENTE");
+                orthoSurf.replace(nPos, strlen("ORTHO_SURF_CORR_PENTE"), "AOT");
+                fileName = orthoSurf;
+            }
+        } else {
+            fileName = meta->Files.OrthoSurfAOT;
+        }
+
+        return m_DirName + "/" + fileName;
+    }
+
+
     ListConcatenerFilterType::Pointer     m_ConcatenerRes10;
     ListConcatenerFilterType::Pointer     m_ConcatenerRes20;
     ExtractROIFilterListType::Pointer     m_ExtractorList;
@@ -532,10 +614,15 @@ private:
     InternalImageListType::Pointer        m_ImageListRes20;
     InternalImageType::Pointer            m_ImageCloudRes10;
     InternalImageType::Pointer            m_ImageWaterRes10;
+    InternalImageType::Pointer            m_ImageSnowRes10;
+    InternalImageType::Pointer            m_ImageAotRes10;
     InternalImageType::Pointer            m_ImageCloudRes20;
     InternalImageType::Pointer            m_ImageWaterRes20;
+    InternalImageType::Pointer            m_ImageSnowRes20;
+    InternalImageType::Pointer            m_ImageAotRes20;
     ResampleFilterType::Pointer           m_ResamplerCloudRes10;
     ResampleFilterType::Pointer           m_ResamplerWaterRes10;
+    ResampleFilterType::Pointer           m_ResamplerSnowRes10;
     ExtractROIFilterType::Pointer         m_ExtractROIFilter;
     ExtractROIFilterListType::Pointer     m_ChannelExtractorList;
     ResampleFilterListType::Pointer       m_ResamplersList;
