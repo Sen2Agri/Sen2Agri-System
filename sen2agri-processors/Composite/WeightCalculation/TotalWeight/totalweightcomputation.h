@@ -34,7 +34,7 @@ public:
   {
     const float dA = static_cast< float >( A );
     const float dB = static_cast< float >( B );
-    const float totalWeight = dA * dB * m_fixedWeight;
+    const float totalWeight = fabs(dA * dB * m_fixedWeight);
 
     return static_cast< TPixel >( totalWeight );
   }
