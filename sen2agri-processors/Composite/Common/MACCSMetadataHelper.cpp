@@ -12,35 +12,33 @@ bool MACCSMetadataHelper::DoLoadMetadata()
     // just check if the file is Spot4 metadata file. In this case
     // the helper will return the hardcoded values from the constructor as these are not
     // present in the metadata
-    if (auto metadata = maccsMetadataReader->ReadMetadata(m_inputMetadataFileName)) {
-        MACCSFileMetadata maccsMetadata = *metadata;
-
-        if (maccsMetadata.Header.FixedHeader.Mission.find(LANDSAT_MISSION_STR) != std::string::npos) {
+    if (m_metadata = maccsMetadataReader->ReadMetadata(m_inputMetadataFileName)) {
+        if (m_metadata->Header.FixedHeader.Mission.find(LANDSAT_MISSION_STR) != std::string::npos) {
             m_missionType = LANDSAT;
-            UpdateValuesForLandsat(maccsMetadata);
-        } else if (maccsMetadata.Header.FixedHeader.Mission.find(SENTINEL_MISSION_STR) != std::string::npos) {
+            UpdateValuesForLandsat();
+        } else if (m_metadata->Header.FixedHeader.Mission.find(SENTINEL_MISSION_STR) != std::string::npos) {
             m_missionType = S2;
-            UpdateValuesForSentinel(maccsMetadata);
+            UpdateValuesForSentinel();
         } else {
-            itkExceptionMacro("Unknown mission: " + maccsMetadata.Header.FixedHeader.Mission);
+            itkExceptionMacro("Unknown mission: " + m_metadata->Header.FixedHeader.Mission);
         }
 
-        m_Mission = maccsMetadata.Header.FixedHeader.Mission;
+        m_Mission = m_metadata->Header.FixedHeader.Mission;
         //m_ReflQuantifVal = std::stod(maccsMetadata.ProductInformation.ReflectanceQuantificationValue);
 
         // compute the Image file name
-        m_ImageFileName = getImageFileName(maccsMetadata);
+        m_ImageFileName = getImageFileName();
 
         // compute the AOT file name
-        m_AotFileName = getAotFileName(maccsMetadata);
+        m_AotFileName = getAotFileName();
         // compute the Cloud file name
-        m_CloudFileName = getCloudFileName(maccsMetadata);
+        m_CloudFileName = getCloudFileName();
         // compute the Water file name
-        m_WaterFileName = getWaterFileName(maccsMetadata);
+        m_WaterFileName = getWaterFileName();
         // compute the Snow file name
-        m_SnowFileName = getSnowFileName(maccsMetadata);
+        m_SnowFileName = getSnowFileName();
         // set the acquisition date
-        m_AcquisitionDate = maccsMetadata.InstanceId.AcquisitionDate;
+        m_AcquisitionDate = m_metadata->InstanceId.AcquisitionDate;
 
         return true;
     }
@@ -48,19 +46,19 @@ bool MACCSMetadataHelper::DoLoadMetadata()
     return false;
 }
 
-void MACCSMetadataHelper::UpdateValuesForLandsat(const MACCSFileMetadata& meta)
+void MACCSMetadataHelper::UpdateValuesForLandsat()
 {
-    std::string specHdrFile = getMACCSImageHdrName(m_inputMetadataFileName, meta.ProductOrganization.AnnexFiles, "_ATB");
+    std::string specHdrFile = getMACCSImageHdrName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_ATB");
     ReadSpecificMACCSHdrFile(specHdrFile);
 }
 
-void MACCSMetadataHelper::UpdateValuesForSentinel(const MACCSFileMetadata& meta)
+void MACCSMetadataHelper::UpdateValuesForSentinel()
 {
     std::string specHdrFile;
     if(m_nResolution == 10) {
-        specHdrFile = getMACCSImageHdrName(m_inputMetadataFileName, meta.ProductOrganization.AnnexFiles, "_ATB_R1");
+        specHdrFile = getMACCSImageHdrName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
     } else {
-        specHdrFile = getMACCSImageHdrName(m_inputMetadataFileName, meta.ProductOrganization.AnnexFiles, "_ATB_R2");
+        specHdrFile = getMACCSImageHdrName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
     }
     ReadSpecificMACCSHdrFile(specHdrFile);
 }
@@ -77,51 +75,51 @@ void MACCSMetadataHelper::ReadSpecificMACCSHdrFile(const std::string& fileName)
     }
 }
 
-std::string MACCSMetadataHelper::getImageFileName(const MACCSFileMetadata& meta) {
+std::string MACCSMetadataHelper::getImageFileName() {
     if(m_missionType == S2) {
         if(m_nResolution == 10) {
-            return getMACCSImageFileName(m_inputMetadataFileName, meta.ProductOrganization.AnnexFiles, "_FRE_R1");
+            return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_FRE_R1");
         } else {
-            return getMACCSImageFileName(m_inputMetadataFileName, meta.ProductOrganization.AnnexFiles, "_FRE_R2");
+            return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_FRE_R2");
         }
     } else {
-        return getMACCSImageFileName(m_inputMetadataFileName, meta.ProductOrganization.AnnexFiles, "_FRE");
+        return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_FRE");
     }
 }
 
-std::string MACCSMetadataHelper::getAotFileName(const MACCSFileMetadata& meta)
+std::string MACCSMetadataHelper::getAotFileName()
 {
     if(m_missionType == S2) {
         if(m_nResolution == 10) {
-            return getMACCSImageFileName(m_inputMetadataFileName, meta.ProductOrganization.AnnexFiles, "_ATB_R1");
+            return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
         } else {
-            return getMACCSImageFileName(m_inputMetadataFileName, meta.ProductOrganization.AnnexFiles, "_ATB_R2");
+            return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
         }
     } else {
-        return getMACCSImageFileName(m_inputMetadataFileName, meta.ProductOrganization.AnnexFiles, "_ATB");
+        return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_ATB");
     }
 }
 
-std::string MACCSMetadataHelper::getCloudFileName(const MACCSFileMetadata& meta)
+std::string MACCSMetadataHelper::getCloudFileName()
 {
     if(m_missionType == S2) {
         if(m_nResolution == 10) {
-            return getMACCSImageFileName(m_inputMetadataFileName, meta.ProductOrganization.AnnexFiles, "_CLD_R1");
+            return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_CLD_R1");
         } else {
-            return getMACCSImageFileName(m_inputMetadataFileName, meta.ProductOrganization.AnnexFiles, "_CLD_R2");
+            return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_CLD_R2");
         }
     } else {
-        return getMACCSImageFileName(m_inputMetadataFileName, meta.ProductOrganization.AnnexFiles, "_CLD");
+        return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_CLD");
     }
 }
 
-std::string MACCSMetadataHelper::getWaterFileName(const MACCSFileMetadata& meta)
+std::string MACCSMetadataHelper::getWaterFileName()
 {
     // TODO:
     return "";
 }
 
-std::string MACCSMetadataHelper::getSnowFileName(const MACCSFileMetadata &meta)
+std::string MACCSMetadataHelper::getSnowFileName()
 {
     // TODO:
     return "";

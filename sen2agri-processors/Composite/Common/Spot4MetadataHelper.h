@@ -17,14 +17,16 @@ public:
 protected:
     virtual bool DoLoadMetadata();
 
-    std::string DeriveFileNameFromImageFileName(const SPOT4Metadata& spot4Metadata, const std::string& replacement);
+    std::string DeriveFileNameFromImageFileName(const std::string& replacement);
     std::string buildFullPath(const std::string& fileName);
 
-    std::string getImageFileName(const SPOT4Metadata& spot4Metadata);
-    std::string getAotFileName(const SPOT4Metadata& spot4Metadata);
-    std::string getCloudFileName(const SPOT4Metadata& spot4Metadata);
-    std::string getWaterFileName(const SPOT4Metadata& spot4Metadata);
-    std::string getSnowFileName(const SPOT4Metadata& spot4Metadata);
+    std::string getImageFileName();
+    std::string getAotFileName();
+    std::string getCloudFileName();
+    std::string getWaterFileName();
+    std::string getSnowFileName();
+
+    std::unique_ptr<SPOT4Metadata> m_metadata;
 };
 
 #endif // SPOT4METADATAHELPER_H

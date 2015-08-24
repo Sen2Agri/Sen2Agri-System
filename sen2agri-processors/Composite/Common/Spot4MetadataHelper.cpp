@@ -10,7 +10,7 @@ Spot4MetadataHelper::Spot4MetadataHelper()
 bool Spot4MetadataHelper::DoLoadMetadata()
 {
     SPOT4MetadataReaderType::Pointer spot4MetadataReader = SPOT4MetadataReaderType::New();
-    if (auto meta = spot4MetadataReader->ReadMetadata(m_inputMetadataFileName)) {
+    if (m_metadata = spot4MetadataReader->ReadMetadata(m_inputMetadataFileName)) {
         // the helper will return the hardcoded values from the constructor as these are not
         // present in the metadata
         m_fAotQuantificationValue = 1000.0;
@@ -19,23 +19,22 @@ bool Spot4MetadataHelper::DoLoadMetadata()
 
         m_ReflQuantifVal = 1000.0;
 
-        SPOT4Metadata spot4Metadata = *meta;
         m_Mission = "SPOT4";
         // compute the Image file name
-        m_ImageFileName = getImageFileName(spot4Metadata);
+        m_ImageFileName = getImageFileName();
 
         // compute the AOT file name
-        m_AotFileName = getAotFileName(spot4Metadata);
+        m_AotFileName = getAotFileName();
         // compute the Cloud file name
-        m_CloudFileName = getCloudFileName(spot4Metadata);
+        m_CloudFileName = getCloudFileName();
         // compute the Water file name
-        m_WaterFileName = getWaterFileName(spot4Metadata);
+        m_WaterFileName = getWaterFileName();
         // compute the Snow file name
-        m_SnowFileName = getSnowFileName(spot4Metadata);
+        m_SnowFileName = getSnowFileName();
 
         // extract the acquisition date
-        m_AcquisitionDate = spot4Metadata.Header.DatePdv.substr(0,4) +
-                spot4Metadata.Header.DatePdv.substr(5,2) + spot4Metadata.Header.DatePdv.substr(8,2);
+        m_AcquisitionDate = m_metadata->Header.DatePdv.substr(0,4) +
+                m_metadata->Header.DatePdv.substr(5,2) + m_metadata->Header.DatePdv.substr(8,2);
 
         return true;
     }
@@ -43,12 +42,12 @@ bool Spot4MetadataHelper::DoLoadMetadata()
     return false;
 }
 
-std::string Spot4MetadataHelper::DeriveFileNameFromImageFileName(const SPOT4Metadata& spot4Metadata, const std::string& replacement)
+std::string Spot4MetadataHelper::DeriveFileNameFromImageFileName(const std::string& replacement)
 {
     std::string fileName;
-    std::string orthoSurf = spot4Metadata.Files.OrthoSurfCorrPente;
+    std::string orthoSurf = m_metadata->Files.OrthoSurfCorrPente;
     if(orthoSurf.empty()) {
-        orthoSurf = spot4Metadata.Files.OrthoSurfCorrEnv;
+        orthoSurf = m_metadata->Files.OrthoSurfCorrEnv;
         if(!orthoSurf.empty()) {
             int nPos = orthoSurf.find("ORTHO_SURF_CORR_ENV");
             orthoSurf.replace(nPos, strlen("ORTHO_SURF_CORR_ENV"), replacement);
@@ -75,38 +74,38 @@ std::string Spot4MetadataHelper::buildFullPath(const std::string& fileName)
     return folder + "/" + fileName;
 }
 
-std::string Spot4MetadataHelper::getImageFileName(const SPOT4Metadata& spot4Metadata) {
+std::string Spot4MetadataHelper::getImageFileName() {
 
-    return buildFullPath(spot4Metadata.Files.OrthoSurfCorrPente);
+    return buildFullPath(m_metadata->Files.OrthoSurfCorrPente);
 }
 
-std::string Spot4MetadataHelper::getAotFileName(const SPOT4Metadata& spot4Metadata)
+std::string Spot4MetadataHelper::getAotFileName()
 {
     // Return the path to a the AOT file computed from ORTHO_SURF_CORR_PENTE or ORTHO_SURF_CORR_ENV
     // if the key is not present in the XML
     std::string fileName;
-    if(spot4Metadata.Files.OrthoSurfAOT == "") {
-        fileName = DeriveFileNameFromImageFileName(spot4Metadata, "AOT");
+    if(m_metadata->Files.OrthoSurfAOT == "") {
+        fileName = DeriveFileNameFromImageFileName("AOT");
     } else {
-        fileName = spot4Metadata.Files.OrthoSurfAOT;
+        fileName = m_metadata->Files.OrthoSurfAOT;
     }
 
     return buildFullPath(fileName);
 }
 
-std::string Spot4MetadataHelper::getCloudFileName(const SPOT4Metadata& spot4Metadata)
+std::string Spot4MetadataHelper::getCloudFileName()
 {
-    return buildFullPath(spot4Metadata.Files.MaskNua);
+    return buildFullPath(m_metadata->Files.MaskNua);
 }
 
-std::string Spot4MetadataHelper::getWaterFileName(const SPOT4Metadata& spot4Metadata)
+std::string Spot4MetadataHelper::getWaterFileName()
 {
-    return buildFullPath(spot4Metadata.Files.MaskDiv);
+    return buildFullPath(m_metadata->Files.MaskDiv);
 }
 
-std::string Spot4MetadataHelper::getSnowFileName(const SPOT4Metadata& spot4Metadata)
+std::string Spot4MetadataHelper::getSnowFileName()
 {
-    return getWaterFileName(spot4Metadata);
+    return getWaterFileName();
 }
 
 

@@ -17,17 +17,14 @@ public:
 protected:
     virtual bool DoLoadMetadata();
 
-    void UpdateValuesForLandsat(const MACCSFileMetadata &meta);
-    void UpdateValuesForSentinel(const MACCSFileMetadata &meta);
+    void UpdateValuesForLandsat();
+    void UpdateValuesForSentinel();
 
-    std::string DeriveFileNameFromImageFileName(const MACCSFileMetadata& meta, const std::string& replacement);
-    std::string buildFullPath(const std::string& fileName);
-
-    std::string getImageFileName(const MACCSFileMetadata& meta);
-    std::string getAotFileName(const MACCSFileMetadata& meta);
-    std::string getCloudFileName(const MACCSFileMetadata& meta);
-    std::string getWaterFileName(const MACCSFileMetadata& meta);
-    std::string getSnowFileName(const MACCSFileMetadata& meta);
+    std::string getImageFileName();
+    std::string getAotFileName();
+    std::string getCloudFileName();
+    std::string getWaterFileName();
+    std::string getSnowFileName();
 
     std::string getMACCSImageFileName(const std::string& descriptor,
                                       const std::vector<MACCSFileInformation>& imageFiles,
@@ -42,9 +39,12 @@ protected:
     void ReadSpecificMACCSHdrFile(const std::string& fileName);
     int getBandIndex(const std::vector<MACCSBand>& bands, const std::string& name);
 
+    //virtual std::unique_ptr<itk::LightObject> GetMetadata() { return m_metadata; }
+
 protected:
     typedef enum {S2, LANDSAT} MissionType;
     MissionType m_missionType;
+    std::unique_ptr<MACCSFileMetadata> m_metadata;
 };
 
 #endif // S2METADATAHELPER_H
