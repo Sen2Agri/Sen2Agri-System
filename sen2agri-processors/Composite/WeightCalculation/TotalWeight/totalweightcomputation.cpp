@@ -25,6 +25,9 @@ void TotalWeightComputation::SetWeightOnSensor(float fWeight)
 
 void TotalWeightComputation::SetDates(std::string& L2ADate, std::string& L3ADate)
 {
+    //std::cout << "L2ADate: " << L2ADate << std::endl;
+    //std::cout << "L3ADate: " << L3ADate << std::endl;
+
     struct tm tmTime = {};
     strptime(L2ADate.c_str(), "%Y%m%d", &tmTime);
     time_t ttL2ATime = mktime(&tmTime);
@@ -96,6 +99,10 @@ void TotalWeightComputation::ComputeWeightOnSensor()
 
 void TotalWeightComputation::ComputeWeightOnDate()
 {
+    //std::cout << "ComputeWeightOnDate: " << std::endl;
+    //std::cout << "\tm_nDaysTimeInterval: " << m_nDaysTimeInterval << std::endl;
+    //std::cout << "\tm_nDeltaMax : " << m_nDeltaMax << std::endl;
+    //std::cout << "\tm_fWeightOnDateMin : " << m_fWeightOnDateMin << std::endl;
     m_fWeightOnDate = 1 - (abs(m_nDaysTimeInterval)/m_nDeltaMax) * (1-m_fWeightOnDateMin);
 }
 

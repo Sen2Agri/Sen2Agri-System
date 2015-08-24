@@ -118,11 +118,6 @@ private:
         AddParameter(ParameterType_InputImage, "wl2a", "Weights of L2A product for date N");
 
         //not mandatory
-        //TODO: see if these parameters are optional or not. In this moment is set this condition
-        // in order to be possible to test
-        MandatoryOff("wm");
-        MandatoryOff("sm");
-
         AddParameter(ParameterType_InputImage, "prevl3a", "Previous l3a product");
         MandatoryOff("prevl3a");
         /*
@@ -170,19 +165,9 @@ private:
         }
         m_CSM = GetParameterFloatVectorImage("csm");
 
-        //TODO: see if these parameters are optional or not. In this moment is set this condition
-        // in order to be possible to test
-        if(HasValue("wm"))
-            m_WM = GetParameterFloatVectorImage("wm");
-        else
-            m_WM = m_CSM;
+        m_WM = GetParameterFloatVectorImage("wm");
 
-        //TODO: see if these parameters are optional or not. In this moment is set this condition
-        // in order to be possible to test
-        if(HasValue("sm"))
-            m_SM = GetParameterFloatVectorImage("sm");
-        else
-            m_SM = m_CSM;
+        m_SM = GetParameterFloatVectorImage("sm");
 
         m_WeightsL2A = GetParameterFloatVectorImage("wl2a");
         //Int16VectorImageType::Pointer inImage2 = GetParameterInt16VectorImage("in2");

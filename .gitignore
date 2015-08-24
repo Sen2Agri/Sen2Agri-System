@@ -1,6 +1,9 @@
 # Qt Creator shadow build directory
 build-*
 
+# CMake shadow build directory
+*-build
+
 # Qt Creator user files
 *.pro.user
 *.user.*
