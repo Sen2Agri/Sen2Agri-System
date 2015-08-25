@@ -18,24 +18,22 @@ static QString findProductMetadata(const QString &path)
     QString result;
     for (const auto &file : QDir(path).entryList({ "*.HDR", "*.xml" }, QDir::Files)) {
         if (!result.isEmpty()) {
-            throw std::runtime_error(
-                QStringLiteral(
-                    "More than one HDR or xml file in path %1. Unable to determine the product "
-                    "metadata file.")
-                    .arg(path)
-                    .toStdString());
+            throw std::runtime_error(QStringLiteral(
+                "More than one HDR or xml file in path %1. Unable to determine the product "
+                "metadata file.")
+                                         .arg(path)
+                                         .toStdString());
         }
 
         result = file;
     }
 
     if (result.isEmpty()) {
-        throw std::runtime_error(
-            QStringLiteral(
-                "Unable to find an HDR or xml file in path %1. Unable to determine the product "
-                "metadata file.")
-                .arg(path)
-                .toStdString());
+        throw std::runtime_error(QStringLiteral(
+            "Unable to find an HDR or xml file in path %1. Unable to determine the product "
+            "metadata file.")
+                                     .arg(path)
+                                     .toStdString());
     }
 
     return path + result;
@@ -73,9 +71,11 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &classifierSvmKernel = configParameters["crop-type.classifier.svm.k"];
     const auto &classifierSvmOptimize = configParameters["crop-type.classifier.svm.opt"];
 
-    TaskToSubmit sampleSelection{ "sample-selection", {} };
     TaskToSubmit bandsExtractor{ "bands-extractor", {} };
-    TaskToSubmit temporalResampling{ "temporal-resampling", { bandsExtractor } };
+    TaskToSubmit clipPolys{ "ogr2ogr", { bandsExtractor } };
+    TaskToSubmit clipRaster{ "gdalwarp", { bandsExtractor } };
+    TaskToSubmit sampleSelection{ "sample-selection", { clipPolys } };
+    TaskToSubmit temporalResampling{ "temporal-resampling", { clipRaster } };
     TaskToSubmit featureExtraction{ "feature-extraction", { temporalResampling } };
     TaskToSubmit computeImagesStatistics{ "compute-images-statistics", { featureExtraction } };
     TaskToSubmit trainImagesClassifier{
@@ -84,21 +84,24 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     TaskToSubmit imageClassifier{ "image-classifier", { trainImagesClassifier } };
     TaskToSubmit computeConfusionMatrix{ "compute-confusion-matrix", { imageClassifier } };
 
-    ctx.SubmitTasks(event.jobId, { sampleSelection,
-                                   bandsExtractor,
-                                   temporalResampling,
-                                   featureExtraction,
-                                   computeImagesStatistics,
-                                   trainImagesClassifier,
-                                   imageClassifier,
-                                   computeConfusionMatrix });
+    ctx.SubmitTasks(event.jobId,
+                    { bandsExtractor,          clipPolys,             clipRaster,
+                      sampleSelection,         temporalResampling,    featureExtraction,
+                      computeImagesStatistics, trainImagesClassifier, imageClassifier,
+                      computeConfusionMatrix });
 
     const auto &trainingPolys = sampleSelection.GetFilePath("training_polygons.shp");
     const auto &validationPolys = sampleSelection.GetFilePath("validation_polygons.shp");
 
-    const auto &fts = bandsExtractor.GetFilePath("fts.tif");
-    const auto &mask = bandsExtractor.GetFilePath("mask.tif");
+    const auto &rawtocr = bandsExtractor.GetFilePath("rawtocr.tif");
+    const auto &rawmask = bandsExtractor.GetFilePath("rawmask.tif");
     const auto &dates = bandsExtractor.GetFilePath("dates.txt");
+    const auto &shape = bandsExtractor.GetFilePath("shape.shp");
+
+    const auto &refPolysClipped = clipPolys.GetFilePath("reference_clip.shp");
+
+    const auto &tocr = clipRaster.GetFilePath("tocr.tif");
+    const auto &mask = clipRaster.GetFilePath("mask.tif");
 
     const auto &rtocr = temporalResampling.GetFilePath("rtocr.tif");
 
@@ -114,38 +117,19 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &confusionMatrixValidation =
         computeConfusionMatrix.GetFilePath("confusion-matrix-validation.csv");
 
-    QStringList bandsExtractorArgs = {
-        "BandsExtractor", "-out", fts, "-mask", mask, "-outdate", dates, "-il"
-    };
+    QStringList bandsExtractorArgs = { "BandsExtractor", "-out", rawtocr,  "-mask", rawmask,
+                                       "-outdate",       dates,  "-shape", shape,   "-il" };
 
     for (const auto &inputProduct : inputProducts) {
         bandsExtractorArgs.append(findProductMetadata(inputProduct.toString()));
     }
 
-    QStringList trainImagesClassifierArgs = { "-io.il",
-                                              feFts,
-                                              "-io.vd",
-                                              trainingPolys,
-                                              "-io.imstat",
-                                              statistics,
-                                              "-rand",
-                                              "42",
-                                              "-sample.bm",
-                                              "0",
-                                              "-io.confmatout",
-                                              confusionMatrix,
-                                              "-io.out",
-                                              model,
-                                              "-sample.mt",
-                                              "-1",
-                                              "-sample.mv",
-                                              "-1",
-                                              "-sample.vtr",
-                                              sampleRatio,
-                                              "-sample.vfn",
-                                              fieldName,
-                                              "-classifier",
-                                              classifier };
+    QStringList trainImagesClassifierArgs = {
+        "-io.il",      feFts,       "-io.vd",      trainingPolys, "-io.imstat",     statistics,
+        "-rand",       "42",        "-sample.bm",  "0",           "-io.confmatout", confusionMatrix,
+        "-io.out",     model,       "-sample.mt",  "-1",          "-sample.mv",     "-1",
+        "-sample.vtr", sampleRatio, "-sample.vfn", fieldName,     "-classifier",    classifier
+    };
 
     if (classifier == "rf") {
         trainImagesClassifierArgs.append("-classifier.rf.nbtrees");
@@ -169,47 +153,33 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
 
     NewStepList steps = {
-        sampleSelection.CreateStep("SampleSelection", { "SampleSelection",
-                                                        "-ref",
-                                                        referencePolygons,
-                                                        "-ratio",
-                                                        sampleRatio,
-                                                        "-tp",
-                                                        trainingPolys,
-                                                        "-vp",
-                                                        validationPolys }),
         bandsExtractor.CreateStep("BandsExtractor", bandsExtractorArgs),
-        temporalResampling.CreateStep("TemporalResampling", { "TemporalResampling",
-                                                              "-tocr",
-                                                              fts,
-                                                              "-mask",
-                                                              mask,
-                                                              "-ind",
-                                                              dates,
-                                                              "-sp",
-                                                              samplingRate,
-                                                              "-t0",
-                                                              dateStart,
-                                                              "-tend",
-                                                              dateEnd,
-                                                              "-rtocr",
-                                                              rtocr }),
+        clipPolys.CreateStep(
+            "ClipPolys", { "-clipsrc", shape, "-overwrite", refPolysClipped, referencePolygons }),
+        clipRaster.CreateStep("ClipRasterImage",
+                              { "-dstnodata", "\"-10000\"",       "-overwrite", "-cutline",
+                                shape,        "-crop_to_cutline", rawtocr,      tocr }),
+        clipRaster.CreateStep("ClipRasterMask",
+                              { "-dstnodata", "1",                "-overwrite", "-cutline",
+                                shape,        "-crop_to_cutline", rawmask,      mask }),
+        sampleSelection.CreateStep("SampleSelection",
+                                   { "SampleSelection", "-ref",      refPolysClipped,
+                                     "-ratio",          sampleRatio, "-tp",
+                                     trainingPolys,     "-vp",       validationPolys }),
+        temporalResampling.CreateStep(
+            "TemporalResampling",
+            { "TemporalResampling", "-tocr", tocr,      "-mask", mask,    "-ind",   dates, "-sp",
+              samplingRate,         "-t0",   dateStart, "-tend", dateEnd, "-rtocr", rtocr }),
         featureExtraction.CreateStep("FeatureExtraction",
                                      { "FeatureExtraction", "-rtocr", rtocr, "-fts", feFts }),
         computeImagesStatistics.CreateStep("ComputeImagesStatistics",
                                            { "-il", feFts, "-out", statistics }),
         trainImagesClassifier.CreateStep("TrainImagesClassifier", trainImagesClassifierArgs),
         imageClassifier.CreateStep("ImageClassifier", imageClassifierArgs),
-        computeConfusionMatrix.CreateStep("ComputeConfusionMatrix", { "-in",
-                                                                      cropTypeMap,
-                                                                      "-out",
-                                                                      confusionMatrixValidation,
-                                                                      "-ref",
-                                                                      "vector",
-                                                                      "-ref.vector.in",
-                                                                      validationPolys,
-                                                                      "-ref.vector.field",
-                                                                      fieldName })
+        computeConfusionMatrix.CreateStep(
+            "ComputeConfusionMatrix",
+            { "-in",    cropTypeMap,      "-out",          confusionMatrixValidation, "-ref",
+              "vector", "-ref.vector.in", validationPolys, "-ref.vector.field",       fieldName })
     };
 
     ctx.SubmitSteps(steps);
