@@ -1,6 +1,8 @@
 #ifndef UPDATESYNTHESIS_H
 #define UPDATESYNTHESIS_H
 
+#include "BandsDefs.h"
+
 typedef enum {SENSOR_S2, SENSOR_LANDSAT8, SENSOR_SPOT4} SensorType;
 typedef enum {RES_10M, RES_20M} ResolutionType;
 
@@ -10,103 +12,6 @@ typedef enum {LAND=1, WATER,SNOW,CLOUD,CLOUD_SHADOW} FlagType;
 #define DATE_NO_DATA -1.0f
 #define REFLECTANCE_NO_DATA -1.0f
 #define WEIGHT_NO_DATA -1.0f
-
-#define S2_L2A_10M_BANDS_NO     4
-#define L8_L2A_10M_BANDS_NO     3
-#define SPOT4_L2A_10M_BANDS_NO  3
-
-#define WEIGHTED_REFLECTANCE_10M_BANDS_NO   S2_L2A_10M_BANDS_NO
-
-//S2 10m Bands defines
-#define S2_L2A_10M_BANDS_START_IDX      0
-#define S2_L2A_10M_BLUE_BAND_IDX        0
-#define S2_L2A_10M_RED_BAND_IDX         2
-#define S2_L2A_10M_CLD_MASK_IDX         4
-#define S2_L2A_10M_WATER_MASK_IDX       5
-#define S2_L2A_10M_SNOW_MASK_IDX        6
-#define S2_L2A_10M_TOTAL_WEIGHT_IDX     7
-#define S2_L3A_10M_WEIGHT_START_IDX     8
-#define S2_L3A_10M_W_AV_DATE_IDX        12
-#define S2_L3A_10M_REFL_START_IDX       13
-#define S2_L3A_10M_PIXEL_STATUS_IDX     17
-
-//Landsat 8 10m Bands defines
-#define L8_L2A_10M_BANDS_START_IDX      0
-#define L8_L2A_10M_BLUE_BAND_IDX        0
-#define L8_L2A_10M_RED_BAND_IDX         2
-#define L8_L2A_10M_CLD_MASK_IDX         3
-#define L8_L2A_10M_WATER_MASK_IDX       4
-#define L8_L2A_10M_SNOW_MASK_IDX        5
-#define L8_L2A_10M_TOTAL_WEIGHT_IDX     6
-#define L8_L3A_10M_WEIGHT_START_IDX     7
-#define L8_L3A_10M_W_AV_DATE_IDX        11
-#define L8_L3A_10M_REFL_START_IDX       12
-#define L8_L3A_10M_PIXEL_STATUS_IDX     16
-
-//SPOT4 10m Bands defines
-#define SPOT4_L2A_10M_BANDS_START_IDX      0
-// For SPOT4 the blue band is actually the green band
-#define SPOT4_L2A_10M_BLUE_BAND_IDX        0
-#define SPOT4_L2A_10M_RED_BAND_IDX         1
-#define SPOT4_L2A_10M_CLD_MASK_IDX         3
-#define SPOT4_L2A_10M_WATER_MASK_IDX       4
-#define SPOT4_L2A_10M_SNOW_MASK_IDX        5
-#define SPOT4_L2A_10M_TOTAL_WEIGHT_IDX     6
-#define SPOT4_L3A_10M_WEIGHT_START_IDX     7
-#define SPOT4_L3A_10M_W_AV_DATE_IDX        11
-#define SPOT4_L3A_10M_REFL_START_IDX       12
-#define SPOT4_L3A_10M_PIXEL_STATUS_IDX     16
-
-
-// 20M Positions Definition
-#define S2_L2A_20M_BANDS_NO     6
-#define L8_L2A_20M_BANDS_NO     3
-#define SPOT4_L2A_20M_BANDS_NO  1
-#define WEIGHTED_REFLECTANCE_20M_BANDS_NO   S2_L2A_20M_BANDS_NO
-
-//S2 20m Bands defines
-#define S2_L2A_20M_BANDS_START_IDX      0
-#define S2_L2A_20M_BLUE_BAND_IDX        -1
-#define S2_L2A_20M_RED_BAND_IDX         -1
-#define S2_L2A_20M_CLD_MASK_IDX         6
-#define S2_L2A_20M_WATER_MASK_IDX       7
-#define S2_L2A_20M_SNOW_MASK_IDX        8
-#define S2_L2A_20M_TOTAL_WEIGHT_IDX     9
-#define S2_L3A_20M_WEIGHT_START_IDX     10
-#define S2_L3A_20M_W_AV_DATE_IDX        16
-#define S2_L3A_20M_REFL_START_IDX       17
-#define S2_L3A_20M_PIXEL_STATUS_IDX     23
-
-//Landsat 8 20m Bands defines
-#define L8_L2A_20M_BANDS_START_IDX      0
-#define L8_L2A_20M_BLUE_BAND_IDX        -1
-#define L8_L2A_20M_RED_BAND_IDX         -1
-#define L8_L2A_20M_CLD_MASK_IDX         3
-#define L8_L2A_20M_WATER_MASK_IDX       4
-#define L8_L2A_20M_SNOW_MASK_IDX        5
-#define L8_L2A_20M_TOTAL_WEIGHT_IDX     6
-#define L8_L3A_20M_WEIGHT_START_IDX     7
-#define L8_L3A_20M_W_AV_DATE_IDX        13
-#define L8_L3A_20M_REFL_START_IDX       14
-#define L8_L3A_20M_PIXEL_STATUS_IDX     20
-
-//SPOT4 20m Bands defines
-#define SPOT4_L2A_20M_BANDS_START_IDX      0
-#define SPOT4_L2A_20M_BLUE_BAND_IDX        -1
-#define SPOT4_L2A_20M_RED_BAND_IDX         -1
-#define SPOT4_L2A_20M_CLD_MASK_IDX         1
-#define SPOT4_L2A_20M_WATER_MASK_IDX       2
-#define SPOT4_L2A_20M_SNOW_MASK_IDX        3
-#define SPOT4_L2A_20M_TOTAL_WEIGHT_IDX     4
-#define SPOT4_L3A_20M_WEIGHT_START_IDX     5
-#define SPOT4_L3A_20M_W_AV_DATE_IDX        11
-#define SPOT4_L3A_20M_REFL_START_IDX       12
-#define SPOT4_L3A_20M_PIXEL_STATUS_IDX     18
-
-#define L3A_WEIGHTED_REFLECTANCES_MAX_NO       S2_L2A_20M_BANDS_NO
-
-enum {B2_MSK=1, B3_MSK=2, B4_MSK=4, B8_MSK=8, ALL_10M_MSK=0x0F};
-enum {B5_MSK=1, B6_MSK=2, B7_MSK=4, B8A_MSK=8, B11_MSK=16, B12_MSK=32, ALL_20M_MSK=0x3F};
 
 class OutFunctorInfos
 {
@@ -126,9 +31,8 @@ public:
     bool operator!=( const UpdateSynthesisFunctor & other) const;
     bool operator==( const UpdateSynthesisFunctor & other ) const;
     TOutput operator()( const TInput & A );
-    void Initialize(SensorType sensorType, ResolutionType resolution, bool bPrevL3ABandsAvailable);
-    void SetReflectanceQuantificationValue(float fQuantifVal);
-    void SetCurrentDate(int nDate);
+    void Initialize(SensorType sensorType, ResolutionType resolution, bool bPrevL3ABandsAvailable,
+                    int nDate, float fQuantifVal, bool bAllInOne = false);
 
     const char * GetNameOfClass() { return "UpdateSynthesisFunctor"; }
 
@@ -150,6 +54,8 @@ private:
     float GetPrevL3AReflectanceValue(const TInput & A, int offset);
     float GetPrevL3APixelFlagValue(const TInput & A);
     int GetBlueBandIndex();
+    bool InitBandInfos(SensorType sensorType, ResolutionType resolution);
+    bool InitAllBandInResolutionInfos(SensorType sensorType);
 
 private:
     SensorType m_sensorType;
