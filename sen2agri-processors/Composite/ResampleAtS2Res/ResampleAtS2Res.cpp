@@ -16,19 +16,6 @@
 
 =========================================================================*/
 
-
-//  Software Guide : BeginCommandLineArgs
-//    INPUTS: {input image}, {xml file desc}
-//    OUTPUTS: {output image NDVI}
-//  Software Guide : EndCommandLineArgs
-
-
-//  Software Guide : BeginLatex
-//
-//
-//  Software Guide : EndLatex
-
-//  Software Guide : BeginCodeSnippet
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 #include "otbBandMathImageFilter.h"
@@ -55,53 +42,20 @@
 #include "itkScaleTransform.h"
 
 
-//  Software Guide : EndCodeSnippet
-
 namespace otb
 {
-
-//  Software Guide : BeginLatex
-//  Application class is defined in Wrapper namespace.
-//
-//  Software Guide : EndLatex
-
-//  Software Guide : BeginCodeSnippet
 namespace Wrapper
 {
-//  Software Guide : EndCodeSnippet
-
-
-//  Software Guide : BeginLatex
-//
-//  ResampleAtS2Res class is derived from Application class.
-//
-//  Software Guide : EndLatex
-
-//  Software Guide : BeginCodeSnippet
 class ResampleAtS2Res : public Application
-//  Software Guide : EndCodeSnippet
 {
 public:
-    //  Software Guide : BeginLatex
-    // The \code{ITK} public types for the class, the superclass and smart pointers.
-    // Software Guide : EndLatex
-
-    //  Software Guide : BeginCodeSnippet
     typedef ResampleAtS2Res Self;
     typedef Application Superclass;
     typedef itk::SmartPointer<Self> Pointer;
     typedef itk::SmartPointer<const Self> ConstPointer;
-    // Software Guide : EndCodeSnippet
-
-    //  Software Guide : BeginLatex
-    //  Invoke the macros necessary to respect ITK object factory mechanisms.
-    //  Software Guide : EndLatex
-
-    //  Software Guide : BeginCodeSnippet
     itkNewMacro(Self)
 
     itkTypeMacro(ResampleAtS2Res, otb::Application)
-    //  Software Guide : EndCodeSnippet
 
     typedef float                                      PixelType;
     typedef otb::VectorImage<PixelType, 2>             ImageType;
@@ -132,29 +86,8 @@ public:
 
 private:
 
-    //  Software Guide : BeginLatex
-    //  \code{DoInit()} method contains class information and description, parameter set up, and example values.
-    //  Software Guide : EndLatex
-
-
-
     void DoInit()
     {
-
-        // Software Guide : BeginLatex
-        // Application name and description are set using following methods :
-        // \begin{description}
-        // \item[\code{SetName()}] Name of the application.
-        // \item[\code{SetDescription()}] Set the short description of the class.
-        // \item[\code{SetDocName()}] Set long name of the application (that can be displayed \dots).
-        // \item[\code{SetDocLongDescription()}] This methods is used to describe the class.
-        // \item[\code{SetDocLimitations()}] Set known limitations (threading, invalid pixel type \dots) or bugs.
-        // \item[\code{SetDocAuthors()}] Set the application Authors. Author List. Format : "John Doe, Winnie the Pooh" \dots
-        // \item[\code{SetDocSeeAlso()}] If the application is related to one another, it can be mentioned.
-        // \end{description}
-        // Software Guide : EndLatex
-
-        //  Software Guide : BeginCodeSnippet
         SetName("ResampleAtS2Res");
         SetDescription("Computes NDVI from RED and NIR bands");
 
@@ -163,17 +96,9 @@ private:
         SetDocLimitations("None");
         SetDocAuthors("AG");
         SetDocSeeAlso(" ");
-        //  Software Guide : EndCodeSnippet
 
 
-        // Software Guide : BeginLatex
-        // \code{AddDocTag()} method categorize the application using relevant tags.
-        // \code{Code/ApplicationEngine/otbWrapperTags.h} contains some predefined tags defined in \code{Tags} namespace.
-        // Software Guide : EndLatex
-
-        //  Software Guide : BeginCodeSnippet
         AddDocTag(Tags::Vector);
-        //  Software Guide : EndCodeSnippet
         m_ConcatenerRes10 = ListConcatenerFilterType::New();
         m_ConcatenerRes20 = ListConcatenerFilterType::New();
         m_ImageListRes10 = InternalImageListType::New();
@@ -182,19 +107,13 @@ private:
         m_ExtractorList = ExtractROIFilterListType::New();
         m_ImageReaderList = ImageReaderListType::New();
 
-        // Software Guide : BeginLatex
-        // The input parameters:
-        // - in: Input image filename with bands for RED and NIR
-        // - xml: Input xml filename with description for input image
-        // The output parameters:
-        // - out: Vector file containing reference data for training
-        // Software Guide : EndLatex
-
-        //  Software Guide : BeginCodeSnippet
-
         AddParameter(ParameterType_String, "xml", "Xml description");
         AddParameter(ParameterType_String, "spotmask", "Image with 3 bands as masks, cloud, water snow for SPOT only");
         MandatoryOff("spotmask");
+
+        AddParameter(ParameterType_Int, "allinone", "Specifies if all bands should be resampled at 10m and 20m");
+        SetDefaultParameterInt("allinone", 0);
+        MandatoryOff("allinone");
 
         AddParameter(ParameterType_OutputImage, "outres10", "Out Image at 10m resolution");
         AddParameter(ParameterType_OutputImage, "outres20", "Out Image at 10m resolution");
@@ -206,55 +125,36 @@ private:
         AddParameter(ParameterType_OutputImage, "outwmres20", "Out water mask image at 20m resolution");
         AddParameter(ParameterType_OutputImage, "outsmres20", "Out snow mask image at 20m resolution");
         AddParameter(ParameterType_OutputImage, "outaotres20", "Out snow mask image at 20m resolution");
-        //TODO: ADD ALSO AOT
 
-
-        // Set default value for parameters
-        //SetDefaultParameterFloat("ratio", 0.75);
-         //  Software Guide : EndCodeSnippet
-
-        // Software Guide : BeginLatex
-        // An example commandline is automatically generated. Method \code{SetDocExampleParameterValue()} is
-        // used to set parameters. Dataset should be located in  \code{OTB-Data/Examples} directory.
-        // Software Guide : EndLatex
-
-        //  Software Guide : BeginCodeSnippet
         SetDocExampleParameterValue("in", "/path/to/input_image.tif");
         SetDocExampleParameterValue("xml", "xml_description.xml");
+        SetDocExampleParameterValue("allinone", "1");
         SetDocExampleParameterValue("out", "/path/to/output_image.tif");
-        //SetDocExampleParameterValue("vp", "validation_polygons.shp");
-        //  Software Guide : EndCodeSnippet
     }
 
-    // Software Guide : BeginLatex
-    // \code{DoUpdateParameters()} is called as soon as a parameter value change. Section \ref{sec:appDoUpdateParameters}
-    // gives a complete description of this method.
-    // Software Guide : EndLatex
-    //  Software Guide :BeginCodeSnippet
     void DoUpdateParameters()
     {
       // Nothing to do.
     }
 
-    // The algorithm consists in a applying a formula for computing the NDVI for each pixel,
-    // using BandMathFilter
     void DoExecute()
     {
         const std::string &tmp = GetParameterAsString("xml");
         std::vector<char> buf(tmp.begin(), tmp.end());
         m_DirName = std::string(dirname(buf.data()));
+        bool allInOne = (GetParameterInt("allinone") != 0);
 
         auto maccsReader = itk::MACCSMetadataReader::New();
         if (auto m = maccsReader->ReadMetadata(GetParameterAsString("xml")))
         {
-            ProcessLANDSAT8(m);
+            ProcessLANDSAT8(m, allInOne);
         }
         else
         {
             auto spot4Reader = itk::SPOT4MetadataReader::New();
             if (auto m = spot4Reader->ReadMetadata(GetParameterAsString("xml")))
             {
-                ProcessSPOT4(m);
+                ProcessSPOT4(m, allInOne);
             }
         }
         m_ConcatenerRes10->SetInput( m_ImageListRes10 );
@@ -283,7 +183,7 @@ private:
     }
 
 
-    bool ProcessSPOT4(const std::unique_ptr<SPOT4Metadata>& meta)
+    bool ProcessSPOT4(const std::unique_ptr<SPOT4Metadata>& meta, bool allInOne)
     {
         if(meta->Radiometry.Bands.size() != 4) {
             itkExceptionMacro("Wrong number of bands for SPOT4: " + meta->Radiometry.Bands.size() );
@@ -305,19 +205,27 @@ private:
             extractor->SetChannel( i );
             extractor->UpdateOutputInformation();
             m_ExtractorList->PushBack( extractor );
-            if((*it).compare("XS1") == 0 || (*it).compare("XS2") == 0 || (*it).compare("XS3") == 0) {
-                // resample from 20m to 10m
-                resampler = getResampler(extractor->GetOutput(), 2.0, false);
 
+            if(allInOne) {
+                m_ImageListRes20->PushBack(extractor->GetOutput());
+                resampler = getResampler(extractor->GetOutput(), 2.0, false);
                 m_ImageListRes10->PushBack(resampler->GetOutput());
-            }
-            else
-                if((*it).compare("SWIR") == 0)
-                    m_ImageListRes20->PushBack(extractor->GetOutput());
-                else {
-                    itkExceptionMacro("Wrong band name for SPOT4: " + (*it));
-                    return false;
+            } else {
+                if((*it).compare("XS1") == 0 || (*it).compare("XS2") == 0 || (*it).compare("XS3") == 0) {
+                    // resample from 20m to 10m
+                    resampler = getResampler(extractor->GetOutput(), 2.0, false);
+
+                    m_ImageListRes10->PushBack(resampler->GetOutput());
                 }
+                else {
+                    if((*it).compare("SWIR") == 0)
+                        m_ImageListRes20->PushBack(extractor->GetOutput());
+                    else {
+                        itkExceptionMacro("Wrong band name for SPOT4: " + (*it));
+                        return false;
+                    }
+                }
+            }
         }
         imageFile = m_DirName + "/" +meta->Files.MaskNua;
 
@@ -367,35 +275,11 @@ private:
         resampler = getResampler(extractor->GetOutput(), 2.0, true);
         m_ImageAotRes10 = resampler->GetOutput();
 
-
-/*
-        ImageReaderType::Pointer readerCloud = getReader(m_DirName + "/" + meta->Files.MaskNua);
-
-        extractor = ExtractROIFilterType::New();
-        extractor->SetInput( readerCloud->GetOutput() );
-        extractor->SetChannel( 1 );
-        extractor->UpdateOutputInformation();
-        m_ExtractorList->PushBack( extractor );
-        m_ImageCloudRes20 = extractor->GetOutput();
-        resampler = getResampler(extractor->GetOutput(), 2.0, true);
-        m_ImageCloudRes10 = resampler->GetOutput();
-
-
-        ImageReaderType::Pointer readerWater = getReader(m_DirName + "/" + meta->Files.MaskDiv);
-        extractor = ExtractROIFilterType::New();
-        extractor->SetInput( readerWater->GetOutput() );
-        extractor->SetChannel( 1 );
-        extractor->UpdateOutputInformation();
-        m_ExtractorList->PushBack( extractor );
-        m_ImageWaterRes20 = extractor->GetOutput();
-        resampler = getResampler(extractor->GetOutput(), 2.0, true);
-        m_ImageWaterRes10 = resampler->GetOutput();
-*/
         return true;
 
     }
 
-    bool ProcessLANDSAT8(const std::unique_ptr<MACCSFileMetadata>& meta)
+    bool ProcessLANDSAT8(const std::unique_ptr<MACCSFileMetadata>& meta, bool allInOne)
     {
         if(meta->ImageInformation.Bands.size() != 8) {
             itkExceptionMacro("Wrong number of bands for LANDSAT: " + meta->ImageInformation.Bands.size() );

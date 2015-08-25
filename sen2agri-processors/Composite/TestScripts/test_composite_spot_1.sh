@@ -32,7 +32,9 @@ WEIGHT_OTB_LIBS_ROOT="$COMPOSITE_OTB_LIBS_ROOT/WeightCalculation"
 
 OUT_SPOT_MASKS="$OUT_FOLDER/spot_masks.tif"
 OUT_IMG_10M="$OUT_FOLDER/res10.tif"
+OUT_IMG_10M_ALL="$OUT_FOLDER/res10_all.tif"
 OUT_IMG_20M="$OUT_FOLDER/res20.tif"
+OUT_IMG_20M_ALL="$OUT_FOLDER/res20_all.tif"
 OUT_CLD_10M="$OUT_FOLDER/cld10.tif"
 OUT_CLD_20M="$OUT_FOLDER/cld20.tif"
 OUT_WAT_10M="$OUT_FOLDER/wat10.tif"
@@ -46,6 +48,7 @@ OUT_AOT_20M="$OUT_FOLDER/aot20.tif"
 OUT_WEIGHT_AOT_FILE="$OUT_FOLDER/WeightAot.tif"
 OUT_WEIGHT_CLOUD_FILE="$OUT_FOLDER/WeightCloud.tif"
 OUT_TOTAL_WEIGHT_FILE="$OUT_FOLDER/WeightTotal.tif"
+
 OUT_L3A_FILE="$OUT_FOLDER/L3AResult#.tif"
 
 WEIGHT_AOT_MIN="0.33"
@@ -88,3 +91,6 @@ PREV_L3A="-prevl3a $mod"
 
 echo "-----------------------------------------------------------"
 done
+
+#otbcli UpdateSynthesis $COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/ -in $OUT_IMG_10M_ALL -allinone 1 -res 10 -xml $INPUT_SPOT_XML_FILE -csm $OUT_CLD_10M -wm $OUT_WAT_10M -sm $OUT_SNOW_10M -wl2a $OUT_TOTAL_WEIGHT_FILE -out $OUT_L3A_FILE_ALL
+
