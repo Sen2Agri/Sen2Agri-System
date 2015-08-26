@@ -92,5 +92,8 @@ PREV_L3A="-prevl3a $mod"
 echo "-----------------------------------------------------------"
 done
 
+rm -fr $OUT_SPOT_MASKS $OUT_IMG_10M $OUT_IMG_10M_ALL $OUT_IMG_20M $OUT_IMG_20M_ALL $OUT_CLD_10M $OUT_CLD_20M $OUT_WAT_10M $OUT_WAT_20M $OUT_SNOW_10M $OUT_SNOW_20M $OUT_AOT_10M $OUT_AOT_20M $OUT_WEIGHT_AOT_FILE $OUT_WEIGHT_CLOUD_FILE $OUT_TOTAL_WEIGHT_FILE
+
+
 #otbcli UpdateSynthesis $COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/ -in $OUT_IMG_10M_ALL -allinone 1 -res 10 -xml $INPUT_SPOT_XML_FILE -csm $OUT_CLD_10M -wm $OUT_WAT_10M -sm $OUT_SNOW_10M -wl2a $OUT_TOTAL_WEIGHT_FILE -out $OUT_L3A_FILE_ALL
 

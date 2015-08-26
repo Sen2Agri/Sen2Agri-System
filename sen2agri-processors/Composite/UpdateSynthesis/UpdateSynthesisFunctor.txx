@@ -193,6 +193,7 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::InitBandInfos(SensorType sensorType
     } else {
         itkExceptionMacro("Invalid resolution " << resolution );
     }
+    return true;
 }
 
 template< class TInput, class TOutput>
@@ -259,6 +260,7 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::InitAllBandInResolutionInfos(Sensor
         } else {
             itkExceptionMacro("Invalid Sensor type " << sensorType << " for resolution 10M");
         }
+        return true;
 
 }
 
