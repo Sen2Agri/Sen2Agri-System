@@ -7,13 +7,20 @@
 
 int main(int argc, char *argv[])
 {
-    assert(argc == 2);
+    if (argc != 2)
+    {
+        return EXIT_FAILURE;
+    }
 
     auto reader = itk::MACCSMetadataReader::New();
     auto writer = itk::MACCSMetadataWriter::New();
 
     TiXmlDocument doc;
-    assert(doc.LoadFile(argv[1]));
+    if (!doc.LoadFile(argv[1]))
+    {
+        return EXIT_FAILURE;
+    }
+
     TiXmlUnknown unk;
     std::istringstream("<?xml-stylesheet type=\"text/xsl\" href=\"DISPLAY/display.xsl\"?>") >> unk;
     doc.ReplaceChild(doc.FirstChild()->NextSibling(), unk);

@@ -1,0 +1,8 @@
+
+set multiplot layout 2,1
+set title "Time series"
+plot "Testing/Temporary/bvMulTeInvRes.txt" using 1:3 with lines t "single date", "Testing/Temporary/bvMulTeInvRes.txt" using 1:4 with lines t "smooth", "Testing/Temporary/bvMulTeInvRes.txt" using 1:2 with lines t "LAI", "Testing/Temporary/bvMulTeInvRes.txt" using 1:5 with lines t "NDVI"
+set title "Scatter plot"
+unset key
+plot "Testing/Temporary/bvMulTeInvRes.txt" using 2:3 t "single date", "Testing/Temporary/bvMulTeInvRes.txt" using 2:4 t "smooth", x t ""
+pause -1

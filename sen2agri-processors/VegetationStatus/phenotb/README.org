@@ -1,0 +1,27 @@
+Phenological analysis
+
+* Install
+
+#+begin_src sh
+cmake \
+-DOTB_DIR:PATH=/home/inglada/OTB/builds/OTB-Stable\
+-DGDAL_CONFIG:FILEPATH=/home/inglada/local/bin/gdal-config \
+-DGDAL_INCLUDE_DIR:PATH=/home/inglada/local/include \
+-DGDAL_LIBRARY:FILEPATH=/home/inglada/local/lib/libgdal.so \
+-DCMAKE_CXX_FLAGS:STRING="-std=c++11 -fpermissive"  \
+../../phenotb/src/
+#+end_src
+
+
+#+begin_src sh
+export ITK_AUTOLOAD_PATH="" && cd ~/Dev/builds/phenotb/ && make -j3 && ctest
+#+end_src
+
+* Improvements
+** TODO First guess, then filter out before and after the peak
+** TODO Cost function penalties
+- x0 < x2
+- x0 and x2 within the year
+
+** TODO [2014-02-04 Tue 11:55] répercuter le code d'estimation de la largeur du pic de gaussinClipping dans gaussianWeighting et factoriser le code commun
+
