@@ -154,9 +154,17 @@ private:
 
     //  Software Guide : BeginCodeSnippet
     AddParameter(ParameterType_InputImage, "rtocr", "Resampled S2 L2A surface reflectances");
+    AddParameter(ParameterType_Int, "mode", "What files are produced ");
+    SetDefaultParameterInt("mode", 0);
 
     AddParameter(ParameterType_OutputImage, "fts", "Feature time series");
-
+    MandatoryOff("fts");
+    AddParameter(ParameterType_OutputImage, "ndvi", "NDVI time series");
+    MandatoryOff("ndvi");
+    AddParameter(ParameterType_OutputImage, "ndwi", "NDWI time series");
+    MandatoryOff("ndwi");
+    AddParameter(ParameterType_OutputImage, "brightness", "Brightness time series");
+    MandatoryOff("brightness");
 
      //  Software Guide : EndCodeSnippet
 
@@ -178,6 +186,22 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoUpdateParameters()
   {
+      int mode = GetParameterInt("mode");
+
+      // verify what parameters are set
+      if(mode == 0) {
+          m_FullSeries = true;
+          m_ftsConcat = ImageListToVectorImageFilterType::New();
+      } else {
+          m_FullSeries = false;
+          m_ndviConcat = ImageListToVectorImageFilterType::New();
+          m_ndwiConcat = ImageListToVectorImageFilterType::New();
+          m_brightnessConcat = ImageListToVectorImageFilterType::New();
+      }
+      m_imgReader = ReaderType::New();
+      m_imgSplit = VectorImageToImageListType::New();
+      m_bandMathFilterList = BandMathImageFilterListType::New();
+
       bandsPerImage = 4;
 
       // The expressions correspond to the case where a list of images is passes to the BandMath filter
@@ -210,27 +234,24 @@ private:
       // define all needed types
 
       //Read all input parameters
-      imgReader = ReaderType::New();
-      imgReader->SetFileName(GetParameterString("rtocr"));
+      m_imgReader->SetFileName(GetParameterString("rtocr"));
 
-      imgReader->UpdateOutputInformation();
+      m_imgReader->UpdateOutputInformation();
 
       // Use a filter to split the input into a list of one band images
-      imgSplit = VectorImageToImageListType::New();
-      imgSplit->SetInput(imgReader->GetOutput());
+      m_imgSplit->SetInput(m_imgReader->GetOutput());
 
-      imgSplit->UpdateOutputInformation();
+      m_imgSplit->UpdateOutputInformation();
 
-      imgConcat = ImageListToVectorImageFilterType::New();
-
-      int nbBands = imgReader->GetOutput()->GetNumberOfComponentsPerPixel();
+      int nbBands = m_imgReader->GetOutput()->GetNumberOfComponentsPerPixel();
       // compute the number of images
       int nbImages = nbBands / bandsPerImage;
 
-      bandMathFilterList = BandMathImageFilterListType::New();
-
       //Create the image list used at the final concatenation step
-      ImageListType::Pointer imgList = ImageListType::New();
+      ImageListType::Pointer ftsList = ImageListType::New();
+      ImageListType::Pointer ndviList = ImageListType::New();
+      ImageListType::Pointer ndwiList = ImageListType::New();
+      ImageListType::Pointer brightnessList = ImageListType::New();
 
       //loop through all images
       for (int i = 0; i < nbImages; i++) {
@@ -243,12 +264,14 @@ private:
 
           for (int j = 0; j < bandsPerImage; j++) {
             // Set all bands of the current image as inputs
-            ndviFilter->SetNthInput(j, imgSplit->GetOutput()->GetNthElement(i * bandsPerImage + j));
-            ndwiFilter->SetNthInput(j, imgSplit->GetOutput()->GetNthElement(i * bandsPerImage + j));
-            brightnessFilter->SetNthInput(j, imgSplit->GetOutput()->GetNthElement(i * bandsPerImage + j));
+            ndviFilter->SetNthInput(j, m_imgSplit->GetOutput()->GetNthElement(i * bandsPerImage + j));
+            ndwiFilter->SetNthInput(j, m_imgSplit->GetOutput()->GetNthElement(i * bandsPerImage + j));
+            brightnessFilter->SetNthInput(j, m_imgSplit->GetOutput()->GetNthElement(i * bandsPerImage + j));
 
             // add the band to the list
-            imgList->PushBack(imgSplit->GetOutput()->GetNthElement(i * bandsPerImage + j));
+            if (m_FullSeries) {
+                ftsList->PushBack(m_imgSplit->GetOutput()->GetNthElement(i * bandsPerImage + j));
+            }
           }
 
           // set the expressions
@@ -257,28 +280,36 @@ private:
           brightnessFilter->SetExpression(brightnessExpr);
 
           // add the outputs of the filters to the list
-          imgList->PushBack(ndviFilter->GetOutput());
-          imgList->PushBack(ndwiFilter->GetOutput());
-          imgList->PushBack(brightnessFilter->GetOutput());
+          if (m_FullSeries) {
+              ftsList->PushBack(ndviFilter->GetOutput());
+              ftsList->PushBack(ndwiFilter->GetOutput());
+              ftsList->PushBack(brightnessFilter->GetOutput());
+          } else {
+              ndviList->PushBack(ndviFilter->GetOutput());
+              ndwiList->PushBack(ndwiFilter->GetOutput());
+              brightnessList->PushBack(brightnessFilter->GetOutput());
+          }
 
 
           //add all filters to the list
-          bandMathFilterList->PushBack(ndviFilter);
-          bandMathFilterList->PushBack(ndwiFilter);
-          bandMathFilterList->PushBack(brightnessFilter);
+          m_bandMathFilterList->PushBack(ndviFilter);
+          m_bandMathFilterList->PushBack(ndwiFilter);
+          m_bandMathFilterList->PushBack(brightnessFilter);
       }
 
-      // add the list as input to the concat filter
-      imgConcat->SetInput(imgList);
 
-      // create the output image
-//      WriterType::Pointer imgWriter = WriterType::New();
-//      imgWriter->SetFileName(GetParameterString("fts"));
-//      imgWriter->SetInput(imgConcat->GetOutput());
-
-//      imgWriter->Update();
-
-      SetParameterOutputImage("fts", imgConcat->GetOutput());
+      if (m_FullSeries) {
+          // add the list as input to the concat filter
+          m_ftsConcat->SetInput(ftsList);
+          SetParameterOutputImage("fts", m_ftsConcat->GetOutput());
+      } else {
+          m_ndviConcat->SetInput(ndviList);
+          m_ndwiConcat->SetInput(ndwiList);
+          m_brightnessConcat->SetInput(brightnessList);
+          SetParameterOutputImage("ndvi", m_ndviConcat->GetOutput());
+          SetParameterOutputImage("ndwi", m_ndwiConcat->GetOutput());
+          SetParameterOutputImage("brightness", m_brightnessConcat->GetOutput());
+      }
   }
   //  Software Guide :EndCodeSnippet
 
@@ -291,13 +322,14 @@ private:
   // The BandMath expression for Brigthness
   std::string brightnessExpr;
 
-  // The mapping between the band name and the band number.
-  std::map<std::string, int> bandsMap;
-
-  ReaderType::Pointer imgReader;
-  VectorImageToImageListType::Pointer imgSplit;
-  BandMathImageFilterListType::Pointer bandMathFilterList;
-  ImageListToVectorImageFilterType::Pointer imgConcat;
+  ReaderType::Pointer                       m_imgReader;
+  VectorImageToImageListType::Pointer       m_imgSplit;
+  BandMathImageFilterListType::Pointer      m_bandMathFilterList;
+  ImageListToVectorImageFilterType::Pointer m_ftsConcat;
+  ImageListToVectorImageFilterType::Pointer m_ndviConcat;
+  ImageListToVectorImageFilterType::Pointer m_ndwiConcat;
+  ImageListToVectorImageFilterType::Pointer m_brightnessConcat;
+  bool                                      m_FullSeries;
 };
 }
 }
