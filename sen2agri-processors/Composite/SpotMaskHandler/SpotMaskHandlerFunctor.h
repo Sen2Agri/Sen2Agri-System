@@ -25,11 +25,11 @@ public:
 
     bool operator!=( const SpotMaskHandlerFunctor & other) const
     {
-        return (*this != other);
+        return true;
     }
     bool operator==( const SpotMaskHandlerFunctor & other ) const
     {
-        return !(*this != other);
+        return false;
     }
 
     TOutput operator()( const TInput1 & A , const TInput2 & B)
