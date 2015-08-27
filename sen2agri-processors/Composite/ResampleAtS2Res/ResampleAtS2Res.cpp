@@ -289,6 +289,7 @@ private:
         std::string cloudXMLFile("");
         std::string waterXMLFile("");
         std::string snowXMLFile("");
+        std::string aotXMLFile("");
         for(auto fileInf = meta->ProductOrganization.ImageFiles.begin(); fileInf != meta->ProductOrganization.ImageFiles.end(); fileInf++)
         {
             if(fileInf->LogicalName.substr(fileInf->LogicalName.size() - 4, 4).compare("_FRE") == 0 && fileInf->FileLocation.size() > 0)
@@ -304,7 +305,18 @@ private:
                 snowXMLFile = m_DirName + "/" + fileInf->FileLocation;
         }
 
-        // TODO: create also the snow and the AOT rasters
+        for(auto fileInf = meta->ProductOrganization.AnnexFiles.begin(); fileInf != meta->ProductOrganization.AnnexFiles.end(); fileInf++)
+        {
+            if(fileInf->File.LogicalName.substr(fileInf->File.LogicalName.size() - 4, 4).compare("_ATB") == 0 && fileInf->File.FileLocation.size() > 0)
+                aotXMLFile = m_DirName + "/" + fileInf->File.FileLocation;
+        }
+        int nAotBandIdx = 1;
+        // For MACCS, AOT is set as the band 2 in the cf. ATB file
+        for (auto band : meta->ImageInformation.Bands) {
+            if (band.Name == "AOT") {
+                nAotBandIdx = std::stoi(band.Id);
+            }
+        }
 
         if(imageXMLFile.empty()) //TODO add error msg
             return false;
@@ -335,18 +347,30 @@ private:
             extractor->SetChannel( i );
             extractor->UpdateOutputInformation();
             m_ExtractorList->PushBack( extractor );
-            if((*it).Name.compare("B2") == 0 || (*it).Name.compare("B3") == 0 || (*it).Name.compare("B4") == 0) {
+            if(allInOne) {
                 // resample from 30m to 10m
                 resampler = getResampler(extractor->GetOutput(), 3.0, false);
-
                 m_ImageListRes10->PushBack(resampler->GetOutput());
-            }
-            else
-                if((*it).Name.compare("B5") == 0 || (*it).Name.compare("B7") == 0 || (*it).Name.compare("B8") == 0) {
-                    // resample from 30m to 20m
-                    resampler = getResampler(extractor->GetOutput(), 1.5, false);
-                    m_ImageListRes20->PushBack(extractor->GetOutput());
+
+                // resample from 30m to 20m
+                resampler = getResampler(extractor->GetOutput(), 1.5, false);
+                m_ImageListRes20->PushBack(extractor->GetOutput());
+            } else {
+                if((*it).Name.compare("B2") == 0 || (*it).Name.compare("B3") == 0 || (*it).Name.compare("B4") == 0) {
+                    // resample from 30m to 10m
+                    resampler = getResampler(extractor->GetOutput(), 3.0, false);
+
+                    m_ImageListRes10->PushBack(resampler->GetOutput());
                 }
+                else
+                {
+                    if((*it).Name.compare("B5") == 0 || (*it).Name.compare("B7") == 0 || (*it).Name.compare("B8") == 0) {
+                        // resample from 30m to 20m
+                        resampler = getResampler(extractor->GetOutput(), 1.5, false);
+                        m_ImageListRes20->PushBack(extractor->GetOutput());
+                    }
+                }
+            }
         }
 
         imageFile = cloudXMLFile;
@@ -362,7 +386,7 @@ private:
 
         resampler = getResampler(extractor->GetOutput(), 3.0, true);
         m_ImageCloudRes10 = resampler->GetOutput();
-        resampler = getResampler(extractor->GetOutput(), 2.0, true);
+        resampler = getResampler(extractor->GetOutput(), 1.5, true);
         m_ImageCloudRes20 = extractor->GetOutput();
 
         imageFile = waterXMLFile;
@@ -378,7 +402,7 @@ private:
 
         resampler = getResampler(extractor->GetOutput(), 3.0, true);
         m_ImageWaterRes10 = resampler->GetOutput();
-        resampler = getResampler(extractor->GetOutput(), 2.0, true);
+        resampler = getResampler(extractor->GetOutput(), 1.5, true);
         m_ImageWaterRes20 = extractor->GetOutput();
 
         imageFile = snowXMLFile;
@@ -387,15 +411,31 @@ private:
         ImageReaderType::Pointer readerSnow = getReader(imageFile);
 
         extractor = ExtractROIFilterType::New();
-        extractor->SetInput( readerWater->GetOutput() );
+        extractor->SetInput( readerSnow->GetOutput() );
         extractor->SetChannel( 1 );
         extractor->UpdateOutputInformation();
         m_ExtractorList->PushBack( extractor );
 
         resampler = getResampler(extractor->GetOutput(), 3.0, true);
         m_ImageSnowRes10 = resampler->GetOutput();
-        resampler = getResampler(extractor->GetOutput(), 2.0, true);
+        resampler = getResampler(extractor->GetOutput(), 1.5, true);
         m_ImageSnowRes20 = extractor->GetOutput();
+
+        imageFile = aotXMLFile;
+        imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
+
+        ImageReaderType::Pointer readerAot = getReader(imageFile);
+
+        extractor = ExtractROIFilterType::New();
+        extractor->SetInput( readerAot->GetOutput() );
+        extractor->SetChannel( nAotBandIdx );
+        extractor->UpdateOutputInformation();
+        m_ExtractorList->PushBack( extractor );
+
+        resampler = getResampler(extractor->GetOutput(), 3.0, true);
+        m_ImageAotRes10 = resampler->GetOutput();
+        resampler = getResampler(extractor->GetOutput(), 1.5, true);
+        m_ImageAotRes20 = extractor->GetOutput();
 
         return true;
 
