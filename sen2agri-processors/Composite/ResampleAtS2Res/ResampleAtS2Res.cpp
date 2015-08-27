@@ -1,46 +1,18 @@
-/*=========================================================================
-
-  Program:   ORFEO Toolbox
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-
-  Copyright (c) Centre National d'Etudes Spatiales. All rights reserved.
-  See OTBCopyright.txt for details.
-
-
-     This software is distributed WITHOUT ANY WARRANTY; without even
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
-#include "otbBandMathImageFilter.h"
 #include "otbMultiToMonoChannelExtractROI.h"
 #include "otbStreamingResampleImageFilter.h"
 #include "otbImage.h"
 #include "otbVectorImage.h"
 #include "otbImageFileReader.h"
 #include "otbImageListToVectorImageFilter.h"
-#include "otbImageFileWriter.h"
-#include "itkUnaryFunctorImageFilter.h"
-#include "itkCastImageFilter.h"
-#include "otbVectorImageToImageListFilter.h"
-#include "itkResampleImageFilter.h"
-#include "itkIndent.h"
 #include "MACCSMetadataReader.hpp"
 #include "SPOT4MetadataReader.hpp"
-#include "itkInterpolateImageFunction.h"
+
 #include "libgen.h"
 
 //Transform
 #include "itkScalableAffineTransform.h"
-#include "itkIdentityTransform.h"
-#include "itkScaleTransform.h"
-
 
 namespace otb
 {
@@ -89,7 +61,7 @@ private:
     void DoInit()
     {
         SetName("ResampleAtS2Res");
-        SetDescription("Computes NDVI from RED and NIR bands");
+        SetDescription("Resample the corresponding bands from LANDSAT or SPOT to S2 resolution");
 
         SetDocName("ResampleAtS2Res");
         SetDocLongDescription("long description");
@@ -107,8 +79,8 @@ private:
         m_ExtractorList = ExtractROIFilterListType::New();
         m_ImageReaderList = ImageReaderListType::New();
 
-        AddParameter(ParameterType_String, "xml", "Xml description");
-        AddParameter(ParameterType_String, "spotmask", "Image with 3 bands as masks, cloud, water snow for SPOT only");
+        AddParameter(ParameterType_String, "xml", "General xml input file for L2A MACCS product");
+        AddParameter(ParameterType_String, "spotmask", "Image with 3 bands with cloud, water and snow masks for SPOT only");
         MandatoryOff("spotmask");
 
         AddParameter(ParameterType_Int, "allinone", "Specifies if all bands should be resampled at 10m and 20m");
@@ -126,10 +98,19 @@ private:
         AddParameter(ParameterType_OutputImage, "outsmres20", "Out snow mask image at 20m resolution");
         AddParameter(ParameterType_OutputImage, "outaotres20", "Out snow mask image at 20m resolution");
 
-        SetDocExampleParameterValue("in", "/path/to/input_image.tif");
-        SetDocExampleParameterValue("xml", "xml_description.xml");
+        SetDocExampleParameterValue("xml", "/path/to/L2Aproduct_maccs.xml");
+        SetDocExampleParameterValue("spotmask", "/path/to/spotmasks.tif");
         SetDocExampleParameterValue("allinone", "1");
-        SetDocExampleParameterValue("out", "/path/to/output_image.tif");
+        SetDocExampleParameterValue("outres10", "/path/to/output_image10.tif");
+        SetDocExampleParameterValue("outres20", "/path/to/output_image20.tif");
+        SetDocExampleParameterValue("outcmres10", "/path/to/output_image_cloud10.tif");
+        SetDocExampleParameterValue("outwmres10", "/path/to/output_image10_water10.tif");
+        SetDocExampleParameterValue("outsmres10", "/path/to/output_image10_snow10.tif");
+        SetDocExampleParameterValue("outaotres10", "/path/to/output_image_aot10.tif");
+        SetDocExampleParameterValue("outcmres20", "/path/to/output_image_cloud20.tif");
+        SetDocExampleParameterValue("outwmres20", "/path/to/output_image10_water20.tif");
+        SetDocExampleParameterValue("outsmres20", "/path/to/output_image10_snow20.tif");
+        SetDocExampleParameterValue("outaotres20", "/path/to/output_image_aot20.tif");
     }
 
     void DoUpdateParameters()
@@ -235,6 +216,7 @@ private:
         }
         ImageReaderType::Pointer spotMasks = getReader(GetParameterAsString("spotmask"));
 
+        //Resample the cloud mask
         extractor = ExtractROIFilterType::New();
         extractor->SetInput( spotMasks->GetOutput() );
         extractor->SetChannel( 1 );
@@ -244,6 +226,7 @@ private:
         resampler = getResampler(extractor->GetOutput(), 2.0, true);
         m_ImageCloudRes10 = resampler->GetOutput();
 
+        //Resample the water mask
         extractor = ExtractROIFilterType::New();
         extractor->SetInput( spotMasks->GetOutput() );
         extractor->SetChannel( 2 );
@@ -253,6 +236,7 @@ private:
         resampler = getResampler(extractor->GetOutput(), 2.0, true);
         m_ImageWaterRes10 = resampler->GetOutput();
 
+        //Resample the snow mask
         extractor = ExtractROIFilterType::New();
         extractor->SetInput( spotMasks->GetOutput() );
         extractor->SetChannel( 3 );
@@ -330,7 +314,7 @@ private:
         if(imageMeta->ImageInformation.Bands.size() != 8) //TODO add error msg
             return false;
 
-        //creates image filename
+        //create image filename
         std::string imageFile = imageXMLFile;
         imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
 
@@ -543,10 +527,7 @@ private:
     InternalImageType::Pointer            m_ImageCloudRes20;
     InternalImageType::Pointer            m_ImageWaterRes20;
     InternalImageType::Pointer            m_ImageSnowRes20;
-    InternalImageType::Pointer            m_ImageAotRes20;
-    ResampleFilterType::Pointer           m_ResamplerCloudRes10;
-    ResampleFilterType::Pointer           m_ResamplerWaterRes10;
-    ResampleFilterType::Pointer           m_ResamplerSnowRes10;
+    InternalImageType::Pointer            m_ImageAotRes20;    
     ExtractROIFilterType::Pointer         m_ExtractROIFilter;
     ExtractROIFilterListType::Pointer     m_ChannelExtractorList;
     ResampleFilterListType::Pointer       m_ResamplersList;
@@ -555,11 +536,7 @@ private:
 }
 }
 
-// Software Guide : BeginLatex
-// Finally \code{OTB\_APPLICATION\_EXPORT} is called.
-// Software Guide : EndLatex
-//  Software Guide :BeginCodeSnippet
 OTB_APPLICATION_EXPORT(otb::Wrapper::ResampleAtS2Res)
-//  Software Guide :EndCodeSnippet
+
 
 
