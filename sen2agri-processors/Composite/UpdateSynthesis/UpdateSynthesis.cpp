@@ -120,6 +120,10 @@ private:
         //not mandatory
         AddParameter(ParameterType_InputImage, "prevl3a", "Previous l3a product");
         MandatoryOff("prevl3a");
+
+        AddParameter(ParameterType_Int, "allinone", "Specifies if all bands should be resampled at 10m and 20m");
+        SetDefaultParameterInt("allinone", 0);
+        MandatoryOff("allinone");
         /*
         AddParameter(ParameterType_InputImage, "prevw", "Weight for each pixel obtained so far");
         MandatoryOff("prevw");
@@ -157,6 +161,7 @@ private:
     {
         int resolution = GetParameterInt("res");
         std::string inXml = GetParameterAsString("xml");
+        bool allInOne = (GetParameterInt("allinone") != 0);
 
         m_L2AIn = GetParameterFloatVectorImage("in");
         m_L2AIn->UpdateOutputInformation();
@@ -254,19 +259,22 @@ private:
             sensorType = SENSOR_SPOT4;
         }
 
-        m_Functor.Initialize(sensorType, (resolution == 10 ? RES_10M : RES_20M), l3aExist);
         int productDate = pHelper->GetAcquisitionDateInDays();
-        m_Functor.SetCurrentDate(productDate);
-        m_Functor.SetReflectanceQuantificationValue(pHelper->GetReflectanceQuantificationValue());
+        m_Functor.Initialize(sensorType, (resolution == 10 ? RES_10M : RES_20M), l3aExist,
+                             productDate, pHelper->GetReflectanceQuantificationValue(),
+                             allInOne);
         m_UpdateSynthesisFunctor = FunctorFilterType::New();
         m_UpdateSynthesisFunctor->SetFunctor(m_Functor);
         m_UpdateSynthesisFunctor->SetInput(m_Concat->GetOutput());
         m_UpdateSynthesisFunctor->UpdateOutputInformation();
-        if(resolution == 10)
-            m_UpdateSynthesisFunctor->GetOutput()->SetNumberOfComponentsPerPixel(10);
-        else
-            m_UpdateSynthesisFunctor->GetOutput()->SetNumberOfComponentsPerPixel(14);
-
+        if(allInOne) {
+            m_UpdateSynthesisFunctor->GetOutput()->SetNumberOfComponentsPerPixel(22);
+        } else {
+            if(resolution == 10)
+                m_UpdateSynthesisFunctor->GetOutput()->SetNumberOfComponentsPerPixel(10);
+            else
+                m_UpdateSynthesisFunctor->GetOutput()->SetNumberOfComponentsPerPixel(14);
+        }
 
         SetParameterOutputImage("out", m_UpdateSynthesisFunctor->GetOutput());
 

@@ -3,8 +3,14 @@
 template< class TInput, class TOutput>
 UpdateSynthesisFunctor<TInput,TOutput>::UpdateSynthesisFunctor()
 {
+    m_sensorType = SENSOR_LANDSAT8;
+    m_resolution = RES_10M;
     m_fQuantificationValue = -1;
+    m_nCurrentDate = 0;
     m_bPrevL3ABandsAvailable = false;
+    m_nNbOfL3AReflectanceBands = 0;
+    m_nNbL2ABands = 0;
+    memset(m_arrL2ABandPresence, -1, sizeof(m_arrL2ABandPresence));
     m_nL2ABandStartIndex = 0;
     m_nCloudMaskBandIndex = -1;
     m_nSnowMaskBandIndex = -1;
@@ -15,14 +21,20 @@ UpdateSynthesisFunctor<TInput,TOutput>::UpdateSynthesisFunctor()
     m_nPrevL3AReflectanceBandStartIndex = -1;
     m_nPrevL3APixelFlagBandIndex = -1;
     m_nRedBandIndex = -1;
-    m_nNbOfL3AReflectanceBands = 0;
+    m_nBlueBandIndex = -1;
 }
 
 template< class TInput, class TOutput>
 UpdateSynthesisFunctor<TInput,TOutput>& UpdateSynthesisFunctor<TInput,TOutput>::operator =(const UpdateSynthesisFunctor& copy)
 {
+    m_sensorType = copy.m_sensorType;
+    m_resolution = copy.m_resolution;
     m_fQuantificationValue = copy.m_fQuantificationValue;
+    m_nCurrentDate = copy.m_nCurrentDate;
     m_bPrevL3ABandsAvailable = copy.m_bPrevL3ABandsAvailable;
+    m_nNbOfL3AReflectanceBands = copy.m_nNbOfL3AReflectanceBands;
+    m_nNbL2ABands = copy.m_nNbL2ABands;
+    memcpy(m_arrL2ABandPresence, copy.m_arrL2ABandPresence, sizeof(m_arrL2ABandPresence));
     m_nL2ABandStartIndex = copy.m_nL2ABandStartIndex;
     m_nCloudMaskBandIndex = copy.m_nCloudMaskBandIndex;
     m_nSnowMaskBandIndex = copy.m_nSnowMaskBandIndex;
@@ -33,16 +45,31 @@ UpdateSynthesisFunctor<TInput,TOutput>& UpdateSynthesisFunctor<TInput,TOutput>::
     m_nPrevL3AReflectanceBandStartIndex = copy.m_nPrevL3AReflectanceBandStartIndex;
     m_nPrevL3APixelFlagBandIndex = copy.m_nPrevL3APixelFlagBandIndex;
     m_nRedBandIndex = copy.m_nRedBandIndex;
-    m_nNbOfL3AReflectanceBands = copy.m_nNbOfL3AReflectanceBands;
+    m_nBlueBandIndex = copy.m_nBlueBandIndex;
     return *this;
 }
 
 template< class TInput, class TOutput>
-void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, ResolutionType resolution, bool bPrevL3ABandsAvailable)
+void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, ResolutionType resolution,
+                                                        bool bPrevL3ABandsAvailable, int nDate, float fQuantifVal,
+                                                        bool bAllInOne)
 {
+    m_nCurrentDate = nDate;
+    m_fQuantificationValue = fQuantifVal;
     m_sensorType = sensorType;
     m_resolution = resolution;
     m_bPrevL3ABandsAvailable = bPrevL3ABandsAvailable;
+    if(bAllInOne) {
+        // in this case we do not care about resolution as we have the same number of bands both for 10m and 20m resolutions
+        InitAllBandInResolutionInfos(sensorType);
+    } else {
+        InitBandInfos(sensorType, resolution);
+    }
+}
+
+template< class TInput, class TOutput>
+bool UpdateSynthesisFunctor<TInput,TOutput>::InitBandInfos(SensorType sensorType, ResolutionType resolution)
+{
     if(resolution == RES_10M) {
         m_nNbOfL3AReflectanceBands = WEIGHTED_REFLECTANCE_10M_BANDS_NO;
         if(sensorType == SENSOR_S2)
@@ -84,7 +111,6 @@ void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, R
             memcpy(m_arrL2ABandPresence, arrL2ABandPresence, sizeof(m_arrL2ABandPresence));
 
         } else if (sensorType == SENSOR_SPOT4) {
-            //TODO:
             m_nNbL2ABands = SPOT4_L2A_10M_BANDS_NO;
             m_nL2ABandStartIndex = SPOT4_L2A_10M_BANDS_START_IDX;
             m_nCloudMaskBandIndex = SPOT4_L2A_10M_CLD_MASK_IDX;
@@ -122,7 +148,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, R
             m_nRedBandIndex = S2_L2A_20M_RED_BAND_IDX;
             m_nBlueBandIndex = S2_L2A_20M_BLUE_BAND_IDX;
             // For S2 at 20m all bands are available
-            int arrL2ABandPresence[L3A_WEIGHTED_REFLECTANCES_MAX_NO] = { 0, 1, 2, 3, 4, 5 };
+            int arrL2ABandPresence[L3A_WEIGHTED_REFLECTANCES_MAX_NO] = { 0, 1, 2, 3, 4, 5, -1, -1, -1, -1 };
             memcpy(m_arrL2ABandPresence, arrL2ABandPresence, sizeof(m_arrL2ABandPresence));
 
         } else if (sensorType == SENSOR_LANDSAT8) {
@@ -140,11 +166,10 @@ void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, R
             m_nRedBandIndex = L8_L2A_20M_RED_BAND_IDX;
             m_nBlueBandIndex = L8_L2A_20M_BLUE_BAND_IDX;
             // For L4 at 20m only B8A, B11 and B12 bands are available
-            int arrL2ABandPresence[L3A_WEIGHTED_REFLECTANCES_MAX_NO] = { -1, -1, -1, 0, 1, 2 };
+            int arrL2ABandPresence[L3A_WEIGHTED_REFLECTANCES_MAX_NO] = { -1, -1, -1, 0, 1, 2, -1, -1, -1, -1 };
             memcpy(m_arrL2ABandPresence, arrL2ABandPresence, sizeof(m_arrL2ABandPresence));
 
         } else if (sensorType == SENSOR_SPOT4) {
-            //TODO:
             m_nNbL2ABands = SPOT4_L2A_20M_BANDS_NO;
             m_nL2ABandStartIndex = SPOT4_L2A_20M_BANDS_START_IDX;
             m_nCloudMaskBandIndex = SPOT4_L2A_20M_CLD_MASK_IDX;
@@ -159,7 +184,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, R
             m_nBlueBandIndex = SPOT4_L2A_20M_BLUE_BAND_IDX;
 
             // For SPOT4 at 20m only SWIR band is available (B11)
-            int arrL2ABandPresence[L3A_WEIGHTED_REFLECTANCES_MAX_NO] = { -1, -1, -1, -1, 0, -1 };
+            int arrL2ABandPresence[L3A_WEIGHTED_REFLECTANCES_MAX_NO] = { -1, -1, -1, -1, 0, -1, -1, -1, -1, -1 };
             memcpy(m_arrL2ABandPresence, arrL2ABandPresence, sizeof(m_arrL2ABandPresence));
 
         } else {
@@ -168,6 +193,75 @@ void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, R
     } else {
         itkExceptionMacro("Invalid resolution " << resolution );
     }
+    return true;
+}
+
+template< class TInput, class TOutput>
+bool UpdateSynthesisFunctor<TInput,TOutput>::InitAllBandInResolutionInfos(SensorType sensorType)
+{
+    // In this case we have the same number for all resolutions (10 and 20) so we don't care about this in this case
+        m_nNbOfL3AReflectanceBands = WEIGHTED_REFLECTANCE_ALL_BANDS_NO;
+        if(sensorType == SENSOR_S2)
+        {
+            m_nNbL2ABands = S2_L2A_ALL_BANDS_NO;
+            m_nL2ABandStartIndex = S2_L2A_ALL_BANDS_START_IDX;
+            m_nCloudMaskBandIndex = S2_L2A_ALL_CLD_MASK_IDX;
+            m_nSnowMaskBandIndex = S2_L2A_ALL_SNOW_MASK_IDX;
+            m_nWaterMaskBandIndex = S2_L2A_ALL_WATER_MASK_IDX;
+            m_nCurrentL2AWeightBandIndex = S2_L2A_ALL_TOTAL_WEIGHT_IDX;
+            m_nPrevL3AWeightBandStartIndex = S2_L3A_ALL_WEIGHT_START_IDX;
+            m_nPrevL3AWeightedAvDateBandIndex = S2_L3A_ALL_W_AV_DATE_IDX;
+            m_nPrevL3AReflectanceBandStartIndex = S2_L3A_ALL_REFL_START_IDX;
+            m_nPrevL3APixelFlagBandIndex = S2_L3A_ALL_PIXEL_STATUS_IDX;
+            m_nRedBandIndex = S2_L2A_ALL_RED_BAND_IDX;
+            m_nBlueBandIndex = S2_L2A_ALL_BLUE_BAND_IDX;
+
+            // For S2 at 10m all bands are available
+            int arrL2ABandPresence[L3A_WEIGHTED_REFLECTANCES_MAX_NO] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+            memcpy(m_arrL2ABandPresence, arrL2ABandPresence, sizeof(m_arrL2ABandPresence));
+
+        } else if (sensorType == SENSOR_LANDSAT8) {
+
+            m_nNbL2ABands = L8_L2A_ALL_BANDS_NO;
+            m_nL2ABandStartIndex = L8_L2A_ALL_BANDS_START_IDX;
+            m_nCloudMaskBandIndex = L8_L2A_ALL_CLD_MASK_IDX;
+            m_nSnowMaskBandIndex = L8_L2A_ALL_SNOW_MASK_IDX;
+            m_nWaterMaskBandIndex = L8_L2A_ALL_WATER_MASK_IDX;
+            m_nCurrentL2AWeightBandIndex = L8_L2A_ALL_TOTAL_WEIGHT_IDX;
+            m_nPrevL3AWeightBandStartIndex = L8_L3A_ALL_WEIGHT_START_IDX;
+            m_nPrevL3AWeightedAvDateBandIndex = L8_L3A_ALL_W_AV_DATE_IDX;
+            m_nPrevL3AReflectanceBandStartIndex = L8_L3A_ALL_REFL_START_IDX;
+            m_nPrevL3APixelFlagBandIndex = L8_L3A_ALL_PIXEL_STATUS_IDX;
+            m_nRedBandIndex = L8_L2A_ALL_RED_BAND_IDX;
+            m_nBlueBandIndex = L8_L2A_ALL_BLUE_BAND_IDX;
+
+            // For L8 at 10m B8 is not available
+            int arrL2ABandPresence[L3A_WEIGHTED_REFLECTANCES_MAX_NO] = {0, 1, 2, -1, -1, -1, -1, 3, 4, 5};
+            memcpy(m_arrL2ABandPresence, arrL2ABandPresence, sizeof(m_arrL2ABandPresence));
+
+        } else if (sensorType == SENSOR_SPOT4) {
+            m_nNbL2ABands = SPOT4_L2A_ALL_BANDS_NO;
+            m_nL2ABandStartIndex = SPOT4_L2A_ALL_BANDS_START_IDX;
+            m_nCloudMaskBandIndex = SPOT4_L2A_ALL_CLD_MASK_IDX;
+            m_nSnowMaskBandIndex = SPOT4_L2A_ALL_SNOW_MASK_IDX;
+            m_nWaterMaskBandIndex = SPOT4_L2A_ALL_WATER_MASK_IDX;
+            m_nCurrentL2AWeightBandIndex = SPOT4_L2A_ALL_TOTAL_WEIGHT_IDX;
+            m_nPrevL3AWeightBandStartIndex = SPOT4_L3A_ALL_WEIGHT_START_IDX;
+            m_nPrevL3AWeightedAvDateBandIndex = SPOT4_L3A_ALL_W_AV_DATE_IDX;
+            m_nPrevL3AReflectanceBandStartIndex = SPOT4_L3A_ALL_REFL_START_IDX;
+            m_nPrevL3APixelFlagBandIndex = SPOT4_L3A_ALL_PIXEL_STATUS_IDX;
+            m_nRedBandIndex = SPOT4_L2A_ALL_RED_BAND_IDX;
+            m_nBlueBandIndex = SPOT4_L2A_ALL_BLUE_BAND_IDX;
+
+            // For L8 at 10m B2 is not available
+            int arrL2ABandPresence[L3A_WEIGHTED_REFLECTANCES_MAX_NO] = { -1, 0, 1, -1, -1, -1, 2, -1, 3, -1 };
+            memcpy(m_arrL2ABandPresence, arrL2ABandPresence, sizeof(m_arrL2ABandPresence));
+
+        } else {
+            itkExceptionMacro("Invalid Sensor type " << sensorType << " for resolution 10M");
+        }
+        return true;
+
 }
 
 template< class TInput, class TOutput>
@@ -233,18 +327,6 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
 }
 
 template< class TInput, class TOutput>
-void UpdateSynthesisFunctor<TInput,TOutput>::SetReflectanceQuantificationValue(float fQuantifVal)
-{
-    m_fQuantificationValue = fQuantifVal;
-}
-
-template< class TInput, class TOutput>
-void UpdateSynthesisFunctor<TInput,TOutput>::SetCurrentDate(int nDate)
-{
-    m_nCurrentDate = nDate;
-}
-
-template< class TInput, class TOutput>
 void UpdateSynthesisFunctor<TInput,TOutput>::ResetCurrentPixelValues(OutFunctorInfos& outInfos)
 {
     for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
@@ -293,16 +375,24 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, O
             float fPrevWeight = GetPrevL3AWeightValue(A, i);
             float fCurrentWeight = GetCurrentL2AWeightValue(A);
             float fPrevWeightedDate = GetPrevL3AWeightedAvDateValue(A);
-            outInfos.m_CurrentWeightedReflectances[i] = (fPrevWeight * fPrevReflect + fCurrentWeight * fCurReflectance) /
-                    (fPrevWeight + fCurrentWeight);
-            outInfos.m_fCurrentPixelWeightedDate = (fPrevWeight * fPrevWeightedDate + fCurrentWeight * m_nCurrentDate) /
-                    (fPrevWeight + fCurrentWeight);
-            outInfos.m_CurrentPixelWeights[i] = (fPrevWeight + fCurrentWeight);
 
+            // TODO: This condition could be eliminated if NO_DATA would be considered as 0
+            if(fPrevReflect != REFLECTANCE_NO_DATA && fPrevWeight != WEIGHT_NO_DATA && fPrevWeightedDate != DATE_NO_DATA) {
+                outInfos.m_CurrentWeightedReflectances[i] = (fPrevWeight * fPrevReflect + fCurrentWeight * fCurReflectance) /
+                        (fPrevWeight + fCurrentWeight);
+                outInfos.m_fCurrentPixelWeightedDate = (fPrevWeight * fPrevWeightedDate + fCurrentWeight * m_nCurrentDate) /
+                        (fPrevWeight + fCurrentWeight);
+                outInfos.m_CurrentPixelWeights[i] = (fPrevWeight + fCurrentWeight);
+            } else {
+                outInfos.m_CurrentWeightedReflectances[i] = fCurReflectance;
+                outInfos.m_fCurrentPixelWeightedDate = m_nCurrentDate;
+                outInfos.m_CurrentPixelWeights[i] = fCurrentWeight;
+            }
         } else {
             // L2A band missing - as for LANDSAT 8
             outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
             outInfos.m_CurrentPixelWeights[i] = GetPrevL3AWeightValue(A, i);
+            //TODO: band is missing but the algorithm checks if it is RED???
             if(IsRedBand(i))
             {
                 outInfos.m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
@@ -357,16 +447,19 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
 template< class TInput, class TOutput>
 void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInput & A, OutFunctorInfos& outInfos)
 {
+    float fPrevL3AFlagVal = GetPrevL3APixelFlagValue(A);
     // if flagN-1 is no-data => replace nodata with cloud
-    if(outInfos.m_fCurrentPixelFlag == FLAG_NO_DATA)
+    if(fPrevL3AFlagVal == FLAG_NO_DATA)
     {
+        outInfos.m_fCurrentPixelFlag = CLOUD;
+
         for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
         {
             int nCurrentBandIndex = GetAbsoluteL2ABandIndex(i);
             // band available
             if(nCurrentBandIndex != -1)
             {
-                outInfos.m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);;
+                outInfos.m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
                 outInfos.m_CurrentPixelWeights[i] = 0;
                 if(IsRedBand(i))
                 {
@@ -379,7 +472,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
             }
         }
     } else {
-        if((outInfos.m_fCurrentPixelFlag == CLOUD) || (outInfos.m_fCurrentPixelFlag == CLOUD_SHADOW))
+        if((fPrevL3AFlagVal == CLOUD) || (fPrevL3AFlagVal == CLOUD_SHADOW))
         {
             // get the blue band index
             int nBlueBandIdx = GetBlueBandIndex();
