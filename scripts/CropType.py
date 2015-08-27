@@ -46,7 +46,7 @@ rawtocr=buildFolder+"rawtocr.tif"
 tocr=buildFolder+"tocr.tif"
 rawmask=buildFolder+"rawmask.tif"
 mask=buildFolder+"mask.tif"
-indates=buildFolder+"dates.txt"
+dates=buildFolder+"dates.txt"
 shape=buildFolder+"shape.shp"
 rtocr=buildFolder+"rtocr.tif"
 fts=buildFolder+"feature-time-series.tif"
@@ -59,7 +59,7 @@ quality_metrics=buildFolder+"quality-metrics.txt"
 
 # Bands Extractor
 print "Executing BandsExtractor..."
-beCmdLine = "otbApplicationLauncherCommandLine BandsExtractor "+buildFolder+"CropType/BandsExtractor -il "+indesc+" -out "+rawtocr+" -mask "+rawmask+" -outdate "+indates+" -shape "+shape
+beCmdLine = "otbApplicationLauncherCommandLine BandsExtractor "+buildFolder+"CropType/BandsExtractor -il "+indesc+" -out "+rawtocr+" -mask "+rawmask+" -outdate "+dates+" -shape "+shape
 print beCmdLine
 result = os.system(beCmdLine)
 
@@ -102,6 +102,8 @@ if result != 0 :
    print "Error running gdalwarp"
    exit(1)
 
+os.system("rm " + rawtocr)
+
 gwCmdLine = "gdalwarp -dstnodata 1 -overwrite -cutline "+shape+" -crop_to_cutline "+rawmask+" "+mask
 print gwCmdLine
 result = os.system(gwCmdLine)
@@ -109,17 +111,24 @@ result = os.system(gwCmdLine)
 if result != 0 :
    print "Error running gdalwarp"
    exit(1)
+
+os.system("rm " + rawmask)
+
 print "gdalwarp done!"
 
 # Temporal Resampling
 print "Executing TemporalResampling..."
-trCmdLine = "otbApplicationLauncherCommandLine TemporalResampling "+buildFolder+"CropType/TemporalResampling -tocr "+tocr+" -mask "+mask+" -ind "+indates+" -sp "+sp+" -t0 "+t0+" -tend "+tend+" -radius "+radius+" -rtocr "+rtocr
+trCmdLine = "otbApplicationLauncherCommandLine TemporalResampling "+buildFolder+"CropType/TemporalResampling -tocr "+tocr+" -mask "+mask+" -ind "+dates+" -sp "+sp+" -t0 "+t0+" -tend "+tend+" -radius "+radius+" -rtocr "+rtocr
 print trCmdLine
 result = os.system(trCmdLine)
 
 if result != 0 :
    print "Error running TemporalResampling"
    exit(1)
+
+os.system("rm " + tocr)
+os.system("rm " + mask)
+
 print "TemporalResampling done!"
 
 # Feature Extraction
@@ -131,6 +140,9 @@ result = os.system(feCmdLine)
 if result != 0 :
    print "Error running FeatureExtraction"
    exit(1)
+
+os.system("rm " + rtocr)
+
 print "FeatureExtraction done!"
 
 # Image Statistics

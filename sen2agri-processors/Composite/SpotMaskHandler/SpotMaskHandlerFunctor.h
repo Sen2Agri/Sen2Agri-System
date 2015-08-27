@@ -12,10 +12,6 @@
 template< class TInput1, class TInput2, class TOutput>
 class SpotMaskHandlerFunctor
 {
-private:
-
-
-
 public:
     SpotMaskHandlerFunctor()
     {
@@ -23,13 +19,13 @@ public:
     }
 
     SpotMaskHandlerFunctor& operator =(const SpotMaskHandlerFunctor& copy)
-    {        
+    {
         return *this;
     }
 
     bool operator!=( const SpotMaskHandlerFunctor & other) const
     {
-        return true;
+        return (*this != other);
     }
     bool operator==( const SpotMaskHandlerFunctor & other ) const
     {
@@ -38,22 +34,13 @@ public:
 
     TOutput operator()( const TInput1 & A , const TInput2 & B)
     {
-        TOutput var;
-        var.SetSize(3);
+        TOutput var(3);
 
-//        int16_t cloudPixel = ((A) & MASK_CLOUD) >> CLOUD_BIT_POS;
-//        int16_t waterPixel = ((B) & MASK_WATER) >> WATER_BIT_POS;
-//        int16_t snowPixel = ((B) & MASK_SNOW) >> SNOW_BIT_POS;
         var[0] = ((A[0]) & MASK_CLOUD) >> CLOUD_BIT_POS;
         var[1] = ((B[0]) & MASK_WATER) >> WATER_BIT_POS;
         var[2] = ((B[0]) & MASK_SNOW) >> SNOW_BIT_POS;
         return var;
-    }
-
-    void Initialize()
-    {
-
-    }
+    }   
 };
 
 #endif // SPOTMASKHANDLER_H

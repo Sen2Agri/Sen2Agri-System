@@ -1,6 +1,6 @@
 otb_create_application(
   NAME           UpdateSynthesis
-  SOURCES        UpdateSynthesisFunctor.h UpdateSynthesisFunctor.txx UpdateSynthesis.cpp
+  SOURCES        UpdateSynthesisFunctor.h BandsDefs.h UpdateSynthesisFunctor.txx UpdateSynthesis.cpp
   LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
 
 if(BUILD_TESTING)
