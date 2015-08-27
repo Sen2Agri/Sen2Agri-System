@@ -1,0 +1,9 @@
+
+* Introduction
+Gapfilling for time series replaces invalid pixels (as designated by a
+mask) by an interpolation using the valid dates of the series.
+* Linear gapfilling
+1. Linear interpolation of invalid pixels using the 2 (before and
+   after) closest valid pixels.
+2. At the beginning (resp. the end) just replicate the first
+   (resp. the last) valid pixel.
