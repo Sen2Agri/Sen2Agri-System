@@ -385,7 +385,7 @@ private:
       descriptor.imgG = resampler->GetOutput();
 
       // Extract the red band
-      extractor = getExtractor(reader->GetOutput(), 3);
+      extractor = getExtractor(reader->GetOutput(), 2);
       // resample from 20m to 10m
       resampler = getResampler(extractor->GetOutput(), 2.0);
       descriptor.imgR = resampler->GetOutput();
@@ -397,7 +397,7 @@ private:
       descriptor.imgNIR = resampler->GetOutput();
 
       // Extract the SWIR band
-      extractor = getExtractor(reader->GetOutput(), 3);
+      extractor = getExtractor(reader->GetOutput(), 4);
       // resample from 20m to 10m
       resampler = getResampler(extractor->GetOutput(), 2.0);
       descriptor.imgSWIR = resampler->GetOutput();
