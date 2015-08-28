@@ -570,8 +570,7 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetCurrentL2AWeightValue(const TIn
     if(m_nCurrentL2AWeightBandIndex == -1)
         return WEIGHT_NO_DATA;
 
-    int val = (int)static_cast<float>(A[m_nCurrentL2AWeightBandIndex]);
-    return (val != 0);
+    return static_cast<float>(A[m_nCurrentL2AWeightBandIndex]);
 }
 
 template< class TInput, class TOutput>
@@ -580,8 +579,7 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AWeightValue(const TInput
     if(!m_bPrevL3ABandsAvailable || m_nPrevL3AWeightBandStartIndex == -1)
         return WEIGHT_NO_DATA;
 
-    int val = (int)static_cast<float>(A[m_nPrevL3AWeightBandStartIndex+offset]);
-    return (val != 0);
+    return static_cast<float>(A[m_nPrevL3AWeightBandStartIndex+offset]);
 }
 
 template< class TInput, class TOutput>
@@ -590,8 +588,7 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AWeightedAvDateValue(cons
     if(!m_bPrevL3ABandsAvailable || m_nPrevL3AWeightedAvDateBandIndex == -1)
         return DATE_NO_DATA;
 
-    int val = (int)static_cast<float>(A[m_nPrevL3AWeightedAvDateBandIndex]);
-    return (val != 0);
+    return static_cast<float>(A[m_nPrevL3AWeightedAvDateBandIndex]);
 }
 
 template< class TInput, class TOutput>
@@ -600,8 +597,7 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AReflectanceValue(const T
     if(!m_bPrevL3ABandsAvailable || m_nPrevL3AReflectanceBandStartIndex == -1)
         return REFLECTANCE_NO_DATA;
 
-    int val = (int)static_cast<float>(A[m_nPrevL3AReflectanceBandStartIndex + offset]);
-    return (val != 0);
+    return static_cast<float>(A[m_nPrevL3AReflectanceBandStartIndex + offset]);
 }
 
 template< class TInput, class TOutput>
@@ -610,8 +606,7 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3APixelFlagValue(const TIn
     if(!m_bPrevL3ABandsAvailable || m_nPrevL3APixelFlagBandIndex == -1)
         return FLAG_NO_DATA;
 
-    int val = (int)static_cast<float>(A[m_nPrevL3APixelFlagBandIndex]);
-    return (val != 0);
+    return static_cast<float>(A[m_nPrevL3APixelFlagBandIndex]);
 }
 
 template< class TInput, class TOutput>
