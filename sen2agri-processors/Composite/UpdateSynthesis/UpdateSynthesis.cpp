@@ -25,32 +25,6 @@ namespace otb
 
 namespace Wrapper
 {
-
-template< class TPixel>
-class CustomFunctor
-{
-public:
-  CustomFunctor() {}
-  ~CustomFunctor() {}
-  inline void SetTest(int x) {}
-  /*
-  bool operator!=(const CustomFunctor &) const
-  {
-    return false;
-  }
-  bool operator==(const CustomFunctor & other) const
-  {
-    return !( *this != other );
-  }
-  */
-  inline TPixel operator()(const TPixel & A) const
-  {
-     Int16VectorImageType::PixelType var(2);
-     var[0] = A[1];
-     var[1] = A[2];
-    return var;
-  }
-};
 class UpdateSynthesis : public Application
 {
 public:
@@ -272,6 +246,7 @@ private:
                 m_UpdateSynthesisFunctor->GetOutput()->SetNumberOfComponentsPerPixel(14);
         }
 
+        SetParameterOutputImagePixelType("out", ImagePixelType_int16);
         SetParameterOutputImage("out", m_UpdateSynthesisFunctor->GetOutput());
 
         return;
