@@ -318,7 +318,9 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
     // Weight for B2 for L3A
     for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
-        var[cnt++] = outInfos.m_CurrentWeightedReflectances[i];
+        // we save back the pixel value but as digital value and not as reflectance
+        var[cnt++] = GetL3APixelValFromReflectance(outInfos.m_CurrentWeightedReflectances[i]);
+        //var[cnt++] = outInfos.m_CurrentWeightedReflectances[i];
     }
     // Pixel status
     var[cnt++] = outInfos.m_fCurrentPixelFlag;
@@ -354,6 +356,12 @@ template< class TInput, class TOutput>
 float UpdateSynthesisFunctor<TInput,TOutput>::GetL2AReflectanceForPixelVal(float fPixelVal)
 {
     return (fPixelVal/m_fQuantificationValue);
+}
+
+template< class TInput, class TOutput>
+float UpdateSynthesisFunctor<TInput,TOutput>::GetL3APixelValFromReflectance(float fReflectance)
+{
+    return (fReflectance*m_fQuantificationValue);
 }
 
 template< class TInput, class TOutput>
@@ -597,7 +605,7 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AReflectanceValue(const T
     if(!m_bPrevL3ABandsAvailable || m_nPrevL3AReflectanceBandStartIndex == -1)
         return REFLECTANCE_NO_DATA;
 
-    return static_cast<float>(A[m_nPrevL3AReflectanceBandStartIndex + offset]);
+    return static_cast<float>(A[m_nPrevL3AReflectanceBandStartIndex + offset])/m_fQuantificationValue;
 }
 
 template< class TInput, class TOutput>
