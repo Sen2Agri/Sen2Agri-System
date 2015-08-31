@@ -311,19 +311,19 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
     // Weighted Average Reflectances
     for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
-        var[cnt++] = outInfos.m_CurrentPixelWeights[i];
+        var[cnt++] = short(outInfos.m_CurrentPixelWeights[i] * m_fQuantificationValue);
     }
     // Weighted Average Date L3A
-    var[cnt++] = outInfos.m_fCurrentPixelWeightedDate;
+    var[cnt++] = short(outInfos.m_fCurrentPixelWeightedDate * m_fQuantificationValue);
     // Weight for B2 for L3A
     for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
         // we save back the pixel value but as digital value and not as reflectance
-        var[cnt++] = GetL3APixelValFromReflectance(outInfos.m_CurrentWeightedReflectances[i]);
+        var[cnt++] = short(outInfos.m_CurrentWeightedReflectances[i] * m_fQuantificationValue);
         //var[cnt++] = outInfos.m_CurrentWeightedReflectances[i];
     }
     // Pixel status
-    var[cnt++] = outInfos.m_fCurrentPixelFlag;
+    var[cnt++] = outInfos.m_nCurrentPixelFlag;
 
     return var;
 }
@@ -336,7 +336,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::ResetCurrentPixelValues(OutFunctorI
         outInfos.m_CurrentPixelWeights[i] = WEIGHT_NO_DATA;
         outInfos.m_CurrentWeightedReflectances[i] = REFLECTANCE_NO_DATA;
     }
-    outInfos.m_fCurrentPixelFlag = FLAG_NO_DATA;
+    outInfos.m_nCurrentPixelFlag = FLAG_NO_DATA;
     outInfos.m_fCurrentPixelWeightedDate = DATE_NO_DATA;
 }
 
@@ -359,18 +359,12 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetL2AReflectanceForPixelVal(float
 }
 
 template< class TInput, class TOutput>
-float UpdateSynthesisFunctor<TInput,TOutput>::GetL3APixelValFromReflectance(float fReflectance)
-{
-    return (fReflectance*m_fQuantificationValue);
-}
-
-template< class TInput, class TOutput>
 void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, OutFunctorInfos& outInfos)
 {
     // we assume that the reflectance bands start from index 0
     for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
     {
-        outInfos.m_fCurrentPixelFlag = LAND;
+        outInfos.m_nCurrentPixelFlag = LAND;
 
         // we will always have as output the number of reflectances equal or greater than
         // the number of bands in the current L2A raster for the current resolution
@@ -413,9 +407,9 @@ template< class TInput, class TOutput>
 void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput & A, OutFunctorInfos& outInfos)
 {
     if(IsWaterPixel(A)) {
-        outInfos.m_fCurrentPixelFlag = WATER;
+        outInfos.m_nCurrentPixelFlag = WATER;
     } else {
-       outInfos. m_fCurrentPixelFlag = SNOW;
+       outInfos. m_nCurrentPixelFlag = SNOW;
     }
     for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
     {
@@ -439,7 +433,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
                 if(IsRedBand(i))
                 {
                     outInfos.m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
-                    outInfos.m_fCurrentPixelFlag = LAND;
+                    outInfos.m_nCurrentPixelFlag = LAND;
                 }
 
             }
@@ -455,11 +449,11 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
 template< class TInput, class TOutput>
 void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInput & A, OutFunctorInfos& outInfos)
 {
-    float fPrevL3AFlagVal = GetPrevL3APixelFlagValue(A);
+    short nPrevL3AFlagVal = GetPrevL3APixelFlagValue(A);
     // if flagN-1 is no-data => replace nodata with cloud
-    if(fPrevL3AFlagVal == FLAG_NO_DATA)
+    if(nPrevL3AFlagVal == FLAG_NO_DATA)
     {
-        outInfos.m_fCurrentPixelFlag = CLOUD;
+        outInfos.m_nCurrentPixelFlag = CLOUD;
 
         for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
         {
@@ -472,7 +466,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                 if(IsRedBand(i))
                 {
                     outInfos.m_fCurrentPixelWeightedDate = m_nCurrentDate;
-                    outInfos.m_fCurrentPixelFlag = CLOUD;
+                    outInfos.m_nCurrentPixelFlag = CLOUD;
                 }
             } else {
                 outInfos.m_CurrentWeightedReflectances[i] = WEIGHT_NO_DATA;
@@ -480,7 +474,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
             }
         }
     } else {
-        if((fPrevL3AFlagVal == CLOUD) || (fPrevL3AFlagVal == CLOUD_SHADOW))
+        if((nPrevL3AFlagVal == CLOUD) || (nPrevL3AFlagVal == CLOUD_SHADOW))
         {
             // get the blue band index
             int nBlueBandIdx = GetBlueBandIndex();
@@ -504,7 +498,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                             if(IsRedBand(i))
                             {
                                 outInfos.m_fCurrentPixelWeightedDate = m_nCurrentDate;
-                                outInfos.m_fCurrentPixelFlag = CLOUD;
+                                outInfos.m_nCurrentPixelFlag = CLOUD;
                             }
                         } else {
                             outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
@@ -514,7 +508,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                 }
             }
         } else {
-            outInfos.m_fCurrentPixelFlag = GetPrevL3APixelFlagValue(A);
+            outInfos.m_nCurrentPixelFlag = GetPrevL3APixelFlagValue(A);
             for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
             {
                 outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
@@ -587,7 +581,7 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AWeightValue(const TInput
     if(!m_bPrevL3ABandsAvailable || m_nPrevL3AWeightBandStartIndex == -1)
         return WEIGHT_NO_DATA;
 
-    return static_cast<float>(A[m_nPrevL3AWeightBandStartIndex+offset]);
+    return (static_cast<float>(A[m_nPrevL3AWeightBandStartIndex+offset]) / m_fQuantificationValue);
 }
 
 template< class TInput, class TOutput>
@@ -596,7 +590,7 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AWeightedAvDateValue(cons
     if(!m_bPrevL3ABandsAvailable || m_nPrevL3AWeightedAvDateBandIndex == -1)
         return DATE_NO_DATA;
 
-    return static_cast<float>(A[m_nPrevL3AWeightedAvDateBandIndex]);
+    return (static_cast<float>(A[m_nPrevL3AWeightedAvDateBandIndex]) / m_fQuantificationValue);
 }
 
 template< class TInput, class TOutput>
@@ -609,12 +603,12 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AReflectanceValue(const T
 }
 
 template< class TInput, class TOutput>
-float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3APixelFlagValue(const TInput & A)
+short UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3APixelFlagValue(const TInput & A)
 {
     if(!m_bPrevL3ABandsAvailable || m_nPrevL3APixelFlagBandIndex == -1)
         return FLAG_NO_DATA;
 
-    return static_cast<float>(A[m_nPrevL3APixelFlagBandIndex]);
+    return short(static_cast<float>(A[m_nPrevL3APixelFlagBandIndex]));
 }
 
 template< class TInput, class TOutput>

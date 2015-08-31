@@ -73,25 +73,21 @@ public:
 
     typedef float                                   PixelType;
     typedef short                                   PixelShortType;
+    typedef FloatVectorImageType                    InputImageType;
+    typedef FloatImageType                          InternalBandImageType;
+    typedef Int16VectorImageType                    OutImageType;
 
-    typedef otb::ImageList<FloatImageType>  ImageListType;
-    typedef ImageListToVectorImageFilter<ImageListType,
-                                         FloatVectorImageType >                   ListConcatenerFilterType;
-    typedef MultiToMonoChannelExtractROI<FloatVectorImageType::InternalPixelType,
-                                         FloatImageType::PixelType>               ExtractROIFilterType;
-    typedef ObjectList<ExtractROIFilterType>                                      ExtractROIFilterListType;
+    typedef otb::ImageList<InternalBandImageType>  ImageListType;
+    typedef ImageListToVectorImageFilter<ImageListType, InputImageType >    ListConcatenerFilterType;
+    typedef MultiToMonoChannelExtractROI<InputImageType::InternalPixelType,
+                                         InternalBandImageType::PixelType>         ExtractROIFilterType;
+    typedef ObjectList<ExtractROIFilterType>                                ExtractROIFilterListType;
 
-    typedef UpdateSynthesisFunctor <FloatVectorImageType::PixelType, FloatVectorImageType::PixelType> UpdateSynthesisFunctorType;
-    typedef itk::UnaryFunctorImageFilter< FloatVectorImageType, FloatVectorImageType,
-                              UpdateSynthesisFunctorType > FunctorFilterType;
-
-    /*
-    typedef itk::BinaryFunctorImageFilter< Int16VectorImageType, Int16VectorImageType, Int16VectorImageType,
-                              CustomFunctor<Int16VectorImageType::PixelType> > BinaryFilterType;
-
-    typedef itk::UnaryFunctorImageFilter< Int16VectorImageType, Int16VectorImageType,
-                              CustomFunctor<Int16VectorImageType::PixelType> > FilterType__;
-    */
+    typedef UpdateSynthesisFunctor <InputImageType::PixelType,
+                                    OutImageType::PixelType>                UpdateSynthesisFunctorType;
+    typedef itk::UnaryFunctorImageFilter< InputImageType,
+                                          OutImageType,
+                                          UpdateSynthesisFunctorType >      FunctorFilterType;
 
 private:
 
@@ -280,10 +276,10 @@ private:
 
         return;
     }
-    FloatVectorImageType::Pointer       m_L2AIn;
-    FloatVectorImageType::Pointer       m_CSM, m_WM, m_SM, m_WeightsL2A;
-    FloatVectorImageType::Pointer       m_PrevL3A;
-    FloatVectorImageType::Pointer       m_PrevWeightPixel, m_WeightAvgDate, m_WeightAvgRef, m_PixelStat;
+    InputImageType::Pointer             m_L2AIn;
+    InputImageType::Pointer             m_CSM, m_WM, m_SM, m_WeightsL2A;
+    InputImageType::Pointer             m_PrevL3A;
+    InputImageType::Pointer             m_PrevWeightPixel, m_WeightAvgDate, m_WeightAvgRef, m_PixelStat;
     ImageListType::Pointer              m_ImageList;
     ListConcatenerFilterType::Pointer   m_Concat;
     ExtractROIFilterListType::Pointer   m_ExtractorList;

@@ -18,7 +18,7 @@ class OutFunctorInfos
 public:
     float m_CurrentWeightedReflectances[L3A_WEIGHTED_REFLECTANCES_MAX_NO];
     float m_CurrentPixelWeights[L3A_WEIGHTED_REFLECTANCES_MAX_NO];
-    float m_fCurrentPixelFlag;
+    short m_nCurrentPixelFlag;
     float m_fCurrentPixelWeightedDate;
 } ;
 
@@ -52,8 +52,7 @@ private:
     float GetPrevL3AWeightValue(const TInput & A, int offset);
     float GetPrevL3AWeightedAvDateValue(const TInput & A);
     float GetPrevL3AReflectanceValue(const TInput & A, int offset);
-    float GetPrevL3APixelFlagValue(const TInput & A);
-    float GetL3APixelValFromReflectance(float fReflectance);
+    short GetPrevL3APixelFlagValue(const TInput & A);
     int GetBlueBandIndex();
     bool InitBandInfos(SensorType sensorType, ResolutionType resolution);
     bool InitAllBandInResolutionInfos(SensorType sensorType);
