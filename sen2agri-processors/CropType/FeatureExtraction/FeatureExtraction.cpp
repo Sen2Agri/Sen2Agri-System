@@ -37,8 +37,8 @@
 #include "otbImageListToVectorImageFilter.h"
 #include "otbBandMathImageFilter.h"
 
-typedef otb::VectorImage<float, 2>  ImageType;
-typedef otb::Image<float, 2>        InternalImageType;
+typedef otb::VectorImage<short, 2>                                        ImageType;
+typedef otb::Image<short, 2>                                              InternalImageType;
 typedef otb::ImageFileReader<ImageType>                                   ReaderType;
 typedef otb::ImageFileWriter<ImageType>                                   WriterType;
 typedef otb::ImageList<InternalImageType>                                 ImageListType;
@@ -154,8 +154,6 @@ private:
 
     //  Software Guide : BeginCodeSnippet
     AddParameter(ParameterType_InputImage, "rtocr", "Resampled S2 L2A surface reflectances");
-    AddParameter(ParameterType_Int, "mode", "What files are produced ");
-    SetDefaultParameterInt("mode", 0);
 
     AddParameter(ParameterType_OutputImage, "fts", "Feature time series");
     MandatoryOff("fts");
@@ -186,18 +184,6 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoUpdateParameters()
   {
-      int mode = GetParameterInt("mode");
-
-      // verify what parameters are set
-      if(mode == 0) {
-          m_FullSeries = true;
-          m_ftsConcat = ImageListToVectorImageFilterType::New();
-      } else {
-          m_FullSeries = false;
-          m_ndviConcat = ImageListToVectorImageFilterType::New();
-          m_ndwiConcat = ImageListToVectorImageFilterType::New();
-          m_brightnessConcat = ImageListToVectorImageFilterType::New();
-      }
       m_imgReader = ReaderType::New();
       m_imgSplit = VectorImageToImageListType::New();
       m_bandMathFilterList = BandMathImageFilterListType::New();
@@ -211,8 +197,8 @@ private:
       // b3 - NIR
       // b4 - SWIR
 #ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
-          ndviExpr = "(b3==-10000) ? -10000 : (abs(b3+b2)<0.000001) ? 0 : (b3-b2)/(b3+b2)";
-          ndwiExpr = "(b3==-10000) ? -10000 : (abs(b4+b3)<0.000001) ? 0 : (b4-b3)/(b4+b3)";
+          ndviExpr = "(b3==-10000) ? -10000 : (abs(b3+b2)<0.000001) ? 0 : 10000 * (b3-b2)/(b3+b2)";
+          ndwiExpr = "(b3==-10000) ? -10000 : (abs(b4+b3)<0.000001) ? 0 : 10000 * (b4-b3)/(b4+b3)";
           brightnessExpr = "(b1==-10000) ? -10000 : sqrt((b1 * b1) + (b2 * b2) + (b3 * b3) + (b4 * b4))";
 #else
           ndviExpr = "if(b3==-10000,-10000,if(abs(b3+b2)<0.000001,0,(b3-b2)/(b3+b2)";
@@ -231,7 +217,21 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoExecute()
   {
-      // define all needed types
+      // check that either fts or the group ndvi, ndwi and brightness are set
+      if (!HasValue("fts") && !(HasValue("ndvi") && HasValue("ndwi") && HasValue("brightness"))) {
+          itkExceptionMacro("You must specify a value either for 'fts' or for all of 'ndvi', 'ndwi' and 'brightness'!");
+      }
+
+      // verify what parameters are set
+      if(HasValue("fts")) {
+          m_FullSeries = true;
+          m_ftsConcat = ImageListToVectorImageFilterType::New();
+      } else {
+          m_FullSeries = false;
+          m_ndviConcat = ImageListToVectorImageFilterType::New();
+          m_ndwiConcat = ImageListToVectorImageFilterType::New();
+          m_brightnessConcat = ImageListToVectorImageFilterType::New();
+      }
 
       //Read all input parameters
       m_imgReader->SetFileName(GetParameterString("rtocr"));

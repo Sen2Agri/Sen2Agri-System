@@ -1,2 +1,4 @@
 add_subdirectory(TemporalFeatures)
+add_subdirectory(StatisticFeatures)
+add_subdirectory(RandomSelection)
 

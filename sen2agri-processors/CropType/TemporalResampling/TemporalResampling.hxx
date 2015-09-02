@@ -6,7 +6,7 @@
 
 #define NOVALUEPIXEL    0.0
 
-typedef otb::VectorImage<float, 2> ImageType;
+typedef otb::VectorImage<short, 2> ImageType;
 
 struct Indeces {
     int minLo;
@@ -75,7 +75,7 @@ public:
                 float a = (y1 - y2) / (x1 - x2);
                 float b = y1 - a * x1;
 
-                result[outPixelId] = (a * outDate + b);
+                result[outPixelId] = (short)(a * outDate + b);
             }
 
         }

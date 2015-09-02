@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import os
+import os.file
 import glob
 import argparse
 import csv
@@ -20,7 +21,7 @@ parser.add_argument('-rate', help='The sampling rate for the temporal series, in
 parser.add_argument('-radius', help='The radius used for gapfilling, in days', required=False, metavar='radius', default=15)
 parser.add_argument('-classifier', help='The classifier used for training (either rf or svm)', required=True, metavar='classifier', choices=['rf','svm'])
 parser.add_argument('-rseed', help='The random seed used for training', required=False, metavar='random_seed', default=0)
-parser.add_argument('-mask', help='The crop mask', required=True, metavar='crop_mask')
+parser.add_argument('-mask', help='The crop mask', required=False, metavar='crop_mask', default='')
 
 args = parser.parse_args()
 
@@ -174,8 +175,9 @@ print "TrainImagesClassifier done!"
 
 #Image Classifier
 print "Executing ImageClassifier..."
-#icCmdLine = "otbcli_ImageClassifier -in "+fts+" -imstat "+statistics+" -mask "+crop_mask+" -model "+model+" -out "+crop_type_map
 icCmdLine = "otbcli_ImageClassifier -in "+fts+" -imstat "+statistics+" -model "+model+" -out "+crop_type_map
+if os.file.exists(crop_mask) :
+   icCmdLine += " -mask "+crop_mask
 print icCmdLine
 result = os.system(icCmdLine)
 
@@ -196,3 +198,4 @@ if result != 0 :
 print "ComputeConfusionMatrix done!"
 
 print "Execution successfull !"
+
