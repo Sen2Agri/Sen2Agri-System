@@ -4,7 +4,7 @@
 #include "itkUnaryFunctorImageFilter.h"
 #include "otbVectorImage.h"
 
-typedef float                                PixelValueType;
+typedef short                                PixelValueType;
 typedef otb::VectorImage<PixelValueType, 2>  ImageType;
 
 
@@ -12,7 +12,7 @@ template <typename PixelType>
 class TemporalFeaturesFunctor
 {
 public:
-  TemporalFeaturesFunctor() : bands(0), w(2), delta(0.05), id(0), tsoil(0.2) {}
+  TemporalFeaturesFunctor() : bands(0), w(2), delta(500), id(0), tsoil(2000) {}
   TemporalFeaturesFunctor(int bands, int w, PixelValueType delta, std::vector<int> id, PixelValueType tsoil) : bands(bands), w(w), delta(delta), id(id), tsoil(tsoil) {}
 
   PixelType operator()(PixelType pix) const
@@ -86,7 +86,7 @@ public:
         result[5] = result[3] - result[4];
     }
 
-    // compute rhe mbiFeatures associated to the maximum NDVI value:
+    // compute the mbiFeatures associated to the maximum NDVI value:
     result[6] = static_cast<PixelValueType>(0);
     result[7] = static_cast<PixelValueType>(0);
     result[8] = static_cast<PixelValueType>(0);
@@ -109,14 +109,14 @@ public:
         }
 
         // compute the interval
-        while (pix[minIndex] >= (result[6] - delta) && pix[minIndex] <= (result[6] + delta)) {
+        while (result[6] > 0.0 && pix[minIndex] >= (result[6] - delta) && pix[minIndex] <= (result[6] + delta)) {
             minIndex--;
             if (minIndex < 0) {
                 minIndex = 0;
                 break;
             }
         }
-        while (pix[maxIndex] >= (result[6] - delta) && pix[maxIndex] <= (result[6] + delta)) {
+        while (result[6] > 0.0 && pix[maxIndex] >= (result[6] - delta) && pix[maxIndex] <= (result[6] + delta)) {
             maxIndex++;
             if (maxIndex >= pixSize) {
                 maxIndex = pixSize - 1;
@@ -226,7 +226,7 @@ public:
         if (pix[i-1] <= tsoil && pix[i] >= tsoil) {
             result[15] = static_cast<PixelValueType>(1);
         } else if (pix[i-1] >= tsoil && pix[i] <= tsoil) {
-            result[15] = static_cast<PixelValueType>(1);
+            result[16] = static_cast<PixelValueType>(1);
         }
     }
 

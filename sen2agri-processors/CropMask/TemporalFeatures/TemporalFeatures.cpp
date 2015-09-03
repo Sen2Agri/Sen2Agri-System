@@ -217,7 +217,7 @@ private:
 
       // connect the functor based filter
       m_filter->SetNumberOfOutputBands(m_bands);
-      m_filter->SetFunctor(TemporalFeaturesFunctorType(m_bands, m_w, m_delta, m_inDates, m_tsoil));
+      m_filter->SetFunctor(TemporalFeaturesFunctorType(m_bands, m_w, static_cast<short>(m_delta*10000), m_inDates, static_cast<short>(m_tsoil*10000)));
 
       m_filter->SetInput(0, m_reader->GetOutput());
 

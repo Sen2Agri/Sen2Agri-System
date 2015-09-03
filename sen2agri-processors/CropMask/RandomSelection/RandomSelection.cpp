@@ -56,7 +56,7 @@ namespace Wrapper
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
-class SampleSelection : public Application
+class RandomSelection : public Application
 //  Software Guide : EndCodeSnippet
 {
 public:
@@ -65,7 +65,7 @@ public:
   // Software Guide : EndLatex
 
   //  Software Guide : BeginCodeSnippet
-  typedef SampleSelection Self;
+  typedef RandomSelection Self;
   typedef Application Superclass;
   typedef itk::SmartPointer<Self> Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
@@ -79,7 +79,7 @@ public:
   itkNewMacro(Self)
 ;
 
-  itkTypeMacro(SampleSelection, otb::Application)
+  itkTypeMacro(RandomSelection, otb::Application)
 ;
   //  Software Guide : EndCodeSnippet
 
@@ -107,10 +107,10 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-      SetName("SampleSelection");
+      SetName("RandomSelection");
       SetDescription("Split the reference data into 2 disjoint sets, the training set and the validation set.");
 
-      SetDocName("SampleSelection");
+      SetDocName("RandomSelection");
       SetDocLongDescription("The sample selection consists in splitting the reference data into 2 disjoint sets, "
                             "the training set and the validation set. "
                             "These sets are composed of polygons, not individual pixels.");
@@ -140,17 +140,15 @@ private:
 
     //  Software Guide : BeginCodeSnippet
     AddParameter(ParameterType_InputFilename, "ref", "Reference Polygons");
-    AddParameter(ParameterType_Float, "ratio", "Sample Ratio");
+    AddParameter(ParameterType_Float, "nbtrsample", "The number of training samples");
     AddParameter(ParameterType_Int, "seed", "Seed for the random number generation");
-    AddParameter(ParameterType_Empty, "nofilter", "Do not filter the polygons based on Crop/No crop");
-    MandatoryOff("nofilter");
 
-    AddParameter(ParameterType_OutputFilename, "tp", "Training Polygons");
-    AddParameter(ParameterType_OutputFilename, "vp", "Validation Polygons");
+    AddParameter(ParameterType_OutputFilename, "trp", "Training Polygons");
+    AddParameter(ParameterType_OutputFilename, "tsp", "Testing Polygons");
 
 
     // Set default value for parameters
-    SetDefaultParameterFloat("ratio", 0.75);
+    SetDefaultParameterFloat("nbtrsample", 1000);
     SetDefaultParameterInt("seed", std::time(0));
      //  Software Guide : EndCodeSnippet
 
@@ -161,10 +159,10 @@ private:
 
     //  Software Guide : BeginCodeSnippet
     SetDocExampleParameterValue("ref", "reference_polygons.shp");
-    SetDocExampleParameterValue("ratio", "0.75");
+    SetDocExampleParameterValue("nbtrsample", "1000");
     SetDocExampleParameterValue("seed", "0");
-    SetDocExampleParameterValue("tp", "training_polygons.shp");
-    SetDocExampleParameterValue("vp", "validation_polygons.shp");
+    SetDocExampleParameterValue("trp", "training_polygons.shp");
+    SetDocExampleParameterValue("tsp", "testing_polygons.shp");
     //  Software Guide : EndCodeSnippet
   }
 
@@ -189,8 +187,8 @@ private:
   {
       // Internal variables for accessing the files
       otb::ogr::DataSource::Pointer ogrRef;
-      otb::ogr::DataSource::Pointer ogrTp;
-      otb::ogr::DataSource::Pointer ogrVp;
+      otb::ogr::DataSource::Pointer ogrTrp;
+      otb::ogr::DataSource::Pointer ogrTsp;
 
       std::multimap<int, ogr::Feature> featuresMap;
 
@@ -201,92 +199,131 @@ private:
       }
 
       // get the required sampling ratio
-      const float ratio = GetParameterFloat("ratio");
+      int nbtrsample = GetParameterInt("nbtrsample");
       // get the random seed
       const int seed = GetParameterInt("seed");
 
       // Create the writers over the outut files
-      ogrTp = otb::ogr::DataSource::New(GetParameterString("tp"), otb::ogr::DataSource::Modes::Overwrite);
-      ogrVp = otb::ogr::DataSource::New(GetParameterString("vp"), otb::ogr::DataSource::Modes::Overwrite);
+      ogrTrp = otb::ogr::DataSource::New(GetParameterString("trp"), otb::ogr::DataSource::Modes::Overwrite);
+      ogrTsp = otb::ogr::DataSource::New(GetParameterString("tsp"), otb::ogr::DataSource::Modes::Overwrite);
 
       // read the layer of the reference file
       otb::ogr::Layer sourceLayer = ogrRef->GetLayer(0);
       if (sourceLayer.GetGeomType() != wkbPolygon) {
           itkExceptionMacro("The first layer must contain polygons!");
       }
-      if (!GetParameterEmpty("nofilter")) {
-          sourceLayer.ogr().SetAttributeFilter("CROP=1");
-      }
 
       int featureCount = sourceLayer.GetFeatureCount(true);
+      int cropNumber = 0;
+      int noCropNumber = 0;
 
-      // read all features frm the source fiel and add them to the multimap
+      // read all features from the source file and add them to the multimap
       for (ogr::Feature& feature : sourceLayer) {
           featuresMap.insert(std::pair<int, ogr::Feature>(feature.ogr().GetFieldAsInteger("CODE"), feature.Clone()));
+          if (feature.ogr().GetFieldAsInteger("CROP") == 1) {
+              cropNumber++;
+          } else {
+              noCropNumber++;
+          }
       }
+
+      // update the number of features so that it will not be bigger than the crop or nocrop number
+      nbtrsample = std::min(nbtrsample, std::min(cropNumber, noCropNumber));
+
+      // compute the ratio for the features.
+      float cropRatio = (float) nbtrsample / cropNumber;
+      float noCropRatio = (float) nbtrsample / noCropNumber;
+
       // create the layers for the target files
-      otb::ogr::Layer tpLayer = ogrTp->CreateLayer(sourceLayer.GetName(), sourceLayer.GetSpatialRef()->Clone(), sourceLayer.GetGeomType());
-      otb::ogr::Layer vpLayer = ogrVp->CreateLayer(sourceLayer.GetName(), sourceLayer.GetSpatialRef()->Clone(), sourceLayer.GetGeomType());
+      otb::ogr::Layer trpLayer = ogrTrp->CreateLayer(sourceLayer.GetName(), sourceLayer.GetSpatialRef()->Clone(), sourceLayer.GetGeomType());
+      otb::ogr::Layer tspLayer = ogrTsp->CreateLayer(sourceLayer.GetName(), sourceLayer.GetSpatialRef()->Clone(), sourceLayer.GetGeomType());
 
       // add the fields
       OGRFeatureDefn* layerDefn = sourceLayer.ogr().GetLayerDefn();
 
       for (int i = 0; i < layerDefn->GetFieldCount(); i++ ) {
           OGRFieldDefn* fieldDefn = layerDefn->GetFieldDefn(i);
-          tpLayer.ogr().CreateField(fieldDefn);
-          vpLayer.ogr().CreateField(fieldDefn);
+          trpLayer.ogr().CreateField(fieldDefn);
+          tspLayer.ogr().CreateField(fieldDefn);
       }
 
-      OGRFeatureDefn* tpLayerDefn = tpLayer.ogr().GetLayerDefn();
-      OGRFeatureDefn* vpLayerDefn = vpLayer.ogr().GetLayerDefn();
+      OGRFeatureDefn* trpLayerDefn = trpLayer.ogr().GetLayerDefn();
+      OGRFeatureDefn* tspLayerDefn = tspLayer.ogr().GetLayerDefn();
 
       // initialise the random number generator
       std::srand(seed);
-      // Loop through the entries
+      // Loop through the key set
       std::multimap<int,ogr::Feature>::iterator it;
-      for (it=featuresMap.begin(); it!=featuresMap.end(); ++it) {
-          // get the feature
-          ogr::Feature &f = it->second;
+      for (it=featuresMap.begin(); it!=featuresMap.end(); it = featuresMap.upper_bound(it->first)) {
+          // get the number of polygons from the feature
+          int count = featuresMap.count(it->first);
 
-          // generate a random number and convert it to the [0..1] interval
-          float random = (float) std::rand() / (float)RAND_MAX;
-
-          // select the target file for this feature
-          if (random <= ratio) {
-              ogr::Feature feat(*tpLayerDefn);
-              // Add field values from input Layer
-              for (int i = 0; i < tpLayerDefn->GetFieldCount(); i++) {
-                  OGRFieldDefn* fieldDefn = tpLayerDefn->GetFieldDefn(i);
-                  feat.ogr().SetField(fieldDefn->GetNameRef(), f.ogr().GetRawFieldRef(i));
-              }
-
-              // Set the geometry
-              feat.ogr().SetGeometry(f.ogr().GetGeometryRef()->clone());
-
-              tpLayer.CreateFeature(feat);
+          // compute the number of training polygons based on the polygon type
+          float ratio;
+          if (it->second.ogr().GetFieldAsInteger("CROP") == 1) {
+              ratio = cropRatio;
           } else {
-              ogr::Feature feat(*vpLayerDefn);
-              // Add field values from input Layer
-              for (int i = 0; i < vpLayerDefn->GetFieldCount(); i++) {
-                  OGRFieldDefn* fieldDefn = vpLayerDefn->GetFieldDefn(i);
-                  feat.ogr().SetField(fieldDefn->GetNameRef(), f.ogr().GetRawFieldRef(i));
+
+              ratio = noCropRatio;
+          }
+          int trCount = std::round(ratio * count);
+          if (trCount == 0) {
+              trCount = 1;
+          }
+
+          // loop through the features belonging to the current key
+          std::multimap<int,ogr::Feature>::iterator featuresIt;
+          for (featuresIt = featuresMap.lower_bound(it->first); featuresIt != featuresMap.upper_bound(it->first); ++featuresIt) {
+              // get the feature
+              ogr::Feature &f = featuresIt->second;
+
+              // generate a random number and convert it to the [0..1] interval
+              float random = (float) std::rand() / (float)RAND_MAX;
+
+              if ((trCount != 0) && (trCount == count || random <= ratio)) {
+                  // add feature to training set
+                  ogr::Feature feat(*trpLayerDefn);
+                  // Add field values from input Layer
+                  for (int i = 0; i < trpLayerDefn->GetFieldCount(); i++) {
+                      OGRFieldDefn* fieldDefn = trpLayerDefn->GetFieldDefn(i);
+                      feat.ogr().SetField(fieldDefn->GetNameRef(), f.ogr().GetRawFieldRef(i));
+                  }
+
+                  // Set the geometry
+                  feat.ogr().SetGeometry(f.ogr().GetGeometryRef()->clone());
+
+                  trpLayer.CreateFeature(feat);
+
+                  // decrement the number of training features
+                  trCount--;
+              } else {
+                  // add feature to testing set
+                  ogr::Feature feat(*tspLayerDefn);
+                  // Add field values from input Layer
+                  for (int i = 0; i < tspLayerDefn->GetFieldCount(); i++) {
+                      OGRFieldDefn* fieldDefn = tspLayerDefn->GetFieldDefn(i);
+                      feat.ogr().SetField(fieldDefn->GetNameRef(), f.ogr().GetRawFieldRef(i));
+                  }
+
+                  // Set the geometry
+                  feat.ogr().SetGeometry(f.ogr().GetGeometryRef()->clone());
+
+                  tspLayer.CreateFeature(feat);
               }
 
-              // Set the geometry
-              feat.ogr().SetGeometry(f.ogr().GetGeometryRef()->clone());
-
-              vpLayer.CreateFeature(feat);
+              // decrement the count
+              count--;
           }
       }
 
       // save the output files
-      tpLayer.ogr().CommitTransaction();
-      vpLayer.ogr().CommitTransaction();
+      trpLayer.ogr().CommitTransaction();
+      tspLayer.ogr().CommitTransaction();
 
-      ogrTp->SyncToDisk();
-      ogrVp->SyncToDisk();
+      ogrTrp->SyncToDisk();
+      ogrTsp->SyncToDisk();
 
-      std::cout << "total features: " << featureCount << ", Training features: " << tpLayer.GetFeatureCount(true) << ", Validation features: " << vpLayer.GetFeatureCount(true) << std::endl;
+      std::cout << "total features: " << featureCount << ", Training features: " << trpLayer.GetFeatureCount(true) << ", Testing features: " << tspLayer.GetFeatureCount(true) << std::endl;
   }
   //  Software Guide :EndCodeSnippet
 
@@ -299,7 +336,7 @@ private:
 // Finally \code{OTB\_APPLICATION\_EXPORT} is called.
 // Software Guide : EndLatex
 //  Software Guide :BeginCodeSnippet
-OTB_APPLICATION_EXPORT(otb::Wrapper::SampleSelection)
+OTB_APPLICATION_EXPORT(otb::Wrapper::RandomSelection)
 //  Software Guide :EndCodeSnippet
 
 

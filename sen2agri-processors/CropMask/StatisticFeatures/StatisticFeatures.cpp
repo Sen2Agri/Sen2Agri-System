@@ -1,4 +1,3 @@
-
 /*=========================================================================
 
   Program:   ORFEO Toolbox
@@ -31,17 +30,17 @@
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <time.h>
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
-#include "TemporalResampling.hxx"
-//  Software Guide : EndCodeSnippet
+#include "otbConcatenateVectorImageFilter.h"
 
-// define all needed types
-typedef otb::ImageFileReader<ImageType>  ReaderType;
+#include "StatisticFeatures.hxx"
+
+typedef otb::ImageFileReader<ImageType>                                     ReaderType;
+typedef StatisticFeaturesFunctor<ImageType::PixelType>                      StatisticFeaturesFunctorType;
+typedef UnaryFunctorImageFilterWithNBands<StatisticFeaturesFunctorType>     UnaryFunctorImageFilterWithNBandsType;
+typedef otb::ConcatenateVectorImageFilter<ImageType, ImageType, ImageType>  ConcatenateVectorImageFilterType;
+//  Software Guide : EndCodeSnippet
 
 namespace otb
 {
@@ -64,7 +63,7 @@ namespace Wrapper
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
-class TemporalResampling : public Application
+class StatisticFeatures : public Application
 //  Software Guide : EndCodeSnippet
 {
 public:
@@ -73,7 +72,7 @@ public:
   // Software Guide : EndLatex
 
   //  Software Guide : BeginCodeSnippet
-  typedef TemporalResampling Self;
+  typedef StatisticFeatures Self;
   typedef Application Superclass;
   typedef itk::SmartPointer<Self> Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
@@ -87,7 +86,7 @@ public:
   itkNewMacro(Self)
 ;
 
-  itkTypeMacro(TemporalResampling, otb::Application)
+  itkTypeMacro(StatisticFeatures, otb::Application)
 ;
   //  Software Guide : EndCodeSnippet
 
@@ -115,11 +114,13 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-      SetName("TemporalResampling");
-      SetDescription("Resample a list of images to a fixed step time interval.");
+      SetName("StatisticFeatures");
+      SetDescription("The feature extraction step produces the relevant features for the classication.");
 
-      SetDocName("TemporalResampling");
-      SetDocLongDescription("Resample a list of images to a fixed step time interval.");
+      SetDocName("StatisticFeatures");
+      SetDocLongDescription("The feature extraction step produces the relevant features for the classication. The features are computed"
+                            "for each date of the resampled and gaplled time series and concatenated together into a single multi-channel"
+                            "image file. The selected features are the surface reflectances, the NDVI, the NDWI and the brightness.");
       SetDocLimitations("None");
       SetDocAuthors("LBU");
       SetDocSeeAlso(" ");
@@ -145,23 +146,12 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
+    AddParameter(ParameterType_InputImage, "ndwi", "NDWI time series");
+    AddParameter(ParameterType_InputImage, "brightness", "Brightness time series");
 
-    AddParameter(ParameterType_InputImage, "tocr", "S2 L2A surface reflectances");
-    AddParameter(ParameterType_InputImage, "mask", "Validity masks for each acquisition date");
-    AddParameter(ParameterType_InputFilename, "ind", "Dates of each image acquisition");
-    AddParameter(ParameterType_Int, "sp", "Temporal sampling rate");
-    AddParameter(ParameterType_String, "t0", "Starting sampling date");
-    AddParameter(ParameterType_String, "tend", "Last date");
-    AddParameter(ParameterType_Int, "radius", "Radius of the temporal window ");
+    AddParameter(ParameterType_OutputImage, "sf", "Statistic features");
 
-    AddParameter(ParameterType_OutputImage, "rtocr", "Resampled S2 L2A surface reflectances");
 
-    AddParameter(ParameterType_OutputFilename, "outdays", "The file containing the days from epoch for the resampled time series");
-    MandatoryOff("outdays");
-
-    // Set default value for parameters
-    SetDefaultParameterInt("sp", 5);
-    SetDefaultParameterInt("radius", 15);
      //  Software Guide : EndCodeSnippet
 
     // Software Guide : BeginLatex
@@ -170,13 +160,9 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-    SetDocExampleParameterValue("tocr", "tocr.tif");
-    SetDocExampleParameterValue("mask", "mask.tif");
-    SetDocExampleParameterValue("ind", "dates.txt");
-    SetDocExampleParameterValue("sp", "5");
-    SetDocExampleParameterValue("t0", "20130501");
-    SetDocExampleParameterValue("tend", "20130601");
-    SetDocExampleParameterValue("radius", "15");
+    SetDocExampleParameterValue("ndwi", "ndwi.tif");
+    SetDocExampleParameterValue("brightness", "brightness.tif");
+    SetDocExampleParameterValue("sf", "statistic_features.tif");
     //  Software Guide : EndCodeSnippet
   }
 
@@ -187,7 +173,17 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoUpdateParameters()
   {
-      // Nothing to do.
+      // define all needed types
+      m_bands = 5;
+
+      m_NDWIReader = ReaderType::New();
+      m_BrightnessReader = ReaderType::New();
+
+      m_NDWIFilter = UnaryFunctorImageFilterWithNBandsType::New();
+      m_BrightnessFilter = UnaryFunctorImageFilterWithNBandsType::New();
+
+      m_Concat = ConcatenateVectorImageFilterType::New();
+
   }
   //  Software Guide : EndCodeSnippet
 
@@ -199,89 +195,44 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoExecute()
   {
+      //Read the NDWI input file
+      m_NDWIReader->SetFileName(GetParameterString("ndwi"));
+      m_NDWIReader->UpdateOutputInformation();
 
-      //Read all input parameters
-      imgReader = ReaderType::New();
-      imgReader->SetFileName(GetParameterString("tocr"));
+      // connect the functor based filter
+      m_NDWIFilter->SetNumberOfOutputBands(m_bands);
+      m_NDWIFilter->SetFunctor(StatisticFeaturesFunctorType(m_bands));
+      m_NDWIFilter->SetInput(0, m_NDWIReader->GetOutput());
 
-      maskReader = ReaderType::New();
-      maskReader->SetFileName(GetParameterString("mask"));
+      // add the result to concat.
+      m_Concat->SetInput1(m_NDWIFilter->GetOutput());
 
-      imgReader->GetOutput()->UpdateOutputInformation();
-      maskReader->GetOutput()->UpdateOutputInformation();
+      //Read the Brightness input file
+      m_BrightnessReader->SetFileName(GetParameterString("brightness"));
+      m_BrightnessReader->UpdateOutputInformation();
 
-      // Get the file that contains the dates
-      std::string datesFileName = GetParameterString("ind");
-      std::ifstream datesFile;
-      datesFile.open(datesFileName);
-      if (!datesFile.is_open()) {
-          itkExceptionMacro("Can't open dates file for reading!");
-      }
+      // connect the functor based filter
+      m_BrightnessFilter->SetNumberOfOutputBands(m_bands);
+      m_BrightnessFilter->SetFunctor(StatisticFeaturesFunctorType(m_bands));
+      m_BrightnessFilter->SetInput(0, m_BrightnessReader->GetOutput());
 
-      // read the file and save the dates as second from Epoch to a vector
-      std::vector<int> inDates;
-      std::string value;
-      while (std::getline(datesFile, value)) {
-          inDates.push_back(getDaysFromEpoch(value));
-      }
-      // close the file
-      datesFile.close();
+      // add the result to concat.
+      m_Concat->SetInput2(m_BrightnessFilter->GetOutput());
 
-      // get the interval used for the output images
-      int sp = GetParameterInt("sp");
-      int t0 = getDaysFromEpoch(GetParameterString("t0"));
-      int tend = getDaysFromEpoch(GetParameterString("tend"));
-      int radius = GetParameterInt("radius");
+      SetParameterOutputImage("sf", m_Concat->GetOutput());
 
-      std::ofstream outDaysFile;
-      if (HasValue("outdays")) {
-          outDaysFile.open(GetParameterString("outdays"));
-          if (!outDaysFile.is_open()) {
-              itkExceptionMacro("Can't open output days file for writing!");
-          }
-      }
-
-      // compute the output dates vector
-      std::vector<int> outDates;
-      for( int i = t0; i <= tend; i += sp) {
-          outDates.push_back(i);
-          if (outDaysFile.is_open()) {
-              outDaysFile <<  i << std::endl;
-          }
-      }
-
-      // close the file is opened.
-      if (outDaysFile.is_open()) {
-          outDaysFile.close();
-      }
-
-      // The number of image bands can be computed as the ratio between the bands in the image and the bands in the mask
-      int imageBands = imgReader->GetOutput()->GetNumberOfComponentsPerPixel() / maskReader->GetOutput()->GetNumberOfComponentsPerPixel();
-
-
-      // Create the instance of the filter which will perform all computations
-      filter = BinaryFunctorImageFilterWithNBands::New();
-      filter->SetNumberOfOutputBands(imageBands * outDates.size());
-      filter->SetFunctor(GapFillingFunctor<ImageType::PixelType>(inDates, outDates, radius, imageBands));
-
-      filter->SetInput(0, imgReader->GetOutput());
-      filter->SetInput(1, maskReader->GetOutput());
-
-      SetParameterOutputImage("rtocr", filter->GetOutput());
   }
   //  Software Guide :EndCodeSnippet
-private:
-  ReaderType::Pointer imgReader;
-  ReaderType::Pointer maskReader;
-  BinaryFunctorImageFilterWithNBands::Pointer filter;
 
-  inline int getDaysFromEpoch(const std::string& date) {
-      struct tm tm = {};
-      if (strptime(date.c_str(), "%Y%m%d", &tm) == NULL) {
-          itkExceptionMacro("Invalid value for a date: " + date);
-      }
-      return mktime(&tm) / 86400;
-  }
+  // The number of bands per output
+  int m_bands;
+
+
+  ReaderType::Pointer                               m_NDWIReader;
+  ReaderType::Pointer                               m_BrightnessReader;
+  UnaryFunctorImageFilterWithNBandsType::Pointer    m_NDWIFilter;
+  UnaryFunctorImageFilterWithNBandsType::Pointer    m_BrightnessFilter;
+  ConcatenateVectorImageFilterType::Pointer         m_Concat;
 };
 }
 }
@@ -290,7 +241,7 @@ private:
 // Finally \code{OTB\_APPLICATION\_EXPORT} is called.
 // Software Guide : EndLatex
 //  Software Guide :BeginCodeSnippet
-OTB_APPLICATION_EXPORT(otb::Wrapper::TemporalResampling)
+OTB_APPLICATION_EXPORT(otb::Wrapper::StatisticFeatures)
 //  Software Guide :EndCodeSnippet
 
 
