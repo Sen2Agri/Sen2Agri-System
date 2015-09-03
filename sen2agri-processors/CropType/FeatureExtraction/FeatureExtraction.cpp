@@ -217,19 +217,30 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoExecute()
   {
-      // check that either fts or the group ndvi, ndwi and brightness are set
-      if (!HasValue("fts") && !(HasValue("ndvi") && HasValue("ndwi") && HasValue("brightness"))) {
-          itkExceptionMacro("You must specify a value either for 'fts' or for all of 'ndvi', 'ndwi' and 'brightness'!");
+      bool fullSeries = false;
+      bool ndviSeries = false;
+      bool ndwiSeries = false;
+      bool brightnessSeries = false;
+      // check that at least one of fts, ndvi, ndwi or brightness is set
+      if (!HasValue("fts") && !HasValue("ndvi") && !HasValue("ndwi") && !HasValue("brightness")) {
+          itkExceptionMacro("You must specify a value for at least one of 'fts', 'ndvi', 'ndwi' and 'brightness'!");
       }
 
       // verify what parameters are set
       if(HasValue("fts")) {
-          m_FullSeries = true;
+          fullSeries = true;
           m_ftsConcat = ImageListToVectorImageFilterType::New();
-      } else {
-          m_FullSeries = false;
+      }
+      if(HasValue("ndvi")) {
+          ndviSeries = true;
           m_ndviConcat = ImageListToVectorImageFilterType::New();
+      }
+      if(HasValue("ndwi")) {
+          ndwiSeries = true;
           m_ndwiConcat = ImageListToVectorImageFilterType::New();
+      }
+      if(HasValue("brightness")) {
+          brightnessSeries = true;
           m_brightnessConcat = ImageListToVectorImageFilterType::New();
       }
 
@@ -269,7 +280,7 @@ private:
             brightnessFilter->SetNthInput(j, m_imgSplit->GetOutput()->GetNthElement(i * bandsPerImage + j));
 
             // add the band to the list
-            if (m_FullSeries) {
+            if (fullSeries) {
                 ftsList->PushBack(m_imgSplit->GetOutput()->GetNthElement(i * bandsPerImage + j));
             }
           }
@@ -280,13 +291,18 @@ private:
           brightnessFilter->SetExpression(brightnessExpr);
 
           // add the outputs of the filters to the list
-          if (m_FullSeries) {
+          if (fullSeries) {
               ftsList->PushBack(ndviFilter->GetOutput());
               ftsList->PushBack(ndwiFilter->GetOutput());
               ftsList->PushBack(brightnessFilter->GetOutput());
-          } else {
+          }
+          if (ndviSeries) {
               ndviList->PushBack(ndviFilter->GetOutput());
+          }
+          if (ndwiSeries) {
               ndwiList->PushBack(ndwiFilter->GetOutput());
+          }
+          if (brightnessSeries) {
               brightnessList->PushBack(brightnessFilter->GetOutput());
           }
 
@@ -297,17 +313,21 @@ private:
           m_bandMathFilterList->PushBack(brightnessFilter);
       }
 
-
-      if (m_FullSeries) {
+      if (fullSeries) {
           // add the list as input to the concat filter
           m_ftsConcat->SetInput(ftsList);
           SetParameterOutputImage("fts", m_ftsConcat->GetOutput());
-      } else {
+      }
+      if (ndviSeries) {
           m_ndviConcat->SetInput(ndviList);
-          m_ndwiConcat->SetInput(ndwiList);
-          m_brightnessConcat->SetInput(brightnessList);
           SetParameterOutputImage("ndvi", m_ndviConcat->GetOutput());
+      }
+      if (ndwiSeries) {
+          m_ndwiConcat->SetInput(ndwiList);
           SetParameterOutputImage("ndwi", m_ndwiConcat->GetOutput());
+      }
+      if (brightnessSeries) {
+          m_brightnessConcat->SetInput(brightnessList);
           SetParameterOutputImage("brightness", m_brightnessConcat->GetOutput());
       }
   }
@@ -329,7 +349,6 @@ private:
   ImageListToVectorImageFilterType::Pointer m_ndviConcat;
   ImageListToVectorImageFilterType::Pointer m_ndwiConcat;
   ImageListToVectorImageFilterType::Pointer m_brightnessConcat;
-  bool                                      m_FullSeries;
 };
 }
 }
