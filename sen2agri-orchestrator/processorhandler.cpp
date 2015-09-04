@@ -19,3 +19,8 @@ void ProcessorHandler::HandleTaskFinished(EventProcessingContext &ctx,
 {
     HandleTaskFinishedImpl(ctx, event);
 }
+
+void ProcessorHandler::HandleProductAvailableImpl(EventProcessingContext &,
+                                                  const ProductAvailableEvent &)
+{
+}

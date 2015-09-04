@@ -14,7 +14,7 @@ public:
 
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,
-                                            const ProductAvailableEvent &event) = 0;
+                                            const ProductAvailableEvent &event);
     virtual void HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                         const JobSubmittedEvent &event) = 0;
     virtual void HandleTaskFinishedImpl(EventProcessingContext &ctx,

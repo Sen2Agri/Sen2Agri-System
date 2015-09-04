@@ -33,6 +33,7 @@ SOURCES += main.cpp \
     processorhandler.cpp \
     processor/dummyprocessorhandler.cpp \
     processor/croptypehandler.cpp \
+    processor/cropmaskhandler.cpp \
     tasktosubmit.cpp
 
 HEADERS += \
@@ -43,6 +44,7 @@ HEADERS += \
     processorhandler.hpp \
     processor/dummyprocessorhandler.hpp \
     processor/croptypehandler.hpp \
+    processor/cropmaskhandler.hpp \
     tasktosubmit.hpp
 
 DISTFILES += \
