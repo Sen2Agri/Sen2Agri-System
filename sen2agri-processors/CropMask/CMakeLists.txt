@@ -1,4 +1,5 @@
 add_subdirectory(TemporalFeatures)
 add_subdirectory(StatisticFeatures)
 add_subdirectory(RandomSelection)
+add_subdirectory(DataSmoothing)
 

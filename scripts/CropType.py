@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import os
-import os.file
 import glob
 import argparse
 import csv
@@ -95,7 +94,7 @@ print "SampleSelection done!"
 # gdalwarp
 print "Executing gdalwarp..."
 
-gwCmdLine = "gdalwarp -dstnodata \"-10000\" -overwrite -cutline "+shape+" -crop_to_cutline "+rawtocr+" "+tocr
+gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata \"-10000\" -overwrite -cutline "+shape+" -crop_to_cutline "+rawtocr+" "+tocr
 print gwCmdLine
 result = os.system(gwCmdLine)
 
@@ -105,7 +104,7 @@ if result != 0 :
 
 os.system("rm " + rawtocr)
 
-gwCmdLine = "gdalwarp -dstnodata 1 -overwrite -cutline "+shape+" -crop_to_cutline "+rawmask+" "+mask
+gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata 1 -overwrite -cutline "+shape+" -crop_to_cutline "+rawmask+" "+mask
 print gwCmdLine
 result = os.system(gwCmdLine)
 
