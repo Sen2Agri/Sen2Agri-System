@@ -7,8 +7,6 @@
 #include "orchestratorworker.hpp"
 #include "dbus_future_utils.hpp"
 
-static std::map<QString, QString>
-getModulePathMap(const JobConfigurationParameterValueList &parameters);
 static StepArgumentList getStepArguments(const JobStepToRun &step);
 static NewExecutorStepList
 getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps);
