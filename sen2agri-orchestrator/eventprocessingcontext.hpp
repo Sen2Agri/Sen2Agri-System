@@ -1,5 +1,6 @@
 #pragma once
 
+#include <map>
 #include <vector>
 #include <QFileInfo>
 
@@ -15,7 +16,7 @@ class EventProcessingContext
 public:
     EventProcessingContext(OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient);
 
-    JobConfigurationParameterValueList GetJobConfigurationParameters(int jobId, QString prefix);
+    std::map<QString, QString> GetJobConfigurationParameters(int jobId, QString prefix);
 
     int SubmitTask(const NewTask &task);
     void SubmitSteps(const NewStepList &steps);
@@ -63,6 +64,8 @@ public:
 
         return steps;
     }
+
+    static QString findProductFile(const QString &path);
 
 private:
     QString GetScratchPath(int jobId);

@@ -2,7 +2,7 @@
 
 #include "processorhandler.hpp"
 
-class CropTypeHandler : public ProcessorHandler
+class CropMaskHandler : public ProcessorHandler
 {
 private:
     void HandleJobSubmittedImpl(EventProcessingContext &ctx,
