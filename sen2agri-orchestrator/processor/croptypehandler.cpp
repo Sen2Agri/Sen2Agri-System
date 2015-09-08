@@ -8,6 +8,9 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                              const JobSubmittedEvent &event)
 {
     auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "crop-type.");
+    auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.");
+
+    const auto &gdalwarpMem = resourceParameters["resources.gdalwarp.working-mem"];
 
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
@@ -154,6 +157,9 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                                    "-cutline",
                                                    shape,
                                                    "-crop_to_cutline",
+                                                   "-multi",
+                                                   "-wm",
+                                                   gdalwarpMem,
                                                    rawtocr,
                                                    tocr }),
         clipRaster.CreateStep("ClipRasterMask", { "-dstnodata",
@@ -162,6 +168,9 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                                   "-cutline",
                                                   shape,
                                                   "-crop_to_cutline",
+                                                  "-multi",
+                                                  "-wm",
+                                                  gdalwarpMem,
                                                   rawmask,
                                                   mask }),
         sampleSelection.CreateStep("SampleSelection", { "SampleSelection",
