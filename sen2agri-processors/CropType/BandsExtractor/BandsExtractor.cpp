@@ -243,6 +243,7 @@ private:
 
     m_Concatener = ListConcatenerFilterType::New();
     m_Masks = ListConcatenerFilterType::New();
+    m_AllMasks = ListConcatenerFilterType::New();
     m_ImageList = InternalImageListType::New();
     m_MasksList = InternalImageListType::New();
     m_AllMasksList = InternalImageListType::New();
@@ -265,7 +266,10 @@ private:
 
     AddParameter(ParameterType_OutputImage, "out", "The concatenated images");
     AddParameter(ParameterType_OutputImage, "mask", "The concatenated masks");
+    MandatoryOff("mask");
+
     AddParameter(ParameterType_OutputImage, "allmasks", "The concatenated masks for cloud, water, snow, saturation, etc.");
+    MandatoryOff("allmasks");
 
     AddParameter(ParameterType_OutputFilename, "outdate", "The file containing the dates for the images");
     AddParameter(ParameterType_OutputVectorData, "shape", "The file containing the border shape");
@@ -282,6 +286,7 @@ private:
     SetDocExampleParameterValue("il", "image1.xml image2.xml");
     SetDocExampleParameterValue("out", "fts.tif");
     SetDocExampleParameterValue("mask", "mask.tif");
+    SetDocExampleParameterValue("allmasks", "allmasks.tif");
     SetDocExampleParameterValue("outdate", "dates.txt");
     SetDocExampleParameterValue("shape", "shape.shp");
     //  Software Guide : EndCodeSnippet
@@ -297,6 +302,7 @@ private:
       // Reinitialize the object
       m_Concatener = ListConcatenerFilterType::New();
       m_Masks = ListConcatenerFilterType::New();
+      m_AllMasks = ListConcatenerFilterType::New();
       m_ImageList = InternalImageListType::New();
       m_MasksList = InternalImageListType::New();
       m_AllMasksList = InternalImageListType::New();
@@ -442,31 +448,33 @@ private:
       resampler = getResampler(extractor->GetOutput(), 2.0);
       descriptor.maskCloud = resampler->GetOutput();
 
-      // Get the water mask
+      if(HasValue("allmasks")) {
+          // Get the water mask
 
-      extractor = getExtractor(maskReaderDiv->GetOutput(), 1);
+          extractor = getExtractor(maskReaderDiv->GetOutput(), 1);
 
-      BandMathImageFilterType::Pointer maskWaterMath = BandMathImageFilterType::New();
-      maskWaterMath->SetNthInput(0, extractor->GetOutput());
-      maskWaterMath->SetExpression("((b1 == 2) || (rint(b1/2 - 0,01)-(rint(rint(b1/2 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
-      maskWaterMath->UpdateOutputInformation();
-      m_BandMathList->PushBack(maskWaterMath);
-      // resample from 20m to 10m
-      resampler = getResampler(extractor->GetOutput(), 2.0);
-      descriptor.maskWater = resampler->GetOutput();
+          BandMathImageFilterType::Pointer maskWaterMath = BandMathImageFilterType::New();
+          maskWaterMath->SetNthInput(0, extractor->GetOutput());
+          maskWaterMath->SetExpression("((b1 == 2) || (rint(b1/2 - 0,01)-(rint(rint(b1/2 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
+          maskWaterMath->UpdateOutputInformation();
+          m_BandMathList->PushBack(maskWaterMath);
+          // resample from 20m to 10m
+          resampler = getResampler(extractor->GetOutput(), 2.0);
+          descriptor.maskWater = resampler->GetOutput();
 
-      // Get the snow mask
+          // Get the snow mask
 
-      extractor = getExtractor(maskReaderDiv->GetOutput(), 1);
+          extractor = getExtractor(maskReaderDiv->GetOutput(), 1);
 
-      BandMathImageFilterType::Pointer maskSnowMath = BandMathImageFilterType::New();
-      maskSnowMath->SetNthInput(0, extractor->GetOutput());
-      maskSnowMath->SetExpression("((b1 == 4) || (rint(b1/4 - 0,01)-(rint(rint(b1/4 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
-      maskSnowMath->UpdateOutputInformation();
-      m_BandMathList->PushBack(maskSnowMath);
-      // resample from 20m to 10m
-      resampler = getResampler(extractor->GetOutput(), 2.0);
-      descriptor.maskSnow = resampler->GetOutput();
+          BandMathImageFilterType::Pointer maskSnowMath = BandMathImageFilterType::New();
+          maskSnowMath->SetNthInput(0, extractor->GetOutput());
+          maskSnowMath->SetExpression("((b1 == 4) || (rint(b1/4 - 0,01)-(rint(rint(b1/4 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
+          maskSnowMath->UpdateOutputInformation();
+          m_BandMathList->PushBack(maskSnowMath);
+          // resample from 20m to 10m
+          resampler = getResampler(extractor->GetOutput(), 2.0);
+          descriptor.maskSnow = resampler->GetOutput();
+      }
   }
 
   // Process a LANDSAT8 metadata structure and extract the needed bands and masks.
@@ -540,34 +548,35 @@ private:
       // resample from 30m to 10m
       resampler = getResampler(extractor->GetOutput(), 3.0);
       descriptor.maskCloud = resampler->GetOutput();
+      if(HasValue("allmasks")) {
+          // Get the water mask
+          std::string maskFileWaterSnow = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_MSK");
+          ImageReaderType::Pointer maskReaderWaterSnow = getReader(maskFileWaterSnow);
+          extractor = getExtractor(maskReaderWaterSnow->GetOutput(), 1);
 
-      // Get the water mask
-      std::string maskFileWaterSnow = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_MSK");
-      ImageReaderType::Pointer maskReaderWaterSnow = getReader(maskFileWaterSnow);
-      extractor = getExtractor(maskReaderWaterSnow->GetOutput(), 1);
+          BandMathImageFilterType::Pointer maskWaterMath = BandMathImageFilterType::New();
+          maskWaterMath->SetNthInput(0, extractor->GetOutput());
+          maskWaterMath->SetExpression("((b1 == 0) || (b1-(rint(b1/2-0.01)*2) == 0)) ? 1 : 0 ");
+          maskWaterMath->UpdateOutputInformation();
+          m_BandMathList->PushBack(maskWaterMath);
 
-      BandMathImageFilterType::Pointer maskWaterMath = BandMathImageFilterType::New();
-      maskWaterMath->SetNthInput(0, extractor->GetOutput());
-      maskWaterMath->SetExpression("((b1 == 0) || (b1-(rint(b1/2-0.01)*2) == 0)) ? 1 : 0 ");
-      maskWaterMath->UpdateOutputInformation();
-      m_BandMathList->PushBack(maskWaterMath);
+          // resample from 30m to 10m
+          resampler = getResampler(maskWaterMath->GetOutput(), 3.0);
+          descriptor.maskWater = resampler->GetOutput();
 
-      // resample from 30m to 10m
-      resampler = getResampler(maskWaterMath->GetOutput(), 3.0);
-      descriptor.maskWater = resampler->GetOutput();
+          // Get the snow mask
+          extractor = getExtractor(maskReaderWaterSnow->GetOutput(), 1);
 
-      // Get the snow mask
-      extractor = getExtractor(maskReaderWaterSnow->GetOutput(), 1);
+          BandMathImageFilterType::Pointer maskSnowMath = BandMathImageFilterType::New();
+          maskSnowMath->SetNthInput(0, extractor->GetOutput());
+          maskSnowMath->SetExpression("((b1 == 32) || (rint(b1/32 - 0,01)-(rint(rint(b1/32 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
+          maskSnowMath->UpdateOutputInformation();
+          m_BandMathList->PushBack(maskSnowMath);
 
-      BandMathImageFilterType::Pointer maskSnowMath = BandMathImageFilterType::New();
-      maskSnowMath->SetNthInput(0, extractor->GetOutput());
-      maskSnowMath->SetExpression("((b1 == 32) || (rint(b1/32 - 0,01)-(rint(rint(b1/32 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
-      maskSnowMath->UpdateOutputInformation();
-      m_BandMathList->PushBack(maskSnowMath);
-
-      // resample from 30m to 10m
-      resampler = getResampler(maskSnowMath->GetOutput(), 3.0);
-      descriptor.maskSnow = resampler->GetOutput();
+          // resample from 30m to 10m
+          resampler = getResampler(maskSnowMath->GetOutput(), 3.0);
+          descriptor.maskSnow = resampler->GetOutput();
+      }
   }
 
 
@@ -638,28 +647,29 @@ private:
       ImageReaderType::Pointer maskReaderCloud = getReader(maskFileCloud);
       extractor = getExtractor(maskReaderCloud->GetOutput(), 1);
       descriptor.maskCloud = extractor->GetOutput();
+      if(HasValue("allmasks")) {
+          // Get the water mask
+          std::string maskFileWaterSnow = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_MSK_R1");
+          ImageReaderType::Pointer maskReaderWaterSnow = getReader(maskFileWaterSnow);
+          extractor = getExtractor(maskReaderWaterSnow->GetOutput(), 1);
 
-      // Get the water mask
-      std::string maskFileWaterSnow = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_MSK_R1");
-      ImageReaderType::Pointer maskReaderWaterSnow = getReader(maskFileWaterSnow);
-      extractor = getExtractor(maskReaderWaterSnow->GetOutput(), 1);
+          BandMathImageFilterType::Pointer maskWaterMath = BandMathImageFilterType::New();
+          maskWaterMath->SetNthInput(0, extractor->GetOutput());
+          maskWaterMath->SetExpression("((b1 == 0) || (b1-(rint(b1/2-0.01)*2) == 0)) ? 1 : 0 ");
+          maskWaterMath->UpdateOutputInformation();
+          m_BandMathList->PushBack(maskWaterMath);
+          descriptor.maskWater = maskWaterMath->GetOutput();
 
-      BandMathImageFilterType::Pointer maskWaterMath = BandMathImageFilterType::New();
-      maskWaterMath->SetNthInput(0, extractor->GetOutput());
-      maskWaterMath->SetExpression("((b1 == 0) || (b1-(rint(b1/2-0.01)*2) == 0)) ? 1 : 0 ");
-      maskWaterMath->UpdateOutputInformation();
-      m_BandMathList->PushBack(maskWaterMath);
-      descriptor.maskWater = maskWaterMath->GetOutput();
+          // Get the snow mask
+          extractor = getExtractor(maskReaderWaterSnow->GetOutput(), 1);
 
-      // Get the snow mask
-      extractor = getExtractor(maskReaderWaterSnow->GetOutput(), 1);
-
-      BandMathImageFilterType::Pointer maskSnowMath = BandMathImageFilterType::New();
-      maskSnowMath->SetNthInput(0, extractor->GetOutput());
-      maskSnowMath->SetExpression("((b1 == 32) || (rint(b1/32 - 0,01)-(rint(rint(b1/32 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
-      maskSnowMath->UpdateOutputInformation();
-      m_BandMathList->PushBack(maskSnowMath);
-      descriptor.maskSnow = maskSnowMath->GetOutput();
+          BandMathImageFilterType::Pointer maskSnowMath = BandMathImageFilterType::New();
+          maskSnowMath->SetNthInput(0, extractor->GetOutput());
+          maskSnowMath->SetExpression("((b1 == 32) || (rint(b1/32 - 0,01)-(rint(rint(b1/32 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
+          maskSnowMath->UpdateOutputInformation();
+          m_BandMathList->PushBack(maskSnowMath);
+          descriptor.maskSnow = maskSnowMath->GetOutput();
+      }
   }
 
   // Get all validity masks and build a validity shape which will be comon for all rasters
@@ -765,7 +775,7 @@ private:
 
 
       // interpret the descriptors and extract the required bands from the atached images
-      for (const ImageDescriptor& desc : m_DescriptorsList) {
+      for ( const ImageDescriptor& desc : m_DescriptorsList) {
           // write the date to the output file
           datesFile << desc.aquisitionDate << std::endl;
 
@@ -775,57 +785,64 @@ private:
           m_ImageList->PushBack(desc.imgNIR);
           m_ImageList->PushBack(desc.imgSWIR);
 
-          // build the corresponding mask
-          BandMathImageFilterType::Pointer maskMath = BandMathImageFilterType::New();
-          maskMath->SetNthInput(0, desc.maskCloud);
-          maskMath->SetNthInput(1, desc.maskSat);
-          maskMath->SetNthInput(2, desc.maskValid);
-          maskMath->SetNthInput(3, m_borderMask->GetOutput());
+           if(HasValue("mask")) {
+              // build the corresponding mask
+              BandMathImageFilterType::Pointer maskMath = BandMathImageFilterType::New();
+              maskMath->SetNthInput(0, desc.maskCloud);
+              maskMath->SetNthInput(1, desc.maskSat);
+              maskMath->SetNthInput(2, desc.maskValid);
+              maskMath->SetNthInput(3, m_borderMask->GetOutput());
 
 #ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
-          m_maskExpression = "(b1 == 0) && (b2 == 0) && (b3 == 1) && (b4 == 1) ? 0 : 1";
+              m_maskExpression = "(b1 == 0) && (b2 == 0) && (b3 == 1) && (b4 == 1) ? 0 : 1";
 #else
-          m_maskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 1) and (b4 == 1), 0, 1)";
+              m_maskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 1) and (b4 == 1), 0, 1)";
 #endif
 
-          maskMath->SetExpression(m_maskExpression);
+              maskMath->SetExpression(m_maskExpression);
 
-          m_BandMathList->PushBack(maskMath);
+              m_BandMathList->PushBack(maskMath);
 
-          m_MasksList->PushBack(maskMath->GetOutput());
+              m_MasksList->PushBack(maskMath->GetOutput());
+           }
 
-          // build the general mask
+          if(HasValue("allmasks")) {
+              // build the general mask
 
-          BandMathImageFilterType::Pointer allMaskMath = BandMathImageFilterType::New();
-          allMaskMath->SetNthInput(0, desc.maskCloud);
-          allMaskMath->SetNthInput(1, desc.maskSat);
-          allMaskMath->SetNthInput(2, desc.maskValid);
-          allMaskMath->SetNthInput(3, desc.maskWater);
-          allMaskMath->SetNthInput(4, desc.maskSnow);
+              BandMathImageFilterType::Pointer allMaskMath = BandMathImageFilterType::New();
+              allMaskMath->SetNthInput(0, desc.maskCloud);
+              allMaskMath->SetNthInput(1, desc.maskSat);
+              allMaskMath->SetNthInput(2, desc.maskValid);
+              allMaskMath->SetNthInput(3, desc.maskWater);
+              allMaskMath->SetNthInput(4, desc.maskSnow);
 
 #ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
-          m_allMaskExpression = "(b1 == 0) && (b2 == 0) && (b3 == 1) && (b4 == 0) && (b5 == 0) ? 0 : 1";
+              m_allMaskExpression = "(b1 == 0) && (b2 == 0) && (b3 == 1) && (b4 == 0) && (b5 == 0) ? 0 : 1";
 #else
-          m_allMaskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 1) and && (b4 == 0) and (b5 == 0) , 0, 1)";
+              m_allMaskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 1) and && (b4 == 0) and (b5 == 0) , 0, 1)";
 #endif
 
-          allMaskMath->SetExpression(m_allMaskExpression);
+              allMaskMath->SetExpression(m_allMaskExpression);
 
-          m_BandMathList->PushBack(allMaskMath);
+              m_BandMathList->PushBack(allMaskMath);
 
-          m_AllMasksList->PushBack(allMaskMath->GetOutput());
+              m_AllMasksList->PushBack(allMaskMath->GetOutput());
+          }
       }
 
       // close the dates file
       datesFile.close();
 
       m_Concatener->SetInput( m_ImageList );
-      m_Masks->SetInput(m_MasksList);
-      m_AllMasks->SetInput(m_AllMasksList);
+      if(HasValue("mask"))
+        m_Masks->SetInput(m_MasksList);
+      if(HasValue("allmasks"))
+        m_AllMasks->SetInput(m_AllMasksList);
 
       SetParameterOutputImage("out", m_Concatener->GetOutput());
       SetParameterOutputImage("mask", m_Masks->GetOutput());
-      SetParameterOutputImage("allmasks", m_AllMasks->GetOutput());
+      if(HasValue("allmasks"))
+          SetParameterOutputImage("allmasks", m_AllMasks->GetOutput());
   }
 
 //  void ExtractMasks() {
