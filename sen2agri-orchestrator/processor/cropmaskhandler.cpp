@@ -7,7 +7,10 @@
 void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                              const JobSubmittedEvent &event)
 {
-    auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "crop-map.");
+    auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "crop-mask.");
+    auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.");
+
+    const auto &gdalwarpMem = resourceParameters["resources.gdalwarp.working-mem"];
 
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
@@ -34,8 +37,8 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &classifierSvmOptimize = configParameters["crop-mask.classifier.svm.opt"];
 
     TaskToSubmit bandsExtractor{ "bands-extractor", {} };
-    TaskToSubmit clipRaster{ "gdalwarp", { bandsExtractor } };
     TaskToSubmit clipPolys{ "ogr2ogr", { bandsExtractor } };
+    TaskToSubmit clipRaster{ "gdalwarp", { bandsExtractor } };
     TaskToSubmit sampleSelection{ "sample-selection", { clipPolys } };
     TaskToSubmit randomSelection{ "random-selection", { sampleSelection } };
     TaskToSubmit temporalResampling{ "temporal-resampling", { clipRaster } };
@@ -53,8 +56,12 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                    clipPolys,
                                    clipRaster,
                                    sampleSelection,
+                                   randomSelection,
                                    temporalResampling,
                                    featureExtraction,
+                                   temporalFeatures,
+                                   statisticFeatures,
+                                   concatenateImages,
                                    computeImagesStatistics,
                                    trainImagesClassifier,
                                    imageClassifier,
@@ -156,10 +163,6 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 
     QStringList imageClassifierArgs = { "-in",    features, "-imstat", statistics,
                                         "-model", model,    "-out",    cropMask };
-    if (!cropMask.isEmpty()) {
-        imageClassifierArgs.append("-mask");
-        imageClassifierArgs.append(cropMask);
-    }
 
     NewStepList steps = {
         bandsExtractor.CreateStep("BandsExtractor", bandsExtractorArgs),
@@ -171,6 +174,9 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                                    "-cutline",
                                                    shape,
                                                    "-crop_to_cutline",
+                                                   "-multi",
+                                                   "-wm",
+                                                   gdalwarpMem,
                                                    rawtocr,
                                                    tocr }),
         clipRaster.CreateStep("ClipRasterMask", { "-dstnodata",
@@ -179,6 +185,9 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                                   "-cutline",
                                                   shape,
                                                   "-crop_to_cutline",
+                                                  "-multi",
+                                                  "-wm",
+                                                  gdalwarpMem,
                                                   rawmask,
                                                   mask }),
         sampleSelection.CreateStep("SampleSelection", { "SampleSelection",
@@ -268,10 +277,10 @@ void CropMaskHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             const auto &mAcc = reAcc.match(output.stdOutText);
 
             const auto &statisticsPath =
-                ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "/statistics.txt";
+                ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "statistics.txt";
             QFile file(statisticsPath);
             if (!file.open(QIODevice::WriteOnly)) {
-                throw std::runtime_error(QStringLiteral("Unable to open %1")
+                throw std::runtime_error(QStringLiteral("Unable to open %1: %2")
                                              .arg(statisticsPath)
                                              .arg(file.errorString())
                                              .toStdString());
