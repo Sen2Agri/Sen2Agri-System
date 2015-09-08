@@ -231,10 +231,10 @@ void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             const auto &mAcc = reAcc.match(output.stdOutText);
 
             const auto &statisticsPath =
-                ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "/statistics.txt";
+                ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "statistics.txt";
             QFile file(statisticsPath);
             if (!file.open(QIODevice::WriteOnly)) {
-                throw std::runtime_error(QStringLiteral("Unable to open %1")
+                throw std::runtime_error(QStringLiteral("Unable to open %1: %2")
                                              .arg(statisticsPath)
                                              .arg(file.errorString())
                                              .toStdString());
