@@ -10,6 +10,10 @@ var get_processor_statistics_interval = 60000;
 var get_product_availability_data_url = "http://sen2agri-dev:8080/dashboard/GetDashboardProductAvailability";
 var get_product_availability_data_interval = 60000;
 
+var get_job_timeline_url = "http://sen2agri-dev:8080/dashboard/GetDashboardJobTimeline";
+get_job_timeline_url = "http://127.0.0.1:8080/dashboard/GetDashboardJobTimeline";
+var get_job_timeline_interval = 60000;
+
 var pause_job_url = "http://sen2agri-dev:8080/dashboard/PauseJob";
 
 var resume_job_url = "http://sen2agri-dev:8080/dashboard/ResumeJob";

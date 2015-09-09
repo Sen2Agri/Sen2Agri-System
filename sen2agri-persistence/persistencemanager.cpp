@@ -353,3 +353,10 @@ QString PersistenceManager::GetDashboardProductAvailability(QDateTime since)
 
     return {};
 }
+
+QString PersistenceManager::GetDashboardJobTimeline(int jobId)
+{
+    RunAsync([this, jobId] { return dbProvider.GetDashboardJobTimeline(jobId); });
+
+    return {};
+}

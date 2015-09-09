@@ -164,5 +164,9 @@
       <arg name="jsonData" type="s" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="QDateTime" />
     </method>
+    <method name="GetDashboardJobTimeline">
+      <arg name="jobId" type="i" direction="in" />
+      <arg name="jsonData" type="s" direction="out" />
+    </method>
   </interface>
 </node>

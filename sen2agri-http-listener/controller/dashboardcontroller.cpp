@@ -28,6 +28,8 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
                 getDashboardProcessorStatistics(request, response);
             } else if (action == "GetDashboardProductAvailability") {
                 getDashboardProductAvailability(request, response);
+            } else if (action == "GetDashboardJobTimeline") {
+                getDashboardJobTimeline(request, response);
             } else {
                 response.setStatus(400, "Bad Request");
             }
@@ -102,6 +104,31 @@ void DashboardController::getDashboardProductAvailability(const HttpRequest &req
 
     const auto &data =
         WaitForResponseAndThrow(persistenceManagerClient.GetDashboardProductAvailability(since));
+
+    response.setHeader("Content-Type", "application/json");
+    response.write(data.toUtf8(), true);
+}
+
+void DashboardController::getDashboardJobTimeline(const HttpRequest &request,
+                                                  HttpResponse &response)
+{
+    const auto &jobIdStr = request.getParameter("jobId");
+    bool ok;
+    auto jobId = jobIdStr.toInt(&ok);
+
+    if (!ok) {
+        Logger::error(QStringLiteral("Invalid jobId value: %1").arg(QString::fromUtf8(jobIdStr)));
+
+        response.setStatus(400, "Bad Request");
+        return;
+    }
+
+    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
+        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
+        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
+
+    const auto &data =
+        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardJobTimeline(jobId));
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);

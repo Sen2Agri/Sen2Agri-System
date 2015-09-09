@@ -13,6 +13,7 @@ class DashboardController : public HttpRequestHandler
     void getDashboardServerResourceData(const HttpRequest &request, HttpResponse &response);
     void getDashboardProcessorStatistics(const HttpRequest &request, HttpResponse &response);
     void getDashboardProductAvailability(const HttpRequest &request, HttpResponse &response);
+    void getDashboardJobTimeline(const HttpRequest &request, HttpResponse &response);
 
     void cancelJob(const HttpRequest &request, HttpResponse &response);
     void pauseJob(const HttpRequest &request, HttpResponse &response);

@@ -6,7 +6,7 @@ function update_current_jobs(json_data)
 {
 	//Remove the old rows
 	$("#pnl_current_jobs table:first tr.to_be_refreshed").remove();
-	
+
 	if(!json_data.current_jobs)
 	{
 		return;
@@ -17,7 +17,7 @@ function update_current_jobs(json_data)
 		var action_buttons = "<div class=\"btn-group\">";
 		job.actions.forEach(function(action)
 			{
-				switch(action) 
+				switch(action)
 				{
 					case 1:
 						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action(pause_job_url, " + job.id + ")\">Pause</button>";
@@ -31,12 +31,12 @@ function update_current_jobs(json_data)
 					case 4:
 						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"get_job_config(" + job.id + ")\">View Config</button>";
 						break;
-				} 
+				}
 			});
 		action_buttons += "</div>";
-		
+
 		if(!job.current_tasks)
-		{	
+		{
 			// Break if there aren't any tasks; should not happen in 'real life'
 			return;
 		}
@@ -83,54 +83,54 @@ function update_server_resources_layout(json_data)
 	json_data.server_resources.forEach(function(server) {
 
 		//Set up the DOM elements
-		var table = "<table class=\"table server_resources_table to_be_refreshed_when_needed\">" + 
-		"<tr>" + 
+		var table = "<table class=\"table server_resources_table to_be_refreshed_when_needed\">" +
+		"<tr>" +
 		"<th colspan=\"3\">" + server.name + "</th>" +
 		"</tr>" +
 		"<tr>" +
-		"<th>CPU</th>" + 
+		"<th>CPU</th>" +
 		"<td id=\"server_resources_table_" + counter + "_cpu\"></td>" +
 		"<td>" +
 		"<div id=\"server_resources_table_" + counter + "_cpu_history\" class=\"server_resources_table_graph\"></div>" +
 		"</td>" +
 		"</tr>" +
 		"<tr>" +
-		"<th>RAM</th>" + 
+		"<th>RAM</th>" +
 		"<td id=\"server_resources_table_" + counter + "_ram\"></td>" +
 		"<td>" +
 		"<div id=\"server_resources_table_" + counter + "_ram_history\" class=\"server_resources_table_graph\"></div>" +
 		"</td>" +
 		"</tr>" +
 		"<tr>" +
-		"<th>Swap</th>" + 
+		"<th>Swap</th>" +
 		"<td id=\"server_resources_table_" + counter + "_swap\"></td>" +
 		"<td>" +
 		"<div id=\"server_resources_table_" + counter + "_swap_history\" class=\"server_resources_table_graph\"></div>" +
 		"</td>" +
 		"</tr>" +
 		"<tr>" +
-		"<th>Disk</th>" + 
+		"<th>Disk</th>" +
 		"<td id=\"server_resources_table_" + counter + "_disk\"></td>" +
 		"<td>" +
 		"<div id=\"server_resources_table_" + counter + "_disk_percentage\" class=\"server_resources_table_graph\"></div>" +
 		"</td>" +
 		"</tr>" +
 		"<tr>" +
-		"<th>Load</th>" + 
+		"<th>Load</th>" +
 		"<td id=\"server_resources_table_" + counter + "_load\"></td>" +
 		"<td>" +
 		"<div id=\"server_resources_table_" + counter + "_load_history\" class=\"server_resources_table_graph\"></div>" +
 		"</td>" +
 		"</tr>" +
-		"<tr>" + 
+		"<tr>" +
 		"<td colspan=\"3\"></td>" + // This adds an extra horizontal line at the bottom
 		"</tr>" +
 		"</table>";
 
 		$("#pnl_server_resources").append(table);
-			      
+
 	    if(window.navigator.userAgent.indexOf ( "MSIE " ) > 0)
-	    {		
+	    {
 			$("#server_resources_table_" + counter + "_cpu_history").height($("#server_resources_table_0_cpu_history").parent().height() * 90 / 100);
 			$("#server_resources_table_" + counter + "_ram_history").height($("#server_resources_table_0_cpu_history").parent().height() * 90 / 100);
 			$("#server_resources_table_" + counter + "_swap_history").height($("#server_resources_table_0_cpu_history").parent().height() * 90 / 100);
@@ -156,10 +156,10 @@ function update_server_resources_layout(json_data)
 				},
 				yaxis: {
 					min: 0,
-					max: 100,        
+					max: 100,
 					tickSize: 50,
 					tickFormatter: function (v, axis) {
-						return v + "%";			           
+						return v + "%";
 					},
 					labelWidth: 30
 				},
@@ -195,7 +195,7 @@ function update_server_resources_layout(json_data)
 				},
 				yaxis: {
 					min: 0,
-					max: server.ram_available,        
+					max: server.ram_available,
 					tickSize: server.ram_available / 2,
 					tickFormatter: function (v, axis) {
 						return  Math.ceil(v) + " " + server.ram_unit;
@@ -225,7 +225,7 @@ function update_server_resources_layout(json_data)
 				},
 				yaxis: {
 					min: 0,
-					max: server.swap_available,        
+					max: server.swap_available,
 					tickSize: server.swap_available / 2,
 					tickFormatter: function (v, axis) {
 						return Math.ceil(v) + " " + server.swap_unit;
@@ -250,7 +250,7 @@ function update_server_resources_layout(json_data)
 				bars: {
 					align: "center",
 					barWidth: 0.5,
-					horizontal: true    
+					horizontal: true
 				},
 				xaxis: {
 					min: 0,
@@ -260,11 +260,11 @@ function update_server_resources_layout(json_data)
 					},
 					labelWidth: 40
 				},
-				yaxis: {			    	
+				yaxis: {
 					tickFormatter: function (v, axis) {
 						return "";
 					},
-					labelWidth: 30			    	
+					labelWidth: 30
 				}
 		};
 
@@ -287,7 +287,7 @@ function update_server_resources_layout(json_data)
 					timeformat: ""
 				},
 				yaxis: {
-					min: 0,    
+					min: 0,
 					labelWidth: 30
 				},
 				legend: {
@@ -305,7 +305,7 @@ function update_server_resources_layout(json_data)
 		plots[element_id] =  $.plot($(element_id), load_history_series, load_history_options);
 
 		counter++;
-	});					
+	});
 }
 
 //This should only be called after update_server_resources_layout.
@@ -315,33 +315,33 @@ function update_server_resources(json_data)
 	json_data.server_resources.forEach(function(server) {
 
 		var element_id = "#server_resources_table_" + counter + "_cpu";
-		$(element_id).html("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"CPU Used by System\" >" + server.cpu_system_now + " %</span> " + 
+		$(element_id).html("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"CPU Used by System\" >" + server.cpu_system_now + " %</span> " +
 				"/ <span data-toggle=\"tooltip\" data-placement=\"top\" title=\"CPU Used by User\" >" + server.cpu_user_now + " %</span> ");
 		element_id = "#server_resources_table_" + counter + "_cpu_history";
-		update_plot(element_id, [server.cpu_system_history, server.cpu_user_history], [0,1]); 
+		update_plot(element_id, [server.cpu_system_history, server.cpu_user_history], [0,1]);
 
 		element_id = "#server_resources_table_" + counter + "_ram";
-		$(element_id).html("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"RAM Used\" >" + server.ram_now + " " + server.ram_unit + "</span> / " 
+		$(element_id).html("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"RAM Used\" >" + server.ram_now + " " + server.ram_unit + "</span> / "
 				+ "<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"RAM Available\" >" + server.ram_available + " " + server.ram_unit + "</span>");
 		element_id = "#server_resources_table_" + counter + "_ram_history";
-		update_plot(element_id, [server.ram_history], [0]); 
+		update_plot(element_id, [server.ram_history], [0]);
 
 		element_id = "#server_resources_table_" + counter + "_swap";
-		$(element_id).html("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"Swap Used\" >" + server.swap_now + " " + server.swap_unit + "</span> / " 
+		$(element_id).html("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"Swap Used\" >" + server.swap_now + " " + server.swap_unit + "</span> / "
 				+ "<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"Swap Available\" >" + server.swap_available + " " + server.swap_unit + "</span>");
 		element_id = "#server_resources_table_" + counter + "_swap_history";
 		update_plot(element_id, [server.swap_history], [0]);
 
 		element_id = "#server_resources_table_" + counter + "_disk";
-		$(element_id).html("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"Disk Used\" >" + server.disk_used+ " " + server.disk_unit + "</span> / " 
+		$(element_id).html("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"Disk Used\" >" + server.disk_used+ " " + server.disk_unit + "</span> / "
 				+ "<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"Disk Available\" >" + server.disk_available + " " + server.disk_unit + "</span>");
 		element_id = "#server_resources_table_" + counter + "_disk_percentage";
 		var disk_series = [[ server.disk_used, 0 ]];
 		update_plot(element_id, [disk_series], [0]);
 
 		element_id = "#server_resources_table_" + counter + "_load";
-		$(element_id).html("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"1 min average\" >" + server.load_1min + "</span> " + 
-				"/ <span data-toggle=\"tooltip\" data-placement=\"top\" title=\"5 min average\" >" + server.load_5min + "</span> " + 
+		$(element_id).html("<span data-toggle=\"tooltip\" data-placement=\"top\" title=\"1 min average\" >" + server.load_1min + "</span> " +
+				"/ <span data-toggle=\"tooltip\" data-placement=\"top\" title=\"5 min average\" >" + server.load_5min + "</span> " +
 				"/ <span data-toggle=\"tooltip\" data-placement=\"top\" title=\"15 min average\" >" + server.load_15min + "</span> ");
 		element_id = "#server_resources_table_" + counter + "_load_history";
 		update_plot(element_id, [server.load_1min_history, server.load_5min_history, server.load_15min_history], [0,1,2]);
@@ -362,7 +362,7 @@ function update_plot(element_id, series_data, series_idxs)
 	for(i = 0; i < series_idxs.length; i++)
 	{
 		series[series_idxs[i]].data = series_data[i];
-	}	
+	}
 
 	plots[element_id] =  $.plot($(element_id), series, options);
 
@@ -471,7 +471,7 @@ function show_job_config(json_data)
 	fill_key_value_table("#popup_content_container", json_data.configuration);
 	// Next show the input parameters
 	fill_key_value_table("#popup_content_container", json_data.input);
-	
+
 	toggleMultipleAdditionalContent([$('#popup_content_parent'), $('#popup_content')], [true, true]);
 }
 
@@ -483,7 +483,7 @@ function fill_key_value_table(parent, list)
 	{
 		return;
 	}
-	
+
 	list.forEach(function(item) {
 		var new_row = "<tr class=\"to_be_refreshed\">" +
 		"<th>" + item[0] + "</th>" +
@@ -645,13 +645,13 @@ function set_product_availability_data_refresh()
 	$("#cbo_products_since li a").click(function(){
 			  var selText = $(this).text();
 			  $("#cbo_products_since_selection").html(selText+'<span class="caret"></span>');
-			  
+
 			  var since = new Date();
-			  
+
 			  switch(this.id)
 			  {
 			  	case "products_since_1_hour":
-			  		since.setHours(since.getHours() - 1); 
+			  		since.setHours(since.getHours() - 1);
 			  		break;
 			  	case "products_since_6_hours":
 			  		since.setHours(since.getHours() - 6);
@@ -672,7 +672,7 @@ function set_product_availability_data_refresh()
 		  			since.setDate(since.getDate() - 30);
 			  		break;
 			  }
-			  
+
 			  product_availability_since = since.toISOString();
 
 			  // Clear the old schedules, run the get function now and schedule the next executions.
@@ -680,8 +680,35 @@ function set_product_availability_data_refresh()
     		  get_product_availability_data();
 			  product_availability_interval_pointer = setInterval(get_product_availability_data, get_product_availability_data_interval);
 		});
-	
+
 	// Run the get function now and schedule the next executions.
 	get_product_availability_data();
 	product_availability_interval_pointer = setInterval(get_product_availability_data, get_product_availability_data_interval);
+}
+
+function get_job_timeline(jobId)
+{
+	$.ajax({
+		url: get_job_timeline_url,
+		type: "get",
+		cache: false,
+		crosDomain: true,
+		dataType: "json",
+		data: {
+            jobId: jobId
+		},
+		success: function(json_data)
+		{
+			update_job_timeline(json_data);
+		},
+		error: function (responseData, textStatus, errorThrown) {
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+		}
+	});
+}
+
+function update_job_timeline(json_data)
+{
+    var container = $("#visualization").get(0);
+    var timeline = new vis.Timeline(container, json_data.items, json_data.groups);
 }
