@@ -54,7 +54,9 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
     try {
         ctx.MarkEventProcessingStarted(event.eventId);
     } catch (const std::exception &e) {
-        Logger::error(QStringLiteral("Unable to mark event id %1 as started: ").arg(e.what()));
+        Logger::error(QStringLiteral("Unable to mark event id %1 as started: %2")
+                          .arg(event.eventId)
+                          .arg(e.what()));
         return;
     }
 
