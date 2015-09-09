@@ -7,8 +7,6 @@
 #include "orchestratorworker.hpp"
 #include "dbus_future_utils.hpp"
 
-static std::map<QString, QString>
-getModulePathMap(const JobConfigurationParameterValueList &parameters);
 static StepArgumentList getStepArguments(const JobStepToRun &step);
 static NewExecutorStepList
 getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps);
@@ -56,7 +54,9 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
     try {
         ctx.MarkEventProcessingStarted(event.eventId);
     } catch (const std::exception &e) {
-        Logger::error(QStringLiteral("Unable to mark event id %1 as started: ").arg(e.what()));
+        Logger::error(QStringLiteral("Unable to mark event id %1 as started: %2")
+                          .arg(event.eventId)
+                          .arg(e.what()));
         return;
     }
 
@@ -227,12 +227,11 @@ ProcessorHandler &OrchestratorWorker::GetHandler(int processorId)
     return *it->second;
 }
 
-static std::map<QString, QString>
-getModulePathMap(const JobConfigurationParameterValueList &parameters)
+static std::map<QString, QString> getModulePathMap(const std::map<QString, QString> &parameters)
 {
     std::map<QString, QString> modulePaths;
     for (const auto &p : parameters) {
-        modulePaths.emplace(p.key.mid(p.key.lastIndexOf('.') + 1), p.value);
+        modulePaths.emplace(p.first.mid(p.first.lastIndexOf('.') + 1), p.second);
     }
 
     return modulePaths;

@@ -12,11 +12,18 @@ EventProcessingContext::EventProcessingContext(
 {
 }
 
-JobConfigurationParameterValueList
-EventProcessingContext::GetJobConfigurationParameters(int jobId, QString prefix)
+std::map<QString, QString> EventProcessingContext::GetJobConfigurationParameters(int jobId,
+                                                                                 QString prefix)
 {
-    return WaitForResponseAndThrow(
+    const auto &paramList = WaitForResponseAndThrow(
         persistenceManagerClient.GetJobConfigurationParameters(jobId, prefix));
+
+    std::map<QString, QString> result;
+    for (const auto &p : paramList) {
+        result.emplace(p.key, p.value);
+    }
+
+    return result;
 }
 
 int EventProcessingContext::SubmitTask(const NewTask &task)
@@ -161,4 +168,32 @@ void EventProcessingContext::SubmitTasks(int jobId,
 
         task.outputPath = GetOutputPath(jobId, task.taskId, task.moduleName);
     }
+}
+
+QString EventProcessingContext::findProductFile(const QString &path)
+{
+    QString result;
+    for (const auto &file : QDir(path).entryList({ "*.HDR", "*.xml" }, QDir::Files)) {
+        if (!result.isEmpty()) {
+            throw std::runtime_error(
+                QStringLiteral(
+                    "More than one HDR or xml file in path %1. Unable to determine the product "
+                    "metadata file.")
+                    .arg(path)
+                    .toStdString());
+        }
+
+        result = file;
+    }
+
+    if (result.isEmpty()) {
+        throw std::runtime_error(
+            QStringLiteral(
+                "Unable to find an HDR or xml file in path %1. Unable to determine the product "
+                "metadata file.")
+                .arg(path)
+                .toStdString());
+    }
+
+    return path + result;
 }

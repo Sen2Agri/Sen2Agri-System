@@ -2,12 +2,12 @@
 #include <QJsonObject>
 #include <QRegularExpression>
 
-#include "croptypehandler.hpp"
+#include "cropmaskhandler.hpp"
 
-void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
+void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                              const JobSubmittedEvent &event)
 {
-    auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "crop-type.");
+    auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "crop-mask.");
     auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.");
 
     const auto &gdalwarpMem = resourceParameters["resources.gdalwarp.working-mem"];
@@ -21,30 +21,34 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &dateStart = parameters["date_start"].toString();
     const auto &dateEnd = parameters["date_end"].toString();
 
-    const auto &cropMask = parameters["crop_mask"].toString();
+    const auto &samplingRate = configParameters["crop-mask.sampling-rate"];
+    const auto &sampleRatio = configParameters["crop-mask.sample-ratio"];
 
-    const auto &samplingRate = configParameters["crop-type.sampling-rate"];
-    const auto &sampleRatio = configParameters["crop-type.sample-ratio"];
+    const auto &trainingSamplesNumber = configParameters["crop-mask.training-samples-number"];
 
-    const auto &classifier = configParameters["crop-type.classifier"];
-    const auto &fieldName = configParameters["crop-type.classifier.field"];
+    const auto &classifier = configParameters["crop-mask.classifier"];
+    const auto &fieldName = configParameters["crop-mask.classifier.field"];
 
-    const auto &classifierRfNbTrees = configParameters["crop-type.classifier.rf.nbtrees"];
-    const auto &classifierRfMinSamples = configParameters["crop-type.classifier.rf.min"];
-    const auto &classifierRfMaxDepth = configParameters["crop-type.classifier.rf.max"];
+    const auto &classifierRfNbTrees = configParameters["crop-mask.classifier.rf.nbtrees"];
+    const auto &classifierRfMinSamples = configParameters["crop-mask.classifier.rf.min"];
+    const auto &classifierRfMaxDepth = configParameters["crop-mask.classifier.rf.max"];
 
-    const auto &classifierSvmKernel = configParameters["crop-type.classifier.svm.k"];
-    const auto &classifierSvmOptimize = configParameters["crop-type.classifier.svm.opt"];
+    const auto &classifierSvmKernel = configParameters["crop-mask.classifier.svm.k"];
+    const auto &classifierSvmOptimize = configParameters["crop-mask.classifier.svm.opt"];
 
     TaskToSubmit bandsExtractor{ "bands-extractor", {} };
     TaskToSubmit clipPolys{ "ogr2ogr", { bandsExtractor } };
     TaskToSubmit clipRaster{ "gdalwarp", { bandsExtractor } };
     TaskToSubmit sampleSelection{ "sample-selection", { clipPolys } };
+    TaskToSubmit randomSelection{ "random-selection", { sampleSelection } };
     TaskToSubmit temporalResampling{ "temporal-resampling", { clipRaster } };
     TaskToSubmit featureExtraction{ "feature-extraction", { temporalResampling } };
-    TaskToSubmit computeImagesStatistics{ "compute-images-statistics", { featureExtraction } };
+    TaskToSubmit temporalFeatures{ "temporal-features", { featureExtraction } };
+    TaskToSubmit statisticFeatures{ "statistic-features", { featureExtraction } };
+    TaskToSubmit concatenateImages{ "concatenate-images", { temporalFeatures, statisticFeatures } };
+    TaskToSubmit computeImagesStatistics{ "compute-images-statistics", { concatenateImages } };
     TaskToSubmit trainImagesClassifier{ "train-images-classifier",
-                                        { sampleSelection, computeImagesStatistics } };
+                                        { randomSelection, computeImagesStatistics } };
     TaskToSubmit imageClassifier{ "image-classifier", { trainImagesClassifier } };
     TaskToSubmit computeConfusionMatrix{ "compute-confusion-matrix", { imageClassifier } };
 
@@ -52,8 +56,12 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                    clipPolys,
                                    clipRaster,
                                    sampleSelection,
+                                   randomSelection,
                                    temporalResampling,
                                    featureExtraction,
+                                   temporalFeatures,
+                                   statisticFeatures,
+                                   concatenateImages,
                                    computeImagesStatistics,
                                    trainImagesClassifier,
                                    imageClassifier,
@@ -61,6 +69,10 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 
     const auto &trainingPolys = sampleSelection.GetFilePath("training_polygons.shp");
     const auto &validationPolys = sampleSelection.GetFilePath("validation_polygons.shp");
+
+    const auto &randomTrainingPolys = randomSelection.GetFilePath("random_training_polygons.shp");
+    // not used
+    const auto &randomTestingPolys = randomSelection.GetFilePath("random_testing_polygons.shp");
 
     const auto &rawtocr = bandsExtractor.GetFilePath("rawtocr.tif");
     const auto &rawmask = bandsExtractor.GetFilePath("rawmask.tif");
@@ -73,15 +85,24 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &mask = clipRaster.GetFilePath("mask.tif");
 
     const auto &rtocr = temporalResampling.GetFilePath("rtocr.tif");
+    const auto &days = temporalResampling.GetFilePath("days.txt");
 
-    const auto &feFts = featureExtraction.GetFilePath("fts.tif");
+    const auto &ndvi = featureExtraction.GetFilePath("ndvi.tif");
+    const auto &ndwi = featureExtraction.GetFilePath("ndwi.tif");
+    const auto &brightness = featureExtraction.GetFilePath("brightness.tif");
+
+    const auto &tf = temporalFeatures.GetFilePath("tf.tif");
+
+    const auto &sf = statisticFeatures.GetFilePath("sf.tif");
+
+    const auto &features = concatenateImages.GetFilePath("features.tif");
 
     const auto &statistics = computeImagesStatistics.GetFilePath("statistics.xml");
 
     const auto &model = trainImagesClassifier.GetFilePath("model.txt");
     const auto &confusionMatrix = trainImagesClassifier.GetFilePath("confusion-matrix.csv");
 
-    const auto &cropTypeMap = imageClassifier.GetFilePath("crop_type_map.tif");
+    const auto &cropMask = imageClassifier.GetFilePath("crop_mask.tif");
 
     const auto &confusionMatrixValidation =
         computeConfusionMatrix.GetFilePath("confusion-matrix-validation.csv");
@@ -102,9 +123,9 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
 
     QStringList trainImagesClassifierArgs = { "-io.il",
-                                              feFts,
+                                              features,
                                               "-io.vd",
-                                              trainingPolys,
+                                              randomTrainingPolys,
                                               "-io.imstat",
                                               statistics,
                                               "-rand",
@@ -140,12 +161,8 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
         trainImagesClassifierArgs.append(classifierSvmOptimize);
     }
 
-    QStringList imageClassifierArgs = { "-in",    feFts, "-imstat", statistics,
-                                        "-model", model, "-out",    cropTypeMap };
-    if (!cropMask.isEmpty()) {
-        imageClassifierArgs.append("-mask");
-        imageClassifierArgs.append(cropMask);
-    }
+    QStringList imageClassifierArgs = { "-in",    features, "-imstat", statistics,
+                                        "-model", model,    "-out",    cropMask };
 
     NewStepList steps = {
         bandsExtractor.CreateStep("BandsExtractor", bandsExtractorArgs),
@@ -181,7 +198,20 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                                         "-tp",
                                                         trainingPolys,
                                                         "-vp",
-                                                        validationPolys }),
+                                                        validationPolys,
+                                                        "-nofilter",
+                                                        "true" }),
+        randomSelection.CreateStep("RandomSelection", { "RandomSelection",
+                                                        "-ref",
+                                                        trainingPolys,
+                                                        "-nbtrsample",
+                                                        trainingSamplesNumber,
+                                                        "-seed",
+                                                        "0",
+                                                        "-trp",
+                                                        randomTrainingPolys,
+                                                        "-tsp",
+                                                        randomTestingPolys }),
         temporalResampling.CreateStep("TemporalResampling", { "TemporalResampling",
                                                               "-tocr",
                                                               tocr,
@@ -196,15 +226,31 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                                               "-tend",
                                                               dateEnd,
                                                               "-rtocr",
-                                                              rtocr }),
-        featureExtraction.CreateStep("FeatureExtraction",
-                                     { "FeatureExtraction", "-rtocr", rtocr, "-fts", feFts }),
+                                                              rtocr,
+                                                              "-outdays",
+                                                              days }),
+        featureExtraction.CreateStep("FeatureExtraction", { "FeatureExtraction",
+                                                            "-rtocr",
+                                                            rtocr,
+                                                            "-ndvi",
+                                                            ndvi,
+                                                            "-ndwi",
+                                                            ndwi,
+                                                            "-brightness",
+                                                            brightness }),
+        temporalFeatures.CreateStep(
+            "TemporalFeatures", { "TemporalFeatures", "-ndvi", ndvi, "-dates", days, "-tf", tf }),
+        statisticFeatures.CreateStep(
+            "StatisticFeatures",
+            { "StatisticFeatures", "-ndwi", ndwi, "-brightness", brightness, "-sf", sf }),
+        concatenateImages.CreateStep("ConcatenateImages",
+                                     { "ConcatenateImages", "-il", tf, sf, "-out", features }),
         computeImagesStatistics.CreateStep("ComputeImagesStatistics",
-                                           { "-il", feFts, "-out", statistics }),
+                                           { "-il", features, "-out", statistics }),
         trainImagesClassifier.CreateStep("TrainImagesClassifier", trainImagesClassifierArgs),
         imageClassifier.CreateStep("ImageClassifier", imageClassifierArgs),
         computeConfusionMatrix.CreateStep("ComputeConfusionMatrix", { "-in",
-                                                                      cropTypeMap,
+                                                                      cropMask,
                                                                       "-out",
                                                                       confusionMatrixValidation,
                                                                       "-ref",
@@ -218,7 +264,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     ctx.SubmitSteps(steps);
 }
 
-void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
+void CropMaskHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
     if (event.module == "compute-confusion-matrix") {

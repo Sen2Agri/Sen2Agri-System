@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_mark_step_finished(
+CREATE OR REPLACE FUNCTION sp_mark_step_finished(
 IN _task_id int,
 IN _step_name character varying,
 IN _node_name character varying,
@@ -23,12 +23,14 @@ BEGIN
 
 	UPDATE step
 	SET status_id = CASE status_id
+                        WHEN 1 THEN 6 -- Submitted -> Finished
                         WHEN 2 THEN 6 -- PendingStart -> Finished
                         WHEN 4 THEN 6 -- Running -> Finished
                         ELSE status_id
                     END,
 	end_timestamp = now(),
 	status_timestamp = CASE status_id
+                           WHEN 1 THEN now()
                            WHEN 2 THEN now()
                            WHEN 4 THEN now()
                            ELSE status_timestamp

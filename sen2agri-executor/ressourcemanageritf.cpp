@@ -225,7 +225,7 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
                           .arg(SRUN_CMD, paramsStr));
 
         CommandInvoker cmdInvoker;
-        if (!cmdInvoker.InvokeCommand(SRUN_CMD, listParams, false)) {
+        if (!cmdInvoker.InvokeCommand(SRUN_CMD, listParams, true)) {
             Logger::error(QString("Unable to execute SLURM srun command for the processor %1")
                               .arg(executionStep.GetProcessorPath()));
             return false;
