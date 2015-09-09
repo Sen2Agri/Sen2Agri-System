@@ -217,6 +217,7 @@ class TwoCycleSigmoFittingFunctor
 {
 protected:
   std::vector<tm> dates;
+  std::vector<int> daysEpoch;
   VectorType dv;
   bool return_fit;
   bool fit_only_invalid;
@@ -235,6 +236,13 @@ public:
       dv[i] = pheno::doy(dates[i]);
       }
 
+    daysEpoch.resize(d.size());
+    size_t sz = d.size();
+    for (size_t i = 0; i < sz; i++)
+      {
+        tm tmTmp = d[i];
+        daysEpoch[i] = mktime(&tmTmp) / 60 / 60 / 24;
+      }
   }
 
   void SetUseMask(bool um) {
@@ -280,7 +288,7 @@ public:
     // A date is valid if it is not NaN and the mask value == 0.
     auto pred = [=](int e) { return !(std::isnan(vec[e])) &&
                              (mv[e]==(typename PixelType::ValueType{0})); };
-    auto f_profiles = filter_profile(vec, dates, pred);
+    auto f_profiles = filter_profile_fast(vec, daysEpoch, pred);
 
     decltype(vec) profile=f_profiles.first;
     decltype(vec) t=f_profiles.second;
