@@ -39,7 +39,7 @@ std::pair<V, V> filter_profile(V vec, W date_vec, P pred)
   unsigned int year_count = 0;
   for(size_t i=1; i<nbDates; ++i)
     {
-    std::cout << t[i] << " ";
+    //std::cout << t[i] << " ";
     auto tmp_doy = t[i];
     if(tmp_doy < t[i-1]-365*year_count)
       ++year_count;
