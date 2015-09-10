@@ -31,9 +31,25 @@ OTB_CREATE_APPLICATION(NAME           BVInversion
 OTB_CREATE_APPLICATION(NAME           BVImageInversion
   SOURCES        otbBVImageInversion.cxx
   LINK_LIBRARIES ${OTB_LIBRARIES};OTBBVUtil;gsl;gslcblas)
+  
 OTB_CREATE_APPLICATION(NAME           ProfileReprocessing
   SOURCES        otbProfileReprocessing.cxx
-  LINK_LIBRARIES ${OTB_LIBRARIES};OTBBVUtil;${PHENOTB_LIBRARY};gsl;gslcblas)
+  LINK_LIBRARIES MACCSMetadata;MetadataHelper;${OTB_LIBRARIES};OTBBVUtil;${PHENOTB_LIBRARY};gsl;gslcblas)
+  
+otb_create_application(
+  NAME           TrainingDataGenerator
+  SOURCES        otbTrainingDataGenerator.cpp
+  LINK_LIBRARIES ${OTB_LIBRARIES})
+  
+otb_create_application(
+  NAME           NdviRviExtraction
+  SOURCES        otbNdviRviExtraction.cpp
+  LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
+  
+otb_create_application(
+  NAME           TimeSeriesBuilder
+  SOURCES        otbTimeSeriesBuilder.cpp
+  LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
                      
 add_executable(testSimus testSimus.cxx)
 target_link_libraries(testSimus ${OTB_LIBRARIES} OTBBVUtil gsl gslcblas)

@@ -14,12 +14,14 @@
 
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
+#include "itkBinaryFunctorImageFilter.h"
 
 #include <vector>
 
 #include "dateUtils.h"
 #include "phenoFunctions.h"
 #include "otbProfileReprocessing.h"
+#include "MetadataHelperFactory.h"
 
 namespace otb
 {
@@ -28,9 +30,93 @@ int date_to_doy(std::string& date_str)
   return pheno::doy(pheno::make_date(date_str));
 }
 
+namespace Functor
+{
+}
+
 
 namespace Wrapper
 {
+
+typedef enum {ALGO_LOCAL = 0, ALGO_FIT} ALGO_TYPE;
+template< class TInput1, class TInput2, class TOutput>
+class ProfileReprocessingFunctor
+{
+public:
+  ProfileReprocessingFunctor() {}
+  ~ProfileReprocessingFunctor() {}
+  bool operator!=(const ProfileReprocessingFunctor &a) const
+  {
+      return (this->date_vect != a.date_vect) || (this->algoType != a.algoType) ||
+              (this->bwr != a.bwr) || (this->fwr != a.fwr);
+  }
+
+  bool operator==(const ProfileReprocessingFunctor & other) const
+  {
+    return !( *this != other );
+  }
+
+  void SetDates(VectorType &idDates)
+  {
+      date_vect = idDates;
+  }
+
+  void SetAlgoType(ALGO_TYPE algo)
+  {
+      algoType = algo;
+  }
+
+  void SetBwr(size_t inBwr) {
+      bwr = inBwr;
+  }
+
+  void SetFwr(size_t inFwr) {
+      fwr = inFwr;
+  }
+
+  inline TOutput operator()(const TInput1 & A,
+                            const TInput2 & B) const
+  {
+      //itk::VariableLengthVector vect;
+    int nbBvElems = A.GetNumberOfElements();
+
+    VectorType ts(nbBvElems);
+    VectorType ets(nbBvElems);
+    int i;
+    for(i = 0; i<nbBvElems; i++) {
+        ts[i] = A[i];
+        ets[i] = B[i];
+    }
+
+    VectorType out_bv_vec{};
+    VectorType out_flag_vec{};
+
+    if(algoType == ALGO_LOCAL) {
+        std::tie(out_bv_vec, out_flag_vec) =
+            smooth_time_series_local_window_with_error(date_vect, ts, ets,
+                                                       bwr, fwr);
+    } else {
+      std::tie(out_bv_vec, out_flag_vec) =
+        fit_csdm(date_vect, ts, ets);
+    }
+    TOutput result(2*nbBvElems);
+    i = 0;
+    for(i = 0; i < nbBvElems; i++) {
+        result[i] = out_bv_vec[i];
+    }
+    for(int j = 0; j < nbBvElems; j++) {
+        result[i+j] = out_flag_vec[j];
+    }
+
+    return result;
+  }
+private:
+  // input dates vector
+  VectorType date_vect;
+  ALGO_TYPE algoType;
+  size_t bwr;
+  size_t fwr;
+};
 
 class ProfileReprocessing : public Application
 {
@@ -40,6 +126,18 @@ public:
   typedef Application                   Superclass;
   typedef itk::SmartPointer<Self>       Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
+
+  typedef float                                   PixelType;
+  typedef FloatVectorImageType                    InputImageType;
+  typedef FloatVectorImageType                    OutImageType;
+
+  typedef ProfileReprocessingFunctor <InputImageType::PixelType,
+                                    InputImageType::PixelType,
+                                    OutImageType::PixelType>                FunctorType;
+
+  typedef itk::BinaryFunctorImageFilter<InputImageType,
+                                        InputImageType,
+                                        OutImageType, FunctorType> FilterType;
 
   /** Standard macro */
   itkNewMacro(Self);
@@ -53,13 +151,16 @@ private:
     SetName("ProfileReprocessing");
     SetDescription("Reprocess a BV time profile.");
    
-    AddParameter(ParameterType_InputFilename, "ipf", "Input profile file.");
-    SetParameterDescription( "ipf", "Input file containing the profile to process. This is an ASCII file where each line contains the date (YYYMMDD) the BV estimation and the error." );
-    MandatoryOn("ipf");
+    AddParameter(ParameterType_InputImage, "lai", "Input profile file.");
+    SetParameterDescription( "lai", "Input file containing the profile to process. This is an ASCII file where each line contains the date (YYYMMDD) the BV estimation and the error." );
 
-    AddParameter(ParameterType_OutputFilename, "opf", "Output profile file.");
-    SetParameterDescription( "opf", "Filename where the reprocessed profile saved. This is an ASCII file where each line contains the date (YYYMMDD) the new BV estimation and a boolean information which is 0 if the value has not been reprocessed." );
-    MandatoryOn("opf");
+    AddParameter(ParameterType_InputImage, "err", "Input profile file.");
+    SetParameterDescription( "err", "Input file containing the profile to process. This is an ASCII file where each line contains the date (YYYMMDD) the BV estimation and the error." );
+
+    AddParameter(ParameterType_InputFilenameList, "ilxml", "The XML metadata files list");
+
+    AddParameter(ParameterType_OutputImage, "opf", "Output profile file.");
+    SetParameterDescription( "opf", "Filename where the reprocessed profile saved. This is an raster band contains the new BV estimation value for each pixel. The last band contains the boolean information which is 0 if the value has not been reprocessed." );
 
     AddParameter(ParameterType_Choice, "algo", 
                  "Reprocessing algorithm: local, fit.");
@@ -90,95 +191,64 @@ private:
 
   void DoExecute()
   {
-    auto ipfn = GetParameterString("ipf");
-    std::ifstream in_profile_file;
-    try
-      {
-      in_profile_file.open(ipfn.c_str());
+      FloatVectorImageType::Pointer lai_image = this->GetParameterImage("lai");
+      FloatVectorImageType::Pointer err_image = this->GetParameterImage("err");
+      std::vector<std::string> xmlsList = this->GetParameterStringList("ilxml");
+      unsigned int nb_lai_bands = lai_image->GetNumberOfComponentsPerPixel();
+      unsigned int nb_err_bands = err_image->GetNumberOfComponentsPerPixel();
+      unsigned int nb_xmls = xmlsList.size();
+      if((nb_lai_bands == 0) || (nb_lai_bands != nb_err_bands) || (nb_lai_bands != nb_xmls)) {
+          itkExceptionMacro("Invalid number of bands or xmls: lai bands=" <<
+                            nb_lai_bands << ", err bands =" <<
+                            nb_err_bands << ", nb_xmls=" << nb_xmls);
       }
-    catch(...)
+
+      VectorType date_vec{};
+      std::string date_str;
+      for (std::string strXml : xmlsList)
       {
-      itkGenericExceptionMacro(<< "Could not open file " 
-                               << ipfn);
+          MetadataHelperFactory::Pointer factory = MetadataHelperFactory::New();
+          // we are interested only in the 10m resolution as we need only the date
+          auto pHelper = factory->GetMetadataHelper(strXml, 10);
+          date_str = pHelper->GetAcquisitionDate();
+          date_vec.push_back(date_to_doy(date_str));
       }
 
-    auto nb_dates = 0;
-    std::vector<std::string> date_str_vec{};
-    VectorType date_vec{};
-    VectorType bv_vec{};
-    VectorType err_vec{};
-    for(std::string line; std::getline(in_profile_file, line); )
-      {
-      if(line.size() > 1)
-        {
-        std::istringstream ss(line);
-        std::string date_str;
-        PrecisionType in_bv;
-        PrecisionType bv_err;
-
-        ss >> date_str;
-        ss >> in_bv;
-        ss >> bv_err;
-
-        date_str_vec.push_back(date_str);
-        date_vec.push_back(date_to_doy(date_str));
-        bv_vec.push_back(in_bv);
-        err_vec.push_back(bv_err);
-
-        nb_dates++;
-        }
-      }
-    otbAppLogINFO("Input profile contains " << nb_dates << " dates.\n");
-
-    in_profile_file.close();
-
-    VectorType out_bv_vec{};
-    VectorType out_flag_vec{};
-
-    std::string algo{"local"};
-    if (IsParameterEnabled("algo"))
-      algo = GetParameterString("algo");    
-    if (algo == "local")
-      {
       size_t bwr{1};
       size_t fwr{1};
-      if (IsParameterEnabled("algo.local.bwr"))
-        bwr = GetParameterInt("algo.local.bwr");
-      if (IsParameterEnabled("algo.local.fwr"))
-        bwr = GetParameterInt("algo.local.fwr");
-      std::tie(out_bv_vec, out_flag_vec) = 
-        smooth_time_series_local_window_with_error(date_vec, bv_vec, err_vec, 
-                                                   bwr, fwr);
-      }
-    else if (algo == "fit")
-      std::tie(out_bv_vec, out_flag_vec) = 
-        fit_csdm(date_vec, bv_vec, err_vec);
-    else
-      itkGenericExceptionMacro(<< "Unknown algorithm " << algo 
-                               << ". Available algorithms are: local, fit.\n");
-
-    auto opfn = GetParameterString("opf");
-    std::ofstream out_profile_file;
-    try
+      ALGO_TYPE algoType = ALGO_LOCAL;
+      std::string algo{"local"};
+      if (IsParameterEnabled("algo"))
+        algo = GetParameterString("algo");
+      if (algo == "local")
       {
-      out_profile_file.open(opfn.c_str());
-      }
-    catch(...)
-      {
-      itkGenericExceptionMacro(<< "Could not open file " << opfn);
-      }
-    for(size_t i=0; i<date_vec.size(); ++i)
-      {
-      std::stringstream ss;
-      ss << date_str_vec[i] << "\t" << out_bv_vec[i] << "\t" 
-         << out_flag_vec[i] << std::endl;
-      out_profile_file << ss.str();
+        if (IsParameterEnabled("algo.local.bwr"))
+          bwr = GetParameterInt("algo.local.bwr");
+        if (IsParameterEnabled("algo.local.fwr"))
+          bwr = GetParameterInt("algo.local.fwr");
+      } else {
+          algoType = ALGO_FIT;
       }
 
-    out_profile_file.close();
+      //instantiate a functor with the regressor and pass it to the
+      //unary functor image filter pass also the normalization values
+      m_profileReprocessingFilter = FilterType::New();
+      m_functor.SetDates(date_vec);
+      m_functor.SetAlgoType(algoType);
+      m_functor.SetBwr(bwr);
+      m_functor.SetFwr(fwr);
 
+      m_profileReprocessingFilter->SetFunctor(m_functor);
+      m_profileReprocessingFilter->SetInput1(lai_image);
+      m_profileReprocessingFilter->SetInput2(err_image);
+      m_profileReprocessingFilter->UpdateOutputInformation();
+      m_profileReprocessingFilter->GetOutput()->SetNumberOfComponentsPerPixel(nb_lai_bands*2);
+      SetParameterOutputImage("opf", m_profileReprocessingFilter->GetOutput());
 
   }
+
+  FilterType::Pointer m_profileReprocessingFilter;
+  FunctorType m_functor;
 };
 }
 }
