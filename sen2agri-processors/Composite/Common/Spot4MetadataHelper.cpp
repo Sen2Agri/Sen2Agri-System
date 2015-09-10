@@ -17,6 +17,11 @@ bool Spot4MetadataHelper::DoLoadMetadata()
         m_fAotNoDataVal = 0;
         m_nAotBandIndex = 1;
 
+        // For Spot4 the bands are XS1;XS2;XS3;SWIR that correspond to RED, GREEN, NIR and SWIR
+        m_nRedBandIndex = 1;
+        m_nGreenBandIndex = 2;
+        m_nNirBandIndex = 3;
+
         m_ReflQuantifVal = 1000.0;
 
         m_Mission = "SPOT4";

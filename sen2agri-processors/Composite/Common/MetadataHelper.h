@@ -33,6 +33,10 @@ public:
     virtual float GetAotNoDataValue() { return m_fAotNoDataVal; }
     virtual int GetAotBandIndex() { return m_nAotBandIndex; }
 
+    virtual int GetRedBandIndex() { return m_nRedBandIndex; }
+    virtual int GetGreenBandIndex() { return m_nGreenBandIndex; }
+    virtual int GetNirBandIndex() { return m_nNirBandIndex; }
+
 protected:
     virtual bool DoLoadMetadata() = 0;
     void Reset();
@@ -51,7 +55,11 @@ protected:
 
     float m_fAotQuantificationValue;
     float m_fAotNoDataVal;
-    float m_nAotBandIndex;
+    int m_nAotBandIndex;
+
+    int m_nRedBandIndex;
+    int m_nGreenBandIndex;
+    int m_nNirBandIndex;
 
 protected:
     std::string m_inputMetadataFileName;

@@ -35,6 +35,10 @@ void MetadataHelper::Reset()
     m_fAotQuantificationValue = 0.0;
     m_fAotNoDataVal = 0;
     m_nAotBandIndex = -1;
+
+    m_nRedBandIndex = -1;
+    m_nGreenBandIndex = -1;
+    m_nNirBandIndex = -1;
 }
 
 int MetadataHelper::GetAcquisitionDateInDays()

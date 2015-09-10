@@ -40,6 +40,13 @@ bool MACCSMetadataHelper::DoLoadMetadata()
         // set the acquisition date
         m_AcquisitionDate = m_metadata->InstanceId.AcquisitionDate;
 
+        if(m_nResolution == 10)
+        {
+            m_nRedBandIndex = getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B4");
+            m_nGreenBandIndex = getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B3");
+            m_nNirBandIndex = getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B8");
+        }
+
         return true;
     }
 
