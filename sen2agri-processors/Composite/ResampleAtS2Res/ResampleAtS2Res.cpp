@@ -50,6 +50,7 @@ public:
 
     typedef itk::NearestNeighborInterpolateImageFunction<InternalImageType, double>             NearestNeighborInterpolationType;
     typedef itk::LinearInterpolateImageFunction<InternalImageType, double>                      LinearInterpolationType;
+    typedef otb::BCOInterpolateImageFunction<InternalImageType>                                 BCOInterpolationType;
     typedef itk::IdentityTransform<double, InternalImageType::ImageDimension>                   IdentityTransformType;
 
     typedef itk::ScalableAffineTransform<double, InternalImageType::ImageDimension>             ScalableTransformType;
@@ -174,10 +175,11 @@ private:
         std::string imageFile = m_DirName + "/" + meta->Files.OrthoSurfCorrPente;
 
         ImageReaderType::Pointer reader = getReader(imageFile);
+        reader->UpdateOutputInformation();
+        int curRes = reader->GetOutput()->GetSpacing()[0];
 
         std::vector<std::string>::iterator it;
         int i = 0;
-        ResampleFilterType::Pointer resampler;
         ExtractROIFilterType::Pointer extractor;
         for (it = meta->Radiometry.Bands.begin(), i = 1; it != meta->Radiometry.Bands.end(); it++, i++)
         {
@@ -188,20 +190,17 @@ private:
             m_ExtractorList->PushBack( extractor );
 
             if(allInOne) {
-                m_ImageListRes20->PushBack(extractor->GetOutput());
-                resampler = getResampler(extractor->GetOutput(), 2.0, false);
-                m_ImageListRes10->PushBack(resampler->GetOutput());
+                m_ImageListRes10->PushBack(getResampledImage(curRes, 10, extractor, false));
+                m_ImageListRes20->PushBack(getResampledImage(curRes, 20, extractor, false));
             } else {
                 if((*it).compare("XS1") == 0 || (*it).compare("XS2") == 0 || (*it).compare("XS3") == 0) {
-                    // resample from 20m to 10m
-                    resampler = getResampler(extractor->GetOutput(), 2.0, false);
-
-                    m_ImageListRes10->PushBack(resampler->GetOutput());
+                    // resample to 10m
+                    m_ImageListRes10->PushBack(getResampledImage(curRes, 10, extractor, false));
                 }
                 else {
-                    if((*it).compare("SWIR") == 0)
-                        m_ImageListRes20->PushBack(extractor->GetOutput());
-                    else {
+                    if((*it).compare("SWIR") == 0) {
+                        m_ImageListRes20->PushBack(getResampledImage(curRes, 20, extractor, false));
+                    } else {
                         itkExceptionMacro("Wrong band name for SPOT4: " + (*it));
                         return false;
                     }
@@ -222,9 +221,8 @@ private:
         extractor->SetChannel( 1 );
         extractor->UpdateOutputInformation();
         m_ExtractorList->PushBack( extractor );
-        m_ImageCloudRes20 = extractor->GetOutput();
-        resampler = getResampler(extractor->GetOutput(), 2.0, true);
-        m_ImageCloudRes10 = resampler->GetOutput();
+        m_ImageCloudRes20 = getResampledImage(curRes, 20, extractor, true);
+        m_ImageCloudRes10 = getResampledImage(curRes, 10, extractor, true);
 
         //Resample the water mask
         extractor = ExtractROIFilterType::New();
@@ -232,9 +230,8 @@ private:
         extractor->SetChannel( 2 );
         extractor->UpdateOutputInformation();
         m_ExtractorList->PushBack( extractor );
-        m_ImageWaterRes20 = extractor->GetOutput();
-        resampler = getResampler(extractor->GetOutput(), 2.0, true);
-        m_ImageWaterRes10 = resampler->GetOutput();
+        m_ImageWaterRes20 = getResampledImage(curRes, 20, extractor, true);
+        m_ImageWaterRes10 = getResampledImage(curRes, 10, extractor, true);
 
         //Resample the snow mask
         extractor = ExtractROIFilterType::New();
@@ -242,9 +239,8 @@ private:
         extractor->SetChannel( 3 );
         extractor->UpdateOutputInformation();
         m_ExtractorList->PushBack( extractor );
-        m_ImageSnowRes20 = extractor->GetOutput();
-        resampler = getResampler(extractor->GetOutput(), 2.0, true);
-        m_ImageSnowRes10 = resampler->GetOutput();
+        m_ImageSnowRes20 = getResampledImage(curRes, 20, extractor, true);
+        m_ImageSnowRes10 = getResampledImage(curRes, 10, extractor, true);
 
         // resample the AOT
         std::string aotFileName = getSpot4AotFileName(meta);
@@ -255,9 +251,8 @@ private:
         extractor->SetChannel( 1 );
         extractor->UpdateOutputInformation();
         m_ExtractorList->PushBack( extractor );
-        m_ImageAotRes20 = extractor->GetOutput();
-        resampler = getResampler(extractor->GetOutput(), 2.0, true);
-        m_ImageAotRes10 = resampler->GetOutput();
+        m_ImageAotRes20 = getResampledImage(curRes, 20, extractor, true);
+        m_ImageAotRes10 = getResampledImage(curRes, 10, extractor, true);
 
         return true;
 
@@ -319,10 +314,11 @@ private:
         imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
 
         ImageReaderType::Pointer reader = getReader(imageFile);
+        reader->UpdateOutputInformation();
+        int curRes = reader->GetOutput()->GetSpacing()[0];
 
         std::vector<MACCSBand>::iterator it;
         int i = 0;
-        ResampleFilterType::Pointer resampler;
         ExtractROIFilterType::Pointer extractor;
         for (it = imageMeta->ImageInformation.Bands.begin(), i = 1; it != imageMeta->ImageInformation.Bands.end(); it++, i++)
         {
@@ -332,26 +328,21 @@ private:
             extractor->UpdateOutputInformation();
             m_ExtractorList->PushBack( extractor );
             if(allInOne) {
-                // resample from 30m to 10m
-                resampler = getResampler(extractor->GetOutput(), 3.0, false);
-                m_ImageListRes10->PushBack(resampler->GetOutput());
+                // resample to 10m
+                m_ImageListRes10->PushBack(getResampledImage(curRes, 10, extractor, false));
 
-                // resample from 30m to 20m
-                resampler = getResampler(extractor->GetOutput(), 1.5, false);
-                m_ImageListRes20->PushBack(extractor->GetOutput());
+                // resample to 20m
+                m_ImageListRes20->PushBack(getResampledImage(curRes, 10, extractor, false));
             } else {
                 if((*it).Name.compare("B2") == 0 || (*it).Name.compare("B3") == 0 || (*it).Name.compare("B4") == 0) {
-                    // resample from 30m to 10m
-                    resampler = getResampler(extractor->GetOutput(), 3.0, false);
-
-                    m_ImageListRes10->PushBack(resampler->GetOutput());
+                    // resample to 10m
+                    m_ImageListRes10->PushBack(getResampledImage(curRes, 10, extractor, false));
                 }
                 else
                 {
                     if((*it).Name.compare("B5") == 0 || (*it).Name.compare("B7") == 0 || (*it).Name.compare("B8") == 0) {
-                        // resample from 30m to 20m
-                        resampler = getResampler(extractor->GetOutput(), 1.5, false);
-                        m_ImageListRes20->PushBack(extractor->GetOutput());
+                        // resample to 20m
+                        m_ImageListRes20->PushBack(getResampledImage(curRes, 20, extractor, false));
                     }
                 }
             }
@@ -368,10 +359,8 @@ private:
         extractor->UpdateOutputInformation();
         m_ExtractorList->PushBack( extractor );
 
-        resampler = getResampler(extractor->GetOutput(), 3.0, true);
-        m_ImageCloudRes10 = resampler->GetOutput();
-        resampler = getResampler(extractor->GetOutput(), 1.5, true);
-        m_ImageCloudRes20 = extractor->GetOutput();
+        m_ImageCloudRes10 = getResampledImage(curRes, 10, extractor, true);
+        m_ImageCloudRes20 = getResampledImage(curRes, 20, extractor, true);
 
         imageFile = waterXMLFile;
         imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
@@ -384,10 +373,8 @@ private:
         extractor->UpdateOutputInformation();
         m_ExtractorList->PushBack( extractor );
 
-        resampler = getResampler(extractor->GetOutput(), 3.0, true);
-        m_ImageWaterRes10 = resampler->GetOutput();
-        resampler = getResampler(extractor->GetOutput(), 1.5, true);
-        m_ImageWaterRes20 = extractor->GetOutput();
+        m_ImageWaterRes10 = getResampledImage(curRes, 10, extractor, true);
+        m_ImageWaterRes20 = getResampledImage(curRes, 20, extractor, true);
 
         imageFile = snowXMLFile;
         imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
@@ -400,10 +387,8 @@ private:
         extractor->UpdateOutputInformation();
         m_ExtractorList->PushBack( extractor );
 
-        resampler = getResampler(extractor->GetOutput(), 3.0, true);
-        m_ImageSnowRes10 = resampler->GetOutput();
-        resampler = getResampler(extractor->GetOutput(), 1.5, true);
-        m_ImageSnowRes20 = extractor->GetOutput();
+        m_ImageSnowRes10 = getResampledImage(curRes, 10, extractor, true);
+        m_ImageSnowRes20 = getResampledImage(curRes, 20, extractor, true);
 
         imageFile = aotXMLFile;
         imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
@@ -416,13 +401,10 @@ private:
         extractor->UpdateOutputInformation();
         m_ExtractorList->PushBack( extractor );
 
-        resampler = getResampler(extractor->GetOutput(), 3.0, true);
-        m_ImageAotRes10 = resampler->GetOutput();
-        resampler = getResampler(extractor->GetOutput(), 1.5, true);
-        m_ImageAotRes20 = extractor->GetOutput();
+        m_ImageAotRes10 = getResampledImage(curRes, 10, extractor, true);
+        m_ImageAotRes20 = getResampledImage(curRes, 20, extractor, true);;
 
         return true;
-
     }
 
     ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const float& ratio, bool isMask) {
@@ -437,6 +419,10 @@ private:
          else {
             LinearInterpolationType::Pointer interpolator = LinearInterpolationType::New();
             resampler->SetInterpolator(interpolator);
+
+            //BCOInterpolationType::Pointer interpolator = BCOInterpolationType::New();
+            //interpolator->SetRadius(2);
+            //resampler->SetInterpolator(interpolator);
          }
 
          IdentityTransformType::Pointer transform = IdentityTransformType::New();
@@ -512,6 +498,17 @@ private:
 
         return m_DirName + "/" + fileName;
     }
+
+    InternalImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes,
+                                                 ExtractROIFilterType::Pointer extractor,
+                                                 bool bIsMask) {
+        if(nCurRes == nDesiredRes)
+            return extractor->GetOutput();
+        float fMultiplicationFactor = ((float)nCurRes)/nDesiredRes;
+        ResampleFilterType::Pointer resampler = getResampler(extractor->GetOutput(), fMultiplicationFactor, bIsMask);
+        return resampler->GetOutput();
+    }
+
 
 
     ListConcatenerFilterType::Pointer     m_ConcatenerRes10;
