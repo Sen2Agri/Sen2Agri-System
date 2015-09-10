@@ -38,6 +38,10 @@ otb_create_application(NAME           SigmoFitting
   SOURCES        SigmoFitting.cxx
   LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno)
 
+otb_create_application(NAME           MetricsEstimation
+  SOURCES        MetricsEstimation.cxx
+  LINK_LIBRARIES MACCSMetadata;MetadataHelper;${OTB_LIBRARIES};OTBPheno)
+  
 
 add_executable(test-sigmo test-sigmo.cxx)
 target_link_libraries(test-sigmo ${OTB_LIBRARIES} OTBPheno)
