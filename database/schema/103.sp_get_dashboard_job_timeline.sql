@@ -23,6 +23,7 @@ BEGIN
                step.end_timestamp AS "end"
         FROM step
         INNER JOIN tasks ON tasks.id = step.task_id
+        WHERE step.start_timestamp IS NOT NULL
     ),
     result AS (
         SELECT (SELECT array_agg(groups) FROM groups) AS groups,
