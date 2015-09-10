@@ -44,19 +44,21 @@ public:
     // Compute the maximum and mean values
     result[0] = static_cast<PixelValueType>(0);
     result[1] = static_cast<PixelValueType>(0);
+    double avg = 0.0;
 
     for (int i = 0; i < pixSize; i++) {
         result[0]  = (result[0]  < pix[i] ? pix[i] : result[0] );
-        result[1] += pix[i];
+        avg += pix[i];
     }
-    result[1] = result[1] / pixSize;
+    result[1] = static_cast<PixelValueType>(avg / pixSize);
 
     result[2] = static_cast<PixelValueType>(0);
+    double stdDev = 0.0;
     // Compute the standard deviation
     for (int i = 0; i < pixSize; i++) {
-        result[2] += std::pow(pix[i] - result[1], 2);
+        stdDev += std::pow(pix[i] - result[1], 2);
     }
-    result[2] = std::sqrt(result[2] / pixSize);
+    result[2] = static_cast<PixelValueType>(std::sqrt(stdDev / pixSize));
 
     // compute the ndvi transitions only if the size of the input pixel is greater or equal to
     // twice the size of the temporal window
@@ -66,21 +68,22 @@ public:
     if (pixSize >= 2 * w) {
         for (int i = 0; i <= pixSize - 2 * w; i++ ) {
             // compute the average of the first part
-            PixelValueType first = static_cast<PixelValueType>(0);
+            double first = 0.0;
             for (int j = i; j <= i + w - 1; j++ ) {
                 first += pix[j];
             }
             first = first / w;
             // compute the average of the second part
-            PixelValueType second = static_cast<PixelValueType>(0);
+            double second = 0.0;
             for (int j = i + w; j <= i + 2 * w - 1; j++ ) {
                 second += pix[j];
             }
             second = second / w;
 
+            PixelValueType dif = static_cast<PixelValueType>(first - second);
             // update the max and min
-            result[3] = (result[3] < (first - second) ? (first - second) : result[3]);
-            result[4] = (result[4] > (first - second) ? (first - second) : result[4]);
+            result[3] = (result[3] < dif ? dif : result[3]);
+            result[4] = (result[4] > dif ? dif : result[4]);
         }
         // compute the difference
         result[5] = result[3] - result[4];
@@ -94,29 +97,31 @@ public:
         int minIndex = 0, maxIndex = 0;
         for (int i = 0; i <= pixSize - w; i++) {
             // Compute the slice average
-            PixelValueType avg = static_cast<PixelValueType>(0);
+            double avg = 0.0;
             for (int j = i; j <= i + w - 1; j++ ) {
                 avg += pix[j];
             }
             avg = avg / w;
 
+            PixelValueType avgPix = static_cast<PixelValueType>(avg);
             // save the maximum average
-            if (avg > result[6]) {
-                result[6] = avg;
+            if (avgPix > result[6]) {
+                result[6] = avgPix;
                 minIndex = i;
                 maxIndex = i + w - 1;
             }
         }
 
         // compute the interval
-        while (result[6] > 0.0 && pix[minIndex] >= (result[6] - delta) && pix[minIndex] <= (result[6] + delta)) {
+        double maxAvg = static_cast<double>(result[6]);
+        while (result[6] > 0.0 && pix[minIndex] >= static_cast<PixelValueType>(maxAvg - delta) && pix[minIndex] <= static_cast<PixelValueType>(maxAvg + delta)) {
             minIndex--;
             if (minIndex < 0) {
                 minIndex = 0;
                 break;
             }
         }
-        while (result[6] > 0.0 && pix[maxIndex] >= (result[6] - delta) && pix[maxIndex] <= (result[6] + delta)) {
+        while (result[6] > 0.0 && pix[maxIndex] >= static_cast<PixelValueType>(maxAvg - delta) && pix[maxIndex] <= static_cast<PixelValueType>(maxAvg + delta)) {
             maxIndex++;
             if (maxIndex >= pixSize) {
                 maxIndex = pixSize - 1;

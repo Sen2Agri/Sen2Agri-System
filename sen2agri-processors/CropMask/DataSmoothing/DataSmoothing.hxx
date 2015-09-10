@@ -23,7 +23,16 @@ public:
     // Create the output pixel
     PixelType result(pix.Size());
 
-    // compute the muber of images
+    // If the input pixel is nodata return nodata
+    PixelType nodata(pixSize);
+    nodata.Fill(static_cast<PixelValueType>(-10000));
+
+    if (pix == nodata) {
+        result.Fill(static_cast<PixelValueType>(-10000));
+        return result;
+    }
+
+    // compute the number of images
     int numImages = pixSize / bands;
 
     // process each band series independently
@@ -35,25 +44,24 @@ public:
 
         // Perform the Whitaker smoothing.
         // The code is inspired from the R language package "ptw"
+        int m = numImages-1;
         d[0] = weights[0] + lambda;
         c[0] = -lambda / d[0];
-        z[0] = weights[0] * static_cast<double>(pix[band]);
+        z[0] = weights[0] * (static_cast<double>(pix[band]) / 10000.0);
 
-        for (int i = 1; i < numImages-1; i++) {
+        for (int i = 1; i < m; i++) {
             d[i]= weights[i] + 2 * lambda - c[i-1] * c[i-1] * d[i-1];
             c[i] = -lambda / d[i];
-            z[i] = weights[i] * static_cast<double>(pix[i * bands + band]) - c[i-1] * z[i-1];
+            z[i] = weights[i] * static_cast<double>(pix[i * bands + band]) / 10000.0 - c[i-1] * z[i-1];
 
         }
-        d[numImages-1] = weights[numImages-1] + lambda - c[numImages-2] * c[numImages-2] * d[numImages-2];
-        z[numImages-1] = (weights[numImages-1] * static_cast<double>(pix[(numImages-1) * bands + band]) - c[numImages-2] * z[numImages-2]) / d[numImages-1];
+        d[m] = weights[m] + lambda - c[m-1] * c[m-1] * d[m-1];
+        z[m] = (weights[m] * static_cast<double>(pix[m * bands + band]) / 10000.0 - c[m-1] * z[m-1]) / d[m];
 
-        result[(numImages-1) * bands + band] = static_cast<PixelValueType>(z[numImages-1]);
-        for (int i = numImages-2 ; 0 <= i; i--) {
-            result[i * bands + band] = static_cast<PixelValueType>(z[i] / d[i] - c[i] * z[i + 1]);
+        result[m * bands + band] = static_cast<PixelValueType>(z[m] * 10000.0);
+        for (int i = m-1 ; 0 <= i; i--) {
+            result[i * bands + band] = static_cast<PixelValueType>((z[i] / d[i] - c[i] * z[i + 1]) * 10000.0);
         }
-
-
     }
 
     return result;

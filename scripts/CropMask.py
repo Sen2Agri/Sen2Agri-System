@@ -256,7 +256,7 @@ print "ImageClassifier done!"
 
 #Validation
 print "Executing ComputeConfusionMatrix..."
-vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+crop_mask+" -out "+confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CROP > "+quality_metrics
+vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+crop_mask+" -out "+confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CROP -nodatalabel 10 > "+quality_metrics
 print vdCmdLine
 result = os.system(vdCmdLine)
 

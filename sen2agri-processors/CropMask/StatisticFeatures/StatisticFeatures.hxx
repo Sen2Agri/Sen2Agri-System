@@ -48,16 +48,17 @@ public:
     // Compute the maximum, minimum and mean values
     result[0] = static_cast<PixelValueType>(0);
     result[1] = static_cast<PixelValueType>(0);
+    double avg = 0.0;
     result[2] = static_cast<PixelValueType>(0);
     std::vector<PixelValueType> values(pixSize);
 
     for (int i = 0; i < pixSize; i++) {
         result[0]  = (result[0] < pix[i] ? pix[i] : result[0] );
         result[1]  = (result[1] > pix[i] ? pix[i] : result[1] );
-        result[2] += pix[i];
+        avg += pix[i];
         values[i] = pix[i];
     }
-    result[2] = result[2] / pixSize;
+    result[2] = static_cast<PixelValueType>(avg / pixSize);
 
     // compute the median
     std::sort(values.begin(), values.end());
@@ -69,12 +70,11 @@ public:
 
     // Compute the standard deviation
     result[4] = static_cast<PixelValueType>(0);
+    double stdDev = 0.0;
     for (int i = 0; i < pixSize; i++) {
-        result[4] += std::pow(pix[i] - result[1], 2);
+        stdDev += std::pow(pix[i] - result[1], 2);
     }
-    result[4] = std::sqrt(result[4] / pixSize);
-
-
+    result[4] = static_cast<PixelValueType>(std::sqrt(stdDev / pixSize));
 
     return result;
   }

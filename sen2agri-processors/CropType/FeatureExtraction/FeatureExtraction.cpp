@@ -197,12 +197,12 @@ private:
       // b3 - NIR
       // b4 - SWIR
 #ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
-          ndviExpr = "(b3==-10000) ? -10000 : (abs(b3+b2)<0.000001) ? 0 : 10000 * (b3-b2)/(b3+b2)";
-          ndwiExpr = "(b3==-10000) ? -10000 : (abs(b4+b3)<0.000001) ? 0 : 10000 * (b4-b3)/(b4+b3)";
+          ndviExpr = "(b3==-10000 || b2==-10000) ? -10000 : (abs(b3+b2)<0.000001) ? 0 : 10000 * (b3-b2)/(b3+b2)";
+          ndwiExpr = "(b3==-10000 || b4==-10000) ? -10000 : (abs(b4+b3)<0.000001) ? 0 : 10000 * (b4-b3)/(b4+b3)";
           brightnessExpr = "(b1==-10000) ? -10000 : sqrt((b1 * b1) + (b2 * b2) + (b3 * b3) + (b4 * b4))";
 #else
-          ndviExpr = "if(b3==-10000,-10000,if(abs(b3+b2)<0.000001,0,(b3-b2)/(b3+b2)";
-          ndwiExpr = "if(b3==-10000,-10000,if(abs(b4+b3)<0.000001,0,(b4-b3)/(b4+b3)";
+          ndviExpr = "if(b3==-10000 or b2==-10000,-10000,if(abs(b3+b2)<0.000001,0,(b3-b2)/(b3+b2)";
+          ndwiExpr = "if(b3==-10000 or b4=-10000,-10000,if(abs(b4+b3)<0.000001,0,(b4-b3)/(b4+b3)";
           brightnessExpr = "if(b1==-10000,-10000,sqrt((b1 * b1) + (b2 * b2) + (b3 * b3) + (b4 * b4))";
 #endif
 

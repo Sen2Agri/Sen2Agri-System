@@ -201,7 +201,7 @@ private:
       double weight = GetParameterFloat("weight");
 
       //Read the input file
-      m_tsReader->SetFileName(GetParameterString("rtocr"));
+      m_tsReader->SetFileName(GetParameterString("ts"));
       m_tsReader->UpdateOutputInformation();
 
       // build the weights vector

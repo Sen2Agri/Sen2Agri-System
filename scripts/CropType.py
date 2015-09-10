@@ -1,6 +1,7 @@
 #!/usr/bin/python
 
 import os
+import os.path
 import glob
 import argparse
 import csv
@@ -175,7 +176,7 @@ print "TrainImagesClassifier done!"
 #Image Classifier
 print "Executing ImageClassifier..."
 icCmdLine = "otbcli_ImageClassifier -in "+fts+" -imstat "+statistics+" -model "+model+" -out "+crop_type_map
-if os.file.exists(crop_mask) :
+if os.path.isfile(crop_mask) :
    icCmdLine += " -mask "+crop_mask
 print icCmdLine
 result = os.system(icCmdLine)
@@ -187,7 +188,7 @@ print "ImageClassifier done!"
 
 #Validation
 print "Executing ComputeConfusionMatrix..."
-vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+crop_type_map+" -out "+confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CODE > "+quality_metrics
+vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+crop_type_map+" -out "+confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CODE -nodatalabel 10 > "+quality_metrics
 print vdCmdLine
 result = os.system(vdCmdLine)
 
