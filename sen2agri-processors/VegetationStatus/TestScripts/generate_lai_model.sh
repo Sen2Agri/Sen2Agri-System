@@ -27,7 +27,7 @@ IMG_INV_OTB_LIBS_ROOT="$VEG_STATUS_OTB_LIBS_ROOT/otb-bv/src/applications"
 OUT_GENERATED_SAMPLE_FILE="$OUT_FOLDER/out_bv_dist_samples.txt"
 
 # Variables for Prosail Simulator
-RSR_FILE="/home/cudroiu/BVModels/in_spot5_rsr.rsr"
+RSR_FILE="../otb-bv/data/in_spot5_rsr.rsr"
 OUT_SIMU_REFLS_FILE="$OUT_FOLDER/out_simu_refls.txt"
 OUT_TRAINING_FILE="$OUT_FOLDER/out_training.txt"
 
