@@ -232,7 +232,14 @@ public:
     for (size_t i=0; i<sz; i++)
       {
         tm tmTmp = d[i];
-        dv[i] = mktime(&tmTmp) / 60 / 60 / 24;
+        dv[i] = mktime(&tmTmp) / (60 * 60 * 24);
+      }
+
+    if (!dv.empty())
+      {
+        auto min = *std::min_element(dv.begin(), dv.end());
+        std::transform(dv.begin(), dv.end(), dv.begin(),
+                       [=](PrecisionType v) { return v - min; });
       }
   }
 
