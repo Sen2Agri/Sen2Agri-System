@@ -12,6 +12,7 @@ typedef enum {LAND=1, WATER,SNOW,CLOUD,CLOUD_SHADOW} FlagType;
 #define DATE_NO_DATA -1.0f
 #define REFLECTANCE_NO_DATA -1.0f
 #define WEIGHT_NO_DATA -1.0f
+#define NO_DATA_EPSILON 0.0001f
 
 class OutFunctorInfos
 {
@@ -56,6 +57,7 @@ private:
     int GetBlueBandIndex();
     bool InitBandInfos(SensorType sensorType, ResolutionType resolution);
     bool InitAllBandInResolutionInfos(SensorType sensorType);
+    bool IsNoDataValue(float fValue, float fNoDataValue);
 
 private:
     SensorType m_sensorType;

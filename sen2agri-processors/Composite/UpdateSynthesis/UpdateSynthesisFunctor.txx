@@ -311,6 +311,10 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
     // Weighted Average Reflectances
     for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
+        // Normalize the values
+        if(outInfos.m_CurrentPixelWeights[i] < 0) {
+            outInfos.m_CurrentPixelWeights[i] = WEIGHT_NO_DATA;
+        }
         var[cnt++] = short(outInfos.m_CurrentPixelWeights[i] * m_fQuantificationValue);
     }
     // Weighted Average Date L3A
@@ -318,6 +322,10 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
     // Weight for B2 for L3A
     for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
+        // Normalize the values
+        if(outInfos.m_CurrentWeightedReflectances[i] < 0) {
+            outInfos.m_CurrentWeightedReflectances[i] = REFLECTANCE_NO_DATA;
+        }
         // we save back the pixel value but as digital value and not as reflectance
         var[cnt++] = short(outInfos.m_CurrentWeightedReflectances[i] * m_fQuantificationValue);
         //var[cnt++] = outInfos.m_CurrentWeightedReflectances[i];
@@ -378,8 +386,9 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, O
             float fCurrentWeight = GetCurrentL2AWeightValue(A);
             float fPrevWeightedDate = GetPrevL3AWeightedAvDateValue(A);
 
-            // TODO: This condition could be eliminated if NO_DATA would be considered as 0
-            if(fPrevReflect != REFLECTANCE_NO_DATA && fPrevWeight != WEIGHT_NO_DATA && fPrevWeightedDate != DATE_NO_DATA) {
+            if(!IsNoDataValue(fPrevReflect, REFLECTANCE_NO_DATA) && !IsNoDataValue(fPrevWeight, WEIGHT_NO_DATA)
+                    && !IsNoDataValue(fPrevWeightedDate, DATE_NO_DATA) && !IsNoDataValue(fCurReflectance, REFLECTANCE_NO_DATA)
+                    && !IsNoDataValue(fCurrentWeight, WEIGHT_NO_DATA)) {
                 outInfos.m_CurrentWeightedReflectances[i] = (fPrevWeight * fPrevReflect + fCurrentWeight * fCurReflectance) /
                         (fPrevWeight + fCurrentWeight);
                 outInfos.m_fCurrentPixelWeightedDate = (fPrevWeight * fPrevWeightedDate + fCurrentWeight * m_nCurrentDate) /
@@ -608,7 +617,7 @@ short UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3APixelFlagValue(const TIn
     if(!m_bPrevL3ABandsAvailable || m_nPrevL3APixelFlagBandIndex == -1)
         return FLAG_NO_DATA;
 
-    return short(static_cast<float>(A[m_nPrevL3APixelFlagBandIndex]));
+    return static_cast<short>(A[m_nPrevL3APixelFlagBandIndex]);
 }
 
 template< class TInput, class TOutput>
@@ -617,4 +626,8 @@ int UpdateSynthesisFunctor<TInput,TOutput>::GetBlueBandIndex()
     return m_nBlueBandIndex;
 }
 
-
+template< class TInput, class TOutput>
+bool UpdateSynthesisFunctor<TInput,TOutput>::IsNoDataValue(float fValue, float fNoDataValue)
+{
+    return fabs(fValue - fNoDataValue) < NO_DATA_EPSILON;
+}
