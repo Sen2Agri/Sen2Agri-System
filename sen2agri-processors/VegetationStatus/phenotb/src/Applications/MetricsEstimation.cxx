@@ -144,14 +144,7 @@ private:
   void DoExecute()
   {
       FloatVectorImageType::Pointer ipf_image = this->GetParameterImage("ipf");
-      std::vector<std::string> xmlsList = this->GetParameterStringList("ilxml");
       unsigned int nb_ipf_bands = ipf_image->GetNumberOfComponentsPerPixel();
-      unsigned int nb_xmls = xmlsList.size();
-      if((nb_ipf_bands == 0) || (nb_ipf_bands != nb_xmls)) {
-          itkExceptionMacro("Invalid number of bands or xmls: ipf bands=" <<
-                            nb_ipf_bands << ", nb_xmls=" << nb_xmls);
-      }
-
       std::string datesFileName = GetParameterString("indates");
       std::ifstream datesFile;
       datesFile.open(datesFileName);
@@ -181,6 +174,12 @@ private:
           std::transform(inDates.begin(), inDates.end(), inDates.begin(),
                          [=](PrecisionType v) { return v - min; });
       }
+
+      if((nb_ipf_bands == 0) || (nb_ipf_bands != inDates.size())) {
+          itkExceptionMacro("Invalid number of bands or number of dates: ipf bands=" <<
+                            nb_ipf_bands << ", nb_xmls=" << inDates.size());
+      }
+
 
       //instantiate a functor with the regressor and pass it to the
       //unary functor image filter pass also the normalization values
