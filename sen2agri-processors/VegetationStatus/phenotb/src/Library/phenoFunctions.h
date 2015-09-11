@@ -216,7 +216,6 @@ template <typename PixelType>
 class TwoCycleSigmoFittingFunctor
 {
 protected:
-  std::vector<tm> dates;
   VectorType dv;
   bool return_fit;
   bool fit_only_invalid;
@@ -228,13 +227,20 @@ public:
                                   use_mask{true} {};
 
   void SetDates(const std::vector<tm>& d) {
-    dates = d;
-    dv = VectorType{static_cast<unsigned int>(dates.size())};
-    for(size_t i=0; i<dates.size(); i++)
+    size_t sz = d.size();
+    dv = VectorType{static_cast<unsigned int>(d.size())};
+    for (size_t i=0; i<sz; i++)
       {
-      dv[i] = pheno::doy(dates[i]);
+        tm tmTmp = d[i];
+        dv[i] = mktime(&tmTmp) / (60 * 60 * 24);
       }
 
+    if (!dv.empty())
+      {
+        auto min = *std::min_element(dv.begin(), dv.end());
+        std::transform(dv.begin(), dv.end(), dv.begin(),
+                       [=](PrecisionType v) { return v - min; });
+      }
   }
 
   void SetUseMask(bool um) {
@@ -259,7 +265,7 @@ public:
     if(!use_mask)
       tmp_mask.Fill(0);
 
-    if(dates.size()!=nbDates) throw DifferentSizes{};
+    if(dv.size()!=nbDates) throw DifferentSizes{};
 
     PixelType tmpix{nbDates};
     tmpix.Fill(typename PixelType::ValueType{0});
@@ -280,7 +286,7 @@ public:
     // A date is valid if it is not NaN and the mask value == 0.
     auto pred = [=](int e) { return !(std::isnan(vec[e])) &&
                              (mv[e]==(typename PixelType::ValueType{0})); };
-    auto f_profiles = filter_profile(vec, dates, pred);
+    auto f_profiles = filter_profile_fast(vec, dv, pred);
 
     decltype(vec) profile=f_profiles.first;
     decltype(vec) t=f_profiles.second;

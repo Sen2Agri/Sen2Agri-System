@@ -173,7 +173,7 @@ private:
          << " " << (satRSR->GetRSR())[i]->GetInterval().second
          << std::endl;
 
-    otbAppLogINFO(""<<ss);
+    otbAppLogINFO(""<<ss.str());
 
     bool add_noise =IsParameterEnabled("noisevar");
     std::vector<std::normal_distribution<>> noise_generators;
