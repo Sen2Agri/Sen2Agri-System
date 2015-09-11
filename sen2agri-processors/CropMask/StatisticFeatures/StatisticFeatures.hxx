@@ -46,8 +46,8 @@ public:
     }
 
     // Compute the maximum, minimum and mean values
-    result[0] = static_cast<PixelValueType>(0);
-    result[1] = static_cast<PixelValueType>(0);
+    result[0] = pix[0];
+    result[1] = pix[0];
     double avg = 0.0;
     result[2] = static_cast<PixelValueType>(0);
     std::vector<PixelValueType> values(pixSize);
