@@ -89,15 +89,25 @@ private:
         MandatoryOff("allinone");
 
         AddParameter(ParameterType_OutputImage, "outres10", "Out Image at 10m resolution");
+        MandatoryOff("outres10");
         AddParameter(ParameterType_OutputImage, "outres20", "Out Image at 10m resolution");
+        MandatoryOff("outres20");
         AddParameter(ParameterType_OutputImage, "outcmres10", "Out cloud mask image at 10m resolution");
+        MandatoryOff("outcmres10");
         AddParameter(ParameterType_OutputImage, "outwmres10", "Out water mask image at 10m resolution");
+        MandatoryOff("outwmres10");
         AddParameter(ParameterType_OutputImage, "outsmres10", "Out snow mask image at 10m resolution");
+        MandatoryOff("outsmres10");
         AddParameter(ParameterType_OutputImage, "outaotres10", "Out snow mask image at 10m resolution");
+        MandatoryOff("outaotres10");
         AddParameter(ParameterType_OutputImage, "outcmres20", "Out cloud mask image at 20m resolution");
+        MandatoryOff("outcmres20");
         AddParameter(ParameterType_OutputImage, "outwmres20", "Out water mask image at 20m resolution");
+        MandatoryOff("outwmres20");
         AddParameter(ParameterType_OutputImage, "outsmres20", "Out snow mask image at 20m resolution");
+        MandatoryOff("outsmres20");
         AddParameter(ParameterType_OutputImage, "outaotres20", "Out snow mask image at 20m resolution");
+        MandatoryOff("outaotres20");
 
         SetDocExampleParameterValue("xml", "/path/to/L2Aproduct_maccs.xml");
         SetDocExampleParameterValue("spotmask", "/path/to/spotmasks.tif");
@@ -124,6 +134,7 @@ private:
         const std::string &tmp = GetParameterAsString("xml");
         std::vector<char> buf(tmp.begin(), tmp.end());
         m_DirName = std::string(dirname(buf.data()));
+        std::cout << m_DirName << std::endl;
         bool allInOne = (GetParameterInt("allinone") != 0);
 
         auto maccsReader = itk::MACCSMetadataReader::New();
@@ -141,27 +152,37 @@ private:
         }
         m_ConcatenerRes10->SetInput( m_ImageListRes10 );
 
-        SetParameterOutputImage("outres10", m_ConcatenerRes10->GetOutput());
+        if(HasValue("outres10"))
+            SetParameterOutputImage("outres10", m_ConcatenerRes10->GetOutput());
 
         m_ConcatenerRes20->SetInput( m_ImageListRes20 );
 
-        SetParameterOutputImage("outres20", m_ConcatenerRes20->GetOutput());
+        if(HasValue("outres10"))
+            SetParameterOutputImage("outres20", m_ConcatenerRes20->GetOutput());
 
-        SetParameterOutputImage("outcmres10", m_ImageCloudRes10.GetPointer());
+        if(HasValue("outcmres10"))
+            SetParameterOutputImage("outcmres10", m_ImageCloudRes10.GetPointer());
 
-        SetParameterOutputImage("outwmres10", m_ImageWaterRes10.GetPointer());
+        if(HasValue("outwmres10"))
+            SetParameterOutputImage("outwmres10", m_ImageWaterRes10.GetPointer());
 
-        SetParameterOutputImage("outsmres10", m_ImageSnowRes10.GetPointer());
+        if(HasValue("outsmres10"))
+            SetParameterOutputImage("outsmres10", m_ImageSnowRes10.GetPointer());
 
-        SetParameterOutputImage("outaotres10", m_ImageAotRes10.GetPointer());
+        if(HasValue("outaotres10"))
+            SetParameterOutputImage("outaotres10", m_ImageAotRes10.GetPointer());
 
-        SetParameterOutputImage("outcmres20", m_ImageCloudRes20.GetPointer());
+        if(HasValue("outcmres20"))
+            SetParameterOutputImage("outcmres20", m_ImageCloudRes20.GetPointer());
 
-        SetParameterOutputImage("outwmres20", m_ImageWaterRes20.GetPointer());
+        if(HasValue("outwmres20"))
+            SetParameterOutputImage("outwmres20", m_ImageWaterRes20.GetPointer());
 
-        SetParameterOutputImage("outsmres20", m_ImageSnowRes20.GetPointer());
+        if(HasValue("outsmres20"))
+            SetParameterOutputImage("outsmres20", m_ImageSnowRes20.GetPointer());
 
-        SetParameterOutputImage("outaotres20", m_ImageAotRes20.GetPointer());
+        if(HasValue("outaotres20"))
+            SetParameterOutputImage("outaotres20", m_ImageAotRes20.GetPointer());
     }
 
 
@@ -173,6 +194,7 @@ private:
         }
 
         std::string imageFile = m_DirName + "/" + meta->Files.OrthoSurfCorrPente;
+        std::cout << imageFile <<std::endl;
 
         ImageReaderType::Pointer reader = getReader(imageFile);
         reader->UpdateOutputInformation();
