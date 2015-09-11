@@ -20,7 +20,6 @@
 
 #include "dateUtils.h"
 #include "phenoFunctions.h"
-#include "MetadataHelperFactory.h"
 
 using PrecisionType = double;
 using VectorType = std::vector<PrecisionType>;
@@ -29,11 +28,6 @@ constexpr PrecisionType processed_value{1};
 
 namespace otb
 {
-int date_to_doy(std::string& date_str)
-{
-  return pheno::doy(pheno::make_date(date_str));
-}
-
 namespace Functor
 {
 }
@@ -136,7 +130,7 @@ private:
     AddParameter(ParameterType_InputImage, "ipf", "Input profile file.");
     SetParameterDescription( "ipf", "Input file containing the profile to process. This is an ASCII file where each line contains the date (YYYMMDD) the BV estimation and the error." );
 
-    AddParameter(ParameterType_InputFilenameList, "ilxml", "The XML metadata files list");
+    AddParameter(ParameterType_InputFilename, "indates", "The file containing the dates of each image acquisition, each date being in the format yyyymmdd");
 
     AddParameter(ParameterType_OutputImage, "opf", "Output profile file.");
     SetParameterDescription( "opf", "Filename where the reprocessed profile saved. This is an raster band contains the new BV estimation value for each pixel. The last band contains the boolean information which is 0 if the value has not been reprocessed." );
@@ -158,21 +152,40 @@ private:
                             nb_ipf_bands << ", nb_xmls=" << nb_xmls);
       }
 
-      VectorType date_vec{};
-      std::string date_str;
-      for (std::string strXml : xmlsList)
+      std::string datesFileName = GetParameterString("indates");
+      std::ifstream datesFile;
+      datesFile.open(datesFileName);
+      if (!datesFile.is_open()) {
+          itkExceptionMacro("Can't open dates file for reading!");
+      }
+
+      // read the file and save the dates as second from Epoch to a vector
+      VectorType inDates;
+      std::string value;
+      int i = 0;
+      while (std::getline(datesFile, value)) {
+          struct tm tmDate = {};
+          if (strptime(value.c_str(), "%Y%m%d", &tmDate) == NULL) {
+              itkExceptionMacro("Invalid value for a date: " + value);
+          }
+          inDates[i] = mktime(&tmDate) / 86400;
+          i++;
+      }
+
+      // close the file
+      datesFile.close();
+
+      if (!inDates.empty())
       {
-          MetadataHelperFactory::Pointer factory = MetadataHelperFactory::New();
-          // we are interested only in the 10m resolution as we need only the date
-          auto pHelper = factory->GetMetadataHelper(strXml, 10);
-          date_str = pHelper->GetAcquisitionDate();
-          date_vec.push_back(date_to_doy(date_str));
+          auto min = *std::min_element(inDates.begin(), inDates.end());
+          std::transform(inDates.begin(), inDates.end(), inDates.begin(),
+                         [=](PrecisionType v) { return v - min; });
       }
 
       //instantiate a functor with the regressor and pass it to the
       //unary functor image filter pass also the normalization values
       m_MetricsEstimationFilter = FilterType::New();
-      m_functor.SetDates(date_vec);
+      m_functor.SetDates(inDates);
 
       m_MetricsEstimationFilter->SetFunctor(m_functor);
       m_MetricsEstimationFilter->SetInput(ipf_image);
