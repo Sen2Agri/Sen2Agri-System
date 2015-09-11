@@ -19,6 +19,29 @@ namespace pheno
 {
 template <ContainerC V, DateContainerC W, PredicateC P>
 inline
+std::pair<V, V> filter_profile_fast(V vec, W date_vec, P pred)
+{
+  if(vec.size()!=date_vec.size())
+    itkGenericExceptionMacro(<< "Profile vector and date vector have different sizes: " << vec.size() << "/" << date_vec.size()<< "\n");
+
+  size_t sz = vec.size();
+  size_t nbDates = 0;
+  for(size_t i=0; i<sz; i++) if(pred(i)) nbDates++;
+  V profile(nbDates);
+  V t(nbDates);
+  size_t dc=0;
+  for (size_t i=0; i<sz; i++)
+    if (pred(i))
+      {
+        profile[dc] = vec[i];
+        t[dc] = date_vec[i];
+        dc++;
+      }
+  return {profile,t};
+}
+
+template <ContainerC V, DateContainerC W, PredicateC P>
+inline
 std::pair<V, V> filter_profile(V vec, W date_vec, P pred)
 {
   if(vec.size()!=date_vec.size())
@@ -178,8 +201,8 @@ T diff_double_sigmoid(T t, const V& x)
 
 template <typename T, ContainerC V>
 inline
-std::tuple<T, T, T, T, T, T> pheno_metrics(const V& x, T maxvalue=1.0, 
-                                           T minvalue=0.0)
+std::tuple<T, T, T, T, T, T> pheno_metrics(const V& x, T maxvalue,
+                                           T minvalue)
 {
   auto A = maxvalue-minvalue;
   auto B = minvalue;

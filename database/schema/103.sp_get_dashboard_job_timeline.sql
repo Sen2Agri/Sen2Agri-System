@@ -20,9 +20,10 @@ BEGIN
         SELECT step.task_id AS "group",
                "name" AS "title",
                step.start_timestamp AS "start",
-               step.end_timestamp AS "end"
+               COALESCE(step.end_timestamp, NOW()) AS "end"
         FROM step
         INNER JOIN tasks ON tasks.id = step.task_id
+        WHERE step.start_timestamp IS NOT NULL
     ),
     result AS (
         SELECT (SELECT array_agg(groups) FROM groups) AS groups,
