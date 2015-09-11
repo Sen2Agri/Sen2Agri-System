@@ -1267,7 +1267,7 @@ private:
            m_ResamplersList->PushBack(resampler);
            return resampler;
        }
-       const float ratio = curRes / wantedRes;
+       const float ratio = (float)curRes / (float)wantedRes;
 
        // Set the interpolator
        LinearInterpolationType::Pointer interpolator = LinearInterpolationType::New();

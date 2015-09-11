@@ -134,7 +134,7 @@ private:
         const std::string &tmp = GetParameterAsString("xml");
         std::vector<char> buf(tmp.begin(), tmp.end());
         m_DirName = std::string(dirname(buf.data()));
-        std::cout << m_DirName << std::endl;
+
         bool allInOne = (GetParameterInt("allinone") != 0);
 
         auto maccsReader = itk::MACCSMetadataReader::New();
@@ -157,7 +157,7 @@ private:
 
         m_ConcatenerRes20->SetInput( m_ImageListRes20 );
 
-        if(HasValue("outres10"))
+        if(HasValue("outres20"))
             SetParameterOutputImage("outres20", m_ConcatenerRes20->GetOutput());
 
         if(HasValue("outcmres10"))
@@ -194,7 +194,7 @@ private:
         }
 
         std::string imageFile = m_DirName + "/" + meta->Files.OrthoSurfCorrPente;
-        std::cout << imageFile <<std::endl;
+
 
         ImageReaderType::Pointer reader = getReader(imageFile);
         reader->UpdateOutputInformation();
