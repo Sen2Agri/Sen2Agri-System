@@ -203,7 +203,7 @@ private:
                             nb_err_bands << ", nb_xmls=" << nb_xmls);
       }
 
-      VectorType date_vec{};
+      std::vector<std::string> dateStrVect;
       std::string date_str;
       for (std::string strXml : xmlsList)
       {
@@ -211,9 +211,30 @@ private:
           // we are interested only in the 10m resolution as we need only the date
           auto pHelper = factory->GetMetadataHelper(strXml, 10);
           date_str = pHelper->GetAcquisitionDate();
-          date_vec.push_back(date_to_doy(date_str));
+          dateStrVect.push_back(date_str);
       }
 
+      VectorType inDates(dateStrVect.size());
+      std::string value;
+      int i = 0;
+      for (std::string strDate : xmlsList) {
+          inDates[i] = date_to_doy(strDate);
+          /*struct tm tmDate = {};
+          if (strptime(strDate.c_str(), "%Y%m%d", &tmDate) == NULL) {
+              itkExceptionMacro("Invalid value for a date: " + value);
+          }
+          inDates[i] = mktime(&tmDate) / 86400;
+          */
+          i++;
+      }
+/*
+      if (!inDates.empty())
+      {
+          auto min = *std::min_element(inDates.begin(), inDates.end());
+          std::transform(inDates.begin(), inDates.end(), inDates.begin(),
+                         [=](PrecisionType v) { return v - min; });
+      }
+*/
       size_t bwr{1};
       size_t fwr{1};
       ALGO_TYPE algoType = ALGO_LOCAL;
@@ -233,7 +254,7 @@ private:
       //instantiate a functor with the regressor and pass it to the
       //unary functor image filter pass also the normalization values
       m_profileReprocessingFilter = FilterType::New();
-      m_functor.SetDates(date_vec);
+      m_functor.SetDates(inDates);
       m_functor.SetAlgoType(algoType);
       m_functor.SetBwr(bwr);
       m_functor.SetFwr(fwr);
