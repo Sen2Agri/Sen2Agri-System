@@ -217,7 +217,8 @@ private:
       VectorType inDates(dateStrVect.size());
       std::string value;
       int i = 0;
-      for (std::string strDate : xmlsList) {
+      for (std::string strDate : dateStrVect) {
+          otbAppLogINFO("Processing date: "<< strDate <<std::endl);
           inDates[i] = date_to_doy(strDate);
           /*struct tm tmDate = {};
           if (strptime(strDate.c_str(), "%Y%m%d", &tmDate) == NULL) {
