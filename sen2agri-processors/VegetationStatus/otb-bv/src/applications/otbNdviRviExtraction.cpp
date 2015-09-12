@@ -3,18 +3,34 @@
 #include "otbVectorImage.h"
 #include "otbVectorImageToImageListFilter.h"
 #include "otbImageListToVectorImageFilter.h"
+#include "otbStreamingResampleImageFilter.h"
 #include "otbBandMathImageFilter.h"
 #include "MetadataHelperFactory.h"
 
-typedef otb::VectorImage<float, 2>  ImageType;
-typedef otb::Image<float, 2>        InternalImageType;
+//Transform
+#include "itkScalableAffineTransform.h"
+
+typedef float                                                             PixelType;
+typedef otb::VectorImage<PixelType, 2>                                    ImageType;
+typedef otb::Image<PixelType, 2>                                          InternalImageType;
 typedef otb::ImageFileReader<ImageType>                                   ReaderType;
-typedef otb::ImageFileWriter<ImageType>                                   WriterType;
 typedef otb::ImageList<InternalImageType>                                 ImageListType;
+
 typedef otb::VectorImageToImageListFilter<ImageType, ImageListType>       VectorImageToImageListType;
 typedef otb::ImageListToVectorImageFilter<ImageListType, ImageType>       ImageListToVectorImageFilterType;
 typedef otb::BandMathImageFilter<InternalImageType>                       BandMathImageFilterType;
 typedef otb::ObjectList<BandMathImageFilterType>                          BandMathImageFilterListType;
+
+typedef otb::StreamingResampleImageFilter<InternalImageType, InternalImageType, double>     ResampleFilterType;
+typedef otb::ObjectList<ResampleFilterType>                                                 ResampleFilterListType;
+
+typedef itk::NearestNeighborInterpolateImageFunction<InternalImageType, double>             NearestNeighborInterpolationType;
+typedef itk::LinearInterpolateImageFunction<InternalImageType, double>                      LinearInterpolationType;
+typedef otb::BCOInterpolateImageFunction<InternalImageType>                                 BCOInterpolationType;
+typedef itk::IdentityTransform<double, InternalImageType::ImageDimension>                   IdentityTransformType;
+
+typedef itk::ScalableAffineTransform<double, InternalImageType::ImageDimension>             ScalableTransformType;
+typedef ScalableTransformType::OutputVectorType     OutputVectorType;
 
 namespace otb
 {
@@ -45,6 +61,9 @@ private:
         SetDocSeeAlso(" ");
 
         AddParameter(ParameterType_String, "xml", "Product Metadata XML File");
+        AddParameter(ParameterType_Int, "outres", "Output resolution. If not specified, is the same as the input resolution.");
+        MandatoryOff("outres");
+
         AddParameter(ParameterType_OutputImage, "ndvi", "NDVI image");
         MandatoryOff("ndvi");
         AddParameter(ParameterType_OutputImage, "rvi", "RVI image");
@@ -55,6 +74,7 @@ private:
         SetDocExampleParameterValue("xml", "data.xml");
         SetDocExampleParameterValue("ndvi", "ndvi.tif");
         SetDocExampleParameterValue("rvi", "rvi.tif");
+        SetDocExampleParameterValue("fts", "ndv_rvi.tif");
   }
 
   void DoUpdateParameters()
@@ -62,9 +82,9 @@ private:
   }
   void DoExecute()
   {
-        // define all needed types
         m_imgReader = ReaderType::New();
         m_imgSplit = VectorImageToImageListType::New();
+        m_ResamplersList = ResampleFilterListType::New();
 
         // NDVI = (NIR-RED) / (NIR + RED)
         // RVI = NIR / RED
@@ -102,8 +122,17 @@ private:
         m_imgReader->SetFileName(pHelper->GetImageFileName());
         m_imgReader->UpdateOutputInformation();
 
-        // Use a filter to split the input into a list of one band images
+        int curRes = m_imgReader->GetOutput()->GetSpacing()[0];
+        int nOutRes = curRes;
+        if(HasValue("outres")) {
+            nOutRes = GetParameterInt("outres");
+            if(nOutRes != 10 && nOutRes != 20) {
+                itkExceptionMacro("Invalid output resolution specified (only 10 and 20 accepted)" << nOutRes);
+            }
+        }
+
         m_imgSplit->SetInput(m_imgReader->GetOutput());
+        // Use a filter to split the input into a list of one band images
         m_imgSplit->UpdateOutputInformation();
         int nbBands = m_imgReader->GetOutput()->GetNumberOfComponentsPerPixel();
 
@@ -114,8 +143,8 @@ private:
 
         for (int j = 0; j < nbBands; j++) {
             // Set all bands of the current image as inputs
-            m_ndviFilter->SetNthInput(j, m_imgSplit->GetOutput()->GetNthElement(j));
-            m_rviFilter->SetNthInput(j, m_imgSplit->GetOutput()->GetNthElement(j));
+            m_ndviFilter->SetNthInput(j, getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(j)));
+            m_rviFilter->SetNthInput(j, getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(j)));
         }
 
         // set the expressions
@@ -149,6 +178,63 @@ private:
       return oss.str();
   }
 
+  ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const float& ratio) {
+       ResampleFilterType::Pointer resampler = ResampleFilterType::New();
+       resampler->SetInput(image);
+
+      LinearInterpolationType::Pointer interpolator = LinearInterpolationType::New();
+      resampler->SetInterpolator(interpolator);
+
+      //BCOInterpolationType::Pointer interpolator = BCOInterpolationType::New();
+      //interpolator->SetRadius(2);
+      //resampler->SetInterpolator(interpolator);
+       IdentityTransformType::Pointer transform = IdentityTransformType::New();
+
+       resampler->SetOutputParametersFromImage( image );
+       // Scale Transform
+       OutputVectorType scale;
+       scale[0] = 1.0 / ratio;
+       scale[1] = 1.0 / ratio;
+
+       // Evaluate spacing
+       InternalImageType::SpacingType spacing = image->GetSpacing();
+       InternalImageType::SpacingType OutputSpacing;
+       OutputSpacing[0] = spacing[0] * scale[0];
+       OutputSpacing[1] = spacing[1] * scale[1];
+
+       resampler->SetOutputSpacing(OutputSpacing);
+
+       FloatVectorImageType::PointType origin = image->GetOrigin();
+       FloatVectorImageType::PointType outputOrigin;
+       outputOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale[0] - 1.0);
+       outputOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0);
+
+       resampler->SetOutputOrigin(outputOrigin);
+
+       resampler->SetTransform(transform);
+
+       // Evaluate size
+       ResampleFilterType::SizeType recomputedSize;
+       recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
+       recomputedSize[1] = image->GetLargestPossibleRegion().GetSize()[1] / scale[1];
+
+       resampler->SetOutputSize(recomputedSize);
+
+       m_ResamplersList->PushBack(resampler);
+       return resampler;
+  }
+
+  InternalImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes,
+                                               InternalImageType::Pointer inImg) {
+      if(nCurRes == nDesiredRes)
+          return inImg;
+      float fMultiplicationFactor = ((float)nCurRes)/nDesiredRes;
+      ResampleFilterType::Pointer resampler = getResampler(inImg, fMultiplicationFactor);
+      return resampler->GetOutput();
+  }
+
+
+
   ReaderType::Pointer                       m_imgReader;
   VectorImageToImageListType::Pointer       m_imgSplit;
 
@@ -156,6 +242,7 @@ private:
   BandMathImageFilterType::Pointer m_rviFilter;
 
   ImageListToVectorImageFilterType::Pointer m_ftsConcat;
+  ResampleFilterListType::Pointer           m_ResamplersList;
 
 };
 }
