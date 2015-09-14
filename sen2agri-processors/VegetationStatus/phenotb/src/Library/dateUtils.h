@@ -38,7 +38,7 @@ void reduce_to_first_year(std::vector<std::time_t> &times);
 /** Converts a sequence of struct tm to a list of time differences from the
     start of the first year in the sequence
 */
-std::vector<time_t> tm_to_doy_list(const std::vector<std::tm> &times);
+std::vector<int> tm_to_doy_list(const std::vector<std::tm> &times);
 
 /** Parses an ASCII file containing a date per line (string with format YYYYMMDD)
     and returns an std::vector< std::tm > containing the dates in the order of reading

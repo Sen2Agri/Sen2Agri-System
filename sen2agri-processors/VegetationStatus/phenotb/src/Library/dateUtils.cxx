@@ -53,32 +53,39 @@ void reduce_to_first_year(std::vector<std::time_t> &times)
   if (it == end)
     return;
 
-  std::tm tm;
+  std::tm tm, tm2 = { };
   localtime_r(&*it, &tm);
 
-  tm.tm_mon = 0;
-  tm.tm_mday = 1;
+  tm2.tm_year = tm.tm_year;
+  tm2.tm_mon = 0;
+  tm2.tm_mday = 1;
 
-  auto yearStart = std::mktime(&tm) / (60 * 60 * 24);
+  auto yearStart = std::mktime(&tm2);
   std::transform(std::begin(times), std::end(times), std::begin(times),
                  [yearStart](std::time_t time) { return time - yearStart; });
 }
 
-std::vector<time_t> tm_to_doy_list(const std::vector<std::tm> &times)
+std::vector<int> tm_to_doy_list(const std::vector<std::tm> &times)
 {
-  std::vector<time_t> res;
+  std::vector<int> res;
+  std::vector<time_t> seconds;
   if (times.empty())
-    {
-      return res;
-    }
-  res.reserve(times.size());
-  std::transform(std::begin(times), std::end(times), std::begin(res),
-                 [](std::tm tm)
-    {
-    return std::mktime(&tm) / (60 * 60 * 24);
-    });
+    return res;
 
-  reduce_to_first_year(res);
+  seconds.resize(times.size());
+  res.resize(times.size());
+
+  std::transform(std::begin(times), std::end(times), std::begin(seconds),
+                 [](std::tm tm) { return std::mktime(&tm); });
+
+  reduce_to_first_year(seconds);
+
+  constexpr int secondsPerDay = 60 * 60 * 24;
+  constexpr float secondsPerDayF = static_cast<float>(secondsPerDay);
+
+  std::transform(std::begin(seconds), std::end(seconds), std::begin(res),
+                 [](std::time_t time) { return static_cast<int>(lrintf(time / secondsPerDayF)); });
+
   return res;
 }
 

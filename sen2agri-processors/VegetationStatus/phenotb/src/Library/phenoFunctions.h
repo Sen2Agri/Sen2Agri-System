@@ -227,9 +227,9 @@ public:
                                   use_mask{true} {};
 
   void SetDates(const std::vector<tm>& d) {
-    auto times = pheno::tm_to_doy_list(d);
     dv = VectorType{static_cast<unsigned int>(d.size())};
-    std::copy(std::begin(times), std::end(times), std::begin(dv));
+    const auto &days = pheno::tm_to_doy_list(d);
+    std::copy(std::begin(days), std::end(days), std::begin(dv));
   }
 
   void SetUseMask(bool um) {
