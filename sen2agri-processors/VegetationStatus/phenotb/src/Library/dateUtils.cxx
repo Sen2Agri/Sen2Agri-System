@@ -46,6 +46,42 @@ unsigned int doy(const std::tm& d)
   return delta_days(d,jan1st)+1;
 }
 
+void reduce_to_first_year(std::vector<std::time_t> &times)
+{
+  auto end = std::end(times);
+  auto it = std::min_element(std::begin(times), end);
+  if (it == end)
+    return;
+
+  std::tm tm;
+  localtime_r(&*it, &tm);
+
+  tm.tm_mon = 0;
+  tm.tm_mday = 1;
+
+  auto yearStart = std::mktime(&tm) / (60 * 60 * 24);
+  std::transform(std::begin(times), std::end(times), std::begin(times),
+                 [yearStart](std::time_t time) { return time - yearStart; });
+}
+
+std::vector<time_t> tm_to_doy_list(const std::vector<std::tm> &times)
+{
+  std::vector<time_t> res;
+  if (times.empty())
+    {
+      return res;
+    }
+  res.reserve(times.size());
+  std::transform(std::begin(times), std::end(times), std::begin(res),
+                 [](std::tm tm)
+    {
+    return std::mktime(&tm) / (60 * 60 * 24);
+    });
+
+  reduce_to_first_year(res);
+  return res;
+}
+
 int months(const std::string& m)
 {
   static std::map<std::string, int> mm {

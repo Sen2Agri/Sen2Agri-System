@@ -18,6 +18,7 @@
 
 #include <string>
 #include <map>
+#include <vector>
 #include "phenoTypes.h"
 
 namespace pheno {
@@ -29,6 +30,15 @@ int delta_days(std::tm t1, std::tm t2);
 
 /// Return the day of year
 unsigned int doy(const std::tm& d);
+
+/** Makes all times relative to the start of the first year in the sequence
+*/
+void reduce_to_first_year(std::vector<std::time_t> &times);
+
+/** Converts a sequence of struct tm to a list of time differences from the
+    start of the first year in the sequence
+*/
+std::vector<time_t> tm_to_doy_list(const std::vector<std::tm> &times);
 
 /** Parses an ASCII file containing a date per line (string with format YYYYMMDD)
     and returns an std::vector< std::tm > containing the dates in the order of reading

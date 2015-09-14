@@ -227,20 +227,9 @@ public:
                                   use_mask{true} {};
 
   void SetDates(const std::vector<tm>& d) {
-    size_t sz = d.size();
+    auto times = pheno::tm_to_doy_list(d);
     dv = VectorType{static_cast<unsigned int>(d.size())};
-    for (size_t i=0; i<sz; i++)
-      {
-        tm tmTmp = d[i];
-        dv[i] = mktime(&tmTmp) / (60 * 60 * 24);
-      }
-
-    if (!dv.empty())
-      {
-        auto min = *std::min_element(dv.begin(), dv.end());
-        std::transform(dv.begin(), dv.end(), dv.begin(),
-                       [=](PrecisionType v) { return v - min; });
-      }
+    std::copy(std::begin(times), std::end(times), std::begin(dv));
   }
 
   void SetUseMask(bool um) {
