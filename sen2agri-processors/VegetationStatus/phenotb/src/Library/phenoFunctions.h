@@ -26,6 +26,9 @@
 #include "dateUtils.h"
 #include "itkBinaryFunctorImageFilter.h"
 
+#define NO_DATA -10000
+#define EPSILON 0.0001f
+
 
 
 namespace pheno
@@ -298,8 +301,8 @@ public:
       // The result uses either the original or the approximated value depending on the mask value
       PixelType result(nbDates);
       for(size_t i=0; i<nbDates; i++) {
-          if(fabs(pix[i] - (-10000)) < 0.0001f)
-              result[i] = -10000;
+          if(fabs(pix[i] - NO_DATA) < EPSILON)
+              result[i] = NO_DATA;
           else {
               // Compute the approximation
               auto tmpres = normalized_sigmoid::F(dv, x_1)*(mm1.second-mm1.first)+mm1.first

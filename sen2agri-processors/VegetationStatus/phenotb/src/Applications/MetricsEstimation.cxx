@@ -79,8 +79,8 @@ public:
     TOutput result(6);
 
     for(size_t i = 0; i < A.Size(); i++) {
-        if(fabs(A[i] - (-10000)) < 0.0001f)
-            result.Fill(-10000);
+        if(fabs(A[i] - NO_DATA) < EPSILON)
+            result.Fill(NO_DATA);
         return result;
     }
 
