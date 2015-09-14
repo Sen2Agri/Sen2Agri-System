@@ -305,16 +305,22 @@ public:
 
     if(return_fit)
       {
-      // Compute the approximation
-      auto tmpres = normalized_sigmoid::F(dv, x_1)*(mm1.second-mm1.first)+mm1.first
-        + normalized_sigmoid::F(dv, x_2)*(mm2.second-mm2.first)+mm2.first;
+
       // The result uses either the original or the approximated value depending on the mask value
       PixelType result(nbDates);
-      for(size_t i=0; i<nbDates; i++)
-        if(fit_only_invalid)
-          result[i] = ((mv[i]==(typename PixelType::ValueType{0}))?pix[i]:tmpres[i]);
-        else
-          result[i] = tmpres[i];
+      for(size_t i=0; i<nbDates; i++) {
+          if(fabs(pix[i] - (-10000)) < 0.0001f)
+              result[i] = -10000;
+          else {
+              // Compute the approximation
+              auto tmpres = normalized_sigmoid::F(dv, x_1)*(mm1.second-mm1.first)+mm1.first
+                + normalized_sigmoid::F(dv, x_2)*(mm2.second-mm2.first)+mm2.first;
+            if(fit_only_invalid)
+              result[i] = ((mv[i]==(typename PixelType::ValueType{0}))?pix[i]:tmpres[i]);
+            else
+              result[i] = tmpres[i];
+          }
+      }
 
       return result;
       }
