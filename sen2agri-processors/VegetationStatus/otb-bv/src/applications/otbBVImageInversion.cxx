@@ -44,6 +44,9 @@ typedef otb::RandomForestsMachineLearningModel<PrecisionType,
 typedef otb::SVMMachineLearningModel<PrecisionType, PrecisionType> SVRType;
 typedef otb::MultiLinearRegressionModel<PrecisionType> MLRType;
 
+#define NO_DATA_VALUE   -10000.0f
+#define NO_DATA_EPSILON 0.0001f
+
 namespace otb
 {
 
@@ -108,17 +111,25 @@ public:
     auto nbInputVariables = in_pix.GetSize();
     InputSampleType inputValue;
     inputValue.Reserve(nbInputVariables);
+    int cnt = 0;
     for(size_t var = 0; var < nbInputVariables; ++var)
       {
-      inputValue[var] = in_pix[var];
-      if( normalization )
-        inputValue[var] = normalize(inputValue[var], m_Normalization[var]);
-      }
-    OutputSampleType outputValue = m_Model->Predict(inputValue);
-    pix[0] = outputValue[0];
-    if( normalization )
-      pix[0] = denormalize(outputValue[0],
-                           m_Normalization[nbInputVariables]);
+        if(!IsNoDataValue(in_pix[var])) {
+            inputValue[cnt] = in_pix[var];
+            if( normalization )
+                inputValue[cnt] = normalize(inputValue[cnt], m_Normalization[var]);
+            cnt++;
+        }
+    }
+    if(cnt < nbInputVariables) {
+        pix[0] = NO_DATA_VALUE;
+    } else {
+        OutputSampleType outputValue = m_Model->Predict(inputValue);
+        pix[0] = outputValue[0];
+        if( normalization )
+          pix[0] = denormalize(outputValue[0],
+                               m_Normalization[nbInputVariables]);
+    }
     return pix;
   }
 
@@ -132,6 +143,12 @@ public:
   {
     return !(*this!=other);
   }
+
+  bool IsNoDataValue(float fValue)
+  {
+      return fabs(fValue - NO_DATA_VALUE) < NO_DATA_EPSILON;
+  }
+
 
 protected:
   ModelPointerType m_Model;

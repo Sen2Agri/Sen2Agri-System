@@ -114,9 +114,10 @@ private:
         std::string RED = getBandStr(nRedBandIdx);
         std::string NIR = getBandStr(nNirBand);
 
-        ndviExprStream << "(" << NIR << "!= -10000) ? (" << NIR << "-" << RED << ") / " <<
-                        "(" << NIR << "+" << RED << ") : -10000";
-        rviExprStream << "(" << NIR << "!= -10000 && " << RED << "!= 0) ? (" << NIR << " / " << RED << ") : -10000";
+        // NO_DATA will be in the output also -10000 but the NDVI and RVI values will not be multiplied with the quantification value
+        ndviExprStream << "(abs(" << NIR << "+10000)<0.000001 || abs(" << RED << "+10000)<0.000001) ? -10000.0 : (abs(" << NIR << "+" << RED << ") < 0.000001 ? 0 : (" <<
+                       NIR << "-" << RED << ")/(" << NIR <<"+" << RED << "))";
+        rviExprStream << "(abs(" << NIR << "+10000)<0.000001 || abs(" << RED << "+10000)<0.000001) ? -10000.0 : ((" << RED << "<0.000001) ? 0 : (" << NIR << " / " << RED << "))";
 
         //Read all input parameters
         m_imgReader->SetFileName(pHelper->GetImageFileName());

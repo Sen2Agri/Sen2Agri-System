@@ -203,39 +203,27 @@ private:
                             nb_err_bands << ", nb_xmls=" << nb_xmls);
       }
 
-      std::vector<std::string> dateStrVect;
       std::string date_str;
+      std::vector<std::tm> dv;
+      VectorType inDates;
       for (std::string strXml : xmlsList)
       {
           MetadataHelperFactory::Pointer factory = MetadataHelperFactory::New();
           // we are interested only in the 10m resolution as we need only the date
           auto pHelper = factory->GetMetadataHelper(strXml, 10);
           date_str = pHelper->GetAcquisitionDate();
-          dateStrVect.push_back(date_str);
-      }
-
-      VectorType inDates(dateStrVect.size());
-      std::string value;
-      int i = 0;
-      for (std::string strDate : dateStrVect) {
-          otbAppLogINFO("Processing date: "<< strDate <<std::endl);
-          inDates[i] = date_to_doy(strDate);
-          /*struct tm tmDate = {};
-          if (strptime(strDate.c_str(), "%Y%m%d", &tmDate) == NULL) {
-              itkExceptionMacro("Invalid value for a date: " + value);
+          //inDates.push_back(date_to_doy(date_str));
+          struct tm tmDate = {};
+          if (strptime(date_str.c_str(), "%Y%m%d", &tmDate) == NULL) {
+              itkExceptionMacro("Invalid value for a date: " + date_str);
           }
-          inDates[i] = mktime(&tmDate) / 86400;
-          */
-          i++;
+          dv.push_back(tmDate);
+
       }
-/*
-      if (!inDates.empty())
-      {
-          auto min = *std::min_element(inDates.begin(), inDates.end());
-          std::transform(inDates.begin(), inDates.end(), inDates.begin(),
-                         [=](PrecisionType v) { return v - min; });
-      }
-*/
+      auto times = pheno::tm_to_doy_list(dv);
+      inDates = VectorType(dv.size());
+      std::copy(std::begin(times), std::end(times), std::begin(inDates));
+
       size_t bwr{1};
       size_t fwr{1};
       ALGO_TYPE algoType = ALGO_LOCAL;
