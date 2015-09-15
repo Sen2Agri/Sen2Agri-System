@@ -57,7 +57,7 @@ echo "Executing from $MY_PWD"
 cnt=0
 for xml in "${inputXML[@]}"
 do
-    try otbcli NdviRviExtraction $IMG_INV_OTB_LIBS_ROOT -xml $xml -outres 20 -fts $OUT_NDVI_RVI
+    try otbcli NdviRviExtraction $IMG_INV_OTB_LIBS_ROOT -xml $xml -outres 10 -fts $OUT_NDVI_RVI
 
     CUR_OUT_LAI_IMG=${OUT_LAI_IMG//[#]/$cnt}
     CUR_OUT_LAI_ERR_IMG=${OUT_LAI_ERR_IMG//[#]/$cnt}
