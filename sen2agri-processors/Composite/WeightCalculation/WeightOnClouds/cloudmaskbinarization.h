@@ -27,7 +27,7 @@ public:
     {
       int val = static_cast< int >( A );
 
-      return ((val == 0) ? 0.0 : 1.0);
+      return ((val == -10000) ? -10000 : ((val == 0) ? 0.0 : 1.0));
     }
 };
 }
