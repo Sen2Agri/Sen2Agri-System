@@ -543,7 +543,13 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                 // TODO: The first 2 lines of code can be removed as the initialization is made in ResetCurrentPixelValues
                 outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
                 outInfos.m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
-                outInfos.m_CurrentPixelWeights[i] = 0;
+                int nCurrentBandIndex = GetAbsoluteL2ABandIndex(i);
+                // band available
+                if(nCurrentBandIndex != -1)
+                {
+                    outInfos.m_CurrentPixelWeights[i] = 0;
+                }
+                // otherwise, it will remain to the previous value
             }
 
         }
