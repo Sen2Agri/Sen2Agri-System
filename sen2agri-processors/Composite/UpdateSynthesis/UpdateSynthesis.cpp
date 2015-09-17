@@ -229,7 +229,7 @@ private:
             sensorType = SENSOR_SPOT4;
         }
 
-        int productDate = pHelper->GetAcquisitionDateInDays();
+        int productDate = pHelper->GetAcquisitionDateAsDoy();
         m_Functor.Initialize(sensorType, (resolution == 10 ? RES_10M : RES_20M), l3aExist,
                              productDate, pHelper->GetReflectanceQuantificationValue(),
                              allInOne);
@@ -251,6 +251,7 @@ private:
 
         return;
     }
+
     InputImageType::Pointer             m_L2AIn;
     InputImageType::Pointer             m_CSM, m_WM, m_SM, m_WeightsL2A;
     InputImageType::Pointer             m_PrevL3A;
