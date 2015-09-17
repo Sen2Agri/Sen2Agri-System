@@ -386,8 +386,12 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, O
             float fCurrentWeight = GetCurrentL2AWeightValue(A);
             float fPrevWeightedDate = GetPrevL3AWeightedAvDateValue(A);
 
-            if(!IsNoDataValue(fPrevReflect, REFLECTANCE_NO_DATA) && !IsNoDataValue(fPrevWeight, WEIGHT_NO_DATA)
-                    && !IsNoDataValue(fPrevWeightedDate, DATE_NO_DATA) && !IsNoDataValue(fCurReflectance, REFLECTANCE_NO_DATA)
+            bool bIsPrevReflNoData = IsNoDataValue(fPrevReflect, REFLECTANCE_NO_DATA);
+            bool bIsCurReflNoData = IsNoDataValue(fCurReflectance, REFLECTANCE_NO_DATA);
+
+            if((bIsPrevReflNoData == false) && (bIsCurReflNoData == false)
+                    && !IsNoDataValue(fPrevWeight, WEIGHT_NO_DATA)
+                    && !IsNoDataValue(fPrevWeightedDate, DATE_NO_DATA)
                     && !IsNoDataValue(fCurrentWeight, WEIGHT_NO_DATA)) {
                 outInfos.m_CurrentWeightedReflectances[i] = (fPrevWeight * fPrevReflect + fCurrentWeight * fCurReflectance) /
                         (fPrevWeight + fCurrentWeight);
@@ -396,8 +400,14 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, O
                 outInfos.m_CurrentPixelWeights[i] = (fPrevWeight + fCurrentWeight);
             } else {
                 outInfos.m_CurrentWeightedReflectances[i] = fCurReflectance;
-                outInfos.m_fCurrentPixelWeightedDate = m_nCurrentDate;
                 outInfos.m_CurrentPixelWeights[i] = fCurrentWeight;
+                // if we have no data so far, then set also the flag as no data
+                if(bIsPrevReflNoData && bIsCurReflNoData) {
+                    outInfos.m_nCurrentPixelFlag = FLAG_NO_DATA;
+                    outInfos.m_fCurrentPixelWeightedDate = DATE_NO_DATA;
+                } else {
+                    outInfos.m_fCurrentPixelWeightedDate = m_nCurrentDate;
+                }
             }
         } else {
             // L2A band missing - as for LANDSAT 8
@@ -428,7 +438,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
         {
             float fPrevWeight = GetPrevL3AWeightValue(A, i);
             // if pixel never observed without cloud, water or snow
-            if(fPrevWeight == 0) {
+            if(IsNoDataValue(fPrevWeight, 0) || IsNoDataValue(fPrevWeight, WEIGHT_NO_DATA)) {
                 outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
                 outInfos.m_CurrentPixelWeights[i] = 0;
                 if(IsRedBand(i))
@@ -462,7 +472,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
     // if flagN-1 is no-data => replace nodata with cloud
     if(nPrevL3AFlagVal == FLAG_NO_DATA)
     {
-        outInfos.m_nCurrentPixelFlag = CLOUD;
+        //outInfos.m_nCurrentPixelFlag = CLOUD;
 
         for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
         {
@@ -478,8 +488,14 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                     outInfos.m_nCurrentPixelFlag = CLOUD;
                 }
             } else {
-                outInfos.m_CurrentWeightedReflectances[i] = WEIGHT_NO_DATA;
-                outInfos.m_CurrentPixelWeights[i] = 0;
+                outInfos.m_CurrentWeightedReflectances[i] = REFLECTANCE_NO_DATA;
+                float fPrevWeight = GetPrevL3AWeightValue(A, i);
+                if(IsNoDataValue(fPrevWeight, WEIGHT_NO_DATA)) {
+                    outInfos.m_CurrentPixelWeights[i] = WEIGHT_NO_DATA; // TODO: This is not conform to ATBD but seems more natural
+                                                                    // in order to have no data for bands that are completely missing
+                } else {
+                    outInfos.m_CurrentPixelWeights[i] = 0;
+                }
             }
         }
     } else {

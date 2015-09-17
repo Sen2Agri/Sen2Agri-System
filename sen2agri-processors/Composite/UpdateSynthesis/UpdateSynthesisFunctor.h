@@ -8,11 +8,11 @@ typedef enum {RES_10M, RES_20M} ResolutionType;
 
 typedef enum {LAND=1, WATER,SNOW,CLOUD,CLOUD_SHADOW} FlagType;
 
-#define FLAG_NO_DATA -1.0f
-#define DATE_NO_DATA -1.0f
-#define REFLECTANCE_NO_DATA -1.0f
-#define WEIGHT_NO_DATA -1.0f
-#define NO_DATA_EPSILON 0.0001f
+#define FLAG_NO_DATA -10000
+#define DATE_NO_DATA -10.0f
+#define REFLECTANCE_NO_DATA -10.0f
+#define WEIGHT_NO_DATA -10.0f
+#define NO_DATA_EPSILON 0.00001f
 
 class OutFunctorInfos
 {
