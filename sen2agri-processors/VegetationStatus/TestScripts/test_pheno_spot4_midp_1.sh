@@ -51,7 +51,7 @@ OUT_DATES="$OUT_FOLDER/spot_dates.txt"
 OUT_SHAPE="$OUT_FOLDER/spot_shapes.shp"
 OUT_NDVI="$OUT_FOLDER/spot_ndvi.TIF"
 OUT_SIGMO="$OUT_FOLDER/spot_sigmo.TIF"
-OUT_METRIC="$OUT_FOLDER/metric_estimation.TIF?&gdal:co:COMPRESS=DEFLATE"
+OUT_METRIC="$OUT_FOLDER/metric_estimation.TIF?gdal:co:COMPRESS=DEFLATE"
 
 MY_PWD=`pwd`
 
