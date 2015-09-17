@@ -152,15 +152,17 @@ private:
     SetDescription("Reprocess a BV time profile.");
    
     AddParameter(ParameterType_InputImage, "lai", "Input profile file.");
-    SetParameterDescription( "lai", "Input file containing the profile to process. This is an ASCII file where each line contains the date (YYYMMDD) the BV estimation and the error." );
+    SetParameterDescription( "lai", "Input file containing the profile to process. This file contains the BV estimation." );
 
     AddParameter(ParameterType_InputImage, "err", "Input profile file.");
-    SetParameterDescription( "err", "Input file containing the profile to process. This is an ASCII file where each line contains the date (YYYMMDD) the BV estimation and the error." );
+    SetParameterDescription( "err", "Input file containing the profile to process. This file contains the error." );
 
     AddParameter(ParameterType_InputFilenameList, "ilxml", "The XML metadata files list");
 
     AddParameter(ParameterType_OutputImage, "opf", "Output profile file.");
-    SetParameterDescription( "opf", "Filename where the reprocessed profile saved. This is an raster band contains the new BV estimation value for each pixel. The last band contains the boolean information which is 0 if the value has not been reprocessed." );
+    SetParameterDescription( "opf", "Filename where the reprocessed profile saved. "
+                                    "This is an raster band contains the new BV estimation value for each pixel. "
+                                    "The last band contains the boolean information which is 0 if the value has not been reprocessed." );
 
     AddParameter(ParameterType_Choice, "algo", 
                  "Reprocessing algorithm: local, fit.");
