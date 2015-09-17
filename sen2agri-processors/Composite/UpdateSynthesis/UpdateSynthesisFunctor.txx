@@ -281,7 +281,7 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
 {
     OutFunctorInfos outInfos;
 
-    ResetCurrentPixelValues(outInfos);
+    ResetCurrentPixelValues(A, outInfos);
     if(IsLandPixel(A))
     {
         HandleLandPixel(A, outInfos);
@@ -337,15 +337,15 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
 }
 
 template< class TInput, class TOutput>
-void UpdateSynthesisFunctor<TInput,TOutput>::ResetCurrentPixelValues(OutFunctorInfos& outInfos)
+void UpdateSynthesisFunctor<TInput,TOutput>::ResetCurrentPixelValues(const TInput & A, OutFunctorInfos& outInfos)
 {
     for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
     {
-        outInfos.m_CurrentPixelWeights[i] = WEIGHT_NO_DATA;
-        outInfos.m_CurrentWeightedReflectances[i] = REFLECTANCE_NO_DATA;
+        outInfos.m_CurrentPixelWeights[i] = GetPrevL3AWeightValue(A, i);
+        outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
     }
-    outInfos.m_nCurrentPixelFlag = FLAG_NO_DATA;
-    outInfos.m_fCurrentPixelWeightedDate = DATE_NO_DATA;
+    outInfos.m_nCurrentPixelFlag = GetPrevL3APixelFlagValue(A);
+    outInfos.m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
 }
 
 template< class TInput, class TOutput>
@@ -410,6 +410,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, O
                 }
             }
         } else {
+            // TODO: This code can be removed as the initialization is made in ResetCurrentPixelValues
             // L2A band missing - as for LANDSAT 8
             outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
             outInfos.m_CurrentPixelWeights[i] = GetPrevL3AWeightValue(A, i);
@@ -457,6 +458,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
 
             }
         } else {
+            // TODO: This code can be removed as the initialization is made in ResetCurrentPixelValues
             // band not available, keep previous values
             outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
             outInfos.m_CurrentPixelWeights[i] = GetPrevL3AWeightValue(A, i);
@@ -482,6 +484,8 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
             {
                 outInfos.m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
                 outInfos.m_CurrentPixelWeights[i] = 0;
+                // TODO: Maybe here we should check if prevRefl or current refl are valid for this pixel
+                //      (a value different than no data)
                 if(IsRedBand(i))
                 {
                     outInfos.m_fCurrentPixelWeightedDate = m_nCurrentDate;
@@ -510,8 +514,9 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                 float fBlueReflectance = GetL2AReflectanceForPixelVal(A[nBlueBandIdx]);
                 for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
                 {
-                    float fCurReflectance = GetPrevL3AReflectanceValue(A, i);
-                    if(fBlueReflectance < fCurReflectance)
+                    float fPrevReflectance = GetPrevL3AReflectanceValue(A, i);
+                    // replace value only if the new reflectance in blue is smaller
+                    if(fBlueReflectance < fPrevReflectance)
                     {
 
                         int nCurrentBandIndex = GetAbsoluteL2ABandIndex(i);
@@ -526,16 +531,16 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                                 outInfos.m_nCurrentPixelFlag = CLOUD;
                             }
                         } else {
-                            outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
+                            outInfos.m_CurrentWeightedReflectances[i] = fPrevReflectance;
                             outInfos.m_CurrentPixelWeights[i] = 0;
                         }
                     }
                 }
             }
         } else {
-            outInfos.m_nCurrentPixelFlag = GetPrevL3APixelFlagValue(A);
             for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
             {
+                // TODO: The first 2 lines of code can be removed as the initialization is made in ResetCurrentPixelValues
                 outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
                 outInfos.m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
                 outInfos.m_CurrentPixelWeights[i] = 0;
