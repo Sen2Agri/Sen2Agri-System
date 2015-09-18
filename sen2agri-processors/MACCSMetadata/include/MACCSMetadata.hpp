@@ -73,8 +73,23 @@ struct MACCSViewingAnglesGrid
     MACCSAngles Angles;
 };
 
+struct MACCSAnglePair
+{
+    std::string ZenithUnit;
+    std::string AzimuthUnit;
+    double ZenithValue;
+    double AzimuthValue;
+};
+
+struct MACCSMeanViewingIncidenceAngle
+{
+    std::string BandId;
+    MACCSAnglePair Angles;
+};
+
 struct MACCSProductInformation
 {
+    MACCSAnglePair MeanSunAngle;
     MACCSAngles SolarAngles;
     std::vector<MACCSViewingAnglesGrid> ViewingAngles;
     std::string ReflectanceQuantificationValue;

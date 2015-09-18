@@ -185,7 +185,30 @@ MACCSAngleList ReadAngleList(const TiXmlElement *el)
     return result;
 }
 
-MACCSAngles ReadAngles(const TiXmlElement *el)
+MACCSAnglePair ReadAnglePair(const TiXmlElement *el)
+{
+    MACCSAnglePair result;
+    result.ZenithValue = std::numeric_limits<double>::quiet_NaN();
+    result.AzimuthValue = std::numeric_limits<double>::quiet_NaN();
+
+    if (!el) {
+        return result;
+    }
+
+    if (auto zenithEl = el->FirstChildElement("ZENITH_ANGLE")) {
+        result.ZenithUnit = GetAttribute(zenithEl, "unit");
+        result.ZenithValue = ReadDouble(GetText(zenithEl));
+    }
+
+    if (auto azimuthEl = el->FirstChildElement("AZIMUTH_ANGLE")) {
+        result.AzimuthUnit = GetAttribute(azimuthEl, "unit");
+        result.AzimuthValue = ReadDouble(GetText(azimuthEl));
+    }
+
+    return result;
+}
+
+MACCSAngles ReadSolarAngles(const TiXmlElement *el)
 {
     MACCSAngles result;
 
@@ -214,7 +237,7 @@ MACCSViewingAnglesGrid ReadViewingAnglesGrid(const TiXmlElement *el)
 
     result.BandId = GetAttribute(el, "bandId");
     result.DetectorId = GetAttribute(el, "detectorId");
-    result.Angles = ReadAngles(el);
+    result.Angles = ReadSolarAngles(el);
 
     return result;
 }
@@ -243,7 +266,8 @@ MACCSProductInformation ReadProductInformation(const TiXmlElement *el)
         return result;
     }
 
-    result.SolarAngles = ReadAngles(el->FirstChildElement("Solar_Angles"));
+    result.MeanSunAngle = ReadAnglePair(el->FirstChildElement("Mean_Sun_Angle"));
+    result.SolarAngles = ReadSolarAngles(el->FirstChildElement("Solar_Angles"));
     result.ViewingAngles =
         ReadViewingAnglesGridList(el->FirstChildElement("List_of_Viewing_Angles"));
     result.ReflectanceQuantificationValue = GetChildText(el, "Reflectance_Quantification_Value");

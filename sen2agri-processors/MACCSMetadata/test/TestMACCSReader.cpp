@@ -105,6 +105,12 @@ int main()
     TEST_EXPECT_EQUAL(m->InstanceId.NickName, "15SVD___");
     TEST_EXPECT_EQUAL(m->InstanceId.AcquisitionDate, "20091211");
 
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanSunAngle.ZenithUnit, "deg");
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanSunAngle.ZenithValue, 64.155021);
+
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanSunAngle.AzimuthUnit, "deg");
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanSunAngle.AzimuthValue, 162.454864);
+
     TEST_EXPECT_EQUAL(m->ProductInformation.SolarAngles.Zenith.ColumnUnit, "m");
     TEST_EXPECT_EQUAL(m->ProductInformation.SolarAngles.Zenith.ColumnStep, "5000");
     TEST_EXPECT_EQUAL(m->ProductInformation.SolarAngles.Zenith.RowUnit, "m");
