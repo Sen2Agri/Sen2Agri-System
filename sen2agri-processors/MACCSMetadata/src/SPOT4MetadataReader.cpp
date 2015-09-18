@@ -1,6 +1,7 @@
 #include <sstream>
 #include <utility>
 #include <vector>
+#include <limits>
 
 #include "otbMacro.h"
 
