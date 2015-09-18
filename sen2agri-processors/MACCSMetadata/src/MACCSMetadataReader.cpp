@@ -4,6 +4,7 @@
 
 #include "MACCSMetadataReader.hpp"
 #include "tinyxml_utils.hpp"
+#include "string_utils.hpp"
 
 namespace itk
 {
@@ -121,17 +122,6 @@ MACCSInstanceId ReadInstanceId(const TiXmlElement *el)
     result.AcquisitionDate = GetChildText(el, "Acquisition_Date");
 
     return result;
-}
-
-double ReadDouble(const std::string &s)
-{
-    try {
-        return std::stod(s);
-    } catch (const std::exception &e) {
-        otbMsgDevMacro("Invalid double value " << s << ": " << e.what());
-
-        return std::numeric_limits<double>::quiet_NaN();
-    }
 }
 
 std::vector<double> ReadDoubleList(const std::string &s)

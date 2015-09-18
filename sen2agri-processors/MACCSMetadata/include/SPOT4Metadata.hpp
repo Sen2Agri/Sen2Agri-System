@@ -32,9 +32,20 @@ struct SPOT4Geometry
     std::string NbRows;
 };
 
+struct SPOT4Angles
+{
+    double PhiS;
+    double ThetaS;
+    double PhiV;
+    double ThetaV;
+    double Pitch;
+    double Roll;
+};
+
 struct SPOT4Radiometry
 {
     std::vector<std::string> Bands;
+    SPOT4Angles Angles;
 };
 
 struct SPOT4Metadata
