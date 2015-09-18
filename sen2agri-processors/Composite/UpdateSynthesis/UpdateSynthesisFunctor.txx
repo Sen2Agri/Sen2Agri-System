@@ -447,7 +447,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
             float fPrevWeight = GetPrevL3AWeightValue(A, i);
             // if pixel never observed without cloud, water or snow
             if(IsNoDataValue(fPrevWeight, 0) || IsNoDataValue(fPrevWeight, WEIGHT_NO_DATA)) {
-                outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
+                outInfos.m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
                 outInfos.m_CurrentPixelWeights[i] = 0;
                 if(IsRedBand(i))
                 {
@@ -462,7 +462,6 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
                     outInfos.m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
                     outInfos.m_nCurrentPixelFlag = LAND;
                 }
-
             }
         } else {
             // TODO: This code can be removed as the initialization is made in ResetCurrentPixelValues
