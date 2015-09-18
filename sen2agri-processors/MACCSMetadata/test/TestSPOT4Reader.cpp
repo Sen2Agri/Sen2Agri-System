@@ -41,4 +41,11 @@ int main()
     TEST_EXPECT_EQUAL(m->Radiometry.Bands[1], "XS2");
     TEST_EXPECT_EQUAL(m->Radiometry.Bands[2], "XS3");
     TEST_EXPECT_EQUAL(m->Radiometry.Bands[3], "SWIR");
+
+    TEST_EXPECT_EQUAL(m->Radiometry.Angles.PhiS, 145.43902353);
+    TEST_EXPECT_EQUAL(m->Radiometry.Angles.ThetaS, 57.472591328);
+    TEST_EXPECT_EQUAL(m->Radiometry.Angles.PhiV, -73.809703566);
+    TEST_EXPECT_EQUAL(m->Radiometry.Angles.ThetaV, 18.141025097);
+    TEST_EXPECT_TRUE(std::isnan(m->Radiometry.Angles.Pitch));
+    TEST_EXPECT_TRUE(std::isnan(m->Radiometry.Angles.Roll));
 }
