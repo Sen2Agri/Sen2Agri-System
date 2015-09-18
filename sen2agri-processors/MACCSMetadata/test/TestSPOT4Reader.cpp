@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include <itkTestingMacros.h>
 
 #include "SPOT4MetadataReader.hpp"
