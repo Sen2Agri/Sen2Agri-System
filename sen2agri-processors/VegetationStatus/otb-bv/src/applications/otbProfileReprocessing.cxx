@@ -152,15 +152,17 @@ private:
     SetDescription("Reprocess a BV time profile.");
    
     AddParameter(ParameterType_InputImage, "lai", "Input profile file.");
-    SetParameterDescription( "lai", "Input file containing the profile to process. This is an ASCII file where each line contains the date (YYYMMDD) the BV estimation and the error." );
+    SetParameterDescription( "lai", "Input file containing the profile to process. This file contains the BV estimation." );
 
     AddParameter(ParameterType_InputImage, "err", "Input profile file.");
-    SetParameterDescription( "err", "Input file containing the profile to process. This is an ASCII file where each line contains the date (YYYMMDD) the BV estimation and the error." );
+    SetParameterDescription( "err", "Input file containing the profile to process. This file contains the error." );
 
     AddParameter(ParameterType_InputFilenameList, "ilxml", "The XML metadata files list");
 
     AddParameter(ParameterType_OutputImage, "opf", "Output profile file.");
-    SetParameterDescription( "opf", "Filename where the reprocessed profile saved. This is an raster band contains the new BV estimation value for each pixel. The last band contains the boolean information which is 0 if the value has not been reprocessed." );
+    SetParameterDescription( "opf", "Filename where the reprocessed profile saved. "
+                                    "This is an raster band contains the new BV estimation value for each pixel. "
+                                    "The last band contains the boolean information which is 0 if the value has not been reprocessed." );
 
     AddParameter(ParameterType_Choice, "algo", 
                  "Reprocessing algorithm: local, fit.");
@@ -203,39 +205,27 @@ private:
                             nb_err_bands << ", nb_xmls=" << nb_xmls);
       }
 
-      std::vector<std::string> dateStrVect;
       std::string date_str;
+      std::vector<std::tm> dv;
+      VectorType inDates;
       for (std::string strXml : xmlsList)
       {
           MetadataHelperFactory::Pointer factory = MetadataHelperFactory::New();
           // we are interested only in the 10m resolution as we need only the date
           auto pHelper = factory->GetMetadataHelper(strXml, 10);
           date_str = pHelper->GetAcquisitionDate();
-          dateStrVect.push_back(date_str);
-      }
-
-      VectorType inDates(dateStrVect.size());
-      std::string value;
-      int i = 0;
-      for (std::string strDate : dateStrVect) {
-          otbAppLogINFO("Processing date: "<< strDate <<std::endl);
-          inDates[i] = date_to_doy(strDate);
-          /*struct tm tmDate = {};
-          if (strptime(strDate.c_str(), "%Y%m%d", &tmDate) == NULL) {
-              itkExceptionMacro("Invalid value for a date: " + value);
+          //inDates.push_back(date_to_doy(date_str));
+          struct tm tmDate = {};
+          if (strptime(date_str.c_str(), "%Y%m%d", &tmDate) == NULL) {
+              itkExceptionMacro("Invalid value for a date: " + date_str);
           }
-          inDates[i] = mktime(&tmDate) / 86400;
-          */
-          i++;
+          dv.push_back(tmDate);
+
       }
-/*
-      if (!inDates.empty())
-      {
-          auto min = *std::min_element(inDates.begin(), inDates.end());
-          std::transform(inDates.begin(), inDates.end(), inDates.begin(),
-                         [=](PrecisionType v) { return v - min; });
-      }
-*/
+      auto times = pheno::tm_to_doy_list(dv);
+      inDates = VectorType(dv.size());
+      std::copy(std::begin(times), std::end(times), std::begin(inDates));
+
       size_t bwr{1};
       size_t fwr{1};
       ALGO_TYPE algoType = ALGO_LOCAL;

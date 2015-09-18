@@ -26,7 +26,7 @@ public:
 
     // returns the acquisition date in the format YYYYMMDD
     virtual std::string GetAcquisitionDate() { return m_AcquisitionDate; }
-    virtual int GetAcquisitionDateInDays();
+    virtual int GetAcquisitionDateAsDoy();
 
     virtual double GetReflectanceQuantificationValue() {return m_ReflQuantifVal; }
     virtual float GetAotQuantificationValue() { return m_fAotQuantificationValue; }

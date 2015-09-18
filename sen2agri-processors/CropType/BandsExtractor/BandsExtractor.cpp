@@ -390,6 +390,7 @@ private:
       // get the bands
       std::string imageFile = rootFolder + meta.Files.OrthoSurfCorrPente;
       ImageReaderType::Pointer reader = getReader(imageFile);
+      reader->UpdateOutputInformation();
       int curRes = reader->GetOutput()->GetSpacing()[0];
       const int wantedRes = 10;
       ExtractROIFilterType::Pointer extractor;
@@ -422,6 +423,7 @@ private:
       // Get the validity mask
       std::string maskFileDiv = rootFolder + meta.Files.MaskDiv;
       ImageReaderType::Pointer maskReaderDiv = getReader(maskFileDiv);
+      maskReaderDiv->UpdateOutputInformation();
       curRes = maskReaderDiv->GetOutput()->GetSpacing()[0];
 
       extractor = getExtractor(maskReaderDiv->GetOutput(), 1);
@@ -438,6 +440,7 @@ private:
       // Get the saturation mask
       std::string maskFileSat = rootFolder + meta.Files.MaskSaturation;
       ImageReaderType::Pointer maskReaderSat = getReader(maskFileSat);
+      maskReaderSat->UpdateOutputInformation();
       curRes = maskReaderSat->GetOutput()->GetSpacing()[0];
 
       extractor = getExtractor(maskReaderSat->GetOutput(), 1);
@@ -448,6 +451,7 @@ private:
       // Get the clouds mask
       std::string maskFileNua = rootFolder + meta.Files.MaskNua;
       ImageReaderType::Pointer maskReaderNua = getReader(maskFileNua);
+      maskReaderNua->UpdateOutputInformation();
       curRes = maskReaderNua->GetOutput()->GetSpacing()[0];
 
       extractor = getExtractor(maskReaderNua->GetOutput(), 1);
@@ -497,6 +501,7 @@ private:
       // get the bands
       std::string imageFile = getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE");
       ImageReaderType::Pointer reader = getReader(imageFile);
+      reader->UpdateOutputInformation();
       int curRes = reader->GetOutput()->GetSpacing()[0];
       const int wantedRes = 10;
       ExtractROIFilterType::Pointer extractor;
@@ -529,6 +534,7 @@ private:
       // Get the validity mask
       std::string maskFileQuality = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_QLT");
       ImageReaderType::Pointer maskReaderQuality = getReader(maskFileQuality);
+      maskReaderQuality->UpdateOutputInformation();
       curRes = maskReaderQuality->GetOutput()->GetSpacing()[0];
 
       extractor = getExtractor(maskReaderQuality->GetOutput(), 3);
@@ -552,6 +558,7 @@ private:
       // Get the cloud mask
       std::string maskFileCloud = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_CLD");
       ImageReaderType::Pointer maskReaderCloud = getReader(maskFileCloud);
+      maskReaderCloud->UpdateOutputInformation();
       curRes = maskReaderCloud->GetOutput()->GetSpacing()[0];
 
       extractor = getExtractor(maskReaderCloud->GetOutput(), 1);
@@ -563,6 +570,7 @@ private:
       // Get the water mask
       std::string maskFileWaterSnow = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_MSK");
       ImageReaderType::Pointer maskReaderWaterSnow = getReader(maskFileWaterSnow);
+      maskReaderWaterSnow->UpdateOutputInformation();
       curRes = maskReaderWaterSnow->GetOutput()->GetSpacing()[0];
 
       extractor = getExtractor(maskReaderWaterSnow->GetOutput(), 1);
@@ -630,6 +638,7 @@ private:
       //Extract the last band form the second file. Resampling needed.
       std::string imageFile2 = getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE_R2");
       ImageReaderType::Pointer reader2 = getReader(imageFile2);
+      reader2->UpdateOutputInformation();
       int curRes = reader2->GetOutput()->GetSpacing()[0];
       const int wantedRes = 10;
 

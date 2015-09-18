@@ -15,12 +15,15 @@
 #define __OTBBVPROFREPR_H
 
 #include <vector>
+#include <phenoFunctions.h>
 
 using PrecisionType = double;
 using VectorType = std::vector<PrecisionType>;
 constexpr PrecisionType not_processed_value{0};
 constexpr PrecisionType processed_value{1};
 
+#define NO_DATA_VALUE   -10000.0f
+#define NO_DATA_EPSILON 0.0001f
 
 namespace otb
 {
@@ -32,12 +35,19 @@ T compute_weight(T delta, T err)
   return (one/(one+delta)+one/(one+err));
 }
 
+bool IsNoDataValue(float fValue)
+{
+    return fabs(fValue - NO_DATA_VALUE) < NO_DATA_EPSILON;
+}
+
 std::pair<VectorType, VectorType> 
-fit_csdm(VectorType dts, VectorType ts, VectorType ets)
+fit_csdm(const VectorType &dts, const VectorType &ts, const VectorType &ets)
 {
   assert(ts.size()==ets.size() && ts.size()==dts.size());
-  auto result = ts;
-  auto result_flag = ts;
+  //auto result = ts;
+  //auto result_flag = ts;
+  auto result = VectorType(ts.size(), NO_DATA_VALUE);
+  auto result_flag = VectorType(ts.size(),not_processed_value);
   // std::vector to vnl_vector
   pheno::VectorType profile_vec(ts.size());
   pheno::VectorType date_vec(dts.size());
@@ -48,9 +58,21 @@ fit_csdm(VectorType dts, VectorType ts, VectorType ets)
     date_vec[i] = dts[i];
     }
 
+  // A date is valid if it is not NaN and the mask value == 0.
+  auto pred = [=](int e) { return !(std::isnan(profile_vec[e])) &&
+                           !IsNoDataValue(profile_vec[e]); };
+  auto f_profiles = pheno::filter_profile_fast(profile_vec, date_vec, pred);
+
+  decltype(profile_vec) profile=f_profiles.first;
+  decltype(profile_vec) t=f_profiles.second;
+  if(profile.size() < 4)
+  {
+    return std::make_pair(result,result_flag);
+  }
+
   // fit
   auto approximation_result = 
-    pheno::normalized_sigmoid::TwoCycleApproximation(profile_vec, date_vec);
+    pheno::normalized_sigmoid::TwoCycleApproximation(profile, t);
   auto princ_cycle = std::get<1>(approximation_result);
   auto x_hat = std::get<0>(princ_cycle);
   auto min_max = std::get<1>(princ_cycle);
@@ -59,19 +81,22 @@ fit_csdm(VectorType dts, VectorType ts, VectorType ets)
   auto p = pheno::normalized_sigmoid::F(date_vec, x_hat);
   //fill the result vectors
   for(size_t i=0; i<ts.size(); i++)
+  {
+    if(!IsNoDataValue(profile_vec[i]))
     {
-    result[i] = p[i]*A_hat+B_hat;
-    result_flag[i] = processed_value;
+        result[i] = p[i]*A_hat+B_hat;
+        result_flag[i] = processed_value;
     }
+  }
 
   return std::make_pair(result,result_flag);
 }
 
 
 std::pair<VectorType, VectorType> 
-smooth_time_series_local_window_with_error(VectorType dts,
-                                           VectorType ts, 
-                                           VectorType ets,
+smooth_time_series_local_window_with_error(const VectorType &dts,
+                                           const VectorType &ts,
+                                           const VectorType &ets,
                                            size_t bwd_radius = 1,
                                            size_t fwd_radius = 1)
 {

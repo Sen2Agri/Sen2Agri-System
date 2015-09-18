@@ -26,6 +26,9 @@
 #include "dateUtils.h"
 #include "itkBinaryFunctorImageFilter.h"
 
+#define NO_DATA -10000
+#define EPSILON 0.0001f
+
 
 
 namespace pheno
@@ -227,20 +230,9 @@ public:
                                   use_mask{true} {};
 
   void SetDates(const std::vector<tm>& d) {
-    size_t sz = d.size();
     dv = VectorType{static_cast<unsigned int>(d.size())};
-    for (size_t i=0; i<sz; i++)
-      {
-        tm tmTmp = d[i];
-        dv[i] = mktime(&tmTmp) / (60 * 60 * 24);
-      }
-
-    if (!dv.empty())
-      {
-        auto min = *std::min_element(dv.begin(), dv.end());
-        std::transform(dv.begin(), dv.end(), dv.begin(),
-                       [=](PrecisionType v) { return v - min; });
-      }
+    const auto &days = pheno::tm_to_doy_list(d);
+    std::copy(std::begin(days), std::end(days), std::begin(dv));
   }
 
   void SetUseMask(bool um) {
@@ -305,16 +297,22 @@ public:
 
     if(return_fit)
       {
-      // Compute the approximation
-      auto tmpres = normalized_sigmoid::F(dv, x_1)*(mm1.second-mm1.first)+mm1.first
-        + normalized_sigmoid::F(dv, x_2)*(mm2.second-mm2.first)+mm2.first;
+
       // The result uses either the original or the approximated value depending on the mask value
       PixelType result(nbDates);
-      for(size_t i=0; i<nbDates; i++)
-        if(fit_only_invalid)
-          result[i] = ((mv[i]==(typename PixelType::ValueType{0}))?pix[i]:tmpres[i]);
-        else
-          result[i] = tmpres[i];
+      for(size_t i=0; i<nbDates; i++) {
+          if(fabs(pix[i] - NO_DATA) < EPSILON)
+              result[i] = NO_DATA;
+          else {
+              // Compute the approximation
+              auto tmpres = normalized_sigmoid::F(dv, x_1)*(mm1.second-mm1.first)+mm1.first
+                + normalized_sigmoid::F(dv, x_2)*(mm2.second-mm2.first)+mm2.first;
+            if(fit_only_invalid)
+              result[i] = ((mv[i]==(typename PixelType::ValueType{0}))?pix[i]:tmpres[i]);
+            else
+              result[i] = tmpres[i];
+          }
+      }
 
       return result;
       }
