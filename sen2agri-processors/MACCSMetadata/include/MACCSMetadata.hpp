@@ -91,6 +91,7 @@ struct MACCSProductInformation
 {
     MACCSAnglePair MeanSunAngle;
     MACCSAngles SolarAngles;
+    std::vector<MACCSMeanViewingIncidenceAngle> MeanViewingIncidenceAngles;
     std::vector<MACCSViewingAnglesGrid> ViewingAngles;
     std::string ReflectanceQuantificationValue;
 };

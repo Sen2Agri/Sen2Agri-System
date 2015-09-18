@@ -128,6 +128,18 @@ int main()
     TEST_EXPECT_EQUAL(m->ProductInformation.SolarAngles.Azimuth.Values[0][0],
                       161.865766); // HACK fp precision
 
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanViewingIncidenceAngles.size(), 13);
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanViewingIncidenceAngles[0].BandId, "0");
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanViewingIncidenceAngles[0].Angles.ZenithUnit, "deg");
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanViewingIncidenceAngles[0].Angles.ZenithValue, 3.300947);
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanViewingIncidenceAngles[0].Angles.AzimuthUnit, "deg");
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanViewingIncidenceAngles[0].Angles.AzimuthValue, 119.551215);
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanViewingIncidenceAngles[12].BandId, "12");
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanViewingIncidenceAngles[12].Angles.ZenithUnit, "deg");
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanViewingIncidenceAngles[12].Angles.ZenithValue, 3.304303);
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanViewingIncidenceAngles[12].Angles.AzimuthUnit, "deg");
+    TEST_EXPECT_EQUAL(m->ProductInformation.MeanViewingIncidenceAngles[12].Angles.AzimuthValue, 119.529656);
+
     TEST_EXPECT_EQUAL(m->ProductInformation.ViewingAngles.size(), 91);
     TEST_EXPECT_EQUAL(m->ProductInformation.ViewingAngles[0].BandId, "0");
     TEST_EXPECT_EQUAL(m->ProductInformation.ViewingAngles[0].DetectorId, "2");

@@ -61,13 +61,10 @@ MACCSMainProductHeader ReadMainProductHeader(const TiXmlElement *el)
         if (auto consumerCountStr = consumersEl->Attribute("count")) {
             size_t count;
             bool countValid;
-            try
-            {
+            try {
                 count = std::stoi(consumerCountStr);
                 countValid = true;
-            }
-            catch (const std::runtime_error &e)
-            {
+            } catch (const std::runtime_error &e) {
                 countValid = false;
 
                 otbMsgDevMacro("Invalid consumer count value: " << consumerCountStr);
@@ -87,13 +84,10 @@ MACCSMainProductHeader ReadMainProductHeader(const TiXmlElement *el)
         if (auto extensionCountStr = extensionsEl->Attribute("count")) {
             size_t count;
             bool countValid;
-            try
-            {
+            try {
                 count = std::stoi(extensionCountStr);
                 countValid = true;
-            }
-            catch (const std::runtime_error &e)
-            {
+            } catch (const std::runtime_error &e) {
                 countValid = false;
 
                 otbMsgDevMacro("Invalid extension count value: " << extensionCountStr);
@@ -131,12 +125,9 @@ MACCSInstanceId ReadInstanceId(const TiXmlElement *el)
 
 double ReadDouble(const std::string &s)
 {
-    try
-    {
+    try {
         return std::stod(s);
-    }
-    catch (const std::exception &e)
-    {
+    } catch (const std::exception &e) {
         otbMsgDevMacro("Invalid double value " << s << ": " << e.what());
 
         return std::numeric_limits<double>::quiet_NaN();
@@ -227,6 +218,36 @@ MACCSAngles ReadSolarAngles(const TiXmlElement *el)
     return result;
 }
 
+MACCSMeanViewingIncidenceAngle ReadMeanViewingIncidenceAngle(const TiXmlElement *el)
+{
+    MACCSMeanViewingIncidenceAngle result;
+
+    if (!el) {
+        return result;
+    }
+
+    result.BandId = GetAttribute(el, "bandId");
+    result.Angles = ReadAnglePair(el);
+
+    return result;
+}
+
+std::vector<MACCSMeanViewingIncidenceAngle> ReadMeanViewingIncidenceAngles(const TiXmlElement *el)
+{
+    std::vector<MACCSMeanViewingIncidenceAngle> result;
+
+    if (!el) {
+        return result;
+    }
+
+    for (auto angleEl = el->FirstChildElement("Mean_Viewing_Incidence_Angle"); angleEl;
+         angleEl = angleEl->NextSiblingElement("Mean_Viewing_Incidence_Angle")) {
+        result.emplace_back(ReadMeanViewingIncidenceAngle(angleEl));
+    }
+
+    return result;
+}
+
 MACCSViewingAnglesGrid ReadViewingAnglesGrid(const TiXmlElement *el)
 {
     MACCSViewingAnglesGrid result;
@@ -268,6 +289,8 @@ MACCSProductInformation ReadProductInformation(const TiXmlElement *el)
 
     result.MeanSunAngle = ReadAnglePair(el->FirstChildElement("Mean_Sun_Angle"));
     result.SolarAngles = ReadSolarAngles(el->FirstChildElement("Solar_Angles"));
+    result.MeanViewingIncidenceAngles =
+        ReadMeanViewingIncidenceAngles(el->FirstChildElement("Mean_Viewing_Incidence_Angle_List"));
     result.ViewingAngles =
         ReadViewingAnglesGridList(el->FirstChildElement("List_of_Viewing_Angles"));
     result.ReflectanceQuantificationValue = GetChildText(el, "Reflectance_Quantification_Value");
@@ -352,13 +375,10 @@ std::vector<MACCSBand> ReadBands(const TiXmlElement *el)
     if (auto countStr = el->Attribute("count")) {
         size_t count;
         bool countValid;
-        try
-        {
+        try {
             count = std::stoi(countStr);
             countValid = true;
-        }
-        catch (const std::runtime_error &e)
-        {
+        } catch (const std::runtime_error &e) {
             countValid = false;
 
             otbMsgDevMacro("Invalid band count value: " << countStr);
@@ -406,13 +426,10 @@ std::vector<MACCSResolution> ReadResolutions(const TiXmlElement *el)
     if (auto countStr = el->Attribute("count")) {
         size_t count;
         bool countValid;
-        try
-        {
+        try {
             count = std::stoi(countStr);
             countValid = true;
-        }
-        catch (const std::runtime_error &e)
-        {
+        } catch (const std::runtime_error &e) {
             countValid = false;
 
             otbMsgDevMacro("Invalid resolution count value: " << countStr);
@@ -520,13 +537,10 @@ std::vector<MACCSAnnexInformation> ReadAnnexes(const TiXmlElement *el)
     if (auto countStr = el->Attribute("count")) {
         size_t count;
         bool countValid;
-        try
-        {
+        try {
             count = std::stoi(countStr);
             countValid = true;
-        }
-        catch (const std::runtime_error &e)
-        {
+        } catch (const std::runtime_error &e) {
             countValid = false;
 
             otbMsgDevMacro("Invalid annex count value: " << countStr);
