@@ -1,5 +1,6 @@
-#include <cassert>
 #include <sstream>
+
+#include <itkTestingMacros.h>
 
 #include "otb_tinyxml.h"
 #include "MACCSMetadataReader.hpp"
@@ -7,8 +8,7 @@
 
 int main(int argc, char *argv[])
 {
-    if (argc != 2)
-    {
+    if (argc != 2) {
         return EXIT_FAILURE;
     }
 
@@ -16,8 +16,7 @@ int main(int argc, char *argv[])
     auto writer = itk::MACCSMetadataWriter::New();
 
     TiXmlDocument doc;
-    if (!doc.LoadFile(argv[1]))
-    {
+    if (!doc.LoadFile(argv[1])) {
         return EXIT_FAILURE;
     }
 
@@ -29,9 +28,9 @@ int main(int argc, char *argv[])
 
     original << doc;
     auto m = reader->ReadMetadataXml(doc);
-    assert(m);
+    TEST_EXPECT_TRUE(m);
     ours << writer->CreateMetadataXml(*m);
 
     std::cerr << original.str() << '\n' << ours.str() << '\n';
-    assert(original.str() == ours.str());
+    TEST_EXPECT_EQUAL(original.str(), ours.str());
 }
