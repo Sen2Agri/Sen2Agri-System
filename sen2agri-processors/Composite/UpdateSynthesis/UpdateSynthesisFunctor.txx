@@ -399,14 +399,21 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, O
                         (fPrevWeight + fCurrentWeight);
                 outInfos.m_CurrentPixelWeights[i] = (fPrevWeight + fCurrentWeight);
             } else {
-                outInfos.m_CurrentWeightedReflectances[i] = fCurReflectance;
-                outInfos.m_CurrentPixelWeights[i] = fCurrentWeight;
+                if(bIsCurReflNoData) {
+                    outInfos.m_CurrentWeightedReflectances[i] = fPrevReflect;
+                    outInfos.m_CurrentPixelWeights[i] = fPrevWeight;
+                } else {
+                    outInfos.m_CurrentWeightedReflectances[i] = fCurReflectance;
+                    outInfos.m_CurrentPixelWeights[i] = fCurrentWeight;
+                }
                 // if we have no data so far, then set also the flag as no data
                 if(bIsPrevReflNoData && bIsCurReflNoData) {
                     outInfos.m_nCurrentPixelFlag = FLAG_NO_DATA;
                     outInfos.m_fCurrentPixelWeightedDate = DATE_NO_DATA;
                 } else {
-                    outInfos.m_fCurrentPixelWeightedDate = m_nCurrentDate;
+                    if (!bIsCurReflNoData){
+                        outInfos.m_fCurrentPixelWeightedDate = m_nCurrentDate;
+                    }   // otherwise, it remains to the value from the previous product, which might be a valid or no data value
                 }
             }
         } else {
