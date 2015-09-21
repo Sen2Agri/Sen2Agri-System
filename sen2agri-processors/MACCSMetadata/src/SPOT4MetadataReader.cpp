@@ -1,11 +1,13 @@
 #include <sstream>
 #include <utility>
 #include <vector>
+#include <limits>
 
 #include "otbMacro.h"
 
 #include "SPOT4MetadataReader.hpp"
 #include "tinyxml_utils.hpp"
+#include "string_utils.hpp"
 
 static SPOT4Header ReadHeader(const TiXmlElement *el);
 static SPOT4Files ReadFiles(const TiXmlElement *el);
@@ -122,15 +124,26 @@ static SPOT4Geometry ReadGeometry(const TiXmlElement *el)
     return result;
 }
 
-std::vector<std::string> split(const std::string &s, char delim)
+static SPOT4Angles ReadAngles(const TiXmlElement *el)
 {
-    std::vector<std::string> result;
+    SPOT4Angles result;
+    result.PhiS = std::numeric_limits<double>::quiet_NaN();
+    result.ThetaS = std::numeric_limits<double>::quiet_NaN();
+    result.PhiV = std::numeric_limits<double>::quiet_NaN();
+    result.ThetaV = std::numeric_limits<double>::quiet_NaN();
+    result.Pitch = std::numeric_limits<double>::quiet_NaN();
+    result.Roll = std::numeric_limits<double>::quiet_NaN();
 
-    std::istringstream is(s);
-    std::string item;
-    while (std::getline(is, item, delim)) {
-        result.emplace_back(std::move(item));
+    if (!el) {
+        return result;
     }
+
+    result.PhiS = ReadDouble(GetChildText(el, "PHI_S"));
+    result.ThetaS = ReadDouble(GetChildText(el, "THETA_S"));
+    result.PhiV = ReadDouble(GetChildText(el, "PHI_V"));
+    result.ThetaV = ReadDouble(GetChildText(el, "THETA_V"));
+    result.Pitch = ReadDouble(GetChildText(el, "PITCH"));
+    result.Roll = ReadDouble(GetChildText(el, "ROLL"));
 
     return result;
 }
@@ -144,6 +157,7 @@ static SPOT4Radiometry ReadRadiometry(const TiXmlElement *el)
     }
 
     result.Bands = split(GetChildText(el, "BANDS"), ';');
+    result.Angles = ReadAngles(el->FirstChildElement("ANGLES"));
 
     return result;
 }

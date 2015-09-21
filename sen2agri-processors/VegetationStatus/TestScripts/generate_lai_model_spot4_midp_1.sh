@@ -27,7 +27,7 @@ IMG_INV_OTB_LIBS_ROOT="$VEG_STATUS_OTB_LIBS_ROOT/otb-bv/src/applications"
 OUT_GENERATED_SAMPLE_FILE="$OUT_FOLDER/out_bv_dist_samples.txt"
 
 # Variables for Prosail Simulator
-RSR_FILE="../otb-bv/data/spot5hrg1.rsr"
+RSR_FILE="../otb-bv/data/spot4hrvir1.rsr"
 OUT_SIMU_REFLS_FILE="$OUT_FOLDER/out_simu_refls.txt"
 OUT_TRAINING_FILE="$OUT_FOLDER/out_training.txt"
 
@@ -41,7 +41,7 @@ try otbcli BVInputVariableGeneration $IMG_INV_OTB_LIBS_ROOT -samples 100 -out $O
 
 # Generating simulation reflectances
 echo "Generating simulation reflectances ..."
-try otbcli ProSailSimulator $IMG_INV_OTB_LIBS_ROOT -bvfile $OUT_GENERATED_SAMPLE_FILE -rsrfile $RSR_FILE -out $OUT_SIMU_REFLS_FILE -solarzenith 25 -sensorzenith 25 -azimuth 10
+try otbcli ProSailSimulator $IMG_INV_OTB_LIBS_ROOT -bvfile $OUT_GENERATED_SAMPLE_FILE -rsrfile $RSR_FILE -out $OUT_SIMU_REFLS_FILE -solarzenith 63.9335336048 -sensorzenith 11.7371647127 -azimuth -40.2681487255
 
 # Generating training file
 echo "Generating training file ..."

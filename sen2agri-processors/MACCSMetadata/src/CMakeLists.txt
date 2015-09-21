@@ -1,6 +1,7 @@
 set(MACCSMetadata_HEADERS
     ../include/FluentXML.hpp
     ../include/tinyxml_utils.hpp
+    ../include/string_utils.hpp
     ../include/MACCSMetadata.hpp
     ../include/SPOT4Metadata.hpp
     ../include/MACCSMetadataReader.hpp
@@ -10,6 +11,7 @@ set(MACCSMetadata_HEADERS
 set(MACCSMetadata_SOURCES
     FluentXML.cpp
     tinyxml_utils.cpp
+    string_utils.cpp
     MACCSMetadataReader.cpp
     MACCSMetadataWriter.cpp
     SPOT4MetadataReader.cpp)

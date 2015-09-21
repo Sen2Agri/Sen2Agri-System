@@ -1,38 +1,54 @@
-#include <cassert>
+#include <cmath>
+
+#define BOOST_TEST_MODULE SPOT4Reader
+#include <boost/test/unit_test.hpp>
 
 #include "SPOT4MetadataReader.hpp"
 
-int main()
+BOOST_AUTO_TEST_CASE(SPOT4Reader)
 {
     auto reader = itk::SPOT4MetadataReader::New();
 
     auto m = reader->ReadMetadata("SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000.xml");
 
-    assert(m);
+    BOOST_REQUIRE(m);
 
-    assert(m->Header.Ident == "SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000");
-    assert(m->Header.DatePdv == "2013-03-18 09:54:26");
-    assert(m->Header.DateProd == "2014-03-05 03:45:20.328949");
+    BOOST_CHECK_EQUAL(m->Header.Ident, "SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000");
+    BOOST_CHECK_EQUAL(m->Header.DatePdv, "2013-03-18 09:54:26");
+    BOOST_CHECK_EQUAL(m->Header.DateProd, "2014-03-05 03:45:20.328949");
 
-    assert(m->Files.GeoTIFF == "");
-    assert(m->Files.OrthoSurfAOT == "SPOT4_HRVIR1_XS_20130318_N2A_AOT_EBelgiumD0000B0000.TIF");
-    assert(m->Files.OrthoSurfCorrEnv == "SPOT4_HRVIR1_XS_20130318_N2A_ORTHO_SURF_CORR_ENV_EBelgiumD0000B0000.TIF");
-    assert(m->Files.OrthoSurfCorrPente == "SPOT4_HRVIR1_XS_20130318_N2A_ORTHO_SURF_CORR_PENTE_EBelgiumD0000B0000.TIF");
-    assert(m->Files.OrthoVapEau == "");
-    assert(m->Files.MaskDiv == "MASK/SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000_DIV.TIF");
-    assert(m->Files.MaskNua == "MASK/SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000_NUA.TIF");
-    assert(m->Files.MaskSaturation == "MASK/SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000_SAT.TIF");
-    assert(m->Files.MaskGapSlc == "");
-    assert(m->Files.MaskN2 == "MASK");
-    assert(m->Files.Prive == "PRIVE");
+    BOOST_CHECK_EQUAL(m->Files.GeoTIFF, "");
+    BOOST_CHECK_EQUAL(m->Files.OrthoSurfAOT,
+                      "SPOT4_HRVIR1_XS_20130318_N2A_AOT_EBelgiumD0000B0000.TIF");
+    BOOST_CHECK_EQUAL(m->Files.OrthoSurfCorrEnv,
+                      "SPOT4_HRVIR1_XS_20130318_N2A_ORTHO_SURF_CORR_ENV_EBelgiumD0000B0000.TIF");
+    BOOST_CHECK_EQUAL(m->Files.OrthoSurfCorrPente,
+                      "SPOT4_HRVIR1_XS_20130318_N2A_ORTHO_SURF_CORR_PENTE_EBelgiumD0000B0000.TIF");
+    BOOST_CHECK_EQUAL(m->Files.OrthoVapEau, "");
+    BOOST_CHECK_EQUAL(m->Files.MaskDiv,
+                      "MASK/SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000_DIV.TIF");
+    BOOST_CHECK_EQUAL(m->Files.MaskNua,
+                      "MASK/SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000_NUA.TIF");
+    BOOST_CHECK_EQUAL(m->Files.MaskSaturation,
+                      "MASK/SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000_SAT.TIF");
+    BOOST_CHECK_EQUAL(m->Files.MaskGapSlc, "");
+    BOOST_CHECK_EQUAL(m->Files.MaskN2, "MASK");
+    BOOST_CHECK_EQUAL(m->Files.Prive, "PRIVE");
 
-    assert(m->Geometry.Resolution == "20.0");
-    assert(m->Geometry.NbCols == "4500");
-    assert(m->Geometry.NbRows == "4000");
+    BOOST_CHECK_EQUAL(m->Geometry.Resolution, "20.0");
+    BOOST_CHECK_EQUAL(m->Geometry.NbCols, "4500");
+    BOOST_CHECK_EQUAL(m->Geometry.NbRows, "4000");
 
-    assert(m->Radiometry.Bands.size() == 4);
-    assert(m->Radiometry.Bands[0] == "XS1");
-    assert(m->Radiometry.Bands[1] == "XS2");
-    assert(m->Radiometry.Bands[2] == "XS3");
-    assert(m->Radiometry.Bands[3] == "SWIR");
+    BOOST_CHECK_EQUAL(m->Radiometry.Bands.size(), 4);
+    BOOST_CHECK_EQUAL(m->Radiometry.Bands[0], "XS1");
+    BOOST_CHECK_EQUAL(m->Radiometry.Bands[1], "XS2");
+    BOOST_CHECK_EQUAL(m->Radiometry.Bands[2], "XS3");
+    BOOST_CHECK_EQUAL(m->Radiometry.Bands[3], "SWIR");
+
+    BOOST_CHECK_EQUAL(m->Radiometry.Angles.PhiS, 145.43902353);
+    BOOST_CHECK_EQUAL(m->Radiometry.Angles.ThetaS, 57.472591328);
+    BOOST_CHECK_EQUAL(m->Radiometry.Angles.PhiV, -73.809703566);
+    BOOST_CHECK_EQUAL(m->Radiometry.Angles.ThetaV, 18.141025097);
+    BOOST_CHECK(std::isnan(m->Radiometry.Angles.Pitch));
+    BOOST_CHECK(std::isnan(m->Radiometry.Angles.Roll));
 }

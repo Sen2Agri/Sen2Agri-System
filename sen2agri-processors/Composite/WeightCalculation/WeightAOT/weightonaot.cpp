@@ -120,9 +120,9 @@ void WeightOnAOT::BuildOutputImageSource()
     //      "(im1bX / AOTQuantificationVal <= AOTMax) ?
     //          WAOTMin + (WAOTMax-WAOTMin) * (1-im1bX/AOTQuantificationVal/AOTMax) :
     //          WAOTMin"
-    exprStream << "(im1b" << m_nBand << "/" << m_fAotQuantificationVal << "<=" << fAotMax << ") ? "
+    exprStream << "(im1b" << m_nBand << "< 0) ? -10000 : ((im1b" << m_nBand << "/" << m_fAotQuantificationVal << "<=" << fAotMax << ") ? "
                <<  m_fMinWeightAot + (m_fMaxWeightAot-m_fMinWeightAot) << " * (1-" << "im1b" << m_nBand << "/" <<
-               m_fAotQuantificationVal << "/" << fAotMax << ") : " << m_fMinWeightAot;
+               m_fAotQuantificationVal << "/" << fAotMax << ") : " << m_fMinWeightAot << ")";
 #else
     // The expression that will be set is
     //      "if (im1bX / AOTQuantificationVal <= AOTMax),

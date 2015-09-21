@@ -29,6 +29,10 @@ public:
   {
     const float dA = static_cast< float >( A );
     const float dB = static_cast< float >( B );
+    // these values should be positive
+    if(dA < 0 || dB < 0) {
+        return -10000;
+    }
     const float weight = (1-dA) * (1 - dB);
 
     return static_cast< TPixel >( weight );

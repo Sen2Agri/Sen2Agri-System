@@ -76,17 +76,26 @@ public:
     auto x_hat = std::get<0>(princ_cycle);
 */
 
+    TOutput result(6);
+
+    for(size_t i = 0; i < A.Size(); i++) {
+        if(fabs(A[i] - NO_DATA) < EPSILON)
+            result.Fill(NO_DATA);
+        return result;
+    }
+
     double dgx0, t0, t1, t2, t3, dgx2;
     std::tie(dgx0, t0, t1, t2, t3, dgx2) =
         pheno::normalized_sigmoid::pheno_metrics<double>(A);
-        
-    TOutput result(6);
+
+
     result[0] = dgx0;
     result[1] = t0;
     result[2] = t1;
     result[3] = t2;
     result[4] = t3;
     result[5] = dgx2;
+
 
     return result;
   }
@@ -154,15 +163,13 @@ private:
 
       // read the file and save the dates as second from Epoch to a vector
       VectorType inDates;
-      std::string value;
-      int i = 0;
+      std::string value;      
       while (std::getline(datesFile, value)) {
           struct tm tmDate = {};
           if (strptime(value.c_str(), "%Y%m%d", &tmDate) == NULL) {
               itkExceptionMacro("Invalid value for a date: " + value);
           }
-          inDates[i] = mktime(&tmDate) / 86400;
-          i++;
+          inDates.push_back(mktime(&tmDate) / 86400);
       }
 
       // close the file

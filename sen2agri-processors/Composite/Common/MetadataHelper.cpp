@@ -1,5 +1,7 @@
 #include "MetadataHelper.h"
 #include <time.h>
+#include <ctime>
+#include <cmath>
 
 MetadataHelper::MetadataHelper()
 {
@@ -41,10 +43,21 @@ void MetadataHelper::Reset()
     m_nNirBandIndex = -1;
 }
 
-int MetadataHelper::GetAcquisitionDateInDays()
+int MetadataHelper::GetAcquisitionDateAsDoy()
 {
-    struct tm tmTime = {};
-    strptime(m_AcquisitionDate.c_str(), "%Y%m%d", &tmTime);
-    time_t ttTime = mktime(&tmTime);
-    return ttTime/(3600*24);
+    struct tm tmDate = {};
+    if (strptime(m_AcquisitionDate.c_str(), "%Y%m%d", &tmDate) == NULL) {
+        return -1;
+    }
+    auto curTime = std::mktime(&tmDate);
+
+    std::tm tmYearStart = {};
+    tmYearStart.tm_year = tmDate.tm_year;
+    tmYearStart.tm_mon = 0;
+    tmYearStart.tm_mday = 1;
+
+    auto yearStart = std::mktime(&tmYearStart);
+    auto diff = curTime - yearStart;
+
+    return lrintf(diff / 86400 /* 60*60*24*/);
 }
