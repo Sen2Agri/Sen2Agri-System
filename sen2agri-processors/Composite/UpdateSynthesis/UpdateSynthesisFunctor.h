@@ -34,6 +34,8 @@ public:
     TOutput operator()( const TInput & A );
     void Initialize(SensorType sensorType, ResolutionType resolution, bool bPrevL3ABandsAvailable,
                     int nDate, float fQuantifVal, bool bAllInOne = false);
+    int GetNbOfL3AReflectanceBands() { return m_nNbOfL3AReflectanceBands; }
+    int GetNbOfOutputComponents() { return 2*m_nNbOfL3AReflectanceBands+2;}
 
     const char * GetNameOfClass() { return "UpdateSynthesisFunctor"; }
 

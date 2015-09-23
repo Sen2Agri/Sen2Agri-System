@@ -301,7 +301,7 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
     //      - The weighted average reflectance bands -> 4 or 6 for 10m and 20m respectively
     //      - one band for weighted average date
     //      - one band for flag with the status of each pixel
-    int nTotalOutBandsNo = 2*m_nNbOfL3AReflectanceBands + 2;
+    int nTotalOutBandsNo = GetNbOfOutputComponents();
     TOutput var(nTotalOutBandsNo);
     var.SetSize(nTotalOutBandsNo);
 
