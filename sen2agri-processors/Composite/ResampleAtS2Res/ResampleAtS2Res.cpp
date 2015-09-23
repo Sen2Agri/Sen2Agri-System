@@ -176,6 +176,7 @@ private:
         }
         m_ConcatenerRes10->SetInput( m_ImageListRes10 );
         m_ConcatenerRes20->SetInput( m_ImageListRes20 );
+        m_ConcatenerResOrig->SetInput( m_ImageListResOrig );
 
         if(HasValue("outres10"))
             SetParameterOutputImage("outres10", m_ConcatenerRes10->GetOutput());
