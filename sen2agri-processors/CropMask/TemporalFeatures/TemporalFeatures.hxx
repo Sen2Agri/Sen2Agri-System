@@ -42,7 +42,7 @@ public:
     }
 
     // Compute the maximum and mean values
-    result[0] = static_cast<PixelValueType>(0);
+    result[0] = pix[0];
     result[1] = static_cast<PixelValueType>(0);
     double avg = 0.0;
 
@@ -82,8 +82,8 @@ public:
 
             PixelValueType dif = static_cast<PixelValueType>(first - second);
             // update the max and min
-            result[3] = (result[3] < dif ? dif : result[3]);
-            result[4] = (result[4] > dif ? dif : result[4]);
+            result[3] = (i == 0 || result[3] < dif ? dif : result[3]);
+            result[4] = (i == 0 || result[4] > dif ? dif : result[4]);
         }
         // compute the difference
         result[5] = result[3] - result[4];
