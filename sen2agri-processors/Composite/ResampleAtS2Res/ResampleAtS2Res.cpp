@@ -74,8 +74,12 @@ private:
         AddDocTag(Tags::Vector);
         m_ConcatenerRes10 = ListConcatenerFilterType::New();
         m_ConcatenerRes20 = ListConcatenerFilterType::New();
+        m_ConcatenerResOrig = ListConcatenerFilterType::New();
+
         m_ImageListRes10 = InternalImageListType::New();
         m_ImageListRes20 = InternalImageListType::New();
+        m_ImageListResOrig = InternalImageListType::New();
+
         m_ResamplersList = ResampleFilterListType::New();
         m_ExtractorList = ExtractROIFilterListType::New();
         m_ImageReaderList = ImageReaderListType::New();
@@ -90,8 +94,6 @@ private:
 
         AddParameter(ParameterType_OutputImage, "outres10", "Out Image at 10m resolution");
         MandatoryOff("outres10");
-        AddParameter(ParameterType_OutputImage, "outres20", "Out Image at 10m resolution");
-        MandatoryOff("outres20");
         AddParameter(ParameterType_OutputImage, "outcmres10", "Out cloud mask image at 10m resolution");
         MandatoryOff("outcmres10");
         AddParameter(ParameterType_OutputImage, "outwmres10", "Out water mask image at 10m resolution");
@@ -100,6 +102,9 @@ private:
         MandatoryOff("outsmres10");
         AddParameter(ParameterType_OutputImage, "outaotres10", "Out snow mask image at 10m resolution");
         MandatoryOff("outaotres10");
+
+        AddParameter(ParameterType_OutputImage, "outres20", "Out Image at 10m resolution");
+        MandatoryOff("outres20");
         AddParameter(ParameterType_OutputImage, "outcmres20", "Out cloud mask image at 20m resolution");
         MandatoryOff("outcmres20");
         AddParameter(ParameterType_OutputImage, "outwmres20", "Out water mask image at 20m resolution");
@@ -109,19 +114,38 @@ private:
         AddParameter(ParameterType_OutputImage, "outaotres20", "Out snow mask image at 20m resolution");
         MandatoryOff("outaotres20");
 
+        AddParameter(ParameterType_OutputImage, "outres", "Out Image at the original resolution");
+        MandatoryOff("outres");
+        AddParameter(ParameterType_OutputImage, "outcmres", "Out cloud mask image at the original  resolution");
+        MandatoryOff("outcmres");
+        AddParameter(ParameterType_OutputImage, "outwmres", "Out water mask image at the original  resolution");
+        MandatoryOff("outwmres");
+        AddParameter(ParameterType_OutputImage, "outsmres", "Out snow mask image at the original  resolution");
+        MandatoryOff("outsmres");
+        AddParameter(ParameterType_OutputImage, "outaotres", "Out snow mask image at the original  resolution");
+        MandatoryOff("outaotres");
+
         SetDocExampleParameterValue("xml", "/path/to/L2Aproduct_maccs.xml");
         SetDocExampleParameterValue("spotmask", "/path/to/spotmasks.tif");
         SetDocExampleParameterValue("allinone", "1");
         SetDocExampleParameterValue("outres10", "/path/to/output_image10.tif");
-        SetDocExampleParameterValue("outres20", "/path/to/output_image20.tif");
         SetDocExampleParameterValue("outcmres10", "/path/to/output_image_cloud10.tif");
         SetDocExampleParameterValue("outwmres10", "/path/to/output_image10_water10.tif");
         SetDocExampleParameterValue("outsmres10", "/path/to/output_image10_snow10.tif");
         SetDocExampleParameterValue("outaotres10", "/path/to/output_image_aot10.tif");
+
+        SetDocExampleParameterValue("outres20", "/path/to/output_image20.tif");
         SetDocExampleParameterValue("outcmres20", "/path/to/output_image_cloud20.tif");
         SetDocExampleParameterValue("outwmres20", "/path/to/output_image10_water20.tif");
         SetDocExampleParameterValue("outsmres20", "/path/to/output_image10_snow20.tif");
         SetDocExampleParameterValue("outaotres20", "/path/to/output_image_aot20.tif");
+
+        SetDocExampleParameterValue("outres", "/path/to/output_image.tif");
+        SetDocExampleParameterValue("outcmres", "/path/to/output_image_cloud.tif");
+        SetDocExampleParameterValue("outwmres", "/path/to/output_image_water.tif");
+        SetDocExampleParameterValue("outsmres", "/path/to/output_image_snow.tif");
+        SetDocExampleParameterValue("outaotres", "/path/to/output_image_aot.tif");
+
     }
 
     void DoUpdateParameters()
@@ -151,14 +175,10 @@ private:
             }
         }
         m_ConcatenerRes10->SetInput( m_ImageListRes10 );
+        m_ConcatenerRes20->SetInput( m_ImageListRes20 );
 
         if(HasValue("outres10"))
             SetParameterOutputImage("outres10", m_ConcatenerRes10->GetOutput());
-
-        m_ConcatenerRes20->SetInput( m_ImageListRes20 );
-
-        if(HasValue("outres20"))
-            SetParameterOutputImage("outres20", m_ConcatenerRes20->GetOutput());
 
         if(HasValue("outcmres10"))
             SetParameterOutputImage("outcmres10", m_ImageCloudRes10.GetPointer());
@@ -172,6 +192,9 @@ private:
         if(HasValue("outaotres10"))
             SetParameterOutputImage("outaotres10", m_ImageAotRes10.GetPointer());
 
+        if(HasValue("outres20"))
+            SetParameterOutputImage("outres20", m_ConcatenerRes20->GetOutput());
+
         if(HasValue("outcmres20"))
             SetParameterOutputImage("outcmres20", m_ImageCloudRes20.GetPointer());
 
@@ -183,6 +206,23 @@ private:
 
         if(HasValue("outaotres20"))
             SetParameterOutputImage("outaotres20", m_ImageAotRes20.GetPointer());
+
+        // outputs at the same resolution as the input
+        if(HasValue("outres"))
+            SetParameterOutputImage("outres", m_ConcatenerResOrig->GetOutput());
+
+        if(HasValue("outcmres"))
+            SetParameterOutputImage("outcmres", m_ImageCloudResOrig.GetPointer());
+
+        if(HasValue("outwmres"))
+            SetParameterOutputImage("outwmres", m_ImageWaterResOrig.GetPointer());
+
+        if(HasValue("outsmres"))
+            SetParameterOutputImage("outsmres", m_ImageSnowResOrig.GetPointer());
+
+        if(HasValue("outaotres"))
+            SetParameterOutputImage("outaotres", m_ImageAotResOrig.GetPointer());
+
     }
 
 
@@ -211,6 +251,7 @@ private:
             extractor->UpdateOutputInformation();
             m_ExtractorList->PushBack( extractor );
 
+            m_ImageListResOrig->PushBack(extractor->GetOutput());
             if(allInOne) {
                 m_ImageListRes10->PushBack(getResampledImage(curRes, 10, extractor, false));
                 m_ImageListRes20->PushBack(getResampledImage(curRes, 20, extractor, false));
@@ -245,6 +286,7 @@ private:
         m_ExtractorList->PushBack( extractor );
         m_ImageCloudRes20 = getResampledImage(curRes, 20, extractor, true);
         m_ImageCloudRes10 = getResampledImage(curRes, 10, extractor, true);
+        m_ImageCloudResOrig = extractor->GetOutput();
 
         //Resample the water mask
         extractor = ExtractROIFilterType::New();
@@ -254,6 +296,7 @@ private:
         m_ExtractorList->PushBack( extractor );
         m_ImageWaterRes20 = getResampledImage(curRes, 20, extractor, true);
         m_ImageWaterRes10 = getResampledImage(curRes, 10, extractor, true);
+        m_ImageWaterResOrig = extractor->GetOutput();
 
         //Resample the snow mask
         extractor = ExtractROIFilterType::New();
@@ -263,6 +306,7 @@ private:
         m_ExtractorList->PushBack( extractor );
         m_ImageSnowRes20 = getResampledImage(curRes, 20, extractor, true);
         m_ImageSnowRes10 = getResampledImage(curRes, 10, extractor, true);
+        m_ImageSnowResOrig = extractor->GetOutput();
 
         // resample the AOT
         std::string aotFileName = getSpot4AotFileName(meta);
@@ -275,6 +319,7 @@ private:
         m_ExtractorList->PushBack( extractor );
         m_ImageAotRes20 = getResampledImage(curRes, 20, extractor, true);
         m_ImageAotRes10 = getResampledImage(curRes, 10, extractor, true);
+        m_ImageAotResOrig = extractor->GetOutput();
 
         return true;
 
@@ -349,12 +394,14 @@ private:
             extractor->SetChannel( i );
             extractor->UpdateOutputInformation();
             m_ExtractorList->PushBack( extractor );
+
+            m_ImageListResOrig->PushBack(extractor->GetOutput());
             if(allInOne) {
                 // resample to 10m
                 m_ImageListRes10->PushBack(getResampledImage(curRes, 10, extractor, false));
 
                 // resample to 20m
-                m_ImageListRes20->PushBack(getResampledImage(curRes, 10, extractor, false));
+                m_ImageListRes20->PushBack(getResampledImage(curRes, 20, extractor, false));
             } else {
                 if((*it).Name.compare("B2") == 0 || (*it).Name.compare("B3") == 0 || (*it).Name.compare("B4") == 0) {
                     // resample to 10m
@@ -383,6 +430,7 @@ private:
 
         m_ImageCloudRes10 = getResampledImage(curRes, 10, extractor, true);
         m_ImageCloudRes20 = getResampledImage(curRes, 20, extractor, true);
+        m_ImageCloudResOrig = extractor->GetOutput();
 
         imageFile = waterXMLFile;
         imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
@@ -397,6 +445,7 @@ private:
 
         m_ImageWaterRes10 = getResampledImage(curRes, 10, extractor, true);
         m_ImageWaterRes20 = getResampledImage(curRes, 20, extractor, true);
+        m_ImageWaterResOrig = extractor->GetOutput();
 
         imageFile = snowXMLFile;
         imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
@@ -411,6 +460,7 @@ private:
 
         m_ImageSnowRes10 = getResampledImage(curRes, 10, extractor, true);
         m_ImageSnowRes20 = getResampledImage(curRes, 20, extractor, true);
+        m_ImageSnowResOrig = extractor->GetOutput();
 
         imageFile = aotXMLFile;
         imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
@@ -424,7 +474,8 @@ private:
         m_ExtractorList->PushBack( extractor );
 
         m_ImageAotRes10 = getResampledImage(curRes, 10, extractor, true);
-        m_ImageAotRes20 = getResampledImage(curRes, 20, extractor, true);;
+        m_ImageAotRes20 = getResampledImage(curRes, 20, extractor, true);
+        m_ImageAotResOrig = extractor->GetOutput();
 
         return true;
     }
@@ -535,18 +586,29 @@ private:
 
     ListConcatenerFilterType::Pointer     m_ConcatenerRes10;
     ListConcatenerFilterType::Pointer     m_ConcatenerRes20;
+    ListConcatenerFilterType::Pointer     m_ConcatenerResOrig;
+
     ExtractROIFilterListType::Pointer     m_ExtractorList;
     ImageReaderListType::Pointer          m_ImageReaderList;
     InternalImageListType::Pointer        m_ImageListRes10;
     InternalImageListType::Pointer        m_ImageListRes20;
+    InternalImageListType::Pointer        m_ImageListResOrig;
+
     InternalImageType::Pointer            m_ImageCloudRes10;
     InternalImageType::Pointer            m_ImageWaterRes10;
     InternalImageType::Pointer            m_ImageSnowRes10;
     InternalImageType::Pointer            m_ImageAotRes10;
+
     InternalImageType::Pointer            m_ImageCloudRes20;
     InternalImageType::Pointer            m_ImageWaterRes20;
     InternalImageType::Pointer            m_ImageSnowRes20;
-    InternalImageType::Pointer            m_ImageAotRes20;    
+    InternalImageType::Pointer            m_ImageAotRes20;
+
+    InternalImageType::Pointer            m_ImageCloudResOrig;
+    InternalImageType::Pointer            m_ImageWaterResOrig;
+    InternalImageType::Pointer            m_ImageSnowResOrig;
+    InternalImageType::Pointer            m_ImageAotResOrig;
+
     ExtractROIFilterType::Pointer         m_ExtractROIFilter;
     ExtractROIFilterListType::Pointer     m_ChannelExtractorList;
     ResampleFilterListType::Pointer       m_ResamplersList;
