@@ -54,6 +54,9 @@ OUT_TOTAL_WEIGHT_FILE="$OUT_FOLDER/WeightTotal.tif"
 
 OUT_L3A_FILE="$OUT_FOLDER/L3AResult#_"$RESOLUTION"M.tif"
 
+PARAMS_TXT="$OUT_FOLDER/params.txt"
+rm -fr $PARAMS_TXT
+touch $PARAMS_TXT
 
 WEIGHT_AOT_MIN="0.33"
 WEIGHT_AOT_MAX="1"
@@ -73,12 +76,30 @@ OUT_FLAGS="$OUT_FOLDER/L3AResult#_flags.tif"
 
 MY_PWD=`pwd`
 
+echo "Weight AOT" >> $PARAMS_TXT
+echo "    weight aot min    = $WEIGHT_AOT_MIN" >> $PARAMS_TXT
+echo "    weight aot max    = $WEIGHT_AOT_MAX" >> $PARAMS_TXT
+echo "    aot max           = $AOT_MAX" >> $PARAMS_TXT
+echo "Weight on clouds" >> $PARAMS_TXT
+echo "    coarse res        = $COARSE_RES" >> $PARAMS_TXT
+echo "    sigma small cloud = $SIGMA_SMALL_CLD" >> $PARAMS_TXT
+echo "    sigma large cloud = $SIGMA_LARGE_CLD" >> $PARAMS_TXT
+echo "Weight on Date" >> $PARAMS_TXT
+echo "    weight date min   = $WEIGHT_DATE_MIN" >> $PARAMS_TXT
+echo "    l3a product date  = $L3A_DATE" >> $PARAMS_TXT
+echo "    half synthesis    = $HALF_SYNTHESIS" >> $PARAMS_TXT
+echo "Weight on " >> $PARAMS_TXT
+echo "    weight sensor     = $WEIGHT_SENSOR" >> $PARAMS_TXT
+echo " " >> $PARAMS_TXT
+echo "Used XML files " >> $PARAMS_TXT
+
 echo "Executing from $MY_PWD"
 
 i=0
 PREV_L3A=""
 for xml in "${inputXML[@]}"
 do
+echo "$xml" >> $PARAMS_TXT
 
 try otbcli SpotMaskHandler $COMPOSITE_OTB_LIBS_ROOT/SpotMaskHandler/ -xml $xml -out $OUT_SPOT_MASKS
 
