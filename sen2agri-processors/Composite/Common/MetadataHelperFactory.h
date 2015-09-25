@@ -20,7 +20,7 @@ public:
 
     itkTypeMacro(MetadataHelperFactory, itk::LightObject)
 
-    std::unique_ptr<MetadataHelper> GetMetadataHelper(std::string& metadataFileName, int nResolution = -1);
+    std::unique_ptr<MetadataHelper> GetMetadataHelper(const std::string& metadataFileName, int nResolution = 10);
 };
 
 #endif // COMPOSITENAMINGHELPERFACTORY_H

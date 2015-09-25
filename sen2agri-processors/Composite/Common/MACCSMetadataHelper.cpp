@@ -15,9 +15,11 @@ bool MACCSMetadataHelper::DoLoadMetadata()
     if (m_metadata = maccsMetadataReader->ReadMetadata(m_inputMetadataFileName)) {
         if (m_metadata->Header.FixedHeader.Mission.find(LANDSAT_MISSION_STR) != std::string::npos) {
             m_missionType = LANDSAT;
+            m_nTotalBandsNo = 6;
             UpdateValuesForLandsat();
         } else if (m_metadata->Header.FixedHeader.Mission.find(SENTINEL_MISSION_STR) != std::string::npos) {
             m_missionType = S2;
+            m_nTotalBandsNo = 10;
             UpdateValuesForSentinel();
         } else {
             itkExceptionMacro("Unknown mission: " + m_metadata->Header.FixedHeader.Mission);
@@ -46,6 +48,8 @@ bool MACCSMetadataHelper::DoLoadMetadata()
             m_nGreenBandIndex = getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B3");
             m_nNirBandIndex = getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B8");
         }
+
+        //TODO: Add initialization for mean angles (solar and sensor)
 
         return true;
     }

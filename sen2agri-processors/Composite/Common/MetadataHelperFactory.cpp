@@ -2,7 +2,7 @@
 #include "Spot4MetadataHelper.h"
 #include "MACCSMetadataHelper.h"
 
-std::unique_ptr<MetadataHelper> MetadataHelperFactory::GetMetadataHelper(std::string& metadataFileName, int nResolution)
+std::unique_ptr<MetadataHelper> MetadataHelperFactory::GetMetadataHelper(const std::string& metadataFileName, int nResolution)
 {
     std::unique_ptr<MetadataHelper> spot4MetadataHelper(new Spot4MetadataHelper);
     if (spot4MetadataHelper->LoadMetadataFile(metadataFileName, nResolution))
