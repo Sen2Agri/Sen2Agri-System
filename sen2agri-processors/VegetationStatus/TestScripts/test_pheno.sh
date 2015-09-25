@@ -1,9 +1,9 @@
 #! /bin/bash
 
-if [ $# -lt 1 ]
+if [ $# -lt 2 ]
 then
-  echo "Usage: $0 <folder name>"
-  echo "The output directory should be given" 1>&2  
+  echo "Usage: $0 <include file> <folder name>"
+  echo "The file with input xmls should be given. The output directory should also be given" 1>&2  
   exit
 fi
 
@@ -22,19 +22,10 @@ function try {
 
 #USER modif
 #add directories where SPOT products are to be found
-inputXML[0]='/mnt/Imagery_S2A/L2A/Spot4-T5/Belgium/SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000/SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000.xml'
-inputXML[1]='/mnt/Imagery_S2A/L2A/Spot4-T5/Belgium/SPOT4_HRVIR1_XS_20130402_N2A_EBelgiumD0000B0000/SPOT4_HRVIR1_XS_20130402_N2A_EBelgiumD0000B0000.xml'
-inputXML[2]='/mnt/Imagery_S2A/L2A/Spot4-T5/Belgium/SPOT4_HRVIR1_XS_20130407_N2A_EBelgiumD0000B0000/SPOT4_HRVIR1_XS_20130407_N2A_EBelgiumD0000B0000.xml'
-inputXML[3]='/mnt/Imagery_S2A/L2A/Spot4-T5/Belgium/SPOT4_HRVIR1_XS_20130417_N2A_EBelgiumD0000B0000/SPOT4_HRVIR1_XS_20130417_N2A_EBelgiumD0000B0000.xml'
-inputXML[4]='/mnt/Imagery_S2A/L2A/Spot4-T5/Belgium/SPOT4_HRVIR1_XS_20130422_N2A_EBelgiumD0000B0000/SPOT4_HRVIR1_XS_20130422_N2A_EBelgiumD0000B0000.xml'
-inputXML[5]='/mnt/Imagery_S2A/L2A/Spot4-T5/Belgium/SPOT4_HRVIR1_XS_20130507_N2A_EBelgiumD0000B0000/SPOT4_HRVIR1_XS_20130507_N2A_EBelgiumD0000B0000.xml'
-inputXML[6]='/mnt/Imagery_S2A/L2A/Spot4-T5/Belgium/SPOT4_HRVIR1_XS_20130527_N2A_EBelgiumD0000B0000/SPOT4_HRVIR1_XS_20130527_N2A_EBelgiumD0000B0000.xml'
-inputXML[7]='/mnt/Imagery_S2A/L2A/Spot4-T5/Belgium/SPOT4_HRVIR1_XS_20130606_N2A_EBelgiumD0000B0000/SPOT4_HRVIR1_XS_20130606_N2A_EBelgiumD0000B0000.xml'
-
+source $1
 #end of USER modif
 
-#RESOLUTION=$1
-OUT_FOLDER=$1
+OUT_FOLDER=$2
 
 CROPTTYPE_OTB_LIBS_ROOT="~/sen2agri-processors-build/CropType"
 VEGETATIONSTATUS_OTB_LIBS_ROOT="~/sen2agri-processors-build/VegetationStatus/phenotb/src/Applications/"
@@ -44,9 +35,7 @@ OUT_DATES="$OUT_FOLDER/spot_dates.txt"
 OUT_SHAPE="$OUT_FOLDER/spot_shapes.shp"
 OUT_NDVI="$OUT_FOLDER/spot_ndvi.TIF"
 OUT_SIGMO="$OUT_FOLDER/spot_sigmo.TIF"
-OUT_METRIC="$OUT_FOLDER/metric_estimation.?gdal:co:COMPRESS=DEFLATE"
-
-OUT_L3A_FILE="$OUT_FOLDER/L3AResult.tif"
+OUT_METRIC="$OUT_FOLDER/metric_estimation.TIF"
 
 MY_PWD=`pwd`
 
