@@ -1,9 +1,9 @@
 #! /bin/bash
 
-if [ $# -lt 2 ]
+if [ $# -lt 3 ]
 then
-  echo "Usage: $0 <include file> <out folder name> [models folder name]"
-  echo "The file with input xmls should be given. The output directory should also be given" 1>&2  
+  echo "Usage: $0 <include file> <resolution> <out folder name> [models folder name]"
+  echo "The file with input xmls should be given. The resolution should be given. The output directory should also be given" 1>&2  
   exit
 fi
 
@@ -25,11 +25,23 @@ function try {
 source $1
 #end of USER modif
 
-OUT_FOLDER=$2
+RESOLUTION=$2
+
+OUT_FOLDER=$3
 MODELS_FOLDER=${OUT_FOLDER}
-if [ $# -gt 2 ] ; then
-    MODELS_FOLDER=$3
+if [ $# -gt 3 ] ; then
+    MODELS_FOLDER=$4
 fi
+
+RESOLUTION_OPTION="-outres $RESOLUTION"
+if [[ $RESOLUTION != 10 && $RESOLUTION != 20 ]]
+then
+  echo "The resolution is : "$RESOLUTION
+  echo "The resolution should be either 10 or 20."
+  echo "The product will be created with the original resolution without resampling."
+  RESOLUTION_OPTION=""
+fi
+
 
 VEG_STATUS_OTB_LIBS_ROOT="~/sen2agri-processors-build/VegetationStatus"
 IMG_INV_OTB_LIBS_ROOT="$VEG_STATUS_OTB_LIBS_ROOT/otb-bv/src/applications"
@@ -69,8 +81,7 @@ ERR_MODEL_FILE="$OUT_FOLDER/err_model_file.txt"
 cnt=0
 for xml in "${inputXML[@]}"
 do
-    #try otbcli NdviRviExtraction $IMG_INV_OTB_LIBS_ROOT -xml $xml -outres 10 -fts $OUT_NDVI_RVI
-    try otbcli NdviRviExtraction $IMG_INV_OTB_LIBS_ROOT -xml $xml -fts $OUT_NDVI_RVI
+    try otbcli NdviRviExtraction $IMG_INV_OTB_LIBS_ROOT -xml $xml $RESOLUTION_OPTION -fts $OUT_NDVI_RVI
 
     try otbcli GetLaiRetrievalModel $IMG_INV_OTB_LIBS_ROOT -xml $xml -ilmodels $MODELS_INPUT_LIST -ilerrmodels $ERR_MODELS_INPUT_LIST -outm $MODEL_FILE -outerr $ERR_MODEL_FILE
     
