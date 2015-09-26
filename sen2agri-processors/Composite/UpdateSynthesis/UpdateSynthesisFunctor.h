@@ -33,7 +33,7 @@ public:
     bool operator==( const UpdateSynthesisFunctor & other ) const;
     TOutput operator()( const TInput & A );
     void Initialize(SensorType sensorType, ResolutionType resolution, bool bPrevL3ABandsAvailable,
-                    int nDate, float fQuantifVal, bool bAllInOne = false);
+                    int nDate, float fQuantifVal, bool bAllInOne = false, bool bMissingL3ABands = false);
     int GetNbOfL3AReflectanceBands() { return m_nNbOfL3AReflectanceBands; }
     int GetNbOfOutputComponents() { return 2*m_nNbOfL3AReflectanceBands+2;}
 
@@ -70,11 +70,17 @@ private:
 
     bool m_bPrevL3ABandsAvailable;
     int m_nNbOfL3AReflectanceBands;
+
+    int m_nRealNbOfL3AReflectanceBands;
+    bool m_bMissingL3ABands;
+
     int m_nNbL2ABands;
 
     // this array holds the availability information of a certain band and
     // its absolute index in the input bands array
     int m_arrL2ABandPresence[L3A_WEIGHTED_REFLECTANCES_MAX_NO];
+    int m_arrL3AReflBandPresence[L3A_WEIGHTED_REFLECTANCES_MAX_NO];
+
     int m_nL2ABandStartIndex;
     int m_nCloudMaskBandIndex;
     int m_nSnowMaskBandIndex;
