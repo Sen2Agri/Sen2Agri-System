@@ -685,7 +685,8 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetCurrentL2AWeightValue(const TIn
     if(m_nCurrentL2AWeightBandIndex == -1)
         return WEIGHT_NO_DATA;
 
-    return static_cast<float>(A[m_nCurrentL2AWeightBandIndex] / m_fQuantificationValue);
+    // TODO: the Total Weight computed for L2A does not have a quantification value yet. Should it be added as now it is just a temp file?
+    return static_cast<float>(A[m_nCurrentL2AWeightBandIndex]);// / m_fQuantificationValue);
 }
 
 template< class TInput, class TOutput>
