@@ -6,7 +6,8 @@ set(MACCSMetadata_HEADERS
     ../include/SPOT4Metadata.hpp
     ../include/MACCSMetadataReader.hpp
     ../include/MACCSMetadataWriter.hpp
-    ../include/SPOT4MetadataReader.hpp)
+    ../include/SPOT4MetadataReader.hpp
+    ../include/ViewingAngles.hpp)
 
 set(MACCSMetadata_SOURCES
     FluentXML.cpp
@@ -14,7 +15,8 @@ set(MACCSMetadata_SOURCES
     string_utils.cpp
     MACCSMetadataReader.cpp
     MACCSMetadataWriter.cpp
-    SPOT4MetadataReader.cpp)
+    SPOT4MetadataReader.cpp
+    ViewingAngles.cpp)
 
 add_library(MACCSMetadata SHARED ${MACCSMetadata_HEADERS} ${MACCSMetadata_SOURCES})
 target_link_libraries(MACCSMetadata
