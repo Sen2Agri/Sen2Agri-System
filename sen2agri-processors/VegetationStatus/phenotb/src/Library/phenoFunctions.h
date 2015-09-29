@@ -26,8 +26,9 @@
 #include "dateUtils.h"
 #include "itkBinaryFunctorImageFilter.h"
 
-#define NO_DATA -10000
+#define NO_DATA -10000.0f
 #define EPSILON 0.0001f
+
 
 
 
@@ -276,7 +277,7 @@ public:
 
 
     // A date is valid if it is not NaN and the mask value == 0.
-    auto pred = [=](int e) { return !(std::isnan(vec[e])) &&
+    auto pred = [=](int e) { return !(std::isnan(vec[e])) && (vec[e] >= 0) &&
                              (mv[e]==(typename PixelType::ValueType{0})); };
     auto f_profiles = filter_profile_fast(vec, dv, pred);
 

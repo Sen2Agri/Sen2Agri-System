@@ -34,6 +34,8 @@
 #include "otbBandMathImageFilter.h"
 #include "otbMultiToMonoChannelExtractROI.h"
 
+#include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
+
 #include "otbImage.h"
 #include "otbVectorImage.h"
 #include "otbImageFileReader.h"
@@ -43,6 +45,8 @@
 #include "otbVectorImageToImageListFilter.h"
 #include "itkResampleImageFilter.h"
 #include "itkIndent.h"
+#include <vector>
+#include "libgen.h"
 
 
 //  Software Guide : EndCodeSnippet
@@ -93,18 +97,21 @@ public:
     itkTypeMacro(ComputeNDVI, otb::Application)
     //  Software Guide : EndCodeSnippet
 
-    typedef float                                     PixelType;
+    typedef short                                     PixelType;
 
     typedef otb::Image<PixelType, 2>                   OutputImageType;
+    typedef Int16VectorImageType                                 ImageType;
+    typedef otb::ImageFileReader<ImageType>                            ImageReaderType;
+
     typedef otb::ImageList<OutputImageType>            ImageListType;
     typedef otb::ImageFileWriter<OutputImageType>      WriterType;
-    typedef otb::VectorImageToImageListFilter<FloatVectorImageType, ImageListType>
-    VectorImageToImageListType;
+    typedef otb::VectorImageToImageListFilter<ImageType, ImageListType>    VectorImageToImageListType;
+
     typedef otb::MultiToMonoChannelExtractROI<FloatVectorImageType::InternalPixelType,
                                               FloatImageType::PixelType>    ExtractROIFilterType;
     typedef otb::ObjectList<ExtractROIFilterType>                           ExtractROIFilterListType;
 
-    typedef otb::BandMathImageFilter<FloatImageType>   BMFilterType;
+    typedef otb::BandMathImageFilter<Int16ImageType>   BMFilterType;
 
 
 
@@ -113,6 +120,10 @@ private:
     //  Software Guide : BeginLatex
     //  \code{DoInit()} method contains class information and description, parameter set up, and example values.
     //  Software Guide : EndLatex
+
+    typedef itk::MACCSMetadataReader                                   MACCSMetadataReaderType;
+
+
     ExtractROIFilterType::Pointer     m_ExtractROIFilter;
     ExtractROIFilterListType::Pointer m_ChannelExtractorList;
 
@@ -165,7 +176,7 @@ private:
         // Software Guide : EndLatex
 
         //  Software Guide : BeginCodeSnippet
-        AddParameter(ParameterType_InputImage, "in", "Input Image");
+        //AddParameter(ParameterType_InputImage, "in", "Input Image");
         AddParameter(ParameterType_InputFilename, "xml", "Xml Desc");
 
         AddParameter(ParameterType_OutputImage, "out", "Out Image");
@@ -181,7 +192,7 @@ private:
         // Software Guide : EndLatex
 
         //  Software Guide : BeginCodeSnippet
-        SetDocExampleParameterValue("in", "/path/to/input_image.tif");
+        //SetDocExampleParameterValue("in", "/path/to/input_image.tif");
         SetDocExampleParameterValue("xml", "xml_description.xml");
         SetDocExampleParameterValue("out", "/path/to/output_image.tif");
         //SetDocExampleParameterValue("vp", "validation_polygons.shp");
@@ -202,20 +213,40 @@ private:
     // using BandMathFilter
     void DoExecute()
     {
-        FloatVectorImageType::Pointer inImage = GetParameterImage("in");
+       MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
+        std::string xmlDesc = GetParameterAsString("xml");
+        std::vector<char> buf(xmlDesc.begin(), xmlDesc.end());
+        m_DirName = std::string(dirname(buf.data()));
+        auto meta = maccsMetadataReader->ReadMetadata(xmlDesc);
+        // check if it is a sentinel 2 product, otherwise -> exception
+        if (meta != nullptr) {
+            if (meta->Header.FixedHeader.Mission.find("SENTINEL-2A") == std::string::npos) {
+                itkExceptionMacro("Mission is not a SENTINEL !");
+            }
+        }
+        else
+            itkExceptionMacro("Mission is not a SENTINEL !");
+
+        std::string imageFile1 = getMACCSRasterFileName(m_DirName, (*meta).ProductOrganization.ImageFiles, "_FRE_R1");
+
+        m_InImage = ImageReaderType::New();
+        m_InImage->SetFileName(imageFile1);
+        m_InImage->GetOutput()->UpdateOutputInformation();
+
         //inImage->UpdateOutputInformation();
         m_ChannelExtractorList = ExtractROIFilterListType::New();
         m_Filter               = BMFilterType::New();
+
         m_ImageList = VectorImageToImageListType::New();
 
-        m_ImageList->SetInput(inImage);
+        m_ImageList->SetInput(m_InImage->GetOutput());
         m_ImageList->UpdateOutputInformation();
 
         otbAppLogINFO( << "Input image has "
-                     << inImage->GetNumberOfComponentsPerPixel()
+                     << m_InImage->GetOutput()->GetNumberOfComponentsPerPixel()
                      << " components" << std::endl );
 
-        for (unsigned int j = 0; j < inImage->GetNumberOfComponentsPerPixel(); j++)
+        for (unsigned int j = 0; j < m_InImage->GetOutput()->GetNumberOfComponentsPerPixel(); j++)
         {
             std::ostringstream tmpParserVarName;
             tmpParserVarName << "b" << j + 1;
@@ -229,8 +260,8 @@ private:
         //  The expression below returns 255 if the ratio $(NIR-RED)/(NIR+RED)$ is greater than 0.4 and 0 if not.
         //
         // TODO: use information from the xml regarding the bands NIR and RED indexes.
-        std::string idxNIR("b"); idxNIR.append("4");
-        std::string idxRED("b"); idxRED.append("3");
+        std::string idxNIR("B"); idxNIR.append("8");
+        std::string idxRED("B"); idxRED.append("4");
         std::string ndviExpr;
 #ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
         ndviExpr = " (( " + idxNIR + " - " + idxRED + " )/( " + idxNIR + " + " + idxRED + " ) > 0.4) ? 255 : 0";
@@ -242,6 +273,22 @@ private:
 
         SetParameterOutputImage("out" , m_Filter->GetOutput() );
     }
+
+    std::string getMACCSRasterFileName(const std::string& rootFolder, const std::vector<MACCSFileInformation>& imageFiles, const std::string& ending) {
+
+        for (const MACCSFileInformation& fileInfo : imageFiles) {
+            if (fileInfo.LogicalName.length() >= ending.length() &&
+                    0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
+                return rootFolder + fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF";
+            }
+
+        }
+        return "";
+    }
+
+    ImageReaderType::Pointer            m_InImage;
+
+    std::string                         m_DirName;
 
 };
 }
