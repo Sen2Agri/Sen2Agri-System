@@ -87,6 +87,12 @@ struct MACCSMeanViewingIncidenceAngle
     MACCSAnglePair Angles;
 };
 
+struct MACCSBandViewingAnglesGriyd
+{
+    std::string BandId;
+    MACCSAngles Angles;
+};
+
 struct MACCSProductInformation
 {
     MACCSAnglePair MeanSunAngle;
