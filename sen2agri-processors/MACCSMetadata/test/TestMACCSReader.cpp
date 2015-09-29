@@ -208,7 +208,7 @@ BOOST_AUTO_TEST_CASE(MACCSReader)
     BOOST_CHECK_EQUAL(m->ImageInformation.Resolutions[1].Bands[5].Id, "6");
     BOOST_CHECK_EQUAL(m->ImageInformation.Resolutions[1].Bands[5].Name, "B12");
 
-    BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles.size(), 3);
+    BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles.size(), 4);
     BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles[0].Nature, "SSC_PDTIMG");
     BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles[0].FileLocation,
                       "./S2A_OPER_SSC_L2VALD_15SVD____20091211.DBL.DIR/"
@@ -227,6 +227,12 @@ BOOST_AUTO_TEST_CASE(MACCSReader)
                       "S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_SRE_R1.HDR");
     BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles[2].LogicalName,
                       "S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_SRE_R1");
+    BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles[3].Nature, "SSC_PDTIMG");
+    BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles[3].FileLocation,
+                      "./S2A_OPER_SSC_L2VALD_15SVD____20091211.DBL.DIR/"
+                      "S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_FRE_R1.HDR");
+    BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles[3].LogicalName,
+                      "S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_FRE_R1");
 
     BOOST_CHECK_EQUAL(m->ProductOrganization.QuickLookFiles.size(), 1);
     BOOST_CHECK_EQUAL(m->ProductOrganization.QuickLookFiles[0].Nature, "SSC_PDTQLK");

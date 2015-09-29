@@ -96,7 +96,7 @@ class BVEstimationFunctor
 {
 public:
   BVEstimationFunctor() = default;
-  BVEstimationFunctor(ModelType* model, 
+  BVEstimationFunctor(ModelType* model,
                       const NormalizationVectorType& normalization) : 
     m_Model{model}, m_Normalization{normalization} {}
 
@@ -190,7 +190,12 @@ private:
 
     AddParameter(ParameterType_InputFilename, "model", "File containing the regression model.");
     SetParameterDescription( "model", "File containing the regression model.");
-    
+    MandatoryOff("model");
+
+    AddParameter(ParameterType_InputFilename, "modelfile", "File containing paths to the regression model.");
+    SetParameterDescription( "modelfile", "File containing paths to the regression model.");
+    MandatoryOff("modelfile");
+
     AddParameter(ParameterType_OutputImage, "out", "Output Image");
     SetParameterDescription("out","Output image.");
 
@@ -214,70 +219,105 @@ private:
 
   void DoExecute()
   {
-    // read output info of the input image
-    FloatVectorImageType::Pointer input_image = this->GetParameterImage("in");
-    auto nb_bands = input_image->GetNumberOfComponentsPerPixel();
-    otbAppLogINFO("Input image has " << nb_bands << " bands."<< std::endl);            
-    auto nbInputVariables = nb_bands;
+        std::string modelFileName;
+        if(!HasValue("model") && !HasValue("modelfile")) {
+            itkExceptionMacro("You should specify at least model or the modelslist file name");
+        } else {
+            if(HasValue("model")) {
+                modelFileName = GetParameterString("model");
+            }
+            // if we have also a file as parameter, get the model path from file
+            if(HasValue("modelfile")) {
+                std::vector<std::string> modelsFileNames;
+                readFileLines(GetParameterString("modelfile"), modelsFileNames);
+                if(modelsFileNames.size() > 0)
+                    modelFileName = modelsFileNames[0];
+            }
+        }
 
-    NormalizationVectorType var_minmax{};
-    if( HasValue( "normalization" )==true )
-      {
-      otbAppLogINFO("Variable normalization."<< std::endl);            
-      var_minmax = read_normalization_file(GetParameterString("normalization"));
-      if(var_minmax.size()!=nbInputVariables+1)
-        itkGenericExceptionMacro(<< "Normalization file ("<< var_minmax.size() 
+        // read output info of the input image
+        FloatVectorImageType::Pointer input_image = this->GetParameterImage("in");
+        auto nb_bands = input_image->GetNumberOfComponentsPerPixel();
+        otbAppLogINFO("Input image has " << nb_bands << " bands."<< std::endl);
+        auto nbInputVariables = nb_bands;
+
+        NormalizationVectorType var_minmax{};
+        if( HasValue( "normalization" )==true )
+        {
+            otbAppLogINFO("Variable normalization."<< std::endl);
+            var_minmax = read_normalization_file(GetParameterString("normalization"));
+            if(var_minmax.size()!=nbInputVariables+1)
+                itkGenericExceptionMacro(<< "Normalization file ("<< var_minmax.size()
                                  << " - 1) is not coherent with the number of "
                                  << "input variables ("<< nbInputVariables 
                                  <<").");
-      for(size_t var = 0; var < nbInputVariables; ++var)
-        otbAppLogINFO("Variable "<< var+1 << " min=" << var_minmax[var].first <<
+            for(size_t var = 0; var < nbInputVariables; ++var)
+                otbAppLogINFO("Variable "<< var+1 << " min=" << var_minmax[var].first <<
                       " max=" << var_minmax[var].second <<std::endl);
-      otbAppLogINFO("Output min=" << var_minmax[nbInputVariables].first <<
+            otbAppLogINFO("Output min=" << var_minmax[nbInputVariables].first <<
                     " max=" << var_minmax[nbInputVariables].second 
                     << std::endl)
         }
-    auto model_file = GetParameterString("model");
-    ModelType* regressor;
-    auto nn_regressor = NeuralNetworkType::New();
-    auto svr_regressor = SVRType::New();
-    auto rfr_regressor = RFRType::New();
-    auto mlr_regressor = MLRType::New();
-    if(nn_regressor->CanReadFile(model_file))
-      {
-      regressor = dynamic_cast<ModelType*>(nn_regressor.GetPointer());
-      otbAppLogINFO("Applying NN regression ..." << std::endl);
-      }
-    else if(svr_regressor->CanReadFile(model_file))
-      {
-      regressor = dynamic_cast<ModelType*>(svr_regressor.GetPointer());
-      otbAppLogINFO("Applying SVR regression ..." << std::endl);
-      }
-    else if(rfr_regressor->CanReadFile(model_file))
-      {
-      regressor = dynamic_cast<ModelType*>(rfr_regressor.GetPointer());
-      otbAppLogINFO("Applying RF regression ..." << std::endl);
-      }
-    else if(mlr_regressor->CanReadFile(model_file))
-      {
-      regressor = dynamic_cast<ModelType*>(mlr_regressor.GetPointer());
-      otbAppLogINFO("Applying MLR regression ..." << std::endl);
-      }
-    else
-      {
-      itkGenericExceptionMacro(<< "Model in file " << model_file 
-                               << " is not valid.\n");
-      }
-    regressor->Load(model_file);    
 
-    //instantiate a functor with the regressor and pass it to the
-    //unary functor image filter pass also the normalization values
-    bv_filter = FilterType::New();
-    bv_filter->SetFunctor(FunctorType(regressor,var_minmax));
-    bv_filter->SetInput(input_image);
-    bv_filter->SetNumberOfOutputBands(1);
-    SetParameterOutputImage("out", bv_filter->GetOutput());
+        ModelType* regressor;
+        auto nn_regressor = NeuralNetworkType::New();
+        auto svr_regressor = SVRType::New();
+        auto rfr_regressor = RFRType::New();
+        auto mlr_regressor = MLRType::New();
+        if(nn_regressor->CanReadFile(modelFileName))
+          {
+          regressor = dynamic_cast<ModelType*>(nn_regressor.GetPointer());
+          otbAppLogINFO("Applying NN regression ..." << std::endl);
+          }
+        else if(svr_regressor->CanReadFile(modelFileName))
+          {
+          regressor = dynamic_cast<ModelType*>(svr_regressor.GetPointer());
+          otbAppLogINFO("Applying SVR regression ..." << std::endl);
+          }
+        else if(rfr_regressor->CanReadFile(modelFileName))
+          {
+          regressor = dynamic_cast<ModelType*>(rfr_regressor.GetPointer());
+          otbAppLogINFO("Applying RF regression ..." << std::endl);
+          }
+        else if(mlr_regressor->CanReadFile(modelFileName))
+          {
+          regressor = dynamic_cast<ModelType*>(mlr_regressor.GetPointer());
+          otbAppLogINFO("Applying MLR regression ..." << std::endl);
+          }
+        else
+          {
+          itkGenericExceptionMacro(<< "Model in file " << modelFileName
+                                   << " is not valid.\n");
+          }
+        regressor->Load(modelFileName);
+
+        //instantiate a functor with the regressor and pass it to the
+        //unary functor image filter pass also the normalization values
+        bv_filter = FilterType::New();
+        bv_filter->SetFunctor(FunctorType(regressor,var_minmax));
+        bv_filter->SetInput(input_image);
+        bv_filter->SetNumberOfOutputBands(1);
+        SetParameterOutputImage("out", bv_filter->GetOutput());
   }
+
+  void readFileLines(const std::string &fileName, std::vector<std::string> &outLines) {
+      std::ifstream isFile;
+      isFile.open(fileName);
+      if (!isFile.is_open()) {
+          itkExceptionMacro("Can't open file containing model path for reading!");
+      }
+
+      // read the file lines
+      std::string value;
+      while (std::getline(isFile, value)) {
+          outLines.push_back(value);
+      }
+
+      // close the file
+      isFile.close();
+
+  }
+
   FilterType::Pointer bv_filter;
 };
 

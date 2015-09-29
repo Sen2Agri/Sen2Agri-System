@@ -91,29 +91,24 @@ private:
         AddParameter(ParameterType_InputImage, "prevl3a", "Previous l3a product");
         MandatoryOff("prevl3a");
 
+        AddParameter(ParameterType_InputImage, "prevl3aw", "Previous l3a product weights");
+        MandatoryOff("prevl3aw");
+        AddParameter(ParameterType_InputImage, "prevl3ad", "Previous l3a product dates");
+        MandatoryOff("prevl3ad");
+        AddParameter(ParameterType_InputImage, "prevl3ar", "Previous l3a product reflectances");
+        MandatoryOff("prevl3ar");
+        AddParameter(ParameterType_InputImage, "prevl3af", "Previous l3a product flags");
+        MandatoryOff("prevl3af");
+
         AddParameter(ParameterType_Int, "allinone", "Specifies if all bands should be resampled at 10m and 20m");
         SetDefaultParameterInt("allinone", 0);
         MandatoryOff("allinone");
-        /*
-        AddParameter(ParameterType_InputImage, "prevw", "Weight for each pixel obtained so far");
-        MandatoryOff("prevw");
-        AddParameter(ParameterType_InputImage, "wavgdate", "Weighted average date for L3A product so far");
-        MandatoryOff("wavgdate");
-        AddParameter(ParameterType_InputImage, "wavgref", "Weighted average reflectance value so far, for each pixel and each spectral band");
-        MandatoryOff("wavgref");
-        AddParameter(ParameterType_InputImage, "pixstat", "Status of each L3A pixel: cloud, water, snow");
-        MandatoryOff("pixstat");
-        */
-        // out rasters for L3A product
-        /*
-        AddParameter(ParameterType_OutputImage, "outw", "Out weight counter for each pixel and for each band");
-        AddParameter(ParameterType_OutputImage, "outdate", "Out weighted average date for L3A product so far");
-        AddParameter(ParameterType_OutputImage, "outro", "Out weighted average reflectance value so far for each pixel and each spectral band");
-        AddParameter(ParameterType_OutputImage, "outstat", "Out status of each L3A pixel: cloud, water, snow");
-        */
 
-        //test only
-        AddParameter(ParameterType_OutputImage, "out", "Out image containing 10 or 14 bands according to resolution");
+        AddParameter(ParameterType_Int, "stypemode", "Single product type mode");
+        SetDefaultParameterInt("stypemode", 0);
+        MandatoryOff("stypemode");
+
+        AddParameter(ParameterType_OutputImage, "out", "Out image containing 10, 14 or 22 bands according to resolution or mode");
         //AddParameter(ParameterType_OutputImage, "outrefls", "Out image containing 10 or 14 bands according to resolution");
         //AddParameter(ParameterType_OutputImage, "outweights", "Out image containing 10 or 14 bands according to resolution");
         //AddParameter(ParameterType_OutputImage, "outflags", "Out image containing 10 or 14 bands according to resolution");
@@ -143,77 +138,39 @@ private:
             resolution = m_L2AIn->GetSpacing()[0];
         }
         m_CSM = GetParameterFloatVectorImage("csm");
-
         m_WM = GetParameterFloatVectorImage("wm");
-
         m_SM = GetParameterFloatVectorImage("sm");
-
         m_WeightsL2A = GetParameterFloatVectorImage("wl2a");
         //Int16VectorImageType::Pointer inImage2 = GetParameterInt16VectorImage("in2");
 
-        unsigned int j=0;
-        for(j=0; j < m_L2AIn->GetNumberOfComponentsPerPixel(); j++)
-        {
-            ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-            extractor->SetInput( m_L2AIn );
-            extractor->SetChannel( j+1 );
-            extractor->UpdateOutputInformation();
-            m_ExtractorList->PushBack( extractor );
-            m_ImageList->PushBack( extractor->GetOutput() );
-        }
+        extractBandsFromImage(m_L2AIn);
         // will the following have only one band, for sure? if yes, simply push_back each one of them
-        for(j=0; j < m_CSM->GetNumberOfComponentsPerPixel(); j++)
-        {
-            ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-            extractor->SetInput( m_CSM );
-            extractor->SetChannel( j+1 );
-            extractor->UpdateOutputInformation();
-            m_ExtractorList->PushBack( extractor );
-            m_ImageList->PushBack( extractor->GetOutput() );
-        }
-
-        for(j=0; j < m_WM->GetNumberOfComponentsPerPixel(); j++)
-        {
-            ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-            extractor->SetInput( m_WM );
-            extractor->SetChannel( j+1 );
-            extractor->UpdateOutputInformation();
-            m_ExtractorList->PushBack( extractor );
-            m_ImageList->PushBack( extractor->GetOutput() );
-        }
-
-        for(j=0; j < m_SM->GetNumberOfComponentsPerPixel(); j++)
-        {
-            ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-            extractor->SetInput( m_SM );
-            extractor->SetChannel( j+1 );
-            extractor->UpdateOutputInformation();
-            m_ExtractorList->PushBack( extractor );
-            m_ImageList->PushBack( extractor->GetOutput() );
-        }
-
-        for(j=0; j < m_WeightsL2A->GetNumberOfComponentsPerPixel(); j++)
-        {
-            ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-            extractor->SetInput( m_WeightsL2A );
-            extractor->SetChannel( j+1 );
-            extractor->UpdateOutputInformation();
-            m_ExtractorList->PushBack( extractor );
-            m_ImageList->PushBack( extractor->GetOutput() );
-        }
+        extractBandsFromImage(m_CSM);
+        extractBandsFromImage(m_WM);
+        extractBandsFromImage(m_SM);
+        extractBandsFromImage(m_WeightsL2A);
 
         bool l3aExist = false;
+        int nNbL3ABands = 0;
         if(HasValue("prevl3a")) {
             m_PrevL3A = GetParameterFloatVectorImage("prevl3a");
             l3aExist = true;
-            for(j=0; j < m_PrevL3A->GetNumberOfComponentsPerPixel(); j++)
-            {
-                ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-                extractor->SetInput( m_PrevL3A );
-                extractor->SetChannel( j+1 );
-                extractor->UpdateOutputInformation();
-                m_ExtractorList->PushBack( extractor );
-                m_ImageList->PushBack( extractor->GetOutput() );
+            nNbL3ABands += extractBandsFromImage(m_PrevL3A);
+        } else {
+            if(HasValue("prevl3aw") && HasValue("prevl3ad") &&
+               HasValue("prevl3ar") && HasValue("prevl3af")) {
+                l3aExist = true;
+                m_PrevL3AWeight = GetParameterFloatVectorImage("prevl3aw");
+                nNbL3ABands += extractBandsFromImage(m_PrevL3AWeight);
+
+                m_PrevL3AAvgDate = GetParameterFloatVectorImage("prevl3ad");
+                nNbL3ABands += extractBandsFromImage(m_PrevL3AAvgDate);
+
+                m_PrevL3ARefl = GetParameterFloatVectorImage("prevl3ar");
+                nNbL3ABands += extractBandsFromImage(m_PrevL3ARefl);
+
+                m_PrevL3AFlags = GetParameterFloatVectorImage("prevl3af");
+                nNbL3ABands += extractBandsFromImage(m_PrevL3AFlags);
             }
         }
 
@@ -223,20 +180,27 @@ private:
         auto pHelper = factory->GetMetadataHelper(inXml, resolution);
         SensorType sensorType;
         std::string missionName = pHelper->GetMissionName();
-        otbAppLogINFO( << "Mission name" << missionName << std::endl );
-
         if(missionName.find(SENTINEL_MISSION_STR) != std::string::npos) {
             sensorType = SENSOR_S2;
         } else if (missionName.find(LANDSAT_MISSION_STR) != std::string::npos) {
             sensorType = SENSOR_LANDSAT8;
         } else if (missionName.find(SPOT4_MISSION_STR) != std::string::npos) {
             sensorType = SENSOR_SPOT4;
+        } else {
+            itkExceptionMacro("Unknown sensor type " << missionName);
         }
-
+        bool bMissingL3ABands = checkForMissingL3ABands(resolution, sensorType, nNbL3ABands, allInOne);
         int productDate = pHelper->GetAcquisitionDateAsDoy();
+
+        otbAppLogINFO( << "Mission name: " << missionName << std::endl );
+        otbAppLogINFO( << "Resolution: " << resolution << std::endl );
+        otbAppLogINFO( << "Exists L3A flag: " << l3aExist << std::endl );
+        otbAppLogINFO( << "All in one flag: " << allInOne << std::endl );
+        otbAppLogINFO( << "Missing L3A bands flag: " << bMissingL3ABands << std::endl );
+
         m_Functor.Initialize(sensorType, (resolution == 10 ? RES_10M : RES_20M), l3aExist,
                              productDate, pHelper->GetReflectanceQuantificationValue(),
-                             allInOne);
+                             allInOne, bMissingL3ABands);
         m_UpdateSynthesisFunctor = FunctorFilterType::New();
         m_UpdateSynthesisFunctor->SetFunctor(m_Functor);
         m_UpdateSynthesisFunctor->SetInput(m_Concat->GetOutput());
@@ -248,6 +212,81 @@ private:
         //splitOutputs();
 
         return;
+    }
+
+    int extractBandsFromImage(InputImageType::Pointer & imageType) {
+        int nbBands = imageType->GetNumberOfComponentsPerPixel();
+        for(int j=0; j < nbBands; j++)
+        {
+            ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
+            extractor->SetInput( imageType );
+            extractor->SetChannel( j+1 );
+            extractor->UpdateOutputInformation();
+            m_ExtractorList->PushBack( extractor );
+            m_ImageList->PushBack( extractor->GetOutput() );
+        }
+        return nbBands;
+    }
+
+    bool checkForMissingL3ABands(int resolution, SensorType sensorType, int nNbL3ABands, bool allInOne) {
+        int expectedNbBandsWhenMissing = 0;
+        int expectedNbBandsWhenComplete = 0;
+
+        int singleProductTypeMode = GetParameterInt("stypemode");
+        // if we are NOT in single product type mode (i.e. combined product types mode)
+        // or if we have a Sentinel 2 product, we will not accept missing bands
+        if((singleProductTypeMode == 0) || (sensorType == SENSOR_S2)) {
+            return false;
+        }
+        // If the nNbL3ABands is 0 and the single product type is on, we return directly true
+        if(nNbL3ABands == 0) {
+            return true;
+        }
+
+        if(sensorType == SENSOR_LANDSAT8 ) {
+            if(allInOne) {
+                expectedNbBandsWhenMissing = L8_L2A_ALL_BANDS_NO;
+                expectedNbBandsWhenComplete = WEIGHTED_REFLECTANCE_ALL_BANDS_NO;
+            } else {
+                if(resolution == 10) {
+                    expectedNbBandsWhenMissing = L8_L2A_10M_BANDS_NO;
+                    expectedNbBandsWhenComplete = WEIGHTED_REFLECTANCE_10M_BANDS_NO;
+                } else if(resolution == 20) {
+                    expectedNbBandsWhenMissing = L8_L2A_20M_BANDS_NO;
+                    expectedNbBandsWhenComplete = WEIGHTED_REFLECTANCE_20M_BANDS_NO;
+                } else {
+                    expectedNbBandsWhenMissing = L8_L2A_ALL_BANDS_NO;
+                    expectedNbBandsWhenComplete = WEIGHTED_REFLECTANCE_ALL_BANDS_NO;
+                }
+            }
+        } else if(sensorType == SENSOR_SPOT4) {
+            if(allInOne) {
+                expectedNbBandsWhenMissing = SPOT4_L2A_ALL_BANDS_NO;
+                expectedNbBandsWhenComplete = WEIGHTED_REFLECTANCE_ALL_BANDS_NO;
+            } else {
+                if(resolution == 10) {
+                    expectedNbBandsWhenMissing = SPOT4_L2A_10M_BANDS_NO;
+                    expectedNbBandsWhenComplete = WEIGHTED_REFLECTANCE_10M_BANDS_NO;
+                } else if(resolution == 20) {
+                    expectedNbBandsWhenMissing = SPOT4_L2A_20M_BANDS_NO;
+                    expectedNbBandsWhenComplete = WEIGHTED_REFLECTANCE_20M_BANDS_NO;
+                } else {
+                    expectedNbBandsWhenMissing = SPOT4_L2A_ALL_BANDS_NO;
+                    expectedNbBandsWhenComplete = WEIGHTED_REFLECTANCE_ALL_BANDS_NO;
+                }
+            }
+        } else {
+            itkExceptionMacro("Unknown sensor type " << sensorType);
+        }
+        if(nNbL3ABands == 2*expectedNbBandsWhenComplete+2)
+            return false;
+
+        if(nNbL3ABands == 2*expectedNbBandsWhenMissing+2)
+            return true;
+
+        itkExceptionMacro("Invalid L3A bands number " << nNbL3ABands << " for resolution " << resolution);
+
+        return false;
     }
 
 /*
@@ -318,7 +357,7 @@ private:
     InputImageType::Pointer             m_L2AIn;
     InputImageType::Pointer             m_CSM, m_WM, m_SM, m_WeightsL2A;
     InputImageType::Pointer             m_PrevL3A;
-    InputImageType::Pointer             m_PrevWeightPixel, m_WeightAvgDate, m_WeightAvgRef, m_PixelStat;
+    InputImageType::Pointer             m_PrevL3AWeight, m_PrevL3AAvgDate, m_PrevL3ARefl, m_PrevL3AFlags;
     ImageListType::Pointer              m_ImageList;
     ListConcatenerFilterType::Pointer   m_Concat;
     ExtractROIFilterListType::Pointer   m_ExtractorList;

@@ -43,13 +43,26 @@
 
 #include <vector>
 #include "libgen.h"
-#include "MACCSMetadataReader.hpp"
-#include "SPOT4MetadataReader.hpp"
-#define LANDSAT    "LANDSAT"
-#define SENTINEL   "SENTINEL"
+#include "MetadataHelperFactory.h"
+
 #define L3A_SIZE            22
-#define L3A_WEIGHT_LIMIT    10
-#define L3A_REFL_LIMIT      21
+#define L3A_ALL_WEIGHT_CNT    10
+#define L3A_10M_WEIGHT_CNT    4
+#define L3A_20M_WEIGHT_CNT    6
+
+//                                            {0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21};
+int S2_ARR_BANDS_PRESENCE_ALL[L3A_SIZE]     = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+int L8_ARR_BANDS_PRESENCE_ALL[L3A_SIZE]     = {1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1};
+int SPOT_ARR_BANDS_PRESENCE_ALL[L3A_SIZE]   = {0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 1};
+
+int S2_ARR_BANDS_PRESENCE_10M[L3A_SIZE]     = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int L8_ARR_BANDS_PRESENCE_10M[L3A_SIZE]     = {1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+int SPOT_ARR_BANDS_PRESENCE_10M[L3A_SIZE]   = {0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+
+int S2_ARR_BANDS_PRESENCE_20M[L3A_SIZE]     = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0};
+int L8_ARR_BANDS_PRESENCE_20M[L3A_SIZE]     = {0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0};
+int SPOT_ARR_BANDS_PRESENCE_20M[L3A_SIZE]   = {0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0};
+
 namespace otb
 {
 
@@ -94,9 +107,6 @@ public:
     typedef otb::ImageList<OutImageType1>                                       ImgListType;
     typedef otb::VectorImage<short, 2>                                          ImageType;
     typedef otb::ImageListToVectorImageFilter<ImgListType, ImageType>           ImageListToVectorImageFilterType;
-    typedef itk::MACCSMetadataReader                                            MACCSMetadataReaderType;
-    typedef itk::SPOT4MetadataReader                                            SPOT4MetadataReaderType;
-
 
 private:
 
@@ -125,6 +135,17 @@ private:
         AddParameter(ParameterType_OutputImage, "outrefls", "Out file weights");
         AddParameter(ParameterType_OutputImage, "outflags", "Out file weights");
 
+        AddParameter(ParameterType_Int, "res", "Input current L3A XML");
+        SetDefaultParameterInt("res", -1);
+        MandatoryOff("res");
+
+        AddParameter(ParameterType_Int, "allinone", "Specifies if all bands of 10 and 20M are present in the L3A product");
+        SetDefaultParameterInt("allinone", 0);
+        MandatoryOff("allinone");
+
+        AddParameter(ParameterType_Int, "stypemode", "Single product type mode");
+        SetDefaultParameterInt("stypemode", 0);
+        MandatoryOff("stypemode");
     }
 
     void DoUpdateParameters()
@@ -134,9 +155,22 @@ private:
 
     void DoExecute()
     {
-        const std::string &tmp = GetParameterAsString("xml");
-        std::vector<char> buf(tmp.begin(), tmp.end());
-        m_DirName = std::string(dirname(buf.data()));
+        int arrL3ABandPresence[L3A_SIZE];
+        memset(arrL3ABandPresence, 0, sizeof(arrL3ABandPresence));
+
+        bool isCombinedProductsTypeMode = (GetParameterInt("stypemode") == 0);
+        int resolution = GetParameterInt("res");
+        bool allInOne = (GetParameterInt("allinone") != 0);
+        const std::string inXml = GetParameterAsString("xml");
+
+        otbAppLogINFO( << "InXML: " << inXml << std::endl );
+        otbAppLogINFO( << "Combined products mode: " << isCombinedProductsTypeMode << std::endl );
+        otbAppLogINFO( << "Resolution: " << resolution << std::endl );
+        otbAppLogINFO( << "All in one: " << allInOne << std::endl );
+        if(resolution == -1 && !allInOne) {
+            allInOne = true;
+            otbAppLogINFO( << "As resolution and allinone were not set, allinone will be automatically considered!" << std::endl );
+        }
 
         m_WeightsConcat = ImageListToVectorImageFilterType::New();
         m_ReflsConcat = ImageListToVectorImageFilterType::New();
@@ -148,55 +182,79 @@ private:
         m_DatesList = ImgListType::New();
         m_FlagsList = ImgListType::New();
 
-        MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
-        SPOT4MetadataReaderType::Pointer spot4MetadataReader = SPOT4MetadataReaderType::New();
-
         m_L3AIn = GetParameterInt16VectorImage("in");
         m_L3AIn->UpdateOutputInformation();
-        if(m_L3AIn->GetNumberOfComponentsPerPixel() != L3A_SIZE)
+
+        int nReflsBandsNo = 0;
+        if(allInOne) {
+            nReflsBandsNo = L3A_ALL_WEIGHT_CNT;
+        } else {
+            if(resolution == 10) {
+                nReflsBandsNo = L3A_10M_WEIGHT_CNT;
+            } else if(resolution == 20) {
+                nReflsBandsNo = L3A_20M_WEIGHT_CNT;
+            } else {
+                itkExceptionMacro("This resolution " << resolution << " can be used only with allinone option");
+            }
+        }
+        unsigned int nTotalBandsNo = (2*nReflsBandsNo+2);
+        if(m_L3AIn->GetNumberOfComponentsPerPixel() != nTotalBandsNo)
         {
             itkExceptionMacro("Wrong number of bands ! " + m_L3AIn->GetNumberOfComponentsPerPixel());
         }
-        //m_L3AIn->UpdateOutputInformation();
+
         m_ImgSplit = VectorImageToImageListType::New();
         m_ImgSplit->SetInput(m_L3AIn);
         m_ImgSplit->UpdateOutputInformation();
-        int arrL3ABandPresence[L3A_SIZE] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
 
-        if (auto meta = maccsMetadataReader->ReadMetadata(tmp)) {
-            // add the information to the list
-            if (meta->Header.FixedHeader.Mission.find(LANDSAT) != std::string::npos) {
-                // Interpret landsat product
-                int tmp[L3A_SIZE] = {0, 1, 2, -1, -1, -1, -1, 7, 8, 9, 10, 11, 12, 13, -1, -1, -1, -1, 18, 19, 20, 21};
-                memcpy(arrL3ABandPresence, tmp, sizeof(tmp));
+        auto factory = MetadataHelperFactory::New();
+        auto pHelper = factory->GetMetadataHelper(inXml);
+        std::string missionName = pHelper->GetMissionName();
 
-            } else if (meta->Header.FixedHeader.Mission.find(SENTINEL) != std::string::npos) {
-                // Interpret sentinel product
-                int tmp[L3A_SIZE] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21};
-                memcpy(arrL3ABandPresence, tmp, sizeof(tmp));
-            } else {
-                itkExceptionMacro("Unknown mission: " + meta->Header.FixedHeader.Mission);
+        // add the information to the list
+        if (missionName.find(LANDSAT_MISSION_STR) != std::string::npos) {
+            if(allInOne) {
+                memcpy(arrL3ABandPresence, L8_ARR_BANDS_PRESENCE_ALL, sizeof(arrL3ABandPresence));
+            } else if (resolution == 10) {
+                memcpy(arrL3ABandPresence, L8_ARR_BANDS_PRESENCE_10M, sizeof(arrL3ABandPresence));
+            } else if (resolution == 20) {
+                memcpy(arrL3ABandPresence, L8_ARR_BANDS_PRESENCE_20M, sizeof(arrL3ABandPresence));
             }
-        }else if (auto meta = spot4MetadataReader->ReadMetadata(tmp)) {
-            // add the information to the list
-            int tmp[L3A_SIZE] = {-1, 1, 2, -1, -1, -1, 6, -1, 8, -1, 10, -1, 12, 13, -1, -1, -1, 17, -1, 19, -1, 21};
-            memcpy(arrL3ABandPresence, tmp, sizeof(tmp));
-
+        } else if (missionName.find(SENTINEL_MISSION_STR) != std::string::npos) {
+            if(allInOne) {
+                memcpy(arrL3ABandPresence, S2_ARR_BANDS_PRESENCE_ALL, sizeof(arrL3ABandPresence));
+            } else if (resolution == 10) {
+                memcpy(arrL3ABandPresence, S2_ARR_BANDS_PRESENCE_10M, sizeof(arrL3ABandPresence));
+            } else if (resolution == 20) {
+                memcpy(arrL3ABandPresence, S2_ARR_BANDS_PRESENCE_20M, sizeof(arrL3ABandPresence));
+            }
+        } else if (missionName.find(SPOT4_MISSION_STR) != std::string::npos) {
+            if(allInOne) {
+                memcpy(arrL3ABandPresence, SPOT_ARR_BANDS_PRESENCE_ALL, sizeof(arrL3ABandPresence));
+            } else if (resolution == 10) {
+                memcpy(arrL3ABandPresence, SPOT_ARR_BANDS_PRESENCE_10M, sizeof(arrL3ABandPresence));
+            } else if (resolution == 20) {
+                memcpy(arrL3ABandPresence, SPOT_ARR_BANDS_PRESENCE_20M, sizeof(arrL3ABandPresence));
+            }
         } else {
-            itkExceptionMacro("Unable to read metadata from " << tmp);
+            itkExceptionMacro("Unknown mission name " << missionName);
         }
 
-        int i = 0;
-        for(i = 0; i < L3A_WEIGHT_LIMIT; i++) {
-            if(arrL3ABandPresence[i] != -1)
-                m_WeightList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(i));
+        int cnt = 0;
+        for(int i = 0; i < nReflsBandsNo; i++) {
+            if(arrL3ABandPresence[cnt] || isCombinedProductsTypeMode) {
+                m_WeightList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt));
+            }
+            cnt++;
         }
-        m_DatesList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(i++));
-        for(; i < L3A_REFL_LIMIT; i++) {
-            if(arrL3ABandPresence[i] != -1)
-                m_ReflectancesList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(i));
+        m_DatesList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt++));
+        for(int i = 0; i < nReflsBandsNo; i++) {
+            if(arrL3ABandPresence[cnt] || isCombinedProductsTypeMode) {
+                m_ReflectancesList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt));
+            }
+            cnt++;
         }
-        m_FlagsList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(i++));
+        m_FlagsList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt++));
 
         m_WeightsConcat = ImageListToVectorImageFilterType::New();
         m_WeightsConcat->SetInput(m_WeightList);
@@ -232,9 +290,6 @@ private:
     ImgListType::Pointer m_WeightList;
     ImgListType::Pointer m_DatesList;
     ImgListType::Pointer m_FlagsList;
-
-    std::string         m_DirName;
-
 };
 
 }

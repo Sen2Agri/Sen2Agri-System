@@ -5,6 +5,9 @@ Spot4MetadataHelper::Spot4MetadataHelper()
     m_fAotQuantificationValue = 1000.0;
     m_fAotNoDataVal = 0;
     m_nAotBandIndex = 1;
+    m_nTotalBandsNo = 4;
+    m_bHasGlobalMeanAngles = true;
+    m_bHasBandMeanAngles = false;
 }
 
 bool Spot4MetadataHelper::DoLoadMetadata()
@@ -40,6 +43,14 @@ bool Spot4MetadataHelper::DoLoadMetadata()
         // extract the acquisition date
         m_AcquisitionDate = m_metadata->Header.DatePdv.substr(0,4) +
                 m_metadata->Header.DatePdv.substr(5,2) + m_metadata->Header.DatePdv.substr(8,2);
+
+        //TODO: Add initialization for mean angles (solar and sensor)
+        m_solarMeanAngles.zenith = m_metadata->Radiometry.Angles.ThetaS;
+        m_solarMeanAngles.azimuth = m_metadata->Radiometry.Angles.PhiS;
+        MeanAngles_Type sensorAngles;
+        sensorAngles.zenith = m_metadata->Radiometry.Angles.ThetaV;
+        sensorAngles.azimuth = m_metadata->Radiometry.Angles.PhiV;
+        m_sensorBandsMeanAngles.push_back(sensorAngles);
 
         return true;
     }

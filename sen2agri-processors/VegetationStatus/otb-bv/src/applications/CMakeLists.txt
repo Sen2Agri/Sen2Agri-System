@@ -50,6 +50,11 @@ otb_create_application(
   NAME           TimeSeriesBuilder
   SOURCES        otbTimeSeriesBuilder.cpp
   LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
-                     
+
+otb_create_application(
+  NAME           GetLaiRetrievalModel
+  SOURCES        otbGetLaiRetrievalModel.cpp
+  LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
+  
 add_executable(testSimus testSimus.cxx)
 target_link_libraries(testSimus ${OTB_LIBRARIES} OTBBVUtil gsl gslcblas)
