@@ -159,10 +159,6 @@ BOOST_AUTO_TEST_CASE(MACCSReader)
     BOOST_CHECK(std::isnan(m->ProductInformation.ViewingAngles[0].Angles.Zenith.Values[0][5]));
 
     const auto &viewingAngles = ComputeViewingAngles(m->ProductInformation.ViewingAngles);
-    for (const auto &g : viewingAngles) {
-        std::cerr << g.BandId << ' ';
-    }
-    std::cerr << '\n';
     BOOST_CHECK_EQUAL(viewingAngles.size(), 13);
     BOOST_CHECK_EQUAL(viewingAngles[0].BandId, "0");
     BOOST_CHECK_EQUAL(viewingAngles[12].BandId, "12");
@@ -174,6 +170,8 @@ BOOST_AUTO_TEST_CASE(MACCSReader)
     BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Azimuth.ColumnStep, "5000");
     BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Azimuth.RowUnit, "m");
     BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Azimuth.RowStep, "5000");
+    BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Azimuth.Values[0][0], 119.857036);
+    BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Zenith.Values[0][0], 8.900153);
 
     BOOST_CHECK_EQUAL(m->ProductInformation.ReflectanceQuantificationValue, "0.000683994528");
 
