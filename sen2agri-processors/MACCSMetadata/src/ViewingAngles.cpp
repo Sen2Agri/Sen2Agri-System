@@ -62,11 +62,18 @@ ComputeViewingAngles(const std::vector<MACCSViewingAnglesGrid> &angleGrids)
     auto rowStep = firstGrid.RowStep;
     auto width = firstGrid.Values.front().size();
     auto height = firstGrid.Values.size();
+    std::map<std::string, int> bandPos;
     std::map<std::string, MACCSBandViewingAnglesGrid> resultGrids;
+    auto endBandPos = std::end(bandPos);
     auto endResultGrids = std::end(resultGrids);
     for (const auto &grid : angleGrids) {
         checkDimensions(columnUnit, columnStep, rowUnit, rowStep, height, width, grid.Angles.Zenith);
         checkDimensions(columnUnit, columnStep, rowUnit, rowStep, height, width, grid.Angles.Azimuth);
+
+        auto itBandPos = bandPos.find(grid.BandId);
+        if (itBandPos == endBandPos) {
+            bandPos.emplace(grid.BandId, bandPos.size());
+        }
 
         auto it = resultGrids.find(grid.BandId);
         if (it == endResultGrids) {
@@ -101,9 +108,9 @@ ComputeViewingAngles(const std::vector<MACCSViewingAnglesGrid> &angleGrids)
         }
     }
 
-    std::vector<MACCSBandViewingAnglesGrid> result;
+    std::vector<MACCSBandViewingAnglesGrid> result(resultGrids.size());
     for (const auto &grid : resultGrids) {
-        result.emplace_back(grid.second);
+        result[bandPos[grid.first]] = grid.second;
     }
     return result;
 }
