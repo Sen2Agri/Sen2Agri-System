@@ -93,11 +93,14 @@ ComputeViewingAngles(const std::vector<MACCSViewingAnglesGrid> &angleGrids)
 
                 for (const auto &grid : angleGrids) {
                     if (grid.BandId == resultGrid.first) {
-                        if (std::isnan(zenith)) {
-                            zenith = grid.Angles.Zenith.Values[j][i];
+                        auto z = grid.Angles.Zenith.Values[j][i];
+                        auto a = grid.Angles.Azimuth.Values[j][i];
+
+                        if (std::isnan(z)) {
+                            zenith = z;
                         }
-                        if (std::isnan(azimuth)) {
-                            azimuth = grid.Angles.Azimuth.Values[j][i];
+                        if (std::isnan(a)) {
+                            azimuth = a;
                         }
                     }
                 }
