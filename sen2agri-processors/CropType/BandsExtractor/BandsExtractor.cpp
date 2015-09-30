@@ -64,6 +64,7 @@
 #define MASK_TYPE_SAT   1
 #define MASK_TYPE_DIV   2
 
+#define EPSILON     1e-6
 
 typedef otb::VectorImage<short, 2>                                 ImageType;
 typedef otb::Image<short, 2>                                       InternalImageType;
@@ -275,6 +276,10 @@ private:
     AddParameter(ParameterType_OutputVectorData, "shape", "The file containing the border shape");
     MandatoryOff("shape");
 
+    AddParameter(ParameterType_Float, "pixsize", "The size of a pixel, in meters");
+    SetDefaultParameterFloat("pixsize", 10.0); // The default value is 10 meters
+    SetMinimumParameterFloatValue("pixsize", 1.0);
+    MandatoryOff("pixsize");
 
      //  Software Guide : EndCodeSnippet
 
@@ -326,6 +331,9 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoExecute()
   {
+      // get the required pixel size
+      m_pixSize = this->GetParameterFloat("pixsize");
+
       // Get the list of input files
       std::vector<std::string> descriptors = this->GetParameterStringList("il");
 
@@ -367,8 +375,9 @@ private:
       std::sort(m_DescriptorsList.begin(), m_DescriptorsList.end(), BandsExtractor::SortMetadata);
 
       // Build the Border Shape
-      if(HasValue("shape"))
+      if(HasValue("shape")) {
           BuildBorderShape();
+      }
 
       // Construct output image and mask
       BuildRasterAndMask();
@@ -391,34 +400,26 @@ private:
       std::string imageFile = rootFolder + meta.Files.OrthoSurfCorrPente;
       ImageReaderType::Pointer reader = getReader(imageFile);
       reader->UpdateOutputInformation();
-      int curRes = reader->GetOutput()->GetSpacing()[0];
-      const int wantedRes = 10;
+      float curRes = reader->GetOutput()->GetSpacing()[0];
       ExtractROIFilterType::Pointer extractor;
-      ResampleFilterType::Pointer resampler;
 
       // Extract the green band
       extractor = getExtractor(reader->GetOutput(), 1);
-      // resample from 20m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.imgG = resampler->GetOutput();
+      // resample if needed
+      descriptor.imgG = getResampledBand(extractor->GetOutput(), curRes);
 
       // Extract the red band
       extractor = getExtractor(reader->GetOutput(), 2);
-      // resample from 20m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.imgR = resampler->GetOutput();
+      descriptor.imgR = getResampledBand(extractor->GetOutput(), curRes);
 
       // Extract the NIR band
       extractor = getExtractor(reader->GetOutput(), 3);
-      // resample from 20m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.imgNIR = resampler->GetOutput();
+      // resample if needed
+      descriptor.imgNIR = getResampledBand(extractor->GetOutput(), curRes);
 
       // Extract the SWIR band
       extractor = getExtractor(reader->GetOutput(), 4);
-      // resample from 20m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.imgSWIR = resampler->GetOutput();
+      descriptor.imgSWIR = getResampledBand(extractor->GetOutput(), curRes);
 
       // Get the validity mask
       std::string maskFileDiv = rootFolder + meta.Files.MaskDiv;
@@ -433,9 +434,7 @@ private:
       maskMath->SetExpression("((b1 == 0) || (b1-(rint(b1/2-0.01)*2) == 0)) ? 1 : 0 ");
       maskMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskMath);
-      // resample from 20m to 10m
-      resampler = getResampler(maskMath->GetOutput(), curRes, wantedRes);
-      descriptor.maskValid = resampler->GetOutput();
+      descriptor.maskValid = getResampledBand(maskMath->GetOutput(), curRes);
 
       // Get the saturation mask
       std::string maskFileSat = rootFolder + meta.Files.MaskSaturation;
@@ -444,9 +443,8 @@ private:
       curRes = maskReaderSat->GetOutput()->GetSpacing()[0];
 
       extractor = getExtractor(maskReaderSat->GetOutput(), 1);
-      // resample from 20m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.maskSat = resampler->GetOutput();
+      // resample if needed
+      descriptor.maskSat = getResampledBand(extractor->GetOutput(), curRes);
 
       // Get the clouds mask
       std::string maskFileNua = rootFolder + meta.Files.MaskNua;
@@ -455,9 +453,8 @@ private:
       curRes = maskReaderNua->GetOutput()->GetSpacing()[0];
 
       extractor = getExtractor(maskReaderNua->GetOutput(), 1);
-      // resample from 20m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.maskCloud = resampler->GetOutput();
+      // resample if needed
+      descriptor.maskCloud = getResampledBand(extractor->GetOutput(), curRes);
 
       // Get the water mask
 
@@ -468,9 +465,8 @@ private:
       maskWaterMath->SetExpression("((b1 == 2) || (rint(b1/2 - 0,01)-(rint(rint(b1/2 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
       maskWaterMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskWaterMath);
-      // resample from 20m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.maskWater = resampler->GetOutput();
+      // resample if needed
+      descriptor.maskWater = getResampledBand(extractor->GetOutput(), curRes);
 
       // Get the snow mask
 
@@ -481,10 +477,8 @@ private:
       maskSnowMath->SetExpression("((b1 == 4) || (rint(b1/4 - 0,01)-(rint(rint(b1/4 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
       maskSnowMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskSnowMath);
-      // resample from 20m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.maskSnow = resampler->GetOutput();
-
+      // resample if needed
+      descriptor.maskSnow = getResampledBand(extractor->GetOutput(), curRes);
   }
 
   // Process a LANDSAT8 metadata structure and extract the needed bands and masks.
@@ -502,34 +496,29 @@ private:
       std::string imageFile = getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE");
       ImageReaderType::Pointer reader = getReader(imageFile);
       reader->UpdateOutputInformation();
-      int curRes = reader->GetOutput()->GetSpacing()[0];
-      const int wantedRes = 10;
+      float curRes = reader->GetOutput()->GetSpacing()[0];
       ExtractROIFilterType::Pointer extractor;
       ResampleFilterType::Pointer resampler;
 
       // Extract the green band
       extractor = getExtractor(reader->GetOutput(), 3);
-      // resample from 30m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.imgG = resampler->GetOutput();
+      // resample if needed
+      descriptor.imgG = getResampledBand(extractor->GetOutput(), curRes);
 
       // Extract the red band
       extractor = getExtractor(reader->GetOutput(), 4);
-      // resample from 30m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.imgR = resampler->GetOutput();
+      // resample if needed
+      descriptor.imgR = getResampledBand(extractor->GetOutput(), curRes);
 
       // Extract the NIR band
       extractor = getExtractor(reader->GetOutput(), 5);
-      // resample from 30m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.imgNIR = resampler->GetOutput();
+      // resample if needed
+      descriptor.imgNIR = getResampledBand(extractor->GetOutput(), curRes);
 
       // Extract the SWIR band
       extractor = getExtractor(reader->GetOutput(), 6);
-      // resample from 30m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.imgSWIR = resampler->GetOutput();
+      // resample if needed
+      descriptor.imgSWIR = getResampledBand(extractor->GetOutput(), curRes);
 
       // Get the validity mask
       std::string maskFileQuality = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_QLT");
@@ -544,16 +533,13 @@ private:
       maskMath->SetExpression("((b1 == 0) || (b1-(rint(b1/2-0.01)*2) == 0)) ? 1 : 0 ");
       maskMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskMath);
-      // resample from 30m to 10m
-      resampler = getResampler(maskMath->GetOutput(), curRes, wantedRes);
-      descriptor.maskValid = resampler->GetOutput();
+      // resample if needed
+      descriptor.maskValid = getResampledBand(maskMath->GetOutput(), curRes);
 
       // Get the saturation mask
       extractor = getExtractor(maskReaderQuality->GetOutput(), 1);
-
-      // resample from 30m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.maskSat = resampler->GetOutput();
+      // resample if needed
+      descriptor.maskSat = getResampledBand(extractor->GetOutput(), curRes);
 
       // Get the cloud mask
       std::string maskFileCloud = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_CLD");
@@ -562,10 +548,8 @@ private:
       curRes = maskReaderCloud->GetOutput()->GetSpacing()[0];
 
       extractor = getExtractor(maskReaderCloud->GetOutput(), 1);
-
-      // resample from 30m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.maskCloud = resampler->GetOutput();
+      // resample if needed
+      descriptor.maskCloud = getResampledBand(extractor->GetOutput(), curRes);
 
       // Get the water mask
       std::string maskFileWaterSnow = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_MSK");
@@ -581,9 +565,8 @@ private:
       maskWaterMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskWaterMath);
 
-      // resample from 30m to 10m
-      resampler = getResampler(maskWaterMath->GetOutput(), curRes, wantedRes);
-      descriptor.maskWater = resampler->GetOutput();
+      // resample if needed
+      descriptor.maskWater = getResampledBand(maskWaterMath->GetOutput(), curRes);
 
       // Get the snow mask
       extractor = getExtractor(maskReaderWaterSnow->GetOutput(), 1);
@@ -594,10 +577,8 @@ private:
       maskSnowMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskSnowMath);
 
-      // resample from 30m to 10m
-      resampler = getResampler(maskSnowMath->GetOutput(), curRes, wantedRes);
-      descriptor.maskSnow = resampler->GetOutput();
-
+      // resample if needed
+      descriptor.maskSnow = getResampledBand(maskSnowMath->GetOutput(), curRes);
   }
 
 
@@ -619,39 +600,45 @@ private:
       //Extract the first 3 bands form the first file. No resampling needed
       std::string imageFile1 = getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE_R1");
       ImageReaderType::Pointer reader1 = getReader(imageFile1);
+      reader1->UpdateOutputInformation();
+      float curRes = reader1->GetOutput()->GetSpacing()[0];
 
       // Extract Green band
       int gIndex = getBandIndex(meta.ImageInformation.Resolutions[0].Bands, "B3");
       extractor = getExtractor(reader1->GetOutput(), gIndex);
-      descriptor.imgG = extractor->GetOutput();
+      // resample if needed
+      descriptor.imgG = getResampledBand(extractor->GetOutput(), curRes);
 
       // Extract Red band
       int rIndex = getBandIndex(meta.ImageInformation.Resolutions[0].Bands, "B4");
       extractor = getExtractor(reader1->GetOutput(), rIndex);
-      descriptor.imgR = extractor->GetOutput();
+      // resample if needed
+      descriptor.imgR = getResampledBand(extractor->GetOutput(), curRes);
 
       // Extract NIR band
       int nirIndex = getBandIndex(meta.ImageInformation.Resolutions[0].Bands, "B8");
       extractor = getExtractor(reader1->GetOutput(), nirIndex);
-      descriptor.imgNIR = extractor->GetOutput();
+      // resample if needed
+      descriptor.imgNIR = getResampledBand(extractor->GetOutput(), curRes);
 
       //Extract the last band form the second file. Resampling needed.
       std::string imageFile2 = getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE_R2");
       ImageReaderType::Pointer reader2 = getReader(imageFile2);
       reader2->UpdateOutputInformation();
-      int curRes = reader2->GetOutput()->GetSpacing()[0];
-      const int wantedRes = 10;
+      curRes = reader2->GetOutput()->GetSpacing()[0];
 
       // Extract SWIR band
       int swirIndex = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B11");
       extractor = getExtractor(reader2->GetOutput(), swirIndex);
-      // resample from 20m to 10m
-      resampler = getResampler(extractor->GetOutput(), curRes, wantedRes);
-      descriptor.imgSWIR = resampler->GetOutput();
+      // resample if needed
+      descriptor.imgSWIR = getResampledBand(extractor->GetOutput(), curRes);
 
       // Get the validity mask
       std::string maskFileQuality = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_QLT_R1");
       ImageReaderType::Pointer maskReaderQuality = getReader(maskFileQuality);
+      maskReaderQuality->UpdateOutputInformation();
+      curRes = maskReaderQuality->GetOutput()->GetSpacing()[0];
+
 
       extractor = getExtractor(maskReaderQuality->GetOutput(), 3);
 
@@ -660,21 +647,29 @@ private:
       maskMath->SetExpression("((b1 == 0) || (b1-(rint(b1/2-0.01)*2) == 0)) ? 1 : 0");
       maskMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskMath);
-      descriptor.maskValid = maskMath->GetOutput();
+
+      // resample if needed
+      descriptor.maskValid = getResampledBand(maskMath->GetOutput(), curRes);
 
       // Get the saturation mask
       extractor = getExtractor(maskReaderQuality->GetOutput(), 1);
-      descriptor.maskSat = extractor->GetOutput();
+      // resample if needed
+      descriptor.maskSat = getResampledBand(extractor->GetOutput(), curRes);
 
       // Get the cloud mask
       std::string maskFileCloud = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_CLD_R1");
       ImageReaderType::Pointer maskReaderCloud = getReader(maskFileCloud);
+      maskReaderCloud->UpdateOutputInformation();
+      curRes = maskReaderCloud->GetOutput()->GetSpacing()[0];
+
       extractor = getExtractor(maskReaderCloud->GetOutput(), 1);
-      descriptor.maskCloud = extractor->GetOutput();
+      descriptor.maskCloud = getResampledBand(extractor->GetOutput(), curRes);
 
       // Get the water mask
       std::string maskFileWaterSnow = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_MSK_R1");
       ImageReaderType::Pointer maskReaderWaterSnow = getReader(maskFileWaterSnow);
+      maskReaderWaterSnow->UpdateOutputInformation();
+      curRes = maskReaderWaterSnow->GetOutput()->GetSpacing()[0];
       extractor = getExtractor(maskReaderWaterSnow->GetOutput(), 1);
 
       BandMathImageFilterType::Pointer maskWaterMath = BandMathImageFilterType::New();
@@ -682,7 +677,9 @@ private:
       maskWaterMath->SetExpression("((b1 == 0) || (b1-(rint(b1/2-0.01)*2) == 0)) ? 1 : 0 ");
       maskWaterMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskWaterMath);
-      descriptor.maskWater = maskWaterMath->GetOutput();
+
+      // resample if needed
+      descriptor.maskWater = getResampledBand(maskWaterMath->GetOutput(), curRes);
 
       // Get the snow mask
       extractor = getExtractor(maskReaderWaterSnow->GetOutput(), 1);
@@ -692,7 +689,9 @@ private:
       maskSnowMath->SetExpression("((b1 == 32) || (rint(b1/32 - 0,01)-(rint(rint(b1/32 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
       maskSnowMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskSnowMath);
-      descriptor.maskSnow = maskSnowMath->GetOutput();
+
+      // resample if needed
+      descriptor.maskSnow = getResampledBand(maskSnowMath->GetOutput(), curRes);
   }
 
   // Get all validity masks and build a validity shape which will be comon for all rasters
@@ -1269,14 +1268,14 @@ private:
       return extractor;
   }
 
-  ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const int curRes, const int wantedRes) {
+  InternalImageType::Pointer getResampledBand(const InternalImageType::Pointer& image, const float curRes) {
+       if(std::abs(m_pixSize - curRes) < EPSILON) {
+           return image;
+       }
        ResampleFilterType::Pointer resampler = ResampleFilterType::New();
        resampler->SetInput(image);
-       if(curRes == wantedRes) {
-           m_ResamplersList->PushBack(resampler);
-           return resampler;
-       }
-       const float ratio = (float)curRes / (float)wantedRes;
+
+       const float ratio = (float)curRes / (float)m_pixSize;
 
        // Set the interpolator
        LinearInterpolationType::Pointer interpolator = LinearInterpolationType::New();
@@ -1315,7 +1314,7 @@ private:
        resampler->SetOutputSize(recomputedSize);
 
        m_ResamplersList->PushBack(resampler);
-       return resampler;
+       return resampler->GetOutput();
   }
 
 
@@ -1337,6 +1336,7 @@ private:
   BandMathImageFilterListType::Pointer  m_BandMathList;  
   std::string                           m_maskExpression;
   std::string                           m_allMaskExpression;
+  float                                 m_pixSize;
 
 //  InternalImageListType::Pointer        m_VldMaskList;
 //  std::vector<float>                    m_MeanPixels;
