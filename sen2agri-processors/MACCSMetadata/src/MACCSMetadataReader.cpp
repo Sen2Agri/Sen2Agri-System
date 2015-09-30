@@ -1,4 +1,5 @@
 #include <limits>
+#include <libgen.h>
 
 #include "otbMacro.h"
 
@@ -62,10 +63,13 @@ MACCSMainProductHeader ReadMainProductHeader(const TiXmlElement *el)
         if (auto consumerCountStr = consumersEl->Attribute("count")) {
             size_t count;
             bool countValid;
-            try {
+            try
+            {
                 count = std::stoi(consumerCountStr);
                 countValid = true;
-            } catch (const std::runtime_error &e) {
+            }
+            catch (const std::runtime_error &e)
+            {
                 countValid = false;
 
                 otbMsgDevMacro("Invalid consumer count value: " << consumerCountStr);
@@ -85,10 +89,13 @@ MACCSMainProductHeader ReadMainProductHeader(const TiXmlElement *el)
         if (auto extensionCountStr = extensionsEl->Attribute("count")) {
             size_t count;
             bool countValid;
-            try {
+            try
+            {
                 count = std::stoi(extensionCountStr);
                 countValid = true;
-            } catch (const std::runtime_error &e) {
+            }
+            catch (const std::runtime_error &e)
+            {
                 countValid = false;
 
                 otbMsgDevMacro("Invalid extension count value: " << extensionCountStr);
@@ -365,10 +372,13 @@ std::vector<MACCSBand> ReadBands(const TiXmlElement *el)
     if (auto countStr = el->Attribute("count")) {
         size_t count;
         bool countValid;
-        try {
+        try
+        {
             count = std::stoi(countStr);
             countValid = true;
-        } catch (const std::runtime_error &e) {
+        }
+        catch (const std::runtime_error &e)
+        {
             countValid = false;
 
             otbMsgDevMacro("Invalid band count value: " << countStr);
@@ -416,10 +426,13 @@ std::vector<MACCSResolution> ReadResolutions(const TiXmlElement *el)
     if (auto countStr = el->Attribute("count")) {
         size_t count;
         bool countValid;
-        try {
+        try
+        {
             count = std::stoi(countStr);
             countValid = true;
-        } catch (const std::runtime_error &e) {
+        }
+        catch (const std::runtime_error &e)
+        {
             countValid = false;
 
             otbMsgDevMacro("Invalid resolution count value: " << countStr);
@@ -527,10 +540,13 @@ std::vector<MACCSAnnexInformation> ReadAnnexes(const TiXmlElement *el)
     if (auto countStr = el->Attribute("count")) {
         size_t count;
         bool countValid;
-        try {
+        try
+        {
             count = std::stoi(countStr);
             countValid = true;
-        } catch (const std::runtime_error &e) {
+        }
+        catch (const std::runtime_error &e)
+        {
             countValid = false;
 
             otbMsgDevMacro("Invalid annex count value: " << countStr);
@@ -548,6 +564,80 @@ std::vector<MACCSAnnexInformation> ReadAnnexes(const TiXmlElement *el)
     }
 
     return result;
+}
+
+static std::string dirname(const std::string &path)
+{
+    std::vector<char> buf(std::begin(path), std::end(path));
+    return ::dirname(buf.data());
+}
+
+static std::string basename(const std::string &path)
+{
+    std::vector<char> buf(std::begin(path), std::end(path));
+    return ::basename(buf.data());
+}
+
+static void FixProductOrganization(MACCSProductOrganization &po)
+{
+    auto foundSRE = false;
+    auto foundSRE_R1 = false;
+    auto foundSRE_R2 = false;
+    auto foundFRE = false;
+    auto foundFRE_R1 = false;
+    auto foundFRE_R2 = false;
+
+    std::string dir;
+    std::string name;
+    const auto &compareSuffix = [](
+        const std::string &name, const std::string &suffix, bool &found, std::string &rest) {
+        if (ends_with(name, suffix)) {
+            found = true;
+            if (rest.empty()) {
+                rest = name.substr(0, name.length() - suffix.length());
+            }
+            return true;
+        }
+
+        return false;
+    };
+
+    for (const auto &file : po.ImageFiles) {
+        if (compareSuffix(file.LogicalName, "_SRE", foundSRE, name) ||
+            compareSuffix(file.LogicalName, "_SRE_R1", foundSRE_R1, name) ||
+            compareSuffix(file.LogicalName, "_SRE_R2", foundSRE_R2, name) ||
+            compareSuffix(file.LogicalName, "_FRE", foundFRE, name) ||
+            compareSuffix(file.LogicalName, "_FRE_R1", foundFRE_R1, name) ||
+            compareSuffix(file.LogicalName, "_FRE_R2", foundFRE_R2, name)) {
+            if (dir.empty()) {
+                dir = dirname(file.FileLocation);
+            }
+        }
+    }
+
+    const auto addImageFile = [&po, &dir, &name](const std::string &nature,
+                                                 const std::string &suffix) {
+        const auto &logicalName = name + suffix;
+        po.ImageFiles.emplace_back(
+            MACCSFileInformation{ nature, dir + "/" + logicalName + ".HDR", logicalName });
+    };
+
+    if (!foundSRE) {
+        if (!foundSRE_R1) {
+            addImageFile("SSC_PDTIMG", "_SRE_R1");
+            if (!foundSRE_R2) {
+                addImageFile("SSC_PDTIMG", "_SRE_R2");
+            }
+        }
+    }
+    if (!foundFRE) {
+        if (!foundFRE_R1) {
+            addImageFile("SSC_PDTIMG", "_FRE_R1");
+        }
+        if (!foundFRE_R2) {
+            addImageFile("SSC_PDTIMG", "_FRE_R2");
+        }
+    }
 }
 
 MACCSProductOrganization ReadProductOrganization(const TiXmlElement *el)
@@ -571,6 +661,8 @@ MACCSProductOrganization ReadProductOrganization(const TiXmlElement *el)
     }
 
     result.AnnexFiles = ReadAnnexes(el->FirstChildElement("List_of_Annex_Files"));
+
+    FixProductOrganization(result);
 
     return result;
 }

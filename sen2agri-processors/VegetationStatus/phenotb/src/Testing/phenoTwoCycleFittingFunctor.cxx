@@ -57,13 +57,15 @@ int phenoTwoCycleFittingFunctor(int argc, char * argv[])
   for(size_t i=0; i<nb_dates; i++)
     {
     std::tm dd;
-    dd.tm_hour = dd.tm_min = dd.tm_sec = 0;
+    dd.tm_hour = dd.tm_min = dd.tm_sec = dd.tm_isdst = 0;
     dd.tm_year = 2012;
     dd.tm_mon = static_cast<unsigned int>((12*i)/nb_dates);
-    dd.tm_mday = static_cast<unsigned int>((28*i)/nb_dates) ;
+    dd.tm_mday = 1 + static_cast<unsigned int>((28*i)/nb_dates) ;
     dv[i] = dd;
-    ddv[i] = pheno::doy(dd);
     }
+
+  const auto &days = pheno::tm_to_doy_list(dv);
+  std::copy(std::begin(days), std::end(days), std::begin(ddv));
 
   auto tmpres = pheno::normalized_sigmoid::F(ddv, x_1)*(mm1.second-mm1.first)+mm1.first
     + pheno::normalized_sigmoid::F(ddv, x_2)*(mm2.second-mm2.first)+mm2.first;
@@ -105,8 +107,3 @@ int phenoTwoCycleFittingFunctor(int argc, char * argv[])
     }
   return EXIT_SUCCESS;
 }
-
-
-
-    
-  

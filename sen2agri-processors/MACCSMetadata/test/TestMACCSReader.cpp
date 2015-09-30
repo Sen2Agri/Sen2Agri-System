@@ -4,6 +4,7 @@
 #include <boost/test/unit_test.hpp>
 
 #include "MACCSMetadataReader.hpp"
+#include "ViewingAngles.hpp"
 
 BOOST_AUTO_TEST_CASE(MACCSReader)
 {
@@ -157,6 +158,21 @@ BOOST_AUTO_TEST_CASE(MACCSReader)
                       8.612239); // HACK fp precision
     BOOST_CHECK(std::isnan(m->ProductInformation.ViewingAngles[0].Angles.Zenith.Values[0][5]));
 
+    const auto &viewingAngles = ComputeViewingAngles(m->ProductInformation.ViewingAngles);
+    BOOST_CHECK_EQUAL(viewingAngles.size(), 13);
+    BOOST_CHECK_EQUAL(viewingAngles[0].BandId, "0");
+    BOOST_CHECK_EQUAL(viewingAngles[12].BandId, "12");
+    BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Zenith.ColumnUnit, "m");
+    BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Zenith.ColumnStep, "5000");
+    BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Zenith.RowUnit, "m");
+    BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Zenith.RowStep, "5000");
+    BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Azimuth.ColumnUnit, "m");
+    BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Azimuth.ColumnStep, "5000");
+    BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Azimuth.RowUnit, "m");
+    BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Azimuth.RowStep, "5000");
+    BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Azimuth.Values[0][0], 119.857036);
+    BOOST_CHECK_EQUAL(viewingAngles[0].Angles.Zenith.Values[0][0], 8.900153);
+
     BOOST_CHECK_EQUAL(m->ProductInformation.ReflectanceQuantificationValue, "0.000683994528");
 
     BOOST_CHECK_EQUAL(m->ImageInformation.Resolutions.size(), 2);
@@ -208,7 +224,7 @@ BOOST_AUTO_TEST_CASE(MACCSReader)
     BOOST_CHECK_EQUAL(m->ImageInformation.Resolutions[1].Bands[5].Id, "6");
     BOOST_CHECK_EQUAL(m->ImageInformation.Resolutions[1].Bands[5].Name, "B12");
 
-    BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles.size(), 3);
+    BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles.size(), 4);
     BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles[0].Nature, "SSC_PDTIMG");
     BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles[0].FileLocation,
                       "./S2A_OPER_SSC_L2VALD_15SVD____20091211.DBL.DIR/"
@@ -227,6 +243,12 @@ BOOST_AUTO_TEST_CASE(MACCSReader)
                       "S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_SRE_R1.HDR");
     BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles[2].LogicalName,
                       "S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_SRE_R1");
+    BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles[3].Nature, "SSC_PDTIMG");
+    BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles[3].FileLocation,
+                      "./S2A_OPER_SSC_L2VALD_15SVD____20091211.DBL.DIR/"
+                      "S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_FRE_R1.HDR");
+    BOOST_CHECK_EQUAL(m->ProductOrganization.ImageFiles[3].LogicalName,
+                      "S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_FRE_R1");
 
     BOOST_CHECK_EQUAL(m->ProductOrganization.QuickLookFiles.size(), 1);
     BOOST_CHECK_EQUAL(m->ProductOrganization.QuickLookFiles[0].Nature, "SSC_PDTQLK");

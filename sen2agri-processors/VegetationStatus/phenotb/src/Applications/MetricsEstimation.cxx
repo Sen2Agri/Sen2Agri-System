@@ -76,17 +76,25 @@ public:
     auto x_hat = std::get<0>(princ_cycle);
 */
 
-    TOutput result(6);
-
+    TOutput result(6);    
+    TInput1 A2(A.Size());
+    result.Fill(NO_DATA);
+    size_t j = 0;
     for(size_t i = 0; i < A.Size(); i++) {
-        if(fabs(A[i] - NO_DATA) < EPSILON)
-            result.Fill(NO_DATA);
-        return result;
+        if(fabs(A[i] - NO_DATA) >= EPSILON) {
+        //if(A[i] >= 0) {
+            A2[j++] = A[i] / 10000;
+        }
     }
+    if(j == 0)
+        return result;
+    if(j != A.Size())
+        A2.SetSize(j);
+
 
     double dgx0, t0, t1, t2, t3, dgx2;
     std::tie(dgx0, t0, t1, t2, t3, dgx2) =
-        pheno::normalized_sigmoid::pheno_metrics<double>(A);
+        pheno::normalized_sigmoid::pheno_metrics<double>(A2);
 
 
     result[0] = dgx0;
