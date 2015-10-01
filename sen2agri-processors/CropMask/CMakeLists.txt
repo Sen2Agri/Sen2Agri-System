@@ -7,4 +7,6 @@ add_subdirectory(SpectralFeatures)
 add_subdirectory(PrincipalComponentAnalysis)
 add_subdirectory(MeanShiftSegmentation)
 add_subdirectory(MajorityVoting)
+add_subdirectory(RandomForestTraining)
+
 
