@@ -79,7 +79,6 @@ private:
         SetDocSeeAlso(" ");
         AddDocTag(Tags::Vector);
 
-        AddParameter(ParameterType_InputImage, "in", "L2A input product");
         AddParameter(ParameterType_Int, "res", "The resolution to be processed");
         SetDefaultParameterInt("res", -1);
         MandatoryOff("res");
