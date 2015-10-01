@@ -14,6 +14,16 @@ DirectionalCorrectionFunctor<TInput,TOutput>& DirectionalCorrectionFunctor<TInpu
     this->m_ScatteringCoeffs = copy.m_ScatteringCoeffs;
     m_nReflBandsCount = copy.m_nReflBandsCount;
 
+    m_nCloudMaskBandIndex = copy.m_nCloudMaskBandIndex;
+    m_nSnowMaskBandIndex = copy.m_nSnowMaskBandIndex;
+    m_nWaterMaskBandIndex = copy.m_nWaterMaskBandIndex;
+    m_nNdviBandIdx = copy.m_nNdviBandIdx;
+    m_nSunAnglesBandStartIdx = copy.m_nSunAnglesBandStartIdx;
+    m_nSensoAnglesBandStartIdx = copy.m_nSensoAnglesBandStartIdx;
+
+    m_fReflQuantifValue = copy.m_fReflQuantifValue;
+    m_fReflNoDataValue = copy.m_fReflNoDataValue;
+
     return *this;
 }
 
