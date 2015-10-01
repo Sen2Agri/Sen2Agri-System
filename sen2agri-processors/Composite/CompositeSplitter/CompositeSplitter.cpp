@@ -273,7 +273,7 @@ private:
 
         m_FlagsConcat = ImageListToVectorImageFilterType::New();
         m_FlagsConcat->SetInput(m_FlagsList);
-        SetParameterOutputImagePixelType("outflags", ImagePixelType_int16);
+        SetParameterOutputImagePixelType("outflags", ImagePixelType_uint8);
         SetParameterOutputImage("outflags", m_FlagsConcat->GetOutput());
         return;
     }
