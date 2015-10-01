@@ -5,7 +5,7 @@ UpdateSynthesisFunctor<TInput,TOutput>::UpdateSynthesisFunctor()
 {
     m_sensorType = SENSOR_LANDSAT8;
     m_resolution = RES_10M;
-    m_fQuantificationValue = -1;
+    m_fReflQuantifValue = -1;
     m_nCurrentDate = 0;
     m_bPrevL3ABandsAvailable = false;
     m_nNbOfL3AReflectanceBands = 0;
@@ -25,6 +25,8 @@ UpdateSynthesisFunctor<TInput,TOutput>::UpdateSynthesisFunctor()
 
     m_bMissingL3ABands = false;
     m_nRealNbOfL3AReflectanceBands = 0;
+
+    m_fReflNoDataValue = -10.0;
 }
 
 template< class TInput, class TOutput>
@@ -32,7 +34,7 @@ UpdateSynthesisFunctor<TInput,TOutput>& UpdateSynthesisFunctor<TInput,TOutput>::
 {
     m_sensorType = copy.m_sensorType;
     m_resolution = copy.m_resolution;
-    m_fQuantificationValue = copy.m_fQuantificationValue;
+    m_fReflQuantifValue = copy.m_fReflQuantifValue;
     m_nCurrentDate = copy.m_nCurrentDate;
     m_bPrevL3ABandsAvailable = copy.m_bPrevL3ABandsAvailable;
     m_nNbOfL3AReflectanceBands = copy.m_nNbOfL3AReflectanceBands;
@@ -53,20 +55,23 @@ UpdateSynthesisFunctor<TInput,TOutput>& UpdateSynthesisFunctor<TInput,TOutput>::
     m_bMissingL3ABands = copy.m_bMissingL3ABands;
     m_nRealNbOfL3AReflectanceBands = copy.m_nRealNbOfL3AReflectanceBands;
 
+    m_fReflNoDataValue = copy.m_fReflNoDataValue;
+
     return *this;
 }
 
 template< class TInput, class TOutput>
 void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(SensorType sensorType, ResolutionType resolution,
-                                                        bool bPrevL3ABandsAvailable, int nDate, float fQuantifVal,
+                                                        bool bPrevL3ABandsAvailable, int nDate, float fReflQuantifVal,
                                                         bool bAllInOne, bool bMissingL3ABands)
 {
     m_nCurrentDate = nDate;
-    m_fQuantificationValue = fQuantifVal;
+    m_fReflQuantifValue = fReflQuantifVal;
     m_sensorType = sensorType;
     m_resolution = resolution;
     m_bPrevL3ABandsAvailable = bPrevL3ABandsAvailable;
     m_bMissingL3ABands = bMissingL3ABands;
+    m_fReflNoDataValue = NO_DATA/m_fReflQuantifValue;
     if(bAllInOne) {
         // in this case we do not care about resolution as we have the same number of bands both for 10m and 20m resolutions
         InitAllBandInResolutionInfos(sensorType);
@@ -387,19 +392,19 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
         if(outInfos.m_CurrentPixelWeights[i] < 0) {
             outInfos.m_CurrentPixelWeights[i] = WEIGHT_NO_DATA;
         }
-        var[cnt++] = short(outInfos.m_CurrentPixelWeights[i] * m_fQuantificationValue);
+        var[cnt++] = short(outInfos.m_CurrentPixelWeights[i] * WEIGHT_QUANTIF_VALUE);
     }
     // Weighted Average Date L3A
-    var[cnt++] = short(outInfos.m_fCurrentPixelWeightedDate * m_fQuantificationValue);
+    var[cnt++] = short(outInfos.m_fCurrentPixelWeightedDate * DATE_QUANTIF_VALUE);
     // Weight for B2 for L3A
     for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
         // Normalize the values
         if(outInfos.m_CurrentWeightedReflectances[i] < 0) {
-            outInfos.m_CurrentWeightedReflectances[i] = REFLECTANCE_NO_DATA;
+            outInfos.m_CurrentWeightedReflectances[i] = m_fReflNoDataValue;
         }
         // we save back the pixel value but as digital value and not as reflectance
-        var[cnt++] = short(outInfos.m_CurrentWeightedReflectances[i] * m_fQuantificationValue);
+        var[cnt++] = short(outInfos.m_CurrentWeightedReflectances[i] * m_fReflQuantifValue);
         //var[cnt++] = outInfos.m_CurrentWeightedReflectances[i];
     }
     // Pixel status
@@ -435,17 +440,17 @@ int UpdateSynthesisFunctor<TInput,TOutput>::GetAbsoluteL2ABandIndex(int index)
 template< class TInput, class TOutput>
 float UpdateSynthesisFunctor<TInput,TOutput>::GetL2AReflectanceForPixelVal(float fPixelVal)
 {
-    return (fPixelVal/m_fQuantificationValue);
+    return (fPixelVal/m_fReflQuantifValue);
 }
 
 template< class TInput, class TOutput>
 void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, OutFunctorInfos& outInfos)
 {
+    outInfos.m_nCurrentPixelFlag = LAND;
+
     // we assume that the reflectance bands start from index 0
     for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
     {
-        outInfos.m_nCurrentPixelFlag = LAND;
-
         // we will always have as output the number of reflectances equal or greater than
         // the number of bands in the current L2A raster for the current resolution
         int nCurrentBandIndex = GetAbsoluteL2ABandIndex(i);
@@ -458,8 +463,8 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, O
             float fCurrentWeight = GetCurrentL2AWeightValue(A);
             float fPrevWeightedDate = GetPrevL3AWeightedAvDateValue(A);
 
-            bool bIsPrevReflNoData = IsNoDataValue(fPrevReflect, REFLECTANCE_NO_DATA);
-            bool bIsCurReflNoData = IsNoDataValue(fCurReflectance, REFLECTANCE_NO_DATA);
+            bool bIsPrevReflNoData = IsNoDataValue(fPrevReflect, m_fReflNoDataValue);
+            bool bIsCurReflNoData = IsNoDataValue(fCurReflectance, m_fReflNoDataValue);
 
             if((bIsPrevReflNoData == false) && (bIsCurReflNoData == false)
                     && !IsNoDataValue(fPrevWeight, WEIGHT_NO_DATA)
@@ -570,7 +575,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                     outInfos.m_nCurrentPixelFlag = CLOUD;
                 }
             } else {
-                outInfos.m_CurrentWeightedReflectances[i] = REFLECTANCE_NO_DATA;
+                outInfos.m_CurrentWeightedReflectances[i] = m_fReflNoDataValue;
                 float fPrevWeight = GetPrevL3AWeightValue(A, i);
                 if(IsNoDataValue(fPrevWeight, WEIGHT_NO_DATA)) {
                     outInfos.m_CurrentPixelWeights[i] = WEIGHT_NO_DATA; // TODO: This is not conform to ATBD but seems more natural
@@ -700,13 +705,13 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AWeightValue(const TInput
         // If we have missing L3A bands in input, then we need to recompute the relative offset
         int relIdx = m_arrL2ABandPresence[offset];
         if(relIdx != -1) {
-            return (static_cast<float>(A[m_nPrevL3AWeightBandStartIndex+relIdx]) / m_fQuantificationValue);
+            return (static_cast<float>(A[m_nPrevL3AWeightBandStartIndex+relIdx]) / WEIGHT_QUANTIF_VALUE);
         }
         return WEIGHT_NO_DATA;
     }
 
     // we have all L3A bands in our product, so we use the existing offset.
-    return (static_cast<float>(A[m_nPrevL3AWeightBandStartIndex+offset]) / m_fQuantificationValue);
+    return (static_cast<float>(A[m_nPrevL3AWeightBandStartIndex+offset]) / WEIGHT_QUANTIF_VALUE);
 }
 
 template< class TInput, class TOutput>
@@ -715,27 +720,27 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AWeightedAvDateValue(cons
     if(!m_bPrevL3ABandsAvailable || m_nPrevL3AWeightedAvDateBandIndex == -1)
         return DATE_NO_DATA;
 
-    return (static_cast<float>(A[m_nPrevL3AWeightedAvDateBandIndex]) / m_fQuantificationValue);
+    return (static_cast<float>(A[m_nPrevL3AWeightedAvDateBandIndex]) / DATE_QUANTIF_VALUE);
 }
 
 template< class TInput, class TOutput>
 float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AReflectanceValue(const TInput & A, int offset)
 {
     if(!m_bPrevL3ABandsAvailable || m_nPrevL3AReflectanceBandStartIndex == -1)
-        return REFLECTANCE_NO_DATA;
+        return m_fReflNoDataValue;
 
     // the L3A bands presence follow the L2A bands presence.
     if(m_bMissingL3ABands) {
         // If we have missing L3A bands in input, then we need to recompute the relative offset
         int relIdx = m_arrL2ABandPresence[offset];
         if(relIdx != -1) {
-            return static_cast<float>(A[m_nPrevL3AReflectanceBandStartIndex + relIdx])/m_fQuantificationValue;
+            return static_cast<float>(A[m_nPrevL3AReflectanceBandStartIndex + relIdx])/m_fReflQuantifValue;
         }
-        return REFLECTANCE_NO_DATA;
+        return m_fReflNoDataValue;
     }
 
     // we have all L3A bands in our product, so we use the existing offset.
-    return static_cast<float>(A[m_nPrevL3AReflectanceBandStartIndex + offset])/m_fQuantificationValue;
+    return static_cast<float>(A[m_nPrevL3AReflectanceBandStartIndex + offset])/m_fReflQuantifValue;
 }
 
 template< class TInput, class TOutput>

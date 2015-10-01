@@ -2,7 +2,8 @@ set(MetadataHelper_HEADERS
     MACCSMetadataHelper.h
     MetadataHelperFactory.h
     MetadataHelper.h
-    Spot4MetadataHelper.h)
+    Spot4MetadataHelper.h
+    GlobalDefs.h)
 
 set(MetadataHelper_SOURCES
     MetadataHelper.cpp

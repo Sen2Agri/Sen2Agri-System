@@ -31,11 +31,11 @@ namespace Wrapper
 {
 
 
-class ClassLabelImageRegularization : public Application
+class MajorityVoting : public Application
 {
 public:
   /** Standard class typedefs. */
-  typedef ClassLabelImageRegularization 	Self;
+  typedef MajorityVoting                    Self;
   typedef Application                   	Superclass;
   typedef itk::SmartPointer<Self>       	Pointer;
   typedef itk::SmartPointer<const Self> 	ConstPointer;
@@ -57,7 +57,7 @@ public:
 private:
   void DoInit()
   {
-    SetName("ClassLabelImageRegularization");
+    SetName("MajorityVoting");
     SetDescription("Perform classification regularization using a segmentation");
 
     // Documentation
@@ -143,4 +143,4 @@ private:
 }
 }
 
-OTB_APPLICATION_EXPORT(otb::Wrapper::ClassLabelImageRegularization)
+OTB_APPLICATION_EXPORT(otb::Wrapper::MajorityVoting)

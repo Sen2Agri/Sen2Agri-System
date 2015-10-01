@@ -8,7 +8,58 @@
 #include "otbBandMathImageFilter.h"
 #include "otbMultiToMonoChannelExtractROI.h"
 #include "otbObjectList.h"
+#include "itkUnaryFunctorImageFilter.h"
 
+
+namespace Functor
+{
+template< class TInput, class TOutput>
+class AotWeightCalculationFunctor
+{
+public:
+    AotWeightCalculationFunctor() {}
+    ~AotWeightCalculationFunctor() {}
+  bool operator!=( const AotWeightCalculationFunctor & ) const
+    {
+    return false;
+    }
+  bool operator==( const AotWeightCalculationFunctor & other ) const
+    {
+    return !(*this != other);
+    }
+  void Initialize(int nBand, float fQuantif, int nAotMax, float fMinWeight, float fMaxWeight) {
+      m_nBand = nBand;
+      m_fAotQuantificationVal = fQuantif;
+      m_nAotMax = nAotMax;
+      m_fMinWeightAot = fMinWeight;
+      m_fMaxWeightAot = fMaxWeight;
+  }
+
+  inline TOutput operator()( const TInput & A ) const
+  {
+      float val = static_cast< float >( A[m_nBand] )/m_fAotQuantificationVal;
+      if(val < 0) {
+          return -10000;
+      }
+
+      float fRetAOT;
+      if(val <= m_nAotMax) {
+          fRetAOT = m_fMinWeightAot + (m_fMaxWeightAot - m_fMinWeightAot) * (1.0 - val/m_nAotMax);
+      } else {
+          fRetAOT = m_fMinWeightAot;
+      }
+
+      return fRetAOT;
+  }
+
+private:
+  int m_nBand;
+  float m_fAotQuantificationVal;
+  int m_nAotMax;
+  float m_fMinWeightAot;
+  float m_fMaxWeightAot;
+};
+}
 
 class WeightOnAOT
 {
@@ -21,12 +72,11 @@ public:
     typedef otb::ImageFileReader<ImageType> ReaderType;
     typedef otb::ImageFileWriter<OutImageType> WriterType;
 
-    typedef otb::MultiToMonoChannelExtractROI<ImageType::InternalPixelType,
-                       otb::Wrapper::FloatImageType::PixelType>    ExtractROIFilterType;
-    typedef otb::ObjectList<ExtractROIFilterType>                  ExtractROIFilterListType;
-    typedef otb::BandMathImageFilter<otb::Wrapper::FloatImageType>  BandMathImageFilterType;
-
-    typedef BandMathImageFilterType::Superclass::Superclass::Superclass OutImageSource;
+    typedef itk::UnaryFunctorImageFilter<ImageType,OutImageType,
+                    Functor::AotWeightCalculationFunctor<
+                        ImageType::PixelType,
+                        OutImageType::PixelType> > FilterType;
+    typedef FilterType::Superclass::Superclass::Superclass OutImageSource;
 
 public:
     WeightOnAOT();
@@ -35,13 +85,9 @@ public:
     void SetInputImageReader(ImageSource::Pointer inputReader);
     void SetOutputFileName(std::string &outFile);
 
-    void SetBand(int band);
-    void SetAotQuantificationValue(float fQuantifVal);
-    void SetAotMaxValue(int nMaxAot);
-    void SetMinAotWeight(float fMinWeightAot);
-    void SetMaxAotWeight(float fMaxWeightAot);
+    void Initialize(int nBand, float fQuantif, int nAotMax, float fMinWeight, float fMaxWeight);
 
-    const char *GetNameOfClass() { return "CloudMaskBinarization";}
+    const char *GetNameOfClass() { return "WeightOnAOT";}
     OutImageSource::Pointer GetOutputImageSource();
     int GetInputImageResolution();
 
@@ -51,15 +97,14 @@ private:
     void BuildOutputImageSource();
     ImageSource::Pointer m_inputReader;
     std::string m_outputFileName;
-    ExtractROIFilterType::Pointer     m_ExtractROIFilter;
-    ExtractROIFilterListType::Pointer m_ChannelExtractorList;
-    BandMathImageFilterType::Pointer  m_Filter;
 
     int m_nBand;
     float m_fAotQuantificationVal;
     int m_nAotMax;
     float m_fMinWeightAot;
     float m_fMaxWeightAot;
+
+    FilterType::Pointer m_filter;
 };
 
 #endif // WEIGHTONAOT_H

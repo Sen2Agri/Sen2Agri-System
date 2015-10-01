@@ -1,18 +1,20 @@
-#ifndef UPDATESYNTHESIS_H
-#define UPDATESYNTHESIS_H
+#ifndef UPDATESYNTHESISFUNCTOR_H
+#define UPDATESYNTHESISFUNCTOR_H
 
 #include "BandsDefs.h"
 
 typedef enum {SENSOR_S2, SENSOR_LANDSAT8, SENSOR_SPOT4} SensorType;
 typedef enum {RES_10M, RES_20M} ResolutionType;
 
-typedef enum {LAND=1, WATER,SNOW,CLOUD,CLOUD_SHADOW} FlagType;
+typedef enum {FLAG_NO_DATA=0, CLOUD=1, SNOW=2, WATER=3, LAND=4, CLOUD_SHADOW=5} FlagType;
 
-#define FLAG_NO_DATA -10000
-#define DATE_NO_DATA -10.0f
-#define REFLECTANCE_NO_DATA -10.0f
-#define WEIGHT_NO_DATA -10.0f
-#define NO_DATA_EPSILON 0.00001f
+#define DATE_QUANTIF_VALUE      10000
+#define WEIGHT_QUANTIF_VALUE    10000
+
+#define NO_DATA                 -10000
+#define DATE_NO_DATA            (NO_DATA/DATE_QUANTIF_VALUE)
+#define WEIGHT_NO_DATA          (NO_DATA/WEIGHT_QUANTIF_VALUE)      //  NO_DATA / WEIGHT_QUANTIF_VALUE
+#define NO_DATA_EPSILON         0.00001f    //
 
 class OutFunctorInfos
 {
@@ -33,7 +35,7 @@ public:
     bool operator==( const UpdateSynthesisFunctor & other ) const;
     TOutput operator()( const TInput & A );
     void Initialize(SensorType sensorType, ResolutionType resolution, bool bPrevL3ABandsAvailable,
-                    int nDate, float fQuantifVal, bool bAllInOne = false, bool bMissingL3ABands = false);
+                    int nDate, float fReflQuantifVal, bool bAllInOne = false, bool bMissingL3ABands = false);
     int GetNbOfL3AReflectanceBands() { return m_nNbOfL3AReflectanceBands; }
     int GetNbOfOutputComponents() { return 2*m_nNbOfL3AReflectanceBands+2;}
 
@@ -65,7 +67,7 @@ private:
     SensorType m_sensorType;
     ResolutionType m_resolution;
 
-    float m_fQuantificationValue;
+    float m_fReflQuantifValue;
     int m_nCurrentDate;
 
     bool m_bPrevL3ABandsAvailable;
@@ -93,8 +95,11 @@ private:
     int m_nRedBandIndex;
     int m_nBlueBandIndex;
 
+    // precomputed value for the reflectance no data (in order to avoid its calculation each pixel)
+    float m_fReflNoDataValue;
+
 };
 
 #include "UpdateSynthesisFunctor.txx"
 
-#endif // UPDATESYNTHESIS_H
+#endif // UPDATESYNTHESISFUNCTOR_H

@@ -6,4 +6,5 @@ add_subdirectory(ResampleAtS2Res)
 add_subdirectory(SpotMaskHandler)
 add_subdirectory(CompositeSplitter)
 add_subdirectory(CreateS2AnglesRaster)
+add_subdirectory(DirectionalCorrection)
 
