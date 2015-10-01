@@ -15,11 +15,11 @@ REPROCESSED_FILE="$OUT_FOLDER/ReprocessedFilesList.txt"
 while read line           
 do           
     echo "Zipping file $line as "$line".zip"
-    zip $line".zip" $line
+    zip -j $line".zip" $line
 done <$FITTED_FILE    
 
 while read line           
 do  
     echo "Zipping file $line as "$line".zip"         
-    zip $line".zip" $line
+    zip -j $line".zip" $line
 done <$REPROCESSED_FILE    
