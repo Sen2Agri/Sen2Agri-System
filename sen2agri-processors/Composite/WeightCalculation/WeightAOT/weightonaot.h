@@ -38,6 +38,10 @@ public:
   inline TOutput operator()( const TInput & A ) const
   {
       float val = static_cast< float >( A[m_nBand] )/m_fAotQuantificationVal;
+      if(val < 0) {
+          return -10000;
+      }
+
       float fRetAOT;
       if(val <= m_nAotMax) {
           fRetAOT = m_fMinWeightAot + (m_fMaxWeightAot - m_fMinWeightAot) * (1.0 - val/m_nAotMax);
