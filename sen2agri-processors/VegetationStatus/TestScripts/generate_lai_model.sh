@@ -98,6 +98,29 @@ echo "AZIMUTH ANGLE reduced from $RELATIVE_AZIMUTH_ANGLE to $REL_AZIMUTH_REDUCED
 OUT_MODEL_FILE="$OUT_FOLDER/Model_THETA_S_"$SOLAR_ZENITH_REDUCED"_THETA_V_"$SENSOR_ZENITH_REDUCED"_REL_PHI_"$REL_AZIMUTH_REDUCED".txt"
 OUT_ERR_EST_FILE="$OUT_FOLDER/Err_Est_Model_THETA_S_"$SOLAR_ZENITH_REDUCED"_THETA_V_"$SENSOR_ZENITH_REDUCED"_REL_PHI_"$REL_AZIMUTH_REDUCED".txt"
 
+PARAMS_TXT="$OUT_FOLDER/generate_lai_model_params.txt"
+rm -fr $PARAMS_TXT
+touch $PARAMS_TXT
+
+echo "BVInputVariableGeneration" >> $PARAMS_TXT
+echo "    Number of generated samples   = $GENERATED_SAMPLES_NO" >> $PARAMS_TXT
+echo "ProSailSimulator" >> $PARAMS_TXT
+echo "    RSR file                      = $RSR_FILE" >> $PARAMS_TXT
+echo "    Solar zenith angle            = $SOLAR_ZENITH_ANGLE" >> $PARAMS_TXT
+echo "    Sensor zenith angle           = $SENSOR_ZENITH_ANGLE" >> $PARAMS_TXT
+echo "    Relative azimuth angle        = $RELATIVE_AZIMUTH_ANGLE" >> $PARAMS_TXT
+echo "TrainingDataGenerator" >> $PARAMS_TXT
+echo "    BV Index                      = $BV_IDX" >> $PARAMS_TXT
+echo "    Add reflectances              = $ADD_REFLS" >> $PARAMS_TXT
+echo "    RED Band Index                = $RED_INDEX" >> $PARAMS_TXT
+echo "    NIR Band Index                = $NIR_INDEX" >> $PARAMS_TXT
+echo "Inverse model generation (InverseModelLearning)" >> $PARAMS_TXT
+echo "    Regression type               = $REGRESSION_TYPE" >> $PARAMS_TXT
+echo "    Best of                       = $BEST_OF" >> $PARAMS_TXT
+echo "    Generated model file name     = $OUT_MODEL_FILE" >> $PARAMS_TXT
+echo "    Generated error estimation model file name = $OUT_ERR_EST_FILE" >> $PARAMS_TXT
+echo " " >> $PARAMS_TXT
+
 #generating Input BV Distribution file
 echo "Generating Input BV Distribution file ..."
 try otbcli BVInputVariableGeneration $IMG_INV_OTB_LIBS_ROOT -samples $GENERATED_SAMPLES_NO -out $OUT_GENERATED_SAMPLE_FILE
@@ -112,4 +135,6 @@ try otbcli TrainingDataGenerator $IMG_INV_OTB_LIBS_ROOT -biovarsfile $OUT_GENERA
 
 # Generating model
 echo "Generating model ..."
-try otbcli InverseModelLearning $IMG_INV_OTB_LIBS_ROOT -training $OUT_TRAINING_FILE -out $OUT_MODEL_FILE -errest $OUT_ERR_EST_FILE -regression "nn" -bestof 1
+try otbcli InverseModelLearning $IMG_INV_OTB_LIBS_ROOT -training $OUT_TRAINING_FILE -out $OUT_MODEL_FILE -errest $OUT_ERR_EST_FILE -regression $REGRESSION_TYPE -bestof $BEST_OF
+
+
