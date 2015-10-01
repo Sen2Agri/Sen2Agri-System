@@ -302,14 +302,14 @@ private:
         int height = atoi(meta->ImageInformation.Size.Lines.c_str());
         if(width == 0 || height == 0)
             itkExceptionMacro("The read width/height from the resolution metadata file is/are 0");
-        //createResampler(m_AnglesRaster, width, height);
-        createResampler(m_AnglesRaster, 23, 10980);
+        createResampler(m_AnglesRaster, width, height);
+
         if(m_Resampler)
             SetParameterOutputImage("out" , m_Resampler->GetOutput() );
         else
             itkExceptionMacro("Could not resample !");
     }
-#if(0)
+
     void createResampler(const OutputImageType::Pointer& image, const int wantedWidth, const int wantedHeight) {
 
          m_Resampler = ResampleFilterType::New();
@@ -349,61 +349,7 @@ private:
          recomputedSize[0] = wantedWidth;
          recomputedSize[1] = wantedHeight;
 
-         //std::cerr << recomputedSize[0] << ' ' << recomputedSize[1] << '\n';
-
-
          m_Resampler->SetOutputSize(recomputedSize);
-
-    }
-#endif
-
-    void createResampler(const OutputImageType::Pointer& image, const int curRes, const int wantedRes) {
-         m_Resampler = ResampleFilterType::New();
-         m_Resampler->SetInput(image);
-         if(curRes == wantedRes)
-             return;
-
-//         const float ratio = (float)wantedRes / (float)curRes;
-
-         // Set the interpolator
-         LinearInterpolationType::Pointer interpolator = LinearInterpolationType::New();
-         m_Resampler->SetInterpolator(interpolator);
-
-         IdentityTransformType::Pointer transform = IdentityTransformType::New();
-
-         m_Resampler->SetOutputParametersFromImage( image );
-         // Scale Transform
-         auto sz = image->GetLargestPossibleRegion().GetSize();
-         OutputVectorType scale;
-         scale[0] = (float)sz[0] / wantedRes;
-         scale[1] = (float)sz[1] / wantedRes;
-
-         // Evaluate spacing
-         OutputImageType::SpacingType spacing = image->GetSpacing();
-         OutputImageType::SpacingType OutputSpacing;
-         OutputSpacing[0] = spacing[0] * scale[0];
-         OutputSpacing[1] = spacing[1] * scale[1];
-
-         m_Resampler->SetOutputSpacing(OutputSpacing);
-
-         FloatVectorImageType::PointType origin = image->GetOrigin();
-         FloatVectorImageType::PointType outputOrigin;
-         outputOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale[0] - 1.0);
-         outputOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0);
-
-         m_Resampler->SetOutputOrigin(outputOrigin);
-
-         m_Resampler->SetTransform(transform);
-
-         ResampleFilterType::SizeType recomputedSize;
-         recomputedSize[0] = wantedRes;
-         recomputedSize[1] = wantedRes;
-
-         std::cerr << recomputedSize[0] << ' ' << recomputedSize[1] << '\n';
-
-
-         m_Resampler->SetOutputSize(recomputedSize);
-
     }
 
     // Return the path to a file for which the name end in the ending
