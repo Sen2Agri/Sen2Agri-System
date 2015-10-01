@@ -446,11 +446,11 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetL2AReflectanceForPixelVal(float
 template< class TInput, class TOutput>
 void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, OutFunctorInfos& outInfos)
 {
+    outInfos.m_nCurrentPixelFlag = LAND;
+
     // we assume that the reflectance bands start from index 0
     for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
     {
-        outInfos.m_nCurrentPixelFlag = LAND;
-
         // we will always have as output the number of reflectances equal or greater than
         // the number of bands in the current L2A raster for the current resolution
         int nCurrentBandIndex = GetAbsoluteL2ABandIndex(i);
