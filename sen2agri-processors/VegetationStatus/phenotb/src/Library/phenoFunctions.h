@@ -271,7 +271,7 @@ public:
     
     for(size_t i=0; i<nbDates; i++)
       {
-      vec[i] = pix[i];
+      vec[i] = pix[i] / 10000;
       mv[i] = tmp_mask[i];
       }
 

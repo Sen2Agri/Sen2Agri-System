@@ -217,10 +217,11 @@ private:
         std::string xmlDesc = GetParameterAsString("xml");
         std::vector<char> buf(xmlDesc.begin(), xmlDesc.end());
         m_DirName = std::string(dirname(buf.data()));
+        m_DirName += '/';
         auto meta = maccsMetadataReader->ReadMetadata(xmlDesc);
         // check if it is a sentinel 2 product, otherwise -> exception
         if (meta != nullptr) {
-            if (meta->Header.FixedHeader.Mission.find("SENTINEL-2A") == std::string::npos) {
+            if (meta->Header.FixedHeader.Mission.find("SENTINEL") == std::string::npos) {
                 itkExceptionMacro("Mission is not a SENTINEL !");
             }
         }
@@ -228,10 +229,11 @@ private:
             itkExceptionMacro("Mission is not a SENTINEL !");
 
         std::string imageFile1 = getMACCSRasterFileName(m_DirName, (*meta).ProductOrganization.ImageFiles, "_FRE_R1");
-
+        if(imageFile1.length() <= 0)
+            itkExceptionMacro("Couldn't get the FRE_R1 file name !");
         m_InImage = ImageReaderType::New();
         m_InImage->SetFileName(imageFile1);
-        m_InImage->GetOutput()->UpdateOutputInformation();
+        m_InImage->UpdateOutputInformation();
 
         //inImage->UpdateOutputInformation();
         m_ChannelExtractorList = ExtractROIFilterListType::New();
@@ -241,35 +243,27 @@ private:
 
         m_ImageList->SetInput(m_InImage->GetOutput());
         m_ImageList->UpdateOutputInformation();
+        if(m_InImage->GetOutput()->GetNumberOfComponentsPerPixel() < 4)
+            itkExceptionMacro("The image has less than 4 bands, which is not acceptable for a SENTINEL-S2 product with resolution 10 meters !");
 
-        otbAppLogINFO( << "Input image has "
-                     << m_InImage->GetOutput()->GetNumberOfComponentsPerPixel()
-                     << " components" << std::endl );
-
-        for (unsigned int j = 0; j < m_InImage->GetOutput()->GetNumberOfComponentsPerPixel(); j++)
-        {
-            std::ostringstream tmpParserVarName;
-            tmpParserVarName << "b" << j + 1;
+        unsigned int j = 0;
+        for (j = 0; j < m_InImage->GetOutput()->GetNumberOfComponentsPerPixel(); j++)
             m_Filter->SetNthInput(j, m_ImageList->GetOutput()->GetNthElement(j));
-         }
 
-        //  Now we can define the mathematical expression to perform on the layers (b3, b4).
-        //  The filter takes advantage of the parsing capabilities of the muParser library and
-        //  allows to set the expression as on a digital calculator.
-        //
-        //  The expression below returns 255 if the ratio $(NIR-RED)/(NIR+RED)$ is greater than 0.4 and 0 if not.
-        //
-        // TODO: use information from the xml regarding the bands NIR and RED indexes.
-        std::string idxNIR("B"); idxNIR.append("8");
-        std::string idxRED("B"); idxRED.append("4");
+        // The significance of the bands is:
+        // b1 - G
+        // b2 - R
+        // b3 - NIR
+        // b4 - SWIR
         std::string ndviExpr;
 #ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
-        ndviExpr = " (( " + idxNIR + " - " + idxRED + " )/( " + idxNIR + " + " + idxRED + " ) > 0.4) ? 255 : 0";
+        ndviExpr = "(b3==-10000 || b2==-10000) ? -10000 : (abs(b3+b2)<0.000001) ? 0 : 10000 * (b3-b2)/(b3+b2)";
 #else        
-        ndviExpr = "if((" + idxNIR + "-" + idxRED + ") / (" + idxNIR + "+" + idxRED +") > 0.4, 255, 0)";
+        ndviExpr = "if(b3==-10000 or b2==-10000,-10000,if(abs(b3+b2)<0.000001,0,(b3-b2)/(b3+b2)";
 #endif
 
         m_Filter->SetExpression(ndviExpr);
+        SetParameterOutputImagePixelType("out", ImagePixelType_int16);
 
         SetParameterOutputImage("out" , m_Filter->GetOutput() );
     }

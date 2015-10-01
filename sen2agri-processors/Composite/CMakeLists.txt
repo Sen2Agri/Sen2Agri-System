@@ -5,4 +5,5 @@ add_subdirectory(WeightCalculation)
 add_subdirectory(ResampleAtS2Res)
 add_subdirectory(SpotMaskHandler)
 add_subdirectory(CompositeSplitter)
+add_subdirectory(CreateS2AnglesRaster)
 
