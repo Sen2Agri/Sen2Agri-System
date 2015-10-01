@@ -78,6 +78,9 @@ done
 MODEL_FILE="$OUT_FOLDER/model_file.txt"
 ERR_MODEL_FILE="$OUT_FOLDER/err_model_file.txt"
 
+FITTED_LIST_FILE="$OUT_FOLDER/FittedFilesList.txt"
+REPROCESSED_LIST_FILE="$OUT_FOLDER/ReprocessedFilesList.txt"
+
 #ProfileReprocessing parameters
 ALGO_LOCAL_BWR=2
 ALGO_LOCAL_FWR=0
@@ -135,5 +138,11 @@ try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_ERR_PARAM -out $OUT
 # Compute the reprocessed time series (On-line Retrieval)
 try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_REPROCESSED_TIME_SERIES  -algo local -algo.local.bwr $ALGO_LOCAL_BWR -algo.local.fwr $ALGO_LOCAL_FWR
 
+#split the Reprocessed time series to a number of images
+try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_REPROCESSED_TIME_SERIES -outlist $REPROCESSED_LIST_FILE
+
 # Compute the fitted time series (CSDM Fitting)
 try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_FITTED_TIME_SERIES -algo fit
+
+#split the Fitted time series to a number of images
+try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_FITTED_TIME_SERIES -outlist $FITTED_LIST_FILE
