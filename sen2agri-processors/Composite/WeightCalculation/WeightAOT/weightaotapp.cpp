@@ -115,12 +115,9 @@ private:
     auto pHelper = factory->GetMetadataHelper(
                 inMetadataXml, m_weightOnAot.GetInputImageResolution());
     float fAotQuantificationVal = pHelper->GetAotQuantificationValue();
-    int nBand = pHelper->GetAotBandIndex();
-    m_weightOnAot.SetBand(nBand);
-    m_weightOnAot.SetAotQuantificationValue(fAotQuantificationVal);
-    m_weightOnAot.SetAotMaxValue(nAotMax);
-    m_weightOnAot.SetMinAotWeight(fWaotMin);
-    m_weightOnAot.SetMaxAotWeight(fWaotMax);
+    // the bands in XML are 1 based
+    int nBand = pHelper->GetAotBandIndex()-1;
+    m_weightOnAot.Initialize(nBand, fAotQuantificationVal, nAotMax, fWaotMin, fWaotMax);
 
     // Set the output image
     SetParameterOutputImage("out", m_weightOnAot.GetOutputImageSource()->GetOutput());
