@@ -74,6 +74,11 @@ public:
       fwr = inFwr;
   }
 
+  void SetGenerateAll(bool bGenAll) {
+      m_bGenAll = bGenAll;
+  }
+
+
   inline TOutput operator()(const TInput1 & A,
                             const TInput2 & B) const
   {
@@ -99,16 +104,23 @@ public:
       std::tie(out_bv_vec, out_flag_vec) =
         fit_csdm(date_vect, ts, ets);
     }
-    TOutput result(2*nbBvElems);
-    i = 0;
-    for(i = 0; i < nbBvElems; i++) {
-        result[i] = out_bv_vec[i];
+    if(m_bGenAll) {
+        TOutput result(2*nbBvElems);
+        i = 0;
+        for(i = 0; i < nbBvElems; i++) {
+            result[i] = out_bv_vec[i];
+        }
+        for(int j = 0; j < nbBvElems; j++) {
+            result[i+j] = out_flag_vec[j];
+        }
+        return result;
+    } else {
+        // if not necessary to generate all, then return only the last value
+        TOutput result(2);
+        result[0] = out_bv_vec[nbBvElems-1];
+        result[1] = out_flag_vec[nbBvElems-1];
+        return result;
     }
-    for(int j = 0; j < nbBvElems; j++) {
-        result[i+j] = out_flag_vec[j];
-    }
-
-    return result;
   }
 private:
   // input dates vector
@@ -116,6 +128,7 @@ private:
   ALGO_TYPE algoType;
   size_t bwr;
   size_t fwr;
+  bool m_bGenAll;
 };
 
 class ProfileReprocessing : public Application
@@ -182,8 +195,12 @@ private:
     AddParameter(ParameterType_Int, "algo.local.fwr", "Local window forward radius");
     SetParameterInt("algo.local.fwr", 1);
     SetParameterDescription("algo.local.fwr", "Forward radius of the local window. ");
-
     MandatoryOff("algo");
+
+    AddParameter(ParameterType_Int, "genall", "Generate LAI for all products in the time series, in one product.");
+    MandatoryOff("genall");
+    SetDefaultParameterInt("genall", 0);
+
   }
 
   void DoUpdateParameters()
@@ -242,6 +259,8 @@ private:
           algoType = ALGO_FIT;
       }
 
+      bool bGenerateAll = (GetParameterInt("genall") != 0);
+
       //instantiate a functor with the regressor and pass it to the
       //unary functor image filter pass also the normalization values
       m_profileReprocessingFilter = FilterType::New();
@@ -249,12 +268,18 @@ private:
       m_functor.SetAlgoType(algoType);
       m_functor.SetBwr(bwr);
       m_functor.SetFwr(fwr);
+      m_functor.SetGenerateAll(bGenerateAll);
 
       m_profileReprocessingFilter->SetFunctor(m_functor);
       m_profileReprocessingFilter->SetInput1(lai_image);
       m_profileReprocessingFilter->SetInput2(err_image);
       m_profileReprocessingFilter->UpdateOutputInformation();
-      m_profileReprocessingFilter->GetOutput()->SetNumberOfComponentsPerPixel(nb_lai_bands*2);
+      if(bGenerateAll) {
+        m_profileReprocessingFilter->GetOutput()->SetNumberOfComponentsPerPixel(nb_lai_bands*2);
+      } else {
+          m_profileReprocessingFilter->GetOutput()->SetNumberOfComponentsPerPixel(2);
+      }
+
       SetParameterOutputImage("opf", m_profileReprocessingFilter->GetOutput());
 
   }

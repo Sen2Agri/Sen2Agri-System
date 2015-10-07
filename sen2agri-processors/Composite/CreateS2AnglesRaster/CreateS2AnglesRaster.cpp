@@ -34,7 +34,8 @@
 #include "otbBandMathImageFilter.h"
 #include "otbMultiToMonoChannelExtractROI.h"
 
-#include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
+#include "MACCSMetadataReader.hpp"
+#include "ViewingAngles.hpp"
 
 #include "otbImage.h"
 #include "otbVectorImage.h"
@@ -43,10 +44,18 @@
 #include "itkUnaryFunctorImageFilter.h"
 #include "itkCastImageFilter.h"
 #include "otbVectorImageToImageListFilter.h"
+#include "otbStreamingResampleImageFilter.h"
+//Transform
+#include "itkScalableAffineTransform.h"
+#include "itkIdentityTransform.h"
+#include "itkScaleTransform.h"
+
 #include "itkResampleImageFilter.h"
 #include "itkIndent.h"
 #include <vector>
 #include "libgen.h"
+
+#define ANGLES_GRID_SIZE    23
 
 
 //  Software Guide : EndCodeSnippet
@@ -67,12 +76,12 @@ namespace Wrapper
 
 //  Software Guide : BeginLatex
 //
-//  ComputeNDVI class is derived from Application class.
+//  CreateS2AnglesRaster class is derived from Application class.
 //
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
-class ComputeNDVI : public Application
+class CreateS2AnglesRaster : public Application
 //  Software Guide : EndCodeSnippet
 {
 public:
@@ -81,7 +90,7 @@ public:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-    typedef ComputeNDVI Self;
+    typedef CreateS2AnglesRaster Self;
     typedef Application Superclass;
     typedef itk::SmartPointer<Self> Pointer;
     typedef itk::SmartPointer<const Self> ConstPointer;
@@ -94,18 +103,19 @@ public:
     //  Software Guide : BeginCodeSnippet
     itkNewMacro(Self)
 
-    itkTypeMacro(ComputeNDVI, otb::Application)
+    itkTypeMacro(CreateS2AnglesRaster, otb::Application)
     //  Software Guide : EndCodeSnippet
 
-    typedef short                                     PixelType;
+    typedef float                                     PixelType;
 
-    typedef otb::Image<PixelType, 2>                   OutputImageType;
-    typedef Int16VectorImageType                                 ImageType;
-    typedef otb::ImageFileReader<ImageType>                            ImageReaderType;
+    typedef FloatVectorImageType                  OutputImageType;
+
+    //typedef FloatVectorImageType                                 ImageType;
+    //typedef otb::ImageFileReader<ImageType>                            ImageReaderType;
 
     typedef otb::ImageList<OutputImageType>            ImageListType;
     typedef otb::ImageFileWriter<OutputImageType>      WriterType;
-    typedef otb::VectorImageToImageListFilter<ImageType, ImageListType>    VectorImageToImageListType;
+    //typedef otb::VectorImageToImageListFilter<ImageType, ImageListType>    VectorImageToImageListType;
 
     typedef otb::MultiToMonoChannelExtractROI<FloatVectorImageType::InternalPixelType,
                                               FloatImageType::PixelType>    ExtractROIFilterType;
@@ -122,13 +132,11 @@ private:
     //  Software Guide : EndLatex
 
     typedef itk::MACCSMetadataReader                                   MACCSMetadataReaderType;
-
-
-    ExtractROIFilterType::Pointer     m_ExtractROIFilter;
-    ExtractROIFilterListType::Pointer m_ChannelExtractorList;
-
-    BMFilterType::Pointer  m_Filter;
-    VectorImageToImageListType::Pointer m_ImageList;
+    typedef otb::StreamingResampleImageFilter<OutputImageType, OutputImageType, double>    ResampleFilterType;
+    typedef itk::LinearInterpolateImageFunction<OutputImageType,  double>          LinearInterpolationType;
+    typedef itk::IdentityTransform<double, OutputImageType::ImageDimension>      IdentityTransformType;
+    typedef itk::ScalableAffineTransform<double, OutputImageType::ImageDimension> ScalableTransformType;
+    typedef ScalableTransformType::OutputVectorType                         OutputVectorType;
 
     void DoInit()
     {
@@ -147,10 +155,10 @@ private:
         // Software Guide : EndLatex
 
         //  Software Guide : BeginCodeSnippet
-        SetName("ComputeNDVI");
+        SetName("CreateS2AnglesRaster");
         SetDescription("Computes NDVI from RED and NIR bands");
 
-        SetDocName("ComputeNDVI");
+        SetDocName("CreateS2AnglesRaster");
         SetDocLongDescription("long description");
         SetDocLimitations("None");
         SetDocAuthors("AG");
@@ -175,10 +183,10 @@ private:
         // - out: Vector file containing reference data for training
         // Software Guide : EndLatex
 
-        //  Software Guide : BeginCodeSnippet
-        //AddParameter(ParameterType_InputImage, "in", "Input Image");
+        //  Software Guide : BeginCodeSnippet        
         AddParameter(ParameterType_InputFilename, "xml", "Xml Desc");
 
+        AddParameter(ParameterType_Int, "outres", "Output image resolution");
         AddParameter(ParameterType_OutputImage, "out", "Out Image");
 
 
@@ -191,9 +199,9 @@ private:
         // used to set parameters. Dataset should be located in  \code{OTB-Data/Examples} directory.
         // Software Guide : EndLatex
 
-        //  Software Guide : BeginCodeSnippet
-        //SetDocExampleParameterValue("in", "/path/to/input_image.tif");
+        //  Software Guide : BeginCodeSnippet        
         SetDocExampleParameterValue("xml", "xml_description.xml");
+        SetDocExampleParameterValue("outres", "resolution in meters for output (10, 20 or 30)");
         SetDocExampleParameterValue("out", "/path/to/output_image.tif");
         //SetDocExampleParameterValue("vp", "validation_polygons.shp");
         //  Software Guide : EndCodeSnippet
@@ -214,73 +222,154 @@ private:
     void DoExecute()
     {
        MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
+       m_Resampler = 0;
         std::string xmlDesc = GetParameterAsString("xml");
         std::vector<char> buf(xmlDesc.begin(), xmlDesc.end());
         m_DirName = std::string(dirname(buf.data()));
         m_DirName += '/';
         auto meta = maccsMetadataReader->ReadMetadata(xmlDesc);
         // check if it is a sentinel 2 product, otherwise -> exception
-        if (meta != nullptr) {
-            if (meta->Header.FixedHeader.Mission.find("SENTINEL") == std::string::npos) {
-                itkExceptionMacro("Mission is not a SENTINEL !");
-            }
-        }
-        else
+        if (meta == nullptr)
+            itkExceptionMacro("THe metadata file could not be read !");
+
+        if (meta->Header.FixedHeader.Mission.find("SENTINEL") == std::string::npos)
             itkExceptionMacro("Mission is not a SENTINEL !");
 
-        std::string imageFile1 = getMACCSRasterFileName(m_DirName, (*meta).ProductOrganization.ImageFiles, "_FRE_R1");
-        if(imageFile1.length() <= 0)
-            itkExceptionMacro("Couldn't get the FRE_R1 file name !");
-        m_InImage = ImageReaderType::New();
-        m_InImage->SetFileName(imageFile1);
-        m_InImage->UpdateOutputInformation();
+        int resolution = GetParameterInt("outres");
+        if(resolution != 10 && resolution != 20)
+            itkExceptionMacro("Accepted resolutions for Sentinel mission are 10 or 20 only!");
 
-        //inImage->UpdateOutputInformation();
-        m_ChannelExtractorList = ExtractROIFilterListType::New();
-        m_Filter               = BMFilterType::New();
+        m_AnglesRaster = OutputImageType::New();
+        OutputImageType::IndexType start;
 
-        m_ImageList = VectorImageToImageListType::New();
+        start[0] =   0;  // first index on X
+        start[1] =   0;  // first index on Y
 
-        m_ImageList->SetInput(m_InImage->GetOutput());
-        m_ImageList->UpdateOutputInformation();
-        if(m_InImage->GetOutput()->GetNumberOfComponentsPerPixel() < 4)
-            itkExceptionMacro("The image has less than 4 bands, which is not acceptable for a SENTINEL-S2 product with resolution 10 meters !");
+        OutputImageType::SizeType size;
 
-        unsigned int j = 0;
-        for (j = 0; j < m_InImage->GetOutput()->GetNumberOfComponentsPerPixel(); j++)
-            m_Filter->SetNthInput(j, m_ImageList->GetOutput()->GetNthElement(j));
+          size[0]  = 23;  // size along X
+          size[1]  = 23;  // size along Y
 
-        // The significance of the bands is:
-        // b1 - G
-        // b2 - R
-        // b3 - NIR
-        // b4 - SWIR
-        std::string ndviExpr;
-#ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
-        ndviExpr = "(b3==-10000 || b2==-10000) ? -10000 : (abs(b3+b2)<0.000001) ? 0 : 10000 * (b3-b2)/(b3+b2)";
-#else        
-        ndviExpr = "if(b3==-10000 or b2==-10000,-10000,if(abs(b3+b2)<0.000001,0,(b3-b2)/(b3+b2)";
-#endif
+        OutputImageType::RegionType region;
 
-        m_Filter->SetExpression(ndviExpr);
-        SetParameterOutputImagePixelType("out", ImagePixelType_int16);
+        region.SetSize(size);
+        region.SetIndex(start);
 
-        SetParameterOutputImage("out" , m_Filter->GetOutput() );
+        m_AnglesRaster->SetRegions(region);
+        m_AnglesRaster->SetNumberOfComponentsPerPixel(10);
+        m_AnglesRaster->Allocate();
+
+        const auto &viewingAngles = ComputeViewingAngles(meta->ProductInformation.ViewingAngles);
+
+
+        std::vector<size_t> bandsToExtract = {
+            1, 2, 3, 7
+        };
+        for (int band = 0; band < 4; band++) {
+            if(viewingAngles[bandsToExtract[band]].Angles.Zenith.Values.size() != ANGLES_GRID_SIZE ||
+                viewingAngles[bandsToExtract[band]].Angles.Azimuth.Values.size() != ANGLES_GRID_SIZE )
+                itkExceptionMacro("The width and/or height of computed angles from the xml file is/are not 23");
+        }
+
+        for(unsigned int i = 0; i < ANGLES_GRID_SIZE; i++) {
+            for(unsigned int j = 0; j < ANGLES_GRID_SIZE; j++) {
+                itk::VariableLengthVector<float> vct(10);
+                vct[0] = meta->ProductInformation.SolarAngles.Zenith.Values[i][j];
+                vct[1] = meta->ProductInformation.SolarAngles.Azimuth.Values[i][j];
+                for (int band = 0; band < 4; band++) {
+                    vct[band * 2 + 2] = viewingAngles[bandsToExtract[band]].Angles.Zenith.Values[i][j];
+                    vct[band * 2 + 3] = viewingAngles[bandsToExtract[band]].Angles.Azimuth.Values[i][j];
+                }
+
+                OutputImageType::IndexType idx;
+                idx[0] = j;
+                idx[1] = i;
+                m_AnglesRaster->SetPixel(idx, vct);
+            }
+        }
+        m_AnglesRaster->UpdateOutputInformation();
+        std::string resSuffix("_FRE_R1");
+        if(resolution == 20)
+            resSuffix = "_FRE_R2";
+        std::string fileMetadata = getMACCSRasterFileName(m_DirName, meta->ProductOrganization.ImageFiles, resSuffix, true);
+        std::cout << fileMetadata << std::endl;
+        meta = maccsMetadataReader->ReadMetadata(fileMetadata);
+        // check if it is a sentinel 2 product, otherwise -> exception
+        if (meta == nullptr)
+            itkExceptionMacro("The resolution metadata file could not be read !");
+
+        int width = atoi(meta->ImageInformation.Size.Columns.c_str());
+        int height = atoi(meta->ImageInformation.Size.Lines.c_str());
+        if(width == 0 || height == 0)
+            itkExceptionMacro("The read width/height from the resolution metadata file is/are 0");
+        createResampler(m_AnglesRaster, width, height);
+
+        if(m_Resampler)
+            SetParameterOutputImage("out" , m_Resampler->GetOutput() );
+        else
+            itkExceptionMacro("Could not resample !");
     }
 
-    std::string getMACCSRasterFileName(const std::string& rootFolder, const std::vector<MACCSFileInformation>& imageFiles, const std::string& ending) {
+    void createResampler(const OutputImageType::Pointer& image, const int wantedWidth, const int wantedHeight) {
+
+         m_Resampler = ResampleFilterType::New();
+         m_Resampler->SetInput(image);
+
+         // Set the interpolator
+         LinearInterpolationType::Pointer interpolator = LinearInterpolationType::New();
+         m_Resampler->SetInterpolator(interpolator);
+
+         IdentityTransformType::Pointer transform = IdentityTransformType::New();
+
+         m_Resampler->SetOutputParametersFromImage( image );
+         // Scale Transform
+         auto sz = image->GetLargestPossibleRegion().GetSize();
+         OutputVectorType scale;
+         scale[0] = (float)sz[0] / wantedWidth;
+         scale[1] = (float)sz[1] / wantedHeight;
+
+         // Evaluate spacing
+         OutputImageType::SpacingType spacing = image->GetSpacing();
+         OutputImageType::SpacingType OutputSpacing;
+         OutputSpacing[0] = spacing[0] * scale[0];
+         OutputSpacing[1] = spacing[1] * scale[1];
+
+         m_Resampler->SetOutputSpacing(OutputSpacing);
+
+         FloatVectorImageType::PointType origin = image->GetOrigin();
+         FloatVectorImageType::PointType outputOrigin;
+         outputOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale[0] - 1.0);
+         outputOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0);
+
+         m_Resampler->SetOutputOrigin(outputOrigin);
+
+         m_Resampler->SetTransform(transform);
+
+         ResampleFilterType::SizeType recomputedSize;
+         recomputedSize[0] = wantedWidth;
+         recomputedSize[1] = wantedHeight;
+
+         m_Resampler->SetOutputSize(recomputedSize);
+    }
+
+    // Return the path to a file for which the name end in the ending
+    std::string getMACCSRasterFileName(const std::string& rootFolder,
+                                       const std::vector<MACCSFileInformation>& imageFiles,
+                                       const std::string& ending,
+                                       const bool fileTypeMeta) {
 
         for (const MACCSFileInformation& fileInfo : imageFiles) {
             if (fileInfo.LogicalName.length() >= ending.length() &&
                     0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
-                return rootFolder + fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF";
+                return rootFolder + fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + (fileTypeMeta ?  ".HDR" : ".DBL.TIF");
             }
 
         }
         return "";
     }
 
-    ImageReaderType::Pointer            m_InImage;
+    OutputImageType::Pointer            m_AnglesRaster;
+    ResampleFilterType::Pointer         m_Resampler;
 
     std::string                         m_DirName;
 
@@ -292,7 +381,7 @@ private:
 // Finally \code{OTB\_APPLICATION\_EXPORT} is called.
 // Software Guide : EndLatex
 //  Software Guide :BeginCodeSnippet
-OTB_APPLICATION_EXPORT(otb::Wrapper::ComputeNDVI)
+OTB_APPLICATION_EXPORT(otb::Wrapper::CreateS2AnglesRaster)
 //  Software Guide :EndCodeSnippet
 
 

@@ -28,14 +28,6 @@ namespace Wrapper
 class DirectionalCorrection : public Application
 {
 public:
-    typedef enum flagVal {
-        land,
-        cloud,
-        shadow,
-        snow,
-        water
-    } FLAG_VALUE;
-
     typedef DirectionalCorrection Self;
     typedef Application Superclass;
     typedef itk::SmartPointer<Self> Pointer;
@@ -75,11 +67,10 @@ private:
         SetDocName("DirectionalCorrection");
         SetDocLongDescription("long description");
         SetDocLimitations("None");
-        SetDocAuthors("AG");
+        SetDocAuthors("CIU");
         SetDocSeeAlso(" ");
         AddDocTag(Tags::Vector);
 
-        AddParameter(ParameterType_InputImage, "in", "L2A input product");
         AddParameter(ParameterType_Int, "res", "The resolution to be processed");
         SetDefaultParameterInt("res", -1);
         MandatoryOff("res");
@@ -130,8 +121,8 @@ private:
         extractBandsFromImage(m_CSM);
         extractBandsFromImage(m_WM);
         extractBandsFromImage(m_SM);
-        extractBandsFromImage(m_AnglesImg);
         extractBandsFromImage(m_NdviImg);
+        extractBandsFromImage(m_AnglesImg);
 
         m_Concat->SetInput(m_ImageList);
 
@@ -185,7 +176,7 @@ private:
         while (std::getline(coeffsFile, line))
         {
             trim(line);
-            if (line[0] != '#' )
+            if ((line.size() > 0) && (line[0] != '#') && (line[0] != '\r'))
             {
                 ScaterringFunctionCoefficients coeffs;
                 std::istringstream iss(line);

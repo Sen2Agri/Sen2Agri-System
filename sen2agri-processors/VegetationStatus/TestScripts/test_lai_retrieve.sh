@@ -78,9 +78,29 @@ done
 MODEL_FILE="$OUT_FOLDER/model_file.txt"
 ERR_MODEL_FILE="$OUT_FOLDER/err_model_file.txt"
 
+FITTED_LIST_FILE="$OUT_FOLDER/FittedFilesList.txt"
+REPROCESSED_LIST_FILE="$OUT_FOLDER/ReprocessedFilesList.txt"
+
+#ProfileReprocessing parameters
+ALGO_LOCAL_BWR=2
+ALGO_LOCAL_FWR=0
+
+PARAMS_TXT="$OUT_FOLDER/lai_retrieval_params.txt"
+rm -fr $PARAMS_TXT
+touch $PARAMS_TXT
+
+echo "ProfileReprocessing parameters" >> $PARAMS_TXT
+echo "    bwr for algo local (online retrieval) = $ALGO_LOCAL_BWR" >> $PARAMS_TXT
+echo "    fwr for algo local (online retrieval) = $ALGO_LOCAL_FWR" >> $PARAMS_TXT
+echo " " >> $PARAMS_TXT
+echo "Used XML files " >> $PARAMS_TXT
+
+
 cnt=0
 for xml in "${inputXML[@]}"
 do
+    echo "$xml" >> $PARAMS_TXT
+    
     try otbcli NdviRviExtraction $IMG_INV_OTB_LIBS_ROOT -xml $xml $RESOLUTION_OPTION -fts $OUT_NDVI_RVI
 
     try otbcli GetLaiRetrievalModel $IMG_INV_OTB_LIBS_ROOT -xml $xml -ilmodels $MODELS_INPUT_LIST -ilerrmodels $ERR_MODELS_INPUT_LIST -outm $MODEL_FILE -outerr $ERR_MODEL_FILE
@@ -116,7 +136,13 @@ try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_LAI_PARAM -out $OUT
 try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_ERR_PARAM -out $OUT_ERR_TIME_SERIES
 
 # Compute the reprocessed time series (On-line Retrieval)
-try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_REPROCESSED_TIME_SERIES  -algo local -algo.local.bwr 2 -algo.local.fwr 0
+try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_REPROCESSED_TIME_SERIES  -algo local -algo.local.bwr $ALGO_LOCAL_BWR -algo.local.fwr $ALGO_LOCAL_FWR
+
+#split the Reprocessed time series to a number of images
+try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_REPROCESSED_TIME_SERIES -outlist $REPROCESSED_LIST_FILE
 
 # Compute the fitted time series (CSDM Fitting)
 try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_FITTED_TIME_SERIES -algo fit
+
+#split the Fitted time series to a number of images
+try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_FITTED_TIME_SERIES -outlist $FITTED_LIST_FILE

@@ -83,7 +83,7 @@ public:
     for(size_t i = 0; i < A.Size(); i++) {
         if(fabs(A[i] - NO_DATA) >= EPSILON) {
         //if(A[i] >= 0) {
-            A2[j++] = A[i] / 10000;
+            A2[j++] = A[i] /*/ 10000*/;
         }
     }
     if(j == 0)
