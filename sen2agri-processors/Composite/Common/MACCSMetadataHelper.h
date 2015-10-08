@@ -26,14 +26,11 @@ protected:
     std::string getWaterFileName();
     std::string getSnowFileName();
 
-    std::string getMACCSImageFileName(const std::string& descriptor,
-                                      const std::vector<MACCSFileInformation>& imageFiles,
+    std::string getMACCSImageFileName(const std::vector<MACCSFileInformation>& imageFiles,
                                       const std::string& ending);
-    std::string getMACCSImageFileName(const std::string& descriptor,
-                                      const std::vector<MACCSAnnexInformation>& maskFiles,
+    std::string getMACCSImageFileName(const std::vector<MACCSAnnexInformation>& maskFiles,
                                       const std::string& ending);
-    std::string getMACCSImageHdrName(const std::string& descriptor,
-                                     const std::vector<MACCSAnnexInformation>& maskFiles,
+    std::string getMACCSImageHdrName(const std::vector<MACCSAnnexInformation>& maskFiles,
                                      const std::string& ending);
 
     void ReadSpecificMACCSHdrFile(const std::string& fileName);

@@ -59,7 +59,7 @@ bool MACCSMetadataHelper::DoLoadMetadata()
 
 void MACCSMetadataHelper::UpdateValuesForLandsat()
 {
-    std::string specHdrFile = getMACCSImageHdrName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_ATB");
+    std::string specHdrFile = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_ATB");
     ReadSpecificMACCSHdrFile(specHdrFile);
 }
 
@@ -67,9 +67,9 @@ void MACCSMetadataHelper::UpdateValuesForSentinel()
 {
     std::string specHdrFile;
     if(m_nResolution == 10) {
-        specHdrFile = getMACCSImageHdrName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
+        specHdrFile = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
     } else {
-        specHdrFile = getMACCSImageHdrName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
+        specHdrFile = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
     }
     ReadSpecificMACCSHdrFile(specHdrFile);
 }
@@ -89,12 +89,12 @@ void MACCSMetadataHelper::ReadSpecificMACCSHdrFile(const std::string& fileName)
 std::string MACCSMetadataHelper::getImageFileName() {
     if(m_missionType == S2) {
         if(m_nResolution == 10) {
-            return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_FRE_R1");
+            return getMACCSImageFileName(m_metadata->ProductOrganization.ImageFiles, "_FRE_R1");
         } else {
-            return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_FRE_R2");
+            return getMACCSImageFileName(m_metadata->ProductOrganization.ImageFiles, "_FRE_R2");
         }
     } else {
-        return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_FRE");
+        return getMACCSImageFileName(m_metadata->ProductOrganization.ImageFiles, "_FRE");
     }
 }
 
@@ -102,12 +102,12 @@ std::string MACCSMetadataHelper::getAotFileName()
 {
     if(m_missionType == S2) {
         if(m_nResolution == 10) {
-            return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
+            return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
         } else {
-            return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
+            return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
         }
     } else {
-        return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_ATB");
+        return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_ATB");
     }
 }
 
@@ -115,44 +115,41 @@ std::string MACCSMetadataHelper::getCloudFileName()
 {
     if(m_missionType == S2) {
         if(m_nResolution == 10) {
-            return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_CLD_R1");
+            return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_CLD_R1");
         } else {
-            return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_CLD_R2");
+            return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_CLD_R2");
         }
     } else {
-        return getMACCSImageFileName(m_inputMetadataFileName, m_metadata->ProductOrganization.AnnexFiles, "_CLD");
+        return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_CLD");
     }
 }
 
 std::string MACCSMetadataHelper::getWaterFileName()
 {
-    // TODO:
-    return "";
+    if(m_missionType == S2) {
+        if(m_nResolution == 10) {
+            return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_MSK_R1");
+        } else {
+            return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_MSK_R2");
+        }
+    } else {
+        return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_MSK");
+    }
 }
 
 std::string MACCSMetadataHelper::getSnowFileName()
 {
-    // TODO:
-    return "";
+    // the water and snow masks are in the same file
+    return getWaterFileName();
 }
 
 // Return the path to a file for which the name end in the ending
-std::string MACCSMetadataHelper::getMACCSImageFileName(const std::string& descriptor,
-                                                          const std::vector<MACCSFileInformation>& imageFiles,
-                                                           const std::string& ending) {
-
-    std::string folder;
-    size_t pos = descriptor.find_last_of("/\\");
-    if (pos == std::string::npos) {
-        folder = "";
-    } else {
-        folder = descriptor.substr(0, pos);
-    }
-
+std::string MACCSMetadataHelper::getMACCSImageFileName(const std::vector<MACCSFileInformation>& imageFiles,
+                                                       const std::string& ending) {
     for (const MACCSFileInformation& fileInfo : imageFiles) {
         if (fileInfo.LogicalName.length() >= ending.length() &&
                 0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
-            return folder + "/" + fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF";
+            return m_DirName + "/" + fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF";
         }
 
     }
@@ -160,45 +157,26 @@ std::string MACCSMetadataHelper::getMACCSImageFileName(const std::string& descri
 }
 
 // Return the path to a file for which the name end in the ending
-std::string MACCSMetadataHelper::getMACCSImageFileName(const std::string& descriptor,
-                                                           const std::vector<MACCSAnnexInformation>& maskFiles,
-                                                           const std::string& ending) {
-
-    std::string folder;
-    size_t pos = descriptor.find_last_of("/\\");
-    if (pos == std::string::npos) {
-        folder = "";
-    } else {
-        folder = descriptor.substr(0, pos);
-    }
-
+std::string MACCSMetadataHelper::getMACCSImageFileName(const std::vector<MACCSAnnexInformation>& maskFiles,
+                                                       const std::string& ending) {
     for (const MACCSAnnexInformation& fileInfo : maskFiles) {
         if (fileInfo.File.LogicalName.length() >= ending.length() &&
                 0 == fileInfo.File.LogicalName.compare (fileInfo.File.LogicalName.length() - ending.length(), ending.length(), ending)) {
-            return folder + "/" + fileInfo.File.FileLocation.substr(0, fileInfo.File.FileLocation.find_last_of('.')) + ".DBL.TIF";
+            return m_DirName + "/" + fileInfo.File.FileLocation.substr(0, fileInfo.File.FileLocation.find_last_of('.')) + ".DBL.TIF";
         }
-
     }
     return "";
 }
 
 // Return the path to a file for which the name end in the ending
-std::string MACCSMetadataHelper::getMACCSImageHdrName(const std::string& descriptor, const std::vector<MACCSAnnexInformation>& maskFiles, const std::string& ending) {
-
-    std::string folder;
-    size_t pos = descriptor.find_last_of("/\\");
-    if (pos == std::string::npos) {
-        folder = "";
-    } else {
-        folder = descriptor.substr(0, pos);
-    }
+std::string MACCSMetadataHelper::getMACCSImageHdrName(const std::vector<MACCSAnnexInformation>& maskFiles,
+                                                      const std::string& ending) {
 
     for (const MACCSAnnexInformation& fileInfo : maskFiles) {
         if (fileInfo.File.LogicalName.length() >= ending.length() &&
                 0 == fileInfo.File.LogicalName.compare (fileInfo.File.LogicalName.length() - ending.length(), ending.length(), ending)) {
-            return folder + "/" + fileInfo.File.FileLocation;
+            return m_DirName + "/" + fileInfo.File.FileLocation;
         }
-
     }
     return "";
 }
