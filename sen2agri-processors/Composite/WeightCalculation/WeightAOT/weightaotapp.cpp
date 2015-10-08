@@ -116,7 +116,7 @@ private:
                 inMetadataXml, m_weightOnAot.GetInputImageResolution());
     float fAotQuantificationVal = pHelper->GetAotQuantificationValue();
     // the bands in XML are 1 based
-    int nBand = pHelper->GetAotBandIndex()-1;
+    int nBand = 0;//pHelper->GetAotBandIndex()-1;
     m_weightOnAot.Initialize(nBand, fAotQuantificationVal, nAotMax, fWaotMin, fWaotMax);
 
     // Set the output image
