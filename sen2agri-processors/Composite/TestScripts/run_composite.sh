@@ -46,7 +46,7 @@ then
   echo "The product will be created with the original resolution without resampling."
 fi
 
-COMPOSITE_OTB_LIBS_ROOT="~/sen2agri-processors-build/Composite"
+COMPOSITE_OTB_LIBS_ROOT="~/sen2agri_git/sen2agri-processors/Composite"
 WEIGHT_OTB_LIBS_ROOT="$COMPOSITE_OTB_LIBS_ROOT/WeightCalculation"
 
 OUT_SPOT_MASKS="$OUT_FOLDER/spot_masks.tif"
@@ -111,7 +111,7 @@ for xml in "${inputXML[@]}"
 do
     echo "$xml" >> $PARAMS_TXT
     
-    try otbcli SpotMaskHandler $COMPOSITE_OTB_LIBS_ROOT/SpotMaskHandler/ -xml $xml -out $OUT_SPOT_MASKS
+    try otbcli MaskHandler $COMPOSITE_OTB_LIBS_ROOT/MaskHandler/ -xml $xml -out $OUT_SPOT_MASKS
     
     mod=${OUT_L3A_FILE//[#]/$i}
     out_w=${OUT_WEIGHTS//[#]/$i}

@@ -56,4 +56,5 @@ try otbcli FeatureExtraction $CROPTTYPE_OTB_LIBS_ROOT/FeatureExtraction -rtocr $
 try otbcli SigmoFitting $VEGETATIONSTATUS_OTB_LIBS_ROOT -in $OUT_NDVI -mask $OUT_MASKS -dates $OUT_DATES -out $OUT_SIGMO
 try otbcli MetricsEstimation $VEGETATIONSTATUS_OTB_LIBS_ROOT -ipf $OUT_SIGMO -indates $OUT_DATES -opf $OUT_METRIC
 
-#rm -fr $OUT_MASKS $OUT_BANDS $OUT_DATES $OUT_NDVI $OUT_SIGMO
+rm -fr $OUT_MASKS $OUT_BANDS $OUT_DATES $OUT_NDVI 
+#$OUT_SIGMO

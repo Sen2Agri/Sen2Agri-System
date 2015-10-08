@@ -86,16 +86,15 @@ public:
             A2[j++] = A[i] /*/ 10000*/;
         }
     }
+
     if(j == 0)
         return result;
     if(j != A.Size())
-        A2.SetSize(j);
-
+        A2.SetSize(j, false);
 
     double dgx0, t0, t1, t2, t3, dgx2;
     std::tie(dgx0, t0, t1, t2, t3, dgx2) =
         pheno::normalized_sigmoid::pheno_metrics<double>(A2);
-
 
     result[0] = dgx0;
     result[1] = t0;
@@ -170,6 +169,7 @@ private:
       }
 
       // read the file and save the dates as second from Epoch to a vector
+      std::vector<struct tm> dates;
       VectorType inDates;
       std::string value;      
       while (std::getline(datesFile, value)) {
@@ -177,18 +177,23 @@ private:
           if (strptime(value.c_str(), "%Y%m%d", &tmDate) == NULL) {
               itkExceptionMacro("Invalid value for a date: " + value);
           }
-          inDates.push_back(mktime(&tmDate) / 86400);
+          dates.emplace_back(tmDate);
+//          inDates.push_back(mktime(&tmDate) / 86400);
       }
+
+      const auto &days = pheno::tm_to_doy_list(dates);
+      inDates.resize(days.size());
+      std::copy(std::begin(days), std::end(days), std::begin(inDates));
 
       // close the file
       datesFile.close();
 
-      if (!inDates.empty())
-      {
-          auto min = *std::min_element(inDates.begin(), inDates.end());
-          std::transform(inDates.begin(), inDates.end(), inDates.begin(),
-                         [=](PrecisionType v) { return v - min; });
-      }
+//      if (!inDates.empty())
+//      {
+//          auto min = *std::min_element(inDates.begin(), inDates.end());
+//          std::transform(inDates.begin(), inDates.end(), inDates.begin(),
+//                         [=](PrecisionType v) { return v - min; });
+//      }
 
       if((nb_ipf_bands == 0) || (nb_ipf_bands != inDates.size())) {
           itkExceptionMacro("Invalid number of bands or number of dates: ipf bands=" <<
@@ -200,6 +205,7 @@ private:
       //unary functor image filter pass also the normalization values
       m_MetricsEstimationFilter = FilterType::New();
       m_functor.SetDates(inDates);
+      m_MetricsEstimationFilter->SetNumberOfThreads(1);
 
       m_MetricsEstimationFilter->SetFunctor(m_functor);
       m_MetricsEstimationFilter->SetInput(ipf_image);

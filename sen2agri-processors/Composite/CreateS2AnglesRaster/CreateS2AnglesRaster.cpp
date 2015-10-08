@@ -230,7 +230,7 @@ private:
         auto meta = maccsMetadataReader->ReadMetadata(xmlDesc);
         // check if it is a sentinel 2 product, otherwise -> exception
         if (meta == nullptr)
-            itkExceptionMacro("THe metadata file could not be read !");
+            itkExceptionMacro("The metadata file could not be read !");
 
         if (meta->Header.FixedHeader.Mission.find("SENTINEL") == std::string::npos)
             itkExceptionMacro("Mission is not a SENTINEL !");
@@ -292,7 +292,7 @@ private:
         if(resolution == 20)
             resSuffix = "_FRE_R2";
         std::string fileMetadata = getMACCSRasterFileName(m_DirName, meta->ProductOrganization.ImageFiles, resSuffix, true);
-        std::cout << fileMetadata << std::endl;
+
         meta = maccsMetadataReader->ReadMetadata(fileMetadata);
         // check if it is a sentinel 2 product, otherwise -> exception
         if (meta == nullptr)
@@ -304,10 +304,9 @@ private:
             itkExceptionMacro("The read width/height from the resolution metadata file is/are 0");
         createResampler(m_AnglesRaster, width, height);
 
-        if(m_Resampler)
-            SetParameterOutputImage("out" , m_Resampler->GetOutput() );
-        else
+        if(m_Resampler.GetPointer() == 0)
             itkExceptionMacro("Could not resample !");
+        SetParameterOutputImage("out" , m_Resampler->GetOutput() );
     }
 
     void createResampler(const OutputImageType::Pointer& image, const int wantedWidth, const int wantedHeight) {
