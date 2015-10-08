@@ -85,6 +85,7 @@ protected:
 protected:
     std::string m_inputMetadataFileName;
     int m_nResolution;
+    std::string m_DirName;
 };
 
 #endif // METADATAHELPER_H

@@ -2,6 +2,7 @@
 #include <time.h>
 #include <ctime>
 #include <cmath>
+#include "libgen.h"
 
 MetadataHelper::MetadataHelper()
 {
@@ -18,6 +19,9 @@ bool MetadataHelper::LoadMetadataFile(const std::string& file, int nResolution)
     Reset();
     m_inputMetadataFileName = file;
     m_nResolution = nResolution;
+    std::vector<char> buf(m_inputMetadataFileName.begin(), m_inputMetadataFileName.end());
+    m_DirName = std::string(dirname(buf.data()));
+
     return DoLoadMetadata();
 }
 
