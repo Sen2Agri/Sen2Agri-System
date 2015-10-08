@@ -48,7 +48,6 @@ void DirectionalCorrection::DoExecute()
 
     m_Concat->SetInput(m_ImageList);
 
-    // TODO: read these coefficients from the parameters (4 for each band!!!)
     std::vector<ScaterringFunctionCoefficients> scatteringCoeffs;
     scatteringCoeffs = loadScatteringFunctionCoeffs(m_strScatCoeffs);
 
