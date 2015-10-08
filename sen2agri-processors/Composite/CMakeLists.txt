@@ -7,4 +7,5 @@ add_subdirectory(MaskHandler)
 add_subdirectory(CompositeSplitter)
 add_subdirectory(CreateS2AnglesRaster)
 add_subdirectory(DirectionalCorrection)
+add_subdirectory(CompositePreprocessing)
 
