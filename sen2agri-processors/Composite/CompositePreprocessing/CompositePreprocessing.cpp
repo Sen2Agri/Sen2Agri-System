@@ -65,9 +65,6 @@ private:
         AddParameter(ParameterType_OutputImage, "outaotres", "Out snow mask image at the original  resolution");
         MandatoryOff("outaotres");
 
-//      TODO: This is already in outres
-//        AddParameter(ParameterType_OutputImage, "out", "Out image containing reflectances with directional correction.");
-
         SetDocExampleParameterValue("xml", "/path/to/L2Aproduct_maccs.xml");
         SetDocExampleParameterValue("msk", "/path/to/msks.tif");
         SetDocExampleParameterValue("allinone", "1");
