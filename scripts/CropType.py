@@ -23,6 +23,8 @@ parser.add_argument('-classifier', help='The classifier used for training (eithe
 parser.add_argument('-rseed', help='The random seed used for training', required=False, metavar='random_seed', default=0)
 parser.add_argument('-mask', help='The crop mask', required=False, metavar='crop_mask', default='')
 
+parser.add_argument('-pixsize', help='THe size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
+
 args = parser.parse_args()
 
 reference_polygons=args.ref
@@ -39,6 +41,7 @@ radius=args.radius
 classifier=args.classifier
 random_seed=args.rseed
 crop_mask=args.mask
+pixsize=args.pixsize
 
 reference_polygons_clip=buildFolder+"reference_clip.shp"
 training_polygons=buildFolder+"training_polygons.shp"
@@ -60,7 +63,7 @@ quality_metrics=buildFolder+"quality-metrics.txt"
 
 # Bands Extractor
 print "Executing BandsExtractor..."
-beCmdLine = "otbApplicationLauncherCommandLine BandsExtractor "+buildFolder+"CropType/BandsExtractor -il "+indesc+" -out "+rawtocr+" -mask "+rawmask+" -outdate "+dates+" -shape "+shape
+beCmdLine = "otbApplicationLauncherCommandLine BandsExtractor "+buildFolder+"CropType/BandsExtractor -il "+indesc+" -out "+rawtocr+" -mask "+rawmask+" -outdate "+dates+" -shape "+shape+" -pixsize "+pixsize
 print beCmdLine
 result = os.system(beCmdLine)
 
