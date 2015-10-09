@@ -14,6 +14,8 @@ public:
 
     const char * GetNameOfClass() { return "Spot4MetadataHelper"; }
 
+    virtual std::string GetBandName(unsigned int nIdx);
+
 protected:
     virtual bool DoLoadMetadata();
 

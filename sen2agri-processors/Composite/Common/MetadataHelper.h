@@ -51,6 +51,8 @@ public:
     virtual MeanAngles_Type GetSensorMeanAngles(int nBand);
 
     virtual int GetTotalBandsNo() { return m_nTotalBandsNo; }
+    virtual int GetBandsNoForCurrentResolution() { return m_nBandsNoForCurRes; }
+    virtual std::string GetBandName(unsigned int nIdx) = 0;
 
 protected:
     virtual bool DoLoadMetadata() = 0;
@@ -76,6 +78,7 @@ protected:
     int m_nGreenBandIndex;
     int m_nNirBandIndex;
     int m_nTotalBandsNo;
+    unsigned int m_nBandsNoForCurRes;
 
     MeanAngles_Type m_solarMeanAngles;
     std::vector<MeanAngles_Type> m_sensorBandsMeanAngles;

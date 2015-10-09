@@ -1,19 +1,35 @@
 #include "Spot4MetadataHelper.h"
 
+#define TOTAL_BANDS_NO      4
+
 Spot4MetadataHelper::Spot4MetadataHelper()
 {
     m_fAotQuantificationValue = 1000.0;
     m_fAotNoDataVal = 0;
     m_nAotBandIndex = 1;
-    m_nTotalBandsNo = 4;
+    m_nTotalBandsNo = TOTAL_BANDS_NO;
+    m_nBandsNoForCurRes = m_nTotalBandsNo;
     m_bHasGlobalMeanAngles = true;
     m_bHasBandMeanAngles = false;
+}
+
+std::string Spot4MetadataHelper::GetBandName(unsigned int nIdx)
+{
+    if(nIdx >= m_nBandsNoForCurRes) {
+        itkExceptionMacro("Invalid band index requested: " << nIdx << ". Maximum is " << m_nBandsNoForCurRes);
+    }
+    return m_metadata->Radiometry.Bands[nIdx];
 }
 
 bool Spot4MetadataHelper::DoLoadMetadata()
 {
     SPOT4MetadataReaderType::Pointer spot4MetadataReader = SPOT4MetadataReaderType::New();
     if (m_metadata = spot4MetadataReader->ReadMetadata(m_inputMetadataFileName)) {
+        if(m_metadata->Radiometry.Bands.size() != m_nBandsNoForCurRes) {
+            itkExceptionMacro("Wrong number of bands for SPOT4: " + m_metadata->Radiometry.Bands.size() );
+            return false;
+        }
+
         // the helper will return the hardcoded values from the constructor as these are not
         // present in the metadata
         m_fAotQuantificationValue = 1000.0;
@@ -80,14 +96,7 @@ std::string Spot4MetadataHelper::DeriveFileNameFromImageFileName(const std::stri
 
 std::string Spot4MetadataHelper::buildFullPath(const std::string& fileName)
 {
-    std::string folder;
-    size_t pos = m_inputMetadataFileName.find_last_of("/\\");
-    if (pos == std::string::npos) {
-        return fileName;
-    }
-
-    folder = m_inputMetadataFileName.substr(0, pos);
-    return folder + "/" + fileName;
+    return m_DirName + "/" + fileName;
 }
 
 std::string Spot4MetadataHelper::getImageFileName() {
