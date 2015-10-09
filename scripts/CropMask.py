@@ -174,9 +174,21 @@ def noInSituDataAvailable() :
 
 	print "SpectralFeatures done!"
 
+	# Image Statistics
+	print "Executing ComputeImagesStatistics..."
+	isCmdLine = "otbcli_ComputeImagesStatistics -il "+spectral_features+" -out "+statistics_noinsitu
+	print isCmdLine
+	result = os.system(isCmdLine)
+
+	if result != 0 :
+	   print "Error running ComputeImagesStatistics"
+	   exit(1)
+	print "ComputeImagesStatistics done!"
+
+
 	# Reference Map preparation
 	print "Executing erosion with GrayScaleMorphologicalOperation application..."
-	rmCmdLine = "otbcli_GrayScaleMorphologicalOperation -in " + reference + " -out "+eroded_reference + " -channel 1 -filter erode -structype.ball.xradius " + erode_radius + "-structype.ball.yradius " + erode_radius
+	rmCmdLine = "otbcli_GrayScaleMorphologicalOperation -in " + reference + " -out "+eroded_reference + " -channel 1 -filter erode -structype.ball.xradius " + erode_radius + " -structype.ball.yradius " + erode_radius
 	print rmCmdLine
 	result = os.system(rmCmdLine)
 
@@ -185,6 +197,40 @@ def noInSituDataAvailable() :
 	   exit(1)
 
 	print "Erosion done!"
+
+	# Trimming
+	print "Executing Trimming application..."
+	trCmdLine = "otbApplicationLauncherCommandLine Trimming "+buildFolder+"CropMask/Trimming -feat " + spectral_features + " -ref "+eroded_reference + " -out " + trimmed_reference_shape + " -alpha " + alpha
+	print trCmdLine
+	result = os.system(trCmdLine)
+
+	if result != 0 :
+	   print "Error running Trimming"
+	   exit(1)
+
+	print "Trimming done!"
+
+	print "Executing TrainImagesClassifier..."
+	tcCmdLine = "otbcli_TrainImagesClassifier -io.il "+spectral_features+" -io.vd "+trimmed_reference_shape+" -io.imstat "+statistics_noinsitu+" -rand "+random_seed+" -sample.bm 0 -io.confmatout "+confmatout+" -io.out "+model+" -sample.mt "+nbtrsample+" -sample.mv -1 -sample.vfn CROP -sample.vtr "+sample_ratio+" -classifier rf -classifier.rf.nbtrees "+rfnbtrees+" -classifier.rf.min "+rfmin+" -classifier.rf.max "+rfmax 
+
+	print tcCmdLine
+	result = os.system(tcCmdLine)
+
+	if result != 0 :
+	   print "Error running TrainImagesClassifier"
+	   exit(1)
+	print "TrainImagesClassifier done!"
+
+	#Image Classifier
+	print "Executing ImageClassifier..."
+	icCmdLine = "otbcli_ImageClassifier -in "+spectral_features+" -imstat "+statistics_noinsitu+" -model "+model+" -out "+raw_crop_mask
+	print icCmdLine
+	result = os.system(icCmdLine)
+
+	if result != 0 :
+	   print "Error running ImageClassifier"
+	   exit(1)
+	print "ImageClassifier done!"
 
 
 
@@ -212,6 +258,7 @@ parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) i
 
 parser.add_argument('-refr', help='The reference raster when insitu data is not available', required=False, metavar='reference', default='')
 parser.add_argument('-eroderad', help='The radius used for erosion', required=False, metavar='erode_radius', default='1')
+parser.add_argument('-alpha', help='The parameter alpha used by the mahalanobis function', required=False, metavar='alpha', default='0.01')
 
 parser.add_argument('-rfnbtrees', help='The number of trees used for training (default 100)', required=False, metavar='rfnbtrees', default=100)
 parser.add_argument('-rfmax', help='maximum depth of the trees used for Random Forest classifier (default 25)', required=False, metavar='rfmax', default=25)
@@ -245,8 +292,9 @@ ranger=args.ranger
 minsize=args.minsize
 pixsize=args.pixsize
 
-reterence=args.refr
+reference=args.refr
 erode_radius=args.eroderad
+alpha=args.alpha
 
 reference_polygons_clip=buildFolder+"reference_clip.shp"
 training_polygons=buildFolder+"training_polygons.shp"
@@ -276,6 +324,8 @@ tf_noinsitu=buildFolder+"tf_noinsitu.tif"
 spectral_features=buildFolder+"spectral_features.tif"
 
 eroded_reference=buildFolder+"eroded_reference.tif"
+trimmed_reference_shape=buildFolder+"trimmed_reference_shape.shp"
+statistics_noinsitu=buildFolder+"statistics_noinsitu.xml"
 
 tmpfolder="."
 
