@@ -1,60 +1,80 @@
 #ifndef COMPUTE_NDVI_H
 #define COMPUTE_NDVI_H
 
-#include "otbBandMathImageFilter.h"
-#include "otbMultiToMonoChannelExtractROI.h"
-
-#include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
-
 #include "otbImage.h"
 #include "otbWrapperTypes.h"
 #include "otbVectorImage.h"
 #include "otbImageFileReader.h"
 #include "otbImageFileWriter.h"
 #include "itkUnaryFunctorImageFilter.h"
-#include "itkCastImageFilter.h"
-#include "otbVectorImageToImageListFilter.h"
-#include "itkResampleImageFilter.h"
-#include "itkIndent.h"
-#include <vector>
-#include "libgen.h"
+#include "GlobalDefs.h"
+
+template< class TInput, class TOutput>
+class NdviRviFunctor
+{
+public:
+    NdviRviFunctor() {}
+    ~NdviRviFunctor() {}
+    void Initialize(int nRedBandIdx, int nNirBandIdx) {
+        m_nRedBandIdx = nRedBandIdx;
+        m_nNirBandIdx = nNirBandIdx;
+  }
+
+  bool operator!=( const NdviRviFunctor & ) const
+  {
+    return false;
+  }
+  bool operator==( const NdviRviFunctor & other ) const
+  {
+    return !(*this != other);
+  }
+  inline TOutput operator()( const TInput & A ) const
+  {
+      TOutput ret;
+      double redVal = A[m_nRedBandIdx];
+      double nirVal = A[m_nNirBandIdx];
+      if((fabs(redVal - NO_DATA_VALUE) < 0.000001) || (fabs(nirVal - NO_DATA_VALUE) < 0.000001)) {
+          ret = NO_DATA_VALUE;
+      } else {
+        if(fabs(redVal + nirVal) < 0.000001) {
+            ret = 0;
+        } else {
+            ret = (nirVal - redVal)/(nirVal+redVal);
+        }
+      }
+
+      return ret;
+  }
+private:
+  int m_nRedBandIdx;
+  int m_nNirBandIdx;
+};
 
 class ComputeNDVI
 {
 public:
     typedef float                                                                   PixelType;
     typedef otb::Image<PixelType, 2>                                                OutputImageType;
-    //typedef otb::Wrapper::FloatVectorImageType                                      OutputImageType;
-    typedef otb::Wrapper::FloatVectorImageType                                      ImageType;
+    typedef otb::Wrapper::Int16VectorImageType                                      ImageType;
     typedef otb::ImageFileReader<ImageType>                                         ImageReaderType;
-
-    typedef otb::ImageList<OutputImageType>            ImageListType;
+    typedef itk::UnaryFunctorImageFilter<ImageType,OutputImageType,
+                    NdviRviFunctor<
+                        ImageType::PixelType,
+                        OutputImageType::PixelType> > FilterType;
     typedef otb::ImageFileWriter<OutputImageType>      WriterType;
-    typedef otb::VectorImageToImageListFilter<ImageType, ImageListType>             VectorImageToImageListType;
-    typedef otb::MultiToMonoChannelExtractROI<otb::Wrapper::FloatVectorImageType::InternalPixelType,
-                                              otb::Wrapper::FloatImageType::PixelType>    ExtractROIFilterType;
-    typedef otb::ObjectList<ExtractROIFilterType>                           ExtractROIFilterListType;
-    typedef otb::BandMathImageFilter<OutputImageType>                       BMFilterType;
-    typedef itk::MACCSMetadataReader                                        MACCSMetadataReaderType;
-
+    
 public:
     ComputeNDVI();
     void DoInit(std::string &xml);
     OutputImageType::Pointer DoExecute();
     const char * GetNameOfClass() { return "ComputeNDVI"; }
+    void WriteToOutputFile();
 
 private:
-    std::string getMACCSRasterFileName(const std::string& rootFolder,
-                                                    const std::vector<MACCSFileInformation>& imageFiles,
-                                                    const std::string& ending);
-private:
-    ExtractROIFilterType::Pointer       m_ExtractROIFilter;
-    ExtractROIFilterListType::Pointer   m_ChannelExtractorList;
-    BMFilterType::Pointer               m_Filter;
-    VectorImageToImageListType::Pointer m_ImageList;
-    ImageReaderType::Pointer            m_InImage;
-    std::string                         m_DirName;
     std::string                         m_inXml;
+    ImageReaderType::Pointer            m_InImage;
+
+    FilterType::Pointer m_Functor;
 
 };
 

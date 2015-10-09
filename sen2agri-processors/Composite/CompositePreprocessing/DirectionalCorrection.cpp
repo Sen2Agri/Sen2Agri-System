@@ -27,7 +27,7 @@ void DirectionalCorrection::DoExecute()
 {
     auto factory = MetadataHelperFactory::New();
     auto pHelper = factory->GetMetadataHelper(m_strXml, m_nRes);
-    float fReflQuantifValue = pHelper->GetReflectanceQuantificationValue();
+    //float fReflQuantifValue = pHelper->GetReflectanceQuantificationValue();
     std::string inputImageFile = pHelper->GetImageFileName();
     m_inputImageReader = ReaderType::New();
     m_inputImageReader->SetFileName(inputImageFile);
@@ -41,8 +41,8 @@ void DirectionalCorrection::DoExecute()
     m_WM = m_ResampledBandsExtractor.ExtractResampledBand(m_inputImageReader->GetOutput(), 2);
     m_SM = m_ResampledBandsExtractor.ExtractResampledBand(m_inputImageReader->GetOutput(), 3);
     m_ImageList->PushBack(m_CSM);
-    m_ImageList->PushBack(m_WM);
     m_ImageList->PushBack(m_SM);
+    m_ImageList->PushBack(m_WM);
     m_ImageList->PushBack(m_NdviImg);
     extractBandsFromImage(m_AnglesImg);
 
@@ -57,7 +57,7 @@ void DirectionalCorrection::DoExecute()
 //        otbAppLogINFO( << "All in one flag: " << allInOne << std::endl );
 //        otbAppLogINFO( << "Missing L3A bands flag: " << bMissingL3ABands << std::endl );
 
-    m_Functor.Initialize(scatteringCoeffs, fReflQuantifValue);
+    m_Functor.Initialize(scatteringCoeffs);
     m_DirectionalCorrectionFunctor = FunctorFilterType::New();
     m_DirectionalCorrectionFunctor->SetFunctor(m_Functor);
     m_DirectionalCorrectionFunctor->SetInput(m_Concat->GetOutput());
