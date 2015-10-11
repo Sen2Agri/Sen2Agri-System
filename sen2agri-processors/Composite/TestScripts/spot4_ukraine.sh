@@ -21,4 +21,4 @@ inputXML[16]='/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130616_N2A
 L3A_DATE="20130616"
 #HALF_SYNTHESIS="50"
 HALF_SYNTHESIS="60"
-#end of USER modif
+#end of USER modif 
