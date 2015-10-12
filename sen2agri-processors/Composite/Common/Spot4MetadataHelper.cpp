@@ -94,11 +94,6 @@ std::string Spot4MetadataHelper::DeriveFileNameFromImageFileName(const std::stri
     return fileName;
 }
 
-std::string Spot4MetadataHelper::buildFullPath(const std::string& fileName)
-{
-    return m_DirName + "/" + fileName;
-}
-
 std::string Spot4MetadataHelper::getImageFileName() {
 
     return buildFullPath(m_metadata->Files.OrthoSurfCorrPente);

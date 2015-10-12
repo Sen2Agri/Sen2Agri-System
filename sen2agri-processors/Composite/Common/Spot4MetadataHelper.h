@@ -20,7 +20,6 @@ protected:
     virtual bool DoLoadMetadata();
 
     std::string DeriveFileNameFromImageFileName(const std::string& replacement);
-    std::string buildFullPath(const std::string& fileName);
 
     std::string getImageFileName();
     std::string getAotFileName();

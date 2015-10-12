@@ -89,16 +89,6 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::InitBandInfos(SensorType sensorType
         if(sensorType == SENSOR_S2)
         {
             m_nNbL2ABands = S2_L2A_10M_BANDS_NO;
-/*            m_nL2ABandStartIndex = S2_L2A_10M_BANDS_START_IDX;
-            m_nCloudMaskBandIndex = S2_L2A_10M_CLD_MASK_IDX;
-            m_nSnowMaskBandIndex = S2_L2A_10M_SNOW_MASK_IDX;
-            m_nWaterMaskBandIndex = S2_L2A_10M_WATER_MASK_IDX;
-            m_nCurrentL2AWeightBandIndex = S2_L2A_10M_TOTAL_WEIGHT_IDX;
-            m_nPrevL3AWeightBandStartIndex = S2_L3A_10M_WEIGHT_START_IDX;
-            m_nPrevL3AWeightedAvDateBandIndex = S2_L3A_10M_W_AV_DATE_IDX;
-            m_nPrevL3AReflectanceBandStartIndex = S2_L3A_10M_REFL_START_IDX;
-            m_nPrevL3APixelFlagBandIndex = S2_L3A_10M_PIXEL_STATUS_IDX;
-*/
             m_nRedBandIndex = S2_L2A_10M_RED_BAND_IDX;
             m_nBlueBandIndex = S2_L2A_10M_BLUE_BAND_IDX;
 
@@ -109,16 +99,6 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::InitBandInfos(SensorType sensorType
         } else if (sensorType == SENSOR_LANDSAT8) {
 
             m_nNbL2ABands = L8_L2A_10M_BANDS_NO;
-/*            m_nL2ABandStartIndex = L8_L2A_10M_BANDS_START_IDX;
-            m_nCloudMaskBandIndex = L8_L2A_10M_CLD_MASK_IDX;
-            m_nSnowMaskBandIndex = L8_L2A_10M_SNOW_MASK_IDX;
-            m_nWaterMaskBandIndex = L8_L2A_10M_WATER_MASK_IDX;
-            m_nCurrentL2AWeightBandIndex = L8_L2A_10M_TOTAL_WEIGHT_IDX;
-            m_nPrevL3AWeightBandStartIndex = L8_L3A_10M_WEIGHT_START_IDX;
-            m_nPrevL3AWeightedAvDateBandIndex = L8_L3A_10M_W_AV_DATE_IDX;
-            m_nPrevL3AReflectanceBandStartIndex = L8_L3A_10M_REFL_START_IDX;
-            m_nPrevL3APixelFlagBandIndex = L8_L3A_10M_PIXEL_STATUS_IDX;
-*/
             m_nRedBandIndex = L8_L2A_10M_RED_BAND_IDX;
             m_nBlueBandIndex = L8_L2A_10M_BLUE_BAND_IDX;
 
@@ -130,16 +110,6 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::InitBandInfos(SensorType sensorType
             }
         } else if (sensorType == SENSOR_SPOT4) {
             m_nNbL2ABands = SPOT4_L2A_10M_BANDS_NO;
-/*            m_nL2ABandStartIndex = SPOT4_L2A_10M_BANDS_START_IDX;
-            m_nCloudMaskBandIndex = SPOT4_L2A_10M_CLD_MASK_IDX;
-            m_nSnowMaskBandIndex = SPOT4_L2A_10M_SNOW_MASK_IDX;
-            m_nWaterMaskBandIndex = SPOT4_L2A_10M_WATER_MASK_IDX;
-            m_nCurrentL2AWeightBandIndex = SPOT4_L2A_10M_TOTAL_WEIGHT_IDX;
-            m_nPrevL3AWeightBandStartIndex = SPOT4_L3A_10M_WEIGHT_START_IDX;
-            m_nPrevL3AWeightedAvDateBandIndex = SPOT4_L3A_10M_W_AV_DATE_IDX;
-            m_nPrevL3AReflectanceBandStartIndex = SPOT4_L3A_10M_REFL_START_IDX;
-            m_nPrevL3APixelFlagBandIndex = SPOT4_L3A_10M_PIXEL_STATUS_IDX;
-*/
             m_nRedBandIndex = SPOT4_L2A_10M_RED_BAND_IDX;
             m_nBlueBandIndex = SPOT4_L2A_10M_BLUE_BAND_IDX;
 
@@ -158,16 +128,6 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::InitBandInfos(SensorType sensorType
         if(sensorType == SENSOR_S2)
         {
             m_nNbL2ABands = S2_L2A_20M_BANDS_NO;
-/*            m_nL2ABandStartIndex = S2_L2A_20M_BANDS_START_IDX;
-            m_nCloudMaskBandIndex = S2_L2A_20M_CLD_MASK_IDX;
-            m_nSnowMaskBandIndex = S2_L2A_20M_SNOW_MASK_IDX;
-            m_nWaterMaskBandIndex = S2_L2A_20M_WATER_MASK_IDX;
-            m_nCurrentL2AWeightBandIndex = S2_L2A_20M_TOTAL_WEIGHT_IDX;
-            m_nPrevL3AWeightBandStartIndex = S2_L3A_20M_WEIGHT_START_IDX;
-            m_nPrevL3AWeightedAvDateBandIndex = S2_L3A_20M_W_AV_DATE_IDX;
-            m_nPrevL3AReflectanceBandStartIndex = S2_L3A_20M_REFL_START_IDX;
-            m_nPrevL3APixelFlagBandIndex = S2_L3A_20M_PIXEL_STATUS_IDX;
-*/
             m_nRedBandIndex = S2_L2A_20M_RED_BAND_IDX;
             m_nBlueBandIndex = S2_L2A_20M_BLUE_BAND_IDX;
             // For S2 at 20m all bands are available
@@ -177,16 +137,6 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::InitBandInfos(SensorType sensorType
         } else if (sensorType == SENSOR_LANDSAT8) {
 
             m_nNbL2ABands = L8_L2A_20M_BANDS_NO;
-/*            m_nL2ABandStartIndex = L8_L2A_20M_BANDS_START_IDX;
-            m_nCloudMaskBandIndex = L8_L2A_20M_CLD_MASK_IDX;
-            m_nSnowMaskBandIndex = L8_L2A_20M_SNOW_MASK_IDX;
-            m_nWaterMaskBandIndex = L8_L2A_20M_WATER_MASK_IDX;
-            m_nCurrentL2AWeightBandIndex = L8_L2A_20M_TOTAL_WEIGHT_IDX;
-            m_nPrevL3AWeightBandStartIndex = L8_L3A_20M_WEIGHT_START_IDX;
-            m_nPrevL3AWeightedAvDateBandIndex = L8_L3A_20M_W_AV_DATE_IDX;
-            m_nPrevL3AReflectanceBandStartIndex = L8_L3A_20M_REFL_START_IDX;
-            m_nPrevL3APixelFlagBandIndex = L8_L3A_20M_PIXEL_STATUS_IDX;
-*/
             m_nRedBandIndex = L8_L2A_20M_RED_BAND_IDX;
             m_nBlueBandIndex = L8_L2A_20M_BLUE_BAND_IDX;
             // For L4 at 20m only B8A, B11 and B12 bands are available
@@ -197,16 +147,6 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::InitBandInfos(SensorType sensorType
             }
         } else if (sensorType == SENSOR_SPOT4) {
             m_nNbL2ABands = SPOT4_L2A_20M_BANDS_NO;
-/*            m_nL2ABandStartIndex = SPOT4_L2A_20M_BANDS_START_IDX;
-            m_nCloudMaskBandIndex = SPOT4_L2A_20M_CLD_MASK_IDX;
-            m_nSnowMaskBandIndex = SPOT4_L2A_20M_SNOW_MASK_IDX;
-            m_nWaterMaskBandIndex = SPOT4_L2A_20M_WATER_MASK_IDX;
-            m_nCurrentL2AWeightBandIndex = SPOT4_L2A_20M_TOTAL_WEIGHT_IDX;
-            m_nPrevL3AWeightBandStartIndex = SPOT4_L3A_20M_WEIGHT_START_IDX;
-            m_nPrevL3AWeightedAvDateBandIndex = SPOT4_L3A_20M_W_AV_DATE_IDX;
-            m_nPrevL3AReflectanceBandStartIndex = SPOT4_L3A_20M_REFL_START_IDX;
-            m_nPrevL3APixelFlagBandIndex = SPOT4_L3A_20M_PIXEL_STATUS_IDX;
-*/
             m_nRedBandIndex = SPOT4_L2A_20M_RED_BAND_IDX;
             m_nBlueBandIndex = SPOT4_L2A_20M_BLUE_BAND_IDX;
 
@@ -255,16 +195,6 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::InitAllBandInResolutionInfos(Sensor
     if(sensorType == SENSOR_S2)
     {
         m_nNbL2ABands = S2_L2A_ALL_BANDS_NO;
-/*        m_nL2ABandStartIndex = S2_L2A_ALL_BANDS_START_IDX;
-        m_nCloudMaskBandIndex = S2_L2A_ALL_CLD_MASK_IDX;
-        m_nSnowMaskBandIndex = S2_L2A_ALL_SNOW_MASK_IDX;
-        m_nWaterMaskBandIndex = S2_L2A_ALL_WATER_MASK_IDX;
-        m_nCurrentL2AWeightBandIndex = S2_L2A_ALL_TOTAL_WEIGHT_IDX;
-        m_nPrevL3AWeightBandStartIndex = S2_L3A_ALL_WEIGHT_START_IDX;
-        m_nPrevL3AWeightedAvDateBandIndex = S2_L3A_ALL_W_AV_DATE_IDX;
-        m_nPrevL3AReflectanceBandStartIndex = S2_L3A_ALL_REFL_START_IDX;
-        m_nPrevL3APixelFlagBandIndex = S2_L3A_ALL_PIXEL_STATUS_IDX;
-*/
         m_nRedBandIndex = S2_L2A_ALL_RED_BAND_IDX;
         m_nBlueBandIndex = S2_L2A_ALL_BLUE_BAND_IDX;
 
@@ -274,16 +204,6 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::InitAllBandInResolutionInfos(Sensor
     } else if (sensorType == SENSOR_LANDSAT8) {
 
         m_nNbL2ABands = L8_L2A_ALL_BANDS_NO;
-/*        m_nL2ABandStartIndex = L8_L2A_ALL_BANDS_START_IDX;
-        m_nCloudMaskBandIndex = L8_L2A_ALL_CLD_MASK_IDX;
-        m_nSnowMaskBandIndex = L8_L2A_ALL_SNOW_MASK_IDX;
-        m_nWaterMaskBandIndex = L8_L2A_ALL_WATER_MASK_IDX;
-        m_nCurrentL2AWeightBandIndex = L8_L2A_ALL_TOTAL_WEIGHT_IDX;
-        m_nPrevL3AWeightBandStartIndex = L8_L3A_ALL_WEIGHT_START_IDX;
-        m_nPrevL3AWeightedAvDateBandIndex = L8_L3A_ALL_W_AV_DATE_IDX;
-        m_nPrevL3AReflectanceBandStartIndex = L8_L3A_ALL_REFL_START_IDX;
-        m_nPrevL3APixelFlagBandIndex = L8_L3A_ALL_PIXEL_STATUS_IDX;
-*/
         m_nRedBandIndex = L8_L2A_ALL_RED_BAND_IDX;
         m_nBlueBandIndex = L8_L2A_ALL_BLUE_BAND_IDX;
 
@@ -295,16 +215,6 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::InitAllBandInResolutionInfos(Sensor
         }
     } else if (sensorType == SENSOR_SPOT4) {
         m_nNbL2ABands = SPOT4_L2A_ALL_BANDS_NO;
-/*        m_nL2ABandStartIndex = SPOT4_L2A_ALL_BANDS_START_IDX;
-        m_nCloudMaskBandIndex = SPOT4_L2A_ALL_CLD_MASK_IDX;
-        m_nSnowMaskBandIndex = SPOT4_L2A_ALL_SNOW_MASK_IDX;
-        m_nWaterMaskBandIndex = SPOT4_L2A_ALL_WATER_MASK_IDX;
-        m_nCurrentL2AWeightBandIndex = SPOT4_L2A_ALL_TOTAL_WEIGHT_IDX;
-        m_nPrevL3AWeightBandStartIndex = SPOT4_L3A_ALL_WEIGHT_START_IDX;
-        m_nPrevL3AWeightedAvDateBandIndex = SPOT4_L3A_ALL_W_AV_DATE_IDX;
-        m_nPrevL3AReflectanceBandStartIndex = SPOT4_L3A_ALL_REFL_START_IDX;
-        m_nPrevL3APixelFlagBandIndex = SPOT4_L3A_ALL_PIXEL_STATUS_IDX;
-*/
         m_nRedBandIndex = SPOT4_L2A_ALL_RED_BAND_IDX;
         m_nBlueBandIndex = SPOT4_L2A_ALL_BLUE_BAND_IDX;
 
@@ -524,7 +434,14 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
             float fPrevWeight = GetPrevL3AWeightValue(A, i);
             // if pixel never observed without cloud, water or snow
             if(IsNoDataValue(fPrevWeight, 0) || IsNoDataValue(fPrevWeight, WEIGHT_NO_DATA)) {
-                outInfos.m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
+                float fCurRefl = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
+                // check if the current reflectance is valid (maybe we have missing areas)
+                // in this case, we will keep the existing reflectance
+                if(IsNoDataValue(fCurRefl, m_fReflNoDataValue)) {
+                    outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
+                } else {
+                    outInfos.m_CurrentWeightedReflectances[i] = fCurRefl;
+                }
                 outInfos.m_CurrentPixelWeights[i] = 0;
                 if(IsRedBand(i))
                 {
