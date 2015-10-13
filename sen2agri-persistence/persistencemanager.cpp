@@ -12,7 +12,11 @@
 PersistenceManager::PersistenceManager(const Settings &settings, QObject *parent)
     : QObject(parent), dbProvider(settings)
 {
-    dbProvider.TestConnection();
+    try {
+        dbProvider.TestConnection();
+    } catch (const std::runtime_error &e) {
+        Logger::error(e.what());
+    }
 }
 
 bool PersistenceManager::IsCallerAdmin()
