@@ -358,6 +358,8 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, O
 {
     outInfos.m_nCurrentPixelFlag = LAND;
 
+    bool bAllReflsAreNoData = true;
+
     // we assume that the reflectance bands start from index 0
     for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
     {
@@ -375,6 +377,9 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, O
 
             bool bIsPrevReflNoData = IsNoDataValue(fPrevReflect, m_fReflNoDataValue);
             bool bIsCurReflNoData = IsNoDataValue(fCurReflectance, m_fReflNoDataValue);
+            if(!bIsCurReflNoData) {
+                bAllReflsAreNoData = false;
+            }
 
             if((bIsPrevReflNoData == false) && (bIsCurReflNoData == false)
                     && !IsNoDataValue(fPrevWeight, WEIGHT_NO_DATA)
@@ -414,6 +419,11 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, O
                 outInfos.m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
             }
         }
+    }
+
+    // if all reflectances are no data for a pixel, we will keep the previous flag
+    if(bAllReflsAreNoData) {
+        outInfos.m_nCurrentPixelFlag = GetPrevL3APixelFlagValue(A);
     }
 }
 
