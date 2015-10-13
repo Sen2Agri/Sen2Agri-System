@@ -257,8 +257,8 @@ parser.add_argument('-ranger', help='The range radius defining the radius (expre
 parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) in segmentation. (default 10)', required=False, metavar='minsize', default=10)
 
 parser.add_argument('-refr', help='The reference raster when insitu data is not available', required=False, metavar='reference', default='')
-parser.add_argument('-eroderad', help='The radius used for erosion', required=False, metavar='erode_radius', default='1')
-parser.add_argument('-alpha', help='The parameter alpha used by the mahalanobis function', required=False, metavar='alpha', default='0.01')
+parser.add_argument('-eroderad', help='The radius used for erosion (default 1)', required=False, metavar='erode_radius', default='1')
+parser.add_argument('-alpha', help='The parameter alpha used by the mahalanobis function (default 0.01)', required=False, metavar='alpha', default='0.01')
 
 parser.add_argument('-rfnbtrees', help='The number of trees used for training (default 100)', required=False, metavar='rfnbtrees', default=100)
 parser.add_argument('-rfmax', help='maximum depth of the trees used for Random Forest classifier (default 25)', required=False, metavar='rfmax', default=25)
@@ -269,7 +269,7 @@ parser.add_argument('-pixsize', help='THe size, in meters, of a pixel (default 1
 args = parser.parse_args()
 
 reference_polygons=args.refp
-sample_ratio=args.ratio
+sample_ratio=str(args.ratio)
 
 indesc = " "
 for desc in args.input:
@@ -277,24 +277,24 @@ for desc in args.input:
 
 t0=args.t0
 tend=args.tend
-sp=args.rate
-radius=args.radius
-random_seed=args.rseed
-nbtrsample=args.nbtrsample
-rfnbtrees=args.rfnbtrees
-rfmax=args.rfmax
-rfmin=args.rfmin
-lmbd=args.lmbd
-weight=args.weight
-nbcomp=args.nbcomp
-spatialr=args.spatialr
-ranger=args.ranger
-minsize=args.minsize
-pixsize=args.pixsize
+sp=str(args.rate)
+radius=str(args.radius)
+random_seed=str(args.rseed)
+nbtrsample=str(args.nbtrsample)
+rfnbtrees=str(args.rfnbtrees)
+rfmax=str(args.rfmax)
+rfmin=str(args.rfmin)
+lmbd=str(args.lmbd)
+weight=str(args.weight)
+nbcomp=str(args.nbcomp)
+spatialr=str(args.spatialr)
+ranger=str(args.ranger)
+minsize=str(args.minsize)
+pixsize=str(args.pixsize)
 
 reference=args.refr
-erode_radius=args.eroderad
-alpha=args.alpha
+erode_radius=str(args.eroderad)
+alpha=str(args.alpha)
 
 reference_polygons_clip=buildFolder+"reference_clip.shp"
 training_polygons=buildFolder+"training_polygons.shp"
@@ -355,7 +355,7 @@ print "BandsExtractor done!"
 # gdalwarp
 print "Executing gdalwarp..."
 
-gwCmdLine = "gdalwarp -dstnodata \"-10000\" -overwrite -cutline "+shape+" -crop_to_cutline "+rawtocr+" "+tocr
+gwCmdLine = "gdalwarp -multi -wm 2048 -dstnodata \"-10000\" -overwrite -cutline "+shape+" -crop_to_cutline "+rawtocr+" "+tocr
 print gwCmdLine
 result = os.system(gwCmdLine)
 
@@ -365,7 +365,7 @@ if result != 0 :
 
 #os.system("rm " + rawtocr)
 
-gwCmdLine = "gdalwarp -dstnodata 1 -overwrite -cutline "+shape+" -crop_to_cutline "+rawmask+" "+mask
+gwCmdLine = "gdalwarp -multi -wm 2048 -dstnodata 1 -overwrite -cutline "+shape+" -crop_to_cutline "+rawmask+" "+mask
 print gwCmdLine
 result = os.system(gwCmdLine)
 
@@ -404,7 +404,6 @@ if result != 0 :
    exit(1)
 
 print "FeatureExtraction done!"
-
 
 if reference_polygons != "" :
 	inSituDataAvailable()
