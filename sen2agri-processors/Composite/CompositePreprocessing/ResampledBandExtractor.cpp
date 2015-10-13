@@ -20,7 +20,29 @@ ResampledBandExtractor::InternalImageType::Pointer ResampledBandExtractor::Extra
     return getResampledImage(curRes, nDesiredRes, extractor, bNearestNeighbourInterpolation);
 }
 
+ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getResampler(const InternalImageType::Pointer& image, const int wantedWidth, const int wantedHeight, bool isMask)
+{
+    auto sz = image->GetLargestPossibleRegion().GetSize();
+    OutputVectorType scale;
+    scale[0] = (float)sz[0] / wantedWidth;
+    scale[1] = (float)sz[1] / wantedHeight;
+    ResampleFilterType::Pointer resampler = getResampler(image, scale, isMask);
+    ResampleFilterType::SizeType recomputedSize;
+    recomputedSize[0] = wantedWidth;
+    recomputedSize[1] = wantedHeight;
+    resampler->SetOutputSize(recomputedSize);
+    return resampler;
+}
+
 ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getResampler(const InternalImageType::Pointer& image, const float& ratio, bool isMask) {
+     // Scale Transform
+     OutputVectorType scale;
+     scale[0] = 1.0 / ratio;
+     scale[1] = 1.0 / ratio;
+     return getResampler(image, scale, isMask);
+}
+
+ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getResampler(const InternalImageType::Pointer& image, const OutputVectorType& scale, bool isMask) {
      ResampleFilterType::Pointer resampler = ResampleFilterType::New();
      resampler->SetInput(image);
 
@@ -41,10 +63,6 @@ ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getR
      IdentityTransformType::Pointer transform = IdentityTransformType::New();
 
      resampler->SetOutputParametersFromImage( image );
-     // Scale Transform
-     OutputVectorType scale;
-     scale[0] = 1.0 / ratio;
-     scale[1] = 1.0 / ratio;
 
      // Evaluate spacing
      InternalImageType::SpacingType spacing = image->GetSpacing();

@@ -94,7 +94,7 @@ private:
         std::string mskImg = GetParameterAsString("msk");
         if(missionName.find(SENTINEL_MISSION_STR) != std::string::npos) {
             std::string scatCoeffsFile = GetParameterAsString("scatcoef");
-            m_computeNdvi.DoInit(inXml);
+            m_computeNdvi.DoInit(inXml, res);
             m_creatAngles.DoInit(res, inXml);
             ImageType1::Pointer anglesImg = m_creatAngles.DoExecute();
             ImageType2::Pointer ndviImg = m_computeNdvi.DoExecute();
