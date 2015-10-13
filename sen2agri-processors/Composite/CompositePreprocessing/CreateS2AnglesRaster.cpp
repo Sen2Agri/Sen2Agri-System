@@ -83,15 +83,16 @@ CreateS2AnglesRaster::OutputImageType::Pointer CreateS2AnglesRaster::DoExecute()
     std::string resSuffix("_FRE_R1");
     if(m_nOutRes == 20)
         resSuffix = "_FRE_R2";
-    std::string fileMetadata = getMACCSRasterFileName(m_DirName, meta->ProductOrganization.ImageFiles, resSuffix, true);
-    std::cout << fileMetadata << std::endl;
-    meta = maccsMetadataReader->ReadMetadata(fileMetadata);
-    // check if it is a sentinel 2 product, otherwise -> exception
-    if (meta == nullptr)
-        itkExceptionMacro("The resolution metadata file could not be read !");
+    std::string fileName = getMACCSRasterFileName(m_DirName, meta->ProductOrganization.ImageFiles, resSuffix, false);
 
-    int width = atoi(meta->ImageInformation.Size.Columns.c_str());
-    int height = atoi(meta->ImageInformation.Size.Lines.c_str());
+    ImageReaderType::Pointer image = ImageReaderType::New();
+    image->SetFileName(fileName);
+    image->UpdateOutputInformation();;
+    auto sz = image->GetOutput()->GetLargestPossibleRegion().GetSize();
+
+    int width = sz[0];
+    int height = sz[1];
+
     if(width == 0 || height == 0)
         itkExceptionMacro("The read width/height from the resolution metadata file is/are 0");
     createResampler(m_AnglesRaster, width, height);

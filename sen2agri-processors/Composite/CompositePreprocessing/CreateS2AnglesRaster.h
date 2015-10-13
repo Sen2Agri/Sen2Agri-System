@@ -33,6 +33,8 @@ class CreateS2AnglesRaster
 public:
     typedef float                                     PixelType;
     typedef otb::Wrapper::FloatVectorImageType                  OutputImageType;
+    typedef otb::ImageFileReader<otb::Wrapper::Int16VectorImageType>      ImageReaderType;
+
     typedef otb::ImageList<OutputImageType>            ImageListType;
     typedef otb::ImageFileWriter<OutputImageType>      WriterType;
     typedef otb::MultiToMonoChannelExtractROI<otb::Wrapper::FloatVectorImageType::InternalPixelType,

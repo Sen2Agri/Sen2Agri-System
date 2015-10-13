@@ -15,46 +15,32 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-
-
 //  Software Guide : BeginCommandLineArgs
 //    INPUTS: {input image}, {xml file desc}
 //    OUTPUTS: {output image NDVI}
 //  Software Guide : EndCommandLineArgs
 
 
-//  Software Guide : BeginLatex
-//
-//
-//  Software Guide : EndLatex
-
 //  Software Guide : BeginCodeSnippet
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 #include "otbBandMathImageFilter.h"
 #include "otbMultiToMonoChannelExtractROI.h"
-
-#include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
-
 #include "otbImage.h"
 #include "otbVectorImage.h"
 #include "otbImageFileReader.h"
-#include "otbImageFileWriter.h"
-#include "itkUnaryFunctorImageFilter.h"
-#include "itkCastImageFilter.h"
 #include "otbVectorImageToImageListFilter.h"
 #include "otbStreamingResampleImageFilter.h"
 #include "itkScalableAffineTransform.h"
 #include "itkIdentityTransform.h"
 #include "itkScaleTransform.h"
-#include "itkResampleImageFilter.h"
-#include "itkIndent.h"
+
+#include "MACCSMetadataReader.hpp"
 #include <vector>
 #include "libgen.h"
 
 #define RESOLUTION_10_M 10
 #define RESOLUTION_20_M 20
-
 
 //  Software Guide : EndCodeSnippet
 
@@ -70,7 +56,6 @@ namespace otb
 namespace Wrapper
 {
 //  Software Guide : EndCodeSnippet
-
 
 //  Software Guide : BeginLatex
 //
@@ -104,36 +89,27 @@ public:
     itkTypeMacro(ComputeNDVI, otb::Application)
     //  Software Guide : EndCodeSnippet
 
-    typedef short                                     PixelType;
+    typedef short                                           PixelType;
+    typedef otb::Image<PixelType, 2>                        OutputImageType;
+    typedef Int16VectorImageType                            ImageType;
+    typedef otb::ImageFileReader<ImageType>                 ImageReaderType;
+    typedef otb::ImageList<OutputImageType>                 ImageListType;
+    typedef otb::VectorImageToImageListFilter<ImageType,
+                                            ImageListType>  VectorImageToImageListType;
+    typedef otb::BandMathImageFilter<Int16ImageType>        BMFilterType;
 
-    typedef otb::Image<PixelType, 2>                   OutputImageType;
-    typedef Int16VectorImageType                                 ImageType;
-    typedef otb::ImageFileReader<ImageType>                            ImageReaderType;
-
-    typedef otb::ImageList<OutputImageType>            ImageListType;
-    typedef otb::ImageFileWriter<OutputImageType>      WriterType;
-    typedef otb::VectorImageToImageListFilter<ImageType, ImageListType>    VectorImageToImageListType;
-
-    typedef otb::MultiToMonoChannelExtractROI<FloatVectorImageType::InternalPixelType,
-                                              FloatImageType::PixelType>    ExtractROIFilterType;
-    typedef otb::ObjectList<ExtractROIFilterType>                           ExtractROIFilterListType;
-
-    typedef otb::BandMathImageFilter<Int16ImageType>   BMFilterType;
-
-
+    typedef itk::MACCSMetadataReader                        MACCSMetadataReaderType;
+    typedef otb::StreamingResampleImageFilter<OutputImageType, OutputImageType, double>    ResampleFilterType;
+    typedef itk::LinearInterpolateImageFunction<OutputImageType,  double>          LinearInterpolationType;
+    typedef itk::IdentityTransform<double, OutputImageType::ImageDimension>      IdentityTransformType;
+    typedef itk::ScalableAffineTransform<double, OutputImageType::ImageDimension> ScalableTransformType;
+    typedef ScalableTransformType::OutputVectorType          OutputVectorType;
 
 private:
 
     //  Software Guide : BeginLatex
     //  \code{DoInit()} method contains class information and description, parameter set up, and example values.
     //  Software Guide : EndLatex
-
-    typedef itk::MACCSMetadataReader                                   MACCSMetadataReaderType;
-    typedef otb::StreamingResampleImageFilter<OutputImageType, OutputImageType, double>    ResampleFilterType;
-    typedef itk::LinearInterpolateImageFunction<OutputImageType,  double>          LinearInterpolationType;
-    typedef itk::IdentityTransform<double, OutputImageType::ImageDimension>      IdentityTransformType;
-    typedef itk::ScalableAffineTransform<double, OutputImageType::ImageDimension> ScalableTransformType;
-    typedef ScalableTransformType::OutputVectorType                         OutputVectorType;
 
     void DoInit()
     {
@@ -244,7 +220,6 @@ private:
         m_InImage->SetFileName(imageFile1);
         m_InImage->UpdateOutputInformation();
 
-        m_ChannelExtractorList = ExtractROIFilterListType::New();
         m_Filter               = BMFilterType::New();
 
         m_ImageList = VectorImageToImageListType::New();
@@ -360,11 +335,8 @@ private:
         return "";
     }
 
-    ExtractROIFilterType::Pointer     m_ExtractROIFilter;
-    ExtractROIFilterListType::Pointer m_ChannelExtractorList;
     BMFilterType::Pointer  m_Filter;
     VectorImageToImageListType::Pointer m_ImageList;
-
     ImageReaderType::Pointer            m_InImage;
     ResampleFilterType::Pointer         m_Resampler;
 
