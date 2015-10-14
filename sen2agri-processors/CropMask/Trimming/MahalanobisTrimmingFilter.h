@@ -35,7 +35,7 @@ public:
   typedef typename OutputImageType::RegionType OutputImageRegionType;
   typedef typename OutputImageType::PixelType  OutputImagePixelType;
 
-  typedef std::list< IndexType > PointsContainerType;
+  typedef std::vector< IndexType > PointsContainerType;
 
   void PrintSelf(std::ostream & os, itk::Indent indent) const ITK_OVERRIDE;
 
@@ -52,6 +52,19 @@ public:
   /** Set/Get the value of the parameter Alpha used for the Chi-Squared Distribution */
   itkSetMacro(Alpha, double);
   itkGetConstMacro(Alpha, double);
+
+  /** Set/Get the value of the Number of samples that must be returned.*/
+  itkSetMacro(NbSamples, int);
+  itkGetConstMacro(NbSamples, int);
+
+  /** Set/Get the value of the Seed or the random number generation.*/
+  itkSetMacro(Seed, int);
+  itkGetConstMacro(Seed, int);
+
+  /** Set/Get value of the class */
+  itkSetMacro(Class, short);
+  itkGetConstMacro(Class, short);
+
 
 protected:
   MahalanobisTrimmingFilter();
@@ -74,6 +87,9 @@ private:
   PointsContainerType  m_Points;
   double               m_Alpha;
   OutputImagePixelType m_ReplaceValue;
+  short                m_Class;
+  int                  m_NbSamples;
+  int                  m_Seed;
 };
 
 #ifndef ITK_MANUAL_INSTANTIATION
