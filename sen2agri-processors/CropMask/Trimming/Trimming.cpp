@@ -174,12 +174,16 @@ private:
 
     AddParameter(ParameterType_Float, "alpha", "The alpha parameter");
     MandatoryOff("alpha");
+    AddParameter(ParameterType_Int, "nbsamples", "The number of crop/nocrop samples required or 0 if all samples selected");
+    MandatoryOff("nbsamples");
+    AddParameter(ParameterType_Int, "seed", "The seed for the random number generation");
+    MandatoryOff("seed");
 
     AddParameter(ParameterType_OutputVectorData, "out", "The training samples shape file");
 
-
-
     SetDefaultParameterFloat("alpha", 0.01);
+    SetDefaultParameterInt("nbsamples", 0);
+    SetDefaultParameterInt("seed", 0);
      //  Software Guide : EndCodeSnippet
 
     // Software Guide : BeginLatex
@@ -190,6 +194,9 @@ private:
     //  Software Guide : BeginCodeSnippet
     SetDocExampleParameterValue("feat", "features.tif");
     SetDocExampleParameterValue("ref", "reference.tif");
+    SetDocExampleParameterValue("alpha", "0.01");
+    SetDocExampleParameterValue("nbsamples", "0");
+    SetDocExampleParameterValue("seed", "0");
     SetDocExampleParameterValue("out", "noinsitu_training_samples.shp");
     //  Software Guide : EndCodeSnippet
   }
@@ -221,9 +228,11 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoExecute()
   {
-      GetLogger()->Debug("Starting trimming");
+      GetLogger()->Debug("Starting trimming\n");
       // get the input parameters
       const double alpha = GetParameterFloat("alpha");
+      const int nbSamples = GetParameterInt("nbsamples");
+      const int seed = GetParameterInt("seed");
 
       //Read the Features input file
       m_FeaturesReader->SetFileName(GetParameterString("feat"));
@@ -249,7 +258,7 @@ private:
       int bandCount = 0;
 
       // loop through the image
-      GetLogger()->Debug("Splitting pixels into classes!");
+      GetLogger()->Debug("Splitting pixels into classes!\n");
       for (ReferenceSizeValueType i = 0; i < imgSize[0]; i++) {
           for (ReferenceSizeValueType j = 0; j < imgSize[1]; j++) {
               InternalImageType::IndexType index;
@@ -264,6 +273,9 @@ private:
                       MahalanobisTrimmingFilterType::Pointer filter = MahalanobisTrimmingFilterType::New();
                       filter->AddPoint(index);
                       filter->SetAlpha(alpha);
+                      filter->SetNbSamples(nbSamples);
+                      filter->SetSeed(seed);
+                      filter->SetClass(pix);
                       // Only the classes 11 and 20 are used as crop
                       // We use 2 for CROP and 1 for NOCROP to differentiate from the ignored pixels
                       // The final shape will contain 1 for CROP and 0 for NOCROP
@@ -278,7 +290,7 @@ private:
               }
           }
       }
-      GetLogger()->Debug("All classes done!");
+      GetLogger()->Debug("Splitting done!\n");
 
       std::ostringstream exprstream;
       exprstream << "-1";
@@ -297,14 +309,9 @@ private:
 
       SetParameterOutputVectorData("out", m_ShapeBuilder->GetOutput());
 
-      GetLogger()->Debug("Trimming done!");
+      GetLogger()->Debug("Performing Trimming!\n");
   }
   //  Software Guide :EndCodeSnippet
-
-  // The number of bands per output
-  int m_bands;
-
-
   VectorImageReaderType::Pointer                m_FeaturesReader;
   ImageReaderType::Pointer                      m_ReferenceReader;
   MahalanobisTrimmingFilterMap                  m_trimingFilters;

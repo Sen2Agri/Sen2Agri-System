@@ -200,7 +200,7 @@ def noInSituDataAvailable() :
 
 	# Trimming
 	print "Executing Trimming application..."
-	trCmdLine = "otbApplicationLauncherCommandLine Trimming "+buildFolder+"CropMask/Trimming -feat " + spectral_features + " -ref "+eroded_reference + " -out " + trimmed_reference_shape + " -alpha " + alpha
+	trCmdLine = "otbApplicationLauncherCommandLine Trimming "+buildFolder+"CropMask/Trimming -feat " + spectral_features + " -ref "+eroded_reference + " -out " + trimmed_reference_shape + " -alpha " + alpha + " -nbsamples 400000 -seed " + random_seed
 	print trCmdLine
 	result = os.system(trCmdLine)
 
@@ -209,7 +209,8 @@ def noInSituDataAvailable() :
 	   exit(1)
 
 	print "Trimming done!"
-
+	
+	# TrainImagesClassifier
 	print "Executing TrainImagesClassifier..."
 	tcCmdLine = "otbcli_TrainImagesClassifier -io.il "+spectral_features+" -io.vd "+trimmed_reference_shape+" -io.imstat "+statistics_noinsitu+" -rand "+random_seed+" -sample.bm 0 -io.confmatout "+confmatout+" -io.out "+model+" -sample.mt "+nbtrsample+" -sample.mv -1 -sample.vfn CROP -sample.vtr "+sample_ratio+" -classifier rf -classifier.rf.nbtrees "+rfnbtrees+" -classifier.rf.min "+rfmin+" -classifier.rf.max "+rfmax 
 
