@@ -83,6 +83,7 @@ OUT_WEIGHTS="$OUT_FOLDER/L3AResult#_weights.tif"
 OUT_DATES="$OUT_FOLDER/L3AResult#_dates.tif"
 OUT_REFLS="$OUT_FOLDER/L3AResult#_refls.tif"
 OUT_FLAGS="$OUT_FOLDER/L3AResult#_flags.tif"
+OUT_RGB="$OUT_FOLDER/L3AResult#_rgb.tif"
 
 SCAT_COEFFS="scattering_coefs_$RESOLUTION.txt"
 
@@ -120,6 +121,7 @@ do
     out_d=${OUT_DATES//[#]/$i}
     out_r=${OUT_REFLS//[#]/$i}
     out_f=${OUT_FLAGS//[#]/$i}
+    out_rgb="-outrgb ${OUT_RGB//[#]/$i}"
     i=$((i+1))
     
     if [[ $RESOLUTION != 10 && $RESOLUTION != 20 ]] ; then
@@ -136,9 +138,12 @@ do
         #todo... search for previous L3A product?
         try otbcli UpdateSynthesis $COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/ -in $OUT_IMG_BANDS -allinone 1 -xml $xml $PREV_L3A -csm $OUT_CLD -wm $OUT_WAT -sm $OUT_SNOW -wl2a $OUT_TOTAL_WEIGHT_FILE -out $mod $IS_SINGLE_PRODUCTS_TYPE_MODE
 
-        try otbcli CompositeSplitter $COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/ -in $mod -allinone 1 -xml $xml -outweights $out_w -outdates $out_d -outrefls $out_r -outflags $out_f $IS_SINGLE_PRODUCTS_TYPE_MODE
+        try otbcli CompositeSplitter $COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/ -in $mod -allinone 1 -xml $xml -outweights $out_w -outdates $out_d -outrefls $out_r -outflags $out_f $IS_SINGLE_PRODUCTS_TYPE_MODE $out_rgb
     else 
         #try otbcli ResampleAtS2Res $COMPOSITE_OTB_LIBS_ROOT/ResampleAtS2Res/ -xml $xml -spotmask $OUT_SPOT_MASKS -outres$RESOLUTION $OUT_IMG_BANDS -outcmres$RESOLUTION $OUT_CLD -outwmres$RESOLUTION $OUT_WAT -outsmres$RESOLUTION $OUT_SNOW -outaotres$RESOLUTION $OUT_AOT $ALL_IN_ONE
+        if [[ $RESOLUTION == 20 ]] ; then
+	    out_rgb=""
+	fi   
 
 	try otbcli CompositePreprocessing $COMPOSITE_OTB_LIBS_ROOT/CompositePreprocessing/ -xml $xml -res $RESOLUTION -scatcoef $SCAT_COEFFS -msk $OUT_SPOT_MASKS -outres $OUT_IMG_BANDS -outcmres $OUT_CLD -outwmres $OUT_WAT -outsmres $OUT_SNOW -outaotres $OUT_AOT
 
@@ -151,7 +156,7 @@ do
         #todo... search for previous L3A product?
         try otbcli UpdateSynthesis $COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/ -in $OUT_IMG_BANDS -xml $xml $PREV_L3A -csm $OUT_CLD -wm $OUT_WAT -sm $OUT_SNOW -wl2a $OUT_TOTAL_WEIGHT_FILE -out $mod $IS_SINGLE_PRODUCTS_TYPE_MODE $ALL_IN_ONE
 
-        try otbcli CompositeSplitter $COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/ -in $mod -res $RESOLUTION -xml $xml -outweights $out_w -outdates $out_d -outrefls $out_r -outflags $out_f $IS_SINGLE_PRODUCTS_TYPE_MODE $ALL_IN_ONE
+        try otbcli CompositeSplitter $COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/ -in $mod -res $RESOLUTION -xml $xml -outweights $out_w -outdates $out_d -outrefls $out_r -outflags $out_f $IS_SINGLE_PRODUCTS_TYPE_MODE $ALL_IN_ONE $out_rgb
     fi 
     #PREV_L3A="-prevl3a $mod"
     PREV_L3A="-prevl3aw $out_w -prevl3ad $out_d -prevl3ar $out_r -prevl3af $out_f"
