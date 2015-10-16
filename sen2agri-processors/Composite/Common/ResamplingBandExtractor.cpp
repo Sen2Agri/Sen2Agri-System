@@ -8,7 +8,7 @@ ResampledBandExtractor::ResampledBandExtractor()
 }
 
 ResampledBandExtractor::InternalImageType::Pointer ResampledBandExtractor::ExtractResampledBand(const ImageType::Pointer img, int nChannel, int curRes,
-                                              int nDesiredRes, bool bNearestNeighbourInterpolation)
+                                              int nDesiredRes, int nForcedOutWidth, int nForcedOutHeight, bool bNearestNeighbourInterpolation)
 {
     //Resample the cloud mask
     ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
@@ -17,20 +17,7 @@ ResampledBandExtractor::InternalImageType::Pointer ResampledBandExtractor::Extra
     extractor->UpdateOutputInformation();
     m_ExtractorList->PushBack( extractor );
 
-    return getResampledImage(curRes, nDesiredRes, extractor, bNearestNeighbourInterpolation);
-}
-
-ResampledBandExtractor::InternalImageType::Pointer ResampledBandExtractor::ExtractResampledBand2(const ImageType::Pointer img, int nChannel, int nWidth,
-                                              int nHeight, bool bNearestNeighbourInterpolation)
-{
-    //Resample the cloud mask
-    ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-    extractor->SetInput( img );
-    extractor->SetChannel( nChannel );
-    extractor->UpdateOutputInformation();
-    m_ExtractorList->PushBack( extractor );
-
-    return getResampledImage2(nWidth, nHeight, extractor, bNearestNeighbourInterpolation);
+    return getResampledImage(curRes, nDesiredRes, nForcedOutWidth, nForcedOutHeight, extractor, bNearestNeighbourInterpolation);
 }
 
 int ResampledBandExtractor::ExtractAllResampledBands(const ImageType::Pointer img,
@@ -47,7 +34,8 @@ int ResampledBandExtractor::ExtractAllResampledBands(const ImageType::Pointer im
         extractor->SetChannel( j+1 );
         extractor->UpdateOutputInformation();
         m_ExtractorList->PushBack( extractor );
-        outList->PushBack(getResampledImage(curRes, nDesiredRes, extractor, bNearestNeighbourInterpolation));
+        // TODO: see if this function should receive instead the forced size of a reference image, if possible
+        outList->PushBack(getResampledImage(curRes, nDesiredRes, -1, -1, extractor, bNearestNeighbourInterpolation));
     }
 
     return nbBands;
@@ -60,7 +48,7 @@ ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getR
     OutputVectorType scale;
     scale[0] = (float)sz[0] / wantedWidth;
     scale[1] = (float)sz[1] / wantedHeight;
-    ResampleFilterType::Pointer resampler = getResampler(image, scale, isMask);
+    ResampleFilterType::Pointer resampler = getResampler(image, scale, wantedWidth, wantedHeight, isMask);
     ResampleFilterType::SizeType recomputedSize;
     recomputedSize[0] = wantedWidth;
     recomputedSize[1] = wantedHeight;
@@ -73,10 +61,11 @@ ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getR
      OutputVectorType scale;
      scale[0] = 1.0 / ratio;
      scale[1] = 1.0 / ratio;
-     return getResampler(image, scale, isMask);
+     return getResampler(image, scale, -1, -1, isMask);
 }
 
-ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getResampler(const InternalImageType::Pointer& image, const OutputVectorType& scale, bool isMask) {
+ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getResampler(const InternalImageType::Pointer& image, const OutputVectorType& scale,
+                                                                                         int forcedWidth, int forcedHeight, bool isMask) {
      ResampleFilterType::Pointer resampler = ResampleFilterType::New();
      resampler->SetInput(image);
 
@@ -117,28 +106,42 @@ ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getR
 
      // Evaluate size
      ResampleFilterType::SizeType recomputedSize;
-     recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
-     recomputedSize[1] = image->GetLargestPossibleRegion().GetSize()[1] / scale[1];
+     if((forcedWidth != -1) && (forcedHeight != -1))
+     {
+         auto sz = image->GetLargestPossibleRegion().GetSize();
+         recomputedSize[0] = sz[0];
+         recomputedSize[1] = sz[1];
+     } else {
+        recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
+        recomputedSize[1] = image->GetLargestPossibleRegion().GetSize()[1] / scale[1];
+     }
 
      resampler->SetOutputSize(recomputedSize);
+
+     InternalImageType::PixelType defaultValue;
+     itk::NumericTraits<InternalImageType::PixelType>::SetLength(defaultValue, image->GetNumberOfComponentsPerPixel());
+     resampler->SetEdgePaddingValue(defaultValue);
+
+//     recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
+//     recomputedSize[1] = image->GetLargestPossibleRegion().GetSize()[1] / scale[1];
+
+//     resampler->SetOutputSize(recomputedSize);
 
      m_ResamplersList->PushBack(resampler);
      return resampler;
 }
 
 ResampledBandExtractor::InternalImageType::Pointer ResampledBandExtractor::getResampledImage(int nCurRes, int nDesiredRes,
-                                             ExtractROIFilterType::Pointer extractor,
+                                             int forcedWidth, int forcedHeight, ExtractROIFilterType::Pointer extractor,
                                              bool bIsMask) {
     if((nDesiredRes <= 0) || nCurRes == nDesiredRes)
         return extractor->GetOutput();
-    float fMultiplicationFactor = ((float)nCurRes)/nDesiredRes;
-    ResampleFilterType::Pointer resampler = getResampler(extractor->GetOutput(), fMultiplicationFactor, bIsMask);
+
+    OutputVectorType scale;
+    scale[0] = ((float)nDesiredRes) / nCurRes;
+    scale[1] = ((float)nDesiredRes) / nCurRes;
+
+    ResampleFilterType::Pointer resampler = getResampler(extractor->GetOutput(), scale, forcedWidth, forcedHeight, bIsMask);
     return resampler->GetOutput();
 }
 
-ResampledBandExtractor::InternalImageType::Pointer ResampledBandExtractor::getResampledImage2(int nWidth, int nHeight,
-                                             ExtractROIFilterType::Pointer extractor,
-                                             bool bIsMask) {
-    ResampleFilterType::Pointer resampler = getResampler(extractor->GetOutput(), nWidth, nHeight, bIsMask);
-    return resampler->GetOutput();
-}
