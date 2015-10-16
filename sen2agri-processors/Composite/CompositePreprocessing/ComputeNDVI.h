@@ -73,7 +73,7 @@ public:
 
 private:
     std::string                         m_inXml;
-    ImageReaderType::Pointer            m_InImage;
+    ImageReaderType::Pointer            m_InputImageReader;
     int m_nResolution;
     FilterType::Pointer m_Functor;
     ResampledBandExtractor m_ResampledBandsExtractor;
