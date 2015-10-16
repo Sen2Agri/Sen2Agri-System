@@ -32,7 +32,7 @@ sample_ratio=args.ratio
 
 indesc = " "
 for desc in args.input:
-   indesc = indesc + desc + " "
+   indesc = indesc + '"' + desc + '"' + " "
 
 t0=args.t0
 tend=args.tend

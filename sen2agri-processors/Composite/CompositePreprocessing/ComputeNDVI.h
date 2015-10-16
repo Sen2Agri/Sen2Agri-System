@@ -8,6 +8,7 @@
 #include "otbImageFileWriter.h"
 #include "itkUnaryFunctorImageFilter.h"
 #include "GlobalDefs.h"
+#include "ResampledBandExtractor.h"
 
 template< class TInput, class TOutput>
 class NdviRviFunctor
@@ -65,7 +66,7 @@ public:
     
 public:
     ComputeNDVI();
-    void DoInit(std::string &xml);
+    void DoInit(std::string &xml, int nRes);
     OutputImageType::Pointer DoExecute();
     const char * GetNameOfClass() { return "ComputeNDVI"; }
     void WriteToOutputFile();
@@ -73,8 +74,9 @@ public:
 private:
     std::string                         m_inXml;
     ImageReaderType::Pointer            m_InImage;
-
+    int m_nResolution;
     FilterType::Pointer m_Functor;
+    ResampledBandExtractor m_ResampledBandsExtractor;
 
 };
 

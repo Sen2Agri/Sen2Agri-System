@@ -52,12 +52,14 @@ public:
 
     const char * GetNameOfClass() { return "MasksBandExtractor"; }
 
+    ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const float& ratio, bool isMask=false);
+    ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const int wantedWidth, const int wantedHeight, bool isMask=false);
+    ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const OutputVectorType& scale, bool isMask=false);
+
 private:
     InternalImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes,
                                                  ExtractROIFilterType::Pointer extractor,
                                                  bool bIsMask);
-    ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const float& ratio, bool isMask);
-
 private:
     bool m_bAllInOne;
     std::string m_strXml;

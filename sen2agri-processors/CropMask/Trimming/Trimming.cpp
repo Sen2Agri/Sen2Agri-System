@@ -174,12 +174,16 @@ private:
 
     AddParameter(ParameterType_Float, "alpha", "The alpha parameter");
     MandatoryOff("alpha");
+    AddParameter(ParameterType_Int, "nbsamples", "The number of crop/nocrop samples required or 0 if all samples selected");
+    MandatoryOff("nbsamples");
+    AddParameter(ParameterType_Int, "seed", "The seed for the random number generation");
+    MandatoryOff("seed");
 
     AddParameter(ParameterType_OutputVectorData, "out", "The training samples shape file");
 
-
-
     SetDefaultParameterFloat("alpha", 0.01);
+    SetDefaultParameterInt("nbsamples", 0);
+    SetDefaultParameterInt("seed", 0);
      //  Software Guide : EndCodeSnippet
 
     // Software Guide : BeginLatex
@@ -190,6 +194,9 @@ private:
     //  Software Guide : BeginCodeSnippet
     SetDocExampleParameterValue("feat", "features.tif");
     SetDocExampleParameterValue("ref", "reference.tif");
+    SetDocExampleParameterValue("alpha", "0.01");
+    SetDocExampleParameterValue("nbsamples", "0");
+    SetDocExampleParameterValue("seed", "0");
     SetDocExampleParameterValue("out", "noinsitu_training_samples.shp");
     //  Software Guide : EndCodeSnippet
   }
@@ -208,6 +215,7 @@ private:
       m_BandsExtractor = ExtractROIFilterType::New();
       m_SumFilter = BandMathImageFilterType::New();
       m_ShapeBuilder = LabelImageToVectorDataFilterType::New();
+      m_ShapeMask = BandMathImageFilterType::New();
 
   }
   //  Software Guide : EndCodeSnippet
@@ -220,8 +228,11 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoExecute()
   {
+      GetLogger()->Debug("Starting trimming\n");
       // get the input parameters
       const double alpha = GetParameterFloat("alpha");
+      const int nbSamples = GetParameterInt("nbsamples");
+      const int seed = GetParameterInt("seed");
 
       //Read the Features input file
       m_FeaturesReader->SetFileName(GetParameterString("feat"));
@@ -247,6 +258,7 @@ private:
       int bandCount = 0;
 
       // loop through the image
+      GetLogger()->Debug("Splitting pixels into classes!\n");
       for (ReferenceSizeValueType i = 0; i < imgSize[0]; i++) {
           for (ReferenceSizeValueType j = 0; j < imgSize[1]; j++) {
               InternalImageType::IndexType index;
@@ -261,7 +273,13 @@ private:
                       MahalanobisTrimmingFilterType::Pointer filter = MahalanobisTrimmingFilterType::New();
                       filter->AddPoint(index);
                       filter->SetAlpha(alpha);
-                      filter->SetReplaceValue(pix);
+                      filter->SetNbSamples(nbSamples);
+                      filter->SetSeed(seed);
+                      filter->SetClass(pix);
+                      // Only the classes 11 and 20 are used as crop
+                      // We use 2 for CROP and 1 for NOCROP to differentiate from the ignored pixels
+                      // The final shape will contain 1 for CROP and 0 for NOCROP
+                      filter->SetReplaceValue((pix == 11 || pix == 20) ? 2 : 1);
                       filter->SetInput(m_BandsExtractor->GetOutput());
                       m_SumFilter->SetNthInput(bandCount++, filter->GetOutput());
                       m_trimingFilters.insert(it, std::make_pair(pix, filter));
@@ -272,33 +290,35 @@ private:
               }
           }
       }
-
+      GetLogger()->Debug("Splitting done!\n");
 
       std::ostringstream exprstream;
-      exprstream << "0";
+      exprstream << "-1";
       for (int i = 1; i <= bandCount; i++) {
           exprstream << " + b" << i;
       }
 
-
       m_SumFilter->SetExpression(exprstream.str());
+
+      m_ShapeMask->SetNthInput(0, m_SumFilter->GetOutput());
+      m_ShapeMask->SetExpression("(b1>=0) ? 1 : 0");
+
       m_ShapeBuilder->SetInput(m_SumFilter->GetOutput());
+      m_ShapeBuilder->SetInputMask(m_ShapeMask->GetOutput());
       m_ShapeBuilder->SetFieldName("CROP");
+
       SetParameterOutputVectorData("out", m_ShapeBuilder->GetOutput());
 
+      GetLogger()->Debug("Performing Trimming!\n");
   }
   //  Software Guide :EndCodeSnippet
-
-  // The number of bands per output
-  int m_bands;
-
-
   VectorImageReaderType::Pointer                m_FeaturesReader;
   ImageReaderType::Pointer                      m_ReferenceReader;
   MahalanobisTrimmingFilterMap                  m_trimingFilters;
   ExtractROIFilterType::Pointer                 m_BandsExtractor;
   BandMathImageFilterType::Pointer              m_SumFilter;
   LabelImageToVectorDataFilterType::Pointer     m_ShapeBuilder;
+  BandMathImageFilterType::Pointer              m_ShapeMask;
 };
 }
 }

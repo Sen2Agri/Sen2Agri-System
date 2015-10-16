@@ -6,9 +6,10 @@ ComputeNDVI::ComputeNDVI()
 {
 }
 
-void ComputeNDVI::DoInit(std::string &xml)
+void ComputeNDVI::DoInit(std::string &xml, int nRes)
 {
     m_inXml = xml;
+    m_nResolution = nRes;
 }
 
 // The algorithm consists in a applying a formula for computing the NDVI for each pixel,
@@ -33,9 +34,15 @@ ComputeNDVI::OutputImageType::Pointer ComputeNDVI::DoExecute()
     m_Functor = FilterType::New();
     m_Functor->GetFunctor().Initialize(nRedBandIdx, nNirBandIdx);
     m_Functor->SetInput(m_InImage->GetOutput());
+    m_Functor->UpdateOutputInformation();
 
     //WriteToOutputFile();
-    return m_Functor->GetOutput();
+    if(m_nResolution == 20) {
+        float fMultiplicationFactor = 0.5f;
+        return m_ResampledBandsExtractor.getResampler(m_Functor->GetOutput(), fMultiplicationFactor)->GetOutput();
+    } else {
+        return m_Functor->GetOutput();
+    }
 }
 
 void ComputeNDVI::WriteToOutputFile()
@@ -44,7 +51,12 @@ void ComputeNDVI::WriteToOutputFile()
     WriterType::Pointer writer;
     writer = WriterType::New();
     writer->SetFileName(outFileName);
-    writer->SetInput(m_Functor->GetOutput());
+    if(m_nResolution == 20) {
+        float fMultiplicationFactor = 0.5f;
+        writer->SetInput(m_ResampledBandsExtractor.getResampler(m_Functor->GetOutput(), fMultiplicationFactor)->GetOutput());
+    } else {
+        writer->SetInput(m_Functor->GetOutput());
+    }
     try
     {
         writer->Update();
@@ -56,5 +68,4 @@ void ComputeNDVI::WriteToOutputFile()
         itkExceptionMacro("Error writing output");
     }
 }
-
 

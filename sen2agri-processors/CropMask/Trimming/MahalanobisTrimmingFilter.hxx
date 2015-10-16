@@ -18,7 +18,7 @@
 #include "itkListSample.h"
 #include "itkCovarianceSampleFilter.h"
 #include "itkMahalanobisDistanceMembershipFunction.h"
-
+#include "itkMacro.h"
 /**
  * Constructor
  */
@@ -27,6 +27,9 @@ MahalanobisTrimmingFilter< TInputImage, TOutputImage >
 ::MahalanobisTrimmingFilter()
 {
   m_Alpha = 0.01;
+  m_NbSamples = 0;
+  m_Seed = 0;
+  m_Class = 0;
   m_Points.clear();
   m_ReplaceValue = itk::NumericTraits< OutputImagePixelType >::OneValue();
 }
@@ -97,6 +100,7 @@ void
 MahalanobisTrimmingFilter< TInputImage, TOutputImage >
 ::GenerateData()
 {
+    itkDebugMacro(<< "Starting processing for class " << m_Class);
   typedef typename InputImageType::PixelType InputPixelType;
 
   typename Superclass::InputImageConstPointer inputImage  = this->GetInput();
@@ -128,6 +132,7 @@ MahalanobisTrimmingFilter< TInputImage, TOutputImage >
   sample->SetMeasurementVectorSize( dimension );
 
   itk::SizeValueType removed_cnt = 1;
+  itkDebugMacro(<< "Number of points at the begining: " << m_Points.size());
 
   while (m_Points.size() > 0 && removed_cnt > 0) {
       // first add the points to the sample
@@ -155,12 +160,40 @@ MahalanobisTrimmingFilter< TInputImage, TOutputImage >
       while (si != li) {
           if (distance->Evaluate(inputImage->GetPixel(*si)) > chi) {
               removed_cnt++;
-              si = m_Points.erase(si);
+              // move to end
+              std::swap(*si, *(--li));
+              //si = m_Points.erase(si);
           } else {
               ++si;
           }
       }
+      // remove the last elements
+      m_Points.erase(li, m_Points.end());
   }
+  itkDebugMacro(<< "Number of points at the end: " << m_Points.size());
+
+  // Reduce the number of pixels in oder to reduce the time of clasification
+  if (m_NbSamples > 0 && m_Points.size() > m_NbSamples) {
+
+      typename PointsContainerType::iterator st = m_Points.begin();
+      int pixSel = 0;
+      int size = m_Points.size();
+      // initialise the random number generator
+      std::srand(m_Seed);
+      while (pixSel < m_NbSamples) {
+          typename PointsContainerType::iterator r = st;
+          float rnd = (float)std::rand() / (float)RAND_MAX;
+          std::advance(r, (int)(rnd * (float)size));
+          std::swap(*st, *r);
+          ++st;
+          --size;
+          ++pixSel;
+      }
+
+      // Remove unselected pixels
+      m_Points.erase(st, m_Points.end());
+  }
+  itkDebugMacro(<< "Writing raster. ");
 
   // Set in the ouput image only the pixels which passed this filter
   typename PointsContainerType::const_iterator si = m_Points.begin();
@@ -169,8 +202,8 @@ MahalanobisTrimmingFilter< TInputImage, TOutputImage >
       outputImage->SetPixel(*si, m_ReplaceValue);
       ++si;
   }
-
-
+  itkDebugMacro(<< "Finished processing class: " << m_Class);
 }
+
 #endif // TEMPORALRESAMPLING_HXX
 

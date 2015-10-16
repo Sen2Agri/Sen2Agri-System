@@ -1,12 +1,5 @@
 #! /bin/bash
 
-if [ $# -lt 3 ]
-then
-  echo "Usage: $0 <include file> <resolution> <out folder name> [combined] [allinone]"
-  echo "The file with input xmls should be given. The resolution for which the computations will be performed should be given. The output directory should be given" 1>&2  
-  exit
-fi
-
 function try {
     echo
     echo
@@ -19,14 +12,19 @@ function try {
         exit 1
     fi
 }
+#source try_command.sh
 
 #USER modif
 #add directories where SPOT products are to be found
-source $1
+#source $1
 #end of USER modif
+
+IFS=' ' read -a inputXML <<< "$1"
 
 RESOLUTION=$2
 OUT_FOLDER=$3
+L3A_DATE=$4
+HALF_SYNTHESIS=$5
 ALL_IN_ONE=""
 IS_SINGLE_PRODUCTS_TYPE_MODE="-stypemode 1"
 
@@ -85,7 +83,9 @@ OUT_REFLS="$OUT_FOLDER/L3AResult#_refls.tif"
 OUT_FLAGS="$OUT_FOLDER/L3AResult#_flags.tif"
 OUT_RGB="$OUT_FOLDER/L3AResult#_rgb.tif"
 
-SCAT_COEFFS="scattering_coefs_$RESOLUTION.txt"
+SCAT_COEFFS="scattering_coeffs_"$RESOLUTION"m.txt"
+cp "$SCAT_COEFFS" "$OUT_FOLDER"
+FULL_SCAT_COEFFS="$OUT_FOLDER/$SCAT_COEFFS"
 
 MY_PWD=`pwd`
 
@@ -108,13 +108,17 @@ echo "Used XML files " >> $PARAMS_TXT
 
 echo "Executing from $MY_PWD"
 
+#TST_XML_1='/media/sf_2_Sen2Agri/8_ProductSamples/2_FromMACCS/S2A_OPER_SSC_L2VALD_15SVD____20091211.HDR'
+#TST_XML_2='/media/sf_2_Sen2Agri/8_ProductSamples/2_FromMACCS/L8_TEST_L8C_L2VALD_198030_20130626.HDR'
+
+#inputXML[0]=$TST_XML_1
 i=0
 PREV_L3A=""
 for xml in "${inputXML[@]}"
 do
     echo "$xml" >> $PARAMS_TXT
-    
-    try otbcli MaskHandler $COMPOSITE_OTB_LIBS_ROOT/MaskHandler/ -xml $xml -out $OUT_SPOT_MASKS
+
+    try otbcli MaskHandler $COMPOSITE_OTB_LIBS_ROOT/MaskHandler/ -xml "$xml" -out $OUT_SPOT_MASKS -sentinelres $RESOLUTION
     
     mod=${OUT_L3A_FILE//[#]/$i}
     out_w=${OUT_WEIGHTS//[#]/$i}
@@ -125,38 +129,38 @@ do
     i=$((i+1))
     
     if [[ $RESOLUTION != 10 && $RESOLUTION != 20 ]] ; then
-#        try otbcli ResampleAtS2Res $COMPOSITE_OTB_LIBS_ROOT/ResampleAtS2Res/ -xml $xml -spotmask $OUT_SPOT_MASKS -outres $OUT_IMG_BANDS -outcmres $OUT_CLD -outwmres $OUT_WAT -outsmres $OUT_SNOW -outaotres $OUT_AOT
+        try otbcli CompositePreprocessing "$COMPOSITE_OTB_LIBS_ROOT/CompositePreprocessing/" -xml "$xml" -res $RESOLUTION -scatcoef "$FULL_SCAT_COEFFS" -msk "$OUT_SPOT_MASKS" -outres "$OUT_IMG_BANDS" -outcmres "$OUT_CLD" -outwmres "$OUT_WAT" -outsmres "$OUT_SNOW" -outaotres "$OUT_AOT"
 
-	try otbcli CompositePreprocessing $COMPOSITE_OTB_LIBS_ROOT/CompositePreprocessing/ -xml $xml -res $RESOLUTION -scatcoef $SCAT_COEFFS -msk $OUT_SPOT_MASKS -outres $OUT_IMG_BANDS -outcmres $OUT_CLD -outwmres $OUT_WAT -outsmres $OUT_SNOW -outaotres $OUT_AOT
+        try otbcli WeightAOT "$WEIGHT_OTB_LIBS_ROOT/WeightAOT/" -in "$OUT_AOT" -xml "$xml" -waotmin $WEIGHT_AOT_MIN -waotmax $WEIGHT_AOT_MAX -aotmax $AOT_MAX -out "$OUT_WEIGHT_AOT_FILE"
 
-        try otbcli WeightAOT $WEIGHT_OTB_LIBS_ROOT/WeightAOT/ -in $OUT_AOT -xml $xml -waotmin $WEIGHT_AOT_MIN -waotmax $WEIGHT_AOT_MAX -aotmax $AOT_MAX -out $OUT_WEIGHT_AOT_FILE
+        try otbcli WeightOnClouds "$WEIGHT_OTB_LIBS_ROOT/WeightOnClouds/" -incldmsk "$OUT_CLD" -coarseres $COARSE_RES -sigmasmallcld $SIGMA_SMALL_CLD -sigmalargecld $SIGMA_LARGE_CLD -out "$OUT_WEIGHT_CLOUD_FILE"
 
-        try otbcli WeightOnClouds $WEIGHT_OTB_LIBS_ROOT/WeightOnClouds/ -incldmsk $OUT_CLD -coarseres $COARSE_RES -sigmasmallcld $SIGMA_SMALL_CLD -sigmalargecld $SIGMA_LARGE_CLD -out $OUT_WEIGHT_CLOUD_FILE
-
-        try otbcli TotalWeight $WEIGHT_OTB_LIBS_ROOT/TotalWeight/ -xml $xml -waotfile $OUT_WEIGHT_AOT_FILE -wcldfile $OUT_WEIGHT_CLOUD_FILE -wsensor $WEIGHT_SENSOR -l3adate $L3A_DATE -halfsynthesis $HALF_SYNTHESIS -wdatemin $WEIGHT_DATE_MIN -out $OUT_TOTAL_WEIGHT_FILE
+        try otbcli TotalWeight "$WEIGHT_OTB_LIBS_ROOT/TotalWeight/" -xml "$xml" -waotfile "$OUT_WEIGHT_AOT_FILE" -wcldfile "$OUT_WEIGHT_CLOUD_FILE" -wsensor $WEIGHT_SENSOR -l3adate "$L3A_DATE" -halfsynthesis $HALF_SYNTHESIS -wdatemin $WEIGHT_DATE_MIN -out "$OUT_TOTAL_WEIGHT_FILE"
 
         #todo... search for previous L3A product?
-        try otbcli UpdateSynthesis $COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/ -in $OUT_IMG_BANDS -allinone 1 -xml $xml $PREV_L3A -csm $OUT_CLD -wm $OUT_WAT -sm $OUT_SNOW -wl2a $OUT_TOTAL_WEIGHT_FILE -out $mod $IS_SINGLE_PRODUCTS_TYPE_MODE
+        try otbcli UpdateSynthesis "$COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/" -in "$OUT_IMG_BANDS" -allinone 1 -xml "$xml" $PREV_L3A -csm "$OUT_CLD" -wm "$OUT_WAT" -sm "$OUT_SNOW" -wl2a "$OUT_TOTAL_WEIGHT_FILE" -out "$mod" "$IS_SINGLE_PRODUCTS_TYPE_MODE"
 
-        try otbcli CompositeSplitter $COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/ -in $mod -allinone 1 -xml $xml -outweights $out_w -outdates $out_d -outrefls $out_r -outflags $out_f $IS_SINGLE_PRODUCTS_TYPE_MODE $out_rgb
+        try otbcli CompositeSplitter "$COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/" -in $mod -allinone 1 -xml "$xml" -outweights "$out_w" -outdates "$out_d" -outrefls "$out_r" -outflags "$out_f" $IS_SINGLE_PRODUCTS_TYPE_MODE "$out_rgb"
     else 
-        #try otbcli ResampleAtS2Res $COMPOSITE_OTB_LIBS_ROOT/ResampleAtS2Res/ -xml $xml -spotmask $OUT_SPOT_MASKS -outres$RESOLUTION $OUT_IMG_BANDS -outcmres$RESOLUTION $OUT_CLD -outwmres$RESOLUTION $OUT_WAT -outsmres$RESOLUTION $OUT_SNOW -outaotres$RESOLUTION $OUT_AOT $ALL_IN_ONE
+#<<<<<<< HEAD
+        #try otbcli ResampleAtS2Res $COMPOSITE_OTB_LIBS_ROOT/ResampleAtS2Res/ -xml "$xml" -spotmask $OUT_SPOT_MASKS -outres$RESOLUTION $OUT_IMG_BANDS -outcmres$RESOLUTION $OUT_CLD -outwmres$RESOLUTION $OUT_WAT -outsmres$RESOLUTION $OUT_SNOW -outaotres$RESOLUTION $OUT_AOT $ALL_IN_ONE
         if [[ $RESOLUTION == 20 ]] ; then
 	    out_rgb=""
 	fi   
 
-	try otbcli CompositePreprocessing $COMPOSITE_OTB_LIBS_ROOT/CompositePreprocessing/ -xml $xml -res $RESOLUTION -scatcoef $SCAT_COEFFS -msk $OUT_SPOT_MASKS -outres $OUT_IMG_BANDS -outcmres $OUT_CLD -outwmres $OUT_WAT -outsmres $OUT_SNOW -outaotres $OUT_AOT
+#	try otbcli CompositePreprocessing $COMPOSITE_OTB_LIBS_ROOT/CompositePreprocessing/ -xml "$xml" -res $RESOLUTION -scatcoef $SCAT_COEFFS -msk $OUT_SPOT_MASKS -outres $OUT_IMG_BANDS -outcmres $OUT_CLD -outwmres $OUT_WAT -outsmres $OUT_SNOW -outaotres $OUT_AOT
+        try otbcli CompositePreprocessing $COMPOSITE_OTB_LIBS_ROOT/CompositePreprocessing/ -xml "$xml" -res $RESOLUTION -scatcoef $FULL_SCAT_COEFFS -msk $OUT_SPOT_MASKS -outres $OUT_IMG_BANDS -outcmres $OUT_CLD -outwmres $OUT_WAT -outsmres $OUT_SNOW -outaotres $OUT_AOT $ALL_IN_ONE
 
-        try otbcli WeightAOT $WEIGHT_OTB_LIBS_ROOT/WeightAOT/ -in $OUT_AOT -xml $xml -waotmin $WEIGHT_AOT_MIN -waotmax $WEIGHT_AOT_MAX -aotmax $AOT_MAX -out $OUT_WEIGHT_AOT_FILE
+        try otbcli WeightAOT $WEIGHT_OTB_LIBS_ROOT/WeightAOT/ -in $OUT_AOT -xml "$xml" -waotmin $WEIGHT_AOT_MIN -waotmax $WEIGHT_AOT_MAX -aotmax $AOT_MAX -out $OUT_WEIGHT_AOT_FILE
 
         try otbcli WeightOnClouds $WEIGHT_OTB_LIBS_ROOT/WeightOnClouds/ -incldmsk $OUT_CLD -coarseres $COARSE_RES -sigmasmallcld $SIGMA_SMALL_CLD -sigmalargecld $SIGMA_LARGE_CLD -out $OUT_WEIGHT_CLOUD_FILE
 
-        try otbcli TotalWeight $WEIGHT_OTB_LIBS_ROOT/TotalWeight/ -xml $xml -waotfile $OUT_WEIGHT_AOT_FILE -wcldfile $OUT_WEIGHT_CLOUD_FILE -wsensor $WEIGHT_SENSOR -l3adate $L3A_DATE -halfsynthesis $HALF_SYNTHESIS -wdatemin $WEIGHT_DATE_MIN -out $OUT_TOTAL_WEIGHT_FILE
+        try otbcli TotalWeight $WEIGHT_OTB_LIBS_ROOT/TotalWeight/ -xml "$xml" -waotfile $OUT_WEIGHT_AOT_FILE -wcldfile $OUT_WEIGHT_CLOUD_FILE -wsensor $WEIGHT_SENSOR -l3adate $L3A_DATE -halfsynthesis $HALF_SYNTHESIS -wdatemin $WEIGHT_DATE_MIN -out $OUT_TOTAL_WEIGHT_FILE
 
         #todo... search for previous L3A product?
-        try otbcli UpdateSynthesis $COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/ -in $OUT_IMG_BANDS -xml $xml $PREV_L3A -csm $OUT_CLD -wm $OUT_WAT -sm $OUT_SNOW -wl2a $OUT_TOTAL_WEIGHT_FILE -out $mod $IS_SINGLE_PRODUCTS_TYPE_MODE $ALL_IN_ONE
+        try otbcli UpdateSynthesis $COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/ -in $OUT_IMG_BANDS -xml "$xml" $PREV_L3A -csm $OUT_CLD -wm $OUT_WAT -sm $OUT_SNOW -wl2a $OUT_TOTAL_WEIGHT_FILE -out $mod $IS_SINGLE_PRODUCTS_TYPE_MODE $ALL_IN_ONE
 
-        try otbcli CompositeSplitter $COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/ -in $mod -res $RESOLUTION -xml $xml -outweights $out_w -outdates $out_d -outrefls $out_r -outflags $out_f $IS_SINGLE_PRODUCTS_TYPE_MODE $ALL_IN_ONE $out_rgb
+        try otbcli CompositeSplitter $COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/ -in $mod -res $RESOLUTION -xml "$xml" -outweights $out_w -outdates $out_d -outrefls $out_r -outflags $out_f $IS_SINGLE_PRODUCTS_TYPE_MODE $ALL_IN_ONE $out_rgb
     fi 
     #PREV_L3A="-prevl3a $mod"
     PREV_L3A="-prevl3aw $out_w -prevl3ad $out_d -prevl3ar $out_r -prevl3af $out_f"
@@ -164,6 +168,6 @@ do
 echo "-----------------------------------------------------------"
 done
 
-rm -fr $OUT_SPOT_MASKS $OUT_IMG_BANDS $OUT_IMG_BANDS_ALL $OUT_CLD $OUT_WAT $OUT_SNOW $OUT_AOT $OUT_WEIGHT_AOT_FILE $OUT_WEIGHT_CLOUD_FILE $OUT_TOTAL_WEIGHT_FILE
+#rm -fr $OUT_SPOT_MASKS $OUT_IMG_BANDS $OUT_IMG_BANDS_ALL $OUT_CLD $OUT_WAT $OUT_SNOW $OUT_AOT $OUT_WEIGHT_AOT_FILE $OUT_WEIGHT_CLOUD_FILE $OUT_TOTAL_WEIGHT_FILE
 
 
