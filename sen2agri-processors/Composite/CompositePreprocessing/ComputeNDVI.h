@@ -8,7 +8,7 @@
 #include "otbImageFileWriter.h"
 #include "itkUnaryFunctorImageFilter.h"
 #include "GlobalDefs.h"
-#include "ResampledBandExtractor.h"
+#include "ResamplingBandExtractor.h"
 
 template< class TInput, class TOutput>
 class NdviRviFunctor
@@ -76,7 +76,7 @@ private:
     ImageReaderType::Pointer            m_InputImageReader;
     int m_nResolution;
     FilterType::Pointer m_Functor;
-    ResampledBandExtractor m_ResampledBandsExtractor;
+    ResamplingBandExtractor m_ResampledBandsExtractor;
 
 };
 
