@@ -8,7 +8,7 @@ import csv
 from sys import argv
 
 #Path to build folder
-buildFolder="../../sen2agri-build/"
+buildFolder="/mnt/data/csudmipy/sen2agri-build/"
 
 parser = argparse.ArgumentParser(description='CropType Python processor')
 
