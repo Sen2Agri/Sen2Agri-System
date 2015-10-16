@@ -49,6 +49,7 @@
 #define L3A_ALL_WEIGHT_CNT    10
 #define L3A_10M_WEIGHT_CNT    4
 #define L3A_20M_WEIGHT_CNT    6
+#define L3A_RGB_CNT    3
 
 //                                            {0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12,13,14,15,16,17,18,19,20,21};
 int S2_ARR_BANDS_PRESENCE_ALL[L3A_SIZE]     = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
@@ -62,6 +63,14 @@ int SPOT_ARR_BANDS_PRESENCE_10M[L3A_SIZE]   = {0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 
 int S2_ARR_BANDS_PRESENCE_20M[L3A_SIZE]     = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0};
 int L8_ARR_BANDS_PRESENCE_20M[L3A_SIZE]     = {0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0};
 int SPOT_ARR_BANDS_PRESENCE_20M[L3A_SIZE]   = {0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0};
+
+int S2_ARR_BANDS_RGB_ALL[L3A_RGB_CNT]       = {13, 12, 11};
+int L8_ARR_BANDS_RGB_ALL[L3A_RGB_CNT]       = {13, 12, 11};
+int SPOT_ARR_BANDS_RGB_ALL[L3A_RGB_CNT]     = {17, 13, 12};
+
+int S2_ARR_BANDS_RGB_10M[L3A_RGB_CNT]       = {7, 6, 5};
+int L8_ARR_BANDS_RGB_10M[L3A_RGB_CNT]       = {7, 6, 5};
+int SPOT_ARR_BANDS_RGB_10M[L3A_RGB_CNT]     = {8, 7, 6};
 
 namespace otb
 {
@@ -146,6 +155,9 @@ private:
         AddParameter(ParameterType_Int, "stypemode", "Single product type mode");
         SetDefaultParameterInt("stypemode", 0);
         MandatoryOff("stypemode");
+
+        AddParameter(ParameterType_OutputImage, "outrgb", "Output rgb filename");
+        MandatoryOff("outrgb");
     }
 
     void DoUpdateParameters()
@@ -173,11 +185,13 @@ private:
         }
 
         m_WeightsConcat = ImageListToVectorImageFilterType::New();
+        m_RGBConcat   = ImageListToVectorImageFilterType::New();
         m_ReflsConcat = ImageListToVectorImageFilterType::New();
         m_DatesConcat = ImageListToVectorImageFilterType::New();
         m_FlagsConcat = ImageListToVectorImageFilterType::New();
 
         m_ReflectancesList = ImgListType::New();
+        m_RGBOutList = ImgListType::New();
         m_WeightList = ImgListType::New();
         m_DatesList = ImgListType::New();
         m_FlagsList = ImgListType::New();
@@ -214,30 +228,57 @@ private:
         // add the information to the list
         if (missionName.find(LANDSAT_MISSION_STR) != std::string::npos) {
             if(allInOne) {
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(L8_ARR_BANDS_RGB_ALL[0]));
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(L8_ARR_BANDS_RGB_ALL[1]));
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(L8_ARR_BANDS_RGB_ALL[2]));
                 memcpy(arrL3ABandPresence, L8_ARR_BANDS_PRESENCE_ALL, sizeof(arrL3ABandPresence));
             } else if (resolution == 10) {
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(L8_ARR_BANDS_RGB_10M[0]));
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(L8_ARR_BANDS_RGB_10M[1]));
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(L8_ARR_BANDS_RGB_10M[2]));
                 memcpy(arrL3ABandPresence, L8_ARR_BANDS_PRESENCE_10M, sizeof(arrL3ABandPresence));
             } else if (resolution == 20) {
                 memcpy(arrL3ABandPresence, L8_ARR_BANDS_PRESENCE_20M, sizeof(arrL3ABandPresence));
             }
         } else if (missionName.find(SENTINEL_MISSION_STR) != std::string::npos) {
             if(allInOne) {
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(S2_ARR_BANDS_RGB_ALL[0]));
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(S2_ARR_BANDS_RGB_ALL[1]));
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(S2_ARR_BANDS_RGB_ALL[2]));
                 memcpy(arrL3ABandPresence, S2_ARR_BANDS_PRESENCE_ALL, sizeof(arrL3ABandPresence));
             } else if (resolution == 10) {
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(S2_ARR_BANDS_RGB_10M[0]));
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(S2_ARR_BANDS_RGB_10M[1]));
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(S2_ARR_BANDS_RGB_10M[2]));
                 memcpy(arrL3ABandPresence, S2_ARR_BANDS_PRESENCE_10M, sizeof(arrL3ABandPresence));
             } else if (resolution == 20) {
                 memcpy(arrL3ABandPresence, S2_ARR_BANDS_PRESENCE_20M, sizeof(arrL3ABandPresence));
             }
         } else if (missionName.find(SPOT4_MISSION_STR) != std::string::npos) {
             if(allInOne) {
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(SPOT_ARR_BANDS_RGB_ALL[0]));
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(SPOT_ARR_BANDS_RGB_ALL[1]));
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(SPOT_ARR_BANDS_RGB_ALL[2]));
                 memcpy(arrL3ABandPresence, SPOT_ARR_BANDS_PRESENCE_ALL, sizeof(arrL3ABandPresence));
             } else if (resolution == 10) {
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(SPOT_ARR_BANDS_RGB_10M[0]));
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(SPOT_ARR_BANDS_RGB_10M[1]));
+                m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(SPOT_ARR_BANDS_RGB_10M[2]));
                 memcpy(arrL3ABandPresence, SPOT_ARR_BANDS_PRESENCE_10M, sizeof(arrL3ABandPresence));
             } else if (resolution == 20) {
                 memcpy(arrL3ABandPresence, SPOT_ARR_BANDS_PRESENCE_20M, sizeof(arrL3ABandPresence));
             }
         } else {
             itkExceptionMacro("Unknown mission name " << missionName);
+        }
+
+        if(m_RGBOutList->Size() > 0) {
+            if(!HasValue("outrgb"))
+                itkExceptionMacro("The parameter outrgb has to be present. This parameter indicates the filename for rgb");
+            m_RGBConcat = ImageListToVectorImageFilterType::New();
+            m_RGBConcat->SetInput(m_RGBOutList);
+            SetParameterOutputImagePixelType("outrgb", ImagePixelType_int16);
+            SetParameterOutputImage("outrgb", m_RGBConcat->GetOutput());
         }
 
         int cnt = 0;
@@ -275,6 +316,7 @@ private:
         m_FlagsConcat->SetInput(m_FlagsList);
         SetParameterOutputImagePixelType("outflags", ImagePixelType_uint8);
         SetParameterOutputImage("outflags", m_FlagsConcat->GetOutput());
+
         return;
     }
 
@@ -285,8 +327,10 @@ private:
     ImageListToVectorImageFilterType::Pointer m_ReflsConcat;
     ImageListToVectorImageFilterType::Pointer m_DatesConcat;
     ImageListToVectorImageFilterType::Pointer m_FlagsConcat;
+    ImageListToVectorImageFilterType::Pointer m_RGBConcat;
 
     ImgListType::Pointer m_ReflectancesList;
+    ImgListType::Pointer m_RGBOutList;
     ImgListType::Pointer m_WeightList;
     ImgListType::Pointer m_DatesList;
     ImgListType::Pointer m_FlagsList;

@@ -8,7 +8,7 @@ import csv
 from sys import argv
 
 #Path to build folder
-buildFolder="../../sen2agri-build/"
+buildFolder="/mnt/data/csudmipy/sen2agri-build/"
 
 parser = argparse.ArgumentParser(description='CropType Python processor')
 
@@ -22,8 +22,8 @@ parser.add_argument('-radius', help='The radius used for gapfilling, in days', r
 parser.add_argument('-classifier', help='The classifier used for training (either rf or svm)', required=True, metavar='classifier', choices=['rf','svm'])
 parser.add_argument('-rseed', help='The random seed used for training', required=False, metavar='random_seed', default=0)
 parser.add_argument('-mask', help='The crop mask', required=False, metavar='crop_mask', default='')
-
 parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
+parser.add_argument('-outdir', help="Output directory", default=buildFolder)
 
 args = parser.parse_args()
 
@@ -43,23 +43,23 @@ random_seed=args.rseed
 crop_mask=args.mask
 pixsize=args.pixsize
 
-reference_polygons_clip=buildFolder+"reference_clip.shp"
-training_polygons=buildFolder+"training_polygons.shp"
-validation_polygons=buildFolder+"validation_polygons.shp"
-rawtocr=buildFolder+"rawtocr.tif"
-tocr=buildFolder+"tocr.tif"
-rawmask=buildFolder+"rawmask.tif"
-mask=buildFolder+"mask.tif"
-dates=buildFolder+"dates.txt"
-shape=buildFolder+"shape.shp"
-rtocr=buildFolder+"rtocr.tif"
-fts=buildFolder+"feature-time-series.tif"
-statistics=buildFolder+"statistics.xml"
-confmatout=buildFolder+"confusion-matrix.csv"
-model=buildFolder+"model.txt"
-crop_type_map=buildFolder+"crop_type_map.tif"
-confusion_matrix_validation=buildFolder+"confusion-matrix-validation.csv"
-quality_metrics=buildFolder+"quality-metrics.txt"
+reference_polygons_clip=os.path.join(args.outdir, "reference_clip.shp")
+training_polygons=os.path.join(args.outdir, "training_polygons.shp")
+validation_polygons=os.path.join(args.outdir, "validation_polygons.shp")
+rawtocr=os.path.join(args.outdir, "rawtocr.tif")
+tocr=os.path.join(args.outdir, "tocr.tif")
+rawmask=os.path.join(args.outdir, "rawmask.tif")
+mask=os.path.join(args.outdir, "mask.tif")
+dates=os.path.join(args.outdir, "dates.txt")
+shape=os.path.join(args.outdir, "shape.shp")
+rtocr=os.path.join(args.outdir, "rtocr.tif")
+fts=os.path.join(args.outdir, "feature-time-series.tif")
+statistics=os.path.join(args.outdir, "statistics.xml")
+confmatout=os.path.join(args.outdir, "confusion-matrix.csv")
+model=os.path.join(args.outdir, "model.txt")
+crop_type_map=os.path.join(args.outdir, "crop_type_map.tif")
+confusion_matrix_validation=os.path.join(args.outdir, "confusion-matrix-validation.csv")
+quality_metrics=os.path.join(args.outdir, "quality-metrics.txt")
 
 # Bands Extractor
 print "Executing BandsExtractor..."
