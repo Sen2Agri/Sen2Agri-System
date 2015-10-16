@@ -13,8 +13,10 @@ Spot4MetadataHelper::Spot4MetadataHelper()
     m_bHasBandMeanAngles = false;
 }
 
-std::string Spot4MetadataHelper::GetBandName(unsigned int nIdx)
+std::string Spot4MetadataHelper::GetBandName(unsigned int nIdx, bool bRelativeIdx)
 {
+    UNUSED(bRelativeIdx);
+
     if(nIdx >= m_nBandsNoForCurRes) {
         itkExceptionMacro("Invalid band index requested: " << nIdx << ". Maximum is " << m_nBandsNoForCurRes);
     }
@@ -39,6 +41,7 @@ bool Spot4MetadataHelper::DoLoadMetadata()
         // For Spot4 the bands are XS1;XS2;XS3;SWIR that correspond to RED, GREEN, NIR and SWIR
         m_nRedBandIndex = 1;
         m_nGreenBandIndex = 2;
+        m_nBlueBandIndex = m_nGreenBandIndex;
         m_nNirBandIndex = 3;
 
         m_ReflQuantifVal = 1000.0;

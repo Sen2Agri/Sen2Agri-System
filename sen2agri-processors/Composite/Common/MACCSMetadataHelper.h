@@ -14,7 +14,8 @@ public:
 
     const char * GetNameOfClass() { return "S2MetadataHelper"; }
 
-    virtual std::string GetBandName(unsigned int nIdx);
+    virtual std::string GetBandName(unsigned int nBandIdx, bool bRelativeIdx=true);
+    virtual int GetRelativeBandIndex(unsigned int nAbsBandIdx);
     virtual float GetAotQuantificationValue();
     virtual float GetAotNoDataValue();
     virtual int GetAotBandIndex();

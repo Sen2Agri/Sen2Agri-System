@@ -17,28 +17,29 @@ void ComputeNDVI::DoInit(std::string &xml, int nRes)
 ComputeNDVI::OutputImageType::Pointer ComputeNDVI::DoExecute()
 {
     auto factory = MetadataHelperFactory::New();
-    // we are interested only in the 10m resolution as here we have the RED and NIR
-    auto pHelper = factory->GetMetadataHelper(m_inXml, 10);
+    auto pHelper = factory->GetMetadataHelper(m_inXml);
     // the bands are 1 based
     int nNirBandIdx = pHelper->GetNirBandIndex()-1;
     int nRedBandIdx = pHelper->GetRedBandIndex()-1;
     //Read all input parameters
-    m_InImage = ImageReaderType::New();
+    m_InputImageReader = ImageReaderType::New();
     std::string imgFileName = pHelper->GetImageFileName();
 
     std::cout << "ComputeNDVI -> Image File Name: " << imgFileName << std::endl;
 
-    m_InImage->SetFileName(imgFileName);
-    m_InImage->UpdateOutputInformation();
+    m_InputImageReader->SetFileName(imgFileName);
+    m_InputImageReader->UpdateOutputInformation();
+    ImageType::Pointer img = m_InputImageReader->GetOutput();
+    int curRes = img->GetSpacing()[0];
 
     m_Functor = FilterType::New();
     m_Functor->GetFunctor().Initialize(nRedBandIdx, nNirBandIdx);
-    m_Functor->SetInput(m_InImage->GetOutput());
+    m_Functor->SetInput(m_InputImageReader->GetOutput());
     m_Functor->UpdateOutputInformation();
 
     //WriteToOutputFile();
-    if(m_nResolution == 20) {
-        float fMultiplicationFactor = 0.5f;
+    if(m_nResolution != curRes) {
+        float fMultiplicationFactor = ((float)curRes)/m_nResolution;
         return m_ResampledBandsExtractor.getResampler(m_Functor->GetOutput(), fMultiplicationFactor)->GetOutput();
     } else {
         return m_Functor->GetOutput();
