@@ -1,13 +1,13 @@
-#include "ResampledBandExtractor.h"
+#include "ResamplingBandExtractor.h"
 
-ResampledBandExtractor::ResampledBandExtractor()
+ResamplingBandExtractor::ResamplingBandExtractor()
 {
     m_ResamplersList = ResampleFilterListType::New();
     m_ExtractorList = ExtractROIFilterListType::New();
     m_ImageReaderList = ImageReaderListType::New();
 }
 
-ResampledBandExtractor::InternalImageType::Pointer ResampledBandExtractor::ExtractResampledBand(const ImageType::Pointer img, int nChannel, int curRes,
+ResamplingBandExtractor::InternalImageType::Pointer ResamplingBandExtractor::ExtractResampledBand(const ImageType::Pointer img, int nChannel, int curRes,
                                               int nDesiredRes, int nForcedOutWidth, int nForcedOutHeight, bool bNearestNeighbourInterpolation)
 {
     //Resample the cloud mask
@@ -20,7 +20,7 @@ ResampledBandExtractor::InternalImageType::Pointer ResampledBandExtractor::Extra
     return getResampledImage(curRes, nDesiredRes, nForcedOutWidth, nForcedOutHeight, extractor, bNearestNeighbourInterpolation);
 }
 
-int ResampledBandExtractor::ExtractAllResampledBands(const ImageType::Pointer img,
+int ResamplingBandExtractor::ExtractAllResampledBands(const ImageType::Pointer img,
                                               otb::ImageList<otb::Wrapper::FloatImageType>::Pointer &outList,
                                               int curRes, int nDesiredRes, bool bNearestNeighbourInterpolation)
 {
@@ -41,7 +41,7 @@ int ResampledBandExtractor::ExtractAllResampledBands(const ImageType::Pointer im
     return nbBands;
 }
 
-ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getResampler(const InternalImageType::Pointer& image, const int wantedWidth,
+ResamplingBandExtractor::ResampleFilterType::Pointer ResamplingBandExtractor::getResampler(const InternalImageType::Pointer& image, const int wantedWidth,
                                                                                          const int wantedHeight, bool isMask)
 {
     auto sz = image->GetLargestPossibleRegion().GetSize();
@@ -56,7 +56,7 @@ ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getR
     return resampler;
 }
 
-ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getResampler(const InternalImageType::Pointer& image, const float& ratio, bool isMask) {
+ResamplingBandExtractor::ResampleFilterType::Pointer ResamplingBandExtractor::getResampler(const InternalImageType::Pointer& image, const float& ratio, bool isMask) {
      // Scale Transform
      OutputVectorType scale;
      scale[0] = 1.0 / ratio;
@@ -64,7 +64,7 @@ ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getR
      return getResampler(image, scale, -1, -1, isMask);
 }
 
-ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getResampler(const InternalImageType::Pointer& image, const OutputVectorType& scale,
+ResamplingBandExtractor::ResampleFilterType::Pointer ResamplingBandExtractor::getResampler(const InternalImageType::Pointer& image, const OutputVectorType& scale,
                                                                                          int forcedWidth, int forcedHeight, bool isMask) {
      ResampleFilterType::Pointer resampler = ResampleFilterType::New();
      resampler->SetInput(image);
@@ -108,9 +108,8 @@ ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getR
      ResampleFilterType::SizeType recomputedSize;
      if((forcedWidth != -1) && (forcedHeight != -1))
      {
-         auto sz = image->GetLargestPossibleRegion().GetSize();
-         recomputedSize[0] = sz[0];
-         recomputedSize[1] = sz[1];
+         recomputedSize[0] = forcedWidth;
+         recomputedSize[1] = forcedHeight;
      } else {
         recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
         recomputedSize[1] = image->GetLargestPossibleRegion().GetSize()[1] / scale[1];
@@ -131,7 +130,7 @@ ResampledBandExtractor::ResampleFilterType::Pointer ResampledBandExtractor::getR
      return resampler;
 }
 
-ResampledBandExtractor::InternalImageType::Pointer ResampledBandExtractor::getResampledImage(int nCurRes, int nDesiredRes,
+ResamplingBandExtractor::InternalImageType::Pointer ResamplingBandExtractor::getResampledImage(int nCurRes, int nDesiredRes,
                                              int forcedWidth, int forcedHeight, ExtractROIFilterType::Pointer extractor,
                                              bool bIsMask) {
     if((nDesiredRes <= 0) || nCurRes == nDesiredRes)
