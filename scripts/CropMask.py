@@ -94,7 +94,7 @@ def inSituDataAvailable() :
 
 	#Train Image Classifier
 	print "Executing TrainImagesClassifier..."
-	tcCmdLine = "otbcli_TrainImagesClassifier -io.il "+features+" -io.vd "+training_polygons+" -io.imstat "+statistics+" -rand "+random_seed+" -sample.bm 0 -io.confmatout "+confmatout+" -io.out "+model+" -sample.mt "+nbtrsample+" -sample.mv -1 -sample.vfn CROP -sample.vtr "+sample_ratio+" -classifier rf -classifier.rf.nbtrees "+rfnbtrees+" -classifier.rf.min "+rfmin+" -classifier.rf.max "+rfmax 
+	tcCmdLine = "otbcli_TrainImagesClassifier -io.il "+features+" -io.vd "+training_polygons+" -io.imstat "+statistics+" -rand "+random_seed+" -sample.bm 0 -io.confmatout "+confmatout+" -io.out "+model+" -sample.mt "+nbtrsample+" -sample.mv -1 -sample.vfn CROP -sample.vtr "+sample_ratio+" -classifier rf -classifier.rf.nbtrees "+rfnbtrees+" -classifier.rf.min "+rfmin+" -classifier.rf.max "+rfmax
 
 	print tcCmdLine
 	result = os.system(tcCmdLine)
@@ -106,7 +106,7 @@ def inSituDataAvailable() :
 
 	#Random Forest Training
 #	print "Executing RandomForestTraining..."
-#	tcCmdLine = "otbApplicationLauncherCommandLine RandomForestTraining "+buildFolder+"CropMask/RandomForestTraining -fvi "+features+" -shp "+training_polygons+" -seed "+random_seed+" -rfnbtrees "+rfnbtrees+" -rfmin "+rfmin+" -rfmax "+rfmax +" -nbsamples "+nbsamples+" -out "+model 
+#	tcCmdLine = "otbApplicationLauncherCommandLine RandomForestTraining "+buildFolder+"CropMask/RandomForestTraining -fvi "+features+" -shp "+training_polygons+" -seed "+random_seed+" -rfnbtrees "+rfnbtrees+" -rfmin "+rfmin+" -rfmax "+rfmax +" -nbsamples "+nbsamples+" -out "+model
 
 #	print tcCmdLine
 #	result = os.system(tcCmdLine)
@@ -209,10 +209,10 @@ def noInSituDataAvailable() :
 	   exit(1)
 
 	print "Trimming done!"
-	
+
 	# TrainImagesClassifier
 	print "Executing TrainImagesClassifier..."
-	tcCmdLine = "otbcli_TrainImagesClassifier -io.il "+spectral_features+" -io.vd "+trimmed_reference_shape+" -io.imstat "+statistics_noinsitu+" -rand "+random_seed+" -sample.bm 0 -io.confmatout "+confmatout+" -io.out "+model+" -sample.mt "+nbtrsample+" -sample.mv -1 -sample.vfn CROP -sample.vtr "+sample_ratio+" -classifier rf -classifier.rf.nbtrees "+rfnbtrees+" -classifier.rf.min "+rfmin+" -classifier.rf.max "+rfmax 
+	tcCmdLine = "otbcli_TrainImagesClassifier -io.il "+spectral_features+" -io.vd "+trimmed_reference_shape+" -io.imstat "+statistics_noinsitu+" -rand "+random_seed+" -sample.bm 0 -io.confmatout "+confmatout+" -io.out "+model+" -sample.mt "+nbtrsample+" -sample.mv -1 -sample.vfn CROP -sample.vtr "+sample_ratio+" -classifier rf -classifier.rf.nbtrees "+rfnbtrees+" -classifier.rf.min "+rfmin+" -classifier.rf.max "+rfmax
 
 	print tcCmdLine
 	result = os.system(tcCmdLine)
@@ -265,7 +265,8 @@ parser.add_argument('-rfnbtrees', help='The number of trees used for training (d
 parser.add_argument('-rfmax', help='maximum depth of the trees used for Random Forest classifier (default 25)', required=False, metavar='rfmax', default=25)
 parser.add_argument('-rfmin', help='minimum number of samples in each node used by the classifier (default 5)', required=False, metavar='rfmin', default=5)
 
-parser.add_argument('-pixsize', help='THe size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
+parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
+parser.add_argument('-outdir', help="Output directory", default=buildFolder)
 
 args = parser.parse_args()
 
@@ -297,50 +298,50 @@ reference=args.refr
 erode_radius=str(args.eroderad)
 alpha=str(args.alpha)
 
-reference_polygons_clip=buildFolder+"reference_clip.shp"
-training_polygons=buildFolder+"training_polygons.shp"
-validation_polygons=buildFolder+"validation_polygons.shp"
-random_training_polygons=buildFolder+"random_training_polygons.shp"
-random_testing_polygons=buildFolder+"random_testing_polygons.shp"
+reference_polygons_clip=os.path.join(args.outdir, "reference_clip.shp")
+training_polygons=os.path.join(args.outdir, "training_polygons.shp")
+validation_polygons=os.path.join(args.outdir, "validation_polygons.shp")
+random_training_polygons=os.path.join(args.outdir, "random_training_polygons.shp")
+random_testing_polygons=os.path.join(args.outdir, "random_testing_polygons.shp")
 
-rawtocr=buildFolder+"rawtocr.tif"
-tocr=buildFolder+"tocr.tif"
-rawmask=buildFolder+"rawmask.tif"
-mask=buildFolder+"mask.tif"
-dates=buildFolder+"dates.txt"
-outdays=buildFolder+"days.txt"
-shape=buildFolder+"shape.shp"
-rtocr=buildFolder+"rtocr.tif"
-ndvi=buildFolder+"ndvi.tif"
-ndwi=buildFolder+"ndwi.tif"
-brightness=buildFolder+"brightness.tif"
-temporal_features=buildFolder+"tf.tif"
-statistic_features=buildFolder+"sf.tif"
-features=buildFolder+"concat_features.tif"
-statistics=buildFolder+"statistics.xml"
+rawtocr=os.path.join(args.outdir, "rawtocr.tif")
+tocr=os.path.join(args.outdir, "tocr.tif")
+rawmask=os.path.join(args.outdir, "rawmask.tif")
+mask=os.path.join(args.outdir, "mask.tif")
+dates=os.path.join(args.outdir, "dates.txt")
+outdays=os.path.join(args.outdir, "days.txt")
+shape=os.path.join(args.outdir, "shape.shp")
+rtocr=os.path.join(args.outdir, "rtocr.tif")
+ndvi=os.path.join(args.outdir, "ndvi.tif")
+ndwi=os.path.join(args.outdir, "ndwi.tif")
+brightness=os.path.join(args.outdir, "brightness.tif")
+temporal_features=os.path.join(args.outdir, "tf.tif")
+statistic_features=os.path.join(args.outdir, "sf.tif")
+features=os.path.join(args.outdir, "concat_features.tif")
+statistics=os.path.join(args.outdir, "statistics.xml")
 
-ndvi_smooth=buildFolder+"ndvi_smooth.tif"
-rtocr_smooth=buildFolder+"rtocr_smooth.tif"
-tf_noinsitu=buildFolder+"tf_noinsitu.tif"
-spectral_features=buildFolder+"spectral_features.tif"
+ndvi_smooth=os.path.join(args.outdir, "ndvi_smooth.tif")
+rtocr_smooth=os.path.join(args.outdir, "rtocr_smooth.tif")
+tf_noinsitu=os.path.join(args.outdir, "tf_noinsitu.tif")
+spectral_features=os.path.join(args.outdir, "spectral_features.tif")
 
-eroded_reference=buildFolder+"eroded_reference.tif"
-trimmed_reference_shape=buildFolder+"trimmed_reference_shape.shp"
-statistics_noinsitu=buildFolder+"statistics_noinsitu.xml"
+eroded_reference=os.path.join(args.outdir, "eroded_reference.tif")
+trimmed_reference_shape=os.path.join(args.outdir, "trimmed_reference_shape.shp")
+statistics_noinsitu=os.path.join(args.outdir, "statistics_noinsitu.xml")
 
 tmpfolder="."
 
-pca=buildFolder+"pca.tif"
-mean_shift_smoothing=buildFolder+"mean_shift_smoothing.tif"
-segmented=buildFolder+"segmented.tif"
-segmented_merged=buildFolder+"segmented_merged.tif"
+pca=os.path.join(args.outdir, "pca.tif")
+mean_shift_smoothing=os.path.join(args.outdir, "mean_shift_smoothing.tif")
+segmented=os.path.join(args.outdir, "segmented.tif")
+segmented_merged=os.path.join(args.outdir, "segmented_merged.tif")
 
-confmatout=buildFolder+"confusion-matrix.csv"
-model=buildFolder+"crop-mask-model.txt"
-raw_crop_mask=buildFolder+"raw_crop_mask.tif"
-crop_mask=buildFolder+"crop_mask.tif"
-confusion_matrix_validation=buildFolder+"crop-mask-confusion-matrix-validation.csv"
-quality_metrics=buildFolder+"crop-mask-quality-metrics.txt"
+confmatout=os.path.join(args.outdir, "confusion-matrix.csv")
+model=os.path.join(args.outdir, "crop-mask-model.txt")
+raw_crop_mask=os.path.join(args.outdir, "raw_crop_mask.tif")
+crop_mask=os.path.join(args.outdir, "crop_mask.tif")
+confusion_matrix_validation=os.path.join(args.outdir, "crop-mask-confusion-matrix-validation.csv")
+quality_metrics=os.path.join(args.outdir, "crop-mask-quality-metrics.txt")
 
 # Bands Extractor
 print "Executing BandsExtractor..."
