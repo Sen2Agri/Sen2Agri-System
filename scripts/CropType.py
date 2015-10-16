@@ -23,7 +23,7 @@ parser.add_argument('-classifier', help='The classifier used for training (eithe
 parser.add_argument('-rseed', help='The random seed used for training', required=False, metavar='random_seed', default=0)
 parser.add_argument('-mask', help='The crop mask', required=False, metavar='crop_mask', default='')
 
-parser.add_argument('-pixsize', help='THe size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
+parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
 
 args = parser.parse_args()
 
@@ -162,12 +162,12 @@ print "ComputeImagesStatistics done!"
 
 #Train Image Classifier
 print "Executing TrainImagesClassifier..."
-tcCmdLine = "otbcli_TrainImagesClassifier -io.il "+fts+" -io.vd "+training_polygons+" -io.imstat "+statistics+" -rand "+random_seed+" -sample.bm 0 -io.confmatout "+confmatout+" -io.out "+model+" -sample.mt -1 -sample.mv -1 -sample.vfn CODE -sample.vtr "+sample_ratio+" -classifier "+classifier 
+tcCmdLine = "otbcli_TrainImagesClassifier -io.il "+fts+" -io.vd "+training_polygons+" -io.imstat "+statistics+" -rand "+random_seed+" -sample.bm 0 -io.confmatout "+confmatout+" -io.out "+model+" -sample.mt -1 -sample.mv -1 -sample.vfn CODE -sample.vtr "+sample_ratio+" -classifier "+classifier
 
 if classifier == "rf" :
-   tcCmdLine += " -classifier.rf.nbtrees 100 -classifier.rf.min 5 -classifier.rf.max 25"   
+   tcCmdLine += " -classifier.rf.nbtrees 100 -classifier.rf.min 5 -classifier.rf.max 25"
 elif classifier == "svm" :
-   tcCmdLine += " -classifier.svm.k rbf -classifier.svm.opt 1"   
+   tcCmdLine += " -classifier.svm.k rbf -classifier.svm.opt 1"
 print tcCmdLine
 result = os.system(tcCmdLine)
 
