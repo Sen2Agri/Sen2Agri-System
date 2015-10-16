@@ -14,7 +14,9 @@ public:
 
     const char * GetNameOfClass() { return "Spot4MetadataHelper"; }
 
-    virtual std::string GetBandName(unsigned int nIdx);
+    virtual std::string GetBandName(unsigned int nIdx, bool bRelativeIdx=true);
+    // for Spot we have only one resolution
+    virtual int GetRelativeBandIndex(unsigned int nAbsBandIdx) { return nAbsBandIdx; }
 
 protected:
     virtual bool DoLoadMetadata();

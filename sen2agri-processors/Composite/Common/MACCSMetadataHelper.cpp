@@ -6,17 +6,39 @@ MACCSMetadataHelper::MACCSMetadataHelper()
     m_ReflQuantifVal = 1;
 }
 
-std::string MACCSMetadataHelper::GetBandName(unsigned int nIdx)
+std::string MACCSMetadataHelper::GetBandName(unsigned int nBandIdx, bool bRelativeIdx)
 {
-    if(!m_specificAotMetadata) {
+    if(bRelativeIdx) {
+        if(!m_specificImgMetadata) {
+            ReadSpecificMACCSImgHdrFile();
+        }
+
+        if(nBandIdx >= m_nBandsNoForCurRes) {
+            itkExceptionMacro("Invalid band index requested: " << bRelativeIdx << ". Maximum is " << m_nBandsNoForCurRes);
+        }
+        return m_specificImgMetadata->ImageInformation.Bands[nBandIdx].Name;
+    } else {
+        for (const MACCSBand& band : m_metadata->ImageInformation.Bands) {
+            // the bands in the file are 1 based while our parameter nBandIdx is 0 based
+            if (std::stoi(band.Id) == (int)nBandIdx) {
+                return band.Name;
+            }
+        }
+        itkExceptionMacro("Invalid absolute band index requested: " << nBandIdx << ". Maximum is " << m_nTotalBandsNo);
+    }
+}
+
+int MACCSMetadataHelper::GetRelativeBandIndex(unsigned int nAbsBandIdx)
+{
+    if(m_missionType == LANDSAT) {
+        return nAbsBandIdx;
+    }
+    // In the case of S2 we need to compute the relative index
+    std::string bandName = GetBandName(nAbsBandIdx, false);
+    if(!m_specificImgMetadata) {
         ReadSpecificMACCSImgHdrFile();
     }
-
-    if(nIdx >= m_nBandsNoForCurRes) {
-        itkExceptionMacro("Invalid band index requested: " << nIdx << ". Maximum is " << m_nBandsNoForCurRes);
-    }
-
-    return m_specificImgMetadata->ImageInformation.Bands[nIdx].Name;
+    return getBandIndex(m_specificImgMetadata->ImageInformation.Bands, bandName);
 }
 
 float MACCSMetadataHelper::GetAotQuantificationValue()
@@ -90,6 +112,7 @@ void MACCSMetadataHelper::UpdateValuesForLandsat()
     m_nTotalBandsNo = 6;
     m_nBandsNoForCurRes = m_nTotalBandsNo;
     m_nRedBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B4");
+    m_nBlueBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B2");
     m_nGreenBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B3");
     m_nNirBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B5");
     // TODO: Add here other initializations for LANDSAT if needed
@@ -102,9 +125,10 @@ void MACCSMetadataHelper::UpdateValuesForSentinel()
     m_nBandsNoForCurRes = ((m_nResolution == 10) ? 4 : 6);
     if(m_nResolution == 10)
     {
-        m_nRedBandIndex = getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B4");
-        m_nGreenBandIndex = getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B3");
-        m_nNirBandIndex = getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B8");
+        m_nRedBandIndex = GetRelativeBandIndex(getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B4"));
+        m_nBlueBandIndex = GetRelativeBandIndex(getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B2"));
+        m_nGreenBandIndex = GetRelativeBandIndex(getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B3"));
+        m_nNirBandIndex = GetRelativeBandIndex(getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B8"));
     }
     // TODO: Add here other initializations for S2 if needed
 }

@@ -39,7 +39,7 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ArchivedProductList" />
     </method>
     <method name="SubmitJob">
-      <arg name="job" type="(ssiiis)" direction="in" />
+      <arg name="job" type="(ssiiisa(ss))" direction="in" />
       <arg name="jobId" type="i" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewJob" />
     </method>
