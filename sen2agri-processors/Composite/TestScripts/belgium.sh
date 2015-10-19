@@ -13,6 +13,7 @@ inputXML+="/mnt/Imagery_S2A/L2A/Spot4-T5/Belgium/SPOT4_HRVIR1_XS_20130606_N2A_EB
 
 L3A_DATE="20130617"
 HALF_SYNTHESIS="50"
+BANDS_MAPPING="bands_mapping_spot.txt"
 
 #end of USER modif
 
