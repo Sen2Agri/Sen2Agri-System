@@ -135,10 +135,15 @@ private:
         int nExtractedBandsNo = 0;
         // create an array of bands presences with the same size as the master band size
         std::vector<int> bandsPresenceVect = bandsMappingCfg.GetBandsPresence(resolution, missionName, nExtractedBandsNo);
-        std::vector<int> vectIdxs = bandsMappingCfg.GetAbsoluteBandIndexes(resolution, missionName);
-        for(unsigned int i = 0; i<vectIdxs.size(); i++) {
-            int nRelBandIdx = pHelper->GetRelativeBandIndex(vectIdxs[i]);
-            m_ImageList->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(m_L2AIn, nRelBandIdx));
+        //std::vector<int> vectIdxs = bandsMappingCfg.GetAbsoluteBandIndexes(resolution, missionName);
+        // Here we have a raster that already has the extracted bands configured in the file.
+        // We do not get the bands from the product anymore but from this file (in file)
+        for(unsigned int i = 0; i<bandsPresenceVect.size(); i++) {
+            //int nRelBandIdx = pHelper->GetRelativeBandIndex(vectIdxs[i]);
+            int nRelBandIdx = bandsPresenceVect[i];
+            if(nRelBandIdx >= 0) {
+                m_ImageList->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(m_L2AIn, nRelBandIdx+1));
+            }
         }
 
         m_CSM = GetParameterFloatVectorImage("csm");
