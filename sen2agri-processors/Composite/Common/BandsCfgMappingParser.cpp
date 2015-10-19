@@ -181,8 +181,8 @@ void BandsCfgMappingParser::ParseFile(const std::string &fileName) {
             // here we need to extract the mission names
             BandMappingConfig bandMappingCfg;
             int cellIdx = 0;
-            int masterIdx;
-            int masterRes;
+            int masterIdx = -1;
+            int masterRes = -1;
             while(std::getline(lineStream,cell,',')) {
                 // TODO: The first 2 columns are resolution and index of the master band
                 // the next pairs of columns are the index and the presence of the secondary products
