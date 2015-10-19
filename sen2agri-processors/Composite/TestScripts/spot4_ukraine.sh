@@ -21,4 +21,5 @@ inputXML[16]='/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130616_N2A
 L3A_DATE="20130616"
 #HALF_SYNTHESIS="50"
 HALF_SYNTHESIS="60"
+BANDS_MAPPING="bands_mapping_spot.txt"
 #end of USER modif 

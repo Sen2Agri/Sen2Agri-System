@@ -29,4 +29,5 @@ inputXML[21]='/mnt/Imagery_S2A/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_2013061
 L3A_DATE="20130615"
 #HALF_SYNTHESIS="50"
 HALF_SYNTHESIS="70"
+BANDS_MAPPING="bands_mapping_spot.txt"
 #end of USER modif
