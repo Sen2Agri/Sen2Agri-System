@@ -115,6 +115,91 @@ void TotalWeightComputation::ComputeTotalWeight()
     m_filter->GetFunctor().SetFixedWeight(m_fWeightOnSensor, m_fWeightOnDate);
     m_filter->SetInput1(m_inputReader1->GetOutput());
     m_filter->SetInput2(m_inputReader2->GetOutput());
+    //m_filter->SetDirectionTolerance(5);
+    //m_filter->SetCoordinateTolerance(5);
+    //CheckTolerance();
+}
+
+typedef double SpacePrecisionType;
+
+void TotalWeightComputation::CheckTolerance()
+{
+    double m_DirectionTolerance = 0.001;
+    double m_CoordinateTolerance = 0.001;
+
+    m_inputReader1->UpdateOutputInformation();
+    m_inputReader2->UpdateOutputInformation();
+
+    ImageType *inputPtr1=
+      dynamic_cast< ImageType * >( m_inputReader1->GetOutput() );
+
+    ImageType *inputPtrN =
+      dynamic_cast< ImageType * >( m_inputReader2->GetOutput() );
+
+    // tolerance for origin and spacing depends on the size of pixel
+    // tolerance for directions a fraction of the unit cube.
+    const SpacePrecisionType coordinateTol
+      = m_CoordinateTolerance * inputPtr1->GetSpacing()[0]; // use first dimension spacing
+
+    /*vnl_vector<double> vect1 = inputPtr1->GetOrigin().GetVnlVector();
+    double val11 = vect1.get(0);
+    double val12 = vect1.get(1);
+    vnl_vector<double> vect2 = inputPtrN->GetOrigin().GetVnlVector();
+    double val21 = vect2.get(0);
+    double val22 = vect2.get(1);
+
+    double diff1 = fabs(val11-val21);
+    double diff2 = fabs(val12-val22);
+
+    vnl_vector<double> vect3 = inputPtr1->GetSpacing().GetVnlVector();
+    double val31 = vect3.get(0);
+    double val32 = vect3.get(1);
+
+    vnl_vector<double> vect4 = inputPtrN->GetSpacing().GetVnlVector();
+    double val41 = vect4.get(0);
+    double val42 = vect4.get(1);
+
+    double diff3 = fabs(val31-val41);
+    double diff4 = fabs(val32-val42);*/
+
+
+    //vnl_vector<SpacingValueType> vect1 = inputPtr1->GetOrigin().GetVnlVector();
+    //vnl_vector<SpacingValueType> vect2 = inputPtrN->GetOrigin().GetVnlVector();
+
+    if ( !inputPtr1->GetOrigin().GetVnlVector().is_equal(inputPtrN->GetOrigin().GetVnlVector(), coordinateTol) ||
+         !inputPtr1->GetSpacing().GetVnlVector().is_equal(inputPtrN->GetSpacing().GetVnlVector(), coordinateTol) ||
+         !inputPtr1->GetDirection().GetVnlMatrix().as_ref().is_equal(inputPtrN->GetDirection().GetVnlMatrix(), m_DirectionTolerance) )
+      {
+      std::ostringstream originString, spacingString, directionString;
+      if ( !inputPtr1->GetOrigin().GetVnlVector().is_equal(inputPtrN->GetOrigin().GetVnlVector(), coordinateTol) )
+        {
+        originString.setf( std::ios::scientific );
+        originString.precision( 7 );
+        originString << "InputImage Origin: " << inputPtr1->GetOrigin()
+                     << ", InputImage" << " Origin: " << inputPtrN->GetOrigin() << std::endl;
+        originString << "\tTolerance: " << coordinateTol << std::endl;
+        }
+      if ( !inputPtr1->GetSpacing().GetVnlVector().is_equal(inputPtrN->GetSpacing().GetVnlVector(), coordinateTol) )
+        {
+        spacingString.setf( std::ios::scientific );
+        spacingString.precision( 7 );
+        spacingString << "InputImage Spacing: " << inputPtr1->GetSpacing()
+                      << ", InputImage"  << " Spacing: " << inputPtrN->GetSpacing() << std::endl;
+        spacingString << "\tTolerance: " << coordinateTol << std::endl;
+        }
+      if ( !inputPtr1->GetDirection().GetVnlMatrix().as_ref().is_equal(inputPtrN->GetDirection().GetVnlMatrix(), m_DirectionTolerance) )
+        {
+        directionString.setf( std::ios::scientific );
+        directionString.precision( 7 );
+        directionString << "InputImage Direction: " << inputPtr1->GetDirection()
+                        << ", InputImage" << " Direction: " << inputPtrN->GetDirection() << std::endl;
+        directionString << "\tTolerance: " << m_DirectionTolerance << std::endl;
+        }
+      itkExceptionMacro(<< "Inputs do not occupy the same physical space! "
+                        << std::endl
+                        << originString.str() << spacingString.str()
+                        << directionString.str() );
+      }
 }
 
 void TotalWeightComputation::WriteToOutputFile()

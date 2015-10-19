@@ -1,5 +1,5 @@
-#ifndef RESAMPLED_BAND_EXTRACTOR_H
-#define RESAMPLED_BAND_EXTRACTOR_H
+#ifndef RESAMPLING_BAND_EXTRACTOR_H
+#define RESAMPLING_BAND_EXTRACTOR_H
 
 #include "otbWrapperTypes.h"
 #include "otbMultiToMonoChannelExtractROI.h"
@@ -9,15 +9,13 @@
 #include "otbImageFileReader.h"
 #include "otbImageFileWriter.h"
 #include "otbImageListToVectorImageFilter.h"
-#include "MACCSMetadataReader.hpp"
-#include "SPOT4MetadataReader.hpp"
 
 #include "libgen.h"
 
 //Transform
 #include "itkScalableAffineTransform.h"
 
-class ResampledBandExtractor
+class ResamplingBandExtractor
 {
 public:
     typedef float                                      PixelType;
@@ -46,33 +44,28 @@ public:
     typedef ScalableTransformType::OutputVectorType     OutputVectorType;
 
 public:
-    ResampledBandExtractor();
+    ResamplingBandExtractor();
     InternalImageType::Pointer ExtractResampledBand(const ImageType::Pointer img, int nChannel, int curRes=-1,
-                                                  int nDesiredRes=-1, bool bNearestNeighbourInterpolation=false);
-    InternalImageType::Pointer ExtractResampledBand2(const ImageType::Pointer img, int nChannel, int nWidth,
-                                                  int nHeight, bool bNearestNeighbourInterpolation=false);
+                                                  int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
+                                                  bool bNearestNeighbourInterpolation=false);
 
     int ExtractAllResampledBands(const ImageType::Pointer img, otb::ImageList<otb::Wrapper::FloatImageType>::Pointer &outList,
                                                   int curRes=-1, int nDesiredRes=-1, bool bNearestNeighbourInterpolation=false);
 
-    const char * GetNameOfClass() { return "ResampledBandExtractor"; }
+    const char * GetNameOfClass() { return "ResamplingBandExtractor"; }
 
     ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const float& ratio, bool isMask=false);
     ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const int wantedWidth, const int wantedHeight, bool isMask=false);
-    ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const OutputVectorType& scale, bool isMask=false);
+    ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const OutputVectorType& scale, int forcedWidth, int forcedHeight, bool isMask=false);
 
 private:
-    InternalImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes,
+    InternalImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes, int forcedWidth, int forcedHeight,
                                                  ExtractROIFilterType::Pointer extractor,
                                                  bool bIsMask);
-    InternalImageType::Pointer getResampledImage2(int nWidth, int nHeight,
-                                                 ExtractROIFilterType::Pointer extractor,
-                                                 bool bIsMask);
-
 private:
     ExtractROIFilterListType::Pointer     m_ExtractorList;
     ImageReaderListType::Pointer          m_ImageReaderList;
     ResampleFilterListType::Pointer       m_ResamplersList;
 };
 
-#endif // RESAMPLED_BAND_EXTRACTOR_H
+#endif // RESAMPLING_BAND_EXTRACTOR_H

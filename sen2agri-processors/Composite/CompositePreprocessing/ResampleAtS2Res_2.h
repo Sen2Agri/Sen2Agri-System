@@ -1,5 +1,5 @@
-#ifndef RESAMPLE_AT_S2_RES_H
-#define RESAMPLE_AT_S2_RES_H
+#ifndef RESAMPLE_AT_S2_RES_2_H
+#define RESAMPLE_AT_S2_RES_2_H
 
 #include "otbWrapperTypes.h"
 #include "otbMultiToMonoChannelExtractROI.h"
@@ -13,7 +13,7 @@
 //Transform
 #include "itkComposeImageFilter.h"
 #include "itkScalableAffineTransform.h"
-#include "../Common/ResampledBandExtractor.h"
+#include "ResamplingBandExtractor.h"
 #include "MetadataHelperFactory.h"
 
 #include "BandsCfgMappingParser.h"
@@ -69,7 +69,7 @@ private:
     int m_nRes;
     ImageReaderType::Pointer m_inputImgReader;
 
-    ResampledBandExtractor m_ResampledBandsExtractor;
+    ResamplingBandExtractor m_ResampledBandsExtractor;
     std::unique_ptr<MetadataHelper> m_pMetadataHelper;
 
     BandsCfgMappingParser m_bandsCfgMappingParser;

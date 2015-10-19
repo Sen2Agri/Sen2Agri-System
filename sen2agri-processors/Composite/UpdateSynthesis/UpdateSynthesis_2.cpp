@@ -20,7 +20,7 @@
 #include "UpdateSynthesisFunctor_2.h"
 #include "MetadataHelperFactory.h"
 #include "BandsCfgMappingParser.h"
-#include "ResampledBandExtractor.h"
+#include "ResamplingBandExtractor.h"
 
 namespace otb
 {
@@ -275,7 +275,7 @@ private:
 
 
     BandsCfgMappingParser m_bandsCfgMappingParser;
-    ResampledBandExtractor m_ResampledBandsExtractor;
+    ResamplingBandExtractor m_ResampledBandsExtractor;
 /*
     VectorImageToImageListType::Pointer       m_imgSplit;
     ImageListToVectorImageFilterType::Pointer m_allConcat;

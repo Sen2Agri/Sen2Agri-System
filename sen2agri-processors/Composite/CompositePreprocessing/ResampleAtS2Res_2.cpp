@@ -16,13 +16,14 @@ void ResampleAtS2Res2::Init(const std::string &xml, const std::string &strMaskFi
     m_ImageList = InternalImageListType::New();
     m_ImageReaderList = ImageReaderListType::New();
 
-    auto factory = MetadataHelperFactory::New();
-    m_pMetadataHelper = factory->GetMetadataHelper(m_strXml);
     m_bandsMappingFile = bandsMappingFile;
 }
 
 void ResampleAtS2Res2::DoExecute()
 {
+    auto factory = MetadataHelperFactory::New();
+    m_pMetadataHelper = factory->GetMetadataHelper(m_strXml);
+
     std::string imageFile = m_pMetadataHelper->GetImageFileName();
     m_inputImgReader = getReader(imageFile);
     m_inputImgReader->UpdateOutputInformation();
@@ -42,7 +43,7 @@ void ResampleAtS2Res2::DoExecute()
         m_ImageList->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(img, nRelBandIdx, curRes, m_nRes, false));
     }
 
-    // Extract (and resample, if needed) the AOTcloud, water and snow masks
+    // Extract (and resample, if needed) the cloud, water and snow masks
     ExtractResampledMasksImages();
 
     // Extract (and resample, if needed) the AOT
@@ -93,7 +94,8 @@ void ResampleAtS2Res2::ExtractResampledAotImage()
     aotImage->UpdateOutputInformation();
     int curRes = aotImage->GetSpacing()[0];
     auto sz = m_inputImgReader->GetOutput()->GetLargestPossibleRegion().GetSize();
-    m_ImageAot = m_ResampledBandsExtractor.ExtractResampledBand2(aotImage, aotBandIdx, sz[0], sz[1], true);
+    m_ImageAot = m_ResampledBandsExtractor.ExtractResampledBand(aotImage, aotBandIdx, curRes, m_nRes, sz[0], sz[1], true);
+
 }
 
 bool ResampleAtS2Res2::ExtractResampledMasksImages()

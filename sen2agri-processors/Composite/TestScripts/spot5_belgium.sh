@@ -13,5 +13,6 @@ inputXML[9]='/mnt/Imagery_S2A/L2A/Spot5-T5/Belgium/SPOT5_HRG2_XS_20150709_N2A_Be
 inputXML[10]='/mnt/Imagery_S2A/L2A/Spot5-T5/Belgium/SPOT5_HRG2_XS_20150729_N2A_BelgiumD0000B0000/SPOT5_HRG2_XS_20150729_N2A_BelgiumD0000B0000.xml'
 L3A_DATE="20150729"
 HALF_SYNTHESIS="50"
+BANDS_MAPPING="bands_mapping_spot.txt"
 #end of USER modif
 

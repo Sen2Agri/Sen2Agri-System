@@ -98,6 +98,7 @@ private:
     ImageSource::Pointer m_inputReader2;
 
     FilterType::Pointer m_filter;
+    void CheckTolerance();
 };
 
 #endif // TOTALWEIGHTCOMPUTATION_H
