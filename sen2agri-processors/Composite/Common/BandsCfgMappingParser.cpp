@@ -2,7 +2,158 @@
 #include <fstream>
 #include <sstream>
 #include <itkMacro.h>
+#include <algorithm>    // std::sort
 
+/********************************************************************
+ *
+ * BandsMappingConfig functions
+ *
+ ********************************************************************/
+void BandMappingConfig::AddBandConfig(bool bMaster, int bandIdx, int res) {
+    BandConfig bandCfg;
+    bandCfg.bIsMaster = bMaster;
+    bandCfg.identifier = bandIdx;
+    bandCfg.res = res;
+    m_bandsCfg.push_back(bandCfg);
+}
+
+BandConfig BandMappingConfig::GetMasterBand() {
+    return m_bandsCfg[0];
+}
+
+BandConfig BandMappingConfig::GetBand(int idx) {
+    return m_bandsCfg[idx];
+}
+
+unsigned int BandMappingConfig::GetBandsNo() {
+    return m_bandsCfg.size();
+}
+
+int BandMappingConfig::GetMasterBandResolution() {
+    return m_bandsCfg[0].res;
+}
+
+bool BandMappingConfig::operator<( const BandMappingConfig & other ) const
+{
+  return (this->m_bandsCfg[0].identifier < other.m_bandsCfg[0].identifier);
+}
+
+
+/********************************************************************
+ *
+ * BandsMappingConfig functions
+ *
+ ********************************************************************/
+std::vector<BandMappingConfig> BandsMappingConfig::GetBandMappingConfigs(int nRes) {
+    std::vector<BandMappingConfig> retMappings;
+    for(unsigned int i = 0; i<m_bandsCfgMapping.size(); i++) {
+        if(nRes == m_bandsCfgMapping[i].GetMasterBandResolution()) {
+            retMappings.push_back(m_bandsCfgMapping[i]);
+        }
+    }
+    return retMappings;
+}
+
+std::vector<BandConfig> BandsMappingConfig::GetBands(int nRes, const std::string &missionName) {
+    std::vector<BandConfig> retBands;
+    int nMissionIdx = -1;
+    for(unsigned int i = 0; i<m_missionNames.size(); i++) {
+        if(m_missionNames[i] == missionName) {
+            nMissionIdx = i;
+            break;
+        }
+    }
+    if(nMissionIdx >= 0) {
+        for(unsigned int i = 0; i<m_bandsCfgMapping.size(); i++) {
+            if(nRes == m_bandsCfgMapping[i].GetMasterBandResolution()) {
+                retBands.push_back(m_bandsCfgMapping[i].GetBand(nMissionIdx));
+            }
+        }
+    }
+    return retBands;
+}
+
+void BandsMappingConfig::AddBandsCfgMapping (const BandMappingConfig& bandsMappingCfg) {
+    m_bandsCfgMapping.push_back(bandsMappingCfg);
+    std::sort (m_bandsCfgMapping.begin(), m_bandsCfgMapping.end());
+}
+
+void BandsMappingConfig::AddMission(std::string &mission) {
+    // TODO: Check that the mission does not already exists
+    m_missionNames.push_back(mission);
+}
+
+unsigned int BandsMappingConfig::GetMissionsNo() {
+    return m_missionNames.size();
+}
+
+std::string BandsMappingConfig::GetMasterMissionName() {
+    return m_missionNames[0];
+}
+
+bool BandsMappingConfig::IsConfiguredMission(const std::string &missionName) {
+    for(unsigned int i = 0; i<m_missionNames.size(); i++) {
+        if(m_missionNames[i] == missionName) {
+            return true;
+        }
+    }
+    return false;
+}
+
+std::vector<int> BandsMappingConfig::GetAbsoluteBandIndexes(int res, const std::string &missionName) {
+    std::vector<int> retIndexes;
+    if(!IsConfiguredMission(missionName)) {
+        itkExceptionMacro("Mission " + missionName + " is not configured for composition!");
+    }
+
+    std::vector<BandConfig> bandsCfg = GetBands(res, missionName);
+    if(bandsCfg.size() <=0) {
+        itkExceptionMacro("No bands configured for this resolution " << res << " and mission " << missionName);
+    }
+    for(unsigned int i = 0; i<bandsCfg.size(); i++) {
+        int nBandIdx = bandsCfg[i].identifier;
+        if(nBandIdx <= 0) {
+            // we ignore the bands that are in master but not in the secondary product
+            continue;
+        }
+        retIndexes.push_back(nBandIdx);
+    }
+    return retIndexes;
+}
+
+/* This function does not returns the indexes from the file but the valid indexes in
+ * sequencial ascending order and -1 if missing band */
+std::vector<int> BandsMappingConfig::GetBandsPresence(int nRes, const std::string &missionName, int &outNbValidBands) {
+    if(!IsConfiguredMission(missionName)) {
+        itkExceptionMacro("Mission " + missionName + "is not configured for composition!");
+    }
+
+    std::string masterMissionName = GetMasterMissionName();
+    std::vector<BandConfig> masterBandsCfg = GetBands(nRes, masterMissionName);
+    std::vector<BandConfig> bandsCfg = GetBands(nRes, missionName);
+    if((bandsCfg.size() <= 0) || (masterBandsCfg.size() != bandsCfg.size())) {
+        itkExceptionMacro("Invalid bands size configuration for resolution " << nRes << " and mission " << missionName);
+    }
+    outNbValidBands = 0;
+    // create an array of bands presences with the same size as the master band size
+    std::vector<int> bandsPresenceVect(bandsCfg.size());
+    for(unsigned int i = 0; i<bandsCfg.size(); i++) {
+        if(bandsCfg[i].identifier <= 0) {
+            // we mark the bands that are in the master product but not in the secondary product
+            bandsPresenceVect[i] = -1;
+            continue;
+        }
+        bandsPresenceVect[i] = outNbValidBands;
+        outNbValidBands++;
+    }
+    return bandsPresenceVect;
+}
+
+/********************************************************************
+ *
+ * BandsCfgMappingParser functions
+ *
+ ********************************************************************/
 BandsCfgMappingParser::BandsCfgMappingParser()
 {
 }
