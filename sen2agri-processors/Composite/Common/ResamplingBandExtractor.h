@@ -50,7 +50,8 @@ public:
                                                   bool bNearestNeighbourInterpolation=false);
 
     int ExtractAllResampledBands(const ImageType::Pointer img, otb::ImageList<otb::Wrapper::FloatImageType>::Pointer &outList,
-                                                  int curRes=-1, int nDesiredRes=-1, bool bNearestNeighbourInterpolation=false);
+                                int curRes=-1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
+                                bool bNearestNeighbourInterpolation=false);
 
     const char * GetNameOfClass() { return "ResamplingBandExtractor"; }
 
