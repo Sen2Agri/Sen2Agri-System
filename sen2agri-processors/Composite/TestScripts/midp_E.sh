@@ -24,4 +24,5 @@ inputXML[8]='/mnt/Imagery_S2A/L2A/Spot4-T5/CSudmipy-E_LEVEL2A/SPOT4_HRVIR1_XS_20
 L3A_DATE="20130413"
 #HALF_SYNTHESIS="50"
 HALF_SYNTHESIS="25"
+BANDS_MAPPING="bands_mapping_spot.txt"
 #end of USER modif
