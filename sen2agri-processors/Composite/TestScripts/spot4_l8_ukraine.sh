@@ -30,7 +30,7 @@ inputXML[26]='/mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EU
 inputXML[27]='/mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20131228_L8_181_025/EUkraineS2A_20131228_L8_181_025.HDR'
 
 L3A_DATE="20131228"
-HALF_SYNTHESIS="190"
+HALF_SYNTHESIS="150"
 BANDS_MAPPING="bands_mapping_Spot4_L8.txt"
 #end of USER modif
 
