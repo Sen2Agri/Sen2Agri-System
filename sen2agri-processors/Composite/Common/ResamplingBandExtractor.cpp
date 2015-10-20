@@ -138,14 +138,14 @@ ResamplingBandExtractor::InternalImageType::Pointer ResamplingBandExtractor::get
         return extractor->GetOutput();
     }
     if(nCurRes == nDesiredRes) {
-        if((forcedWidth == -1) && (forcedHeight != -1)) {
+        if((forcedWidth == -1) || (forcedHeight == -1)) {
             return extractor->GetOutput();
         }
         // if we have the same resolution and the same desired dimensions as the input image
         extractor->GetOutput()->UpdateOutputInformation();
         auto sz = extractor->GetOutput()->GetLargestPossibleRegion().GetSize();
         // no need to do any resampling if res and dimensions are the same
-        if((sz[0] == forcedWidth) && (sz[1] == forcedHeight)) {
+        if((sz[0] == (unsigned int)forcedWidth) && (sz[1] == (unsigned int)forcedHeight)) {
             return extractor->GetOutput();
         }
     }

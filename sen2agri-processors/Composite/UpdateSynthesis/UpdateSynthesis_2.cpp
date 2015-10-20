@@ -144,6 +144,8 @@ private:
         auto factory = MetadataHelperFactory::New();
         auto pHelper = factory->GetMetadataHelper(inXml, resolution);
         std::string missionName = pHelper->GetMissionName();
+        // TODO: Using these indexes as they are extracted is not right
+        //       These indexes are from the current product and they should be translated
         int nRedBandIdx = pHelper->GetRedBandIndex();
         int nBlueBandIdx = pHelper->GetBlueBandIndex();
 
