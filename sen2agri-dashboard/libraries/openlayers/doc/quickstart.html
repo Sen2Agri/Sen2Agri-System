@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>OpenLayers 3 - Quick Start</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <link href='http://fonts.googleapis.com/css?family=Quattrocento+Sans:400,400italic,700' rel='stylesheet' type='text/css'>
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    <link href='../../../assets/theme/site.css' rel='stylesheet' type='text/css'>
+    <link rel="icon" type="image/x-icon" href="../../../assets/theme/img/favicon.ico" />
+    
+  </head>
+  <body>
+    <header class='navbar navbar-fixed-top' role='navigation'>
+      <div class='container'>
+
+        <!-- button that shows up below 768px width -->
+        <button type='button' class='navbar-toggle' data-toggle='collapse' data-target='.navbar-responsive-collapse'>
+          <span class='icon-bar'></span>
+          <span class='icon-bar'></span>
+          <span class='icon-bar'></span>
+        </button>
+
+        <a href='/' class='navbar-brand'><img src='../../../assets/theme/img/logo70.png'>&nbsp;OpenLayers 3</a>
+
+        <!-- menu items that get hidden below 768px width -->
+        <nav class='collapse navbar-collapse navbar-responsive-collapse'>
+          <ul class='nav navbar-nav pull-right'>
+            <li><a href='/en/v3.10.1/doc'class="active">Docs</a></li>
+            <li><a href='/en/v3.10.1/examples'>Examples</a></li>
+            <li><a href='/en/v3.10.1/apidoc'>API</a></li>
+            <li><a href='https://github.com/openlayers/ol3'>Code</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    
+
+<div class='container'>
+<h1 id="quick-start">Quick Start</h1>
+<h2 id="put-a-map-on-a-page">Put a map on a page</h2>
+<p>Below you&#39;ll find a complete working example.  Create a new file, copy in the contents below, and open in a browser:</p>
+<pre><code class="language-xml"><span class="doctype">&lt;!doctype html&gt;</span>
+<span class="tag">&lt;<span class="title">html</span> <span class="attribute">lang</span>=<span class="value">"en"</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">head</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">link</span> <span class="attribute">rel</span>=<span class="value">"stylesheet"</span> <span class="attribute">href</span>=<span class="value">"http://openlayers.org/en/v3.10.1/css/ol.css"</span> <span class="attribute">type</span>=<span class="value">"text/css"</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">style</span>&gt;</span><span class="css">
+      <span class="class">.map</span> <span class="rules">{
+        <span class="rule"><span class="attribute">height</span>:<span class="value"> <span class="number">400</span>px</span></span>;
+        <span class="rule"><span class="attribute">width</span>:<span class="value"> <span class="number">100</span>%</span></span>;
+      <span class="rule">}</span></span>
+    </span><span class="tag">&lt;/<span class="title">style</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">script</span> <span class="attribute">src</span>=<span class="value">"http://openlayers.org/en/v3.10.1/build/ol.js"</span> <span class="attribute">type</span>=<span class="value">"text/javascript"</span>&gt;</span><span class="javascript"></span><span class="tag">&lt;/<span class="title">script</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">title</span>&gt;</span>OpenLayers 3 example<span class="tag">&lt;/<span class="title">title</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">head</span>&gt;</span>
+  <span class="tag">&lt;<span class="title">body</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">h2</span>&gt;</span>My Map<span class="tag">&lt;/<span class="title">h2</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">div</span> <span class="attribute">id</span>=<span class="value">"map"</span> <span class="attribute">class</span>=<span class="value">"map"</span>&gt;</span><span class="tag">&lt;/<span class="title">div</span>&gt;</span>
+    <span class="tag">&lt;<span class="title">script</span> <span class="attribute">type</span>=<span class="value">"text/javascript"</span>&gt;</span><span class="javascript">
+      <span class="keyword">var</span> map = <span class="keyword">new</span> ol.Map({
+        target: <span class="string">'map'</span>,
+        layers: [
+          <span class="keyword">new</span> ol.layer.Tile({
+            source: <span class="keyword">new</span> ol.source.MapQuest({layer: <span class="string">'sat'</span>})
+          })
+        ],
+        view: <span class="keyword">new</span> ol.View({
+          center: ol.proj.fromLonLat([<span class="number">37.41</span>, <span class="number">8.82</span>]),
+          zoom: <span class="number">4</span>
+        })
+      });
+    </span><span class="tag">&lt;/<span class="title">script</span>&gt;</span>
+  <span class="tag">&lt;/<span class="title">body</span>&gt;</span>
+<span class="tag">&lt;/<span class="title">html</span>&gt;</span></code></pre>
+<h2 id="understanding-what-is-going-on">Understanding what is going on</h2>
+<p>To include a map a web page you will need 3 things:</p>
+<ol>
+<li>Include OpenLayers</li>
+<li><code>&lt;div&gt;</code> map container</li>
+<li>JavaScript to create a simple map</li>
+</ol>
+<h3 id="include-openlayers">Include OpenLayers</h3>
+<pre><code class="language-xml">  <span class="tag">&lt;<span class="title">script</span> <span class="attribute">src</span>=<span class="value">"http://openlayers.org/en/v3.10.1/build/ol.js"</span> <span class="attribute">type</span>=<span class="value">"text/javascript"</span>&gt;</span><span class="javascript"></span><span class="tag">&lt;/<span class="title">script</span>&gt;</span></code></pre>
+<p>The first part is to include the JavaScript library. For the purpose of this tutorial, here we simply point to the openlayers.org website to get the whole library. In a production environment, we would build a custom version of the library including only the module needed for our application.</p>
+<h3 id="-div-to-contain-the-map"><code>&lt;div&gt;</code> to contain the map</h3>
+<pre><code class="language-xml">  <span class="tag">&lt;<span class="title">div</span> <span class="attribute">id</span>=<span class="value">"map"</span> <span class="attribute">class</span>=<span class="value">"map"</span>&gt;</span><span class="tag">&lt;/<span class="title">div</span>&gt;</span></code></pre>
+<p>The map in the application is contained in a <a href="http://en.wikipedia.org/wiki/Span_and_div"><code>&lt;div&gt;</code> HTML element</a>. Through this <code>&lt;div&gt;</code> the map properties like width, height and border can be controlled through CSS. Here&#39;s the CSS element used to make the map 400 pixels high and as wide as the browser window.</p>
+<pre><code class="language-xml">  <span class="tag">&lt;<span class="title">style</span>&gt;</span><span class="css">
+    <span class="class">.map</span> <span class="rules">{
+      <span class="rule"><span class="attribute">height</span>:<span class="value"> <span class="number">400</span>px</span></span>;
+      <span class="rule"><span class="attribute">width</span>:<span class="value"> <span class="number">100</span>%</span></span>;
+    <span class="rule">}</span></span>
+  </span><span class="tag">&lt;/<span class="title">style</span>&gt;</span></code></pre>
+<h3 id="javascript-to-create-a-simple-map">JavaScript to create a simple map</h3>
+<pre><code class="language-js">  <span class="keyword">var</span> map = <span class="keyword">new</span> ol.Map({
+    target: <span class="string">'map'</span>,
+    layers: [
+      <span class="keyword">new</span> ol.layer.Tile({
+        source: <span class="keyword">new</span> ol.source.MapQuest({layer: <span class="string">'sat'</span>})
+      })
+    ],
+    view: <span class="keyword">new</span> ol.View({
+      center: ol.proj.fromLonLat([<span class="number">37.41</span>, <span class="number">8.82</span>]),
+      zoom: <span class="number">4</span>
+    })
+  });</code></pre>
+<p>With this JavaScript code, a map object is created with a MapQuest Open Aerial layer zoomed on the African East coast. Let&#39;s break this down:</p>
+<p>The following line creates an OpenLayers <code>Map</code> object. Just by itself, this does nothing since there&#39;s no layers or interaction attached to it.</p>
+<pre><code class="language-js">  <span class="keyword">var</span> map = <span class="keyword">new</span> ol.Map({ ... });</code></pre>
+<p>To attach the map object to the <code>&lt;div&gt;</code>, the map object takes a <code>target</code> into arguments. The value is the <code>id</code> of the <code>&lt;div&gt;</code>:</p>
+<pre><code class="language-js">    target: <span class="string">'map'</span></code></pre>
+<p>The <code>layers: [ ... ]</code> array is used to define the list of layers available in the map. The first and only layer right now is a tiled layer:</p>
+<pre><code class="language-js">    layers: [
+      <span class="keyword">new</span> ol.layer.Tile({
+        source: <span class="keyword">new</span> ol.source.MapQuest({layer: <span class="string">'sat'</span>})
+      })
+    ]</code></pre>
+<p>Layers in OpenLayers 3 are defined with a type (Image, Tile or Vector) which contains a source. The source is the protocol used to get the map tiles. You can consult the list of <a href="/en/v3.10.1/apidoc/ol.source.html">available layer sources here</a></p>
+<p>The next part of the <code>Map</code> object is the <code>View</code>. The view allow to specify the center, resolution, and rotation of the map. The simplest way to define a view is to define a center point and a zoom level.  Note that zoom level 0 is zoomed out.</p>
+<pre><code class="language-js">    view: <span class="keyword">new</span> ol.View({
+      center: ol.proj.fromLonLat([<span class="number">37.41</span>, <span class="number">8.82</span>]),
+      zoom: <span class="number">4</span>
+    })</code></pre>
+<p>You will notice that the <code>center</code> specified is in lon/lat coordinates (EPSG:4326). Since the only layer we use is in Spherical Mercator projection (EPSG:3857), we can reproject them on the fly to be able to zoom the map on the right coordinates.</p>
+
+</div>
+
+    <footer>
+      Code licensed under the <a href='http://www.tldrlegal.com/license/bsd-2-clause-license-(freebsd)'>2-Clause BSD</a>.  All documentation <a href='http://creativecommons.org/licenses/by/3.0/'>CC BY 3.0</a>. Thanks to our <a href='/sponsors.html'>sponsors</a>.
+    </footer>
+    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    
+  </body>
+</html>
