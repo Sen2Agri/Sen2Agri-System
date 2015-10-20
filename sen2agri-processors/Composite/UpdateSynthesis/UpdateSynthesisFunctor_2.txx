@@ -190,7 +190,7 @@ int UpdateSynthesisFunctor<TInput,TOutput>::GetAbsoluteL2ABandIndex(int index)
 template< class TInput, class TOutput>
 float UpdateSynthesisFunctor<TInput,TOutput>::GetL2AReflectanceForPixelVal(float fPixelVal)
 {
-    if(fPixelVal < 0) {
+    if(fPixelVal <= 0 || IsNoDataValue(fPixelVal, 0)) {
         fPixelVal = NO_DATA;
     }
     return (fPixelVal/m_fReflQuantifValue);
@@ -218,8 +218,10 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, O
             float fCurrentWeight = GetCurrentL2AWeightValue(A);
             float fPrevWeightedDate = GetPrevL3AWeightedAvDateValue(A);
 
-            bool bIsPrevReflNoData = IsNoDataValue(fPrevReflect, m_fReflNoDataValue);
-            bool bIsCurReflNoData = IsNoDataValue(fCurReflectance, m_fReflNoDataValue);
+            bool bIsPrevReflNoData = IsNoDataValue(fPrevReflect, m_fReflNoDataValue) ||
+                                     IsNoDataValue(fPrevReflect, 0);
+            bool bIsCurReflNoData = IsNoDataValue(fCurReflectance, m_fReflNoDataValue) ||
+                                    IsNoDataValue(fCurReflectance, 0);
             if(!bIsCurReflNoData) {
                 bAllReflsAreNoData = false;
             }
@@ -290,7 +292,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
                 float fCurRefl = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
                 // check if the current reflectance is valid (maybe we have missing areas)
                 // in this case, we will keep the existing reflectance
-                if(IsNoDataValue(fCurRefl, m_fReflNoDataValue)) {
+                if(IsNoDataValue(fCurRefl, m_fReflNoDataValue) || IsNoDataValue(fCurRefl, 0)) {
                     outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
                 } else {
                     outInfos.m_CurrentWeightedReflectances[i] = fCurRefl;
