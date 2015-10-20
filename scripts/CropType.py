@@ -74,7 +74,7 @@ print "BandsExtractor done!"
 
 # ogr2ogr
 print "Executing ogr2ogr"
-ooCmdLine = "ogr2ogr -clipsrc "+shape+" -overwrite "+reference_polygons_clip+" "+reference_polygons
+ooCmdLine = "/usr/local/bin/ogr2ogr -clipsrc "+shape+" -overwrite "+reference_polygons_clip+" "+reference_polygons
 print ooCmdLine
 result = os.system(ooCmdLine)
 
