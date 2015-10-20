@@ -31,11 +31,18 @@ L3A_DATE="20130501"
 HALF_SYNTHESIS="50"
 #end of USER modif
 
-if [ $# -lt 2 ]
+if [ $# -lt 3 ]
 then
-  echo "Usage: $0 <resolution> <out folder name> [combined] [allinone]"
+  echo "Usage: $0 <resolution> <out folder name> <bands mapping file> [scattering coefficient file - S2 case only]"
   echo "The file with input xmls should be given. The resolution for which the computations will be performed should be given. The output directory should be given" 1>&2  
   exit
 fi
 
-./run_composite.sh "$inputXML" $1 $2 "$L3A_DATE" "$HALF_SYNTHESIS"
+SCAT_COEF=""
+if [ $# == 4 ] ; then    
+    ./run_composite.sh "$inputXML" "$1" "$2" "$L3A_DATE" "$HALF_SYNTHESIS" "$3" "$4"
+else
+    ./run_composite.sh "$inputXML" "$1" "$2" "$L3A_DATE" "$HALF_SYNTHESIS" "$3"
+fi
+
+

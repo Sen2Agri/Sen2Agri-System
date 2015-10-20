@@ -236,7 +236,7 @@ def noInSituDataAvailable() :
 
 
 #Path to build folder
-buildFolder="../../sen2agri-build/"
+buildFolder="~/sen2agri-build/"
 
 parser = argparse.ArgumentParser(description='CropMask Python processor')
 
