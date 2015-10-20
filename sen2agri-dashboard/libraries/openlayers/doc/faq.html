@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>OpenLayers 3 - Frequently Asked Questions (FAQ)</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <link href='http://fonts.googleapis.com/css?family=Quattrocento+Sans:400,400italic,700' rel='stylesheet' type='text/css'>
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    <link href='../../../assets/theme/site.css' rel='stylesheet' type='text/css'>
+    <link rel="icon" type="image/x-icon" href="../../../assets/theme/img/favicon.ico" />
+    
+  </head>
+  <body>
+    <header class='navbar navbar-fixed-top' role='navigation'>
+      <div class='container'>
+
+        <!-- button that shows up below 768px width -->
+        <button type='button' class='navbar-toggle' data-toggle='collapse' data-target='.navbar-responsive-collapse'>
+          <span class='icon-bar'></span>
+          <span class='icon-bar'></span>
+          <span class='icon-bar'></span>
+        </button>
+
+        <a href='/' class='navbar-brand'><img src='../../../assets/theme/img/logo70.png'>&nbsp;OpenLayers 3</a>
+
+        <!-- menu items that get hidden below 768px width -->
+        <nav class='collapse navbar-collapse navbar-responsive-collapse'>
+          <ul class='nav navbar-nav pull-right'>
+            <li><a href='/en/v3.10.1/doc'class="active">Docs</a></li>
+            <li><a href='/en/v3.10.1/examples'>Examples</a></li>
+            <li><a href='/en/v3.10.1/apidoc'>API</a></li>
+            <li><a href='https://github.com/openlayers/ol3'>Code</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    
+
+<div class='container'>
+<h1 id="frequently-asked-questions-faq-">Frequently Asked Questions (FAQ)</h1>
+<p>Certain questions arise more often than others when users ask for help. This 
+document tries to list some of the common questions that frequently get asked,
+e.g. on <a href="http://stackoverflow.com/questions/tagged/openlayers-3">Stack Overflow</a>.</p>
+<p>If you think a question (and naturally its answer) should be added here, feel
+free to ping us or to send a pull request enhancing this document.</p>
+<p>Table of contents:</p>
+<ul>
+<li><a href="#what-projection-is-openlayers-using-">What projection is OpenLayers using?</a></li>
+<li><a href="#how-do-i-change-the-projection-of-my-map-">How do I change the projection of my map?</a></li>
+<li><a href="#why-is-my-map-centered-on-the-gulf-of-guinea-or-africa-the-ocean-null-island-">Why is my map centered on the gulf of guinea (or africa, the ocean, null-island)?</a></li>
+<li><a href="#why-is-the-order-of-a-coordinate-lon-lat-and-not-lat-lon-">Why is the order of a coordinate [lon,lat], and not [lat,lon]?</a></li>
+<li><a href="#why-aren-t-there-any-features-in-my-source-">Why aren&#39;t there any features in my source?</a></li>
+<li><a href="#how-do-i-force-a-re-render-of-the-map-">How do I force a re-render of the map?</a></li>
+<li><a href="#how-do-i-create-a-custom-build-of-openlayers-">How do I create a custom build of OpenLayers?</a></li>
+<li><a href="#do-i-need-to-write-my-own-code-using-closure-library-">Do I need to write my own code using Closure library?</a></li>
+<li><a href="#do-i-need-to-compress-my-code-with-closure-compiler-">Do I need to compress my code with Closure compiler?</a></li>
+</ul>
+<h2 id="what-projection-is-openlayers-using-">What projection is OpenLayers using?</h2>
+<p>Every map that you&#39;ll create with OpenLayers will have a view, and every view
+will have a projection. As the earth is three-dimensional and round but the 2D
+view of a map isn&#39;t, we need a mathematical expression to represent it. Enter
+projections.</p>
+<p>There isn&#39;t only one projection, but there are many common ones. Each projection
+has different properties, in that it accurately represents distances, angles or
+areas. Certain projections are better suited for different regions in the world.</p>
+<p>Back to the original question: OpenLayers is capable of dealing with most
+projections. If you do not explicitly set one, your map is going to use our
+default which is the Web Mercator projection (EPSG:3857). The same projection is
+used e.g. for the maps of the OpenStreetMap-project and commercial products such
+as Bing Maps or Google Maps.</p>
+<p>This projection is a good choice if you want a map which shows the whole world,
+and you may need to have this projection if you want to e.g. use the
+OpenStreetMap or Bing tiles.</p>
+<h2 id="how-do-i-change-the-projection-of-my-map-">How do I change the projection of my map?</h2>
+<p>There is a good chance that you want to change the default projection of
+OpenLayers to something more appropriate for your region or your specific data.</p>
+<p>The projection of your map can be set through the <code>view</code>-property. Here are some
+examples:</p>
+<pre><code class="language-javascript"><span class="comment">// OpenLayers comes with support for the World Geodetic System 1984, EPSG:4326:</span>
+<span class="keyword">var</span> map = <span class="keyword">new</span> ol.Map({
+  view: <span class="keyword">new</span> ol.View({
+    projection: <span class="string">'EPSG:4326'</span>
+    <span class="comment">// other view properties like map center etc.</span>
+  })
+  <span class="comment">// other properties for your map like layers etc.</span>
+});</code></pre>
+<pre><code class="language-javascript"><span class="comment">// To use other projections, you have to register the projection in OpenLayers:</span>
+<span class="comment">//</span>
+<span class="comment">// By default OpenLayers does not know about the EPSG:21781 (Swiss) projection.</span>
+<span class="comment">// So we create a projection instance for EPSG:21781 and pass it to</span>
+<span class="comment">// ol.proj.addProjection to make it available to the library for lookup by its</span>
+<span class="comment">// code.</span>
+<span class="keyword">var</span> swissProjection = <span class="keyword">new</span> ol.proj.Projection({
+  code: <span class="string">'EPSG:21781'</span>,
+  <span class="comment">// The extent is used to determine zoom level 0. Recommended values for a</span>
+  <span class="comment">// projection's validity extent can be found at http://epsg.io/.</span>
+  extent: [<span class="number">485869.5728</span>, <span class="number">76443.1884</span>, <span class="number">837076.5648</span>, <span class="number">299941.7864</span>],
+  units: <span class="string">'m'</span>
+});
+ol.proj.addProjection(swissProjection);
+
+<span class="comment">// we can now use the projection:</span>
+<span class="keyword">var</span> map = <span class="keyword">new</span> ol.Map({
+  view: <span class="keyword">new</span> ol.View({
+    projection: swissProjection
+    <span class="comment">// other view properties like map center etc.</span>
+  })
+  <span class="comment">// other properties for your map like layers etc.</span>
+});</code></pre>
+<p>We recommend to lookup parameters of your projection (like the validity extent)
+over at <a href="http://epsg.io/">epsg.io</a>.</p>
+<h2 id="why-is-my-map-centered-on-the-gulf-of-guinea-or-africa-the-ocean-null-island-">Why is my map centered on the gulf of guinea (or africa, the ocean, null-island)?</h2>
+<p>If you have set a center in your map view, but don&#39;t see a real change in visual
+output, chances are that you have provided the coordinates of the map center in
+the wrong (a non-matching) projection.</p>
+<p>As the default projection in OpenLayers is Web Mercator (see above), the
+coordinates for the center have to be provided in that projection. Chances are
+that your map looks like this:</p>
+<pre><code class="language-javascript"><span class="keyword">var</span> washingtonLonLat = [-<span class="number">77.036667</span>, <span class="number">38.895</span>];
+<span class="keyword">var</span> map = <span class="keyword">new</span> ol.Map({
+  layers: [
+    <span class="keyword">new</span> ol.layer.Tile({
+      source: <span class="keyword">new</span> ol.source.OSM()
+    })
+  ],
+  target: <span class="string">'map'</span>,
+  view: <span class="keyword">new</span> ol.View({
+    center: washingtonLonLat,
+    zoom: <span class="number">12</span>
+  })
+});</code></pre>
+<p>Here <code>[-77.036667, 38.895]</code> is provided as the center of the view. But as Web
+Mercator is a metric projection, you are currently telling OpenLayers that the
+center shall be some meters (~77m and ~39m respectively) away from <code>[0, 0]</code>. In
+the Web Mercator projection the coordinate is right in the gulf of guinea.</p>
+<p>The solution is easy: Provide the coordinates projected into Web Mercator.
+OpenLayers has some helpful utility methods to assist you:</p>
+<pre><code class="language-javascript"><span class="keyword">var</span> washingtonLonLat = [-<span class="number">77.036667</span>, <span class="number">38.895</span>];
+<span class="keyword">var</span> washingtonWebMercator = ol.proj.fromLonLat(washingtonLonLat);
+
+<span class="keyword">var</span> map = <span class="keyword">new</span> ol.Map({
+  layers: [
+    <span class="keyword">new</span> ol.layer.Tile({
+      source: <span class="keyword">new</span> ol.source.OSM()
+    })
+  ],
+  target: <span class="string">'map'</span>,
+  view: <span class="keyword">new</span> ol.View({
+    center: washingtonWebMercator,
+    zoom: <span class="number">8</span>
+  })
+});</code></pre>
+<p>The method <code>ol.proj.fromLonLat()</code> is available from version 3.5 onwards.</p>
+<p>If you told OpenLayers about a custom projection (see above), you can use the
+following method to transform a coordinate from WGS84 to your projection:</p>
+<pre><code class="language-javascript"><span class="comment">// assuming that OpenLayers knows about EPSG:21781, see above</span>
+<span class="keyword">var</span> swissCoord = ol.proj.transform([<span class="number">8.23</span>, <span class="number">46.86</span>], <span class="string">'EPSG:4326'</span>, <span class="string">'EPSG:21781'</span>);</code></pre>
+<h2 id="why-is-the-order-of-a-coordinate-lon-lat-and-not-lat-lon-">Why is the order of a coordinate [lon,lat], and not [lat,lon]?</h2>
+<p>So you want to center your map on a certain place on the earth and obviously you
+need to have its coordinates for this. Let&#39;s assume you want your map centered
+on Schladming, a beautiful place in Austria. Head over to the wikipedia
+page for <a href="http://en.wikipedia.org/wiki/Schladming">Schladming</a>. In the top-right
+corner there is a link to <a href="http://tools.wmflabs.org/geohack/geohack.php?pagename=Schladming&amp;params=47_23_39_N_13_41_21_E_type:city(4565">GeoHack</a>_region:AT-6),
+which effectively tells you the coordinates are:</p>
+<pre><code>WGS84:
+47° 23′ 39″ N, 13° 41′ 21″ E
+47.394167, 13.689167</code></pre>
+<p>So the next step would be to put the decimal coordinates into an array and use
+it as center:</p>
+<pre><code class="language-javascript"><span class="keyword">var</span> schladming = [<span class="number">47.394167</span>, <span class="number">13.689167</span>]; <span class="comment">// caution partner, read on...</span>
+<span class="comment">// since we are using OSM, we have to transform the coordinates...</span>
+<span class="keyword">var</span> schladmingWebMercator = ol.proj.fromLonLat(schladming);
+
+<span class="keyword">var</span> map = <span class="keyword">new</span> ol.Map({
+  layers: [
+    <span class="keyword">new</span> ol.layer.Tile({
+      source: <span class="keyword">new</span> ol.source.OSM()
+    })
+  ],
+  target: <span class="string">'map'</span>,
+  view: <span class="keyword">new</span> ol.View({
+    center: schladmingWebMercator,
+    zoom: <span class="number">9</span>
+  })
+});</code></pre>
+<p>Running the above example will possibly surprise you, since we are not centered
+on Schladming, Austria, but instead on Abyan, a region in Yemen (possibly also a
+nice place). So what happened?</p>
+<p>Many people mix up the order of longitude and latitude in a coordinate array.
+Don&#39;t worry if you get it wrong at first, many OpenLayers developers have to
+think twice about whether to put the longitude or the latitude first when they
+e.g. try to change the map center.</p>
+<p>Ok, then let&#39;s flip the coordinates:</p>
+<pre><code class="language-javascript"><span class="keyword">var</span> schladming = [<span class="number">13.689167</span>, <span class="number">47.394167</span>]; <span class="comment">// longitude first, then latitude</span>
+<span class="comment">// since we are using OSM, we have to transform the coordinates...</span>
+<span class="keyword">var</span> schladmingWebMercator = ol.proj.fromLonLat(schladming);
+
+<span class="keyword">var</span> map = <span class="keyword">new</span> ol.Map({
+  layers: [
+    <span class="keyword">new</span> ol.layer.Tile({
+      source: <span class="keyword">new</span> ol.source.OSM()
+    })
+  ],
+  target: <span class="string">'map'</span>,
+  view: <span class="keyword">new</span> ol.View({
+    center: schladmingWebMercator,
+    zoom: <span class="number">9</span>
+  })
+});</code></pre>
+<p>Schladming is now correctly displayed in the center of the map.</p>
+<p>So when you deal with EPSG:4326 coordinates in OpenLayers, put the longitude
+first, and then the latitude. This behaviour is the same as we had in OpenLayers
+2, and it actually makes sense because of the natural axis order in WGS84.</p>
+<p>If you cannot remember the correct order, just have a look at the method name
+we used: <code>ol.proj.fromLonLat</code>; even there we hint that we expect longitude
+first, and then latitude.</p>
+<h2 id="why-aren-t-there-any-features-in-my-source-">Why aren&#39;t there any features in my source?</h2>
+<p>Suppose you want to load a KML file and display the contained features on the
+map. Code like the following could be used:</p>
+<pre><code class="language-javascript"><span class="keyword">var</span> vector = <span class="keyword">new</span> ol.layer.Vector({
+  source: <span class="keyword">new</span> ol.source.KML({
+    projection: <span class="string">'EPSG:3857'</span>,
+    url: <span class="string">'data/kml/2012-02-10.kml'</span>
+  })
+});</code></pre>
+<p>You may ask yourself how many features are in that KML, and try something like
+the following:</p>
+<pre><code class="language-javascript"><span class="keyword">var</span> vector = <span class="keyword">new</span> ol.layer.Vector({
+  source: <span class="keyword">new</span> ol.source.KML({
+    projection: <span class="string">'EPSG:3857'</span>,
+    url: <span class="string">'data/kml/2012-02-10.kml'</span>
+  })
+});
+<span class="keyword">var</span> numFeatures = vector.getSource().getFeatures().length;
+console.log(<span class="string">"Count right after construction: "</span> + numFeatures);</code></pre>
+<p>This will log a count of <code>0</code> features to be in the source. This is because the
+loading of the KML-file will happen in an asynchronous manner. To get the count
+as soon as possible (right after the file has been fetched and the source has
+been populated with features), you should use an event listener function on the
+<code>source</code>:</p>
+<pre><code class="language-javascript">vector.getSource().on(<span class="string">'change'</span>, <span class="function"><span class="keyword">function</span><span class="params">(evt)</span>{</span>
+  <span class="keyword">var</span> source = evt.target;
+  <span class="keyword">if</span> (source.getState() === <span class="string">'ready'</span>) {
+    <span class="keyword">var</span> numFeatures = source.getFeatures().length; 
+    console.log(<span class="string">"Count after change: "</span> + numFeatures);
+  }
+});</code></pre>
+<p>This will correctly report the number of features, <code>1119</code> in that particular
+case.</p>
+<h2 id="how-do-i-force-a-re-render-of-the-map-">How do I force a re-render of the map?</h2>
+<p>Usually the map is automatically re-rendered, once a source changes (for example
+when a remote source has loaded).</p>
+<p>If you actually want to manually trigger a rendering, you could use</p>
+<pre><code class="language-javascript">map.render();</code></pre>
+<p>...or its companion method</p>
+<pre><code class="language-javascript">map.renderSync();</code></pre>
+<h2 id="how-do-i-create-a-custom-build-of-openlayers-">How do I create a custom build of OpenLayers?</h2>
+<p>Please refer to the <a href="tutorials/custom-builds.html">official create custom builds tutorial</a>
+which explains how to create a custom build of OpenLayers with just those parts
+included that you want.</p>
+<h2 id="do-i-need-to-write-my-own-code-using-closure-library-">Do I need to write my own code using Closure library?</h2>
+<p>OpenLayers is built on top of the <a href="https://developers.google.com/closure/library/">Google Closure JavaScript
+library</a>, but this
+does not mean that you must use that library in your application code.</p>
+<p>OpenLayers should play well with all sorts of JavaScript libraries out there,
+and you are in no way forced to use a specific one. Choose one that looks
+right for you.</p>
+<h2 id="do-i-need-to-compress-my-code-with-closure-compiler-">Do I need to compress my code with Closure compiler?</h2>
+<p>No, you don&#39;t need to do compress your code with the <a href="https://developers.google.com/closure/compiler/">Google Closure
+compiler</a>.</p>
+<p>It may be a good choice though, because when your application code and the
+OpenLayers source code is compiled together using closure compiler, the
+resulting build will most probably be the smallest in terms of byte-size. For
+more details refer to the
+<a href="tutorials/closure.html">compile application and OpenLayers together tutorial</a>.</p>
+<p>If you don&#39;t want to use the closure compiler, or you can&#39;t, you are not at all
+forced to use it.</p>
+
+</div>
+
+    <footer>
+      Code licensed under the <a href='http://www.tldrlegal.com/license/bsd-2-clause-license-(freebsd)'>2-Clause BSD</a>.  All documentation <a href='http://creativecommons.org/licenses/by/3.0/'>CC BY 3.0</a>. Thanks to our <a href='/sponsors.html'>sponsors</a>.
+    </footer>
+    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    
+  </body>
+</html>
