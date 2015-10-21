@@ -21,25 +21,19 @@ void ResampleAtS2Res::Init(bool bAllInOne, std::string &xml, std::string &strMas
 
     m_ImageReaderList = ImageReaderListType::New();
 
-//    auto factory = MetadataHelperFactory::New();
-//    auto pHelper = factory->GetMetadataHelper(xml);
-    //std::string missionName = pHelper->GetMissionName();
+    auto factory = MetadataHelperFactory::New();
+    m_pMetadataHelper = factory->GetMetadataHelper(m_strXml);
 }
 
 void ResampleAtS2Res::DoExecute()
 {
-    std::vector<char> buf(m_strXml.begin(), m_strXml.end());
-    m_DirName = std::string(dirname(buf.data()));
-
-    auto maccsReader = itk::MACCSMetadataReader::New();
-    if (auto m = maccsReader->ReadMetadata(m_strXml)) {
-        ProcessLANDSAT8(m, m_bAllInOne);
-    } else {
-        auto spot4Reader = itk::SPOT4MetadataReader::New();
-        if (auto m = spot4Reader->ReadMetadata(m_strXml)) {
-            ProcessSPOT4(m, m_bAllInOne);
-        }
+    std::string missionName = m_pMetadataHelper->GetMissionName();
+    if (missionName.find(LANDSAT_MISSION_STR) != std::string::npos) {
+        ProcessLANDSAT8(m_bAllInOne);
+    } else if(missionName.find(SPOT4_MISSION_STR) != std::string::npos) {
+        ProcessSPOT4(m_bAllInOne);
     }
+
     m_ConcatenerRes10->SetInput( m_ImageListRes10 );
     m_ConcatenerRes20->SetInput( m_ImageListRes20 );
     m_ConcatenerResOrig->SetInput( m_ImageListResOrig );
@@ -95,36 +89,31 @@ ResampleAtS2Res::InternalImageType::Pointer ResampleAtS2Res::GetResampledAotImg(
     }
 }
 
-bool ResampleAtS2Res::ProcessSPOT4(const std::unique_ptr<SPOT4Metadata>& meta, bool allInOne)
+bool ResampleAtS2Res::ProcessSPOT4(bool allInOne)
 {
-    if(meta->Radiometry.Bands.size() != 4) {
-        itkExceptionMacro("Wrong number of bands for SPOT4: " + meta->Radiometry.Bands.size() );
-        return false;
-    }
-
-    std::string imageFile = m_DirName + "/" + meta->Files.OrthoSurfCorrPente;
+    std::string imageFile = m_pMetadataHelper->GetImageFileName();
     ImageReaderType::Pointer reader = getReader(imageFile);
     reader->UpdateOutputInformation();
     ImageType::Pointer img = reader->GetOutput();
     int curRes = img->GetSpacing()[0];
 
-    std::vector<std::string>::iterator it;
-    int i = 0;
-    for (it = meta->Radiometry.Bands.begin(), i = 1; it != meta->Radiometry.Bands.end(); it++, i++) {
+    int nBandsNo = m_pMetadataHelper->GetBandsNoForCurrentResolution();
+    for (int i = 1; i<=nBandsNo; i++) {
         m_ImageListResOrig->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(img, i));
         if(allInOne) {
             m_ImageListRes10->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(img, i, curRes, 10, false));
             m_ImageListRes20->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(img, i, curRes, 20, false));
         } else {
-            if((*it).compare("XS1") == 0 || (*it).compare("XS2") == 0 || (*it).compare("XS3") == 0) {
+            std::string bandName = m_pMetadataHelper->GetBandName(i-1);
+            if(bandName.compare("XS1") == 0 || bandName.compare("XS2") == 0 || bandName.compare("XS3") == 0) {
                 // resample to 10m
                 m_ImageListRes10->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(img, i, curRes, 10, false));
             }
             else {
-                if((*it).compare("SWIR") == 0) {
+                if(bandName.compare("SWIR") == 0) {
                     m_ImageListRes20->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(img, i, curRes, 20, false));
                 } else {
-                    itkExceptionMacro("Wrong band name for SPOT4: " + (*it));
+                    itkExceptionMacro("Wrong band name for SPOT4: " + bandName);
                     return false;
                 }
             }
@@ -135,83 +124,44 @@ bool ResampleAtS2Res::ProcessSPOT4(const std::unique_ptr<SPOT4Metadata>& meta, b
     ExtractResampledMasksImages(curRes);
 
     // resample the AOT
-    std::string aotFileName = getSpot4AotFileName(meta);
+    std::string aotFileName = m_pMetadataHelper->GetAotImageFileName();
     //otbAppLogINFO( << "AOT file name" << aotFileName << std::endl );
     ImageReaderType::Pointer aotImageReader = getReader(aotFileName);
     ImageType::Pointer aotImage = aotImageReader->GetOutput();
     m_ImageAotRes20 = m_ResampledBandsExtractor.ExtractResampledBand(aotImage, 1, curRes, 20, true);
     m_ImageAotRes10 = m_ResampledBandsExtractor.ExtractResampledBand(aotImage, 1, curRes, 10, true);
-    m_ImageAotResOrig = m_ResampledBandsExtractor.ExtractResampledBand(aotImage, 1, curRes, -1, true);
+    m_ImageAotResOrig = m_ResampledBandsExtractor.ExtractResampledBand(aotImage, 1);
 
     return true;
 }
 
-bool ResampleAtS2Res::ProcessLANDSAT8(const std::unique_ptr<MACCSFileMetadata>& meta, bool allInOne)
+bool ResampleAtS2Res::ProcessLANDSAT8(bool allInOne)
 {
-    if(meta->ImageInformation.Bands.size() != 8) {
-        itkExceptionMacro("Wrong number of bands for LANDSAT: " + meta->ImageInformation.Bands.size() );
-        return false;
-    }
-    std::string imageXMLFile("");
-    std::string aotXMLFile("");
-    for(auto fileInf = meta->ProductOrganization.ImageFiles.begin(); fileInf != meta->ProductOrganization.ImageFiles.end(); fileInf++)
-    {
-        if(fileInf->LogicalName.substr(fileInf->LogicalName.size() - 4, 4).compare("_FRE") == 0 && fileInf->FileLocation.size() > 0)
-            imageXMLFile = m_DirName + "/" + fileInf->FileLocation;
-    }
-
-    for(auto fileInf = meta->ProductOrganization.AnnexFiles.begin(); fileInf != meta->ProductOrganization.AnnexFiles.end(); fileInf++)
-    {
-        if(fileInf->File.LogicalName.substr(fileInf->File.LogicalName.size() - 4, 4).compare("_ATB") == 0 && fileInf->File.FileLocation.size() > 0)
-            aotXMLFile = m_DirName + "/" + fileInf->File.FileLocation;
-    }
-    int nAotBandIdx = 1;
-    // For MACCS, AOT is set as the band 2 in the cf. ATB file
-    for (auto band : meta->ImageInformation.Bands) {
-        if (band.Name == "AOT") {
-            nAotBandIdx = std::stoi(band.Id);
-        }
-    }
-
-    if(imageXMLFile.empty()) //TODO add error msg
-        return false;
-
-    auto maccsImageReader = itk::MACCSMetadataReader::New();
-    std::unique_ptr<MACCSFileMetadata> imageMeta = nullptr;
-
-    if ((imageMeta = maccsImageReader->ReadMetadata(imageXMLFile)) == nullptr) //TODO add error msg
-        return false;
-
-    if(imageMeta->ImageInformation.Bands.size() != 8) //TODO add error msg
-        return false;
-
     //create image filename
-    std::string imageFile = imageXMLFile;
-    imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
+    std::string imageFile = m_pMetadataHelper->GetImageFileName();
 
     ImageReaderType::Pointer reader = getReader(imageFile);
     reader->UpdateOutputInformation();
     ImageType::Pointer img = reader->GetOutput();
     int curRes = img->GetSpacing()[0];
 
-    std::vector<MACCSBand>::iterator it;
-    int i = 0;
-    for (it = imageMeta->ImageInformation.Bands.begin(), i = 1; it != imageMeta->ImageInformation.Bands.end(); it++, i++) {
+    int nBandsNo = m_pMetadataHelper->GetBandsNoForCurrentResolution();
+    for (int i = 1; i<=nBandsNo; i++) {
         m_ImageListResOrig->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(img, i));
         if(allInOne) {
             // resample to 10m
             m_ImageListRes10->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(img, i, curRes, 10, false));
-
             // resample to 20m
             m_ImageListRes20->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(img, i, curRes, 20, false));
         } else {
-            if((*it).Name.compare("B2") == 0 || (*it).Name.compare("B3") == 0 || (*it).Name.compare("B4") == 0) {
+            std::string bandName = m_pMetadataHelper->GetBandName(i-1);
+            if(bandName.compare("B2") == 0 || bandName.compare("B3") == 0 || bandName.compare("B4") == 0) {
                 // resample to 10m
                 m_ImageListRes10->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(img, i, curRes, 10, false));
             }
             else
             {
-                if((*it).Name.compare("B5") == 0 || (*it).Name.compare("B7") == 0 || (*it).Name.compare("B8") == 0) {
+                if(bandName.compare("B5") == 0 || bandName.compare("B7") == 0 || bandName.compare("B8") == 0) {
                     // resample to 20m
                     m_ImageListRes20->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(img, i, curRes, 20, false));
                 }
@@ -222,8 +172,8 @@ bool ResampleAtS2Res::ProcessLANDSAT8(const std::unique_ptr<MACCSFileMetadata>& 
     // Extracts the cloud, water and snow masks resampled images
     ExtractResampledMasksImages(curRes);
 
-    imageFile = aotXMLFile;
-    imageFile.replace(imageFile.size() - 4, 4, ".DBL.TIF");
+    imageFile = m_pMetadataHelper->GetAotImageFileName();
+    int nAotBandIdx = m_pMetadataHelper->GetAotBandIndex();
     ImageReaderType::Pointer readerAot = getReader(imageFile);
     ImageType::Pointer imgAot = readerAot->GetOutput();
     m_ImageAotRes20 = m_ResampledBandsExtractor.ExtractResampledBand(imgAot, nAotBandIdx, curRes, 20, true);
@@ -245,32 +195,6 @@ ResampleAtS2Res::ImageReaderType::Pointer ResampleAtS2Res::getReader(const std::
     return reader;
 }
 
-std::string ResampleAtS2Res::getSpot4AotFileName(const std::unique_ptr<SPOT4Metadata>& meta)
-{
-    // Return the path to a the AOT file computed from ORTHO_SURF_CORR_PENTE or ORTHO_SURF_CORR_ENV
-    // if the key is not present in the XML
-    std::string fileName;
-    if(meta->Files.OrthoSurfAOT == "") {
-        std::string orthoSurf = meta->Files.OrthoSurfCorrPente;
-        if(orthoSurf.empty()) {
-            orthoSurf = meta->Files.OrthoSurfCorrEnv;
-            if(!orthoSurf.empty()) {
-                int nPos = orthoSurf.find("ORTHO_SURF_CORR_ENV");
-                orthoSurf.replace(nPos, strlen("ORTHO_SURF_CORR_ENV"), "AOT");
-                fileName = orthoSurf;
-            }
-        } else {
-            int nPos = orthoSurf.find("ORTHO_SURF_CORR_PENTE");
-            orthoSurf.replace(nPos, strlen("ORTHO_SURF_CORR_PENTE"), "AOT");
-            fileName = orthoSurf;
-        }
-    } else {
-        fileName = meta->Files.OrthoSurfAOT;
-    }
-
-    return m_DirName + "/" + fileName;
-}
-
 bool ResampleAtS2Res::ExtractResampledMasksImages(int curRes)
 {
     if(m_strMaskFileName == "") {
@@ -282,17 +206,17 @@ bool ResampleAtS2Res::ExtractResampledMasksImages(int curRes)
     //Extract and Resample the cloud mask
     m_ImageCloudRes20 = m_ResampledBandsExtractor.ExtractResampledBand(img, 1, curRes, 20, true);
     m_ImageCloudRes10 = m_ResampledBandsExtractor.ExtractResampledBand(img, 1, curRes, 10, true);
-    m_ImageCloudResOrig = m_ResampledBandsExtractor.ExtractResampledBand(img, 1, curRes, -1, true);
+    m_ImageCloudResOrig = m_ResampledBandsExtractor.ExtractResampledBand(img, 1);
 
     //Resample the water mask
     m_ImageWaterRes20 = m_ResampledBandsExtractor.ExtractResampledBand(img, 2, curRes, 20, true);
     m_ImageWaterRes10 = m_ResampledBandsExtractor.ExtractResampledBand(img, 2, curRes, 10, true);
-    m_ImageWaterResOrig = m_ResampledBandsExtractor.ExtractResampledBand(img, 2, curRes, -1, true);
+    m_ImageWaterResOrig = m_ResampledBandsExtractor.ExtractResampledBand(img, 2);
 
     //Resample the snow mask
     m_ImageSnowRes20 = m_ResampledBandsExtractor.ExtractResampledBand(img, 3, curRes, 20, true);
     m_ImageSnowRes10 = m_ResampledBandsExtractor.ExtractResampledBand(img, 3, curRes, 10, true);
-    m_ImageSnowResOrig = m_ResampledBandsExtractor.ExtractResampledBand(img, 3, curRes, -1, true);
+    m_ImageSnowResOrig = m_ResampledBandsExtractor.ExtractResampledBand(img, 3);
 
     return true;
 }

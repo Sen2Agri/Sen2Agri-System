@@ -18,7 +18,7 @@
 #include "otbMultiToMonoChannelExtractROI.h"
 #include "DirectionalCorrectionFunctor.h"
 #include "MetadataHelperFactory.h"
-#include "ResampledBandExtractor.h"
+#include "ResamplingBandExtractor.h"
 
 
 class DirectionalCorrection
@@ -82,7 +82,7 @@ private:
     ReaderType::Pointer m_inputImageReader;
     ReaderType::Pointer m_aotImageReader;
 
-    ResampledBandExtractor m_ResampledBandsExtractor;
+    ResamplingBandExtractor m_ResampledBandsExtractor;
 };
 
 #endif // DIRECTIONAL_CORRECTION_H

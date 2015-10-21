@@ -16,6 +16,7 @@
 #include "itkComposeImageFilter.h"
 #include "itkScalableAffineTransform.h"
 #include "ResampledBandExtractor.h"
+#include "MetadataHelperFactory.h"
 
 class ResampleAtS2Res
 {
@@ -48,8 +49,8 @@ public:
 private:
     std::string getSpot4AotFileName(const std::unique_ptr<SPOT4Metadata>& meta);
     ImageReaderType::Pointer getReader(const std::string& filePath);
-    bool ProcessLANDSAT8(const std::unique_ptr<MACCSFileMetadata>& meta, bool allInOne);
-    bool ProcessSPOT4(const std::unique_ptr<SPOT4Metadata>& meta, bool allInOne);
+    bool ProcessLANDSAT8(bool allInOne);
+    bool ProcessSPOT4(bool allInOne);
 
     bool ExtractResampledMasksImages(int curRes);
 
@@ -86,6 +87,7 @@ private:
     int m_nRes;
 
     ResampledBandExtractor m_ResampledBandsExtractor;
+    std::unique_ptr<MetadataHelper> m_pMetadataHelper;
 };
 
 #endif // RESAMPLE_AT_S2_RES_H

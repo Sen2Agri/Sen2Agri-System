@@ -6,6 +6,66 @@ MACCSMetadataHelper::MACCSMetadataHelper()
     m_ReflQuantifVal = 1;
 }
 
+std::string MACCSMetadataHelper::GetBandName(unsigned int nBandIdx, bool bRelativeIdx)
+{
+    if(bRelativeIdx) {
+        if(!m_specificImgMetadata) {
+            ReadSpecificMACCSImgHdrFile();
+        }
+
+        if(nBandIdx >= m_nBandsNoForCurRes) {
+            itkExceptionMacro("Invalid band index requested: " << bRelativeIdx << ". Maximum is " << m_nBandsNoForCurRes);
+        }
+        return m_specificImgMetadata->ImageInformation.Bands[nBandIdx].Name;
+    } else {
+        for (const MACCSBand& band : m_metadata->ImageInformation.Bands) {
+            // the bands in the file are 1 based while our parameter nBandIdx is 0 based
+            if (std::stoi(band.Id) == (int)nBandIdx) {
+                return band.Name;
+            }
+        }
+        itkExceptionMacro("Invalid absolute band index requested: " << nBandIdx << ". Maximum is " << m_nTotalBandsNo);
+    }
+}
+
+int MACCSMetadataHelper::GetRelativeBandIndex(unsigned int nAbsBandIdx)
+{
+    if(m_missionType == LANDSAT) {
+        return nAbsBandIdx;
+    }
+    // In the case of S2 we need to compute the relative index
+    std::string bandName = GetBandName(nAbsBandIdx, false);
+    if(!m_specificImgMetadata) {
+        ReadSpecificMACCSImgHdrFile();
+    }
+    return getBandIndex(m_specificImgMetadata->ImageInformation.Bands, bandName);
+}
+
+float MACCSMetadataHelper::GetAotQuantificationValue()
+{
+    if(!m_specificAotMetadata) {
+        ReadSpecificMACCSAotHdrFile();
+    }
+    return m_fAotQuantificationValue;
+}
+
+float MACCSMetadataHelper::GetAotNoDataValue()
+{
+    if(!m_specificAotMetadata) {
+        ReadSpecificMACCSAotHdrFile();
+    }
+    return m_fAotNoDataVal;
+}
+
+int MACCSMetadataHelper::GetAotBandIndex()
+{
+    if(!m_specificAotMetadata) {
+        ReadSpecificMACCSAotHdrFile();
+    }
+    return m_nAotBandIndex;
+}
+
+
 bool MACCSMetadataHelper::DoLoadMetadata()
 {
     MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
@@ -14,19 +74,15 @@ bool MACCSMetadataHelper::DoLoadMetadata()
     // present in the metadata
     if (m_metadata = maccsMetadataReader->ReadMetadata(m_inputMetadataFileName)) {
         if (m_metadata->Header.FixedHeader.Mission.find(LANDSAT_MISSION_STR) != std::string::npos) {
-            m_missionType = LANDSAT;
-            m_nTotalBandsNo = 6;
             UpdateValuesForLandsat();
         } else if (m_metadata->Header.FixedHeader.Mission.find(SENTINEL_MISSION_STR) != std::string::npos) {
-            m_missionType = S2;
-            m_nTotalBandsNo = 10;
             UpdateValuesForSentinel();
         } else {
             itkExceptionMacro("Unknown mission: " + m_metadata->Header.FixedHeader.Mission);
         }
 
         m_Mission = m_metadata->Header.FixedHeader.Mission;
-        //m_ReflQuantifVal = std::stod(maccsMetadata.ProductInformation.ReflectanceQuantificationValue);
+        m_ReflQuantifVal = std::stod(m_metadata->ProductInformation.ReflectanceQuantificationValue);
 
         // compute the Image file name
         m_ImageFileName = getImageFileName();
@@ -42,13 +98,6 @@ bool MACCSMetadataHelper::DoLoadMetadata()
         // set the acquisition date
         m_AcquisitionDate = m_metadata->InstanceId.AcquisitionDate;
 
-        if(m_nResolution == 10)
-        {
-            m_nRedBandIndex = getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B4");
-            m_nGreenBandIndex = getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B3");
-            m_nNirBandIndex = getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B8");
-        }
-
         //TODO: Add initialization for mean angles (solar and sensor)
 
         return true;
@@ -59,31 +108,106 @@ bool MACCSMetadataHelper::DoLoadMetadata()
 
 void MACCSMetadataHelper::UpdateValuesForLandsat()
 {
-    std::string specHdrFile = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_ATB");
-    ReadSpecificMACCSHdrFile(specHdrFile);
+    m_missionType = LANDSAT;
+    m_nTotalBandsNo = 6;
+    m_nBandsNoForCurRes = m_nTotalBandsNo;
+    m_nRedBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B4");
+    m_nBlueBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B2");
+    m_nGreenBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B3");
+    m_nNirBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B5");
+    // TODO: Add here other initializations for LANDSAT if needed
 }
 
 void MACCSMetadataHelper::UpdateValuesForSentinel()
 {
-    std::string specHdrFile;
-    if(m_nResolution == 10) {
-        specHdrFile = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
-    } else {
-        specHdrFile = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
+    m_missionType = S2;
+    m_nTotalBandsNo = 10;
+    m_nBandsNoForCurRes = ((m_nResolution == 10) ? 4 : 6);
+    if(m_nResolution == 10)
+    {
+        m_nRedBandIndex = GetRelativeBandIndex(getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B4"));
+        m_nBlueBandIndex = GetRelativeBandIndex(getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B2"));
+        m_nGreenBandIndex = GetRelativeBandIndex(getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B3"));
+        m_nNirBandIndex = GetRelativeBandIndex(getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B8"));
     }
-    ReadSpecificMACCSHdrFile(specHdrFile);
+    // TODO: Add here other initializations for S2 if needed
 }
 
-void MACCSMetadataHelper::ReadSpecificMACCSHdrFile(const std::string& fileName)
+void MACCSMetadataHelper::ReadSpecificMACCSImgHdrFile()
 {
-    MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
-    if (auto meta = maccsMetadataReader->ReadMetadata(fileName)) {
-        // add the information to the list
-        MACCSFileMetadata maccsMetadata = *meta;
-        m_fAotQuantificationValue = atof(maccsMetadata.ImageInformation.AOTQuantificationValue.c_str());
-        m_fAotNoDataVal = atof(maccsMetadata.ImageInformation.AOTNoDataValue.c_str());
-        m_nAotBandIndex = getBandIndex(maccsMetadata.ImageInformation.Bands, "AOT");
+    std::string fileName;
+    if(m_missionType == LANDSAT) {
+        fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.ImageFiles, "_FRE");
+    } else {
+        if(m_nResolution == 10) {
+            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.ImageFiles, "_FRE_R1");
+        } else {
+            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.ImageFiles, "_FRE_R1");
+        }
     }
+
+    MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
+    m_specificImgMetadata = maccsMetadataReader->ReadMetadata(fileName);
+    if(m_nBandsNoForCurRes > m_specificImgMetadata->ImageInformation.Bands.size()) {
+        itkExceptionMacro("Invalid number of bands found in specific img xml: " <<
+                          m_specificImgMetadata->ImageInformation.Bands.size() <<
+                          ". Expected is " << m_nBandsNoForCurRes);
+    }
+}
+
+void MACCSMetadataHelper::ReadSpecificMACCSCldHdrFile()
+{
+    std::string fileName;
+    if(m_missionType == LANDSAT) {
+        fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_CLD");
+    } else {
+        if(m_nResolution == 10) {
+            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_CLD_R1");
+        } else {
+            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_CLD_R2");
+        }
+    }
+
+    MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
+    m_specificCldMetadata = maccsMetadataReader->ReadMetadata(fileName);
+}
+
+void MACCSMetadataHelper::ReadSpecificMACCSAotHdrFile()
+{
+    std::string fileName;
+    if(m_missionType == LANDSAT) {
+        fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_ATB");
+    } else {
+        if(m_nResolution == 10) {
+            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_ATB_R1");
+        } else {
+            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_ATB_R2");
+        }
+    }
+    MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
+    if (m_specificAotMetadata = maccsMetadataReader->ReadMetadata(fileName)) {
+        // add the information to the list
+        m_fAotQuantificationValue = atof(m_specificAotMetadata->ImageInformation.AOTQuantificationValue.c_str());
+        m_fAotNoDataVal = atof(m_specificAotMetadata->ImageInformation.AOTNoDataValue.c_str());
+        m_nAotBandIndex = getBandIndex(m_specificAotMetadata->ImageInformation.Bands, "AOT");
+    }
+}
+
+void MACCSMetadataHelper::ReadSpecificMACCSMskHdrFile()
+{
+    std::string fileName;
+    if(m_missionType == LANDSAT) {
+        fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_MSK");
+    } else {
+        if(m_nResolution == 10) {
+            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_MSK_R1");
+        } else {
+            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_MSK_R1");
+        }
+    }
+
+    MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
+    m_specificMskMetadata = maccsMetadataReader->ReadMetadata(fileName);
 }
 
 std::string MACCSMetadataHelper::getImageFileName() {
@@ -151,7 +275,6 @@ std::string MACCSMetadataHelper::getMACCSImageFileName(const std::vector<MACCSFi
                 0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
             return m_DirName + "/" + fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF";
         }
-
     }
     return "";
 }
@@ -176,6 +299,19 @@ std::string MACCSMetadataHelper::getMACCSImageHdrName(const std::vector<MACCSAnn
         if (fileInfo.File.LogicalName.length() >= ending.length() &&
                 0 == fileInfo.File.LogicalName.compare (fileInfo.File.LogicalName.length() - ending.length(), ending.length(), ending)) {
             return m_DirName + "/" + fileInfo.File.FileLocation;
+        }
+    }
+    return "";
+}
+
+// Return the path to a file for which the name end in the ending
+std::string MACCSMetadataHelper::getMACCSImageHdrName(const std::vector<MACCSFileInformation>& imageFiles,
+                                                      const std::string& ending) {
+
+    for (const MACCSFileInformation& fileInfo : imageFiles) {
+        if (fileInfo.LogicalName.length() >= ending.length() &&
+                0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
+            return m_DirName + "/" + fileInfo.FileLocation;
         }
     }
     return "";

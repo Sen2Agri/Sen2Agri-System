@@ -21,14 +21,13 @@ DirectionalCorrectionFunctor<TInput,TOutput>& DirectionalCorrectionFunctor<TInpu
     m_nSunAnglesBandStartIdx = copy.m_nSunAnglesBandStartIdx;
     m_nSensoAnglesBandStartIdx = copy.m_nSensoAnglesBandStartIdx;
 
-    m_fReflQuantifValue = copy.m_fReflQuantifValue;
     m_fReflNoDataValue = copy.m_fReflNoDataValue;
 
     return *this;
 }
 
 template< class TInput, class TOutput>
-void DirectionalCorrectionFunctor<TInput,TOutput>::Initialize(const std::vector<ScaterringFunctionCoefficients> &coeffs, float fReflQuantifVal)
+void DirectionalCorrectionFunctor<TInput,TOutput>::Initialize(const std::vector<ScaterringFunctionCoefficients> &coeffs)
 {
     m_nReflBandsCount = coeffs.size();
     m_ScatteringCoeffs = coeffs;
@@ -41,8 +40,7 @@ void DirectionalCorrectionFunctor<TInput,TOutput>::Initialize(const std::vector<
     m_nSunAnglesBandStartIdx = m_nNdviBandIdx + 1;
     // we have 2 sun angles bands (for azimuth and zenith)
     m_nSensoAnglesBandStartIdx = m_nSunAnglesBandStartIdx+2;
-    m_fReflQuantifValue = fReflQuantifVal;
-    m_fReflNoDataValue = NO_DATA_VALUE/m_fReflQuantifValue;
+    m_fReflNoDataValue = NO_DATA_VALUE;
 }
 
 template< class TInput, class TOutput>
@@ -67,7 +65,7 @@ TOutput DirectionalCorrectionFunctor<TInput,TOutput>::operator()( const TInput &
     double phiS = A[m_nSunAnglesBandStartIdx+1];
 
     for(int i = 0; i<bandsNo; i++) {
-        float fReflVal = (A[i]/m_fReflQuantifValue);
+        float fReflVal = (float)(A[i]);
         if(IsNoDataValue(fReflVal, m_fReflNoDataValue)) {
             var[i] = m_fReflNoDataValue;
         } else {
@@ -86,7 +84,6 @@ TOutput DirectionalCorrectionFunctor<TInput,TOutput>::operator()( const TInput &
                 var[i] = fReflVal * dirModel0.dir_mod(kV, kR)/dirModel.dir_mod(kV, kR);
             }
         }
-        var[i] = var[i] * m_fReflQuantifValue;
     }
 
     return var;

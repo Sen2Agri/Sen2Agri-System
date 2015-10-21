@@ -19,8 +19,9 @@ bool MetadataHelper::LoadMetadataFile(const std::string& file, int nResolution)
     Reset();
     m_inputMetadataFileName = file;
     m_nResolution = nResolution;
-    std::vector<char> buf(m_inputMetadataFileName.begin(), m_inputMetadataFileName.end());
-    m_DirName = std::string(dirname(buf.data()));
+    //std::vector<char> buf(m_inputMetadataFileName.begin(), m_inputMetadataFileName.end());
+    //m_DirName = std::string(dirname(buf.data()));
+    m_DirName = extractFolder(m_inputMetadataFileName);
 
     return DoLoadMetadata();
 }
@@ -114,4 +115,19 @@ double MetadataHelper::GetRelativeAzimuthAngle()
     }
 
     return relAzimuth;
+}
+
+// Extract the folder from a given path.
+std::string MetadataHelper::extractFolder(const std::string& filename) {
+    size_t pos = filename.find_last_of("/\\");
+    if (pos == std::string::npos) {
+        return "";
+    }
+
+    return filename.substr(0, pos) + "/";
+}
+
+std::string MetadataHelper::buildFullPath(const std::string& fileName)
+{
+    return m_DirName + "/" + fileName;
 }

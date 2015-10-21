@@ -30,7 +30,15 @@ public:
     for (int i = 0; i < bands; i++) {
         for (int j = 0; j < tfSize; j++) {
             int imgIndex = static_cast<int>(tf[j]);
-            result[j * bands + i] = ts[imgIndex * bands + i];
+            typename PixelType::ValueType value;
+
+            if (imgIndex >= 0)
+                value = ts[imgIndex * bands + i] < 0 ? 0 : ts[imgIndex * bands + i];
+            else
+                value = 0;
+
+            // if the corresponding pixel is nodata replace it with 0.
+            result[j * bands + i] = value;
         }
     }
 

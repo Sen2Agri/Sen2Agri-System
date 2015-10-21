@@ -46,11 +46,7 @@
 #include <vector>
 #include "libgen.h"
 #include "MaskHandlerFunctor.h"
-#include "MACCSMetadataReader.hpp"
-#include "SPOT4MetadataReader.hpp"
-
-#define LANDSAT    "LANDSAT"
-#define SENTINEL   "SENTINEL"
+#include "MetadataHelperFactory.h"
 
 namespace otb
 {
@@ -204,68 +200,33 @@ private:
 
     void DoExecute()
     {
-        const std::string &tmp = GetParameterAsString("xml");
-        std::vector<char> buf(tmp.begin(), tmp.end());
-        m_DirName = std::string(dirname(buf.data()));
-        m_DirName += '/';
+        const std::string &inXml = GetParameterAsString("xml");
+        auto factory = MetadataHelperFactory::New();
 
+        int resolution = 10;
+        if(HasValue("sentinelres")) {
+            resolution = GetParameterInt("sentinelres");
+        }
+        auto pHelper = factory->GetMetadataHelper(inXml, resolution);
+        std::string missionName = pHelper->GetMissionName();
+        if((missionName.find(SENTINEL_MISSION_STR) != std::string::npos) &&
+           !HasValue("sentinelres")) {
+           itkExceptionMacro("In case of SENTINEL-S2, 'sentinelres' parameter with resolution as 10 or 20 meters should be provided");
+        }
 
+        m_MaskExtractor = MaskExtractorFilterType::New();
         m_ReaderCloud = ReaderType::New();
         m_ReaderWaterSnow = ReaderType::New();
-
-        auto spot4Reader = itk::SPOT4MetadataReader::New();
-        auto maccsReader = itk::MACCSMetadataReader::New();
-        m_MaskExtractor = MaskExtractorFilterType::New();
-
-        if ( std::unique_ptr<SPOT4Metadata> metaSPOT = spot4Reader->ReadMetadata(GetParameterAsString("xml") ))
-        {
-            m_ReaderCloud->SetFileName(m_DirName + metaSPOT->Files.MaskNua);
-            m_ReaderWaterSnow->SetFileName(m_DirName + metaSPOT->Files.MaskDiv);
+        if(missionName.find(SPOT4_MISSION_STR) != std::string::npos) {
             m_MaskExtractor->SetBitsMask(0, 1, 2);
-        }
-        else
-        if (std::unique_ptr<MACCSFileMetadata> metaMACCS = maccsReader->ReadMetadata(GetParameterAsString("xml"))) {
-            std::string maskFileCloud("");
-            std::string maskFileWaterSnow("");
-            std::string suffix("");
-            std::string cld("_CLD");
-            std::string msk("_MSK");
-
-            if (metaMACCS->Header.FixedHeader.Mission.find(LANDSAT) != std::string::npos) {
-                // Interpret landsat product
-                suffix.empty();
-            } else if (metaMACCS->Header.FixedHeader.Mission.find(SENTINEL) != std::string::npos) {
-                // Interpret sentinel product
-                if(!HasValue("sentinelres"))
-                    itkExceptionMacro("In case of SENTINEL-S2, 'sentinelres' parameter with resolution as 10 or 20 meters should be provided");
-                int resolution = GetParameterInt("sentinelres");
-                switch(resolution)
-                {
-                case 10:
-                    suffix = "_R1";
-                    break;
-                case 20:
-                    suffix = "_R2";
-                    break;
-                default:
-                    itkExceptionMacro("In case of SENTINEL-S2, 'sentinelres' parameter should be 10 or 20");
-                }
-
-            } else {
-                itkExceptionMacro("Unknown mission: " + metaMACCS->Header.FixedHeader.Mission);
-            }
-            maskFileCloud = getMACCSMaskFileName(m_DirName, metaMACCS->ProductOrganization.AnnexFiles, cld + suffix);
-            if(maskFileCloud.length() == 0)
-                itkExceptionMacro("Could not read the filename for cloud mask for " + metaMACCS->Header.FixedHeader.Mission);
-            maskFileWaterSnow = getMACCSMaskFileName(m_DirName, metaMACCS->ProductOrganization.AnnexFiles, msk + suffix);
-            if(maskFileCloud.length() == 0)
-                itkExceptionMacro("Could not read the filename for water and snow mask for " + metaMACCS->Header.FixedHeader.Mission);
-            m_ReaderCloud->SetFileName(maskFileCloud);
-            m_ReaderWaterSnow->SetFileName(maskFileWaterSnow);
+        } else if ((missionName.find(LANDSAT_MISSION_STR) != std::string::npos) ||
+                   (missionName.find(SENTINEL_MISSION_STR) != std::string::npos)) {
             m_MaskExtractor->SetBitsMask(0, 0, 5);
+        } else {
+            itkExceptionMacro("Unknown mission: " + missionName);
         }
-        else
-            itkExceptionMacro("No SPOT or MACCS xml");
+        m_ReaderCloud->SetFileName(pHelper->GetCloudImageFileName());
+        m_ReaderWaterSnow->SetFileName(pHelper->GetWaterImageFileName());
 
         m_MaskExtractor->SetInput(0, m_ReaderCloud->GetOutput());
         m_MaskExtractor->SetInput(1, m_ReaderWaterSnow->GetOutput());
@@ -276,31 +237,11 @@ private:
         return;
     }
 
-    // Return the path to a file for which the name end in the ending
-    std::string getMACCSMaskFileName(const std::string& rootFolder, const std::vector<MACCSAnnexInformation>& maskFiles, const std::string& ending) {
-
-        for (const MACCSAnnexInformation& fileInfo : maskFiles) {
-            if (fileInfo.File.LogicalName.length() >= ending.length() &&
-                    0 == fileInfo.File.LogicalName.compare (fileInfo.File.LogicalName.length() - ending.length(), ending.length(), ending)) {
-                return rootFolder + fileInfo.File.FileLocation.substr(0, fileInfo.File.FileLocation.find_last_of('.')) + ".DBL.TIF";
-            }
-        }
-        return "";
-    }
-
-
     ReaderType::Pointer                 m_ReaderCloud;
     ReaderType::Pointer                 m_ReaderWaterSnow ;
-    FunctorFilterType::Pointer      m_SpotMaskHandlerFunctor;
+    //FunctorFilterType::Pointer      m_SpotMaskHandlerFunctor;
     MaskHandlerFunctorType          m_Functor;
-    std::string                         m_DirName;
-
     MaskExtractorFilterType::Pointer             m_MaskExtractor;
-
-
-
-
-    std::unique_ptr<SPOT4Metadata> m_MetaMACCS;
 };
 
 }

@@ -29,6 +29,7 @@
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
+#include "otbWrapperTypes.h"
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 #include "otbBandMathImageFilter.h"
@@ -45,6 +46,7 @@
 #include "itkCastImageFilter.h"
 #include "otbVectorImageToImageListFilter.h"
 #include "otbStreamingResampleImageFilter.h"
+
 //Transform
 #include "itkScalableAffineTransform.h"
 #include "itkIdentityTransform.h"
@@ -106,16 +108,11 @@ public:
     itkTypeMacro(CreateS2AnglesRaster, otb::Application)
     //  Software Guide : EndCodeSnippet
 
-    typedef float                                     PixelType;
-
-    typedef FloatVectorImageType                  OutputImageType;
-
-    //typedef FloatVectorImageType                                 ImageType;
-    //typedef otb::ImageFileReader<ImageType>                            ImageReaderType;
+    typedef FloatVectorImageType                            OutputImageType;
+    typedef otb::ImageFileReader<Int16VectorImageType>      ImageReaderType;
 
     typedef otb::ImageList<OutputImageType>            ImageListType;
     typedef otb::ImageFileWriter<OutputImageType>      WriterType;
-    //typedef otb::VectorImageToImageListFilter<ImageType, ImageListType>    VectorImageToImageListType;
 
     typedef otb::MultiToMonoChannelExtractROI<FloatVectorImageType::InternalPixelType,
                                               FloatImageType::PixelType>    ExtractROIFilterType;
@@ -291,15 +288,16 @@ private:
         std::string resSuffix("_FRE_R1");
         if(resolution == 20)
             resSuffix = "_FRE_R2";
-        std::string fileMetadata = getMACCSRasterFileName(m_DirName, meta->ProductOrganization.ImageFiles, resSuffix, true);
+        std::string fileName = getMACCSRasterFileName(m_DirName, meta->ProductOrganization.ImageFiles, resSuffix, false);
 
-        meta = maccsMetadataReader->ReadMetadata(fileMetadata);
-        // check if it is a sentinel 2 product, otherwise -> exception
-        if (meta == nullptr)
-            itkExceptionMacro("The resolution metadata file could not be read !");
+        ImageReaderType::Pointer image = ImageReaderType::New();
+        image->SetFileName(fileName);
+        image->UpdateOutputInformation();;
+        auto sz = image->GetOutput()->GetLargestPossibleRegion().GetSize();
 
-        int width = atoi(meta->ImageInformation.Size.Columns.c_str());
-        int height = atoi(meta->ImageInformation.Size.Lines.c_str());
+        int width = sz[0];
+        int height = sz[1];
+
         if(width == 0 || height == 0)
             itkExceptionMacro("The read width/height from the resolution metadata file is/are 0");
         createResampler(m_AnglesRaster, width, height);

@@ -30,6 +30,17 @@ target_link_libraries(MACCSMetadata
     "${OTBTinyXML_LIBRARIES}"
     "${OTBITK_LIBRARIES}")
 
+otb_create_application(
+  NAME           ProductFormatter
+  SOURCES        ProductFormatter.cpp
+  LINK_LIBRARIES ${OTB_LIBRARIES} MACCSMetadata)
+
+#if(BUILD_TESTING)
+#  add_subdirectory(test)
+#endif()
+
 target_include_directories(MACCSMetadata PUBLIC ../include)
 
 install(TARGETS MACCSMetadata DESTINATION lib)
+
+install(TARGETS otbapp_ProductFormatter DESTINATION lib/otb/applications/)

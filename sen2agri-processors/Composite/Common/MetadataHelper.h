@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#define UNUSED(expr) do { (void)(expr); } while (0)
+
 #define LANDSAT_MISSION_STR    "LANDSAT"
 #define SENTINEL_MISSION_STR   "SENTINEL"
 #define SPOT4_MISSION_STR      "SPOT4"
@@ -39,6 +41,7 @@ public:
     virtual int GetAotBandIndex() { return m_nAotBandIndex; }
 
     virtual int GetRedBandIndex() { return m_nRedBandIndex; }
+    virtual int GetBlueBandIndex() { return m_nBlueBandIndex; }
     virtual int GetGreenBandIndex() { return m_nGreenBandIndex; }
     virtual int GetNirBandIndex() { return m_nNirBandIndex; }
 
@@ -51,10 +54,17 @@ public:
     virtual MeanAngles_Type GetSensorMeanAngles(int nBand);
 
     virtual int GetTotalBandsNo() { return m_nTotalBandsNo; }
+    virtual int GetBandsNoForCurrentResolution() { return m_nBandsNoForCurRes; }
+    virtual std::string GetBandName(unsigned int nRelBandIdx, bool bRelativeIdx=true) = 0;
+    // In the case of multiple resolutions in multiple files, we need to know the
+    // index of an absolute index band in its file
+    virtual int GetRelativeBandIndex(unsigned int nAbsBandIdx) = 0;
 
 protected:
     virtual bool DoLoadMetadata() = 0;
     void Reset();
+    std::string extractFolder(const std::string& filename);
+    std::string buildFullPath(const std::string& fileName);
 
 protected:
     std::string m_Mission;
@@ -73,9 +83,11 @@ protected:
     int m_nAotBandIndex;
 
     int m_nRedBandIndex;
+    int m_nBlueBandIndex;
     int m_nGreenBandIndex;
     int m_nNirBandIndex;
     int m_nTotalBandsNo;
+    unsigned int m_nBandsNoForCurRes;
 
     MeanAngles_Type m_solarMeanAngles;
     std::vector<MeanAngles_Type> m_sensorBandsMeanAngles;

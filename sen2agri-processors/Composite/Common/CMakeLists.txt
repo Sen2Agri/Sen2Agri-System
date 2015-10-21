@@ -3,13 +3,17 @@ set(MetadataHelper_HEADERS
     MetadataHelperFactory.h
     MetadataHelper.h
     Spot4MetadataHelper.h
-    GlobalDefs.h)
+    GlobalDefs.h
+    BandsCfgMappingParser.h
+    ResamplingBandExtractor.h)
 
 set(MetadataHelper_SOURCES
     MetadataHelper.cpp
     MetadataHelperFactory.cpp
     Spot4MetadataHelper.cpp
-    MACCSMetadataHelper.cpp)
+    MACCSMetadataHelper.cpp
+    BandsCfgMappingParser.cpp
+    ResamplingBandExtractor.cpp)
 
 add_library(MetadataHelper SHARED ${MetadataHelper_HEADERS} ${MetadataHelper_SOURCES})
 target_link_libraries(MetadataHelper

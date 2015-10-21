@@ -14,6 +14,12 @@ public:
 
     const char * GetNameOfClass() { return "S2MetadataHelper"; }
 
+    virtual std::string GetBandName(unsigned int nBandIdx, bool bRelativeIdx=true);
+    virtual int GetRelativeBandIndex(unsigned int nAbsBandIdx);
+    virtual float GetAotQuantificationValue();
+    virtual float GetAotNoDataValue();
+    virtual int GetAotBandIndex();
+
 protected:
     virtual bool DoLoadMetadata();
 
@@ -32,8 +38,12 @@ protected:
                                       const std::string& ending);
     std::string getMACCSImageHdrName(const std::vector<MACCSAnnexInformation>& maskFiles,
                                      const std::string& ending);
-
-    void ReadSpecificMACCSHdrFile(const std::string& fileName);
+    std::string getMACCSImageHdrName(const std::vector<MACCSFileInformation>& imageFiles,
+                                                          const std::string& ending);
+    void ReadSpecificMACCSImgHdrFile();
+    void ReadSpecificMACCSAotHdrFile();
+    void ReadSpecificMACCSCldHdrFile();
+    void ReadSpecificMACCSMskHdrFile();
     int getBandIndex(const std::vector<MACCSBand>& bands, const std::string& name);
 
     //virtual std::unique_ptr<itk::LightObject> GetMetadata() { return m_metadata; }
@@ -42,6 +52,10 @@ protected:
     typedef enum {S2, LANDSAT} MissionType;
     MissionType m_missionType;
     std::unique_ptr<MACCSFileMetadata> m_metadata;
+    std::unique_ptr<MACCSFileMetadata> m_specificAotMetadata;
+    std::unique_ptr<MACCSFileMetadata> m_specificImgMetadata;
+    std::unique_ptr<MACCSFileMetadata> m_specificCldMetadata;
+    std::unique_ptr<MACCSFileMetadata> m_specificMskMetadata;
 };
 
 #endif // S2METADATAHELPER_H

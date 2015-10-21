@@ -21,7 +21,7 @@ public:
     bool operator!=( const DirectionalCorrectionFunctor & other) const;
     bool operator==( const DirectionalCorrectionFunctor & other ) const;
     TOutput operator()( const TInput & A );
-    void Initialize(const std::vector<ScaterringFunctionCoefficients> &coeffs, float fReflQuantifVal);
+    void Initialize(const std::vector<ScaterringFunctionCoefficients> &coeffs);
 
     const char * GetNameOfClass() { return "DirectionalCorrectionFunctor"; }
 
@@ -34,8 +34,6 @@ private:
     bool IsNoDataValue(float fValue, float fNoDataValue);
 
 private:
-    float m_fReflQuantifValue;
-
     std::vector<ScaterringFunctionCoefficients> m_ScatteringCoeffs;
 
     int m_nReflBandsCount;
