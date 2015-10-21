@@ -182,8 +182,6 @@ int BandsMappingConfig::GetIndexInPresenceArray(int nRes, const std::string &mis
 
     for(unsigned int i = 0; i<bandsPresenceVect.size(); i++) {
         if(bandsPresenceVect[i] != -1) {
-            // NOTE: We intentionally use only if here and not if else in order to
-            //       allow setting the same band multiple times
             if(absoluteBandsIdxVect[i] == absIdx) {
                 return bandsPresenceVect[i];
             }
