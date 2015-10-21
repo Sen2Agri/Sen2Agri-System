@@ -3,10 +3,14 @@ set(MACCSMetadata_HEADERS
     ../include/tinyxml_utils.hpp
     ../include/string_utils.hpp
     ../include/MACCSMetadata.hpp
+    ../include/TileMetadata.hpp
+    ../include/ProductMetadata.hpp
     ../include/SPOT4Metadata.hpp
     ../include/MACCSMetadataReader.hpp
     ../include/MACCSMetadataWriter.hpp
     ../include/SPOT4MetadataReader.hpp
+    ../include/TileMetadataWriter.hpp
+    ../include/ProductMetadataWriter.hpp
     ../include/ViewingAngles.hpp)
 
 set(MACCSMetadata_SOURCES
@@ -15,6 +19,8 @@ set(MACCSMetadata_SOURCES
     string_utils.cpp
     MACCSMetadataReader.cpp
     MACCSMetadataWriter.cpp
+    TileMetadataWriter.cpp
+    ProductMetadataWriter.cpp
     SPOT4MetadataReader.cpp
     ViewingAngles.cpp)
 
