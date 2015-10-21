@@ -63,9 +63,9 @@ void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(const std::vector<int> p
 
     m_nNbOfL3AReflectanceBands = presenceVect.size();
     m_nNbL2ABands = nExtractedL2ABandsNo;
-    //bands normally are 1 based but here we used as indexes in array, so 0 based
-    m_nRedBandIndex = nRedBandIdx-1;
-    m_nBlueBandIndex = nBlueBandIdx-1;
+    // these indexes are 0 based
+    m_nRedBandIndex = nRedBandIdx;
+    m_nBlueBandIndex = nBlueBandIdx;
 
     // the L2A Reflectance bands start at index 0
     m_nL2ABandStartIndex = 0;
