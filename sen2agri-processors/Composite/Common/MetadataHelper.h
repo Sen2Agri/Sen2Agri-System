@@ -59,6 +59,7 @@ public:
     // In the case of multiple resolutions in multiple files, we need to know the
     // index of an absolute index band in its file
     virtual int GetRelativeBandIndex(unsigned int nAbsBandIdx) = 0;
+    virtual bool GetTrueColourBandIndexes(int &redIdx, int &greenIdx, int &blueIdx);
 
 protected:
     virtual bool DoLoadMetadata() = 0;
