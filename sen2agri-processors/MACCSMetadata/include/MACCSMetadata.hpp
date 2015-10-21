@@ -51,6 +51,22 @@ struct MACCSInstanceId
     std::string AcquisitionDate;
 };
 
+struct MACCSGeoPoint
+{
+    std::string UnitLong;
+    std::string UnitLat;
+    double Long;
+    double Lat;
+};
+
+struct MACCSGeoCoverage
+{
+    MACCSGeoPoint UpperLeftCorner;
+    MACCSGeoPoint UpperRightCorner;
+    MACCSGeoPoint LowerLeftCorner;
+    MACCSGeoPoint LowerRightCorner;
+};
+
 struct MACCSAngleList
 {
     std::string ColumnUnit;
@@ -95,6 +111,7 @@ struct MACCSBandViewingAnglesGrid
 
 struct MACCSProductInformation
 {
+    MACCSGeoCoverage GeoCoverage;
     MACCSAnglePair MeanSunAngle;
     MACCSAngles SolarAngles;
     std::vector<MACCSMeanViewingIncidenceAngle> MeanViewingIncidenceAngles;
