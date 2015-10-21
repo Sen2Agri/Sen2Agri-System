@@ -1,0 +1,333 @@
+/*
+    designed by AlphaStudio.pl
+    http://www.alphastudio.pl/
+    released under Creative Commons Attribution 3.0 license
+*/
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font: 16px Arial, Helvetica, sans-serif;
+    color: #555555;
+    background: #263034 url('../images/bg.gif') repeat-y top;
+}
+
+h1, h2 {
+    text-transform: lowercase;
+    font-family: "Roboto Condensed", Arial, Helvetica, sans-serif;
+    font-weight: normal;
+}
+
+h1 {
+    font-size: 4em;
+    letter-spacing: -2px;
+}
+
+h2 {
+    font-size: 2.5em;
+    letter-spacing: -1px;
+    color: #2C363C;
+}
+
+p {
+    padding: .75em 0;
+    line-height: 1.5em;
+}
+
+a {
+    text-decoration: underline;
+    color: #6F8D33;
+}
+
+a:hover {
+    text-decoration: none;
+}
+
+img {
+    margin-bottom: 1em;
+    border: 1px solid #EAE9CB;
+}
+
+/* header */
+
+#header, #menu, #main, #bar, #footer {
+    width: 100%;
+    min-width: 1250px;
+}
+
+#header2 {
+    margin: 0 auto;
+    width: 990px;
+    height: 200px;
+    padding: 0 130px;
+    background: #0B171E url('../images/bg.gif') repeat-y;
+}
+
+#logo {
+    float: left;
+}
+
+#header h1 {
+    color: #E7E7E7;
+    padding: 40px 0 0 0;
+}
+
+#header h1 a {
+    text-decoration: none;
+    color: #E7E7E7;
+}
+
+p#subtitle {
+    position: relative;
+    top: -.3em;
+    padding: 0;
+    font: 1.5em "Roboto Condensed", Arial, Helvetica, sans-serif;
+    letter-spacing: -1px;
+    text-transform: lowercase;
+    color: #A9A9A9;
+}
+
+/* search */
+
+#search {
+    float: right;
+    width: 235px;
+    height: 38px;
+    margin-top: 110px;
+    padding-left: 15px;
+    background: #E8F0D9 url('../images/search.gif') no-repeat;
+    border: none;
+}
+
+#search input.text {
+    float: left;
+    display: block;
+    width: 192px;
+    height: 20px;
+    font-size: 16px;
+    line-height: 20px;
+    padding: 9px 0;
+    color: #282925;
+    background: none;
+    border: none;
+}
+
+#search input.submit {
+    float: right;
+    display: block;
+    width: 40px;
+    height: 38px;
+    background: url('../images/submit.gif') no-repeat 10px 11px;
+    border: none;
+    cursor: pointer;
+}
+
+/* menu */
+
+#menu {
+    background: #9BBE54 url('../images/menu.gif') repeat-x;
+}
+
+#menu2 {
+    margin: 0 auto;
+    width: 1040px;
+    height: 44px;
+    padding: 11px 80px 36px 130px;
+    background: #8FB63F url('../images/menu.jpg');
+}
+
+#menu ul {
+    list-style: none;
+}
+
+#menu ul li {
+    display: block;
+    float: left;
+    padding-right: 50px;
+}
+
+#menu ul li a {
+    font: 22px/40px "Roboto Condensed", Arial, Helvetica, sans-serif;
+    text-transform: lowercase;
+    text-decoration: none;
+    text-shadow: 0px -1px 0px #607725;
+    color: #FFFFFF;
+}
+
+/* main */
+
+#main {
+    clear: both;
+    background: #F4F2E1 url('../images/main.gif') repeat-x bottom;
+}
+
+#main2 {
+    margin: 0 auto;
+    width: 1250px;
+    background: #F8F7ED url('../images/main2.gif') repeat-y;
+}
+
+#main3 {
+    padding: 0 105px 50px 105px;
+    background: url('../images/main.jpg') no-repeat bottom;
+}
+
+/* content */
+
+#content {
+    float: left;
+    width: 540px;
+    padding: 40px 0 0 0;
+}
+
+#content .post {
+    padding: 0 0 6em 0;
+}
+
+#content .entry {
+    padding-top: 1.5em;
+}
+
+#content h2 a {
+    color: #2C363C;
+    text-decoration: none;
+}
+
+p.postmeta {
+    color: #8C8C8C;
+}
+
+p.readmore {
+    padding-right: 2em;
+    text-align: right;
+}
+
+p.readmore a {
+    display: block;
+    float: right;
+    width: 120px;
+    height: 42px;
+    text-align: center;
+    line-height: 42px;
+    text-decoration: none;
+    color: #FFFFFF;
+    background: #B4C298;
+    border: 1px solid #9DA984;
+    -webkit-border-radius: 6px;
+    -moz-border-radius: 6px;
+    border-radius: 6px;
+}
+
+/* sidebar */
+
+#sidebar {
+    float: right;
+    width: 500px;
+    padding: 40px 0 0 0;
+}
+
+#sidebar h2, #bar h2 {
+    font-size: 2em;
+}
+
+#sidebar .box {
+    padding: 2.5em 0 3em 0;
+}
+
+#sidebar p {
+    line-height: 2em;
+}
+
+#sidebar ul {
+    list-style: none;
+    margin-top: 2.5em;
+    padding-bottom: 3em;
+    border-top: 1px solid #EAE9CB;
+}
+
+#sidebar ul li {
+    padding: .3em 0 .3em .3em;
+    line-height: 2.5em;
+    border-bottom: 1px solid #EAE9CB;
+}
+
+/* bar */
+
+#bar {
+    clear: both;
+    background: #AEBD8F url('../images/bar.gif') repeat-x bottom;
+}
+
+#bar2 {
+    margin: 0 auto;
+    width: 1250px;
+    background: #B4C298 url('../images/bar2.gif') repeat-y;
+}
+
+#bar3 {
+    padding: 10px 0 0 105px;
+    background: url('../images/bar.jpg') no-repeat bottom;
+}
+
+.col {
+    float: left;
+    width: 320px;
+    padding-right: 40px;
+}
+
+.col h2 {
+    text-shadow: 0px 1px 0px #EAE9CA;
+    color: #000000;
+}
+
+.col ul {
+    list-style: none;
+    margin-top: 2.5em;
+    padding-bottom: 3em;
+    border-top: 1px solid #AEBD8F;
+}
+
+.col ul li {
+    padding: .3em 0 .3em .3em;
+    line-height: 2.5em;
+    border-bottom: 1px solid #AEBD8F;
+}
+
+.col ul li a {
+    color: #5B732A;
+}
+
+.clearing {
+    clear: both;
+    height: 1px;
+    overflow: hidden;
+}
+
+/* footer */
+
+#footer {
+    clear: both;
+}
+
+#footer2 {
+    margin: 0 auto;
+    width: 1250px;
+    padding: 50px 0 100px 0;
+    background: #0B171E url('../images/bg.gif') repeat-y top;
+}
+
+#footer2 p {
+    text-align: center;
+}
+
+.tabControl { min-height: 500px; position: relative; width: 100%; /*font-family: "Roboto Condensed", Arial, Helvetica, sans-serif; font-size: 1em;*/ }
+.tabControl > div { display: inline-block; }
+.tabControl > div > a { margin-left: -1px; position: relative; left: 1px; text-decoration: none; color: black; background: white; display: block; float: left; padding: 5px 10px; border: 1px solid #ccc; border-bottom: 1px solid white; }
+.tabControl > div:not(:target) > a { border-bottom: 0; background: -moz-linear-gradient(top, white, #eee); }
+.tabControl > div:target > a { background: white; }
+.tabControl > div > div { font-family: "Roboto Condensed", Arial, Helvetica, sans-serif; font-size: 0.8em; background: white; z-index: -1; left: 0; top: 30px; bottom: 0; right: 0; padding: 20px; border: 1px solid #ccc; }
+.tabControl > div:not(:target) > div { position: absolute }
+.tabControl > div:target > div { position: absolute; z-index: 0; }

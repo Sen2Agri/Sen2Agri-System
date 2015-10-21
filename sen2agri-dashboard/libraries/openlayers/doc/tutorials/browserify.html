@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>OpenLayers 3 - Basic project setup using NPM and Browserify</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <link href='http://fonts.googleapis.com/css?family=Quattrocento+Sans:400,400italic,700' rel='stylesheet' type='text/css'>
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    <link href='../../../../assets/theme/site.css' rel='stylesheet' type='text/css'>
+    <link rel="icon" type="image/x-icon" href="../../../../assets/theme/img/favicon.ico" />
+    
+  </head>
+  <body>
+    <header class='navbar navbar-fixed-top' role='navigation'>
+      <div class='container'>
+
+        <!-- button that shows up below 768px width -->
+        <button type='button' class='navbar-toggle' data-toggle='collapse' data-target='.navbar-responsive-collapse'>
+          <span class='icon-bar'></span>
+          <span class='icon-bar'></span>
+          <span class='icon-bar'></span>
+        </button>
+
+        <a href='/' class='navbar-brand'><img src='../../../../assets/theme/img/logo70.png'>&nbsp;OpenLayers 3</a>
+
+        <!-- menu items that get hidden below 768px width -->
+        <nav class='collapse navbar-collapse navbar-responsive-collapse'>
+          <ul class='nav navbar-nav pull-right'>
+            <li><a href='/en/v3.10.1/doc'class="active">Docs</a></li>
+            <li><a href='/en/v3.10.1/examples'>Examples</a></li>
+            <li><a href='/en/v3.10.1/apidoc'>API</a></li>
+            <li><a href='https://github.com/openlayers/ol3'>Code</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    
+
+<div class='container'>
+<h1 id="introduction">Introduction</h1>
+<p>When going beyond modifying existing examples you might be looking for a
+way to setup your own code with dependency management together with external
+dependencies like OpenLayers 3.</p>
+<p>This tutorial serves as a suggested project setup using NPM and Browserify
+for the most basic needs. There are several other options and in particular
+you might be interested in 
+<a href="closure.html">compiling your own code together with OpenLayers 3</a>.</p>
+<h2 id="initial-steps">Initial steps</h2>
+<p>Create a new empty directory for your project and navigate to it by running
+<code>mkdir new-project &amp;&amp; cd new-project</code>. Initialize your project using <code>npm init</code>
+and answer the questions asked.</p>
+<p>At this point you can ask NPM to add required dependencies by running
+<code>npm install --save-dev openlayers browserify watchify uglify-js</code>. Watchify and
+Uglify will be used to monitor for changes and to build into a minified
+bundle.</p>
+<h2 id="application-code-and-index-html">Application code and index.html</h2>
+<p>Place your application code in <code>index.js</code>. Here is a simple starting point:</p>
+<pre><code class="language-js"><span class="keyword">var</span> ol = require(<span class="string">'openlayers'</span>);
+
+<span class="keyword">var</span> map = <span class="keyword">new</span> ol.Map({
+  target: <span class="string">'map'</span>,
+  layers: [
+    <span class="keyword">new</span> ol.layer.Tile({
+      source: <span class="keyword">new</span> ol.source.OSM()
+    })
+  ],
+  view: <span class="keyword">new</span> ol.View({
+    center: [<span class="number">0</span>, <span class="number">0</span>],
+    zoom: <span class="number">0</span>
+  })
+});</code></pre>
+<p>You will also need an <code>ìndex.html</code> file that will use your bundle. Here is a simple
+example:</p>
+<pre><code class="language-html">&lt;!doctype html&gt;
+&lt;html&gt;
+  &lt;head&gt;
+    &lt;meta charset=&quot;utf-8&quot;&gt;
+    &lt;title&gt;Using Browserify with OpenLayers&lt;/title&gt;
+    &lt;link rel=&quot;stylesheet&quot; href=&quot;node_modules/openlayers/dist/ol.css&quot; type=&quot;text/css&quot;&gt;
+    &lt;style&gt;
+      #map {
+        width: 400px;
+        height: 250px;
+      }
+    &lt;/style&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;div id=&quot;map&quot;&gt;&lt;/div&gt;
+    &lt;script src=&quot;bundle.js&quot;&gt;&lt;/script&gt;
+  &lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<h2 id="creating-a-bundle">Creating a bundle</h2>
+<p>With simple scripts you can introduce the commands <code>npm run build</code> and <code>npm start</code> to
+manually build your bundle and watch for changes, respectively. Add the following
+to the script section in <code>package.json</code>:</p>
+<pre><code class="language-json">&quot;scripts&quot;: {
+  &quot;start&quot;: &quot;watchify index.js --outfile bundle.js&quot;,
+  &quot;build&quot;: &quot;browserify index.js | uglifyjs --compress --output bundle.js&quot;
+}</code></pre>
+<p>Note that <code>bundle.js</code> will contain your application code and all dependencies
+used in your application, in this case the official full build of OpenLayers 3.
+If you only need parts of OpenLayers 3 you can create
+<a href="../../builder">custom builds</a>.</p>
+
+</div>
+
+    <footer>
+      Code licensed under the <a href='http://www.tldrlegal.com/license/bsd-2-clause-license-(freebsd)'>2-Clause BSD</a>.  All documentation <a href='http://creativecommons.org/licenses/by/3.0/'>CC BY 3.0</a>. Thanks to our <a href='/sponsors.html'>sponsors</a>.
+    </footer>
+    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    
+  </body>
+</html>

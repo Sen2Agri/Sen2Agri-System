@@ -82,10 +82,6 @@ private:
         AddParameter(ParameterType_InputImage, "sm", "Snow Mask");
         AddParameter(ParameterType_InputImage, "wl2a", "Weights of L2A product for date N");
 
-        //not mandatory
-        AddParameter(ParameterType_InputImage, "prevl3a", "Previous l3a product");
-        MandatoryOff("prevl3a");
-
         AddParameter(ParameterType_InputImage, "prevl3aw", "Previous l3a product weights");
         MandatoryOff("prevl3aw");
         AddParameter(ParameterType_InputImage, "prevl3ad", "Previous l3a product dates");
@@ -95,11 +91,7 @@ private:
         AddParameter(ParameterType_InputImage, "prevl3af", "Previous l3a product flags");
         MandatoryOff("prevl3af");
 
-        AddParameter(ParameterType_OutputImage, "out", "Out image containing 10, 14 or 22 bands according to resolution or mode");
-        //AddParameter(ParameterType_OutputImage, "outrefls", "Out image containing 10 or 14 bands according to resolution");
-        //AddParameter(ParameterType_OutputImage, "outweights", "Out image containing 10 or 14 bands according to resolution");
-        //AddParameter(ParameterType_OutputImage, "outflags", "Out image containing 10 or 14 bands according to resolution");
-        //AddParameter(ParameterType_OutputImage, "outdates", "Out image containing 10 or 14 bands according to resolution");
+        AddParameter(ParameterType_OutputImage, "out", "Out image containing the number of bands of the master product, for the given resolution");
 
         m_ImageList = ImageListType::New();
         m_Concat = ListConcatenerFilterType::New();
@@ -123,57 +115,85 @@ private:
         if(resolution <= 0) {
             resolution = m_L2AIn->GetSpacing()[0];
         }
-
-        auto factory = MetadataHelperFactory::New();
-        auto pHelper = factory->GetMetadataHelper(inXml, resolution);
-        std::string missionName = pHelper->GetMissionName();
-        int nRedBandIdx = pHelper->GetRedBandIndex();
-        int nBlueBandIdx = pHelper->GetBlueBandIndex();
-
-        m_bandsCfgMappingParser.ParseFile(strBandsMappingFileName);
-        BandsMappingConfig bandsMappingCfg = m_bandsCfgMappingParser.GetBandsMappingCfg();
-        int nExtractedBandsNo = 0;
-        // create an array of bands presences with the same size as the master band size
-        std::vector<int> bandsPresenceVect = bandsMappingCfg.GetBandsPresence(resolution, missionName, nExtractedBandsNo);
-        std::vector<int> vectIdxs = bandsMappingCfg.GetAbsoluteBandIndexes(resolution, missionName);
-        for(unsigned int i = 0; i<vectIdxs.size(); i++) {
-            int nRelBandIdx = pHelper->GetRelativeBandIndex(vectIdxs[i]);
-            m_ImageList->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(m_L2AIn, nRelBandIdx));
-        }
-
         m_CSM = GetParameterFloatVectorImage("csm");
         m_WM = GetParameterFloatVectorImage("wm");
         m_SM = GetParameterFloatVectorImage("sm");
         m_WeightsL2A = GetParameterFloatVectorImage("wl2a");
 
-        //m_ResampledBandsExtractor.ExtractAllResampledBands(m_L2AIn, m_ImageList);
-        m_ResampledBandsExtractor.ExtractAllResampledBands(m_CSM, m_ImageList);
-        m_ResampledBandsExtractor.ExtractAllResampledBands(m_WM, m_ImageList);
-        m_ResampledBandsExtractor.ExtractAllResampledBands(m_SM, m_ImageList);
-        m_ResampledBandsExtractor.ExtractAllResampledBands(m_WeightsL2A, m_ImageList);
+        auto szL2A = m_L2AIn->GetLargestPossibleRegion().GetSize();
+        int nL2AWidth = szL2A[0];
+        int nL2AHeight = szL2A[1];
 
+
+        int nL3AWidth = -1;
+        int nL3AHeight = -1;
         bool l3aExist = false;
-        int nNbL3ABands = 0;
-        if(HasValue("prevl3a")) {
-            m_PrevL3A = GetParameterFloatVectorImage("prevl3a");
+        if(HasValue("prevl3aw") && HasValue("prevl3ad") &&
+           HasValue("prevl3ar") && HasValue("prevl3af")) {
             l3aExist = true;
-            m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3A, m_ImageList);
-        } else {
-            if(HasValue("prevl3aw") && HasValue("prevl3ad") &&
-               HasValue("prevl3ar") && HasValue("prevl3af")) {
-                l3aExist = true;
-                m_PrevL3AWeight = GetParameterFloatVectorImage("prevl3aw");
-                nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AWeight, m_ImageList);
+            m_PrevL3AWeight = GetParameterFloatVectorImage("prevl3aw");
+            m_PrevL3AAvgDate = GetParameterFloatVectorImage("prevl3ad");
+            m_PrevL3ARefl = GetParameterFloatVectorImage("prevl3ar");
+            m_PrevL3AFlags = GetParameterFloatVectorImage("prevl3af");
+            m_PrevL3AFlags->UpdateOutputInformation();
+            auto szL3A = m_PrevL3AFlags->GetLargestPossibleRegion().GetSize();
+            nL3AWidth = szL3A[0];
+            nL3AHeight = szL3A[1];
+        }
 
-                m_PrevL3AAvgDate = GetParameterFloatVectorImage("prevl3ad");
-                nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AAvgDate, m_ImageList);
+        auto factory = MetadataHelperFactory::New();
+        auto pHelper = factory->GetMetadataHelper(inXml, resolution);
+        std::string missionName = pHelper->GetMissionName();
+        // TODO: Using these indexes as they are extracted is not right
+        //       These indexes are from the current product and they should be translated
+        int nRedBandIdx = pHelper->GetRedBandIndex();
+        int nBlueBandIdx = pHelper->GetBlueBandIndex();
 
-                m_PrevL3ARefl = GetParameterFloatVectorImage("prevl3ar");
-                nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3ARefl, m_ImageList);
+        m_bandsCfgMappingParser.ParseFile(strBandsMappingFileName);
+        BandsMappingConfig bandsMappingCfg = m_bandsCfgMappingParser.GetBandsMappingCfg();
 
-                m_PrevL3AFlags = GetParameterFloatVectorImage("prevl3af");
-                nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AFlags, m_ImageList);
+        // TODO: Maybe the mission name should be considered
+        //std::string masterMissionName = bandsMappingCfg.GetMasterMissionName();
+
+        int nDesiredWidth = -1;
+        int nDesiredHeight = -1;
+        // it is enough to check only one dimension
+        if(nL3AWidth != -1) {
+            if((nL3AWidth != nL2AWidth) || (nL3AHeight != nL2AHeight)) {
+                nDesiredWidth = std::max(nL3AWidth, nL2AWidth);
+                nDesiredHeight = std::max(nL3AHeight, nL2AHeight);
             }
+        }
+
+        int nExtractedBandsNo = 0;
+        // create an array of bands presences with the same size as the master band size
+        std::vector<int> bandsPresenceVect = bandsMappingCfg.GetBandsPresence(resolution, missionName, nExtractedBandsNo);
+        //std::vector<int> vectIdxs = bandsMappingCfg.GetAbsoluteBandIndexes(resolution, missionName);
+        // Here we have a raster that already has the extracted bands configured in the file.
+        // We do not get the bands from the product anymore but from this file (in file)
+        for(unsigned int i = 0; i<bandsPresenceVect.size(); i++) {
+            //int nRelBandIdx = pHelper->GetRelativeBandIndex(vectIdxs[i]);
+            int nRelBandIdx = bandsPresenceVect[i];
+            if(nRelBandIdx >= 0) {
+                InternalBandImageType::Pointer l2aBandImg = m_ResampledBandsExtractor.ExtractResampledBand(m_L2AIn, nRelBandIdx+1,
+                                                                            resolution, resolution, nDesiredWidth, nDesiredHeight);
+                m_ImageList->PushBack(l2aBandImg);
+            }
+        }
+
+        //m_ResampledBandsExtractor.ExtractAllResampledBands(m_L2AIn, m_ImageList);
+        m_ResampledBandsExtractor.ExtractAllResampledBands(m_CSM, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight);
+        m_ResampledBandsExtractor.ExtractAllResampledBands(m_WM, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight);
+        m_ResampledBandsExtractor.ExtractAllResampledBands(m_SM, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight);
+        m_ResampledBandsExtractor.ExtractAllResampledBands(m_WeightsL2A, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight);
+
+        int nNbL3ABands = 0;
+        if(HasValue("prevl3aw") && HasValue("prevl3ad") &&
+           HasValue("prevl3ar") && HasValue("prevl3af")) {
+            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AWeight, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight);
+            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AAvgDate, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight);
+            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3ARefl, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight);
+            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AFlags, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight);
         }
 
         m_Concat->SetInput(m_ImageList);
@@ -265,7 +285,6 @@ private:
 */
     InputImageType::Pointer             m_L2AIn;
     InputImageType::Pointer             m_CSM, m_WM, m_SM, m_WeightsL2A;
-    InputImageType::Pointer             m_PrevL3A;
     InputImageType::Pointer             m_PrevL3AWeight, m_PrevL3AAvgDate, m_PrevL3ARefl, m_PrevL3AFlags;
     ImageListType::Pointer              m_ImageList;
     ListConcatenerFilterType::Pointer   m_Concat;

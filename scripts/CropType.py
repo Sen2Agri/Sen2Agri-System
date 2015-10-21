@@ -8,7 +8,7 @@ import csv
 from sys import argv
 
 #Path to build folder
-buildFolder="/mnt/data/csudmipy/sen2agri-build/"
+buildFolder="~/sen2agri-build/"
 
 parser = argparse.ArgumentParser(description='CropType Python processor')
 
@@ -74,7 +74,7 @@ print "BandsExtractor done!"
 
 # ogr2ogr
 print "Executing ogr2ogr"
-ooCmdLine = "ogr2ogr -clipsrc "+shape+" -overwrite "+reference_polygons_clip+" "+reference_polygons
+ooCmdLine = "/usr/local/bin/ogr2ogr -clipsrc "+shape+" -overwrite "+reference_polygons_clip+" "+reference_polygons
 print ooCmdLine
 result = os.system(ooCmdLine)
 

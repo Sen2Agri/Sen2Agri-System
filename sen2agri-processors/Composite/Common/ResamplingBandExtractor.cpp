@@ -22,7 +22,7 @@ ResamplingBandExtractor::InternalImageType::Pointer ResamplingBandExtractor::Ext
 
 int ResamplingBandExtractor::ExtractAllResampledBands(const ImageType::Pointer img,
                                               otb::ImageList<otb::Wrapper::FloatImageType>::Pointer &outList,
-                                              int curRes, int nDesiredRes, bool bNearestNeighbourInterpolation)
+                                              int curRes, int nDesiredRes, int nForcedOutWidth, int nForcedOutHeight, bool bNearestNeighbourInterpolation)
 {
     int nbBands = img->GetNumberOfComponentsPerPixel();
     for(int j=0; j < nbBands; j++)
@@ -35,7 +35,7 @@ int ResamplingBandExtractor::ExtractAllResampledBands(const ImageType::Pointer i
         extractor->UpdateOutputInformation();
         m_ExtractorList->PushBack( extractor );
         // TODO: see if this function should receive instead the forced size of a reference image, if possible
-        outList->PushBack(getResampledImage(curRes, nDesiredRes, -1, -1, extractor, bNearestNeighbourInterpolation));
+        outList->PushBack(getResampledImage(curRes, nDesiredRes, nForcedOutWidth, nForcedOutHeight, extractor, bNearestNeighbourInterpolation));
     }
 
     return nbBands;
@@ -119,6 +119,9 @@ ResamplingBandExtractor::ResampleFilterType::Pointer ResamplingBandExtractor::ge
 
      InternalImageType::PixelType defaultValue;
      itk::NumericTraits<InternalImageType::PixelType>::SetLength(defaultValue, image->GetNumberOfComponentsPerPixel());
+//     if(!isMask) {
+//         defaultValue = -10000;
+//     }
      resampler->SetEdgePaddingValue(defaultValue);
 
 //     recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
@@ -133,8 +136,22 @@ ResamplingBandExtractor::ResampleFilterType::Pointer ResamplingBandExtractor::ge
 ResamplingBandExtractor::InternalImageType::Pointer ResamplingBandExtractor::getResampledImage(int nCurRes, int nDesiredRes,
                                              int forcedWidth, int forcedHeight, ExtractROIFilterType::Pointer extractor,
                                              bool bIsMask) {
-    if((nDesiredRes <= 0) || nCurRes == nDesiredRes)
+    // if the resolutions are identical AND desired dimensions are not set
+    if(nDesiredRes <= 0) {
         return extractor->GetOutput();
+    }
+    if(nCurRes == nDesiredRes) {
+        if((forcedWidth == -1) || (forcedHeight == -1)) {
+            return extractor->GetOutput();
+        }
+        // if we have the same resolution and the same desired dimensions as the input image
+        extractor->GetOutput()->UpdateOutputInformation();
+        auto sz = extractor->GetOutput()->GetLargestPossibleRegion().GetSize();
+        // no need to do any resampling if res and dimensions are the same
+        if((sz[0] == (unsigned int)forcedWidth) && (sz[1] == (unsigned int)forcedHeight)) {
+            return extractor->GetOutput();
+        }
+    }
 
     OutputVectorType scale;
     scale[0] = ((float)nDesiredRes) / nCurRes;

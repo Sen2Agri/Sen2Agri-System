@@ -89,14 +89,16 @@ private:
             resolution = m_L3AIn->GetSpacing()[0];
         }
 
-        auto factory = MetadataHelperFactory::New();
+        /*auto factory = MetadataHelperFactory::New();
         auto pHelper = factory->GetMetadataHelper(inXml);
         std::string missionName = pHelper->GetMissionName();
-
+        */
         m_bandsCfgMappingParser.ParseFile(strBandsMappingFileName);
         BandsMappingConfig bandsMappingCfg = m_bandsCfgMappingParser.GetBandsMappingCfg();
         int nExtractedBandsNo = 0;
         // create an array of bands presences with the same size as the master band size
+        // and having the presences of Master band
+        std::string missionName = bandsMappingCfg.GetMasterMissionName();
         std::vector<int> bandsPresenceVect = bandsMappingCfg.GetBandsPresence(resolution, missionName, nExtractedBandsNo);
 
         otbAppLogINFO( << "InXML: " << inXml << std::endl );
