@@ -51,6 +51,9 @@ private:
         AddDocTag(Tags::Vector);
         AddParameter(ParameterType_String,  "in",   "The BV estimation values product containing all time series");
         AddParameter(ParameterType_OutputFilename, "outlist", "File containing the list of all files produced.");
+        AddParameter(ParameterType_Int, "compress", "Specifies if output files should be compressed or not.");
+        MandatoryOff("compress");
+        SetDefaultParameterInt("compress", 0);
     }
 
     void DoUpdateParameters()
@@ -69,6 +72,8 @@ private:
         {
             itkExceptionMacro("Wrong number of bands. It should be even! " + nTotalBands);
         }
+
+        bool bUseCompression = (GetParameterInt("compress") != 0);
 
         std::string strOutFilesList = GetParameterString("outlist");
         std::ofstream m_SimulationsFile;
@@ -101,6 +106,9 @@ private:
             writer = WriterType::New();
             std::ostringstream fileNameStream;
             fileNameStream << strOutPrefix << "_b" << i << ".tif";
+            if(bUseCompression) {
+                fileNameStream << "?gdal:co:COMPRESS=DEFLATE";
+            }
             std::string fileName = fileNameStream.str();
             writer->SetFileName(fileName);
             writer->SetInput(concater->GetOutput());
