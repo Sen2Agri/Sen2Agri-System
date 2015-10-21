@@ -71,6 +71,9 @@ private:
         AddParameter(ParameterType_Int, "res", "Input current L3A XML");
         SetDefaultParameterInt("res", -1);
         MandatoryOff("res");
+
+        AddParameter(ParameterType_OutputImage, "outrgb", "Output rgb filename");
+        MandatoryOff("outrgb");
     }
 
     void DoUpdateParameters()
@@ -89,17 +92,13 @@ private:
             resolution = m_L3AIn->GetSpacing()[0];
         }
 
-        /*auto factory = MetadataHelperFactory::New();
-        auto pHelper = factory->GetMetadataHelper(inXml);
-        std::string missionName = pHelper->GetMissionName();
-        */
         m_bandsCfgMappingParser.ParseFile(strBandsMappingFileName);
         BandsMappingConfig bandsMappingCfg = m_bandsCfgMappingParser.GetBandsMappingCfg();
         int nExtractedBandsNo = 0;
         // create an array of bands presences with the same size as the master band size
         // and having the presences of Master band
-        std::string missionName = bandsMappingCfg.GetMasterMissionName();
-        std::vector<int> bandsPresenceVect = bandsMappingCfg.GetBandsPresence(resolution, missionName, nExtractedBandsNo);
+        std::string masterMissionName = bandsMappingCfg.GetMasterMissionName();
+        std::vector<int> bandsPresenceVect = bandsMappingCfg.GetBandsPresence(resolution, masterMissionName, nExtractedBandsNo);
 
         otbAppLogINFO( << "InXML: " << inXml << std::endl );
         otbAppLogINFO( << "Resolution: " << resolution << std::endl );
@@ -108,11 +107,13 @@ private:
         m_ReflsConcat = ImageListToVectorImageFilterType::New();
         m_DatesConcat = ImageListToVectorImageFilterType::New();
         m_FlagsConcat = ImageListToVectorImageFilterType::New();
+        m_RGBConcat   = ImageListToVectorImageFilterType::New();
 
         m_ReflectancesList = ImgListType::New();
         m_WeightList = ImgListType::New();
         m_DatesList = ImgListType::New();
         m_FlagsList = ImgListType::New();
+        m_RGBOutList = ImgListType::New();
 
         int nReflsBandsNo = nExtractedBandsNo;
         unsigned int nTotalBandsNo = (2*nReflsBandsNo+2);
@@ -126,20 +127,42 @@ private:
         m_ImgSplit->UpdateOutputInformation();
 
         int cnt = 0;
-        for(int i = 0; i < nReflsBandsNo; i++) {
+        for(unsigned int i = 0; i < bandsPresenceVect.size(); i++) {
             if(bandsPresenceVect[cnt] != -1) {
                 m_WeightList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt));
+                cnt++;
             }
-            cnt++;
         }
         m_DatesList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt++));
-        for(int i = 0; i < nReflsBandsNo; i++) {
-            if(bandsPresenceVect[cnt] != -1) {
+        int redIdx, greenIdx, blueIdx;
+        bool bHasTrueColorBandIndexes = GetTrueColorBandIndexes(inXml, bandsMappingCfg, resolution, redIdx, greenIdx, blueIdx);
+        int redBandNo = -1;
+        int greenBandNo = -1;
+        int blueBandNo = -1;
+        for(unsigned int i = 0; i < bandsPresenceVect.size(); i++) {
+            if(bandsPresenceVect[i] != -1) {
                 m_ReflectancesList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt));
+                if(bHasTrueColorBandIndexes) {
+                    if(bandsPresenceVect[i] == redIdx) {
+                        redBandNo = cnt;
+                    }
+                    if(bandsPresenceVect[i] == greenIdx) {
+                        greenBandNo = cnt;
+                    }
+                    if(bandsPresenceVect[i] == blueIdx) {
+                        blueBandNo = cnt;
+                    }
+                }
+                cnt++;
             }
-            cnt++;
         }
         m_FlagsList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt++));
+
+        if((redBandNo != -1) && (greenBandNo != -1) && (blueBandNo != -1)) {
+            m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(redBandNo));
+            m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(greenBandNo));
+            m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(blueBandNo));
+        }
 
         m_WeightsConcat = ImageListToVectorImageFilterType::New();
         m_WeightsConcat->SetInput(m_WeightList);
@@ -160,7 +183,47 @@ private:
         m_FlagsConcat->SetInput(m_FlagsList);
         SetParameterOutputImagePixelType("outflags", ImagePixelType_uint8);
         SetParameterOutputImage("outflags", m_FlagsConcat->GetOutput());
+
+
+        if(HasValue("outrgb") && m_RGBOutList->Size() > 0) {
+            m_RGBConcat = ImageListToVectorImageFilterType::New();
+            m_RGBConcat->SetInput(m_RGBOutList);
+            SetParameterOutputImagePixelType("outrgb", ImagePixelType_int16);
+            SetParameterOutputImage("outrgb", m_RGBConcat->GetOutput());
+        }
+
         return;
+    }
+
+    bool GetTrueColorBandIndexes(const std::string &inXml, BandsMappingConfig &bandsMappingCfg, int resolution,
+                                 int &redIdx, int &greenIdx, int &blueIdx) {
+        auto factory = MetadataHelperFactory::New();
+        auto pHelper = factory->GetMetadataHelper(inXml);
+        std::string curMissionName = pHelper->GetMissionName();
+        redIdx = greenIdx = blueIdx = -1;
+
+        int nRedIdx, nGreenIdx, nBlueIdx;
+        bool bHasTrueColors = pHelper->GetTrueColourBandIndexes(nRedIdx, nGreenIdx, nBlueIdx);
+        if(!bHasTrueColors)
+            return false;
+        int nMasterRedIdx = bandsMappingCfg.GetMasterBandIndex(curMissionName, resolution, nRedIdx);
+        int nMasterGreenIdx = bandsMappingCfg.GetMasterBandIndex(curMissionName, resolution, nGreenIdx);
+        int nMasterBlueIdx = bandsMappingCfg.GetMasterBandIndex(curMissionName, resolution, nBlueIdx);
+        // if one of them is not present, return
+        if(nMasterRedIdx <= 0 ||  nMasterGreenIdx <= 0 || nMasterBlueIdx <= 0) {
+            return false;
+        }
+        // now convert the absolute indexes into relative indexes to our raster type
+        std::string masterMissionName = bandsMappingCfg.GetMasterMissionName();
+        redIdx = bandsMappingCfg.GetIndexInPresenceArray(resolution, masterMissionName, nMasterRedIdx);
+        greenIdx = bandsMappingCfg.GetIndexInPresenceArray(resolution, masterMissionName, nMasterGreenIdx);
+        blueIdx = bandsMappingCfg.GetIndexInPresenceArray(resolution, masterMissionName, nMasterBlueIdx);
+
+        // these indexes are 0 based
+        if(redIdx < 0 ||  greenIdx < 0 || blueIdx < 0) {
+            return false;
+        }
+        return true;
     }
 
     InputImageType::Pointer             m_L3AIn;
@@ -170,11 +233,13 @@ private:
     ImageListToVectorImageFilterType::Pointer m_ReflsConcat;
     ImageListToVectorImageFilterType::Pointer m_DatesConcat;
     ImageListToVectorImageFilterType::Pointer m_FlagsConcat;
+    ImageListToVectorImageFilterType::Pointer m_RGBConcat;
 
     ImgListType::Pointer m_ReflectancesList;
     ImgListType::Pointer m_WeightList;
     ImgListType::Pointer m_DatesList;
     ImgListType::Pointer m_FlagsList;
+    ImgListType::Pointer m_RGBOutList;
 
     BandsCfgMappingParser m_bandsCfgMappingParser;
 };
