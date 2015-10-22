@@ -73,7 +73,7 @@ struct MACCSAngleList
     std::string ColumnStep;
     std::string RowUnit;
     std::string RowStep;
-    std::vector<std::vector<double>> Values;
+    std::vector<std::vector<double> > Values;
 };
 
 struct MACCSAngles
@@ -212,4 +212,6 @@ struct MACCSFileMetadata
     MACCSProductInformation ProductInformation;
     MACCSImageInformation ImageInformation;
     MACCSProductOrganization ProductOrganization;
+
+    std::string ProductPath;
 };

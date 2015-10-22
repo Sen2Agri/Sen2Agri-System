@@ -33,14 +33,26 @@
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 
-#include "otbPCAImageFilter.h"
-#include "otbVectorImage.h"
+#include "itkBinaryBallStructuringElement.h"
 
-typedef float                                PixelValueType;
-typedef otb::VectorImage<PixelValueType, 2>  ImageType;
+#include "itkBinaryErodeImageFilter.h"
+#include "otbBandMathImageFilter.h"
 
-typedef otb::ImageFileReader<ImageType>                                     ReaderType;
-typedef otb::PCAImageFilter< ImageType, ImageType, otb::Transform::FORWARD> PCAFilterType;
+#include <unordered_set>
+
+typedef short                                PixelValueType;
+typedef otb::Image<PixelValueType, 2>        InternalImageType;
+
+typedef otb::ImageFileReader<InternalImageType>                                     ReaderType;
+typedef itk::BinaryBallStructuringElement<PixelValueType, 2>                        BallStructuringType;
+typedef BallStructuringType::RadiusType                                             RadiusType;
+
+typedef InternalImageType::SizeType          ReferenceSizeType;
+typedef InternalImageType::SizeValueType     ReferenceSizeValueType;
+
+typedef itk::BinaryErodeImageFilter<InternalImageType, InternalImageType, BallStructuringType>   BinaryErodeImageFilterType;
+typedef otb::ObjectList<BinaryErodeImageFilterType>                    BinaryErodeImageFilterListType;
+
 
 //  Software Guide : EndCodeSnippet
 
@@ -65,7 +77,7 @@ namespace Wrapper
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
-class PrincipalComponentAnalysis : public Application
+class Erosion : public Application
 //  Software Guide : EndCodeSnippet
 {
 public:
@@ -74,7 +86,7 @@ public:
   // Software Guide : EndLatex
 
   //  Software Guide : BeginCodeSnippet
-  typedef PrincipalComponentAnalysis Self;
+  typedef Erosion Self;
   typedef Application Superclass;
   typedef itk::SmartPointer<Self> Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
@@ -88,7 +100,7 @@ public:
   itkNewMacro(Self)
 ;
 
-  itkTypeMacro(PrincipalComponentAnalysis, otb::Application)
+  itkTypeMacro(Erosion, otb::Application)
 ;
   //  Software Guide : EndCodeSnippet
 
@@ -116,10 +128,10 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-      SetName("PrincipalComponentAnalysis");
+      SetName("Erosion");
       SetDescription("The feature extraction step produces the relevant features for the classication.");
 
-      SetDocName("PrincipalComponentAnalysis");
+      SetDocName("Erosion");
       SetDocLongDescription("The feature extraction step produces the relevant features for the classication. The features are computed"
                             "for each date of the resampled and gaplled time series and concatenated together into a single multi-channel"
                             "image file. The selected features are the surface reflectances, the NDVI, the NDWI and the brightness.");
@@ -148,14 +160,13 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-    AddParameter(ParameterType_InputImage, "ndvi", "The NDVI time series");
-    AddParameter(ParameterType_Int, "nc", "The number of required components.");
+    AddParameter(ParameterType_InputImage, "in", "The input raster");
+    AddParameter(ParameterType_Int, "radius", "The erosion radius");
+    MandatoryOff("radius");
 
-    AddParameter(ParameterType_OutputImage, "out", "Vector image containing the principal component images");
+    AddParameter(ParameterType_OutputImage, "out", "The eroded raster");
 
-    SetDefaultParameterInt("nc", 6);
-    SetMinimumParameterIntValue("nc",1);
-    SetMaximumParameterIntValue("nc",6);
+    SetDefaultParameterInt("radius", 5);
 
      //  Software Guide : EndCodeSnippet
 
@@ -165,9 +176,9 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-    SetDocExampleParameterValue("ndvi", "ndvi.tif");
-    SetDocExampleParameterValue("nc", "6");
-    SetDocExampleParameterValue("out", "pca.tif");
+    SetDocExampleParameterValue("in", "reference.tif");
+    SetDocExampleParameterValue("radius", "1");
+    SetDocExampleParameterValue("out", "eroded_reference.tif");
     //  Software Guide : EndCodeSnippet
   }
 
@@ -179,8 +190,9 @@ private:
   void DoUpdateParameters()
   {
 
-      m_ndviReader = ReaderType::New();
-      m_pcaFilter = PCAFilterType::New();
+      m_inReader = ReaderType::New();
+      m_erodeFilterList = BinaryErodeImageFilterListType::New();
+
   }
   //  Software Guide : EndCodeSnippet
 
@@ -192,23 +204,73 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoExecute()
   {
-      // Get the number of components
-      int nc = GetParameterInt("nc");
+      // Get the input parameters
+      int radius = GetParameterInt("radius");
 
       //Read the input file
-      m_ndviReader->SetFileName(GetParameterString("ndvi"));
-      m_ndviReader->UpdateOutputInformation();
+      m_inReader->SetFileName(GetParameterString("in"));
+      m_inReader->Update();
 
-      m_pcaFilter->SetNumberOfPrincipalComponentsRequired(nc);
-      m_pcaFilter->SetInput(m_ndviReader->GetOutput());
+      InternalImageType::Pointer refImg = m_inReader->GetOutput();
+      ReferenceSizeType imgSize = refImg->GetLargestPossibleRegion().GetSize();
 
-      SetParameterOutputImage("out", m_pcaFilter->GetOutput());
+      // build ball structure
+      RadiusType rad;
+      rad[0] = radius;
+      rad[1] = radius;
+      BallStructuringType se;
+      se.SetRadius(rad);
+      se.CreateStructuringElement();
+
+      // define the class set
+      std::unordered_set<PixelValueType> classes;
+
+      for (ReferenceSizeValueType i = 0; i < imgSize[0]; i++) {
+          for (ReferenceSizeValueType j = 0; j < imgSize[1]; j++) {
+              InternalImageType::IndexType index;
+              index[0] = i;
+              index[1] = j;
+
+              InternalImageType::PixelType pix = refImg->GetPixel(index);
+              classes.insert(pix);
+          }
+      }
+
+      BinaryErodeImageFilterType::Pointer prevErodeFilter;
+
+      // erode each class
+      for (PixelValueType pix : classes) {
+          BinaryErodeImageFilterType::Pointer currentErodeFilter = BinaryErodeImageFilterType::New();
+
+          if (prevErodeFilter.IsNull()) {
+              currentErodeFilter->SetInput(m_inReader->GetOutput());
+          } else {
+              currentErodeFilter->SetInput(prevErodeFilter->GetOutput());
+          }
+
+          // set the kernel and foreground and background values
+          currentErodeFilter->SetKernel(se);
+          currentErodeFilter->SetErodeValue(pix);
+          currentErodeFilter->SetBackgroundValue(0);
+
+          // add to list
+          m_erodeFilterList->PushBack(currentErodeFilter);
+
+          // update the previous erode filter
+          prevErodeFilter = currentErodeFilter;
+      }
+      // set the output
+      if (prevErodeFilter.IsNotNull()) {
+          SetParameterOutputImage("out", prevErodeFilter->GetOutput());
+      } else {
+          SetParameterOutputImage("out", m_inReader->GetOutput());
+      }
 
   }
   //  Software Guide :EndCodeSnippet
 
-  ReaderType::Pointer                     m_ndviReader;
-  PCAFilterType::Pointer                  m_pcaFilter;
+  ReaderType::Pointer                               m_inReader;
+  BinaryErodeImageFilterListType::Pointer           m_erodeFilterList;
 };
 }
 }
@@ -217,8 +279,7 @@ private:
 // Finally \code{OTB\_APPLICATION\_EXPORT} is called.
 // Software Guide : EndLatex
 //  Software Guide :BeginCodeSnippet
-OTB_APPLICATION_EXPORT(otb::Wrapper::PrincipalComponentAnalysis)
+OTB_APPLICATION_EXPORT(otb::Wrapper::Erosion)
 //  Software Guide :EndCodeSnippet
-
 
 
