@@ -18,12 +18,6 @@ std::vector<std::string> split(const std::string &s, char delim)
     return result;
 }
 
-bool ends_with(const std::string &s1, const std::string &s2)
-{
-    return s1.length() >= s2.length() &&
-           s1.compare(s1.length() - s2.length(), s2.length(), s2) == 0;
-}
-
 double ReadDouble(const std::string &s)
 {
     try {

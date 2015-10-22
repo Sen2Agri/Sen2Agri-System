@@ -67,4 +67,6 @@ struct SPOT4Metadata
     SPOT4Geometry Geometry;
     SPOT4WGS84 WGS84;
     SPOT4Radiometry Radiometry;
+
+    std::string ProductPath;
 };
