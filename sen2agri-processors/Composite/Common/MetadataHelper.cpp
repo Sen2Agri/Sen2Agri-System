@@ -117,6 +117,22 @@ double MetadataHelper::GetRelativeAzimuthAngle()
     return relAzimuth;
 }
 
+bool MetadataHelper::GetTrueColourBandIndexes(int &redIdx, int &greenIdx, int &blueIdx)
+{
+    redIdx = m_nRedBandIndex;
+    greenIdx = m_nGreenBandIndex;
+    blueIdx = m_nBlueBandIndex;
+    // we might not have blue and is green (as for spot, in this case we use NIR)
+    // TODO: We should override this function for SPOT
+    if(blueIdx == greenIdx) {
+        blueIdx = m_nNirBandIndex;
+    }
+    if(redIdx > 0 && greenIdx > 0 && blueIdx > 0) {
+        return true;
+    }
+    return false;
+}
+
 // Extract the folder from a given path.
 std::string MetadataHelper::extractFolder(const std::string& filename) {
     size_t pos = filename.find_last_of("/\\");

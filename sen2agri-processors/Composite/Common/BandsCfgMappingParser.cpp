@@ -100,7 +100,9 @@ bool BandsMappingConfig::IsConfiguredMission(const std::string &missionName) {
     return false;
 }
 
-std::vector<int> BandsMappingConfig::GetAbsoluteBandIndexes(int res, const std::string &missionName) {
+// Returns the bands indexes of a mission. If a secondary mission has no index for the one in master,
+// a -1 is filled only if bIgnoreMissing is not set otherwise it is not added in the returned vector
+std::vector<int> BandsMappingConfig::GetAbsoluteBandIndexes(int res, const std::string &missionName, bool bIgnoreMissing) {
     std::vector<int> retIndexes;
     if(!IsConfiguredMission(missionName)) {
         itkExceptionMacro("Mission " + missionName + " is not configured for composition!");
@@ -113,8 +115,11 @@ std::vector<int> BandsMappingConfig::GetAbsoluteBandIndexes(int res, const std::
     for(unsigned int i = 0; i<bandsCfg.size(); i++) {
         int nBandIdx = bandsCfg[i].identifier;
         if(nBandIdx <= 0) {
-            // we ignore the bands that are in master but not in the secondary product
-            continue;
+            if(bIgnoreMissing) {
+                // we ignore the bands that are in master but not in the secondary product
+                continue;
+            }
+            nBandIdx = -1;
         }
         retIndexes.push_back(nBandIdx);
     }
@@ -147,6 +152,42 @@ std::vector<int> BandsMappingConfig::GetBandsPresence(int nRes, const std::strin
         outNbValidBands++;
     }
     return bandsPresenceVect;
+}
+
+int BandsMappingConfig::GetMasterBandIndex(const std::string &missionName, int nRes, int nSensorBandIdx)
+{
+    std::string masterMissionName = GetMasterMissionName();
+    std::vector<BandConfig> bandsCfg = GetBands(nRes, missionName);
+    std::vector<BandConfig> masterBandsCfg = GetBands(nRes, masterMissionName);
+    if(bandsCfg.size() != masterBandsCfg.size()) {
+        itkExceptionMacro("Invalid bands size configuration for resolution " << nRes << ". Number differ from master for mission " << missionName);
+    }
+    for(unsigned int i = 0; i< bandsCfg.size(); i++) {
+        if(bandsCfg[i].identifier == nSensorBandIdx) {
+            return masterBandsCfg[i].identifier;
+        }
+    }
+    return -1;
+}
+
+int BandsMappingConfig::GetIndexInPresenceArray(int nRes, const std::string &missionName, int absIdx)
+{
+    int nbValidBands;
+
+    std::vector<int> bandsPresenceVect = GetBandsPresence(nRes, missionName, nbValidBands);
+    std::vector<int> absoluteBandsIdxVect = GetAbsoluteBandIndexes(nRes, missionName, false);
+    if(bandsPresenceVect.size() != absoluteBandsIdxVect.size()) {
+        itkExceptionMacro("Wrong number of bands configured for master mission !");
+    }
+
+    for(unsigned int i = 0; i<bandsPresenceVect.size(); i++) {
+        if(bandsPresenceVect[i] != -1) {
+            if(absoluteBandsIdxVect[i] == absIdx) {
+                return bandsPresenceVect[i];
+            }
+        }
+    }
+    return -1;
 }
 
 /********************************************************************

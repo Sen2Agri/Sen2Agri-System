@@ -37,10 +37,12 @@ public:
     std::string GetMasterMissionName();
     bool IsConfiguredMission(const std::string &missionName);
 
-    std::vector<int> GetAbsoluteBandIndexes(int res, const std::string &missionName);
+    std::vector<int> GetAbsoluteBandIndexes(int res, const std::string &missionName, bool bIgnoreMissing = true);
     /* This function does not returns the indexes from the file but the valid indexes in
      * sequencial ascending order and -1 if missing band */
     std::vector<int> GetBandsPresence(int nRes, const std::string &missionName, int &outNbValidBands);
+    int GetMasterBandIndex(const std::string &missionName, int nRes, int nSensorBandIdx);
+    int GetIndexInPresenceArray(int nRes, const std::string &missionName, int absIdx);
 
 private:
     std::vector<std::string> m_missionNames;
