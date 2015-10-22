@@ -180,6 +180,12 @@ private:
     MandatoryOff("seed");
 
     AddParameter(ParameterType_OutputVectorData, "out", "The training samples shape file");
+    MandatoryOff("out");
+
+    AddParameter(ParameterType_OutputImage, "outraster", "The training samples as a raster");
+    MandatoryOff("outraster");
+    AddParameter(ParameterType_OutputImage, "outmask", "The mask used to create the shape file");
+    MandatoryOff("outmask");
 
     SetDefaultParameterFloat("alpha", 0.01);
     SetDefaultParameterInt("nbsamples", 0);
@@ -299,15 +305,23 @@ private:
       }
 
       m_SumFilter->SetExpression(exprstream.str());
+      if (HasValue("outraster")) {
+          SetParameterOutputImage("outraster", m_SumFilter->GetOutput());
+      }
 
       m_ShapeMask->SetNthInput(0, m_SumFilter->GetOutput());
       m_ShapeMask->SetExpression("(b1>=0) ? 1 : 0");
+      if (HasValue("outmask")) {
+          SetParameterOutputImage("outmask", m_ShapeMask->GetOutput());
+      }
 
-      m_ShapeBuilder->SetInput(m_SumFilter->GetOutput());
-      m_ShapeBuilder->SetInputMask(m_ShapeMask->GetOutput());
-      m_ShapeBuilder->SetFieldName("CROP");
+      if (HasValue("out")) {
+          m_ShapeBuilder->SetInput(m_SumFilter->GetOutput());
+          m_ShapeBuilder->SetInputMask(m_ShapeMask->GetOutput());
+          m_ShapeBuilder->SetFieldName("CROP");
+          SetParameterOutputVectorData("out", m_ShapeBuilder->GetOutput());
+      }
 
-      SetParameterOutputVectorData("out", m_ShapeBuilder->GetOutput());
 
       GetLogger()->Debug("Performing Trimming!\n");
   }

@@ -41,8 +41,8 @@ def inSituDataAvailable() :
 	   print "Error running ConcatenateImages"
 	   exit(1)
 
-	#os.system("rm " + temporal_features)
-	#os.system("rm " + statistic_features)
+	os.system("rm " + temporal_features)
+	os.system("rm " + statistic_features)
 
 	print "ConcatenateImages done!"
 
@@ -60,7 +60,7 @@ def inSituDataAvailable() :
 
 	# ogr2ogr
 	print "Executing ogr2ogr"
-	ooCmdLine = "ogr2ogr -clipsrc "+shape+" -overwrite "+reference_polygons_clip+" "+reference_polygons
+	ooCmdLine = "/usr/local/bin/ogr2ogr -clipsrc "+shape+" -overwrite "+reference_polygons_clip+" "+reference_polygons
 	print ooCmdLine
 	result = os.system(ooCmdLine)
 
@@ -187,20 +187,30 @@ def noInSituDataAvailable() :
 
 
 	# Reference Map preparation
-	print "Executing erosion with GrayScaleMorphologicalOperation application..."
-	rmCmdLine = "otbcli_GrayScaleMorphologicalOperation -in " + reference + " -out "+eroded_reference + " -channel 1 -filter erode -structype.ball.xradius " + erode_radius + " -structype.ball.yradius " + erode_radius
+	print "Executing gdalwarp..."
+
+	gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata \"-10000\" -overwrite -cutline "+shape+" -crop_to_cutline "+reference+" "+crop_reference
+	print gwCmdLine
+	result = os.system(gwCmdLine)
+
+	if result != 0 :
+   		print "Error running gdalwarp"
+		exit(1)
+
+	print "Executing Erosion..."
+	rmCmdLine = "otbApplicationLauncherCommandLine Erosion "+buildFolder+"CropMask/Erosion -in " + crop_reference + " -out "+eroded_reference + " -radius " + erode_radius
 	print rmCmdLine
 	result = os.system(rmCmdLine)
 
 	if result != 0 :
-	   print "Error running GrayScaleMorphologicalOperation"
+	   print "Error running Erosion"
 	   exit(1)
 
 	print "Erosion done!"
 
 	# Trimming
 	print "Executing Trimming application..."
-	trCmdLine = "otbApplicationLauncherCommandLine Trimming "+buildFolder+"CropMask/Trimming -feat " + spectral_features + " -ref "+eroded_reference + " -out " + trimmed_reference_shape + " -alpha " + alpha + " -nbsamples 400000 -seed " + random_seed
+	trCmdLine = "otbApplicationLauncherCommandLine Trimming "+buildFolder+"CropMask/Trimming -feat " + spectral_features + " -ref "+eroded_reference + " -out " + trimmed_reference_shape + " -alpha " + alpha + " -nbsamples 0 -seed " + random_seed
 	print trCmdLine
 	result = os.system(trCmdLine)
 
@@ -233,6 +243,8 @@ def noInSituDataAvailable() :
 	   exit(1)
 	print "ImageClassifier done!"
 
+	# use the entire shape for validation when no insitu data is available
+	validation_polygons = trimmed_reference_shape
 
 
 #Path to build folder
@@ -326,6 +338,7 @@ tf_noinsitu=os.path.join(args.outdir, "tf_noinsitu.tif")
 spectral_features=os.path.join(args.outdir, "spectral_features.tif")
 
 eroded_reference=os.path.join(args.outdir, "eroded_reference.tif")
+crop_reference=os.path.join(args.outdir, "crop_reference.tif")
 trimmed_reference_shape=os.path.join(args.outdir, "trimmed_reference_shape.shp")
 statistics_noinsitu=os.path.join(args.outdir, "statistics_noinsitu.xml")
 
@@ -333,12 +346,15 @@ tmpfolder="."
 
 pca=os.path.join(args.outdir, "pca.tif")
 mean_shift_smoothing=os.path.join(args.outdir, "mean_shift_smoothing.tif")
+mean_shift_smoothing_spatial=os.path.join(args.outdir, "mean_shift_smoothing_spatial.tif")
 segmented=os.path.join(args.outdir, "segmented.tif")
 segmented_merged=os.path.join(args.outdir, "segmented_merged.tif")
 
 confmatout=os.path.join(args.outdir, "confusion-matrix.csv")
 model=os.path.join(args.outdir, "crop-mask-model.txt")
 raw_crop_mask=os.path.join(args.outdir, "raw_crop_mask.tif")
+raw_crop_mask_confusion_matrix_validation=os.path.join(args.outdir, "raw-crop-mask-confusion-matrix-validation.csv")
+raw_crop_mask_quality_metrics=os.path.join(args.outdir, "raw-crop-mask-quality-metrics.txt")
 crop_mask=os.path.join(args.outdir, "crop_mask.tif")
 confusion_matrix_validation=os.path.join(args.outdir, "crop-mask-confusion-matrix-validation.csv")
 quality_metrics=os.path.join(args.outdir, "crop-mask-quality-metrics.txt")
@@ -357,7 +373,7 @@ print "BandsExtractor done!"
 # gdalwarp
 print "Executing gdalwarp..."
 
-gwCmdLine = "gdalwarp -multi -wm 2048 -dstnodata \"-10000\" -overwrite -cutline "+shape+" -crop_to_cutline "+rawtocr+" "+tocr
+gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata \"-10000\" -overwrite -cutline "+shape+" -crop_to_cutline "+rawtocr+" "+tocr
 print gwCmdLine
 result = os.system(gwCmdLine)
 
@@ -365,9 +381,9 @@ if result != 0 :
    print "Error running gdalwarp"
    exit(1)
 
-#os.system("rm " + rawtocr)
+os.system("rm " + rawtocr)
 
-gwCmdLine = "gdalwarp -multi -wm 2048 -dstnodata 1 -overwrite -cutline "+shape+" -crop_to_cutline "+rawmask+" "+mask
+gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata 1 -overwrite -cutline "+shape+" -crop_to_cutline "+rawmask+" "+mask
 print gwCmdLine
 result = os.system(gwCmdLine)
 
@@ -375,7 +391,7 @@ if result != 0 :
    print "Error running gdalwarp"
    exit(1)
 
-#os.system("rm " + rawmask)
+os.system("rm " + rawmask)
 
 print "gdalwarp done!"
 
@@ -389,8 +405,8 @@ if result != 0 :
    print "Error running TemporalResampling"
    exit(1)
 
-#os.system("rm " + tocr)
-#os.system("rm " + mask)
+os.system("rm " + tocr)
+os.system("rm " + mask)
 
 print "TemporalResampling done!"
 
@@ -412,9 +428,11 @@ if reference_polygons != "" :
 else:
 	noInSituDataAvailable()
 
+os.system("rm " + rtocr)
+
 #Validation
 print "Executing ComputeConfusionMatrix..."
-vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+raw_crop_mask+" -out "+confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CROP -nodatalabel 10 > "+quality_metrics
+vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+raw_crop_mask+" -out "+raw_crop_mask_confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CROP -nodatalabel -10000 > "+raw_crop_mask_quality_metrics
 print vdCmdLine
 result = os.system(vdCmdLine)
 
@@ -424,8 +442,8 @@ if result != 0 :
 print "ComputeConfusionMatrix done!"
 
 #Dimension reduction
-print "Executing DimensionalityReduction..."
-drCmdLine = "otbcli_DimensionalityReduction -in "+ndvi+" -method pca -nbcomp "+nbcomp+" -out "+pca
+print "Executing PrincipalComponentAnalysis..."
+drCmdLine = "otbApplicationLauncherCommandLine PrincipalComponentAnalysis "+buildFolder+"CropMask/PrincipalComponentAnalysis -ndvi "+ndvi+" -nc "+nbcomp+" -out "+pca
 print drCmdLine
 result = os.system(drCmdLine)
 
@@ -436,7 +454,7 @@ print "DimensionalityReduction done!"
 
 #Mean-Shift segmentation
 print "Executing MeanShiftSmoothing..."
-msCmdLine = "otbcli_MeanShiftSmoothing -in "+pca+" -modesearch 0 -spatialr "+spatialr+" -ranger "+ranger+" -fout "+mean_shift_smoothing +" uint32"
+msCmdLine = "otbcli_MeanShiftSmoothing -in "+pca+" -modesearch 0 -maxiter 10 -spatialr "+spatialr+" -ranger "+ranger+" -foutpos " + mean_shift_smoothing_spatial +" -fout "+mean_shift_smoothing +" uint32"
 print msCmdLine
 result = os.system(msCmdLine)
 
@@ -446,7 +464,7 @@ if result != 0 :
 print "MeanShiftSmoothing done!"
 
 print "Executing LSMSSegmentation..."
-msCmdLine = "otbcli_LSMSSegmentation -in "+mean_shift_smoothing+" -spatialr "+spatialr+" -ranger "+ranger+" -minsize "+minsize+" -tmpdir " +tmpfolder+ " -out "+segmented+" uint32"
+msCmdLine = "otbcli_LSMSSegmentation -in "+mean_shift_smoothing+" -inpos "+ mean_shift_smoothing_spatial +" -spatialr "+spatialr+" -ranger "+ranger+" -minsize "+minsize+" -tmpdir " +tmpfolder+ " -tilesizex 256 -tilesizey 256 -out "+segmented+" uint32"
 print msCmdLine
 result = os.system(msCmdLine)
 
@@ -456,7 +474,7 @@ if result != 0 :
 print "LSMSSegmentation done!"
 
 print "Executing LSMSSmallRegionsMerging..."
-msCmdLine = "otbcli_LSMSSmallRegionsMerging -in "+pca+" -inseg "+segmented+" -minsize "+minsize+" -out "+segmented_merged+" uint32"
+msCmdLine = "otbcli_LSMSSmallRegionsMerging -in "+pca+" -inseg "+segmented+" -minsize "+minsize+" -tilesizex 256 -tilesizey 256 -out "+segmented_merged+" uint32"
 print msCmdLine
 result = os.system(msCmdLine)
 
@@ -467,7 +485,7 @@ print "LSMSSmallRegionsMerging done!"
 
 #Majority voting
 print "Executing MajorityVoting..."
-drCmdLine = "otbApplicationLauncherCommandLine MajorityVoting "+buildFolder+"CropMask/MajorityVoting  -inclass "+raw_crop_mask+" -inseg "+segmented_merged+" -rout "+crop_mask
+drCmdLine = "otbApplicationLauncherCommandLine MajorityVoting "+buildFolder+"CropMask/MajorityVoting -nodatasegvalue 0 -nodataclassifvalue -10000 -inclass "+raw_crop_mask+" -inseg "+segmented_merged+" -rout "+crop_mask
 print drCmdLine
 result = os.system(drCmdLine)
 
@@ -475,6 +493,17 @@ if result != 0 :
    print "Error running MajorityVoting"
    exit(1)
 print "MajorityVoting done!"
+
+#Validation
+print "Executing ComputeConfusionMatrix..."
+vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+crop_mask+" -out "+confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CROP -nodatalabel -10000 > "+quality_metrics
+print vdCmdLine
+result = os.system(vdCmdLine)
+
+if result != 0 :
+   print "Error running ComputeConfusionMatrix"
+   exit(1)
+print "ComputeConfusionMatrix done!"
 
 print "Execution successfull !"
 
