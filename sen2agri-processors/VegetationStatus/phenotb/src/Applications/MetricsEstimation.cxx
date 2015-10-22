@@ -60,21 +60,7 @@ public:
   inline TOutput operator()(const TInput1 & A) const
   {
       //itk::VariableLengthVector vect;
-    /*
-     // TODO: Uncomment this if the approximation is needed and use in pheno_metrix x_hat instead of ts
-    int nbBvElems = A.GetNumberOfElements();
 
-    VectorType ts(nbBvElems);
-    int i;
-    for(i = 0; i<nbBvElems; i++) {
-        ts[i] = A[i];
-    }
-
-    auto approximation_result =
-      pheno::normalized_sigmoid::TwoCycleApproximation(ts, date_vect);
-    auto princ_cycle = std::get<1>(approximation_result);
-    auto x_hat = std::get<0>(princ_cycle);
-*/
 
     TOutput result(6);    
     TInput1 A2(A.Size());
@@ -92,9 +78,26 @@ public:
     if(j != A.Size())
         A2.SetSize(j, false);
 
+
+     // TODO: Uncomment this if the approximation is needed and use in pheno_metrix x_hat instead of ts
+    int nbBvElems = A.GetNumberOfElements();
+
+    vnl_vector<double> ts, dv;
+    for(size_t i = 0; i<nbBvElems; i++) {
+        ts[i] = A[i];
+    }
+    for(size_t i = 0; i<date_vect.size(); i++) {
+        dv[i] = date_vect[i];
+    }
+
+    auto approximation_result =
+      pheno::normalized_sigmoid::TwoCycleApproximation(ts, dv);
+    auto princ_cycle = std::get<1>(approximation_result);
+    auto x_hat = std::get<0>(princ_cycle);
+
     double dgx0, t0, t1, t2, t3, dgx2;
     std::tie(dgx0, t0, t1, t2, t3, dgx2) =
-        pheno::normalized_sigmoid::pheno_metrics<double>(A2);
+        pheno::normalized_sigmoid::pheno_metrics<double>(x_hat);
 
     result[0] = dgx0;
     result[1] = t0;
