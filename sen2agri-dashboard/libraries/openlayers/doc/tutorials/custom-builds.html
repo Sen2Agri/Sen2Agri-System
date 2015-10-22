@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>OpenLayers 3 - Custom builds</title>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <link href='http://fonts.googleapis.com/css?family=Quattrocento+Sans:400,400italic,700' rel='stylesheet' type='text/css'>
+    <script src="//code.jquery.com/jquery-1.11.3.min.js"></script>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    <link href='../../../../assets/theme/site.css' rel='stylesheet' type='text/css'>
+    <link rel="icon" type="image/x-icon" href="../../../../assets/theme/img/favicon.ico" />
+    
+  </head>
+  <body>
+    <header class='navbar navbar-fixed-top' role='navigation'>
+      <div class='container'>
+
+        <!-- button that shows up below 768px width -->
+        <button type='button' class='navbar-toggle' data-toggle='collapse' data-target='.navbar-responsive-collapse'>
+          <span class='icon-bar'></span>
+          <span class='icon-bar'></span>
+          <span class='icon-bar'></span>
+        </button>
+
+        <a href='/' class='navbar-brand'><img src='../../../../assets/theme/img/logo70.png'>&nbsp;OpenLayers 3</a>
+
+        <!-- menu items that get hidden below 768px width -->
+        <nav class='collapse navbar-collapse navbar-responsive-collapse'>
+          <ul class='nav navbar-nav pull-right'>
+            <li><a href='/en/v3.10.1/doc'class="active">Docs</a></li>
+            <li><a href='/en/v3.10.1/examples'>Examples</a></li>
+            <li><a href='/en/v3.10.1/apidoc'>API</a></li>
+            <li><a href='https://github.com/openlayers/ol3'>Code</a></li>
+          </ul>
+        </nav>
+      </div>
+    </header>
+    
+
+<div class='container'>
+<h1 id="creating-custom-builds">Creating custom builds</h1>
+<p>OpenLayers 3 is a big library providing a lot of functionality. So it is unlikely that an application will need and use all the functionality OpenLayers 3 provides. This is why creating application-specific OpenLayers 3 builds, with just the functionality your application needs, is often a good idea.</p>
+<p>An alternative to creating custom builds is to compile your application code together with OpenLayers 3. See the <a href="closure.html">Compiling Application with Closure Compiler</a> tutorial for more information.</p>
+<p>This particular tutorial explains how to create custom builds of OpenLayers 3.</p>
+<h2 id="requirements">Requirements</h2>
+<p>OpenLayers 3&#39;s build tools use Node and Java, so you need to have Node and Java installed on your machine. You can run <code>node --version</code> and <code>java -version</code> to test that Node and Java are installed, respectively.</p>
+<h2 id="download-openlayers">Download OpenLayers</h2>
+<p>Obviously, creating a custom build requires the OpenLayers 3 source and specific build scripts.</p>
+<p>To get the OpenLayers 3 source and the build scripts you can clone the <code>ol3</code> <a href="https://github.com/openlayers/ol3">repository</a>, or you can download one of the release archives. You can also download the <code>openlayers</code> Node package from the Node package registry, using NPM (the Node Package Manager). This is the method we are going to use in this tutorial.</p>
+<p>Create a directory:</p>
+<pre><code>$ mkdir openlayers</code></pre>
+<p>Download the OpenLayers 3 distribution using NPM:</p>
+<pre><code>$ npm install openlayers</code></pre>
+<p>This will download the latest stable version of OpenLayers 3, and install it under <code>node_modules</code>. You can list the content of <code>node_modules</code> to verify that it effectively contains a directory named &quot;openlayers&quot;.</p>
+<p>The Node packages onto which the <code>openlayers</code> package depends are installed under <code>node_modules/openlayers/node_modules</code>. That directory should, for example, include <code>closure-util</code>, which is the utility library OpenLayers 3 uses for Closure.</p>
+<p>You should now have everything you need to create custom builds of OpenLayers 3!</p>
+<h2 id="create-a-build-configuration-file">Create a build configuration file</h2>
+<p>Creating a custom build requires writing a build configuration file. The format of build configuration files is JSON. Here is a simple example of a build configuration file:</p>
+<pre><code class="language-json">{
+  "<span class="attribute">exports</span>": <span class="value">[
+    <span class="string">"ol.Map"</span>,
+    <span class="string">"ol.View"</span>,
+    <span class="string">"ol.control.defaults"</span>,
+    <span class="string">"ol.layer.Tile"</span>,
+    <span class="string">"ol.source.OSM"</span>
+  ]</span>,
+  "<span class="attribute">compile</span>": <span class="value">{
+    "<span class="attribute">externs</span>": <span class="value">[
+      <span class="string">"externs/bingmaps.js"</span>,
+      <span class="string">"externs/closure-compiler.js"</span>,
+      <span class="string">"externs/geojson.js"</span>,
+      <span class="string">"externs/oli.js"</span>,
+      <span class="string">"externs/olx.js"</span>,
+      <span class="string">"externs/proj4js.js"</span>,
+      <span class="string">"externs/tilejson.js"</span>,
+      <span class="string">"externs/topojson.js"</span>
+    ]</span>,
+    "<span class="attribute">define</span>": <span class="value">[
+      <span class="string">"goog.array.ASSUME_NATIVE_FUNCTIONS=true"</span>,
+      <span class="string">"goog.dom.ASSUME_STANDARDS_MODE=true"</span>,
+      <span class="string">"goog.json.USE_NATIVE_JSON=true"</span>,
+      <span class="string">"goog.DEBUG=false"</span>
+    ]</span>,
+    "<span class="attribute">jscomp_off</span>": <span class="value">[
+      <span class="string">"unknownDefines"</span>
+    ]</span>,
+    "<span class="attribute">extra_annotation_name</span>": <span class="value">[
+      <span class="string">"api"</span>, <span class="string">"observable"</span>
+    ]</span>,
+    "<span class="attribute">compilation_level</span>": <span class="value"><span class="string">"ADVANCED_OPTIMIZATIONS"</span></span>,
+    "<span class="attribute">manage_closure_dependencies</span>": <span class="value"><span class="literal">true</span>
+  </span>}
+</span>}</code></pre>
+<p>Create a file named <code>ol-custom.json</code> with that content, and save it under the <code>node_modules/openlayers/build</code> directory. (You can save it to any location really.)</p>
+<p>The most relevant part of this configuration object is the <code>&quot;exports&quot;</code> array. This array declares the functions/constructors you use in your JavaScript code. For example, the above configuration file is what you&#39;d use for the following JavaScript code:</p>
+<pre><code class="language-js"><span class="keyword">var</span> map = <span class="keyword">new</span> ol.Map({
+  target: <span class="string">'map'</span>,
+  layers: [
+    <span class="keyword">new</span> ol.layer.Tile({
+      source: <span class="keyword">new</span> ol.source.OSM()
+    })
+  ],
+  controls: ol.control.defaults({
+    attributionOptions: {
+      collapsible: <span class="literal">false</span>
+    }
+  }),
+  view: <span class="keyword">new</span> ol.View({
+    center: [<span class="number">0</span>, <span class="number">0</span>],
+    zoom: <span class="number">4</span>
+  })
+});</code></pre>
+<p>Note that this JavaScript code corresponds to OpenLayers 3&#39;s <a href="http://openlayers.org/en/master/examples/simple.html"><code>simple</code></a> example.</p>
+<p>You are now ready to create your first OpenLayers 3 build. Use the following command to create the build:</p>
+<pre><code>$ cd node_modules/openlayers
+$ node tasks/build.js build/ol-custom.json build/ol-custom.js</code></pre>
+<p>The build command may take some time, but it should end with the following output in the console:</p>
+<pre><code>info ol Parsing dependencies
+info ol Compiling 364 sources</code></pre>
+<p>The build command should have created an <code>ol-custom.js</code> file in the <code>node_modules/openlayers/build</code> directory. You can verify that the file was created. You can even open it in your editor if you&#39;re curious.</p>
+<p>As a test, you can use the following HTML file to verify that your custom build works as expected:</p>
+<pre><code class="language-html">&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;
+    &lt;meta charset=&quot;utf-8&quot; /&gt;
+    &lt;title&gt;OpenLayers 3 example&lt;/title&gt;
+    &lt;link rel=&quot;stylesheet&quot; href=&quot;node_modules/openlayers/css/ol.css&quot; /&gt;
+    &lt;style&gt;
+      #map {
+        width: 600px;
+        height: 400px;
+      }
+    &lt;/style&gt;
+&lt;/head&gt;
+&lt;body&gt;
+    &lt;div id=&quot;map&quot;&gt;&lt;/div&gt;
+    &lt;script src=&quot;node_modules/openlayers/build/ol-custom.js&quot;&gt;&lt;/script&gt;
+    &lt;script&gt;
+    var map = new ol.Map({
+      target: &#39;map&#39;,
+      layers: [
+        new ol.layer.Tile({
+          source: new ol.source.OSM()
+        })
+      ],
+      view: new ol.View({
+        center: [0, 0],
+        zoom: 4
+      })
+    });
+    &lt;/script&gt;
+&lt;/body&gt;
+&lt;/html&gt;</code></pre>
+<h2 id="more-on-the-config-file">More on the config file</h2>
+<h3 id="-define-s"><code>define</code>&#39;s</h3>
+<p>Closure allows you to define constants that can be set at compile time. The <code>define</code> config property above sets four <code>goog</code> properties for the Closure library. The OpenLayers 3 code also has defined values you can set.</p>
+<p>Setting some of these to <code>false</code> means that the portions of the code relating to this setting become &quot;dead&quot;, i.e. are never executed. As Closure Compiler&#39;s <code>ADVANCED</code> mode removes dead code, this makes the size of the advanced compiled file smaller.</p>
+<p>You might have noticed that the build file you&#39;ve just created is considerably smaller than the full build, but it can be reduced further. This is because all three renderers and all layer types are included by default. We only need one renderer, and only need the tile layer, so can exclude the others by setting these properties with <code>define</code>s. So add the following to the define section of the config above:</p>
+<pre><code>      &quot;ol.ENABLE_DOM=false&quot;,
+      &quot;ol.ENABLE_WEBGL=false&quot;,
+      &quot;ol.ENABLE_PROJ4JS=false&quot;,
+      &quot;ol.ENABLE_IMAGE=false&quot;,
+      &quot;ol.ENABLE_VECTOR=false&quot;,</code></pre>
+<p>and re-run the build script. The build size should now be smaller.</p>
+<h3 id="externs">Externs</h3>
+<p>The Closure documentation explains that &quot;externs&quot; are for external names used in the code being compiled. The compiler includes externs for built-ins such as <code>document</code>. The <code>externs</code> directory of the OpenLayers 3 code includes files for all those used in some part of the library. For example, if you use Bing Maps, you should include the Bing externs file in the <code>externs</code> section of the config file.</p>
+<p><code>oli.js</code> and <code>olx.js</code> are externs files for the OpenLayers 3 API. For examples <code>olx.js</code> includes extern definitions for OpenLayers 3&#39;s constructor options. You should always use these two files as externs when creating custom builds.</p>
+<h3 id="other-compiler-options">Other compiler options</h3>
+<p>There are a couple of other compiler options in the config file above. <code>manage_closure_dependencies</code> should always be used.</p>
+<p>You can specify any of the other compiler options here as needed, such as the renaming reports, output manifest, or source maps. There is a full list of available options in <a href="https://github.com/openlayers/closure-util/blob/master/compiler-options.txt">closure-util</a>.</p>
+<p>Note that <code>build.js</code> currently requires you to enter an output file and will write the output from the compiler to it; it does not use the <code>js_output_file</code> compiler option. If you specify this in the config file, there will be no compiler output, so <code>build.js</code>&#39;s output file will be empty.</p>
+<h2 id="a-more-complicated-example">A more complicated example</h2>
+<p>Now let&#39;s try a more complicated example: <a href="http://openlayers.org/en/master/examples/heatmap-earthquakes.html"><code>heatmaps-earthquakes</code></a>. The build configuration file looks like this:</p>
+<pre><code class="language-json">{
+  "<span class="attribute">exports</span>": <span class="value">[
+    <span class="string">"ol.layer.Heatmap"</span>,
+    <span class="string">"ol.source.KML"</span>,
+    <span class="string">"ol.layer.Heatmap#getSource"</span>,
+    <span class="string">"ol.source.KML#on"</span>,
+    <span class="string">"ol.source.VectorEvent#feature"</span>,
+    <span class="string">"ol.Feature#get"</span>,
+    <span class="string">"ol.Feature#set"</span>,
+    <span class="string">"ol.layer.Tile"</span>,
+    <span class="string">"ol.source.Stamen"</span>,
+    <span class="string">"ol.Map"</span>,
+    <span class="string">"ol.View"</span>
+  ]</span>,
+  "<span class="attribute">compile</span>": <span class="value">{
+    "<span class="attribute">externs</span>": <span class="value">[
+      <span class="string">"externs/olx.js"</span>,
+      <span class="string">"externs/oli.js"</span>
+    ]</span>,
+    "<span class="attribute">define</span>": <span class="value">[
+      <span class="string">"ol.ENABLE_DOM=false"</span>,
+      <span class="string">"ol.ENABLE_WEBGL=false"</span>,
+      <span class="string">"ol.ENABLE_PROJ4JS=false"</span>,
+      <span class="string">"ol.ENABLE_IMAGE=false"</span>,
+      <span class="string">"goog.dom.ASSUME_STANDARDS_MODE=true"</span>,
+      <span class="string">"goog.DEBUG=false"</span>
+    ]</span>,
+    "<span class="attribute">compilation_level</span>": <span class="value"><span class="string">"ADVANCED_OPTIMIZATIONS"</span></span>,
+    "<span class="attribute">manage_closure_dependencies</span>": <span class="value"><span class="literal">true</span>
+  </span>}
+</span>}</code></pre>
+<p>The exports are given here in the order in which they occur in the <code>heatmaps-earthquakes</code> example&#39;s JavaScript code. In this example we not only use the <code>ol.</code> functions and constructors, but also <code>prototype</code> methods where the <code>ol</code> namespace is not directly used. In the code, we have for example <code>vector.getSource().on()</code>. This means we are using the <code>getSource</code> method of <code>layer.Heatmap</code> and the <code>on</code> method of <code>source.KML</code>, so this is what has to be exported. Similarly, <code>event.feature.get()</code> means we are using the <code>feature</code> property of <code>source.VectorEvent</code> and the <code>get</code> method of <code>Feature</code>. If any of these names are left out, the compile will complete successfully, but the missing names will be obfuscated and you will get a &#39;property undefined&#39; error when you try and run the script.</p>
+<p>As this example uses a vector layer it is necessary to remove <code>&quot;ol.ENABLE_VECTOR=false&quot;</code> in the <code>define</code> section of the configuration.</p>
+<h2 id="conclusion">Conclusion</h2>
+<p>This tutorial should have given you the information you need to create custom builds, i.e. builds tailored to your application. See the <a href="https://github.com/openlayers/ol3/tree/master/tasks/readme.md">tasks readme</a> for more information on the build scripts and the properties you can use in the build configuration file.</p>
+
+</div>
+
+    <footer>
+      Code licensed under the <a href='http://www.tldrlegal.com/license/bsd-2-clause-license-(freebsd)'>2-Clause BSD</a>.  All documentation <a href='http://creativecommons.org/licenses/by/3.0/'>CC BY 3.0</a>. Thanks to our <a href='/sponsors.html'>sponsors</a>.
+    </footer>
+    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    
+  </body>
+</html>

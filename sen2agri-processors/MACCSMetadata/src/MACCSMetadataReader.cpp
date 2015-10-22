@@ -13,7 +13,7 @@ std::unique_ptr<MACCSFileMetadata> MACCSMetadataReader::ReadMetadata(const std::
 {
     TiXmlDocument doc(path);
     if (!doc.LoadFile()) {
-        itkExceptionMacro(<< "Can't open metadata file");
+        return nullptr;
     }
 
     return ReadMetadataXml(doc);
@@ -127,6 +127,40 @@ MACCSInstanceId ReadInstanceId(const TiXmlElement *el)
     result.AnnexCode = GetChildText(el, "Annex_Code");
     result.NickName = GetChildText(el, "Nick_Name");
     result.AcquisitionDate = GetChildText(el, "Acquisition_Date");
+
+    return result;
+}
+
+MACCSGeoPoint ReadGeoPoint(const TiXmlElement *el)
+{
+    MACCSGeoPoint result;
+    result.Long = std::numeric_limits<double>::quiet_NaN();
+    result.Lat = std::numeric_limits<double>::quiet_NaN();
+
+    if (!el) {
+        return result;
+    }
+
+    result.UnitLong = GetChildAttribute(el, "Long", "unit");
+    result.UnitLat = GetChildAttribute(el, "Lat", "unit");
+    result.Long = ReadDouble(GetChildText(el, "Long"));
+    result.Lat = ReadDouble(GetChildText(el, "Lat"));
+
+    return result;
+}
+
+MACCSGeoCoverage ReadGeoCoverage(const TiXmlElement *el)
+{
+    MACCSGeoCoverage result;
+
+    if (!el) {
+        return result;
+    }
+
+    result.UpperLeftCorner = ReadGeoPoint(el->FirstChildElement("Upper_Left_Corner"));
+    result.UpperRightCorner = ReadGeoPoint(el->FirstChildElement("Upper_Right_Corner"));
+    result.LowerLeftCorner = ReadGeoPoint(el->FirstChildElement("Lower_Left_Corner"));
+    result.LowerRightCorner = ReadGeoPoint(el->FirstChildElement("Lower_Right_Corner"));
 
     return result;
 }
@@ -283,6 +317,8 @@ MACCSProductInformation ReadProductInformation(const TiXmlElement *el)
     if (!el) {
         return result;
     }
+
+    result.GeoCoverage = ReadGeoCoverage(el->FirstChildElement("Image_Geo_Coverage"));
 
     result.MeanSunAngle = ReadAnglePair(el->FirstChildElement("Mean_Sun_Angle"));
     result.SolarAngles = ReadSolarAngles(el->FirstChildElement("Solar_Angles"));

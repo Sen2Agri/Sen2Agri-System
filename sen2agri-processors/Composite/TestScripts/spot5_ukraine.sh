@@ -20,6 +20,6 @@ inputXML[16]='/mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Ukraine/SPOT5_HRG2_XS_20150729
 inputXML[17]='/mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Ukraine/SPOT5_HRG2_XS_20150808_N2A_UkraineD0000B0000/SPOT5_HRG2_XS_20150808_N2A_UkraineD0000B0000.xml'
 L3A_DATE="20150808"
 HALF_SYNTHESIS="60"
-BANDS_MAPPING="bands_mapping_spot.txt"
+BANDS_MAPPING="bands_mapping_spot5.txt"
 #end of USER modif
 

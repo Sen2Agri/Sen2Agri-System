@@ -32,6 +32,18 @@ struct SPOT4Geometry
     std::string NbRows;
 };
 
+struct SPOT4WGS84
+{
+    double HGX;
+    double HGY;
+    double HDX;
+    double HDY;
+    double BGX;
+    double BGY;
+    double BDX;
+    double BDY;
+};
+
 struct SPOT4Angles
 {
     double PhiS;
@@ -53,5 +65,6 @@ struct SPOT4Metadata
     SPOT4Header Header;
     SPOT4Files Files;
     SPOT4Geometry Geometry;
+    SPOT4WGS84 WGS84;
     SPOT4Radiometry Radiometry;
 };

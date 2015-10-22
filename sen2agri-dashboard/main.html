@@ -1,0 +1,310 @@
+﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title>Sentinel-2 for Agriculture</title>
+    <meta name="keywords" content="" />
+    <meta name="description" content="" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta http-equiv="content-language" content="" />
+    <link href="http://fonts.googleapis.com/css?family=Roboto+Condensed&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="styles/theme.css" />
+    <link rel="stylesheet" href="libraries/openlayers/css/ol.css" />
+
+    <style type="text/css">
+        .map {
+            height: 400px;
+            width: 500px;
+            border: double;
+        }
+        .table {
+            display: block;
+        }
+        .table-row {
+            clear: both;
+        }
+        .table-cell {
+            float: left;
+            padding: 3px 1.8%;
+            text-transform: lowercase;
+            font-family: "Roboto Condensed", Arial, Helvetica, sans-serif;
+            font-weight: normal;
+        }
+            .table-cell img {
+                width: 40px;
+                height: 40px;
+            }
+            .table-cell a div {
+                width: 400px;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+    </style>
+</head>
+<body>
+    <div id="header" style="height:120px;">
+        <div id="header2" style="background-image: url(images/logo.png); background-repeat: no-repeat;">
+            <div id="logo" style="margin-top: -20px;">
+                <h1><a href="#">&nbsp;</a></h1>
+                <p id="subtitle">Sentinel-2 for Agriculture Monitoring</p>
+            </div>
+        </div>
+    </div><!-- header --><!-- header2 -->
+    <div id="menu">
+        <div id="menu2">
+            <ul>
+                <li><a href="main.html">Products</a></li>
+                <li><a href="system.html">System Overview</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="config.html">Configuration</a></li>
+                <!--<li><a href="#">Contact</a></li>-->
+            </ul>
+        </div>
+    </div><!-- menu --><!-- menu2 -->
+    <div id="main">
+        <div id="main2">
+            <div id="main3">
+                <div id="content">
+                    <div class="post">
+                        <h2><a href="#">Available Products</a></h2>
+                        <div class="entry">
+                            <div id="map" class="map"></div>
+                        </div>
+                    </div>
+                </div><!-- content -->
+                <div id="sidebar">
+                    <ul>
+                        <li id="SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000_link">
+                            <div class="table">
+                                <div class="table-row">
+                                    <div class="table-cell">
+                                        <img src="file://E:/RemoteSensing/Sen2Agri/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150410_N2A_BurkinaD0000B0000/QUICKLOOKS/ORTHO_SURF_CORR_PENTE_20150410.jpg"
+                                             onclick="zoomToProduct('SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000')"
+                                             onmouseover="highlightRectangle('SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000')"
+                                             onmouseout="restoreRectangle('SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000')" />
+                                    </div>
+                                    <div id="SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000_Link" class="table-cell">
+                                        <a href="file://E:/RemoteSensing/Sen2Agri/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150410_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000.zip">
+                                            <div>SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000</div>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="table-row">
+                                    <div class="table-cell">
+                                        <img src="file://S:/L2A/Spot5-T5/Belgium/SPOT5_HRG2_XS_20150410_N2A_BelgiumD0000B0000/QUICKLOOKS/ORTHO_SURF_CORR_PENTE_20150410.jpg"
+                                             onclick="zoomToProduct('SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BelgiumD0000B0000')"
+                                             onmouseover="highlightRectangle('SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BelgiumD0000B0000')"
+                                             onmouseout="restoreRectangle('SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BelgiumD0000B0000')" />
+                                    </div>
+                                    <div id="SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BelgiumD0000B0000_link" class="table-cell">
+                                        <a href="file://S:/L2A/Spot5-T5/Belgium/SPOT5_HRG2_XS_20150410_N2A_BelgiumD0000B0000/SPOT5_HRG_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BelgiumD0000B0000.zip">
+                                            <div>SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BelgiumD0000B0000</div>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+
+                    </ul>
+                </div><!-- sidebar -->
+                <div class="clearing">&nbsp;</div>
+            </div>
+        </div>
+    </div><!-- main --><!-- main2 --><!-- main3 -->
+    <div id="bar">
+        <div id="bar2">
+            <div id="bar3">
+                <div class="clearing" style="height:20px;">&nbsp;</div>
+            </div>
+        </div>
+    </div><!-- bar --><!-- bar2 --><!-- bar3 -->
+    <div id="footer" style="height: 20px;">
+        <div id="footer2" style="height: 20px; text-align: center; vertical-align: middle; padding: 0 0 0 0;">
+            <span>Copyright &copy; 2015 CS ROMANIA SA</span>
+        </div>
+    </div>
+
+    <script src="libraries/openlayers/build/ol.js"></script>
+    <script type="text/javascript">
+        var defaultStyle = new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'red'
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(255, 0, 0, 0.2)'
+            })
+        });
+
+        var selectedStyle = new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'red',
+                width: 3
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(255, 0, 0, 0.4)'
+            })
+        });
+
+        /*
+         * Should be replaced with call and extraction from WS
+         */
+        var productFeatures = {
+            "type": "FeatureCollection",
+            "crs": {
+                "type": "name",
+                "properties": {
+                    "name": "EPSG:4326"
+                }
+            },
+            "features": [
+                {
+                    "type": "Feature",
+                    "id": "SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[-4.16456146844, 11.5223973844],    // top-left
+							             [-3.3301337817, 11.5245417951],     // top-right
+							             [-3.32930760273, 10.7919972527],    // bottom-right
+                                         [-4.16164782102, 10.7899924083]     // bottom-left
+                        ]]
+                    }
+                },
+                {
+                    "type": "Feature",
+                    "id": "SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BelgiumD0000B0000",
+                    "geometry": {
+                        "type": "Polygon",
+                        "coordinates": [[[4.35318341124, 50.9757517697],    // top-left
+							             [5.64827183705, 50.9535591892],     // top-right
+							             [5.60773432794, 50.225882025],    // bottom-right
+                                         [4.3324487029, 50.2475107174]     // bottom-left
+                        ]]
+                    }
+                }
+            ]
+        };
+
+        // the map control
+        var map = createMapControl();
+
+        // features from JSON
+        var features = (new ol.format.GeoJSON()).readFeatures(productFeatures);
+        for (var i = 0; i < features.length; i++) {
+            features[i].getGeometry().transform('EPSG:4326', 'EPSG:3857');
+        }
+        var source = new ol.source.Vector({
+            features: features,
+            projection: 'EPSG:4326'
+        });
+
+        // the vector layer for rectangles
+        var vectLayer = new ol.layer.Vector({
+            source: source,
+            style: defaultStyle
+        });
+        map.addLayer(vectLayer);
+
+        map.on('click', function (browserEvent) {
+            var coordinate = browserEvent.coordinate;
+            var pixel = browserEvent.pixel;
+            var featureCollection = vectLayer.getSource().getFeatures();
+            featureCollection = [];
+            map.forEachFeatureAtPixel(pixel, function (feature, layer) {
+                if (!layer) {
+                    return;
+                }
+                if (feature.getStyle() == defaultStyle) {
+                    feature.setStyle(selectedStyle);
+                    document.getElementById(feature.getId() + "_link").className = "selectedProduct";
+                } else {
+                    feature.setStyle(defaultStyle);
+                    document.getElementById(feature.getId() + "_link").className = "";
+                }
+                var textFeature = new ol.Feature({
+                    geometry: new ol.geom.Point(feature.getGeometry().getCoordinates()[3]),
+                    text: feature.getId()
+                });
+                featureCollection.push(textFeature);
+                featureCollection.push(feature);
+                vectLayer.getSource().addFeatures(featureCollection);
+            });
+        });
+
+        function createMapControl() {
+            var map = new ol.Map({
+                layers: [
+                    new ol.layer.Tile({
+                        source: new ol.source.MapQuest({ layer: 'sat' })
+                    })],
+                target: 'map',
+                projection: "EPSG:4326",
+                view: new ol.View({
+                    center: [0, 0],
+                    zoom: 3
+                })
+            });
+
+            return map;
+        }
+
+        function getFeatureById(productName) {
+            var featureCollection = vectLayer.getSource().getFeatures();
+            var feature;
+            for (var i = 0; i < featureCollection.length; i++) {
+                if (featureCollection[i].getId() == productName) {
+                    feature = featureCollection[i];
+                    break;
+                }
+            }
+            return feature;
+        }
+
+        function highlightRectangle(productName) {
+            var feature = getFeatureById(productName);
+            if (feature) {
+                feature.setStyle(selectedStyle);
+            }
+        }
+
+        function restoreRectangle(productName) {
+            var feature = getFeatureById(productName);
+            if (feature) {
+                feature.setStyle(defaultStyle);
+            }
+        }
+
+        function zoomToProduct(productName) {
+            var featureCollection = vectLayer.getSource().getFeatures();
+            var feature;
+            for (var i = 0; i < featureCollection.length; i++) {
+                if (featureCollection[i].getId() == productName) {
+                    feature = featureCollection[i];
+                    break;
+                }
+            }
+            if (feature != null) {
+                var polygon = feature.getGeometry();
+                var size = map.getSize();
+                map.getView().fit(
+                    polygon,
+                    [size[0] / 2, size[1] / 2],
+                    {
+                        padding: [50, 50, 50, 50],
+                        constrainResolution: false
+                    });
+            }
+        }
+    </script>
+    <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+    <script src="libraries/flot-0.8.3/jquery.flot.min.js"></script>
+    <script src="libraries/flot-0.8.3/jquery.flot.time.min.js"></script>
+    <script src="libraries/flot-0.8.3/jquery.flot.stack.min.js"></script>
+    <script src="libraries/nvd3-1.1.11/nv.d3.js"></script>
+    <script src="scripts/config.js"></script>
+    <script src="scripts/helpers.js"></script>
+    <script src="scripts/processing_functions.js"></script>
+    <script src="scripts/processing.js"></script>
+</body>
+</html>

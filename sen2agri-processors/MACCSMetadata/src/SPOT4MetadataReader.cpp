@@ -12,6 +12,7 @@
 static SPOT4Header ReadHeader(const TiXmlElement *el);
 static SPOT4Files ReadFiles(const TiXmlElement *el);
 static SPOT4Geometry ReadGeometry(const TiXmlElement *el);
+static SPOT4WGS84 ReadWGS84(const TiXmlElement *el);
 static SPOT4Radiometry ReadRadiometry(const TiXmlElement *el);
 
 namespace itk
@@ -20,7 +21,7 @@ std::unique_ptr<SPOT4Metadata> SPOT4MetadataReader::ReadMetadata(const std::stri
 {
     TiXmlDocument doc(path);
     if (!doc.LoadFile()) {
-        itkExceptionMacro(<< "Can't open metadata file");
+        return nullptr;
     }
 
     return ReadMetadataXml(doc);
@@ -40,6 +41,7 @@ std::unique_ptr<SPOT4Metadata> SPOT4MetadataReader::ReadMetadataXml(const TiXmlD
     metadata->Header = ReadHeader(root->FirstChildElement("HEADER"));
     metadata->Files = ReadFiles(root->FirstChildElement("FILES"));
     metadata->Geometry = ReadGeometry(root->FirstChildElement("GEOMETRY"));
+    metadata->WGS84 = ReadWGS84(root->FirstChildElement("WGS84"));
     metadata->Radiometry = ReadRadiometry(root->FirstChildElement("RADIOMETRY"));
 
     // SPOT4_HRVIR1_XS_20130318_N2A_EBelgiumD0000B0000_DIV.TIF
@@ -120,6 +122,34 @@ static SPOT4Geometry ReadGeometry(const TiXmlElement *el)
     result.Resolution = GetChildText(el, "RESOLUTION");
     result.NbCols = GetChildText(el, "NB_COLS");
     result.NbRows = GetChildText(el, "NB_ROWS");
+
+    return result;
+}
+
+static SPOT4WGS84 ReadWGS84(const TiXmlElement *el)
+{
+    SPOT4WGS84 result;
+    result.HGX = std::numeric_limits<double>::quiet_NaN();
+    result.HGY = std::numeric_limits<double>::quiet_NaN();
+    result.HDX = std::numeric_limits<double>::quiet_NaN();
+    result.HDY = std::numeric_limits<double>::quiet_NaN();
+    result.BGX = std::numeric_limits<double>::quiet_NaN();
+    result.BGY = std::numeric_limits<double>::quiet_NaN();
+    result.BDX = std::numeric_limits<double>::quiet_NaN();
+    result.BDY = std::numeric_limits<double>::quiet_NaN();
+
+    if (!el) {
+        return result;
+    }
+
+    result.HGX = ReadDouble(GetChildText(el, "HGX"));
+    result.HGY = ReadDouble(GetChildText(el, "HGY"));
+    result.HDX = ReadDouble(GetChildText(el, "HDX"));
+    result.HDY = ReadDouble(GetChildText(el, "HDY"));
+    result.BGX = ReadDouble(GetChildText(el, "BGX"));
+    result.BGY = ReadDouble(GetChildText(el, "BGY"));
+    result.BDX = ReadDouble(GetChildText(el, "BDX"));
+    result.BDY = ReadDouble(GetChildText(el, "BDY"));
 
     return result;
 }

@@ -271,6 +271,23 @@ BOOST_AUTO_TEST_CASE(MACCSReader)
 
     BOOST_REQUIRE(m);
 
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.UpperLeftCorner.UnitLong, "deg");
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.UpperLeftCorner.UnitLat, "deg");
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.UpperLeftCorner.Long, 0.38468);
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.UpperLeftCorner.Lat, 44.0979);
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.UpperRightCorner.UnitLong, "deg");
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.UpperRightCorner.UnitLat, "deg");
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.UpperRightCorner.Long, 3.1258);
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.UpperRightCorner.Lat, 44.0979);
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.LowerLeftCorner.UnitLong, "deg");
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.LowerLeftCorner.UnitLat, "deg");
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.LowerLeftCorner.Long, 0.38468);
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.LowerLeftCorner.Lat, 42.2751);
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.LowerRightCorner.UnitLong, "deg");
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.LowerRightCorner.UnitLat, "deg");
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.LowerRightCorner.Long, 3.1258);
+    BOOST_CHECK_EQUAL(m->ProductInformation.GeoCoverage.LowerRightCorner.Lat, 42.2751);
+
     BOOST_CHECK_EQUAL(m->ImageInformation.Bands.size(), 7);
     BOOST_CHECK_EQUAL(m->ImageInformation.Bands[0].Id, "1");
     BOOST_CHECK_EQUAL(m->ImageInformation.Bands[0].Name, "B1");

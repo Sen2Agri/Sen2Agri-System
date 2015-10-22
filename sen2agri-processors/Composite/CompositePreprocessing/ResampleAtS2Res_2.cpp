@@ -93,8 +93,11 @@ void ResampleAtS2Res2::ExtractResampledAotImage()
     ImageType::Pointer aotImage = aotImageReader->GetOutput();
     aotImage->UpdateOutputInformation();
     int curRes = aotImage->GetSpacing()[0];
-    auto sz = m_inputImgReader->GetOutput()->GetLargestPossibleRegion().GetSize();
-    m_ImageAot = m_ResampledBandsExtractor.ExtractResampledBand(aotImage, aotBandIdx, curRes, m_nRes, sz[0], sz[1], true);
+    //auto sz = m_inputImgReader->GetOutput()->GetLargestPossibleRegion().GetSize();
+    //m_ImageAot = m_ResampledBandsExtractor.ExtractResampledBand(aotImage, aotBandIdx, curRes, m_nRes, sz[0], sz[1], true);
+    // TODO: Here we should take into account also the sz[0] and sz[1] but unfortunatelly,
+    //       the input image is likely to be also resampled so we should receive them from outside
+    m_ImageAot = m_ResampledBandsExtractor.ExtractResampledBand(aotImage, aotBandIdx, curRes, m_nRes, true);
 
 }
 
