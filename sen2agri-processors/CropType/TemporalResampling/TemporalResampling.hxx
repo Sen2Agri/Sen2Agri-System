@@ -4,7 +4,7 @@
 #include "itkBinaryFunctorImageFilter.h"
 #include "otbVectorImage.h"
 
-#define NOVALUEPIXEL    0.0
+#define NOVALUEPIXEL    -10000.0
 
 typedef otb::VectorImage<short, 2> ImageType;
 
