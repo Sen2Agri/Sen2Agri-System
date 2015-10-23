@@ -5,6 +5,7 @@
 #include "itkBinaryFunctorImageFilter.h"
 #include "otbImageFileReader.h"
 #include "otbImageFileWriter.h"
+#include "../../Common/GlobalDefs.h"
 
 namespace Functor
 {
@@ -27,13 +28,14 @@ public:
   inline TPixel operator()(const TPixel & A,
                             const TPixel & B) const
   {
-    const float dA = static_cast< float >( A );
-    const float dB = static_cast< float >( B );
-    // these values should be positive
-    if(dA < 0 || dB < 0) {
-        return -10000;
+    const float dA = fabs(static_cast< float >( A ));
+    const float dB = fabs(static_cast< float >( B ));
+    float weight;
+    if(dA >= 1.0 || dB >= 1.0) {
+        weight = 0.0;
+    } else {
+        weight = (1-dA) * (1 - dB);
     }
-    const float weight = (1-dA) * (1 - dB);
 
     return static_cast< TPixel >( weight );
   }
