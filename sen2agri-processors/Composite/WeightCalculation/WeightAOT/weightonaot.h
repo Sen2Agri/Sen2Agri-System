@@ -43,7 +43,7 @@ public:
       }
 
       float fRetAOT;
-      if(val <= m_nAotMax) {
+      if(val < m_nAotMax) {
           fRetAOT = m_fMinWeightAot + (m_fMaxWeightAot - m_fMinWeightAot) * (1.0 - val/m_nAotMax);
       } else {
           fRetAOT = m_fMinWeightAot;
