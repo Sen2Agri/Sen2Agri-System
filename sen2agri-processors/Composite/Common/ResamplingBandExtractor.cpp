@@ -119,9 +119,9 @@ ResamplingBandExtractor::ResampleFilterType::Pointer ResamplingBandExtractor::ge
 
      InternalImageType::PixelType defaultValue;
      itk::NumericTraits<InternalImageType::PixelType>::SetLength(defaultValue, image->GetNumberOfComponentsPerPixel());
-//     if(!isMask) {
-//         defaultValue = -10000;
-//     }
+     if(!isMask) {
+         defaultValue = -10000;
+     }
      resampler->SetEdgePaddingValue(defaultValue);
 
 //     recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];

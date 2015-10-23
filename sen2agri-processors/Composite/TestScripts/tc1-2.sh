@@ -1,18 +1,18 @@
 #! /bin/bash
 
-if [ $# -lt 4 ]
+if [ $# -lt 5 ]
 then
-  echo "Usage: $0 <xml L2A> <resolution> <out folder name> <bands mapping file> [scattering coefficient file - S2 case only]"
+  echo "Usage: $0 <otb apllication directory> <xml L2A> <resolution> <out folder name> <bands mapping file> [scattering coefficient file - S2 case only]"
   echo "The file with input xml should be given. The resolution for which the mask extraction will be performed should be given. The output directory should be given" 1>&2  
   exit
 fi
 
 source try_command.sh
 
-RESOLUTION="$2"
-OUT_FOLDER="$3"
+RESOLUTION="$3"
+OUT_FOLDER="$4"
 
-COMPOSITE_OTB_LIBS_ROOT="~/sen2agri-processors-build/Composite"
+COMPOSITE_OTB_LIBS_ROOT="$1"
 OUT_SPOT_MASKS="$OUT_FOLDER/masks$RESOLUTION.tif"
 
 OUT_IMG_BANDS="$OUT_FOLDER/res$RESOLUTION.tif"
@@ -22,19 +22,19 @@ OUT_SNOW="$OUT_FOLDER/snow$RESOLUTION.tif"
 OUT_AOT="$OUT_FOLDER/aot$RESOLUTION.tif"
 
 FULL_SCAT_COEFFS=""
-BANDS_MAPPING="$4"
+BANDS_MAPPING="$5"
 
 cp "$BANDS_MAPPING" "$OUT_FOLDER"
 
 FULL_BANDS_MAPPING="$OUT_FOLDER/$BANDS_MAPPING"
 
-if [ $# == 5 ] ; then
+if [ $# == 6 ] ; then
     SCAT_COEFFS="$5"
     cp "$SCAT_COEFFS" "$OUT_FOLDER"
     FULL_SCAT_COEFFS="-scatcoef $OUT_FOLDER/$SCAT_COEFFS"
 fi
 
-try otbcli CompositePreprocessing2 "$COMPOSITE_OTB_LIBS_ROOT/CompositePreprocessing/" -xml     $1 -bmap "$FULL_BANDS_MAPPING" -res "$RESOLUTION" "$FULL_SCAT_COEFFS" -msk "$OUT_SPOT_MASKS" -outres "$OUT_IMG_BANDS" -outcmres "$OUT_CLD" -outwmres "$OUT_WAT" -outsmres "$OUT_SNOW" -outaotres "$OUT_AOT"
+try otbcli CompositePreprocessing2 "$COMPOSITE_OTB_LIBS_ROOT/CompositePreprocessing/" -xml $2 -bmap "$FULL_BANDS_MAPPING" -res "$RESOLUTION" "$FULL_SCAT_COEFFS" -msk "$OUT_SPOT_MASKS" -outres "$OUT_IMG_BANDS" -outcmres "$OUT_CLD" -outwmres "$OUT_WAT" -outsmres "$OUT_SNOW" -outaotres "$OUT_AOT"
 
 OUTPUT_IMAGE_BANDS_INFO="$(otbcli_ReadImageInfo -in $OUT_IMG_BANDS | grep "Number of bands")"
 OUTPUT_IMAGE_CLD_INFO="$(otbcli_ReadImageInfo -in $OUT_CLD | grep "Number of bands")"

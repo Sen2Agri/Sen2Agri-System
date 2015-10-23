@@ -1,10 +1,7 @@
 #ifndef UPDATESYNTHESISFUNCTOR_H
 #define UPDATESYNTHESISFUNCTOR_H
 
-#include "BandsDefs.h"
-
-typedef enum {SENSOR_S2, SENSOR_LANDSAT8, SENSOR_SPOT4} SensorType;
-typedef enum {RES_10M, RES_20M} ResolutionType;
+#include <vector>
 
 typedef enum {FLAG_NO_DATA=0, CLOUD=1, SNOW=2, WATER=3, LAND=4, CLOUD_SHADOW=5} FlagType;
 
@@ -19,8 +16,13 @@ typedef enum {FLAG_NO_DATA=0, CLOUD=1, SNOW=2, WATER=3, LAND=4, CLOUD_SHADOW=5} 
 class OutFunctorInfos
 {
 public:
-    float m_CurrentWeightedReflectances[L3A_WEIGHTED_REFLECTANCES_MAX_NO];
-    float m_CurrentPixelWeights[L3A_WEIGHTED_REFLECTANCES_MAX_NO];
+    OutFunctorInfos(int nSize) {
+        m_CurrentWeightedReflectances.resize(nSize);
+        m_CurrentPixelWeights.resize(nSize);
+    }
+
+    std::vector<float> m_CurrentWeightedReflectances;
+    std::vector<float> m_CurrentPixelWeights;
     short m_nCurrentPixelFlag;
     float m_fCurrentPixelWeightedDate;
 } ;
@@ -59,7 +61,6 @@ private:
     float GetPrevL3AReflectanceValue(const TInput & A, int offset);
     short GetPrevL3APixelFlagValue(const TInput & A);
     int GetBlueBandIndex();
-    bool InitBandInfos(SensorType sensorType, ResolutionType resolution);
     bool IsNoDataValue(float fValue, float fNoDataValue);
 
 private:

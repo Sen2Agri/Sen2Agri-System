@@ -6,6 +6,7 @@
 #include "otbImageFileReader.h"
 #include "otbImageFileWriter.h"
 #include "itkImageSource.h"
+#include "../../Common/GlobalDefs.h"
 
 namespace Functor
 {
@@ -27,7 +28,7 @@ public:
     {
       int val = static_cast< int >( A );
 
-      return ((val == -10000) ? -10000 : ((val == 0) ? 0.0 : 1.0));
+      return ((val == NO_DATA_VALUE) ? NO_DATA_VALUE : ((val == 0) ? 0.0 : 1.0));
     }
 };
 }

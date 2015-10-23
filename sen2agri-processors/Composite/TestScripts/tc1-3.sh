@@ -1,19 +1,19 @@
 #! /bin/bash
 
-if [ $# -lt 3 ]
+if [ $# -lt 4 ]
 then
-  echo "Usage: $0 <xml L2A> <resolution> <out folder name>"
+  echo "Usage: $0 <otb apllication directory> <xml L2A> <resolution> <out folder name>"
   echo "The file with input xml should be given. The resolution for which the mask extraction will be performed should be given. The output directory should be given" 1>&2  
   exit
 fi
 
 source try_command.sh
 
-RESOLUTION=$2
-OUT_FOLDER=$3
-xml=$1
+RESOLUTION=$3
+OUT_FOLDER=$4
+xml=$2
 
-COMPOSITE_OTB_LIBS_ROOT="~/sen2agri-processors-build/Composite"
+COMPOSITE_OTB_LIBS_ROOT="$1"
 WEIGHT_OTB_LIBS_ROOT="$COMPOSITE_OTB_LIBS_ROOT/WeightCalculation"
 
 OUT_AOT="$OUT_FOLDER/aot$RESOLUTION.tif"
