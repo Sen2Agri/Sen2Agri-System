@@ -20,11 +20,7 @@ function try {
     fi
 }
 
-#USER modif
-#add directories where products are to be found
-source $1
-#end of USER modif
-
+IFS=' ' read -a inputXML <<< "$1"
 RESOLUTION=$2
 
 OUT_FOLDER=$3
