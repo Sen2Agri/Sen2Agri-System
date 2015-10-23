@@ -1,24 +1,9 @@
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 
-#include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
-#include "../../MACCSMetadata/include/SPOT4MetadataReader.hpp"
-
 #include "otbVectorImage.h"
-#include "otbImageList.h"
-#include "otbImageListToVectorImageFilter.h"
-#include "otbMultiToMonoChannelExtractROI.h"
-#include "otbBandMathImageFilter.h"
-#include "otbVectorDataFileWriter.h"
 
-#include "otbStreamingResampleImageFilter.h"
-#include "otbStreamingStatisticsImageFilter.h"
 #include "otbLabelImageToVectorDataFilter.h"
-
-// Transform
-#include "itkScalableAffineTransform.h"
-#include "itkIdentityTransform.h"
-#include "itkScaleTransform.h"
 
 #include "otbOGRIOHelper.h"
 #include "otbGeoInformationConversion.h"
@@ -27,45 +12,13 @@
 #include "SPOT4MetadataReader.hpp"
 #include "MetadataUtil.hpp"
 
+#include "CreateMaskFromValueFunctor.hxx"
+
 namespace otb
 {
 
 namespace Wrapper
 {
-
-template <typename TInput, typename TOutput>
-class CreateMaskFunctor
-{
-public:
-    typedef typename TInput::ValueType InputValueType;
-
-    CreateMaskFunctor() : m_NoDataValue()
-    {
-    }
-
-    TOutput operator()(const TInput &in)
-    {
-        bool ok = false;
-
-        int size = in.GetSize();
-        for (int i = 0; i < size; i++) {
-            if (in[i] != -10000) {
-                ok = true;
-                break;
-            }
-        }
-
-        return ok ? 1 : 0;
-    }
-
-    void SetNoDataValue(InputValueType value)
-    {
-        m_NoDataValue = value;
-    }
-
-private:
-    InputValueType m_NoDataValue;
-};
 
 class CreateFootprint : public Application
 {
@@ -91,7 +44,8 @@ private:
     typedef itk::UnaryFunctorImageFilter<
         InputImageType,
         MaskImageType,
-        CreateMaskFunctor<InputImageType::PixelType, MaskImageType::PixelType> > MaskFilterType;
+        CreateMaskFromValueFunctor<InputImageType::PixelType, MaskImageType::PixelType> >
+    MaskFilterType;
     typedef otb::LabelImageToVectorDataFilter<MaskImageType> PolygonizeFilterType;
 
     void DoInit() ITK_OVERRIDE
