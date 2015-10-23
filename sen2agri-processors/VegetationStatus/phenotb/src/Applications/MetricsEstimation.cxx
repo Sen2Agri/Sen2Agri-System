@@ -80,11 +80,11 @@ public:
 
 
      // TODO: Uncomment this if the approximation is needed and use in pheno_metrix x_hat instead of ts
-    int nbBvElems = A.GetNumberOfElements();
+    int nbBvElems = A2.GetNumberOfElements();
 
     vnl_vector<double> ts, dv;
     for(size_t i = 0; i<nbBvElems; i++) {
-        ts[i] = A[i];
+        ts[i] = A2[i];
     }
     for(size_t i = 0; i<date_vect.size(); i++) {
         dv[i] = date_vect[i];

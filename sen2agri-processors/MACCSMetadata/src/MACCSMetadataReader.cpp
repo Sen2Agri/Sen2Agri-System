@@ -1,6 +1,8 @@
 #include <limits>
 #include <libgen.h>
 
+#include <boost/algorithm/string/predicate.hpp>
+
 #include "otbMacro.h"
 
 #include "MACCSMetadataReader.hpp"
@@ -16,7 +18,11 @@ std::unique_ptr<MACCSFileMetadata> MACCSMetadataReader::ReadMetadata(const std::
         return nullptr;
     }
 
-    return ReadMetadataXml(doc);
+    auto metadata = ReadMetadataXml(doc);
+    if (metadata) {
+        metadata->ProductPath = path;
+    }
+    return metadata;
 }
 
 MACCSFixedHeader ReadFixedHeader(const TiXmlElement *el)
@@ -627,7 +633,7 @@ static void FixProductOrganization(MACCSProductOrganization &po)
     std::string name;
     const auto &compareSuffix = [](
         const std::string &name, const std::string &suffix, bool &found, std::string &rest) {
-        if (ends_with(name, suffix)) {
+        if (boost::algorithm::ends_with(name, suffix)) {
             found = true;
             if (rest.empty()) {
                 rest = name.substr(0, name.length() - suffix.length());

@@ -1,36 +1,25 @@
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 
-#include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
-#include "../../MACCSMetadata/include/SPOT4MetadataReader.hpp"
-
 #include "otbVectorImage.h"
-#include "otbImageList.h"
-#include "otbImageListToVectorImageFilter.h"
-#include "otbMultiToMonoChannelExtractROI.h"
-#include "otbBandMathImageFilter.h"
-#include "otbVectorDataFileWriter.h"
 
-#include "otbStreamingResampleImageFilter.h"
-#include "otbStreamingStatisticsImageFilter.h"
 #include "otbLabelImageToVectorDataFilter.h"
-
-// Transform
-#include "itkScalableAffineTransform.h"
-#include "itkIdentityTransform.h"
-#include "itkScaleTransform.h"
 
 #include "otbOGRIOHelper.h"
 #include "otbGeoInformationConversion.h"
 
 #include "MACCSMetadataReader.hpp"
 #include "SPOT4MetadataReader.hpp"
+#include "MetadataUtil.hpp"
+
+#include "CreateMaskFromValueFunctor.hxx"
 
 namespace otb
 {
 
 namespace Wrapper
 {
+
 class CreateFootprint : public Application
 {
 public:
@@ -49,7 +38,17 @@ private:
     typedef DataNodeType::PolygonType PolygonType;
     typedef PolygonType::ContinuousIndexType ContinuousIndexType;
 
-    void DoInit()
+    typedef Int32VectorImageType InputImageType;
+    typedef Int32ImageType MaskImageType;
+    typedef ImageFileReader<InputImageType> ImageFileReaderType;
+    typedef itk::UnaryFunctorImageFilter<
+        InputImageType,
+        MaskImageType,
+        CreateMaskFromValueFunctor<InputImageType::PixelType, MaskImageType::PixelType> >
+    MaskFilterType;
+    typedef otb::LabelImageToVectorDataFilter<MaskImageType> PolygonizeFilterType;
+
+    void DoInit() ITK_OVERRIDE
     {
         SetName("CreateFootprint");
         SetDescription("Creates vector data from an image footprint");
@@ -66,26 +65,55 @@ private:
         AddParameter(ParameterType_InputFilename,
                      "in",
                      "The input file, an image, or a SPOT4 or MACCS descriptor file");
+        AddParameter(ParameterType_Choice, "mode", "Mode");
+        SetParameterDescription("mode", "Specifies what the footprint will contain");
+        AddChoice("mode.metadata", "Footprint from metadata");
+        SetParameterDescription("mode.metadata", "Uses the bounding box from the metadata");
+        AddChoice("mode.raster", "Footprint from raster");
+        SetParameterDescription("mode.metadata",
+                                "Uses the raster 'no data' values to create covering polygons");
+
+        AddParameter(ParameterType_Int, "mode.raster.nodata", "'No data' value");
+        SetDefaultParameterInt("mode.raster.nodata", -10000);
+
         AddParameter(ParameterType_OutputVectorData, "out", "The output footprint");
 
         SetDocExampleParameterValue("in", "image.tif");
+        SetDocExampleParameterValue("mode", "metadata");
         SetDocExampleParameterValue("out", "footprint.shp");
     }
 
-    void DoUpdateParameters()
+    void DoUpdateParameters() ITK_OVERRIDE
     {
     }
 
-    void DoExecute()
+    void DoExecute() ITK_OVERRIDE
     {
-        auto vectorData = CreateVectorData(GetParameterString("in"));
+        const auto &file = GetParameterString("in");
 
-        SetParameterOutputVectorData("out", vectorData.GetPointer());
+        if (GetParameterString("mode") == "metadata") {
+            auto vectorData = CreateVectorDataFromMetadata(file);
+
+            SetParameterOutputVectorData("out", vectorData.GetPointer());
+        } else {
+            m_ImageFileReader = ImageFileReaderType::New();
+            m_ImageFileReader->SetFileName(getMainRasterFile(file));
+
+            m_MaskFilter = MaskFilterType::New();
+            m_MaskFilter->GetFunctor().SetNoDataValue(GetParameterInt("mode.raster.nodata"));
+            m_MaskFilter->SetInput(m_ImageFileReader->GetOutput());
+
+            m_PolygonizeFilter = PolygonizeFilterType::New();
+            m_PolygonizeFilter->SetInput(m_MaskFilter->GetOutput());
+            m_PolygonizeFilter->SetInputMask(m_MaskFilter->GetOutput());
+
+            SetParameterOutputVectorData("out", m_PolygonizeFilter->GetOutput());
+        }
     }
 
-    VectorDataType::Pointer CreateVectorData(const std::string &file)
+    VectorDataType::Pointer CreateVectorDataFromMetadata(const std::string &file)
     {
-        auto outVectorData = VectorDataType::New();
+        auto vectorData = VectorDataType::New();
 
         auto document = DataNodeType::New();
         document->SetNodeType(otb::DOCUMENT);
@@ -95,7 +123,7 @@ private:
         auto polygonNode = DataNodeType::New();
         polygonNode->SetNodeType(otb::FEATURE_POLYGON);
 
-        auto tree = outVectorData->GetDataTree();
+        auto tree = vectorData->GetDataTree();
         auto root = tree->GetRoot()->Get();
 
         tree->Add(document, root);
@@ -106,11 +134,11 @@ private:
         if (auto metadata = itk::MACCSMetadataReader::New()->ReadMetadata(file)) {
             polygon = FootprintFromMACCSMetadata(*metadata);
 
-            outVectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
+            vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
         } else if (auto metadata = itk::SPOT4MetadataReader::New()->ReadMetadata(file)) {
             polygon = FootprintFromSPOT4Metadata(*metadata);
 
-            outVectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
+            vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
         } else {
             auto reader = otb::ImageFileReader<FloatVectorImageType>::New();
             reader->SetFileName(file);
@@ -120,12 +148,57 @@ private:
 
             polygon = FootprintFromGeoCoding(output);
 
-            outVectorData->SetProjectionRef(output->GetProjectionRef());
+            vectorData->SetProjectionRef(output->GetProjectionRef());
         }
 
         polygonNode->SetPolygonExteriorRing(polygon);
 
-        return outVectorData;
+        return vectorData;
+    }
+
+    VectorDataType::Pointer CreateVectorDataFromRaster(const std::string &file)
+    {
+        auto vectorData = VectorDataType::New();
+
+        auto document = DataNodeType::New();
+        document->SetNodeType(otb::DOCUMENT);
+        document->SetNodeId("footprint");
+        auto folder = DataNodeType::New();
+        folder->SetNodeType(otb::FOLDER);
+        auto polygonNode = DataNodeType::New();
+        polygonNode->SetNodeType(otb::FEATURE_POLYGON);
+
+        auto tree = vectorData->GetDataTree();
+        auto root = tree->GetRoot()->Get();
+
+        tree->Add(document, root);
+        tree->Add(folder, document);
+        tree->Add(polygonNode, folder);
+
+        PolygonType::Pointer polygon;
+        if (auto metadata = itk::MACCSMetadataReader::New()->ReadMetadata(file)) {
+            polygon = FootprintFromMACCSMetadata(*metadata);
+
+            vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
+        } else if (auto metadata = itk::SPOT4MetadataReader::New()->ReadMetadata(file)) {
+            polygon = FootprintFromSPOT4Metadata(*metadata);
+
+            vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
+        } else {
+            auto reader = otb::ImageFileReader<FloatVectorImageType>::New();
+            reader->SetFileName(file);
+            reader->UpdateOutputInformation();
+
+            auto output = reader->GetOutput();
+
+            polygon = FootprintFromGeoCoding(output);
+
+            vectorData->SetProjectionRef(output->GetProjectionRef());
+        }
+
+        polygonNode->SetPolygonExteriorRing(polygon);
+
+        return vectorData;
     }
 
     PolygonType::Pointer FootprintFromMACCSMetadata(const MACCSFileMetadata &metadata)
@@ -185,6 +258,10 @@ private:
         index[1] = v[1];
         return index;
     }
+
+    ImageFileReaderType::Pointer m_ImageFileReader;
+    MaskFilterType::Pointer m_MaskFilter;
+    PolygonizeFilterType::Pointer m_PolygonizeFilter;
 };
 }
 }
