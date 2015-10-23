@@ -1,19 +1,19 @@
 #! /bin/bash
 
-if [ $# -lt 4 ]
+if [ $# -lt 5 ]
 then
-  echo "Usage: $0 <xml L2A> <out folder name> <bands mapping> [previous weights l3a product] [previous dates l3a product] [previous reflectances l3a product] [previous flags l3a product]"
+  echo "Usage: $0 <otb apllication directory> <xml L2A> <out folder name> <bands mapping> [previous weights l3a product] [previous dates l3a product] [previous reflectances l3a product] [previous flags l3a product]"
   echo "The file with input xml should be given. The resolution for which the mask extraction will be performed should be given. The output directory should be given" 1>&2  
   exit
 fi
 
 source try_command.sh
 
-RESOLUTION=$2
-OUT_FOLDER=$3
-xml=$1
-
-COMPOSITE_OTB_LIBS_ROOT="~/sen2agri-processors-build/Composite"
+RESOLUTION=$3
+OUT_FOLDER=$4
+xml=$2
+BANDS_MAPPING="$5"
+COMPOSITE_OTB_LIBS_ROOT="$1"
 WEIGHT_OTB_LIBS_ROOT="$COMPOSITE_OTB_LIBS_ROOT/WeightCalculation"
 
 OUT_IMG_BANDS="$OUT_FOLDER/res$RESOLUTION.tif"
@@ -41,8 +41,6 @@ WEIGHT_DATE_MIN="0.10"
 L3A_DATE=20130131
 HALF_SYNTHESIS=50
 
-BANDS_MAPPING="$4"
-
 cp "$BANDS_MAPPING" "$OUT_FOLDER"
 
 FULL_BANDS_MAPPING="$OUT_FOLDER/$BANDS_MAPPING"
@@ -62,8 +60,8 @@ out_f="$OUT_FLAGS"
 out_rgb="-outrgb $OUT_RGB"
 
 PREV_L3A=""
-if [ $# == 8 ] ; then
-    PREV_L3A="-prevl3aw $4 -prevl3ad $5 -prevl3ar $6 -prevl3af $7"
+if [ $# == 9 ] ; then
+    PREV_L3A="-prevl3aw $6 -prevl3ad $7 -prevl3ar $8 -prevl3af $9"
 fi
 
 try otbcli CompositeSplitter2 "$COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/" -in "$OUT_L3A_FILE" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -outweights "$out_w" -outdates "$out_d" -outrefls "$out_r" -outflags "$out_f" $out_rgb

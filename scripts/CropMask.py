@@ -5,10 +5,11 @@ import glob
 import argparse
 import csv
 from sys import argv
+import datetime
 
 def inSituDataAvailable() :
 	# Temporal Features
-	print "Executing TemporalFeatures..."
+	print "Executing TemporalFeatures at " + str(datetime.datetime.now())
 	tfCmdLine = "otbApplicationLauncherCommandLine TemporalFeatures "+buildFolder+"CropMask/TemporalFeatures -ndvi "+ndvi+" -dates "+outdays+" -tf "+temporal_features
 	print tfCmdLine
 	result = os.system(tfCmdLine)
@@ -17,10 +18,10 @@ def inSituDataAvailable() :
 	   print "Error running TemporalFeatures"
 	   exit(1)
 
-	print "TemporalFeatures done!"
+	print "TemporalFeatures done at " + str(datetime.datetime.now())
 
 	# Statistic Features
-	print "Executing StatisticFeatures..."
+	print "Executing StatisticFeatures at " + str(datetime.datetime.now())
 	sfCmdLine = "otbApplicationLauncherCommandLine StatisticFeatures "+buildFolder+"CropMask/StatisticFeatures -ndwi "+ndwi+" -brightness "+brightness+" -sf "+statistic_features
 	print sfCmdLine
 	result = os.system(sfCmdLine)
@@ -29,10 +30,10 @@ def inSituDataAvailable() :
 	   print "Error running StatisticFeatures"
 	   exit(1)
 
-	print "StatisticFeatures done!"
+	print "StatisticFeatures done at " + str(datetime.datetime.now())
 
 	# _Concatenate Images
-	print "Executing ConcatenateImages..."
+	print "Executing ConcatenateImages at " + str(datetime.datetime.now())
 	ciCmdLine = "otbcli_ConcatenateImages -il "+temporal_features+" "+statistic_features+" -out " + features
 	print ciCmdLine
 	result = os.system(ciCmdLine)
@@ -44,11 +45,11 @@ def inSituDataAvailable() :
 	os.system("rm " + temporal_features)
 	os.system("rm " + statistic_features)
 
-	print "ConcatenateImages done!"
+	print "ConcatenateImages done at " + str(datetime.datetime.now())
 
 
 	# Image Statistics
-	print "Executing ComputeImagesStatistics..."
+	print "Executing ComputeImagesStatistics at " + str(datetime.datetime.now())
 	isCmdLine = "otbcli_ComputeImagesStatistics -il "+features+" -out "+statistics
 	print isCmdLine
 	result = os.system(isCmdLine)
@@ -56,10 +57,10 @@ def inSituDataAvailable() :
 	if result != 0 :
 	   print "Error running ComputeImagesStatistics"
 	   exit(1)
-	print "ComputeImagesStatistics done!"
+	print "ComputeImagesStatistics done at " + str(datetime.datetime.now())
 
 	# ogr2ogr
-	print "Executing ogr2ogr"
+	print "Executing ogr2ogr at " + str(datetime.datetime.now())
 	ooCmdLine = "/usr/local/bin/ogr2ogr -clipsrc "+shape+" -overwrite "+reference_polygons_clip+" "+reference_polygons
 	print ooCmdLine
 	result = os.system(ooCmdLine)
@@ -67,11 +68,11 @@ def inSituDataAvailable() :
 	if result != 0 :
 	   print "Error running ogr2ogr"
 	   exit(1)
-	print "ogr2ogr done!"
+	print "ogr2ogr done at " + str(datetime.datetime.now())
 
 
 	# Sample Selection
-	print "Executing SampleSelection..."
+	print "Executing SampleSelection at " + str(datetime.datetime.now())
 	ssCmdLine = "otbApplicationLauncherCommandLine SampleSelection "+buildFolder+"CropType/SampleSelection -ref "+reference_polygons_clip+" -ratio "+sample_ratio+" -seed "+random_seed+" -tp "+training_polygons+" -vp "+validation_polygons + " -nofilter true"
 	print ssCmdLine
 	result = os.system(ssCmdLine)
@@ -79,7 +80,7 @@ def inSituDataAvailable() :
 	if result != 0 :
 	   print "Error running SampleSelection"
 	   exit(1)
-	print "SampleSelection done!"
+	print "SampleSelection done at " + str(datetime.datetime.now())
 
 	# Random Selection
 #	print "Executing RandomSelection..."
@@ -93,7 +94,7 @@ def inSituDataAvailable() :
 #	print "RandomSelection done!"
 
 	#Train Image Classifier
-	print "Executing TrainImagesClassifier..."
+	print "Executing TrainImagesClassifier at " + str(datetime.datetime.now())
 	tcCmdLine = "otbcli_TrainImagesClassifier -io.il "+features+" -io.vd "+training_polygons+" -io.imstat "+statistics+" -rand "+random_seed+" -sample.bm 0 -io.confmatout "+confmatout+" -io.out "+model+" -sample.mt "+nbtrsample+" -sample.mv -1 -sample.vfn CROP -sample.vtr "+sample_ratio+" -classifier rf -classifier.rf.nbtrees "+rfnbtrees+" -classifier.rf.min "+rfmin+" -classifier.rf.max "+rfmax
 
 	print tcCmdLine
@@ -102,7 +103,7 @@ def inSituDataAvailable() :
 	if result != 0 :
 	   print "Error running TrainImagesClassifier"
 	   exit(1)
-	print "TrainImagesClassifier done!"
+	print "TrainImagesClassifier done at " + str(datetime.datetime.now())
 
 	#Random Forest Training
 #	print "Executing RandomForestTraining..."
@@ -117,7 +118,7 @@ def inSituDataAvailable() :
 #	print "RandomForestTraining done!"
 
 	#Image Classifier
-	print "Executing ImageClassifier..."
+	print "Executing ImageClassifier at " + str(datetime.datetime.now())
 	icCmdLine = "otbcli_ImageClassifier -in "+features+" -imstat "+statistics+" -model "+model+" -out "+raw_crop_mask
 	print icCmdLine
 	result = os.system(icCmdLine)
@@ -125,11 +126,11 @@ def inSituDataAvailable() :
 	if result != 0 :
 	   print "Error running ImageClassifier"
 	   exit(1)
-	print "ImageClassifier done!"
+	print "ImageClassifier done at " + str(datetime.datetime.now())
 
 def noInSituDataAvailable() :
 	#Data Smoothing
-	print "Executing DataSmoothing..."
+	print "Executing DataSmoothing at " + str(datetime.datetime.now())
 	dsCmdLine = "otbApplicationLauncherCommandLine DataSmoothing "+buildFolder+"CropMask/DataSmoothing -ts "+ndvi+" -bands 1 -lambda "+lmbd+" -weight "+weight+" -sts "+ndvi_smooth
 
 	print dsCmdLine
@@ -148,10 +149,10 @@ def noInSituDataAvailable() :
 	   print "Error running DataSmoothing"
 	   exit(1)
 
-	print "DataSmoothing done!"
+	print "DataSmoothing done at " + str(datetime.datetime.now())
 
 	# Temporal Features
-	print "Executing TemporalFeatures..."
+	print "Executing TemporalFeatures at " + str(datetime.datetime.now())
 	tfCmdLine = "otbApplicationLauncherCommandLine TemporalFeaturesNoInsitu "+buildFolder+"CropMask/TemporalFeaturesNoInsitu -ndvi "+ndvi_smooth+" -ts " + rtocr_smooth + " -dates "+outdays+" -tf "+tf_noinsitu
 	print tfCmdLine
 	result = os.system(tfCmdLine)
@@ -160,10 +161,10 @@ def noInSituDataAvailable() :
 	   print "Error running TemporalFeatures"
 	   exit(1)
 
-	print "TemporalFeatures done!"
+	print "TemporalFeatures done at " + str(datetime.datetime.now())
 
 	# Spectral Features
-	print "Executing SpectralFeatures..."
+	print "Executing SpectralFeatures at " + str(datetime.datetime.now())
 	sfCmdLine = "otbApplicationLauncherCommandLine SpectralFeatures "+buildFolder+"CropMask/SpectralFeatures -ts " + rtocr_smooth + " -tf "+tf_noinsitu + " -sf " + spectral_features
 	print sfCmdLine
 	result = os.system(sfCmdLine)
@@ -172,10 +173,10 @@ def noInSituDataAvailable() :
 	   print "Error running SpectralFeatures"
 	   exit(1)
 
-	print "SpectralFeatures done!"
+	print "SpectralFeatures done at " + str(datetime.datetime.now())
 
 	# Image Statistics
-	print "Executing ComputeImagesStatistics..."
+	print "Executing ComputeImagesStatistics at " + str(datetime.datetime.now())
 	isCmdLine = "otbcli_ComputeImagesStatistics -il "+spectral_features+" -out "+statistics_noinsitu
 	print isCmdLine
 	result = os.system(isCmdLine)
@@ -183,21 +184,23 @@ def noInSituDataAvailable() :
 	if result != 0 :
 	   print "Error running ComputeImagesStatistics"
 	   exit(1)
-	print "ComputeImagesStatistics done!"
+	print "ComputeImagesStatistics done at " + str(datetime.datetime.now())
 
 
 	# Reference Map preparation
-	print "Executing gdalwarp..."
+	print "Executing gdalwarp at " + str(datetime.datetime.now())
 
-	gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata \"-10000\" -overwrite -cutline "+shape+" -crop_to_cutline "+reference+" "+crop_reference
+	gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata 0 -overwrite -tr "+pixsize+" "+pixsize+" -cutline "+shape+" -crop_to_cutline "+reference+" "+crop_reference
 	print gwCmdLine
 	result = os.system(gwCmdLine)
 
 	if result != 0 :
    		print "Error running gdalwarp"
 		exit(1)
-
-	print "Executing Erosion..."
+	print "gdalwarp done at " + str(datetime.datetime.now())
+	
+	# Erosion
+	print "Executing Erosion at " + str(datetime.datetime.now())
 	rmCmdLine = "otbApplicationLauncherCommandLine Erosion "+buildFolder+"CropMask/Erosion -in " + crop_reference + " -out "+eroded_reference + " -radius " + erode_radius
 	print rmCmdLine
 	result = os.system(rmCmdLine)
@@ -206,10 +209,10 @@ def noInSituDataAvailable() :
 	   print "Error running Erosion"
 	   exit(1)
 
-	print "Erosion done!"
+	print "Erosion done at " + str(datetime.datetime.now())
 
 	# Trimming
-	print "Executing Trimming application..."
+	print "Executing Trimming application at " + str(datetime.datetime.now())
 	trCmdLine = "otbApplicationLauncherCommandLine Trimming "+buildFolder+"CropMask/Trimming -feat " + spectral_features + " -ref "+eroded_reference + " -out " + trimmed_reference_shape + " -alpha " + alpha + " -nbsamples 0 -seed " + random_seed
 	print trCmdLine
 	result = os.system(trCmdLine)
@@ -218,10 +221,10 @@ def noInSituDataAvailable() :
 	   print "Error running Trimming"
 	   exit(1)
 
-	print "Trimming done!"
+	print "Trimming done at " + str(datetime.datetime.now())
 
 	# TrainImagesClassifier
-	print "Executing TrainImagesClassifier..."
+	print "Executing TrainImagesClassifier at " + str(datetime.datetime.now())
 	tcCmdLine = "otbcli_TrainImagesClassifier -io.il "+spectral_features+" -io.vd "+trimmed_reference_shape+" -io.imstat "+statistics_noinsitu+" -rand "+random_seed+" -sample.bm 0 -io.confmatout "+confmatout+" -io.out "+model+" -sample.mt "+nbtrsample+" -sample.mv -1 -sample.vfn CROP -sample.vtr "+sample_ratio+" -classifier rf -classifier.rf.nbtrees "+rfnbtrees+" -classifier.rf.min "+rfmin+" -classifier.rf.max "+rfmax
 
 	print tcCmdLine
@@ -230,10 +233,10 @@ def noInSituDataAvailable() :
 	if result != 0 :
 	   print "Error running TrainImagesClassifier"
 	   exit(1)
-	print "TrainImagesClassifier done!"
+	print "TrainImagesClassifier done at " + str(datetime.datetime.now())
 
 	#Image Classifier
-	print "Executing ImageClassifier..."
+	print "Executing ImageClassifier at " + str(datetime.datetime.now())
 	icCmdLine = "otbcli_ImageClassifier -in "+spectral_features+" -imstat "+statistics_noinsitu+" -model "+model+" -out "+raw_crop_mask
 	print icCmdLine
 	result = os.system(icCmdLine)
@@ -241,14 +244,14 @@ def noInSituDataAvailable() :
 	if result != 0 :
 	   print "Error running ImageClassifier"
 	   exit(1)
-	print "ImageClassifier done!"
+	print "ImageClassifier done at " + str(datetime.datetime.now())
 
 	# use the entire shape for validation when no insitu data is available
 	validation_polygons = trimmed_reference_shape
 
 
 #Path to build folder
-buildFolder="~/sen2agri-build/"
+defaultBuildFolder="~/sen2agri-build/"
 
 parser = argparse.ArgumentParser(description='CropMask Python processor')
 
@@ -278,7 +281,8 @@ parser.add_argument('-rfmax', help='maximum depth of the trees used for Random F
 parser.add_argument('-rfmin', help='minimum number of samples in each node used by the classifier (default 5)', required=False, metavar='rfmin', default=5)
 
 parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
-parser.add_argument('-outdir', help="Output directory", default=buildFolder)
+parser.add_argument('-outdir', help="Output directory", default=defaultBuildFolder)
+parser.add_argument('-buildfolder', help="Build folder", default=defaultBuildFolder)
 
 args = parser.parse_args()
 
@@ -306,6 +310,7 @@ ranger=str(args.ranger)
 minsize=str(args.minsize)
 pixsize=str(args.pixsize)
 
+buildFolder=args.buildfolder
 reference=args.refr
 erode_radius=str(args.eroderad)
 alpha=str(args.alpha)
@@ -360,7 +365,7 @@ confusion_matrix_validation=os.path.join(args.outdir, "crop-mask-confusion-matri
 quality_metrics=os.path.join(args.outdir, "crop-mask-quality-metrics.txt")
 
 # Bands Extractor
-print "Executing BandsExtractor..."
+print "Executing BandsExtractor at " + str(datetime.datetime.now())
 beCmdLine = "otbApplicationLauncherCommandLine BandsExtractor "+buildFolder+"CropType/BandsExtractor -il "+indesc+" -out "+rawtocr+" -mask "+rawmask+" -outdate "+dates+" -shape "+shape+" -pixsize "+pixsize
 print beCmdLine
 result = os.system(beCmdLine)
@@ -368,10 +373,10 @@ result = os.system(beCmdLine)
 if result != 0 :
    print "Error running BandsExtractor"
    exit(1)
-print "BandsExtractor done!"
+print "BandsExtractor done at " + str(datetime.datetime.now())
 
 # gdalwarp
-print "Executing gdalwarp..."
+print "Executing gdalwarp at " + str(datetime.datetime.now())
 
 gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata \"-10000\" -overwrite -cutline "+shape+" -crop_to_cutline "+rawtocr+" "+tocr
 print gwCmdLine
@@ -393,10 +398,10 @@ if result != 0 :
 
 os.system("rm " + rawmask)
 
-print "gdalwarp done!"
+print "gdalwarp done at " + str(datetime.datetime.now())
 
 # Temporal Resampling
-print "Executing TemporalResampling..."
+print "Executing TemporalResampling at " + str(datetime.datetime.now())
 trCmdLine = "otbApplicationLauncherCommandLine TemporalResampling "+buildFolder+"CropType/TemporalResampling -tocr "+tocr+" -mask "+mask+" -ind "+dates+" -sp "+sp+" -t0 "+t0+" -tend "+tend+" -radius "+radius+" -rtocr "+rtocr+" -outdays "+outdays
 print trCmdLine
 result = os.system(trCmdLine)
@@ -408,11 +413,11 @@ if result != 0 :
 os.system("rm " + tocr)
 os.system("rm " + mask)
 
-print "TemporalResampling done!"
+print "TemporalResampling done at " + str(datetime.datetime.now())
 
 
 # Feature Extraction
-print "Executing FeatureExtraction..."
+print "Executing FeatureExtraction at " + str(datetime.datetime.now())
 feCmdLine = "otbApplicationLauncherCommandLine FeatureExtraction "+buildFolder+"CropType/FeatureExtraction -rtocr "+rtocr+" -ndvi "+ndvi+" -ndwi "+ndwi+" -brightness "+brightness
 print feCmdLine
 result = os.system(feCmdLine)
@@ -421,7 +426,7 @@ if result != 0 :
    print "Error running FeatureExtraction"
    exit(1)
 
-print "FeatureExtraction done!"
+print "FeatureExtraction done at " + str(datetime.datetime.now())
 
 if reference_polygons != "" :
 	inSituDataAvailable()
@@ -431,7 +436,7 @@ else:
 os.system("rm " + rtocr)
 
 #Validation
-print "Executing ComputeConfusionMatrix..."
+print "Executing ComputeConfusionMatrix at " + str(datetime.datetime.now())
 vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+raw_crop_mask+" -out "+raw_crop_mask_confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CROP -nodatalabel -10000 > "+raw_crop_mask_quality_metrics
 print vdCmdLine
 result = os.system(vdCmdLine)
@@ -439,21 +444,21 @@ result = os.system(vdCmdLine)
 if result != 0 :
    print "Error running ComputeConfusionMatrix"
    exit(1)
-print "ComputeConfusionMatrix done!"
+print "ComputeConfusionMatrix done at " + str(datetime.datetime.now())
 
 #Dimension reduction
-print "Executing PrincipalComponentAnalysis..."
+print "Executing PrincipalComponentAnalysis at " + str(datetime.datetime.now())
 drCmdLine = "otbApplicationLauncherCommandLine PrincipalComponentAnalysis "+buildFolder+"CropMask/PrincipalComponentAnalysis -ndvi "+ndvi+" -nc "+nbcomp+" -out "+pca
 print drCmdLine
 result = os.system(drCmdLine)
 
 if result != 0 :
-   print "Error running DimensionalityReduction"
+   print "Error running PrincipalComponentAnalysis"
    exit(1)
-print "DimensionalityReduction done!"
+print "PrincipalComponentAnalysis done at " + str(datetime.datetime.now())
 
 #Mean-Shift segmentation
-print "Executing MeanShiftSmoothing..."
+print "Executing MeanShiftSmoothing at " + str(datetime.datetime.now())
 msCmdLine = "otbcli_MeanShiftSmoothing -in "+pca+" -modesearch 0 -maxiter 10 -spatialr "+spatialr+" -ranger "+ranger+" -foutpos " + mean_shift_smoothing_spatial +" -fout "+mean_shift_smoothing +" uint32"
 print msCmdLine
 result = os.system(msCmdLine)
@@ -461,9 +466,9 @@ result = os.system(msCmdLine)
 if result != 0 :
    print "Error running MeanShiftSmoothing"
    exit(1)
-print "MeanShiftSmoothing done!"
+print "MeanShiftSmoothing done at " + str(datetime.datetime.now())
 
-print "Executing LSMSSegmentation..."
+print "Executing LSMSSegmentation at " + str(datetime.datetime.now())
 msCmdLine = "otbcli_LSMSSegmentation -in "+mean_shift_smoothing+" -inpos "+ mean_shift_smoothing_spatial +" -spatialr "+spatialr+" -ranger "+ranger+" -minsize "+minsize+" -tmpdir " +tmpfolder+ " -tilesizex 256 -tilesizey 256 -out "+segmented+" uint32"
 print msCmdLine
 result = os.system(msCmdLine)
@@ -471,9 +476,9 @@ result = os.system(msCmdLine)
 if result != 0 :
    print "Error running LSMSSegmentation"
    exit(1)
-print "LSMSSegmentation done!"
+print "LSMSSegmentation done at " + str(datetime.datetime.now())
 
-print "Executing LSMSSmallRegionsMerging..."
+print "Executing LSMSSmallRegionsMerging at " + str(datetime.datetime.now())
 msCmdLine = "otbcli_LSMSSmallRegionsMerging -in "+pca+" -inseg "+segmented+" -minsize "+minsize+" -tilesizex 256 -tilesizey 256 -out "+segmented_merged+" uint32"
 print msCmdLine
 result = os.system(msCmdLine)
@@ -481,10 +486,10 @@ result = os.system(msCmdLine)
 if result != 0 :
    print "Error running LSMSSmallRegionsMerging"
    exit(1)
-print "LSMSSmallRegionsMerging done!"
+print "LSMSSmallRegionsMerging done at " + str(datetime.datetime.now())
 
 #Majority voting
-print "Executing MajorityVoting..."
+print "Executing MajorityVoting at " + str(datetime.datetime.now())
 drCmdLine = "otbApplicationLauncherCommandLine MajorityVoting "+buildFolder+"CropMask/MajorityVoting -nodatasegvalue 0 -nodataclassifvalue -10000 -inclass "+raw_crop_mask+" -inseg "+segmented_merged+" -rout "+crop_mask
 print drCmdLine
 result = os.system(drCmdLine)
@@ -492,10 +497,10 @@ result = os.system(drCmdLine)
 if result != 0 :
    print "Error running MajorityVoting"
    exit(1)
-print "MajorityVoting done!"
+print "MajorityVoting done at " + str(datetime.datetime.now())
 
 #Validation
-print "Executing ComputeConfusionMatrix..."
+print "Executing ComputeConfusionMatrix at " + str(datetime.datetime.now())
 vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+crop_mask+" -out "+confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CROP -nodatalabel -10000 > "+quality_metrics
 print vdCmdLine
 result = os.system(vdCmdLine)
@@ -503,7 +508,7 @@ result = os.system(vdCmdLine)
 if result != 0 :
    print "Error running ComputeConfusionMatrix"
    exit(1)
-print "ComputeConfusionMatrix done!"
+print "ComputeConfusionMatrix done at " + str(datetime.datetime.now())
 
 print "Execution successfull !"
 

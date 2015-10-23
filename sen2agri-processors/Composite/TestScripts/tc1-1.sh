@@ -1,27 +1,27 @@
 #! /bin/bash
 
-if [ $# -lt 3 ]
+if [ $# -lt 4 ]
 then
-  echo "Usage: $0 <xml L2A> <resolution> <out folder name>"
+  echo "Usage: $0 <otb apllication directory> <xml L2A> <resolution> <out folder name>"
   echo "The file with input xml should be given. The resolution for which the mask extraction will be performed should be given. The output directory should be given" 1>&2  
   exit
 fi
 
 source try_command.sh
 
-RESOLUTION=$2
-OUT_FOLDER=$3
+RESOLUTION=$3
+OUT_FOLDER=$4
 
-COMPOSITE_OTB_LIBS_ROOT="~/sen2agri-processors-build/Composite"
+COMPOSITE_OTB_LIBS_ROOT="$1"
 OUT_SPOT_MASKS="$OUT_FOLDER/masks$RESOLUTION.tif"
 
-try otbcli MaskHandler $COMPOSITE_OTB_LIBS_ROOT/MaskHandler/ -xml $1 -out $OUT_SPOT_MASKS -sentinelres $RESOLUTION
+try otbcli MaskHandler $COMPOSITE_OTB_LIBS_ROOT/MaskHandler/ -xml $2 -out $OUT_SPOT_MASKS -sentinelres $RESOLUTION
 
 echo "Information for $OUT_SPOT_MASKS file:"
 OUTPUT_IMAGE_INFO="$(otbcli_ReadImageInfo -in $OUT_SPOT_MASKS | grep "Number of bands")"
 
 BANDS_NB="${OUTPUT_IMAGE_INFO: -1}"
-COMPARISION_FILE="./qr_cmp_southafrica/cld$RESOLUTION.tif"
+COMPARISION_FILE="./qr_cmp_southafrica/msk$RESOLUTION.tif"
 
 if [ $BANDS_NB == 3 ] ; then
     echo "Number of bands: PASSED"

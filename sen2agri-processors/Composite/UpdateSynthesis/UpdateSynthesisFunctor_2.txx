@@ -85,9 +85,6 @@ void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(const std::vector<int> p
     m_nPrevL3AReflectanceBandStartIndex = m_nPrevL3AWeightedAvDateBandIndex + 1;
     // the last band after the L3A reflectances bands is the flags band
     m_nPrevL3APixelFlagBandIndex = m_nPrevL3AReflectanceBandStartIndex + m_nNbOfL3AReflectanceBands;
-
-
-    //InitBandInfos(sensorType, resolution);
 }
 
 template< class TInput, class TOutput>
@@ -106,7 +103,7 @@ bool UpdateSynthesisFunctor<TInput,TOutput>::operator==( const UpdateSynthesisFu
 template< class TInput, class TOutput>
 TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
 {
-    OutFunctorInfos outInfos;
+    OutFunctorInfos outInfos(m_nNbOfL3AReflectanceBands);
 
     ResetCurrentPixelValues(A, outInfos);
     if(IsLandPixel(A))
@@ -190,7 +187,7 @@ int UpdateSynthesisFunctor<TInput,TOutput>::GetAbsoluteL2ABandIndex(int index)
 template< class TInput, class TOutput>
 float UpdateSynthesisFunctor<TInput,TOutput>::GetL2AReflectanceForPixelVal(float fPixelVal)
 {
-    if(fPixelVal <= 0 || IsNoDataValue(fPixelVal, 0)) {
+     if(fPixelVal < 0) {
         fPixelVal = NO_DATA;
     }
     return (fPixelVal/m_fReflQuantifValue);
@@ -218,10 +215,8 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, O
             float fCurrentWeight = GetCurrentL2AWeightValue(A);
             float fPrevWeightedDate = GetPrevL3AWeightedAvDateValue(A);
 
-            bool bIsPrevReflNoData = IsNoDataValue(fPrevReflect, m_fReflNoDataValue) ||
-                                     IsNoDataValue(fPrevReflect, 0);
-            bool bIsCurReflNoData = IsNoDataValue(fCurReflectance, m_fReflNoDataValue) ||
-                                    IsNoDataValue(fCurReflectance, 0);
+            bool bIsPrevReflNoData = IsNoDataValue(fPrevReflect, m_fReflNoDataValue);
+            bool bIsCurReflNoData = IsNoDataValue(fCurReflectance, m_fReflNoDataValue);
             if(!bIsCurReflNoData) {
                 bAllReflsAreNoData = false;
             }
@@ -292,7 +287,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
                 float fCurRefl = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
                 // check if the current reflectance is valid (maybe we have missing areas)
                 // in this case, we will keep the existing reflectance
-                if(IsNoDataValue(fCurRefl, m_fReflNoDataValue) || IsNoDataValue(fCurRefl, 0)) {
+                if(IsNoDataValue(fCurRefl, m_fReflNoDataValue)) {
                     outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
                 } else {
                     outInfos.m_CurrentWeightedReflectances[i] = fCurRefl;
@@ -330,14 +325,20 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
     if(nPrevL3AFlagVal == FLAG_NO_DATA)
     {
         //outInfos.m_nCurrentPixelFlag = CLOUD;
-
+        bool bAllReflsAreNoData = true;
         for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
         {
             int nCurrentBandIndex = GetAbsoluteL2ABandIndex(i);
             // band available
             if(nCurrentBandIndex != -1)
             {
-                outInfos.m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
+                float fCurReflectance = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
+                bool bIsCurReflNoData = IsNoDataValue(fCurReflectance, m_fReflNoDataValue);
+                if(!bIsCurReflNoData) {
+                    bAllReflsAreNoData = false;
+                }
+
+                outInfos.m_CurrentWeightedReflectances[i] = fCurReflectance;
                 outInfos.m_CurrentPixelWeights[i] = 0;
                 // TODO: Maybe here we should check if prevRefl or current refl are valid for this pixel
                 //      (a value different than no data)
@@ -356,6 +357,11 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                     outInfos.m_CurrentPixelWeights[i] = 0;
                 }
             }
+        }
+        // This step is needed to remove the eventual false clouds when all reflectance bands are NO_DATA
+        // and we previously didn't detected anything
+        if(bAllReflsAreNoData) {
+            outInfos.m_nCurrentPixelFlag = FLAG_NO_DATA;
         }
     } else {
         if((nPrevL3AFlagVal == CLOUD) || (nPrevL3AFlagVal == CLOUD_SHADOW))

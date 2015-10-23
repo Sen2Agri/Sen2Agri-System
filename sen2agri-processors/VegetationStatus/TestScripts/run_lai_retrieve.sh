@@ -1,8 +1,8 @@
 #! /bin/bash
 
-if [ $# -lt 7 ]
+if [ $# -lt 8 ]
 then
-  echo "Usage: $0 <list of input XMLs> <resolution> <out folder name> <RSR filename> <solar zenith angle> <sensor_zenith_angle> <relative azimuth angle>"
+  echo "Usage: $0 <otb application directory> <list of input XMLs> <resolution> <out folder name> <RSR filename> <solar zenith angle> <sensor_zenith_angle> <relative azimuth angle>"
   echo "The file with input xmls should be given. The resolution should be given. The output directory should also be given" 1>&2  
   exit
 fi
@@ -20,15 +20,15 @@ function try {
     fi
 }
 
-IFS=' ' read -a inputXML <<< "$1"
-RESOLUTION=$2
+IFS=' ' read -a inputXML <<< "$2"
+RESOLUTION=$3
 
-OUT_FOLDER=$3
+OUT_FOLDER=$4
 
-RSR_FILENAME="$4"
-SOLAR_ZENITH_ANGLE=57.472591328
-SENSOR_ZENITH_ANGLE=18.141025097
-RELATIVE_AZIMUTH_ANGLE=-39.248727096
+RSR_FILENAME="$5"
+SOLAR_ZENITH_ANGLE=$6
+SENSOR_ZENITH_ANGLE=$7
+RELATIVE_AZIMUTH_ANGLE=$8
 MODELS_FOLDER=${OUT_FOLDER}
 
 ./lai_model.sh "$RSR_FILENAME" $SOLAR_ZENITH_ANGLE $SENSOR_ZENITH_ANGLE $RELATIVE_AZIMUTH_ANGLE "$MODELS_FOLDER"
@@ -44,7 +44,7 @@ then
 fi
 
 
-VEG_STATUS_OTB_LIBS_ROOT="~/sen2agri-processors-build/VegetationStatus"
+VEG_STATUS_OTB_LIBS_ROOT="$1"
 IMG_INV_OTB_LIBS_ROOT="$VEG_STATUS_OTB_LIBS_ROOT/otb-bv/src/applications"
 
 OUT_NDVI_RVI="$OUT_FOLDER/ndvi_rvi.tif"
@@ -140,10 +140,10 @@ try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_ERR_PARAM -out $OUT
 try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_REPROCESSED_TIME_SERIES  -algo local -algo.local.bwr $ALGO_LOCAL_BWR -algo.local.fwr $ALGO_LOCAL_FWR
 
 #split the Reprocessed time series to a number of images
-try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_REPROCESSED_TIME_SERIES -outlist $REPROCESSED_LIST_FILE
+try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_REPROCESSED_TIME_SERIES -outlist $REPROCESSED_LIST_FILE -compress 1
 
 # Compute the fitted time series (CSDM Fitting)
 try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_FITTED_TIME_SERIES -algo fit
 
 #split the Fitted time series to a number of images
-try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_FITTED_TIME_SERIES -outlist $FITTED_LIST_FILE
+try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_FITTED_TIME_SERIES -outlist $FITTED_LIST_FILE -compress 1
