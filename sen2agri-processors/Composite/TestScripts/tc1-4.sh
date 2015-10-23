@@ -1,19 +1,20 @@
 #! /bin/bash
 
-if [ $# -lt 4 ]
+if [ $# -lt 5 ]
 then
-  echo "Usage: $0 <xml L2A> <resolution> <out folder name> <bands mapping> [previous weights l3a product] [previous dates l3a product] [previous reflectances l3a product] [previous flags l3a product]"
+  echo "Usage: $0 <otb apllication directory> <xml L2A> <resolution> <out folder name> <bands mapping> [previous weights l3a product] [previous dates l3a product] [previous reflectances l3a product] [previous flags l3a product]"
   echo "The file with input xml should be given. The resolution for which the mask extraction will be performed should be given. The output directory should be given" 1>&2  
   exit
 fi
 
 source try_command.sh
 
-RESOLUTION=$2
-OUT_FOLDER=$3
-xml=$1
+RESOLUTION=$3
+OUT_FOLDER=$4
+xml=$2
+BANDS_MAPPING="$5"
+COMPOSITE_OTB_LIBS_ROOT="$1"
 
-COMPOSITE_OTB_LIBS_ROOT="~/sen2agri-processors-build/Composite"
 WEIGHT_OTB_LIBS_ROOT="$COMPOSITE_OTB_LIBS_ROOT/WeightCalculation"
 
 OUT_IMG_BANDS="$OUT_FOLDER/res$RESOLUTION.tif"
@@ -41,7 +42,7 @@ WEIGHT_DATE_MIN="0.10"
 L3A_DATE=20130131
 HALF_SYNTHESIS=50
 
-BANDS_MAPPING="$4"
+
 
 cp "$BANDS_MAPPING" "$OUT_FOLDER"
 
@@ -50,11 +51,10 @@ FULL_BANDS_MAPPING="$OUT_FOLDER/$BANDS_MAPPING"
 OUT_L3A_FILE="$OUT_FOLDER/L3AResult_$RESOLUTION.tif"
 
 PREV_L3A=""
-if [ $# == 8 ] ; then
-    PREV_L3A="-prevl3aw $4 -prevl3ad $5 -prevl3ar $6 -prevl3af $7"
+if [ $# == 9 ] ; then
+    PREV_L3A="-prevl3aw $6 -prevl3ad $7 -prevl3ar $8 -prevl3af $9"
 fi
 
-#try otbcli UpdateSynthesis "$COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/" -in "$OUT_IMG_BANDS" -allinone 1 -xml "$xml" $PREV_L3A -csm "$OUT_CLD" -wm "$OUT_WAT" -sm "$OUT_SNOW" -wl2a "$OUT_TOTAL_WEIGHT_FILE" -out "$OUT_L3A_FILE" 
 try otbcli UpdateSynthesis2 $COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/ -in "$OUT_IMG_BANDS" -bmap "$FULL_BANDS_MAPPING" -xml "$xml" $PREV_L3A -csm "$OUT_CLD" -wm "$OUT_WAT" -sm "$OUT_SNOW" -wl2a "$OUT_TOTAL_WEIGHT_FILE" -out "$OUT_L3A_FILE"
 
 echo "Information for $OUT_L3A_FILE file:"

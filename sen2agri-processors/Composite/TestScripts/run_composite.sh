@@ -19,12 +19,12 @@ function try {
 #source $1
 #end of USER modif
 
-IFS=' ' read -a inputXML <<< "$1"
+IFS=' ' read -a inputXML <<< "$2"
 
-RESOLUTION=$2
-OUT_FOLDER=$3
-L3A_DATE=$4
-HALF_SYNTHESIS=$5
+RESOLUTION=$3
+OUT_FOLDER=$4
+L3A_DATE=$5
+HALF_SYNTHESIS=$6
 
 
 if [[ $RESOLUTION != 10 && $RESOLUTION != 20 ]]
@@ -34,7 +34,7 @@ then
   echo "The product will be created with the original resolution without resampling."
 fi
 
-COMPOSITE_OTB_LIBS_ROOT="~/sen2agri-processors-build/Composite"
+COMPOSITE_OTB_LIBS_ROOT="$1"
 WEIGHT_OTB_LIBS_ROOT="$COMPOSITE_OTB_LIBS_ROOT/WeightCalculation"
 
 OUT_SPOT_MASKS="$OUT_FOLDER/spot_masks.tif"
@@ -74,13 +74,13 @@ OUT_FLAGS="$OUT_FOLDER/L3AResult#_flags.tif"
 OUT_RGB="$OUT_FOLDER/L3AResult#_rgb.tif"
 
 FULL_SCAT_COEFFS=""
-BANDS_MAPPING="$6"
+BANDS_MAPPING="$7"
 
 cp "$BANDS_MAPPING" "$OUT_FOLDER"
 
 FULL_BANDS_MAPPING="$OUT_FOLDER/$BANDS_MAPPING"
 
-if [ $# == 7 ] ; then
+if [ $# == 8 ] ; then
     SCAT_COEFFS="$7"
 #"scattering_coeffs_"$RESOLUTION"m.txt"
     cp "$SCAT_COEFFS" "$OUT_FOLDER"
@@ -122,7 +122,7 @@ do
     out_d=${OUT_DATES//[#]/$i}
     out_r=${OUT_REFLS//[#]/$i}
     out_f=${OUT_FLAGS//[#]/$i}
-    out_rgb="-outrgb ${OUT_RGB//[#]/$i}"
+    out_rgb=${OUT_RGB//[#]/$i}
     i=$((i+1))
 
     try otbcli CompositePreprocessing2 "$COMPOSITE_OTB_LIBS_ROOT/CompositePreprocessing/" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -res "$RESOLUTION" "$FULL_SCAT_COEFFS" -msk "$OUT_SPOT_MASKS" -outres "$OUT_IMG_BANDS" -outcmres "$OUT_CLD" -outwmres "$OUT_WAT" -outsmres "$OUT_SNOW" -outaotres "$OUT_AOT"
@@ -136,8 +136,7 @@ do
     #todo... search for previous L3A product?
     try otbcli UpdateSynthesis2 "$COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/" -in "$OUT_IMG_BANDS" -bmap "$FULL_BANDS_MAPPING" -xml "$xml" $PREV_L3A -csm "$OUT_CLD" -wm "$OUT_WAT" -sm "$OUT_SNOW" -wl2a "$OUT_TOTAL_WEIGHT_FILE" -out "$mod"
 
-    try otbcli CompositeSplitter2 "$COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/" -in "$mod" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -outweights "$out_w" -outdates "$out_d" -outrefls "$out_r" -outflags "$out_f"
-#"$out_rgb"
+    try otbcli CompositeSplitter2 "$COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/" -in "$mod" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -outweights "$out_w" -outdates "$out_d" -outrefls "$out_r" -outflags "$out_f" -outrgb "$out_rgb"
 
     #PREV_L3A="-prevl3a $mod"
     PREV_L3A="-prevl3aw $out_w -prevl3ad $out_d -prevl3ar $out_r -prevl3af $out_f"
