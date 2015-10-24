@@ -46,13 +46,13 @@ public:
 
 
   // Typedef list
-  typedef unsigned int                              	LabelType;
+  typedef int                              	LabelType;
   //typedef otb::Image<LabelType, 2>                  	ImageType;
   typedef itk::AttributeLabelObject<LabelType, 2, LabelType>           LabelObjectType; //1st attrib : segmentation type, 3rd attrib : classification type
   typedef itk::LabelMap<LabelObjectType>				LabelMapType;
-  typedef otb::LabelMapWithMajorityClassLabelFilter<LabelMapType , UInt32ImageType /*ImageType*/ >  	ClassRegularizationFilterType;
-  typedef itk::LabelImageToLabelMapFilter<UInt32ImageType /*ImageType*/ , LabelMapType > 		ConverterType;
-  typedef itk::LabelMapToAttributeImageFilter< LabelMapType, UInt32ImageType /*ImageType*/ > 		AttributeToImageType;
+  typedef otb::LabelMapWithMajorityClassLabelFilter<LabelMapType , Int32ImageType /*ImageType*/ >  	ClassRegularizationFilterType;
+  typedef itk::LabelImageToLabelMapFilter<Int32ImageType /*ImageType*/ , LabelMapType > 		ConverterType;
+  typedef itk::LabelMapToAttributeImageFilter< LabelMapType, Int32ImageType /*ImageType*/ > 		AttributeToImageType;
 
 private:
   void DoInit()
@@ -110,8 +110,8 @@ private:
 
   void DoExecute()
   {
-    UInt32ImageType* inputC = GetParameterUInt32Image("inclass");
-    UInt32ImageType* inputS = GetParameterUInt32Image("inseg");
+    Int32ImageType* inputC = GetParameterInt32Image("inclass");
+    Int32ImageType* inputS = GetParameterInt32Image("inseg");
 
     //Instanciations
     m_Image2LabelMap = ConverterType::New();
