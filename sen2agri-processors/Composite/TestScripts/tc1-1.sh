@@ -29,9 +29,9 @@ if [ $BANDS_NB == 3 ] ; then
     if [ $FILESIZE == 6008384 ] ; then    
 	echo "File size      : PASSED"
 	if [[ ! $(diff "$OUT_SPOT_MASKS" "$COMPARISION_FILE") ]] ; then
-    	    echo "File size      : PASSED"
+            echo "Comp ref file  : PASSED"
 	else
-	    echo "File size      : FAILED"
+            echo "Comp ref file  : FAILED"
 	fi
     else
 	echo "File size      : FAILED"
@@ -39,5 +39,6 @@ if [ $BANDS_NB == 3 ] ; then
 else
     echo "Number of bands: FAILED"
     echo "File size      : FAILED"
+    echo "Comp ref file  : FAILED"
 fi
 
