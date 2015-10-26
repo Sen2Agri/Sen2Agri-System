@@ -158,6 +158,7 @@ private:
     AddParameter(ParameterType_Int, "minsize", "Minimum size of a region (in pixel unit) in segmentation.");
 
     AddParameter(ParameterType_OutputImage, "out", "Segmentation result image");
+    AddParameter(ParameterType_OutputImage, "outbound", "Segmentation boundaries file");
 
     SetDefaultParameterInt("spatialradius", 10);
     SetDefaultParameterFloat("rangeradius", 0.65);
@@ -176,6 +177,7 @@ private:
     SetDocExampleParameterValue("rangeradius", "0.65");
     SetDocExampleParameterValue("minsize", "10");
     SetDocExampleParameterValue("out", "segmentation.tif");
+    SetDocExampleParameterValue("outbound", "segmentation_bound.tif");
     //  Software Guide : EndCodeSnippet
   }
 
@@ -217,6 +219,7 @@ private:
       m_meanShiftFilter->SetMinRegionSize(minSize);
 
       SetParameterOutputImage("out", m_meanShiftFilter->GetClusteredOutput());
+      SetParameterOutputImage("outbound", m_meanShiftFilter->GetLabelOutput());
 
   }
   //  Software Guide :EndCodeSnippet

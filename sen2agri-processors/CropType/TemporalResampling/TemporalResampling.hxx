@@ -8,6 +8,8 @@
 
 typedef otb::VectorImage<short, 2> ImageType;
 
+typedef std::vector<int>                RasterDates;
+
 struct Indeces {
     int minLo;
     int maxLo;
@@ -15,70 +17,99 @@ struct Indeces {
     int maxHi;
 };
 
+struct SensorData {
+    // the name of the sensor (for information only)
+    std::string sensorName;
+    // the dates of the input
+    RasterDates inDates;
+    // the offset for the first band in the input raster
+    int         offset;
+    // the number of output raster created for this sensor
+    int         outNum;
+    // the date of the first output raster that should be created for this sensor
+    int         outStart;
+    // the date of the last output raster that should be created for this sensor
+    int         outEnd;
+};
+
 
 template <typename PixelType>
 class GapFillingFunctor
 {
 public:
-  GapFillingFunctor() : id(0), od(0), radius(0), bands(0) {}
-  GapFillingFunctor(std::vector<int> idDates, std::vector<int> outDates, int r, int b) : id(idDates), od(outDates), radius(r), bands(b) {}
+  GapFillingFunctor() : od(0), radius(0), bands(0) {}
+  GapFillingFunctor(std::vector<SensorData>& inData, RasterDates& outDates, int r, int b) : inputData(inData), od(outDates), radius(r), bands(b) {radius = 365000;}
 
   PixelType operator()(PixelType pix, PixelType mask) const
   {
 
-    // compute the number of images in the output file
+    // compute the number of image dates.
     int outImages = od.size();
 
     // Create the output pixel
-    PixelType result(outImages * bands);
+    int outSize = 0;
+    for (const SensorData& sd : inputData) {
+        outSize += sd.outNum;
+    }
+    PixelType result(outSize * bands);
+    int outPixelId = 0;
 
-    Indeces ind = {0, 0, 0, 0};
 
     // loop through the output dates.
     for (int outDateIndex = 0; outDateIndex < outImages; outDateIndex++) {
         // get the value of the corresponding output date
         int outDate = od.at(outDateIndex);
 
-        // get the indeces intervals
-        ind = getDateIndeces(ind.minLo, outDate);
+        // Build the output for each sensor, if needed
+        for (const SensorData& sd : inputData) {
+            if (sd.outStart <= outDate && sd.outEnd >= outDate) {
+                Indeces ind = {0, 0, 0, 0};
+                // get the indeces intervals
+                ind = getDateIndeces(sd, outDate);
 
-        // get the id of the first valid date before or equal to the output date
-        int beforeId = getPixelDateIndex(ind.maxLo, ind.minLo, mask);
+                // get the id of the first valid date before or equal to the output date
+                int beforeId = getPixelDateIndex(ind.maxLo, ind.minLo, mask, sd);
 
-        // get the id of the first valid date after or equal to the output date
-        int afterId = getPixelDateIndex(ind.minHi, ind.maxHi, mask);
+                // get the id of the first valid date after or equal to the output date
+                int afterId = getPixelDateIndex(ind.minHi, ind.maxHi, mask, sd);
 
-        // for each band
-        for (int band = 0; band < bands; band++) {
-            // compute the id of the output pixel
-            int outPixelId = outDateIndex * bands + band;
+                // build the offseted ids
+                int beforeRasterId = beforeId + sd.offset;
+                int afterRasterId = afterId + sd.offset;
 
-            if (beforeId == -1 && afterId == -1) {
-                // if no valid pixel then set a default value (0.0)
-                result[outPixelId] = NOVALUEPIXEL;
-            } else if (beforeId == -1) {
-                // use only the after value
-                result[outPixelId] = pix[afterId * bands + band];
-            } else if (afterId == -1) {
-                // use only the before value
-                result[outPixelId] = pix[beforeId * bands + band];
-            } else if (beforeId == afterId) {
-                // use only the before value which is equal to the after value
-                result[outPixelId] = pix[beforeId * bands + band];
-            } else {
-                // use liniar interpolation to compute the pixel value
-                float x1 = id.at(beforeId);
-                float y1 = pix[beforeId * bands + band];
-                float x2 = id.at(afterId);
-                float y2 = pix[afterId * bands + band];
+                // for each band
+                for (int band = 0; band < bands; band++) {
 
-                float a = (y1 - y2) / (x1 - x2);
-                float b = y1 - a * x1;
+                    if (beforeId == -1 && afterId == -1) {
+                        // if no valid pixel then set a default value (0.0)
+                        result[outPixelId] = NOVALUEPIXEL;
+                    } else if (beforeId == -1) {
+                        // use only the after value
+                        result[outPixelId] = pix[afterRasterId * bands + band];
+                    } else if (afterId == -1) {
+                        // use only the before value
+                        result[outPixelId] = pix[beforeRasterId * bands + band];
+                    } else if (beforeId == afterId) {
+                        // use only the before value which is equal to the after value
+                        result[outPixelId] = pix[beforeRasterId * bands + band];
+                    } else {
+                        // use liniar interpolation to compute the pixel value
+                        float x1 = sd.inDates.at(beforeId);
+                        float y1 = pix[beforeRasterId * bands + band];
+                        float x2 = sd.inDates.at(afterId);
+                        float y2 = pix[afterRasterId * bands + band];
 
-                result[outPixelId] = (short)(a * outDate + b);
+                        float a = (y1 - y2) / (x1 - x2);
+                        float b = y1 - a * x1;
+
+                        result[outPixelId] = (short)(a * outDate + b);
+                    }
+                    outPixelId++;
+
+                }
             }
-
         }
+
     }
 
     return result;
@@ -86,7 +117,7 @@ public:
 
   bool operator!=(const GapFillingFunctor a) const
   {
-    return (this->id != a.id) || (this->od != a.od) || (this->radius != a.radius) || (this->bands != a.bands) ;
+    return (this->od != a.od) || (this->radius != a.radius) || (this->bands != a.bands) ;
   }
 
   bool operator==(const GapFillingFunctor a) const
@@ -95,8 +126,8 @@ public:
   }
 
 protected:
-  // input dates vector
-  std::vector<int> id;
+  // input data
+  std::vector<SensorData> inputData;
   // output dates vector
   std::vector<int> od;
   // the radius for date search
@@ -106,12 +137,12 @@ protected:
 
 private:
   // get the indeces of the input dates which are before and after the centerDate and within the radius.
-  Indeces getDateIndeces(int startIndex, int centerDate) const {
+  Indeces getDateIndeces(const SensorData& sd, int centerDate) const {
       Indeces indeces = {-1, -1, -1, -1};
 
-      for (int i=startIndex; i < id.size(); i++) {
+      for (int i=0; i < sd.inDates.size(); i++) {
           // get input date
-          int inputDate = id.at(i);
+          int inputDate = sd.inDates.at(i);
 
           if (inputDate > centerDate + radius) {
               // all future dates are after the center date.
@@ -146,14 +177,12 @@ private:
               indeces.maxHi = i;
           }
       }
-      indeces.minLo = 0;
-      indeces.maxHi = id.size() - 1;
 
       return indeces;
   }
 
   // Get the date index of the first valid pixel or -1 if none found
-  int getPixelDateIndex(int startIndex, int endIndex, const PixelType& mask) const {
+  int getPixelDateIndex(int startIndex, int endIndex, const PixelType& mask, const SensorData& sd ) const {
 
       if (startIndex == -1 || endIndex == -1) {
           return -1;
@@ -164,7 +193,7 @@ private:
 
       while (!done) {
           // if the pixel is masked then continue
-          if (mask[index] != 0) {
+          if (mask[index+sd.offset] != 0) {
               // if it was the last index then stop and return -1
               if (index == endIndex) {
                   index = -1;
