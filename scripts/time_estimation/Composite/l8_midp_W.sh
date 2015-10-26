@@ -1,13 +1,13 @@
 #USER modif
 #add directories where SPOT products are to be found
-inputXML="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20130414_L8_199_030/SudouestS2A_20130414_L8_199_030.HDR"
-inputXML+="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20130719_L8_199_030/SudouestS2A_20130719_L8_199_030.HDR"
-inputXML+="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20130804_L8_199_030/SudouestS2A_20130804_L8_199_030.HDR"
-inputXML+="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20130820_L8_199_030/SudouestS2A_20130820_L8_199_030.HDR"
-inputXML+="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20130905_L8_199_030/SudouestS2A_20130905_L8_199_030.HDR"
-inputXML+="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20131007_L8_199_030/SudouestS2A_20131007_L8_199_030.HDR"
-inputXML+="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20131023_L8_199_030/SudouestS2A_20131023_L8_199_030.HDR"
-inputXML+="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20131210_L8_199_030/SudouestS2A_20131210_L8_199_030.HDR"
+inputXML="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20130414_L8_199_030/SudouestS2A_20130414_L8_199_030.HDR "
+inputXML+="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20130719_L8_199_030/SudouestS2A_20130719_L8_199_030.HDR "
+inputXML+="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20130804_L8_199_030/SudouestS2A_20130804_L8_199_030.HDR "
+inputXML+="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20130820_L8_199_030/SudouestS2A_20130820_L8_199_030.HDR "
+inputXML+="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20130905_L8_199_030/SudouestS2A_20130905_L8_199_030.HDR "
+inputXML+="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20131007_L8_199_030/SudouestS2A_20131007_L8_199_030.HDR "
+inputXML+="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20131023_L8_199_030/SudouestS2A_20131023_L8_199_030.HDR "
+inputXML+="/mnt/Sen2Agri_DataSets/L2A/Landsat8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20131210_L8_199_030/SudouestS2A_20131210_L8_199_030.HDR "
 
 L3A_DATE="20131210"
 HALF_SYNTHESIS="120"

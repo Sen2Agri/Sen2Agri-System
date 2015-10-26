@@ -3,7 +3,7 @@
     yum install epel-release
 
     yum install cmake
-    yum install boost-devel curl-devel expat-devel fftw-devel gdal-devel geos-devel libgeotiff-devel itk-devel libjpeg-turbo-devel libsvm-devel muParser-devel opencv-devel openjpeg-devel pcre-devel libpng-devel proj-devel qt4 sqlite-devel swig libtiff-devel tinyxml-devel qt5-qtbase-devel qt5-qtbase-postgresql
+    yum install boost-devel curl-devel expat-devel fftw-devel gdal-devel geos-devel libgeotiff-devel itk-devel libjpeg-turbo-devel libsvm-devel muParser-devel opencv-devel openjpeg-devel pcre-devel libpng-devel proj-devel qt-devel sqlite-devel swig libtiff-devel tinyxml-devel qt5-qtbase-devel qt5-qtbase-postgresql
 
 # Compiling OTB
 
