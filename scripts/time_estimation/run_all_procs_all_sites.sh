@@ -13,34 +13,6 @@ function timedExec {
 }
 
 cd $MY_PWD
-cd CropMask
-mkdir /mnt/data/output_temp/out_l4a_spot4_CSudmipyE/
-timedExec "out_l4a_spot4_CSudmipyE" "./CropType-CSudmipy-E.sh /mnt/data/output_temp/out_l4a_spot4_CSudmipyE/"
-
-mkdir /mnt/data/output_temp/out_l4a_spot4_CSudmipyO/
-timedExec "out_l4a_spot4_CSudmipyO" "./CropType-CSudmipy-O.sh /mnt/data/output_temp/out_l4a_spot4_CSudmipyO/"
-
-mkdir /mnt/data/output_temp/out_l4a_spot4_south_africa/
-timedExec "out_l4a_spot4_south_africa" "./CropType-SouthAfrica.sh /mnt/data/output_temp/out_l4a_spot4_south_africa/"
-
-mkdir /mnt/data/output_temp/out_l4a_spot4_ukraine/
-timedExec "out_l4a_spot4_ukraine" "./CropType-Ukraine.sh /mnt/data/output_temp/out_l4a_spot4_ukraine/"
-
-cd $MY_PWD
-cd CropType
-mkdir /mnt/data/output_temp/out_l4b_spot4_CSudmipyE/
-timedExec "out_l4b_spot4_CSudmipyE" "./CropType-CSudmipy-E.sh /mnt/data/output_temp/out_l4b_spot4_CSudmipyE/ /mnt/data/output_temp/out_l4a_spot4_CSudmipyE/crop_mask.tif"
-
-mkdir /mnt/data/output_temp/out_l4b_spot4_CSudmipyO/
-timedExec "out_l4b_spot4_CSudmipyO" "./CropType-CSudmipy-O.sh /mnt/data/output_temp/out_l4b_spot4_CSudmipyO/ /mnt/data/output_temp/out_l4a_spot4_CSudmipyO/crop_mask.tif"
-
-mkdir /mnt/data/output_temp/out_l4b_spot4_south_africa/
-timedExec "out_l4b_spot4_south_africa" "./CropType-SouthAfrica.sh /mnt/data/output_temp/out_l4b_spot4_south_africa/ /mnt/data/output_temp/out_l4a_spot4_south_africa/crop_mask.tif"
-
-mkdir /mnt/data/output_temp/out_l4b_spot4_ukraine/
-timedExec "out_l4b_spot4_ukraine" "./CropType-Ukraine.sh /mnt/data/output_temp/out_l4b_spot4_ukraine/ /mnt/data/output_temp/out_l4a_spot4_ukraine/crop_mask.tif"
-
-cd $MY_PWD
 cd Composite
 
 mkdir /mnt/data/output_temp/out_l3a_spot4_south_africa/
@@ -81,6 +53,34 @@ timedExec "out_l3a_l8_south_africa" "./l8_south_africa.sh ~/sen2agri-processors-
 
 mkdir /mnt/data/output_temp/out_l3a_l8_ukraine/
 timedExec "out_l3a_l8_ukraine" "./l8_ukraine.sh ~/sen2agri-processors-build/Composite/ 30 /mnt/data/output_temp/out_l3a_l8_ukraine/"
+
+cd $MY_PWD
+cd CropMask
+mkdir /mnt/data/output_temp/out_l4a_spot4_CSudmipyE/
+timedExec "out_l4a_spot4_CSudmipyE" "./CropType-CSudmipy-E.sh /mnt/data/output_temp/out_l4a_spot4_CSudmipyE/"
+
+mkdir /mnt/data/output_temp/out_l4a_spot4_CSudmipyO/
+timedExec "out_l4a_spot4_CSudmipyO" "./CropType-CSudmipy-O.sh /mnt/data/output_temp/out_l4a_spot4_CSudmipyO/"
+
+mkdir /mnt/data/output_temp/out_l4a_spot4_south_africa/
+timedExec "out_l4a_spot4_south_africa" "./CropType-SouthAfrica.sh /mnt/data/output_temp/out_l4a_spot4_south_africa/"
+
+mkdir /mnt/data/output_temp/out_l4a_spot4_ukraine/
+timedExec "out_l4a_spot4_ukraine" "./CropType-Ukraine.sh /mnt/data/output_temp/out_l4a_spot4_ukraine/"
+
+cd $MY_PWD
+cd CropType
+mkdir /mnt/data/output_temp/out_l4b_spot4_CSudmipyE/
+timedExec "out_l4b_spot4_CSudmipyE" "./CropType-CSudmipy-E.sh /mnt/data/output_temp/out_l4b_spot4_CSudmipyE/ /mnt/data/output_temp/out_l4a_spot4_CSudmipyE/crop_mask.tif"
+
+mkdir /mnt/data/output_temp/out_l4b_spot4_CSudmipyO/
+timedExec "out_l4b_spot4_CSudmipyO" "./CropType-CSudmipy-O.sh /mnt/data/output_temp/out_l4b_spot4_CSudmipyO/ /mnt/data/output_temp/out_l4a_spot4_CSudmipyO/crop_mask.tif"
+
+mkdir /mnt/data/output_temp/out_l4b_spot4_south_africa/
+timedExec "out_l4b_spot4_south_africa" "./CropType-SouthAfrica.sh /mnt/data/output_temp/out_l4b_spot4_south_africa/ /mnt/data/output_temp/out_l4a_spot4_south_africa/crop_mask.tif"
+
+mkdir /mnt/data/output_temp/out_l4b_spot4_ukraine/
+timedExec "out_l4b_spot4_ukraine" "./CropType-Ukraine.sh /mnt/data/output_temp/out_l4b_spot4_ukraine/ /mnt/data/output_temp/out_l4a_spot4_ukraine/crop_mask.tif"
 
 #cd $MY_PWD
 #cd VegetationStatus
