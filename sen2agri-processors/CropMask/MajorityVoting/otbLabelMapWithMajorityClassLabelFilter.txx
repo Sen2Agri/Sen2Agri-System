@@ -52,6 +52,7 @@ void LabelMapWithMajorityClassLabelFilter < TInputImage, TInputImage2 >::Threade
 	{
 
 		HistoType histo;
+        typename LabelObjectType::LineType::LengthType labelSize = 0;
 		for(int j=0; j<labelObject->GetNumberOfLines(); j++)
 		{
 
@@ -60,11 +61,13 @@ void LabelMapWithMajorityClassLabelFilter < TInputImage, TInputImage2 >::Threade
 			const typename LabelObjectType::LineType::IndexType & firstIdx = line.GetIndex(); //lit->GetIndex();
 			const typename LabelObjectType::LineType::LengthType & length = line.GetLength(); //lit->GetLength();
 
-			
+
 		
 			for( typename InputImageType::IndexType idx = firstIdx; idx[0]<firstIdx[0] + length; idx[0]++)
-				if (m_ClassifImage->GetPixel( idx ) != m_NoDataClassifValue )
+                if (m_ClassifImage->GetPixel( idx ) != m_NoDataClassifValue ) {
 					histo[m_ClassifImage->GetPixel( idx )]++;
+                    labelSize++;
+                }
 		
 		}
 
@@ -78,16 +81,18 @@ void LabelMapWithMajorityClassLabelFilter < TInputImage, TInputImage2 >::Threade
 	    		typename HistoType::key_type classifLabel = histoIt->first;
 	    		typename HistoType::mapped_type Freq = histoIt->second;
 
-			if ( Freq >= greatestLabelFreq )
+            if ( Freq > 0 && Freq >= greatestLabelFreq )
 	      		{
 	       			if ( Freq == greatestLabelFreq )
-					uniqueLabel = false;
-				else  
-				{
-		  			greatestLabelFreq = Freq;
-		  			greatestLabel = classifLabel;  
-		  			uniqueLabel = true;
-				}
+                    {
+                        uniqueLabel = false;
+                    }
+                    else
+                    {
+                        greatestLabelFreq = Freq;
+                        greatestLabel = classifLabel;
+                        uniqueLabel = true;
+                    }
 	      		}
 			++histoIt;
 		}
@@ -99,7 +104,8 @@ void LabelMapWithMajorityClassLabelFilter < TInputImage, TInputImage2 >::Threade
 	    	else
 	    	{
 	      		//std::cout << "greatest label is undifined (" << extUndifinedValue << ")" << std::endl;
-			labelObject->SetAttribute( m_NoDataClassifValue );
+                // choose one between 0 and 1
+            labelObject->SetAttribute( labelSize > 20 ? 1 : 0 );
 	   	}
 
 	}
