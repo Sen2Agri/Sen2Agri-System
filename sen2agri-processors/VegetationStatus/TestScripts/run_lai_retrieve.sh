@@ -20,6 +20,39 @@ function try {
     fi
 }
 
+function ut_output_info {
+    if [ $# != 4 ] ; then
+	echo " Wrong call for ut_output_info. This function should receive 4 params"
+	exit
+    fi
+    echo "Information for $1 file:"
+    OUTPUT_IMAGE_INFO="$(otbcli_ReadImageInfo -in $1 | grep "Number of bands")"
+
+    BANDS_NB="${OUTPUT_IMAGE_INFO: -1}"
+    COMPARISION_FILE="$3"
+#"./qr_cmp_southafrica/ReprocessedTimeSeries.tif"
+
+    if [ $BANDS_NB == $2 ] ; then
+	echo "Number of bands: PASSED"
+	FILESIZE=$(stat -c%s "$1")
+	if [ $FILESIZE == $4 ] ; then    
+	    echo "File size      : PASSED"
+	    if [[ ! $(diff "$1" "$COMPARISION_FILE") ]] ; then
+		echo "Comp ref file  : PASSED"
+	    else
+		echo "Comp ref file  : FAILED"
+	    fi
+	else
+	    echo "File size      : FAILED"
+	fi
+    else
+	echo "Number of bands: FAILED"
+	echo "File size      : FAILED"
+	echo "Comp ref file  : FAILED"
+    fi
+
+}
+
 IFS=' ' read -a inputXML <<< "$2"
 RESOLUTION=$3
 
@@ -136,14 +169,30 @@ done
 try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_LAI_PARAM -out $OUT_LAI_TIME_SERIES
 try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_ERR_PARAM -out $OUT_ERR_TIME_SERIES
 
+if [[ $# == 9 && "$9" == "tc2-1" ]] ; then
+ut_output_info "$OUT_ERR_TIME_SERIES" 5 "./qr_cmp_southafrica/Err_time_series.tif" 20008400
+exit
+fi
+
 # Compute the reprocessed time series (On-line Retrieval)
 try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_REPROCESSED_TIME_SERIES  -algo local -algo.local.bwr $ALGO_LOCAL_BWR -algo.local.fwr $ALGO_LOCAL_FWR
+
+if [[ $# == 9 && "$9" == "tc2-2" ]] ; then
+ut_output_info "$OUT_REPROCESSED_TIME_SERIES" 2 "./qr_cmp_southafrica/ReprocessedTimeSeries.tif" 8008372
+exit
+fi
 
 #split the Reprocessed time series to a number of images
 try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_REPROCESSED_TIME_SERIES -outlist $REPROCESSED_LIST_FILE -compress 1
 
+
 # Compute the fitted time series (CSDM Fitting)
 try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_FITTED_TIME_SERIES -algo fit
+
+if [[ $# == 9 && "$9" == "tc2-3" ]] ; then
+ut_output_info "$OUT_FITTED_TIME_SERIES" 2 "./qr_cmp_southafrica/FittedTimeSeries.tif" 8008372
+exit
+fi
 
 #split the Fitted time series to a number of images
 try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_FITTED_TIME_SERIES -outlist $FITTED_LIST_FILE -compress 1
