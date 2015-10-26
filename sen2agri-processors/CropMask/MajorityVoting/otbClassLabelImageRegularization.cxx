@@ -124,9 +124,13 @@ private:
 
     //Pipeline
     m_Image2LabelMap->SetInput(inputS);
+    m_Image2LabelMap->SetBackgroundValue(0);
     m_ClassRegularization->SetInput(m_Image2LabelMap->GetOutput());
     m_ClassRegularization->SetClassifImage(inputC);
     m_Attribute2Image->SetInput(m_ClassRegularization->GetOutput());
+    m_Attribute2Image->SetBackgroundValue(0);
+    m_Attribute2Image->UpdateOutputInformation();
+    m_Attribute2Image->GetOutput()->CopyInformation(inputC);
     SetParameterOutputImage("rout", m_Attribute2Image->GetOutput());
     
    }
