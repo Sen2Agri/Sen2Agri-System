@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source set_build_folder.sh
+
 ./CropMask.py -refp /mnt/Sen2Agri_DataSets/In-Situ_TDS/France/LC/SudmipyS2A_LandCoverDecoupe_dissolvedGeometry.shp -ratio 0.75 -input \
 /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Sudmipy-West/SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000.xml \
 /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Sudmipy-West/SPOT4_HRVIR_XS_20130221_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130221_N2A_CSudmipy-OD0000B0000.xml \
@@ -26,4 +28,4 @@
 /mnt/Sen2Agri_DataSets/L2A/LANDSAT8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20131023_L8_199_030/SudouestS2A_20131023_L8_199_030.HDR \
 /mnt/Sen2Agri_DataSets/L2A/LANDSAT8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20131210_L8_199_030/SudouestS2A_20131210_L8_199_030.HDR \
 -t0 20130216 -tend 20130616 -rate 5 -radius 100 -nbtrsample 4000 -rseed 0 -lmbd 2 -weight 1 -nbcomp 6 -spatialr 10 -ranger 0.65 -minsize 10 -rfnbtrees 100 -rfmax 25 -rfmin 5 -pixsize 20 \
--outdir /mnt/data/csudmipy/CSudmipy-O-mask/
+-outdir /mnt/data/csudmipy/CSudmipy-O-mask/ -buildfolder $BUILD_FOLDER
