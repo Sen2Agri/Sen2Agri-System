@@ -36,6 +36,7 @@ fi
 
 OTB_LIBS_ROOT="$1"
 COMPOSITE_OTB_LIBS_ROOT="$OTB_LIBS_ROOT/Composite"
+echo "COMPOSITE_OTB_LIBS_ROOT is $COMPOSITE_OTB_LIBS_ROOT"
 WEIGHT_OTB_LIBS_ROOT="$COMPOSITE_OTB_LIBS_ROOT/WeightCalculation"
 
 OUT_SPOT_MASKS="$OUT_FOLDER/spot_masks.tif"
@@ -46,11 +47,19 @@ UNCLIPPED_OUT_WAT="$OUT_FOLDER/wat$RESOLUTION.tif"
 UNCLIPPED_OUT_SNOW="$OUT_FOLDER/snow$RESOLUTION.tif"
 UNCLIPPED_OUT_AOT="$OUT_FOLDER/aot$RESOLUTION.tif"
 
+OUT_IMG_BANDS="$OUT_FOLDER/res_clipped_$RESOLUTION.tif"
+OUT_CLD="$OUT_FOLDER/cld_clipped_$RESOLUTION.tif"
+OUT_WAT="$OUT_FOLDER/wat_clipped_$RESOLUTION.tif"
+OUT_SNOW="$OUT_FOLDER/snow_clipped_$RESOLUTION.tif"
+OUT_AOT="$OUT_FOLDER/aot_clipped_$RESOLUTION.tif"
+
 OUT_WEIGHT_AOT_FILE="$OUT_FOLDER/WeightAot.tif"
 OUT_WEIGHT_CLOUD_FILE="$OUT_FOLDER/WeightCloud.tif"
 OUT_TOTAL_WEIGHT_FILE="$OUT_FOLDER/WeightTotal.tif"
 
 OUT_L3A_FILE="$OUT_FOLDER/L3AResult#_"$RESOLUTION"M.tif"
+
+MASTER_INFO_FILE="$OUT_FOLDER/MasterInfo.txt"
 
 PARAMS_TXT="$OUT_FOLDER/params.txt"
 rm -fr $PARAMS_TXT
@@ -127,18 +136,20 @@ do
     out_rgb=${OUT_RGB//[#]/$i}
     i=$((i+1))
 
-    try otbcli CompositePreprocessing2 "$COMPOSITE_OTB_LIBS_ROOT/CompositePreprocessing/" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -res "$RESOLUTION" "$FULL_SCAT_COEFFS" -msk "$OUT_SPOT_MASKS" -outres "$UNCLIPPED_OUT_IMG_BANDS" -outcmres "$UNCLIPPED_OUT_CLD" -outwmres "$UNCLIPPED_OUT_WAT" -outsmres "$UNCLIPPED_OUT_SNOW" -outaotres "$UNCLIPPED_OUT_AOT"
+    try otbcli CompositePreprocessing2 "$COMPOSITE_OTB_LIBS_ROOT/CompositePreprocessing/" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -res "$RESOLUTION" "$FULL_SCAT_COEFFS" -msk "$OUT_SPOT_MASKS" -outres "$UNCLIPPED_OUT_IMG_BANDS" -outcmres "$UNCLIPPED_OUT_CLD" -outwmres "$UNCLIPPED_OUT_WAT" -outsmres "$UNCLIPPED_OUT_SNOW" -outaotres "$UNCLIPPED_OUT_AOT" -masterinfo "$MASTER_INFO_FILE"
     
     # if we have a shape file, then we will apply it on all files from preprocessing
     # else, if we don't have a shape file then 
     #   Check if it is a master product and create the shape
     #
     if ! [[ -f $SHAPE_FILE ]] ; then
-        # TODO: Check also here if the CompositePreprocessing created 
-        try otbcli CreateFootprint "$OTB_LIBS_ROOT/CreateFootprint/" -in "$UNCLIPPED_OUT_IMG_BANDS" -mode raster -out "$SHAPE_FILE"
+        if [ -f "$MASTER_INFO_FILE" ] ; then
+            try otbcli CreateFootprint "$OTB_LIBS_ROOT/CreateFootprint/" -in "$UNCLIPPED_OUT_IMG_BANDS" -mode raster -out "$SHAPE_FILE"
+        fi
     fi
 
     if [ -f $SHAPE_FILE ] ; then
+        echo "Executing GDALWARP for all files ..."
         gdalwarp -dstnodata "-10000" -overwrite -cutline $SHAPE_FILE -crop_to_cutline "$UNCLIPPED_OUT_IMG_BANDS" "$OUT_IMG_BANDS"
         gdalwarp -dstnodata "0" -overwrite -cutline $SHAPE_FILE -crop_to_cutline "$UNCLIPPED_OUT_CLD" "$OUT_CLD"
         gdalwarp -dstnodata "0" -overwrite -cutline $SHAPE_FILE -crop_to_cutline "$UNCLIPPED_OUT_WAT" "$OUT_WAT"
@@ -167,7 +178,7 @@ do
     PREV_L3A="-prevl3aw $out_w -prevl3ad $out_d -prevl3ar $out_r -prevl3af $out_f"
     
     rm "$mod"
-   
+    rm "$MASTER_INFO_FILE"   
 echo "-----------------------------------------------------------"
 done
 

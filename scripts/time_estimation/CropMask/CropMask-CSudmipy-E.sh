@@ -2,6 +2,8 @@
 
 OUT_FOLDER=$1
 
+source set_build_folder.sh
+
 ./CropMask.py -refp /mnt/Imagery_S2A/In-Situ_TDS/France/LC/SudmipyS2A_LandCoverDecoupe_dissolvedGeometry.shp -ratio 0.75 -input \
 /mnt/Imagery_S2A/L2A/Spot4-T5/CSudmipy-E_LEVEL2A/SPOT4_HRVIR1_XS_20130217_N2A_CSudmipy-ED0000B0000/SPOT4_HRVIR1_XS_20130217_N2A_CSudmipy-ED0000B0000.xml \
 /mnt/Imagery_S2A/L2A/Spot4-T5/CSudmipy-E_LEVEL2A/SPOT4_HRVIR1_XS_20130222_N2A_CSudmipy-ED0000B0000/SPOT4_HRVIR1_XS_20130222_N2A_CSudmipy-ED0000B0000.xml \
@@ -23,4 +25,4 @@ OUT_FOLDER=$1
 /mnt/Imagery_S2A/L2A/Spot4-T5/CSudmipy-E_LEVEL2A/SPOT4_HRVIR1_XS_20130612_N2A_CSudmipy-ED0000B0000/SPOT4_HRVIR1_XS_20130612_N2A_CSudmipy-ED0000B0000.xml \
 /mnt/Imagery_S2A/L2A/Spot4-T5/CSudmipy-E_LEVEL2A/SPOT4_HRVIR1_XS_20130617_N2A_CSudmipy-ED0000B0000/SPOT4_HRVIR1_XS_20130617_N2A_CSudmipy-ED0000B0000.xml \
 -t0 20130217 -tend 20130617 -rate 5 -radius 100 -nbtrsample 4000 -rseed 0 -lmbd 2 -weight 1 -nbcomp 6 -spatialr 10 -ranger 0.65 -minsize 10 -rfnbtrees 100 -rfmax 25 -rfmin 5 -pixsize 20 \
--outdir $OUT_FOLDER
+-outdir $OUT_FOLDER -buildfolder $BUILD_FOLDER
