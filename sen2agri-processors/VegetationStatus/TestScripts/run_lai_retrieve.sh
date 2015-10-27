@@ -38,6 +38,7 @@ function ut_output_info {
 	if [ $FILESIZE == $4 ] ; then    
 	    echo "File size      : PASSED"
 	    if [[ ! $(diff "$1" "$COMPARISION_FILE") ]] ; then
+#otbcli_CompareImages -ref.in /mnt/data/output_temp/out_qr_vegetation_south_africa//FittedTimeSeries.tif -meas.in qr_cmp_southafrica/FittedTimeSeries.tif | grep psnr | cut "-d " -f2
 		echo "Comp ref file  : PASSED"
 	    else
 		echo "Comp ref file  : FAILED"
@@ -170,6 +171,7 @@ try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_LAI_PARAM -out $OUT
 try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_ERR_PARAM -out $OUT_ERR_TIME_SERIES
 
 if [[ $# == 9 && "$9" == "tc2-1" ]] ; then
+ut_output_info "$OUT_LAI_TIME_SERIES" 5 "./qr_cmp_southafrica/LAI_time_series.tif" 20008400
 ut_output_info "$OUT_ERR_TIME_SERIES" 5 "./qr_cmp_southafrica/Err_time_series.tif" 20008400
 exit
 fi

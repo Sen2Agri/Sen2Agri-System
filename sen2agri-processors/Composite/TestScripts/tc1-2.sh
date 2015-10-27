@@ -69,6 +69,12 @@ if [ $RESOLUTION == 20 ] ; then
     FILESIZE_SNOW="4004360"
     FILESIZE_AOT="4004360"
 fi
+ut_output_info "$OUT_IMG_BANDS" 4 "./qr_cmp_southafrica/res$RESOLUTION.tif" $FILESIZE_REF
+ut_output_info "$OUT_CLD" 1 "./qr_cmp_southafrica/cld$RESOLUTION.tif" $FILESIZE_CLD
+ut_output_info "$OUT_WAT" 1 "./qr_cmp_southafrica/wat$RESOLUTION.tif" $FILESIZE_WAT
+ut_output_info "$OUT_SNOW" 1 "./qr_cmp_southafrica/snow$RESOLUTION.tif" $FILESIZE_SNOW
+ut_output_info "$OUT_AOT" 1 "./qr_cmp_southafrica/aot$RESOLUTION.tif" $FILESIZE_AOT
+exit
 
 if [[ "$BANDS_NB" == "4" ]] ; then
     echo "Reflectance number of bands: PASSED"
