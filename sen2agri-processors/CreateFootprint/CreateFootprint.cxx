@@ -155,10 +155,23 @@ private:
 
                 auto sourceSrs = static_cast<OGRSpatialReference *>(
                     OSRNewSpatialReference(output->GetProjectionRef().c_str()));
+                if (!sourceSrs) {
+                    itkExceptionMacro(
+                        << "Unable to create source OGRSpatialReference from OGR WKT\n"
+                        << output->GetProjectionRef());
+                }
+
                 auto targetSrs =
                     static_cast<OGRSpatialReference *>(OSRNewSpatialReference(SRS_WKT_WGS84));
+                if (!targetSrs) {
+                    itkExceptionMacro(<< "Unable to create WGS84 OGRSpatialReference");
+                }
+
                 auto transform = static_cast<OGRCoordinateTransformation *>(
                     OCTNewCoordinateTransformation(sourceSrs, targetSrs));
+                if (!transform) {
+                    itkExceptionMacro(<< "Unable to create OGRCoordinateTransformation");
+                }
 
                 auto point = static_cast<OGRPoint *>(OGRGeometryFactory::createGeometry(wkbPoint));
                 std::ofstream boundsFile(GetParameterString("outbounds"));
@@ -166,16 +179,22 @@ private:
                     point->setX(v[0]);
                     point->setY(v[1]);
                     point->setZ(0.0);
-                    if (point->transform(transform) == OGRERR_NONE) {
+                    auto err = point->transform(transform);
+                    if (err == OGRERR_NONE) {
                         boundsFile << point->getX() << ' ' << point->getY() << '\n';
+                    } else {
+                        itkExceptionMacro(<< "Unable to transform point (" << v[0] << ", " << v[1]
+                                          << ") to WGS84. The source projection is:\n"
+                                          << output->GetProjectionRef()
+                                          << "\nOGR returned error code " << err);
                     }
                 }
 
                 OGRGeometryFactory::destroyGeometry(point);
 
-                OGRFree(transform);
-                OGRFree(targetSrs);
-                OGRFree(sourceSrs);
+                OCTDestroyCoordinateTransformation(transform);
+                OSRDestroySpatialReference(targetSrs);
+                OSRDestroySpatialReference(sourceSrs);
             }
 
             m_MaskFilter = MaskFilterType::New();
