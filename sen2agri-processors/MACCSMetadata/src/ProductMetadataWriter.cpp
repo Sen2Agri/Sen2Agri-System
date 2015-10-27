@@ -103,7 +103,7 @@ XElement Format(const ProductImageCharacteristicsMetadata &ProductImageCharacter
     for (const auto &specialValues : ProductImageCharacteristics.SpecialValuesList) {
         ProductImageCharEl.Append(XElement("Special_Values",
                                            XElement("SPECIAL_VALUE_TEXT", specialValues.SpecialValueText),
-                                           XElement("SPECIAL_VALUE_INDEX", std::to_string(specialValues.SpecialValueIndex))));
+                                           XElement("SPECIAL_VALUE_INDEX", specialValues.SpecialValueIndex)));
     }
 
     ProductImageCharEl.Append(XElement("Image_Display_Order",

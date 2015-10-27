@@ -125,11 +125,11 @@ BOOST_AUTO_TEST_CASE(ProductMetadataWriter)
     metadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.reserve(2);
 
     SpecialValues specialValue;
-    specialValue.SpecialValueIndex = 0;
+    specialValue.SpecialValueIndex = "0";
     specialValue.SpecialValueText = "NODATA";
     metadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
 
-    specialValue.SpecialValueIndex = 1;
+    specialValue.SpecialValueIndex = "1";
     specialValue.SpecialValueText = "NOTVALID";
     metadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
 

@@ -57,7 +57,7 @@ struct ProductInfoMetadata
 struct SpecialValues
 {
     std::string SpecialValueText;
-    int SpecialValueIndex;
+    std::string SpecialValueIndex;
 };
 
 struct ProductImageDisplayOrder

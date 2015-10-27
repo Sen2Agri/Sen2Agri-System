@@ -48,16 +48,16 @@ BOOST_AUTO_TEST_CASE(TileMetadataWriter)
 
 
     metadata.TileThematicInfo = "AKJSDGSDJFG LKSDSKDIHFKJ FKHDKUJFG";
-    metadata.TileImageContentQI.NoDataPixelPercentange = 0;
-    metadata.TileImageContentQI.SaturatedDefectivePixelPercentange = 1;
-    metadata.TileImageContentQI.CloudShadowPercentange = 2;
-    metadata.TileImageContentQI.VegetationPercentange = 3;
-    metadata.TileImageContentQI.WaterPercentange = 4;
-    metadata.TileImageContentQI.LowProbaCloudsPercentange = 5;
-    metadata.TileImageContentQI.MediumProbaCloudsPercentange = 6;
-    metadata.TileImageContentQI.HighProbaCloudsPercentange = 7;
-    metadata.TileImageContentQI.ThinCirrusPercentange = 8;
-    metadata.TileImageContentQI.SnowIcePercentange = 9;
+    metadata.TileImageContentQI.NoDataPixelPercentange = "0";
+    metadata.TileImageContentQI.SaturatedDefectivePixelPercentange = "1";
+    metadata.TileImageContentQI.CloudShadowPercentange = "2";
+    metadata.TileImageContentQI.VegetationPercentange = "3";
+    metadata.TileImageContentQI.WaterPercentange = "4";
+    metadata.TileImageContentQI.LowProbaCloudsPercentange = "5";
+    metadata.TileImageContentQI.MediumProbaCloudsPercentange = "6";
+    metadata.TileImageContentQI.HighProbaCloudsPercentange = "7";
+    metadata.TileImageContentQI.ThinCirrusPercentange = "8";
+    metadata.TileImageContentQI.SnowIcePercentange = "9";
 
     metadata.TileMasksList.reserve(2);
 
