@@ -520,9 +520,8 @@ private:
 
 
       for (rasterInfo &rasterFileEl : m_rasterInfoList) {
-          if((rasterFileEl.iRasterType == REFLECTANCE_RASTER) ||
-             (rasterFileEl.iRasterType == LAI_REPR_RASTER) ||
-             (rasterFileEl.iRasterType == LAI_FIT_RASTER))
+          if((rasterFileEl.iRasterType != FLAGS_MASK) &&
+             (rasterFileEl.iRasterType != DATES_MASK))
           {
               auto imageReader = ImageFileReader<FloatVectorImageType>::New();
               imageReader->SetFileName(rasterFileEl.strRasterFileName);
@@ -531,8 +530,7 @@ private:
 
               iResolution = output->GetSpacing()[0];
 
-              if((rasterFileEl.iRasterType == LAI_REPR_RASTER) ||
-                 (rasterFileEl.iRasterType == LAI_FIT_RASTER))
+              if(rasterFileEl.iRasterType != REFLECTANCE_RASTER)
               {
                   //get bands no
                   int iBands = output->GetNumberOfComponentsPerPixel();
@@ -616,9 +614,6 @@ private:
       m_productMetadata.GeneralInfo.ProductInfo.ProcessingBaseline = m_strBaseline;
       m_productMetadata.GeneralInfo.ProductInfo.GenerationTime = currentDateTimeFormattted("%Y-%m-%dT%H:%M:%S");/*"2015-07-04T10:12:29.000413Z";*/
 
-      if(m_previewList.empty()== false)
-        m_productMetadata.GeneralInfo.ProductInfo.PreviewImageURL = m_previewList.at(0);
-
       m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.PreviewImage = !m_previewList.empty();
 
       FillBandList();
@@ -666,8 +661,8 @@ private:
       }
 */
 
-      m_productMetadata.QualityIndicatorsInfo.TechnicalQualityAssessment.DegratedANCDataPercentage = 0;
-      m_productMetadata.QualityIndicatorsInfo.TechnicalQualityAssessment.DegratedMSIDataPercentage = 0;
+      m_productMetadata.QualityIndicatorsInfo.TechnicalQualityAssessment.DegratedANCDataPercentage = "";
+      m_productMetadata.QualityIndicatorsInfo.TechnicalQualityAssessment.DegratedMSIDataPercentage = "";
 
       m_productMetadata.QualityIndicatorsInfo.QualityControlChecks.QualityInspections.FormatCorectnessFlag = "";
       m_productMetadata.QualityIndicatorsInfo.QualityControlChecks.QualityInspections.GeometricQualityFlag = "";
@@ -802,7 +797,7 @@ private:
       for (const auto &gippFileEl : m_GIPPList) {
           strNewGIPPFileName = m_strProductMetadataFilePath;
           strNewGIPPFileName = ReplaceString(strNewGIPPFileName, MAIN_FOLDER_CATEG, PARAMETER_CATEG);
-          strNewGIPPFileName = strNewGIPPFileName + extractExtension(gippFileEl);
+          strNewGIPPFileName = strNewGIPPFileName + "." + extractExtension(gippFileEl);
 
           GIPPEl.GIPPFileName = strNewGIPPFileName;
           GIPPEl.GIPPType = "";
@@ -826,6 +821,9 @@ private:
              strNewFileName = m_strProductMetadataFilePath;
              strNewFileName = ReplaceString(strNewFileName, MAIN_FOLDER_CATEG, QUICK_L0OK_IMG_CATEG);
              strNewFileName = strNewFileName + "." + extractExtension(previewFileEl);
+
+             m_productMetadata.GeneralInfo.ProductInfo.PreviewImageURL = strNewFileName;
+
 
             CopyFile(m_strDestRoot + "/" + m_strProductMetadataFilePath + "/" + strNewFileName, previewFileEl);
           }
@@ -969,7 +967,7 @@ private:
     specialValue.SpecialValueText = "NOTVALID";
     m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
 
-    m_productMetadata.QualityIndicatorsInfo.CloudCoverage = 0.0;
+    m_productMetadata.QualityIndicatorsInfo.CloudCoverage = "";
   }
 
   void FillMetadataInfoForSPOT(std::unique_ptr<SPOT4Metadata> &metadata)
