@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source set_build_folder.sh
+
 ./CropType.py -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp -ratio 0.75 -input \
 /mnt/Satellite_Imagery/S2-QR/Ukraine/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000.xml \
 /mnt/Satellite_Imagery/S2-QR/Ukraine/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000.xml \
@@ -19,4 +21,4 @@
 /mnt/Satellite_Imagery/S2-QR/Ukraine/SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000.xml \
 /mnt/Satellite_Imagery/S2-QR/Ukraine/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000.xml \
 -t0 20130206 -tend 20130616 -rate 5 -radius 100 -classifier rf -rseed 0 -mask /mnt/data/QR_scripts/CropMask_Ukraine/crop_mask.tif -pixsize 20 \
--outdir "/mnt/data/QR_Results/CropType_Ukraine/"
+-outdir "/mnt/data/QR_Results/CropType_Ukraine/" -buildfolder $BUILD_FOLDER
