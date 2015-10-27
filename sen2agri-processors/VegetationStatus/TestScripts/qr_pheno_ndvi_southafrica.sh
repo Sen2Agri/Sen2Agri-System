@@ -25,24 +25,13 @@ inputXML+="/mnt/Satellite_Imagery/S2-QR/SouthAfrica/SPOT4_HRVIR1_XS_20130531_N2A
 inputXML+="/mnt/Satellite_Imagery/S2-QR/SouthAfrica/SPOT4_HRVIR1_XS_20130605_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130605_N2A_ESouthAfricaD0000B0000.xml "
 inputXML+="/mnt/Satellite_Imagery/S2-QR/SouthAfrica/SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000.xml "
 inputXML+="/mnt/Satellite_Imagery/S2-QR/SouthAfrica/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000.xml "
-
-
-L3A_DATE="20130501"
-HALF_SYNTHESIS="50"
 #end of USER modif
 
 if [ $# -lt 3 ]
 then
-  echo "Usage: $0 <resolution> <out folder name> <bands mapping file> [scattering coefficient file - S2 case only]"
+  echo "Usage: $0 <croptype otb application directory> <pheno metrics otb application directory> <output directory name>"
   echo "The file with input xmls should be given. The resolution for which the computations will be performed should be given. The output directory should be given" 1>&2  
   exit
 fi
 
-SCAT_COEF=""
-if [ $# == 4 ] ; then    
-    ./run_composite.sh "$inputXML" "$1" "$2" "$L3A_DATE" "$HALF_SYNTHESIS" "$3" "$4"
-else
-    ./run_composite.sh "$inputXML" "$1" "$2" "$L3A_DATE" "$HALF_SYNTHESIS" "$3"
-fi
-
-
+./run_pheno.sh $1 $2 "$inputXML" $3

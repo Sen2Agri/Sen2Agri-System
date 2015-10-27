@@ -78,6 +78,10 @@ private:
 
         AddParameter(ParameterType_OutputVectorData, "out", "The output footprint");
 
+        AddParameter(
+            ParameterType_OutputFilename, "outbounds", "The output footprint as a text file");
+        MandatoryOff("outbounds");
+
         SetDocExampleParameterValue("in", "image.tif");
         SetDocExampleParameterValue("mode", "metadata");
         SetDocExampleParameterValue("out", "footprint.shp");
@@ -92,12 +96,125 @@ private:
         const auto &file = GetParameterString("in");
 
         if (GetParameterString("mode") == "metadata") {
-            auto vectorData = CreateVectorDataFromMetadata(file);
+            auto vectorData = VectorDataType::New();
+
+            auto document = DataNodeType::New();
+            document->SetNodeType(otb::DOCUMENT);
+            document->SetNodeId("footprint");
+            auto folder = DataNodeType::New();
+            folder->SetNodeType(otb::FOLDER);
+            auto polygonNode = DataNodeType::New();
+            polygonNode->SetNodeType(otb::FEATURE_POLYGON);
+
+            auto tree = vectorData->GetDataTree();
+            auto root = tree->GetRoot()->Get();
+
+            tree->Add(document, root);
+            tree->Add(folder, document);
+            tree->Add(polygonNode, folder);
+
+            PolygonType::Pointer polygon;
+            if (auto metadata = itk::MACCSMetadataReader::New()->ReadMetadata(file)) {
+                polygon = FootprintFromMACCSMetadata(*metadata);
+
+                vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
+            } else if (auto metadata = itk::SPOT4MetadataReader::New()->ReadMetadata(file)) {
+                polygon = FootprintFromSPOT4Metadata(*metadata);
+
+                vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
+            } else {
+                auto reader = otb::ImageFileReader<FloatVectorImageType>::New();
+                reader->SetFileName(file);
+                reader->UpdateOutputInformation();
+
+                auto output = reader->GetOutput();
+
+                polygon = FootprintFromGeoCoding(output);
+
+                vectorData->SetProjectionRef(output->GetProjectionRef());
+            }
+
+            polygonNode->SetPolygonExteriorRing(polygon);
 
             SetParameterOutputVectorData("out", vectorData.GetPointer());
+
+            if (HasValue("outbounds")) {
+                std::ofstream boundsFile(GetParameterString("outbounds"));
+                for (const auto &v : *polygon->GetVertexList()) {
+                    boundsFile << v[0] << ' ' << v[1];
+                }
+            }
         } else {
             m_ImageFileReader = ImageFileReaderType::New();
             m_ImageFileReader->SetFileName(getMainRasterFile(file));
+
+            if (HasValue("outbounds")) {
+                m_ImageFileReader->UpdateOutputInformation();
+                auto output = m_ImageFileReader->GetOutput();
+                auto polygon = FootprintFromGeoCoding(output);
+
+                auto sourceSrs = static_cast<OGRSpatialReference *>(
+                    OSRNewSpatialReference(output->GetProjectionRef().c_str()));
+                if (!sourceSrs) {
+                    itkExceptionMacro(
+                        << "Unable to create source OGRSpatialReference from OGR WKT\n"
+                        << output->GetProjectionRef());
+                }
+
+                auto targetSrs =
+                    static_cast<OGRSpatialReference *>(OSRNewSpatialReference(SRS_WKT_WGS84));
+                if (!targetSrs) {
+                    OSRDestroySpatialReference(sourceSrs);
+
+                    itkExceptionMacro(<< "Unable to create WGS84 OGRSpatialReference");
+                }
+
+                auto transform = static_cast<OGRCoordinateTransformation *>(
+                    OCTNewCoordinateTransformation(sourceSrs, targetSrs));
+                if (!transform) {
+                    OSRDestroySpatialReference(sourceSrs);
+                    OSRDestroySpatialReference(targetSrs);
+
+                    itkExceptionMacro(<< "Unable to create OGRCoordinateTransformation");
+                }
+
+                auto point = static_cast<OGRPoint *>(OGRGeometryFactory::createGeometry(wkbPoint));
+                if (!point) {
+                    OCTDestroyCoordinateTransformation(transform);
+                    OSRDestroySpatialReference(targetSrs);
+                    OSRDestroySpatialReference(sourceSrs);
+
+                    itkExceptionMacro(<< "Unable to create OGRPoint");
+                }
+
+                std::ofstream boundsFile(GetParameterString("outbounds"));
+                for (const auto &v : *polygon->GetVertexList()) {
+                    point->setX(v[0]);
+                    point->setY(v[1]);
+                    point->setZ(0.0);
+                    auto err = point->transform(transform);
+                    if (err == OGRERR_NONE) {
+                        boundsFile << point->getX() << ' ' << point->getY() << '\n';
+                    } else {
+                        OGRGeometryFactory::destroyGeometry(point);
+
+                        OCTDestroyCoordinateTransformation(transform);
+                        OSRDestroySpatialReference(targetSrs);
+                        OSRDestroySpatialReference(sourceSrs);
+
+                        itkExceptionMacro(<< "Unable to transform point (" << v[0] << ", " << v[1]
+                                          << ") to WGS84. The source projection is:\n"
+                                          << output->GetProjectionRef()
+                                          << "\nOGR returned error code " << err);
+                    }
+                }
+
+                OGRGeometryFactory::destroyGeometry(point);
+
+                OCTDestroyCoordinateTransformation(transform);
+                OSRDestroySpatialReference(targetSrs);
+                OSRDestroySpatialReference(sourceSrs);
+            }
 
             m_MaskFilter = MaskFilterType::New();
             m_MaskFilter->GetFunctor().SetNoDataValue(GetParameterInt("mode.raster.nodata"));
@@ -109,96 +226,6 @@ private:
 
             SetParameterOutputVectorData("out", m_PolygonizeFilter->GetOutput());
         }
-    }
-
-    VectorDataType::Pointer CreateVectorDataFromMetadata(const std::string &file)
-    {
-        auto vectorData = VectorDataType::New();
-
-        auto document = DataNodeType::New();
-        document->SetNodeType(otb::DOCUMENT);
-        document->SetNodeId("footprint");
-        auto folder = DataNodeType::New();
-        folder->SetNodeType(otb::FOLDER);
-        auto polygonNode = DataNodeType::New();
-        polygonNode->SetNodeType(otb::FEATURE_POLYGON);
-
-        auto tree = vectorData->GetDataTree();
-        auto root = tree->GetRoot()->Get();
-
-        tree->Add(document, root);
-        tree->Add(folder, document);
-        tree->Add(polygonNode, folder);
-
-        PolygonType::Pointer polygon;
-        if (auto metadata = itk::MACCSMetadataReader::New()->ReadMetadata(file)) {
-            polygon = FootprintFromMACCSMetadata(*metadata);
-
-            vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
-        } else if (auto metadata = itk::SPOT4MetadataReader::New()->ReadMetadata(file)) {
-            polygon = FootprintFromSPOT4Metadata(*metadata);
-
-            vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
-        } else {
-            auto reader = otb::ImageFileReader<FloatVectorImageType>::New();
-            reader->SetFileName(file);
-            reader->UpdateOutputInformation();
-
-            auto output = reader->GetOutput();
-
-            polygon = FootprintFromGeoCoding(output);
-
-            vectorData->SetProjectionRef(output->GetProjectionRef());
-        }
-
-        polygonNode->SetPolygonExteriorRing(polygon);
-
-        return vectorData;
-    }
-
-    VectorDataType::Pointer CreateVectorDataFromRaster(const std::string &file)
-    {
-        auto vectorData = VectorDataType::New();
-
-        auto document = DataNodeType::New();
-        document->SetNodeType(otb::DOCUMENT);
-        document->SetNodeId("footprint");
-        auto folder = DataNodeType::New();
-        folder->SetNodeType(otb::FOLDER);
-        auto polygonNode = DataNodeType::New();
-        polygonNode->SetNodeType(otb::FEATURE_POLYGON);
-
-        auto tree = vectorData->GetDataTree();
-        auto root = tree->GetRoot()->Get();
-
-        tree->Add(document, root);
-        tree->Add(folder, document);
-        tree->Add(polygonNode, folder);
-
-        PolygonType::Pointer polygon;
-        if (auto metadata = itk::MACCSMetadataReader::New()->ReadMetadata(file)) {
-            polygon = FootprintFromMACCSMetadata(*metadata);
-
-            vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
-        } else if (auto metadata = itk::SPOT4MetadataReader::New()->ReadMetadata(file)) {
-            polygon = FootprintFromSPOT4Metadata(*metadata);
-
-            vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
-        } else {
-            auto reader = otb::ImageFileReader<FloatVectorImageType>::New();
-            reader->SetFileName(file);
-            reader->UpdateOutputInformation();
-
-            auto output = reader->GetOutput();
-
-            polygon = FootprintFromGeoCoding(output);
-
-            vectorData->SetProjectionRef(output->GetProjectionRef());
-        }
-
-        polygonNode->SetPolygonExteriorRing(polygon);
-
-        return vectorData;
     }
 
     PolygonType::Pointer FootprintFromMACCSMetadata(const MACCSFileMetadata &metadata)
@@ -225,7 +252,8 @@ private:
         return poly;
     }
 
-    PolygonType::Pointer FootprintFromGeoCoding(const FloatVectorImageType *image)
+    template <typename TPixel>
+    PolygonType::Pointer FootprintFromGeoCoding(const otb::VectorImage<TPixel> *image)
     {
         auto poly = PolygonType::New();
         poly->AddVertex(PointFromVector(image->GetUpperLeftCorner()));

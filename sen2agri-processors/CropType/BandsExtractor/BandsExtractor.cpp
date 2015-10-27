@@ -56,6 +56,7 @@
 
 #define LANDSAT    "LANDSAT"
 #define SENTINEL   "SENTINEL"
+#define SPOT       "SPOT"
 
 #define TYPE_MACCS  0
 #define TYPE_SPOT4  1
@@ -88,6 +89,7 @@ typedef otb::StreamingResampleImageFilter<InternalImageType, InternalImageType, 
 typedef otb::ObjectList<ResampleFilterType>                           ResampleFilterListType;
 typedef itk::LinearInterpolateImageFunction<InternalImageType,
                                             double>          LinearInterpolationType;
+typedef itk::NearestNeighborInterpolateImageFunction<InternalImageType, double>             NearestNeighborInterpolationType;
 typedef itk::IdentityTransform<double, InternalImageType::ImageDimension>      IdentityTransformType;
 typedef itk::ScalableAffineTransform<double, InternalImageType::ImageDimension> ScalableTransformType;
 typedef ScalableTransformType::OutputVectorType                         OutputVectorType;
@@ -108,6 +110,10 @@ struct ImageDescriptor {
     std::string filename;
     // the aquisition date in format YYYYMMDD
     std::string aquisitionDate;
+    // the mission name
+    std::string mission;
+    // this product belongs to the main mission
+    bool isMain;
 
     // The Green band
     InternalImageType::Pointer imgG;
@@ -281,6 +287,13 @@ private:
     SetMinimumParameterFloatValue("pixsize", 1.0);
     MandatoryOff("pixsize");
 
+    AddParameter(ParameterType_Empty, "merge", "Merge all products into one time series regardless of the mission. (default off)");
+    MandatoryOff("merge");
+
+    AddParameter(ParameterType_String, "mission", "The main raster series that will be used. By default SPOT is used");
+    MandatoryOff("mission");
+
+
      //  Software Guide : EndCodeSnippet
 
     // Software Guide : BeginLatex
@@ -334,6 +347,18 @@ private:
       // get the required pixel size
       m_pixSize = this->GetParameterFloat("pixsize");
 
+      // get the main mission
+      m_mission = SPOT;
+      if (HasValue("mission")) {
+          m_mission = this->GetParameterString("mission");
+      }
+
+      // verify if merging is required
+      m_merge = false;
+      if (IsParameterEnabled("merge")) {
+          m_merge = true;
+      }
+
       // Get the list of input files
       std::vector<std::string> descriptors = this->GetParameterStringList("il");
 
@@ -342,8 +367,12 @@ private:
         itkExceptionMacro("No input file set...");
         }
 
-      // load all descriptors
+      std::cout << "Running BandsExtractor with pixel size " << m_pixSize << "m, main mission " << m_mission << " and " << (m_merge ? "with" : "without") << " merging" << std::endl;
 
+      // compute the desired size of the output image
+      updateRequiredImageSize(descriptors);
+
+      // load all descriptors
       MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
       SPOT4MetadataReaderType::Pointer spot4MetadataReader = SPOT4MetadataReaderType::New();
       for (const std::string& desc : descriptors) {
@@ -372,7 +401,7 @@ private:
       }
 
       // sort the descriptors after the aquisition date
-      std::sort(m_DescriptorsList.begin(), m_DescriptorsList.end(), BandsExtractor::SortMetadata);
+      std::sort(m_DescriptorsList.begin(), m_DescriptorsList.end(), m_merge ? BandsExtractor::SortMergedMetadata : BandsExtractor::SortUnmergedMetadata);
 
       // Build the Border Shape
       if(HasValue("shape")) {
@@ -384,6 +413,67 @@ private:
   }
   //  Software Guide :EndCodeSnippet
 
+  void updateRequiredImageSize(std::vector<std::string>& descriptors) {
+      m_imageWidth = 0;
+      m_imageHeight = 0;
+
+      // look for the first raster belonging to the main mission
+      MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
+      SPOT4MetadataReaderType::Pointer spot4MetadataReader = SPOT4MetadataReaderType::New();
+      for (const std::string& desc : descriptors) {
+          if (auto meta = maccsMetadataReader->ReadMetadata(desc)) {
+              // check if the raster corresponds to the main mission
+              if (meta->Header.FixedHeader.Mission.find(m_mission) != std::string::npos) {
+                  std::string rootFolder = extractFolder(desc);
+                  std::string imageFile = getMACCSRasterFileName(rootFolder, meta->ProductOrganization.ImageFiles, "_FRE");
+                  if (imageFile.size() == 0) {
+                      imageFile = getMACCSRasterFileName(rootFolder, meta->ProductOrganization.ImageFiles, "_FRE_R1");
+                  }
+                  ImageReaderType::Pointer reader = getReader(imageFile);
+                  reader->UpdateOutputInformation();
+                  float curRes = reader->GetOutput()->GetSpacing()[0];
+
+
+                  const float scale = (float)m_pixSize / curRes;
+                  m_imageWidth = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[0] / scale;
+                  m_imageHeight = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[1] / scale;
+
+                  FloatVectorImageType::PointType origin = reader->GetOutput()->GetOrigin();
+                  InternalImageType::SpacingType spacing = reader->GetOutput()->GetSpacing();
+                  m_imageOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale - 1.0);
+                  m_imageOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale - 1.0);
+
+                  break;
+              }
+
+          }else if (auto meta = spot4MetadataReader->ReadMetadata(desc)) {
+              // check if the raster corresponds to the main mission
+              if (meta->Header.Ident.find(m_mission) != std::string::npos) {
+                  // get the root foloder from the descriptor file name
+                  std::string rootFolder = extractFolder(desc);
+                  std::string imageFile = rootFolder + meta->Files.OrthoSurfCorrPente;
+                  ImageReaderType::Pointer reader = getReader(imageFile);
+                  reader->UpdateOutputInformation();
+                  float curRes = reader->GetOutput()->GetSpacing()[0];
+
+
+                  const float scale = (float)m_pixSize / curRes;
+                  m_imageWidth = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[0] / scale;
+                  m_imageHeight = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[1] / scale;
+
+                  FloatVectorImageType::PointType origin = reader->GetOutput()->GetOrigin();
+                  InternalImageType::SpacingType spacing = reader->GetOutput()->GetSpacing();
+                  m_imageOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale - 1.0);
+                  m_imageOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale - 1.0);
+
+                  break;
+              }
+
+          } else {
+            itkExceptionMacro("Unable to read metadata from " << desc);
+          }
+      }
+  }
 
   // Process a SPOT4 metadata structure and extract the needed bands and masks.
   void ProcessSpot4Metadata(const SPOT4Metadata& meta, const std::string& filename, ImageDescriptor& descriptor) {
@@ -393,6 +483,10 @@ private:
 
       // Save the descriptor fiel path
       descriptor.filename = filename;
+
+      // save the mission
+      descriptor.mission = SPOT;
+      descriptor.isMain = m_mission.compare(descriptor.mission) == 0;
 
       // get the root foloder from the descriptor file name
       std::string rootFolder = extractFolder(filename);
@@ -406,20 +500,20 @@ private:
       // Extract the green band
       extractor = getExtractor(reader->GetOutput(), 1);
       // resample if needed
-      descriptor.imgG = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.imgG = getResampledBand(extractor->GetOutput(), curRes, false);
 
       // Extract the red band
       extractor = getExtractor(reader->GetOutput(), 2);
-      descriptor.imgR = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.imgR = getResampledBand(extractor->GetOutput(), curRes, false);
 
       // Extract the NIR band
       extractor = getExtractor(reader->GetOutput(), 3);
       // resample if needed
-      descriptor.imgNIR = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.imgNIR = getResampledBand(extractor->GetOutput(), curRes, false);
 
       // Extract the SWIR band
       extractor = getExtractor(reader->GetOutput(), 4);
-      descriptor.imgSWIR = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.imgSWIR = getResampledBand(extractor->GetOutput(), curRes, false);
 
       // Get the validity mask
       std::string maskFileDiv = rootFolder + meta.Files.MaskDiv;
@@ -434,7 +528,7 @@ private:
       maskMath->SetExpression("((b1 == 0) || (b1-(rint(b1/2-0.01)*2) == 0)) ? 1 : 0 ");
       maskMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskMath);
-      descriptor.maskValid = getResampledBand(maskMath->GetOutput(), curRes);
+      descriptor.maskValid = getResampledBand(maskMath->GetOutput(), curRes, true);
 
       // Get the saturation mask
       std::string maskFileSat = rootFolder + meta.Files.MaskSaturation;
@@ -444,7 +538,7 @@ private:
 
       extractor = getExtractor(maskReaderSat->GetOutput(), 1);
       // resample if needed
-      descriptor.maskSat = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.maskSat = getResampledBand(extractor->GetOutput(), curRes, true);
 
       // Get the clouds mask
       std::string maskFileNua = rootFolder + meta.Files.MaskNua;
@@ -454,7 +548,7 @@ private:
 
       extractor = getExtractor(maskReaderNua->GetOutput(), 1);
       // resample if needed
-      descriptor.maskCloud = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.maskCloud = getResampledBand(extractor->GetOutput(), curRes, true);
 
       // Get the water mask
 
@@ -466,7 +560,7 @@ private:
       maskWaterMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskWaterMath);
       // resample if needed
-      descriptor.maskWater = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.maskWater = getResampledBand(extractor->GetOutput(), curRes, true);
 
       // Get the snow mask
 
@@ -478,7 +572,7 @@ private:
       maskSnowMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskSnowMath);
       // resample if needed
-      descriptor.maskSnow = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.maskSnow = getResampledBand(extractor->GetOutput(), curRes, true);
   }
 
   // Process a LANDSAT8 metadata structure and extract the needed bands and masks.
@@ -489,6 +583,10 @@ private:
 
       // Save the descriptor fiel path
       descriptor.filename = filename;
+
+      // save the mission
+      descriptor.mission = LANDSAT;
+      descriptor.isMain = m_mission.compare(descriptor.mission) == 0;
 
       // get the root foloder from the descriptor file name
       std::string rootFolder = extractFolder(filename);
@@ -503,22 +601,22 @@ private:
       // Extract the green band
       extractor = getExtractor(reader->GetOutput(), 3);
       // resample if needed
-      descriptor.imgG = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.imgG = getResampledBand(extractor->GetOutput(), curRes, false);
 
       // Extract the red band
       extractor = getExtractor(reader->GetOutput(), 4);
       // resample if needed
-      descriptor.imgR = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.imgR = getResampledBand(extractor->GetOutput(), curRes, false);
 
       // Extract the NIR band
       extractor = getExtractor(reader->GetOutput(), 5);
       // resample if needed
-      descriptor.imgNIR = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.imgNIR = getResampledBand(extractor->GetOutput(), curRes, false);
 
       // Extract the SWIR band
       extractor = getExtractor(reader->GetOutput(), 6);
       // resample if needed
-      descriptor.imgSWIR = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.imgSWIR = getResampledBand(extractor->GetOutput(), curRes, false);
 
       // Get the validity mask
       std::string maskFileQuality = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_QLT");
@@ -534,12 +632,12 @@ private:
       maskMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskMath);
       // resample if needed
-      descriptor.maskValid = getResampledBand(maskMath->GetOutput(), curRes);
+      descriptor.maskValid = getResampledBand(maskMath->GetOutput(), curRes, true);
 
       // Get the saturation mask
       extractor = getExtractor(maskReaderQuality->GetOutput(), 1);
       // resample if needed
-      descriptor.maskSat = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.maskSat = getResampledBand(extractor->GetOutput(), curRes, true);
 
       // Get the cloud mask
       std::string maskFileCloud = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_CLD");
@@ -549,7 +647,7 @@ private:
 
       extractor = getExtractor(maskReaderCloud->GetOutput(), 1);
       // resample if needed
-      descriptor.maskCloud = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.maskCloud = getResampledBand(extractor->GetOutput(), curRes, true);
 
       // Get the water mask
       std::string maskFileWaterSnow = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_MSK");
@@ -566,7 +664,7 @@ private:
       m_BandMathList->PushBack(maskWaterMath);
 
       // resample if needed
-      descriptor.maskWater = getResampledBand(maskWaterMath->GetOutput(), curRes);
+      descriptor.maskWater = getResampledBand(maskWaterMath->GetOutput(), curRes, true);
 
       // Get the snow mask
       extractor = getExtractor(maskReaderWaterSnow->GetOutput(), 1);
@@ -578,7 +676,7 @@ private:
       m_BandMathList->PushBack(maskSnowMath);
 
       // resample if needed
-      descriptor.maskSnow = getResampledBand(maskSnowMath->GetOutput(), curRes);
+      descriptor.maskSnow = getResampledBand(maskSnowMath->GetOutput(), curRes, true);
   }
 
 
@@ -590,6 +688,10 @@ private:
 
       // Save the descriptor fiel path
       descriptor.filename = filename;
+
+      // save the mission
+      descriptor.mission = SENTINEL;
+      descriptor.isMain = m_mission.compare(descriptor.mission) == 0;
 
       // get the root foloder from the descriptor file name
       std::string rootFolder = extractFolder(filename);
@@ -607,19 +709,19 @@ private:
       int gIndex = getBandIndex(meta.ImageInformation.Resolutions[0].Bands, "B3");
       extractor = getExtractor(reader1->GetOutput(), gIndex);
       // resample if needed
-      descriptor.imgG = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.imgG = getResampledBand(extractor->GetOutput(), curRes, false);
 
       // Extract Red band
       int rIndex = getBandIndex(meta.ImageInformation.Resolutions[0].Bands, "B4");
       extractor = getExtractor(reader1->GetOutput(), rIndex);
       // resample if needed
-      descriptor.imgR = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.imgR = getResampledBand(extractor->GetOutput(), curRes, false);
 
       // Extract NIR band
       int nirIndex = getBandIndex(meta.ImageInformation.Resolutions[0].Bands, "B8");
       extractor = getExtractor(reader1->GetOutput(), nirIndex);
       // resample if needed
-      descriptor.imgNIR = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.imgNIR = getResampledBand(extractor->GetOutput(), curRes, false);
 
       //Extract the last band form the second file. Resampling needed.
       std::string imageFile2 = getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE_R2");
@@ -631,7 +733,7 @@ private:
       int swirIndex = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B11");
       extractor = getExtractor(reader2->GetOutput(), swirIndex);
       // resample if needed
-      descriptor.imgSWIR = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.imgSWIR = getResampledBand(extractor->GetOutput(), curRes, false);
 
       // Get the validity mask
       std::string maskFileQuality = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_QLT_R1");
@@ -649,12 +751,12 @@ private:
       m_BandMathList->PushBack(maskMath);
 
       // resample if needed
-      descriptor.maskValid = getResampledBand(maskMath->GetOutput(), curRes);
+      descriptor.maskValid = getResampledBand(maskMath->GetOutput(), curRes, true);
 
       // Get the saturation mask
       extractor = getExtractor(maskReaderQuality->GetOutput(), 1);
       // resample if needed
-      descriptor.maskSat = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.maskSat = getResampledBand(extractor->GetOutput(), curRes, true);
 
       // Get the cloud mask
       std::string maskFileCloud = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_CLD_R1");
@@ -663,7 +765,7 @@ private:
       curRes = maskReaderCloud->GetOutput()->GetSpacing()[0];
 
       extractor = getExtractor(maskReaderCloud->GetOutput(), 1);
-      descriptor.maskCloud = getResampledBand(extractor->GetOutput(), curRes);
+      descriptor.maskCloud = getResampledBand(extractor->GetOutput(), curRes, true);
 
       // Get the water mask
       std::string maskFileWaterSnow = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_MSK_R1");
@@ -679,7 +781,7 @@ private:
       m_BandMathList->PushBack(maskWaterMath);
 
       // resample if needed
-      descriptor.maskWater = getResampledBand(maskWaterMath->GetOutput(), curRes);
+      descriptor.maskWater = getResampledBand(maskWaterMath->GetOutput(), curRes, true);
 
       // Get the snow mask
       extractor = getExtractor(maskReaderWaterSnow->GetOutput(), 1);
@@ -691,7 +793,7 @@ private:
       m_BandMathList->PushBack(maskSnowMath);
 
       // resample if needed
-      descriptor.maskSnow = getResampledBand(maskSnowMath->GetOutput(), curRes);
+      descriptor.maskSnow = getResampledBand(maskSnowMath->GetOutput(), curRes, true);
   }
 
   // Get all validity masks and build a validity shape which will be comon for all rasters
@@ -701,6 +803,12 @@ private:
       int counter = 0;
 
       for (const ImageDescriptor& desc : m_DescriptorsList) {
+          if (!m_merge) {
+              // use only main mission rasters for the mask
+              if (!desc.isMain) {
+                  break;
+              }
+          }
           // compute mean value
           StreamingStatisticsImageFilterType::Pointer statsEstimator = StreamingStatisticsImageFilterType::New();
           statsEstimator->SetInput(desc.maskValid);
@@ -795,11 +903,33 @@ private:
           itkExceptionMacro("Can't open dates file for writing!");
       }
 
+      // last processed mission descriptor
+      std::string lastMission = m_mission;
+      // write the main mission name
+      datesFile << m_mission << std::endl;
+
+      std::ostringstream missionDates;
+      int numDates = 0;
 
       // interpret the descriptors and extract the required bands from the atached images
       for ( const ImageDescriptor& desc : m_DescriptorsList) {
-          // write the date to the output file
-          datesFile << desc.aquisitionDate << std::endl;
+          // check if the mission of this descriptor is identical to the mission of the previous descriptor if merging is not requested
+          if (!m_merge && lastMission.find(desc.mission) == std::string::npos) {
+              // write previous mission's data to file
+              datesFile << numDates << std::endl;
+              datesFile << missionDates.str();
+
+              // new mission
+              lastMission = desc.mission;
+              datesFile << lastMission << std::endl;
+              numDates = 0;
+              missionDates.str("");
+              missionDates.clear();
+          }
+
+          // write the date to the buffer
+          missionDates << desc.aquisitionDate << std::endl;
+          numDates++;
 
           // add the bans to the image list
           m_ImageList->PushBack(desc.imgG);
@@ -852,6 +982,10 @@ private:
           }
       }
 
+      // write the data for the last mission
+      datesFile << numDates << std::endl;
+      datesFile << missionDates.str() << std::endl;
+
       // close the dates file
       datesFile.close();
 
@@ -867,314 +1001,27 @@ private:
           SetParameterOutputImage("allmasks", m_AllMasks->GetOutput());
   }
 
-//  void ExtractMasks() {
-
-//      // Extract the validity masks
-//      ExtractValidityMasks();
-
-//      // Compute the border mask
-//      float sum = 0.0;
-//      std::string expression = "(0";
-//      int counter = 0;
-//      for (float i : m_MeanPixels) {
-//          sum += i;
-//          m_borderMask->SetNthInput(counter, m_VldMaskList->GetNthElement(counter));
-//          expression += "+b" + std::to_string(++counter);
-//      }
-
-//      int threshold = (int)sum;
-//      expression += ") >= " + std::to_string(threshold) + " ? 1 : 0";
-
-//      m_borderMask->SetExpression(expression);
-
-//      // polygonize the border mask
-//      m_ShapeBuilder->SetInput(m_borderMask->GetOutput());
-//      m_ShapeBuilder->SetInputMask(m_borderMask->GetOutput());
-
-
-
-//      // interpret the descriptors and extract the required bands from the atached images
-//      for (const ImageDescriptor& desc : m_DescriptorsList) {
-
-//          if (desc.type == TYPE_MACCS) {
-//              if (desc.maccsDescriptor.Header.FixedHeader.Mission.find(LANDSAT) != std::string::npos) {
-//                  // Interpret landsat masks
-//                  PocessLandsatMasks(desc);
-//              } else if (desc.maccsDescriptor.Header.FixedHeader.Mission.find(SENTINEL) != std::string::npos) {
-//                  // Interpret sentinel masks
-//                  PocessSentinelMasks(desc);
-//              } else {
-//                  itkExceptionMacro("Unknown mission: " + desc.maccsDescriptor.Header.FixedHeader.Mission);
-//              }
-//          } else if (desc.type == TYPE_SPOT4) {
-//              PocessSpot4Masks(desc);
-//          }
-//      }
-//  }
-
-//  // Loop through all descriptors and extract the pixel validity masks as 0 for invalid pixel and 1 for valid pixel
-//  void ExtractValidityMasks() {
-//      for (const ImageDescriptor& desc : m_DescriptorsList) {
-
-//          if (desc.type == TYPE_MACCS) {
-//              if (desc.maccsDescriptor.Header.FixedHeader.Mission.find(LANDSAT) != std::string::npos) {
-//                  // Interpret landsat masks
-//                  ExtractLandsatValidityMask(desc);
-//              } else if (desc.maccsDescriptor.Header.FixedHeader.Mission.find(SENTINEL) != std::string::npos) {
-//                  // Interpret sentinel masks
-//                  ExtractSentinelValidityMask(desc);
-//              } else {
-//                  itkExceptionMacro("Unknown mission: " + desc.maccsDescriptor.Header.FixedHeader.Mission);
-//              }
-//          } else if (desc.type == TYPE_SPOT4) {
-//              ExtractSpot4ValidityMask(desc);
-//          }
-//      }
-//  }
-
-//  void ExtractLandsatValidityMask(const ImageDescriptor& meta) {
-//      //TODO: To implement
-//  }
-
-//  void ExtractSentinelValidityMask(const ImageDescriptor& meta) {
-//      //TODO: To implement
-//  }
-
-//  void ExtractSpot4ValidityMask(const ImageDescriptor& meta) {
-//      std::string maskFileDiv = getSPOT4MaskFileName(meta, MASK_TYPE_DIV);
-//      ImageReaderType::Pointer maskReaderDiv = getReader(maskFileDiv);
-
-//      ExtractROIFilterType::Pointer divMaskExtractor = ExtractROIFilterType::New();
-//      divMaskExtractor->SetInput( maskReaderDiv->GetOutput() );
-//      divMaskExtractor->SetChannel( 1 );
-//      divMaskExtractor->UpdateOutputInformation();
-//      m_ExtractorList->PushBack( divMaskExtractor );
-
-//      BandMathImageFilterType::Pointer maskMath = BandMathImageFilterType::New();
-//      maskMath->SetNthInput(0, divMaskExtractor->GetOutput());
-//      maskMath->SetExpression("((b1 == 0) || (b1-rint(b1/2-0.01) == 0)) ? 1 : 0 ");
-//      m_BandMathList->PushBack(maskMath);
-
-//      // compute mean value
-//      StreamingStatisticsImageFilterType::Pointer statsEstimator = StreamingStatisticsImageFilterType::New();
-//      statsEstimator->SetInput(maskMath->GetOutput());
-//      statsEstimator->Update();
-
-//      m_MeanPixels.push_back(statsEstimator->GetMean());
-
-//      m_VldMaskList->PushBack(maskMath->GetOutput());
-
-//  }
-
-//  void PocessSpot4Masks(const ImageDescriptor& meta) {
-//      // create the mask
-//      std::string maskFileNua = getSPOT4MaskFileName(meta, MASK_TYPE_NUA);
-//      ImageReaderType::Pointer maskReaderNua = getReader(maskFileNua);
-//      std::string maskFileSat = getSPOT4MaskFileName(meta, MASK_TYPE_SAT);
-//      ImageReaderType::Pointer maskReaderSat = getReader(maskFileSat);
-//      std::string maskFileDiv = getSPOT4MaskFileName(meta, MASK_TYPE_DIV);
-//      ImageReaderType::Pointer maskReaderDiv = getReader(maskFileDiv);
-
-//      BandMathImageFilterType::Pointer maskMath = BandMathImageFilterType::New();
-
-//      ExtractROIFilterType::Pointer nuaMaskExtractor = ExtractROIFilterType::New();
-//      nuaMaskExtractor->SetInput( maskReaderNua->GetOutput() );
-//      nuaMaskExtractor->SetChannel( 1 );
-//      nuaMaskExtractor->UpdateOutputInformation();
-//      m_ExtractorList->PushBack( nuaMaskExtractor );
-
-//      ExtractROIFilterType::Pointer satMaskExtractor = ExtractROIFilterType::New();
-//      satMaskExtractor->SetInput( maskReaderSat->GetOutput() );
-//      satMaskExtractor->SetChannel( 1 );
-//      satMaskExtractor->UpdateOutputInformation();
-//      m_ExtractorList->PushBack( satMaskExtractor );
-
-//      ExtractROIFilterType::Pointer divMaskExtractor = ExtractROIFilterType::New();
-//      divMaskExtractor->SetInput( maskReaderDiv->GetOutput() );
-//      divMaskExtractor->SetChannel( 1 );
-//      divMaskExtractor->UpdateOutputInformation();
-//      m_ExtractorList->PushBack( divMaskExtractor );
-
-//      maskMath->SetNthInput(0, nuaMaskExtractor->GetOutput());
-//      maskMath->SetNthInput(1, satMaskExtractor->GetOutput());
-//      maskMath->SetNthInput(2, divMaskExtractor->GetOutput());
-//      maskMath->SetNthInput(3, m_borderMask->GetOutput());
-
-//#ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
-//      m_maskExpression = "(b1 == 0) && (b2 == 0) && (b3 == 0) && (b4 == 1) ? 0 : 1";
-//#else
-//      m_maskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 0) and (b4 == 1), 0, 1)";
-//#endif
-
-//      maskMath->SetExpression(m_maskExpression);
-
-//      m_BandMathList->PushBack(maskMath);
-
-//      m_MasksList->PushBack(maskMath->GetOutput());
-//  }
-
-//  void PocessLandsatMasks(const ImageDescriptor& meta) {
-//      //TODO: To implement
-//      // create the mask
-//      std::string maskFile = getMACCSImageFileName(meta.filename, meta.maccsDescriptor.ProductOrganization.AnnexFiles, "_MSK");
-//      ImageReaderType::Pointer maskReader = getReader(maskFile);
-//      ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-//      extractor->SetInput( maskReader->GetOutput() );
-//      extractor->SetChannel( 1 );
-//      extractor->UpdateOutputInformation();
-//      m_ExtractorList->PushBack( extractor );
-
-
-//      // resample from 30m to 10m
-//      ResampleFilterType::Pointer maskResampler = getResampler(extractor->GetOutput(), 3.0);
-//      m_MasksList->PushBack(maskResampler->GetOutput());
-
-//  }
-
-//  void PocessSentinelMasks(const ImageDescriptor& meta) {
-//      //TODO: To implement
-//      // create the mask
-//      std::string maskFile = getMACCSImageFileName(meta.filename, meta.maccsDescriptor.ProductOrganization.AnnexFiles, "_MSK");
-//      ImageReaderType::Pointer maskReader = getReader(maskFile);
-//      ExtractROIFilterType::Pointer maskExtractor = ExtractROIFilterType::New();
-//      maskExtractor->SetInput( maskReader->GetOutput() );
-//      maskExtractor->SetChannel( 1 );
-//      maskExtractor->UpdateOutputInformation();
-//      m_ExtractorList->PushBack( maskExtractor );
-
-//      m_MasksList->PushBack(maskExtractor->GetOutput());
-//  }
-
   // Sort the descriptors based on the aquisition date
-  static bool SortMetadata(const ImageDescriptor& o1, const ImageDescriptor& o2) {
+  static bool SortMergedMetadata(const ImageDescriptor& o1, const ImageDescriptor& o2) {
       return o1.aquisitionDate.compare(o2.aquisitionDate) < 0;
   }
 
-//  // Process a Landsat8 image.
-//  void PocessLandsatImage(const ImageDescriptor& meta) {
-//      // Only MACCS format is supported
-//      if (meta.type != TYPE_MACCS) {
-//          itkExceptionMacro("Unsupported LANDSAT8 image format for descritor: " + meta.filename);
-//      }
-//      // The Landsat8 images contains only one resolution described in one file.
-//      // load the file in a reader
-//      std::string imageFile = getMACCSImageFileName(meta.filename, meta.maccsDescriptor.ProductOrganization.ImageFiles, "_FRE");
-//      ImageReaderType::Pointer reader = getReader(imageFile);
+  // Sort the descriptors based on the aquisition date
+  static bool SortUnmergedMetadata(const ImageDescriptor& o1, const ImageDescriptor& o2) {
+      if (o1.isMain && !o2.isMain) {
+          return true;
+      }
+      if (o2.isMain && !o1.isMain) {
+          return false;
+      }
+      int missionComp = o1.mission.compare(o2.mission);
+      if (missionComp == 0) {
+          return o1.aquisitionDate.compare(o2.aquisitionDate) < 0;
+      } else {
+          return missionComp < 0;
+      }
+  }
 
-//      // the required bands are:
-//      // b3 - G (Name B3)
-//      // b4 - R (Name B4)
-//      // b5 - NIR (Name B5)
-//      // b6 - SWIR (Name B6)
-//      for (int i = 3; i <= 6; i++) {
-//          std::string bandName = "B" + std::to_string(i);
-//          int index = getBandIndex(meta.maccsDescriptor.ImageInformation.Bands, bandName);
-
-//          ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-//          extractor->SetInput( reader->GetOutput() );
-//          extractor->SetChannel( index );
-//          extractor->UpdateOutputInformation();
-//          m_ExtractorList->PushBack( extractor );
-
-//          // resample from 30m to 10m
-//          ResampleFilterType::Pointer resampler = getResampler(extractor->GetOutput(), 3.0);
-
-//          m_ImageList->PushBack( resampler->GetOutput() );
-//      }
-//  }
-
-
-//  // Process a Spot4 image
-//  void PocessSpot4Image(const ImageDescriptor& meta) {
-//      // The Spot4 images contains only one resolution described in one file.
-//      // No filtering is required.
-//      // load the file in a reader
-//      std::string imageFile = getSPOT4ImageFileName(meta);
-//      ImageReaderType::Pointer reader = getReader(imageFile);
-
-//      // the required bands are:
-//      // b1 - G (Name B3)
-//      // b2 - R (Name B4)
-//      // b3 - NIR (Name B5)
-//      // b4 - SWIR (Name B6)
-//      for (int i = 1; i <= 4; i++) {
-
-//          ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
-//          extractor->SetInput( reader->GetOutput() );
-//          extractor->SetChannel( i );
-//          extractor->UpdateOutputInformation();
-//          m_ExtractorList->PushBack( extractor );
-
-//          m_ImageList->PushBack( extractor->GetOutput() );
-//      }
-//  }
-
-//  // Process a Sentinel2 image
-//  void PocessSentinelImage(const ImageDescriptor& meta) {
-//      // Only MACCS format is supported
-//      if (meta.type != TYPE_MACCS) {
-//          itkExceptionMacro("Unsupported Sentinel2 image format for descritor: " + meta.filename);
-//      }
-//      // The Sentinel2 images are described in 2 files, one with 10m resolution and one with 20m resolution
-//      // The 10m resolution file contains the G, R and NIR bands which can be used unmodified
-//      // The 20m resolution file contains the SWIR band which must be resampled.
-
-//      //Extract the first 3 bands form the first file. No resampling needed
-//      std::string imageFile1 = getMACCSImageFileName(meta.filename, meta.maccsDescriptor.ProductOrganization.ImageFiles, "_FRE_R1");
-//      ImageReaderType::Pointer reader1 = getReader(imageFile1);
-
-//      // Extract Green band
-//      int gIndex = getBandIndex(meta.maccsDescriptor.ImageInformation.Resolutions[0].Bands, "B3");
-
-//      ExtractROIFilterType::Pointer gExtractor = ExtractROIFilterType::New();
-//      gExtractor->SetInput( reader1->GetOutput() );
-//      gExtractor->SetChannel( gIndex );
-//      gExtractor->UpdateOutputInformation();
-//      m_ExtractorList->PushBack( gExtractor );
-
-//      m_ImageList->PushBack( gExtractor->GetOutput() );
-
-//      // Extract Red band
-//      int rIndex = getBandIndex(meta.maccsDescriptor.ImageInformation.Resolutions[0].Bands, "B4");
-
-//      ExtractROIFilterType::Pointer rExtractor = ExtractROIFilterType::New();
-//      rExtractor->SetInput( reader1->GetOutput() );
-//      rExtractor->SetChannel( rIndex );
-//      rExtractor->UpdateOutputInformation();
-//      m_ExtractorList->PushBack( rExtractor );
-
-//      m_ImageList->PushBack( rExtractor->GetOutput() );
-
-//      // Extract NIR band
-//      int nirIndex = getBandIndex(meta.maccsDescriptor.ImageInformation.Resolutions[0].Bands, "B8");
-
-//      ExtractROIFilterType::Pointer nirExtractor = ExtractROIFilterType::New();
-//      nirExtractor->SetInput( reader1->GetOutput() );
-//      nirExtractor->SetChannel( nirIndex );
-//      nirExtractor->UpdateOutputInformation();
-//      m_ExtractorList->PushBack( nirExtractor );
-
-//      m_ImageList->PushBack( nirExtractor->GetOutput() );
-
-//      //Extract the last band form the second file. Resampling needed.
-//      std::string imageFile2 = getMACCSImageFileName(meta.filename, meta.maccsDescriptor.ProductOrganization.ImageFiles, "_FRE_R2");
-//      ImageReaderType::Pointer reader2 = getReader(imageFile2);
-
-//      // Extract SWIR band
-//      int swirIndex = getBandIndex(meta.maccsDescriptor.ImageInformation.Resolutions[1].Bands, "B11");
-
-//      ExtractROIFilterType::Pointer swirExtractor = ExtractROIFilterType::New();
-//      swirExtractor->SetInput( reader2->GetOutput() );
-//      swirExtractor->SetChannel( swirIndex );
-//      swirExtractor->UpdateOutputInformation();
-//      m_ExtractorList->PushBack( swirExtractor );
-
-//      // resample from 20m to 10m
-//      ResampleFilterType::Pointer resampler = getResampler(swirExtractor->GetOutput(), 2.0);
-
-//      m_ImageList->PushBack( resampler->GetOutput() );
-
-//  }
 
   // Get the id of the band. Return -1 if band not found.
   int getBandIndex(const std::vector<MACCSBand>& bands, const std::string& name) {
@@ -1268,18 +1115,23 @@ private:
       return extractor;
   }
 
-  InternalImageType::Pointer getResampledBand(const InternalImageType::Pointer& image, const float curRes) {
-       if(std::abs(m_pixSize - curRes) < EPSILON) {
-           return image;
-       }
+  InternalImageType::Pointer getResampledBand(const InternalImageType::Pointer& image, const float curRes, const bool isMask) {
+//       if(std::abs(m_pixSize - curRes) < EPSILON) {
+//           return image;
+//       }
        ResampleFilterType::Pointer resampler = ResampleFilterType::New();
        resampler->SetInput(image);
 
        const float ratio = (float)curRes / (float)m_pixSize;
 
        // Set the interpolator
-       LinearInterpolationType::Pointer interpolator = LinearInterpolationType::New();
-       resampler->SetInterpolator(interpolator);
+       if (isMask) {
+           NearestNeighborInterpolationType::Pointer interpolator = NearestNeighborInterpolationType::New();
+           resampler->SetInterpolator(interpolator);
+       } else {
+           LinearInterpolationType::Pointer interpolator = LinearInterpolationType::New();
+           resampler->SetInterpolator(interpolator);
+       }
 
        IdentityTransformType::Pointer transform = IdentityTransformType::New();
 
@@ -1297,28 +1149,42 @@ private:
 
        resampler->SetOutputSpacing(OutputSpacing);
 
-       FloatVectorImageType::PointType origin = image->GetOrigin();
-       FloatVectorImageType::PointType outputOrigin;
-       outputOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale[0] - 1.0);
-       outputOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0);
+//       FloatVectorImageType::PointType origin = image->GetOrigin();
+//       FloatVectorImageType::PointType outputOrigin;
+//       outputOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale[0] - 1.0);
+//       outputOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0);
 
-       resampler->SetOutputOrigin(outputOrigin);
+       resampler->SetOutputOrigin(m_imageOrigin);
 
        resampler->SetTransform(transform);
 
        // Evaluate size
        ResampleFilterType::SizeType recomputedSize;
-       recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
-       recomputedSize[1] = image->GetLargestPossibleRegion().GetSize()[1] / scale[1];
+       if (m_imageWidth != 0 && m_imageHeight != 0) {
+           recomputedSize[0] = m_imageWidth;
+           recomputedSize[1] = m_imageHeight;
+       } else {
+           recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
+           recomputedSize[1] = image->GetLargestPossibleRegion().GetSize()[1] / scale[1];
+       }
 
        resampler->SetOutputSize(recomputedSize);
+
+       // Padd with nodata
+       InternalImageType::PixelType defaultValue;
+       itk::NumericTraits<InternalImageType::PixelType>::SetLength(defaultValue, image->GetNumberOfComponentsPerPixel());
+       if(!isMask) {
+           defaultValue = -10000;
+       }
+       resampler->SetEdgePaddingValue(defaultValue);
+
 
        m_ResamplersList->PushBack(resampler);
        return resampler->GetOutput();
   }
 
 
-
+  // build the date for spot products as YYYYMMDD
   inline std::string formatSPOT4Date(const std::string& date) {
       return date.substr(0,4) + date.substr(5,2) + date.substr(8,2);
   }
@@ -1336,7 +1202,12 @@ private:
   BandMathImageFilterListType::Pointer  m_BandMathList;  
   std::string                           m_maskExpression;
   std::string                           m_allMaskExpression;
+  std::string                           m_mission;
   float                                 m_pixSize;
+  double                                m_imageWidth;
+  double                                m_imageHeight;
+  FloatVectorImageType::PointType       m_imageOrigin;
+  bool                                  m_merge;
 
 //  InternalImageListType::Pointer        m_VldMaskList;
 //  std::vector<float>                    m_MeanPixels;

@@ -129,6 +129,7 @@ def inSituDataAvailable() :
 	print "ImageClassifier done at " + str(datetime.datetime.now())
 
 def noInSituDataAvailable() :
+	global validation_polygons
 	#Data Smoothing
 	print "Executing DataSmoothing at " + str(datetime.datetime.now())
 	dsCmdLine = "otbApplicationLauncherCommandLine DataSmoothing "+buildFolder+"CropMask/DataSmoothing -ts "+ndvi+" -bands 1 -lambda "+lmbd+" -weight "+weight+" -sts "+ndvi_smooth
@@ -246,9 +247,8 @@ def noInSituDataAvailable() :
 	   exit(1)
 	print "ImageClassifier done at " + str(datetime.datetime.now())
 
-	# use the entire shape for validation when no insitu data is available
+	#use the shape built from the reference image for validation
 	validation_polygons = trimmed_reference_shape
-
 
 #Path to build folder
 defaultBuildFolder="~/sen2agri-build/"
@@ -291,7 +291,7 @@ sample_ratio=str(args.ratio)
 
 indesc = " "
 for desc in args.input:
-   indesc = indesc + desc + " "
+   indesc = indesc + '"' + desc + '"' + " "
 
 t0=args.t0
 tend=args.tend
@@ -366,7 +366,7 @@ quality_metrics=os.path.join(args.outdir, "crop-mask-quality-metrics.txt")
 
 # Bands Extractor
 print "Executing BandsExtractor at " + str(datetime.datetime.now())
-beCmdLine = "otbApplicationLauncherCommandLine BandsExtractor "+buildFolder+"CropType/BandsExtractor -il "+indesc+" -out "+rawtocr+" -mask "+rawmask+" -outdate "+dates+" -shape "+shape+" -pixsize "+pixsize
+beCmdLine = "otbApplicationLauncherCommandLine BandsExtractor "+buildFolder+"CropType/BandsExtractor -il "+indesc+" -out "+rawtocr+" -mask "+rawmask+" -outdate "+dates+" -shape "+shape+" -pixsize "+pixsize+" -merge true"
 print beCmdLine
 result = os.system(beCmdLine)
 
@@ -434,7 +434,6 @@ else:
 	noInSituDataAvailable()
 
 os.system("rm " + rtocr)
-
 #Validation
 print "Executing ComputeConfusionMatrix at " + str(datetime.datetime.now())
 vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+raw_crop_mask+" -out "+raw_crop_mask_confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CROP -nodatalabel -10000 > "+raw_crop_mask_quality_metrics

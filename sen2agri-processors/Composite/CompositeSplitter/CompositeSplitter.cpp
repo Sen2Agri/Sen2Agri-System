@@ -70,7 +70,7 @@ int SPOT_ARR_BANDS_RGB_ALL[L3A_RGB_CNT]     = {17, 13, 12};
 
 int S2_ARR_BANDS_RGB_10M[L3A_RGB_CNT]       = {7, 6, 5};
 int L8_ARR_BANDS_RGB_10M[L3A_RGB_CNT]       = {7, 6, 5};
-int SPOT_ARR_BANDS_RGB_10M[L3A_RGB_CNT]     = {8, 7, 6};
+int SPOT_ARR_BANDS_RGB_10M[L3A_RGB_CNT]     = {8, 7, 8};
 
 namespace otb
 {

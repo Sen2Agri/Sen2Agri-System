@@ -66,6 +66,13 @@ fi
 
 try otbcli CompositeSplitter2 "$COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/" -in "$OUT_L3A_FILE" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -outweights "$out_w" -outdates "$out_d" -outrefls "$out_r" -outflags "$out_f" $out_rgb
 
+ut_output_info "$OUT_WEIGHTS" 4 "./qr_cmp_southafrica/L3AResult_weights.tif" 8008394
+ut_output_info "$OUT_DATES" 1 "./qr_cmp_southafrica/L3AResult_dates.tif" 2002360
+ut_output_info "$OUT_REFLS" 4 "./qr_cmp_southafrica/L3AResult_refls.tif" 8008394
+ut_output_info "$OUT_FLAGS" 1 "./qr_cmp_southafrica/L3AResult_flags.tif" 1001360
+ut_output_info "$OUT_RGB" 3 "./qr_cmp_southafrica/L3AResult_rgb.tif" 6008384
+
+exit
 echo "Information for $OUT_WEIGHTS:"
 OUTPUT_IMAGE_INFO="$(otbcli_ReadImageInfo -in $OUT_WEIGHTS | grep "Number of bands")"
 

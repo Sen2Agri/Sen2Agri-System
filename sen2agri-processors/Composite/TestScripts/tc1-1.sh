@@ -17,6 +17,10 @@ OUT_SPOT_MASKS="$OUT_FOLDER/masks$RESOLUTION.tif"
 
 try otbcli MaskHandler $COMPOSITE_OTB_LIBS_ROOT/MaskHandler/ -xml $2 -out $OUT_SPOT_MASKS -sentinelres $RESOLUTION
 
+ut_output_info "$OUT_SPOT_MASKS" 3 "./qr_cmp_southafrica/masks$RESOLUTION.tif" 6008384
+
+exit
+
 echo "Information for $OUT_SPOT_MASKS file:"
 OUTPUT_IMAGE_INFO="$(otbcli_ReadImageInfo -in $OUT_SPOT_MASKS | grep "Number of bands")"
 
@@ -29,9 +33,9 @@ if [ $BANDS_NB == 3 ] ; then
     if [ $FILESIZE == 6008384 ] ; then    
 	echo "File size      : PASSED"
 	if [[ ! $(diff "$OUT_SPOT_MASKS" "$COMPARISION_FILE") ]] ; then
-    	    echo "File size      : PASSED"
+            echo "Comp ref file  : PASSED"
 	else
-	    echo "File size      : FAILED"
+            echo "Comp ref file  : FAILED"
 	fi
     else
 	echo "File size      : FAILED"
@@ -39,5 +43,6 @@ if [ $BANDS_NB == 3 ] ; then
 else
     echo "Number of bands: FAILED"
     echo "File size      : FAILED"
+    echo "Comp ref file  : FAILED"
 fi
 

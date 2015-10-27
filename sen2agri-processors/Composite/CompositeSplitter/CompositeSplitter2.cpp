@@ -74,6 +74,9 @@ private:
 
         AddParameter(ParameterType_OutputImage, "outrgb", "Output rgb filename");
         MandatoryOff("outrgb");
+
+        AddParameter(ParameterType_String, "masterinfo", "Information about the product (created only if is master)");
+        MandatoryOff("masterinfo");
     }
 
     void DoUpdateParameters()
@@ -135,7 +138,9 @@ private:
         }
         m_DatesList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt++));
         int redIdx, greenIdx, blueIdx;
-        bool bHasTrueColorBandIndexes = GetTrueColorBandIndexes(inXml, bandsMappingCfg, resolution, redIdx, greenIdx, blueIdx);
+        auto factory = MetadataHelperFactory::New();
+        auto pHelper = factory->GetMetadataHelper(inXml);
+        bool bHasTrueColorBandIndexes = GetTrueColorBandIndexes(bandsMappingCfg, pHelper, resolution, redIdx, greenIdx, blueIdx);
         int redBandNo = -1;
         int greenBandNo = -1;
         int blueBandNo = -1;
@@ -192,13 +197,24 @@ private:
             SetParameterOutputImage("outrgb", m_RGBConcat->GetOutput());
         }
 
+        std::string curMissionName = pHelper->GetMissionName();
+        if(bandsMappingCfg.GetMasterMissionName() == curMissionName) {
+            auto outFileName = GetParameterString("masterinfo");
+            std::ofstream outFile;
+            try {
+              outFile.open(outFileName.c_str());
+              outFile << inXml << std::endl;
+              outFile.close();
+            } catch(...) {
+              itkGenericExceptionMacro(<< "Could not open file " << outFileName);
+            }
+        }
+
         return;
     }
 
-    bool GetTrueColorBandIndexes(const std::string &inXml, BandsMappingConfig &bandsMappingCfg, int resolution,
+    bool GetTrueColorBandIndexes(BandsMappingConfig &bandsMappingCfg, const std::unique_ptr<MetadataHelper> &pHelper, int resolution,
                                  int &redIdx, int &greenIdx, int &blueIdx) {
-        auto factory = MetadataHelperFactory::New();
-        auto pHelper = factory->GetMetadataHelper(inXml);
         std::string curMissionName = pHelper->GetMissionName();
         redIdx = greenIdx = blueIdx = -1;
 
