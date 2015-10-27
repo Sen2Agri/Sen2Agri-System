@@ -210,6 +210,19 @@ private:
       imgReader->GetOutput()->UpdateOutputInformation();
       maskReader->GetOutput()->UpdateOutputInformation();
 
+      // get the interval used for the output images
+      int sp = GetParameterInt("sp");
+      int t0 = getDaysFromEpoch(GetParameterString("t0"));
+      int tend = getDaysFromEpoch(GetParameterString("tend"));
+      int radius = GetParameterInt("radius");
+
+
+      // compute the output dates vector
+      std::vector<int> outDates;
+      for( int i = t0; i <= tend; i += sp) {
+          outDates.push_back(i);
+      }
+
       // Get the file that contains the dates
       std::string datesFileName = GetParameterString("ind");
       std::ifstream datesFile;
@@ -218,42 +231,119 @@ private:
           itkExceptionMacro("Can't open dates file for reading!");
       }
 
-      // read the file and save the dates as second from Epoch to a vector
-      std::vector<int> inDates;
+      // build the input data vector
+      std::vector<SensorData> inData;
       std::string value;
-      while (std::getline(datesFile, value)) {
-          inDates.push_back(getDaysFromEpoch(value));
+      int offset = 0;
+      while (std::getline(datesFile, value) && value.size() > 0) {
+          // the first line is the mission name
+          SensorData sd;
+          sd.sensorName = value;
+          sd.outNum = 0;
+
+          // set the offset
+          sd.offset = offset;
+
+          // read the number of input dates
+          if (!std::getline(datesFile, value)) {
+              itkExceptionMacro("Invald dates file!. Cannot read the number of iamges for sensor " << sd.sensorName);
+          }
+          int numInput = std::stoi(value);
+          // read the input dates
+          for (int i=0; i<numInput; i++) {
+              if (!std::getline(datesFile, value)) {
+                  itkExceptionMacro("Invald dates file! Cannot read date " << (i+1) << " for sensor " << sd.sensorName);
+              }
+              sd.inDates.push_back(getDaysFromEpoch(value));
+          }
+
+          // update the offset
+          offset += numInput;
+
+          // add the data to the vector
+          inData.push_back(sd);
       }
+
+      // decide what are the output rasters build for each sensor
+      std::vector<int> outDateStatus(outDates.size(), -1);
+      for (unsigned int i=0; i<outDates.size(); i++) {
+          int outDate = outDates[i];
+
+          //check if the date can be covered by the sensor data
+          for (SensorData& sd : inData) {
+              if (outDate >= sd.inDates[0] && outDate <= sd.inDates[sd.inDates.size()-1]) {
+                  // the date is covered
+                  outDateStatus[i] = -2;
+
+                  // update the covered output dates interval
+                  if (sd.outNum == 0) {
+                      sd.outStart = outDate;
+                  }
+                  sd.outEnd = outDate;
+                  sd.outNum++;
+              }
+          }
+      }
+
+      // check if there are uncovered dates
+      for (unsigned int i=0; i<outDates.size(); i++) {
+          if (outDateStatus[i] == -1) {
+              int outDate = outDates[i];
+
+              int distance = INT_MAX;
+              for (unsigned int j=0; j<inData.size(); j++) {
+                  SensorData& sd = inData[j];
+                  int sensorDist = std::min(std::abs(sd.inDates[0]-outDate), std::abs(sd.inDates[sd.inDates.size()-1]-outDate));
+                  if (sensorDist < distance) {
+                      distance = sensorDist;
+                      outDateStatus[i] = j;
+                  }
+              }
+          }
+      }
+
+      // distribute last dates to the corresponding sensors
+      for (unsigned int i=0; i<outDates.size(); i++) {
+          if (outDateStatus[i] >= 0) {
+              int outDate = outDates[i];
+              SensorData& sd = inData[outDateStatus[i]];
+
+              if (sd.outStart > outDate) {
+                  sd.outStart = outDate;
+              }
+              if (sd.outEnd < outDate) {
+                  sd.outEnd = outDate;
+              }
+              sd.outNum++;
+          }
+      }
+
+
+
       // close the file
       datesFile.close();
 
-      // get the interval used for the output images
-      int sp = GetParameterInt("sp");
-      int t0 = getDaysFromEpoch(GetParameterString("t0"));
-      int tend = getDaysFromEpoch(GetParameterString("tend"));
-      int radius = GetParameterInt("radius");
-
-      std::ofstream outDaysFile;
       if (HasValue("outdays")) {
+          // create the output days file
+          std::ofstream outDaysFile;
           outDaysFile.open(GetParameterString("outdays"));
           if (!outDaysFile.is_open()) {
               itkExceptionMacro("Can't open output days file for writing!");
           }
-      }
 
-      // compute the output dates vector
-      std::vector<int> outDates;
-      for( int i = t0; i <= tend; i += sp) {
-          outDates.push_back(i);
-          if (outDaysFile.is_open()) {
-              outDaysFile <<  i << std::endl;
+          // add one entry for each day and each sensor that covers the output date
+          for (int outDay : outDates) {
+              for (SensorData& sd : inData) {
+                  if (outDay >= sd.outStart && outDay <= sd.outEnd) {
+                      outDaysFile <<  outDay << std::endl;
+                  }
+              }
           }
-      }
 
-      // close the file is opened.
-      if (outDaysFile.is_open()) {
+          // close the file if it is opened.
           outDaysFile.close();
       }
+
 
       // The number of image bands can be computed as the ratio between the bands in the image and the bands in the mask
       int imageBands = imgReader->GetOutput()->GetNumberOfComponentsPerPixel() / maskReader->GetOutput()->GetNumberOfComponentsPerPixel();
@@ -262,7 +352,7 @@ private:
       // Create the instance of the filter which will perform all computations
       filter = BinaryFunctorImageFilterWithNBands::New();
       filter->SetNumberOfOutputBands(imageBands * outDates.size());
-      filter->SetFunctor(GapFillingFunctor<ImageType::PixelType>(inDates, outDates, radius, imageBands));
+      filter->SetFunctor(GapFillingFunctor<ImageType::PixelType>(inData, outDates, radius, imageBands));
 
       filter->SetInput(0, imgReader->GetOutput());
       filter->SetInput(1, maskReader->GetOutput());

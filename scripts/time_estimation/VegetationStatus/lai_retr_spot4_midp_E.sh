@@ -49,15 +49,16 @@ RELATIVE_AZIMUTH_ANGLE=140.964187309
 
 #end of USER modif
 
-RSR_FILE="../../otb-bv/data/spot4hrvir1.rsr"
+RSR_FILE="../../../sen2agri-processors/VegetationStatus/otb-bv/data/spot4hrvir1.rsr"
 
-if [ $# -lt 2 ]
+if [ $# -lt 3 ]
 then
   echo "Usage: $0 <resolution> <out folder name>"
   echo "The resolution for which the computations will be performed should be given.  The RSR filename should be given. The output directory should be given" 1>&2  
   exit
 fi
 
-./run_lai_retrieve.sh "$inputXML" "$1" "$2" $RSR_FILE $SOLAR_ZENITH_ANGLE $SENSOR_ZENITH_ANGLE $RELATIVE_AZIMUTH_ANGLE
+./run_lai_retrieve.sh "$1" "$inputXML" "$2" "$3" $RSR_FILE $SOLAR_ZENITH_ANGLE $SENSOR_ZENITH_ANGLE $RELATIVE_AZIMUTH_ANGLE
+
 
 

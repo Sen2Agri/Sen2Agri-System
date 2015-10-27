@@ -56,6 +56,9 @@ if [ $# == 9 ] ; then
 fi
 
 try otbcli UpdateSynthesis2 $COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/ -in "$OUT_IMG_BANDS" -bmap "$FULL_BANDS_MAPPING" -xml "$xml" $PREV_L3A -csm "$OUT_CLD" -wm "$OUT_WAT" -sm "$OUT_SNOW" -wl2a "$OUT_TOTAL_WEIGHT_FILE" -out "$OUT_L3A_FILE"
+ut_output_info "$OUT_L3A_FILE" 10 "./qr_cmp_southafrica/L3AResult_$RESOLUTION.tif" 20008430
+
+exit
 
 echo "Information for $OUT_L3A_FILE file:"
 OUTPUT_IMAGE_INFO="$(otbcli_ReadImageInfo -in $OUT_L3A_FILE | grep "Number of bands")"

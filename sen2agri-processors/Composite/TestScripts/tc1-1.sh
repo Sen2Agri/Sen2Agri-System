@@ -17,6 +17,10 @@ OUT_SPOT_MASKS="$OUT_FOLDER/masks$RESOLUTION.tif"
 
 try otbcli MaskHandler $COMPOSITE_OTB_LIBS_ROOT/MaskHandler/ -xml $2 -out $OUT_SPOT_MASKS -sentinelres $RESOLUTION
 
+ut_output_info "$OUT_SPOT_MASKS" 3 "./qr_cmp_southafrica/masks$RESOLUTION.tif" 6008384
+
+exit
+
 echo "Information for $OUT_SPOT_MASKS file:"
 OUTPUT_IMAGE_INFO="$(otbcli_ReadImageInfo -in $OUT_SPOT_MASKS | grep "Number of bands")"
 
