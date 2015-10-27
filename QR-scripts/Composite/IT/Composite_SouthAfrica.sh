@@ -16,7 +16,7 @@ function try {
 
 OTB_APP="/home/agrosu/sen2agri-processors-build/Composite"
 SCRIPT_PATH="/home/agrosu/sen2agri/sen2agri-processors/Composite/TestScripts"
-OUTPUT_PATH="/mnt/data/QR_scripts/Composite_SouthAfrica/"
+OUTPUT_PATH="/mnt/data/QR_Results/Composite_SouthAfrica/"
 
 echo "The OTB application will be launched from:"
 echo "$OTB_APP"
