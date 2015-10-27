@@ -36,7 +36,7 @@ public:
 public:
     ResampleAtS2Res2();
     void Init(const std::string &xml, const std::string &strMaskFileName,
-              const std::string &bandsMappingFile, int nRes);
+              const std::string &bandsMappingFile, int nRes, const std::string &masterInfo);
     void DoExecute();
 
     ImageType::Pointer GetResampledMainImg();
@@ -51,6 +51,7 @@ private:
     ImageReaderType::Pointer getReader(const std::string& filePath);
     bool ExtractResampledMasksImages();
     void ExtractResampledAotImage();
+    void CreateMasterInfoFile();
 
 private:
     std::string m_strXml;
@@ -74,6 +75,7 @@ private:
 
     BandsCfgMappingParser m_bandsCfgMappingParser;
     std::string m_bandsMappingFile;
+    std::string m_masterInfoFile;
 
 };
 
