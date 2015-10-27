@@ -1,7 +1,5 @@
 #!/bin/bash
 
-OUT_FOLDER=$1
-
 ./CropType.py -ref /mnt/Imagery_S2A/In-Situ_TDS/SouthAfrica/ZA_FST_LC_FO_2013.shp -ratio 0.75 -input \
 /mnt/Satellite_Imagery/S2-QR/SouthAfrica/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000.xml \
 /mnt/Satellite_Imagery/S2-QR/SouthAfrica/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000.xml \
@@ -27,4 +25,4 @@ OUT_FOLDER=$1
 /mnt/Satellite_Imagery/S2-QR/SouthAfrica/SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000.xml \
 /mnt/Satellite_Imagery/S2-QR/SouthAfrica/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000.xml \
 -t0 20130131 -tend 20130615 -rate 5 -radius 100 -classifier rf -rseed 0 -mask /mnt/data/QR_scripts/CropMask_SouthAfrica/crop_mask.tif -pixsize 20 \
--outdir $OUT_FOLDER
+-outdir "/mnt/data/QR_Results/CropType_SouthAfrica/"
