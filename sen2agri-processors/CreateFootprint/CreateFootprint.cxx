@@ -164,16 +164,29 @@ private:
                 auto targetSrs =
                     static_cast<OGRSpatialReference *>(OSRNewSpatialReference(SRS_WKT_WGS84));
                 if (!targetSrs) {
+                    OSRDestroySpatialReference(sourceSrs);
+
                     itkExceptionMacro(<< "Unable to create WGS84 OGRSpatialReference");
                 }
 
                 auto transform = static_cast<OGRCoordinateTransformation *>(
                     OCTNewCoordinateTransformation(sourceSrs, targetSrs));
                 if (!transform) {
+                    OSRDestroySpatialReference(sourceSrs);
+                    OSRDestroySpatialReference(targetSrs);
+
                     itkExceptionMacro(<< "Unable to create OGRCoordinateTransformation");
                 }
 
                 auto point = static_cast<OGRPoint *>(OGRGeometryFactory::createGeometry(wkbPoint));
+                if (!point) {
+                    OCTDestroyCoordinateTransformation(transform);
+                    OSRDestroySpatialReference(targetSrs);
+                    OSRDestroySpatialReference(sourceSrs);
+
+                    itkExceptionMacro(<< "Unable to create OGRPoint");
+                }
+
                 std::ofstream boundsFile(GetParameterString("outbounds"));
                 for (const auto &v : *polygon->GetVertexList()) {
                     point->setX(v[0]);
@@ -183,6 +196,12 @@ private:
                     if (err == OGRERR_NONE) {
                         boundsFile << point->getX() << ' ' << point->getY() << '\n';
                     } else {
+                        OGRGeometryFactory::destroyGeometry(point);
+
+                        OCTDestroyCoordinateTransformation(transform);
+                        OSRDestroySpatialReference(targetSrs);
+                        OSRDestroySpatialReference(sourceSrs);
+
                         itkExceptionMacro(<< "Unable to transform point (" << v[0] << ", " << v[1]
                                           << ") to WGS84. The source projection is:\n"
                                           << output->GetProjectionRef()
