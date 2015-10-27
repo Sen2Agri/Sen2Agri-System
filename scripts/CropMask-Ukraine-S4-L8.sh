@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source set_build_folder.sh
+
 ./CropMask.py -refp /mnt/Sen2Agri_DataSets/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp -ratio 0.75 -input \
 /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000.xml \
 /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000.xml \
@@ -30,4 +32,4 @@
 /mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20131110_L8_181_025/EUkraineS2A_20131110_L8_181_025.HDR \
 /mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20131228_L8_181_025/EUkraineS2A_20131228_L8_181_025.HDR \
 -t0 20130206 -tend 20130616 -rate 5 -radius 100 -nbtrsample 4000 -rseed 0 -lmbd 2 -weight 1 -nbcomp 6 -spatialr 10 -ranger 0.65 -minsize 10 -rfnbtrees 100 -rfmax 25 -rfmin 5 -pixsize 20 \
--outdir /mnt/data/ukraine/Ukraine-mask/
+-outdir /mnt/data/ukraine/Ukraine-mask/ -buildfolder $BUILD_FOLDER

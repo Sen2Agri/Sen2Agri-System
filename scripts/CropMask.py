@@ -291,7 +291,7 @@ sample_ratio=str(args.ratio)
 
 indesc = " "
 for desc in args.input:
-   indesc = indesc + desc + " "
+   indesc = indesc + '"' + desc + '"' + " "
 
 t0=args.t0
 tend=args.tend
@@ -366,7 +366,7 @@ quality_metrics=os.path.join(args.outdir, "crop-mask-quality-metrics.txt")
 
 # Bands Extractor
 print "Executing BandsExtractor at " + str(datetime.datetime.now())
-beCmdLine = "otbApplicationLauncherCommandLine BandsExtractor "+buildFolder+"CropType/BandsExtractor -il "+indesc+" -out "+rawtocr+" -mask "+rawmask+" -outdate "+dates+" -shape "+shape+" -pixsize "+pixsize
+beCmdLine = "otbApplicationLauncherCommandLine BandsExtractor "+buildFolder+"CropType/BandsExtractor -il "+indesc+" -out "+rawtocr+" -mask "+rawmask+" -outdate "+dates+" -shape "+shape+" -pixsize "+pixsize+" -merge true"
 print beCmdLine
 result = os.system(beCmdLine)
 
