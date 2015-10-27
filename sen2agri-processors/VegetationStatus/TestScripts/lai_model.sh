@@ -1,8 +1,8 @@
 #! /bin/bash
 
-if [ $# -lt 5 ]
+if [ $# -lt 6 ]
 then
-  echo "Usage: $0 <RSR filename> <solar zenith angle> <sensor_zenith_angle> <relative azimuth angle> <out folder name>"
+  echo "Usage: $0 <otb application directory> <RSR filename> <solar zenith angle> <sensor_zenith_angle> <relative azimuth angle> <out folder name>"
   echo "The output directory should be given" 1>&2  
   exit
 fi
@@ -29,9 +29,9 @@ function getReducedAngle() {
     echo "$INTEGER.${FRACT:0:1}"
 }
 
-OUT_FOLDER=$5
+OUT_FOLDER=$6
 
-VEG_STATUS_OTB_LIBS_ROOT="~/sen2agri-processors-build/VegetationStatus"
+VEG_STATUS_OTB_LIBS_ROOT="$1"
 IMG_INV_OTB_LIBS_ROOT="$VEG_STATUS_OTB_LIBS_ROOT/otb-bv/src/applications"
 OUT_GENERATED_SAMPLE_FILE="$OUT_FOLDER/out_bv_dist_samples.txt"
 
@@ -51,12 +51,12 @@ NIR_INDEX=2
 REGRESSION_TYPE="nn"
 BEST_OF=1
 
-SATELLITE_NAME=$1
-SOLAR_ZENITH_ANGLE=$2
-SENSOR_ZENITH_ANGLE=$3
-RELATIVE_AZIMUTH_ANGLE=$4
+SATELLITE_NAME=$2
+SOLAR_ZENITH_ANGLE=$3
+SENSOR_ZENITH_ANGLE=$4
+RELATIVE_AZIMUTH_ANGLE=$5
 
-RSR_FILE="$1"
+RSR_FILE="$2"
 #if [ "$SATELLITE_NAME" == "SPOT4" ]; then
 #    RSR_FILE="../otb-bv/data/spot4hrvir1.rsr"
 #else 

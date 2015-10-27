@@ -81,6 +81,11 @@ class Sen2AgriClient(object):
     def submit_job(self, job):
         self.proxy.SubmitJob(job.to_dbus())
 
+        bus = dbus.SystemBus()
+        orchestrator_proxy = bus.get_object('org.esa.sen2agri.orchestrator',
+                                            '/org/esa/sen2agri/orchestrator')
+        orchestrator_proxy.NotifyEventsAvailable()
+
 
 class Sen2AgriCtl(object):
 
