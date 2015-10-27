@@ -39,12 +39,11 @@ WEIGHT_OTB_LIBS_ROOT="$COMPOSITE_OTB_LIBS_ROOT/WeightCalculation"
 
 OUT_SPOT_MASKS="$OUT_FOLDER/spot_masks.tif"
 
-OUT_IMG_BANDS="$OUT_FOLDER/res$RESOLUTION.tif"
-OUT_IMG_BANDS_ALL="$OUT_FOLDER/res"$RESOLUTION"_all.tif"
-OUT_CLD="$OUT_FOLDER/cld$RESOLUTION.tif"
-OUT_WAT="$OUT_FOLDER/wat$RESOLUTION.tif"
-OUT_SNOW="$OUT_FOLDER/snow$RESOLUTION.tif"
-OUT_AOT="$OUT_FOLDER/aot$RESOLUTION.tif"
+UNCLIPPED_OUT_IMG_BANDS="$OUT_FOLDER/res$RESOLUTION.tif"
+UNCLIPPED_OUT_CLD="$OUT_FOLDER/cld$RESOLUTION.tif"
+UNCLIPPED_OUT_WAT="$OUT_FOLDER/wat$RESOLUTION.tif"
+UNCLIPPED_OUT_SNOW="$OUT_FOLDER/snow$RESOLUTION.tif"
+UNCLIPPED_OUT_AOT="$OUT_FOLDER/aot$RESOLUTION.tif"
 
 OUT_WEIGHT_AOT_FILE="$OUT_FOLDER/WeightAot.tif"
 OUT_WEIGHT_CLOUD_FILE="$OUT_FOLDER/WeightCloud.tif"
@@ -72,6 +71,8 @@ OUT_DATES="$OUT_FOLDER/L3AResult#_dates.tif"
 OUT_REFLS="$OUT_FOLDER/L3AResult#_refls.tif"
 OUT_FLAGS="$OUT_FOLDER/L3AResult#_flags.tif"
 OUT_RGB="$OUT_FOLDER/L3AResult#_rgb.tif"
+SHAPE_FILE="$OUT_FOLDER/ClippingShape.shp"
+
 
 FULL_SCAT_COEFFS=""
 BANDS_MAPPING="$7"
@@ -125,13 +126,31 @@ do
     out_rgb=${OUT_RGB//[#]/$i}
     i=$((i+1))
 
-    try otbcli CompositePreprocessing2 "$COMPOSITE_OTB_LIBS_ROOT/CompositePreprocessing/" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -res "$RESOLUTION" "$FULL_SCAT_COEFFS" -msk "$OUT_SPOT_MASKS" -outres "$OUT_IMG_BANDS" -outcmres "$OUT_CLD" -outwmres "$OUT_WAT" -outsmres "$OUT_SNOW" -outaotres "$OUT_AOT"
+    try otbcli CompositePreprocessing2 "$COMPOSITE_OTB_LIBS_ROOT/CompositePreprocessing/" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -res "$RESOLUTION" "$FULL_SCAT_COEFFS" -msk "$OUT_SPOT_MASKS" -outres "$UNCLIPPED_OUT_IMG_BANDS" -outcmres "$UNCLIPPED_OUT_CLD" -outwmres "$UNCLIPPED_OUT_WAT" -outsmres "$UNCLIPPED_OUT_SNOW" -outaotres "$UNCLIPPED_OUT_AOT"
     
     # if we have a shape file, then we will apply it on all files from preprocessing
     # else, if we don't have a shape file then 
     #   Check if it is a master product and create the shape
-    
+    #
+    if ! [[ -f $SHAPE_FILE ]] ; then
+        # TODO: Check also here if the CompositePreprocessing created 
+        try otbcli CreateFootprint "$COMPOSITE_OTB_LIBS_ROOT/CreateFootprint/" -in "$UNCLIPPED_OUT_IMG_BANDS" -mode raster -out "$SHAPE_FILE"
+    fi
 
+    if [ -f $SHAPE_FILE ] ; then
+        gdalwarp -dstnodata "-10000" -overwrite -cutline $SHAPE_FILE -crop_to_cutline "$UNCLIPPED_OUT_IMG_BANDS" "$OUT_IMG_BANDS"
+        gdalwarp -dstnodata "0" -overwrite -cutline $SHAPE_FILE -crop_to_cutline "$UNCLIPPED_OUT_CLD" "$OUT_CLD"
+        gdalwarp -dstnodata "0" -overwrite -cutline $SHAPE_FILE -crop_to_cutline "$UNCLIPPED_OUT_WAT" "$OUT_WAT"
+        gdalwarp -dstnodata "0" -overwrite -cutline $SHAPE_FILE -crop_to_cutline "$UNCLIPPED_OUT_SNOW" "$OUT_SNOW"
+        gdalwarp -dstnodata "-10000" -overwrite -cutline $SHAPE_FILE -crop_to_cutline "$UNCLIPPED_OUT_AOT" "$OUT_AOT"
+    else
+        OUT_IMG_BANDS=$UNCLIPPED_OUT_IMG_BANDS
+        OUT_CLD=$UNCLIPPED_OUT_CLD
+        OUT_WAT=$UNCLIPPED_OUT_WAT
+        OUT_SNOW=$UNCLIPPED_OUT_SNOW
+        OUT_AOT=$UNCLIPPED_OUT_AOT
+    fi
+    
     try otbcli WeightAOT "$WEIGHT_OTB_LIBS_ROOT/WeightAOT/" -in "$OUT_AOT" -xml "$xml" -waotmin "$WEIGHT_AOT_MIN" -waotmax "$WEIGHT_AOT_MAX" -aotmax "$AOT_MAX" -out "$OUT_WEIGHT_AOT_FILE"
 
     try otbcli WeightOnClouds "$WEIGHT_OTB_LIBS_ROOT/WeightOnClouds/" -incldmsk "$OUT_CLD" -coarseres "$COARSE_RES" -sigmasmallcld "$SIGMA_SMALL_CLD" -sigmalargecld "$SIGMA_LARGE_CLD" -out "$OUT_WEIGHT_CLOUD_FILE"
@@ -141,7 +160,7 @@ do
     #todo... search for previous L3A product?
     try otbcli UpdateSynthesis2 "$COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/" -in "$OUT_IMG_BANDS" -bmap "$FULL_BANDS_MAPPING" -xml "$xml" $PREV_L3A -csm "$OUT_CLD" -wm "$OUT_WAT" -sm "$OUT_SNOW" -wl2a "$OUT_TOTAL_WEIGHT_FILE" -out "$mod"
 
-    try otbcli CompositeSplitter2 "$COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/" -in "$mod" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -outweights "$out_w?gdal:co:COMPRESS=DEFLATE" -outdates "$out_d?gdal:co:COMPRESS=DEFLATE" -outrefls "$out_r?gdal:co:COMPRESS=DEFLATE" -outflags "$out_f?gdal:co:COMPRESS=DEFLATE" -outrgb "$out_rgb?gdal:co:COMPRESS=DEFLATE"
+    try otbcli CompositeSplitter2 "$COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/" -in "$mod" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -outweights "$out_w" -outdates "$out_d" -outrefls "$out_r" -outflags "$out_f" -outrgb "$out_rgb"
 
     #PREV_L3A="-prevl3a $mod"
     PREV_L3A="-prevl3aw $out_w -prevl3ad $out_d -prevl3ar $out_r -prevl3af $out_f"
