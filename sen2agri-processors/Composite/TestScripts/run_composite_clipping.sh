@@ -34,7 +34,8 @@ then
   echo "The product will be created with the original resolution without resampling."
 fi
 
-COMPOSITE_OTB_LIBS_ROOT="$1"
+OTB_LIBS_ROOT="$1"
+COMPOSITE_OTB_LIBS_ROOT="$OTB_LIBS_ROOT/Composite"
 WEIGHT_OTB_LIBS_ROOT="$COMPOSITE_OTB_LIBS_ROOT/WeightCalculation"
 
 OUT_SPOT_MASKS="$OUT_FOLDER/spot_masks.tif"
@@ -134,7 +135,7 @@ do
     #
     if ! [[ -f $SHAPE_FILE ]] ; then
         # TODO: Check also here if the CompositePreprocessing created 
-        try otbcli CreateFootprint "$COMPOSITE_OTB_LIBS_ROOT/CreateFootprint/" -in "$UNCLIPPED_OUT_IMG_BANDS" -mode raster -out "$SHAPE_FILE"
+        try otbcli CreateFootprint "$OTB_LIBS_ROOT/CreateFootprint/" -in "$UNCLIPPED_OUT_IMG_BANDS" -mode raster -out "$SHAPE_FILE"
     fi
 
     if [ -f $SHAPE_FILE ] ; then

@@ -18,7 +18,6 @@ public:
         m_CloudMask = -1;
         m_WaterMask = -1;
         m_SnowMask = -1;
-
     }
 
     MaskHandlerFunctor& operator =(const MaskHandlerFunctor& copy)
@@ -56,7 +55,7 @@ public:
     }
 
 private:
-    int m_MasksArray[8] = {0x01, 0x02, 0x04, 0x08, 0x16, 0x32, 0x64};
+    int m_MasksArray[8] = {0x01, 0x02, 0x04, 0x08, 0x16, 0x32, 0x64, 0x128};
     int m_CloudMask, m_WaterMask, m_SnowMask;
 };
 
