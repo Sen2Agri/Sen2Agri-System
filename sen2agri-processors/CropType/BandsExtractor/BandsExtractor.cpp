@@ -257,7 +257,7 @@ private:
     m_ResamplersList = ResampleFilterListType::New();
     m_ExtractorList = ExtractROIFilterListType::New();
     m_ImageReaderList = ImageReaderListType::New();
-    m_BandMathList = BandMathImageFilterListType::New();    
+    m_BandMathList = BandMathImageFilterListType::New();
     //m_VldMaskList = InternalImageListType::New();
     m_borderMask = BandMathImageFilterType::New();
     m_ShapeBuilder = LabelImageToVectorDataFilterType::New();
@@ -293,6 +293,8 @@ private:
     AddParameter(ParameterType_String, "mission", "The main raster series that will be used. By default SPOT is used");
     MandatoryOff("mission");
 
+    AddParameter(ParameterType_Empty, "ndh", "Information about mission name and number of xmls will not be added inside the dates files (default off)");
+    MandatoryOff("ndh");
 
      //  Software Guide : EndCodeSnippet
 
@@ -359,6 +361,11 @@ private:
           m_merge = true;
       }
 
+      //verify is no data header (ndh) is set on true
+      m_ndh = false;
+      if (IsParameterEnabled("ndh")) {
+          m_ndh = true;
+      }
       // Get the list of input files
       std::vector<std::string> descriptors = this->GetParameterStringList("il");
 
@@ -906,7 +913,8 @@ private:
       // last processed mission descriptor
       std::string lastMission = m_mission;
       // write the main mission name
-      datesFile << m_mission << std::endl;
+      if(!m_ndh)
+        datesFile << m_mission << std::endl;
 
       std::ostringstream missionDates;
       int numDates = 0;
@@ -916,12 +924,15 @@ private:
           // check if the mission of this descriptor is identical to the mission of the previous descriptor if merging is not requested
           if (!m_merge && lastMission.find(desc.mission) == std::string::npos) {
               // write previous mission's data to file
-              datesFile << numDates << std::endl;
-              datesFile << missionDates.str();
+              if(!m_ndh) {
+                datesFile << numDates << std::endl;
+                datesFile << missionDates.str();
+              }
 
               // new mission
               lastMission = desc.mission;
-              datesFile << lastMission << std::endl;
+              if(!m_ndh)
+                datesFile << lastMission << std::endl;
               numDates = 0;
               missionDates.str("");
               missionDates.clear();
@@ -983,7 +994,8 @@ private:
       }
 
       // write the data for the last mission
-      datesFile << numDates << std::endl;
+      if(!m_ndh)
+        datesFile << numDates << std::endl;
       datesFile << missionDates.str() << std::endl;
 
       // close the dates file
@@ -1199,7 +1211,7 @@ private:
   InternalImageListType::Pointer        m_AllMasksList;
   ImageReaderListType::Pointer          m_ImageReaderList;
   std::vector<ImageDescriptor>          m_DescriptorsList;
-  BandMathImageFilterListType::Pointer  m_BandMathList;  
+  BandMathImageFilterListType::Pointer  m_BandMathList;
   std::string                           m_maskExpression;
   std::string                           m_allMaskExpression;
   std::string                           m_mission;
@@ -1208,6 +1220,7 @@ private:
   double                                m_imageHeight;
   FloatVectorImageType::PointType       m_imageOrigin;
   bool                                  m_merge;
+  bool                                  m_ndh;
 
 //  InternalImageListType::Pointer        m_VldMaskList;
 //  std::vector<float>                    m_MeanPixels;
