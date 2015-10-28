@@ -16,7 +16,7 @@ function try {
 CROPTYPE_APP="/home/agrosu/sen2agri-processors-build/CropType"
 OTB_APP="/home/agrosu/sen2agri-processors-build/VegetationStatus/phenotb/src/Applications/"
 SCRIPT_PATH="/home/agrosu/sen2agri/sen2agri-processors/VegetationStatus/TestScripts"
-OUTPUT_PATH="/mnt/data/output_temp/out_qr_pheno_ndvi_midpir_E"
+OUTPUT_PATH="/mnt/data/QR_Results/PhenoNDVI_CSudmipy_E/"
 
 echo "The OTB appliction will be launched from:"
 echo "$OTB_APP"
