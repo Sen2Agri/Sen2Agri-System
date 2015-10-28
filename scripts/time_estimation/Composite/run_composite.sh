@@ -34,7 +34,8 @@ then
   echo "The product will be created with the original resolution without resampling."
 fi
 
-COMPOSITE_OTB_LIBS_ROOT="$1"
+OTB_LIBS_ROOT="$1"
+COMPOSITE_OTB_LIBS_ROOT="$OTB_LIBS_ROOT/Composite"
 WEIGHT_OTB_LIBS_ROOT="$COMPOSITE_OTB_LIBS_ROOT/WeightCalculation"
 
 OUT_SPOT_MASKS="$OUT_FOLDER/spot_masks.tif"
@@ -51,6 +52,7 @@ OUT_WEIGHT_CLOUD_FILE="$OUT_FOLDER/WeightCloud.tif"
 OUT_TOTAL_WEIGHT_FILE="$OUT_FOLDER/WeightTotal.tif"
 
 OUT_L3A_FILE="$OUT_FOLDER/L3AResult#_"$RESOLUTION"M.tif"
+PRODUCT_FOLDER="$OUT_FOLDER/ProductFolder/"
 
 PARAMS_TXT="$OUT_FOLDER/params.txt"
 rm -fr $PARAMS_TXT
@@ -147,6 +149,8 @@ do
     PREV_L3A="-prevl3aw $out_w -prevl3ad $out_d -prevl3ar $out_r -prevl3af $out_f"
     
     rm "$mod"
+    
+    try otbcli ProductFormatter "$OTB_LIBS_ROOT/MACCSMetadata/src/"  -destroot "$PRODUCT_FOLDER" -fileclass SVT1 -level L3A -timeperiod "20130228_20130615" -baseline 01.00 -processor composite -processor.composite.refls "$out_r" -processor.composite.weights "$out_w" -processor.composite.flags "$out_f" -processor.composite.dates "$out_d" -il "$xml" -gipp $PARAMS_TXT
     
 echo "-----------------------------------------------------------"
 done

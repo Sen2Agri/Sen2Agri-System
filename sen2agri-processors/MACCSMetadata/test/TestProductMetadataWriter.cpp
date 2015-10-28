@@ -125,11 +125,11 @@ BOOST_AUTO_TEST_CASE(ProductMetadataWriter)
     metadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.reserve(2);
 
     SpecialValues specialValue;
-    specialValue.SpecialValueIndex = 0;
+    specialValue.SpecialValueIndex = "0";
     specialValue.SpecialValueText = "NODATA";
     metadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
 
-    specialValue.SpecialValueIndex = 1;
+    specialValue.SpecialValueIndex = "1";
     specialValue.SpecialValueText = "NOTVALID";
     metadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
 
@@ -158,9 +158,9 @@ BOOST_AUTO_TEST_CASE(ProductMetadataWriter)
     metadata.GeometricInfo.ProductFootprint.RatserCSType = "POINT";
     metadata.GeometricInfo.ProductFootprint.PixelOrigin = 1;
 
-    metadata.QualityIndicatorsInfo.CloudCoverage = 0.0;
-    metadata.QualityIndicatorsInfo.TechnicalQualityAssessment.DegratedANCDataPercentage = 0;
-    metadata.QualityIndicatorsInfo.TechnicalQualityAssessment.DegratedMSIDataPercentage = 0;
+    metadata.QualityIndicatorsInfo.CloudCoverage = "0.0";
+    metadata.QualityIndicatorsInfo.TechnicalQualityAssessment.DegratedANCDataPercentage = "0";
+    metadata.QualityIndicatorsInfo.TechnicalQualityAssessment.DegratedMSIDataPercentage = "0";
 
     metadata.QualityIndicatorsInfo.QualityControlChecks.QualityInspections.FormatCorectnessFlag = "PASS";
     metadata.QualityIndicatorsInfo.QualityControlChecks.QualityInspections.GeometricQualityFlag = "PASS";

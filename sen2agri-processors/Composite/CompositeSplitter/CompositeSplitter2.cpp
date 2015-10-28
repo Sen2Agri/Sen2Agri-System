@@ -74,9 +74,6 @@ private:
 
         AddParameter(ParameterType_OutputImage, "outrgb", "Output rgb filename");
         MandatoryOff("outrgb");
-
-        AddParameter(ParameterType_String, "masterinfo", "Information about the product (created only if is master)");
-        MandatoryOff("masterinfo");
     }
 
     void DoUpdateParameters()
@@ -195,19 +192,6 @@ private:
             m_RGBConcat->SetInput(m_RGBOutList);
             SetParameterOutputImagePixelType("outrgb", ImagePixelType_int16);
             SetParameterOutputImage("outrgb", m_RGBConcat->GetOutput());
-        }
-
-        std::string curMissionName = pHelper->GetMissionName();
-        if(bandsMappingCfg.GetMasterMissionName() == curMissionName) {
-            auto outFileName = GetParameterString("masterinfo");
-            std::ofstream outFile;
-            try {
-              outFile.open(outFileName.c_str());
-              outFile << inXml << std::endl;
-              outFile.close();
-            } catch(...) {
-              itkGenericExceptionMacro(<< "Could not open file " << outFileName);
-            }
         }
 
         return;

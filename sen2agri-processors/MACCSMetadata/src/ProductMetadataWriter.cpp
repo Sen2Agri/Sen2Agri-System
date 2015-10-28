@@ -103,7 +103,7 @@ XElement Format(const ProductImageCharacteristicsMetadata &ProductImageCharacter
     for (const auto &specialValues : ProductImageCharacteristics.SpecialValuesList) {
         ProductImageCharEl.Append(XElement("Special_Values",
                                            XElement("SPECIAL_VALUE_TEXT", specialValues.SpecialValueText),
-                                           XElement("SPECIAL_VALUE_INDEX", std::to_string(specialValues.SpecialValueIndex))));
+                                           XElement("SPECIAL_VALUE_INDEX", specialValues.SpecialValueIndex)));
     }
 
     ProductImageCharEl.Append(XElement("Image_Display_Order",
@@ -163,8 +163,8 @@ XElement Format(const TechnicalQualityAssessmentMetadata &TechnicalQualityAss)
 
     XElement addEl("Technical_Quality_Assessment");
 
-    addEl.Append(XElement("DEGRADED_ANC_DATA_PERCENTAGE", std::to_string(TechnicalQualityAss.DegratedANCDataPercentage)));
-    addEl.Append(XElement("DEGRADED_MSI_DATA_PERCENTAGE", std::to_string(TechnicalQualityAss.DegratedMSIDataPercentage)));
+    addEl.Append(XElement("DEGRADED_ANC_DATA_PERCENTAGE", TechnicalQualityAss.DegratedANCDataPercentage));
+    addEl.Append(XElement("DEGRADED_MSI_DATA_PERCENTAGE", TechnicalQualityAss.DegratedMSIDataPercentage));
 
     return addEl;
 }
@@ -227,7 +227,7 @@ XDocument ProductMetadataWriter::CreateProductMetadataXml(const ProductFileMetad
     root.Append(
         XElement(
            "Quality_Indicators_Info",
-            XElement("Cloud_Coverage_Assessment", std::to_string(metadata.QualityIndicatorsInfo.CloudCoverage)),
+            XElement("Cloud_Coverage_Assessment", metadata.QualityIndicatorsInfo.CloudCoverage),
                     Format(metadata.QualityIndicatorsInfo.TechnicalQualityAssessment),
                     Format(metadata.QualityIndicatorsInfo.QualityControlChecks)));
     doc.Append(root);
