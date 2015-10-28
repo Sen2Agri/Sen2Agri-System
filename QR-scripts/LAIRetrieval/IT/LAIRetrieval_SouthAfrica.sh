@@ -14,8 +14,8 @@ function try {
 }
 
 
-OTB_APP="/home/agrosu/sen2agri-processors-build/VegetationStatus"
-SCRIPT_PATH="/home/agrosu/sen2agri/sen2agri-processors/VegetationStatus/TestScripts"
+OTB_APP="/home/cudroiu/sen2agri-processors-build/VegetationStatus"
+SCRIPT_PATH="/home/cudroiu/sen2agri/sen2agri-processors/VegetationStatus/TestScripts"
 OUTPUT_PATH="/mnt/data/QR_Results/LAIRetrieval_SouthAfrica/"
 
 echo "The OTB application will be launched from:"
