@@ -95,13 +95,13 @@ try otbcli BandsExtractor $CROPTTYPE_OTB_LIBS_ROOT/BandsExtractor/ -il $TIME_SER
 try otbcli FeatureExtraction $CROPTTYPE_OTB_LIBS_ROOT/FeatureExtraction -rtocr $OUT_BANDS -ndvi $OUT_NDVI
 try otbcli SigmoFitting $VEGETATIONSTATUS_OTB_LIBS_ROOT -in $OUT_NDVI -mask $OUT_MASKS -dates $OUT_DATES -out $OUT_SIGMO
 if [[ $# == 4 && "$4" == "tc3-1" ]] ; then
-ut_output_info "$OUT_SIGMO" 2 "./qr_cmp_southafrica/spot_sigmo.tif" 8008372
+ut_output_info "$OUT_SIGMO" 2 "./qr_cmp_pheno_southafrica/spot_sigmo.tif" 8008372
 rm -fr $OUT_MASKS $OUT_BANDS $OUT_DATES $OUT_NDVI 
 exit
 fi
 try otbcli MetricsEstimation $VEGETATIONSTATUS_OTB_LIBS_ROOT -ipf $OUT_SIGMO -indates $OUT_DATES -opf $OUT_METRIC
 if [[ $# == 4 && "$4" == "tc3-2" ]] ; then
-ut_output_info "$OUT_SIGMO" 2 "./qr_cmp_southafrica/metric_estimation.tif" 8008372
+ut_output_info "$OUT_SIGMO" 2 "./qr_cmp_pheno_southafrica/metric_estimation.tif" 8008372
 fi
 
 rm -fr $OUT_MASKS $OUT_BANDS $OUT_DATES $OUT_NDVI 
