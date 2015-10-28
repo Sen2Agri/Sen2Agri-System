@@ -14,7 +14,7 @@ function try {
 }
 
 
-OTB_APP="/home/cudroiu/sen2agri-processors-build/Composite"
+OTB_APP="/home/cudroiu/sen2agri-processors-build"
 SCRIPT_PATH="/home/cudroiu/sen2agri/sen2agri-processors/Composite/TestScripts"
 OUTPUT_PATH="/mnt/data/QR_Results/Composite_SouthAfrica/"
 
