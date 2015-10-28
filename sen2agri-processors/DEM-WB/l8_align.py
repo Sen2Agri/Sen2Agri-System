@@ -355,7 +355,7 @@ logger.debug(txt_file)
 epsg_code = get_image_info_with_gdal(image)
 shape_temp = os.path.join(working_dir, os.path.splitext(os.path.basename(l8_vector))[0] + "_reprojected" + os.path.splitext(os.path.basename(l8_vector))[1])
 logger.debug(shape_temp)
-ogr_command = "ogr2ogr -t_srs EPSG:" + str(epsg_code) + " -s_srs EPSG:4326 " + shape_temp + " " + l8_vector
+ogr_command = "ogr2ogr -t_srs EPSG:" + str(epsg_code) + " " + shape_temp + " " + l8_vector
 os.system(ogr_command)
 
 # shape_env = os.path.join(working_dir, os.path.splitext(os.path.basename(l8_vector))[0] + "_env" + os.path.splitext(os.path.basename(l8_vector))[1])
