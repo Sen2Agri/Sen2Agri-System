@@ -141,7 +141,7 @@ private:
             if (HasValue("outbounds")) {
                 std::ofstream boundsFile(GetParameterString("outbounds"));
                 for (const auto &v : *polygon->GetVertexList()) {
-                    boundsFile << v[0] << ' ' << v[1];
+                    boundsFile << v[0] << ' ' << v[1] << '\n';
                 }
             }
         } else {
