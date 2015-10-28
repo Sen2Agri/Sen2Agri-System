@@ -1,3 +1,5 @@
+find_package(Boost REQUIRED COMPONENTS filesystem)
+
 set(MACCSMetadata_HEADERS
     ../include/FluentXML.hpp
     ../include/tinyxml_utils.hpp
@@ -11,7 +13,8 @@ set(MACCSMetadata_HEADERS
     ../include/SPOT4MetadataReader.hpp
     ../include/TileMetadataWriter.hpp
     ../include/ProductMetadataWriter.hpp
-    ../include/ViewingAngles.hpp)
+    ../include/ViewingAngles.hpp
+    ../include/MetadataUtil.hpp)
 
 set(MACCSMetadata_SOURCES
     FluentXML.cpp
@@ -22,10 +25,12 @@ set(MACCSMetadata_SOURCES
     TileMetadataWriter.cpp
     ProductMetadataWriter.cpp
     SPOT4MetadataReader.cpp
-    ViewingAngles.cpp)
+    ViewingAngles.cpp
+    MetadataUtil.cpp)
 
 add_library(MACCSMetadata SHARED ${MACCSMetadata_HEADERS} ${MACCSMetadata_SOURCES})
 target_link_libraries(MACCSMetadata
+    "${Boost_LIBRARIES}"
     "${OTBCommon_LIBRARIES}"
     "${OTBTinyXML_LIBRARIES}"
     "${OTBITK_LIBRARIES}")

@@ -57,7 +57,7 @@ struct ProductInfoMetadata
 struct SpecialValues
 {
     std::string SpecialValueText;
-    int SpecialValueIndex;
+    std::string SpecialValueIndex;
 };
 
 struct ProductImageDisplayOrder
@@ -95,8 +95,8 @@ struct AuxiliaryDataInfoMetadata
 
 struct TechnicalQualityAssessmentMetadata
 {
-    int DegratedANCDataPercentage;
-    int DegratedMSIDataPercentage;
+    std::string DegratedANCDataPercentage;
+    std::string DegratedMSIDataPercentage;
 };
 
 struct QualityInspectionsMetadata
@@ -122,7 +122,7 @@ struct QualityControlChecksMetadata
 
 struct QualityIndicatorsInfoMetadata
 {
-    float CloudCoverage;
+    std::string CloudCoverage;
     TechnicalQualityAssessmentMetadata TechnicalQualityAssessment;
     QualityControlChecksMetadata QualityControlChecks;
 };

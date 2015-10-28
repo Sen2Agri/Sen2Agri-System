@@ -59,35 +59,37 @@ public:
 
   inline TOutput operator()(const TInput1 & A) const
   {
-      //itk::VariableLengthVector vect;
+    //itk::VariableLengthVector vect;
 
 
     TOutput result(6);    
     TInput1 A2(A.Size());
+    VectorType tmp_DateVect;
     result.Fill(NO_DATA);
     size_t j = 0;
     for(size_t i = 0; i < A.Size(); i++) {
         if(fabs(A[i] - NO_DATA) >= EPSILON) {
         //if(A[i] >= 0) {
             A2[j++] = A[i] /*/ 10000*/;
+            tmp_DateVect.push_back(date_vect[i]);
         }
     }
 
-    if(j == 0)
+    if(j < 4)
         return result;
     if(j != A.Size())
         A2.SetSize(j, false);
 
 
      // TODO: Uncomment this if the approximation is needed and use in pheno_metrix x_hat instead of ts
-    int nbBvElems = A.GetNumberOfElements();
+    int nbBvElems = A2.GetNumberOfElements();
 
-    vnl_vector<double> ts, dv;
+    vnl_vector<double> ts(nbBvElems), dv(tmp_DateVect.size());
     for(size_t i = 0; i<nbBvElems; i++) {
-        ts[i] = A[i];
+        ts[i] = A2[i];
     }
-    for(size_t i = 0; i<date_vect.size(); i++) {
-        dv[i] = date_vect[i];
+    for(size_t i = 0; i<tmp_DateVect.size(); i++) {
+        dv[i] = tmp_DateVect[i];
     }
 
     auto approximation_result =
@@ -178,7 +180,8 @@ private:
       while (std::getline(datesFile, value)) {
           struct tm tmDate = {};
           if (strptime(value.c_str(), "%Y%m%d", &tmDate) == NULL) {
-              itkExceptionMacro("Invalid value for a date: " + value);
+              itkWarningMacro(<< "Invalid value for a date: " << value);
+              continue;
           }
           dates.emplace_back(tmDate);
 //          inDates.push_back(mktime(&tmDate) / 86400);

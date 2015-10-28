@@ -29,16 +29,16 @@ struct TileGeocoding
 
 struct TileImageContent
 {
-    float NoDataPixelPercentange;
-    float SaturatedDefectivePixelPercentange;
-    float CloudShadowPercentange;
-    float VegetationPercentange;
-    float WaterPercentange;
-    float LowProbaCloudsPercentange;
-    float MediumProbaCloudsPercentange;
-    float HighProbaCloudsPercentange;
-    float ThinCirrusPercentange;
-    float SnowIcePercentange;
+    std::string NoDataPixelPercentange;
+    std::string SaturatedDefectivePixelPercentange;
+    std::string CloudShadowPercentange;
+    std::string VegetationPercentange;
+    std::string WaterPercentange;
+    std::string LowProbaCloudsPercentange;
+    std::string MediumProbaCloudsPercentange;
+    std::string HighProbaCloudsPercentange;
+    std::string ThinCirrusPercentange;
+    std::string SnowIcePercentange;
 };
 
 struct TileMask

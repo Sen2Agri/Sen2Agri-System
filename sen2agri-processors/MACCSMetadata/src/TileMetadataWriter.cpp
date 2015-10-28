@@ -32,16 +32,16 @@ XElement Format(const TileGeocoding &tileGeocoding)
 XElement Format(const TileImageContent &tileImageContent)
 {
     XElement tileImageContentEl("Image_Content_QI",
-                   XElement("NODATA_PIXEL_PERCENTAGE", std::to_string(tileImageContent.NoDataPixelPercentange)),
-                   XElement("SATURATED_DEFECTIVE_PIXEL_PERCENTAGE", std::to_string(tileImageContent.SaturatedDefectivePixelPercentange)),
-                   XElement("CLOUD_SHADOW_PERCENTAGE", std::to_string(tileImageContent.CloudShadowPercentange)),
-                   XElement("VEGETATION_PERCENTAGE", std::to_string(tileImageContent.VegetationPercentange)),
-                   XElement("WATER_PERCENTAGE", std::to_string(tileImageContent.WaterPercentange)),
-                   XElement("LOW_PROBA_CLOUDS_PERCENTAGE", std::to_string(tileImageContent.LowProbaCloudsPercentange)),
-                   XElement("MEDIUM_PROBA_CLOUDS_PERCENTAGE", std::to_string(tileImageContent.MediumProbaCloudsPercentange)),
-                   XElement("HIGH_PROBA_CLOUDS_PERCENTAGE", std::to_string(tileImageContent.HighProbaCloudsPercentange)),
-                   XElement("THIN_CIRRUS_PERCENTAGE", std::to_string(tileImageContent.ThinCirrusPercentange)),
-                   XElement("SNOW_ICE_PERCENTAGE", std::to_string(tileImageContent.SnowIcePercentange)));
+                   XElement("NODATA_PIXEL_PERCENTAGE", tileImageContent.NoDataPixelPercentange),
+                   XElement("SATURATED_DEFECTIVE_PIXEL_PERCENTAGE", tileImageContent.SaturatedDefectivePixelPercentange),
+                   XElement("CLOUD_SHADOW_PERCENTAGE", tileImageContent.CloudShadowPercentange),
+                   XElement("VEGETATION_PERCENTAGE", tileImageContent.VegetationPercentange),
+                   XElement("WATER_PERCENTAGE", tileImageContent.WaterPercentange),
+                   XElement("LOW_PROBA_CLOUDS_PERCENTAGE", tileImageContent.LowProbaCloudsPercentange),
+                   XElement("MEDIUM_PROBA_CLOUDS_PERCENTAGE", tileImageContent.MediumProbaCloudsPercentange),
+                   XElement("HIGH_PROBA_CLOUDS_PERCENTAGE", tileImageContent.HighProbaCloudsPercentange),
+                   XElement("THIN_CIRRUS_PERCENTAGE", tileImageContent.ThinCirrusPercentange),
+                   XElement("SNOW_ICE_PERCENTAGE", tileImageContent.SnowIcePercentange));
 
     return tileImageContentEl;
 }

@@ -8,7 +8,7 @@ import csv
 from sys import argv
 
 #Path to build folder
-buildFolder="~/sen2agri-build/"
+defaultBuildFolder="~/sen2agri-build/"
 
 parser = argparse.ArgumentParser(description='CropType Python processor')
 
@@ -23,7 +23,8 @@ parser.add_argument('-classifier', help='The classifier used for training (eithe
 parser.add_argument('-rseed', help='The random seed used for training', required=False, metavar='random_seed', default=0)
 parser.add_argument('-mask', help='The crop mask', required=False, metavar='crop_mask', default='')
 parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
-parser.add_argument('-outdir', help="Output directory", default=buildFolder)
+parser.add_argument('-outdir', help="Output directory", default=defaultBuildFolder)
+parser.add_argument('-buildfolder', help="Build folder", default=defaultBuildFolder)
 
 args = parser.parse_args()
 
@@ -42,6 +43,8 @@ classifier=args.classifier
 random_seed=args.rseed
 crop_mask=args.mask
 pixsize=args.pixsize
+
+buildFolder=args.buildfolder
 
 reference_polygons_clip=os.path.join(args.outdir, "reference_clip.shp")
 training_polygons=os.path.join(args.outdir, "training_polygons.shp")

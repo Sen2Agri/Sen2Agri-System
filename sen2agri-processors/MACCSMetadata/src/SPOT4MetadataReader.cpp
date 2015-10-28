@@ -24,7 +24,11 @@ std::unique_ptr<SPOT4Metadata> SPOT4MetadataReader::ReadMetadata(const std::stri
         return nullptr;
     }
 
-    return ReadMetadataXml(doc);
+    auto metadata = ReadMetadataXml(doc);
+    if (metadata) {
+        metadata->ProductPath = path;
+    }
+    return metadata;
 }
 
 std::unique_ptr<SPOT4Metadata> SPOT4MetadataReader::ReadMetadataXml(const TiXmlDocument &doc)

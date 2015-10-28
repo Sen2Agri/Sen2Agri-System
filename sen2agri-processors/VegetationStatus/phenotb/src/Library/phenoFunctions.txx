@@ -270,7 +270,7 @@ FittingErrors error_diagnostics(const V& x, const V& p, const V& t)
 }
 
 template <ContainerC V>
-ApproximationResultType Approximation(const V& profile, const V& t) 
+ApproximationResultType Approximation(const V& profile, const V& t)
 {
   auto minmax = std::minmax_element(std::begin(profile), std::end(profile));
   auto t_max = std::begin(t);

@@ -62,6 +62,9 @@ private:
         AddParameter(ParameterType_OutputImage, "outaotres", "Out snow mask image at the original  resolution");
         MandatoryOff("outaotres");
 
+        AddParameter(ParameterType_String, "masterinfo", "Information about the product (created only if is master)");
+        MandatoryOff("masterinfo");
+
         SetDocExampleParameterValue("xml", "/path/to/L2Aproduct_maccs.xml");
         SetDocExampleParameterValue("msk", "/path/to/msks.tif");
         SetDocExampleParameterValue("allinone", "1");
@@ -104,7 +107,11 @@ private:
             SetParameterOutputImage("outaotres", m_dirCorr.GetResampledAotImg().GetPointer());
         } else if ((missionName.find(LANDSAT_MISSION_STR) != std::string::npos) ||
                    (missionName.find(SPOT4_MISSION_STR) != std::string::npos)) {
-            m_resampleAtS2Res.Init(inXml, mskImg, strBandsMappingFileName, res);
+            std::string masterInfoFileName;
+            if(HasValue("masterinfo")) {
+                masterInfoFileName = GetParameterString("masterinfo");
+            }
+            m_resampleAtS2Res.Init(inXml, mskImg, strBandsMappingFileName, res, masterInfoFileName);
             m_resampleAtS2Res.DoExecute();
 
             SetParameterOutputImage("outres", m_resampleAtS2Res.GetResampledMainImg());

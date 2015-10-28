@@ -6,7 +6,7 @@ ResampleAtS2Res2::ResampleAtS2Res2()
 }
 
 void ResampleAtS2Res2::Init(const std::string &xml, const std::string &strMaskFileName,
-                            const std::string &bandsMappingFile, int nRes)
+                            const std::string &bandsMappingFile, int nRes, const std::string &masterInfo)
 {
     m_strXml = xml;
     m_strMaskFileName = strMaskFileName;
@@ -17,6 +17,7 @@ void ResampleAtS2Res2::Init(const std::string &xml, const std::string &strMaskFi
     m_ImageReaderList = ImageReaderListType::New();
 
     m_bandsMappingFile = bandsMappingFile;
+    m_masterInfoFile = masterInfo;
 }
 
 void ResampleAtS2Res2::DoExecute()
@@ -50,6 +51,8 @@ void ResampleAtS2Res2::DoExecute()
     ExtractResampledAotImage();
 
     m_Concatener->SetInput( m_ImageList );
+
+    CreateMasterInfoFile();
 }
 
 ResampleAtS2Res2::ImageType::Pointer ResampleAtS2Res2::GetResampledMainImg() {
@@ -119,4 +122,19 @@ bool ResampleAtS2Res2::ExtractResampledMasksImages()
     m_ImageSnow = m_ResampledBandsExtractor.ExtractResampledBand(img, 3, curRes, m_nRes, true);
 
     return true;
+}
+
+void ResampleAtS2Res2::CreateMasterInfoFile() {
+    if(m_masterInfoFile != "") {
+        BandsMappingConfig bandsMappingCfg = m_bandsCfgMappingParser.GetBandsMappingCfg();
+        std::string curMissionName = m_pMetadataHelper->GetMissionName();
+        if(bandsMappingCfg.GetMasterMissionName() == curMissionName) {
+            try {
+              std::ofstream outFile(m_masterInfoFile);
+              outFile << curMissionName << std::endl;
+            } catch(...) {
+              itkGenericExceptionMacro(<< "Could not create file " << m_masterInfoFile);
+            }
+        }
+    }
 }
