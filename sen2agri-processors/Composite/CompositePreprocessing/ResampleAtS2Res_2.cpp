@@ -129,13 +129,11 @@ void ResampleAtS2Res2::CreateMasterInfoFile() {
         BandsMappingConfig bandsMappingCfg = m_bandsCfgMappingParser.GetBandsMappingCfg();
         std::string curMissionName = m_pMetadataHelper->GetMissionName();
         if(bandsMappingCfg.GetMasterMissionName() == curMissionName) {
-            std::ofstream outFile;
             try {
-              outFile.open(m_masterInfoFile.c_str());
+              std::ofstream outFile(m_masterInfoFile);
               outFile << curMissionName << std::endl;
-              outFile.close();
             } catch(...) {
-              itkGenericExceptionMacro(<< "Could not open file " << outFileName);
+              itkGenericExceptionMacro(<< "Could not create file " << m_masterInfoFile);
             }
         }
     }

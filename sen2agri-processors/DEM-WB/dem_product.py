@@ -412,8 +412,6 @@ def gdal_reprojection_and_no_data(image_in, image_out, image_out_srs, image_in_s
     """
     # input no data is set to -32768 and as output, no data are set to 0 (for the sea)
     command = "gdalwarp "
-    if not image_in_srs == "":
-        command += " -s_srs " + image_in_srs + " "
     command += "-t_srs " + str(image_out_srs) + " -of GTiff "  # " -srcnodata -32768 -dstnodata 0 -of GTiff "
     command += image_in + " " + image_out
 
@@ -545,7 +543,7 @@ def get_DTM(data, dem_tiles, output_dem_directory, tile_id, extent_wgs84_vector)
         logger.debug("output_vrt : " + output_vrt)
         logger.debug("Bulding vrt")
         command_build_vrt = "gdalbuildvrt " + output_vrt
-        for srtm in glob.glob(os.path.join(dem_tiles, "*.tif")):
+        for srtm in glob.glob(os.path.join(dem_tiles, "*.TIF")):
             command_build_vrt += " " + srtm
         logger.info(command_build_vrt)
         os.system(command_build_vrt)
@@ -559,7 +557,7 @@ def get_DTM(data, dem_tiles, output_dem_directory, tile_id, extent_wgs84_vector)
     logger.debug("vrt reprojete et nodata set : " + dtm_temp)
 
     shape_temp = os.path.join(working_dir, os.path.splitext(os.path.basename(l8_vector))[0] + "_reprojected" + os.path.splitext(os.path.basename(l8_vector))[1])
-    ogr_command = "ogr2ogr -t_srs EPSG:" + str(epsg_code) + " -s_srs EPSG:4326 " + shape_temp + " " + extent_wgs84_vector
+    ogr_command = "ogr2ogr -t_srs EPSG:" + str(epsg_code) + " " + shape_temp + " " + extent_wgs84_vector
     os.system(ogr_command)
 
     dtm_temp_nodata_r = os.path.join(working_dir_dtm, tile_id + "_DTM_90m_no_data_cropped.tif")
@@ -637,7 +635,7 @@ def get_wb(data, output_dem_directory, working_dir, dtm_l2_coarse, tile_id):
         logger.debug("rasterizing wb")
         shape_temp = os.path.splitext(shapefile)[0] + "_reproject" + os.path.splitext(shapefile)[1]
 
-        ogr_command = "ogr2ogr -t_srs EPSG:" + str(epsg_code) + " -s_srs EPSG:4326 " + shape_temp + " " + shapefile
+        ogr_command = "ogr2ogr -t_srs EPSG:" + str(epsg_code) + " " + shape_temp + " " + shapefile
         os.system(ogr_command)
 
         shape_clipped = clipVectorWithOGR_Extent(shape_temp, [a_x, a_y, b_x, b_y], working_dir_wb)
@@ -899,7 +897,7 @@ logger.info("Ratio ratio_l2 : " + str(ratio_l2) + " ; ratio ratio_l2_coarse : " 
 logger.debug("######## END MANAGING ARGUMENTS ########")
 # ####### END MANAGING ARGUMENTS ########
 
-dtm_l2_no_data_to_zero, dtm_l2_coarse_no_data_to_zero, dtm_temp = get_DTM(input_image, working_dir, output_dem_directory, tile_id, extent_wgs84_vector)
+dtm_l2_no_data_to_zero, dtm_l2_coarse_no_data_to_zero, dtm_temp = get_DTM(input_image, ouput_product_dir, output_dem_directory, tile_id, extent_wgs84_vector)
 
 # dtm_l2_coarse_no_data_to_zero = os.path.join(output_dem_directory, tile_id + "_ALC.TIF")
 wb = get_wb(input_image, output_dem_directory, working_dir, dtm_l2_coarse_no_data_to_zero, tile_id)

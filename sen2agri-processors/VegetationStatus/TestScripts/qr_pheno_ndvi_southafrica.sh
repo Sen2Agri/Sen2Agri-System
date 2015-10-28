@@ -29,9 +29,13 @@ inputXML+="/mnt/Satellite_Imagery/S2-QR/SouthAfrica/SPOT4_HRVIR1_XS_20130615_N2A
 
 if [ $# -lt 3 ]
 then
-  echo "Usage: $0 <croptype otb application directory> <pheno metrics otb application directory> <output directory name>"
+  echo "Usage: $0 <croptype otb application directory> <pheno metrics otb application directory> <output directory name> [test number]"
   echo "The file with input xmls should be given. The resolution for which the computations will be performed should be given. The output directory should be given" 1>&2  
   exit
 fi
 
+if [ $# == 3 ] ; then
 ./run_pheno.sh $1 $2 "$inputXML" $3
+else
+./run_pheno.sh $1 $2 "$inputXML" $3 $4
+fi
