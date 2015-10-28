@@ -86,7 +86,7 @@ div.panel table.table td {
 }
 
 div.panel table.default_panel_style th, div.panel table.default_panel_style td {
-    padding: 13px 5px;
+    /*padding: 13px 5px;*/
     text-align: left;
 }
 
@@ -155,6 +155,7 @@ div.panel table.server_resources_table tr td:nth-child(3) {
 div.panel table.server_resources_table div.server_resources_table_graph {
     display: inline-block;
     height: 90%;
+    min-height: 65px;
     width: 100%;
 }
 
@@ -181,6 +182,7 @@ div.full_width {
     width: 100%;
     overflow: auto;
     bottom: 2%;
+    font-size: 0.75em;
 }
 
 #pnl_current_jobs table:first-of-type tr td {
@@ -201,6 +203,7 @@ div.full_width {
     width: 100%;
     overflow: auto;
     margin-bottom: 0px;
+    font-size: 0.75em;
 }
 
 
@@ -290,5 +293,9 @@ div.pop_up #close_button{
 
 .hand_cursor:hover {
     cursor:pointer;
+}
+
+* {
+    box-sizing: content-box;
 }
 
