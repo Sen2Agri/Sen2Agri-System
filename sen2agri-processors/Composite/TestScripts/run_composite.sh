@@ -141,7 +141,7 @@ do
 
     try otbcli CompositeSplitter2 "$COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/" -in "$mod" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -outweights "$out_w" -outdates "$out_d" -outrefls "$out_r" -outflags "$out_f" -outrgb "$out_rgb"
 
-    try otbcli ProductFormatter "$PRODUCT_FORMATER_OTB_LIBS_ROOT"  -destroot "$OUT_FOLDER" -fileclass SVT1 -level L3A -timeperiod 20130228_20130615 -baseline 01.00 -processor composite -processor.composite.refls "$out_r" -processor.composite.weights "$out_w" -processor.composite.flags "$out_f" -processor.composite.dates "$out_d" -il "$xml" -gipp "$PARAMS_TXT"
+    try otbcli ProductFormatter "$PRODUCT_FORMATER_OTB_LIBS_ROOT"  -destroot "$OUT_FOLDER" -fileclass SVT1 -level L3A -timeperiod 20130228_20130615 -baseline 01.00 -processor composite -processor.composite.refls "$out_r" -processor.composite.weights "$out_w" -processor.composite.flags "$out_f" -processor.composite.dates "$out_d" -processor.composite.rgb "$out_rgb" -il "$xml" -gipp "$PARAMS_TXT"
 
     #PREV_L3A="-prevl3a $mod"
     PREV_L3A="-prevl3aw $out_w -prevl3ad $out_d -prevl3ar $out_r -prevl3af $out_f"
