@@ -67,7 +67,7 @@ quality_metrics=os.path.join(args.outdir, "quality-metrics.txt")
 
 # Bands Extractor
 print "Executing BandsExtractor at " + str(datetime.datetime.now())
-beCmdLine = "otbApplicationLauncherCommandLine BandsExtractor "+buildFolder+"CropType/BandsExtractor -il "+indesc+" -out "+rawtocr+" -mask "+rawmask+" -outdate "+dates+" -shape "+shape+" -pixsize "+pixsize
+beCmdLine = "otbApplicationLauncherCommandLine BandsExtractor "+os.path.join(buildFolder,"CropType/BandsExtractor")+" -il "+indesc+" -out "+rawtocr+" -mask "+rawmask+" -outdate "+dates+" -shape "+shape+" -pixsize "+pixsize
 print beCmdLine
 result = os.system(beCmdLine)
 
@@ -90,7 +90,7 @@ print "ogr2ogr done at " + str(datetime.datetime.now())
 
 # Sample Selection
 print "Executing SampleSelection at " + str(datetime.datetime.now())
-ssCmdLine = "otbApplicationLauncherCommandLine SampleSelection "+buildFolder+"CropType/SampleSelection -ref "+reference_polygons_clip+" -ratio "+sample_ratio+" -seed "+random_seed+" -tp "+training_polygons+" -vp "+validation_polygons
+ssCmdLine = "otbApplicationLauncherCommandLine SampleSelection "+os.path.join(buildFolder,"CropType/SampleSelection")+" -ref "+reference_polygons_clip+" -ratio "+sample_ratio+" -seed "+random_seed+" -tp "+training_polygons+" -vp "+validation_polygons
 print ssCmdLine
 result = os.system(ssCmdLine)
 
@@ -126,7 +126,7 @@ print "gdalwarp done at " + str(datetime.datetime.now())
 
 # Temporal Resampling
 print "Executing TemporalResampling at " + str(datetime.datetime.now())
-trCmdLine = "otbApplicationLauncherCommandLine TemporalResampling "+buildFolder+"CropType/TemporalResampling -tocr "+tocr+" -mask "+mask+" -ind "+dates+" -sp "+sp+" -t0 "+t0+" -tend "+tend+" -radius "+radius+" -rtocr "+rtocr
+trCmdLine = "otbApplicationLauncherCommandLine TemporalResampling "+os.path.join(buildFolder,"CropType/TemporalResampling")+" -tocr "+tocr+" -mask "+mask+" -ind "+dates+" -sp "+sp+" -t0 "+t0+" -tend "+tend+" -radius "+radius+" -rtocr "+rtocr
 print trCmdLine
 result = os.system(trCmdLine)
 
@@ -141,7 +141,7 @@ print "TemporalResampling done at " + str(datetime.datetime.now())
 
 # Feature Extraction
 print "Executing FeatureExtraction at " + str(datetime.datetime.now())
-feCmdLine = "otbApplicationLauncherCommandLine FeatureExtraction "+buildFolder+"CropType/FeatureExtraction -rtocr "+rtocr+" -fts "+fts
+feCmdLine = "otbApplicationLauncherCommandLine FeatureExtraction "+os.path.join(buildFolder,"CropType/FeatureExtraction")+" -rtocr "+rtocr+" -fts "+fts
 print feCmdLine
 result = os.system(feCmdLine)
 
@@ -206,7 +206,7 @@ print "ComputeConfusionMatrix done at " + str(datetime.datetime.now())
 
 #Product creation
 print "Executing ProductFormatter at " + str(datetime.datetime.now())
-pfCmdLine = "otbApplicationLauncherCommandLine ProductFormatter "+buildFolder+"MACCSMetadata/src -destroot "+args.outdir+" -fileclass SVT1 -level L4B -timeperiod "+t0+"_"+tend+" -baseline 01.00 -processor croptype -processor.croptype.file "+crop_type_map
+pfCmdLine = "otbApplicationLauncherCommandLine ProductFormatter "+os.path.join(buildFolder,"MACCSMetadata/src")+" -destroot "+args.outdir+" -fileclass SVT1 -level L4B -timeperiod "+t0+"_"+tend+" -baseline 01.00 -processor croptype -processor.croptype.file "+crop_type_map
 print pfCmdLine
 result = os.system(pfCmdLine)
 
