@@ -19,3 +19,14 @@ CROP MASK
 
 ProductFormatter ~/sen2agri/sen2agri-processors-build/MACCSMetadata/src/  -destroot /home/atrasca/sen2agri/sen2agri-processors-build/Testing/Dest -fileclass SVT1 -level L4A -timeperiod 20130228_20130615 -baseline 01.00 -processor cropmask -processor.cropmask.file /home/atrasca/sen2agri/sen2agri-processors-build/Testing/Src/S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_FRE_R2.DBL.TIF -il /home/atrasca/sen2agri/sen2agri-processors-build/Testing/Src/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000.xml -preview /home/atrasca/sen2agri/sen2agri-processors-build/Testing/Src/file1.jpg /home/atrasca/sen2agri/sen2agri-processors-build/Testing/Src/file2.jpg -gipp /home/atrasca/sen2agri/sen2agri-processors-build/Testing/Src/gipp1.xml
 
+
+Teste pe date reale
+/mnt/data/QR_Results/Composite_SouthAfrica
+
+ProductFormatter ~/sen2agri/sen2agri-processors-build/MACCSMetadata/src/  -destroot /home/atrasca/sen2agri/sen2agri-processors-build/Testing/Dest -fileclass SVT1 -level L3A -timeperiod 20130228_20130615 -baseline 01.00 -processor composite -processor.composite.refls /mnt/data/QR_Results/Composite_SouthAfrica/L3AResult22_refls.tif -processor.composite.weights /mnt/data/QR_Results/Composite_SouthAfrica/L3AResult22_weights.tif -processor.composite.flags /mnt/data/QR_Results/Composite_SouthAfrica/L3AResult22_flags.tif -processor.composite.dates /mnt/data/QR_Results/Composite_SouthAfrica/L3AResult22_dates.tif -il /mnt/Satellite_Imagery/S2-QR/SouthAfrica/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000.xml -gipp /mnt/data/QR_Results/Composite_SouthAfrica/params.txt -processor.composite.rgb /mnt/data/output_temp/out_l3a_spot4_south_africa/L3AResult22_rgb.tif
+
+
+
+
+
+

@@ -6,25 +6,25 @@
 			"selectable":false,
 			"nodes":[
 					{"text":"SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000",
-						"href":"files/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000.xml",
+						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000.zip",
 						"productId":"SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000"
 					},
 					{"text":"SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000",
-						"href":"files/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000.zip",
+						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000.zip",
 						"productId":"SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000"
 					},
 					{"text":"SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000",
-						"href":"files/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000.zip",
+						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000.zip",
 						"productId":"SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000"
 					}
 					,
 					{"text":"SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000",
-						"href":"files/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000.zip",
+						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000.zip",
 						"productId":"SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000"
 					}
 					,
 					{"text":"SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000",
-						"href":"files/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000.zip",
+						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000.zip",
 						"productId":"SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000"
 					}
 				]
@@ -38,8 +38,13 @@
 			"selectable":false,
 			"nodes":[
 					{"text":"SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000",
-						"href":"files/Imagery_S2A/Spot4-T5/L2A/South Africa/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000.zip",
+						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000.zip",
 						"productId":"SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000"
+					}
+					,
+					{"text":"SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000",
+						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000.zip",
+						"productId":"SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000"
 					}
 				 ]
 			}
@@ -52,8 +57,13 @@
 			"selectable":false,
 			"nodes":[
 					{"text":"SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000",
-						"href":"files/Imagery_S2A/Spot4-T5/L2A/CSudmipy-O_LEVEL2A/SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000.zip",
+						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000.zip",
 						"productId":"SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000"
+					}
+					,
+					{"text":"SPOT4_HRVIR_XS_20130221_N2A_CSudmipy-OD0000B0000",
+						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR_XS_20130221_N2A_CSudmipy-OD0000B0000.zip",
+						"productId":"SPOT4_HRVIR_XS_20130221_N2A_CSudmipy-OD0000B0000"
 					}
 				 ]
 			}
@@ -66,8 +76,13 @@
 			"selectable":false,
 			"nodes":[
 					{"text":"SPOT4_HRVIR1_XS_20130217_N2A_CSudmipy-ED0000B0000",
-						"href":"files/Imagery_S2A/Spot4-T5/L2A/CSudmipy-E_LEVEL2A/SPOT4_HRVIR1_XS_20130217_N2A_CSudmipy-ED0000B0000/SPOT4_HRVIR1_XS_20130217_N2A_CSudmipy-ED0000B0000.zip",
+						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130217_N2A_CSudmipy-ED0000B0000.zip",
 						"productId":"SPOT4_HRVIR1_XS_20130217_N2A_CSudmipy-ED0000B0000"
+					}
+					,
+					{"text":"SPOT4_HRVIR1_XS_20130222_N2A_CSudmipy-ED0000B0000",
+						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130222_N2A_CSudmipy-ED0000B0000.zip",
+						"productId":"SPOT4_HRVIR1_XS_20130222_N2A_CSudmipy-ED0000B0000"
 					}
 				 ]
 			}
