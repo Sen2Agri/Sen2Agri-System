@@ -6,6 +6,8 @@
 #include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
+#include <spawn.h>
 #include <fstream>
 
 #include "ProductMetadataWriter.hpp"
@@ -93,7 +95,9 @@ typedef enum{
     FLAGS_MASK,
     DATES_MASK,
     LAI_REPR_RASTER,
-    LAI_FIT_RASTER
+    LAI_FIT_RASTER,
+    CROP_MASK_RASTER,
+    CROP_TYPE_RASTER
 }rasterTypes;
 
 struct rasterInfo
@@ -142,15 +146,23 @@ private:
         AddParameter(ParameterType_InputFilenameList, "rasters", "Raster files list");
         AddParameter(ParameterType_InputFilenameList, "masks", "Masks files list");*/
 
-   //composite parameters
+
         AddParameter(ParameterType_Choice, "processor", "Processor");
         SetParameterDescription("processor", "Specifies the product type");
 
         AddChoice("processor.composite", "Composite product");
         SetParameterDescription("processor.composite", "Specifies a Composite product");
+
         AddChoice("processor.vegetation", "Vegetation Status product");
         SetParameterDescription("processor.vegetation", "Specifies a Vegetation Status product");
 
+        AddChoice("processor.croptype", "Crop type product");
+        SetParameterDescription("processor.croptype", "Specifies a CropType product");
+
+        AddChoice("processor.cropmask", "Crop mask product");
+        SetParameterDescription("processor.cropmask", "Specifies a CropMask product");
+
+  //composite parameters
         AddParameter(ParameterType_InputFilenameList, "processor.composite.refls", "Reflectance raster files list for composite");
         MandatoryOff("processor.composite.refls");
 
@@ -171,6 +183,13 @@ private:
          AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laifit", "LAI FIT raster files list for vegetation");
          MandatoryOff("processor.vegetation.laifit");
 
+//crop type parameters
+        AddParameter(ParameterType_InputFilenameList, "processor.croptype.file", "CROP TYPE raster file");
+        MandatoryOff("processor.croptype.file");
+
+//crop mask parameters
+        AddParameter(ParameterType_InputFilenameList, "processor.cropmask.file", "CROP MASK raster file");
+        MandatoryOff("processor.cropmask.file");
 
         AddParameter(ParameterType_InputFilenameList, "il", "The xml files");
         AddParameter(ParameterType_InputFilenameList, "preview", "The quicklook files");
@@ -196,6 +215,10 @@ private:
   }
   void DoExecute()
   {
+      /*std::vector<std::string> channels = {"Channel1", "Channel2", "Channel3"};
+      generateQuicklook("/home/atrasca/sen2agri/sen2agri-processors-build/Testing/Src/S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_SRE_R1.DBL.TIF", channels);
+      return;*/
+
       //get file class
       m_strFileClass = this->GetParameterString("fileclass");
 
@@ -249,10 +272,10 @@ private:
 
      }
 
-      //if is composite read reflectance rasters, weights ratsters, flags masks, dates masks
+      //if is vegetation, read LAIREPR and LAIFIT raster files list
       if (m_strProductLevel.compare("L3B") == 0)
       {
-          // Get reflectance raster file list
+          // Get LAIREPR raster file list
           std::vector<std::string> rastersList;
           rastersList = this->GetParameterStringList("processor.vegetation.lairepr");
           rasterInfo rasterInfoEl;
@@ -264,6 +287,7 @@ private:
 
           }
 
+          //get LAIFIT raster files list
           rastersList = this->GetParameterStringList("processor.vegetation.laifit");
           for (const auto &rasterFileEl : rastersList) {
               rasterInfoEl.iRasterType = LAI_FIT_RASTER;
@@ -272,6 +296,39 @@ private:
           }
 
      }
+
+      //if is CROP MASK, read raster file
+      if (m_strProductLevel.compare("L4A") == 0)
+      {
+
+          std::vector<std::string> rastersList;
+          rastersList = this->GetParameterStringList("processor.cropmask.file");
+          rasterInfo rasterInfoEl;
+          //add them in global raster list
+          for (const auto &rasterFileEl : rastersList) {
+              rasterInfoEl.iRasterType = CROP_MASK_RASTER;
+              rasterInfoEl.strRasterFileName = rasterFileEl;
+              m_rasterInfoList.emplace_back(rasterInfoEl);
+
+          }
+      }
+
+      //if is CROP TYPE, read raster file
+      if (m_strProductLevel.compare("L4B") == 0)
+      {
+          // Get reflectance raster file list
+          std::vector<std::string> rastersList;
+          rastersList = this->GetParameterStringList("processor.croptype.file");
+          rasterInfo rasterInfoEl;
+          //add them in global raster list
+          for (const auto &rasterFileEl : rastersList) {
+              rasterInfoEl.iRasterType = CROP_TYPE_RASTER;
+              rasterInfoEl.strRasterFileName = rasterFileEl;
+              m_rasterInfoList.emplace_back(rasterInfoEl);
+
+          }
+      }
+
       // Get preview files list
       m_previewList = this->GetParameterStringList("preview");
 
@@ -505,11 +562,127 @@ private:
       return index;
   }
 
+  template <typename TVector>
+  OGRErr TransformPoint(const TVector &v,
+                        OGRCoordinateTransformation *transform,
+                        OGRPoint &pt,
+                        OGRRawPoint &ptOut)
+  {
+      pt.setX(v[0]);
+      pt.setY(v[1]);
+      pt.setZ(0.0);
+
+      auto err = pt.transform(transform);
+
+      ptOut.x = pt.getX();
+      ptOut.y = pt.getY();
+
+      return err;
+  }
+
+  template <typename TImage>
+  std::vector<OGRRawPoint> GetExtent(const TImage *image)
+  {
+      std::vector<OGRRawPoint> extent;
+
+      auto *sourceSRS = static_cast<OGRSpatialReference *>(
+                           OSRNewSpatialReference(image->GetProjectionRef().c_str()));
+
+      auto targetSRS = static_cast<OGRSpatialReference *>(OSRNewSpatialReference(SRS_WKT_WGS84));
+
+      if (!targetSRS) {
+          return extent;
+      }
+      auto transform = static_cast<OGRCoordinateTransformation *>(
+          OCTNewCoordinateTransformation(sourceSRS, targetSRS));
+      if (!transform) {
+          return extent;
+      }
+
+      auto ok = true;
+      auto point = static_cast<OGRPoint *>(OGRGeometryFactory::createGeometry(wkbPoint));
+      OGRRawPoint pt;
+      if (TransformPoint(image->GetUpperLeftCorner(), transform, *point, pt) == OGRERR_NONE) {
+          extent.emplace_back(pt);
+      } else {
+          ok = false;
+      }
+      if (ok &&
+          TransformPoint(image->GetLowerLeftCorner(), transform, *point, pt) == OGRERR_NONE) {
+          extent.emplace_back(pt);
+      } else {
+          ok = false;
+      }
+      if (ok &&
+          TransformPoint(image->GetLowerRightCorner(), transform, *point, pt) == OGRERR_NONE) {
+          extent.emplace_back(pt);
+      } else {
+          ok = false;
+      }
+      if (ok &&
+          TransformPoint(image->GetUpperRightCorner(), transform, *point, pt) == OGRERR_NONE) {
+          extent.emplace_back(pt);
+      } else {
+          ok = false;
+      }
+
+      if (!ok) {
+          extent.clear();
+      }
+
+      OGRGeometryFactory::destroyGeometry(point);
+
+      OCTDestroyCoordinateTransformation(transform);
+      OSRDestroySpatialReference(targetSRS);
+      OSRDestroySpatialReference(sourceSRS);
+
+      return extent;
+  }
+
+  void generateQuicklook(const std::string &raster, const std::vector<std::string> &channels)
+  {
+      int error, status;
+          pid_t pid, waitres;
+//          const char *myargs[14];
+//          char *myenv[2] = { "ITK_AUTOLOanswer=42", NULL };
+
+//          /* Make sure we have no child processes. */
+//          while (waitpid(-1, NULL, 0) != -1)
+//              ;
+//          assert(errno == ECHILD);
+
+          std::vector<const char *> args;
+          args.emplace_back("otbApplicationLauncherCommandLine");
+          args.emplace_back("Quicklook");
+          args.emplace_back("-in");
+          args.emplace_back(raster.c_str());
+          args.emplace_back("-out");
+          args.emplace_back("test.tif");
+          args.emplace_back("uint8");
+          args.emplace_back("-sr");
+          args.emplace_back("10");
+          args.emplace_back("-cl");
+          for (const auto &channel : channels) {
+              args.emplace_back(channel.c_str());
+          }
+          args.emplace_back(nullptr);
+
+
+
+          error = posix_spawnp(&pid, args[0], NULL, NULL, (char *const *)args.data(), environ);
+//          assert(error == 0);
+          waitres = waitpid(pid, &status, 0);
+//          assert(waitres == pid);
+//          assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+  }
+
   void generateTileMetadataFile(const std::string &strTileName)
   {
       TileSize tileSizeEl;
       TileGeoposition tileGeoposition;
       int iResolution;
+      bool bFootPrintDone = false;
+      bool bResolutionExistingAlready = false;
 
       auto writer = itk::TileMetadataWriter::New();
 
@@ -545,14 +718,23 @@ private:
               }
 
               rasterFileEl.nResolution = iResolution;
+              //search the current resolution to seed if is already added in tileEl
+              for (const auto &tileEl : m_tileMetadata.TileGeometricInfo.TileSizeList) {
+                  if(tileEl.resolution == iResolution)
+                  {
+                      bResolutionExistingAlready = true;
+                      break;
+                  }
+               }
 
-              tileSizeEl.resolution = iResolution;
-              tileSizeEl.nrows = output->GetLargestPossibleRegion().GetSize()[1];
-              tileSizeEl.ncols = output->GetLargestPossibleRegion().GetSize()[0];
+              if(!bResolutionExistingAlready){
+                  tileSizeEl.resolution = iResolution;
+                  tileSizeEl.nrows = output->GetLargestPossibleRegion().GetSize()[1];
+                  tileSizeEl.ncols = output->GetLargestPossibleRegion().GetSize()[0];
+                  m_tileMetadata.TileGeometricInfo.TileSizeList.emplace_back(tileSizeEl);
+              }
 
-              m_tileMetadata.TileGeometricInfo.TileSizeList.emplace_back(tileSizeEl);
-
-              tileGeoposition.resolution = tileSizeEl.resolution;
+              tileGeoposition.resolution = iResolution;
               Coord coord = PointFromVector(output->GetUpperLeftCorner());
               tileGeoposition.ulx = coord.x;
               tileGeoposition.uly = coord.y;
@@ -570,7 +752,29 @@ private:
                   OSRDestroySpatialReference(oSRS);
               }
 
-            }
+              if((((rasterFileEl.iRasterType == REFLECTANCE_RASTER) && (iResolution == 10)) || (rasterFileEl.iRasterType != REFLECTANCE_RASTER)) && (!bFootPrintDone))
+              {
+                  const auto &extent = GetExtent(output.GetPointer());
+                  if (extent.size()) {
+                      for (const auto &p : extent) {
+                          //std::cerr << p.x << ' ' << p.y << std::endl;
+                          m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(p.x);
+                          m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(p.y);
+                      }
+                      //std::cerr << "----\n";
+                      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(extent[0].x);
+                      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(extent[0].y);
+                  }
+
+
+                  m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon = extent[1].x;
+                  m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon = extent[1].y;
+                  m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLon = extent[3].x;
+                  m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLon = extent[3].y;
+
+                  bFootPrintDone = false;
+               }
+          }
       }
 
       ComputeNewNameOfRasterFiles();
@@ -634,7 +838,7 @@ private:
       granuleEl.ImageFormat = IMAGE_FORMAT;
       //fill the TIFF files for current tile
       for (const auto &rasterFileEl : m_rasterInfoList) {
-          if((rasterFileEl.iRasterType == REFLECTANCE_RASTER) || (rasterFileEl.iRasterType == WEIGHTS_RASTER))
+          if((rasterFileEl.iRasterType != FLAGS_MASK) & (rasterFileEl.iRasterType != DATES_MASK))
           {
             granuleEl.ImageIDList.emplace_back(rasterFileEl.strNewRasterFileName);
           }
@@ -649,17 +853,7 @@ private:
       m_productMetadata.GeneralInfo.ProductImageCharacteristics.QuantificationUnit = "none";
       m_productMetadata.GeneralInfo.ProductImageCharacteristics.QuantificationValue = 1000;
 
-      /* GIPP are completed in TransferAndRenameGIPPFiles*/
-      /*
-      GIPPInfo GIPPEl;
-
-      for (const auto &GIPPFileEl : m_GIPPList) {
-            GIPPEl.GIPPFileName = GIPPFileEl;
-            GIPPEl.GIPPType = "";
-            GIPPEl.GIPPVersion = GIPP_VERSION;
-            m_productMetadata.AuxiliaryDataInfo.GIPPList.emplace_back(GIPPEl);
-      }
-*/
+      /* GIPP infos are completed in TransferAndRenameGIPPFiles*/
 
       m_productMetadata.QualityIndicatorsInfo.TechnicalQualityAssessment.DegratedANCDataPercentage = "";
       m_productMetadata.QualityIndicatorsInfo.TechnicalQualityAssessment.DegratedMSIDataPercentage = "";
@@ -730,10 +924,13 @@ private:
                 case LAI_REPR_RASTER:
                    strNewRasterFileName = strNewRasterFileName + "_" + LAI_REPR_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
                    break;
-              case LAI_FIT_RASTER:
-                 strNewRasterFileName = strNewRasterFileName + "_" + LAI_FIT_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
-                 break;
-
+                case LAI_FIT_RASTER:
+                   strNewRasterFileName = strNewRasterFileName + "_" + LAI_FIT_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
+                   break;
+                case CROP_TYPE_RASTER:
+                case CROP_MASK_RASTER:
+                   strNewRasterFileName= strNewRasterFileName + TIF_EXTENSION;
+                   break;
                 case DATES_MASK:
                   strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
                   strNewRasterFileName = strNewRasterFileName + "_" + DATES_SUFFIX + TIF_EXTENSION;
@@ -762,6 +959,8 @@ private:
                 case WEIGHTS_RASTER:
                 case LAI_REPR_RASTER:
                 case LAI_FIT_RASTER:
+                case CROP_TYPE_RASTER:
+                case CROP_MASK_RASTER:
                   strImgDataPath = m_strTilePath + "/" + IMG_DATA_FOLDER_NAME;
                   break;
 
@@ -856,103 +1055,15 @@ private:
         return filename.substr(0, pos) + "/";
     }
 
-
-   template <typename TVector>
-   OGRErr TransformPoint(const TVector &v,
-                         OGRCoordinateTransformation *transform,
-                         OGRPoint &pt,
-                         OGRRawPoint &ptOut)
-   {
-       pt.setX(v[0]);
-       pt.setY(v[1]);
-       pt.setZ(0.0);
-
-       auto err = pt.transform(transform);
-
-       ptOut.x = pt.getX();
-       ptOut.y = pt.getY();
-
-       return err;
-   }
-
-   template <typename TImage>
-   std::vector<OGRRawPoint> GetExtent(const TImage *image)
-   {
-       std::vector<OGRRawPoint> extent;
-
-       auto *sourceSRS = static_cast<OGRSpatialReference *>(
-                            OSRNewSpatialReference(image->GetProjectionRef().c_str()));
-
-       auto targetSRS = static_cast<OGRSpatialReference *>(OSRNewSpatialReference(SRS_WKT_WGS84));
-
-       if (!targetSRS) {
-           return extent;
-       }
-       auto transform = static_cast<OGRCoordinateTransformation *>(
-           OCTNewCoordinateTransformation(sourceSRS, targetSRS));
-       if (!transform) {
-           return extent;
-       }
-
-       auto ok = true;
-       auto point = static_cast<OGRPoint *>(OGRGeometryFactory::createGeometry(wkbPoint));
-       OGRRawPoint pt;
-       if (TransformPoint(image->GetUpperLeftCorner(), transform, *point, pt) == OGRERR_NONE) {
-           extent.emplace_back(pt);
-       } else {
-           ok = false;
-       }
-       if (ok &&
-           TransformPoint(image->GetLowerLeftCorner(), transform, *point, pt) == OGRERR_NONE) {
-           extent.emplace_back(pt);
-       } else {
-           ok = false;
-       }
-       if (ok &&
-           TransformPoint(image->GetLowerRightCorner(), transform, *point, pt) == OGRERR_NONE) {
-           extent.emplace_back(pt);
-       } else {
-           ok = false;
-       }
-       if (ok &&
-           TransformPoint(image->GetUpperRightCorner(), transform, *point, pt) == OGRERR_NONE) {
-           extent.emplace_back(pt);
-       } else {
-           ok = false;
-       }
-
-       if (!ok) {
-           extent.clear();
-       }
-
-       OGRGeometryFactory::destroyGeometry(point);
-
-       OCTDestroyCoordinateTransformation(transform);
-       OSRDestroySpatialReference(targetSRS);
-       OSRDestroySpatialReference(sourceSRS);
-
-       return extent;
-   }
-
-
-
   void FillMetadataInfoForLandsat(std::unique_ptr<MACCSFileMetadata> &metadata)
   {
       /* the source is a HDR file */
     MACCSGeoCoverage geoCoverage = metadata->ProductInformation.GeoCoverage;
-    m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon = geoCoverage.LowerLeftCorner.Long;
-    m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLat = geoCoverage.LowerLeftCorner.Lat;
-    m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLon = geoCoverage.UpperRightCorner.Long;
-    m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLat = geoCoverage.UpperRightCorner.Lat;
+//    m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon = geoCoverage.LowerLeftCorner.Long;
+//    m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLat = geoCoverage.LowerLeftCorner.Lat;
+//    m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLon = geoCoverage.UpperRightCorner.Long;
+//    m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLat = geoCoverage.UpperRightCorner.Lat;
 
-    m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(geoCoverage.UpperLeftCorner.Long);
-    m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(geoCoverage.UpperLeftCorner.Lat);
-    m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(geoCoverage.LowerLeftCorner.Long);
-    m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(geoCoverage.LowerLeftCorner.Lat);
-    m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(geoCoverage.LowerRightCorner.Long);
-    m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(geoCoverage.LowerRightCorner.Lat);
-    m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(geoCoverage.UpperRightCorner.Long);
-    m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(geoCoverage.UpperRightCorner.Lat);
 
     m_productMetadata.GeometricInfo.ProductFootprint.RatserCSType = "POINT";
     m_productMetadata.GeometricInfo.ProductFootprint.PixelOrigin = 1;
@@ -973,20 +1084,20 @@ private:
   void FillMetadataInfoForSPOT(std::unique_ptr<SPOT4Metadata> &metadata)
   {
       /* the source is a SPOT file */
-      SPOT4WGS84 spotWGS84 = metadata->WGS84;
-      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon = spotWGS84.BGX;
-      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLat = spotWGS84.BGY;
-      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLon = spotWGS84.HDX;
-      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLat = spotWGS84.HDY;
+//      SPOT4WGS84 &spotWGS84 = metadata->WGS84;
+//      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon = spotWGS84.BGX;
+//      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLat = spotWGS84.BGY;
+//      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLon = spotWGS84.HDX;
+//      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLat = spotWGS84.HDY;
 
-      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.HGX);
-      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.HGY);
-      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.BGX);
-      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.BGY);
-      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.BDX);
-      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.BDY);
-      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.HDX);
-      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.HDY);
+//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.HGX);
+//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.HGY);
+//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.BGX);
+//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.BGY);
+//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.BDX);
+//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.BDY);
+//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.HDX);
+//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.HDY);
 
       m_productMetadata.GeometricInfo.ProductFootprint.RatserCSType = "POINT";
       m_productMetadata.GeometricInfo.ProductFootprint.PixelOrigin = 1;

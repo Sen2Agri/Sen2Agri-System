@@ -379,9 +379,13 @@ function get_current_job_data()
 		success: function(json_data)
 		{
 			update_current_jobs(json_data);
+			// Schedule the next request
+			setTimeout(get_current_job_data, get_current_job_data_interval);
 		},
 		error: function (responseData, textStatus, errorThrown) {
 			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			// Schedule the next request
+			setTimeout(get_current_job_data, get_current_job_data_interval);
 		}
 	});
 }
@@ -390,7 +394,7 @@ function set_current_job_refresh()
 {
 	// Run the get function now and schedule the next executions.
 	get_current_job_data();
-	setInterval(get_current_job_data, get_current_job_data_interval);
+	//setInterval(get_current_job_data, get_current_job_data_interval);
 }
 
 function get_server_resource_data()
@@ -409,9 +413,13 @@ function get_server_resource_data()
 			}
 
 			update_server_resources(json_data);
+			// Schedule the next request
+			setTimeout(get_server_resource_data, get_server_resource_data_interval);
 		},
 		error: function (responseData, textStatus, errorThrown) {
 			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			// Schedule the next request
+			setTimeout(get_server_resource_data, get_server_resource_data_interval);
 		}
 	});
 }
@@ -420,7 +428,7 @@ function set_server_resource_refresh()
 {
 	// Run the get function now and schedule the next executions.
 	get_server_resource_data();
-	setInterval(get_server_resource_data, get_server_resource_data_interval);
+	//setInterval(get_server_resource_data, get_server_resource_data_interval);
 }
 
 function perform_job_action(action_url, job_id)
@@ -569,9 +577,13 @@ function get_processor_statistics()
 			update_l3b_statistics(json_data);
 			update_l4a_statistics(json_data);
 			update_l4b_statistics(json_data);
+			// Schedule the next request
+			setTimeout(get_processor_statistics, get_processor_statistics_interval);
 		},
 		error: function (responseData, textStatus, errorThrown) {
 			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			// Schedule the next request
+			setTimeout(get_processor_statistics, get_processor_statistics_interval);
 		}
 	});
 }
@@ -580,7 +592,7 @@ function set_processor_statistics_refresh()
 {
 	// Run the get function now and schedule the next executions.
 	get_processor_statistics();
-	setInterval(get_processor_statistics, get_processor_statistics_interval);
+	//setInterval(get_processor_statistics, get_processor_statistics_interval);
 }
 
 //Update product availability --------------------------------------------------------------------------------------------------------------------------

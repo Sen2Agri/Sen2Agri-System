@@ -23,6 +23,7 @@ IFS=' ' read -a inputXML <<< "$2"
 
 RESOLUTION=$3
 OUT_FOLDER=$4
+mkdir "$OUT_FOLDER"
 L3A_DATE=$5
 HALF_SYNTHESIS=$6
 
@@ -35,6 +36,8 @@ then
 fi
 
 COMPOSITE_OTB_LIBS_ROOT="$1"
+PRODUCT_FORMATER_OTB_LIBS_ROOT="$1/../MACCSMetadata/src"
+
 WEIGHT_OTB_LIBS_ROOT="$COMPOSITE_OTB_LIBS_ROOT/WeightCalculation"
 
 OUT_SPOT_MASKS="$OUT_FOLDER/spot_masks.tif"
@@ -137,6 +140,8 @@ do
     try otbcli UpdateSynthesis2 "$COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/" -in "$OUT_IMG_BANDS" -bmap "$FULL_BANDS_MAPPING" -xml "$xml" $PREV_L3A -csm "$OUT_CLD" -wm "$OUT_WAT" -sm "$OUT_SNOW" -wl2a "$OUT_TOTAL_WEIGHT_FILE" -out "$mod"
 
     try otbcli CompositeSplitter2 "$COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/" -in "$mod" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -outweights "$out_w" -outdates "$out_d" -outrefls "$out_r" -outflags "$out_f" -outrgb "$out_rgb"
+
+    try otbcli ProductFormatter "$PRODUCT_FORMATER_OTB_LIBS_ROOT"  -destroot "$OUT_FOLDER" -fileclass SVT1 -level L3A -timeperiod 20130228_20130615 -baseline 01.00 -processor composite -processor.composite.refls "$out_r" -processor.composite.weights "$out_w" -processor.composite.flags "$out_f" -processor.composite.dates "$out_d" -il "$xml" -gipp "$PARAMS_TXT"
 
     #PREV_L3A="-prevl3a $mod"
     PREV_L3A="-prevl3aw $out_w -prevl3ad $out_d -prevl3ar $out_r -prevl3af $out_f"
