@@ -23,7 +23,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 
     const auto &cropMask = parameters["crop_mask"].toString();
 
-    const auto &resolution = parameters["resolution"].toString();
+    const auto &resolution = parameters["resolution"].toInt();
 
     const auto &samplingRate = configParameters["crop-type.sampling-rate"];
     const auto &sampleRatio = configParameters["crop-type.sample-ratio"];
@@ -83,12 +83,13 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
         computeConfusionMatrix.GetFilePath("confusion-matrix-validation.csv");
 
     QStringList bandsExtractorArgs = { "BandsExtractor", "-out", rawtocr,  "-mask", rawmask,
-                                       "-outdate",       dates,  "-shape", shape,   "-il" };
-    if (!resolution.isEmpty()) {
+                                       "-outdate",       dates,  "-shape", shape };
+    if (resolution) {
         bandsExtractorArgs.append("-pixsize");
-        bandsExtractorArgs.append(resolution);
+        bandsExtractorArgs.append(QString::number(resolution));
     }
 
+    bandsExtractorArgs.append("-il");
     for (const auto &inputProduct : inputProducts) {
         bandsExtractorArgs.append(ctx.findProductFile(inputProduct.toString()));
     }
