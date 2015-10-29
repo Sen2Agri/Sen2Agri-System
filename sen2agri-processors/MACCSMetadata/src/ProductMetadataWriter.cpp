@@ -106,10 +106,23 @@ XElement Format(const ProductImageCharacteristicsMetadata &ProductImageCharacter
                                            XElement("SPECIAL_VALUE_INDEX", specialValues.SpecialValueIndex)));
     }
 
-    ProductImageCharEl.Append(XElement("Image_Display_Order",
+    if((ProductImageCharacteristics.ImageDisplayOrder.RedChannel == 0) &&
+       (ProductImageCharacteristics.ImageDisplayOrder.GreenChannel == 0) &&
+       (ProductImageCharacteristics.ImageDisplayOrder.BlueChannel == 0))
+    {
+        //crop mask and crop type products
+        ProductImageCharEl.Append(XElement("Image_Display_Order",
+                                       XElement("GREY_CHANNEL", std::to_string(ProductImageCharacteristics.ImageDisplayOrder.RedChannel))));
+
+    }
+    else
+    {
+        ProductImageCharEl.Append(XElement("Image_Display_Order",
                                        XElement("RED_CHANNEL", std::to_string(ProductImageCharacteristics.ImageDisplayOrder.RedChannel)),
                                        XElement("GREEN_CHANNEL", std::to_string(ProductImageCharacteristics.ImageDisplayOrder.GreenChannel)),
                                        XElement("BLUE_CHANNEL", std::to_string(ProductImageCharacteristics.ImageDisplayOrder.BlueChannel))));
+
+    }
 
     ProductImageCharEl.Append(XElement("QUANTIFICATION_VALUE", XAttribute("unit", ProductImageCharacteristics.QuantificationUnit),
                                        XText(std::to_string(ProductImageCharacteristics.QuantificationValue))));

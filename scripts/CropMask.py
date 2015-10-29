@@ -509,6 +509,17 @@ if result != 0 :
    exit(1)
 print "ComputeConfusionMatrix done at " + str(datetime.datetime.now())
 
+#Product creation
+print "Executing ProductFormatter at " + str(datetime.datetime.now())
+pfCmdLine = "otbApplicationLauncherCommandLine ProductFormatter "+buildFolder+"MACCSMetadata/src -destroot "+args.outdir+" -fileclass SVT1 -level L4A -timeperiod "+t0+"_"+tend+" -baseline 01.00 -processor cropmask -processor.cropmask.file "+crop_mask
+print pfCmdLine
+result = os.system(pfCmdLine)
+
+if result != 0 :
+   print "Error running ProductFormatter"
+   exit(1)
+print "ProductFormatter done at " + str(datetime.datetime.now())
+
 print "Execution successfull !"
 
 

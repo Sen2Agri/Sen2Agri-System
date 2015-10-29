@@ -6,6 +6,7 @@ import glob
 import argparse
 import csv
 from sys import argv
+import datetime
 
 #Path to build folder
 defaultBuildFolder="~/sen2agri-build/"
@@ -65,7 +66,7 @@ confusion_matrix_validation=os.path.join(args.outdir, "confusion-matrix-validati
 quality_metrics=os.path.join(args.outdir, "quality-metrics.txt")
 
 # Bands Extractor
-print "Executing BandsExtractor..."
+print "Executing BandsExtractor at " + str(datetime.datetime.now())
 beCmdLine = "otbApplicationLauncherCommandLine BandsExtractor "+buildFolder+"CropType/BandsExtractor -il "+indesc+" -out "+rawtocr+" -mask "+rawmask+" -outdate "+dates+" -shape "+shape+" -pixsize "+pixsize
 print beCmdLine
 result = os.system(beCmdLine)
@@ -73,10 +74,10 @@ result = os.system(beCmdLine)
 if result != 0 :
    print "Error running BandsExtractor"
    exit(1)
-print "BandsExtractor done!"
+print "BandsExtractor done at " + str(datetime.datetime.now())
 
 # ogr2ogr
-print "Executing ogr2ogr"
+print "Executing ogr2ogr at " + str(datetime.datetime.now())
 ooCmdLine = "/usr/local/bin/ogr2ogr -clipsrc "+shape+" -overwrite "+reference_polygons_clip+" "+reference_polygons
 print ooCmdLine
 result = os.system(ooCmdLine)
@@ -84,11 +85,11 @@ result = os.system(ooCmdLine)
 if result != 0 :
    print "Error running ogr2ogr"
    exit(1)
-print "ogr2ogr done!"
+print "ogr2ogr done at " + str(datetime.datetime.now())
 
 
 # Sample Selection
-print "Executing SampleSelection..."
+print "Executing SampleSelection at " + str(datetime.datetime.now())
 ssCmdLine = "otbApplicationLauncherCommandLine SampleSelection "+buildFolder+"CropType/SampleSelection -ref "+reference_polygons_clip+" -ratio "+sample_ratio+" -seed "+random_seed+" -tp "+training_polygons+" -vp "+validation_polygons
 print ssCmdLine
 result = os.system(ssCmdLine)
@@ -96,10 +97,10 @@ result = os.system(ssCmdLine)
 if result != 0 :
    print "Error running SampleSelection"
    exit(1)
-print "SampleSelection done!"
+print "SampleSelection done at " + str(datetime.datetime.now())
 
 # gdalwarp
-print "Executing gdalwarp..."
+print "Executing gdalwarp at " + str(datetime.datetime.now())
 
 gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata \"-10000\" -overwrite -cutline "+shape+" -crop_to_cutline "+rawtocr+" "+tocr
 print gwCmdLine
@@ -121,10 +122,10 @@ if result != 0 :
 
 os.system("rm " + rawmask)
 
-print "gdalwarp done!"
+print "gdalwarp done at " + str(datetime.datetime.now())
 
 # Temporal Resampling
-print "Executing TemporalResampling..."
+print "Executing TemporalResampling at " + str(datetime.datetime.now())
 trCmdLine = "otbApplicationLauncherCommandLine TemporalResampling "+buildFolder+"CropType/TemporalResampling -tocr "+tocr+" -mask "+mask+" -ind "+dates+" -sp "+sp+" -t0 "+t0+" -tend "+tend+" -radius "+radius+" -rtocr "+rtocr
 print trCmdLine
 result = os.system(trCmdLine)
@@ -136,10 +137,10 @@ if result != 0 :
 os.system("rm " + tocr)
 os.system("rm " + mask)
 
-print "TemporalResampling done!"
+print "TemporalResampling done at " + str(datetime.datetime.now())
 
 # Feature Extraction
-print "Executing FeatureExtraction..."
+print "Executing FeatureExtraction at " + str(datetime.datetime.now())
 feCmdLine = "otbApplicationLauncherCommandLine FeatureExtraction "+buildFolder+"CropType/FeatureExtraction -rtocr "+rtocr+" -fts "+fts
 print feCmdLine
 result = os.system(feCmdLine)
@@ -150,10 +151,10 @@ if result != 0 :
 
 os.system("rm " + rtocr)
 
-print "FeatureExtraction done!"
+print "FeatureExtraction done at " + str(datetime.datetime.now())
 
 # Image Statistics
-print "Executing ComputeImagesStatistics..."
+print "Executing ComputeImagesStatistics at " + str(datetime.datetime.now())
 isCmdLine = "otbcli_ComputeImagesStatistics -il "+fts+" -out "+statistics
 print isCmdLine
 result = os.system(isCmdLine)
@@ -161,10 +162,10 @@ result = os.system(isCmdLine)
 if result != 0 :
    print "Error running ComputeImagesStatistics"
    exit(1)
-print "ComputeImagesStatistics done!"
+print "ComputeImagesStatistics done at " + str(datetime.datetime.now())
 
 #Train Image Classifier
-print "Executing TrainImagesClassifier..."
+print "Executing TrainImagesClassifier at " + str(datetime.datetime.now())
 tcCmdLine = "otbcli_TrainImagesClassifier -io.il "+fts+" -io.vd "+training_polygons+" -io.imstat "+statistics+" -rand "+random_seed+" -sample.bm 0 -io.confmatout "+confmatout+" -io.out "+model+" -sample.mt -1 -sample.mv -1 -sample.vfn CODE -sample.vtr "+sample_ratio+" -classifier "+classifier
 
 if classifier == "rf" :
@@ -177,10 +178,10 @@ result = os.system(tcCmdLine)
 if result != 0 :
    print "Error running TrainImagesClassifier"
    exit(1)
-print "TrainImagesClassifier done!"
+print "TrainImagesClassifier done at " + str(datetime.datetime.now())
 
 #Image Classifier
-print "Executing ImageClassifier..."
+print "Executing ImageClassifier at " + str(datetime.datetime.now())
 icCmdLine = "otbcli_ImageClassifier -in "+fts+" -imstat "+statistics+" -model "+model+" -out "+crop_type_map
 if os.path.isfile(crop_mask) :
    icCmdLine += " -mask "+crop_mask
@@ -190,10 +191,10 @@ result = os.system(icCmdLine)
 if result != 0 :
    print "Error running ImageClassifier"
    exit(1)
-print "ImageClassifier done!"
+print "ImageClassifier done at " + str(datetime.datetime.now())
 
 #Validation
-print "Executing ComputeConfusionMatrix..."
+print "Executing ComputeConfusionMatrix at " + str(datetime.datetime.now())
 vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+crop_type_map+" -out "+confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CODE -nodatalabel 10 > "+quality_metrics
 print vdCmdLine
 result = os.system(vdCmdLine)
@@ -201,7 +202,19 @@ result = os.system(vdCmdLine)
 if result != 0 :
    print "Error running ComputeConfusionMatrix"
    exit(1)
-print "ComputeConfusionMatrix done!"
+print "ComputeConfusionMatrix done at " + str(datetime.datetime.now())
+
+#Product creation
+print "Executing ProductFormatter at " + str(datetime.datetime.now())
+pfCmdLine = "otbApplicationLauncherCommandLine ProductFormatter "+buildFolder+"MACCSMetadata/src -destroot "+args.outdir+" -fileclass SVT1 -level L4B -timeperiod "+t0+"_"+tend+" -baseline 01.00 -processor croptype -processor.croptype.file "+crop_type_map
+print pfCmdLine
+result = os.system(pfCmdLine)
+
+if result != 0 :
+   print "Error running ProductFormatter"
+   exit(1)
+print "ProductFormatter done at " + str(datetime.datetime.now())
+
 
 print "Execution successfull !"
 

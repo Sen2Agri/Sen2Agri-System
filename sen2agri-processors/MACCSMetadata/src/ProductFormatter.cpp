@@ -4,6 +4,7 @@
 #include "ogr_geometry.h"
 
 #include <time.h>
+#include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -19,7 +20,8 @@
 #define GIPP_VERSION "0001"
 #define IMAGE_FORMAT "GEOTIFF"
 #define TILE_ID      "T15SWC"
-#define TIF_EXTENSION      ".tif"
+#define TIF_EXTENSION      ".TIF"
+#define JPEG_EXTENSION      ".jpg"
 
 #define REFLECTANCE_SUFFIX "SRFL"
 #define WEIGHTS_SUFFIX     "SWGT"
@@ -36,7 +38,7 @@
 #define METADATA_CATEG "MTD"
 #define MASK_CATEG "MSK"
 #define PARAMETER_CATEG "IPP"
-
+#define NO_DATA_VALUE "-10000"
 
 #define ORIGINATOR_SITE "CSRO"
 
@@ -108,6 +110,14 @@ struct rasterInfo
     std::string strNewRasterFileName;
 };
 
+struct geoProductInfo
+{
+    rasterTypes rasterType;
+    int iResolution;
+    std::vector<double>PosList;
+    Bbox AreaOfInterest;
+};
+
 namespace otb
 {
 namespace Wrapper
@@ -175,6 +185,8 @@ private:
         AddParameter(ParameterType_InputFilenameList, "processor.composite.dates", "Dates mask files list for composite");
         MandatoryOff("processor.composite.dates");
 
+        AddParameter(ParameterType_InputFilenameList, "processor.composite.rgb", "TIFF file to be used to obtain preview for SPOT product");
+        MandatoryOff("processor.composite.rgb");
  //vegetation parameters
 
          AddParameter(ParameterType_InputFilenameList, "processor.vegetation.lairepr", "LAI REPR raster files list for vegetation");
@@ -192,10 +204,12 @@ private:
         MandatoryOff("processor.cropmask.file");
 
         AddParameter(ParameterType_InputFilenameList, "il", "The xml files");
-        AddParameter(ParameterType_InputFilenameList, "preview", "The quicklook files");
-        MandatoryOff("preview");
-        AddParameter(ParameterType_InputFilenameList, "gipp", "The GIPP files");
+        MandatoryOff("il");
 
+        /*AddParameter(ParameterType_InputFilenameList, "preview", "The quicklook files");
+        MandatoryOff("preview");*/
+        AddParameter(ParameterType_InputFilenameList, "gipp", "The GIPP files");
+        MandatoryOff("gipp");
 
         SetDocExampleParameterValue("destroot", "/home/atrasca/sen2agri/sen2agri-processors-build/Testing/Temporary/Dest");
         SetDocExampleParameterValue("fileclass", "SVT1");
@@ -205,7 +219,7 @@ private:
         /*SetDocExampleParameterValue("rasters", "file1.tif file2.tif file3.tif");
         SetDocExampleParameterValue("masks", "mask1.tif mask2.tif");*/
         SetDocExampleParameterValue("il", "image1.xml image2.xml");
-        SetDocExampleParameterValue("preview", "image1.jpg image2.jpg");
+        //SetDocExampleParameterValue("preview", "image1.jpg image2.jpg");
         SetDocExampleParameterValue("gipp", "gippFile1.xml gippFile2");
 
   }
@@ -270,6 +284,8 @@ private:
               m_rasterInfoList.emplace_back(rasterInfoEl);
           }
 
+          m_previewList = this->GetParameterStringList("processor.composite.rgb");
+
      }
 
       //if is vegetation, read LAIREPR and LAIFIT raster files list
@@ -330,16 +346,11 @@ private:
       }
 
       // Get preview files list
-      m_previewList = this->GetParameterStringList("preview");
+      //m_previewList = this->GetParameterStringList("preview");
 
       //read .xml or .HDR files to fill the metadata structures
       // Get the list of input files
       std::vector<std::string> descriptors = this->GetParameterStringList("il");
-
-      if( descriptors.size()== 0 )
-        {
-        itkExceptionMacro("No .xml or .hdr file set...");
-        }
 
       // Get GIPP file list
       m_GIPPList = this->GetParameterStringList("gipp");
@@ -394,8 +405,8 @@ private:
               m_strTileNameRoot = strTileName;
 
               generateTileMetadataFile(strTileName);
-              TransferPreviewFiles();
               TransferRasterFiles();
+              TransferPreviewFiles();
 
           }
 
@@ -431,6 +442,7 @@ private:
   bool m_bIsHDR; /* true if is  loaded a .HDR fiel, false if is a .xml file */
   std::string m_strTileNameRoot;
   std::string m_strProductMetadataFilePath;
+  std::vector<geoProductInfo> m_geoProductInfo;
 
   // Get current date/time, format is YYYYMMDDThhmmss
   const std::string currentDateTimeFormattted(std::string strFormat) {
@@ -539,7 +551,7 @@ private:
   void FillBandList()
   {
       Band bandEl;
-      if (m_strProductLevel.compare("L3A") == 0)
+      if ((m_strProductLevel.compare("L3A") == 0) && (CompositeBandList.empty()))
               //if is composite product, fill bands
       {
 
@@ -639,7 +651,7 @@ private:
       return extent;
   }
 
-  void generateQuicklook(const std::string &raster, const std::vector<std::string> &channels)
+  void generateQuicklook(const std::string &rasterFullFilePath, const std::vector<std::string> &channels,const std::string &jpegFullFilePath)
   {
       int error, status;
           pid_t pid, waitres;
@@ -655,9 +667,9 @@ private:
           args.emplace_back("otbApplicationLauncherCommandLine");
           args.emplace_back("Quicklook");
           args.emplace_back("-in");
-          args.emplace_back(raster.c_str());
+          args.emplace_back(rasterFullFilePath.c_str());
           args.emplace_back("-out");
-          args.emplace_back("test.tif");
+          args.emplace_back(jpegFullFilePath.c_str());
           args.emplace_back("uint8");
           args.emplace_back("-sr");
           args.emplace_back("10");
@@ -683,6 +695,8 @@ private:
       int iResolution;
       bool bFootPrintDone = false;
       bool bResolutionExistingAlready = false;
+      bool bGeoPositionExistingAlready = false;
+      bool bPreview = !m_previewList.empty();
 
       auto writer = itk::TileMetadataWriter::New();
 
@@ -696,12 +710,24 @@ private:
           if((rasterFileEl.iRasterType != FLAGS_MASK) &&
              (rasterFileEl.iRasterType != DATES_MASK))
           {
+
+              //std::cout << "ImageFileReader =" << rasterFileEl.strRasterFileName << std::endl;
+
               auto imageReader = ImageFileReader<FloatVectorImageType>::New();
               imageReader->SetFileName(rasterFileEl.strRasterFileName);
               imageReader->UpdateOutputInformation();
               FloatVectorImageType::Pointer output = imageReader->GetOutput();
 
               iResolution = output->GetSpacing()[0];
+
+              if((!bPreview) && (((rasterFileEl.iRasterType == REFLECTANCE_RASTER) && (iResolution == 10)) ||
+                                (rasterFileEl.iRasterType == LAI_REPR_RASTER) ||
+                                (rasterFileEl.iRasterType == CROP_TYPE_RASTER) ||
+                                (rasterFileEl.iRasterType == CROP_MASK_RASTER)))
+              {
+                m_previewList.emplace_back(rasterFileEl.strRasterFileName);
+                bPreview = true;
+              }
 
               if(rasterFileEl.iRasterType != REFLECTANCE_RASTER)
               {
@@ -735,12 +761,24 @@ private:
               }
 
               tileGeoposition.resolution = iResolution;
-              Coord coord = PointFromVector(output->GetUpperLeftCorner());
-              tileGeoposition.ulx = coord.x;
-              tileGeoposition.uly = coord.y;
-              tileGeoposition.xdim = output->GetSpacing()[0];
-              tileGeoposition.ydim = output->GetSpacing()[1];
-              m_tileMetadata.TileGeometricInfo.TileGeopositionList.emplace_back(tileGeoposition);
+
+              for (const auto &geoPosEl : m_tileMetadata.TileGeometricInfo.TileGeopositionList) {
+                  if(geoPosEl.resolution == iResolution)
+                  {
+                      bGeoPositionExistingAlready = true;
+                      break;
+                  }
+               }
+
+              if(!bGeoPositionExistingAlready)
+              {
+                  Coord coord = PointFromVector(output->GetUpperLeftCorner());
+                  tileGeoposition.ulx = coord.x;
+                  tileGeoposition.uly = coord.y;
+                  tileGeoposition.xdim = output->GetSpacing()[0];
+                  tileGeoposition.ydim = output->GetSpacing()[1];
+                  m_tileMetadata.TileGeometricInfo.TileGeopositionList.emplace_back(tileGeoposition);
+              }
 
               if (auto oSRS = static_cast<OGRSpatialReference *>(OSRNewSpatialReference(output->GetProjectionRef().c_str()))) {
                   m_productMetadata.GeometricInfo.CoordReferenceSystem.HorizCSName = oSRS->GetAttrValue("PROJCS");
@@ -752,28 +790,43 @@ private:
                   OSRDestroySpatialReference(oSRS);
               }
 
-              if((((rasterFileEl.iRasterType == REFLECTANCE_RASTER) && (iResolution == 10)) || (rasterFileEl.iRasterType != REFLECTANCE_RASTER)) && (!bFootPrintDone))
-              {
+              geoProductInfo geoProductInfoEl;
+              geoProductInfoEl.iResolution = iResolution;
+              geoProductInfoEl.rasterType = rasterFileEl.iRasterType;
+
+              /*if((((rasterFileEl.iRasterType == REFLECTANCE_RASTER) && (iResolution == 10)) || (rasterFileEl.iRasterType != REFLECTANCE_RASTER)) && (!bFootPrintDone))
+              {*/
                   const auto &extent = GetExtent(output.GetPointer());
                   if (extent.size()) {
                       for (const auto &p : extent) {
                           //std::cerr << p.x << ' ' << p.y << std::endl;
-                          m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(p.x);
-                          m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(p.y);
+                          //m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(p.x);
+                          //m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(p.y);
+                          geoProductInfoEl.PosList.emplace_back(p.x);
+                          geoProductInfoEl.PosList.emplace_back(p.y);
                       }
                       //std::cerr << "----\n";
-                      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(extent[0].x);
-                      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(extent[0].y);
+                      //add again first point coordinates
+                      //m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(extent[0].x);
+                      //m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(extent[0].y);
+                      geoProductInfoEl.PosList.emplace_back(extent[0].x);
+                      geoProductInfoEl.PosList.emplace_back(extent[0].y);
                   }
 
 
-                  m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon = extent[1].x;
-                  m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon = extent[1].y;
+                  /*m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon = extent[1].x;
+                  m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLat = extent[1].y;
                   m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLon = extent[3].x;
-                  m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLon = extent[3].y;
+                  m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLat = extent[3].y;*/
+                  geoProductInfoEl.AreaOfInterest.LowerCornerLon = extent[1].x;
+                  geoProductInfoEl.AreaOfInterest.LowerCornerLat = extent[1].y;
+                  geoProductInfoEl.AreaOfInterest.UpperCornerLon = extent[3].x;
+                  geoProductInfoEl.AreaOfInterest.UpperCornerLat = extent[3].y;
+                  m_geoProductInfo.emplace_back(geoProductInfoEl);
 
                   bFootPrintDone = false;
-               }
+               //}
+
           }
       }
 
@@ -820,14 +873,46 @@ private:
 
       m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.PreviewImage = !m_previewList.empty();
 
+      int iGoodGeoPos = 0;
+      geoProductInfo geoPosEl;
+      for (int i = 0; i < m_geoProductInfo.size(); i++) {
+
+          if((geoPosEl.rasterType == REFLECTANCE_RASTER) && (geoPosEl.iResolution == 10))
+          {
+              iGoodGeoPos = i;
+              break;
+          }
+      }
+      if(!m_geoProductInfo.empty())
+      {
+          geoPosEl = m_geoProductInfo[iGoodGeoPos];
+          for (const auto &posPoint : geoPosEl.PosList) {
+            m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(posPoint);
+          }
+          m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon = geoPosEl.AreaOfInterest.LowerCornerLon;
+          m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLat = geoPosEl.AreaOfInterest.LowerCornerLat;
+          m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLon = geoPosEl.AreaOfInterest.UpperCornerLon;
+          m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLat = geoPosEl.AreaOfInterest.UpperCornerLat;
+      }
+
       FillBandList();
 
       //TODO ????
       m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.MetadataLevel = "SuperBrief";
       m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AuxListContent.ProductLevel = "Level-3A";
-      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AuxListContent.GIPP = " NO";
+
+
+      if(m_GIPPList.empty())
+      {
+          m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AuxListContent.GIPP = " NO";
+      }
+      else
+      {
+          m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AuxListContent.GIPP = " YES";
+      }
       m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.ProductFormat = "SAFE";
       m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AggregationFlag = true;
+
 
 
       //fill tiles list
@@ -845,10 +930,20 @@ private:
       }
       m_productMetadata.GeneralInfo.ProductInfo.ProductOrganisation.emplace_back(granuleEl);
 
+      m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.RedChannel = 0;
+      m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.GreenChannel = 0;
+      m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.BlueChannel = 0;
 
-      m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.RedChannel = 3;
-      m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.GreenChannel = 2;
-      m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.BlueChannel = 1;
+      if ((m_strProductLevel.compare("L2A") == 0) ||
+          (m_strProductLevel.compare("L3A") == 0) ||
+          (m_strProductLevel.compare("L3B") == 0))
+      {
+          std::cout << "Red, green and blue" << std::endl;
+          m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.RedChannel = 3;
+          m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.GreenChannel = 2;
+          m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.BlueChannel = 1;
+
+      }
 
       m_productMetadata.GeneralInfo.ProductImageCharacteristics.QuantificationUnit = "none";
       m_productMetadata.GeneralInfo.ProductImageCharacteristics.QuantificationValue = 1000;
@@ -869,6 +964,22 @@ private:
       granuleReport.GranuleReportId = "";
       granuleReport.GranuleReportFileName = "";
       m_productMetadata.QualityIndicatorsInfo.QualityControlChecks.FailedInspections.emplace_back(granuleReport);
+
+      m_productMetadata.GeometricInfo.ProductFootprint.RatserCSType = "POINT";
+      m_productMetadata.GeometricInfo.ProductFootprint.PixelOrigin = 1;
+
+      //???? TODO
+      SpecialValues specialValue;
+      specialValue.SpecialValueIndex = "1";
+      specialValue.SpecialValueText = "NOTVALID";
+      m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
+
+      specialValue.SpecialValueIndex = NO_DATA_VALUE;
+      specialValue.SpecialValueText = "NODATA";
+      m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
+
+
+      m_productMetadata.QualityIndicatorsInfo.CloudCoverage = "";
 
       writer->WriteProductMetadata(m_productMetadata, strProductMetadataFilePath);
   }
@@ -1010,30 +1121,59 @@ private:
 
   void TransferPreviewFiles()
   {
-      std::string strNewFileName;
-      bool bFirst = true;
+      std::string strProductPreviewFullPath;
+      std::string strTilePreviewFullPath;
+      int iChannelNo = 1;
+      std::vector<std::string> strChannelsList;
+
+      if ((m_strProductLevel.compare("L2A") == 0) ||
+          (m_strProductLevel.compare("L3A") == 0) ||
+          (m_strProductLevel.compare("L3B") == 0))
+      {
+          iChannelNo = 3;
+      }
+
+      std::cout << "ChannelNo = " << iChannelNo << std::endl;
+
+      for(int j = 1; j <= iChannelNo; j++)
+      {
+        strChannelsList.emplace_back("Channel" + std::to_string(j));
+      }
+
+      //std::cout << "m_previewListCount = " << m_previewList.size() << std::endl;
+
       for (const auto &previewFileEl : m_previewList) {
 
-           //first preview image is copied in product direwctory, the following in tile directrory
-          if(bFirst)
-          {
-             strNewFileName = m_strProductMetadataFilePath;
-             strNewFileName = ReplaceString(strNewFileName, MAIN_FOLDER_CATEG, QUICK_L0OK_IMG_CATEG);
-             strNewFileName = strNewFileName + "." + extractExtension(previewFileEl);
+            //for the moment the preview file for product and tile are the same
 
-             m_productMetadata.GeneralInfo.ProductInfo.PreviewImageURL = strNewFileName;
+            //build producty preview file name
+             strProductPreviewFullPath = m_strProductMetadataFilePath;
+             strProductPreviewFullPath = ReplaceString(strProductPreviewFullPath, MAIN_FOLDER_CATEG, QUICK_L0OK_IMG_CATEG);
+             strProductPreviewFullPath = strProductPreviewFullPath + JPEG_EXTENSION;
 
+             m_productMetadata.GeneralInfo.ProductInfo.PreviewImageURL = strProductPreviewFullPath;
 
-            CopyFile(m_strDestRoot + "/" + m_strProductMetadataFilePath + "/" + strNewFileName, previewFileEl);
-          }
-          else
-          {
-             strNewFileName = m_strTileNameWithoutExt + "." + extractExtension(previewFileEl);
-             strNewFileName = ReplaceString(strNewFileName, METADATA_CATEG, QUICK_L0OK_IMG_CATEG);
-             CopyFile(strNewFileName, previewFileEl);
-          }
+             strProductPreviewFullPath = m_strDestRoot + "/" + m_strProductMetadataFilePath + "/" + strProductPreviewFullPath;
 
-          bFirst = false;
+             std::cout << "ProductPreviewFullPath = " << strProductPreviewFullPath << std::endl;
+
+             //transform .tif file in .jpg file directly in product directory
+             generateQuicklook(previewFileEl, strChannelsList, strProductPreviewFullPath);
+
+            //build producty preview file name for tile
+             strTilePreviewFullPath = m_strTileNameWithoutExt + JPEG_EXTENSION;
+             strTilePreviewFullPath = ReplaceString(strTilePreviewFullPath, METADATA_CATEG, QUICK_L0OK_IMG_CATEG);
+
+             std::cout << "TilePreviewFullPath = " << strTilePreviewFullPath << std::endl;
+
+             CopyFile(strTilePreviewFullPath, strProductPreviewFullPath);
+
+             //remove  file with extension jpg.aux.xml generated after preview obtained
+
+             std::string strFileToBeRemoved = strProductPreviewFullPath + ".aux.xml";
+             std::cout << "Remove file: " <<  strFileToBeRemoved<< std::endl;
+             remove(strFileToBeRemoved.c_str());
+
     }
   }
 
@@ -1058,15 +1198,6 @@ private:
   void FillMetadataInfoForLandsat(std::unique_ptr<MACCSFileMetadata> &metadata)
   {
       /* the source is a HDR file */
-    MACCSGeoCoverage geoCoverage = metadata->ProductInformation.GeoCoverage;
-//    m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon = geoCoverage.LowerLeftCorner.Long;
-//    m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLat = geoCoverage.LowerLeftCorner.Lat;
-//    m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLon = geoCoverage.UpperRightCorner.Long;
-//    m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLat = geoCoverage.UpperRightCorner.Lat;
-
-
-    m_productMetadata.GeometricInfo.ProductFootprint.RatserCSType = "POINT";
-    m_productMetadata.GeometricInfo.ProductFootprint.PixelOrigin = 1;
 
     SpecialValues specialValue;
     specialValue.SpecialValueText = "NODATA";
@@ -1084,37 +1215,14 @@ private:
   void FillMetadataInfoForSPOT(std::unique_ptr<SPOT4Metadata> &metadata)
   {
       /* the source is a SPOT file */
-//      SPOT4WGS84 &spotWGS84 = metadata->WGS84;
-//      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon = spotWGS84.BGX;
-//      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLat = spotWGS84.BGY;
-//      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLon = spotWGS84.HDX;
-//      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLat = spotWGS84.HDY;
-
-//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.HGX);
-//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.HGY);
-//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.BGX);
-//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.BGY);
-//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.BDX);
-//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.BDY);
-//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.HDX);
-//      m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(spotWGS84.HDY);
-
-      m_productMetadata.GeometricInfo.ProductFootprint.RatserCSType = "POINT";
-      m_productMetadata.GeometricInfo.ProductFootprint.PixelOrigin = 1;
-
-
       //????? TODO
       SpecialValues specialValue;
       specialValue.SpecialValueIndex = "0";
       specialValue.SpecialValueText = "NODATA";
       m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
 
-      specialValue.SpecialValueIndex = "1";
-      specialValue.SpecialValueText = "NOTVALID";
-      m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
-
       //????NOT FOUND
-      m_productMetadata.QualityIndicatorsInfo.CloudCoverage = 0.0;
+      m_productMetadata.QualityIndicatorsInfo.CloudCoverage = "";
   }
 
   void LoadAllDescriptors(std::vector<std::string> descriptors)
