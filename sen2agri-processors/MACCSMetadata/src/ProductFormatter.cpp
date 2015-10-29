@@ -930,10 +930,15 @@ private:
       }
       m_productMetadata.GeneralInfo.ProductInfo.ProductOrganisation.emplace_back(granuleEl);
 
+      m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.RedChannel = 0;
+      m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.GreenChannel = 0;
+      m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.BlueChannel = 0;
+
       if ((m_strProductLevel.compare("L2A") == 0) ||
           (m_strProductLevel.compare("L3A") == 0) ||
           (m_strProductLevel.compare("L3B") == 0))
       {
+          std::cout << "Red, green and blue" << std::endl;
           m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.RedChannel = 3;
           m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.GreenChannel = 2;
           m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.BlueChannel = 1;
