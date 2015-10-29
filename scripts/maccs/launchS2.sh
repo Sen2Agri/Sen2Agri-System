@@ -15,8 +15,8 @@ echo "Launching $MODE on input..."
 "--loglevel"                "DEBUG"                   \
 "--enableTest"              "false"                   \
 "--CheckXMLFilesWithSchema" "false"                   \
-"--conf"                    "$CONF_DIR"               \
-                            > log_$MODE.txt 2>&1
+"--conf"                    "$CONF_DIR"               #\
+#                            > log_$MODE.txt 2>&1
 
 #echo "Launching L2 Checktool on output..."
 
