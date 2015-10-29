@@ -8,43 +8,24 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <meta http-equiv="content-language" content="" />
     <link href="http://fonts.googleapis.com/css?family=Roboto+Condensed&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css" />
+    <link rel="stylesheet" href="styles/styles.css" />
     <link rel="stylesheet" href="styles/theme.css" />
-    <link rel="stylesheet" href="libraries/openlayers/css/ol.css" />
+    <link rel="stylesheet" href="libraries/openlayers/build/ol.css" />
+    <link rel="stylesheet" href="libraries/bootstrap-treeview/bootstrap-treeview.min.css" />
 
-    <style type="text/css">
-        .map {
-            height: 400px;
-            width: 500px;
-            border: double;
+	<style type="text/css">
+		.list-group-item {
+        	width: 600px;
         }
-        .table {
-            display: block;
-        }
-        .table-row {
-            clear: both;
-        }
-        .table-cell {
-            float: left;
-            padding: 3px 1.8%;
-            text-transform: lowercase;
-            font-family: "Roboto Condensed", Arial, Helvetica, sans-serif;
-            font-weight: normal;
-        }
-            .table-cell img {
-                width: 40px;
-                height: 40px;
-            }
-            .table-cell a div {
-                width: 400px;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
     </style>
+    
 </head>
 <body>
     <div id="header" style="height:120px;">
         <div id="header2" style="background-image: url(images/logo.png); background-repeat: no-repeat;">
-            <div id="logo" style="margin-top: -20px;">
+            <div id="logo" style="margin-top: -50px;">
                 <h1><a href="#">&nbsp;</a></h1>
                 <p id="subtitle">Sentinel-2 for Agriculture Monitoring</p>
             </div>
@@ -55,7 +36,7 @@
             <ul>
                 <li><a href="main.html">Products</a></li>
                 <li><a href="system.html">System Overview</a></li>
-                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="dashboard.html#tab_l2a">Dashboard</a></li>
                 <li><a href="config.html">Configuration</a></li>
                 <!--<li><a href="#">Contact</a></li>-->
             </ul>
@@ -64,50 +45,16 @@
     <div id="main">
         <div id="main2">
             <div id="main3">
-                <div id="content">
-                    <div class="post">
-                        <h2><a href="#">Available Products</a></h2>
-                        <div class="entry">
-                            <div id="map" class="map"></div>
-                        </div>
-                    </div>
-                </div><!-- content -->
-                <div id="sidebar">
-                    <ul>
-                        <li id="SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000_link">
-                            <div class="table">
-                                <div class="table-row">
-                                    <div class="table-cell">
-                                        <img src="file://E:/RemoteSensing/Sen2Agri/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150410_N2A_BurkinaD0000B0000/QUICKLOOKS/ORTHO_SURF_CORR_PENTE_20150410.jpg"
-                                             onclick="zoomToProduct('SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000')"
-                                             onmouseover="highlightRectangle('SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000')"
-                                             onmouseout="restoreRectangle('SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000')" />
-                                    </div>
-                                    <div id="SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000_Link" class="table-cell">
-                                        <a href="file://E:/RemoteSensing/Sen2Agri/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150410_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000.zip">
-                                            <div>SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000</div>
-                                        </a>
-                                    </div>
-                                </div>
-                                <div class="table-row">
-                                    <div class="table-cell">
-                                        <img src="file://S:/L2A/Spot5-T5/Belgium/SPOT5_HRG2_XS_20150410_N2A_BelgiumD0000B0000/QUICKLOOKS/ORTHO_SURF_CORR_PENTE_20150410.jpg"
-                                             onclick="zoomToProduct('SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BelgiumD0000B0000')"
-                                             onmouseover="highlightRectangle('SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BelgiumD0000B0000')"
-                                             onmouseout="restoreRectangle('SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BelgiumD0000B0000')" />
-                                    </div>
-                                    <div id="SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BelgiumD0000B0000_link" class="table-cell">
-                                        <a href="file://S:/L2A/Spot5-T5/Belgium/SPOT5_HRG2_XS_20150410_N2A_BelgiumD0000B0000/SPOT5_HRG_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BelgiumD0000B0000.zip">
-                                            <div>SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BelgiumD0000B0000</div>
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-
-                    </ul>
-                </div><!-- sidebar -->
-                <div class="clearing">&nbsp;</div>
+				<table cellpadding="0px" cellspacing="0px">
+					<tr>
+						<td colspan=3"><h3>Available products</h3></td>
+					</tr>
+					<tr>
+						<td><div id="tree" style="height:550px; width:500px; overflow: scroll; border: 1px solid;"></div></td>
+						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
+						<td><div id="map" class="map" style="height:550px; width:500px;"></div></td>
+					</tr>
+				</table>
             </div>
         </div>
     </div><!-- main --><!-- main2 --><!-- main3 -->
@@ -124,177 +71,7 @@
         </div>
     </div>
 
-    <script src="libraries/openlayers/build/ol.js"></script>
-    <script type="text/javascript">
-        var defaultStyle = new ol.style.Style({
-            stroke: new ol.style.Stroke({
-                color: 'red'
-            }),
-            fill: new ol.style.Fill({
-                color: 'rgba(255, 0, 0, 0.2)'
-            })
-        });
-
-        var selectedStyle = new ol.style.Style({
-            stroke: new ol.style.Stroke({
-                color: 'red',
-                width: 3
-            }),
-            fill: new ol.style.Fill({
-                color: 'rgba(255, 0, 0, 0.4)'
-            })
-        });
-
-        /*
-         * Should be replaced with call and extraction from WS
-         */
-        var productFeatures = {
-            "type": "FeatureCollection",
-            "crs": {
-                "type": "name",
-                "properties": {
-                    "name": "EPSG:4326"
-                }
-            },
-            "features": [
-                {
-                    "type": "Feature",
-                    "id": "SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BurkinaD0000B0000",
-                    "geometry": {
-                        "type": "Polygon",
-                        "coordinates": [[[-4.16456146844, 11.5223973844],    // top-left
-							             [-3.3301337817, 11.5245417951],     // top-right
-							             [-3.32930760273, 10.7919972527],    // bottom-right
-                                         [-4.16164782102, 10.7899924083]     // bottom-left
-                        ]]
-                    }
-                },
-                {
-                    "type": "Feature",
-                    "id": "SPOT5_HRG2_XS_20150410_N2A_ORTHO_SURF_CORR_PENTE_BelgiumD0000B0000",
-                    "geometry": {
-                        "type": "Polygon",
-                        "coordinates": [[[4.35318341124, 50.9757517697],    // top-left
-							             [5.64827183705, 50.9535591892],     // top-right
-							             [5.60773432794, 50.225882025],    // bottom-right
-                                         [4.3324487029, 50.2475107174]     // bottom-left
-                        ]]
-                    }
-                }
-            ]
-        };
-
-        // the map control
-        var map = createMapControl();
-
-        // features from JSON
-        var features = (new ol.format.GeoJSON()).readFeatures(productFeatures);
-        for (var i = 0; i < features.length; i++) {
-            features[i].getGeometry().transform('EPSG:4326', 'EPSG:3857');
-        }
-        var source = new ol.source.Vector({
-            features: features,
-            projection: 'EPSG:4326'
-        });
-
-        // the vector layer for rectangles
-        var vectLayer = new ol.layer.Vector({
-            source: source,
-            style: defaultStyle
-        });
-        map.addLayer(vectLayer);
-
-        map.on('click', function (browserEvent) {
-            var coordinate = browserEvent.coordinate;
-            var pixel = browserEvent.pixel;
-            var featureCollection = vectLayer.getSource().getFeatures();
-            featureCollection = [];
-            map.forEachFeatureAtPixel(pixel, function (feature, layer) {
-                if (!layer) {
-                    return;
-                }
-                if (feature.getStyle() == defaultStyle) {
-                    feature.setStyle(selectedStyle);
-                    document.getElementById(feature.getId() + "_link").className = "selectedProduct";
-                } else {
-                    feature.setStyle(defaultStyle);
-                    document.getElementById(feature.getId() + "_link").className = "";
-                }
-                var textFeature = new ol.Feature({
-                    geometry: new ol.geom.Point(feature.getGeometry().getCoordinates()[3]),
-                    text: feature.getId()
-                });
-                featureCollection.push(textFeature);
-                featureCollection.push(feature);
-                vectLayer.getSource().addFeatures(featureCollection);
-            });
-        });
-
-        function createMapControl() {
-            var map = new ol.Map({
-                layers: [
-                    new ol.layer.Tile({
-                        source: new ol.source.MapQuest({ layer: 'sat' })
-                    })],
-                target: 'map',
-                projection: "EPSG:4326",
-                view: new ol.View({
-                    center: [0, 0],
-                    zoom: 3
-                })
-            });
-
-            return map;
-        }
-
-        function getFeatureById(productName) {
-            var featureCollection = vectLayer.getSource().getFeatures();
-            var feature;
-            for (var i = 0; i < featureCollection.length; i++) {
-                if (featureCollection[i].getId() == productName) {
-                    feature = featureCollection[i];
-                    break;
-                }
-            }
-            return feature;
-        }
-
-        function highlightRectangle(productName) {
-            var feature = getFeatureById(productName);
-            if (feature) {
-                feature.setStyle(selectedStyle);
-            }
-        }
-
-        function restoreRectangle(productName) {
-            var feature = getFeatureById(productName);
-            if (feature) {
-                feature.setStyle(defaultStyle);
-            }
-        }
-
-        function zoomToProduct(productName) {
-            var featureCollection = vectLayer.getSource().getFeatures();
-            var feature;
-            for (var i = 0; i < featureCollection.length; i++) {
-                if (featureCollection[i].getId() == productName) {
-                    feature = featureCollection[i];
-                    break;
-                }
-            }
-            if (feature != null) {
-                var polygon = feature.getGeometry();
-                var size = map.getSize();
-                map.getView().fit(
-                    polygon,
-                    [size[0] / 2, size[1] / 2],
-                    {
-                        padding: [50, 50, 50, 50],
-                        constrainResolution: false
-                    });
-            }
-        }
-    </script>
+   
     <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
@@ -302,9 +79,145 @@
     <script src="libraries/flot-0.8.3/jquery.flot.time.min.js"></script>
     <script src="libraries/flot-0.8.3/jquery.flot.stack.min.js"></script>
     <script src="libraries/nvd3-1.1.11/nv.d3.js"></script>
+    <script src="libraries/bootstrap-treeview/bootstrap-treeview.min.js"></script>
+    <script src="libraries/openlayers/build/ol.js"></script>
     <script src="scripts/config.js"></script>
     <script src="scripts/helpers.js"></script>
-    <script src="scripts/processing_functions.js"></script>
-    <script src="scripts/processing.js"></script>
+    
+	<script>
+		var raster = new ol.layer.Tile({
+		  source: new ol.source.MapQuest({layer: 'sat'})
+		});
+
+		var vector = new ol.layer.Vector({
+		  source: new ol.source.Vector({
+		    url: 'productsMapData.json',
+		    format: new ol.format.GeoJSON()
+		  })
+		});
+
+		var view = new ol.View({
+		    center: [0, 0],
+		    zoom: 2
+		});
+
+		var map = new ol.Map({
+		  layers: [raster, vector],
+		  target: 'map',
+		  view: view
+		});
+
+
+
+		// select interaction working on "singleclick"
+		var selectSingleClick = new ol.interaction.Select();
+
+		// select interaction working on "click"
+		var selectClick = new ol.interaction.Select({
+		  condition: ol.events.condition.click
+		});
+
+		// select interaction working on "pointermove"
+		var selectPointerMove = new ol.interaction.Select({
+		  condition: ol.events.condition.pointerMove
+		});
+
+		var selectAltClick = new ol.interaction.Select({
+		  condition: function(mapBrowserEvent) {
+		    return ol.events.condition.click(mapBrowserEvent) &&
+		        ol.events.condition.altKeyOnly(mapBrowserEvent);
+		  }
+		});
+
+		var selectMethod = selectSingleClick;  // ref to currently selected interaction
+
+		var initInteraction = function() {
+		  if (selectMethod !== null) {
+		    map.removeInteraction(selectMethod);
+		  }
+		  
+		  if (selectMethod !== null) {
+		    map.addInteraction(selectMethod);
+		    selectMethod.on('select', function(e) {
+		      $('#status').html('&nbsp;' + e.target.getFeatures().getLength() +
+		          ' selected features (last operation selected ' + e.selected.length +
+		          ' and deselected ' + e.deselected.length + ' features)');
+		    });
+		  }
+		};
+
+
+		var panToLocation = function(location, extent) {
+		  var pan = ol.animation.pan({
+		    duration: 2000,
+		    source: /** @type {ol.Coordinate} */ (view.getCenter())
+		  });
+		  map.beforeRender(pan);
+		  //view.setCenter(location);
+		  //view.setZoom(zoom);
+		  view.fit(extent, map.getSize());
+		};
+
+		initInteraction();
+
+
+
+
+
+		var treeData;
+		var initTree = function() {
+			$.ajax({
+				url: "productsTreeData.json",
+				type: "get",
+				cache: false,
+				crosDomain: true,
+				dataType: "json",
+				success: function(data)
+				{
+					treeData = data;
+					renderTree();
+				},
+				error: function (responseData, textStatus, errorThrown) {
+					console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+					treeData = [];
+					renderTree();
+				}
+			});
+		};
+
+		var renderTree = function() {
+			$('#tree').treeview({
+				data: treeData,
+				//multiSelect: true,
+				//showCheckbox: true,
+				collapseIcon: "glyphicon glyphicon-folder-open",
+				expandIcon: "glyphicon glyphicon-folder-close",
+				emptyIcon: "glyphicon glyphicon-file",
+				levels: 3,
+				enableLinks: true
+				
+			});
+			
+			$('#tree').on('nodeSelected', function(event, data) {
+				
+				vector.getSource().forEachFeature(function (feature) {
+					
+					if(feature.getId() == data['productId']) {
+						panToLocation(null, feature.getGeometry().getExtent());
+						
+						var selectedFeatures = selectMethod.getFeatures();
+						selectedFeatures.clear();
+						selectedFeatures.push(feature);
+					}
+				});
+				
+			});
+		};
+
+		initTree();
+
+	
+	</script>
+   
 </body>
 </html>

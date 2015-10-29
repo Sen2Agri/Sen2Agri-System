@@ -1,3 +1,5 @@
+#include <limits>
+
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 
@@ -140,8 +142,10 @@ private:
 
             if (HasValue("outbounds")) {
                 std::ofstream boundsFile(GetParameterString("outbounds"));
+                boundsFile.precision(std::numeric_limits<double>::max_digits10);
+
                 for (const auto &v : *polygon->GetVertexList()) {
-                    boundsFile << v[0] << ' ' << v[1];
+                    boundsFile << std::fixed << v[0] << ' ' << v[1] << '\n';
                 }
             }
         } else {
@@ -188,13 +192,15 @@ private:
                 }
 
                 std::ofstream boundsFile(GetParameterString("outbounds"));
+                boundsFile.precision(std::numeric_limits<double>::max_digits10);
+
                 for (const auto &v : *polygon->GetVertexList()) {
                     point->setX(v[0]);
                     point->setY(v[1]);
                     point->setZ(0.0);
                     auto err = point->transform(transform);
                     if (err == OGRERR_NONE) {
-                        boundsFile << point->getX() << ' ' << point->getY() << '\n';
+                        boundsFile << std::fixed << point->getX() << ' ' << point->getY() << '\n';
                     } else {
                         OGRGeometryFactory::destroyGeometry(point);
 

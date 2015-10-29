@@ -38,19 +38,19 @@ function ut_output_info {
 	FILESIZE=$(stat -c%s "$1")
 	if [ $FILESIZE == $4 ] ; then    
 	    echo "File size      : PASSED"
-	    if [[ ! $(diff "$1" "$COMPARISION_FILE") ]] ; then
+	  #  if [[ ! $(diff "$1" "$COMPARISION_FILE") ]] ; then
 #otbcli_CompareImages -ref.in /mnt/data/output_temp/out_qr_vegetation_south_africa//FittedTimeSeries.tif -meas.in qr_cmp_southafrica/FittedTimeSeries.tif | grep psnr | cut "-d " -f2
-		echo "Comp ref file  : PASSED"
-	    else
-		echo "Comp ref file  : FAILED"
-	    fi
+	#	echo "Comp ref file  : PASSED"
+	 #   else
+	#	echo "Comp ref file  : FAILED"
+	 #   fi
 	else
 	    echo "File size      : FAILED"
 	fi
     else
 	echo "Number of bands: FAILED"
 	echo "File size      : FAILED"
-	echo "Comp ref file  : FAILED"
+	#echo "Comp ref file  : FAILED"
     fi
 
 }
@@ -64,6 +64,7 @@ function ut_output_info {
 IFS=' ' read -a inputXML <<< "$3"
 
 OUT_FOLDER=$4
+mkdir "$OUT_FOLDER"
 
 CROPTTYPE_OTB_LIBS_ROOT=$1
 #"~/sen2agri-processors-build/CropType"

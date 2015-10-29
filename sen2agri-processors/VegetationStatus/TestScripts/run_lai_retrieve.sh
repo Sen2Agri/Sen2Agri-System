@@ -1,8 +1,8 @@
 #! /bin/bash
 
-if [ $# -lt 8 ]
+if [ $# -lt 9 ]
 then
-  echo "Usage: $0 <otb application directory> <list of input XMLs> <resolution> <out folder name> <RSR filename> <solar zenith angle> <sensor_zenith_angle> <relative azimuth angle>"
+  echo "Usage: $0 <otb application directory> <list of input XMLs> <resolution> <out folder name> <RSR filename> <solar zenith angle> <sensor_zenith_angle> <relative azimuth angle> <scripts folder name>"
   echo "The file with input xmls should be given. The resolution should be given. The output directory should also be given" 1>&2  
   exit
 fi
@@ -37,19 +37,19 @@ function ut_output_info {
 	FILESIZE=$(stat -c%s "$1")
 	if [ $FILESIZE == $4 ] ; then    
 	    echo "File size      : PASSED"
-	    if [[ ! $(diff "$1" "$COMPARISION_FILE") ]] ; then
+	    #if [[ ! $(diff "$1" "$COMPARISION_FILE") ]] ; then
 #otbcli_CompareImages -ref.in /mnt/data/output_temp/out_qr_vegetation_south_africa//FittedTimeSeries.tif -meas.in qr_cmp_southafrica/FittedTimeSeries.tif | grep psnr | cut "-d " -f2
-		echo "Comp ref file  : PASSED"
-	    else
-		echo "Comp ref file  : FAILED"
-	    fi
+	#	echo "Comp ref file  : PASSED"
+	 #   else
+	#	echo "Comp ref file  : FAILED"
+	 #   fi
 	else
 	    echo "File size      : FAILED"
 	fi
     else
 	echo "Number of bands: FAILED"
 	echo "File size      : FAILED"
-	echo "Comp ref file  : FAILED"
+	#echo "Comp ref file  : FAILED"
     fi
 
 }
@@ -58,6 +58,7 @@ IFS=' ' read -a inputXML <<< "$2"
 RESOLUTION=$3
 
 OUT_FOLDER=$4
+mkdir "$OUT_FOLDER"
 
 RSR_FILENAME="$5"
 SOLAR_ZENITH_ANGLE=$6
@@ -66,8 +67,9 @@ RELATIVE_AZIMUTH_ANGLE=$8
 MODELS_FOLDER=${OUT_FOLDER}
 
 VEG_STATUS_OTB_LIBS_ROOT="$1"
+PRODUCT_FORMATER_OTB_LIBS_ROOT="$VEG_STATUS_OTB_LIBS_ROOT/../MACCSMetadata/src"
 
-./lai_model.sh "$VEG_STATUS_OTB_LIBS_ROOT" "$RSR_FILENAME" $SOLAR_ZENITH_ANGLE $SENSOR_ZENITH_ANGLE $RELATIVE_AZIMUTH_ANGLE "$MODELS_FOLDER"
+"$9/lai_model.sh" "$VEG_STATUS_OTB_LIBS_ROOT" "$RSR_FILENAME" $SOLAR_ZENITH_ANGLE $SENSOR_ZENITH_ANGLE $RELATIVE_AZIMUTH_ANGLE "$MODELS_FOLDER"
 
 
 RESOLUTION_OPTION="-outres $RESOLUTION"
@@ -172,7 +174,7 @@ done
 try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_LAI_PARAM -out $OUT_LAI_TIME_SERIES
 try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_ERR_PARAM -out $OUT_ERR_TIME_SERIES
 
-if [[ $# == 9 && "$9" == "tc2-1" ]] ; then
+if [[ $# == 10 && "$10" == "tc2-1" ]] ; then
 ut_output_info "$OUT_LAI_TIME_SERIES" 5 "./qr_cmp_southafrica/LAI_time_series.tif" 20008400
 ut_output_info "$OUT_ERR_TIME_SERIES" 5 "./qr_cmp_southafrica/Err_time_series.tif" 20008400
 exit
@@ -181,7 +183,7 @@ fi
 # Compute the reprocessed time series (On-line Retrieval)
 try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_REPROCESSED_TIME_SERIES  -algo local -algo.local.bwr $ALGO_LOCAL_BWR -algo.local.fwr $ALGO_LOCAL_FWR
 
-if [[ $# == 9 && "$9" == "tc2-2" ]] ; then
+if [[ $# == 10 && "$10" == "tc2-2" ]] ; then
 ut_output_info "$OUT_REPROCESSED_TIME_SERIES" 2 "./qr_cmp_southafrica/ReprocessedTimeSeries.tif" 8008372
 exit
 fi
@@ -193,10 +195,12 @@ try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_REPROCESSE
 # Compute the fitted time series (CSDM Fitting)
 try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_FITTED_TIME_SERIES -algo fit
 
-if [[ $# == 9 && "$9" == "tc2-3" ]] ; then
+if [[ $# == 10 && "$10" == "tc2-3" ]] ; then
 ut_output_info "$OUT_FITTED_TIME_SERIES" 2 "./qr_cmp_southafrica/FittedTimeSeries.tif" 8008372
 exit
 fi
+
+#try otbcli ProductFormatter "$PRODUCT_FORMATER_OTB_LIBS_ROOT" -destroot "$OUT_FOLDER" -fileclass SVT1 -level L3B -timeperiod 20130228_20130615 -baseline 01.00 -processor vegetation -processor.vegetation.lairepr /home/atrasca/sen2agri/sen2agri-processors-build/Testing/Src/S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_FRE_R2.DBL.TIF -processor.vegetation.laifit /home/atrasca/sen2agri/sen2agri-processors-build/Testing/Src/S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_SRE_R1.DBL.TIF -il /home/atrasca/sen2agri/sen2agri-processors-build/Testing/Src/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000.xml -gipp /home/atrasca/sen2agri/sen2agri-processors-build/Testing/Src/gipp1.xml
 
 #split the Fitted time series to a number of images
 try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_FITTED_TIME_SERIES -outlist $FITTED_LIST_FILE -compress 1
