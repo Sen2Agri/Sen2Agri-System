@@ -61,8 +61,8 @@ then
 fi
 
 if [ $# == 5 ] ; then
-./run_lai_retrieve.sh "$1" "$inputXML" "$2" "$4" "$3" $SOLAR_ZENITH_ANGLE $SENSOR_ZENITH_ANGLE $RELATIVE_AZIMUTH_ANGLE "$5"
+"$5/run_lai_retrieve.sh" "$1" "$inputXML" "$2" "$4" "$3" $SOLAR_ZENITH_ANGLE $SENSOR_ZENITH_ANGLE $RELATIVE_AZIMUTH_ANGLE "$5"
 else
-./run_lai_retrieve.sh "$1" "$inputXML" "$2" "$4" "$3" $SOLAR_ZENITH_ANGLE $SENSOR_ZENITH_ANGLE $RELATIVE_AZIMUTH_ANGLE "$5" "$6"
+"$5/run_lai_retrieve.sh" "$1" "$inputXML" "$2" "$4" "$3" $SOLAR_ZENITH_ANGLE $SENSOR_ZENITH_ANGLE $RELATIVE_AZIMUTH_ANGLE "$5" "$6"
 fi
 

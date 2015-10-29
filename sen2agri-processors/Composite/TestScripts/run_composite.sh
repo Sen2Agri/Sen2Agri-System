@@ -35,8 +35,8 @@ then
   echo "The product will be created with the original resolution without resampling."
 fi
 
-COMPOSITE_OTB_LIBS_ROOT="$1/Composite"
-PRODUCT_FORMATER_OTB_LIBS_ROOT="$1/MACCSMetadata/src"
+COMPOSITE_OTB_LIBS_ROOT="$1"
+PRODUCT_FORMATER_OTB_LIBS_ROOT="$1/../MACCSMetadata/src"
 
 WEIGHT_OTB_LIBS_ROOT="$COMPOSITE_OTB_LIBS_ROOT/WeightCalculation"
 
