@@ -196,10 +196,10 @@ private:
         MandatoryOff("processor.cropmask.file");
 
         AddParameter(ParameterType_InputFilenameList, "il", "The xml files");
-        AddParameter(ParameterType_InputFilenameList, "preview", "The quicklook files");
-        MandatoryOff("preview");
+        /*AddParameter(ParameterType_InputFilenameList, "preview", "The quicklook files");
+        MandatoryOff("preview");*/
         AddParameter(ParameterType_InputFilenameList, "gipp", "The GIPP files");
-
+        MandatoryOff("gipp");
 
         SetDocExampleParameterValue("destroot", "/home/atrasca/sen2agri/sen2agri-processors-build/Testing/Temporary/Dest");
         SetDocExampleParameterValue("fileclass", "SVT1");
@@ -209,7 +209,7 @@ private:
         /*SetDocExampleParameterValue("rasters", "file1.tif file2.tif file3.tif");
         SetDocExampleParameterValue("masks", "mask1.tif mask2.tif");*/
         SetDocExampleParameterValue("il", "image1.xml image2.xml");
-        SetDocExampleParameterValue("preview", "image1.jpg image2.jpg");
+        //SetDocExampleParameterValue("preview", "image1.jpg image2.jpg");
         SetDocExampleParameterValue("gipp", "gippFile1.xml gippFile2");
 
   }
@@ -545,7 +545,7 @@ private:
   void FillBandList()
   {
       Band bandEl;
-      if (m_strProductLevel.compare("L3A") == 0)
+      if ((m_strProductLevel.compare("L3A") == 0) && (CompositeBandList.empty()))
               //if is composite product, fill bands
       {
 
