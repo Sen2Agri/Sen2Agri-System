@@ -1127,8 +1127,7 @@ private:
       std::vector<std::string> strChannelsList;
 
       if ((m_strProductLevel.compare("L2A") == 0) ||
-          (m_strProductLevel.compare("L3A") == 0) ||
-          (m_strProductLevel.compare("L3B") == 0))
+          (m_strProductLevel.compare("L3A") == 0) )
       {
           iChannelNo = 3;
       }
