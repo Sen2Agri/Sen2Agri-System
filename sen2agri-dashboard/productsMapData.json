@@ -101,7 +101,22 @@
 				]
 			}
 		},
-		
+		{
+		"type":"Feature",
+		"id":"SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000",
+		"properties":{"name":"SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000"},
+		"geometry":
+			{
+				"type":"Polygon",
+				"coordinates":[
+					[[26.1430709098,-27.0295765019],
+					[26.9495901388,-27.0321756537],
+					[26.9492824169,-27.7092841929],
+					[26.1378406581,-27.7066090524],
+					[26.1430709098,-27.0295765019]]
+				]
+			}
+		},
 		
 		
 		
@@ -109,6 +124,22 @@
 		"type":"Feature",
 		"id":"SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000",
 		"properties":{"name":"SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000"},
+		"geometry":
+			{
+				"type":"Polygon",
+				"coordinates":[
+					[[-0.71796093542,44.5915687311],
+					[1.67580329778,44.6461775904],
+					[1.72468344674,42.4872082405],
+					[-0.580887019092,42.4346931226],
+					[-0.71796093542,44.5915687311]]
+				]
+			}
+		},
+		{
+		"type":"Feature",
+		"id":"SPOT4_HRVIR_XS_20130221_N2A_CSudmipy-OD0000B0000",
+		"properties":{"name":"SPOT4_HRVIR_XS_20130221_N2A_CSudmipy-OD0000B0000"},
 		"geometry":
 			{
 				"type":"Polygon",
@@ -129,6 +160,22 @@
 		"type":"Feature",
 		"id":"SPOT4_HRVIR1_XS_20130217_N2A_CSudmipy-ED0000B0000",
 		"properties":{"name":"SPOT4_HRVIR1_XS_20130217_N2A_CSudmipy-ED0000B0000"},
+		"geometry":
+			{
+				"type":"Polygon",
+				"coordinates":[
+					[[0.654245267577,44.9444733957],
+					[2.36583930139,44.9674086996],
+					[2.3926655696,42.4931020347],
+					[0.753424668833,42.4711720103],
+					[0.654245267577,44.9444733957]]
+				]
+			}
+		},
+		{
+		"type":"Feature",
+		"id":"SPOT4_HRVIR1_XS_20130222_N2A_CSudmipy-ED0000B0000",
+		"properties":{"name":"SPOT4_HRVIR1_XS_20130222_N2A_CSudmipy-ED0000B0000"},
 		"geometry":
 			{
 				"type":"Polygon",
