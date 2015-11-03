@@ -1,3 +1,5 @@
+MY_PWD=`pwd`
+
 #USER modif
 #add directories where SPOT products are to be found
 inputXML1="/mnt/Imagery_S2A/L2A/Spot4-T5/CSudmipy-O_LEVEL2A/SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000.xml "
@@ -44,16 +46,19 @@ then
   exit
 fi
 
+cd ../../
+
 SCAT_COEF=""
 if [ $# == 5 ] ; then    
-    ../run_composite_clipping.sh "$1" "$inputxml1 " "$2" "$3" "$L3A_DATE_1" "$HALF_SYNTHESIS" "$4" "$5"
-    ../run_composite_clipping.sh "$1" "$inputxml2 " "$2" "$3" "$L3A_DATE_2" "$HALF_SYNTHESIS" "$4" "$5"
-    ../run_composite_clipping.sh "$1" "$inputxml3 " "$2" "$3" "$L3A_DATE_3" "$HALF_SYNTHESIS" "$4" "$5"
-    ../run_composite_clipping.sh "$1" "$inputxml4 " "$2" "$3" "$L3A_DATE_4" "$HALF_SYNTHESIS" "$4" "$5"
+    ./run_composite_clipping.sh "$1" "$inputxml1 " "$2" "$3" "$L3A_DATE_1" "$HALF_SYNTHESIS" "$4" "$5"
+    ./run_composite_clipping.sh "$1" "$inputxml2 " "$2" "$3" "$L3A_DATE_2" "$HALF_SYNTHESIS" "$4" "$5"
+    ./run_composite_clipping.sh "$1" "$inputxml3 " "$2" "$3" "$L3A_DATE_3" "$HALF_SYNTHESIS" "$4" "$5"
+    ./run_composite_clipping.sh "$1" "$inputxml4 " "$2" "$3" "$L3A_DATE_4" "$HALF_SYNTHESIS" "$4" "$5"
 else
-    ../run_composite_clipping.sh "$1" "$inputxml1 " "$2" "$3" "$L3A_DATE_1" "$HALF_SYNTHESIS" "$4"
-    ../run_composite_clipping.sh "$1" "$inputxml2 " "$2" "$3" "$L3A_DATE_2" "$HALF_SYNTHESIS" "$4"
-    ../run_composite_clipping.sh "$1" "$inputxml3 " "$2" "$3" "$L3A_DATE_3" "$HALF_SYNTHESIS" "$4"
-    ../run_composite_clipping.sh "$1" "$inputxml4 " "$2" "$3" "$L3A_DATE_4" "$HALF_SYNTHESIS" "$4"
+    ./run_composite_clipping.sh "$1" "$inputxml1 " "$2" "$3" "$L3A_DATE_1" "$HALF_SYNTHESIS" "$4"
+    ./run_composite_clipping.sh "$1" "$inputxml2 " "$2" "$3" "$L3A_DATE_2" "$HALF_SYNTHESIS" "$4"
+    ./run_composite_clipping.sh "$1" "$inputxml3 " "$2" "$3" "$L3A_DATE_3" "$HALF_SYNTHESIS" "$4"
+    ./run_composite_clipping.sh "$1" "$inputxml4 " "$2" "$3" "$L3A_DATE_4" "$HALF_SYNTHESIS" "$4"
 fi
 
+cd $MY_PWD
