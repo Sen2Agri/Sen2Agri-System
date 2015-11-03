@@ -9,9 +9,9 @@ inputXML+="/mnt/Imagery_S2A/L2A/Spot4-T5/South\ Africa/SPOT4_HRVIR1_XS_20130506_
 
 
 #L3A_DATE="20130617"
-L3A_DATE="20130615"
+L3A_DATE="20130425"
 #HALF_SYNTHESIS="50"
-HALF_SYNTHESIS="70"
+HALF_SYNTHESIS="15"
 BANDS_MAPPING="bands_mapping_spot.txt"
 #end of USER modif
 
@@ -24,8 +24,8 @@ fi
 
 SCAT_COEF=""
 if [ $# == 5 ] ; then    
-    ./run_composite.sh "$1" "$inputxml " "$2" "$3" "$L3A_DATE" "$HALF_SYNTHESIS" "$4" "$5"
+    ./run_composite.sh "$1" "$inputXML " "$2" "$3" "$L3A_DATE" "$HALF_SYNTHESIS" "$4" "$5"
 else
-    ./run_composite.sh "$1" "$inputxml " "$2" "/mnt/scratch/composite_southafrica_20130328" "$L3A_DATE" "$HALF_SYNTHESIS" "$4"
+    ./run_composite.sh "$1" "$inputXML " "$2" "/mnt/scratch/composite_southafrica_20130425" "$L3A_DATE" "$HALF_SYNTHESIS" "$4"
 fi
 
