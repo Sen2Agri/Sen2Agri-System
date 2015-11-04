@@ -197,6 +197,7 @@ private:
         // These indexes are from the current product and they should be translated to bands presence array indexes
         int nRedBandIdx = pHelper->GetRedBandIndex();
         int nBlueBandIdx = pHelper->GetBlueBandIndex();
+        // here we compute the relative indexes according to the presence array for the red and blue band
         int nRelRedBandIdx = bandsMappingCfg.GetIndexInPresenceArray(resolution, missionName, nRedBandIdx);
         int nRelBlueBandIdx = bandsMappingCfg.GetIndexInPresenceArray(resolution, missionName, nBlueBandIdx);
         int productDate = pHelper->GetAcquisitionDateAsDoy();

@@ -142,7 +142,7 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
         var[cnt++] = short(outInfos.m_CurrentPixelWeights[i] * WEIGHT_QUANTIF_VALUE);
     }
     // Weighted Average Date L3A
-    var[cnt++] = short(outInfos.m_fCurrentPixelWeightedDate * DATE_QUANTIF_VALUE);
+    var[cnt++] = short(outInfos.m_fCurrentPixelWeightedDate);
     // Weight for B2 for L3A
     for(i = 0; i < m_nNbOfL3AReflectanceBands; i++)
     {
@@ -373,45 +373,38 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
             if(nBlueBandIdx != -1)
             {
                 float fBlueReflectance = GetL2AReflectanceForPixelVal(A[nBlueBandIdx]);
-                for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
+                float fRelBlueReflectance = GetPrevL3AReflectanceValue(A, nBlueBandIdx);
+                // replace value only if the new reflectance in blue is smaller
+                if(fBlueReflectance < fRelBlueReflectance)
                 {
-                    float fPrevReflectance = GetPrevL3AReflectanceValue(A, i);
-                    // replace value only if the new reflectance in blue is smaller
-                    if(fBlueReflectance < fPrevReflectance)
+                    for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
                     {
-
                         int nCurrentBandIndex = GetAbsoluteL2ABandIndex(i);
                         // band available
                         if(nCurrentBandIndex != -1)
                         {
                             outInfos.m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
-                            outInfos.m_CurrentPixelWeights[i] = 0;
                             if(IsRedBand(i))
                             {
                                 outInfos.m_fCurrentPixelWeightedDate = m_nCurrentDate;
                                 outInfos.m_nCurrentPixelFlag = CLOUD;
                             }
                         } else {
-                            outInfos.m_CurrentWeightedReflectances[i] = fPrevReflectance;
-                            outInfos.m_CurrentPixelWeights[i] = 0;
+                            outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
+                            outInfos.m_nCurrentPixelFlag = nPrevL3AFlagVal;
                         }
+                        outInfos.m_CurrentPixelWeights[i] = 0;
+                    }
+                } else {
+                    outInfos.m_nCurrentPixelFlag = nPrevL3AFlagVal;
+                    for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
+                    {
+                        outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
+                        outInfos.m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
+                        outInfos.m_CurrentPixelWeights[i] = 0;
                     }
                 }
             }
-        } else {
-            for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
-            {
-                // TODO: The first 2 lines of code can be removed as the initialization is made in ResetCurrentPixelValues
-                outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
-                outInfos.m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
-                // band available
-                if(GetAbsoluteL2ABandIndex(i) != -1)
-                {
-                    outInfos.m_CurrentPixelWeights[i] = 0;
-                }
-                // otherwise, it will remain to the previous value
-            }
-
         }
     }
 }
@@ -493,7 +486,7 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AWeightedAvDateValue(cons
     if(!m_bPrevL3ABandsAvailable || m_nPrevL3AWeightedAvDateBandIndex == -1)
         return DATE_NO_DATA;
 
-    return (static_cast<float>(A[m_nPrevL3AWeightedAvDateBandIndex]) / DATE_QUANTIF_VALUE);
+    return (static_cast<float>(A[m_nPrevL3AWeightedAvDateBandIndex]));
 }
 
 template< class TInput, class TOutput>

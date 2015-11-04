@@ -5,11 +5,10 @@
 
 typedef enum {FLAG_NO_DATA=0, CLOUD=1, SNOW=2, WATER=3, LAND=4, CLOUD_SHADOW=5} FlagType;
 
-#define DATE_QUANTIF_VALUE      10000
 #define WEIGHT_QUANTIF_VALUE    10000
 
 #define NO_DATA                 -10000
-#define DATE_NO_DATA            (NO_DATA/DATE_QUANTIF_VALUE)
+#define DATE_NO_DATA            NO_DATA
 #define WEIGHT_NO_DATA          (NO_DATA/WEIGHT_QUANTIF_VALUE)      //  NO_DATA / WEIGHT_QUANTIF_VALUE
 #define NO_DATA_EPSILON         0.00001f    //
 
