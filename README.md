@@ -5,7 +5,7 @@
 
 # Compiling OTB
 
-    git clone https://github.com/GrayShade/OTB.git # fixes-5.0 branch
+    git clone --depth=1 https://github.com/GrayShade/OTB.git # fixes-5.0 branch
     mkdir OTB-BUILD
     cd OTB-BUILD
     ccmake ../OTB/SuperBuild
