@@ -179,7 +179,7 @@ private:
     AddParameter(ParameterType_Int, "seed", "The seed for the random number generation");
     MandatoryOff("seed");
 
-    AddParameter(ParameterType_OutputImage, "out", "The training samples raster file");
+    AddParameter(ParameterType_OutputVectorData, "out", "The training samples shape file");
 
     SetDefaultParameterFloat("alpha", 0.01);
     SetDefaultParameterInt("nbsamples", 0);
@@ -197,7 +197,7 @@ private:
     SetDocExampleParameterValue("alpha", "0.01");
     SetDocExampleParameterValue("nbsamples", "0");
     SetDocExampleParameterValue("seed", "0");
-    SetDocExampleParameterValue("out", "noinsitu_training_data.tif");
+    SetDocExampleParameterValue("out", "noinsitu_training_data.shp");
     //  Software Guide : EndCodeSnippet
   }
 
@@ -329,7 +329,7 @@ private:
       m_ShapeBuilder->SetInput(m_SumFilter->GetOutput());
       m_ShapeBuilder->SetInputMask(m_ShapeMask->GetOutput());
       m_ShapeBuilder->SetFieldName("CROP");
-      SetParameterOutputImage("out", m_SumFilter->GetOutput());
+      SetParameterOutputVectorData("out", m_ShapeBuilder->GetOutput());
 
       GetLogger()->Debug("Performing Trimming!\n");
   }
