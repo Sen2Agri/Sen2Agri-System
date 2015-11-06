@@ -43,7 +43,7 @@
 #include "otbVectorImage.h"
 #include "otbImage.h"
 
-typedef short                                PixelValueType;
+typedef float                                PixelValueType;
 typedef otb::VectorImage<PixelValueType, 2>  ImageType;
 typedef otb::Image<PixelValueType, 2>        InternalImageType;
 
@@ -179,13 +179,7 @@ private:
     AddParameter(ParameterType_Int, "seed", "The seed for the random number generation");
     MandatoryOff("seed");
 
-    AddParameter(ParameterType_OutputVectorData, "out", "The training samples shape file");
-    MandatoryOff("out");
-
-    AddParameter(ParameterType_OutputImage, "outraster", "The training samples as a raster");
-    MandatoryOff("outraster");
-    AddParameter(ParameterType_OutputImage, "outmask", "The mask used to create the shape file");
-    MandatoryOff("outmask");
+    AddParameter(ParameterType_OutputImage, "out", "The training samples raster file");
 
     SetDefaultParameterFloat("alpha", 0.01);
     SetDefaultParameterInt("nbsamples", 0);
@@ -203,7 +197,7 @@ private:
     SetDocExampleParameterValue("alpha", "0.01");
     SetDocExampleParameterValue("nbsamples", "0");
     SetDocExampleParameterValue("seed", "0");
-    SetDocExampleParameterValue("out", "noinsitu_training_samples.shp");
+    SetDocExampleParameterValue("out", "noinsitu_training_data.tif");
     //  Software Guide : EndCodeSnippet
   }
 
@@ -217,7 +211,6 @@ private:
       // define all needed types
 
       m_FeaturesReader = VectorImageReaderType::New();
-      m_ReferenceReader = ImageReaderType::New();
       m_BandsExtractor = ExtractROIFilterType::New();
       m_SumFilter = BandMathImageFilterType::New();
       m_ShapeBuilder = LabelImageToVectorDataFilterType::New();
@@ -244,27 +237,39 @@ private:
       m_FeaturesReader->SetFileName(GetParameterString("feat"));
       m_FeaturesReader->UpdateOutputInformation();
 
-      // Extract only the Green, Red and NIR bands at max NDVI and the Red and NIR bands at min NDVI
-      // Those are the bands 9, 10, 11, 14 and 15 from the initial image
-      m_BandsExtractor->SetInput(m_FeaturesReader->GetOutput());
-      m_BandsExtractor->SetChannel(9);
-      m_BandsExtractor->SetChannel(10);
-      m_BandsExtractor->SetChannel(11);
-      m_BandsExtractor->SetChannel(14);
-      m_BandsExtractor->SetChannel(15);
+      bool needExtract = false;
+      if (m_FeaturesReader->GetOutput()->GetNumberOfComponentsPerPixel() != 5) {
+          // Extract only the Green, Red and NIR bands at max NDVI and the Red and NIR bands at min NDVI
+          // Those are the bands 9, 10, 11, 14 and 15 from the initial image
+          m_BandsExtractor->SetInput(m_FeaturesReader->GetOutput());
+          m_BandsExtractor->SetChannel(9);
+          m_BandsExtractor->SetChannel(10);
+          m_BandsExtractor->SetChannel(11);
+          m_BandsExtractor->SetChannel(14);
+          m_BandsExtractor->SetChannel(15);
+          needExtract = true;
+      }
 
       //Read the Reference input file
-      m_ReferenceReader->SetFileName(GetParameterString("ref"));
-      m_ReferenceReader->Update();
+      //m_ReferenceReader->SetFileName(GetParameterString("ref"));
+      //m_ReferenceReader->UpdateOutputInformation();
+
+      // Use a temporary reader over the reference image
+      // to fix the Update bug in GDAL
+      ImageReaderType::Pointer refReader = ImageReaderType::New();
+      refReader->SetFileName(GetParameterString("ref"));
+      refReader->Update();
 
       // Get the output
-      InternalImageType::Pointer refImg = m_ReferenceReader->GetOutput();
+      InternalImageType::Pointer refImg = refReader->GetOutput();
 
       ReferenceSizeType imgSize = refImg->GetLargestPossibleRegion().GetSize();
       int bandCount = 0;
 
       // loop through the image
       GetLogger()->Debug("Splitting pixels into classes!\n");
+      // signal that class 11 is found.
+      bool have11 = false;
       for (ReferenceSizeValueType i = 0; i < imgSize[0]; i++) {
           for (ReferenceSizeValueType j = 0; j < imgSize[1]; j++) {
               InternalImageType::IndexType index;
@@ -273,6 +278,9 @@ private:
 
               InternalImageType::PixelType pix = refImg->GetPixel(index);
               if (pix > 0) {
+                  if (pix == 11) {
+                      have11 = true;
+                  }
                   MahalanobisTrimmingFilterMap::iterator it = m_trimingFilters.find(pix);
                   if (it == m_trimingFilters.end()) {
                       // create a new instance of the filter
@@ -286,7 +294,7 @@ private:
                       // We use 2 for CROP and 1 for NOCROP to differentiate from the ignored pixels
                       // The final shape will contain 1 for CROP and 0 for NOCROP
                       filter->SetReplaceValue((pix == 11 || pix == 20) ? 2 : 1);
-                      filter->SetInput(m_BandsExtractor->GetOutput());
+                      filter->SetInput(needExtract ? m_BandsExtractor->GetOutput() : m_FeaturesReader->GetOutput());
                       m_SumFilter->SetNthInput(bandCount++, filter->GetOutput());
                       m_trimingFilters.insert(it, std::make_pair(pix, filter));
                   } else {
@@ -296,6 +304,15 @@ private:
               }
           }
       }
+      // if no 11 class is found then use class 10 as crop
+      if (!have11) {
+          MahalanobisTrimmingFilterMap::iterator it = m_trimingFilters.find(static_cast<InternalImageType::PixelType>(10));
+          if (it != m_trimingFilters.end()) {
+              MahalanobisTrimmingFilterType::Pointer& filter = it->second;
+              filter->SetReplaceValue(2);
+          }
+      }
+
       GetLogger()->Debug("Splitting done!\n");
 
       std::ostringstream exprstream;
@@ -305,29 +322,20 @@ private:
       }
 
       m_SumFilter->SetExpression(exprstream.str());
-      if (HasValue("outraster")) {
-          SetParameterOutputImage("outraster", m_SumFilter->GetOutput());
-      }
 
       m_ShapeMask->SetNthInput(0, m_SumFilter->GetOutput());
       m_ShapeMask->SetExpression("(b1>=0) ? 1 : 0");
-      if (HasValue("outmask")) {
-          SetParameterOutputImage("outmask", m_ShapeMask->GetOutput());
-      }
 
-      if (HasValue("out")) {
-          m_ShapeBuilder->SetInput(m_SumFilter->GetOutput());
-          m_ShapeBuilder->SetInputMask(m_ShapeMask->GetOutput());
-          m_ShapeBuilder->SetFieldName("CROP");
-          SetParameterOutputVectorData("out", m_ShapeBuilder->GetOutput());
-      }
-
+      m_ShapeBuilder->SetInput(m_SumFilter->GetOutput());
+      m_ShapeBuilder->SetInputMask(m_ShapeMask->GetOutput());
+      m_ShapeBuilder->SetFieldName("CROP");
+      SetParameterOutputImage("out", m_SumFilter->GetOutput());
 
       GetLogger()->Debug("Performing Trimming!\n");
   }
   //  Software Guide :EndCodeSnippet
   VectorImageReaderType::Pointer                m_FeaturesReader;
-  ImageReaderType::Pointer                      m_ReferenceReader;
+  //ImageReaderType::Pointer                      m_ReferenceReader;
   MahalanobisTrimmingFilterMap                  m_trimingFilters;
   ExtractROIFilterType::Pointer                 m_BandsExtractor;
   BandMathImageFilterType::Pointer              m_SumFilter;

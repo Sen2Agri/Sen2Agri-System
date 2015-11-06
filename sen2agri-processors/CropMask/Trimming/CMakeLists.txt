@@ -1,6 +1,6 @@
 otb_create_application(
   NAME           Trimming
-  SOURCES        Trimming.cpp MahalanobisTrimmingFilter.h MahalanobisTrimmingFilter.hxx
+  SOURCES        Trimming.cpp MahalanobisTrimmingFilter.h MahalanobisTrimmingFilter.hxx MahalanobisTrimmingFilterThreaded.h MahalanobisTrimmingFilterThreaded.hxx
   LINK_LIBRARIES ${OTB_LIBRARIES})
 
 if(BUILD_TESTING)

@@ -1,6 +1,6 @@
 otb_create_application(
   NAME           FeatureExtraction
-  SOURCES        FeatureExtraction.cpp
+  SOURCES        FeatureExtraction.cpp FeatureExtraction.hxx
   LINK_LIBRARIES ${OTB_LIBRARIES})
 
 if(BUILD_TESTING)

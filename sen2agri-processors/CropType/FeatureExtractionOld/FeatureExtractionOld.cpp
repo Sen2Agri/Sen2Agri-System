@@ -32,22 +32,20 @@
 //  Software Guide : BeginCodeSnippet
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
+#include "otbVectorImage.h"
+#include "otbVectorImageToImageListFilter.h"
+#include "otbImageListToVectorImageFilter.h"
+#include "otbBandMathImageFilter.h"
 
-#include "FeatureExtraction.hxx"
-
-
-typedef FeatureTimeSeriesFunctor<ImageType::PixelType>                    FeatureTimeSeriesFunctorType;
-typedef NDVIFunctor<ImageType::PixelType>                                 NDVIFunctorType;
-typedef NDWIFunctor<ImageType::PixelType>                                 NDWIFunctorType;
-typedef BrightnessFunctor<ImageType::PixelType>                           BrightnessFunctorType;
-
-typedef UnaryFunctorImageFilterWithNBands<FeatureTimeSeriesFunctorType>   FeatureTimeSeriesFilterType;
-typedef UnaryFunctorImageFilterWithNBands<NDVIFunctorType>                NDVIFilterType;
-typedef UnaryFunctorImageFilterWithNBands<NDWIFunctorType>                NDWIFilterType;
-typedef UnaryFunctorImageFilterWithNBands<BrightnessFunctorType>          BrightnessFilterType;
-
+typedef otb::VectorImage<short, 2>                                        ImageType;
+typedef otb::Image<short, 2>                                              InternalImageType;
 typedef otb::ImageFileReader<ImageType>                                   ReaderType;
-
+typedef otb::ImageFileWriter<ImageType>                                   WriterType;
+typedef otb::ImageList<InternalImageType>                                 ImageListType;
+typedef otb::VectorImageToImageListFilter<ImageType, ImageListType>       VectorImageToImageListType;
+typedef otb::ImageListToVectorImageFilter<ImageListType, ImageType>       ImageListToVectorImageFilterType;
+typedef otb::BandMathImageFilter<InternalImageType>                       BandMathImageFilterType;
+typedef otb::ObjectList<BandMathImageFilterType>                          BandMathImageFilterListType;
 
 //  Software Guide : EndCodeSnippet
 
@@ -72,7 +70,7 @@ namespace Wrapper
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
-class FeatureExtraction : public Application
+class FeatureExtractionOld : public Application
 //  Software Guide : EndCodeSnippet
 {
 public:
@@ -81,7 +79,7 @@ public:
   // Software Guide : EndLatex
 
   //  Software Guide : BeginCodeSnippet
-  typedef FeatureExtraction Self;
+  typedef FeatureExtractionOld Self;
   typedef Application Superclass;
   typedef itk::SmartPointer<Self> Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
@@ -95,7 +93,7 @@ public:
   itkNewMacro(Self)
 ;
 
-  itkTypeMacro(FeatureExtraction, otb::Application)
+  itkTypeMacro(FeatureExtractionOld, otb::Application)
 ;
   //  Software Guide : EndCodeSnippet
 
@@ -123,10 +121,10 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-      SetName("FeatureExtraction");
+      SetName("FeatureExtractionOld");
       SetDescription("The feature extraction step produces the relevant features for the classication.");
 
-      SetDocName("FeatureExtraction");
+      SetDocName("FeatureExtractionOld");
       SetDocLongDescription("The feature extraction step produces the relevant features for the classication. The features are computed"
                             "for each date of the resampled and gaplled time series and concatenated together into a single multi-channel"
                             "image file. The selected features are the surface reflectances, the NDVI, the NDWI and the brightness.");
@@ -187,7 +185,28 @@ private:
   void DoUpdateParameters()
   {
       m_imgReader = ReaderType::New();
-      m_bandsPerImage = 4;
+      m_imgSplit = VectorImageToImageListType::New();
+      m_bandMathFilterList = BandMathImageFilterListType::New();
+
+      bandsPerImage = 4;
+
+      // The expressions correspond to the case where a list of images is passes to the BandMath filter
+      // The significance of the bands is:
+      // b1 - G
+      // b2 - R
+      // b3 - NIR
+      // b4 - SWIR
+#ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
+          ndviExpr = "(b3==-10000 || b2==-10000) ? -10000 : (abs(b3+b2)<0.000001) ? 0 : 10000 * (b3-b2)/(b3+b2)";
+          //ndviExpr = "((abs(b3+b2)<0.000001) || abs((b3-b2)/(b3+b2)) > 1) ? 0 : 10000 * (b3-b2)/(b3+b2)";
+          ndwiExpr = "(b3==-10000 || b4==-10000) ? -10000 : (abs(b4+b3)<0.000001) ? 0 : 10000 * (b4-b3)/(b4+b3)";
+          brightnessExpr = "(b1==-10000) ? -10000 : sqrt((b1 * b1) + (b2 * b2) + (b3 * b3) + (b4 * b4))";
+#else
+          ndviExpr = "if(b3==-10000 or b2==-10000,-10000,if(abs(b3+b2)<0.000001,0,(b3-b2)/(b3+b2)";
+          ndwiExpr = "if(b3==-10000 or b4=-10000,-10000,if(abs(b4+b3)<0.000001,0,(b4-b3)/(b4+b3)";
+          brightnessExpr = "if(b1==-10000,-10000,sqrt((b1 * b1) + (b2 * b2) + (b3 * b3) + (b4 * b4))";
+#endif
+
   }
   //  Software Guide : EndCodeSnippet
 
@@ -199,57 +218,138 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoExecute()
   {
+      bool fullSeries = false;
+      bool ndviSeries = false;
+      bool ndwiSeries = false;
+      bool brightnessSeries = false;
       // check that at least one of fts, ndvi, ndwi or brightness is set
       if (!HasValue("fts") && !HasValue("ndvi") && !HasValue("ndwi") && !HasValue("brightness")) {
           itkExceptionMacro("You must specify a value for at least one of 'fts', 'ndvi', 'ndwi' and 'brightness'!");
       }
 
-      //Read the input time series
-      m_imgReader->SetFileName(GetParameterString("rtocr"));
-      m_imgReader->UpdateOutputInformation();
-
-      int numImages = m_imgReader->GetOutput()->GetNumberOfComponentsPerPixel() / m_bandsPerImage;
-
       // verify what parameters are set
       if(HasValue("fts")) {
-          m_ftsFilter = FeatureTimeSeriesFilterType::New();
-          m_ftsFilter->SetNumberOfOutputBands(numImages * (m_bandsPerImage + 3));
-          m_ftsFilter->SetFunctor(FeatureTimeSeriesFunctorType(m_bandsPerImage));
-          m_ftsFilter->SetInput(m_imgReader->GetOutput());
-          SetParameterOutputImage("fts", m_ftsFilter->GetOutput());
+          fullSeries = true;
+          m_ftsConcat = ImageListToVectorImageFilterType::New();
       }
       if(HasValue("ndvi")) {
-          m_ndviFilter = NDVIFilterType::New();
-          m_ndviFilter->SetNumberOfOutputBands(numImages);
-          m_ndviFilter->SetFunctor(NDVIFunctorType(m_bandsPerImage));
-          m_ndviFilter->SetInput(m_imgReader->GetOutput());
-          SetParameterOutputImage("ndvi", m_ndviFilter->GetOutput());
+          ndviSeries = true;
+          m_ndviConcat = ImageListToVectorImageFilterType::New();
       }
       if(HasValue("ndwi")) {
-          m_ndwiFilter = NDWIFilterType::New();
-          m_ndwiFilter->SetNumberOfOutputBands(numImages);
-          m_ndwiFilter->SetFunctor(NDWIFunctorType(m_bandsPerImage));
-          m_ndwiFilter->SetInput(m_imgReader->GetOutput());
-          SetParameterOutputImage("ndwi", m_ndwiFilter->GetOutput());
+          ndwiSeries = true;
+          m_ndwiConcat = ImageListToVectorImageFilterType::New();
       }
       if(HasValue("brightness")) {
-          m_brightnessFilter = BrightnessFilterType::New();
-          m_brightnessFilter->SetNumberOfOutputBands(numImages);
-          m_brightnessFilter->SetFunctor(BrightnessFunctorType(m_bandsPerImage));
-          m_brightnessFilter->SetInput(m_imgReader->GetOutput());
-          SetParameterOutputImage("brightness", m_brightnessFilter->GetOutput());
+          brightnessSeries = true;
+          m_brightnessConcat = ImageListToVectorImageFilterType::New();
+      }
+
+      //Read all input parameters
+      m_imgReader->SetFileName(GetParameterString("rtocr"));
+
+      m_imgReader->UpdateOutputInformation();
+
+      // Use a filter to split the input into a list of one band images
+      m_imgSplit->SetInput(m_imgReader->GetOutput());
+
+      m_imgSplit->UpdateOutputInformation();
+
+      int nbBands = m_imgReader->GetOutput()->GetNumberOfComponentsPerPixel();
+      // compute the number of images
+      int nbImages = nbBands / bandsPerImage;
+
+      //Create the image list used at the final concatenation step
+      ImageListType::Pointer ftsList = ImageListType::New();
+      ImageListType::Pointer ndviList = ImageListType::New();
+      ImageListType::Pointer ndwiList = ImageListType::New();
+      ImageListType::Pointer brightnessList = ImageListType::New();
+
+      //loop through all images
+      for (int i = 0; i < nbImages; i++) {
+          // Create the ndvi bandmath filter
+          BandMathImageFilterType::Pointer ndviFilter = BandMathImageFilterType::New();
+          // Create the ndwi bandmath filter
+          BandMathImageFilterType::Pointer ndwiFilter = BandMathImageFilterType::New();
+          // Create the brightness bandmath filter
+          BandMathImageFilterType::Pointer brightnessFilter = BandMathImageFilterType::New();
+
+          for (int j = 0; j < bandsPerImage; j++) {
+            // Set all bands of the current image as inputs
+            ndviFilter->SetNthInput(j, m_imgSplit->GetOutput()->GetNthElement(i * bandsPerImage + j));
+            ndwiFilter->SetNthInput(j, m_imgSplit->GetOutput()->GetNthElement(i * bandsPerImage + j));
+            brightnessFilter->SetNthInput(j, m_imgSplit->GetOutput()->GetNthElement(i * bandsPerImage + j));
+
+            // add the band to the list
+            if (fullSeries) {
+                ftsList->PushBack(m_imgSplit->GetOutput()->GetNthElement(i * bandsPerImage + j));
+            }
+          }
+
+          // set the expressions
+          ndviFilter->SetExpression(ndviExpr);
+          ndwiFilter->SetExpression(ndwiExpr);
+          brightnessFilter->SetExpression(brightnessExpr);
+
+          // add the outputs of the filters to the list
+          if (fullSeries) {
+              ftsList->PushBack(ndviFilter->GetOutput());
+              ftsList->PushBack(ndwiFilter->GetOutput());
+              ftsList->PushBack(brightnessFilter->GetOutput());
+          }
+          if (ndviSeries) {
+              ndviList->PushBack(ndviFilter->GetOutput());
+          }
+          if (ndwiSeries) {
+              ndwiList->PushBack(ndwiFilter->GetOutput());
+          }
+          if (brightnessSeries) {
+              brightnessList->PushBack(brightnessFilter->GetOutput());
+          }
+
+
+          //add all filters to the list
+          m_bandMathFilterList->PushBack(ndviFilter);
+          m_bandMathFilterList->PushBack(ndwiFilter);
+          m_bandMathFilterList->PushBack(brightnessFilter);
+      }
+
+      if (fullSeries) {
+          // add the list as input to the concat filter
+          m_ftsConcat->SetInput(ftsList);
+          SetParameterOutputImage("fts", m_ftsConcat->GetOutput());
+      }
+      if (ndviSeries) {
+          m_ndviConcat->SetInput(ndviList);
+          SetParameterOutputImage("ndvi", m_ndviConcat->GetOutput());
+      }
+      if (ndwiSeries) {
+          m_ndwiConcat->SetInput(ndwiList);
+          SetParameterOutputImage("ndwi", m_ndwiConcat->GetOutput());
+      }
+      if (brightnessSeries) {
+          m_brightnessConcat->SetInput(brightnessList);
+          SetParameterOutputImage("brightness", m_brightnessConcat->GetOutput());
       }
   }
   //  Software Guide :EndCodeSnippet
 
   // The number of bands per image
-  int m_bandsPerImage;
+  int bandsPerImage;
+  // The BandMath expression for NDVI
+  std::string ndviExpr;
+  // The BandMath expression for NDWI
+  std::string ndwiExpr;
+  // The BandMath expression for Brigthness
+  std::string brightnessExpr;
 
   ReaderType::Pointer                       m_imgReader;
-  FeatureTimeSeriesFilterType::Pointer      m_ftsFilter;
-  NDVIFilterType::Pointer                   m_ndviFilter;
-  NDWIFilterType::Pointer                   m_ndwiFilter;
-  BrightnessFilterType::Pointer             m_brightnessFilter;
+  VectorImageToImageListType::Pointer       m_imgSplit;
+  BandMathImageFilterListType::Pointer      m_bandMathFilterList;
+  ImageListToVectorImageFilterType::Pointer m_ftsConcat;
+  ImageListToVectorImageFilterType::Pointer m_ndviConcat;
+  ImageListToVectorImageFilterType::Pointer m_ndwiConcat;
+  ImageListToVectorImageFilterType::Pointer m_brightnessConcat;
 };
 }
 }
@@ -258,7 +358,7 @@ private:
 // Finally \code{OTB\_APPLICATION\_EXPORT} is called.
 // Software Guide : EndLatex
 //  Software Guide :BeginCodeSnippet
-OTB_APPLICATION_EXPORT(otb::Wrapper::FeatureExtraction)
+OTB_APPLICATION_EXPORT(otb::Wrapper::FeatureExtractionOld)
 //  Software Guide :EndCodeSnippet
 
 

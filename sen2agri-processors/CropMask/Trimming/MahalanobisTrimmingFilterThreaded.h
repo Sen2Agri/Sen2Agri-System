@@ -4,12 +4,12 @@
 #include "itkImageToImageFilter.h"
 
 template< typename TInputImage, typename TOutputImage >
-class MahalanobisTrimmingFilter:
+class MahalanobisTrimmingFilterThreaded:
   public itk::ImageToImageFilter< TInputImage, TOutputImage >
 {
 public:
   /** Standard class typedefs. */
-  typedef MahalanobisTrimmingFilter            Self;
+  typedef MahalanobisTrimmingFilterThreaded            Self;
   typedef itk::ImageToImageFilter< TInputImage, TOutputImage > Superclass;
   typedef itk::SmartPointer< Self >                            Pointer;
   typedef itk::SmartPointer< const Self >                      ConstPointer;
@@ -18,7 +18,7 @@ public:
   itkNewMacro(Self);
 
   /** Run-time type information (and related methods).  */
-  itkTypeMacro(MahalanobisTrimmingFilter,
+  itkTypeMacro(MahalanobisTrimmingFilterThreaded,
                ImageToImageFilter);
 
   typedef TInputImage                         InputImageType;
@@ -33,7 +33,8 @@ public:
   typedef typename OutputImageType::RegionType OutputImageRegionType;
   typedef typename OutputImageType::PixelType  OutputImagePixelType;
 
-  typedef std::vector< IndexType > PointsContainerType;
+  typedef std::vector< IndexType >            PointsContainerType;
+  typedef std::vector< InputImagePixelType >  PixelsContainerType;
 
   void PrintSelf(std::ostream & os, itk::Indent indent) const ITK_OVERRIDE;
 
@@ -65,33 +66,42 @@ public:
 
 
 protected:
-  MahalanobisTrimmingFilter();
+  MahalanobisTrimmingFilterThreaded();
 
   // Override since the filter needs all the data for the algorithm
-  void GenerateInputRequestedRegion() ITK_OVERRIDE;
+  //void GenerateInputRequestedRegion() ITK_OVERRIDE;
 
   // Override since the filter produces the entire dataset
-  void EnlargeOutputRequestedRegion(itk::DataObject *output) ITK_OVERRIDE;
+  //void EnlargeOutputRequestedRegion(itk::DataObject *output) ITK_OVERRIDE;
 
-  void GenerateData() ITK_OVERRIDE;
+  //void GenerateData() ITK_OVERRIDE;
+   void BeforeThreadedGenerateData();
+   void ThreadedGenerateData(const OutputImageRegionType& outputRegionForThread, itk::ThreadIdType threadId );
+   void AfterThreadedGenerateData();
+   //virtual void GenerateOutputInformation();
+   //virtual void AllocateOutputs();
 
 private:
-  MahalanobisTrimmingFilter(const Self &); //purposely not
+  MahalanobisTrimmingFilterThreaded(const Self &); //purposely not
                                                       // implemented
   void operator=(const Self &);                       //purposely not
 
   // implemented
 
   PointsContainerType  m_Points;
+  PixelsContainerType  m_Pixels;
   double               m_Alpha;
   OutputImagePixelType m_ReplaceValue;
   short                m_Class;
   int                  m_NbSamples;
   int                  m_Seed;
+  std::vector<int>     m_Counts;
+  bool                 m_Done;
+
 };
 
 #ifndef ITK_MANUAL_INSTANTIATION
-#include "MahalanobisTrimmingFilter.hxx"
+#include "MahalanobisTrimmingFilterThreaded.hxx"
 #endif
 
 

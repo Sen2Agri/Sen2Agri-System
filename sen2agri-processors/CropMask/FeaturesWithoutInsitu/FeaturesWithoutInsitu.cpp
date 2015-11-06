@@ -33,21 +33,11 @@
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 
-#include "FeatureExtraction.hxx"
+#include "FeaturesWithoutInsitu.hxx"
 
-
-typedef FeatureTimeSeriesFunctor<ImageType::PixelType>                    FeatureTimeSeriesFunctorType;
-typedef NDVIFunctor<ImageType::PixelType>                                 NDVIFunctorType;
-typedef NDWIFunctor<ImageType::PixelType>                                 NDWIFunctorType;
-typedef BrightnessFunctor<ImageType::PixelType>                           BrightnessFunctorType;
-
-typedef UnaryFunctorImageFilterWithNBands<FeatureTimeSeriesFunctorType>   FeatureTimeSeriesFilterType;
-typedef UnaryFunctorImageFilterWithNBands<NDVIFunctorType>                NDVIFilterType;
-typedef UnaryFunctorImageFilterWithNBands<NDWIFunctorType>                NDWIFilterType;
-typedef UnaryFunctorImageFilterWithNBands<BrightnessFunctorType>          BrightnessFilterType;
-
-typedef otb::ImageFileReader<ImageType>                                   ReaderType;
-
+typedef otb::ImageFileReader<ImageType>                                         ReaderType;
+typedef TemporalFeaturesNoInsituFunctor<ImageType::PixelType>                   TemporalFeaturesNoInsituFunctorType;
+typedef BinaryFunctorImageFilterWithNBands<TemporalFeaturesNoInsituFunctorType>  BinaryFunctorImageFilterWithNBandsType;
 
 //  Software Guide : EndCodeSnippet
 
@@ -72,7 +62,7 @@ namespace Wrapper
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
-class FeatureExtraction : public Application
+class TemporalFeaturesNoInsitu : public Application
 //  Software Guide : EndCodeSnippet
 {
 public:
@@ -81,7 +71,7 @@ public:
   // Software Guide : EndLatex
 
   //  Software Guide : BeginCodeSnippet
-  typedef FeatureExtraction Self;
+  typedef TemporalFeaturesNoInsitu Self;
   typedef Application Superclass;
   typedef itk::SmartPointer<Self> Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
@@ -95,7 +85,7 @@ public:
   itkNewMacro(Self)
 ;
 
-  itkTypeMacro(FeatureExtraction, otb::Application)
+  itkTypeMacro(TemporalFeaturesNoInsitu, otb::Application)
 ;
   //  Software Guide : EndCodeSnippet
 
@@ -123,10 +113,10 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-      SetName("FeatureExtraction");
+      SetName("TemporalFeaturesNoInsitu");
       SetDescription("The feature extraction step produces the relevant features for the classication.");
 
-      SetDocName("FeatureExtraction");
+      SetDocName("TemporalFeaturesNoInsitu");
       SetDocLongDescription("The feature extraction step produces the relevant features for the classication. The features are computed"
                             "for each date of the resampled and gaplled time series and concatenated together into a single multi-channel"
                             "image file. The selected features are the surface reflectances, the NDVI, the NDWI and the brightness.");
@@ -155,16 +145,12 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-    AddParameter(ParameterType_InputImage, "rtocr", "Resampled S2 L2A surface reflectances");
+    AddParameter(ParameterType_InputImage, "ndvi", "NDVI time series");
+    AddParameter(ParameterType_InputImage, "ts", "Initial time series");
+    AddParameter(ParameterType_InputFilename, "dates", "The dates for the input series, expressed as days from epoch");
 
-    AddParameter(ParameterType_OutputImage, "fts", "Feature time series");
-    MandatoryOff("fts");
-    AddParameter(ParameterType_OutputImage, "ndvi", "NDVI time series");
-    MandatoryOff("ndvi");
-    AddParameter(ParameterType_OutputImage, "ndwi", "NDWI time series");
-    MandatoryOff("ndwi");
-    AddParameter(ParameterType_OutputImage, "brightness", "Brightness time series");
-    MandatoryOff("brightness");
+    AddParameter(ParameterType_OutputImage, "tf", "Temporal features");
+
 
      //  Software Guide : EndCodeSnippet
 
@@ -174,8 +160,10 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-    SetDocExampleParameterValue("rtocr", "reflectances.tif");
-    SetDocExampleParameterValue("fts", "feature-time-series.tif");
+    SetDocExampleParameterValue("ndvi", "ndvi.tif");
+    SetDocExampleParameterValue("ts", "ts.tif");
+    SetDocExampleParameterValue("dates", "dates.txt");
+    SetDocExampleParameterValue("tf", "temporal_features.tif");
     //  Software Guide : EndCodeSnippet
   }
 
@@ -186,8 +174,11 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoUpdateParameters()
   {
-      m_imgReader = ReaderType::New();
-      m_bandsPerImage = 4;
+
+      m_NDVIReader = ReaderType::New();
+      m_TSReader = ReaderType::New();
+      m_filter = BinaryFunctorImageFilterWithNBandsType::New();
+
   }
   //  Software Guide : EndCodeSnippet
 
@@ -199,57 +190,51 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoExecute()
   {
-      // check that at least one of fts, ndvi, ndwi or brightness is set
-      if (!HasValue("fts") && !HasValue("ndvi") && !HasValue("ndwi") && !HasValue("brightness")) {
-          itkExceptionMacro("You must specify a value for at least one of 'fts', 'ndvi', 'ndwi' and 'brightness'!");
+
+      // Get the file that contains the dates
+      m_inDates.clear();
+      std::string datesFileName = GetParameterString("dates");
+      std::ifstream datesFile;
+      datesFile.open(datesFileName);
+      if (!datesFile.is_open()) {
+          itkExceptionMacro("Can't open dates file for reading!");
       }
 
-      //Read the input time series
-      m_imgReader->SetFileName(GetParameterString("rtocr"));
-      m_imgReader->UpdateOutputInformation();
+      // read the file and save the dates as second from Epoch to a vector
+      std::string value;
+      while (std::getline(datesFile, value)) {
+          m_inDates.push_back(std::stoi(value));
+      }
+      // close the file
+      datesFile.close();
 
-      int numImages = m_imgReader->GetOutput()->GetNumberOfComponentsPerPixel() / m_bandsPerImage;
+      //Read the input files
+      m_NDVIReader->SetFileName(GetParameterString("ndvi"));
+      m_NDVIReader->UpdateOutputInformation();
+      m_TSReader->SetFileName(GetParameterString("ts"));
+      m_TSReader->UpdateOutputInformation();
 
-      // verify what parameters are set
-      if(HasValue("fts")) {
-          m_ftsFilter = FeatureTimeSeriesFilterType::New();
-          m_ftsFilter->SetNumberOfOutputBands(numImages * (m_bandsPerImage + 3));
-          m_ftsFilter->SetFunctor(FeatureTimeSeriesFunctorType(m_bandsPerImage));
-          m_ftsFilter->SetInput(m_imgReader->GetOutput());
-          SetParameterOutputImage("fts", m_ftsFilter->GetOutput());
-      }
-      if(HasValue("ndvi")) {
-          m_ndviFilter = NDVIFilterType::New();
-          m_ndviFilter->SetNumberOfOutputBands(numImages);
-          m_ndviFilter->SetFunctor(NDVIFunctorType(m_bandsPerImage));
-          m_ndviFilter->SetInput(m_imgReader->GetOutput());
-          SetParameterOutputImage("ndvi", m_ndviFilter->GetOutput());
-      }
-      if(HasValue("ndwi")) {
-          m_ndwiFilter = NDWIFilterType::New();
-          m_ndwiFilter->SetNumberOfOutputBands(numImages);
-          m_ndwiFilter->SetFunctor(NDWIFunctorType(m_bandsPerImage));
-          m_ndwiFilter->SetInput(m_imgReader->GetOutput());
-          SetParameterOutputImage("ndwi", m_ndwiFilter->GetOutput());
-      }
-      if(HasValue("brightness")) {
-          m_brightnessFilter = BrightnessFilterType::New();
-          m_brightnessFilter->SetNumberOfOutputBands(numImages);
-          m_brightnessFilter->SetFunctor(BrightnessFunctorType(m_bandsPerImage));
-          m_brightnessFilter->SetInput(m_imgReader->GetOutput());
-          SetParameterOutputImage("brightness", m_brightnessFilter->GetOutput());
-      }
+      int outImages = 5;
+      int bpi = m_TSReader->GetOutput()->GetNumberOfComponentsPerPixel() / m_NDVIReader->GetOutput()->GetNumberOfComponentsPerPixel();
+
+      // connect the functor based filter
+      m_filter->SetNumberOfOutputBands(bpi*outImages);
+      m_filter->SetFunctor(TemporalFeaturesNoInsituFunctorType(outImages, bpi, m_inDates));
+
+      m_filter->SetInput(0, m_NDVIReader->GetOutput());
+      m_filter->SetInput(1, m_TSReader->GetOutput());
+
+      SetParameterOutputImage("tf", m_filter->GetOutput());
+
   }
   //  Software Guide :EndCodeSnippet
 
-  // The number of bands per image
-  int m_bandsPerImage;
+  // the dates for the images
+  std::vector<int> m_inDates;
 
-  ReaderType::Pointer                       m_imgReader;
-  FeatureTimeSeriesFilterType::Pointer      m_ftsFilter;
-  NDVIFilterType::Pointer                   m_ndviFilter;
-  NDWIFilterType::Pointer                   m_ndwiFilter;
-  BrightnessFilterType::Pointer             m_brightnessFilter;
+  ReaderType::Pointer                                m_NDVIReader;
+  ReaderType::Pointer                                m_TSReader;
+  BinaryFunctorImageFilterWithNBandsType::Pointer    m_filter;
 };
 }
 }
@@ -258,7 +243,7 @@ private:
 // Finally \code{OTB\_APPLICATION\_EXPORT} is called.
 // Software Guide : EndLatex
 //  Software Guide :BeginCodeSnippet
-OTB_APPLICATION_EXPORT(otb::Wrapper::FeatureExtraction)
+OTB_APPLICATION_EXPORT(otb::Wrapper::TemporalFeaturesNoInsitu)
 //  Software Guide :EndCodeSnippet
 
 
