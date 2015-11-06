@@ -24,14 +24,9 @@
  */
 template< typename TInputImage, typename TOutputImage >
 MahalanobisTrimmingFilter< TInputImage, TOutputImage >
-::MahalanobisTrimmingFilter()
+::MahalanobisTrimmingFilter() : m_Has11(false)
 {
-  m_Alpha = 0.01;
-  m_NbSamples = 0;
-  m_Seed = 0;
-  m_Class = 0;
   m_Points.clear();
-  m_ReplaceValue = itk::NumericTraits< OutputImagePixelType >::OneValue();
 }
 
 /**
@@ -43,167 +38,87 @@ MahalanobisTrimmingFilter< TInputImage, TOutputImage >
 ::PrintSelf(std::ostream & os, itk::Indent indent) const
 {
   this->Superclass::PrintSelf(os, indent);
-  os << indent << "Alpha: " << m_Alpha
-     << std::endl;
-  os << indent << "ReplaceValue: "
-     << static_cast< typename itk::NumericTraits< OutputImagePixelType >::PrintType >( m_ReplaceValue )
-     << std::endl;
 }
 
 template< typename TInputImage, typename TOutputImage >
 void
 MahalanobisTrimmingFilter< TInputImage, TOutputImage >
-::AddPoint(const IndexType & point)
+::SetPoints(const IndexMapType & points)
 {
-  m_Points.push_back(point);
-  this->Modified();
+  m_Points = points;
+  m_Has11 = true;
+  if (m_Points.find(11) == m_Points.end()) {
+      m_Has11 = false;
+  }
 }
 
-template< typename TInputImage, typename TOutputImage >
-void
-MahalanobisTrimmingFilter< TInputImage, TOutputImage >
-::ClearPoints()
-{
-  if ( this->m_Points.size() > 0 )
-    {
-    this->m_Points.clear();
-    this->Modified();
-    }
-}
-
-template< typename TInputImage, typename TOutputImage >
-void
-MahalanobisTrimmingFilter< TInputImage, TOutputImage >
-::GenerateInputRequestedRegion()
-{
-  Superclass::GenerateInputRequestedRegion();
-  if ( this->GetInput() )
-    {
-    InputImagePointer input =
-      const_cast< TInputImage * >( this->GetInput() );
-    input->SetRequestedRegionToLargestPossibleRegion();
-    }
-}
+//template< typename TInputImage, typename TOutputImage >
+//void
+//MahalanobisTrimmingFilter< TInputImage, TOutputImage >
+//::GenerateInputRequestedRegion()
+//{
+//  Superclass::GenerateInputRequestedRegion();
+//  if ( this->GetInput() )
+//    {
+//    InputImagePointer input =
+//      const_cast< TInputImage * >( this->GetInput() );
+//    input->SetRequestedRegionToLargestPossibleRegion();size()
+//    }
+//}
 
 
-template< typename TInputImage, typename TOutputImage >
-void
-MahalanobisTrimmingFilter< TInputImage, TOutputImage >
-::EnlargeOutputRequestedRegion(itk::DataObject *output)
-{
-  Superclass::EnlargeOutputRequestedRegion(output);
-  output->SetRequestedRegionToLargestPossibleRegion();
-}
+//template< typename TInputImage, typename TOutputImage >
+//void
+//MahalanobisTrimmingFilter< TInputImage, TOutputImage >
+//::EnlargeOutputRequestedRegion(itk::DataObject *output)
+//{
+//  Superclass::EnlargeOutputRequestedRegion(output);
+//  output->SetRequestedRegionToLargestPossibleRegion();
+//}
 
 template< typename TInputImage, typename TOutputImage >
 void
 MahalanobisTrimmingFilter< TInputImage, TOutputImage >
 ::GenerateData()
 {
-    itkDebugMacro(<< "Starting processing for class " << m_Class);
-  typedef typename InputImageType::PixelType InputPixelType;
+    typename Superclass::OutputImagePointer outputImage = this->GetOutput();
+    typedef typename OutputImageType::PixelType OutputPixelType;
 
-  typename Superclass::InputImageConstPointer inputImage  = this->GetInput();
-  typename Superclass::OutputImagePointer outputImage = this->GetOutput();
+    // Zero the output
+    OutputImageRegionType region = outputImage->GetRequestedRegion();
+    outputImage->SetBufferedRegion(region);
+    outputImage->Allocate();
+    outputImage->FillBuffer (static_cast<OutputPixelType>(-1));
 
-  // Zero the output
-  OutputImageRegionType region = outputImage->GetRequestedRegion();
-  outputImage->SetBufferedRegion(region);
-  outputImage->Allocate();
-  outputImage->FillBuffer (itk::NumericTraits< OutputImagePixelType >::ZeroValue());
-
-  const unsigned int dimension = inputImage->GetNumberOfComponentsPerPixel();
-
-  // Compute the chi-squared distribution
-  typedef itk::Statistics::ChiSquareDistribution      ChiSquareDistributionType;
-  const double chi = ChiSquareDistributionType::InverseCDF(1.0 - m_Alpha, dimension);
-
-
-  // Compute the statistics of the points
-  typedef itk::Statistics::ListSample< InputPixelType > SampleType;
-
-  typedef itk::Statistics::MahalanobisDistanceMembershipFunction<
-    InputPixelType
-    >  MahalanobisDistanceFunctionType;
-
-  typename MahalanobisDistanceFunctionType::Pointer distance = MahalanobisDistanceFunctionType::New();
-
-  typename SampleType::Pointer sample = SampleType::New();
-  sample->SetMeasurementVectorSize( dimension );
-
-  itk::SizeValueType removed_cnt = 1;
-  itkDebugMacro(<< "Number of points at the begining: " << m_Points.size());
-
-  while (m_Points.size() > 0 && removed_cnt > 0) {
-      // first add the points to the sample
-      sample->Clear();
-
-      typename PointsContainerType::iterator si = m_Points.begin();
-      typename PointsContainerType::iterator li = m_Points.end();
-      removed_cnt = 0;
-      while ( si != li )
-        {
-          sample->PushBack(inputImage->GetPixel(*si));
-          ++si;
+    // loop through each class
+    for (auto& points : m_Points) {
+        OutputPixelType pix;
+        if (points.first == 11 || points.first == 20 || (points.first == 10 && !m_Has11)) {
+            //Crop
+            pix = static_cast<OutputPixelType>(1);
+        } else {
+            //No Crop
+            pix = static_cast<OutputPixelType>(0);
         }
+        typename IndexVectorType::iterator si = points.second.begin();
+        typename IndexVectorType::iterator li = points.second.end();
 
-      // compute the mean and convergence of the sample
-      typedef itk::Statistics::CovarianceSampleFilter< SampleType >  CovarianceAlgorithmType;
-      typename CovarianceAlgorithmType::Pointer covarianceAlgorithm = CovarianceAlgorithmType::New();
-      covarianceAlgorithm->SetInput( sample );
-      covarianceAlgorithm->Update();
+        while (si != li) {
+            if (region.IsInside(*si)) {
+                // set the value of the pixel
+                outputImage->SetPixel(*si, pix);
 
-      distance->SetMean(covarianceAlgorithm->GetMean());
-      distance->SetCovariance(covarianceAlgorithm->GetCovarianceMatrix());
+                // move it to the end for removal.
+                std::swap(*si, *(--li));
+            } else {
+                si++;
+            }
+        }
+        // remove already placed pixels
+        points.second.erase(li, points.second.end());
 
-      si = m_Points.begin();
-      while (si != li) {
-          if (distance->Evaluate(inputImage->GetPixel(*si)) > chi) {
-              removed_cnt++;
-              // move to end
-              std::swap(*si, *(--li));
-              //si = m_Points.erase(si);
-          } else {
-              ++si;
-          }
-      }
-      // remove the last elements
-      m_Points.erase(li, m_Points.end());
-  }
-  itkDebugMacro(<< "Number of points at the end: " << m_Points.size());
-
-  // Reduce the number of pixels in oder to reduce the time of clasification
-  if (m_NbSamples > 0 && m_Points.size() > m_NbSamples) {
-
-      typename PointsContainerType::iterator st = m_Points.begin();
-      int pixSel = 0;
-      int size = m_Points.size();
-      // initialise the random number generator
-      std::srand(m_Seed);
-      while (pixSel < m_NbSamples) {
-          typename PointsContainerType::iterator r = st;
-          float rnd = (float)std::rand() / (float)RAND_MAX;
-          std::advance(r, (int)(rnd * (float)size));
-          std::swap(*st, *r);
-          ++st;
-          --size;
-          ++pixSel;
-      }
-
-      // Remove unselected pixels
-      m_Points.erase(st, m_Points.end());
-  }
-  itkDebugMacro(<< "Writing raster. ");
-
-  // Set in the ouput image only the pixels which passed this filter
-  typename PointsContainerType::const_iterator si = m_Points.begin();
-  typename PointsContainerType::const_iterator li = m_Points.end();
-  while(si != li) {
-      outputImage->SetPixel(*si, m_ReplaceValue);
-      ++si;
-  }
-  itkDebugMacro(<< "Finished processing class: " << m_Class);
-}
+    }
+ }
 
 #endif // TEMPORALRESAMPLING_HXX
 
