@@ -61,6 +61,7 @@ fts=os.path.join(args.outdir, "feature-time-series.tif")
 statistics=os.path.join(args.outdir, "statistics.xml")
 confmatout=os.path.join(args.outdir, "confusion-matrix.csv")
 model=os.path.join(args.outdir, "model.txt")
+crop_type_map_uncut=os.path.join(args.outdir, "crop_type_map_uncut.tif")
 crop_type_map=os.path.join(args.outdir, "crop_type_map.tif")
 confusion_matrix_validation=os.path.join(args.outdir, "confusion-matrix-validation.csv")
 quality_metrics=os.path.join(args.outdir, "quality-metrics.txt")
@@ -182,7 +183,7 @@ print "TrainImagesClassifier done at " + str(datetime.datetime.now())
 
 #Image Classifier
 print "Executing ImageClassifier at " + str(datetime.datetime.now())
-icCmdLine = "otbcli_ImageClassifier -in "+fts+" -imstat "+statistics+" -model "+model+" -out "+crop_type_map
+icCmdLine = "otbcli_ImageClassifier -in "+fts+" -imstat "+statistics+" -model "+model+" -out "+crop_type_map_uncut + " int16"
 if os.path.isfile(crop_mask) :
    icCmdLine += " -mask "+crop_mask
 print icCmdLine
@@ -191,11 +192,26 @@ result = os.system(icCmdLine)
 if result != 0 :
    print "Error running ImageClassifier"
    exit(1)
+
+os.system("rm " + fts)
 print "ImageClassifier done at " + str(datetime.datetime.now())
+
+# gdalwarp
+print "Executing gdalwarp at " + str(datetime.datetime.now())
+
+gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata \"-10000\" -overwrite -cutline "+shape+" -crop_to_cutline "+crop_type_map_uncut+" "+crop_type_map
+print gwCmdLine
+result = os.system(gwCmdLine)
+
+if result != 0 :
+   print "Error running gdalwarp"
+   exit(1)
+
+print "gdalwarp done at " + str(datetime.datetime.now())
 
 #Validation
 print "Executing ComputeConfusionMatrix at " + str(datetime.datetime.now())
-vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+crop_type_map+" -out "+confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CODE -nodatalabel 10 > "+quality_metrics
+vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+crop_type_map+" -out "+confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CODE -nodatalabel -10000 > "+quality_metrics
 print vdCmdLine
 result = os.system(vdCmdLine)
 

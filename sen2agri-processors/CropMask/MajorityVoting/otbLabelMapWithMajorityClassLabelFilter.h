@@ -87,8 +87,6 @@ void SetClassifImage(const TInputImage2 *input)
   m_ClassifImage=input;
 }
 
-
-
   /** Set noDataSegValue */
   itkSetMacro(NoDataSegValue, LabelType);
   /** Get noDataSegValue */
@@ -99,7 +97,10 @@ void SetClassifImage(const TInputImage2 *input)
   /** Get noDataClassifValue */
   itkGetConstReferenceMacro(NoDataClassifValue, InputImagePixelType2);
 
-
+  /** Set MinArea */
+  itkSetMacro(MinArea, int);
+  /** Get MinArea */
+  itkGetConstReferenceMacro(MinArea, int);
  
  protected:
  LabelMapWithMajorityClassLabelFilter();
@@ -118,6 +119,7 @@ void SetClassifImage(const TInputImage2 *input)
  const TInputImage2 * m_ClassifImage;
  LabelType m_NoDataSegValue;
  InputImagePixelType2 m_NoDataClassifValue;  
+ int m_MinArea;
 
 
 }; // end of class
