@@ -45,6 +45,11 @@ otb_create_application(
   NAME           NdviRviExtraction
   SOURCES        otbNdviRviExtraction.cpp
   LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
+
+otb_create_application(
+  NAME           NdviRviExtraction2
+  SOURCES        otbNdviRviExtraction2.cpp
+  LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
   
 otb_create_application(
   NAME           TimeSeriesBuilder
