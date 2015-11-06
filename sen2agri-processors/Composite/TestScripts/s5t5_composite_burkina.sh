@@ -23,7 +23,7 @@ inputXML+="/mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150729_N2
 inputXML+="/mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150823_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150823_N2A_BurkinaD0000B0000.xml "
 
 L3A_DATE="20150525"
-HALF_SYNTHESIS="25"
+HALF_SYNTHESIS="70"
 #end of USER modif
 
 if [ $# -lt 4 ]
