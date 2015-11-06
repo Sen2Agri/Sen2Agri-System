@@ -3,7 +3,7 @@
 _____________________________________________________________________________
 
    Program:         MACCS
- 
+
    Author:          CS SI, (Alexia Mondot alexia.mondot@c-s.fr)
    Copyright:       CS SI
    Licence:         See Licence.txt
@@ -20,7 +20,7 @@ _____________________________________________________________________________
 
   $Id: $
   _____________________________________________________________________________
-  
+
 This script allows to create a DTM product according to a RE tile.
 It produces the following files :
     - DTM at L2 resolution
@@ -30,7 +30,7 @@ It produces the following files :
     - Slope at L2_Coarse resolution
     - Aspect at L2 resolution
     - Aspect at L2_Coarse resolution
-    
+
 Usage :
     python processing.py -i path/to/my/product/directory - -o path/to/my/output/dir
 """
@@ -543,7 +543,7 @@ def get_DTM(data, dem_tiles, output_dem_directory, tile_id, extent_wgs84_vector)
         logger.debug("output_vrt : " + output_vrt)
         logger.debug("Bulding vrt")
         command_build_vrt = "gdalbuildvrt " + output_vrt
-        for srtm in glob.glob(os.path.join(dem_tiles, "*.TIF")):
+        for srtm in glob.glob(os.path.join(dem_tiles, "*.tif")):
             command_build_vrt += " " + srtm
         logger.info(command_build_vrt)
         os.system(command_build_vrt)
@@ -897,7 +897,7 @@ logger.info("Ratio ratio_l2 : " + str(ratio_l2) + " ; ratio ratio_l2_coarse : " 
 logger.debug("######## END MANAGING ARGUMENTS ########")
 # ####### END MANAGING ARGUMENTS ########
 
-dtm_l2_no_data_to_zero, dtm_l2_coarse_no_data_to_zero, dtm_temp = get_DTM(input_image, ouput_product_dir, output_dem_directory, tile_id, extent_wgs84_vector)
+dtm_l2_no_data_to_zero, dtm_l2_coarse_no_data_to_zero, dtm_temp = get_DTM(input_image, working_dir, output_dem_directory, tile_id, extent_wgs84_vector)
 
 # dtm_l2_coarse_no_data_to_zero = os.path.join(output_dem_directory, tile_id + "_ALC.TIF")
 wb = get_wb(input_image, output_dem_directory, working_dir, dtm_l2_coarse_no_data_to_zero, tile_id)

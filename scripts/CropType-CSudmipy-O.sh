@@ -18,4 +18,4 @@
 /mnt/Imagery_S2A/L2A/Spot4-T5/CSudmipy-O_LEVEL2A/SPOT4_HRVIR_XS_20130611_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130611_N2A_CSudmipy-OD0000B0000.xml \
 /mnt/Imagery_S2A/L2A/Spot4-T5/CSudmipy-O_LEVEL2A/SPOT4_HRVIR_XS_20130616_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130616_N2A_CSudmipy-OD0000B0000.xml \
 -t0 20130216 -tend 20130616 -rate 5 -radius 100 -classifier rf -rseed 0 -mask /mnt/data/csudmipy/CSudmipy-O-mask/crop_mask.tif -pixsize 20 \
--outdir /mnt/data/csudmipy/CSudmipy-O
+-outdir /mnt/data/csudmipy/CSudmipy-O-type

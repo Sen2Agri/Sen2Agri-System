@@ -1,5 +1,7 @@
 #! /bin/bash
 
+USE_COMPRESSION=1
+
 function try {
     echo
     echo
@@ -139,7 +141,11 @@ do
     #todo... search for previous L3A product?
     try otbcli UpdateSynthesis2 "$COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/" -in "$OUT_IMG_BANDS" -bmap "$FULL_BANDS_MAPPING" -xml "$xml" $PREV_L3A -csm "$OUT_CLD" -wm "$OUT_WAT" -sm "$OUT_SNOW" -wl2a "$OUT_TOTAL_WEIGHT_FILE" -out "$mod"
 
-    try otbcli CompositeSplitter2 "$COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/" -in "$mod" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -outweights "$out_w" -outdates "$out_d" -outrefls "$out_r" -outflags "$out_f" -outrgb "$out_rgb"
+    if [ USE_COMPRESSION == 0 ] ; then
+        try otbcli CompositeSplitter2 "$COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/" -in "$mod" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -outweights "$out_w" -outdates "$out_d" -outrefls "$out_r" -outflags "$out_f" -outrgb "$out_rgb"    
+    else
+        try otbcli CompositeSplitter2 "$COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/" -in "$mod" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -outweights "$out_w?gdal:co:COMPRESS=DEFLATE" -outdates "$out_d?gdal:co:COMPRESS=DEFLATE" -outrefls "$out_r?gdal:co:COMPRESS=DEFLATE" -outflags "$out_f?gdal:co:COMPRESS=DEFLATE" -outrgb "$out_rgb?gdal:co:COMPRESS=DEFLATE"
+    fi
 
     try otbcli ProductFormatter "$PRODUCT_FORMATER_OTB_LIBS_ROOT"  -destroot "$OUT_FOLDER" -fileclass SVT1 -level L3A -timeperiod 20130228_20130615 -baseline 01.00 -processor composite -processor.composite.refls "$out_r" -processor.composite.weights "$out_w" -processor.composite.flags "$out_f" -processor.composite.dates "$out_d" -processor.composite.rgb "$out_rgb" -il "$xml" -gipp "$PARAMS_TXT"
 
@@ -149,6 +155,6 @@ do
 echo "-----------------------------------------------------------"
 done
 
-#rm -fr $OUT_SPOT_MASKS $OUT_IMG_BANDS $OUT_IMG_BANDS_ALL $OUT_CLD $OUT_WAT $OUT_SNOW $OUT_AOT $OUT_WEIGHT_AOT_FILE $OUT_WEIGHT_CLOUD_FILE $OUT_TOTAL_WEIGHT_FILE
+rm -fr $OUT_SPOT_MASKS $OUT_IMG_BANDS $OUT_IMG_BANDS_ALL $OUT_CLD $OUT_WAT $OUT_SNOW $OUT_AOT $OUT_WEIGHT_AOT_FILE $OUT_WEIGHT_CLOUD_FILE $OUT_TOTAL_WEIGHT_FILE
 
 

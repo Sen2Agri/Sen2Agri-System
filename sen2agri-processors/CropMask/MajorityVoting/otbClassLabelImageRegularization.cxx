@@ -90,9 +90,15 @@ private:
 
     AddParameter(ParameterType_Int, "nodataclassifvalue", "The label that corresponds to no data within the classification image");
     SetParameterDescription("nodataclassifvalue", "The label that corresponds to no data within the classification image");
-    SetDefaultParameterInt("nodataclassifvalue", 0);
-    SetMinimumParameterIntValue("nodataclassifvalue", 0);
+    SetDefaultParameterInt("nodataclassifvalue", -10000);
+    SetMinimumParameterIntValue("nodataclassifvalue", -10000);
     MandatoryOff("nodataclassifvalue");
+
+    AddParameter(ParameterType_Int, "minarea", "The minimum number of pixels in an area where, for equal number of crop and nocrop samples, the area is still declared as crop.");
+    SetParameterDescription("minarea", "The minimum number of pixels in an area where, for equal number of crop and nocrop samples, the area is still declared as crop.");
+    SetDefaultParameterInt("minarea", 20);
+    SetMinimumParameterIntValue("minarea", 0);
+    MandatoryOff("minarea");
 
     // Doc example parameter settings
     SetDocExampleParameterValue("inclass", "classImage.tif");
@@ -121,6 +127,7 @@ private:
     //Settings
     m_ClassRegularization->SetNoDataSegValue(GetParameterInt("nodatasegvalue"));
     m_ClassRegularization->SetNoDataClassifValue(GetParameterInt("nodataclassifvalue"));
+    m_ClassRegularization->SetMinArea(GetParameterInt("minarea"));
 
     //Pipeline
     m_Image2LabelMap->SetInput(inputS);

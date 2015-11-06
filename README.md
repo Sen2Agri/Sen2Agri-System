@@ -1,16 +1,16 @@
 # Prerequisites
 
     yum install epel-release
-    yum install cmake boost-devel curl-devel expat-devel fftw-devel gdal-devel geos-devel libgeotiff-devel libjpeg-turbo-devel libsvm-devel muParser-devel opencv-devel openjpeg-devel pcre-devel libpng-devel proj-devel python-devel qt-devel sqlite-devel swig libtiff-devel tinyxml-devel qt5-qtbase-devel qt5-qtbase-postgresql gsl-devel
+    yum install git gcc gcc-c++ cmake boost-devel curl-devel expat-devel fftw-devel gdal-devel geos-devel libgeotiff-devel libjpeg-turbo-devel libsvm-devel muParser-devel opencv-devel openjpeg-devel pcre-devel libpng-devel proj-devel python-devel qt-devel sqlite-devel swig libtiff-devel tinyxml-devel qt5-qtbase-devel qt5-qtbase-postgresql gsl-devel
 
 # Compiling OTB
 
-    git clone https://github.com/GrayShade/OTB.git # fixes-5.0 branch
+    git clone --depth=1 https://github.com/GrayShade/OTB.git # fixes-5.0 branch
     mkdir OTB-BUILD
     cd OTB-BUILD
     ccmake ../OTB/SuperBuild
 
-Press `c` (configure), `e` (exit the warning screen), `t` (toggle advanced mode). Change:
+Press `c` (configure), ignore the warnings, press `e` (exit the warning screen), `t` (toggle advanced mode). Change:
 
     CMAKE_BUILD_TYPE        RelWithDebInfo
 
@@ -42,9 +42,9 @@ Press `c` (configure), `e` (exit the warning screen), `t` (toggle advanced mode)
     USE_SYSTEM_SWIG         ON
     USE_SYSTEM_TIFF         ON
     USE_SYSTEM_TINYXML      ON
-    USE_SYSTEM_XLIB         ON
+    USE_SYSTEM_ZLIB         ON
 
-Press `c`, `e`, `c`, `e`. Ignore the OpenThreads warning. Press `g` (generate and exit).
+Press `c`, `e`, `c`. Ignore the OpenThreads warning. Press `e`, `g` (generate and exit).
 
     sudo make
 

@@ -2,8 +2,6 @@
 #define TRIMMING_HXX
 
 #include "itkImageToImageFilter.h"
-#include <list>
-
 
 template< typename TInputImage, typename TOutputImage >
 class MahalanobisTrimmingFilter:

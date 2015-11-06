@@ -36,6 +36,7 @@ LabelMapWithMajorityClassLabelFilter < TInputImage, TInputImage2 >::LabelMapWith
   	// Internal parameters
 	m_NoDataSegValue=static_cast<LabelType>(0);
   	m_NoDataClassifValue=static_cast<InputImagePixelType2>(0);
+    m_MinArea = 20;
 
 	/*m_ClassifImage = GetClassifImage();
 
@@ -105,7 +106,7 @@ void LabelMapWithMajorityClassLabelFilter < TInputImage, TInputImage2 >::Threade
 	    	{
 	      		//std::cout << "greatest label is undifined (" << extUndifinedValue << ")" << std::endl;
                 // choose one between 0 and 1
-            labelObject->SetAttribute( labelSize > 20 ? 1 : 0 );
+            labelObject->SetAttribute( labelSize >= m_MinArea ? 1 : 0 );
 	   	}
 
 	}

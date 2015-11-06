@@ -19,4 +19,4 @@
 /mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000.xml \
 /mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000.xml \
 -t0 20130206 -tend 20130616 -rate 5 -radius 100 -classifier rf -rseed 0 -mask /mnt/data/ukraine/Ukraine-mask/crop_mask.tif -pixsize 20 \
--outdir /mnt/data/ukraine/Ukraine
+-outdir /mnt/data/ukraine/Ukraine-type

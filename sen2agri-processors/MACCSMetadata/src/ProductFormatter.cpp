@@ -152,10 +152,6 @@ private:
         AddParameter(ParameterType_String, "level", "Product level");
         AddParameter(ParameterType_String, "timeperiod", "First product date and last product date");
         AddParameter(ParameterType_String, "baseline", "Processing baseline");
-        /*
-        AddParameter(ParameterType_InputFilenameList, "rasters", "Raster files list");
-        AddParameter(ParameterType_InputFilenameList, "masks", "Masks files list");*/
-
 
         AddParameter(ParameterType_Choice, "processor", "Processor");
         SetParameterDescription("processor", "Specifies the product type");
@@ -214,13 +210,10 @@ private:
         SetDocExampleParameterValue("destroot", "/home/atrasca/sen2agri/sen2agri-processors-build/Testing/Temporary/Dest");
         SetDocExampleParameterValue("fileclass", "SVT1");
         SetDocExampleParameterValue("level", "L3A");
-        SetDocExampleParameterValue("timeperiod", "V20130228_20130615");
+        SetDocExampleParameterValue("timeperiod", "20130228_20130615");
         SetDocExampleParameterValue("baseline", "01.00");
-        /*SetDocExampleParameterValue("rasters", "file1.tif file2.tif file3.tif");
-        SetDocExampleParameterValue("masks", "mask1.tif mask2.tif");*/
-        SetDocExampleParameterValue("il", "image1.xml image2.xml");
-        //SetDocExampleParameterValue("preview", "image1.jpg image2.jpg");
-        SetDocExampleParameterValue("gipp", "gippFile1.xml gippFile2");
+        SetDocExampleParameterValue("il", "image1.xml image2.hdr");
+        SetDocExampleParameterValue("gipp", "gippFile1.xml gippFile2.txt");
 
   }
 
@@ -229,10 +222,6 @@ private:
   }
   void DoExecute()
   {
-      /*std::vector<std::string> channels = {"Channel1", "Channel2", "Channel3"};
-      generateQuicklook("/home/atrasca/sen2agri/sen2agri-processors-build/Testing/Src/S2A_OPER_SSC_PDTIMG_L2VALD_15SVD____20091211_SRE_R1.DBL.TIF", channels);
-      return;*/
-
       //get file class
       m_strFileClass = this->GetParameterString("fileclass");
 
@@ -345,9 +334,6 @@ private:
           }
       }
 
-      // Get preview files list
-      //m_previewList = this->GetParameterStringList("preview");
-
       //read .xml or .HDR files to fill the metadata structures
       // Get the list of input files
       std::vector<std::string> descriptors = this->GetParameterStringList("il");
@@ -367,10 +353,14 @@ private:
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "{creation_date}", strCreationDate);
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "{time_period}", m_strTimePeriod);
       std::string strTileName = strMainProductFolderName;
-      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{product_descriptor}", "");
+
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{tile_id}", "");
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{processing_baseline}", "");
-      m_strProductMetadataFilePath = strMainProductFolderName;
+
+      m_strProductFileName = ReplaceString(strMainProductFolderName, "{product_descriptor}", PRODUCT_DESCRIPTOR);
+
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{product_descriptor}", "");
+      m_strProductDirectoryName = strMainProductFolderName;
 
       /*strMainProductFolderName = PROJECT_ID;
 
@@ -413,10 +403,8 @@ private:
           //create product metadata file
           if(bResult)
           {
-              std::string strProductMetadataFilePath;
-              strProductMetadataFilePath = strMainFolderFullPath + "/" + ReplaceString(m_strProductMetadataFilePath, MAIN_FOLDER_CATEG, METADATA_CATEG) + ".xml";
               TransferAndRenameGIPPFiles();
-              generateProductMetadataFile(strProductMetadataFilePath);
+              generateProductMetadataFile(strMainFolderFullPath + "/" + ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, METADATA_CATEG) + ".xml");
 
           }
 
@@ -429,8 +417,6 @@ private:
   std::string m_strTimePeriod;
   std::string m_strDestRoot;
   std::string m_strBaseline;
-  /*std::vector<std::string> m_rastersList;
-  std::vector<std::string> m_masksList;*/
   std::vector<std::string> m_previewList;
   std::vector<std::string> m_GIPPList;
   std::string m_strTilePath;
@@ -438,25 +424,23 @@ private:
   TileFileMetadata m_tileMetadata;
   std::vector<rasterInfo> m_rasterInfoList;
   std::string m_strTileNameWithoutExt;
+  std::string m_strProductDirectoryName;
 
   bool m_bIsHDR; /* true if is  loaded a .HDR fiel, false if is a .xml file */
   std::string m_strTileNameRoot;
-  std::string m_strProductMetadataFilePath;
+  std::string m_strProductFileName;
   std::vector<geoProductInfo> m_geoProductInfo;
 
   // Get current date/time, format is YYYYMMDDThhmmss
-  const std::string currentDateTimeFormattted(std::string strFormat) {
-      time_t     now = time(0);
-      struct tm  tstruct;
+  const std::string currentDateTimeFormattted(const std::string &strFormat) {
       char       buf[80];
-      tstruct = *localtime(&now);
-
-      strftime(buf, sizeof(buf), strFormat.c_str(), &tstruct);
-
+      std::time_t now = std::time(NULL);
+      std::strftime(buf, sizeof(buf), strFormat.c_str(), std::localtime(&now));
       return buf;
   }
 
-    bool mkPath(const std::string &path)
+  //creates a directory given by full path 'path'
+  bool mkPath(const std::string &path)
   {
       bool bSuccess = false;
       int nRC = ::mkdir( path.c_str(), 0775 );
@@ -561,9 +545,6 @@ private:
               m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.BandList.emplace_back(bandEl);
            }
       }
-
-      //TODO - for the rest of products
-
   }
 
   Coord PointFromVector(const FloatVectorImageType::VectorType &v)
@@ -693,7 +674,6 @@ private:
       TileSize tileSizeEl;
       TileGeoposition tileGeoposition;
       int iResolution;
-      bool bFootPrintDone = false;
       bool bResolutionExistingAlready = false;
       bool bGeoPositionExistingAlready = false;
       bool bPreview = !m_previewList.empty();
@@ -702,6 +682,7 @@ private:
 
       std::string strTile = strTileName;
       strTile = ReplaceString(strTile, "_N" + m_strBaseline, "");
+      strTile = ReplaceString(strTile, TILE_LEGACY_FOLDER_CATEG, METADATA_CATEG);
 
       m_tileMetadata.TileID = strTile;
 
@@ -794,38 +775,25 @@ private:
               geoProductInfoEl.iResolution = iResolution;
               geoProductInfoEl.rasterType = rasterFileEl.iRasterType;
 
-              /*if((((rasterFileEl.iRasterType == REFLECTANCE_RASTER) && (iResolution == 10)) || (rasterFileEl.iRasterType != REFLECTANCE_RASTER)) && (!bFootPrintDone))
-              {*/
-                  const auto &extent = GetExtent(output.GetPointer());
-                  if (extent.size()) {
-                      for (const auto &p : extent) {
-                          //std::cerr << p.x << ' ' << p.y << std::endl;
-                          //m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(p.x);
-                          //m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(p.y);
-                          geoProductInfoEl.PosList.emplace_back(p.x);
-                          geoProductInfoEl.PosList.emplace_back(p.y);
-                      }
-                      //std::cerr << "----\n";
-                      //add again first point coordinates
-                      //m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(extent[0].x);
-                      //m_productMetadata.GeometricInfo.ProductFootprint.ExtPosList.emplace_back(extent[0].y);
-                      geoProductInfoEl.PosList.emplace_back(extent[0].x);
-                      geoProductInfoEl.PosList.emplace_back(extent[0].y);
+              const auto &extent = GetExtent(output.GetPointer());
+              if (extent.size()) {
+                  for (const auto &p : extent) {
+                      //std::cerr << p.x << ' ' << p.y << std::endl;
+                      geoProductInfoEl.PosList.emplace_back(p.x);
+                      geoProductInfoEl.PosList.emplace_back(p.y);
                   }
+                  //std::cerr << "----\n";
+                  //add again first point coordinates
+                  geoProductInfoEl.PosList.emplace_back(extent[0].x);
+                  geoProductInfoEl.PosList.emplace_back(extent[0].y);
+              }
 
 
-                  /*m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon = extent[1].x;
-                  m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLat = extent[1].y;
-                  m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLon = extent[3].x;
-                  m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLat = extent[3].y;*/
-                  geoProductInfoEl.AreaOfInterest.LowerCornerLon = extent[1].x;
-                  geoProductInfoEl.AreaOfInterest.LowerCornerLat = extent[1].y;
-                  geoProductInfoEl.AreaOfInterest.UpperCornerLon = extent[3].x;
-                  geoProductInfoEl.AreaOfInterest.UpperCornerLat = extent[3].y;
-                  m_geoProductInfo.emplace_back(geoProductInfoEl);
-
-                  bFootPrintDone = false;
-               //}
+              geoProductInfoEl.AreaOfInterest.LowerCornerLon = extent[1].x;
+              geoProductInfoEl.AreaOfInterest.LowerCornerLat = extent[1].y;
+              geoProductInfoEl.AreaOfInterest.UpperCornerLon = extent[3].x;
+              geoProductInfoEl.AreaOfInterest.UpperCornerLat = extent[3].y;
+              m_geoProductInfo.emplace_back(geoProductInfoEl);
 
           }
       }
@@ -1105,7 +1073,7 @@ private:
       GIPPInfo GIPPEl;
 
       for (const auto &gippFileEl : m_GIPPList) {
-          strNewGIPPFileName = m_strProductMetadataFilePath;
+          strNewGIPPFileName = m_strProductFileName;
           strNewGIPPFileName = ReplaceString(strNewGIPPFileName, MAIN_FOLDER_CATEG, PARAMETER_CATEG);
           strNewGIPPFileName = strNewGIPPFileName + "." + extractExtension(gippFileEl);
 
@@ -1115,7 +1083,7 @@ private:
           m_productMetadata.AuxiliaryDataInfo.GIPPList.emplace_back(GIPPEl);
 
            //rasters file are copied to tileDirectory/IMG_DATA or QI_DATA
-          CopyFile(m_strDestRoot + "/" + m_strProductMetadataFilePath + "/" + AUX_DATA_FOLDER_NAME + "/" + strNewGIPPFileName, gippFileEl);
+          CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + AUX_DATA_FOLDER_NAME + "/" + strNewGIPPFileName, gippFileEl);
     }
   }
 
@@ -1127,8 +1095,7 @@ private:
       std::vector<std::string> strChannelsList;
 
       if ((m_strProductLevel.compare("L2A") == 0) ||
-          (m_strProductLevel.compare("L3A") == 0) ||
-          (m_strProductLevel.compare("L3B") == 0))
+          (m_strProductLevel.compare("L3A") == 0) )
       {
           iChannelNo = 3;
       }
@@ -1140,20 +1107,17 @@ private:
         strChannelsList.emplace_back("Channel" + std::to_string(j));
       }
 
-      //std::cout << "m_previewListCount = " << m_previewList.size() << std::endl;
-
       for (const auto &previewFileEl : m_previewList) {
 
             //for the moment the preview file for product and tile are the same
 
-            //build producty preview file name
-             strProductPreviewFullPath = m_strProductMetadataFilePath;
-             strProductPreviewFullPath = ReplaceString(strProductPreviewFullPath, MAIN_FOLDER_CATEG, QUICK_L0OK_IMG_CATEG);
+            //build product preview file name
+             strProductPreviewFullPath = ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, QUICK_L0OK_IMG_CATEG);
              strProductPreviewFullPath = strProductPreviewFullPath + JPEG_EXTENSION;
 
              m_productMetadata.GeneralInfo.ProductInfo.PreviewImageURL = strProductPreviewFullPath;
 
-             strProductPreviewFullPath = m_strDestRoot + "/" + m_strProductMetadataFilePath + "/" + strProductPreviewFullPath;
+             strProductPreviewFullPath = m_strDestRoot + "/" + m_strProductDirectoryName + "/" + strProductPreviewFullPath;
 
              std::cout << "ProductPreviewFullPath = " << strProductPreviewFullPath << std::endl;
 
@@ -1199,17 +1163,17 @@ private:
   {
       /* the source is a HDR file */
 
-    SpecialValues specialValue;
-    specialValue.SpecialValueText = "NODATA";
-    specialValue.SpecialValueIndex = metadata->ImageInformation.NoDataValue;
-    m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
+    //SpecialValues specialValue;
+    //specialValue.SpecialValueText = "NODATA";
+    //specialValue.SpecialValueIndex = metadata->ImageInformation.NoDataValue;
+    //m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
 
     //???? TODO
-    specialValue.SpecialValueIndex = "1";
-    specialValue.SpecialValueText = "NOTVALID";
-    m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
+    //specialValue.SpecialValueIndex = "1";
+    //specialValue.SpecialValueText = "NOTVALID";
+    //m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
 
-    m_productMetadata.QualityIndicatorsInfo.CloudCoverage = "";
+    //m_productMetadata.QualityIndicatorsInfo.CloudCoverage = "";
   }
 
   void FillMetadataInfoForSPOT(std::unique_ptr<SPOT4Metadata> &metadata)

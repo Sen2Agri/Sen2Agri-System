@@ -54,6 +54,17 @@ function ut_output_info {
 
 }
 
+function timed_exec {
+    IN_PARAM="$1"
+    echo "EXECUTING: $IN_PARAM" >> "$OUT_FOLDER/Execution_Times.txt"
+    start=`date +%s`
+    ($IN_PARAM)
+    end=`date +%s`
+
+    execution_time=$((end-start))
+    echo -e "\nExecution took: $execution_time seconds\n\n" >> "$OUT_FOLDER/Execution_Times.txt"
+}
+
 IFS=' ' read -a inputXML <<< "$2"
 RESOLUTION=$3
 
@@ -71,6 +82,7 @@ PRODUCT_FORMATER_OTB_LIBS_ROOT="$VEG_STATUS_OTB_LIBS_ROOT/../MACCSMetadata/src"
 
 "$9/lai_model.sh" "$VEG_STATUS_OTB_LIBS_ROOT" "$RSR_FILENAME" $SOLAR_ZENITH_ANGLE $SENSOR_ZENITH_ANGLE $RELATIVE_AZIMUTH_ANGLE "$MODELS_FOLDER"
 
+echo "Starting tests ..." > "$OUT_FOLDER/Execution_Times.txt"
 
 RESOLUTION_OPTION="-outres $RESOLUTION"
 if [[ $RESOLUTION != 10 && $RESOLUTION != 20 ]]
@@ -140,15 +152,15 @@ for xml in "${inputXML[@]}"
 do
     echo "$xml" >> $PARAMS_TXT
     
-    try otbcli NdviRviExtraction $IMG_INV_OTB_LIBS_ROOT -xml $xml $RESOLUTION_OPTION -fts $OUT_NDVI_RVI
+    timed_exec "try otbcli NdviRviExtraction $IMG_INV_OTB_LIBS_ROOT -xml $xml $RESOLUTION_OPTION -fts $OUT_NDVI_RVI"
 
-    try otbcli GetLaiRetrievalModel $IMG_INV_OTB_LIBS_ROOT -xml $xml -ilmodels $MODELS_INPUT_LIST -ilerrmodels $ERR_MODELS_INPUT_LIST -outm $MODEL_FILE -outerr $ERR_MODEL_FILE
+    timed_exec "try otbcli GetLaiRetrievalModel $IMG_INV_OTB_LIBS_ROOT -xml $xml -ilmodels $MODELS_INPUT_LIST -ilerrmodels $ERR_MODELS_INPUT_LIST -outm $MODEL_FILE -outerr $ERR_MODEL_FILE"
     
     CUR_OUT_LAI_IMG=${OUT_LAI_IMG//[#]/$cnt}
     CUR_OUT_LAI_ERR_IMG=${OUT_LAI_ERR_IMG//[#]/$cnt}
     
-    try otbcli BVImageInversion $IMG_INV_OTB_LIBS_ROOT -in $OUT_NDVI_RVI -modelfile $MODEL_FILE -out $CUR_OUT_LAI_IMG
-    try otbcli BVImageInversion $IMG_INV_OTB_LIBS_ROOT -in $OUT_NDVI_RVI -modelfile $ERR_MODEL_FILE -out $CUR_OUT_LAI_ERR_IMG
+    timed_exec "try otbcli BVImageInversion $IMG_INV_OTB_LIBS_ROOT -in $OUT_NDVI_RVI -modelfile $MODEL_FILE -out $CUR_OUT_LAI_IMG"
+    timed_exec "try otbcli BVImageInversion $IMG_INV_OTB_LIBS_ROOT -in $OUT_NDVI_RVI -modelfile $ERR_MODEL_FILE -out $CUR_OUT_LAI_ERR_IMG"
     
     cnt=$((cnt+1))
 echo "-----------------------------------------------------------"
@@ -171,8 +183,8 @@ while [  $i -lt $cnt ]; do
 done
 
 # Create the LAI and Error time series
-try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_LAI_PARAM -out $OUT_LAI_TIME_SERIES
-try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_ERR_PARAM -out $OUT_ERR_TIME_SERIES
+timed_exec "try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_LAI_PARAM -out $OUT_LAI_TIME_SERIES"
+timed_exec "try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_ERR_PARAM -out $OUT_ERR_TIME_SERIES"
 
 if [[ $# == 10 && "$10" == "tc2-1" ]] ; then
 ut_output_info "$OUT_LAI_TIME_SERIES" 5 "./qr_cmp_southafrica/LAI_time_series.tif" 20008400
@@ -181,7 +193,7 @@ exit
 fi
 
 # Compute the reprocessed time series (On-line Retrieval)
-try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_REPROCESSED_TIME_SERIES  -algo local -algo.local.bwr $ALGO_LOCAL_BWR -algo.local.fwr $ALGO_LOCAL_FWR
+timed_exec "try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_REPROCESSED_TIME_SERIES  -algo local -algo.local.bwr $ALGO_LOCAL_BWR -algo.local.fwr $ALGO_LOCAL_FWR"
 
 if [[ $# == 10 && "$10" == "tc2-2" ]] ; then
 ut_output_info "$OUT_REPROCESSED_TIME_SERIES" 2 "./qr_cmp_southafrica/ReprocessedTimeSeries.tif" 8008372
@@ -189,11 +201,11 @@ exit
 fi
 
 #split the Reprocessed time series to a number of images
-try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_REPROCESSED_TIME_SERIES -outlist $REPROCESSED_LIST_FILE -compress 1
+timed_exec "try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_REPROCESSED_TIME_SERIES -outlist $REPROCESSED_LIST_FILE -compress 1"
 
 
 # Compute the fitted time series (CSDM Fitting)
-try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_FITTED_TIME_SERIES -algo fit
+timed_exec "try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_FITTED_TIME_SERIES -algo fit"
 
 if [[ $# == 10 && "$10" == "tc2-3" ]] ; then
 ut_output_info "$OUT_FITTED_TIME_SERIES" 2 "./qr_cmp_southafrica/FittedTimeSeries.tif" 8008372
@@ -203,4 +215,4 @@ fi
 try otbcli ProductFormatter "$PRODUCT_FORMATER_OTB_LIBS_ROOT" -destroot "$OUT_FOLDER" -fileclass SVT1 -level L3B -timeperiod 20130228_20130615 -baseline 01.00 -processor vegetation -processor.vegetation.lairepr "$OUT_REPROCESSED_TIME_SERIES" -processor.vegetation.laifit "$OUT_FITTED_TIME_SERIES" -il "${inputXML[0]}" -gipp "$PARAMS_TXT"
 
 #split the Fitted time series to a number of images
-try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_FITTED_TIME_SERIES -outlist $FITTED_LIST_FILE -compress 1
+timed_exec "try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_FITTED_TIME_SERIES -outlist $FITTED_LIST_FILE -compress 1"
