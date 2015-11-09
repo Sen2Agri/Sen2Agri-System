@@ -1,0 +1,63 @@
+#!/usr/bin/python
+
+import os
+import datetime
+import subprocess 
+
+#name: 		The name of the step as it will be dispayed on screen
+#args:		The external process that must be invoked and it arguments
+#kwargs:	The list containing the arguments with default values. 
+#		Possible values are: 
+#			outf - the file where the output is redirected to (default: "")
+#			skip - if True then this step is not executed (default: False)
+#			rmfiles - the list of files to remove after the execution of the process ends (default: [])
+def executeStep(name, *args, **kwargs) :
+	# Check if the output should be redirected to a file
+	outf 	= kwargs.get("outf", "")
+	skip 	= kwargs.get("skip", False)
+	rmfiles = kwargs.get("rmfiles", [])
+
+	# Get the start date
+	startTime = datetime.datetime.now()
+
+	#Check if the step should be skiped
+	if skip:
+		print "Skipping "+name+" at " + str(startTime)
+		return
+
+	# Print start message
+	print "Executing "+name+" at " + str(startTime)
+
+	# Build the command line and print it to the output
+	cmdLine = ""
+	for arg in args: 
+		cmdLine = cmdLine + arg + " "
+	if len(outf):
+		cmdLine = cmdLine + "> " + outf
+	print cmdLine
+
+	#invoke the external process
+	if len(outf):
+		fil = open(outf, "w")
+		result = subprocess.call(args, stdout=fil)
+	else:
+		result = subprocess.call(args)
+	
+	#Get the end time
+	endTime = datetime.datetime.now()
+
+	# Check for errors
+	if result != 0 :
+		print "Error running " + name + " at " + str(endTime) + ". The call returned " + result
+		exit(result)
+
+	# Remove intermediate files if needed 
+	for fil in rmfiles:
+		os.remove(fil)
+
+	# Print end message
+	print name + " done at " + str(endTime) + ". Duration: " + str(endTime-startTime)
+
+	return;
+#end executeStep
+

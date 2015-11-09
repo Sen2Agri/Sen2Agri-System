@@ -50,13 +50,15 @@ public:
         result[0]  = (result[0]  < pix[i] ? pix[i] : result[0] );
         avg += pix[i];
     }
-    result[1] = static_cast<PixelValueType>(avg / pixSize);
+    avg /= pixSize;
+    result[1] = static_cast<PixelValueType>(avg);
 
     result[2] = static_cast<PixelValueType>(0);
     double stdDev = 0.0;
+    double avg2 = avg * avg;
     // Compute the standard deviation
     for (int i = 0; i < pixSize; i++) {
-        stdDev += std::pow(pix[i] - result[1], 2);
+        stdDev += ((double)pix[i]*pix[i] - avg2);
     }
     result[2] = static_cast<PixelValueType>(std::sqrt(stdDev / pixSize));
 

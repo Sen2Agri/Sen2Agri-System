@@ -6,276 +6,80 @@ import argparse
 import csv
 from sys import argv
 import datetime
+from common import executeStep  
 
 def inSituDataAvailable() :
-	# Temporal Features
-	print "Executing TemporalFeatures at " + str(datetime.datetime.now())
-	tfCmdLine = "otbApplicationLauncherCommandLine TemporalFeatures "+os.path.join(buildFolder,"CropMask/TemporalFeatures")+" -ndvi "+ndvi+" -dates "+outdays+" -tf "+temporal_features
-	print tfCmdLine
-	result = os.system(tfCmdLine)
+	# Temporal Features (Step 6)
+	#executeStep("TemporalFeatures", "otbApplicationLauncherCommandLine", "TemporalFeatures", os.path.join(buildFolder,"CropMask/TemporalFeatures"),"-ndvi",ndvi,"-dates",outdays,"-window", window, "-tf",temporal_features, skip=fromstep>6)
 
-	if result != 0 :
-	   print "Error running TemporalFeatures"
-	   exit(1)
+	# Statistic Features (Step 7)
+	#executeStep("StatisticFeatures", "otbApplicationLauncherCommandLine", "StatisticFeatures", os.path.join(buildFolder,"CropMask/StatisticFeatures"),"-ndwi",ndwi,"-brightness",brightness,"-sf",statistic_features, skip=fromstep>7, rmfiles=[] if keepfiles else [ndwi, brightness])
 
-	print "TemporalFeatures done at " + str(datetime.datetime.now())
+	# Concatenate Features (Step 8)
+	#executeStep("ConcatenateFeatures", "otbcli_ConcatenateImages", "-il", temporal_features,statistic_features,"-out",features, skip=fromstep>8, rmfiles=[] if keepfiles else [temporal_features, statistic_features])
 
-	# Statistic Features
-	print "Executing StatisticFeatures at " + str(datetime.datetime.now())
-	sfCmdLine = "otbApplicationLauncherCommandLine StatisticFeatures "+os.path.join(buildFolder,"CropMask/StatisticFeatures")+" -ndwi "+ndwi+" -brightness "+brightness+" -sf "+statistic_features
-	print sfCmdLine
-	result = os.system(sfCmdLine)
+	#Features when insitu data is available (Step 6 or 7 or 8)
+	executeStep("FeaturesWithInsitu", "otbApplicationLauncherCommandLine", "FeaturesWithInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithInsitu"),"-ndvi",ndvi,"-ndwi",ndwi,"-brightness",brightness,"-dates",outdays,"-window", window, "-out",features, skip=fromstep>6, rmfiles=[] if keepfiles else [ndwi, brightness])
 
-	if result != 0 :
-	   print "Error running StatisticFeatures"
-	   exit(1)
+	# Image Statistics (Step 9)
+	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", features,"-out",statistics, skip=fromstep>9)
 
-	print "StatisticFeatures done at " + str(datetime.datetime.now())
+	# ogr2ogr (Step 10)
+	executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-clipsrc", shape,"-overwrite",reference_polygons_clip, reference_polygons, skip=fromstep>10)
 
-	# _Concatenate Images
-	print "Executing ConcatenateImages at " + str(datetime.datetime.now())
-	ciCmdLine = "otbcli_ConcatenateImages -il "+temporal_features+" "+statistic_features+" -out " + features
-	print ciCmdLine
-	result = os.system(ciCmdLine)
+	# Sample Selection (Step 11)
+	executeStep("SampleSelection", "otbApplicationLauncherCommandLine","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons,"-nofilter","true", skip=fromstep>11)
 
-	if result != 0 :
-	   print "Error running ConcatenateImages"
-	   exit(1)
-
-	os.system("rm " + temporal_features)
-	os.system("rm " + statistic_features)
-
-	print "ConcatenateImages done at " + str(datetime.datetime.now())
+	#Train Image Classifier (Step 12)
+	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", features,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vfn","CROP","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>12)
 
 
-	# Image Statistics
-	print "Executing ComputeImagesStatistics at " + str(datetime.datetime.now())
-	isCmdLine = "otbcli_ComputeImagesStatistics -il "+features+" -out "+statistics
-	print isCmdLine
-	result = os.system(isCmdLine)
+	#Image Classifier (Step 13)
+	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", features,"-imstat",statistics,"-model", model, "-out", raw_crop_mask, skip=fromstep>13, rmfiles=[] if keepfiles else [features])
 
-	if result != 0 :
-	   print "Error running ComputeImagesStatistics"
-	   exit(1)
-	print "ComputeImagesStatistics done at " + str(datetime.datetime.now())
-
-	# ogr2ogr
-	print "Executing ogr2ogr at " + str(datetime.datetime.now())
-	ooCmdLine = "/usr/local/bin/ogr2ogr -clipsrc "+shape+" -overwrite "+reference_polygons_clip+" "+reference_polygons
-	print ooCmdLine
-	result = os.system(ooCmdLine)
-
-	if result != 0 :
-	   print "Error running ogr2ogr"
-	   exit(1)
-	print "ogr2ogr done at " + str(datetime.datetime.now())
-
-	# Sample Selection
-	print "Executing SampleSelection at " + str(datetime.datetime.now())
-	ssCmdLine = "otbApplicationLauncherCommandLine SampleSelection "+os.path.join(buildFolder,"CropType/SampleSelection")+" -ref "+reference_polygons_clip+" -ratio "+sample_ratio+" -seed "+random_seed+" -tp "+training_polygons+" -vp "+validation_polygons + " -nofilter true"
-	print ssCmdLine
-	result = os.system(ssCmdLine)
-
-	if result != 0 :
-	   print "Error running SampleSelection"
-	   exit(1)
-	print "SampleSelection done at " + str(datetime.datetime.now())
-
-	# Random Selection
-#	print "Executing RandomSelection..."
-#	rsCmdLine = "otbApplicationLauncherCommandLine RandomSelection "+buildFolder+"CropMask/RandomSelection -ref "+training_polygons+" -nbtrsample "+nbtrsample+" -seed "+random_seed+" -trp "+random_training_polygons+" -tsp "+random_testing_polygons
-#	print rsCmdLine
-#	result = os.system(rsCmdLine)
-
-#	if result != 0 :
-#	   print "Error running RandomSelection"
-#	   exit(1)
-#	print "RandomSelection done!"
-
-	#Train Image Classifier
-	print "Executing TrainImagesClassifier at " + str(datetime.datetime.now())
-	tcCmdLine = "otbcli_TrainImagesClassifier -io.il "+features+" -io.vd "+training_polygons+" -io.imstat "+statistics+" -rand "+random_seed+" -sample.bm 0 -io.confmatout "+confmatout+" -io.out "+model+" -sample.mt "+nbtrsample+" -sample.mv -1 -sample.vfn CROP -sample.vtr "+sample_ratio+" -classifier rf -classifier.rf.nbtrees "+rfnbtrees+" -classifier.rf.min "+rfmin+" -classifier.rf.max "+rfmax
-
-	print tcCmdLine
-	result = os.system(tcCmdLine)
-
-	if result != 0 :
-	   print "Error running TrainImagesClassifier"
-	   exit(1)
-	print "TrainImagesClassifier done at " + str(datetime.datetime.now())
-
-	#Random Forest Training
-#	print "Executing RandomForestTraining..."
-#	tcCmdLine = "otbApplicationLauncherCommandLine RandomForestTraining "+buildFolder+"CropMask/RandomForestTraining -fvi "+features+" -shp "+training_polygons+" -seed "+random_seed+" -rfnbtrees "+rfnbtrees+" -rfmin "+rfmin+" -rfmax "+rfmax +" -nbsamples "+nbsamples+" -out "+model
-
-#	print tcCmdLine
-#	result = os.system(tcCmdLine)
-
-#	if result != 0 :
-#	   print "Error running RandomForestTraining"
-#	   exit(1)
-#	print "RandomForestTraining done!"
-
-	#Image Classifier
-	print "Executing ImageClassifier at " + str(datetime.datetime.now())
-	icCmdLine = "otbcli_ImageClassifier -in "+features+" -imstat "+statistics+" -model "+model+" -out "+raw_crop_mask
-	print icCmdLine
-	result = os.system(icCmdLine)
-
-	if result != 0 :
-	   print "Error running ImageClassifier"
-	   exit(1)
-	print "ImageClassifier done at " + str(datetime.datetime.now())
-
-	os.system("rm " + features)
+	return;
+#end inSituDataAvailable
 
 def noInSituDataAvailable() :
 	global validation_polygons
-	#Data Smoothing
-	print "Executing DataSmoothing at " + str(datetime.datetime.now())
-	dsCmdLine = "otbApplicationLauncherCommandLine DataSmoothing "+os.path.join(buildFolder,"CropMask/DataSmoothing")+" -ts "+ndvi+" -bands 1 -lambda "+lmbd+" -weight "+weight+" -sts "+ndvi_smooth
-
-	print dsCmdLine
-	result = os.system(dsCmdLine)
-
-	if result != 0 :
-	   print "Error running DataSmoothing"
-	   exit(1)
-
-	dsCmdLine = "otbApplicationLauncherCommandLine DataSmoothing "+os.path.join(buildFolder,"CropMask/DataSmoothing")+" -ts "+rtocr+" -bands 4 -lambda "+lmbd+" -weight "+weight+" -sts "+rtocr_smooth
-
-	print dsCmdLine
-	result = os.system(dsCmdLine)
-
-	if result != 0 :
-	   print "Error running DataSmoothing"
-	   exit(1)
-
-	print "DataSmoothing done at " + str(datetime.datetime.now())
-
-	# Temporal Features
-	print "Executing TemporalFeatures at " + str(datetime.datetime.now())
-	tfCmdLine = "otbApplicationLauncherCommandLine TemporalFeaturesNoInsitu "+os.path.join(buildFolder,"CropMask/TemporalFeaturesNoInsitu")+" -ndvi "+ndvi_smooth+" -ts " + rtocr_smooth + " -dates "+outdays+" -tf "+tf_noinsitu
-	print tfCmdLine
-	result = os.system(tfCmdLine)
-
-	if result != 0 :
-	   print "Error running TemporalFeatures"
-	   exit(1)
-
-	print "TemporalFeatures done at " + str(datetime.datetime.now())
-
-	# Spectral Features
-	print "Executing SpectralFeatures at " + str(datetime.datetime.now())
-	sfCmdLine = "otbApplicationLauncherCommandLine SpectralFeatures "+os.path.join(buildFolder,"CropMask/SpectralFeatures")+" -ts " + rtocr_smooth + " -tf "+tf_noinsitu + " -sf " + spectral_features
-	print sfCmdLine
-	result = os.system(sfCmdLine)
-
-	if result != 0 :
-	   print "Error running SpectralFeatures"
-	   exit(1)
-
-	print "SpectralFeatures done at " + str(datetime.datetime.now())
-
-	os.system("rm " + ndvi_smooth)
-	os.system("rm " + rtocr_smooth)
-	os.system("rm " + tf_noinsitu)
-
-	# Image Statistics
-	print "Executing ComputeImagesStatistics at " + str(datetime.datetime.now())
-	isCmdLine = "otbcli_ComputeImagesStatistics -il "+spectral_features+" -out "+statistics_noinsitu
-	print isCmdLine
-	result = os.system(isCmdLine)
-
-	if result != 0 :
-	   print "Error running ComputeImagesStatistics"
-	   exit(1)
-	print "ComputeImagesStatistics done at " + str(datetime.datetime.now())
-
-
-	# Reference Map preparation
-	print "Executing gdalwarp at " + str(datetime.datetime.now())
-
-	gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata 0 -overwrite -tr "+pixsize+" "+pixsize+" -cutline "+shape+" -crop_to_cutline "+reference+" "+crop_reference
-	print gwCmdLine
-	result = os.system(gwCmdLine)
-
-	if result != 0 :
-   		print "Error running gdalwarp"
-		exit(1)
-	print "gdalwarp done at " + str(datetime.datetime.now())
+	#Data Smoothing for NDVI (Step 14)
+	executeStep("DataSmoothing for NDVI", "otbApplicationLauncherCommandLine", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts",ndvi,"-bands", "1", "-lambda", lmbd, "-weight", weight, "-sts",ndvi_smooth, skip=fromstep>14)
 	
-	# Erosion
-	print "Executing Erosion at " + str(datetime.datetime.now())
-	rmCmdLine = "otbApplicationLauncherCommandLine Erosion "+os.path.join(buildFolder,"CropMask/Erosion")+" -in " + crop_reference + " -out "+eroded_reference + " -radius " + erode_radius
-	print rmCmdLine
-	result = os.system(rmCmdLine)
+	#Data Smoothing for Reflectances (Step 15)
+	executeStep("DataSmoothing for Reflectances", "otbApplicationLauncherCommandLine", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts",rtocr,"-bands", "4", "-lambda", lmbd, "-weight", weight, "-sts",rtocr_smooth, skip=fromstep>15, rmfiles=[] if keepfiles else [rtocr])
 
-	if result != 0 :
-	   print "Error running Erosion"
-	   exit(1)
+	# Temporal Features (Step 16)
+	#executeStep("TemporalFeatures", "otbApplicationLauncherCommandLine", "TemporalFeaturesNoInsitu", os.path.join(buildFolder,"CropMask/TemporalFeaturesNoInsitu"),"-ndvi",ndvi_smooth,"-ts", rtocr_smooth, "-dates", outdays, "-tf", tf_noinsitu, skip=fromstep>16)
 
-	os.system("rm " + crop_reference)
+	# Spectral Features (Step 17)
+	#executeStep("SpectralFeatures", "otbApplicationLauncherCommandLine", "SpectralFeatures", os.path.join(buildFolder,"CropMask/SpectralFeatures"),"-ts", rtocr_smooth, "-tf", tf_noinsitu, "-sf", spectral_features, skip=fromstep>17, rmfiles=[] if keepfiles else [ndvi_smooth, rtocr_smooth, tf_noinsitu])
 
-	print "Erosion done at " + str(datetime.datetime.now())
+	#Features when no insitu data is available (Step 16 or 17)
+	executeStep("FeaturesWithoutInsitu", "otbApplicationLauncherCommandLine", "FeaturesWithoutInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithoutInsitu"),"-ndvi",ndvi_smooth,"-ts", rtocr_smooth, "-dates", outdays , "-sf", spectral_features, skip=fromstep>16, rmfiles=[] if keepfiles else [ndvi_smooth, rtocr_smooth])
+
+	# Image Statistics (Step 18)
+	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", spectral_features, "-out", statistics_noinsitu, skip=fromstep>18)
+
+	# Reference Map preparation (Step 19)
+	executeStep("gdalwarp for Reference map", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reference, crop_reference, skip=fromstep>19)
 	
-	# Extract Bands
-	print "Executing ExtractROI at " + str(datetime.datetime.now())
-	rmCmdLine = "otbcli_ExtractROI  -in " + spectral_features + " -cl Channel9 Channel10 Channel11 Channel14 Channel15 -out "+triming_features+" int16"
-	print rmCmdLine
-	result = os.system(rmCmdLine)
-
-	if result != 0 :
-	   print "Error running Erosion"
-	   exit(1)
-
-	os.system("rm " + crop_reference)
-
-	print "Erosion done at " + str(datetime.datetime.now())	
+	# Erosion (Step 20)
+	executeStep("Erosion", "otbApplicationLauncherCommandLine", "Erosion", os.path.join(buildFolder,"CropMask/Erosion"),"-in", crop_reference, "-out", eroded_reference, "-radius", erode_radius, skip=fromstep>20, rmfiles=[] if keepfiles else [crop_reference])
 
 
-	# Trimming
-	print "Executing Trimming application at " + str(datetime.datetime.now())
-	trCmdLine = "otbApplicationLauncherCommandLine Trimming "+os.path.join(buildFolder,"CropMask/Trimming")+" -feat " + triming_features + " -ref "+eroded_reference + " -out " + trimmed_reference_shape + " -alpha " + alpha + " -nbsamples 0 -seed " + random_seed
-	print trCmdLine
-	result = os.system(trCmdLine)
+	# Trimming (Step 21)
+	executeStep("Trimming", "otbApplicationLauncherCommandLine", "Trimming", os.path.join(buildFolder,"CropMask/Trimming"),"-feat", spectral_features, "-ref", eroded_reference, "-out", trimmed_reference_shape, "-alpha", alpha, "-nbsamples", "0", "-seed", random_seed, skip=fromstep>21, rmfiles=[] if keepfiles else [eroded_reference])
+	
+	#Train Image Classifier (Step 22)
+	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", spectral_features,"-io.vd",trimmed_reference_shape,"-io.imstat", statistics_noinsitu, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vfn","CROP","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>22)
 
-	if result != 0 :
-	   print "Error running Trimming"
-	   exit(1)
-
-	os.system("rm " + eroded_reference)
-	os.system("rm " + triming_features)
-
-	print "Trimming done at " + str(datetime.datetime.now())
-
-	# TrainImagesClassifier
-	print "Executing TrainImagesClassifier at " + str(datetime.datetime.now())
-	tcCmdLine = "otbcli_TrainImagesClassifier -io.il "+spectral_features+" -io.vd "+trimmed_reference_shape+" -io.imstat "+statistics_noinsitu+" -rand "+random_seed+" -sample.bm 0 -io.confmatout "+confmatout+" -io.out "+model+" -sample.mt "+nbtrsample+" -sample.mv -1 -sample.vfn CROP -sample.vtr "+sample_ratio+" -classifier rf -classifier.rf.nbtrees "+rfnbtrees+" -classifier.rf.min "+rfmin+" -classifier.rf.max "+rfmax
-
-	print tcCmdLine
-	result = os.system(tcCmdLine)
-
-	if result != 0 :
-	   print "Error running TrainImagesClassifier"
-	   exit(1)
-	print "TrainImagesClassifier done at " + str(datetime.datetime.now())
-
-	#Image Classifier
-	print "Executing ImageClassifier at " + str(datetime.datetime.now())
-	icCmdLine = "otbcli_ImageClassifier -in "+spectral_features+" -imstat "+statistics_noinsitu+" -model "+model+" -out "+raw_crop_mask
-	print icCmdLine
-	result = os.system(icCmdLine)
-
-	if result != 0 :
-	   print "Error running ImageClassifier"
-	   exit(1)
-
-	os.system("rm " + spectral_features)
-	print "ImageClassifier done at " + str(datetime.datetime.now())
+	#Image Classifier (Step 23)
+	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", spectral_features,"-imstat",statistics_noinsitu,"-model", model, "-out", raw_crop_mask, skip=fromstep>23, rmfiles=[] if keepfiles else [spectral_features])
 
 	#use the shape built from the reference image for validation
 	validation_polygons = trimmed_reference_shape
+	return
+#end noInSituDataAvailable
 
 #Path to build folder
 defaultBuildFolder="~/sen2agri-build/"
@@ -292,6 +96,7 @@ parser.add_argument('-radius', help='The radius used for gapfilling, in days', r
 parser.add_argument('-nbtrsample', help='The number of samples included in the training set.', required=False, metavar='nbtrsample', default=1000)
 parser.add_argument('-rseed', help='The random seed used for training', required=False, metavar='random_seed', default=0)
 
+parser.add_argument('-window', help='The window, expressed in number of records, used for the temporal features extraction', required=False, metavar='window', default=6)
 parser.add_argument('-lmbd', help='The lambda parameter used in data smoothing (default 2)', required=False, metavar='lmbd', default=2)
 parser.add_argument('-weight', help='The weight factor for data smoothing (default 1)', required=False, metavar='weight', default=1)
 parser.add_argument('-nbcomp', help='The number of components used by dimensionality reduction (default 6)', required=False, metavar='nbcomp', default=6)
@@ -313,14 +118,15 @@ parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 1
 parser.add_argument('-outdir', help="Output directory", default=defaultBuildFolder)
 parser.add_argument('-buildfolder', help="Build folder", default=defaultBuildFolder)
 
+parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)", default=False, action='store_true')
+parser.add_argument('-fromstep', help="Run from the selected step (default 1)", type=int, default=1)
+
 args = parser.parse_args()
 
 reference_polygons=args.refp
 sample_ratio=str(args.ratio)
 
-indesc = " "
-for desc in args.input:
-   indesc = indesc + '"' + desc + '"' + " "
+indesc = args.input
 
 t0=args.t0
 tend=args.tend
@@ -339,6 +145,8 @@ ranger=str(args.ranger)
 minsize=str(args.minsize)
 pixsize=str(args.pixsize)
 minarea=str(args.minarea)
+window=str(args.window)
+
 
 buildFolder=args.buildfolder
 reference=args.refr
@@ -378,7 +186,7 @@ crop_reference=os.path.join(args.outdir, "crop_reference.tif")
 trimmed_reference_shape=os.path.join(args.outdir, "trimmed_reference_shape.shp")
 statistics_noinsitu=os.path.join(args.outdir, "statistics_noinsitu.xml")
 
-tmpfolder="."
+tmpfolder=args.outdir
 
 pca=os.path.join(args.outdir, "pca.tif")
 mean_shift_smoothing=os.path.join(args.outdir, "mean_shift_smoothing.tif")
@@ -398,185 +206,63 @@ crop_mask=os.path.join(args.outdir, "crop_mask.tif")
 confusion_matrix_validation=os.path.join(args.outdir, "crop-mask-confusion-matrix-validation.csv")
 quality_metrics=os.path.join(args.outdir, "crop-mask-quality-metrics.txt")
 
-# Bands Extractor
-print "Executing BandsExtractor at " + str(datetime.datetime.now())
-beCmdLine = "otbApplicationLauncherCommandLine BandsExtractor "+os.path.join(buildFolder,"CropType/BandsExtractor")+" -il "+indesc+" -out "+rawtocr+" -mask "+rawmask+" -outdate "+dates+" -shape "+shape+" -pixsize "+pixsize+" -merge true"
-print beCmdLine
-result = os.system(beCmdLine)
+keepfiles = args.keepfiles
+fromstep = args.fromstep
 
-if result != 0 :
-   print "Error running BandsExtractor"
-   exit(1)
-print "BandsExtractor done at " + str(datetime.datetime.now())
+globalStart = datetime.datetime.now()
 
-# gdalwarp
-print "Executing gdalwarp at " + str(datetime.datetime.now())
+# Bands Extractor (Step 1)
+executeStep("BandsExtractor", "otbApplicationLauncherCommandLine", "BandsExtractor", os.path.join(buildFolder,"CropType/BandsExtractor"),"-out",rawtocr,"-mask",rawmask,"-outdate", dates, "-shape", shape, "-pixsize", pixsize,"-merge", "true", "-il", *indesc, skip=fromstep>1)
 
-gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata \"-10000\" -overwrite -cutline "+shape+" -crop_to_cutline "+rawtocr+" "+tocr
-print gwCmdLine
-result = os.system(gwCmdLine)
+# gdalwarp (Step 2 and 3)
+executeStep("gdalwarp for reflectances", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawtocr, tocr, skip=fromstep>2, rmfiles=[] if keepfiles else [rawtocr])
 
-if result != 0 :
-   print "Error running gdalwarp"
-   exit(1)
+executeStep("gdalwarp for masks", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawmask, mask, skip=fromstep>3, rmfiles=[] if keepfiles else [rawmask])
 
-os.system("rm " + rawtocr)
+# Temporal Resampling (Step 4)
+executeStep("TemporalResampling", "otbApplicationLauncherCommandLine", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", sp, "-t0", t0, "-tend", tend, "-radius", radius, "-rtocr", rtocr, "-outdays", outdays, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
 
-gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata 1 -overwrite -cutline "+shape+" -crop_to_cutline "+rawmask+" "+mask
-print gwCmdLine
-result = os.system(gwCmdLine)
+# Feature Extraction (Step 5)
+if reference_polygons != "" :
+	executeStep("FeatureExtraction", "otbApplicationLauncherCommandLine", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, "-ndwi", ndwi, "-brightness", brightness, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
+else:
+	executeStep("FeatureExtraction", "otbApplicationLauncherCommandLine", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, skip=fromstep>5)
 
-if result != 0 :
-   print "Error running gdalwarp"
-   exit(1)
-
-os.system("rm " + rawmask)
-
-print "gdalwarp done at " + str(datetime.datetime.now())
-
-# Temporal Resampling
-print "Executing TemporalResampling at " + str(datetime.datetime.now())
-trCmdLine = "otbApplicationLauncherCommandLine TemporalResampling "+os.path.join(buildFolder,"CropType/TemporalResampling")+" -tocr "+tocr+" -mask "+mask+" -ind "+dates+" -sp "+sp+" -t0 "+t0+" -tend "+tend+" -radius "+radius+" -rtocr "+rtocr+" -outdays "+outdays
-print trCmdLine
-result = os.system(trCmdLine)
-
-if result != 0 :
-   print "Error running TemporalResampling"
-   exit(1)
-
-os.system("rm " + tocr)
-os.system("rm " + mask)
-
-print "TemporalResampling done at " + str(datetime.datetime.now())
-
-
-# Feature Extraction
-print "Executing FeatureExtraction at " + str(datetime.datetime.now())
-feCmdLine = "otbApplicationLauncherCommandLine FeatureExtraction "+os.path.join(buildFolder,"CropType/FeatureExtraction")+" -rtocr "+rtocr+" -ndvi "+ndvi+" -ndwi "+ndwi+" -brightness "+brightness
-print feCmdLine
-result = os.system(feCmdLine)
-
-if result != 0 :
-   print "Error running FeatureExtraction"
-   exit(1)
-
-print "FeatureExtraction done at " + str(datetime.datetime.now())
-
+# Select either inSitu or noInSitu branches
 if reference_polygons != "" :
 	inSituDataAvailable()
 else:
 	noInSituDataAvailable()
 
-os.system("rm " + rtocr)
-os.system("rm " + ndwi)
-os.system("rm " + brightness)
+#Validation (Step 24)
+executeStep("Validation for Raw Cropmask", "otbcli_ComputeConfusionMatrix", "-in", raw_crop_mask, "-out", raw_crop_mask_confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CROP", "-nodatalabel", "-10000", outf=raw_crop_mask_quality_metrics, skip=fromstep>24)
 
-#Validation
-print "Executing ComputeConfusionMatrix at " + str(datetime.datetime.now())
-vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+raw_crop_mask+" -out "+raw_crop_mask_confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CROP -nodatalabel -10000 > "+raw_crop_mask_quality_metrics
-print vdCmdLine
-result = os.system(vdCmdLine)
+#Dimension reduction (Step 25)
+executeStep("PrincipalComponentAnalysis", "otbApplicationLauncherCommandLine", "PrincipalComponentAnalysis",os.path.join(buildFolder,"CropMask/PrincipalComponentAnalysis") ,"-ndvi", ndvi, "-nc", nbcomp, "-out", pca, skip=fromstep>25, rmfiles=[] if keepfiles else [ndvi])
 
-if result != 0 :
-   print "Error running ComputeConfusionMatrix"
-   exit(1)
-print "ComputeConfusionMatrix done at " + str(datetime.datetime.now())
+#Mean-Shift segmentation (Step 26, 27 and 28)
+executeStep("MeanShiftSmoothing", "otbcli_MeanShiftSmoothing", "-in", pca,"-modesearch","0", "-maxiter", "10", "-spatialr", spatialr, "-ranger", ranger, "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing, "uint32", skip=fromstep>26)
 
-#Dimension reduction
-print "Executing PrincipalComponentAnalysis at " + str(datetime.datetime.now())
-drCmdLine = "otbApplicationLauncherCommandLine PrincipalComponentAnalysis "+os.path.join(buildFolder,"CropMask/PrincipalComponentAnalysis")+" -ndvi "+ndvi+" -nc "+nbcomp+" -out "+pca
-print drCmdLine
-result = os.system(drCmdLine)
+executeStep("LSMSSegmentation", "otbcli_LSMSSegmentation", "-in", mean_shift_smoothing,"-inpos", mean_shift_smoothing_spatial, "-spatialr", spatialr, "-ranger", ranger, "-minsize", minsize, "-tmpdir", tmpfolder, "-out", segmented, "uint32", skip=fromstep>27, rmfiles=[] if keepfiles else [mean_shift_smoothing, mean_shift_smoothing_spatial])
 
-if result != 0 :
-   print "Error running PrincipalComponentAnalysis"
-   exit(1)
-print "PrincipalComponentAnalysis done at " + str(datetime.datetime.now())
+executeStep("LSMSSmallRegionsMerging", "otbcli_LSMSSmallRegionsMerging", "-in", pca,"-inseg", segmented, "-minsize", minsize, "-out", segmented_merged, "uint32", skip=fromstep>28, rmfiles=[] if keepfiles else [pca, segmented])
 
-os.system("rm " + ndvi)
+#Majority voting (Step 29)
+executeStep("MajorityVoting", "otbApplicationLauncherCommandLine", "MajorityVoting",os.path.join(buildFolder,"CropMask/MajorityVoting") ,"-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", minarea, "-inclass", raw_crop_mask, "-inseg", segmented_merged, "-rout", crop_mask_uncut, skip=fromstep>29, rmfiles=[] if keepfiles else [segmented_merged])
 
-#Mean-Shift segmentation
-print "Executing MeanShiftSmoothing at " + str(datetime.datetime.now())
-msCmdLine = "otbcli_MeanShiftSmoothing -in "+pca+" -modesearch 0 -maxiter 10 -spatialr "+spatialr+" -ranger "+ranger+" -foutpos " + mean_shift_smoothing_spatial +" -fout "+mean_shift_smoothing +" uint32"
-print msCmdLine
-result = os.system(msCmdLine)
+# gdalwarp (Step 30)
+executeStep("gdalwarp for crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_mask_uncut, crop_mask, skip=fromstep>30)
 
-if result != 0 :
-   print "Error running MeanShiftSmoothing"
-   exit(1)
-print "MeanShiftSmoothing done at " + str(datetime.datetime.now())
+#Validation (Step 31)
+executeStep("Validation for Cropmask", "otbcli_ComputeConfusionMatrix", "-in", crop_mask, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CROP", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>31)
 
-print "Executing LSMSSegmentation at " + str(datetime.datetime.now())
-msCmdLine = "otbcli_LSMSSegmentation -in "+mean_shift_smoothing+" -inpos "+ mean_shift_smoothing_spatial +" -spatialr "+spatialr+" -ranger "+ranger+" -minsize "+minsize+" -tmpdir " +tmpfolder+ " -out "+segmented+" uint32"
-print msCmdLine
-result = os.system(msCmdLine)
+#Product creation (Step 32)
+executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", args.outdir, "-fileclass", "SVT1", "-level", "L4A", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "cropmask", "-processor.cropmask.file", crop_mask, skip=fromstep>32)
 
-if result != 0 :
-   print "Error running LSMSSegmentation"
-   exit(1)
-print "LSMSSegmentation done at " + str(datetime.datetime.now())
+globalEnd = datetime.datetime.now()
 
-print "Executing LSMSSmallRegionsMerging at " + str(datetime.datetime.now())
-msCmdLine = "otbcli_LSMSSmallRegionsMerging -in "+pca+" -inseg "+segmented+" -minsize "+minsize+" -out "+segmented_merged+" uint32"
-print msCmdLine
-result = os.system(msCmdLine)
+print "Processor CropMask finished in " + str(globalEnd-globalStart)
 
-if result != 0 :
-   print "Error running LSMSSmallRegionsMerging"
-   exit(1)
-print "LSMSSmallRegionsMerging done at " + str(datetime.datetime.now())
 
-os.system("rm " + pca)
-os.system("rm " + segmented)
-os.system("rm " + mean_shift_smoothing)
-os.system("rm " + mean_shift_smoothing_spatial)
-
-#Majority voting
-print "Executing MajorityVoting at " + str(datetime.datetime.now())
-drCmdLine = "otbApplicationLauncherCommandLine MajorityVoting "+os.path.join(buildFolder,"CropMask/MajorityVoting")+" -nodatasegvalue 0 -nodataclassifvalue -10000 -minarea "+minarea+" -inclass "+raw_crop_mask+" -inseg "+segmented_merged+" -rout "+crop_mask_uncut
-print drCmdLine
-result = os.system(drCmdLine)
-
-if result != 0 :
-   print "Error running MajorityVoting"
-   exit(1)
-print "MajorityVoting done at " + str(datetime.datetime.now())
-
-# gdalwarp
-print "Executing gdalwarp at " + str(datetime.datetime.now())
-
-gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata -10000 -overwrite -cutline "+shape+" -crop_to_cutline "+crop_mask_uncut+" "+crop_mask
-print gwCmdLine
-result = os.system(gwCmdLine)
-
-if result != 0 :
-   print "Error running gdalwarp"
-   exit(1)
-
-print "gdalwarp done at " + str(datetime.datetime.now())
-
-#Validation
-print "Executing ComputeConfusionMatrix at " + str(datetime.datetime.now())
-vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+crop_mask+" -out "+confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CROP -nodatalabel -10000 > "+quality_metrics
-print vdCmdLine
-result = os.system(vdCmdLine)
-
-if result != 0 :
-   print "Error running ComputeConfusionMatrix"
-   exit(1)
-print "ComputeConfusionMatrix done at " + str(datetime.datetime.now())
-
-#Product creation
-print "Executing ProductFormatter at " + str(datetime.datetime.now())
-pfCmdLine = "otbApplicationLauncherCommandLine ProductFormatter "+os.path.join(buildFolder,"MACCSMetadata/src")+" -destroot "+args.outdir+" -fileclass SVT1 -level L4A -timeperiod "+t0+"_"+tend+" -baseline 01.00 -processor cropmask -processor.cropmask.file "+crop_mask
-print pfCmdLine
-result = os.system(pfCmdLine)
-
-if result != 0 :
-   print "Error running ProductFormatter"
-   exit(1)
-print "ProductFormatter done at " + str(datetime.datetime.now())
-
-print "Execution successfull !"
 
 

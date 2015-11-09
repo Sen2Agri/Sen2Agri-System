@@ -36,8 +36,8 @@
 #include "TemporalFeaturesNoInsitu.hxx"
 
 typedef otb::ImageFileReader<ImageType>                                         ReaderType;
-typedef TemporalFeaturesNoInsituFunctor<ImageType::PixelType>                   TemporalFeaturesNoInsituFunctorType;
-typedef BinaryFunctorImageFilterWithNBands<TemporalFeaturesNoInsituFunctorType>  BinaryFunctorImageFilterWithNBandsType;
+typedef TemporalFeaturesNoInsituFunctor<ImageType::PixelType>                   FeaturesNoInsituFunctorType;
+typedef BinaryFunctorImageFilterWithNBands<FeaturesNoInsituFunctorType>  BinaryFunctorImageFilterWithNBandsType;
 
 //  Software Guide : EndCodeSnippet
 
@@ -218,7 +218,7 @@ private:
 
       // connect the functor based filter
       m_filter->SetNumberOfOutputBands(m_bands);
-      m_filter->SetFunctor(TemporalFeaturesNoInsituFunctorType(m_bands, m_inDates));
+      m_filter->SetFunctor(FeaturesNoInsituFunctorType(m_bands, m_inDates));
 
       m_filter->SetInput(0, m_NDVIReader->GetOutput());
       m_filter->SetInput(1, m_TSReader->GetOutput());
