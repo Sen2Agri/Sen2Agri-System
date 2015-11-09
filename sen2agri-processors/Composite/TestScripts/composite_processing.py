@@ -50,7 +50,7 @@ parser.add_argument('--outdir', help="Output directory", required=True)
 parser.add_argument(
     '--bandsmap', help="Bands mapping file location", required=True)
 parser.add_argument('--scatteringcoef',
-                    help="Scattering coefficient file. This file is requested only in S2 case", required=False)
+                    help="Scattering coefficient file. This file is requested in S2 case ONLY", required=False)
 
 USE_COMPRESSION=True
 REMOVE_TEMP=True
