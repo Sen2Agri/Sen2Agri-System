@@ -36,7 +36,7 @@ parser = argparse.ArgumentParser(description='Composite Python processor')
 
 parser.add_argument(
     '--applocation', help='The path where the sen2agri is built', required=True)
-parser.add_argument('--syntdate', help='Synthesis period', required=True)
+parser.add_argument('--syntdate', help='L3A synthesis date', required=True)
 parser.add_argument('--synthalf', help='Half synthesis', required=True)
 parser.add_argument(
     '--input', help='The list of products xml descriptors', required=True, nargs='+')
