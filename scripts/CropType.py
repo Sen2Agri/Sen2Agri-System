@@ -74,6 +74,7 @@ crop_type_map_uncut=os.path.join(args.outdir, "crop_type_map_uncut.tif")
 crop_type_map=os.path.join(args.outdir, "crop_type_map.tif")
 confusion_matrix_validation=os.path.join(args.outdir, "confusion-matrix-validation.csv")
 quality_metrics=os.path.join(args.outdir, "quality-metrics.txt")
+xml_validation_metrics=os.path.join(args.outdir, "validation-metrics.xml")
 
 keepfiles = args.keepfiles
 fromstep = args.fromstep
@@ -121,8 +122,11 @@ executeStep("gdalwarp for crop type", "/usr/local/bin/gdalwarp", "-multi", "-wm"
 #Validation (Step 12)
 executeStep("Validation for Crop Type", "otbcli_ComputeConfusionMatrix", "-in", crop_type_map, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CODE", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>12)
 
-#Product creation (Step 13)
-executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", args.outdir, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", crop_type_map, skip=fromstep>13)
+#XML conversion (Step 13)
+executeStep("XML Conversion for Crop Type", "otbApplicationLauncherCommandLine", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics,  skip=fromstep>13)
+
+#Product creation (Step 14)
+executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", args.outdir, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", crop_type_map, skip=fromstep>14)
 
 globalEnd = datetime.datetime.now()
 

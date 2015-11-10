@@ -205,6 +205,7 @@ crop_mask_uncut=os.path.join(args.outdir, "crop_mask_uncut.tif")
 crop_mask=os.path.join(args.outdir, "crop_mask.tif")
 confusion_matrix_validation=os.path.join(args.outdir, "crop-mask-confusion-matrix-validation.csv")
 quality_metrics=os.path.join(args.outdir, "crop-mask-quality-metrics.txt")
+xml_validation_metrics=os.path.join(args.outdir, "crop-mask-validation-metrics.xml")
 
 keepfiles = args.keepfiles
 fromstep = args.fromstep
@@ -241,11 +242,11 @@ executeStep("Validation for Raw Cropmask", "otbcli_ComputeConfusionMatrix", "-in
 executeStep("PrincipalComponentAnalysis", "otbApplicationLauncherCommandLine", "PrincipalComponentAnalysis",os.path.join(buildFolder,"CropMask/PrincipalComponentAnalysis") ,"-ndvi", ndvi, "-nc", nbcomp, "-out", pca, skip=fromstep>25, rmfiles=[] if keepfiles else [ndvi])
 
 #Mean-Shift segmentation (Step 26, 27 and 28)
-executeStep("MeanShiftSmoothing", "otbcli_MeanShiftSmoothing", "-in", pca,"-modesearch","0", "-maxiter", "10", "-spatialr", spatialr, "-ranger", ranger, "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing, "uint32", skip=fromstep>26)
+executeStep("MeanShiftSmoothing", "otbcli_MeanShiftSmoothing", "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger, "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing, "uint32", skip=fromstep>26, rmfiles=[] if keepfiles else [pca])
 
-executeStep("LSMSSegmentation", "otbcli_LSMSSegmentation", "-in", mean_shift_smoothing,"-inpos", mean_shift_smoothing_spatial, "-spatialr", spatialr, "-ranger", ranger, "-minsize", minsize, "-tmpdir", tmpfolder, "-out", segmented, "uint32", skip=fromstep>27, rmfiles=[] if keepfiles else [mean_shift_smoothing, mean_shift_smoothing_spatial])
+executeStep("LSMSSegmentation", "otbcli_LSMSSegmentation", "-in", mean_shift_smoothing,"-inpos", mean_shift_smoothing_spatial, "-spatialr", spatialr, "-ranger", ranger, "-minsize", "0", "-tmpdir", tmpfolder, "-out", segmented, "uint32", skip=fromstep>27, rmfiles=[] if keepfiles else [mean_shift_smoothing_spatial])
 
-executeStep("LSMSSmallRegionsMerging", "otbcli_LSMSSmallRegionsMerging", "-in", pca,"-inseg", segmented, "-minsize", minsize, "-out", segmented_merged, "uint32", skip=fromstep>28, rmfiles=[] if keepfiles else [pca, segmented])
+executeStep("LSMSSmallRegionsMerging", "otbcli_LSMSSmallRegionsMerging", "-in", mean_shift_smoothing,"-inseg", segmented, "-minsize", minsize, "-out", segmented_merged, "uint32", skip=fromstep>28, rmfiles=[] if keepfiles else [mean_shift_smoothing, segmented])
 
 #Majority voting (Step 29)
 executeStep("MajorityVoting", "otbApplicationLauncherCommandLine", "MajorityVoting",os.path.join(buildFolder,"CropMask/MajorityVoting") ,"-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", minarea, "-inclass", raw_crop_mask, "-inseg", segmented_merged, "-rout", crop_mask_uncut, skip=fromstep>29, rmfiles=[] if keepfiles else [segmented_merged])
@@ -256,8 +257,11 @@ executeStep("gdalwarp for crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm"
 #Validation (Step 31)
 executeStep("Validation for Cropmask", "otbcli_ComputeConfusionMatrix", "-in", crop_mask, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CROP", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>31)
 
-#Product creation (Step 32)
-executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", args.outdir, "-fileclass", "SVT1", "-level", "L4A", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "cropmask", "-processor.cropmask.file", crop_mask, skip=fromstep>32)
+#XML conversion (Step 32)
+executeStep("XML Conversion for Crop Mask", "otbApplicationLauncherCommandLine", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics,  skip=fromstep>32)
+
+#Product creation (Step 33)
+executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", args.outdir, "-fileclass", "SVT1", "-level", "L4A", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "cropmask", "-processor.cropmask.file", crop_mask, skip=fromstep>33)
 
 globalEnd = datetime.datetime.now()
 
