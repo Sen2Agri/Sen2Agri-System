@@ -48,7 +48,7 @@ def executeStep(name, *args, **kwargs) :
 
 	# Check for errors
 	if result != 0 :
-		print "Error running " + name + " at " + str(endTime) + ". The call returned " + result
+		print "Error running " + name + " at " + str(endTime) + ". The call returned " + str(result)
 		exit(result)
 
 	# Remove intermediate files if needed 

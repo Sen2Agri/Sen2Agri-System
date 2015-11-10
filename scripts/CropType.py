@@ -40,9 +40,7 @@ args = parser.parse_args()
 reference_polygons=args.ref
 sample_ratio=args.ratio
 
-indesc = " "
-for desc in args.input:
-   indesc = indesc + '"' + desc + '"' + " "
+indesc = args.input
 
 t0=args.t0
 tend=args.tend
