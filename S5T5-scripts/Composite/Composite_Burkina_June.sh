@@ -27,4 +27,4 @@ mkdir -p "$OUTPUT_PATH"
 try cd "$SCRIPT_PATH"
 
 
-./s5t5_composite_burkina_may_june.sh "$OTB_APP" 20 "$OUTPUT_PATH" bands_mapping_spot.txt
+./s5t5_composite_burkina_june.sh "$OTB_APP" 20 "$OUTPUT_PATH" bands_mapping_spot.txt
