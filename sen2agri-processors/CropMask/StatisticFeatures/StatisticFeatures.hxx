@@ -72,7 +72,7 @@ public:
     result[4] = static_cast<PixelValueType>(0);
     double stdDev = 0.0;
     for (int i = 0; i < pixSize; i++) {
-        stdDev += std::pow(pix[i] - result[1], 2);
+        stdDev += ((double)pix[i]*pix[i]) - ((double)result[2]*result[2]);
     }
     result[4] = static_cast<PixelValueType>(std::sqrt(stdDev / pixSize));
 

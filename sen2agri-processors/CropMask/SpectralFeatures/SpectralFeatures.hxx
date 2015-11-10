@@ -26,19 +26,13 @@ public:
     // Create the output pixel
     PixelType result(outSize);
 
-    // Loop trough the bands series
-    for (int i = 0; i < bands; i++) {
-        for (int j = 0; j < tfSize; j++) {
-            int imgIndex = static_cast<int>(tf[j]);
-            typename PixelType::ValueType value;
+    // Loop trough the input series
+    for (int i = 0; i < tfSize; i++) {
+        int imgIndex = static_cast<int>(tf[i]);
 
-            if (imgIndex >= 0)
-                value = ts[imgIndex * bands + i] < 0 ? 0 : ts[imgIndex * bands + i];
-            else
-                value = 0;
-
-            // if the corresponding pixel is nodata replace it with 0.
-            result[j * bands + i] = value;
+        // copy all bands from the source image
+        for (int j = 0; j < bands; j++) {
+            result[i * bands + j] = imgIndex >= 0 ? ts[imgIndex * bands + j] : static_cast<PixelValueType>(-10000);
         }
     }
 
