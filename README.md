@@ -1,7 +1,7 @@
 # Prerequisites
 
     yum install epel-release
-    yum install git gcc gcc-c++ cmake boost-devel curl-devel expat-devel fftw-devel gdal-devel geos-devel libgeotiff-devel libjpeg-turbo-devel libsvm-devel muParser-devel opencv-devel openjpeg-devel pcre-devel libpng-devel proj-devel python-devel qt-devel sqlite-devel swig libtiff-devel tinyxml-devel qt5-qtbase-devel qt5-qtbase-postgresql gsl-devel
+    yum install git gcc gcc-c++ cmake boost-devel curl-devel expat-devel fftw-devel gdal-devel geos-devel libgeotiff-devel libjpeg-turbo-devel libsvm-devel muParser-devel opencv-devel openjpeg2-devel openjpeg2-tools pcre-devel libpng-devel proj-devel python-devel qt-devel sqlite-devel swig libtiff-devel tinyxml-devel qt5-qtbase-devel qt5-qtbase-postgresql gsl-devel
 
 # Compiling OTB
 
