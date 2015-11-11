@@ -14,6 +14,8 @@ Press `c` (configure), ignore the warnings, press `e` (exit the warning screen),
 
     CMAKE_BUILD_TYPE        RelWithDebInfo
 
+    BUILD_TESTING           OFF
+
     OTB_USE_MUPARSERX       OFF
     OTB_WRAP_PYTHON         ON
 
