@@ -1,30 +1,15 @@
-#!/bin/bash
-
-function try {
-    echo
-    echo
-    echo "$@"
-    "$@"
-    code=$?
-    if [ $code -ne 0 ]
-    then
-        echo "$1 did not work: exit status $code"
-        exit 1
-    fi
-}
-
-
-OTB_APP="/home/ramona/sen2agri-processors-build/Composite"
-SCRIPT_PATH="/home/ramona/sen2agri/sen2agri-processors/Composite/TestScripts"
-OUTPUT_PATH="/home/ramona/S5T5-Tests/Composite_Burkina_April/"
-
-echo "The OTB application will be launched from:"
-echo "$OTB_APP"
-echo "Resolution 20 meters"
-echo "The output path:"
-echo "$OUTPUT_PATH"
-mkdir -p "$OUTPUT_PATH"
-try cd "$SCRIPT_PATH"
-
-
-./s5t5_composite_burkina_april.sh "$OTB_APP" 10 "$OUTPUT_PATH" bands_mapping_spot5.txt
+##!/bin/bash
+#USER modif
+#add directories where SPOT products are to be found
+./composite_processing.py --applocation /home/ramona/sen2agri-processors-build --syntdate 20150430 --synthalf 25 --input \
+"/mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150410_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150410_N2A_BurkinaD0000B0000.xml " \
+"/mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150415_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150415_N2A_BurkinaD0000B0000.xml " \
+"/mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150420_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150420_N2A_BurkinaD0000B0000.xml " \
+"/mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150425_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150425_N2A_BurkinaD0000B0000.xml " \
+"/mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150430_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150430_N2A_BurkinaD0000B0000.xml " \
+"/mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150505_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150505_N2A_BurkinaD0000B0000.xml " \
+"/mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150510_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150510_N2A_BurkinaD0000B0000.xml " \
+"/mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150515_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150515_N2A_BurkinaD0000B0000.xml " \
+"/mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150520_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150520_N2A_BurkinaD0000B0000.xml " \
+"/mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150525_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150525_N2A_BurkinaD0000B0000.xml " \
+--res 10 --t0 20150410 --tend 20150525 --outdir /home/ramona/S5T5-Tests/Composite_Burkina_April --bandsmap /home/ramona/sen2agri/sen2agri-processors/Composite/TestScripts/bands_mapping_spot5.txt
