@@ -6,6 +6,8 @@ import glob
 import argparse
 import csv
 from sys import argv
+import datetime
+from common import executeStep 
 
 #Path to build folder
 defaultBuildFolder="~/sen2agri-build/"
@@ -26,14 +28,19 @@ parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 1
 parser.add_argument('-outdir', help="Output directory", default=defaultBuildFolder)
 parser.add_argument('-buildfolder', help="Build folder", default=defaultBuildFolder)
 
+parser.add_argument('-rfnbtrees', help='The number of trees used for training (default 100)', required=False, metavar='rfnbtrees', default=100)
+parser.add_argument('-rfmax', help='maximum depth of the trees used for Random Forest classifier (default 25)', required=False, metavar='rfmax', default=25)
+parser.add_argument('-rfmin', help='minimum number of samples in each node used by the classifier (default 5)', required=False, metavar='rfmin', default=5)
+
+parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)", default=False, action='store_true')
+parser.add_argument('-fromstep', help="Run from the selected step (default 1)", type=int, default=1)
+
 args = parser.parse_args()
 
 reference_polygons=args.ref
 sample_ratio=args.ratio
 
-indesc = " "
-for desc in args.input:
-   indesc = indesc + '"' + desc + '"' + " "
+indesc = args.input
 
 t0=args.t0
 tend=args.tend
@@ -43,6 +50,9 @@ classifier=args.classifier
 random_seed=args.rseed
 crop_mask=args.mask
 pixsize=args.pixsize
+rfnbtrees=str(args.rfnbtrees)
+rfmax=str(args.rfmax)
+rfmin=str(args.rfmin)
 
 buildFolder=args.buildfolder
 
@@ -60,148 +70,72 @@ fts=os.path.join(args.outdir, "feature-time-series.tif")
 statistics=os.path.join(args.outdir, "statistics.xml")
 confmatout=os.path.join(args.outdir, "confusion-matrix.csv")
 model=os.path.join(args.outdir, "model.txt")
+
+crop_type_map_uncut=os.path.join(args.outdir, "crop_type_map_uncut.tif")
+crop_type_map_uncompressed=os.path.join(args.outdir, "crop_type_map_uncompressed.tif")
 crop_type_map=os.path.join(args.outdir, "crop_type_map.tif")
+
 confusion_matrix_validation=os.path.join(args.outdir, "confusion-matrix-validation.csv")
 quality_metrics=os.path.join(args.outdir, "quality-metrics.txt")
+xml_validation_metrics=os.path.join(args.outdir, "validation-metrics.xml")
 
-# Bands Extractor
-print "Executing BandsExtractor..."
-beCmdLine = "otbApplicationLauncherCommandLine BandsExtractor "+buildFolder+"CropType/BandsExtractor -il "+indesc+" -out "+rawtocr+" -mask "+rawmask+" -outdate "+dates+" -shape "+shape+" -pixsize "+pixsize
-print beCmdLine
-result = os.system(beCmdLine)
+keepfiles = args.keepfiles
+fromstep = args.fromstep
 
-if result != 0 :
-   print "Error running BandsExtractor"
-   exit(1)
-print "BandsExtractor done!"
+globalStart = datetime.datetime.now()
 
-# ogr2ogr
-print "Executing ogr2ogr"
-ooCmdLine = "/usr/local/bin/ogr2ogr -clipsrc "+shape+" -overwrite "+reference_polygons_clip+" "+reference_polygons
-print ooCmdLine
-result = os.system(ooCmdLine)
+# Bands Extractor (Step 1)
+executeStep("BandsExtractor", "otbApplicationLauncherCommandLine", "BandsExtractor", os.path.join(buildFolder,"CropType/BandsExtractor"),"-out",rawtocr,"-mask",rawmask,"-outdate", dates, "-shape", shape, "-pixsize", pixsize, "-il", *indesc, skip=fromstep>1)
 
-if result != 0 :
-   print "Error running ogr2ogr"
-   exit(1)
-print "ogr2ogr done!"
+# gdalwarp (Step 2 and 3)
+executeStep("gdalwarp for reflectances", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawtocr, tocr, skip=fromstep>2, rmfiles=[] if keepfiles else [rawtocr])
 
+executeStep("gdalwarp for masks", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawmask, mask, skip=fromstep>3, rmfiles=[] if keepfiles else [rawmask])
 
-# Sample Selection
-print "Executing SampleSelection..."
-ssCmdLine = "otbApplicationLauncherCommandLine SampleSelection "+buildFolder+"CropType/SampleSelection -ref "+reference_polygons_clip+" -ratio "+sample_ratio+" -seed "+random_seed+" -tp "+training_polygons+" -vp "+validation_polygons
-print ssCmdLine
-result = os.system(ssCmdLine)
+# Temporal Resampling (Step 4)
+executeStep("TemporalResampling", "otbApplicationLauncherCommandLine", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", sp, "-t0", t0, "-tend", tend, "-radius", radius, "-rtocr", rtocr, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
 
-if result != 0 :
-   print "Error running SampleSelection"
-   exit(1)
-print "SampleSelection done!"
+# Feature Extraction (Step 5)
+executeStep("FeatureExtraction", "otbApplicationLauncherCommandLine", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-fts", fts, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
 
-# gdalwarp
-print "Executing gdalwarp..."
+# ogr2ogr (Step 6)
+executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-clipsrc", shape,"-overwrite",reference_polygons_clip, reference_polygons, skip=fromstep>6)
 
-gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata \"-10000\" -overwrite -cutline "+shape+" -crop_to_cutline "+rawtocr+" "+tocr
-print gwCmdLine
-result = os.system(gwCmdLine)
+# Sample Selection (Step 7)
+executeStep("SampleSelection", "otbApplicationLauncherCommandLine","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons, skip=fromstep>7)
 
-if result != 0 :
-   print "Error running gdalwarp"
-   exit(1)
+# Image Statistics (Step 8)
+executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", fts,"-out",statistics, skip=fromstep>8)
 
-os.system("rm " + rawtocr)
-
-gwCmdLine = "/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata 1 -overwrite -cutline "+shape+" -crop_to_cutline "+rawmask+" "+mask
-print gwCmdLine
-result = os.system(gwCmdLine)
-
-if result != 0 :
-   print "Error running gdalwarp"
-   exit(1)
-
-os.system("rm " + rawmask)
-
-print "gdalwarp done!"
-
-# Temporal Resampling
-print "Executing TemporalResampling..."
-trCmdLine = "otbApplicationLauncherCommandLine TemporalResampling "+buildFolder+"CropType/TemporalResampling -tocr "+tocr+" -mask "+mask+" -ind "+dates+" -sp "+sp+" -t0 "+t0+" -tend "+tend+" -radius "+radius+" -rtocr "+rtocr
-print trCmdLine
-result = os.system(trCmdLine)
-
-if result != 0 :
-   print "Error running TemporalResampling"
-   exit(1)
-
-os.system("rm " + tocr)
-os.system("rm " + mask)
-
-print "TemporalResampling done!"
-
-# Feature Extraction
-print "Executing FeatureExtraction..."
-feCmdLine = "otbApplicationLauncherCommandLine FeatureExtraction "+buildFolder+"CropType/FeatureExtraction -rtocr "+rtocr+" -fts "+fts
-print feCmdLine
-result = os.system(feCmdLine)
-
-if result != 0 :
-   print "Error running FeatureExtraction"
-   exit(1)
-
-os.system("rm " + rtocr)
-
-print "FeatureExtraction done!"
-
-# Image Statistics
-print "Executing ComputeImagesStatistics..."
-isCmdLine = "otbcli_ComputeImagesStatistics -il "+fts+" -out "+statistics
-print isCmdLine
-result = os.system(isCmdLine)
-
-if result != 0 :
-   print "Error running ComputeImagesStatistics"
-   exit(1)
-print "ComputeImagesStatistics done!"
-
-#Train Image Classifier
-print "Executing TrainImagesClassifier..."
-tcCmdLine = "otbcli_TrainImagesClassifier -io.il "+fts+" -io.vd "+training_polygons+" -io.imstat "+statistics+" -rand "+random_seed+" -sample.bm 0 -io.confmatout "+confmatout+" -io.out "+model+" -sample.mt -1 -sample.mv -1 -sample.vfn CODE -sample.vtr "+sample_ratio+" -classifier "+classifier
-
+#Train Image Classifier (Step 9)
 if classifier == "rf" :
-   tcCmdLine += " -classifier.rf.nbtrees 100 -classifier.rf.min 5 -classifier.rf.max 25"
-elif classifier == "svm" :
-   tcCmdLine += " -classifier.svm.k rbf -classifier.svm.opt 1"
-print tcCmdLine
-result = os.system(tcCmdLine)
+	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>9)
+elif classifier == "svm":
+	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr",sample_ratio,"-classifier","svm", "-classifier.svm.k",rbf,"-classifier.svm.opt",1, skip=fromstep>9)
 
-if result != 0 :
-   print "Error running TrainImagesClassifier"
-   exit(1)
-print "TrainImagesClassifier done!"
-
-#Image Classifier
-print "Executing ImageClassifier..."
-icCmdLine = "otbcli_ImageClassifier -in "+fts+" -imstat "+statistics+" -model "+model+" -out "+crop_type_map
+#Image Classifier (Step 10)
 if os.path.isfile(crop_mask) :
-   icCmdLine += " -mask "+crop_mask
-print icCmdLine
-result = os.system(icCmdLine)
+	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts,"-imstat",statistics,"-model", model, "-mask", crop_mask, "-out", crop_type_map_uncut, "int16", skip=fromstep>10, rmfiles=[] if keepfiles else [fts])
+else:
+	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts,"-imstat",statistics,"-model", model, "-out", crop_type_map_uncut, "int16", skip=fromstep>10, rmfiles=[] if keepfiles else [fts])
 
-if result != 0 :
-   print "Error running ImageClassifier"
-   exit(1)
-print "ImageClassifier done!"
+# gdalwarp (Step 11)
+executeStep("gdalwarp for crop type", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_type_map_uncut, crop_type_map_uncompressed, skip=fromstep>11)
 
-#Validation
-print "Executing ComputeConfusionMatrix..."
-vdCmdLine = "otbcli_ComputeConfusionMatrix -in "+crop_type_map+" -out "+confusion_matrix_validation+" -ref vector -ref.vector.in "+validation_polygons+" -ref.vector.field CODE -nodatalabel 10 > "+quality_metrics
-print vdCmdLine
-result = os.system(vdCmdLine)
+#Validation (Step 12)
+executeStep("Validation for Crop Type", "otbcli_ComputeConfusionMatrix", "-in",  crop_type_map_uncompressed, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CODE", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>12)
 
-if result != 0 :
-   print "Error running ComputeConfusionMatrix"
-   exit(1)
-print "ComputeConfusionMatrix done!"
+#Compression (Step 13)
+executeStep("Compression", "otbcli_Convert", "-in",  crop_type_map_uncompressed, "-out", crop_type_map+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>13, rmfiles=[] if keepfiles else [ crop_type_map_uncompressed])
 
-print "Execution successfull !"
+#XML conversion (Step 14)
+executeStep("XML Conversion for Crop Type", "otbApplicationLauncherCommandLine", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics,  skip=fromstep>14)
+
+#Product creation (Step 15)
+executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", args.outdir, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", crop_type_map, skip=fromstep>15)
+
+globalEnd = datetime.datetime.now()
+
+print "Processor CropType finished in " + str(globalEnd-globalStart)
+
 
