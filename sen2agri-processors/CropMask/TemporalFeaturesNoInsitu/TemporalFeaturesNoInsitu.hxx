@@ -35,15 +35,6 @@ public:
         return result;
     }
 
-    // If the input pixel is zero return zero
-    PixelType zero(numImages);
-    nodata.Fill(static_cast<PixelValueType>(0));
-
-    if (ndvi == zero) {
-        result.Fill(static_cast<PixelValueType>(0));
-        return result;
-    }
-
     // Compute the maximum and minimum NDVI slopes
     // Compute the maximum and minimum NDVI values
     // Compute the maximum Red value

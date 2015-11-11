@@ -36,8 +36,8 @@
 #include "FeaturesWithoutInsitu.hxx"
 
 typedef otb::ImageFileReader<ImageType>                                         ReaderType;
-typedef TemporalFeaturesNoInsituFunctor<ImageType::PixelType>                   TemporalFeaturesNoInsituFunctorType;
-typedef BinaryFunctorImageFilterWithNBands<TemporalFeaturesNoInsituFunctorType>  BinaryFunctorImageFilterWithNBandsType;
+typedef FeaturesNoInsituFunctor<ImageType::PixelType>                   FeaturesNoInsituFunctorType;
+typedef BinaryFunctorImageFilterWithNBands<FeaturesNoInsituFunctorType>  BinaryFunctorImageFilterWithNBandsType;
 
 //  Software Guide : EndCodeSnippet
 
@@ -62,7 +62,7 @@ namespace Wrapper
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
-class TemporalFeaturesNoInsitu : public Application
+class FeaturesWithoutInsitu : public Application
 //  Software Guide : EndCodeSnippet
 {
 public:
@@ -71,7 +71,7 @@ public:
   // Software Guide : EndLatex
 
   //  Software Guide : BeginCodeSnippet
-  typedef TemporalFeaturesNoInsitu Self;
+  typedef FeaturesWithoutInsitu Self;
   typedef Application Superclass;
   typedef itk::SmartPointer<Self> Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
@@ -85,7 +85,7 @@ public:
   itkNewMacro(Self)
 ;
 
-  itkTypeMacro(TemporalFeaturesNoInsitu, otb::Application)
+  itkTypeMacro(FeaturesWithoutInsitu, otb::Application)
 ;
   //  Software Guide : EndCodeSnippet
 
@@ -113,10 +113,10 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-      SetName("TemporalFeaturesNoInsitu");
+      SetName("FeaturesWithoutInsitu");
       SetDescription("The feature extraction step produces the relevant features for the classication.");
 
-      SetDocName("TemporalFeaturesNoInsitu");
+      SetDocName("FeaturesWithoutInsitu");
       SetDocLongDescription("The feature extraction step produces the relevant features for the classication. The features are computed"
                             "for each date of the resampled and gaplled time series and concatenated together into a single multi-channel"
                             "image file. The selected features are the surface reflectances, the NDVI, the NDWI and the brightness.");
@@ -149,7 +149,7 @@ private:
     AddParameter(ParameterType_InputImage, "ts", "Initial time series");
     AddParameter(ParameterType_InputFilename, "dates", "The dates for the input series, expressed as days from epoch");
 
-    AddParameter(ParameterType_OutputImage, "tf", "Temporal features");
+    AddParameter(ParameterType_OutputImage, "sf", "Spectral features");
 
 
      //  Software Guide : EndCodeSnippet
@@ -163,7 +163,7 @@ private:
     SetDocExampleParameterValue("ndvi", "ndvi.tif");
     SetDocExampleParameterValue("ts", "ts.tif");
     SetDocExampleParameterValue("dates", "dates.txt");
-    SetDocExampleParameterValue("tf", "temporal_features.tif");
+    SetDocExampleParameterValue("sf", "spectral_features.tif");
     //  Software Guide : EndCodeSnippet
   }
 
@@ -219,12 +219,12 @@ private:
 
       // connect the functor based filter
       m_filter->SetNumberOfOutputBands(bpi*outImages);
-      m_filter->SetFunctor(TemporalFeaturesNoInsituFunctorType(outImages, bpi, m_inDates));
+      m_filter->SetFunctor(FeaturesNoInsituFunctorType(outImages, bpi, m_inDates));
 
       m_filter->SetInput(0, m_NDVIReader->GetOutput());
       m_filter->SetInput(1, m_TSReader->GetOutput());
 
-      SetParameterOutputImage("tf", m_filter->GetOutput());
+      SetParameterOutputImage("sf", m_filter->GetOutput());
 
   }
   //  Software Guide :EndCodeSnippet
@@ -243,7 +243,7 @@ private:
 // Finally \code{OTB\_APPLICATION\_EXPORT} is called.
 // Software Guide : EndLatex
 //  Software Guide :BeginCodeSnippet
-OTB_APPLICATION_EXPORT(otb::Wrapper::TemporalFeaturesNoInsitu)
+OTB_APPLICATION_EXPORT(otb::Wrapper::FeaturesWithoutInsitu)
 //  Software Guide :EndCodeSnippet
 
 

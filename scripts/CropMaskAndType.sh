@@ -1,21 +1,21 @@
 #!/bin/bash
 
-echo "Running CropMask with insitu for Ukraine ..."
+#echo "Running CropMask with insitu for Ukraine ..."
 ./CropMask-Ukraine.sh > ~/logs/CropMask-Ukraine-insitu.txt
-echo "Running CropMask with insitu for South Africa ..."
+#echo "Running CropMask with insitu for South Africa ..."
 ./CropMask-SouthAfrica.sh > ~/logs/CropMask-SouthAfrica-insitu.txt
-echo "Running CropMask with insitu for Sudmipy West ..."
+#echo "Running CropMask with insitu for Sudmipy West ..."
 ./CropMask-CSudmipy-O.sh > ~/logs/CropMask-CSudmipy-O-insitu.txt
-echo "Running CropMask with insitu for Sudmipy East ..."
+#echo "Running CropMask with insitu for Sudmipy East ..."
 ./CropMask-CSudmipy-E.sh > ~/logs/CropMask-CSudmipy-E-insitu.txt
 
-echo "Running CropType with insitu mask for Ukraine ..."
+#echo "Running CropType with insitu mask for Ukraine ..."
 ./CropType-Ukraine.sh > ~/logs/CropType-Ukraine-insitu.txt
-echo "Running CropType with insitu mask for South Africa ..."
+#echo "Running CropType with insitu mask for South Africa ..."
 ./CropType-SouthAfrica.sh > ~/logs/CropType-SouthAfrica-insitu.txt
-echo "Running CropType with insitu mask for Sudmipy West ..."
+#echo "Running CropType with insitu mask for Sudmipy West ..."
 ./CropType-CSudmipy-O.sh > ~/logs/CropType-CSudmipy-O-insitu.txt
-echo "Running CropType with insitu mask for Sudmipy West ..."
+#echo "Running CropType with insitu mask for Sudmipy West ..."
 ./CropType-CSudmipy-E.sh > ~/logs/CropType-CSudmipy-E-insitu.txt
 
 echo "Running CropMask with no insitu for Sudmipy West ..."

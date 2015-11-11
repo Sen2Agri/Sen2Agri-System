@@ -16,11 +16,11 @@ typedef otb::VectorImage<PixelValueType, 2>  ImageType;
 
 
 template <typename PixelType>
-class TemporalFeaturesNoInsituFunctor
+class FeaturesNoInsituFunctor
 {
 public:
-  TemporalFeaturesNoInsituFunctor() : m_outImages(5), m_bpi(4), m_id(0) {}
-  TemporalFeaturesNoInsituFunctor(int outImages, int bpi, std::vector<int> id) : m_outImages(outImages), m_bpi(bpi), m_id(id) {}
+  FeaturesNoInsituFunctor() : m_outImages(5), m_bpi(4), m_id(0) {}
+  FeaturesNoInsituFunctor(int outImages, int bpi, std::vector<int> id) : m_outImages(outImages), m_bpi(bpi), m_id(id) {}
 
   PixelType operator()(PixelType ndvi, PixelType ts) const
   {
@@ -45,9 +45,9 @@ public:
     int index[INDEXSIZE];
     index[MAXNDVISLOPE]     = -1;
     index[MINNDVISLOPE]     = -1;
-    index[MAXNDVI]          = -1;
-    index[MINNDVI]          = -1;
-    index[MAXRED]           = -1;
+    index[MAXNDVI]          = 0;
+    index[MINNDVI]          = 0;
+    index[MAXRED]           = 0;
     double slope = 0.0;
     double minSlope = 0.0;
     double maxSlope = 0.0;
@@ -88,19 +88,19 @@ public:
     // build the result
     for (int i = 0; i< m_outImages; i++) {
         for (int j = 0; j < m_bpi; j++) {
-            result[i * m_outImages + j] = (index[i] == -1 ? -10000 : ts[index[i] * numImages + j]);
+            result[i * m_bpi + j] = (index[i] == -1 ? -10000 : ts[index[i] * m_bpi + j]);
         }
     }
 
     return result;
   }
 
-  bool operator!=(const TemporalFeaturesNoInsituFunctor a) const
+  bool operator!=(const FeaturesNoInsituFunctor a) const
   {
     return (this->m_outImages != a.m_outImages) || (this->m_bpi != a.m_bpi) || (this->m_id != a.m_id);
   }
 
-  bool operator==(const TemporalFeaturesNoInsituFunctor a) const
+  bool operator==(const FeaturesNoInsituFunctor a) const
   {
     return !(*this != a);
   }

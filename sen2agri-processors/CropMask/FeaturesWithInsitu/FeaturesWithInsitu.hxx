@@ -63,9 +63,12 @@ public:
         avgBrightness += brightness[i];
         valuesBrightness[i] = brightness[i];
     }
-    result[1] = static_cast<PixelValueType>(avgNDVI / pixSize);
-    result[19] = static_cast<PixelValueType>(avgNDWI / pixSize);
-    result[24] = static_cast<PixelValueType>(avgBrightness / pixSize);
+    avgNDVI /= pixSize;
+    avgNDWI /= pixSize;
+    avgBrightness /= pixSize;
+    result[1] = static_cast<PixelValueType>(avgNDVI);
+    result[19] = static_cast<PixelValueType>(avgNDWI);
+    result[24] = static_cast<PixelValueType>(avgBrightness);
 
     // Compute the median for ndwi and brightness
     std::sort(valuesNDWI.begin(), valuesNDWI.end());
@@ -78,6 +81,11 @@ public:
         result[25] = (valuesBrightness[pixSize / 2 - 1] + valuesBrightness[pixSize / 2]) / 2;
     }
 
+    //Comput the square for the avegare values (used for standard deviation)
+    double avgNDVI2 = avgNDVI*avgNDVI;
+    double avgNDWI2 = avgNDWI*avgNDWI;
+    double avgBrightness2 = avgBrightness*avgBrightness;
+
     // Compute the standard deviation for ndvi, ndwi and brightness
     result[2] = static_cast<PixelValueType>(0);
     double stdDevNDVI = 0.0;
@@ -86,10 +94,11 @@ public:
     result[26] = static_cast<PixelValueType>(0);
     double stdDevBrightness = 0.0;
     for (int i = 0; i < pixSize; i++) {
-        stdDevNDVI += std::pow(ndvi[i] - result[1], 2);
-        stdDevNDWI += std::pow(ndwi[i] - result[19], 2);
-        stdDevBrightness += std::pow(brightness[i] - result[24], 2);
+        stdDevNDVI += ((double)ndvi[i]*ndvi[i] - avgNDVI2);
+        stdDevNDWI += ((double)ndwi[i]*ndwi[i] - avgNDWI2);
+        stdDevBrightness += ((double)brightness[i]*brightness[i] - avgBrightness2);
     }
+
     result[2] = static_cast<PixelValueType>(std::sqrt(stdDevNDVI / pixSize));
     result[21] = static_cast<PixelValueType>(std::sqrt(stdDevNDWI / pixSize));
     result[26] = static_cast<PixelValueType>(std::sqrt(stdDevBrightness / pixSize));

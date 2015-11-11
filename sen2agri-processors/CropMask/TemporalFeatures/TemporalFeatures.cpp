@@ -148,6 +148,9 @@ private:
     AddParameter(ParameterType_InputImage, "ndvi", "NDVI time series");
     AddParameter(ParameterType_InputFilename, "dates", "The dates for the input series, expressed as days from epoch");
 
+    AddParameter(ParameterType_Int, "window", "The number of dates in the temporal window");
+    SetDefaultParameterInt("window", 2);
+
     AddParameter(ParameterType_OutputImage, "tf", "Temporal features");
 
 
@@ -161,6 +164,7 @@ private:
     //  Software Guide : BeginCodeSnippet
     SetDocExampleParameterValue("ndvi", "ndvi.tif");
     SetDocExampleParameterValue("dates", "dates.txt");
+    SetDocExampleParameterValue("window", "2");
     SetDocExampleParameterValue("tf", "temporal_features.tif");
     //  Software Guide : EndCodeSnippet
   }
@@ -192,6 +196,8 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoExecute()
   {
+      // Read the parameters
+      m_w = GetParameterInt("window");
 
       // Get the file that contains the dates
       m_inDates.clear();
