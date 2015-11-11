@@ -21,5 +21,5 @@ source set_build_folder.sh
 /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150714_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150714_N2A_BurkinaD0000B0000.xml \
 /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150729_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150729_N2A_BurkinaD0000B0000.xml \
 /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150823_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150823_N2A_BurkinaD0000B0000.xml \
--t0 20150410 -tend 20150823 -rate 5 -radius 100 -classifier rf -rseed 0 -mask /home/ramona/S5T5-Tests/CropType_Burkina/crop_mask.tif -pixsize 20 \
+-t0 20150410 -tend 20150823 -rate 5 -radius 100 -classifier rf -rseed 0 -mask /home/ramona/S5T5-Tests/CropType_Burkina/crop_mask.tif -pixsize 10 \
 -outdir "/home/ramona/S5T5-Tests/CropType_Burkina/" -buildfolder $BUILD_FOLDER
