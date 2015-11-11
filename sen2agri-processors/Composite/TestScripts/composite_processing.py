@@ -281,7 +281,7 @@ if REMOVE_TEMP:
     filesToBeDeleted = outDir + '/L3AResult*'
     runCmd(["rm", "-fr", filesToBeDeleted])
 
-print("Processing finnished: " + str(datetime.datetime.now()))
+print("Processing finished: " + str(datetime.datetime.now()))
 print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 '''
