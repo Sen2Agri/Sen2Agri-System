@@ -70,8 +70,11 @@ fts=os.path.join(args.outdir, "feature-time-series.tif")
 statistics=os.path.join(args.outdir, "statistics.xml")
 confmatout=os.path.join(args.outdir, "confusion-matrix.csv")
 model=os.path.join(args.outdir, "model.txt")
+
 crop_type_map_uncut=os.path.join(args.outdir, "crop_type_map_uncut.tif")
+crop_type_map_uncompressed=os.path.join(args.outdir, "crop_type_map_uncompressed.tif")
 crop_type_map=os.path.join(args.outdir, "crop_type_map.tif")
+
 confusion_matrix_validation=os.path.join(args.outdir, "confusion-matrix-validation.csv")
 quality_metrics=os.path.join(args.outdir, "quality-metrics.txt")
 xml_validation_metrics=os.path.join(args.outdir, "validation-metrics.xml")
@@ -117,16 +120,19 @@ else:
 	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts,"-imstat",statistics,"-model", model, "-out", crop_type_map_uncut, "int16", skip=fromstep>10, rmfiles=[] if keepfiles else [fts])
 
 # gdalwarp (Step 11)
-executeStep("gdalwarp for crop type", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_type_map_uncut, crop_type_map, skip=fromstep>11)
+executeStep("gdalwarp for crop type", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_type_map_uncut, crop_type_map_uncompressed, skip=fromstep>11)
 
 #Validation (Step 12)
-executeStep("Validation for Crop Type", "otbcli_ComputeConfusionMatrix", "-in", crop_type_map, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CODE", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>12)
+executeStep("Validation for Crop Type", "otbcli_ComputeConfusionMatrix", "-in",  crop_type_map_uncompressed, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CODE", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>12)
 
-#XML conversion (Step 13)
-executeStep("XML Conversion for Crop Type", "otbApplicationLauncherCommandLine", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics,  skip=fromstep>13)
+#Compression (Step 13)
+executeStep("Compression", "otbcli_Convert", "-in",  crop_type_map_uncompressed, "-out", crop_type_map+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>13, rmfiles=[] if keepfiles else [ crop_type_map_uncompressed])
 
-#Product creation (Step 14)
-executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", args.outdir, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", crop_type_map, skip=fromstep>14)
+#XML conversion (Step 14)
+executeStep("XML Conversion for Crop Type", "otbApplicationLauncherCommandLine", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics,  skip=fromstep>14)
+
+#Product creation (Step 15)
+executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", args.outdir, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", crop_type_map, skip=fromstep>15)
 
 globalEnd = datetime.datetime.now()
 
