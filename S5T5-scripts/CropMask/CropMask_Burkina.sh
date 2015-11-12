@@ -2,7 +2,7 @@
 
 source set_build_folder.sh
 
-./CropMask.py -refp /mnt/Imagery_S2A/In-Situ_TDS/Burkina-Faso/BF_KOUM_LC_FO_2013.shp -ratio 0.75 -input \
+../../scripts/CropMask.py -refp /mnt/Imagery_S2A/In-Situ_TDS/Burkina-Faso/BF_KOUM_LC_FO_2013.shp -ratio 0.75 -input \
 /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150410_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150410_N2A_BurkinaD0000B0000.xml \
 /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150415_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150415_N2A_BurkinaD0000B0000.xml \
 /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Burkina/SPOT5_HRG2_XS_20150420_N2A_BurkinaD0000B0000/SPOT5_HRG2_XS_20150420_N2A_BurkinaD0000B0000.xml \
