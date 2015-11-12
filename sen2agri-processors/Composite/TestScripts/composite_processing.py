@@ -164,10 +164,10 @@ with open(paramsFilenameXML, 'w') as paramsFileXML:
     wON = ET.SubElement(root, "Weight_ON")
     ET.SubElement(wON, "weight_sensor").text = WEIGHT_SENSOR
     dates = ET.SubElement(root, "Dates_information")
-    ET.SubElement(wON, "start_date").text = t0
-    ET.SubElement(wON, "end_date").text = tend
-    ET.SubElement(wON, "synthesis_date").text = syntDate
-    ET.SubElement(wON, "synthesis_half").text = syntHalf
+    ET.SubElement(dates, "start_date").text = t0
+    ET.SubElement(dates, "end_date").text = tend
+    ET.SubElement(dates, "synthesis_date").text = syntDate
+    ET.SubElement(dates, "synthesis_half").text = syntHalf
     usedXMLs = ET.SubElement(root, "XML_files")
     i = 0
     for xml in args.input:
