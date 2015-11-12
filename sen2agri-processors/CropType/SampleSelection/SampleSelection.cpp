@@ -147,7 +147,8 @@ private:
 
     AddParameter(ParameterType_OutputFilename, "tp", "Training Polygons");
     AddParameter(ParameterType_OutputFilename, "vp", "Validation Polygons");
-
+    AddParameter(ParameterType_OutputFilename, "lut", "The lookup table based on the CODE field. Used only for Crop Type");
+    MandatoryOff("lut");
 
     // Set default value for parameters
     SetDefaultParameterFloat("ratio", 0.75);
@@ -220,10 +221,13 @@ private:
 
       int featureCount = sourceLayer.GetFeatureCount(true);
 
-      // read all features frm the source fiel and add them to the multimap
+
+
+      // read all features from the source field and add them to the multimap
       for (ogr::Feature& feature : sourceLayer) {
           featuresMap.insert(std::pair<int, ogr::Feature>(feature.ogr().GetFieldAsInteger("CODE"), feature.Clone()));
       }
+
       // create the layers for the target files
       otb::ogr::Layer tpLayer = ogrTp->CreateLayer(sourceLayer.GetName(), sourceLayer.GetSpatialRef()->Clone(), sourceLayer.GetGeomType());
       otb::ogr::Layer vpLayer = ogrVp->CreateLayer(sourceLayer.GetName(), sourceLayer.GetSpatialRef()->Clone(), sourceLayer.GetGeomType());
@@ -240,6 +244,24 @@ private:
       OGRFeatureDefn* tpLayerDefn = tpLayer.ogr().GetLayerDefn();
       OGRFeatureDefn* vpLayerDefn = vpLayer.ogr().GetLayerDefn();
 
+      std::ofstream outLUTFile;
+
+      if (HasValue("lut")) {
+          // create the LUT file
+          outLUTFile.open(GetParameterString("lut"));
+          if (!outLUTFile.is_open()) {
+              itkExceptionMacro("Can't open LUT file for writting!");
+          }
+          outLUTFile << "# LUT table for Crop Type " << std::endl;
+
+          // append the lines for -10000 (nodata) and 0 (no crop)
+          outLUTFile << "-10000 245 245 245" << std::endl;
+          outLUTFile << "0 0 0 0" << std::endl;
+      }
+
+      int index = 0;
+      int lastcode = 0;
+
       // initialise the random number generator
       std::srand(seed);
       // Loop through the entries
@@ -247,6 +269,13 @@ private:
       for (it=featuresMap.begin(); it!=featuresMap.end(); ++it) {
           // get the feature
           ogr::Feature &f = it->second;
+
+          if (it->first != lastcode && HasValue("lut")) {
+              // Adda new color to the LUT file
+              outLUTFile << it->first << " " << colors[index] << std::endl;
+              index = (index + 1) % 20;
+              lastcode = it->first;
+          }
 
           // generate a random number and convert it to the [0..1] interval
           float random = (float) std::rand() / (float)RAND_MAX;
@@ -286,10 +315,37 @@ private:
       ogrTp->SyncToDisk();
       ogrVp->SyncToDisk();
 
+      // Write the LUT file
+      if (HasValue("lut")) {
+          outLUTFile.close();
+      }
+
       std::cout << "total features: " << featureCount << ", Training features: " << tpLayer.GetFeatureCount(true) << ", Validation features: " << vpLayer.GetFeatureCount(true) << std::endl;
   }
   //  Software Guide :EndCodeSnippet
 
+  std::string colors[20] = {
+      std::string("255 0 0"), // Red
+      std::string("0 255 0"), // Green
+      std::string("0 0 255"), // Blue
+      std::string("255 255 0"), // Yellow
+      std::string("255 0 255"), // Fucsia
+      std::string("0 255 255"), // Cyan
+      std::string("255 165 0"), // Orange
+      std::string("128 0 128"), // Purple
+      std::string("51 161 201"), //Peacock
+      std::string("189 252 201"), //Mint
+      std::string("128 0 0"),//Maroon
+      std::string("245 222 179"),//Wheat
+      std::string("142 56 142"), //sgi beet
+      std::string("113 113 198"), //sgi slateblue
+      std::string("125 158 192"), //sgi lightblue
+      std::string("56 142 142"), //sgi teal
+      std::string("113 198 113"), //sgi chartreuse
+      std::string("142 142 56"), //sgi olivedrab
+      std::string("197 193 170"), //sgi brightgray
+      std::string("198 113 113") //sgi salmon
+  };
 
 };
 }
