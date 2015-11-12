@@ -25,6 +25,7 @@ parser.add_argument('-classifier', help='The classifier used for training (eithe
 parser.add_argument('-rseed', help='The random seed used for training', required=False, metavar='random_seed', default=0)
 parser.add_argument('-mask', help='The crop mask', required=False, metavar='crop_mask', default='')
 parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
+parser.add_argument('-tilename', help="The name of the tile", default="T0000")
 parser.add_argument('-outdir', help="Output directory", default=defaultBuildFolder)
 parser.add_argument('-buildfolder', help="Build folder", default=defaultBuildFolder)
 parser.add_argument('-targetfolder', help="The folder where the target product is built", default="")
@@ -58,6 +59,7 @@ rfmin=str(args.rfmin)
 buildFolder=args.buildfolder
 
 targetFolder=args.targetfolder if args.targetfolder != "" else args.outdir
+tilename = args.tilename
 
 reference_polygons_reproject=os.path.join(args.outdir, "reference_polygons_reproject.shp")
 reference_polygons_clip=os.path.join(args.outdir, "reference_clip.shp")
@@ -75,10 +77,12 @@ fts=os.path.join(args.outdir, "feature-time-series.tif")
 statistics=os.path.join(args.outdir, "statistics.xml")
 confmatout=os.path.join(args.outdir, "confusion-matrix.csv")
 model=os.path.join(args.outdir, "model.txt")
+lut=os.path.join(args.outdir, "lut.txt")
 
 crop_type_map_uncut=os.path.join(args.outdir, "crop_type_map_uncut.tif")
 crop_type_map_uncompressed=os.path.join(args.outdir, "crop_type_map_uncompressed.tif")
 crop_type_map=os.path.join(args.outdir, "crop_type_map.tif")
+color_crop_type_map=os.path.join(args.outdir, "color_crop_type_map.tif")
 
 confusion_matrix_validation=os.path.join(args.outdir, "confusion-matrix-validation.csv")
 quality_metrics=os.path.join(args.outdir, "quality-metrics.txt")
@@ -110,16 +114,16 @@ executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-t_srs", shape_proj,"-progress
 executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-clipsrc", shape,"-progress","-overwrite",reference_polygons_clip, reference_polygons_reproject, skip=fromstep>7)
 
 # Sample Selection (Step 8)
-executeStep("SampleSelection", "otbApplicationLauncherCommandLine","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons, skip=fromstep>8)
+executeStep("SampleSelection", "otbApplicationLauncherCommandLine","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons, "-lut", lut, skip=fromstep>8)
 
 # Image Statistics (Step 9)
 executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", fts,"-out",statistics, skip=fromstep>9)
 
 #Train Image Classifier (Step 10)
 if classifier == "rf" :
-	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>10)
+	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr","0.9","-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>10)
 elif classifier == "svm":
-	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr",sample_ratio,"-classifier","svm", "-classifier.svm.k",rbf,"-classifier.svm.opt",1, skip=fromstep>10)
+	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr","0.9","-classifier","svm", "-classifier.svm.k",rbf,"-classifier.svm.opt",1, skip=fromstep>10)
 
 #Image Classifier (Step 11)
 if os.path.isfile(crop_mask) :
@@ -133,14 +137,17 @@ executeStep("gdalwarp for crop type", "/usr/local/bin/gdalwarp", "-multi", "-wm"
 #Validation (Step 13)
 executeStep("Validation for Crop Type", "otbcli_ComputeConfusionMatrix", "-in",  crop_type_map_uncompressed, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CODE", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>13)
 
-#Compression (Step 14)
-executeStep("Compression", "otbcli_Convert", "-in",  crop_type_map_uncompressed, "-out", crop_type_map+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>14, rmfiles=[] if keepfiles else [ crop_type_map_uncompressed])
+#Color image (Step 14)
+executeStep("ColorMapping", "otbcli_ColorMapping", "-in", crop_type_map_uncompressed,"-method","custom","-method.custom.lut", lut, "-out", color_crop_type_map, "int32", skip=fromstep>14)
 
-#XML conversion (Step 15)
-executeStep("XML Conversion for Crop Type", "otbApplicationLauncherCommandLine", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics,  skip=fromstep>15)
+#Compression (Step 15)
+executeStep("Compression", "otbcli_Convert", "-in",  crop_type_map_uncompressed, "-out", crop_type_map+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>15, rmfiles=[] if keepfiles else [ crop_type_map_uncompressed])
 
-#Product creation (Step 16)
-executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", crop_type_map, skip=fromstep>16)
+#XML conversion (Step 16)
+executeStep("XML Conversion for Crop Type", "otbApplicationLauncherCommandLine", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics,  skip=fromstep>16)
+
+#Product creation (Step 17)
+executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", "TILE_"+tilename, crop_type_map, "-processor.croptype.quality", xml_validation_metrics, skip=fromstep>17)
 
 globalEnd = datetime.datetime.now()
 

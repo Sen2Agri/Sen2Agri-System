@@ -34,8 +34,7 @@ def inSituDataAvailable() :
 	executeStep("SampleSelection", "otbApplicationLauncherCommandLine","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons,"-nofilter","true", skip=fromstep>12)
 
 	#Train Image Classifier (Step 13)
-	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", features,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vfn","CROP","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>13)
-
+	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", features,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vfn","CROP","-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>13)
 
 	#Image Classifier (Step 14)
 	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", features,"-imstat",statistics,"-model", model, "-out", raw_crop_mask, skip=fromstep>14, rmfiles=[] if keepfiles else [features])
@@ -118,6 +117,7 @@ parser.add_argument('-rfmin', help='minimum number of samples in each node used 
 parser.add_argument('-minarea', help="The minium number of pixel in an area where, for an equal number of crop and nocrop samples, the crop decision is taken (default 20)", required=False, metavar='minarea', default=20)
 
 parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
+parser.add_argument('-tilename', help="The name of the tile", default="T0000")
 parser.add_argument('-outdir', help="Output directory", default=defaultBuildFolder)
 parser.add_argument('-buildfolder', help="Build folder", default=defaultBuildFolder)
 parser.add_argument('-targetfolder', help="The folder where the target product is built", default="")
@@ -194,6 +194,7 @@ trimmed_reference_shape=os.path.join(args.outdir, "trimmed_reference_shape.shp")
 statistics_noinsitu=os.path.join(args.outdir, "statistics_noinsitu.xml")
 
 tmpfolder=args.outdir
+tilename=args.tilename
 
 pca=os.path.join(args.outdir, "pca.tif")
 mean_shift_smoothing=os.path.join(args.outdir, "mean_shift_smoothing.tif")
@@ -210,7 +211,6 @@ raw_crop_mask_quality_metrics=os.path.join(args.outdir, "raw-crop-mask-quality-m
 crop_mask_uncut=os.path.join(args.outdir, "crop_mask_uncut.tif")
 crop_mask_uncompressed=os.path.join(args.outdir, "crop_mask_uncomp.tif")
 crop_mask=os.path.join(args.outdir, "crop_mask.tif")
-
 
 confusion_matrix_validation=os.path.join(args.outdir, "crop-mask-confusion-matrix-validation.csv")
 quality_metrics=os.path.join(args.outdir, "crop-mask-quality-metrics.txt")
@@ -273,7 +273,7 @@ executeStep("Compression", "otbcli_Convert", "-in", crop_mask_uncompressed, "-ou
 executeStep("XML Conversion for Crop Mask", "otbApplicationLauncherCommandLine", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics,  skip=fromstep>33)
 
 #Product creation (Step 34)
-executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "cropmask", "-processor.cropmask.file", crop_mask, skip=fromstep>34)
+executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.quality", xml_validation_metrics, skip=fromstep>34)
 
 globalEnd = datetime.datetime.now()
 
