@@ -52,7 +52,7 @@ parser.add_argument(
 parser.add_argument('--scatteringcoef',
                     help="Scattering coefficient file. This file is requested in S2 case ONLY", required=False)
 
-USE_COMPRESSION=False
+USE_COMPRESSION=True
 REMOVE_TEMP=True
 
 args = parser.parse_args()
@@ -162,11 +162,6 @@ with open(paramsFilenameXML, 'w') as paramsFileXML:
     ET.SubElement(wDATE, "half_synthesis").text = syntHalf
     wON = ET.SubElement(root, "Weight_ON")
     ET.SubElement(wON, "weight_sensor").text = WEIGHT_SENSOR
-    dates = ET.SubElement(root, "Dates_information")
-    ET.SubElement(wON, "start_date").text = t0
-    ET.SubElement(wON, "end_date").text = tend
-    ET.SubElement(wON, "synthesis_date").text = syntDate
-    ET.SubElement(wON, "synthesis_half").text = syntHalf
     usedXMLs = ET.SubElement(root, "XML_files")
     i = 0
     for xml in args.input:
@@ -190,11 +185,6 @@ with open(paramsFilename, 'w') as paramsFile:
     paramsFile.write("    half synthesis    = " + syntHalf + "\n")
     paramsFile.write("Weight on\n")
     paramsFile.write("    weight sensor     = " + WEIGHT_SENSOR + "\n")
-    paramsFile.write("Dates information\n")
-    paramsFile.write("    start date        = " + t0 + "\n")
-    paramsFile.write("    end date          = " + tend + "\n")
-    paramsFile.write("    synthesis date    = " + syntDate + "\n")
-    paramsFile.write("    synthesis half    = " + syntHalf + "\n")
     paramsFile.write(" ")
     paramsFile.write("Used XML files\n")
     for xml in args.input:
@@ -259,6 +249,8 @@ for xml in args.input:
 
     prevL3A = ["-prevl3aw", out_w, "-prevl3ad", out_d, "-prevl3ar", out_r, "-prevl3af", out_f]
 
+    runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3A", "-timeperiod", syntDate, "-baseline", "01.00", "-processor", "composite", "-processor.composite.refls", out_r, "-processor.composite.weights", out_w, "-processor.composite.flags", out_f, "-processor.composite.dates", out_d, "-processor.composite.rgb", out_rgb, "-il", xml, "-gipp", paramsFilename])
+    
     runCmd(["rm", "-fr", mod, outSpotMasks, outImgBands, outCld, outWat, outSnow, outAot, outWeightAotFile, outWeightCloudFile, outTotalWeightFile])
     if REMOVE_TEMP and i > 0:
         counterString = str(i - 1)
@@ -271,19 +263,10 @@ for xml in args.input:
         print(outRefls.replace("#", counterString))
         os.remove(outFlags.replace("#", counterString))
         print(outFlags.replace("#", counterString))
-        os.remove(outRGB.replace("#", counterString))
+        #os.remove(outRGB.replace("#", counterString))
     i += 1
-if i == 0:
-    print("No L2A products found !")
-    exit(1)
-i -= 1
-print("!!!!!out_w={}".format(out_w))
-print("!!!!!out_f={}".format(out_f))
-
-runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3A", "-timeperiod", syntDate, "-baseline", "01.00", "-processor", "composite", "-processor.composite.refls", out_r, "-processor.composite.weights", out_w, "-processor.composite.flags", out_f, "-processor.composite.dates", out_d, "-processor.composite.rgb", out_rgb, "-il", xml, "-gipp", paramsFileXML])
-
-if REMOVE_TEMP:
-    counterString = str(i)
+if REMOVE_TEMP and i > 0:
+    counterString = str(i - 1)
     print("!!!!!!!! The following files will be deleted: !!!!!!!!")
     os.remove(outWeights.replace("#", counterString))
     print(outWeights.replace("#", counterString))
