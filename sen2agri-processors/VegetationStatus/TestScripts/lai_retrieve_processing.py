@@ -25,6 +25,13 @@ def runCmd(cmdArray):
         exit(1)
     return res
 
+def prettify(elem):
+    """Return a pretty-printed XML string for the Element.
+    """
+    rough_string = ET.tostring(elem, 'utf-8')
+    reparsed = minidom.parseString(rough_string)
+    return reparsed.toprettyxml(indent="  ")
+
 parser = argparse.ArgumentParser(description='LAI retrieval processor')
 
 parser.add_argument('--applocation', help='The path where the sen2agri is built', required=True)
@@ -116,8 +123,8 @@ fittedListFile = "{}/FittedFilesList.txt".format(outDir)
 reprocessedListFile = "{}/ReprocessedFilesist.txt".format(outDir)
 
 #ProfileReprocessing parameters
-ALGO_LOCAL_BWR=2
-ALGO_LOCAL_FWR=0
+ALGO_LOCAL_BWR="2"
+ALGO_LOCAL_FWR="0"
 
 with open(paramsLaiRetrFilenameXML, 'w') as paramsFileXML:
     root = ET.Element('metadata')
