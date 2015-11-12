@@ -52,7 +52,7 @@ parser.add_argument(
 parser.add_argument('--scatteringcoef',
                     help="Scattering coefficient file. This file is requested in S2 case ONLY", required=False)
 
-USE_COMPRESSION=True
+USE_COMPRESSION=False
 REMOVE_TEMP=True
 
 args = parser.parse_args()
@@ -136,7 +136,8 @@ if os.path.exists(outDir):
 else:
     os.makedirs(outDir)
 
-shutil.copy(bandsMap, outDir)
+#shutil.copy(bandsMap, outDir)
+shutil.copyfile(bandsMap, os.path.join(outDir, os.path.basename(bandsMap)))
 
 if args.scatteringcoef:
     shutil.copy(args.scatteringcoef, outDir)
@@ -162,6 +163,11 @@ with open(paramsFilenameXML, 'w') as paramsFileXML:
     ET.SubElement(wDATE, "half_synthesis").text = syntHalf
     wON = ET.SubElement(root, "Weight_ON")
     ET.SubElement(wON, "weight_sensor").text = WEIGHT_SENSOR
+    dates = ET.SubElement(root, "Dates_information")
+    ET.SubElement(wON, "start_date").text = t0
+    ET.SubElement(wON, "end_date").text = tend
+    ET.SubElement(wON, "synthesis_date").text = syntDate
+    ET.SubElement(wON, "synthesis_half").text = syntHalf
     usedXMLs = ET.SubElement(root, "XML_files")
     i = 0
     for xml in args.input:
@@ -185,6 +191,11 @@ with open(paramsFilename, 'w') as paramsFile:
     paramsFile.write("    half synthesis    = " + syntHalf + "\n")
     paramsFile.write("Weight on\n")
     paramsFile.write("    weight sensor     = " + WEIGHT_SENSOR + "\n")
+    paramsFile.write("Dates information\n")
+    paramsFile.write("    start date        = " + t0 + "\n")
+    paramsFile.write("    end date          = " + tend + "\n")
+    paramsFile.write("    synthesis date    = " + syntDate + "\n")
+    paramsFile.write("    synthesis half    = " + syntHalf + "\n")
     paramsFile.write(" ")
     paramsFile.write("Used XML files\n")
     for xml in args.input:
@@ -197,7 +208,6 @@ print("Processing started: " + str(datetime.datetime.now()))
 start = time.time()
 for xml in args.input:
     
-# otbcli MaskHandler "$COMPOSITE_OTB_LIBS_ROOT/MaskHandler/" -xml "$xml" -out "$OUT_SPOT_MASKS" -sentinelres $RESOLUTION
     runCmd(["otbcli", "MaskHandler", compositeLocation + '/MaskHandler', "-xml", xml, "-out", outSpotMasks, "-sentinelres", resolution])
     
     counterString = str(i)
@@ -208,28 +218,20 @@ for xml in args.input:
     out_f=outFlags.replace("#", counterString)
     out_rgb=outRGB.replace("#", counterString)
 
-
-#    try otbcli CompositePreprocessing2 "$COMPOSITE_OTB_LIBS_ROOT/CompositePreprocessing/" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -res "$RESOLUTION" "$FULL_SCAT_COEFFS" -msk "$OUT_SPOT_MASKS" -outres "$OUT_IMG_BANDS" -outcmres "$OUT_CLD" -outwmres "$OUT_WAT" -outsmres "$OUT_SNOW" -outaotres "$OUT_AOT"
     if fullScatCoeffs:
         cmd = ["otbcli", "CompositePreprocessing2", compositeLocation + '/CompositePreprocessing', "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-scatcoef", fullScatCoeffs, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
     else:
         cmd = ["otbcli", "CompositePreprocessing2", compositeLocation + '/CompositePreprocessing', "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
     
     runCmd(cmd)
-        
-#    try otbcli WeightAOT "$WEIGHT_OTB_LIBS_ROOT/WeightAOT/" -in "$OUT_AOT" -xml "$xml" -waotmin "$WEIGHT_AOT_MIN" -waotmax "$WEIGHT_AOT_MAX" -aotmax "$AOT_MAX" -out "$OUT_WEIGHT_AOT_FILE"
-    
+   
     runCmd(["otbcli", "WeightAOT", weightOtbLibsRoot + '/WeightAOT', "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", outWeightAotFile])
 
-#    try otbcli WeightOnClouds "$WEIGHT_OTB_LIBS_ROOT/WeightOnClouds/" -incldmsk "$OUT_CLD" -coarseres "$COARSE_RES" -sigmasmallcld "$SIGMA_SMALL_CLD" -sigmalargecld "$SIGMA_LARGE_CLD" -out "$OUT_WEIGHT_CLOUD_FILE"
-    
     runCmd(["otbcli", "WeightOnClouds", weightOtbLibsRoot + '/WeightOnClouds', "-incldmsk", outCld, "-coarseres", COARSE_RES, "-sigmasmallcld", SIGMA_SMALL_CLD, "-sigmalargecld", SIGMA_LARGE_CLD, "-out", outWeightCloudFile])
 
-#    try otbcli TotalWeight "$WEIGHT_OTB_LIBS_ROOT/TotalWeight/" -xml "$xml" -waotfile "$OUT_WEIGHT_AOT_FILE" -wcldfile "$OUT_WEIGHT_CLOUD_FILE" -wsensor "$WEIGHT_SENSOR" -l3adate "$L3A_DATE" -halfsynthesis "$HALF_SYNTHESIS" -wdatemin "$WEIGHT_DATE_MIN" -out "$OUT_TOTAL_WEIGHT_FILE"
     runCmd(["otbcli", "TotalWeight", weightOtbLibsRoot + '/TotalWeight', "-xml", xml, "-waotfile", outWeightAotFile, "-wcldfile", outWeightCloudFile, "-wsensor", WEIGHT_SENSOR, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", outTotalWeightFile])
     #todo... search for previous L3A produc?
 
-#    try otbcli UpdateSynthesis2 "$COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/" -in "$OUT_IMG_BANDS" -bmap "$FULL_BANDS_MAPPING" -xml "$xml" $PREV_L3A -csm "$OUT_CLD" -wm "$OUT_WAT" -sm "$OUT_SNOW" -wl2a "$OUT_TOTAL_WEIGHT_FILE" -out "$mod"
     runCmd(["otbcli", "UpdateSynthesis2", compositeLocation + '/UpdateSynthesis', "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", outTotalWeightFile, "-out", mod] + prevL3A)
 
     tmpOut_w = out_w
@@ -249,8 +251,6 @@ for xml in args.input:
 
     prevL3A = ["-prevl3aw", out_w, "-prevl3ad", out_d, "-prevl3ar", out_r, "-prevl3af", out_f]
 
-    runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3A", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "composite", "-processor.composite.refls", out_r, "-processor.composite.weights", out_w, "-processor.composite.flags", out_f, "-processor.composite.dates", out_d, "-processor.composite.rgb", out_rgb, "-il", xml, "-gipp", paramsFilename])
-    
     runCmd(["rm", "-fr", mod, outSpotMasks, outImgBands, outCld, outWat, outSnow, outAot, outWeightAotFile, outWeightCloudFile, outTotalWeightFile])
     if REMOVE_TEMP and i > 0:
         counterString = str(i - 1)
@@ -263,11 +263,18 @@ for xml in args.input:
         print(outRefls.replace("#", counterString))
         os.remove(outFlags.replace("#", counterString))
         print(outFlags.replace("#", counterString))
-        #os.remove(outRGB.replace("#", counterString))
+        os.remove(outRGB.replace("#", counterString))
     i += 1
-if REMOVE_TEMP and i > 0:
-    counterString = str(i - 1)
-    print("!!!!!!!! The following files will be deleted: !!!!!!!!")
+if i == 0:
+    print("No L2A products found !")
+    exit(1)
+
+i -= 1
+runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3A", "-timeperiod", syntDate, "-baseline", "01.00", "-processor", "composite", "-processor.composite.refls", out_r, "-processor.composite.weights", out_w, "-processor.composite.flags", out_f, "-processor.composite.dates", out_d, "-processor.composite.rgb", out_rgb, "-il", args.input[-1], "-gipp", paramsFilenameXML])
+
+if REMOVE_TEMP:
+    counterString = str(i)
+    print("The following files will be deleted:")
     os.remove(outWeights.replace("#", counterString))
     print(outWeights.replace("#", counterString))
     os.remove(outDates.replace("#", counterString))
@@ -277,9 +284,6 @@ if REMOVE_TEMP and i > 0:
     os.remove(outFlags.replace("#", counterString))
     print(outFlags.replace("#", counterString))
     
-if REMOVE_TEMP:
-    filesToBeDeleted = outDir + '/L3AResult*'
-    runCmd(["rm", "-fr", filesToBeDeleted])
 
 print("Processing finished: " + str(datetime.datetime.now()))
 print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))

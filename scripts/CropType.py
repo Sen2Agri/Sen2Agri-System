@@ -27,6 +27,7 @@ parser.add_argument('-mask', help='The crop mask', required=False, metavar='crop
 parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
 parser.add_argument('-outdir', help="Output directory", default=defaultBuildFolder)
 parser.add_argument('-buildfolder', help="Build folder", default=defaultBuildFolder)
+parser.add_argument('-targetfolder', help="The folder where the target product is built", default="")
 
 parser.add_argument('-rfnbtrees', help='The number of trees used for training (default 100)', required=False, metavar='rfnbtrees', default=100)
 parser.add_argument('-rfmax', help='maximum depth of the trees used for Random Forest classifier (default 25)', required=False, metavar='rfmax', default=25)
@@ -56,6 +57,9 @@ rfmin=str(args.rfmin)
 
 buildFolder=args.buildfolder
 
+targetFolder=args.targetfolder if args.targetfolder != "" else args.outdir
+
+reference_polygons_reproject=os.path.join(args.outdir, "reference_polygons_reproject.shp")
 reference_polygons_clip=os.path.join(args.outdir, "reference_clip.shp")
 training_polygons=os.path.join(args.outdir, "training_polygons.shp")
 validation_polygons=os.path.join(args.outdir, "validation_polygons.shp")
@@ -65,6 +69,7 @@ rawmask=os.path.join(args.outdir, "rawmask.tif")
 mask=os.path.join(args.outdir, "mask.tif")
 dates=os.path.join(args.outdir, "dates.txt")
 shape=os.path.join(args.outdir, "shape.shp")
+shape_proj=os.path.join(args.outdir, "shape.prj")
 rtocr=os.path.join(args.outdir, "rtocr.tif")
 fts=os.path.join(args.outdir, "feature-time-series.tif")
 statistics=os.path.join(args.outdir, "statistics.xml")
@@ -98,41 +103,44 @@ executeStep("TemporalResampling", "otbApplicationLauncherCommandLine", "Temporal
 # Feature Extraction (Step 5)
 executeStep("FeatureExtraction", "otbApplicationLauncherCommandLine", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-fts", fts, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
 
-# ogr2ogr (Step 6)
-executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-clipsrc", shape,"-overwrite",reference_polygons_clip, reference_polygons, skip=fromstep>6)
+# ogr2ogr Reproject insitu data (Step 6)
+executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-t_srs", shape_proj,"-progress","-overwrite",reference_polygons_reproject, reference_polygons, skip=fromstep>6)
 
-# Sample Selection (Step 7)
-executeStep("SampleSelection", "otbApplicationLauncherCommandLine","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons, skip=fromstep>7)
+# ogr2ogr Crop insitu data (Step 7)
+executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-clipsrc", shape,"-progress","-overwrite",reference_polygons_clip, reference_polygons_reproject, skip=fromstep>7)
 
-# Image Statistics (Step 8)
-executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", fts,"-out",statistics, skip=fromstep>8)
+# Sample Selection (Step 8)
+executeStep("SampleSelection", "otbApplicationLauncherCommandLine","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons, skip=fromstep>8)
 
-#Train Image Classifier (Step 9)
+# Image Statistics (Step 9)
+executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", fts,"-out",statistics, skip=fromstep>9)
+
+#Train Image Classifier (Step 10)
 if classifier == "rf" :
-	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>9)
+	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>10)
 elif classifier == "svm":
-	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr",sample_ratio,"-classifier","svm", "-classifier.svm.k",rbf,"-classifier.svm.opt",1, skip=fromstep>9)
+	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr",sample_ratio,"-classifier","svm", "-classifier.svm.k",rbf,"-classifier.svm.opt",1, skip=fromstep>10)
 
-#Image Classifier (Step 10)
+#Image Classifier (Step 11)
 if os.path.isfile(crop_mask) :
-	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts,"-imstat",statistics,"-model", model, "-mask", crop_mask, "-out", crop_type_map_uncut, "int16", skip=fromstep>10, rmfiles=[] if keepfiles else [fts])
+	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts,"-imstat",statistics,"-model", model, "-mask", crop_mask, "-out", crop_type_map_uncut, "int16", skip=fromstep>11, rmfiles=[] if keepfiles else [fts])
 else:
-	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts,"-imstat",statistics,"-model", model, "-out", crop_type_map_uncut, "int16", skip=fromstep>10, rmfiles=[] if keepfiles else [fts])
+	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts,"-imstat",statistics,"-model", model, "-out", crop_type_map_uncut, "int16", skip=fromstep>11, rmfiles=[] if keepfiles else [fts])
 
-# gdalwarp (Step 11)
-executeStep("gdalwarp for crop type", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_type_map_uncut, crop_type_map_uncompressed, skip=fromstep>11)
+# gdalwarp (Step 12)
+executeStep("gdalwarp for crop type", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_type_map_uncut, crop_type_map_uncompressed, skip=fromstep>12)
 
-#Validation (Step 12)
-executeStep("Validation for Crop Type", "otbcli_ComputeConfusionMatrix", "-in",  crop_type_map_uncompressed, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CODE", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>12)
+#Validation (Step 13)
+executeStep("Validation for Crop Type", "otbcli_ComputeConfusionMatrix", "-in",  crop_type_map_uncompressed, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CODE", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>13)
 
-#Compression (Step 13)
-executeStep("Compression", "otbcli_Convert", "-in",  crop_type_map_uncompressed, "-out", crop_type_map+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>13, rmfiles=[] if keepfiles else [ crop_type_map_uncompressed])
+#Compression (Step 14)
+executeStep("Compression", "otbcli_Convert", "-in",  crop_type_map_uncompressed, "-out", crop_type_map+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>14, rmfiles=[] if keepfiles else [ crop_type_map_uncompressed])
 
-#XML conversion (Step 14)
-executeStep("XML Conversion for Crop Type", "otbApplicationLauncherCommandLine", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics,  skip=fromstep>14)
+#XML conversion (Step 15)
+executeStep("XML Conversion for Crop Type", "otbApplicationLauncherCommandLine", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics,  skip=fromstep>15)
 
-#Product creation (Step 15)
-executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", args.outdir, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", crop_type_map, skip=fromstep>15)
+#Product creation (Step 16)
+executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", crop_type_map, skip=fromstep>16)
 
 globalEnd = datetime.datetime.now()
 
