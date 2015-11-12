@@ -249,8 +249,6 @@ private:
   }
   void DoExecute()
   {
-      findDirectoryByRootName("/home/atrasca/sen2agri/sen2agri-processors-build/Testing/Dest");
-
 
       //get file class
       m_strFileClass = this->GetParameterString("fileclass");
