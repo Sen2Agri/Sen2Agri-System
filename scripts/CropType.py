@@ -25,6 +25,7 @@ parser.add_argument('-classifier', help='The classifier used for training (eithe
 parser.add_argument('-rseed', help='The random seed used for training', required=False, metavar='random_seed', default=0)
 parser.add_argument('-mask', help='The crop mask', required=False, metavar='crop_mask', default='')
 parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
+parser.add_argument('-tilename', help="The name of the tile", default="T0000")
 parser.add_argument('-outdir', help="Output directory", default=defaultBuildFolder)
 parser.add_argument('-buildfolder', help="Build folder", default=defaultBuildFolder)
 parser.add_argument('-targetfolder', help="The folder where the target product is built", default="")
@@ -58,6 +59,7 @@ rfmin=str(args.rfmin)
 buildFolder=args.buildfolder
 
 targetFolder=args.targetfolder if args.targetfolder != "" else args.outdir
+tilename = args.tilename
 
 reference_polygons_reproject=os.path.join(args.outdir, "reference_polygons_reproject.shp")
 reference_polygons_clip=os.path.join(args.outdir, "reference_clip.shp")
@@ -145,7 +147,7 @@ executeStep("Compression", "otbcli_Convert", "-in",  crop_type_map_uncompressed,
 executeStep("XML Conversion for Crop Type", "otbApplicationLauncherCommandLine", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics,  skip=fromstep>16)
 
 #Product creation (Step 17)
-executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", crop_type_map, skip=fromstep>17)
+executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", "TILE_"+tilename, crop_type_map, "-processor.croptype.quality", xml_validation_metrics, skip=fromstep>17)
 
 globalEnd = datetime.datetime.now()
 
