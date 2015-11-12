@@ -52,7 +52,7 @@ parser.add_argument(
 parser.add_argument('--scatteringcoef',
                     help="Scattering coefficient file. This file is requested in S2 case ONLY", required=False)
 parser.add_argument('--tileid',
-                    help="Scattering coefficient file. This file is requested in S2 case ONLY", required=False)
+                    help="Tile id", required=False)
 
 USE_COMPRESSION=False
 REMOVE_TEMP=True
