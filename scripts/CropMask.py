@@ -24,29 +24,32 @@ def inSituDataAvailable() :
 	# Image Statistics (Step 9)
 	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", features,"-out",statistics, skip=fromstep>9)
 
-	# ogr2ogr (Step 10)
-	executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-clipsrc", shape,"-overwrite",reference_polygons_clip, reference_polygons, skip=fromstep>10)
+	# ogr2ogr Reproject insitu data (Step 10)
+	executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-t_srs", shape_proj,"-progress","-overwrite",reference_polygons_reproject, reference_polygons, skip=fromstep>10)
 
-	# Sample Selection (Step 11)
-	executeStep("SampleSelection", "otbApplicationLauncherCommandLine","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons,"-nofilter","true", skip=fromstep>11)
+	# ogr2ogr Crop insitu data (Step 11)
+	executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-clipsrc", shape,"-progress","-overwrite",reference_polygons_clip, reference_polygons_reproject, skip=fromstep>11)
 
-	#Train Image Classifier (Step 12)
-	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", features,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vfn","CROP","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>12)
+	# Sample Selection (Step 12)
+	executeStep("SampleSelection", "otbApplicationLauncherCommandLine","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons,"-nofilter","true", skip=fromstep>12)
+
+	#Train Image Classifier (Step 13)
+	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", features,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vfn","CROP","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>13)
 
 
-	#Image Classifier (Step 13)
-	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", features,"-imstat",statistics,"-model", model, "-out", raw_crop_mask, skip=fromstep>13, rmfiles=[] if keepfiles else [features])
+	#Image Classifier (Step 14)
+	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", features,"-imstat",statistics,"-model", model, "-out", raw_crop_mask, skip=fromstep>14, rmfiles=[] if keepfiles else [features])
 
 	return;
 #end inSituDataAvailable
 
 def noInSituDataAvailable() :
 	global validation_polygons
-	#Data Smoothing for NDVI (Step 14)
-	executeStep("DataSmoothing for NDVI", "otbApplicationLauncherCommandLine", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts",ndvi,"-bands", "1", "-lambda", lmbd, "-weight", weight, "-sts",ndvi_smooth, skip=fromstep>14)
+	#Data Smoothing for NDVI (Step 15)
+	executeStep("DataSmoothing for NDVI", "otbApplicationLauncherCommandLine", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts",ndvi,"-bands", "1", "-lambda", lmbd, "-weight", weight, "-sts",ndvi_smooth, skip=fromstep>15)
 	
-	#Data Smoothing for Reflectances (Step 15)
-	executeStep("DataSmoothing for Reflectances", "otbApplicationLauncherCommandLine", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts",rtocr,"-bands", "4", "-lambda", lmbd, "-weight", weight, "-sts",rtocr_smooth, skip=fromstep>15, rmfiles=[] if keepfiles else [rtocr])
+	#Data Smoothing for Reflectances (Step 16)
+	executeStep("DataSmoothing for Reflectances", "otbApplicationLauncherCommandLine", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts",rtocr,"-bands", "4", "-lambda", lmbd, "-weight", weight, "-sts",rtocr_smooth, skip=fromstep>16, rmfiles=[] if keepfiles else [rtocr])
 
 	# Temporal Features (Step 16)
 	#executeStep("TemporalFeatures", "otbApplicationLauncherCommandLine", "TemporalFeaturesNoInsitu", os.path.join(buildFolder,"CropMask/TemporalFeaturesNoInsitu"),"-ndvi",ndvi_smooth,"-ts", rtocr_smooth, "-dates", outdays, "-tf", tf_noinsitu, skip=fromstep>16)
@@ -54,8 +57,8 @@ def noInSituDataAvailable() :
 	# Spectral Features (Step 17)
 	#executeStep("SpectralFeatures", "otbApplicationLauncherCommandLine", "SpectralFeatures", os.path.join(buildFolder,"CropMask/SpectralFeatures"),"-ts", rtocr_smooth, "-tf", tf_noinsitu, "-sf", spectral_features, skip=fromstep>17, rmfiles=[] if keepfiles else [ndvi_smooth, rtocr_smooth, tf_noinsitu])
 
-	#Features when no insitu data is available (Step 16 or 17)
-	executeStep("FeaturesWithoutInsitu", "otbApplicationLauncherCommandLine", "FeaturesWithoutInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithoutInsitu"),"-ndvi",ndvi_smooth,"-ts", rtocr_smooth, "-dates", outdays , "-sf", spectral_features, skip=fromstep>16, rmfiles=[] if keepfiles else [ndvi_smooth, rtocr_smooth])
+	#Features when no insitu data is available (Step 17)
+	executeStep("FeaturesWithoutInsitu", "otbApplicationLauncherCommandLine", "FeaturesWithoutInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithoutInsitu"),"-ndvi",ndvi_smooth,"-ts", rtocr_smooth, "-dates", outdays , "-sf", spectral_features, skip=fromstep>17, rmfiles=[] if keepfiles else [ndvi_smooth, rtocr_smooth])
 
 	# Image Statistics (Step 18)
 	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", spectral_features, "-out", statistics_noinsitu, skip=fromstep>18)
@@ -117,6 +120,7 @@ parser.add_argument('-minarea', help="The minium number of pixel in an area wher
 parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
 parser.add_argument('-outdir', help="Output directory", default=defaultBuildFolder)
 parser.add_argument('-buildfolder', help="Build folder", default=defaultBuildFolder)
+parser.add_argument('-targetfolder', help="The folder where the target product is built", default="")
 
 parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)", default=False, action='store_true')
 parser.add_argument('-fromstep', help="Run from the selected step (default 1)", type=int, default=1)
@@ -149,10 +153,12 @@ window=str(args.window)
 
 
 buildFolder=args.buildfolder
+targetFolder=args.targetfolder if args.targetfolder != "" else args.outdir
 reference=args.refr
 erode_radius=str(args.eroderad)
 alpha=str(args.alpha)
 
+reference_polygons_reproject=os.path.join(args.outdir, "reference_polygons_reproject.shp")
 reference_polygons_clip=os.path.join(args.outdir, "reference_clip.shp")
 training_polygons=os.path.join(args.outdir, "training_polygons.shp")
 validation_polygons=os.path.join(args.outdir, "validation_polygons.shp")
@@ -166,6 +172,7 @@ mask=os.path.join(args.outdir, "mask.tif")
 dates=os.path.join(args.outdir, "dates.txt")
 outdays=os.path.join(args.outdir, "days.txt")
 shape=os.path.join(args.outdir, "shape.shp")
+shape_proj=os.path.join(args.outdir, "shape.prj")
 rtocr=os.path.join(args.outdir, "rtocr.tif")
 ndvi=os.path.join(args.outdir, "ndvi.tif")
 ndwi=os.path.join(args.outdir, "ndwi.tif")
@@ -266,7 +273,7 @@ executeStep("Compression", "otbcli_Convert", "-in", crop_mask_uncompressed, "-ou
 executeStep("XML Conversion for Crop Mask", "otbApplicationLauncherCommandLine", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics,  skip=fromstep>33)
 
 #Product creation (Step 34)
-executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", args.outdir, "-fileclass", "SVT1", "-level", "L4A", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "cropmask", "-processor.cropmask.file", crop_mask, skip=fromstep>34)
+executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "cropmask", "-processor.cropmask.file", crop_mask, skip=fromstep>34)
 
 globalEnd = datetime.datetime.now()
 
