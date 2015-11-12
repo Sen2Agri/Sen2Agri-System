@@ -51,6 +51,8 @@ parser.add_argument(
     '--bandsmap', help="Bands mapping file location", required=True)
 parser.add_argument('--scatteringcoef',
                     help="Scattering coefficient file. This file is requested in S2 case ONLY", required=False)
+parser.add_argument('--tileid',
+                    help="Scattering coefficient file. This file is requested in S2 case ONLY", required=False)
 
 USE_COMPRESSION=False
 REMOVE_TEMP=True
@@ -66,42 +68,25 @@ bandsMap = args.bandsmap
 appLocation = args.applocation
 outDir = args.outdir
 
-#filesToBeDeleted = outDir + "/L["rm", filesToBeDele3AResult*"
-#runCmd(["rm", filesToBeDeleted])
-#exit(1)
-
 compositeLocation = appLocation + '/Composite'
-
 print("Composite location:{}".format(compositeLocation))
+
 productFormatterLocation = appLocation + '/MACCSMetadata/src'
 print("Product formater location:{}".format(productFormatterLocation))
 
 #defintion for filenames
 weightOtbLibsRoot = compositeLocation + '/WeightCalculation'
-#WEIGHT_OTB_LIBS_ROOT="$COMPOSITE_OTB_LIBS_ROOT/WeightCalculation"
 outSpotMasks = outDir + '/spot_masks.tif'
-#OUT_SPOT_MASKS="$OUT_FOLDER/spot_masks.tif"
 outImgBands = outDir + '/res' + resolution + '.tif'
-#OUT_IMG_BANDS="$OUT_FOLDER/res$RESOLUTION.tif"
 outImgBandsAll = outDir + '/res' + resolution + '_all.tif'
-#OUT_IMG_BANDS_ALL="$OUT_FOLDER/res"$RESOLUTION"_all.tif"
 outCld = outDir + '/cld' + resolution + '.tif'
-#OUT_CLD="$OUT_FOLDER/cld$RESOLUTION.tif"
 outWat = outDir + '/wat' + resolution + '.tif'
-#OUT_WAT="$OUT_FOLDER/wat$RESOLUTION.tif"
 outSnow = outDir + '/snow' + resolution + '.tif'
-#OUT_SNOW="$OUT_FOLDER/snow$RESOLUTION.tif"
 outAot = outDir + '/aot' + resolution + '.tif'
-#OUT_AOT="$OUT_FOLDER/aot$RESOLUTION.tif"
-
 outWeightAotFile = outDir + '/WeightAot.tif'
-#OUT_WEIGHT_AOT_FILE="$OUT_FOLDER/WeightAot.tif"
 outWeightCloudFile = outDir + '/WeightCloud.tif'
-#OUT_WEIGHT_CLOUD_FILE="$OUT_FOLDER/WeightCloud.tif"
 outTotalWeightFile = outDir + '/WeightTotal.tif'
-#OUT_TOTAL_WEIGHT_FILE="$OUT_FOLDER/WeightTotal.tif"
 outL3AFile = outDir + '/L3AResult#_' + resolution + 'M.tif'
-#OUT_L3A_FILE="$OUT_FOLDER/L3AResult#_"$RESOLUTION"M.tif"
 
 WEIGHT_AOT_MIN="0.33"
 WEIGHT_AOT_MAX="1"
@@ -115,18 +100,13 @@ WEIGHT_SENSOR="0.33"
 WEIGHT_DATE_MIN="0.10"
 
 outWeights = outDir + '/L3AResult#_weights.tif'
-#OUT_WEIGHTS="$OUT_FOLDER/L3AResult#_weights.tif"
 outDates = outDir + '/L3AResult#_dates.tif'
-#OUT_DATES="$OUT_FOLDER/L3AResult#_dates.tif
 outRefls = outDir + '/L3AResult#_refls.tif'
-#OUT_REFLS="$OUT_FOLDER/L3AResult#_refls.tif"
 outFlags = outDir + '/L3AResult#_flags.tif'
-#OUT_FLAGS="$OUT_FOLDER/L3AResult#_flags.tif
 outRGB = outDir + '/L3AResult#_rgb.tif'
-#OUT_RGB="$OUT_FOLDER/L3AResult#_rgb.tif"
 
 fullScatCoeffs=""
-#FULL_SCAT_COEFFS=""
+tileID="TILE_none"
 
 if os.path.exists(outDir):
     if not os.path.isdir(outDir):
@@ -136,15 +116,16 @@ if os.path.exists(outDir):
 else:
     os.makedirs(outDir)
 
-#shutil.copy(bandsMap, outDir)
 shutil.copyfile(bandsMap, os.path.join(outDir, os.path.basename(bandsMap)))
 
 if args.scatteringcoef:
-    shutil.copy(args.scatteringcoef, outDir)
+    shutil.copyfile(args.scatteringcoef, os.path.join(outDir, os.path.basename(args.scatteringcoef)))
     scatteringCoefFilename = args.scatteringcoef[args.scatteringcoef.rfind('/'):]
     fullScatCoeffs = outDir + scatteringCoefFilename
     print(fullScatCoeffs)
-#    FULL_SCAT_COEFFS= "-scatcoef $OUT_FOLDER/$SCAT_COEFFS"
+
+if args.tileid:
+    tileID = "TILE_{}".format(args.tileid)
 
 paramsFilenameXML= outDir + '/params.xml'
 with open(paramsFilenameXML, 'w') as paramsFileXML:
@@ -254,35 +235,67 @@ for xml in args.input:
     runCmd(["rm", "-fr", mod, outSpotMasks, outImgBands, outCld, outWat, outSnow, outAot, outWeightAotFile, outWeightCloudFile, outTotalWeightFile])
     if REMOVE_TEMP and i > 0:
         counterString = str(i - 1)
-        print("!!!!!!!! The following files will be deleted: !!!!!!!!")
-        os.remove(outWeights.replace("#", counterString))
+        print("The following files will be deleted:")
         print(outWeights.replace("#", counterString))
-        os.remove(outDates.replace("#", counterString))
         print(outDates.replace("#", counterString))
-        os.remove(outRefls.replace("#", counterString))
         print(outRefls.replace("#", counterString))
-        os.remove(outFlags.replace("#", counterString))
         print(outFlags.replace("#", counterString))
-        os.remove(outRGB.replace("#", counterString))
+        print(outRGB.replace("#", counterString))
+        try:
+            os.remove(outWeights.replace("#", counterString))
+        except:            
+            pass
+        try:
+            os.remove(outDates.replace("#", counterString))
+        except:            
+            pass
+        try:
+            os.remove(outRefls.replace("#", counterString))
+        except:            
+            pass
+        try:
+            os.remove(outFlags.replace("#", counterString))
+        except:            
+            pass
+        try:
+            os.remove(outRGB.replace("#", counterString))
+        except:            
+            pass
     i += 1
 if i == 0:
     print("No L2A products found !")
     exit(1)
 
 i -= 1
-runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3A", "-timeperiod", syntDate, "-baseline", "01.00", "-processor", "composite", "-processor.composite.refls", out_r, "-processor.composite.weights", out_w, "-processor.composite.flags", out_f, "-processor.composite.dates", out_d, "-processor.composite.rgb", out_rgb, "-il", args.input[-1], "-gipp", paramsFilenameXML])
+runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3A", "-timeperiod", syntDate, "-baseline", "01.00", "-processor", "composite", "-processor.composite.refls", tileID, out_r, "-processor.composite.weights", tileID, out_w, "-processor.composite.flags", tileID, out_f, "-processor.composite.dates", tileID, out_d, "-processor.composite.rgb", tileID, out_rgb, "-il", args.input[-1], "-gipp", paramsFilenameXML])
 
 if REMOVE_TEMP:
     counterString = str(i)
     print("The following files will be deleted:")
-    os.remove(outWeights.replace("#", counterString))
     print(outWeights.replace("#", counterString))
-    os.remove(outDates.replace("#", counterString))
     print(outDates.replace("#", counterString))
-    os.remove(outRefls.replace("#", counterString))
     print(outRefls.replace("#", counterString))
-    os.remove(outFlags.replace("#", counterString))
     print(outFlags.replace("#", counterString))
+    try:
+        os.remove(outWeights.replace("#", counterString))
+    except:
+        pass
+    try:
+        os.remove(outDates.replace("#", counterString))
+    except:
+        pass
+    try:
+        os.remove(outRefls.replace("#", counterString))
+    except:
+        pass
+    try:
+        os.remove(outFlags.replace("#", counterString))
+    except:
+        pass
+#    try:
+#        os.remove(outRGB.replace("#", counterString))
+#    except:
+#        pass
     
 
 print("Processing finished: " + str(datetime.datetime.now()))
