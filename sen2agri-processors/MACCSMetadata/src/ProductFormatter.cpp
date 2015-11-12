@@ -2,6 +2,10 @@
 #include "otbWrapperApplicationFactory.h"
 #include "otbOGRIOHelper.h"
 #include "ogr_geometry.h"
+#include "boost/filesystem/path.hpp"
+#include "boost/filesystem/operations.hpp"
+#include "boost/progress.hpp"
+#include <iostream>
 
 #include <time.h>
 #include <stdio.h>
@@ -38,6 +42,7 @@
 #define METADATA_CATEG "MTD"
 #define MASK_CATEG "MSK"
 #define PARAMETER_CATEG "IPP"
+#define QUALITY_CATEG "QLT"
 #define NO_DATA_VALUE "-10000"
 
 #define ORIGINATOR_SITE "CSRO"
@@ -108,6 +113,22 @@ struct rasterInfo
     int nResolution;
     rasterTypes iRasterType;
     std::string strNewRasterFileName;
+    std::string strTileID;
+};
+
+struct previewInfo
+{
+    std::string strPreviewFileName;
+    std::string strTileID;
+};
+
+struct tileInfo
+{
+    std::string strTileID;
+    std::string strTileNameRoot;
+    std::string strTilePath;
+    std::string strTileNameWithoutExt;
+    TileFileMetadata tileMetadata;
 };
 
 struct geoProductInfo
@@ -195,9 +216,15 @@ private:
         AddParameter(ParameterType_InputFilenameList, "processor.croptype.file", "CROP TYPE raster file");
         MandatoryOff("processor.croptype.file");
 
+        AddParameter(ParameterType_InputFilenameList, "processor.croptype.quality", "CROP TYPE quality file");
+        MandatoryOff("processor.croptype.quality");
+
 //crop mask parameters
         AddParameter(ParameterType_InputFilenameList, "processor.cropmask.file", "CROP MASK raster file");
         MandatoryOff("processor.cropmask.file");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.cropmask.quality", "CROP MASK quality file");
+        MandatoryOff("processor.cropmask.quality");
 
         AddParameter(ParameterType_InputFilenameList, "il", "The xml files");
         MandatoryOff("il");
@@ -222,6 +249,7 @@ private:
   }
   void DoExecute()
   {
+
       //get file class
       m_strFileClass = this->GetParameterString("fileclass");
 
@@ -240,40 +268,40 @@ private:
       //if is composite read reflectance rasters, weights ratsters, flags masks, dates masks
       if (m_strProductLevel.compare("L3A") == 0)
       {
-          // Get reflectance raster file list
           std::vector<std::string> rastersList;
+
+           // Get reflectance raster file list
           rastersList = this->GetParameterStringList("processor.composite.refls");
-          rasterInfo rasterInfoEl;
-          //add them in global raster list
-          for (const auto &rasterFileEl : rastersList) {
-              rasterInfoEl.iRasterType = REFLECTANCE_RASTER;
-              rasterInfoEl.strRasterFileName = rasterFileEl;
-              m_rasterInfoList.emplace_back(rasterInfoEl);
+          //unpack and add them in global raster list
+          UnpackRastersList(rastersList, REFLECTANCE_RASTER);
 
-          }
-
+          //get weights rasters list
           rastersList = this->GetParameterStringList("processor.composite.weights");
-          for (const auto &rasterFileEl : rastersList) {
-              rasterInfoEl.iRasterType = WEIGHTS_RASTER;
-              rasterInfoEl.strRasterFileName = rasterFileEl;
-              m_rasterInfoList.emplace_back(rasterInfoEl);
-          }
+          UnpackRastersList(rastersList, WEIGHTS_RASTER);
 
           rastersList = this->GetParameterStringList("processor.composite.flags");
-          for (const auto &rasterFileEl : rastersList) {
-              rasterInfoEl.iRasterType = FLAGS_MASK;
-              rasterInfoEl.strRasterFileName = rasterFileEl;
-              m_rasterInfoList.emplace_back(rasterInfoEl);
-          }
+          UnpackRastersList(rastersList, FLAGS_MASK);
 
           rastersList = this->GetParameterStringList("processor.composite.dates");
-          for (const auto &rasterFileEl : rastersList) {
-              rasterInfoEl.iRasterType = DATES_MASK;
-              rasterInfoEl.strRasterFileName = rasterFileEl;
-              m_rasterInfoList.emplace_back(rasterInfoEl);
-          }
+          UnpackRastersList(rastersList, DATES_MASK);
 
-          m_previewList = this->GetParameterStringList("processor.composite.rgb");
+          rastersList = this->GetParameterStringList("processor.composite.rgb");
+          std::string strTileID;
+          previewInfo previewInfoEl;
+          for (const auto &rasterFileEl : rastersList) {
+              if(rasterFileEl.compare(0, 5, "TILE_") == 0)
+              {
+                  //if is TILE separator, read tileID
+                  strTileID = rasterFileEl.substr(5, rasterFileEl.length() - 5);
+              }
+              else
+              {
+                  previewInfoEl.strTileID = strTileID;
+                  previewInfoEl.strPreviewFileName = rasterFileEl;
+                  m_previewList.emplace_back(previewInfoEl);
+              }
+
+          }
 
      }
 
@@ -283,22 +311,12 @@ private:
           // Get LAIREPR raster file list
           std::vector<std::string> rastersList;
           rastersList = this->GetParameterStringList("processor.vegetation.lairepr");
-          rasterInfo rasterInfoEl;
-          //add them in global raster list
-          for (const auto &rasterFileEl : rastersList) {
-              rasterInfoEl.iRasterType = LAI_REPR_RASTER;
-              rasterInfoEl.strRasterFileName = rasterFileEl;
-              m_rasterInfoList.emplace_back(rasterInfoEl);
+          UnpackRastersList(rastersList, LAI_REPR_RASTER);
 
-          }
 
           //get LAIFIT raster files list
           rastersList = this->GetParameterStringList("processor.vegetation.laifit");
-          for (const auto &rasterFileEl : rastersList) {
-              rasterInfoEl.iRasterType = LAI_FIT_RASTER;
-              rasterInfoEl.strRasterFileName = rasterFileEl;
-              m_rasterInfoList.emplace_back(rasterInfoEl);
-          }
+          UnpackRastersList(rastersList, LAI_FIT_RASTER);
 
      }
 
@@ -308,14 +326,11 @@ private:
 
           std::vector<std::string> rastersList;
           rastersList = this->GetParameterStringList("processor.cropmask.file");
-          rasterInfo rasterInfoEl;
-          //add them in global raster list
-          for (const auto &rasterFileEl : rastersList) {
-              rasterInfoEl.iRasterType = CROP_MASK_RASTER;
-              rasterInfoEl.strRasterFileName = rasterFileEl;
-              m_rasterInfoList.emplace_back(rasterInfoEl);
+          UnpackRastersList(rastersList, CROP_MASK_RASTER);
 
-          }
+
+          //get quality file list
+          m_qualityList = this->GetParameterStringList("processor.cropmask.quality");
       }
 
       //if is CROP TYPE, read raster file
@@ -324,14 +339,14 @@ private:
           // Get reflectance raster file list
           std::vector<std::string> rastersList;
           rastersList = this->GetParameterStringList("processor.croptype.file");
-          rasterInfo rasterInfoEl;
-          //add them in global raster list
-          for (const auto &rasterFileEl : rastersList) {
-              rasterInfoEl.iRasterType = CROP_TYPE_RASTER;
-              rasterInfoEl.strRasterFileName = rasterFileEl;
-              m_rasterInfoList.emplace_back(rasterInfoEl);
+          UnpackRastersList(rastersList, CROP_TYPE_RASTER);
 
-          }
+          //get quality file list
+          m_qualityList = this->GetParameterStringList("processor.croptype.quality");
+      }
+
+      for (const auto &tileInfoEl : m_tileIDList ) {
+            std::cout << "TileID =" << tileInfoEl.strTileID << "  strTilePath =" << tileInfoEl.strTilePath  << std::endl;
       }
 
       //read .xml or .HDR files to fill the metadata structures
@@ -350,6 +365,7 @@ private:
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "{file_category}", MAIN_FOLDER_CATEG);
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "{product_level}", m_strProductLevel);
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "{originator_site}", ORIGINATOR_SITE);
+
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "{creation_date}", strCreationDate);
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "{time_period}", m_strTimePeriod);
       std::string strTileName = strMainProductFolderName;
@@ -362,10 +378,6 @@ private:
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{product_descriptor}", "");
       m_strProductDirectoryName = strMainProductFolderName;
 
-      /*strMainProductFolderName = PROJECT_ID;
-
-      strMainProductFolderName +=  "_" + m_strFileClass + "_" + MAIN_FOLDER_CATEG + "_" + m_strProductLevel + "_" + ORIGINATOR_SITE +"_" + strCreationDate + "_V" + m_strTimePeriod;*/
-
       std::string strMainFolderFullPath = m_strDestRoot + "/" + strMainProductFolderName;
 
       //created all folders ierarchy
@@ -377,37 +389,24 @@ private:
       }
 
 
-      //
+      strTileName = ReplaceString(strTileName, MAIN_FOLDER_CATEG, TILE_LEGACY_FOLDER_CATEG);
+      strTileName = ReplaceString(strTileName, "{product_descriptor}", TILE_DESCRIPTOR);
+
+      strTileName = ReplaceString(strTileName, "{processing_baseline}", "N" + m_strBaseline);
+      //strTileName = strMainFolderFullPath + "/" + TILES_FOLDER_NAME + "/" +  ReplaceString(strTileName, MAIN_FOLDER_CATEG, TILE_LEGACY_FOLDER_CATEG);
+
       if(bResult)
       {
-          strTileName = ReplaceString(strTileName, MAIN_FOLDER_CATEG, TILE_LEGACY_FOLDER_CATEG);
-          strTileName = ReplaceString(strTileName, "{product_descriptor}", TILE_DESCRIPTOR);
-          //?????? TODO tile_id
-          strTileName = ReplaceString(strTileName, "{tile_id}", TILE_ID);
-
-          strTileName = ReplaceString(strTileName, "{processing_baseline}", "N" + m_strBaseline);
-          m_strTilePath = strMainFolderFullPath + "/" + TILES_FOLDER_NAME + "/" +  ReplaceString(strTileName, MAIN_FOLDER_CATEG, TILE_LEGACY_FOLDER_CATEG);
-          bResult = createsAllTileSubfolders(m_strTilePath);
-          if(bResult)
-          {
-
-              strTileName = ReplaceString(strTileName, "_" + m_strBaseline, "");
-              m_strTileNameRoot = strTileName;
-
-              generateTileMetadataFile(strTileName);
-              TransferRasterFiles();
-              TransferPreviewFiles();
-
+          for (tileInfo &tileEl : m_tileIDList) {
+              CreateAndFillTile(tileEl, strMainFolderFullPath, strTileName);
           }
 
-          //create product metadata file
-          if(bResult)
-          {
-              TransferAndRenameGIPPFiles();
-              generateProductMetadataFile(strMainFolderFullPath + "/" + ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, METADATA_CATEG) + ".xml");
+      }
 
-          }
-
+      if(bResult)
+      {
+          TransferAndRenameGIPPFiles();
+          //generateProductMetadataFile(tileInfoEl, strMainFolderFullPath + "/" + ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, METADATA_CATEG) + ".xml");
       }
 
   }
@@ -417,19 +416,131 @@ private:
   std::string m_strTimePeriod;
   std::string m_strDestRoot;
   std::string m_strBaseline;
-  std::vector<std::string> m_previewList;
+  std::vector<previewInfo> m_previewList;
   std::vector<std::string> m_GIPPList;
-  std::string m_strTilePath;
+  std::vector<std::string> m_qualityList;
+  std::vector<tileInfo> m_tileIDList;
+
+  //std::string m_strTilePath;
   ProductFileMetadata m_productMetadata;
-  TileFileMetadata m_tileMetadata;
+  //TileFileMetadata m_tileMetadata;
   std::vector<rasterInfo> m_rasterInfoList;
-  std::string m_strTileNameWithoutExt;
+  //std::string m_strTileNameWithoutExt;
   std::string m_strProductDirectoryName;
 
   bool m_bIsHDR; /* true if is  loaded a .HDR fiel, false if is a .xml file */
-  std::string m_strTileNameRoot;
+  //std::string m_strTileNameRoot;
   std::string m_strProductFileName;
   std::vector<geoProductInfo> m_geoProductInfo;
+
+  void CreateAndFillTile(tileInfo &tileInfoEl, const std::string &strMainFolderFullPath, const std::string &tileNameRoot)
+  {
+      bool bResult;
+      std::string strTileName = tileNameRoot;
+      strTileName = ReplaceString(strTileName, "{tile_id}", tileInfoEl.strTileID);
+
+      strTileName = ReplaceString(strTileName, "{processing_baseline}", "N" + m_strBaseline);
+
+      std::cout << "TileName =" << strTileName << std::endl;
+
+      /*m_strTilePath */tileInfoEl.strTilePath = strMainFolderFullPath + "/" + TILES_FOLDER_NAME + "/" +  ReplaceString(strTileName, MAIN_FOLDER_CATEG, TILE_LEGACY_FOLDER_CATEG);
+
+      std::cout << "TileID =" << tileInfoEl.strTileID << "  strTilePath =" << tileInfoEl.strTilePath  << std::endl;
+
+      bResult = createsAllTileSubfolders(tileInfoEl.strTilePath);
+
+
+      if(bResult)
+      {
+
+          strTileName = ReplaceString(strTileName, "_" + m_strBaseline, "");
+          //m_strTileNameRoot = strTileName;
+          tileInfoEl.strTileNameRoot = strTileName;
+
+          generateTileMetadataFile(tileInfoEl, strTileName);
+          TransferRasterFiles(tileInfoEl);
+          TransferPreviewFiles();
+
+      }
+
+      //create product metadata file
+      if(bResult)
+      {
+          //TransferAndRenameGIPPFiles();
+          TransferAndRenameQualityFiles();
+          generateProductMetadataFile(tileInfoEl, strMainFolderFullPath + "/" + ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, METADATA_CATEG) + ".xml");
+
+      }
+
+ }
+
+  bool findDirectoryByRootName( const std::string & dir_path)
+  {
+    boost::filesystem::path p(dir_path);
+
+
+    if ( !boost::filesystem::exists(p)) return false;
+
+    if ( boost::filesystem::is_directory(p))
+      {
+        boost::filesystem::directory_iterator end_itr; // default construction yields past-the-end
+        for ( boost::filesystem::directory_iterator itr(p);
+              itr != end_itr;
+              ++itr )
+        {
+          if ( is_directory(itr->status()) )
+          {
+              std::cout << itr->path().filename() << " [directory]\n";
+
+            /*if ( findDirectoryByRootName( itr->path(), file_name, path_found ) )*/
+            //test to have the same root
+
+          }
+          else
+          {
+              //not directory, nothing to do
+          }
+        }
+
+    }
+  }
+
+  void UnpackRastersList(std::vector<std::string> &rastersList, rasterTypes rasterType)
+  {
+      rasterInfo rasterInfoEl;
+      std::string strTileID;
+      bool bAlreadyExist = false;
+
+      for (const auto &rasterFileEl : rastersList) {
+          if(rasterFileEl.compare(0, 5, "TILE_") == 0)
+          {
+              //if is TILE separator, read tileID
+              strTileID = rasterFileEl.substr(5, rasterFileEl.length() - 5);
+              bAlreadyExist = false;
+              for (const auto &tileIDEl : m_tileIDList) {
+                  if(tileIDEl.strTileID == strTileID)
+                  {
+                      bAlreadyExist = true;
+                      break;
+                  }
+              }
+              if(!bAlreadyExist)
+              {
+                tileInfo tileInfoEl;
+                tileInfoEl.strTileID = strTileID;
+                m_tileIDList.emplace_back(tileInfoEl);
+              }
+          }
+          else
+          {
+              rasterInfoEl.iRasterType = rasterType;
+              rasterInfoEl.strRasterFileName = rasterFileEl;
+              rasterInfoEl.strTileID = strTileID;
+              m_rasterInfoList.emplace_back(rasterInfoEl);
+          }
+
+      }
+  }
 
   // Get current date/time, format is YYYYMMDDThhmmss
   const std::string currentDateTimeFormattted(const std::string &strFormat) {
@@ -669,7 +780,7 @@ private:
 //          assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
   }
 
-  void generateTileMetadataFile(const std::string &strTileName)
+  void generateTileMetadataFile(tileInfo &tileInfoEl, const std::string &strTileName)
   {
       TileSize tileSizeEl;
       TileGeoposition tileGeoposition;
@@ -684,15 +795,15 @@ private:
       strTile = ReplaceString(strTile, "_N" + m_strBaseline, "");
       strTile = ReplaceString(strTile, TILE_LEGACY_FOLDER_CATEG, METADATA_CATEG);
 
-      m_tileMetadata.TileID = strTile;
-
+      tileInfoEl.tileMetadata.TileID = strTile;
 
       for (rasterInfo &rasterFileEl : m_rasterInfoList) {
-          if((rasterFileEl.iRasterType != FLAGS_MASK) &&
+          if((rasterFileEl.strTileID == tileInfoEl.strTileID) &&
+             (rasterFileEl.iRasterType != FLAGS_MASK) &&
              (rasterFileEl.iRasterType != DATES_MASK))
           {
 
-              //std::cout << "ImageFileReader =" << rasterFileEl.strRasterFileName << std::endl;
+              std::cout << "ImageFileReader =" << rasterFileEl.strRasterFileName << std::endl;
 
               auto imageReader = ImageFileReader<FloatVectorImageType>::New();
               imageReader->SetFileName(rasterFileEl.strRasterFileName);
@@ -706,7 +817,10 @@ private:
                                 (rasterFileEl.iRasterType == CROP_TYPE_RASTER) ||
                                 (rasterFileEl.iRasterType == CROP_MASK_RASTER)))
               {
-                m_previewList.emplace_back(rasterFileEl.strRasterFileName);
+                previewInfo previewInfoEl;
+                previewInfoEl.strPreviewFileName = rasterFileEl.strRasterFileName;
+                previewInfoEl.strTileID = tileInfoEl.strTileID;
+                m_previewList.emplace_back();
                 bPreview = true;
               }
 
@@ -726,7 +840,7 @@ private:
 
               rasterFileEl.nResolution = iResolution;
               //search the current resolution to seed if is already added in tileEl
-              for (const auto &tileEl : m_tileMetadata.TileGeometricInfo.TileSizeList) {
+              for (const auto &tileEl : tileInfoEl.tileMetadata.TileGeometricInfo.TileSizeList) {
                   if(tileEl.resolution == iResolution)
                   {
                       bResolutionExistingAlready = true;
@@ -738,12 +852,12 @@ private:
                   tileSizeEl.resolution = iResolution;
                   tileSizeEl.nrows = output->GetLargestPossibleRegion().GetSize()[1];
                   tileSizeEl.ncols = output->GetLargestPossibleRegion().GetSize()[0];
-                  m_tileMetadata.TileGeometricInfo.TileSizeList.emplace_back(tileSizeEl);
+                  tileInfoEl.tileMetadata.TileGeometricInfo.TileSizeList.emplace_back(tileSizeEl);
               }
 
               tileGeoposition.resolution = iResolution;
 
-              for (const auto &geoPosEl : m_tileMetadata.TileGeometricInfo.TileGeopositionList) {
+              for (const auto &geoPosEl : tileInfoEl.tileMetadata.TileGeometricInfo.TileGeopositionList) {
                   if(geoPosEl.resolution == iResolution)
                   {
                       bGeoPositionExistingAlready = true;
@@ -758,15 +872,15 @@ private:
                   tileGeoposition.uly = coord.y;
                   tileGeoposition.xdim = output->GetSpacing()[0];
                   tileGeoposition.ydim = output->GetSpacing()[1];
-                  m_tileMetadata.TileGeometricInfo.TileGeopositionList.emplace_back(tileGeoposition);
+                  tileInfoEl.tileMetadata.TileGeometricInfo.TileGeopositionList.emplace_back(tileGeoposition);
               }
 
               if (auto oSRS = static_cast<OGRSpatialReference *>(OSRNewSpatialReference(output->GetProjectionRef().c_str()))) {
                   m_productMetadata.GeometricInfo.CoordReferenceSystem.HorizCSName = oSRS->GetAttrValue("PROJCS");
                   m_productMetadata.GeometricInfo.CoordReferenceSystem.HorizCSCode = std::string(oSRS->GetAuthorityName("PROJCS")) + ':' + oSRS->GetAuthorityCode("PROJCS");
 
-                  m_tileMetadata.TileGeometricInfo.HorizontalCSName = m_productMetadata.GeometricInfo.CoordReferenceSystem.HorizCSName;
-                  m_tileMetadata.TileGeometricInfo.HorizontalCSCode = m_productMetadata.GeometricInfo.CoordReferenceSystem.HorizCSCode;
+                  tileInfoEl.tileMetadata.TileGeometricInfo.HorizontalCSName = m_productMetadata.GeometricInfo.CoordReferenceSystem.HorizCSName;
+                  tileInfoEl.tileMetadata.TileGeometricInfo.HorizontalCSCode = m_productMetadata.GeometricInfo.CoordReferenceSystem.HorizCSCode;
 
                   OSRDestroySpatialReference(oSRS);
               }
@@ -798,37 +912,37 @@ private:
           }
       }
 
-      ComputeNewNameOfRasterFiles();
+      ComputeNewNameOfRasterFiles(tileInfoEl);
 
-      m_tileMetadata.TileThematicInfo = "";
-      m_tileMetadata.TileImageContentQI.NoDataPixelPercentange = "";
-      m_tileMetadata.TileImageContentQI.SaturatedDefectivePixelPercentange = "";
-      m_tileMetadata.TileImageContentQI.CloudShadowPercentange = "";
-      m_tileMetadata.TileImageContentQI.VegetationPercentange = "";
-      m_tileMetadata.TileImageContentQI.WaterPercentange = "";
-      m_tileMetadata.TileImageContentQI.LowProbaCloudsPercentange = "";
-      m_tileMetadata.TileImageContentQI.MediumProbaCloudsPercentange = "";
-      m_tileMetadata.TileImageContentQI.HighProbaCloudsPercentange = "";
-      m_tileMetadata.TileImageContentQI.ThinCirrusPercentange = "";
-      m_tileMetadata.TileImageContentQI.SnowIcePercentange = "";
+      tileInfoEl.tileMetadata.TileThematicInfo = "";
+      tileInfoEl.tileMetadata.TileImageContentQI.NoDataPixelPercentange = "";
+      tileInfoEl.tileMetadata.TileImageContentQI.SaturatedDefectivePixelPercentange = "";
+      tileInfoEl.tileMetadata.TileImageContentQI.CloudShadowPercentange = "";
+      tileInfoEl.tileMetadata.TileImageContentQI.VegetationPercentange = "";
+      tileInfoEl.tileMetadata.TileImageContentQI.WaterPercentange = "";
+      tileInfoEl.tileMetadata.TileImageContentQI.LowProbaCloudsPercentange = "";
+      tileInfoEl.tileMetadata.TileImageContentQI.MediumProbaCloudsPercentange = "";
+      tileInfoEl.tileMetadata.TileImageContentQI.HighProbaCloudsPercentange = "";
+      tileInfoEl.tileMetadata.TileImageContentQI.ThinCirrusPercentange = "";
+      tileInfoEl.tileMetadata.TileImageContentQI.SnowIcePercentange = "";
 
       TileMask tileMask;
       for (const auto &rasterFileEl : m_rasterInfoList) {
-         if((rasterFileEl.iRasterType == FLAGS_MASK) || (rasterFileEl.iRasterType == DATES_MASK))
+         if((rasterFileEl.strTileID == tileInfoEl.strTileID) && ((rasterFileEl.iRasterType == FLAGS_MASK) || (rasterFileEl.iRasterType == DATES_MASK)))
          {
               tileMask.MaskType = "";// ??? TODO
               tileMask.BandId = 0;
               tileMask.Geometry = "FULL_RESOLUTION";
               tileMask.MaskFileName = rasterFileEl.strNewRasterFileName;
-              m_tileMetadata.TileMasksList.emplace_back(tileMask);
+              tileInfoEl.tileMetadata.TileMasksList.emplace_back(tileMask);
           }
       }
 
-      m_strTileNameWithoutExt = m_strTilePath + "/" + strTile;
-      writer->WriteTileMetadata(m_tileMetadata, m_strTilePath + "/" + strTile + ".xml");
+      tileInfoEl.strTileNameWithoutExt = tileInfoEl.strTilePath + "/" + strTile;
+      writer->WriteTileMetadata(tileInfoEl.tileMetadata, tileInfoEl.strTilePath + "/" + strTile + ".xml");
   }
 
-  void generateProductMetadataFile(const std::string &strProductMetadataFilePath)
+  void generateProductMetadataFile(const tileInfo &tileInfoEl, const std::string &strProductMetadataFilePath)
   {
       auto writer = itk::ProductMetadataWriter::New();
 
@@ -867,7 +981,7 @@ private:
 
       //TODO ????
       m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.MetadataLevel = "SuperBrief";
-      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AuxListContent.ProductLevel = "Level-3A";
+      m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AuxListContent.ProductLevel = "Level-"  + m_strProductLevel;
 
 
       if(m_GIPPList.empty())
@@ -887,13 +1001,14 @@ private:
       Granule granuleEl;
 
       //for the moment is only one tile
-      granuleEl.GranuleIdentifier = m_strTileNameRoot;//m_strTilePath;
+      granuleEl.GranuleIdentifier = tileInfoEl.strTileNameRoot;
       granuleEl.ImageFormat = IMAGE_FORMAT;
       //fill the TIFF files for current tile
       for (const auto &rasterFileEl : m_rasterInfoList) {
-          if((rasterFileEl.iRasterType != FLAGS_MASK) & (rasterFileEl.iRasterType != DATES_MASK))
+          if((rasterFileEl.strTileID == tileInfoEl.strTileID) && (rasterFileEl.iRasterType != FLAGS_MASK) & (rasterFileEl.iRasterType != DATES_MASK))
           {
             granuleEl.ImageIDList.emplace_back(rasterFileEl.strNewRasterFileName);
+
           }
       }
       m_productMetadata.GeneralInfo.ProductInfo.ProductOrganisation.emplace_back(granuleEl);
@@ -929,7 +1044,7 @@ private:
 
       //no reports for now
       GranuleReport granuleReport;
-      granuleReport.GranuleReportId = "";
+      granuleReport.GranuleReportId = tileInfoEl.strTileNameRoot;
       granuleReport.GranuleReportFileName = "";
       m_productMetadata.QualityIndicatorsInfo.QualityControlChecks.FailedInspections.emplace_back(granuleReport);
 
@@ -983,13 +1098,13 @@ private:
       return bResult;
   }
 
-  void ComputeNewNameOfRasterFiles()
+  void ComputeNewNameOfRasterFiles(const tileInfo &tileInfoEl)
   {
 
       std::string strNewRasterFileName;
 
       for (auto &rasterFileEl : m_rasterInfoList) {
-          strNewRasterFileName = m_strTileNameRoot;
+          strNewRasterFileName = tileInfoEl.strTileNameRoot;
           strNewRasterFileName = ReplaceString(strNewRasterFileName, "_N" + m_strBaseline, "");
           switch(rasterFileEl.iRasterType)
               {
@@ -1026,34 +1141,35 @@ private:
 
   }
 
-  void TransferRasterFiles()
+  void TransferRasterFiles(const tileInfo &tileInfoEl)
   {
 
       std::string strImgDataPath;
 
       for (const auto &rasterFileEl : m_rasterInfoList) {
+          if(tileInfoEl.strTileID == rasterFileEl.strTileID)
+          {
               switch(rasterFileEl.iRasterType)
               {
                 case REFLECTANCE_RASTER:
-                case WEIGHTS_RASTER:
+                //case WEIGHTS_RASTER:
                 case LAI_REPR_RASTER:
                 case LAI_FIT_RASTER:
                 case CROP_TYPE_RASTER:
                 case CROP_MASK_RASTER:
-                  strImgDataPath = m_strTilePath + "/" + IMG_DATA_FOLDER_NAME;
+                  strImgDataPath = tileInfoEl.strTilePath + "/" + IMG_DATA_FOLDER_NAME;
                   break;
 
+                case WEIGHTS_RASTER:
                 case DATES_MASK:
-                  strImgDataPath = m_strTilePath + "/" + QI_DATA_FOLDER_NAME;
-                  break;
                 case FLAGS_MASK:
-                  strImgDataPath = m_strTilePath + "/" + QI_DATA_FOLDER_NAME;
+                  strImgDataPath = tileInfoEl.strTilePath + "/" + QI_DATA_FOLDER_NAME;
                   break;
               }
 
                CopyFile(strImgDataPath + "/" + rasterFileEl.strNewRasterFileName, rasterFileEl.strRasterFileName);
           }
-
+        }
    }
 
   /* Extract the extension of a file */
@@ -1087,6 +1203,19 @@ private:
     }
   }
 
+  void TransferAndRenameQualityFiles()
+  {
+      std::string strNewQualityFileName;
+
+      for (const auto &qualityFileEl : m_qualityList) {
+          strNewQualityFileName = m_strProductFileName;
+          strNewQualityFileName = ReplaceString(strNewQualityFileName, MAIN_FOLDER_CATEG, QUALITY_CATEG);
+          strNewQualityFileName = strNewQualityFileName + "." + extractExtension(qualityFileEl);
+
+           //quality files are copied to tileDirectory/QI_DATA
+          CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + AUX_DATA_FOLDER_NAME + "/" + strNewQualityFileName, qualityFileEl);
+    }
+  }
   void TransferPreviewFiles()
   {
       std::string strProductPreviewFullPath;
@@ -1107,38 +1236,42 @@ private:
         strChannelsList.emplace_back("Channel" + std::to_string(j));
       }
 
-      for (const auto &previewFileEl : m_previewList) {
+      for (const auto &tileID : m_tileIDList) {
+          for (const auto &previewFileEl : m_previewList) {
 
-            //for the moment the preview file for product and tile are the same
+              if(tileID.strTileID == previewFileEl.strTileID)
+              {
+                //for the moment the preview file for product and tile are the same
 
-            //build product preview file name
-             strProductPreviewFullPath = ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, QUICK_L0OK_IMG_CATEG);
-             strProductPreviewFullPath = strProductPreviewFullPath + JPEG_EXTENSION;
+                //build product preview file name
+                 strProductPreviewFullPath = ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, QUICK_L0OK_IMG_CATEG);
+                 strProductPreviewFullPath = strProductPreviewFullPath + JPEG_EXTENSION;
 
-             m_productMetadata.GeneralInfo.ProductInfo.PreviewImageURL = strProductPreviewFullPath;
+                 m_productMetadata.GeneralInfo.ProductInfo.PreviewImageURL = strProductPreviewFullPath;
 
-             strProductPreviewFullPath = m_strDestRoot + "/" + m_strProductDirectoryName + "/" + strProductPreviewFullPath;
+                 strProductPreviewFullPath = m_strDestRoot + "/" + m_strProductDirectoryName + "/" + strProductPreviewFullPath;
 
-             std::cout << "ProductPreviewFullPath = " << strProductPreviewFullPath << std::endl;
+                 std::cout << "ProductPreviewFullPath = " << strProductPreviewFullPath << std::endl;
 
-             //transform .tif file in .jpg file directly in product directory
-             generateQuicklook(previewFileEl, strChannelsList, strProductPreviewFullPath);
+                 //transform .tif file in .jpg file directly in product directory
+                 generateQuicklook(previewFileEl.strPreviewFileName, strChannelsList, strProductPreviewFullPath);
 
-            //build producty preview file name for tile
-             strTilePreviewFullPath = m_strTileNameWithoutExt + JPEG_EXTENSION;
-             strTilePreviewFullPath = ReplaceString(strTilePreviewFullPath, METADATA_CATEG, QUICK_L0OK_IMG_CATEG);
+                //build producty preview file name for tile
+                 strTilePreviewFullPath = tileID.strTileNameWithoutExt + JPEG_EXTENSION;
+                 strTilePreviewFullPath = ReplaceString(strTilePreviewFullPath, METADATA_CATEG, QUICK_L0OK_IMG_CATEG);
 
-             std::cout << "TilePreviewFullPath = " << strTilePreviewFullPath << std::endl;
+                 std::cout << "TilePreviewFullPath = " << strTilePreviewFullPath << std::endl;
 
-             CopyFile(strTilePreviewFullPath, strProductPreviewFullPath);
+                 CopyFile(strTilePreviewFullPath, strProductPreviewFullPath);
 
-             //remove  file with extension jpg.aux.xml generated after preview obtained
+                 //remove  file with extension jpg.aux.xml generated after preview obtained
 
-             std::string strFileToBeRemoved = strProductPreviewFullPath + ".aux.xml";
-             std::cout << "Remove file: " <<  strFileToBeRemoved<< std::endl;
-             remove(strFileToBeRemoved.c_str());
-
-    }
+                 std::string strFileToBeRemoved = strProductPreviewFullPath + ".aux.xml";
+                 std::cout << "Remove file: " <<  strFileToBeRemoved<< std::endl;
+                 remove(strFileToBeRemoved.c_str());
+            }
+        }
+      }
   }
 
    void CopyFile(const std::string &strDest, const std::string &strSrc)
