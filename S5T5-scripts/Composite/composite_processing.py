@@ -249,7 +249,7 @@ for xml in args.input:
 
     prevL3A = ["-prevl3aw", out_w, "-prevl3ad", out_d, "-prevl3ar", out_r, "-prevl3af", out_f]
 
-    runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3A", "-timeperiod", syntDate, "-baseline", "01.00", "-processor", "composite", "-processor.composite.refls", out_r, "-processor.composite.weights", out_w, "-processor.composite.flags", out_f, "-processor.composite.dates", out_d, "-processor.composite.rgb", out_rgb, "-il", xml, "-gipp", paramsFilename])
+    runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3A", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "composite", "-processor.composite.refls", out_r, "-processor.composite.weights", out_w, "-processor.composite.flags", out_f, "-processor.composite.dates", out_d, "-processor.composite.rgb", out_rgb, "-il", xml, "-gipp", paramsFilename])
     
     runCmd(["rm", "-fr", mod, outSpotMasks, outImgBands, outCld, outWat, outSnow, outAot, outWeightAotFile, outWeightCloudFile, outTotalWeightFile])
     if REMOVE_TEMP and i > 0:
