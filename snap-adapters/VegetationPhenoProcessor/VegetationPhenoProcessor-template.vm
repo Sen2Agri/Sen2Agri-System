@@ -1,0 +1,12 @@
+--applocation
+$SENTINEL_BUILD_PATH
+--input
+$inputFiles
+--t0
+$t0
+--tend
+$tend
+--outdir
+$WORKING_DIR_PATH/Vegetation/out
+--tileid
+$tileid
