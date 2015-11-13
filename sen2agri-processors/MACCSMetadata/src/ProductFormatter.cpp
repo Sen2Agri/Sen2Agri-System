@@ -33,6 +33,7 @@
 #define FLAGS_SUFFIX       "MFLG"
 #define LAI_REPR_SUFFIX    "SLAIR"
 #define LAI_FIT_SUFFIX     "SLAIF"
+#define PHENO_SUFFIX       "SNVDIMET"
 
 
 #define MAIN_FOLDER_CATEG "PRD"
@@ -104,7 +105,8 @@ typedef enum{
     LAI_REPR_RASTER,
     LAI_FIT_RASTER,
     CROP_MASK_RASTER,
-    CROP_TYPE_RASTER
+    CROP_TYPE_RASTER,
+    PHENO_RASTER
 }rasterTypes;
 
 struct rasterInfo
@@ -212,6 +214,9 @@ private:
          AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laifit", "LAI FIT raster files list for vegetation");
          MandatoryOff("processor.vegetation.laifit");
 
+         AddParameter(ParameterType_InputFilenameList, "processor.vegetation.pheno", "Metric estimation raster files list for vegetation");
+         MandatoryOff("processor.vegetation.pheno");
+
 //crop type parameters
         AddParameter(ParameterType_InputFilenameList, "processor.croptype.file", "CROP TYPE raster file");
         MandatoryOff("processor.croptype.file");
@@ -234,7 +239,7 @@ private:
         AddParameter(ParameterType_InputFilenameList, "gipp", "The GIPP files");
         MandatoryOff("gipp");
 
-        SetDocExampleParameterValue("destroot", "/home/atrasca/sen2agri/sen2agri-processors-build/Testing/Temporary/Dest");
+        SetDocExampleParameterValue("destroot", "/home/ata/sen2agri/sen2agri-processors-build/Testing/Temporary/Dest");
         SetDocExampleParameterValue("fileclass", "SVT1");
         SetDocExampleParameterValue("level", "L3A");
         SetDocExampleParameterValue("timeperiod", "20130228_20130615");
@@ -286,8 +291,8 @@ private:
           UnpackRastersList(rastersList, DATES_MASK);
 
           rastersList = this->GetParameterStringList("processor.composite.rgb");
-          std::string strTileID;
-          previewInfo previewInfoEl;
+          std::string strTileID("");
+
           for (const auto &rasterFileEl : rastersList) {
               if(rasterFileEl.compare(0, 5, "TILE_") == 0)
               {
@@ -296,6 +301,7 @@ private:
               }
               else
               {
+                  previewInfo previewInfoEl;
                   previewInfoEl.strTileID = strTileID;
                   previewInfoEl.strPreviewFileName = rasterFileEl;
                   m_previewList.emplace_back(previewInfoEl);
@@ -317,6 +323,10 @@ private:
           //get LAIFIT raster files list
           rastersList = this->GetParameterStringList("processor.vegetation.laifit");
           UnpackRastersList(rastersList, LAI_FIT_RASTER);
+
+          //get PHENO raster files list
+          rastersList = this->GetParameterStringList("processor.vegetation.pheno");
+          UnpackRastersList(rastersList, PHENO_RASTER);
 
      }
 
@@ -405,6 +415,7 @@ private:
 
       if(bResult)
       {
+          TransferPreviewFiles();
           TransferAndRenameGIPPFiles();
           //generateProductMetadataFile(tileInfoEl, strMainFolderFullPath + "/" + ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, METADATA_CATEG) + ".xml");
       }
@@ -443,7 +454,7 @@ private:
 
       std::cout << "TileName =" << strTileName << std::endl;
 
-      /*m_strTilePath */tileInfoEl.strTilePath = strMainFolderFullPath + "/" + TILES_FOLDER_NAME + "/" +  ReplaceString(strTileName, MAIN_FOLDER_CATEG, TILE_LEGACY_FOLDER_CATEG);
+      tileInfoEl.strTilePath = strMainFolderFullPath + "/" + TILES_FOLDER_NAME + "/" +  ReplaceString(strTileName, MAIN_FOLDER_CATEG, TILE_LEGACY_FOLDER_CATEG);
 
       std::cout << "TileID =" << tileInfoEl.strTileID << "  strTilePath =" << tileInfoEl.strTilePath  << std::endl;
 
@@ -459,7 +470,7 @@ private:
 
           generateTileMetadataFile(tileInfoEl, strTileName);
           TransferRasterFiles(tileInfoEl);
-          TransferPreviewFiles();
+          //TransferPreviewFiles();
 
       }
 
@@ -508,7 +519,7 @@ private:
   void UnpackRastersList(std::vector<std::string> &rastersList, rasterTypes rasterType)
   {
       rasterInfo rasterInfoEl;
-      std::string strTileID;
+      std::string strTileID("");
       bool bAlreadyExist = false;
 
       for (const auto &rasterFileEl : rastersList) {
@@ -820,7 +831,7 @@ private:
                 previewInfo previewInfoEl;
                 previewInfoEl.strPreviewFileName = rasterFileEl.strRasterFileName;
                 previewInfoEl.strTileID = tileInfoEl.strTileID;
-                m_previewList.emplace_back();
+                m_previewList.emplace_back(previewInfoEl);
                 bPreview = true;
               }
 
@@ -1121,6 +1132,9 @@ private:
                 case LAI_FIT_RASTER:
                    strNewRasterFileName = strNewRasterFileName + "_" + LAI_FIT_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
                    break;
+                case PHENO_RASTER:
+                     strNewRasterFileName = strNewRasterFileName + "_" + PHENO_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
+                     break;
                 case CROP_TYPE_RASTER:
                 case CROP_MASK_RASTER:
                    strNewRasterFileName= strNewRasterFileName + TIF_EXTENSION;
@@ -1155,6 +1169,7 @@ private:
                 //case WEIGHTS_RASTER:
                 case LAI_REPR_RASTER:
                 case LAI_FIT_RASTER:
+                case PHENO_RASTER:
                 case CROP_TYPE_RASTER:
                 case CROP_MASK_RASTER:
                   strImgDataPath = tileInfoEl.strTilePath + "/" + IMG_DATA_FOLDER_NAME;

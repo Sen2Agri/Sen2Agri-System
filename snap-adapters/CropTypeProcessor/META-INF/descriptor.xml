@@ -1,0 +1,212 @@
+<operator>
+  <name>org.esa.sen2agri.croptypeprocessor</name>
+  <operatorClass>org.esa.snap.core.gpf.operators.tooladapter.ToolAdapterOp</operatorClass>
+  <alias>CropTypeProcessor</alias>
+  <label>Crop Type Processor</label>
+  <version>1.0</version>
+  <description>Sen2Agri Crop Type Processor</description>
+  <authors>Cosmin Cara</authors>
+  <copyright>(C)2015 CS ROMANIA</copyright>
+  <internal>false</internal>
+  <autoWriteSuppressed>false</autoWriteSuppressed>
+  <menuLocation>Menu/Tools/External Tools</menuLocation>
+  <preprocessTool>false</preprocessTool>
+  <writeForProcessing>false</writeForProcessing>
+  <mainToolFileLocation>$SCRIPT_PATH/CropType.py</mainToolFileLocation>
+  <workingDir>$WORKING_DIR_PATH/CropType</workingDir>
+  <templateFileLocation>CropTypeProcessor-template.vm</templateFileLocation>
+  <progressPattern>(?:.+): (\d{1,3})% (?:.+)</progressPattern>
+  <errorPattern>ERROR: (.+)</errorPattern>
+  <variables>
+    <variable>
+      <key>SCRIPT_PATH</key>
+      <value>/home/ramonag/sen2agri/sources/sen2agri/scripts</value>
+    </variable>
+    <osvariable>
+      <key>PYTHON_BIN</key>
+      <value></value>
+      <windows>python.exe</windows>
+      <linux>/bin/python2.7</linux>
+      <macosx>/bin/python2.7</macosx>
+      <isTransient>false</isTransient>
+    </osvariable>
+    <variable>
+      <key>WORKING_DIR_PATH</key>
+      <value>/home/ramonag/sen2agri/workingDir/</value>
+    </variable>
+    <variable>
+      <key>SENTINEL_BUILD_PATH</key>
+      <value>/home/ramonag/sen2agri/sources/sen2agri-build/</value>
+    </variable>
+  </variables>
+  <parameters>
+    <parameter>
+      <name>targetProductFile</name>
+      <dataType>java.io.File</dataType>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>ref</name>
+      <dataType>java.io.File</dataType>
+      <defaultValue>/mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp</defaultValue>
+      <description>The reference polygons</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>ratio</name>
+      <dataType>java.lang.Float</dataType>
+      <defaultValue>0.75</defaultValue>
+      <description>The ratio between the validation and training polygons</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>t0</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>20130206</defaultValue>
+      <description>The start date for the temporal resampling interval (in format YYYYMMDD)</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>tend</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>20130616</defaultValue>
+      <description>The end date for the temporal resampling interval (in format YYYYMMDD)</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>rate</name>
+      <dataType>java.lang.Integer</dataType>
+      <defaultValue>10</defaultValue>
+      <description>The sampling rate for the temporal series, in days</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>radius</name>
+      <dataType>java.lang.Integer</dataType>
+      <defaultValue>100</defaultValue>
+      <description>The radius used for gapfilling, in days</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>classifier</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>rf</defaultValue>
+      <description>The classifier used for training (either rf or svm)</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>rseed</name>
+      <dataType>java.lang.Integer</dataType>
+      <defaultValue>0</defaultValue>
+      <description>The random seed used for training</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>mask</name>
+      <dataType>java.io.File</dataType>
+      <defaultValue>/home/ramonag/sen2agri/workingDir/CropMask/out/crop_mask.tif</defaultValue>
+      <description>The crop mask</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>inputFiles</name>
+      <dataType>[Ljava.io.File;</dataType>
+      <description>The list of products descriptors</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>pixsize</name>
+      <dataType>java.lang.Integer</dataType>
+      <defaultValue>20</defaultValue>
+      <description>The size, in meters, of a pixel (default 10)</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>rfnbtrees</name>
+      <dataType>java.lang.Integer</dataType>
+      <defaultValue>100</defaultValue>
+      <description>The number of trees used for training (default 100)</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>rfmax</name>
+      <dataType>java.lang.Integer</dataType>
+      <defaultValue>25</defaultValue>
+      <description>maximum depth of the trees used for Random Forest classifier (default 25)</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>rfmin</name>
+      <dataType>java.lang.Integer</dataType>
+      <defaultValue>5</defaultValue>
+      <description>minimum number of samples in each node used by the classifier (default 5)</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+  </parameters>
+  <source>user</source>
+  <isSystem>false</isSystem>
+  <isHandlingOutputName>true</isHandlingOutputName>
+  <sourceProductDescriptors/>
+  <targetPropertyDescriptors/>
+  <numSourceProducts>0</numSourceProducts>
+</operator>

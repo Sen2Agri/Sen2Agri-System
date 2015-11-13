@@ -1,0 +1,150 @@
+<operator>
+  <name>org.esa.sen2agri.vegetationprocessor</name>
+  <operatorClass>org.esa.snap.core.gpf.operators.tooladapter.ToolAdapterOp</operatorClass>
+  <alias>VegetationStatusProcessor</alias>
+  <label>Vegetation Status Processor</label>
+  <version>1.0</version>
+  <description>Sen2Agri LAI Processor</description>
+  <authors>Ramona Manda</authors>
+  <copyright>(C)2015 CS ROMANIA</copyright>
+  <internal>false</internal>
+  <autoWriteSuppressed>false</autoWriteSuppressed>
+  <menuLocation>Menu/Tools/External Tools</menuLocation>
+  <preprocessTool>false</preprocessTool>
+  <writeForProcessing>false</writeForProcessing>
+  <mainToolFileLocation>$PROCESSORS_PATH/VegetationStatus/TestScripts/lai_retrieve_processing.py</mainToolFileLocation>
+  <workingDir>$WORKING_DIR_PATH/VegetationLAI</workingDir>
+  <templateFileLocation>VegetationStatusProcessor-template.vm</templateFileLocation>
+  <progressPattern>(?:.+): (\d{1,3})% (?:.+)</progressPattern>
+  <errorPattern>ERROR: (.+)</errorPattern>
+  <variables>
+    <osvariable>
+      <key>PYTHON_BIN</key>
+      <value></value>
+      <windows>python.exe</windows>
+      <linux></linux>
+      <macosx>/bin/python2.7</macosx>
+      <isTransient>false</isTransient>
+    </osvariable>
+    <variable>
+      <key>SENTINEL_BUILD_PATH</key>
+      <value>/home/ramonag/sen2agri/sources/sen2agri-build/</value>
+    </variable>
+    <variable>
+      <key>SCRIPT_PATH</key>
+      <value>/home/ramonag/sen2agri/sources/sen2agri/scripts/</value>
+    </variable>
+    <variable>
+      <key>PROCESSORS_PATH</key>
+      <value>/home/ramonag/sen2agri/sources/sen2agri/sen2agri-processors/</value>
+    </variable>
+    <variable>
+      <key>WORKING_DIR_PATH</key>
+      <value>/home/ramonag/sen2agri/workingDir/</value>
+    </variable>
+  </variables>
+  <parameters>
+    <parameter>
+      <name>targetProductFile</name>
+      <dataType>java.io.File</dataType>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>resolution</name>
+      <dataType>java.lang.Integer</dataType>
+      <defaultValue>20</defaultValue>
+      <description></description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>inputFiles</name>
+      <dataType>[Ljava.io.File;</dataType>
+      <description>the list of files representing the metadata files of the products</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>RSRFile</name>
+      <dataType>java.io.File</dataType>
+      <defaultValue>/home/ramonag/sen2agri/sources/sen2agri/sen2agri-processors/VegetationStatus/otb-bv/data/spot4hrvir1.rsr</defaultValue>
+      <description>file containing spectral response of a sensor</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>solZenAngle</name>
+      <dataType>java.lang.Float</dataType>
+      <defaultValue>67.3722</defaultValue>
+      <description>solar zenith angle</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>senZenAngle</name>
+      <dataType>java.lang.Float</dataType>
+      <defaultValue>0.23422731</defaultValue>
+      <description>sensor zenith angle</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>relAzmAngle</name>
+      <dataType>java.lang.Float</dataType>
+      <defaultValue>133.75078</defaultValue>
+      <description>relative azimuth angle</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>t0</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>20130206</defaultValue>
+      <description>The start date for the temporal resampling interval (in format YYYYMMDD)</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>tend</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>20130616</defaultValue>
+      <description>The end date for the temporal resampling interval (in format YYYYMMDD)</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+  </parameters>
+  <source>user</source>
+  <isSystem>false</isSystem>
+  <isHandlingOutputName>true</isHandlingOutputName>
+  <sourceProductDescriptors/>
+  <targetPropertyDescriptors/>
+  <numSourceProducts>0</numSourceProducts>
+</operator>

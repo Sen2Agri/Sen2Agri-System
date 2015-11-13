@@ -2,7 +2,7 @@
 
 source set_build_folder.sh
 
-./CropType.py -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp -ratio 0.75 -input \
+../../scripts/CropType.py -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp -ratio 0.75 -input \
 /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Ukraine/SPOT5_HRG2_XS_20150410_N2A_UkraineD0000B0000/SPOT5_HRG2_XS_20150410_N2A_UkraineD0000B0000.xml \
 /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Ukraine/SPOT5_HRG2_XS_20150425_N2A_UkraineD0000B0000/SPOT5_HRG2_XS_20150425_N2A_UkraineD0000B0000.xml \
 /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Ukraine/SPOT5_HRG2_XS_20150430_N2A_UkraineD0000B0000/SPOT5_HRG2_XS_20150430_N2A_UkraineD0000B0000.xml \
@@ -21,5 +21,5 @@ source set_build_folder.sh
 /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Ukraine/SPOT5_HRG2_XS_20150724_N2A_UkraineD0000B0000/SPOT5_HRG2_XS_20150724_N2A_UkraineD0000B0000.xml \
 /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Ukraine/SPOT5_HRG2_XS_20150729_N2A_UkraineD0000B0000/SPOT5_HRG2_XS_20150729_N2A_UkraineD0000B0000.xml \
 /mnt/Sen2Agri_DataSets/L2A/Spot5-T5/Ukraine/SPOT5_HRG2_XS_20150808_N2A_UkraineD0000B0000/SPOT5_HRG2_XS_20150808_N2A_UkraineD0000B0000.xml \
--t0 20150410 -tend 20150808 -rate 5 -radius 100 -classifier rf -rseed 0 -mask /home/ramona/S5T5-Tests/CropType_Ukraine/crop_mask.tif -pixsize 10 \
--outdir "/home/ramona/S5T5-Tests/CropType_Ukraine/" -buildfolder $BUILD_FOLDER
+-t0 20150410 -tend 20150808 -rate 5 -radius 100 -classifier rf -rfnbtrees 100 -rfmax 25 -rfmin 25 -rseed 0 -mask /mnt/data/ukraine/Ukraine-mask/crop_mask.tif -tilename UkraineD0000B0000 -pixsize 10 \
+-outdir /mnt/data/ukraine/Ukraine-type -targetfolder /mnt/output/L4B/SPOT5-T5/Ukraine -buildfolder $BUILD_FOLDER
