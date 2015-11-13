@@ -29,15 +29,27 @@ parser = argparse.ArgumentParser(description='Phenological NDVI processor')
 
 parser.add_argument('--applocation', help='The path where the sen2agri is built', required=True)
 parser.add_argument('--input', help='The list of products xml descriptors', required=True, nargs='+')
+parser.add_argument('--t0', help='The start date for the temporal resampling interval (in format YYYYMMDD)',
+                    required=True, metavar='YYYYMMDD')
+parser.add_argument('--tend', help='The end date for the temporal resampling interval (in format YYYYMMDD)',
+                    required=True, metavar='YYYYMMDD')
 parser.add_argument('--outdir', help="Output directory", required=True)
+parser.add_argument('--tileid', help="Tile id", required=False)
 
 args = parser.parse_args()
 
 appLocation = args.applocation
 outDir = args.outdir
+t0 = args.t0
+tend = args.tend
 
 vegetationStatusLocation = "{}/VegetationStatus/phenotb/src/Applications".format(appLocation)
 cropTypeLocation = "{}/CropType".format(appLocation)
+productFormatterLocation = "{}/MACCSMetadata/src".format(appLocation)
+
+tileID="TILE_none"
+if args.tileid:
+    tileID = "TILE_{}".format(args.tileid)
 
 if os.path.exists(outDir):
     if not os.path.isdir(outDir):
@@ -70,6 +82,8 @@ runCmd(["otbcli", "FeatureExtraction", cropTypeLocation, "-rtocr", outBands, "-n
 runCmd(["otbcli", "SigmoFitting", vegetationStatusLocation, "-in", outNdvi, "-mask", outMasks, "-dates", outDates,"-out", outSigmo])
 #try otbcli MetricsEstimation $VEGETATIONSTATUS_OTB_LIBS_ROOT -ipf $OUT_SIGMO -indates $OUT_DATES -opf $OUT_METRIC
 runCmd(["otbcli", "MetricsEstimation", vegetationStatusLocation, "-ipf", outSigmo, "-indates", outDates, "-opf", outMetric])
+
+runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.pheno", tileID, outMetric, "-il", args.input[0]])
 
 #os.remove(outMasks)
 #os.remove(outBands)
