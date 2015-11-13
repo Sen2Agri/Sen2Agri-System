@@ -50,6 +50,7 @@ parser.add_argument('--rsrfile', help='The RSR file (/path/filename)', required=
 parser.add_argument('--solarzenith', help='The value for solar zenith angle', type=float, required=True)
 parser.add_argument('--sensorzenith', help='The value for sensor zenith angle', type=float, required=True)
 parser.add_argument('--relativeazimuth', help='The value for relative azimuth angle', type=float, required=True)
+parser.add_argument('--tileid', help="Tile id", required=False)
 
 args = parser.parse_args()
 
@@ -66,6 +67,10 @@ relativeAzimuthAngle = args.relativeazimuth
 vegetationStatusLocation = "{}/VegetationStatus".format(appLocation)
 productFormatterLocation = "{}/MACCSMetadata/src".format(appLocation)
 imgInvOtbLibsLocation = vegetationStatusLocation + '/otb-bv/src/applications'
+
+tileID="TILE_none"
+if args.tileid:
+    tileID = "TILE_{}".format(args.tileid)
 
 if os.path.exists(outDir):
     if not os.path.isdir(outDir):
@@ -348,7 +353,7 @@ runCmd(["otbcli", "ReprocessedProfileSplitter", imgInvOtbLibsLocation, "-in", ou
 runCmd(["otbcli", "ProfileReprocessing", imgInvOtbLibsLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outFittedTimeSeries, "-algo", "fit"])
 
 #try otbcli ProductFormatter "$PRODUCT_FORMATER_OTB_LIBS_ROOT" -destroot "$OUT_FOLDER" -fileclass SVT1 -level L3B -timeperiod 20130228_20130615 -baseline 01.00 -processor vegetation -processor.vegetation.lairepr "$OUT_REPROCESSED_TIME_SERIES" -processor.vegetation.laifit "$OUT_FITTED_TIME_SERIES" -il "${inputXML[0]}" -gipp "$PARAMS_TXT"
-runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.lairepr", "TILE_none", outReprocessedTimeSeries, "-processor.vegetation.laifit", "TILE_none", outFittedTimeSeries, "-il", args.input[0], "-gipp", paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML])
+runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.lairepr", tileID, outReprocessedTimeSeries, "-processor.vegetation.laifit", tileID, outFittedTimeSeries, "-il", args.input[0], "-gipp", paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML])
 
 #split the Fitted time series to a number of images
 #timed_exec "try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_FITTED_TIME_SERIES -outlist $FITTED_LIST_FILE -compress 1"
