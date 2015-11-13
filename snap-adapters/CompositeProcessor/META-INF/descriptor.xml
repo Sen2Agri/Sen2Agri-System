@@ -12,11 +12,12 @@
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>$SCRIPT_PATH/run_composite.sh</mainToolFileLocation>
-  <workingDir>/home/ramonag/sen2agri/workingDir/Composite</workingDir>
+  <mainToolFileLocation>$PROCESSORS_PATH/Composite/TestScripts/composite_processing.py</mainToolFileLocation>
+  <workingDir>$WORKING_DIR_PATH/Composite</workingDir>
   <templateFileLocation>CompositeProcessor-template.vm</templateFileLocation>
   <progressPattern>(?:.+): (\d{1,3})% (?:.+)</progressPattern>
   <errorPattern>ERROR: (.+)</errorPattern>
+  <stepPattern>(?:.+)otbcli (\w+) (?:.+)</stepPattern>
   <variables>
     <variable>
       <key>SCRIPT_PATH</key>
@@ -30,6 +31,18 @@
       <macosx>/bin/python2.7</macosx>
       <isTransient>false</isTransient>
     </osvariable>
+    <variable>
+      <key>PROCESSORS_PATH</key>
+      <value>/home/ramonag/sen2agri/sources/sen2agri/sen2agri-processors</value>
+    </variable>
+    <variable>
+      <key>WORKING_DIR_PATH</key>
+      <value>/home/ramonag/sen2agri/workingDir</value>
+    </variable>
+    <variable>
+      <key>SENTINEL_BUILD_PATH</key>
+      <value>/home/ramonag/sen2agri/sources/sen2agri-build/</value>
+    </variable>
   </variables>
   <parameters>
     <parameter>
@@ -45,7 +58,7 @@
       <name>resolution</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>20</defaultValue>
-      <description></description>
+      <description>the resolution of the putput product (if this is 0, the original resolution is kept; otherwise, the image will be resampled)</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
@@ -53,19 +66,9 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>outputFolder</name>
-      <dataType>java.io.File</dataType>
-      <defaultValue>/home/ramonag/sen2agri/workingDir/Composite</defaultValue>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>l3aDate</name>
+      <name>t0</name>
       <dataType>java.lang.String</dataType>
-      <defaultValue>20130528</defaultValue>
+      <defaultValue>20130206</defaultValue>
       <description>date format YYYYMMDD</description>
       <valueSet/>
       <notNull>false</notNull>
@@ -77,6 +80,7 @@
       <name>halfSynthesis</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>50</defaultValue>
+      <description>the half synthesis period (in days)</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
@@ -86,17 +90,8 @@
     <parameter>
       <name>bandsMappingFile</name>
       <dataType>java.io.File</dataType>
-      <defaultValue>/home/ramonag/sen2agri/scripts/bands_mapping_spot.txt</defaultValue>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>scatteringCoefficientsFile</name>
-      <dataType>java.io.File</dataType>
-      <defaultValue>0</defaultValue>
+      <defaultValue>/home/ramonag/sen2agri/sources/sen2agri/sen2agri-processors/Composite/TestScripts/bands_mapping_spot.txt</defaultValue>
+      <description>the file that contains the mapping of the bands. The structure of the mapping of the bands. The file should be located in BUILD_PATH/Composite folder</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
@@ -106,6 +101,29 @@
     <parameter>
       <name>inputFiles</name>
       <dataType>[Ljava.io.File;</dataType>
+      <description>the list of files representing the metadata files of the products</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>tend</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>20130318</defaultValue>
+      <description>date format YYYYMMDD</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>syntdate</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>20130226</defaultValue>
+      <description>L3A synthesys date (format YYYYMMDD)</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
