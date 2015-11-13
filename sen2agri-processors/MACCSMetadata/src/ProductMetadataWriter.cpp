@@ -152,9 +152,25 @@ XElement Format(const CoordReferenceSystemMetadata &CoordRefSystem)
 
     XElement ProductCoordRefSystemEl("Coordinate_Reference_System");
 
-    ProductCoordRefSystemEl.Append(XElement("HORIZONTAL_CS_NAME", CoordRefSystem.HorizCSName));
-    ProductCoordRefSystemEl.Append(XElement("HORIZONTAL_CS_CODE", CoordRefSystem.HorizCSCode));
+    if(!CoordRefSystem.HorizCSName.empty())
+    {
+        ProductCoordRefSystemEl.Append(XElement("HORIZONTAL_CS_NAME", CoordRefSystem.HorizCSName));
+    }
 
+    if(!CoordRefSystem.HorizCSCode.empty())
+    {
+        ProductCoordRefSystemEl.Append(XElement("HORIZONTAL_CS_CODE", CoordRefSystem.HorizCSCode));
+    }
+
+    if(!CoordRefSystem.HorizCSType.empty())
+    {
+        ProductCoordRefSystemEl.Append(XElement("HORIZONTAL_CS_TYPE", CoordRefSystem.HorizCSType));
+    }
+
+    if(!CoordRefSystem.GeoTables.empty())
+    {
+        ProductCoordRefSystemEl.Append(XElement("GEO_TABLES", XAttribute("version", std::to_string(CoordRefSystem.nGeoTablesVersion)), XText(CoordRefSystem.HorizCSType)));
+    }
     return ProductCoordRefSystemEl;
 }
 

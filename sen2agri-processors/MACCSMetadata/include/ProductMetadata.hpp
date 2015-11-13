@@ -138,6 +138,9 @@ struct CoordReferenceSystemMetadata
 {
     std::string HorizCSName;
     std::string HorizCSCode;
+    std::string GeoTables;
+    std::string HorizCSType;
+    int nGeoTablesVersion;
 };
 
 struct GeometricInfoMetadata
