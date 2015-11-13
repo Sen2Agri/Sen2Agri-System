@@ -1203,10 +1203,22 @@ private:
       std::string strNewGIPPFileName;
       GIPPInfo GIPPEl;
 
+
       for (const auto &gippFileEl : m_GIPPList) {
           strNewGIPPFileName = m_strProductFileName;
           strNewGIPPFileName = ReplaceString(strNewGIPPFileName, MAIN_FOLDER_CATEG, PARAMETER_CATEG);
-          strNewGIPPFileName = strNewGIPPFileName + "." + extractExtension(gippFileEl);
+          boost::filesystem::path p(gippFileEl);
+          if(m_GIPPList.size() > 1)
+          {
+
+              strNewGIPPFileName = strNewGIPPFileName + "_" + p.stem().string() + p.extension().string();
+          }
+          else
+          {
+              strNewGIPPFileName = strNewGIPPFileName + p.extension().string();
+          }
+
+          std::cout << "strNewGIPPFileName = " << strNewGIPPFileName << std::endl;
 
           GIPPEl.GIPPFileName = strNewGIPPFileName;
           GIPPEl.GIPPType = "";
@@ -1214,6 +1226,9 @@ private:
           m_productMetadata.AuxiliaryDataInfo.GIPPList.emplace_back(GIPPEl);
 
            //rasters file are copied to tileDirectory/IMG_DATA or QI_DATA
+
+          std::cout << "destGIPP = " << m_strDestRoot + "/" + m_strProductDirectoryName + "/" + AUX_DATA_FOLDER_NAME + "/" + strNewGIPPFileName << std::endl;
+
           CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + AUX_DATA_FOLDER_NAME + "/" + strNewGIPPFileName, gippFileEl);
     }
   }
