@@ -201,9 +201,6 @@ class LaiModel(object):
         runCmd(["otbcli", "InverseModelLearning", imgInvOtbLibsLocation, "-training", outTrainingFile, "-out", outModelFile, "-errest", outErrEstFile, "-regression", str(REGRESSION_TYPE), "-bestof", str(BEST_OF)])
 
 
-
-
-#runCmd(["./lai_model.py", "--applocation", appLocation, "--rsrfile", args.rsrfile, "--solarzenith", args.solarzenith, "--sensorzenith", args.sensorzenith, "--relativeazimuth", args.relativeazimuth, "--outdir", outDir, "--outxml", paramsLaiModelFilenameXML])
 if GENERATE_MODEL:
     laiModel = LaiModel()
     laiModel.generateModel()
@@ -353,7 +350,11 @@ runCmd(["otbcli", "ReprocessedProfileSplitter", imgInvOtbLibsLocation, "-in", ou
 runCmd(["otbcli", "ProfileReprocessing", imgInvOtbLibsLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outFittedTimeSeries, "-algo", "fit"])
 
 #try otbcli ProductFormatter "$PRODUCT_FORMATER_OTB_LIBS_ROOT" -destroot "$OUT_FOLDER" -fileclass SVT1 -level L3B -timeperiod 20130228_20130615 -baseline 01.00 -processor vegetation -processor.vegetation.lairepr "$OUT_REPROCESSED_TIME_SERIES" -processor.vegetation.laifit "$OUT_FITTED_TIME_SERIES" -il "${inputXML[0]}" -gipp "$PARAMS_TXT"
-runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.lairepr", tileID, outReprocessedTimeSeries, "-processor.vegetation.laifit", tileID, outFittedTimeSeries, "-il", args.input[0], "-gipp", paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML])
+cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.lairepr", tileID, outReprocessedTimeSeries, "-processor.vegetation.laifit", tileID, outFittedTimeSeries, "-il", args.input[0], "-gipp", paramsLaiRetrFilenameXML]
+if GENERATE_MODEL:
+    cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.lairepr", tileID, outReprocessedTimeSeries, "-processor.vegetation.laifit", tileID, outFittedTimeSeries, "-il", args.input[0], "-gipp", paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML]
+
+runCmd(cmd)
 
 #split the Fitted time series to a number of images
 #timed_exec "try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_FITTED_TIME_SERIES -outlist $FITTED_LIST_FILE -compress 1"
