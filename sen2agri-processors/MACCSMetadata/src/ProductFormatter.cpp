@@ -105,7 +105,8 @@ typedef enum{
     LAI_REPR_RASTER,
     LAI_FIT_RASTER,
     CROP_MASK_RASTER,
-    CROP_TYPE_RASTER
+    CROP_TYPE_RASTER,
+    PHENO_RASTER
 }rasterTypes;
 
 struct rasterInfo
@@ -322,6 +323,10 @@ private:
           //get LAIFIT raster files list
           rastersList = this->GetParameterStringList("processor.vegetation.laifit");
           UnpackRastersList(rastersList, LAI_FIT_RASTER);
+
+          //get PHENO raster files list
+          rastersList = this->GetParameterStringList("processor.vegetation.pheno");
+          UnpackRastersList(rastersList, PHENO_RASTER);
 
      }
 
@@ -1127,6 +1132,9 @@ private:
                 case LAI_FIT_RASTER:
                    strNewRasterFileName = strNewRasterFileName + "_" + LAI_FIT_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
                    break;
+                case PHENO_RASTER:
+                     strNewRasterFileName = strNewRasterFileName + "_" + PHENO_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
+                     break;
                 case CROP_TYPE_RASTER:
                 case CROP_MASK_RASTER:
                    strNewRasterFileName= strNewRasterFileName + TIF_EXTENSION;
@@ -1161,6 +1169,7 @@ private:
                 //case WEIGHTS_RASTER:
                 case LAI_REPR_RASTER:
                 case LAI_FIT_RASTER:
+                case PHENO_RASTER:
                 case CROP_TYPE_RASTER:
                 case CROP_MASK_RASTER:
                   strImgDataPath = tileInfoEl.strTilePath + "/" + IMG_DATA_FOLDER_NAME;
