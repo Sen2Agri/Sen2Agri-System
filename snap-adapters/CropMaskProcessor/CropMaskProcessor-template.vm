@@ -1,4 +1,3 @@
-$SCRIPT_PATH/CropMask.py
 -refp
 $refp
 -ratio
@@ -17,6 +16,8 @@ $radius
 $nbtrsample
 -rseed
 $rseed
+-window
+$window
 -lmbd
 $lmbd
 -weight
@@ -29,10 +30,8 @@ $spatialr
 $ranger
 -minsize
 $minsize
--refr
-$refr
--eroderab
-$eroderab
+-eroderad
+$eroderad
 -alpha
 $alpha
 -rfnbtrees
@@ -41,7 +40,15 @@ $rfnbtrees
 $rfmax
 -rfmin
 $rfmin
+-minarea
+$minarea
 -pixsize
 $pixsize
+-tilename
+$tilename
 -outdir
-$outdir
+$WORKING_DIR_PATH/CropMask/out
+-buildfolder
+$SENTINEL_BUILD_PATH
+-targetfolder
+$WORKING_DIR_PATH/CropMask/out
