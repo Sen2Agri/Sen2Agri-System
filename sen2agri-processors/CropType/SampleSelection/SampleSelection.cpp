@@ -260,7 +260,11 @@ private:
       }
 
       int index = 0;
-      int lastcode = 0;
+      int lastcode = -1;
+      int featTrainingTarget = 0;
+      int featValidationTarget = 0;
+      int featTrainingCount = 0;
+      int featValidationCount = 0;
 
       // initialise the random number generator
       std::srand(seed);
@@ -270,18 +274,35 @@ private:
           // get the feature
           ogr::Feature &f = it->second;
 
-          if (it->first != lastcode && HasValue("lut")) {
-              // Adda new color to the LUT file
-              outLUTFile << it->first << " " << colors[index] << std::endl;
-              index = (index + 1) % 20;
+          if (it->first != lastcode) {
+              if (HasValue("lut")) {
+                  // Adda new color to the LUT file
+                  outLUTFile << it->first << " " << colors[index] << std::endl;
+                  index = (index + 1) % 20;
+              }
               lastcode = it->first;
+
+              // get the number of features with the same code
+              int featCount = featuresMap.count(lastcode);
+
+              // compute the target training features
+              featTrainingTarget = std::max(1, (int)std::round((float)featCount * ratio));
+              featValidationTarget = featCount - featTrainingTarget;
+              featTrainingCount = 0;
+              featValidationCount = 0;
+
+              // Add info message to log
+              std::ostringstream strLog;
+              strLog << "Found " << featCount << " features with CODE = " << lastcode << ". ";
+              strLog << "Using " << featTrainingTarget << " for training and " << featValidationTarget << " for validation. " << std::endl;
+              GetLogger()->Info(strLog.str());
           }
 
           // generate a random number and convert it to the [0..1] interval
           float random = (float) std::rand() / (float)RAND_MAX;
 
           // select the target file for this feature
-          if (random <= ratio) {
+          if ((random <= ratio && featTrainingCount < featTrainingTarget) || featValidationCount == featValidationTarget) {
               ogr::Feature feat(*tpLayerDefn);
               // Add field values from input Layer
               for (int i = 0; i < tpLayerDefn->GetFieldCount(); i++) {
@@ -293,6 +314,7 @@ private:
               feat.ogr().SetGeometry(f.ogr().GetGeometryRef()->clone());
 
               tpLayer.CreateFeature(feat);
+              featTrainingCount++;
           } else {
               ogr::Feature feat(*vpLayerDefn);
               // Add field values from input Layer
@@ -305,6 +327,7 @@ private:
               feat.ogr().SetGeometry(f.ogr().GetGeometryRef()->clone());
 
               vpLayer.CreateFeature(feat);
+              featValidationCount++;
           }
       }
 
@@ -320,7 +343,11 @@ private:
           outLUTFile.close();
       }
 
-      std::cout << "total features: " << featureCount << ", Training features: " << tpLayer.GetFeatureCount(true) << ", Validation features: " << vpLayer.GetFeatureCount(true) << std::endl;
+      std::ostringstream strLog;
+      strLog << "Total features: " << featureCount;
+      strLog << ", Training features: " << tpLayer.GetFeatureCount(true);
+      strLog << ", Validation features: " << vpLayer.GetFeatureCount(true) << std::endl;
+      GetLogger()->Info(strLog.str());
   }
   //  Software Guide :EndCodeSnippet
 
