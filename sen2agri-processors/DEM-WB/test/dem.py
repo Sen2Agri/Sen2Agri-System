@@ -36,6 +36,33 @@ def ReprojectCoords(coords, src_srs, tgt_srs):
         trans_coords.append([x, y])
     return trans_coords
 
+def resample_dataset(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y):
+    dataset = gdal.Open(src_file_name, gdal.gdalconst.GA_ReadOnly)
+
+    src_x_size = dataset.RasterXSize
+    src_y_size = dataset.RasterYSize
+
+    print("Source dataset {} of size {}x{}".format(src_file_name, src_x_size, src_y_size))
+
+    src_geo_transform = dataset.GetGeoTransform()
+    (ulx, uly) = (src_geo_transform[0], src_geo_transform[3])
+    (lrx, lry) = (src_geo_transform[0] + src_geo_transform[1] * src_x_size,
+                  src_geo_transform[3] + src_geo_transform[5] * src_y_size)
+
+    dst_x_size = int((lrx - ulx) / dst_spacing_x)
+    dst_y_size = int((lry - uly) / dst_spacing_y)
+
+    print("Source dataset {} of size {}x{}".format(dst_file_name, dst_x_size, dst_y_size))
+
+    dst_geo_transform = (ulx, dst_spacing_x, src_geo_transform[2],
+                         uly, src_geo_transform[4], dst_spacing_y)
+
+    drv = gdal.GetDriverByName('GTiff')
+    dest = drv.Create(dst_file_name, dst_x_size, dst_y_size, 1, gdal.GDT_Float32)
+    dest.SetGeoTransform(dst_geo_transform)
+    dest.SetProjection(dataset.GetProjection())
+    gdal.ReprojectImage(dataset, dest, dataset.GetProjection(), dest.GetProjection(),
+                        gdal.GRA_Bilinear)
 
 def get_dtm_tiles(points):
     """
@@ -211,25 +238,27 @@ def process_DTM(context):
                  "-il", context.dem_vrt,
                  "-out", context.dem_nodata,
                  "-exp", "im1b1 == -32768 ? 0 : im1b1"])
-    # run_command(["otbcli_OrthoRectification",
-    #              "-io.in", context.dem_nodata,
-    #              "-io.out", context.dem_r1,
-    #              "-map", "epsg",
-    #              "-map.epsg.code", context.epsg_code,
-    #              "-outputs.sizex", str(context.size_x),
-    #              "-outputs.sizey", str(context.size_y),
-    #              "-outputs.spacingx", str(context.spacing_x),
-    #              "-outputs.spacingy", str(context.spacing_y),
-    #              "-outputs.ulx", str(context.extent[0][0]),
-    #              "-outputs.uly", str(context.extent[0][1]),
-    #              "-opt.gridspacing", str(grid_spacing)])
+    run_command(["otbcli_OrthoRectification",
+                 "-io.in", context.dem_nodata,
+                 "-io.out", context.dem_r1,
+                 "-map", "epsg",
+                 "-map.epsg.code", context.epsg_code,
+                 "-outputs.sizex", str(context.size_x),
+                 "-outputs.sizey", str(context.size_y),
+                 "-outputs.spacingx", str(context.spacing_x),
+                 "-outputs.spacingy", str(context.spacing_y),
+                 "-outputs.ulx", str(context.extent[0][0]),
+                 "-outputs.uly", str(context.extent[0][1]),
+                 "-opt.gridspacing", str(grid_spacing)])
 
     if context.dem_r2:
-        run_command(["gdal_translate",
-                     "-outsize", str(int(round(context.size_x / 2.0))), str(int(round(context.size_y
-                         / 2.0))),
-                     context.dem_r1,
-                     context.dem_r2])
+        resample_dataset(context.dem_r1, context.dem_r2, 20, -20)
+        # run_command(["gdal_translate",
+        #              # "-outsize", str(int(round(context.size_x / 2.0))), str(int(round(context.size_y
+        #              #     / 2.0))),
+        #              "-outsize", "50%", "50%",
+        #              context.dem_r1,
+        #              context.dem_r2])
         # run_command(["otbcli_RigidTransformResample",
         #              "-in", context.dem_r1,
         #              "-out", context.dem_r2,
@@ -244,11 +273,13 @@ def process_DTM(context):
         scale = 1.0 / 24
         inv_scale = 24.0
 
-        run_command(["gdal_translate",
-                     "-outsize", str(int(round(context.size_x / inv_scale))), str(int(round(context.size_y /
-                         inv_scale))),
-                     context.dem_r1,
-                     context.dem_coarse])
+        resample_dataset(context.dem_r1, context.dem_coarse, 240, -240)
+        # run_command(["gdal_translate",
+        #              # "-outsize", str(int(round(context.size_x / inv_scale))), str(int(round(context.size_y /
+        #              #     inv_scale))),
+        #              "-outsize", str(100.0 / inv_scale) + "%", str(100.0 / inv_scale) + "%",
+        #              context.dem_r1,
+        #              context.dem_coarse])
         # run_command(["otbcli_RigidTransformResample",
         #              "-in", context.dem_r1,
         #              "-out", context.dem_coarse,
