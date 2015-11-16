@@ -3,6 +3,9 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>Sentinel-2 for Agriculture</title>
+	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+	<meta http-equiv="Pragma" content="no-cache" />
+	<meta http-equiv="Expires" content="0" />
     <meta name="keywords" content="" />
     <meta name="description" content="" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -12,14 +15,35 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css" />
     <link rel="stylesheet" href="styles/styles.css" />
     <link rel="stylesheet" href="styles/theme.css" />
+	
+	<style type="text/css">
+		.form-control {
+        	width: 60%;
+        }
+		
+		.form-group-sm .form-control {
+			height: 22px;
+		}
+		
+		.form-group-sm select.form-control {
+			height: 22px;
+			line-height: 22px;
+		}
+		
+		label.error {
+			color: #ff0000;
+			font-size: 12px;
+		}
+    </style>
+	
 </head>
 <body>
     <div id="header" style="height:120px;">
-        <div id="header2" style="background-image: url(images/logo.png); background-repeat: no-repeat;">
-            <div id="logo" style="margin-top: -50px;">
+        <div id="header2" style="background-image: url(images/logo2.png); background-repeat: no-repeat;">
+            <!--div id="logo" style="margin-top: -50px;">
                 <h1><a href="#">&nbsp;</a></h1>
                 <p id="subtitle">Sentinel-2 for Agriculture Monitoring</p>
-            </div>
+            </div-->
         </div>
     </div>
     <div id="menu">
@@ -36,11 +60,338 @@
     <div id="main">
         <div id="main2">
             <div id="main3">
-                <div id="content" style="width:100%;">
-                    <div class="post" style="height:400px;">
-						<p>Coming soon</p>
+                <div class="container-fluid">
+					<div class="panel-group" id="accordion">
+						<!--div class="panel panel-default">
+							<div class="panel-heading">
+								<h4 class="panel-title">
+									<a data-toggle="collapse" data-parent="#accordion" href="#l2a">L2A processor</a>
+								</h4>
+							</div>
+							<div id="l2a" class="panel-collapse collapse">
+								<div class="panel-body">
+								--
+								</div>
+							</div>
+						</div-->
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h4 class="panel-title">
+									<a data-toggle="collapse" data-parent="#accordion" href="#l3a">L3A processor</a>
+								</h4>
+							</div>
+							<div id="l3a" class="panel-collapse collapse">
+								<div class="panel-body">
+									<form role="form" id="l3aform">
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="inputFiles">Input files:</label>
+											<!--input type="file" class="form-control" id="inputFiles" name="inputFiles"-->
+											<select multiple class="form-control" id="inputFiles" name="inputFiles">
+												<option value="SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000</option>
+											</select>
+											<span class="help-block">The list of products descriptors (xml files).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="resolution">Resolution:</label>
+											<input type="number" min="0" max="20" step="10" class="form-control" id="resolution" name="resolution">
+											<span class="help-block">Resolution of the output image.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="outputFolder">Output folder:</label>
+											<input type="text" class="form-control" id="outputFolder" name="outputFolder">
+											<span class="help-block">The output directory.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="l3aDate">L3A date:</label>
+											<input type="text" class="form-control" id="l3aDate" name="l3aDate">
+											<span class="help-block">The date of the composite product.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="halfSynthesis">Half synthesis:</label>
+											<input type="number" min="0" step="1" class="form-control" id="halfSynthesis" name="halfSynthesis">
+											<span class="help-block">The half synthesis period (days).</span>
+										</div>
+										<!--div class="form-group form-group-sm">
+											<label class="control-label" for="bandsMappingFile">Bands mapping file:</label>
+											<input type="file" class="form-control" id="bandsMappingFile" name="bandsMappingFile">
+											<span class="help-block">The file that contains the mapping of the bands.</span>
+										</div-->
+										<input type="submit" class="btn btn-primary" value="Submit">
+									</form>
+								</div>
+							</div>
+						</div>
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h4 class="panel-title">
+									<a data-toggle="collapse" data-parent="#accordion" href="#l3b">L3B processor</a>
+								</h4>
+							</div>
+							<div id="l3b" class="panel-collapse collapse">
+								<div class="panel-body">
+									<form role="form" id="l3bform">
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="inputFiles">Input files:</label>
+											<!--input type="file" class="form-control" id="inputFiles" name="inputFiles"-->
+											<select multiple class="form-control" id="inputFiles" name="inputFiles">
+												<option value="SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000</option>
+											</select>
+											<span class="help-block">The list of products descriptors (xml files).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="resolution">Resolution:</label>
+											<input type="number" min="0" max="20" step="10" class="form-control" id="resolution" name="resolution">
+											<span class="help-block">Resolution of the output image.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="outputFolder">Output folder:</label>
+											<input type="text" class="form-control" id="outputFolder" name="outputFolder">
+											<span class="help-block">The output directory.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="modelsFolder">Models folder:</label>
+											<input type="text" class="form-control" id="modelsFolder" name="modelsFolder">
+											<span class="help-block">The folder where the model can be found (it is optional and should be specified only if the model folder is different than the current one).</span>
+										</div>
+										<input type="submit" class="btn btn-primary" value="Submit">
+									</form>
+								</div>
+							</div>
+						</div>
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h4 class="panel-title">
+									<a data-toggle="collapse" data-parent="#accordion" href="#l4a">L4A processor</a>
+								</h4>
+							</div>
+							<div id="l4a" class="panel-collapse collapse">
+								<div class="panel-body">
+									<form role="form" id="l4aform">
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="ref">Reference polygons:</label>
+											<input type="text" class="form-control" id="ref" name="ref">
+											<span class="help-block">The reference polygons.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="ratio">Ratio:</label>
+											<input type="number" min="0" step="0.01" class="form-control" id="ratio" name="ratio">
+											<span class="help-block">The ratio between the validation and training polygons.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="inputFiles">Input files:</label>
+											<!--input type="file" class="form-control" id="inputFiles" name="inputFiles"-->
+											<select multiple class="form-control" id="inputFiles" name="inputFiles">
+												<option value="SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000</option>
+											</select>
+											<span class="help-block">The list of products descriptors (xml files).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="t0">T0:</label>
+											<input type="text" pattern="[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])" class="form-control" id="t0" name="t0">
+											<span class="help-block">The start date for the temporal resampling interval (in format YYYYMMDD).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="tend">T end:</label>
+											<input type="text" pattern="[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])" class="form-control" id="tend" name="tend">
+											<span class="help-block">The end date for the temporal resampling interval (in format YYYYMMDD).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="rate">Rate:</label>
+											<input type="number" min="0" step="1" class="form-control" id="rate" name="rate">
+											<span class="help-block">The sampling rate for the temporal series, in days.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="radius">Radius:</label>
+											<input type="number" min="0" step="1" class="form-control" id="radius" name="radius">
+											<span class="help-block">The radius used for gap filling, in days.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="nbtrsample">Training set samples:</label>
+											<input type="number" min="0" step="1" class="form-control" id="nbtrsample" name="nbtrsample">
+											<span class="help-block">The number of samples included in the training set.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="rseed">Random seed:</label>
+											<input type="number" min="0" step="1" class="form-control" id="rseed" name="rseed">
+											<span class="help-block">The random seed used for training.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="lmbd">Lambda:</label>
+											<input type="number" min="0" step="1" class="form-control" id="lmbd" name="lmbd">
+											<span class="help-block">The lambda parameter used in data smoothing (default 2).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="weight">Weight:</label>
+											<input type="number" min="0" step="1" class="form-control" id="weight" name="weight">
+											<span class="help-block">The weight factor for data smoothing (default 1).</span>
+										</div>
+										
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="nbcomp">Number of components:</label>
+											<input type="number" min="0" step="1" class="form-control" id="nbcomp" name="nbcomp">
+											<span class="help-block">The number of components used by dimensionality reduction (default 6).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="spatialr">Spatial radius:</label>
+											<input type="number" min="0" step="1" class="form-control" id="spatialr" name="spatialr">
+											<span class="help-block">The spatial radius of the neighbourhood used for segmentation (default 10).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="ranger">Range radius:</label>
+											<input type="number" min="0" step="0.01" class="form-control" id="ranger" name="ranger">
+											<span class="help-block">The range radius defining the radius (expressed in radiometry unit) in the multispectral space (default 0.65).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="minsize">Minimum size of a region:</label>
+											<input type="number" min="0" step="1" class="form-control" id="minsize" name="minsize">
+											<span class="help-block">Minimum size of a region (in pixel unit) in segmentation (default 10).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="refr">Reference raster:</label>
+											<input type="text" class="form-control" id="refr" name="refr">
+											<span class="help-block">The reference raster when in situ data is not available.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="eroderad">Erosion radius:</label>
+											<input type="number" min="0" step="1" class="form-control" id="eroderad" name="eroderad">
+											<span class="help-block">The radius used for erosion (default 1).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="alpha">Alpha:</label>
+											<input type="number" min="0" step="0.01" class="form-control" id="alpha" name="alpha">
+											<span class="help-block">The parameter alpha used by the mahalanobis function (default 0.01).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="rfnbtrees">Training trees:</label>
+											<input type="number" min="0" step="1" class="form-control" id="rfnbtrees" name="rfnbtrees">
+											<span class="help-block">The number of trees used for training (default 100).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="rfmax">Random Forest classifier max depth:</label>
+											<input type="number" min="0" step="1" class="form-control" id="rfmax" name="rfmax">
+											<span class="help-block">Maximum depth of the trees used for Random Forest classifier (default 25).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="rfmin">Minimum number of samples:</label>
+											<input type="number" min="0" step="1" class="form-control" id="rfmin" name="rfmin">
+											<span class="help-block">Minimum number of samples in each node used by the classifier (default 5).</span>
+										</div>
+										
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="pixsize">Pixel size:</label>
+											<input type="number" min="0" step="1" class="form-control" id="pixsize" name="pixsize">
+											<span class="help-block">The size, in meters, of a pixel (default 10).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="outdir">Output folder:</label>
+											<input type="text" class="form-control" id="outdir" name="outdir">
+											<span class="help-block">The output directory.</span>
+										</div>
+										<input type="submit" class="btn btn-primary" value="Submit">
+									</form>
+								</div>
+							</div>
+						</div>
+						<div class="panel panel-default">
+							<div class="panel-heading">
+								<h4 class="panel-title">
+									<a data-toggle="collapse" data-parent="#accordion" href="#l4b">L4B processor</a>
+								</h4>
+							</div>
+							<div id="l4b" class="panel-collapse collapse">
+								<div class="panel-body">
+									<form role="form" id="l4bform">
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="ref">Reference polygons:</label>
+											<input type="text" class="form-control" id="ref" name="ref">
+											<span class="help-block">The reference polygons.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="ratio">Ratio:</label>
+											<input type="number" min="0" step="0.01" class="form-control" id="ratio" name="ratio">
+											<span class="help-block">The ratio between the validation and training polygons.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="inputFiles">Input files:</label>
+											<!--input type="file" class="form-control" id="inputFiles" name="inputFiles"-->
+											<select multiple class="form-control" id="inputFiles" name="inputFiles">
+												<option value="SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000</option>
+												<option value="SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000</option>
+											</select>
+											<span class="help-block">The list of products descriptors (xml files).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="t0">T0:</label>
+											<input type="text" pattern="[0-9]{8}" class="form-control" id="t0" name="t0">
+											<span class="help-block">The start date for the temporal resampling interval (in format YYYYMMDD).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="tend">T end:</label>
+											<input type="text" pattern="[0-9]{8}" class="form-control" id="tend" name="tend">
+											<span class="help-block">The end date for the temporal resampling interval (in format YYYYMMDD).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="rate">Rate:</label>
+											<input type="number" min="0" step="1" class="form-control" id="rate" name="rate">
+											<span class="help-block">The sampling rate for the temporal series, in days.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="radius">Radius:</label>
+											<input type="number" min="0" step="1" class="form-control" id="radius" name="radius">
+											<span class="help-block">The radius used for gap filling, in days.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label for="classifier">Classifier:</label>
+											<select class="form-control" id="classifier" name="classifier">
+												<option value="">Select a classifier</option>
+												<option value="rf">RF</option>
+												<option value="svm">SVM</option>
+											</select>
+											<span class="help-block">The classifier used for training .</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="rseed">Random seed:</label>
+											<input type="number" min="0" step="1" class="form-control" id="rseed" name="rseed">
+											<span class="help-block">The random seed used for training.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="mask">Mask:</label>
+											<input type="text" class="form-control" id="mask" name="mask">
+											<span class="help-block">The crop mask.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="pixsize">Pixel size:</label>
+											<input type="number" min="0" step="1" class="form-control" id="pixsize" name="pixsize">
+											<span class="help-block">The size, in meters, of a pixel (default 10).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="outdir">Output folder:</label>
+											<input type="text" class="form-control" id="outdir" name="outdir">
+											<span class="help-block">The output directory.</span>
+										</div>
+										<input type="submit" class="btn btn-primary" value="Submit">
+									</form>
+								</div>
+							</div>
+						</div>
 					</div>
-                </div>
+					
+				</div>
                 <div class="clearing">&nbsp;</div>
             </div>
         </div>
@@ -57,5 +408,187 @@
             <span>Copyright &copy; 2015 CS ROMANIA SA</span>
         </div>
     </div>
+	
+	<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+	<script src="libraries/jquery-validate/jquery.validate.min.js"></script>
+	<script src="libraries/jquery-validate/additional-methods.min.js"></script>
+	
+	<script>
+		//$("#l3aform").validate();
+		$(document).ready(function() {
+			// validate l3aform form on keyup and submit
+			$("#l3aform").validate({
+				rules: {
+					inputFiles: "required",
+					resolution: "required",
+					outputFolder: "required",
+					l3aDate: { required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])"},
+					halfSynthesis: "required"/*,
+					bandsMappingFile: "required"*/
+				},
+				messages: {
+					l3aDate: {
+						pattern: "Enter a date in YYYYMMDD format"
+					}
+				},
+				// the errorPlacement has to take the table layout into account
+				errorPlacement: function(error, element) {
+					/*if (element.is(":radio"))
+						error.appendTo(element.parent().next().next());
+					else if (element.is(":checkbox"))
+						error.appendTo(element.next());
+					else*/
+						error.appendTo(element.parent());
+						
+					//$(element).parent().addClass("has-error");
+				},
+				// specifying a submitHandler prevents the default submit, good for the demo
+				submitHandler: function() {
+					alert("submitted!");
+				},
+				// set this class to error-labels to indicate valid fields
+				success: function(label) {
+					label.remove();
+				},
+				highlight: function(element, errorClass) {
+					$(element).parent().addClass("has-error");
+				},
+				unhighlight: function(element, errorClass) {
+					$(element).parent().removeClass("has-error");
+				}
+			});
+			
+			// validate l3bform form on keyup and submit
+			$("#l3bform").validate({
+				rules: {
+					inputFiles: "required",
+					resolution: "required",
+					outputFolder: "required",
+					modelsFolder: "required"
+				},
+				messages: {
+				},
+				// the errorPlacement has to take the table layout into account
+				errorPlacement: function(error, element) {
+					error.appendTo(element.parent());
+				},
+				// specifying a submitHandler prevents the default submit, good for the demo
+				submitHandler: function() {
+					alert("submitted!");
+				},
+				// set this class to error-labels to indicate valid fields
+				success: function(label) {
+					label.remove();
+				},
+				highlight: function(element, errorClass) {
+					$(element).parent().addClass("has-error");
+				},
+				unhighlight: function(element, errorClass) {
+					$(element).parent().removeClass("has-error");
+				}
+			});
+			
+			// validate l4aform form on keyup and submit
+			$("#l4aform").validate({
+				rules: {
+					ref: "required",
+					ratio: "required",
+					inputFiles: "required",
+					t0: { required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])"},
+					tend: { required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])"},
+					rate: "required",
+					radius: "required",
+					nbtrsample: "required",
+					rseed: "required",
+					lmbd: "required",
+					weight: "required",
+					nbcomp: "required",
+					spatialr: "required",
+					ranger: "required",
+					minsize: "required",
+					refr: "required",
+					eroderad: "required",
+					alpha: "required",
+					rfnbtrees: "required",
+					rfmax: "required",
+					rfmin: "required",
+					pixsize: "required",
+					outdir: "required"
+				},
+				messages: {
+					t0: {
+						pattern: "Enter a date in YYYYMMDD format"
+					},
+					tend: {
+						pattern: "Enter a date in YYYYMMDD format"
+					}
+				},
+				// the errorPlacement has to take the table layout into account
+				errorPlacement: function(error, element) {
+					error.appendTo(element.parent());
+				},
+				// specifying a submitHandler prevents the default submit, good for the demo
+				submitHandler: function() {
+					alert("submitted!");
+				},
+				// set this class to error-labels to indicate valid fields
+				success: function(label) {
+					label.remove();
+				},
+				highlight: function(element, errorClass) {
+					$(element).parent().addClass("has-error");
+				},
+				unhighlight: function(element, errorClass) {
+					$(element).parent().removeClass("has-error");
+				}
+			});
+			
+			// validate l4bform form on keyup and submit
+			$("#l4bform").validate({
+				rules: {
+					ref: "required",
+					ratio: "required",
+					inputFiles: "required",
+					t0: { required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])"},
+					tend: { required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])"},
+					rate: "required",
+					radius: "required",
+					classifier: "required",
+					rseed: "required",
+					mask: "required",
+					pixsize: "required",
+					outdir: "required"
+				},
+				messages: {
+					t0: {
+						pattern: "Enter a date in YYYYMMDD format"
+					},
+					tend: {
+						pattern: "Enter a date in YYYYMMDD format"
+					}
+				},
+				// the errorPlacement has to take the table layout into account
+				errorPlacement: function(error, element) {
+					error.appendTo(element.parent());
+				},
+				// specifying a submitHandler prevents the default submit, good for the demo
+				submitHandler: function() {
+					alert("submitted!");
+				},
+				// set this class to error-labels to indicate valid fields
+				success: function(label) {
+					label.remove();
+				},
+				highlight: function(element, errorClass) {
+					$(element).parent().addClass("has-error");
+				},
+				unhighlight: function(element, errorClass) {
+					$(element).parent().removeClass("has-error");
+				}
+			});
+		});
+	</script>
+	
 </body>
 </html>

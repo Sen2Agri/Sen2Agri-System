@@ -3,6 +3,9 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
     <title>Sentinel-2 for Agriculture</title>
+	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+	<meta http-equiv="Pragma" content="no-cache" />
+	<meta http-equiv="Expires" content="0" />
     <meta name="keywords" content="" />
     <meta name="description" content="" />
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
@@ -24,11 +27,11 @@
 </head>
 <body>
     <div id="header" style="height:120px;">
-        <div id="header2" style="background-image: url(images/logo.png); background-repeat: no-repeat;">
-            <div id="logo" style="margin-top: -50px;">
+        <div id="header2" style="background-image: url(images/logo2.png); background-repeat: no-repeat;">
+            <!--div id="logo" style="margin-top: -50px;">
                 <h1><a href="#">&nbsp;</a></h1>
                 <p id="subtitle">Sentinel-2 for Agriculture Monitoring</p>
-            </div>
+            </div-->
         </div>
     </div><!-- header --><!-- header2 -->
     <div id="menu">
@@ -52,7 +55,7 @@
 					<tr>
 						<td><div id="tree" style="height:550px; width:500px; overflow: scroll; border: 1px solid;"></div></td>
 						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
-						<td><div id="map" class="map" style="height:550px; width:500px;"></div></td>
+						<td><div id="map" class="map" style="height:550px; width:500px; border: 1px solid;"></div></td>
 					</tr>
 				</table>
             </div>
@@ -85,32 +88,77 @@
     <script src="scripts/helpers.js"></script>
     
 	<script>
+		var styleSelected = new ol.style.Style({
+			stroke: new ol.style.Stroke({
+				color: 'rgba(255, 0, 0, 0.75)',
+				lineDash: [4],
+				width: 2
+			}),
+			fill: new ol.style.Fill({
+				color: 'rgba(0, 0, 255, 0.01)'
+			})
+		});
+	
 		var raster = new ol.layer.Tile({
 		  source: new ol.source.MapQuest({layer: 'sat'})
 		});
 
-		var vector = new ol.layer.Vector({
+		/*var vector = new ol.layer.Vector({
 		  source: new ol.source.Vector({
 		    url: 'productsMapData.json',
 		    format: new ol.format.GeoJSON()
 		  })
+		});*/
+		
+		var vector = new ol.layer.Vector({
+		  source: new ol.source.Vector(),
+		  style: styleSelected
 		});
-
+		vector.setZIndex(10);
+		
 		var view = new ol.View({
 		    center: [0, 0],
 		    zoom: 2
 		});
 
 		var map = new ol.Map({
-		  layers: [raster, vector],
+		  layers: [raster, vector], // [raster, vector]
 		  target: 'map',
 		  view: view
 		});
+		
+		//map.addLayer(vector);
 
+		// Create an image layer
+		var imageLayer;
+		
+		var displayProductImage = function(imageUrl, imageWidth, imageHeight, extent) {
+			if(imageLayer) map.removeLayer(imageLayer);
+			
+			if(!imageUrl) return;
+			imageLayer = new ol.layer.Image({
+				opacity: 0.75,
+				source: new ol.source.ImageStatic({
+					attributions: [
+						new ol.Attribution({
+							html: ''
+						})
+					],
+					url: imageUrl,
+					imageSize: [imageWidth, imageHeight],
+					projection: map.getView().getProjection(),
+					imageExtent: extent
+				})
+			});
+			
+			map.addLayer(imageLayer);
+		};
 
 
 		// select interaction working on "singleclick"
-		var selectSingleClick = new ol.interaction.Select();
+		var selectSingleClick = new ol.interaction.Select({
+			style: styleSelected
+		});
 
 		// select interaction working on "click"
 		var selectClick = new ol.interaction.Select({
@@ -147,7 +195,7 @@
 		};
 
 
-		var panToLocation = function(location, extent) {
+		var panToLocation = function(extent) {
 		  var pan = ol.animation.pan({
 		    duration: 2000,
 		    source: /** @type {ol.Coordinate} */ (view.getCenter())
@@ -156,6 +204,7 @@
 		  //view.setCenter(location);
 		  //view.setZoom(zoom);
 		  view.fit(extent, map.getSize());
+		  view.setZoom(view.getZoom()-1);
 		};
 
 		initInteraction();
@@ -193,23 +242,66 @@
 				collapseIcon: "glyphicon glyphicon-folder-open",
 				expandIcon: "glyphicon glyphicon-folder-close",
 				emptyIcon: "glyphicon glyphicon-file",
-				levels: 3,
+				levels: 1,
 				enableLinks: true
 				
 			});
 			
 			$('#tree').on('nodeSelected', function(event, data) {
 				
-				vector.getSource().forEachFeature(function (feature) {
+				/*vector.getSource().forEachFeature(function (feature) {
 					
 					if(feature.getId() == data['productId']) {
-						panToLocation(null, feature.getGeometry().getExtent());
+						
+						displayProductImage(data['productImageUrl'], data['productImageWidth'], data['productImageHeight'], feature.getGeometry().getExtent());
+						
+						panToLocation(feature.getGeometry().getExtent());
 						
 						var selectedFeatures = selectMethod.getFeatures();
 						selectedFeatures.clear();
 						selectedFeatures.push(feature);
+						
+						
 					}
-				});
+				});*/
+				
+				/*features.forEachFeature(function (feature) {
+					
+					if(feature.getId() == data['productId']) {
+						
+						displayProductImage(data['productImageUrl'], data['productImageWidth'], data['productImageHeight'], feature.getGeometry().getExtent());
+						
+						panToLocation(feature.getGeometry().getExtent());
+						
+						var selectedFeatures = selectMethod.getFeatures();
+						selectedFeatures.clear();
+						selectedFeatures.push(feature);
+						
+					}
+				});*/
+				
+				var extent;
+				
+				var selectedFeatures = vector.getSource();//selectMethod.getFeatures();
+				selectedFeatures.clear();
+				
+				if(data['productCoord']) {
+					extent = ol.extent.applyTransform(data['productCoord'], ol.proj.getTransform("EPSG:4326", "EPSG:3857"));
+					
+					var feature = new ol.Feature({
+						geometry: ol.geom.Polygon.fromExtent(extent)
+					});
+					//selectedFeatures.push(feature);
+					selectedFeatures.addFeature(feature);
+					
+				} else {
+					extent = ol.extent.applyTransform([-90,-50,90,50], ol.proj.getTransform("EPSG:4326", "EPSG:3857"));
+				}
+				
+				displayProductImage(data['productImageUrl'], data['productImageWidth'], data['productImageHeight'], extent);
+						
+				panToLocation(extent);
+				
 				
 			});
 		};

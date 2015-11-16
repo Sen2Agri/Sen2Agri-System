@@ -1,91 +1,1672 @@
 [
-	{"text":"Ukraine",
-		"selectable":false,
-		"nodes":[
-			{"text":"L2A",
-			"selectable":false,
-			"nodes":[
-					{"text":"SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000",
-						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000.zip",
-						"productId":"SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000"
-					},
-					{"text":"SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000",
-						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000.zip",
-						"productId":"SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000"
-					},
-					{"text":"SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000",
-						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000.zip",
-						"productId":"SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000"
-					}
-					,
-					{"text":"SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000",
-						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000.zip",
-						"productId":"SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000"
-					}
-					,
-					{"text":"SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000",
-						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000.zip",
-						"productId":"SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000"
-					}
-				]
-			}
-		]
-	},
-	{"text":"South Africa",
-		"selectable":false,
-		"nodes":[
-			{"text":"L2A",
-			"selectable":false,
-			"nodes":[
-					{"text":"SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000",
-						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000.zip",
-						"productId":"SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000"
-					}
-					,
-					{"text":"SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000",
-						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000.zip",
-						"productId":"SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000"
-					}
-				 ]
-			}
-		]
-	},
-	{"text":"SudMidPyr-West",
-		"selectable":false,
-		"nodes":[
-			{"text":"L2A",
-			"selectable":false,
-			"nodes":[
-					{"text":"SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000",
-						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000.zip",
-						"productId":"SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000"
-					}
-					,
-					{"text":"SPOT4_HRVIR_XS_20130221_N2A_CSudmipy-OD0000B0000",
-						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR_XS_20130221_N2A_CSudmipy-OD0000B0000.zip",
-						"productId":"SPOT4_HRVIR_XS_20130221_N2A_CSudmipy-OD0000B0000"
-					}
-				 ]
-			}
-		]
-	},
-	{"text":"SudMidPyr-East",
-		"selectable":false,
-		"nodes":[
-			{"text":"L2A",
-			"selectable":false,
-			"nodes":[
-					{"text":"SPOT4_HRVIR1_XS_20130217_N2A_CSudmipy-ED0000B0000",
-						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130217_N2A_CSudmipy-ED0000B0000.zip",
-						"productId":"SPOT4_HRVIR1_XS_20130217_N2A_CSudmipy-ED0000B0000"
-					}
-					,
-					{"text":"SPOT4_HRVIR1_XS_20130222_N2A_CSudmipy-ED0000B0000",
-						"href":"files/Sen2Agri_DataSets/SiteProducts/SPOT4_HRVIR1_XS_20130222_N2A_CSudmipy-ED0000B0000.zip",
-						"productId":"SPOT4_HRVIR1_XS_20130222_N2A_CSudmipy-ED0000B0000"
-					}
-				 ]
-			}
-		]
-	}
+    {
+        "text": "SouthAfrica",
+        "selectable": false,
+        "nodes": [
+            {
+                "text": "L2A",
+                "selectable": false,
+                "nodes": [
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130220_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130220_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130220_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130220_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130225_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130225_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130225_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130225_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130302_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130302_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130302_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130302_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130312_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130312_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130312_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130312_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130317_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130317_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130317_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130317_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130322_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130322_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130322_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130322_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130401_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130401_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130401_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130401_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130406_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130406_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130406_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130406_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130416_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130416_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130416_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130416_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130421_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130421_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130421_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130421_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130426_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130426_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130426_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130426_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130501_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130501_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130501_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130501_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130506_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130506_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130506_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130506_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130511_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130511_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130511_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130511_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130516_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130516_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130516_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130516_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130521_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130521_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130521_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130521_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130526_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130526_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130526_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130526_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130531_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130531_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130531_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130531_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130605_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130605_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130605_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130605_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            26.1378406581,
+                            -27.7066090524,
+                            26.9495901388,
+                            -27.0321756537
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/SouthAfrica/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 2000,
+                        "productImageHeight": 1875
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150414_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150414_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150414_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150414_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150429_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150429_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150429_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150429_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150504_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150504_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150504_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150504_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150509_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150509_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150509_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150509_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150514_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150514_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150514_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150514_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150519_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150519_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150519_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150519_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150524_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150524_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150524_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150524_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150608_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150608_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150608_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150608_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150613_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150613_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150613_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150613_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150618_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150618_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150618_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150618_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150623_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150623_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150623_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150623_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150628_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150628_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150628_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150628_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150703_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150703_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150703_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150703_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150708_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150708_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150708_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150708_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150718_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150718_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150718_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150718_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150728_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150728_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150728_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150728_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150807_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150807_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150807_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150807_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150817_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150817_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150817_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150817_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150822_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150822_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150822_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150822_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150827_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150827_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150827_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150827_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150901_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150901_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150901_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150901_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150911_N2A_SouthAfricaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150911_N2A_SouthAfricaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150911_N2A_SouthAfricaD0000B0000.zip",
+                        "productCoord": [
+                            28.0101963357,
+                            -28.3555137265,
+                            28.9254016335,
+                            -27.6146815928
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/SouthAfrica/SPOT5_HRG2_XS_20150911_N2A_SouthAfricaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    }
+                ]
+            },
+            {
+                "text": "L3A",
+                "selectable": false,
+                "nodes": [
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L3A_CSRO_20151111T234922_V20150429",
+                        "text": "S2AGRI_SVT1_PRD_L3A_CSRO_20151111T234922_V20150429",
+                        "href": "files/Sen2AgriFiles/L3A/SPOT5-T5/SouthAfrica/S2AGRI_SVT1_PRD_L3A_CSRO_20151111T234922_V20150429.zip",
+                        "productCoord": [
+                            28.010197,
+                            -28.355515,
+                            28.925402,
+                            -27.614681
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L3A/SPOT5-T5/SouthAfrica/S2AGRI_SVT1_PRD_L3A_CSRO_20151111T234922_V20150429.jpg",
+                        "productImageWidth": 910,
+                        "productImageHeight": 810
+                    },
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T003514_V20150827",
+                        "text": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T003514_V20150827",
+                        "href": "files/Sen2AgriFiles/L3A/SPOT5-T5/SouthAfrica/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T003514_V20150827.zip",
+                        "productCoord": [
+                            28.010197,
+                            -28.355515,
+                            28.925402,
+                            -27.614681
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L3A/SPOT5-T5/SouthAfrica/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T003514_V20150827.jpg",
+                        "productImageWidth": 910,
+                        "productImageHeight": 810
+                    },
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T012622_V20150728",
+                        "text": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T012622_V20150728",
+                        "href": "files/Sen2AgriFiles/L3A/SPOT5-T5/SouthAfrica/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T012622_V20150728.zip",
+                        "productCoord": [
+                            28.010197,
+                            -28.355515,
+                            28.925402,
+                            -27.614681
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L3A/SPOT5-T5/SouthAfrica/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T012622_V20150728.jpg",
+                        "productImageWidth": 910,
+                        "productImageHeight": 810
+                    },
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T014847_V20150628",
+                        "text": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T014847_V20150628",
+                        "href": "files/Sen2AgriFiles/L3A/SPOT5-T5/SouthAfrica/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T014847_V20150628.zip",
+                        "productCoord": [
+                            28.010197,
+                            -28.355515,
+                            28.925402,
+                            -27.614681
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L3A/SPOT5-T5/SouthAfrica/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T014847_V20150628.jpg",
+                        "productImageWidth": 910,
+                        "productImageHeight": 810
+                    },
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T020640_V20150524",
+                        "text": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T020640_V20150524",
+                        "href": "files/Sen2AgriFiles/L3A/SPOT5-T5/SouthAfrica/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T020640_V20150524.zip",
+                        "productCoord": [
+                            28.010197,
+                            -28.355515,
+                            28.925402,
+                            -27.614681
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L3A/SPOT5-T5/SouthAfrica/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T020640_V20150524.jpg",
+                        "productImageWidth": 910,
+                        "productImageHeight": 810
+                    }
+                ]
+            },
+            {
+                "text": "L3B",
+                "selectable": false,
+                "nodes": []
+            },
+            {
+                "text": "L4A",
+                "selectable": false,
+                "nodes": [
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L4A_CSRO_20151113T175602_V20150414_20150911",
+                        "text": "S2AGRI_SVT1_PRD_L4A_CSRO_20151113T175602_V20150414_20150911",
+                        "href": "files/Sen2AgriFiles/L4A/SPOT5-T5/SouthAfrica/S2AGRI_SVT1_PRD_L4A_CSRO_20151113T175602_V20150414_20150911.zip",
+                        "productCoord": [
+                            28.10466,
+                            -28.314255,
+                            28.870207,
+                            -27.639805
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L4A/SPOT5-T5/SouthAfrica/S2AGRI_SVT1_PRD_L4A_CSRO_20151113T175602_V20150414_20150911.jpg",
+                        "productImageWidth": 762,
+                        "productImageHeight": 738
+                    }
+                ]
+            },
+            {
+                "text": "L4B",
+                "selectable": false,
+                "nodes": []
+            }
+        ]
+    },
+    {
+        "text": "Ukraine",
+        "selectable": false,
+        "nodes": [
+            {
+                "text": "L2A",
+                "selectable": false,
+                "nodes": [
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130417_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130417_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130417_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130417_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130422_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130422_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130422_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130422_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130427_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130427_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130427_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130427_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130502_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130502_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130502_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130502_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130507_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130507_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130507_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130507_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130512_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130512_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130512_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130512_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130517_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130517_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130517_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130517_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130527_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130527_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130527_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130527_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130601_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130601_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130601_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130601_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130606_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130606_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130606_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130606_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000",
+                        "text": "SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4643066227,
+                            49.6884929757,
+                            30.6763514415,
+                            50.4387961606
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT4-T5/Ukraine/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000.jpg",
+                        "productImageWidth": 2250,
+                        "productImageHeight": 2000
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150410_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150410_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150410_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150410_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150425_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150425_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150425_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150425_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150430_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150430_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150430_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150430_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150510_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150510_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150510_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150510_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150520_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150520_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150520_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150520_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150525_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150525_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150525_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150525_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150604_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150604_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150604_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150604_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150609_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150609_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150609_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150609_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150614_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150614_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150614_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150614_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150619_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150619_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150619_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150619_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150624_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150624_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150624_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150624_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150629_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150629_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150629_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150629_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150704_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150704_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150704_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150704_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150709_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150709_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150709_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150709_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150719_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150719_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150719_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150719_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150724_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150724_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150724_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150724_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150729_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150729_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150729_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150729_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150808_N2A_UkraineD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150808_N2A_UkraineD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150808_N2A_UkraineD0000B0000.zip",
+                        "productCoord": [
+                            29.4241137658,
+                            49.6692625804,
+                            30.6486564592,
+                            50.4292447457
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Ukraine/SPOT5_HRG2_XS_20150808_N2A_UkraineD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    }
+                ]
+            },
+            {
+                "text": "L3A",
+                "selectable": false,
+                "nodes": [
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T002820_V20150430",
+                        "text": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T002820_V20150430",
+                        "href": "files/Sen2AgriFiles/L3A/SPOT5-T5/Ukraine/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T002820_V20150430.zip",
+                        "productCoord": [
+                            29.424114,
+                            49.669262,
+                            30.648657,
+                            50.429245
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L3A/SPOT5-T5/Ukraine/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T002820_V20150430.jpg",
+                        "productImageWidth": 910,
+                        "productImageHeight": 810
+                    },
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T003501_V20150729",
+                        "text": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T003501_V20150729",
+                        "href": "files/Sen2AgriFiles/L3A/SPOT5-T5/Ukraine/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T003501_V20150729.zip",
+                        "productCoord": [
+                            29.424114,
+                            49.669262,
+                            30.648657,
+                            50.429245
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L3A/SPOT5-T5/Ukraine/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T003501_V20150729.jpg",
+                        "productImageWidth": 910,
+                        "productImageHeight": 810
+                    },
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T014830_V20150525",
+                        "text": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T014830_V20150525",
+                        "href": "files/Sen2AgriFiles/L3A/SPOT5-T5/Ukraine/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T014830_V20150525.zip",
+                        "productCoord": [
+                            29.424114,
+                            49.669262,
+                            30.648657,
+                            50.429245
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L3A/SPOT5-T5/Ukraine/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T014830_V20150525.jpg",
+                        "productImageWidth": 910,
+                        "productImageHeight": 810
+                    },
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T021205_V20150629",
+                        "text": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T021205_V20150629",
+                        "href": "files/Sen2AgriFiles/L3A/SPOT5-T5/Ukraine/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T021205_V20150629.zip",
+                        "productCoord": [
+                            29.424114,
+                            49.669262,
+                            30.648657,
+                            50.429245
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L3A/SPOT5-T5/Ukraine/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T021205_V20150629.jpg",
+                        "productImageWidth": 910,
+                        "productImageHeight": 810
+                    }
+                ]
+            },
+            {
+                "text": "L3B",
+                "selectable": false,
+                "nodes": []
+            },
+            {
+                "text": "L4A",
+                "selectable": false,
+                "nodes": []
+            },
+            {
+                "text": "L4B",
+                "selectable": false,
+                "nodes": []
+            }
+        ]
+    },
+    {
+        "text": "Burkina",
+        "selectable": false,
+        "nodes": [
+            {
+                "text": "L2A",
+                "selectable": false,
+                "nodes": [
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150410_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150410_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150410_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150410_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150415_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150415_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150415_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150415_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150420_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150420_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150420_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150420_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150425_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150425_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150425_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150425_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150430_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150430_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150430_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150430_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150505_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150505_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150505_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150505_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150510_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150510_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150510_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150510_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150515_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150515_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150515_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150515_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150520_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150520_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150520_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150520_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150525_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150525_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150525_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150525_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150604_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150604_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150604_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150604_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150614_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150614_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150614_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150614_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150624_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150624_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150624_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150624_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150629_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150629_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150629_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150629_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150709_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150709_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150709_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150709_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150714_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150714_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150714_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150714_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    },
+                    {
+                        "productId": "SPOT5_HRG2_XS_20150823_N2A_BurkinaD0000B0000",
+                        "text": "SPOT5_HRG2_XS_20150823_N2A_BurkinaD0000B0000",
+                        "href": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150823_N2A_BurkinaD0000B0000.zip",
+                        "productCoord": [
+                            -4.16164782102,
+                            10.7899924083,
+                            -3.3301337817,
+                            11.5245417951
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L2A/SPOT5-T5/Burkina/SPOT5_HRG2_XS_20150823_N2A_BurkinaD0000B0000.jpg",
+                        "productImageWidth": 4550,
+                        "productImageHeight": 4050
+                    }
+                ]
+            },
+            {
+                "text": "L3A",
+                "selectable": false,
+                "nodes": [
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T010414_V20150629",
+                        "text": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T010414_V20150629",
+                        "href": "files/Sen2AgriFiles/L3A/SPOT5-T5/Burkina/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T010414_V20150629.zip",
+                        "productCoord": [
+                            -4.161648,
+                            10.789992,
+                            -3.330134,
+                            11.524542
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L3A/SPOT5-T5/Burkina/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T010414_V20150629.jpg",
+                        "productImageWidth": 910,
+                        "productImageHeight": 810
+                    },
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T014956_V20150525",
+                        "text": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T014956_V20150525",
+                        "href": "files/Sen2AgriFiles/L3A/SPOT5-T5/Burkina/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T014956_V20150525.zip",
+                        "productCoord": [
+                            -4.161648,
+                            10.789992,
+                            -3.330134,
+                            11.524542
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L3A/SPOT5-T5/Burkina/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T014956_V20150525.jpg",
+                        "productImageWidth": 910,
+                        "productImageHeight": 810
+                    },
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T020834_V20150430",
+                        "text": "S2AGRI_SVT1_PRD_L3A_CSRO_20151112T020834_V20150430",
+                        "href": "files/Sen2AgriFiles/L3A/SPOT5-T5/Burkina/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T020834_V20150430.zip",
+                        "productCoord": [
+                            -4.161648,
+                            10.789992,
+                            -3.330134,
+                            11.524542
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L3A/SPOT5-T5/Burkina/S2AGRI_SVT1_PRD_L3A_CSRO_20151112T020834_V20150430.jpg",
+                        "productImageWidth": 910,
+                        "productImageHeight": 810
+                    }
+                ]
+            },
+            {
+                "text": "L3B",
+                "selectable": false,
+                "nodes": []
+            },
+            {
+                "text": "L4A",
+                "selectable": false,
+                "nodes": [
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L4A_CSRO_20151113T162158_V20150410_20150823",
+                        "text": "S2AGRI_SVT1_PRD_L4A_CSRO_20151113T162158_V20150410_20150823",
+                        "href": "files/Sen2AgriFiles/L4A/SPOT5-T5/Burkina/S2AGRI_SVT1_PRD_L4A_CSRO_20151113T162158_V20150410_20150823.zip",
+                        "productCoord": [
+                            -4.080351,
+                            10.818229,
+                            -3.374915,
+                            11.478366
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L4A/SPOT5-T5/Burkina/S2AGRI_SVT1_PRD_L4A_CSRO_20151113T162158_V20150410_20150823.jpg",
+                        "productImageWidth": 772,
+                        "productImageHeight": 728
+                    }
+                ]
+            },
+            {
+                "text": "L4B",
+                "selectable": false,
+                "nodes": [
+                    {
+                        "productId": "S2AGRI_SVT1_PRD_L4B_CSRO_20151113T162202_V20150410_20150823",
+                        "text": "S2AGRI_SVT1_PRD_L4B_CSRO_20151113T162202_V20150410_20150823",
+                        "href": "files/Sen2AgriFiles/L4B/SPOT5-T5/Burkina/S2AGRI_SVT1_PRD_L4B_CSRO_20151113T162202_V20150410_20150823.zip",
+                        "productCoord": [
+                            -4.080351,
+                            10.818229,
+                            -3.374915,
+                            11.478366
+                        ],
+                        "productImageUrl": "files/Sen2AgriFiles/L4B/SPOT5-T5/Burkina/S2AGRI_SVT1_PRD_L4B_CSRO_20151113T162202_V20150410_20150823.jpg",
+                        "productImageWidth": 772,
+                        "productImageHeight": 728
+                    }
+                ]
+            }
+        ]
+    }
 ]
