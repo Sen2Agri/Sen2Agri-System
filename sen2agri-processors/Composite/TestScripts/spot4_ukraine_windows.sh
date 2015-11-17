@@ -24,8 +24,7 @@
 "/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130512_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130512_N2A_EUkraineD0000B0000.xml" \
 "/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130517_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130517_N2A_EUkraineD0000B0000.xml" \
 --res 20 --t0 20130402 --tend 20130517 --outdir /mnt/scratch/composite_python_ukraine/20130425 --bandsmap /home/agrosu/sen2agri/sen2agri-processors/Composite/TestScripts/bands_mapping_spot.txt
-
-./composite_processing.py --applocation /home/agrosu/sen2agri-processors-build --syntdate 20130523 --synthalf 15 --input \
+./composite_processing.py --applocation /home/agrosu/sen2agri-processors-build --syntdate 20130523 --synthalf 25 --input \
 "/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130502_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130502_N2A_EUkraineD0000B0000.xml" \
 "/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130507_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130507_N2A_EUkraineD0000B0000.xml" \
 "/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130512_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130512_N2A_EUkraineD0000B0000.xml" \
@@ -35,4 +34,4 @@
 "/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130606_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130606_N2A_EUkraineD0000B0000.xml" \
 "/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000.xml" \
 "/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000.xml" \
---res 20 --t0 20130228 --tend 20130616 --outdir /mnt/scratch/composite_python_ukraine/20130523 --bandsmap /home/agrosu/sen2agri/sen2agri-processors/Composite/TestScripts/bands_mapping_spot.txt
+--res 20 --t0 20130502 --tend 20130616 --outdir /mnt/scratch/composite_python_ukraine/20130523 --bandsmap /home/agrosu/sen2agri/sen2agri-processors/Composite/TestScripts/bands_mapping_spot.txt

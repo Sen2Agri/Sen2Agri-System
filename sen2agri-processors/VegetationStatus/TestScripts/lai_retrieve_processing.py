@@ -41,9 +41,9 @@ parser = argparse.ArgumentParser(description='LAI retrieval processor')
 parser.add_argument('--applocation', help='The path where the sen2agri is built', required=True)
 parser.add_argument('--input', help='The list of products xml descriptors', required=True, nargs='+')
 parser.add_argument('--res', help='The requested resolution in meters', required=True)
-parser.add_argument('--t0', help='The start date for the temporal resampling interval (in format YYYYMMDD)',
+parser.add_argument('--t0', help='The start date for the multi-date LAI retrieval pocedure (in format YYYYMMDD)',
                     required=True, metavar='YYYYMMDD')
-parser.add_argument('--tend', help='The end date for the temporal resampling interval (in format YYYYMMDD)',
+parser.add_argument('--tend', help='The end date for the multi-date LAI retrieval pocedure (in format YYYYMMDD)',
                     required=True, metavar='YYYYMMDD')
 parser.add_argument('--outdir', help="Output directory", required=True)
 parser.add_argument('--rsrfile', help='The RSR file (/path/filename)', required=True)
