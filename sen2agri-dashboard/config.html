@@ -152,14 +152,44 @@
 											<span class="help-block">Resolution of the output image.</span>
 										</div>
 										<div class="form-group form-group-sm">
+											<label class="control-label" for="t0">T0:</label>
+											<input type="text" pattern="[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])" class="form-control" id="t0" name="t0">
+											<span class="help-block">The start date for the temporal resampling interval (in format YYYYMMDD).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="tend">T end:</label>
+											<input type="text" pattern="[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])" class="form-control" id="tend" name="tend">
+											<span class="help-block">The end date for the temporal resampling interval (in format YYYYMMDD).</span>
+										</div>
+										<div class="form-group form-group-sm">
 											<label class="control-label" for="outputFolder">Output folder:</label>
 											<input type="text" class="form-control" id="outputFolder" name="outputFolder">
 											<span class="help-block">The output directory.</span>
 										</div>
 										<div class="form-group form-group-sm">
-											<label class="control-label" for="modelsFolder">Models folder:</label>
-											<input type="text" class="form-control" id="modelsFolder" name="modelsFolder">
-											<span class="help-block">The folder where the model can be found (it is optional and should be specified only if the model folder is different than the current one).</span>
+											<label class="control-label" for="rsrFile">RSR file:</label>
+											<input type="text" class="form-control" id="rsrFile" name="rsrFile">
+											<span class="help-block">The RSR file (/path/filename).</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="solarZenith">Solar zenith angle:</label>
+											<input type="number" step="0.01" class="form-control" id="solarZenith" name="solarZenith">
+											<span class="help-block">The value for solar zenith angle.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="sensorZenith">Sensor zenith angle:</label>
+											<input type="number" step="0.01" class="form-control" id="sensorZenith" name="sensorZenith">
+											<span class="help-block">The value for sensor zenith angle.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="relativeAzimuth">Relative azimuth angle:</label>
+											<input type="number" step="0.01" class="form-control" id="relativeAzimuth" name="relativeAzimuth">
+											<span class="help-block">The value for relative azimuth angle.</span>
+										</div>
+										<div class="form-group form-group-sm">
+											<label class="control-label" for="tileId">Tile Id:</label>
+											<input type="text" class="form-control" id="tileId" name="tileId">
+											<span class="help-block">The value for tile Id (optional).</span>
 										</div>
 										<input type="submit" class="btn btn-primary" value="Submit">
 									</form>
@@ -464,10 +494,21 @@
 				rules: {
 					inputFiles: "required",
 					resolution: "required",
+					t0: { required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])"},
+					tend: { required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])"},
 					outputFolder: "required",
-					modelsFolder: "required"
+					rsrFile: "required",
+					solarZenith: "required",
+					sensorZenith: "required",
+					relativeAzimuth: "required"
 				},
 				messages: {
+					t0: {
+						pattern: "Enter a date in YYYYMMDD format"
+					},
+					tend: {
+						pattern: "Enter a date in YYYYMMDD format"
+					}
 				},
 				// the errorPlacement has to take the table layout into account
 				errorPlacement: function(error, element) {
