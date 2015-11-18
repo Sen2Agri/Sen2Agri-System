@@ -186,13 +186,12 @@ private:
         SetParameterOutputImagePixelType("outflags", ImagePixelType_uint8);
         SetParameterOutputImage("outflags", m_FlagsConcat->GetOutput());
 
-
+        m_RGBConcat = ImageListToVectorImageFilterType::New();
         if(HasValue("outrgb") && m_RGBOutList->Size() > 0) {
-            m_RGBConcat = ImageListToVectorImageFilterType::New();
-            m_RGBConcat->SetInput(m_RGBOutList);
-            SetParameterOutputImagePixelType("outrgb", ImagePixelType_int16);
-            SetParameterOutputImage("outrgb", m_RGBConcat->GetOutput());
+            m_RGBConcat->SetInput(m_RGBOutList);            
         }
+        SetParameterOutputImagePixelType("outrgb", ImagePixelType_int16);
+        SetParameterOutputImage("outrgb", m_RGBConcat->GetOutput());
 
         return;
     }
