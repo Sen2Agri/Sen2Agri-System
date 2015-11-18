@@ -130,7 +130,7 @@ std::vector<int> BandsMappingConfig::GetAbsoluteBandIndexes(int res, const std::
  * sequencial ascending order and -1 if missing band */
 std::vector<int> BandsMappingConfig::GetBandsPresence(int nRes, const std::string &missionName, int &outNbValidBands) {
     if(!IsConfiguredMission(missionName)) {
-        itkExceptionMacro("Mission " + missionName + "is not configured for composition!");
+        itkExceptionMacro("Mission " + missionName + " is not configured for composition!");
     }
 
     std::string masterMissionName = GetMasterMissionName();
@@ -163,7 +163,7 @@ int BandsMappingConfig::GetMasterBandIndex(const std::string &missionName, int n
         itkExceptionMacro("Invalid bands size configuration for resolution " << nRes << ". Number differ from master for mission " << missionName);
     }
     for(unsigned int i = 0; i< bandsCfg.size(); i++) {
-        if(bandsCfg[i].identifier == nSensorBandIdx) {
+        if(bandsCfg[i].identifier == nSensorBandIdx +1) {
             return masterBandsCfg[i].identifier;
         }
     }
