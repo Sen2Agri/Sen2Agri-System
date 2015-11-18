@@ -5,7 +5,7 @@ MACCSMetadataHelper::MACCSMetadataHelper()
     m_missionType = S2;
     m_ReflQuantifVal = 1;
 }
-
+/*
 std::string MACCSMetadataHelper::GetBandName(unsigned int nBandIdx, bool bRelativeIdx)
 {
     if(bRelativeIdx) {
@@ -22,6 +22,43 @@ std::string MACCSMetadataHelper::GetBandName(unsigned int nBandIdx, bool bRelati
             // the bands in the file are 1 based while our parameter nBandIdx is 0 based
             if (std::stoi(band.Id) == (int)nBandIdx) {
                 return band.Name;
+            }
+        }
+        itkExceptionMacro("Invalid absolute band index requested: " << nBandIdx << ". Maximum is " << m_nTotalBandsNo);
+    }
+}
+*/
+
+std::string MACCSMetadataHelper::GetBandName(unsigned int nBandIdx, bool bRelativeIdx)
+{
+    if(bRelativeIdx) {
+        if(!m_specificImgMetadata) {
+            ReadSpecificMACCSImgHdrFile();
+        }
+
+        if(nBandIdx >= m_nBandsNoForCurRes) {
+            itkExceptionMacro("Invalid band index requested: " << bRelativeIdx << ". Maximum is " << m_nBandsNoForCurRes);
+        }
+        return m_specificImgMetadata->ImageInformation.Bands[nBandIdx].Name;
+    } else {
+        if(m_missionType == LANDSAT) {
+            for (const MACCSBand& band : m_metadata->ImageInformation.Bands) {
+                // the bands in the file are 1 based while our parameter nBandIdx is 0 based
+                if (std::stoi(band.Id) == (int)nBandIdx) {
+                    return band.Name;
+                }
+            }
+        } else {
+            // Sentinel 2
+            for(const MACCSResolution& maccsRes: m_metadata->ImageInformation.Resolutions) {
+                if(std::atoi(maccsRes.Id.c_str()) == m_nResolution) {
+                    for (const MACCSBand& band : maccsRes.Bands) {
+                        // the bands in the file are 1 based while our parameter nBandIdx is 0 based
+                        if (std::stoi(band.Id) == (int)nBandIdx) {
+                            return band.Name;
+                        }
+                    }
+                }
             }
         }
         itkExceptionMacro("Invalid absolute band index requested: " << nBandIdx << ". Maximum is " << m_nTotalBandsNo);
