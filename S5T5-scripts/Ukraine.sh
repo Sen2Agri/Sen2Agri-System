@@ -1,9 +1,9 @@
 #!/bin/bash
 
 cd CropMask
-./CropMask_Ukraine.sh
+./CropMask_Ukraine_noinsitu.sh
 cd ..
 
 cd CropType
-./CropType_Ukraine.sh
+./CropType_Ukraine_noinsitu.sh
 cd ..

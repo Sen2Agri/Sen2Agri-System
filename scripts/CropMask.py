@@ -19,7 +19,7 @@ def inSituDataAvailable() :
 	#executeStep("ConcatenateFeatures", "otbcli_ConcatenateImages", "-il", temporal_features,statistic_features,"-out",features, skip=fromstep>8, rmfiles=[] if keepfiles else [temporal_features, statistic_features])
 
 	#Features when insitu data is available (Step 6 or 7 or 8)
-	executeStep("FeaturesWithInsitu", "otbApplicationLauncherCommandLine", "FeaturesWithInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithInsitu"),"-ndvi",ndvi,"-ndwi",ndwi,"-brightness",brightness,"-dates",outdays,"-window", window, "-out",features, skip=fromstep>6, rmfiles=[] if keepfiles else [ndwi, brightness])
+	executeStep("FeaturesWithInsitu", "otbApplicationLauncherCommandLine", "FeaturesWithInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithInsitu"),"-ndvi",ndvi,"-ndwi",ndwi,"-brightness",brightness,"-dates",outdays,"-window", window,"-bm", "false", "-out",features, skip=fromstep>6, rmfiles=[] if keepfiles else [ndwi, brightness])
 
 	# Image Statistics (Step 9)
 	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", features,"-out",statistics, skip=fromstep>9)
@@ -251,7 +251,7 @@ executeStep("Validation for Raw Cropmask", "otbcli_ComputeConfusionMatrix", "-in
 executeStep("PrincipalComponentAnalysis", "otbApplicationLauncherCommandLine", "PrincipalComponentAnalysis",os.path.join(buildFolder,"CropMask/PrincipalComponentAnalysis") ,"-ndvi", ndvi, "-nc", nbcomp, "-out", pca, skip=fromstep>25, rmfiles=[] if keepfiles else [ndvi])
 
 #Mean-Shift segmentation (Step 26, 27 and 28)
-executeStep("MeanShiftSmoothing", "otbcli_MeanShiftSmoothing", "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger, "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing, "uint32", skip=fromstep>26, rmfiles=[] if keepfiles else [pca])
+executeStep("MeanShiftSmoothing", "otbcli_MeanShiftSmoothing", "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger, "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing, "uint32", skip=fromstep>26, rmfiles=[] if keepfiles else [pca])
 
 executeStep("LSMSSegmentation", "otbcli_LSMSSegmentation", "-in", mean_shift_smoothing,"-inpos", mean_shift_smoothing_spatial, "-spatialr", spatialr, "-ranger", ranger, "-minsize", "0", "-tmpdir", tmpfolder, "-out", segmented, "uint32", skip=fromstep>27, rmfiles=[] if keepfiles else [mean_shift_smoothing_spatial])
 

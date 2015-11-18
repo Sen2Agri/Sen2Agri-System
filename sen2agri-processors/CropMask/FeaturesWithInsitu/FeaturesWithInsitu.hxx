@@ -305,6 +305,276 @@ protected:
 
 };
 
+template <typename PixelType>
+class FeaturesWithInsituBMFunctor
+{
+public:
+  FeaturesWithInsituBMFunctor() : bands(0), w(2), delta(500), id(0), tsoil(2000) {}
+  FeaturesWithInsituBMFunctor(int bands, int w, PixelValueType delta, std::vector<int> id, PixelValueType tsoil) : bands(bands), w(w), delta(delta), id(id), tsoil(tsoil) {}
+
+  PixelType operator()(PixelType ndvi,PixelType ndwi, PixelType brightness) const
+  {
+    // compute the size of the input pixel
+    int pixSize = ndvi.Size();
+
+    // The output pixel contains 17 bands built from the ndvi series, 5 bands built from ndwi series and 5 bands built from brightness series
+    // Create the output pixel
+    PixelType result(bands);
+
+    // If the input pixel is nodata return nodata
+    PixelType nodata(pixSize);
+    nodata.Fill(static_cast<PixelValueType>(-10000));
+
+    if (ndvi == nodata || ndwi == nodata || brightness == nodata) {
+        result.Fill(static_cast<PixelValueType>(-10000));
+        return result;
+    }
+
+    // Compute the mean values for ndvi and the maximum, minimum and mean for ndwi and brightness
+    result[0] = static_cast<PixelValueType>(0);
+    double avgNDVI = 0.0;
+    std::vector<PixelValueType> valuesNDVI(pixSize);
+
+    result[16] = ndwi[0];
+    result[17] = ndwi[0];
+    result[18] = static_cast<PixelValueType>(0);
+    double avgNDWI = 0.0;
+    std::vector<PixelValueType> valuesNDWI(pixSize);
+
+    result[21] = brightness[0];
+    result[22] = brightness[0];
+    result[23] = static_cast<PixelValueType>(0);
+    double avgBrightness = 0.0;
+    std::vector<PixelValueType> valuesBrightness(pixSize);
+
+    for (int i = 0; i < pixSize; i++) {
+        avgNDVI += ndvi[i];
+        valuesNDVI[i] = ndvi[i];
+
+        result[16]  = (result[16]  < ndwi[i] ? ndwi[i] : result[16] );
+        result[17]  = (result[17]  > ndwi[i] ? ndwi[i] : result[17] );
+        avgNDWI += ndwi[i];
+        valuesNDWI[i] = ndwi[i];
+
+        result[21]  = (result[21]  < brightness[i] ? brightness[i] : result[21] );
+        result[22]  = (result[22]  > brightness[i] ? brightness[i] : result[22] );
+        avgBrightness += brightness[i];
+        valuesBrightness[i] = brightness[i];
+    }
+    avgNDVI /= pixSize;
+    avgNDWI /= pixSize;
+    avgBrightness /= pixSize;
+    result[0] = static_cast<PixelValueType>(avgNDVI);
+    result[18] = static_cast<PixelValueType>(avgNDWI);
+    result[23] = static_cast<PixelValueType>(avgBrightness);
+
+    // Compute the median for ndvi, ndwi and brightness
+    std::sort(valuesNDVI.begin(), valuesNDVI.end());
+    std::sort(valuesNDWI.begin(), valuesNDWI.end());
+    std::sort(valuesBrightness.begin(), valuesBrightness.end());
+    if (pixSize % 2 == 1) {
+        result[2]  = valuesNDVI[pixSize / 2];
+        result[20] = valuesNDWI[pixSize / 2];
+        result[25] = valuesBrightness[pixSize / 2];
+    } else {
+        result[2]  = (valuesNDVI[pixSize / 2 - 1] + valuesNDVI[pixSize / 2]) / 2;
+        result[20] = (valuesNDWI[pixSize / 2 - 1] + valuesNDWI[pixSize / 2]) / 2;
+        result[25] = (valuesBrightness[pixSize / 2 - 1] + valuesBrightness[pixSize / 2]) / 2;
+    }
+
+    //Comput the square for the average values (used for standard deviation)
+    double avgNDVI2 = avgNDVI*avgNDVI;
+    double avgNDWI2 = avgNDWI*avgNDWI;
+    double avgBrightness2 = avgBrightness*avgBrightness;
+
+    // Compute the standard deviation for ndvi, ndwi and brightness
+    result[1] = static_cast<PixelValueType>(0);
+    double stdDevNDVI = 0.0;
+    result[19] = static_cast<PixelValueType>(0);
+    double stdDevNDWI = 0.0;
+    result[24] = static_cast<PixelValueType>(0);
+    double stdDevBrightness = 0.0;
+    for (int i = 0; i < pixSize; i++) {
+        stdDevNDVI += ((double)ndvi[i]*ndvi[i] - avgNDVI2);
+        stdDevNDWI += ((double)ndwi[i]*ndwi[i] - avgNDWI2);
+        stdDevBrightness += ((double)brightness[i]*brightness[i] - avgBrightness2);
+    }
+
+    result[1] = static_cast<PixelValueType>(std::sqrt(stdDevNDVI / pixSize));
+    result[19] = static_cast<PixelValueType>(std::sqrt(stdDevNDWI / pixSize));
+    result[24] = static_cast<PixelValueType>(std::sqrt(stdDevBrightness / pixSize));
+
+
+
+
+    // compute features
+    double LgthNegativeDerivative = 0.0;
+    double SurfaceNegativeDerivative = 0.0;
+    double SlopeNegativeDerivative = 0.0;
+    double LgthPositiveDerivative = 0.0;
+    double SurfacePositiveDerivative = 0.0;
+    double SlopePositiveDerivative = 0.0;
+
+    double meanMax = 0;
+    result[4] = static_cast<PixelValueType>(0);
+    result[5] = static_cast<PixelValueType>(0);
+
+    result[12] = static_cast<PixelValueType>(0);
+    result[13] = static_cast<PixelValueType>(0);
+    for (int i = 0; i < pixSize; i++) {
+        double meanMaxCurrent = 0.0;
+
+        // compute the start and end ideces based on the window
+        int startIndex = std::max(0, i-w);
+        int endIndex = std::min(pixSize-1, i+w);
+        int count = endIndex - startIndex + 1;
+
+        for (int j = startIndex; j <= endIndex; j++) {
+            meanMaxCurrent += ndvi[j];
+        }
+
+        // Compute the maximum for the local average
+        meanMaxCurrent /= count;
+        if (i == 0 || meanMaxCurrent > meanMax) {
+            meanMax = meanMaxCurrent;
+        }
+
+        if (i == 1 || (i > 0 && result[4] < (ndvi[i] - ndvi[i-1]))) {
+            result[4] = ndvi[i] - ndvi[i-1];
+        }
+
+        if (i == 1 || (i > 0 && result[5] > (ndvi[i] - ndvi[i-1]))) {
+            result[5] = ndvi[i] - ndvi[i-1];
+        }
+
+        //Derivative Parameters
+        // If the function is in a decreasing period
+
+        if ( i > 0  && ndvi[i-1] > ndvi[i] )
+        {
+            int j =  i;
+            while (j >= 1  &&  ndvi[j] < ndvi[j-1])
+            {
+
+                double LgthNegative = ( id[i] - id[j-1]) ;
+                double SurfaceNegative = (ndvi[j-1] - ndvi[i]) * LgthNegative;
+                SurfaceNegative /= 2;
+
+                if ( SurfaceNegativeDerivative < SurfaceNegative )
+                {
+                  LgthNegativeDerivative = LgthNegative ;
+                  SurfaceNegativeDerivative = SurfaceNegative ;
+                  SlopeNegativeDerivative = SurfaceNegative / LgthNegative;
+
+                  if ( ndvi[i] < tsoil && ndvi[j-1] > tsoil)
+                  {
+                      result[13] = static_cast<PixelValueType>(1);
+                  }
+
+                }
+                j = j - 1;
+             }
+         }
+         else
+         {
+             // If the function is in an increasing period
+             if ( i > 0 )
+             {
+               int j =  i;
+               while (j < pixSize &&  ndvi[j] > ndvi[j-1])
+               {
+                  double LgthPositive = id[j] - id[i-1] ;
+                  double SurfacePositive = (ndvi[j] - ndvi[i-1]) * LgthPositive ;
+                  SurfacePositive /= 2 ;
+
+                  if ( SurfacePositiveDerivative < SurfacePositive )
+                  {
+                    LgthPositiveDerivative = LgthPositive;
+                    SurfacePositiveDerivative = SurfacePositive ;
+                    SlopePositiveDerivative = SurfacePositive / LgthPositive;
+
+                    if ( ndvi[i-1] < tsoil && ndvi[j] > tsoil)
+                    {
+                        result[12] = static_cast<PixelValueType>(1);
+                    }
+
+                   }
+                   j = j + 1;
+                }
+
+              }
+         }
+    }
+    result[3] = static_cast<PixelValueType>(meanMax);
+    result[6]  = static_cast<PixelValueType>(LgthNegativeDerivative);
+    result[7]  = static_cast<PixelValueType>(SurfaceNegativeDerivative);
+    result[8]  = static_cast<PixelValueType>(SlopeNegativeDerivative);
+    result[9]  = static_cast<PixelValueType>(LgthPositiveDerivative);
+    result[10]  = static_cast<PixelValueType>(SurfacePositiveDerivative);
+    result[11] = static_cast<PixelValueType>(SlopePositiveDerivative);
+
+    double MeanMaxLgth = 0.0;
+    double MeanMaxSurface = 0.0;
+
+    for (auto i=0; i < pixSize; i++)
+    {
+        double CurrentMeanMaxLgthNeg = 0.0;
+        double CurrentMeanMaxLgthPos = 0.0;
+        if ( ndvi[i] > result[3] )
+        {
+            int j = i-1;
+            while (j>0 && (ndvi[j] > result[3] - delta) && (ndvi[j] < result[3] + delta) )
+            {
+             CurrentMeanMaxLgthNeg = id[i] - id[j] ;
+             j = j - 1;
+            }
+
+            j = i+1;
+            while (j < pixSize && (ndvi[j] > result[3] - delta) && (ndvi[j] < result[3] + delta) )
+            {
+                CurrentMeanMaxLgthPos = id[j] - id[i] ;
+                 j = j + 1;
+            }
+
+        }
+
+        if ( (CurrentMeanMaxLgthPos + CurrentMeanMaxLgthNeg) >  MeanMaxLgth )
+        {
+             MeanMaxLgth = CurrentMeanMaxLgthPos + CurrentMeanMaxLgthNeg;
+             MeanMaxSurface = MeanMaxLgth * result[3] ;
+        }
+
+    }
+
+    result[14] = static_cast<PixelValueType>(MeanMaxLgth);
+    result[15] = static_cast<PixelValueType>(MeanMaxSurface);
+
+    return result;
+  }
+
+  bool operator!=(const FeaturesWithInsituBMFunctor a) const
+  {
+    return (this->bands != a.bands) || (this->w != a.w) || (this->delta != a.delta) || (this->id != a.id) || (this->tsoil != a.tsoil);
+  }
+
+  bool operator==(const FeaturesWithInsituBMFunctor a) const
+  {
+    return !(*this != a);
+  }
+
+protected:
+  // the number of bands of the output raster
+  int bands;
+  // the size of the temporal neghbourhood
+  int w;
+  // the diference delta
+  PixelValueType delta;
+  // the days from epoch corresponding to the input series raster
+  std::vector<int> id;
+  // the threshhold for the soil
+  PixelValueType tsoil;
+
+};
 
 /** Ternary functor image filter which produces a vector image with a
 * number of bands different from the input images */

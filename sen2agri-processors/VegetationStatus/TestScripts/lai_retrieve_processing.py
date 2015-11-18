@@ -41,9 +41,9 @@ parser = argparse.ArgumentParser(description='LAI retrieval processor')
 parser.add_argument('--applocation', help='The path where the sen2agri is built', required=True)
 parser.add_argument('--input', help='The list of products xml descriptors', required=True, nargs='+')
 parser.add_argument('--res', help='The requested resolution in meters', required=True)
-parser.add_argument('--t0', help='The start date for the temporal resampling interval (in format YYYYMMDD)',
+parser.add_argument('--t0', help='The start date for the multi-date LAI retrieval pocedure (in format YYYYMMDD)',
                     required=True, metavar='YYYYMMDD')
-parser.add_argument('--tend', help='The end date for the temporal resampling interval (in format YYYYMMDD)',
+parser.add_argument('--tend', help='The end date for the multi-date LAI retrieval pocedure (in format YYYYMMDD)',
                     required=True, metavar='YYYYMMDD')
 parser.add_argument('--outdir', help="Output directory", required=True)
 parser.add_argument('--rsrfile', help='The RSR file (/path/filename)', required=True)
@@ -201,9 +201,6 @@ class LaiModel(object):
         runCmd(["otbcli", "InverseModelLearning", imgInvOtbLibsLocation, "-training", outTrainingFile, "-out", outModelFile, "-errest", outErrEstFile, "-regression", str(REGRESSION_TYPE), "-bestof", str(BEST_OF)])
 
 
-
-
-#runCmd(["./lai_model.py", "--applocation", appLocation, "--rsrfile", args.rsrfile, "--solarzenith", args.solarzenith, "--sensorzenith", args.sensorzenith, "--relativeazimuth", args.relativeazimuth, "--outdir", outDir, "--outxml", paramsLaiModelFilenameXML])
 if GENERATE_MODEL:
     laiModel = LaiModel()
     laiModel.generateModel()
@@ -292,9 +289,10 @@ for xml in args.input:
         runCmd(["otbcli", "NdviRviExtraction", imgInvOtbLibsLocation, "-xml", xml, "-fts", outNdviRvi])
     else:
         runCmd(["otbcli", "NdviRviExtraction", imgInvOtbLibsLocation, "-xml", xml, "-outres", resolution, "-fts", outNdviRvi])
-
+    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     #timed_exec "try otbcli GetLaiRetrievalModel $IMG_INV_OTB_LIBS_ROOT -xml $xml -ilmodels $MODELS_INPUT_LIST -ilerrmodels $ERR_MODELS_INPUT_LIST -outm $MODEL_FILE -outerr $ERR_MODEL_FILE"
     runCmd(["otbcli", "GetLaiRetrievalModel", imgInvOtbLibsLocation, "-xml", xml, "-ilmodels"] + modelsInputList + ["-ilerrmodels"] + errModelsInputList + ["-outm", modelFile, "-outerr", errModelFile])
+    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     
     #CUR_OUT_LAI_IMG=${OUT_LAI_IMG//[#]/$cnt}
     counterString = str(cnt)
@@ -304,11 +302,12 @@ for xml in args.input:
     
     #timed_exec "try otbcli BVImageInversion $IMG_INV_OTB_LIBS_ROOT -in $OUT_NDVI_RVI -modelfile $MODEL_FILE -out $CUR_OUT_LAI_IMG"
     runCmd(["otbcli", "BVImageInversion", imgInvOtbLibsLocation, "-in", outNdviRvi, "-modelfile", modelFile, "-out", curOutLaiImg])
+    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     #timed_exec "try otbcli BVImageInversion $IMG_INV_OTB_LIBS_ROOT -in $OUT_NDVI_RVI -modelfile $ERR_MODEL_FILE -out $CUR_OUT_LAI_ERR_IMG"
     runCmd(["otbcli", "BVImageInversion", imgInvOtbLibsLocation, "-in", outNdviRvi, "-modelfile", errModelFile, "-out", curOutLaiErrImg])
+    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     
     cnt += 1
-
 
 i = int(0)
 
@@ -335,26 +334,29 @@ while i < cnt:
     i += 1
 
 # Create the LAI and Error time series
-#timed_exec "try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_LAI_PARAM -out $OUT_LAI_TIME_SERIES"
 runCmd(["otbcli", "TimeSeriesBuilder", imgInvOtbLibsLocation, "-il"] + allLaiParam + ["-out", outLaiTimeSeries])
-#timed_exec "try otbcli TimeSeriesBuilder $IMG_INV_OTB_LIBS_ROOT -il $ALL_ERR_PARAM -out $OUT_ERR_TIME_SERIES"
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 runCmd(["otbcli", "TimeSeriesBuilder", imgInvOtbLibsLocation, "-il"] + allErrParam + ["-out", outErrTimeSeries])
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 # Compute the reprocessed time series (On-line Retrieval)
-#timed_exec "try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_REPROCESSED_TIME_SERIES  -algo local -algo.local.bwr $ALGO_LOCAL_BWR -algo.local.fwr $ALGO_LOCAL_FWR"
 runCmd(["otbcli", "ProfileReprocessing", imgInvOtbLibsLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outReprocessedTimeSeries, "-algo", "local", "-algo.local.bwr", str(ALGO_LOCAL_BWR), "-algo.local.fwr", str(ALGO_LOCAL_FWR)])
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 #split the Reprocessed time series to a number of images
-#timed_exec "try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_REPROCESSED_TIME_SERIES -outlist $REPROCESSED_LIST_FILE -compress 1"
 runCmd(["otbcli", "ReprocessedProfileSplitter", imgInvOtbLibsLocation, "-in", outReprocessedTimeSeries, "-outlist", reprocessedListFile, "-compress", "1"])
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 # Compute the fitted time series (CSDM Fitting)
-#timed_exec "try otbcli ProfileReprocessing $IMG_INV_OTB_LIBS_ROOT -lai $OUT_LAI_TIME_SERIES -err $OUT_ERR_TIME_SERIES -ilxml $ALL_XML_PARAM -opf $OUT_FITTED_TIME_SERIES -algo fit"
 runCmd(["otbcli", "ProfileReprocessing", imgInvOtbLibsLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outFittedTimeSeries, "-algo", "fit"])
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-#try otbcli ProductFormatter "$PRODUCT_FORMATER_OTB_LIBS_ROOT" -destroot "$OUT_FOLDER" -fileclass SVT1 -level L3B -timeperiod 20130228_20130615 -baseline 01.00 -processor vegetation -processor.vegetation.lairepr "$OUT_REPROCESSED_TIME_SERIES" -processor.vegetation.laifit "$OUT_FITTED_TIME_SERIES" -il "${inputXML[0]}" -gipp "$PARAMS_TXT"
-runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.lairepr", tileID, outReprocessedTimeSeries, "-processor.vegetation.laifit", tileID, outFittedTimeSeries, "-il", args.input[0], "-gipp", paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML])
+cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.lairepr", tileID, outReprocessedTimeSeries, "-processor.vegetation.laifit", tileID, outFittedTimeSeries, "-il", args.input[0], "-gipp", paramsLaiRetrFilenameXML]
+if GENERATE_MODEL:
+    cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.lairepr", tileID, outReprocessedTimeSeries, "-processor.vegetation.laifit", tileID, outFittedTimeSeries, "-il", args.input[0], "-gipp", paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML]
 
+runCmd(cmd)
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 #split the Fitted time series to a number of images
 #timed_exec "try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_FITTED_TIME_SERIES -outlist $FITTED_LIST_FILE -compress 1"
 runCmd(["otbcli", "ReprocessedProfileSplitter", imgInvOtbLibsLocation, "-in", outFittedTimeSeries, "-outlist", fittedListFile, "-compress", "1"])

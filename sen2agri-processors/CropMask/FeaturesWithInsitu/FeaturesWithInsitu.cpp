@@ -37,7 +37,10 @@
 
 typedef otb::ImageFileReader<ImageType>                                     ReaderType;
 typedef FeaturesWithInsituFunctor<ImageType::PixelType>                     FeaturesWithInsituFunctorType;
+typedef FeaturesWithInsituBMFunctor<ImageType::PixelType>                   FeaturesWithInsituBMFunctorType;
+
 typedef TernaryFunctorImageFilterWithNBands<FeaturesWithInsituFunctorType>  TernaryFunctorImageFilterWithNBandsType;
+typedef TernaryFunctorImageFilterWithNBands<FeaturesWithInsituBMFunctorType>  TernaryFunctorImageFilterBMWithNBandsType;
 
 //  Software Guide : EndCodeSnippet
 
@@ -153,6 +156,9 @@ private:
     AddParameter(ParameterType_Int, "window", "The number of dates in the temporal window");
     SetDefaultParameterInt("window", 2);
 
+    AddParameter(ParameterType_Empty, "bm", "If set use the features from Benchmarking instead of the features from ATBD");
+    MandatoryOff("bm");
+
     AddParameter(ParameterType_OutputImage, "out", "Temporal and Statistic features");
 
 
@@ -185,12 +191,13 @@ private:
       m_w = 2;
       m_delta = 0.05f;
       m_tsoil = 0.2f;
+      m_bm = false;
 
       m_ndviReader = ReaderType::New();
       m_ndwiReader = ReaderType::New();
       m_brightnessReader = ReaderType::New();
       m_filter = TernaryFunctorImageFilterWithNBandsType::New();
-
+      m_filterBM = TernaryFunctorImageFilterBMWithNBandsType::New();
   }
   //  Software Guide : EndCodeSnippet
 
@@ -204,6 +211,12 @@ private:
   {
       // Read the parameters
       m_w = GetParameterInt("window");
+      if (IsParameterEnabled("bm")) {
+          m_bm = true;
+      }
+      if (m_bm) {
+          m_bands = 26;
+      }
 
       // Get the file that contains the dates
       m_inDates.clear();
@@ -233,14 +246,24 @@ private:
       m_brightnessReader->UpdateOutputInformation();
 
       // connect the functor based filter
-      m_filter->SetNumberOfOutputBands(m_bands);
-      m_filter->SetFunctor(FeaturesWithInsituFunctorType(m_bands, m_w, static_cast<short>(m_delta*10000), m_inDates, static_cast<short>(m_tsoil*10000)));
+      if (m_bm) {
+          m_filterBM->SetNumberOfOutputBands(m_bands);
+          m_filterBM->SetFunctor(FeaturesWithInsituBMFunctorType(m_bands, m_w, static_cast<short>(m_delta*10000), m_inDates, static_cast<short>(m_tsoil*10000)));
+          m_filterBM->SetInput(0, m_ndviReader->GetOutput());
+          m_filterBM->SetInput(1, m_ndwiReader->GetOutput());
+          m_filterBM->SetInput(2, m_brightnessReader->GetOutput());
 
-      m_filter->SetInput(0, m_ndviReader->GetOutput());
-      m_filter->SetInput(1, m_ndwiReader->GetOutput());
-      m_filter->SetInput(2, m_brightnessReader->GetOutput());
+          SetParameterOutputImage("out", m_filterBM->GetOutput());
+      } else {
+          m_filter->SetNumberOfOutputBands(m_bands);
+          m_filter->SetFunctor(FeaturesWithInsituFunctorType(m_bands, m_w, static_cast<short>(m_delta*10000), m_inDates, static_cast<short>(m_tsoil*10000)));
+          m_filter->SetInput(0, m_ndviReader->GetOutput());
+          m_filter->SetInput(1, m_ndwiReader->GetOutput());
+          m_filter->SetInput(2, m_brightnessReader->GetOutput());
 
-      SetParameterOutputImage("out", m_filter->GetOutput());
+          SetParameterOutputImage("out", m_filter->GetOutput());
+      }
+
 
   }
   //  Software Guide :EndCodeSnippet
@@ -255,12 +278,15 @@ private:
   std::vector<int> m_inDates;
   // T_soil
   float m_tsoil;
+  // Use benchmarking features
+  bool m_bm;
 
 
   ReaderType::Pointer                               m_ndviReader;
   ReaderType::Pointer                               m_ndwiReader;
   ReaderType::Pointer                               m_brightnessReader;
   TernaryFunctorImageFilterWithNBandsType::Pointer  m_filter;
+  TernaryFunctorImageFilterBMWithNBandsType::Pointer m_filterBM;
 };
 }
 }

@@ -39,6 +39,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &classifierSvmOptimize = configParameters["crop-type.classifier.svm.opt"];
 
     TaskToSubmit bandsExtractor{ "bands-extractor", {} };
+    //TaskToSubmit reprojectPolys{ "ogr2ogr", { bandsExtractor } };
     TaskToSubmit clipPolys{ "ogr2ogr", { bandsExtractor } };
     TaskToSubmit clipRaster{ "gdalwarp", { bandsExtractor } };
     TaskToSubmit sampleSelection{ "sample-selection", { clipPolys } };
@@ -48,20 +49,30 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     TaskToSubmit trainImagesClassifier{ "train-images-classifier",
                                         { sampleSelection, computeImagesStatistics } };
     TaskToSubmit imageClassifier{ "image-classifier", { trainImagesClassifier } };
-    TaskToSubmit computeConfusionMatrix{ "compute-confusion-matrix", { imageClassifier } };
+    TaskToSubmit clipCropType{ "gdalwarp", { imageClassifier } };
+    TaskToSubmit computeConfusionMatrix{ "compute-confusion-matrix", { clipCropType } };
+    TaskToSubmit colorMapping{ "color-mapping", { clipCropType } };
+    TaskToSubmit compression{ "compression", { clipCropType } };
+    TaskToSubmit xmlMetrics{ "xml-statistics", { computeConfusionMatrix } };
+    TaskToSubmit productFormatter{ "product-formatter", { compression, xmlMetrics } };
 
     ctx.SubmitTasks(event.jobId,
                     { bandsExtractor, clipPolys, clipRaster, sampleSelection, temporalResampling,
                       featureExtraction, computeImagesStatistics, trainImagesClassifier,
-                      imageClassifier, computeConfusionMatrix });
+                      imageClassifier, clipCropType, computeConfusionMatrix, colorMapping,
+                      compression, xmlMetrics,  productFormatter});
 
     const auto &trainingPolys = sampleSelection.GetFilePath("training_polygons.shp");
     const auto &validationPolys = sampleSelection.GetFilePath("validation_polygons.shp");
+    const auto &lut = sampleSelection.GetFilePath("lut.txt");
 
     const auto &rawtocr = bandsExtractor.GetFilePath("rawtocr.tif");
     const auto &rawmask = bandsExtractor.GetFilePath("rawmask.tif");
     const auto &dates = bandsExtractor.GetFilePath("dates.txt");
     const auto &shape = bandsExtractor.GetFilePath("shape.shp");
+    const auto &shapePrj = bandsExtractor.GetFilePath("shape.prj");
+
+    //const auto &refPolysReprojected = reprojectPolys.GetFilePath("reference_polygons_reproject.shp");
 
     const auto &refPolysClipped = clipPolys.GetFilePath("reference_clip.shp");
 
@@ -77,10 +88,21 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &model = trainImagesClassifier.GetFilePath("model.txt");
     const auto &confusionMatrix = trainImagesClassifier.GetFilePath("confusion-matrix.csv");
 
-    const auto &cropTypeMap = imageClassifier.GetFilePath("crop_type_map.tif");
+    const auto &cropTypeMapUncut = imageClassifier.GetFilePath("crop_type_map_uncut.tif");
+
+    const auto &cropTypeMapUncompressed = clipCropType.GetFilePath("crop_type_map_uncompressed.tif");
 
     const auto &confusionMatrixValidation =
         computeConfusionMatrix.GetFilePath("confusion-matrix-validation.csv");
+    const auto &qualityMetrics = computeConfusionMatrix.GetFilePath("quality_metrics.txt");
+
+    const auto &colorCropTypeMap = colorMapping.GetFilePath("color_crop_type_map.tif");
+
+    const auto &cropTypeMap = compression.GetFilePath("crop_type_map.tif");
+
+    const auto &xmlValidationMetrics = xmlMetrics.GetFilePath("validation-metrics.xml");
+
+    const auto &targetFolder = productFormatter.GetFilePath("");
 
     QStringList bandsExtractorArgs = { "BandsExtractor", "-out", rawtocr,  "-mask", rawmask,
                                        "-outdate",       dates,  "-shape", shape };
@@ -116,7 +138,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
 
     QStringList imageClassifierArgs = { "-in",    feFts, "-imstat", statistics,
-                                        "-model", model, "-out",    cropTypeMap };
+                                        "-model", model, "-out",    cropTypeMapUncut };
     if (!cropMask.isEmpty()) {
         imageClassifierArgs.append("-mask");
         imageClassifierArgs.append(cropMask);
@@ -124,17 +146,19 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 
     NewStepList steps = {
         bandsExtractor.CreateStep("BandsExtractor", bandsExtractorArgs),
+        //reprojectPolys.CreateStep(
+        //    "ReprojectPolys", { "-t_srs", shapePrj, refPolysReprojected, referencePolygons }),
         clipPolys.CreateStep(
-            "ClipPolys", { "-clipsrc", shape, "-overwrite", refPolysClipped, referencePolygons }),
+            "ClipPolys", { "-clipsrc", shape, refPolysClipped, referencePolygons }),
         clipRaster.CreateStep("ClipRasterImage",
                               { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
                                 "-crop_to_cutline", "-multi", "-wm", gdalwarpMem, rawtocr, tocr }),
         clipRaster.CreateStep("ClipRasterMask",
-                              { "-dstnodata", "1", "-overwrite", "-cutline", shape,
+                              { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
                                 "-crop_to_cutline", "-multi", "-wm", gdalwarpMem, rawmask, mask }),
         sampleSelection.CreateStep("SampleSelection",
                                    { "SampleSelection", "-ref", refPolysClipped, "-ratio",
-                                     sampleRatio, "-tp", trainingPolys, "-vp", validationPolys }),
+                                     sampleRatio, "-lut", lut, "-tp", trainingPolys, "-vp", validationPolys }),
         temporalResampling.CreateStep("TemporalResampling",
                                       { "TemporalResampling", "-tocr", tocr, "-mask", mask, "-ind",
                                         dates, "-sp", samplingRate, "-t0", dateStart, "-tend",
@@ -145,10 +169,28 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                            { "-il", feFts, "-out", statistics }),
         trainImagesClassifier.CreateStep("TrainImagesClassifier", trainImagesClassifierArgs),
         imageClassifier.CreateStep("ImageClassifier", imageClassifierArgs),
+        clipCropType.CreateStep("ClipCropTypeMap",
+                                {"-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
+                                 "-crop_to_cutline", "-multi", "-wm", gdalwarpMem,
+                                 cropTypeMapUncut, cropTypeMapUncompressed }),
         computeConfusionMatrix.CreateStep(
-            "ComputeConfusionMatrix", { "-in", cropTypeMap, "-out", confusionMatrixValidation,
+            "ComputeConfusionMatrix", { "-in", cropTypeMapUncompressed, "-out", confusionMatrixValidation,
                                         "-ref", "vector", "-ref.vector.in", validationPolys,
-                                        "-ref.vector.field", fieldName, "-nodatalabel", "10" })
+                                        "-ref.vector.field", fieldName, "-nodatalabel", "-10000" }),
+        colorMapping.CreateStep("ColorMapping",
+                                { "-in", cropTypeMapUncompressed,"-method","custom","-method.custom.lut", lut,
+                                  "-out", colorCropTypeMap, "int32"}),
+        compression.CreateStep("Compression",
+                               {"-in",  cropTypeMapUncompressed, "-out", cropTypeMap+"?gdal:co:COMPRESS=DEFLATE",
+                                "int16"}),
+        xmlMetrics.CreateStep("XMLMetrics",
+                              {"XMLStatistics", "-confmat", confusionMatrixValidation, "-quality", qualityMetrics,
+                               "-root", "CropType", "-out", xmlValidationMetrics}),
+        productFormatter.CreateStep("ProductFormatter",
+                                    {"ProductFormatter", "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B",
+                                     "-timeperiod", dateStart+"_"+dateEnd, "-baseline", "-01.00", "-processor", "croptype",
+                                     "-processor.croptype.file", "TILE_T0000", cropTypeMap, "-processor.croptype.quality", xmlValidationMetrics})
+
     };
 
     ctx.SubmitSteps(steps);
@@ -159,26 +201,40 @@ void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 {
     if (event.module == "compute-confusion-matrix") {
         const auto &outputs = ctx.GetTaskConsoleOutputs(event.taskId);
-        for (const auto &output : outputs) {
-            QRegularExpression reK("Kappa index: (\\d+(?:\\.\\d*)?)");
-            QRegularExpression reAcc("Overall accuracy index: (\\d+(?:\\.\\d*)?)");
 
-            const auto &mK = reK.match(output.stdOutText);
-            const auto &mAcc = reAcc.match(output.stdOutText);
+        const auto &qualityMetrics = ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "quality_metrics.txt";
 
-            const auto &statisticsPath =
-                ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "statistics.txt";
-            QFile file(statisticsPath);
-            if (!file.open(QIODevice::WriteOnly)) {
-                throw std::runtime_error(QStringLiteral("Unable to open %1: %2")
-                                             .arg(statisticsPath)
-                                             .arg(file.errorString())
-                                             .toStdString());
-            }
-
-            QTextStream s(&file);
-            s << mK.captured(1) << ' ' << mAcc.captured(1);
+        QFile file(qualityMetrics);
+        if (!file.open(QIODevice::WriteOnly)) {
+            throw std::runtime_error(QStringLiteral("Unable to open %1: %2")
+                                         .arg(qualityMetrics)
+                                         .arg(file.errorString())
+                                         .toStdString());
         }
+
+        QTextStream s(&file);
+        s << outputs[0].stdOutText;
+
+//        for (const auto &output : outputs) {
+//            QRegularExpression reK("Kappa index: (\\d+(?:\\.\\d*)?)");
+//            QRegularExpression reAcc("Overall accuracy index: (\\d+(?:\\.\\d*)?)");
+
+//            const auto &mK = reK.match(qualityMetrics);
+//            const auto &mAcc = reAcc.match(output.stdOutText);
+
+//            const auto &statisticsPath =
+//                ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "statistics.txt";
+//            QFile file(statisticsPath);
+//            if (!file.open(QIODevice::WriteOnly)) {
+//                throw std::runtime_error(QStringLiteral("Unable to open %1: %2")
+//                                             .arg(statisticsPath)
+//                                             .arg(file.errorString())
+//                                             .toStdString());
+//            }
+
+//            QTextStream s(&file);
+//            s << mK.captured(1) << ' ' << mAcc.captured(1);
+//        }
 
         ctx.MarkJobFinished(event.jobId);
     }

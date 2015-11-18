@@ -264,6 +264,8 @@ MACCSMeanViewingIncidenceAngle ReadMeanViewingIncidenceAngle(const TiXmlElement 
     }
 
     result.BandId = GetAttribute(el, "bandId");
+    if(result.BandId.empty())
+        result.BandId = GetAttribute(el, "band_id");
     result.Angles = ReadAnglePair(el);
 
     return result;
@@ -294,7 +296,11 @@ MACCSViewingAnglesGrid ReadViewingAnglesGrid(const TiXmlElement *el)
     }
 
     result.BandId = GetAttribute(el, "bandId");
+    if(result.BandId.empty())
+        result.BandId = GetAttribute(el, "band_id");
     result.DetectorId = GetAttribute(el, "detectorId");
+    if(result.DetectorId.empty())
+        result.DetectorId = GetAttribute(el, "detector_id");
     result.Angles = ReadSolarAngles(el);
 
     return result;

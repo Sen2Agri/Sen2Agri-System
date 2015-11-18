@@ -1,5 +1,9 @@
 #!/bin/sh
 git clone https://github.com/GrayShade/OTB.git
+sudo ln -s /usr/bin/opj2_compress /usr/bin/opj_compress
+sudo ln -s /usr/bin/opj2_decompress /usr/bin/opj_decompress
+sudo ln -s /usr/bin/opj2_dump /usr/bin/opj_dump
+
 mkdir OTB-BUILD
 cd OTB-BUILD
 cmake ../OTB/SuperBuild \
@@ -38,4 +42,4 @@ cmake ../OTB/SuperBuild \
 	-DUSE_SYSTEM_TINYXML=ON \
 	-DUSE_SYSTEM_ZLIB=ON
 mkdir ~/tmp
-fpm -s dir -t rpm -n otb -v 5.0 -C ~/otb-install/ -p --workdir ~/tmp otb-VERSION.fc22.ARCH.rpm usr
+fpm -s dir -t rpm -n otb -v 5.0 -C ~/otb-install/ --workdir ~/tmp -p otb-VERSION.fc22.ARCH.rpm usr
