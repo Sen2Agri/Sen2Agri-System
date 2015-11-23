@@ -163,7 +163,7 @@ int BandsMappingConfig::GetMasterBandIndex(const std::string &missionName, int n
         itkExceptionMacro("Invalid bands size configuration for resolution " << nRes << ". Number differ from master for mission " << missionName);
     }
     for(unsigned int i = 0; i< bandsCfg.size(); i++) {
-        if(bandsCfg[i].identifier == nSensorBandIdx +1) {
+        if(bandsCfg[i].identifier == nSensorBandIdx) {
             return masterBandsCfg[i].identifier;
         }
     }

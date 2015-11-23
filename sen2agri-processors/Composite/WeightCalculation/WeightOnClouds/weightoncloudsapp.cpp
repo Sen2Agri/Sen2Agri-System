@@ -79,6 +79,11 @@ private:
     AddParameter(ParameterType_Float, "sigmalargecld", "Large cloud sigma");
     SetParameterDescription("sigmalargecld", "Sigma value for the large cloud gaussian filter.");
 
+    AddParameter(ParameterType_Int, "kernelwidth", "Gaussian filter kernel width");
+    SetParameterDescription("kernelwidth", "The gaussian filter kernel width.");
+    SetDefaultParameterInt("kernelwidth", 81);
+    MandatoryOff("kernelwidth");
+
     AddParameter(ParameterType_Int, "outres", "Resolution of the output image");
     SetParameterDescription("outres", "The resolution at which the output will be produced.");
     SetDefaultParameterInt("outres", -1);
@@ -93,6 +98,7 @@ private:
     SetDocExampleParameterValue("coarseres", "240");
     SetDocExampleParameterValue("sigmasmallcld", "10.0");
     SetDocExampleParameterValue("sigmalargecld", "50.0");
+    SetDocExampleParameterValue("kernelwidth", "81");
     SetDocExampleParameterValue("outres", "10");
     SetDocExampleParameterValue("out", "apAOTWeightOutput.tif");
   }
@@ -114,6 +120,12 @@ private:
     float sigmaSmallCloud = GetParameterFloat("sigmasmallcld");
     float sigmaLargeCloud = GetParameterFloat("sigmalargecld");
     int outputResolution = GetParameterInt("outres");
+    int gaussianKernelWidth = GetParameterInt("kernelwidth");
+
+    std::cout << "=================================" << std::endl;
+    std::cout << "sigmasmallcld : " << sigmaSmallCloud << std::endl;
+    std::cout << "sigmalargecld : " << sigmaLargeCloud << std::endl;
+    std::cout << "=================================" << std::endl;
 
     m_cloudMaskBinarization.SetInputFileName(inCldFileName);
     if(inputCloudMaskResolution == -1) {
@@ -132,9 +144,11 @@ private:
     // Compute the DistLargeCloud, Low Res
     m_gaussianFilterSmallCloud.SetInputImageReader(m_underSampler.GetOutputImageSource());
     m_gaussianFilterSmallCloud.SetSigma(sigmaSmallCloud);
+    m_gaussianFilterSmallCloud.SetKernelWidth(gaussianKernelWidth);
 
     m_gaussianFilterLargeCloud.SetInputImageReader(m_underSampler.GetOutputImageSource());
     m_gaussianFilterLargeCloud.SetSigma(sigmaLargeCloud);
+    m_gaussianFilterLargeCloud.SetKernelWidth(gaussianKernelWidth);
 
     // resample at the current small resolution (10 or 20) the small cloud large resolution image
     m_overSamplerSmallCloud.SetInputImageReader(m_gaussianFilterSmallCloud.GetOutputImageSource());

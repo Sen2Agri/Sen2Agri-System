@@ -5,6 +5,7 @@
 
 GaussianFilter::GaussianFilter()
 {
+    m_nKernelWidth = 81;
 }
 
 void GaussianFilter::SetInputFileName(std::string &inputImageStr)
@@ -51,6 +52,11 @@ void GaussianFilter::SetSigma(float fSigma)
     m_fSigma = fSigma;
 }
 
+void GaussianFilter::SetKernelWidth(int nKernelWidth)
+{
+    m_nKernelWidth = nKernelWidth;
+}
+
 GaussianFilter::OutImageSource::Pointer GaussianFilter::GetOutputImageSource()
 {
     BuildOutputImageSource();
@@ -68,7 +74,8 @@ void GaussianFilter::BuildOutputImageSource()
     m_gaussianFilter = DiscreteGaussianFilterType::New();
     m_gaussianFilter->SetInput(m_inputReader->GetOutput());
     m_gaussianFilter->SetVariance(m_fSigma);
-    m_gaussianFilter->SetMaximumKernelWidth(32);
+    m_gaussianFilter->SetUseImageSpacing(false);
+    m_gaussianFilter->SetMaximumKernelWidth(m_nKernelWidth);
     //m_gaussianFilter->Update();
 
 //    typedef otb::VectorRescaleIntensityImageFilter<
@@ -119,8 +126,16 @@ void GaussianFilter::WriteToOutputFile()
             std::cout << "Size : " << m_gaussianFilter->GetOutput()->GetLargestPossibleRegion().GetSize()[0] << " " <<
                          m_gaussianFilter->GetOutput()->GetLargestPossibleRegion().GetSize()[1] << std::endl;
 
+            std::cout << "Sigma : " << m_fSigma << std::endl;
+            std::cout << "Kernel Width : " << m_nKernelWidth << std::endl;
+
             std::cout  << "=================================" << std::endl;
             std::cout << std::endl;
+
+            std::stringstream ss;
+            m_gaussianFilter.Print(ss);
+            std::cout << ss.str() << std::endl;
+
         }
         catch (itk::ExceptionObject& err)
         {

@@ -113,7 +113,7 @@ private:
         m_WeightList = ImgListType::New();
         m_DatesList = ImgListType::New();
         m_FlagsList = ImgListType::New();
-        m_RGBOutList = ImgListType::New();
+        m_RGBOutList = ImgListType::New();        
 
         int nReflsBandsNo = nExtractedBandsNo;
         unsigned int nTotalBandsNo = (2*nReflsBandsNo+2);
@@ -140,7 +140,7 @@ private:
         bool bHasTrueColorBandIndexes = GetTrueColorBandIndexes(bandsMappingCfg, pHelper, resolution, redIdx, greenIdx, blueIdx);
         int redBandNo = -1;
         int greenBandNo = -1;
-        int blueBandNo = -1;
+        int blueBandNo = -1;        
         for(unsigned int i = 0; i < bandsPresenceVect.size(); i++) {
             if(bandsPresenceVect[i] != -1) {
                 m_ReflectancesList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt));
@@ -157,7 +157,7 @@ private:
                 }
                 cnt++;
             }
-        }
+        }        
         m_FlagsList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt++));
 
         if((redBandNo != -1) && (greenBandNo != -1) && (blueBandNo != -1)) {
@@ -186,13 +186,18 @@ private:
         SetParameterOutputImagePixelType("outflags", ImagePixelType_uint8);
         SetParameterOutputImage("outflags", m_FlagsConcat->GetOutput());
 
-        m_RGBConcat = ImageListToVectorImageFilterType::New();
-        if(HasValue("outrgb") && m_RGBOutList->Size() > 0) {
-            m_RGBConcat->SetInput(m_RGBOutList);            
+        if(HasValue("outrgb")) {
+            if(m_RGBOutList->Size() > 0) {
+                m_RGBConcat = ImageListToVectorImageFilterType::New();
+                m_RGBConcat->SetInput(m_RGBOutList);
+                SetParameterOutputImagePixelType("outrgb", ImagePixelType_int16);
+                SetParameterOutputImage("outrgb", m_RGBConcat->GetOutput());
+            }
+            else {
+                otbAppLogINFO( << "Could not get the indexes for RGB bands. The 'outrgb' file '" << GetParameterString("outrgb") << "' will not be created ");
+                DisableParameter("outrgb");
+            }
         }
-        SetParameterOutputImagePixelType("outrgb", ImagePixelType_int16);
-        SetParameterOutputImage("outrgb", m_RGBConcat->GetOutput());
-
         return;
     }
 
