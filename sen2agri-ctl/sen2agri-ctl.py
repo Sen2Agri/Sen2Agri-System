@@ -79,12 +79,14 @@ class Sen2AgriClient(object):
         return sorted(sites)
 
     def submit_job(self, job):
-        self.proxy.SubmitJob(job.to_dbus())
+        jobId = self.proxy.SubmitJob(job.to_dbus())
 
         bus = dbus.SystemBus()
         orchestrator_proxy = bus.get_object('org.esa.sen2agri.orchestrator',
                                             '/org/esa/sen2agri/orchestrator')
         orchestrator_proxy.NotifyEventsAvailable()
+
+	return jobId
 
 
 class Sen2AgriCtl(object):
@@ -181,7 +183,9 @@ class Sen2AgriCtl(object):
             parameters['resolution'] = args.resolution
 
         job = self.create_job(5, parameters, args)
-        self.client.submit_job(job)
+        jobId = self.client.submit_job(job)
+
+	print("Submitted job {}".format(jobId))
 
     def create_job(self, processor_id, parameters, args):
         config = config_from_parameters(args.parameter)
