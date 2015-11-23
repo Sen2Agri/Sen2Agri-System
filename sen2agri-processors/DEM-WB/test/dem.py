@@ -49,13 +49,20 @@ def resample_dataset(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y)
     (lrx, lry) = (src_geo_transform[0] + src_geo_transform[1] * src_x_size,
                   src_geo_transform[3] + src_geo_transform[5] * src_y_size)
 
-    dst_x_size = int((lrx - ulx) / dst_spacing_x)
-    dst_y_size = int((lry - uly) / dst_spacing_y)
+    print("Source coordinates ({}, {})-({},{})".format(ulx, uly, lrx, lry))
 
-    print("Source dataset {} of size {}x{}".format(dst_file_name, dst_x_size, dst_y_size))
+    dst_x_size = int(round((lrx - ulx) / dst_spacing_x))
+    dst_y_size = int(round((lry - uly) / dst_spacing_y))
+
+    print("Destination dataset {} of size {}x{}".format(dst_file_name, dst_x_size, dst_y_size))
 
     dst_geo_transform = (ulx, dst_spacing_x, src_geo_transform[2],
                          uly, src_geo_transform[4], dst_spacing_y)
+
+    (ulx, uly) = (dst_geo_transform[0], dst_geo_transform[3])
+    (lrx, lry) = (dst_geo_transform[0] + dst_geo_transform[1] * dst_x_size,
+                  dst_geo_transform[3] + dst_geo_transform[5] * dst_y_size)
+    print("Destination coordinates ({}, {})-({},{})".format(ulx, uly, lrx, lry))
 
     drv = gdal.GetDriverByName('GTiff')
     dest = drv.Create(dst_file_name, dst_x_size, dst_y_size, 1, gdal.GDT_Float32)
@@ -252,8 +259,13 @@ def process_DTM(context):
                  "-opt.gridspacing", str(grid_spacing)])
 
     if context.dem_r2:
-        resample_dataset(context.dem_r1, context.dem_r2, 20, -20)
-        # run_command(["gdal_translate",
+        run_command(["gdal_translate",
+                     "-outsize", str(int(round(context.size_x / 2.0))), str(int(round(context.size_y
+                         / 2.0))),
+                     context.dem_r1,
+                     context.dem_r2])
+        # resample_dataset(context.dem_r1, context.dem_r2, 20, -20)
+        # # run_command(["gdal_translate",
         #              # "-outsize", str(int(round(context.size_x / 2.0))), str(int(round(context.size_y
         #              #     / 2.0))),
         #              "-outsize", "50%", "50%",
@@ -273,7 +285,12 @@ def process_DTM(context):
         scale = 1.0 / 24
         inv_scale = 24.0
 
-        resample_dataset(context.dem_r1, context.dem_coarse, 240, -240)
+    run_command(["gdal_translate",
+                 "-outsize", str(int(round(context.size_x / inv_scale))), str(int(round(context.size_y /
+                     inv_scale))),
+                 context.dem_r1,
+                 context.dem_coarse])
+#     resample_dtaset(context.dem_r2, context.dem_coarse, 240, -240)
         # run_command(["gdal_translate",
         #              # "-outsize", str(int(round(context.size_x / inv_scale))), str(int(round(context.size_y /
         #              #     inv_scale))),
