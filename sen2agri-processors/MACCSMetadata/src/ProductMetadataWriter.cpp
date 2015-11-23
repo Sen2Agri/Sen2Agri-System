@@ -152,6 +152,8 @@ XElement Format(const CoordReferenceSystemMetadata &CoordRefSystem)
 
     XElement ProductCoordRefSystemEl("Coordinate_Reference_System");
 
+    std::cout << "CoordRefSystem.HorizCSName =" << CoordRefSystem.HorizCSName << "  CoordRefSystem.HorizCSName.empty() =" << CoordRefSystem.HorizCSName.empty()  << std::endl;
+
     if(!CoordRefSystem.HorizCSName.empty())
     {
         ProductCoordRefSystemEl.Append(XElement("HORIZONTAL_CS_NAME", CoordRefSystem.HorizCSName));
