@@ -30,6 +30,7 @@ public:
     void SetOutputFileName(std::string &outFile);
     void SetInputImageReader(ImageSource::Pointer inputReader);
     void SetSigma(float fSigma);
+    void SetKernelWidth(int nKernelWidth);
 
     const char* GetNameOfClass() { return "GaussianFilter"; }
     OutImageSource::Pointer GetOutputImageSource();
@@ -38,6 +39,7 @@ public:
 private:
     void BuildOutputImageSource();
     float m_fSigma;
+    int m_nKernelWidth;
     std::string m_outputFileName;
     RescaleFilterType::Pointer m_rescaler;
     DiscreteGaussianFilterType::Pointer m_gaussianFilter;
