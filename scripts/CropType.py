@@ -14,6 +14,8 @@ defaultBuildFolder="~/sen2agri-build/"
 
 parser = argparse.ArgumentParser(description='CropType Python processor')
 
+parser.add_argument('-mission', help='The main mission for the series', required=False, default='SPOT')
+
 parser.add_argument('-ref', help='The reference polygons', required=True, metavar='reference_polygons')
 parser.add_argument('-ratio', help='The ratio between the validation and training polygons', required=False, metavar='sample_ratio', default=0.75)
 parser.add_argument('-input', help='The list of products descriptors', required=True, metavar='product_descriptor', nargs='+')
@@ -38,6 +40,8 @@ parser.add_argument('-keepfiles', help="Keep all intermediate files (default fal
 parser.add_argument('-fromstep', help="Run from the selected step (default 1)", type=int, default=1)
 
 args = parser.parse_args()
+
+mission=args.mission
 
 reference_polygons=args.ref
 sample_ratio=args.ratio
@@ -94,7 +98,7 @@ fromstep = args.fromstep
 globalStart = datetime.datetime.now()
 
 # Bands Extractor (Step 1)
-executeStep("BandsExtractor", "otbApplicationLauncherCommandLine", "BandsExtractor", os.path.join(buildFolder,"CropType/BandsExtractor"),"-out",rawtocr,"-mask",rawmask,"-outdate", dates, "-shape", shape, "-pixsize", pixsize, "-il", *indesc, skip=fromstep>1)
+executeStep("BandsExtractor", "otbApplicationLauncherCommandLine", "BandsExtractor", os.path.join(buildFolder,"CropType/BandsExtractor"),"-mission",mission,"-out",rawtocr,"-mask",rawmask,"-outdate", dates, "-shape", shape, "-pixsize", pixsize, "-il", *indesc, skip=fromstep>1)
 
 # gdalwarp (Step 2 and 3)
 executeStep("gdalwarp for reflectances", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawtocr, tocr, skip=fromstep>2, rmfiles=[] if keepfiles else [rawtocr])
