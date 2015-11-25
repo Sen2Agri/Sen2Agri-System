@@ -4,23 +4,25 @@
 
 DirectionalCorrection::DirectionalCorrection()
 {
-    m_inputImageReader = ReaderType::New();
 }
 
-void DirectionalCorrection::Init(int res, std::string &xml, std::string &scatcoef, std::string &strMaskFileName,
-                                 InputImageType1::Pointer &angles, InputImageType2::Pointer &ndvi)
+void DirectionalCorrection::Init(int res, std::string &xml, std::string &scatcoef,
+                                 InputImageType2::Pointer &cldImg, InputImageType2::Pointer &watImg,
+                                 InputImageType2::Pointer &snowImg, InputImageType1::Pointer &angles,
+                                 InputImageType2::Pointer &ndvi)
 {
     m_nRes = res;
     m_strXml = xml;
     m_strScatCoeffs = scatcoef;
-    m_inputImageReader->SetFileName(strMaskFileName);
 
     m_AnglesImg = angles;
     m_NdviImg = ndvi;
+    m_CSM = cldImg;
+    m_WM = watImg;
+    m_SM = snowImg;
 
     m_ImageList = ImageListType::New();
     m_Concat = ListConcatenerFilterType::New();
-    m_ExtractorList = ExtractROIFilterListType::New();
 }
 
 void DirectionalCorrection::DoExecute()
@@ -37,9 +39,6 @@ void DirectionalCorrection::DoExecute()
     extractBandsFromImage(inputImg);
 
     // extract the cloud, water and snow masks from the masks file
-    m_CSM = m_ResampledBandsExtractor.ExtractResampledBand(m_inputImageReader->GetOutput(), 1);
-    m_WM = m_ResampledBandsExtractor.ExtractResampledBand(m_inputImageReader->GetOutput(), 2);
-    m_SM = m_ResampledBandsExtractor.ExtractResampledBand(m_inputImageReader->GetOutput(), 3);
     m_ImageList->PushBack(m_CSM);
     m_ImageList->PushBack(m_SM);
     m_ImageList->PushBack(m_WM);
@@ -50,12 +49,11 @@ void DirectionalCorrection::DoExecute()
 
     std::vector<ScaterringFunctionCoefficients> scatteringCoeffs;
     scatteringCoeffs = loadScatteringFunctionCoeffs(m_strScatCoeffs);
-
-//        otbAppLogINFO( << "Mission name: " << missionName << std::endl );
-//        otbAppLogINFO( << "Resolution: " << resolution << std::endl );
-//        otbAppLogINFO( << "Exists L3A flag: " << l3aExist << std::endl );
-//        otbAppLogINFO( << "All in one flag: " << allInOne << std::endl );
-//        otbAppLogINFO( << "Missing L3A bands flag: " << bMissingL3ABands << std::endl );
+    unsigned int nBandsForRes = pHelper->GetBandsNoForCurrentResolution();
+    if(nBandsForRes != scatteringCoeffs.size()) {
+        itkExceptionMacro("Scattering coefficients file contains only " << scatteringCoeffs.size()
+                          << " but are expected coefficients for " << nBandsForRes << " bands!");
+    }
 
     m_Functor.Initialize(scatteringCoeffs);
     m_DirectionalCorrectionFunctor = FunctorFilterType::New();
@@ -63,13 +61,6 @@ void DirectionalCorrection::DoExecute()
     m_DirectionalCorrectionFunctor->SetInput(m_Concat->GetOutput());
     m_DirectionalCorrectionFunctor->UpdateOutputInformation();
     m_DirectionalCorrectionFunctor->GetOutput()->SetNumberOfComponentsPerPixel(scatteringCoeffs.size());
-
-    // additionally, we export also the AOT
-    std::string aotFileName = pHelper->GetAotImageFileName();
-    m_aotImageReader = ReaderType::New();
-    m_aotImageReader->SetFileName(aotFileName);
-    m_aotImageReader->UpdateOutputInformation();
-    m_AOT = m_ResampledBandsExtractor.ExtractResampledBand(m_aotImageReader->GetOutput(), 1);
 }
 
 int DirectionalCorrection::extractBandsFromImage(InputImageType1::Pointer & imageType) {
@@ -149,27 +140,7 @@ std::string DirectionalCorrection::trim(std::string const& str)
 }
 
 
-DirectionalCorrection::OutImageType::Pointer DirectionalCorrection::GetResampledMainImg()
+DirectionalCorrection::OutImageType::Pointer DirectionalCorrection::GetCorrectedImg()
 {
     return m_DirectionalCorrectionFunctor->GetOutput();
-}
-
-DirectionalCorrection::InputImageType2::Pointer DirectionalCorrection::GetResampledCloudMaskImg()
-{
-    return m_CSM;
-}
-
-DirectionalCorrection::InputImageType2::Pointer DirectionalCorrection::GetResampledWaterMaskImg()
-{
-    return m_WM;
-}
-
-DirectionalCorrection::InputImageType2::Pointer DirectionalCorrection::GetResampledSnowMaskImg()
-{
-    return m_SM;
-}
-
-DirectionalCorrection::InputImageType2::Pointer DirectionalCorrection::GetResampledAotImg()
-{
-    return m_AOT;
 }

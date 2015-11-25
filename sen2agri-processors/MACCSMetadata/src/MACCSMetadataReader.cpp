@@ -322,6 +322,67 @@ std::vector<MACCSViewingAnglesGrid> ReadViewingAnglesGridList(const TiXmlElement
     return result;
 }
 
+MACCSBandWavelength ReadBandWavelength(const TiXmlElement *el)
+{
+    MACCSBandWavelength result;
+
+    if (!el) {
+        return result;
+    }
+
+    result.BandName = GetAttribute(el, "sk");
+    result.Unit = GetAttribute(el, "unit");
+    result.WaveLength = GetText(el);
+
+    return result;
+}
+
+std::vector<MACCSBandWavelength> ReadBandWavelengths(const TiXmlElement *el)
+{
+    std::vector<MACCSBandWavelength> result;
+
+    if (!el) {
+        return result;
+    }
+
+    for (auto wavelenEl = el->FirstChildElement("Band_Central_Wavelength"); wavelenEl;
+        wavelenEl = wavelenEl->NextSiblingElement("Band_Central_Wavelength")) {
+        result.emplace_back(ReadBandWavelength(wavelenEl));
+    }
+
+    return result;
+}
+
+MACCSBandResolution ReadBandResolution(const TiXmlElement *el)
+{
+    MACCSBandResolution result;
+
+    if (!el) {
+        return result;
+    }
+
+    result.BandName = GetAttribute(el, "sk");
+    result.Unit = GetAttribute(el, "unit");
+    result.Resolution = GetText(el);
+
+    return result;
+}
+
+std::vector<MACCSBandResolution> ReadBandResolutions(const TiXmlElement *el)
+{
+    std::vector<MACCSBandResolution> result;
+
+    if (!el) {
+        return result;
+    }
+
+    for (auto resEl = el->FirstChildElement("Band_Central_Resolution"); resEl;
+        resEl = resEl->NextSiblingElement("Band_Central_Resolution")) {
+        result.emplace_back(ReadBandResolution(resEl));
+    }
+
+    return result;
+}
 MACCSProductInformation ReadProductInformation(const TiXmlElement *el)
 {
     MACCSProductInformation result;
@@ -339,6 +400,10 @@ MACCSProductInformation ReadProductInformation(const TiXmlElement *el)
     result.ViewingAngles =
         ReadViewingAnglesGridList(el->FirstChildElement("List_of_Viewing_Angles"));
     result.ReflectanceQuantificationValue = GetChildText(el, "Reflectance_Quantification_Value");
+    result.BandWavelengths =
+        ReadBandWavelengths(el->FirstChildElement("List_of_Band_Central_Wavelength"));
+    result.BandResolutions =
+        ReadBandResolutions(el->FirstChildElement("List_of_Band_Resolution"));
 
     return result;
 }

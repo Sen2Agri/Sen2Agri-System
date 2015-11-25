@@ -7,6 +7,7 @@
 MetadataHelper::MetadataHelper()
 {
     m_nResolution = -1;
+    m_detailedAnglesGridSize = 0;
 }
 
 MetadataHelper::~MetadataHelper()
@@ -43,11 +44,19 @@ void MetadataHelper::Reset()
     m_fAotNoDataVal = 0;
     m_nAotBandIndex = -1;
 
-    m_nRedBandIndex = -1;
-    m_nGreenBandIndex = -1;
-    m_nNirBandIndex = -1;
+    m_nAbsRedBandIndex = -1;
+    m_nAbsGreenBandIndex = -1;
+    m_nAbsBlueBandIndex = -1;
+    m_nAbsNirBandIndex = -1;
+
+    m_nRelRedBandIndex = -1;
+    m_nRelGreenBandIndex = -1;
+    m_nRelBlueBandIndex = -1;
+    m_nRelNirBandIndex = -1;
+
 
     m_solarMeanAngles.azimuth = m_solarMeanAngles.zenith = 0.0;
+    m_bHasDetailedAngles = false;
 }
 
 int MetadataHelper::GetAcquisitionDateAsDoy()
@@ -119,13 +128,13 @@ double MetadataHelper::GetRelativeAzimuthAngle()
 
 bool MetadataHelper::GetTrueColourBandIndexes(int &redIdx, int &greenIdx, int &blueIdx)
 {
-    redIdx = m_nRedBandIndex;
-    greenIdx = m_nGreenBandIndex;
-    blueIdx = m_nBlueBandIndex;
+    redIdx = m_nAbsRedBandIndex;
+    greenIdx = m_nAbsGreenBandIndex;
+    blueIdx = m_nAbsBlueBandIndex;
     // we might not have blue and is green (as for spot, in this case we use NIR)
     // TODO: We should override this function for SPOT
     if(blueIdx == greenIdx) {
-        blueIdx = m_nNirBandIndex;
+        blueIdx = m_nAbsNirBandIndex;
     }
     if(redIdx > 0 && greenIdx > 0 && blueIdx > 0) {
         return true;

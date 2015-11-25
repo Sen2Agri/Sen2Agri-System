@@ -1,11 +1,12 @@
 #include "MACCSMetadataHelper.h"
+#include "ViewingAngles.hpp"
 
 MACCSMetadataHelper::MACCSMetadataHelper()
 {
     m_missionType = S2;
     m_ReflQuantifVal = 1;
 }
-/*
+
 std::string MACCSMetadataHelper::GetBandName(unsigned int nBandIdx, bool bRelativeIdx)
 {
     if(bRelativeIdx) {
@@ -18,47 +19,11 @@ std::string MACCSMetadataHelper::GetBandName(unsigned int nBandIdx, bool bRelati
         }
         return m_specificImgMetadata->ImageInformation.Bands[nBandIdx].Name;
     } else {
-        for (const MACCSBand& band : m_metadata->ImageInformation.Bands) {
+        const std::vector<MACCSBand>& maccsBands = GetAllMACCSBandsInfos();
+        for (const MACCSBand& band : maccsBands) {
             // the bands in the file are 1 based while our parameter nBandIdx is 0 based
             if (std::stoi(band.Id) == (int)nBandIdx) {
                 return band.Name;
-            }
-        }
-        itkExceptionMacro("Invalid absolute band index requested: " << nBandIdx << ". Maximum is " << m_nTotalBandsNo);
-    }
-}
-*/
-
-std::string MACCSMetadataHelper::GetBandName(unsigned int nBandIdx, bool bRelativeIdx)
-{
-    if(bRelativeIdx) {
-        if(!m_specificImgMetadata) {
-            ReadSpecificMACCSImgHdrFile();
-        }
-
-        if(nBandIdx >= m_nBandsNoForCurRes) {
-            itkExceptionMacro("Invalid band index requested: " << bRelativeIdx << ". Maximum is " << m_nBandsNoForCurRes);
-        }
-        return m_specificImgMetadata->ImageInformation.Bands[nBandIdx].Name;
-    } else {
-        if(m_missionType == LANDSAT) {
-            for (const MACCSBand& band : m_metadata->ImageInformation.Bands) {
-                // the bands in the file are 1 based while our parameter nBandIdx is 0 based
-                if (std::stoi(band.Id) == (int)nBandIdx) {
-                    return band.Name;
-                }
-            }
-        } else {
-            // Sentinel 2
-            for(const MACCSResolution& maccsRes: m_metadata->ImageInformation.Resolutions) {
-                if(std::atoi(maccsRes.Id.c_str()) == m_nResolution) {
-                    for (const MACCSBand& band : maccsRes.Bands) {
-                        // the bands in the file are 1 based while our parameter nBandIdx is 0 based
-                        if (std::stoi(band.Id) == (int)nBandIdx) {
-                            return band.Name;
-                        }
-                    }
-                }
             }
         }
         itkExceptionMacro("Invalid absolute band index requested: " << nBandIdx << ". Maximum is " << m_nTotalBandsNo);
@@ -148,25 +113,57 @@ void MACCSMetadataHelper::UpdateValuesForLandsat()
     m_missionType = LANDSAT;
     m_nTotalBandsNo = 6;
     m_nBandsNoForCurRes = m_nTotalBandsNo;
-    m_nRedBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B4");
-    m_nBlueBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B2");
-    m_nGreenBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B3");
-    m_nNirBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B5");
+    // we have the same values for relative and absolute bands indexes as we have only one raster
+    m_nAbsRedBandIndex = m_nRelRedBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B4");
+    m_nAbsBlueBandIndex = m_nRelBlueBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B2");
+    m_nAbsGreenBandIndex = m_nRelGreenBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B3");
+    m_nAbsNirBandIndex = m_nRelNirBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B5");
+    
+    m_bHasGlobalMeanAngles = true;
+    m_bHasBandMeanAngles = false;
+
+    // update the solar mean angle
+    m_solarMeanAngles.azimuth = m_metadata->ProductInformation.MeanSunAngle.AzimuthValue;
+    m_solarMeanAngles.zenith = m_metadata->ProductInformation.MeanSunAngle.ZenithValue;
+
+    // update the solar mean angle
+    //MeanAngles_Type sensorAngle;
+    // TODO: Here we should get this from the Mean_Viewing_Angle. Most probably if we get here it will crash
+    // if the MACCS Metadata Reader will not be updated to read this element for LANDSAT8
+    //sensorAngle.azimuth = m_metadata->ProductInformation.MeanViewingIncidenceAngles.at(0).Angles.AzimuthValue;
+    //sensorAngle.zenith = m_metadata->ProductInformation.MeanViewingIncidenceAngles.at(0).Angles.ZenithValue;
+    //m_sensorBandsMeanAngles.push_back(sensorAngle);
+
+    
     // TODO: Add here other initializations for LANDSAT if needed
 }
 
 void MACCSMetadataHelper::UpdateValuesForSentinel()
 {
+    if(m_nResolution != 10 && m_nResolution != 20) {
+        itkExceptionMacro("Accepted resolutions for Sentinel mission are 10 or 20 only!");
+    }
     m_missionType = S2;
     m_nTotalBandsNo = 10;
     m_nBandsNoForCurRes = ((m_nResolution == 10) ? 4 : 6);
     if(m_nResolution == 10)
     {
-        m_nRedBandIndex = GetRelativeBandIndex(getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B4"));
-        m_nBlueBandIndex = GetRelativeBandIndex(getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B2"));
-        m_nGreenBandIndex = GetRelativeBandIndex(getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B3"));
-        m_nNirBandIndex = GetRelativeBandIndex(getBandIndex(m_metadata->ImageInformation.Resolutions[0].Bands, "B8"));
+        // for S2 we do not use the ImageInformation bands but the bands from the MACCSResolution structures
+        //const MACCSResolution& maccsRes = GetMACCSResolutionInfo(m_nResolution);
+        std::vector<MACCSBand> maccsBands = GetAllMACCSBandsInfos();
+        m_nAbsRedBandIndex = getBandIndex(maccsBands, "B4");
+        m_nAbsBlueBandIndex = getBandIndex(maccsBands, "B2");
+        m_nAbsGreenBandIndex = getBandIndex(maccsBands, "B3");
+        m_nAbsNirBandIndex = getBandIndex(maccsBands, "B8");
+
+        m_nRelRedBandIndex = GetRelativeBandIndex(m_nAbsRedBandIndex);
+        m_nRelBlueBandIndex = GetRelativeBandIndex(m_nAbsBlueBandIndex);
+        m_nRelGreenBandIndex = GetRelativeBandIndex(m_nAbsGreenBandIndex);
+        m_nRelNirBandIndex = GetRelativeBandIndex(m_nAbsNirBandIndex);
     }
+    
+    InitializeS2Angles();
+
     // TODO: Add here other initializations for S2 if needed
 }
 
@@ -179,7 +176,7 @@ void MACCSMetadataHelper::ReadSpecificMACCSImgHdrFile()
         if(m_nResolution == 10) {
             fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.ImageFiles, "_FRE_R1");
         } else {
-            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.ImageFiles, "_FRE_R1");
+            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.ImageFiles, "_FRE_R2");
         }
     }
 
@@ -239,7 +236,7 @@ void MACCSMetadataHelper::ReadSpecificMACCSMskHdrFile()
         if(m_nResolution == 10) {
             fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_MSK_R1");
         } else {
-            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_MSK_R1");
+            fileName = getMACCSImageHdrName(m_metadata->ProductOrganization.AnnexFiles, "_MSK_R2");
         }
     }
 
@@ -362,5 +359,116 @@ int MACCSMetadataHelper::getBandIndex(const std::vector<MACCSBand>& bands, const
         }
     }
     return -1;
+}
+
+const MACCSResolution& MACCSMetadataHelper::GetMACCSResolutionInfo(int nResolution) {
+    for(const MACCSResolution& maccsRes: m_metadata->ImageInformation.Resolutions) {
+        if(std::atoi(maccsRes.Id.c_str()) == nResolution) {
+            return maccsRes;
+        }
+    }
+    itkExceptionMacro("No resolution structure was found in the main xml for S2 resolution : " << nResolution);
+}
+
+std::vector<MACCSBand> MACCSMetadataHelper::GetAllMACCSBandsInfos() {
+    if(m_missionType == LANDSAT) {
+        return m_metadata->ImageInformation.Bands;
+    } else {
+        // Sentinel 2
+        std::vector<MACCSBand> maccsBands;
+        int bandIdx = 1;
+        for(const MACCSBandWavelength& maccsBandWavelength: m_metadata->ProductInformation.BandWavelengths) {
+            MACCSBand band;
+            band.Id = std::to_string(bandIdx);
+            band.Name = maccsBandWavelength.BandName;
+            maccsBands.push_back(band);
+            bandIdx++;
+        }
+        return maccsBands;
+    }
+}
+
+void MACCSMetadataHelper::InitializeS2Angles() {
+    m_bHasGlobalMeanAngles = true;
+    m_bHasBandMeanAngles = true;
+    m_detailedAnglesGridSize = 23;
+
+    // update the solar mean angle
+    m_solarMeanAngles.azimuth = m_metadata->ProductInformation.MeanSunAngle.AzimuthValue;
+    m_solarMeanAngles.zenith = m_metadata->ProductInformation.MeanSunAngle.ZenithValue;
+
+    // first compute the total number of bands to add into m_sensorBandsMeanAngles
+    unsigned int nMaxBandId = 0;
+    std::vector<MACCSMeanViewingIncidenceAngle> angles = m_metadata->ProductInformation.MeanViewingIncidenceAngles;
+    for(unsigned int i = 0; i<angles.size(); i++) {
+        unsigned int anglesBandId = std::atoi(angles[i].BandId.c_str());
+        if(nMaxBandId < anglesBandId) {
+            nMaxBandId = anglesBandId;
+        }
+    }
+    if(nMaxBandId+1 != angles.size()) {
+        std::cout << "ATTENTION: Number of mean viewing angles different than the maximum band + 1 " << std::endl;
+    }
+    // compute the array size
+    unsigned int nArrSize = (nMaxBandId > angles.size() ? nMaxBandId+1 : angles.size());
+    // update the viewing mean angle
+    m_sensorBandsMeanAngles.resize(nArrSize);
+    for(unsigned int i = 0; i<angles.size(); i++) {
+        m_sensorBandsMeanAngles[i].azimuth = angles[i].Angles.AzimuthValue;
+        m_sensorBandsMeanAngles[i].zenith = angles[i].Angles.ZenithValue;
+    }
+
+    // extract the detailed viewing and solar angles
+    std::vector<MACCSBandViewingAnglesGrid> maccsAngles = ComputeViewingAngles(m_metadata->ProductInformation.ViewingAngles);
+    for(unsigned int i = 0; i<maccsAngles.size(); i++) {
+        MACCSBandViewingAnglesGrid maccsGrid = maccsAngles[i];
+        //Return only the angles of the bands for the current resolution
+        if(BandAvailableForCurrentResolution(std::atoi(maccsGrid.BandId.c_str()))) {
+            MetadataHelperViewingAnglesGrid mhGrid;
+            mhGrid.BandId = maccsGrid.BandId;
+            //mhGrid.DetectorId = maccsGrid.DetectorId;
+            mhGrid.Angles.Azimuth.ColumnStep = maccsGrid.Angles.Azimuth.ColumnStep;
+            mhGrid.Angles.Azimuth.ColumnUnit = maccsGrid.Angles.Azimuth.ColumnUnit;
+            mhGrid.Angles.Azimuth.RowStep = maccsGrid.Angles.Azimuth.RowStep;
+            mhGrid.Angles.Azimuth.RowUnit = maccsGrid.Angles.Azimuth.RowUnit;
+            mhGrid.Angles.Azimuth.Values = maccsGrid.Angles.Azimuth.Values;
+
+            mhGrid.Angles.Zenith.ColumnStep = maccsGrid.Angles.Zenith.ColumnStep;
+            mhGrid.Angles.Zenith.ColumnUnit = maccsGrid.Angles.Zenith.ColumnUnit;
+            mhGrid.Angles.Zenith.RowStep = maccsGrid.Angles.Zenith.RowStep;
+            mhGrid.Angles.Zenith.RowUnit = maccsGrid.Angles.Zenith.RowUnit;
+            mhGrid.Angles.Zenith.Values = maccsGrid.Angles.Zenith.Values;
+
+            m_detailedViewingAngles.push_back(mhGrid);
+        }
+    }
+    m_detailedSolarAngles.Azimuth.ColumnStep = m_metadata->ProductInformation.SolarAngles.Azimuth.ColumnStep;
+    m_detailedSolarAngles.Azimuth.ColumnUnit = m_metadata->ProductInformation.SolarAngles.Azimuth.ColumnUnit;
+    m_detailedSolarAngles.Azimuth.RowStep = m_metadata->ProductInformation.SolarAngles.Azimuth.RowStep;
+    m_detailedSolarAngles.Azimuth.RowUnit = m_metadata->ProductInformation.SolarAngles.Azimuth.RowUnit;
+    m_detailedSolarAngles.Azimuth.Values = m_metadata->ProductInformation.SolarAngles.Azimuth.Values;
+
+    m_detailedSolarAngles.Zenith.ColumnStep = m_metadata->ProductInformation.SolarAngles.Zenith.ColumnStep;
+    m_detailedSolarAngles.Zenith.ColumnUnit = m_metadata->ProductInformation.SolarAngles.Zenith.ColumnUnit;
+    m_detailedSolarAngles.Zenith.RowStep = m_metadata->ProductInformation.SolarAngles.Zenith.RowStep;
+    m_detailedSolarAngles.Zenith.RowUnit = m_metadata->ProductInformation.SolarAngles.Zenith.RowUnit;
+    m_detailedSolarAngles.Zenith.Values = m_metadata->ProductInformation.SolarAngles.Zenith.Values;
+}
+
+bool MACCSMetadataHelper::BandAvailableForCurrentResolution(unsigned int nBand) {
+    if(m_missionType == LANDSAT) {
+        if(nBand < m_metadata->ProductInformation.BandWavelengths.size())
+            return true;
+    } else {
+        // Sentinel 2
+        if(nBand < m_metadata->ProductInformation.BandResolutions.size()) {
+            const MACCSBandResolution& maccsBandResolution = m_metadata->ProductInformation.BandResolutions[nBand];
+            int nBandRes = std::atoi(maccsBandResolution.Resolution.c_str());
+            if(nBandRes == m_nResolution) {
+                return true;
+            }
+        }
+    }
+    return false;
 }
 

@@ -109,8 +109,8 @@ private:
         // we are interested only in the 10m resolution as here we have the RED and NIR
         auto pHelper = factory->GetMetadataHelper(inMetadataXml, 10);
 
-        int nNirBand = pHelper->GetNirBandIndex();
-        int nRedBandIdx = pHelper->GetRedBandIndex();
+        int nNirBand = pHelper->GetRelNirBandIndex();
+        int nRedBandIdx = pHelper->GetRelRedBandIndex();
         std::string RED = getBandStr(nRedBandIdx);
         std::string NIR = getBandStr(nNirBand);
 

@@ -88,8 +88,8 @@ do
 	AOT_MAX="50"
 
 	COARSE_RES="240"
-	SIGMA_SMALL_CLD="10"
-	SIGMA_LARGE_CLD="50"
+	SIGMA_SMALL_CLD="2"
+	SIGMA_LARGE_CLD="10"
 
 	WEIGHT_SENSOR="0.33"
 	WEIGHT_DATE_MIN="0.10"
@@ -168,7 +168,7 @@ do
         try otbcli CompositeSplitter2 "$COMPOSITE_OTB_LIBS_ROOT/CompositeSplitter/" -in "$mod" -xml "$xml" -bmap "$FULL_BANDS_MAPPING" -outweights "$out_w?gdal:co:COMPRESS=DEFLATE" -outdates "$out_d?gdal:co:COMPRESS=DEFLATE" -outrefls "$out_r?gdal:co:COMPRESS=DEFLATE" -outflags "$out_f?gdal:co:COMPRESS=DEFLATE" -outrgb "$out_rgb?gdal:co:COMPRESS=DEFLATE"
     fi
 
-    try otbcli ProductFormatter "$PRODUCT_FORMATER_OTB_LIBS_ROOT"  -destroot "$CURRENT_OUT_FOLDER" -fileclass SVT1 -level L3A -timeperiod 20130228_20130615 -baseline 01.00 -processor composite -processor.composite.refls "$out_r" -processor.composite.weights "$out_w" -processor.composite.flags "$out_f" -processor.composite.dates "$out_d" -processor.composite.rgb "$out_rgb" -il "$xml" -gipp "$PARAMS_TXT"
+    try otbcli ProductFormatter "$PRODUCT_FORMATER_OTB_LIBS_ROOT"  -destroot "$CURRENT_OUT_FOLDER" -fileclass SVT1 -level L3A -timeperiod 20130228_20130615 -baseline 01.00 -processor composite -processor.composite.refls "TILE_None" "$out_r" -processor.composite.weights "TILE_None" "$out_w" -processor.composite.flags "TILE_None" "$out_f" -processor.composite.dates "TILE_None" "$out_d" -processor.composite.rgb "TILE_None" "$out_rgb" -il "$xml" -gipp "$PARAMS_TXT"
 
     #PREV_L3A="-prevl3a $mod"
     PREV_L3A="-prevl3aw $out_w -prevl3ad $out_d -prevl3ar $out_r -prevl3af $out_f"

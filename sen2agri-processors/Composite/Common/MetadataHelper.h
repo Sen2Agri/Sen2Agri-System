@@ -15,6 +15,28 @@ typedef struct {
     double azimuth;
 } MeanAngles_Type;
 
+struct MetadataHelperAngleList
+{
+    std::string ColumnUnit;
+    std::string ColumnStep;
+    std::string RowUnit;
+    std::string RowStep;
+    std::vector<std::vector<double> > Values;
+};
+
+struct MetadataHelperAngles
+{
+    MetadataHelperAngleList Zenith;
+    MetadataHelperAngleList Azimuth;
+};
+
+struct MetadataHelperViewingAnglesGrid
+{
+    std::string BandId;
+    std::string DetectorId;
+    MetadataHelperAngles Angles;
+};
+
 class MetadataHelper
 {
 public:
@@ -40,10 +62,15 @@ public:
     virtual float GetAotNoDataValue() { return m_fAotNoDataVal; }
     virtual int GetAotBandIndex() { return m_nAotBandIndex; }
 
-    virtual int GetRedBandIndex() { return m_nRedBandIndex; }
-    virtual int GetBlueBandIndex() { return m_nBlueBandIndex; }
-    virtual int GetGreenBandIndex() { return m_nGreenBandIndex; }
-    virtual int GetNirBandIndex() { return m_nNirBandIndex; }
+    virtual int GetAbsRedBandIndex() { return m_nAbsRedBandIndex; }
+    virtual int GetAbsBlueBandIndex() { return m_nAbsBlueBandIndex; }
+    virtual int GetAbsGreenBandIndex() { return m_nAbsGreenBandIndex; }
+    virtual int GetAbsNirBandIndex() { return m_nAbsNirBandIndex; }
+
+    virtual int GetRelRedBandIndex() { return m_nRelRedBandIndex; }
+    virtual int GetRelBlueBandIndex() { return m_nRelBlueBandIndex; }
+    virtual int GetRelGreenBandIndex() { return m_nRelGreenBandIndex; }
+    virtual int GetRelNirBandIndex() { return m_nRelNirBandIndex; }
 
     // angles
     virtual bool HasGlobalMeanAngles() { return m_bHasGlobalMeanAngles; }
@@ -52,6 +79,11 @@ public:
     virtual MeanAngles_Type GetSensorMeanAngles();
     virtual double GetRelativeAzimuthAngle();
     virtual MeanAngles_Type GetSensorMeanAngles(int nBand);
+
+    virtual bool HasDetailedAngles() { return m_bHasDetailedAngles; }
+    virtual int GetDetailedAnglesGridSize() { return m_detailedAnglesGridSize; }
+    virtual MetadataHelperAngles GetDetailedSolarAngles() { return m_detailedSolarAngles; }
+    virtual std::vector<MetadataHelperViewingAnglesGrid> GetDetailedViewingAngles() { return m_detailedViewingAngles; }
 
     virtual int GetTotalBandsNo() { return m_nTotalBandsNo; }
     virtual int GetBandsNoForCurrentResolution() { return m_nBandsNoForCurRes; }
@@ -83,10 +115,16 @@ protected:
     float m_fAotNoDataVal;
     int m_nAotBandIndex;
 
-    int m_nRedBandIndex;
-    int m_nBlueBandIndex;
-    int m_nGreenBandIndex;
-    int m_nNirBandIndex;
+    int m_nAbsRedBandIndex;
+    int m_nAbsBlueBandIndex;
+    int m_nAbsGreenBandIndex;
+    int m_nAbsNirBandIndex;
+
+    int m_nRelRedBandIndex;
+    int m_nRelBlueBandIndex;
+    int m_nRelGreenBandIndex;
+    int m_nRelNirBandIndex;
+
     int m_nTotalBandsNo;
     unsigned int m_nBandsNoForCurRes;
 
@@ -94,6 +132,11 @@ protected:
     std::vector<MeanAngles_Type> m_sensorBandsMeanAngles;
     bool m_bHasGlobalMeanAngles;
     bool m_bHasBandMeanAngles;
+
+    bool m_bHasDetailedAngles;
+    int m_detailedAnglesGridSize;
+    MetadataHelperAngles m_detailedSolarAngles;
+    std::vector<MetadataHelperViewingAnglesGrid> m_detailedViewingAngles;
 
 protected:
     std::string m_inputMetadataFileName;

@@ -109,6 +109,20 @@ struct MACCSBandViewingAnglesGrid
     MACCSAngles Angles;
 };
 
+struct MACCSBandWavelength
+{
+    std::string BandName;
+    std::string Unit;
+    std::string WaveLength;
+};
+
+struct MACCSBandResolution
+{
+    std::string BandName;
+    std::string Unit;
+    std::string Resolution;
+};
+
 struct MACCSProductInformation
 {
     MACCSGeoCoverage GeoCoverage;
@@ -117,6 +131,8 @@ struct MACCSProductInformation
     std::vector<MACCSMeanViewingIncidenceAngle> MeanViewingIncidenceAngles;
     std::vector<MACCSViewingAnglesGrid> ViewingAngles;
     std::string ReflectanceQuantificationValue;
+    std::vector<MACCSBandWavelength> BandWavelengths;
+    std::vector<MACCSBandResolution> BandResolutions;
 };
 
 struct MACCSSize

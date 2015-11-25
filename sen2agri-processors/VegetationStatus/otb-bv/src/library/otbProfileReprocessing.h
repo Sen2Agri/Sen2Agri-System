@@ -37,7 +37,8 @@ T compute_weight(T delta, T err)
 
 bool IsNoDataValue(float fValue)
 {
-    return fabs(fValue - NO_DATA_VALUE) < NO_DATA_EPSILON;
+    return (fValue < NO_DATA_EPSILON);
+    //return fabs(fValue - NO_DATA_VALUE) < NO_DATA_EPSILON;
 }
 
 std::pair<VectorType, VectorType> 
@@ -46,7 +47,7 @@ fit_csdm(const VectorType &dts, const VectorType &ts, const VectorType &ets)
   assert(ts.size()==ets.size() && ts.size()==dts.size());
   //auto result = ts;
   //auto result_flag = ts;
-  auto result = VectorType(ts.size(), NO_DATA_VALUE);
+  auto result = VectorType(ts.size(), 0);
   auto result_flag = VectorType(ts.size(),not_processed_value);
   // std::vector to vnl_vector
   pheno::VectorType profile_vec(ts.size());

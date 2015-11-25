@@ -33,9 +33,6 @@ public:
 
     typedef otb::ImageList<InternalBandImageType>  ImageListType;
     typedef otb::ImageListToVectorImageFilter<ImageListType, InputImageType1 >    ListConcatenerFilterType;
-    typedef otb::MultiToMonoChannelExtractROI<InputImageType1::InternalPixelType,
-                                         InternalBandImageType::PixelType>         ExtractROIFilterType;
-    typedef otb::ObjectList<ExtractROIFilterType>                                ExtractROIFilterListType;
 
     typedef DirectionalCorrectionFunctor <InputImageType1::PixelType,
                                     OutImageType::PixelType>                DirectionalCorrectionFunctorType;
@@ -47,17 +44,15 @@ public:
 
 public:
     DirectionalCorrection();
-    void Init(int res, std::string &xml, std::string &scatcoef, std::string &strMaskFileName, InputImageType1::Pointer &angles,
-                               InputImageType2::Pointer &ndvi);
+
+    void Init(int res, std::string &xml, std::string &scatcoef, InputImageType2::Pointer &cldImg,
+              InputImageType2::Pointer &watImg, InputImageType2::Pointer &snowImg,
+              InputImageType1::Pointer &angles, InputImageType2::Pointer &ndvi);
+
     void DoExecute();
     const char * GetNameOfClass() { return "DirectionalCorrection"; }
 
-    OutImageType::Pointer GetResampledMainImg();
-    InputImageType2::Pointer GetResampledCloudMaskImg();
-    InputImageType2::Pointer GetResampledWaterMaskImg();
-    InputImageType2::Pointer GetResampledSnowMaskImg();
-    InputImageType2::Pointer GetResampledAotImg();
-
+    OutImageType::Pointer GetCorrectedImg();
 
 private:
     int extractBandsFromImage(InputImageType1::Pointer & imageType);
@@ -65,24 +60,20 @@ private:
     std::string trim(std::string const& str);
 
 private:
-    int m_nRes;
-    std::string m_strXml;
-    std::string m_strScatCoeffs;
+    int                                     m_nRes;
+    std::string                             m_strXml;
+    std::string                             m_strScatCoeffs;
 
-    InputImageType1::Pointer             m_L2AIn;
-    InputImageType1::Pointer             m_AnglesImg;
-    InputImageType2::Pointer             m_NdviImg;
-    InputImageType2::Pointer             m_CSM, m_WM, m_SM, m_AOT;
-    ImageListType::Pointer              m_ImageList;
-    ListConcatenerFilterType::Pointer   m_Concat;
-    ExtractROIFilterListType::Pointer   m_ExtractorList;
-    FunctorFilterType::Pointer          m_DirectionalCorrectionFunctor;
-    DirectionalCorrectionFunctorType          m_Functor;
+    InputImageType1::Pointer                m_L2AIn;
+    InputImageType1::Pointer                m_AnglesImg;
+    InputImageType2::Pointer                m_NdviImg, m_CSM, m_WM, m_SM;
+    ImageListType::Pointer                  m_ImageList;
+    ListConcatenerFilterType::Pointer       m_Concat;
+    FunctorFilterType::Pointer              m_DirectionalCorrectionFunctor;
+    DirectionalCorrectionFunctorType        m_Functor;
 
-    ReaderType::Pointer m_inputImageReader;
-    ReaderType::Pointer m_aotImageReader;
-
-    ResamplingBandExtractor m_ResampledBandsExtractor;
+    ReaderType::Pointer                     m_inputImageReader;
+    ResamplingBandExtractor                 m_ResampledBandsExtractor;
 };
 
 #endif // DIRECTIONAL_CORRECTION_H

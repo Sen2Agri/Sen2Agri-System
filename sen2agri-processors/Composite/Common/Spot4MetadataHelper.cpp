@@ -11,6 +11,7 @@ Spot4MetadataHelper::Spot4MetadataHelper()
     m_nBandsNoForCurRes = m_nTotalBandsNo;
     m_bHasGlobalMeanAngles = true;
     m_bHasBandMeanAngles = false;
+    m_bHasDetailedAngles = false;
 }
 
 std::string Spot4MetadataHelper::GetBandName(unsigned int nIdx, bool bRelativeIdx)
@@ -39,10 +40,12 @@ bool Spot4MetadataHelper::DoLoadMetadata()
         m_nAotBandIndex = 1;
 
         // For Spot4 the bands are XS1;XS2;XS3;SWIR that correspond to RED, GREEN, NIR and SWIR
-        m_nRedBandIndex = 1;
-        m_nGreenBandIndex = 2;
-        m_nBlueBandIndex = m_nGreenBandIndex;
-        m_nNirBandIndex = 3;
+        // we have the same values for relative and absolute indexes as we have only one raster
+        // with only one resolution
+        m_nAbsRedBandIndex = m_nRelRedBandIndex = 1;
+        m_nAbsGreenBandIndex = m_nRelGreenBandIndex = 2;
+        m_nAbsBlueBandIndex = m_nRelBlueBandIndex = m_nAbsGreenBandIndex;
+        m_nAbsNirBandIndex = m_nRelNirBandIndex = 3;
 
         m_ReflQuantifVal = 1000.0;
 

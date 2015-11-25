@@ -122,7 +122,7 @@ public:
         }
     }
     if(cnt < nbInputVariables) {
-        pix[0] = NO_DATA_VALUE;
+        pix[0] = 0;
     } else {
         OutputSampleType outputValue = m_Model->Predict(inputValue);
         pix[0] = outputValue[0];
@@ -146,7 +146,8 @@ public:
 
   bool IsNoDataValue(float fValue)
   {
-      return fabs(fValue - NO_DATA_VALUE) < NO_DATA_EPSILON;
+      return (fValue < NO_DATA_EPSILON);
+      //return fabs(fValue - NO_DATA_VALUE) < NO_DATA_EPSILON;
   }
 
 

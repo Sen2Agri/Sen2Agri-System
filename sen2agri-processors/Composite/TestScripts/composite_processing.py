@@ -54,7 +54,7 @@ parser.add_argument('--scatteringcoef',
 parser.add_argument('--tileid',
                     help="Tile id", required=False)
 
-USE_COMPRESSION=False
+USE_COMPRESSION=True
 REMOVE_TEMP=True
 
 args = parser.parse_args()
@@ -93,8 +93,8 @@ WEIGHT_AOT_MAX="1"
 AOT_MAX="50"
 
 COARSE_RES="240"
-SIGMA_SMALL_CLD="10"
-SIGMA_LARGE_CLD="50"
+SIGMA_SMALL_CLD="2"
+SIGMA_LARGE_CLD="10"
 
 WEIGHT_SENSOR="0.33"
 WEIGHT_DATE_MIN="0.10"
