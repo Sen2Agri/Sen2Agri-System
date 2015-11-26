@@ -213,7 +213,8 @@ MACCSAngleList ReadAngleList(const TiXmlElement *el)
     return result;
 }
 
-MACCSAnglePair ReadAnglePair(const TiXmlElement *el)
+MACCSAnglePair ReadAnglePair(const TiXmlElement *el, const std::string &zenithElName,
+                             const std::string &azimuthElName)
 {
     MACCSAnglePair result;
     result.ZenithValue = std::numeric_limits<double>::quiet_NaN();
@@ -223,12 +224,12 @@ MACCSAnglePair ReadAnglePair(const TiXmlElement *el)
         return result;
     }
 
-    if (auto zenithEl = el->FirstChildElement("ZENITH_ANGLE")) {
+    if (auto zenithEl = el->FirstChildElement(zenithElName)) {
         result.ZenithUnit = GetAttribute(zenithEl, "unit");
         result.ZenithValue = ReadDouble(GetText(zenithEl));
     }
 
-    if (auto azimuthEl = el->FirstChildElement("AZIMUTH_ANGLE")) {
+    if (auto azimuthEl = el->FirstChildElement(azimuthElName)) {
         result.AzimuthUnit = GetAttribute(azimuthEl, "unit");
         result.AzimuthValue = ReadDouble(GetText(azimuthEl));
     }
@@ -266,7 +267,7 @@ MACCSMeanViewingIncidenceAngle ReadMeanViewingIncidenceAngle(const TiXmlElement 
     result.BandId = GetAttribute(el, "bandId");
     if(result.BandId.empty())
         result.BandId = GetAttribute(el, "band_id");
-    result.Angles = ReadAnglePair(el);
+    result.Angles = ReadAnglePair(el, "ZENITH_ANGLE", "AZIMUTH_ANGLE");
 
     return result;
 }
@@ -393,10 +394,25 @@ MACCSProductInformation ReadProductInformation(const TiXmlElement *el)
 
     result.GeoCoverage = ReadGeoCoverage(el->FirstChildElement("Image_Geo_Coverage"));
 
-    result.MeanSunAngle = ReadAnglePair(el->FirstChildElement("Mean_Sun_Angle"));
+    result.MeanSunAngle = ReadAnglePair(el->FirstChildElement("Mean_Sun_Angle"),
+                                        "ZENITH_ANGLE", "AZIMUTH_ANGLE");
+    if(std::isnan(result.MeanSunAngle.AzimuthValue) || std::isnan(result.MeanSunAngle.ZenithValue)) {
+        result.MeanSunAngle = ReadAnglePair(el->FirstChildElement("Mean_Solar_Angles"),
+                                            "Zenith", "Azimuth");
+    }
     result.SolarAngles = ReadSolarAngles(el->FirstChildElement("Solar_Angles"));
     result.MeanViewingIncidenceAngles =
         ReadMeanViewingIncidenceAngles(el->FirstChildElement("Mean_Viewing_Incidence_Angle_List"));
+    if(result.MeanViewingIncidenceAngles.empty()) {
+        MACCSMeanViewingIncidenceAngle meanVIncAng;
+        meanVIncAng.Angles = ReadAnglePair(el->FirstChildElement("Mean_Viewing_Angles"),
+                                                  "Zenith", "Azimuth");
+        if(!std::isnan(meanVIncAng.Angles.AzimuthValue) &&
+           !std::isnan(meanVIncAng.Angles.ZenithValue)) {
+            meanVIncAng.BandId = 1;
+            result.MeanViewingIncidenceAngles.push_back(meanVIncAng);
+        }
+    }
     result.ViewingAngles =
         ReadViewingAnglesGridList(el->FirstChildElement("List_of_Viewing_Angles"));
     result.ReflectanceQuantificationValue = GetChildText(el, "Reflectance_Quantification_Value");
