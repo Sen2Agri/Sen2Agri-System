@@ -18,7 +18,7 @@ OTB_CREATE_APPLICATION(NAME           BVInputVariableGeneration
 
 OTB_CREATE_APPLICATION(NAME           ProSailSimulator
   SOURCES        otbProSailSimulator.cxx
-  LINK_LIBRARIES ${OTB_LIBRARIES};OTBBVUtil)                     
+  LINK_LIBRARIES MACCSMetadata;MetadataHelper;${OTB_LIBRARIES};OTBBVUtil)
 
 OTB_CREATE_APPLICATION(NAME           InverseModelLearning
   SOURCES        otbInverseModelLearning.cxx
