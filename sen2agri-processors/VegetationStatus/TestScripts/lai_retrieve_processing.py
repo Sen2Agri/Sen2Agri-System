@@ -188,7 +188,7 @@ class LaiModel(object):
         # Generating simulation reflectances
         print("Generating simulation reflectances ...")
         #try otbcli ProSailSimulator $IMG_INV_OTB_LIBS_ROOT -bvfile $OUT_GENERATED_SAMPLE_FILE -rsrfile $RSR_FILE -out $OUT_SIMU_REFLS_FILE -solarzenith $SOLAR_ZENITH_ANGLE -sensorzenith $SENSOR_ZENITH_ANGLE -azimuth $RELATIVE_AZIMUTH_ANGLE
-        runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation, "-bvfile", outGeneratedSampleFile, "-rsrfile", rsrFile, "-out", outSimuReflsFile, "-solarzenith", str(solarZenithAngle), "-sensorzenith", str(sensorZenithAngle), "-azimuth", str(relativeAzimuthAngle)])
+        runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation, "-xml", args.input[0], "-bvfile", outGeneratedSampleFile, "-rsrfile", rsrFile, "-out", outSimuReflsFile, "-solarzenith", str(solarZenithAngle), "-sensorzenith", str(sensorZenithAngle), "-azimuth", str(relativeAzimuthAngle)])
 
         # Generating training file
         print("Generating training file ...")
