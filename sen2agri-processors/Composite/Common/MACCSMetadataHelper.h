@@ -46,6 +46,10 @@ protected:
     void ReadSpecificMACCSMskHdrFile();
     int getBandIndex(const std::vector<MACCSBand>& bands, const std::string& name);
 
+    void InitializeS2Angles();
+    bool BandAvailableForCurrentResolution(unsigned int nBand);
+    const MACCSResolution& GetMACCSResolutionInfo(int nResolution);
+    std::vector<MACCSBand> GetAllMACCSBandsInfos();
     //virtual std::unique_ptr<itk::LightObject> GetMetadata() { return m_metadata; }
 
 protected:

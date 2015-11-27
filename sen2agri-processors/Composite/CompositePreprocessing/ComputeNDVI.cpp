@@ -19,8 +19,8 @@ ComputeNDVI::OutputImageType::Pointer ComputeNDVI::DoExecute()
     auto factory = MetadataHelperFactory::New();
     auto pHelper = factory->GetMetadataHelper(m_inXml);
     // the bands are 1 based
-    int nNirBandIdx = pHelper->GetNirBandIndex()-1;
-    int nRedBandIdx = pHelper->GetRedBandIndex()-1;
+    int nNirBandIdx = pHelper->GetRelNirBandIndex()-1;
+    int nRedBandIdx = pHelper->GetRelRedBandIndex()-1;
     //Read all input parameters
     m_InputImageReader = ImageReaderType::New();
     std::string imgFileName = pHelper->GetImageFileName();

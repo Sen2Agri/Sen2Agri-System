@@ -87,41 +87,39 @@ private:
         std::string inXml = GetParameterAsString("xml");
         int res = GetParameterInt("res");
         std::string strBandsMappingFileName = GetParameterAsString("bmap");
+        std::string mskImg = GetParameterAsString("msk");
 
         auto factory = MetadataHelperFactory::New();
         auto pHelper = factory->GetMetadataHelper(inXml, res);
-        std::string missionName = pHelper->GetMissionName();
-        std::string mskImg = GetParameterAsString("msk");
-        if(missionName.find(SENTINEL_MISSION_STR) != std::string::npos) {
+
+
+        std::string masterInfoFileName;
+        if(HasValue("masterinfo")) {
+            masterInfoFileName = GetParameterString("masterinfo");
+        }
+        m_resampleAtS2Res.Init(inXml, mskImg, strBandsMappingFileName, res, masterInfoFileName);
+        m_resampleAtS2Res.DoExecute();
+
+        // if we have detailded angles, then we apply the directional correction
+        if(pHelper->HasDetailedAngles()) {
             std::string scatCoeffsFile = GetParameterAsString("scatcoef");
             m_computeNdvi.DoInit(inXml, res);
             m_creatAngles.DoInit(res, inXml);
             ImageType1::Pointer anglesImg = m_creatAngles.DoExecute();
             ImageType2::Pointer ndviImg = m_computeNdvi.DoExecute();
-            m_dirCorr.Init(res, inXml, scatCoeffsFile, mskImg, anglesImg, ndviImg);
+            ImageType2::Pointer cldImg = m_resampleAtS2Res.GetResampledCloudMaskImg().GetPointer();
+            ImageType2::Pointer watImg = m_resampleAtS2Res.GetResampledWaterMaskImg().GetPointer();
+            ImageType2::Pointer snowImg = m_resampleAtS2Res.GetResampledSnowMaskImg().GetPointer();
+            m_dirCorr.Init(res, inXml, scatCoeffsFile, cldImg, watImg, snowImg, anglesImg, ndviImg);
             m_dirCorr.DoExecute();
-            SetParameterOutputImage("outres", m_dirCorr.GetResampledMainImg().GetPointer());
-            SetParameterOutputImage("outcmres", m_dirCorr.GetResampledCloudMaskImg().GetPointer());
-            SetParameterOutputImage("outwmres", m_dirCorr.GetResampledWaterMaskImg().GetPointer());
-            SetParameterOutputImage("outsmres", m_dirCorr.GetResampledSnowMaskImg().GetPointer());
-            SetParameterOutputImage("outaotres", m_dirCorr.GetResampledAotImg().GetPointer());
-        } else if ((missionName.find(LANDSAT_MISSION_STR) != std::string::npos) ||
-                   (missionName.find(SPOT4_MISSION_STR) != std::string::npos)) {
-            std::string masterInfoFileName;
-            if(HasValue("masterinfo")) {
-                masterInfoFileName = GetParameterString("masterinfo");
-            }
-            m_resampleAtS2Res.Init(inXml, mskImg, strBandsMappingFileName, res, masterInfoFileName);
-            m_resampleAtS2Res.DoExecute();
-
-            SetParameterOutputImage("outres", m_resampleAtS2Res.GetResampledMainImg());
-            SetParameterOutputImage("outcmres", m_resampleAtS2Res.GetResampledCloudMaskImg().GetPointer());
-            SetParameterOutputImage("outwmres", m_resampleAtS2Res.GetResampledWaterMaskImg().GetPointer());
-            SetParameterOutputImage("outsmres", m_resampleAtS2Res.GetResampledSnowMaskImg().GetPointer());
-            SetParameterOutputImage("outaotres", m_resampleAtS2Res.GetResampledAotImg().GetPointer());
+            SetParameterOutputImage("outres", m_dirCorr.GetCorrectedImg().GetPointer());
         } else {
-            itkExceptionMacro("Unknown sensor type " << missionName);
+            SetParameterOutputImage("outres", m_resampleAtS2Res.GetResampledMainImg());
         }
+        SetParameterOutputImage("outcmres", m_resampleAtS2Res.GetResampledCloudMaskImg().GetPointer());
+        SetParameterOutputImage("outwmres", m_resampleAtS2Res.GetResampledWaterMaskImg().GetPointer());
+        SetParameterOutputImage("outsmres", m_resampleAtS2Res.GetResampledSnowMaskImg().GetPointer());
+        SetParameterOutputImage("outaotres", m_resampleAtS2Res.GetResampledAotImg().GetPointer());
     }
 
 private:

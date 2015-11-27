@@ -25,6 +25,7 @@
 
 #include "otbBVUtil.h"
 #include "otbProSailSimulatorFunctor.h"
+#include "MetadataHelperFactory.h"
 
 namespace otb
 {
@@ -114,6 +115,12 @@ private:
     SetParameterDescription( "azimuth", "." );
     MandatoryOn("azimuth");
 
+    AddParameter(ParameterType_InputFilename, "xml",
+                 "Input XML file of a product containing angles. If specified, the angles above will be ignored.");
+    SetParameterDescription( "xml", "Input XML file of a product containing angles." );
+    MandatoryOff("xml");
+
+
     AddParameter(ParameterType_StringList, "noisevar", 
                  "Variance of the noise to be added per band");
     SetParameterDescription("noisevar",
@@ -125,8 +132,6 @@ private:
     SetParameterDescription("threads", 
                             "Number of parallel threads for the simulation");
     MandatoryOff("threads");
-
-
   }
 
   virtual ~ProSailSimulator()
@@ -165,6 +170,32 @@ private:
     satRSR->SetSortBands(false);
     satRSR->Load(rsrFileName);
 
+    if(HasValue("xml")) {
+        std::string inMetadataXml = GetParameterString("xml");
+        auto factory = MetadataHelperFactory::New();
+        // we are interested only in the 10m resolution as here we have the RED and NIR
+        auto pHelper = factory->GetMetadataHelper(inMetadataXml);
+
+        MeanAngles_Type solarAngles = pHelper->GetSolarMeanAngles();
+        double relativeAzimuth = pHelper->GetRelativeAzimuthAngle();
+
+        MeanAngles_Type sensorBandAngles;
+        bool hasAngles = true;
+        if(pHelper->HasBandMeanAngles()) {
+            // we use the angle of the first band
+            sensorBandAngles = pHelper->GetSensorMeanAngles(0);
+        } else if(pHelper->HasGlobalMeanAngles()) {
+            sensorBandAngles = pHelper->GetSensorMeanAngles();
+        } else {
+            hasAngles = false;
+            otbAppLogWARNING("There are no angles for this mission? " << pHelper->GetMissionName());
+        }
+        if(hasAngles) {
+            m_SolarZenith = solarAngles.zenith;
+            m_SensorZenith = sensorBandAngles.zenith;
+            m_Azimuth = relativeAzimuth;
+        }
+    }
     
     std::stringstream ss;
     ss << "Bands for sensor" << std::endl;

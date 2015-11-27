@@ -54,8 +54,8 @@ parser.add_argument('--scatteringcoef',
 parser.add_argument('--tileid',
                     help="Tile id", required=False)
 
-USE_COMPRESSION=False
-REMOVE_TEMP=True
+USE_COMPRESSION=True
+REMOVE_TEMP=False
 
 args = parser.parse_args()
 
@@ -83,9 +83,9 @@ outCld = outDir + '/cld' + resolution + '.tif'
 outWat = outDir + '/wat' + resolution + '.tif'
 outSnow = outDir + '/snow' + resolution + '.tif'
 outAot = outDir + '/aot' + resolution + '.tif'
-outWeightAotFile = outDir + '/WeightAot.tif'
-outWeightCloudFile = outDir + '/WeightCloud.tif'
-outTotalWeightFile = outDir + '/WeightTotal.tif'
+outWeightAotFile = outDir + '/WeightAot#.tif'
+outWeightCloudFile = outDir + '/WeightCloud#.tif'
+outTotalWeightFile = outDir + '/WeightTotal#.tif'
 outL3AFile = outDir + '/L3AResult#_' + resolution + 'M.tif'
 
 WEIGHT_AOT_MIN="0.33"
@@ -93,8 +93,8 @@ WEIGHT_AOT_MAX="1"
 AOT_MAX="50"
 
 COARSE_RES="240"
-SIGMA_SMALL_CLD="10"
-SIGMA_LARGE_CLD="50"
+SIGMA_SMALL_CLD="2"
+SIGMA_LARGE_CLD="10"
 
 WEIGHT_SENSOR="0.33"
 WEIGHT_DATE_MIN="0.10"
@@ -198,7 +198,11 @@ for xml in args.input:
     out_r=outRefls.replace("#", counterString)
     out_f=outFlags.replace("#", counterString)
     out_rgb=outRGB.replace("#", counterString)
-
+    
+    out_w_Aot=outWeightAotFile.replace("#", counterString)
+    out_w_Cloud=outWeightCloudFile.replace("#", counterString)
+    out_w_Total=outTotalWeightFile.replace("#", counterString)
+    
     if fullScatCoeffs:
         cmd = ["otbcli", "CompositePreprocessing2", compositeLocation + '/CompositePreprocessing', "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-scatcoef", fullScatCoeffs, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
     else:
@@ -206,14 +210,14 @@ for xml in args.input:
     
     runCmd(cmd)
    
-    runCmd(["otbcli", "WeightAOT", weightOtbLibsRoot + '/WeightAOT', "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", outWeightAotFile])
+    runCmd(["otbcli", "WeightAOT", weightOtbLibsRoot + '/WeightAOT', "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", out_w_Aot])
 
-    runCmd(["otbcli", "WeightOnClouds", weightOtbLibsRoot + '/WeightOnClouds', "-incldmsk", outCld, "-coarseres", COARSE_RES, "-sigmasmallcld", SIGMA_SMALL_CLD, "-sigmalargecld", SIGMA_LARGE_CLD, "-out", outWeightCloudFile])
+    runCmd(["otbcli", "WeightOnClouds", weightOtbLibsRoot + '/WeightOnClouds', "-incldmsk", outCld, "-coarseres", COARSE_RES, "-sigmasmallcld", SIGMA_SMALL_CLD, "-sigmalargecld", SIGMA_LARGE_CLD, "-out", out_w_Cloud])
 
-    runCmd(["otbcli", "TotalWeight", weightOtbLibsRoot + '/TotalWeight', "-xml", xml, "-waotfile", outWeightAotFile, "-wcldfile", outWeightCloudFile, "-wsensor", WEIGHT_SENSOR, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", outTotalWeightFile])
+    runCmd(["otbcli", "TotalWeight", weightOtbLibsRoot + '/TotalWeight', "-xml", xml, "-waotfile", out_w_Aot, "-wcldfile", out_w_Cloud, "-wsensor", WEIGHT_SENSOR, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", out_w_Total])
     #todo... search for previous L3A produc?
 
-    runCmd(["otbcli", "UpdateSynthesis2", compositeLocation + '/UpdateSynthesis', "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", outTotalWeightFile, "-out", mod] + prevL3A)
+    runCmd(["otbcli", "UpdateSynthesis2", compositeLocation + '/UpdateSynthesis', "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", out_w_Total, "-out", mod] + prevL3A)
 
     tmpOut_w = out_w
     tmpOut_d = out_d
@@ -232,7 +236,21 @@ for xml in args.input:
 
     prevL3A = ["-prevl3aw", out_w, "-prevl3ad", out_d, "-prevl3ar", out_r, "-prevl3af", out_f]
 
-    runCmd(["rm", "-fr", mod, outSpotMasks, outImgBands, outCld, outWat, outSnow, outAot, outWeightAotFile, outWeightCloudFile, outTotalWeightFile])
+    if REMOVE_TEMP:
+        try:
+            os.remove(outWeightAotFile.replace("#", counterString))
+        except:            
+            pass
+        try:
+            os.remove(outWeightCloudFile.replace("#", counterString))
+        except:            
+            pass
+        try:
+            os.remove(outTotalWeightFile.replace("#", counterString))
+        except:            
+            pass
+    
+    runCmd(["rm", "-fr", mod, outSpotMasks, outImgBands, outCld, outWat, outSnow, outAot])
     if REMOVE_TEMP and i > 0:
         counterString = str(i - 1)
         print("The following files will be deleted:")

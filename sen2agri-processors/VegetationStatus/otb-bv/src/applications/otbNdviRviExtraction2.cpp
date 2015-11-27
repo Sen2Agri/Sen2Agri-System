@@ -43,9 +43,9 @@ public:
         m_nNirBandIdx = nNirBandIdx;
   }
 
-  bool operator!=( const NdviRviFunctor & ) const
+  bool operator!=( const NdviRviFunctor &a) const
   {
-    return false;
+      return (this->m_nRedBandIdx != a.m_nRedBandIdx) || (this->m_nNirBandIdx != a.m_nNirBandIdx);
   }
   bool operator==( const NdviRviFunctor & other ) const
   {
@@ -57,8 +57,9 @@ public:
       double redVal = A[m_nRedBandIdx];
       double nirVal = A[m_nNirBandIdx];
       if((fabs(redVal - NO_DATA_VALUE) < 0.000001) || (fabs(nirVal - NO_DATA_VALUE) < 0.000001)) {
-          ret[0] = NO_DATA_VALUE;
-          ret[1] = NO_DATA_VALUE;
+          // if one of the values is no data, then we set the NDVI and RVI to 0
+          ret[0] = 0;
+          ret[1] = 0;
       } else {
         if(fabs(redVal + nirVal) < 0.000001) {
             ret[0] = 0;
@@ -154,8 +155,8 @@ private:
         auto pHelper = factory->GetMetadataHelper(inMetadataXml, 10);
 
         // the bands are 1 based
-        int nNirBandIdx = pHelper->GetNirBandIndex()-1;
-        int nRedBandIdx = pHelper->GetRedBandIndex()-1;
+        int nNirBandIdx = pHelper->GetRelNirBandIndex()-1;
+        int nRedBandIdx = pHelper->GetRelRedBandIndex()-1;
 
         //Read all input parameters
         m_imgReader->SetFileName(pHelper->GetImageFileName());
