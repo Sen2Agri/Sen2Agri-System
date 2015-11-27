@@ -19,7 +19,7 @@ def inSituDataAvailable() :
 	#executeStep("ConcatenateFeatures", "otbcli_ConcatenateImages", "-il", temporal_features,statistic_features,"-out",features, skip=fromstep>8, rmfiles=[] if keepfiles else [temporal_features, statistic_features])
 
 	#Features when insitu data is available (Step 6 or 7 or 8)
-	executeStep("FeaturesWithInsitu", "otbApplicationLauncherCommandLine", "FeaturesWithInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithInsitu"),"-ndvi",ndvi,"-ndwi",ndwi,"-brightness",brightness,"-dates",outdays,"-window", window,"-bm", "false", "-out",features, skip=fromstep>6, rmfiles=[] if keepfiles else [ndwi, brightness])
+	executeStep("FeaturesWithInsitu", "otbApplicationLauncherCommandLine", "FeaturesWithInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithInsitu"),"-ndvi",ndvi,"-ndwi",ndwi,"-brightness",brightness,"-dates",outdays,"-window", window,"-bm", "true", "-out",features, skip=fromstep>6, rmfiles=[] if keepfiles else [ndwi, brightness])
 
 	# Image Statistics (Step 9)
 	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", features,"-out",statistics, skip=fromstep>9)
@@ -72,16 +72,14 @@ def noInSituDataAvailable() :
 
 
 	# Trimming (Step 22)
-	executeStep("Trimming", "otbApplicationLauncherCommandLine", "Trimming", os.path.join(buildFolder,"CropMask/Trimming"),"-feat", spectral_features, "-ref", eroded_reference, "-out", trimmed_reference_shape, "-alpha", alpha, "-nbsamples", "0", "-seed", random_seed, skip=fromstep>22, rmfiles=[] if keepfiles else [eroded_reference])
+	executeStep("Trimming", "otbApplicationLauncherCommandLine", "Trimming", os.path.join(buildFolder,"CropMask/Trimming"),"-feat", spectral_features, "-ref", eroded_reference, "-out", trimmed_reference_raster, "-alpha", alpha, "-nbsamples", "0", "-seed", random_seed, skip=fromstep>22, rmfiles=[] if keepfiles else [eroded_reference])
 	
 	#Train Image Classifier (Step 23)
-	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", spectral_features,"-io.vd",trimmed_reference_shape,"-io.imstat", statistics_noinsitu, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vfn","CROP","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>23)
+	executeStep("TrainImagesClassifierNew", "otbApplicationLauncherCommandLine", "TrainImagesClassifierNew", os.path.join(buildFolder,"Common/TrainImagesClassifierNew"), "-io.il", spectral_features,"-io.rs",trimmed_reference_raster,"-nodatalabel", "-10000", "-io.imstat", statistics_noinsitu, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>23)
 
 	#Image Classifier (Step 24)
 	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", spectral_features,"-imstat",statistics_noinsitu,"-model", model, "-out", raw_crop_mask, skip=fromstep>24, rmfiles=[] if keepfiles else [spectral_features])
 
-	#use the shape built from the reference image for validation
-	validation_polygons = trimmed_reference_shape
 	return
 #end noInSituDataAvailable
 
@@ -197,7 +195,7 @@ triming_features=os.path.join(args.outdir, "triming_features.tif")
 eroded_reference=os.path.join(args.outdir, "eroded_reference.tif")
 reprojected_reference = os.path.join(args.outdir, "reprojected_reference.tif")
 crop_reference=os.path.join(args.outdir, "crop_reference.tif")
-trimmed_reference_shape=os.path.join(args.outdir, "trimmed_reference_shape.shp")
+trimmed_reference_raster=os.path.join(args.outdir, "trimmed_reference_raster.tif")
 statistics_noinsitu=os.path.join(args.outdir, "statistics_noinsitu.xml")
 
 tmpfolder=args.outdir
@@ -239,20 +237,25 @@ executeStep("gdalwarp for masks", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2
 # Temporal Resampling (Step 4)
 executeStep("TemporalResampling", "otbApplicationLauncherCommandLine", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", sp, "-t0", t0, "-tend", tend, "-radius", radius, "-rtocr", rtocr, "-outdays", outdays, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
 
-# Feature Extraction (Step 5)
-if reference_polygons != "" :
-	executeStep("FeatureExtraction", "otbApplicationLauncherCommandLine", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, "-ndwi", ndwi, "-brightness", brightness, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
-else:
-	executeStep("FeatureExtraction", "otbApplicationLauncherCommandLine", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, skip=fromstep>5)
-
 # Select either inSitu or noInSitu branches
 if reference_polygons != "" :
+	# Feature Extraction with insitu (Step 5)
+	executeStep("FeatureExtraction", "otbApplicationLauncherCommandLine", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, "-ndwi", ndwi, "-brightness", brightness, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
+
+	#Perform insitu specific steps.
 	inSituDataAvailable()
+
+	#Validation (Step 25)
+	executeStep("Validation for Raw Cropmask with insitu", "otbcli_ComputeConfusionMatrix", "-in", raw_crop_mask, "-out", raw_crop_mask_confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CROP", "-nodatalabel", "-10000", outf=raw_crop_mask_quality_metrics, skip=fromstep>25)
 else:
+	# Feature Extraction without insitu (Step 5)
+	executeStep("FeatureExtraction", "otbApplicationLauncherCommandLine", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, skip=fromstep>5)
+
+	#Perform Noinsitu specific steps
 	noInSituDataAvailable()
 
-#Validation (Step 25)
-executeStep("Validation for Raw Cropmask", "otbcli_ComputeConfusionMatrix", "-in", raw_crop_mask, "-out", raw_crop_mask_confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CROP", "-nodatalabel", "-10000", outf=raw_crop_mask_quality_metrics, skip=fromstep>25)
+	#Validation (Step 25)
+	executeStep("Validation for Raw Cropmask without insitu", "otbcli_ComputeConfusionMatrix", "-in", raw_crop_mask, "-out", raw_crop_mask_confusion_matrix_validation, "-ref", "raster", "-ref.raster.in", trimmed_reference_raster, "-nodatalabel", "-10000", outf=raw_crop_mask_quality_metrics, skip=fromstep>25)
 
 #Dimension reduction (Step 26)
 executeStep("PrincipalComponentAnalysis", "otbApplicationLauncherCommandLine", "PrincipalComponentAnalysis",os.path.join(buildFolder,"CropMask/PrincipalComponentAnalysis") ,"-ndvi", ndvi, "-nc", nbcomp, "-out", pca, skip=fromstep>26, rmfiles=[] if keepfiles else [ndvi])
@@ -271,7 +274,10 @@ executeStep("MajorityVoting", "otbApplicationLauncherCommandLine", "MajorityVoti
 executeStep("gdalwarp for crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_mask_uncut, crop_mask_uncompressed, skip=fromstep>31)
 
 #Validation (Step 32)
-executeStep("Validation for Cropmask", "otbcli_ComputeConfusionMatrix", "-in", crop_mask_uncompressed, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CROP", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>32)
+if reference_polygons != "" :
+	executeStep("Validation for Cropmask with insitu", "otbcli_ComputeConfusionMatrix", "-in", crop_mask_uncompressed, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CROP", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>32)
+else:
+	executeStep("Validation for Cropmask without insitu", "otbcli_ComputeConfusionMatrix", "-in", crop_mask_uncompressed, "-out", confusion_matrix_validation, "-ref", "raster", "-ref.raster.in", trimmed_reference_raster, "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>32, rmfiles=[] if keepfiles else [trimmed_reference_raster])
 
 #Compression (Step 33)
 executeStep("Compression", "otbcli_Convert", "-in", crop_mask_uncompressed, "-out", crop_mask+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>33, rmfiles=[] if keepfiles else [crop_mask_uncompressed])

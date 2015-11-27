@@ -182,7 +182,8 @@ private:
     AddParameter(ParameterType_Int, "seed", "The seed for the random number generation");
     MandatoryOff("seed");
 
-    AddParameter(ParameterType_OutputVectorData, "out", "The training samples shape file");
+    AddParameter(ParameterType_OutputImage, "out", "The training samples raster file");
+
 
     SetDefaultParameterFloat("alpha", 0.01);
     SetDefaultParameterInt("nbsamples", 0);
@@ -200,7 +201,7 @@ private:
     SetDocExampleParameterValue("alpha", "0.01");
     SetDocExampleParameterValue("nbsamples", "0");
     SetDocExampleParameterValue("seed", "0");
-    SetDocExampleParameterValue("out", "noinsitu_training_data.shp");
+    SetDocExampleParameterValue("out", "noinsitu_training_data.tif");
     //  Software Guide : EndCodeSnippet
   }
 
@@ -217,11 +218,10 @@ private:
       m_ReferenceReader = ImageReaderType::New();
       m_BandsExtractor = ExtractROIFilterType::New();
 
-      //m_SumFilter = BandMathImageFilterType::New();
       m_PixelExtractor = MahalanobisPixelExtractorFilterType::New();
       m_Trimming = MahalanobisTrimmingFilterType::New();
-      m_ShapeBuilder = LabelImageToVectorDataFilterType::New();
-      m_ShapeMask = BandMathImageFilterType::New();
+//      m_ShapeBuilder = LabelImageToVectorDataFilterType::New();
+//      m_ShapeMask = BandMathImageFilterType::New();
 
 
   }
@@ -262,12 +262,6 @@ private:
       m_ReferenceReader->SetFileName(GetParameterString("ref"));
       m_ReferenceReader->Update();
 
-//      // Use a temporary reader over the reference image
-//      // to fix the Update bug in GDAL
-//      ImageReaderType::Pointer refReader = ImageReaderType::New();
-//      refReader->SetFileName(GetParameterString("ref"));
-//      refReader->Update();
-
       // Get the output
       InternalImageType::Pointer refImg = m_ReferenceReader->GetOutput();
 
@@ -291,77 +285,38 @@ private:
               InternalImageType::PixelType pix = refImg->GetPixel(index);
               if (pix > 0) {
                   m_PixelExtractor->AddPoint(index, pix);
-//                  if (pix == 11) {
-//                      have11 = true;
-//                  }
-//                  MahalanobisTrimmingFilterMap::iterator it = m_trimingFilters.find(pix);
-//                  if (it == m_trimingFilters.end()) {
-//                      // create a new instance of the filter
-//                      MahalanobisTrimmingFilterType::Pointer filter = MahalanobisTrimmingFilterType::New();
-//                      filter->AddPoint(index);
-//                      filter->SetAlpha(alpha);
-//                      filter->SetNbSamples(nbSamples);
-//                      filter->SetSeed(seed);
-//                      filter->SetClass(pix);
-//                      // Only the classes 11 and 20 are used as crop
-//                      // We use 2 for CROP and 1 for NOCROP to differentiate from the ignored pixels
-//                      // The final shape will contain 1 for CROP and 0 for NOCROP
-//                      filter->SetReplaceValue((pix == 11 || pix == 20) ? 2 : 1);
-//                      filter->SetInput(needExtract ? m_BandsExtractor->GetOutput() : m_FeaturesReader->GetOutput());
-//                      m_SumFilter->SetNthInput(bandCount++, filter->GetOutput());
-//                      m_trimingFilters.insert(it, std::make_pair(pix, filter));
-//                  } else {
-//                      MahalanobisTrimmingFilterType::Pointer& filter = it->second;
-//                      filter->AddPoint(index);
-//                  }
               }
           }
       }
-//      // if no 11 class is found then use class 10 as crop
-//      if (!have11) {
-//          MahalanobisTrimmingFilterMap::iterator it = m_trimingFilters.find(static_cast<InternalImageType::PixelType>(10));
-//          if (it != m_trimingFilters.end()) {
-//              MahalanobisTrimmingFilterType::Pointer& filter = it->second;
-//              filter->SetReplaceValue(2);
-//          }
-//      }
+
       // Update the pixels extractor
       m_PixelExtractor->Update();
       GetLogger()->Debug("Splitting done!\n");
+      GetLogger()->Debug("Performing Trimming!\n");
 
       m_Trimming->SetInput(m_ReferenceReader->GetOutput());
       m_Trimming->SetPoints(m_PixelExtractor->GetIndeces());
 
-        //SetParameterOutputImage("out", m_Trimming->GetOutput());
+      SetParameterOutputImage("out", m_Trimming->GetOutput());
+      GetLogger()->Debug("Trimming done!\n");
 
-//      std::ostringstream exprstream;
-//      exprstream << "-1";
-//      for (int i = 1; i <= bandCount; i++) {
-//          exprstream << " + b" << i;
-//      }
+//      m_ShapeMask->SetNthInput(0, m_Trimming->GetOutput());
+//      m_ShapeMask->SetExpression("(b1>=0) ? 1 : 0");
 
-//      m_SumFilter->SetExpression(exprstream.str());
+//      m_ShapeBuilder->SetInput(m_Trimming->GetOutput());
+//      m_ShapeBuilder->SetInputMask(m_ShapeMask->GetOutput());
+//      m_ShapeBuilder->SetFieldName("CROP");
+//      SetParameterOutputVectorData("out", m_ShapeBuilder->GetOutput());
 
-      m_ShapeMask->SetNthInput(0, m_Trimming->GetOutput());
-      m_ShapeMask->SetExpression("(b1>=0) ? 1 : 0");
-
-      m_ShapeBuilder->SetInput(m_Trimming->GetOutput());
-      m_ShapeBuilder->SetInputMask(m_ShapeMask->GetOutput());
-      m_ShapeBuilder->SetFieldName("CROP");
-      SetParameterOutputVectorData("out", m_ShapeBuilder->GetOutput());
-
-      GetLogger()->Debug("Performing Trimming!\n");
   }
   //  Software Guide :EndCodeSnippet
   VectorImageReaderType::Pointer                m_FeaturesReader;
   ImageReaderType::Pointer                      m_ReferenceReader;
-  //MahalanobisTrimmingFilterMap                  m_trimingFilters;
   MahalanobisPixelExtractorFilterType::Pointer  m_PixelExtractor;
   MahalanobisTrimmingFilterType::Pointer        m_Trimming;
   ExtractROIFilterType::Pointer                 m_BandsExtractor;
-  //BandMathImageFilterType::Pointer              m_SumFilter;
-  LabelImageToVectorDataFilterType::Pointer     m_ShapeBuilder;
-  BandMathImageFilterType::Pointer              m_ShapeMask;
+//  LabelImageToVectorDataFilterType::Pointer     m_ShapeBuilder;
+//  BandMathImageFilterType::Pointer              m_ShapeMask;
 };
 }
 }
