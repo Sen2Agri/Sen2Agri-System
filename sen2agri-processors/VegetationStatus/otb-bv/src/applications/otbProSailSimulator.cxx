@@ -120,6 +120,11 @@ private:
     SetParameterDescription( "xml", "Input XML file of a product containing angles." );
     MandatoryOff("xml");
 
+    AddParameter(ParameterType_OutputFilename, "outangles",
+                 "Output file containing the angles really used for the generated values (the ones from command line or from xml file).");
+    SetParameterDescription( "outangles", "Output file containing the angles really used for the generated values." );
+    MandatoryOff("outangles");
+
 
     AddParameter(ParameterType_StringList, "noisevar", 
                  "Variance of the noise to be added per band");
@@ -196,6 +201,9 @@ private:
             m_Azimuth = relativeAzimuth;
         }
     }
+
+    writeAnglesFile();
+
     
     std::stringstream ss;
     ss << "Bands for sensor" << std::endl;
@@ -335,6 +343,24 @@ private:
     otbAppLogINFO("Results saved in " << outFileName << std::endl);
   }
 
+  void writeAnglesFile() {
+      if(HasValue("outangles")) {
+          std::string outAnglesFileName = GetParameterString("outangles");
+          try
+            {
+              m_OutAnglesFile.open(outAnglesFileName.c_str());
+              m_OutAnglesFile << m_SolarZenith;
+              m_OutAnglesFile << m_SensorZenith;
+              m_OutAnglesFile << m_Azimuth;
+              m_OutAnglesFile.close();
+            }
+          catch(...)
+            {
+            itkGenericExceptionMacro(<< "Could not open file " << outAnglesFileName);
+            }
+      }
+  }
+
   double m_Azimuth;
   double m_SolarZenith;
   double m_SolarZenith_Fapar;
@@ -343,6 +369,9 @@ private:
   std::ifstream m_SampleFile;
   // the output file
   std::ofstream m_SimulationsFile;
+  // the output angles file
+  std::ofstream m_OutAnglesFile;
+
 };
 
 }
