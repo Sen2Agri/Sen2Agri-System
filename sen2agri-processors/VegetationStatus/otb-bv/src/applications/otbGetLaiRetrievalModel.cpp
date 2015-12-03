@@ -120,6 +120,12 @@ private:
               otbAppLogWARNING("Invalid model name found in list: " << modelName);
           }
       }
+
+      otbAppLogWARNING("NO APPROPRIATE MODEL NAME FOUND!");
+      if(modelsList.size() > 0) {
+        otbAppLogWARNING("Using the first model in the list: " << modelsList[0]);
+        return modelsList[0];
+      }
       return "";
   }
 
@@ -130,6 +136,10 @@ private:
       if (!modelFileContainerFile.is_open()) {
           itkExceptionMacro("Can't open file for writing the output!");
       }
+
+      otbAppLogINFO("" << "================================================" << std::endl);
+      otbAppLogINFO("" << "Extracted model name " << modelName << std::endl);
+      otbAppLogINFO("" << "================================================" << std::endl);
 
       modelFileContainerFile << modelName;
 
@@ -173,7 +183,7 @@ private:
   }
 
   bool inRange(double middle, double distance, double value) {
-        if((value >= (middle - distance)) ||
+        if((value >= (middle - distance)) &&
            (value <= (middle + distance))) {
               return true;
         }

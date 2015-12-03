@@ -358,7 +358,9 @@ private:
             {
               m_OutAnglesFile.open(outAnglesFileName.c_str());
               m_OutAnglesFile << m_SolarZenith;
+              m_OutAnglesFile << std::endl;
               m_OutAnglesFile << m_SensorZenith;
+              m_OutAnglesFile << std::endl;
               m_OutAnglesFile << m_Azimuth;
               m_OutAnglesFile.close();
             }
