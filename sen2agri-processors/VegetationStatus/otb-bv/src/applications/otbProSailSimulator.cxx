@@ -100,7 +100,8 @@ private:
 
     AddParameter(ParameterType_Float, "solarzenith", "");
     SetParameterDescription( "solarzenith", "." );
-    MandatoryOn("solarzenith");
+    SetDefaultParameterFloat("solarzenith", std::numeric_limits<float>::quiet_NaN());
+    MandatoryOff("solarzenith");
 
     AddParameter(ParameterType_Float, "solarzenithf", "");
     SetParameterDescription( "solarzenithf", 
@@ -109,11 +110,13 @@ private:
     
     AddParameter(ParameterType_Float, "sensorzenith", "");
     SetParameterDescription( "sensorzenith", "." );
-    MandatoryOn("sensorzenith");
+    SetDefaultParameterFloat("sensorzenith", std::numeric_limits<float>::quiet_NaN());
+    MandatoryOff("sensorzenith");
 
     AddParameter(ParameterType_Float, "azimuth", "");
     SetParameterDescription( "azimuth", "." );
-    MandatoryOn("azimuth");
+    SetDefaultParameterFloat("azimuth", std::numeric_limits<float>::quiet_NaN());
+    MandatoryOff("azimuth");
 
     AddParameter(ParameterType_InputFilename, "xml",
                  "Input XML file of a product containing angles. If specified, the angles above will be ignored.");
@@ -158,6 +161,7 @@ private:
   
   void DoExecute()
   {
+
     m_Azimuth = GetParameterFloat("azimuth");
     m_SolarZenith = GetParameterFloat("solarzenith");
     m_SolarZenith_Fapar = m_SolarZenith;
@@ -200,6 +204,10 @@ private:
             m_SensorZenith = sensorBandAngles.zenith;
             m_Azimuth = relativeAzimuth;
         }
+    }
+
+    if(std::isnan(m_SolarZenith) || std::isnan(m_SensorZenith) || std::isnan(m_Azimuth)) {
+        itkGenericExceptionMacro(<< "Please provide all angles or a valid XML file!");
     }
 
     writeAnglesFile();
