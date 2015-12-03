@@ -191,7 +191,7 @@ private:
       m_w = 2;
       m_delta = 0.05f;
       m_tsoil = 0.2f;
-      m_bm = false;
+      m_bm = true;
 
       m_ndviReader = ReaderType::New();
       m_ndwiReader = ReaderType::New();
@@ -211,12 +211,13 @@ private:
   {
       // Read the parameters
       m_w = GetParameterInt("window");
-      if (IsParameterEnabled("bm")) {
-          m_bm = true;
+      if (HasValue("bm")) {
+          m_bm = GetParameterEmpty("bm");
       }
       if (m_bm) {
           m_bands = 26;
       }
+      otbAppLogINFO("Computing " << m_bands << " temporal features!");
 
       // Get the file that contains the dates
       m_inDates.clear();

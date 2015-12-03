@@ -100,7 +100,8 @@ private:
 
     AddParameter(ParameterType_Float, "solarzenith", "");
     SetParameterDescription( "solarzenith", "." );
-    MandatoryOn("solarzenith");
+    SetDefaultParameterFloat("solarzenith", std::numeric_limits<float>::quiet_NaN());
+    MandatoryOff("solarzenith");
 
     AddParameter(ParameterType_Float, "solarzenithf", "");
     SetParameterDescription( "solarzenithf", 
@@ -109,16 +110,23 @@ private:
     
     AddParameter(ParameterType_Float, "sensorzenith", "");
     SetParameterDescription( "sensorzenith", "." );
-    MandatoryOn("sensorzenith");
+    SetDefaultParameterFloat("sensorzenith", std::numeric_limits<float>::quiet_NaN());
+    MandatoryOff("sensorzenith");
 
     AddParameter(ParameterType_Float, "azimuth", "");
     SetParameterDescription( "azimuth", "." );
-    MandatoryOn("azimuth");
+    SetDefaultParameterFloat("azimuth", std::numeric_limits<float>::quiet_NaN());
+    MandatoryOff("azimuth");
 
     AddParameter(ParameterType_InputFilename, "xml",
                  "Input XML file of a product containing angles. If specified, the angles above will be ignored.");
     SetParameterDescription( "xml", "Input XML file of a product containing angles." );
     MandatoryOff("xml");
+
+    AddParameter(ParameterType_OutputFilename, "outangles",
+                 "Output file containing the angles really used for the generated values (the ones from command line or from xml file).");
+    SetParameterDescription( "outangles", "Output file containing the angles really used for the generated values." );
+    MandatoryOff("outangles");
 
 
     AddParameter(ParameterType_StringList, "noisevar", 
@@ -153,6 +161,7 @@ private:
   
   void DoExecute()
   {
+
     m_Azimuth = GetParameterFloat("azimuth");
     m_SolarZenith = GetParameterFloat("solarzenith");
     m_SolarZenith_Fapar = m_SolarZenith;
@@ -196,6 +205,13 @@ private:
             m_Azimuth = relativeAzimuth;
         }
     }
+
+    if(std::isnan(m_SolarZenith) || std::isnan(m_SensorZenith) || std::isnan(m_Azimuth)) {
+        itkGenericExceptionMacro(<< "Please provide all angles or a valid XML file!");
+    }
+
+    writeAnglesFile();
+
     
     std::stringstream ss;
     ss << "Bands for sensor" << std::endl;
@@ -335,6 +351,24 @@ private:
     otbAppLogINFO("Results saved in " << outFileName << std::endl);
   }
 
+  void writeAnglesFile() {
+      if(HasValue("outangles")) {
+          std::string outAnglesFileName = GetParameterString("outangles");
+          try
+            {
+              m_OutAnglesFile.open(outAnglesFileName.c_str());
+              m_OutAnglesFile << m_SolarZenith;
+              m_OutAnglesFile << m_SensorZenith;
+              m_OutAnglesFile << m_Azimuth;
+              m_OutAnglesFile.close();
+            }
+          catch(...)
+            {
+            itkGenericExceptionMacro(<< "Could not open file " << outAnglesFileName);
+            }
+      }
+  }
+
   double m_Azimuth;
   double m_SolarZenith;
   double m_SolarZenith_Fapar;
@@ -343,6 +377,9 @@ private:
   std::ifstream m_SampleFile;
   // the output file
   std::ofstream m_SimulationsFile;
+  // the output angles file
+  std::ofstream m_OutAnglesFile;
+
 };
 
 }

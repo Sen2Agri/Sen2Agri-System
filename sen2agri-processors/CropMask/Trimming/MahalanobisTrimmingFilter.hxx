@@ -88,7 +88,7 @@ MahalanobisTrimmingFilter< TInputImage, TOutputImage >
     OutputImageRegionType region = outputImage->GetRequestedRegion();
     outputImage->SetBufferedRegion(region);
     outputImage->Allocate();
-    outputImage->FillBuffer (static_cast<OutputPixelType>(-1));
+    outputImage->FillBuffer (static_cast<OutputPixelType>(-10000));
 
     // loop through each class
     for (auto& points : m_Points) {
