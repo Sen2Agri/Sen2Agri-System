@@ -97,7 +97,7 @@ class LaiModel(object):
         # THE INCLUDE FILE
 
         #parameters for BVInputVariableGeneration
-        GENERATED_SAMPLES_NO="100"
+        GENERATED_SAMPLES_NO="40000"
 
         #parameters for TrainingDataGenerator
         BV_IDX="0"
@@ -214,9 +214,9 @@ if resolution != 10 and resolution != 20:
 #OUT_NDVI_RVI="$OUT_FOLDER/ndvi_rvi.tif"
 outNdviRvi = "{}/ndvi_rvi.tif".format(outDir)
 #OUT_LAI_IMG="$OUT_FOLDER/LAI_img_#.tif"
-outLaiImg = "{}/LAI_img_#.tif".format(outDir)
+outLaiImg = "{}/#_LAI_img.tif".format(outDir)
 #OUT_LAI_ERR_IMG="$OUT_FOLDER/LAI_err_img_#.tif"
-outLaiErrImg = "{}/LAI_err_img_#.tif".format(outDir) 
+outLaiErrImg = "{}/#_LAI_err_img.tif".format(outDir) 
 
 #OUT_LAI_TIME_SERIES="$OUT_FOLDER/LAI_time_series.tif"
 outLaiTimeSeries = "{}/LAI_time_series.tif".format(outDir)
@@ -296,10 +296,17 @@ for xml in args.input:
     
     #CUR_OUT_LAI_IMG=${OUT_LAI_IMG//[#]/$cnt}
     counterString = str(cnt)
+    lastPoint = xml.rfind('.')
+    lastSlash = xml.rfind('/')
+    if lastPoint != -1 and lastSlash != -1 and lastSlash + 1 < lastPoint:
+        counterString = xml[lastSlash + 1:lastPoint]
+    print("counterString = {}".format(counterString))
     curOutLaiImg = outLaiImg.replace("#", counterString)
+    print("curOutLaiImg = {}".format(curOutLaiImg))
     #CUR_OUT_LAI_ERR_IMG=${OUT_LAI_ERR_IMG//[#]/$cnt}
     curOutLaiErrImg = outLaiErrImg.replace("#", counterString)
-    
+    print("curOutLaiErrImg = {}".format(curOutLaiErrImg))
+    continue
     #timed_exec "try otbcli BVImageInversion $IMG_INV_OTB_LIBS_ROOT -in $OUT_NDVI_RVI -modelfile $MODEL_FILE -out $CUR_OUT_LAI_IMG"
     runCmd(["otbcli", "BVImageInversion", imgInvOtbLibsLocation, "-in", outNdviRvi, "-modelfile", modelFile, "-out", curOutLaiImg])
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
