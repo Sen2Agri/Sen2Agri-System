@@ -168,5 +168,8 @@
       <arg name="jobId" type="i" direction="in" />
       <arg name="jsonData" type="s" direction="out" />
     </method>
+    <method name="GetDashboardProducts">
+      <arg name="jsonData" type="s" direction="out" />
+    </method>
   </interface>
 </node>

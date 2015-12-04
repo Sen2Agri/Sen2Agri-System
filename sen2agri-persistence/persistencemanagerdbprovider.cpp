@@ -930,6 +930,28 @@ QString PersistenceManagerDBProvider::GetDashboardJobTimeline(int jobId)
     });
 }
 
+QString PersistenceManagerDBProvider::GetDashboardProducts()
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_products()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error(
+                "Expecting a return value from sp_get_products, but none found");
+        }
+
+        return query.value(0).toString();
+    });
+}
+
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions)
 {
     QJsonArray array;

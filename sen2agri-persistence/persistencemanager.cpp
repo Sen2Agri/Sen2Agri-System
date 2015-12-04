@@ -364,3 +364,10 @@ QString PersistenceManager::GetDashboardJobTimeline(int jobId)
 
     return {};
 }
+
+QString PersistenceManager::GetDashboardProducts()
+{
+    RunAsync([this] { return dbProvider.GetDashboardProducts(); });
+
+    return {};
+}

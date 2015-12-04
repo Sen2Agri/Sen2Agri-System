@@ -30,6 +30,8 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
                 getDashboardProductAvailability(request, response);
             } else if (action == "GetDashboardJobTimeline") {
                 getDashboardJobTimeline(request, response);
+            } else if (action == "GetDashboardProducts") {
+                getDashboardProducts(request, response);
             } else {
                 response.setStatus(400, "Bad Request");
             }
@@ -129,6 +131,19 @@ void DashboardController::getDashboardJobTimeline(const HttpRequest &request,
 
     const auto &data =
         WaitForResponseAndThrow(persistenceManagerClient.GetDashboardJobTimeline(jobId));
+
+    response.setHeader("Content-Type", "application/json");
+    response.write(data.toUtf8(), true);
+}
+
+void DashboardController::getDashboardProducts(const HttpRequest &, HttpResponse &response)
+{
+    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
+        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
+        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
+
+    const auto &data =
+        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardProducts());
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
