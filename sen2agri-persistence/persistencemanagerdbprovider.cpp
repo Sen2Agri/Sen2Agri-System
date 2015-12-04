@@ -936,7 +936,7 @@ QString PersistenceManagerDBProvider::GetDashboardProducts()
 
     return provider.handleTransactionRetry(__func__, [&] {
         auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_get_products()"));
+            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_products()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -945,7 +945,7 @@ QString PersistenceManagerDBProvider::GetDashboardProducts()
 
         if (!query.next()) {
             throw std::runtime_error(
-                "Expecting a return value from sp_get_products, but none found");
+                "Expecting a return value from sp_get_dashboard_products, but none found");
         }
 
         return query.value(0).toString();
