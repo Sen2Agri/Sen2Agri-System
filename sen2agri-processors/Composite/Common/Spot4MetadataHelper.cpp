@@ -42,8 +42,8 @@ bool Spot4MetadataHelper::DoLoadMetadata()
         // For Spot4 the bands are XS1;XS2;XS3;SWIR that correspond to RED, GREEN, NIR and SWIR
         // we have the same values for relative and absolute indexes as we have only one raster
         // with only one resolution
-        m_nAbsRedBandIndex = m_nRelRedBandIndex = 1;
-        m_nAbsGreenBandIndex = m_nRelGreenBandIndex = 2;
+        m_nAbsGreenBandIndex = m_nRelGreenBandIndex = 1;
+        m_nAbsRedBandIndex = m_nRelRedBandIndex = 2;
         m_nAbsBlueBandIndex = m_nRelBlueBandIndex = m_nAbsGreenBandIndex;
         m_nAbsNirBandIndex = m_nRelNirBandIndex = 3;
 

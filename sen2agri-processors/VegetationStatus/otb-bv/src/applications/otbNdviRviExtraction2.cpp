@@ -66,10 +66,14 @@ public:
         } else {
             ret[0] = (nirVal - redVal)/(nirVal+redVal);
         }
-        if(redVal < 0.000001) {
+        ret[1] = nirVal/redVal;
+        // we limit the RVI to a maximum value of 30
+        if(ret[1] < 0.000001 || std::isnan(ret[1])) {
             ret[1] = 0;
         } else {
-            ret[1] = nirVal/redVal;
+            if(ret[1] > 30 || std::isinf(ret[1])) {
+                ret[1] = 30;
+            }
         }
       }
 
@@ -184,7 +188,6 @@ private:
         m_imgSplit->UpdateOutputInformation();
         m_imgSplit->GetOutput()->UpdateOutputInformation();
 
-
         // export the NDVI in a distinct raster if we have this option set
         if(bOutNdvi) {
             //SetParameterOutputImagePixelType("ndvi", ImagePixelType_int16);
@@ -197,6 +200,15 @@ private:
             SetParameterOutputImage("rvi", getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(1)).GetPointer());
         }
         if(bOutFts) {
+            m_imgInputSplit = VectorImageToImageListType::New();
+            m_imgInputSplit->SetInput(m_imgReader->GetOutput());
+            m_imgInputSplit->UpdateOutputInformation();
+            m_imgInputSplit->GetOutput()->UpdateOutputInformation();
+
+            // add the RED and NIR bands from the input image
+            allList->PushBack(getResampledImage(curRes, nOutRes, m_imgInputSplit->GetOutput()->GetNthElement(nRedBandIdx)));
+            allList->PushBack(getResampledImage(curRes, nOutRes, m_imgInputSplit->GetOutput()->GetNthElement(nNirBandIdx)));
+            // add the bands for NDVI and RVI
             allList->PushBack(getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(0)));
             allList->PushBack(getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(1)));
             m_ftsConcat = ImageListToVectorImageFilterType::New();
@@ -259,6 +271,7 @@ private:
   }
 
     VectorImageToImageListType::Pointer       m_imgSplit;
+    VectorImageToImageListType::Pointer       m_imgInputSplit;
     ImageListToVectorImageFilterType::Pointer m_ftsConcat;
 
     ImageListType::Pointer allList;

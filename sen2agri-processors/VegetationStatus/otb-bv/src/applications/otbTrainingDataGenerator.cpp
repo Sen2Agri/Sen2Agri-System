@@ -156,7 +156,13 @@ private:
               vectRefls.pop_back();
               vectRefls.pop_back();
 
-              outline += accumulate( vectRefls.begin(), vectRefls.end(), std::string(" ") );
+              if(redIdx < (int)vectRefls.size() && nirIdx < (int)vectRefls.size()) {
+                outline += " ";
+                outline += vectRefls[redIdx];
+                outline += " ";
+                outline += vectRefls[nirIdx];
+              }
+              //outline += accumulate( vectRefls.begin(), vectRefls.end(), std::string(" ") );
           }
           // TODO trim line
           // TODO: The angles are not added
