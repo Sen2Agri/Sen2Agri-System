@@ -15,6 +15,8 @@
  PURPOSE.  See the above copyright notices for more information.
 
  =========================================================================*/
+#include <boost/filesystem.hpp>
+
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 #include "otbGenericRSTransform.h"
@@ -69,26 +71,6 @@ private:
 
   int m_Mode;
 
-  bool SWBDTileExists(const std::string & url) const
-  {
-    switch ( m_Mode )
-      {
-      case Mode_Download:
-      {
-      CurlHelper::Pointer curl = CurlHelper::New();
-      curl->SetTimeout(0);
-      return !curl->IsCurlReturnHttpError(url);
-      }
-      break;
-      case Mode_List:
-      {
-      return itksys::SystemTools::FileExists(url.c_str());
-      }
-      default :
-      break;
-      }
-    return false;
-  }
   void DoInit()
   {
     SetName("DownloadSWBDTiles");
@@ -349,65 +331,12 @@ private:
 
 
           url = urlStream.str();
-          //std::cout << url << std::endl;
 
           if (!curl->IsCurlReturnHttpError( urlStream.str()))
             {
             findURL = true;
             break;
             }
-          else
-            {
-            //try down casing the url
-            std::string lowerIt = *it;
-            std::transform(it->begin(), it->end(), lowerIt.begin(), ::tolower);
-
-            urlStream.clear();
-            urlStream << SRTMServerPath;
-            if((*it)[0] == 'e')
-			  urlStream << "/SWBDeast";
-            else // (*it)[0] == 'e'
-			  urlStream << "SWBDwest";
-            urlStream << "/";
-            urlStream << lowerIt;
-            urlStream << *contIt;
-            urlStream << SHPExtension;
-            if (!curl->IsCurlReturnHttpError( urlStream.str()))
-              {
-              tiles.erase(*it);
-              tiles.insert(lowerIt);
-              //urls.insert(urlStream.str());
-              findURL = true;
-              break;
-              }
-            else
-              {
-              //upcase all
-              std::string upperIt = *it;
-              std::transform(it->begin(), it->end(), upperIt.begin(), ::toupper);
-
-              urlStream.clear();
-              urlStream << SRTMServerPath;
-              if((*it)[0] == 'e')
-            	urlStream << "/SWBDeast";
-              else // (*it)[0] == 'e'
-            	urlStream << "SWBDwest";
-              urlStream << "/";
-              urlStream << upperIt;
-              urlStream << *contIt;
-              urlStream << SHPExtension;
-
-              if (!curl->IsCurlReturnHttpError( urlStream.str()))
-                {
-                tiles.erase(*it);
-                tiles.insert(upperIt);
-                //urls.insert(urlStream.str());
-                findURL = true;
-                break;
-                }
-              }
-            }
-
           }
 
         if (!findURL)
@@ -435,7 +364,10 @@ private:
 
         CurlHelper::Pointer curlReq = CurlHelper::New();
         curlReq->SetTimeout(0);
-        curlReq->RetrieveFile(url, GetParameterString("mode.download.outdir") + "/" + *it +SHPExtension);
+        boost::filesystem::path outPath(GetParameterString("mode.download.outdir"));
+        boost::filesystem::path tilePath = outPath / *it;
+        tilePath.replace_extension(SHPExtension);
+        curlReq->RetrieveFile(url, tilePath.string());
         //TODO unzip here (can do this in memory?)
         }
         break;
@@ -445,38 +377,17 @@ private:
         std::ostringstream listStream;
         listStream << "Corresponding SWBD tiles: ";
         listStream << GetParameterString("mode.list.indir") + "/";
+        boost::filesystem::path inPath(GetParameterString("mode.list.indir"));
         for(std::vector<std::string>::const_iterator contIt= USGSContinentList.begin(); contIt!=USGSContinentList.end(); ++contIt)
         {
-        	if ( this->SWBDTileExists(GetParameterString("mode.list.indir") + "/" + *it + "/" + *it + *contIt + SHPExtensionSimulation) )
+            boost::filesystem::path tilePath = inPath / (*it + *contIt);
+            tilePath.replace_extension(SHPExtensionSimulation);
+
+            if ( boost::filesystem::exists(tilePath) )
 			  {
-			  listStream <<  *it + "/" + *it + *contIt + SHPExtensionSimulation << " ";
+              listStream <<  tilePath.filename().string() << " ";
 			  findURL = true;
-			  }
-			else
-			  {
-			  //try down casing the url
-			  std::string lowerIt = *it;
-			  std::transform(it->begin(), it->end(), lowerIt.begin(), ::tolower);
-
-			  if ( this->SWBDTileExists(GetParameterString("mode.list.indir") + "/" + lowerIt + SHPExtensionSimulation) )
-				{
-				tiles.erase(*it);
-				tiles.insert(lowerIt);
-				findURL = true;
-				}
-			  else
-				{
-				//upcase all
-				std::string upperIt = *it;
-				std::transform(it->begin(), it->end(), upperIt.begin(), ::toupper);
-
-				if (this->SWBDTileExists(GetParameterString("mode.list.indir") + "/" + lowerIt + SHPExtensionSimulation) )
-				  {
-				  tiles.erase(*it);
-				  tiles.insert(upperIt);
-				  findURL = true;
-				  }
-				}
+              break;
 			  }
         }
 
