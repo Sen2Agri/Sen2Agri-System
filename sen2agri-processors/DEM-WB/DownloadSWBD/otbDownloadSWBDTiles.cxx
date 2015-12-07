@@ -102,13 +102,17 @@ private:
     SetParameterDescription("mode.download","Download corresponding tiles on USGE server.");
 
     AddParameter(ParameterType_Directory, "mode.download.outdir", "Output directory");
-    SetParameterDescription("mode.download.outdir", "Directory where zipped tiles will be save. You'll need to unzip all tile files before using them in your application.");
+    SetParameterDescription("mode.download.outdir", "Directory where zipped tiles will be saved. You'll need to unzip all tile files before using them in your application.");
 
     AddChoice("mode.list", "List tiles");
     SetParameterDescription("mode.list","List tiles in an existing local directory.");
 
     AddParameter(ParameterType_Directory, "mode.list.indir", "Input directory");
-    SetParameterDescription("mode.list.indir", "Input directory where SWBD tiles can are located.");
+    SetParameterDescription("mode.list.indir", "Input directory where SWBD tiles are located.");
+
+    AddParameter(ParameterType_OutputFilename, "mode.list.outlist", "Output file");
+    SetParameterDescription("mode.list.outlist", "Output file where SWBD tiles will be listed.");
+    MandatoryOff("mode.list.outlist");
 
     // Doc example parameter settings
     SetDocExampleParameterValue("il", "QB_Toulouse_Ortho_XS.tif");
@@ -303,6 +307,14 @@ private:
 
       }
 
+    std::ofstream outList;
+    if ( m_Mode == Mode_List )
+      {
+      const std::string &outListName = GetParameterString("mode.list.outlist");
+      if ( !outListName.empty() )
+        outList.open(outListName);
+      }
+
     //iterate over all tiles to build URLs
     for(std::set<std::string>::const_iterator it= tiles.begin(); it!=tiles.end(); ++it)
       {
@@ -385,7 +397,10 @@ private:
 
             if ( boost::filesystem::exists(tilePath) )
 			  {
-              listStream <<  tilePath.filename().string() << " ";
+              std::string file = tilePath.filename().string();
+              listStream << file << " ";
+              if (outList)
+                outList << tilePath.string() << '\n';
 			  findURL = true;
               break;
 			  }
