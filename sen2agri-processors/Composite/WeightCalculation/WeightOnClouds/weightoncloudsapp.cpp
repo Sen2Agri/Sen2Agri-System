@@ -81,7 +81,7 @@ private:
 
     AddParameter(ParameterType_Int, "kernelwidth", "Gaussian filter kernel width");
     SetParameterDescription("kernelwidth", "The gaussian filter kernel width.");
-    SetDefaultParameterInt("kernelwidth", 81);
+    SetDefaultParameterInt("kernelwidth", 401);
     MandatoryOff("kernelwidth");
 
     AddParameter(ParameterType_Int, "outres", "Resolution of the output image");

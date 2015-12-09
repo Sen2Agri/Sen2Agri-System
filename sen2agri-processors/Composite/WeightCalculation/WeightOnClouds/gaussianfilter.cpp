@@ -67,7 +67,8 @@ void GaussianFilter::BuildOutputImageSource()
 {
     m_gaussianFilter = DiscreteGaussianFilterType::New();
     m_gaussianFilter->SetInput(m_inputReader->GetOutput());
-    m_gaussianFilter->SetVariance(m_fSigma);
+    // the variance is sigma^2
+    m_gaussianFilter->SetVariance(m_fSigma*m_fSigma);
     m_gaussianFilter->SetUseImageSpacing(false);
     m_gaussianFilter->SetMaximumKernelWidth(m_nKernelWidth);
 }
