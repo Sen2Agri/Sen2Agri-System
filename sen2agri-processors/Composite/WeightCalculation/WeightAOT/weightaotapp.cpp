@@ -72,9 +72,8 @@ private:
     AddParameter(ParameterType_Float, "waotmax", "WeightAOTMax");
     SetParameterDescription("waotmax", "max weight depending on AOT");
 
-    AddParameter(ParameterType_Int, "aotmax", "AOTMax");
-    SetParameterDescription("aotmax",
-        "maximum value of the linear range for weights w.r.t AOT to which the quantification value is applied");
+    AddParameter(ParameterType_Float, "aotmax", "AOTMax");
+    SetParameterDescription("aotmax", "maximum value of the linear range for weights w.r.t AOT");
 
     AddRAMParameter();
 
@@ -106,7 +105,7 @@ private:
         itkExceptionMacro("No input metadata XML set...; please set the input image");
     }
 
-    int nAotMax = GetParameterInt("aotmax");
+    float fAotMax = GetParameterFloat("aotmax");
     float fWaotMin = GetParameterFloat("waotmin");
     float fWaotMax = GetParameterFloat("waotmax");
 
@@ -117,7 +116,7 @@ private:
     float fAotQuantificationVal = pHelper->GetAotQuantificationValue();
     // the bands in XML are 1 based
     int nBand = 0;//pHelper->GetAotBandIndex()-1;
-    m_weightOnAot.Initialize(nBand, fAotQuantificationVal, nAotMax, fWaotMin, fWaotMax);
+    m_weightOnAot.Initialize(nBand, fAotQuantificationVal, fAotMax, fWaotMin, fWaotMax);
 
     // Set the output image
     SetParameterOutputImage("out", m_weightOnAot.GetOutputImageSource()->GetOutput());

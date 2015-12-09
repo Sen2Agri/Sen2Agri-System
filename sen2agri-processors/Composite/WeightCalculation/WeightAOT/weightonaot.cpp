@@ -43,10 +43,10 @@ void WeightOnAOT::SetOutputFileName(std::string &outFile)
     m_outputFileName = outFile;
 }
 
-void WeightOnAOT::Initialize(int nBand, float fQuantif, int nAotMax, float fMinWeight, float fMaxWeight) {
+void WeightOnAOT::Initialize(int nBand, float fQuantif, float fAotMax, float fMinWeight, float fMaxWeight) {
     m_nBand = nBand;
     m_fAotQuantificationVal = fQuantif;
-    m_nAotMax = nAotMax;
+    m_fAotMax = fAotMax;
     m_fMinWeightAot = fMinWeight;
     m_fMaxWeightAot = fMaxWeight;
 }
@@ -74,7 +74,7 @@ void WeightOnAOT::BuildOutputImageSource()
     }
     m_filter = FilterType::New();
     m_filter->GetFunctor().Initialize(m_nBand, m_fAotQuantificationVal,
-                                      m_nAotMax, m_fMinWeightAot, m_fMaxWeightAot);
+                                      m_fAotMax, m_fMinWeightAot, m_fMaxWeightAot);
     m_filter->SetInput(m_inputReader->GetOutput());
 }
 
