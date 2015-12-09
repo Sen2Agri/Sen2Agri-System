@@ -31,9 +31,6 @@ build-*
 *.dylib
 *.dll
 
-# Fortran module files
-*.mod
-
 # Compiled Static libraries
 *.lai
 *.la
@@ -44,3 +41,6 @@ build-*
 *.exe
 *.out
 *.app
+
+# Python bytecode
+*.pyc
