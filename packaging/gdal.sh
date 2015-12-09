@@ -11,3 +11,4 @@ make install DESTDIR=~/gdal-install
 cd ..
 mkdir tmp
 fpm -s dir -t rpm -n gdal-local -v 2.0.1 -C ~/gdal-install -p gdal-local-VERSION.fc22.ARCH.rpm --workdir ~/tmp usr
+fpm -s dir -t rpm -n gdal -v 2.0.1 -C ~/gdal-install -p gdal-VERSION.fc22.ARCH.rpm --workdir ~/tmp usr

@@ -127,6 +127,9 @@ private:
         MandatoryOff("rvi");
         AddParameter(ParameterType_OutputImage, "fts", "Features image containing NDVI and RVI bands");
         MandatoryOff("fts");
+        AddParameter(ParameterType_Int, "addallrefls", "Add all reflectance bands fo the features output.");
+        MandatoryOff("addallrefls");
+        SetDefaultParameterInt("addallrefls", 1);
 
         SetDocExampleParameterValue("xml", "data.xml");
         SetDocExampleParameterValue("ndvi", "ndvi.tif");
@@ -139,6 +142,7 @@ private:
   }
   void DoExecute()
   {
+        bool bUseAllBands = true;
         m_imgReader = ReaderType::New();
         m_ResamplersList = ResampleFilterListType::New();
 
@@ -152,6 +156,9 @@ private:
         bool bOutFts = HasValue("fts");
         if(!bOutNdvi && !bOutRvi && !bOutFts) {
             itkExceptionMacro("No output specified. Please specify at least one output (ndvi or rvi)");
+        }
+        if(HasValue("addallrefls")) {
+            bUseAllBands = (GetParameterInt("addallrefls") != 0);
         }
 
         auto factory = MetadataHelperFactory::New();
@@ -205,9 +212,17 @@ private:
             m_imgInputSplit->UpdateOutputInformation();
             m_imgInputSplit->GetOutput()->UpdateOutputInformation();
 
-            // add the RED and NIR bands from the input image
-            allList->PushBack(getResampledImage(curRes, nOutRes, m_imgInputSplit->GetOutput()->GetNthElement(nRedBandIdx)));
-            allList->PushBack(getResampledImage(curRes, nOutRes, m_imgInputSplit->GetOutput()->GetNthElement(nNirBandIdx)));
+            if(bUseAllBands) {
+                // add all bands from the input image
+                int nBandsNo = m_imgReader->GetOutput()->GetNumberOfComponentsPerPixel();
+                for(int i = 0; i<nBandsNo; i++) {
+                    allList->PushBack(getResampledImage(curRes, nOutRes, m_imgInputSplit->GetOutput()->GetNthElement(i)));
+                }
+            } else {
+                // add the RED and NIR bands from the input image
+                allList->PushBack(getResampledImage(curRes, nOutRes, m_imgInputSplit->GetOutput()->GetNthElement(nRedBandIdx)));
+                allList->PushBack(getResampledImage(curRes, nOutRes, m_imgInputSplit->GetOutput()->GetNthElement(nNirBandIdx)));
+            }
             // add the bands for NDVI and RVI
             allList->PushBack(getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(0)));
             allList->PushBack(getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(1)));

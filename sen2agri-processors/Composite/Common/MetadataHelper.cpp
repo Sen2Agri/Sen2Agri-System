@@ -114,15 +114,15 @@ double MetadataHelper::GetRelativeAzimuthAngle()
     MeanAngles_Type solarAngle = GetSolarMeanAngles();
     MeanAngles_Type sensorAngle = GetSensorMeanAngles();
 
-    double relAzimuth = sensorAngle.azimuth - 180.0 - solarAngle.azimuth;
-
+    double relAzimuth = solarAngle.azimuth - sensorAngle.azimuth/* - 180.0 */;
+/*
     if (relAzimuth < -180.0) {
         relAzimuth = relAzimuth + 360.0;
     }
     if (relAzimuth > 180.0) {
         relAzimuth = relAzimuth - 360.0;
     }
-
+*/
     return relAzimuth;
 }
 

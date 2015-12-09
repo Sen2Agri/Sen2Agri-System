@@ -59,7 +59,8 @@ public:
   OutputType operator ()()
   {
     OutputType pix;
-    for(size_t i=0;i<m_SatRSR->GetNbBands();i++)
+    auto nbBands = m_SatRSR->GetNbBands();
+    for(size_t i=0;i<nbBands;i++)
       pix.push_back(0.0);
 
     auto leaf_pars = LeafParametersType::New();

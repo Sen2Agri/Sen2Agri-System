@@ -25,9 +25,11 @@ RELATIVE_AZIMUTH_ANGLE=-40.2681487255
 #REGRESSION_TYPE="nn"
 #BEST_OF=1
 
+CUR_DATE=`date +%Y-%m-%d`
+
 #end of USER modif
 
-./lai_retrieve_processing.py --applocation /home/agrosu/sen2agri-processors-build --input \
+./lai_retrieve_processing.py --applocation ~/sen2agri-processors-build --input \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Sudmipy-West/SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130216_N2A_CSudmipy-OD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Sudmipy-West/SPOT4_HRVIR_XS_20130221_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130221_N2A_CSudmipy-OD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Sudmipy-West/SPOT4_HRVIR_XS_20130303_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130303_N2A_CSudmipy-OD0000B0000.xml" \
@@ -44,4 +46,4 @@ RELATIVE_AZIMUTH_ANGLE=-40.2681487255
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Sudmipy-West/SPOT4_HRVIR_XS_20130606_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130606_N2A_CSudmipy-OD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Sudmipy-West/SPOT4_HRVIR_XS_20130611_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130611_N2A_CSudmipy-OD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Sudmipy-West/SPOT4_HRVIR_XS_20130616_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130616_N2A_CSudmipy-OD0000B0000.xml" \
---res 0 --t0 20130216 --tend 20130616 --outdir /mnt/output/L3B/SPOT4-T5/Midp_W --rsrfile /home/agrosu/sen2agri/sen2agri-processors/VegetationStatus/otb-bv/data/spot4hrvir1.rsr --solarzenith $SOLAR_ZENITH_ANGLE --sensorzenith $SENSOR_ZENITH_ANGLE --relativeazimuth $RELATIVE_AZIMUTH_ANGLE
+--res 0 --t0 20130216 --tend 20130616 --outdir /mnt/output/L3B/SPOT4-T5/Midp_W/$CUR_DATE --rsrfile ~/sen2agri/sen2agri-processors/VegetationStatus/otb-bv/data/spot4hrvir1.rsr --solarzenith $SOLAR_ZENITH_ANGLE --sensorzenith $SENSOR_ZENITH_ANGLE --relativeazimuth $RELATIVE_AZIMUTH_ANGLE --modelsfolder /mnt/output/L3B/SPOT4-T5/GeneratedModels/

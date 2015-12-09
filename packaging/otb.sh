@@ -41,5 +41,11 @@ cmake ../OTB/SuperBuild \
 	-DUSE_SYSTEM_TIFF=ON \
 	-DUSE_SYSTEM_TINYXML=ON \
 	-DUSE_SYSTEM_ZLIB=ON
+
+sed -i -e "s|/home/grayshade/otb-install/|/|g" ~/otb-install/usr/lib/cmake/OTB-5.2/*.cmake
+sed -i -e "s|/home/grayshade/otb-install/|/|g" ~/otb-install/usr/lib/cmake/OTB-5.2/Modules/*.cmake
+sed -i -e "s|/home/grayshade/otb-install/|/|g" ~/otb-install/usr/lib/pkgconfig/openthreads.pc
+
 mkdir ~/tmp
 fpm -s dir -t rpm -n otb -v 5.0 -C ~/otb-install/ --workdir ~/tmp -p otb-VERSION.fc22.ARCH.rpm usr
+fpm -s dir -t rpm -n otb -v 5.2 -C ~/otb-install/ --workdir ~/tmp -p otb-VERSION.fc22.ARCH.rpm usr
