@@ -65,38 +65,11 @@ GaussianFilter::OutImageSource::Pointer GaussianFilter::GetOutputImageSource()
 
 void GaussianFilter::BuildOutputImageSource()
 {
-/*    typedef itk::VectorIndexSelectionCastImageFilter<FloatVectorImageType, ScalarImageType> IndexSelectionType;
-    IndexSelectionType::Pointer indexSelectionFilter = IndexSelectionType::New();
-    indexSelectionFilter->SetIndex(0);
-    indexSelectionFilter->SetInput(m_inputImage);
-    indexSelectionFilter->Update();
-*/
     m_gaussianFilter = DiscreteGaussianFilterType::New();
     m_gaussianFilter->SetInput(m_inputReader->GetOutput());
     m_gaussianFilter->SetVariance(m_fSigma);
     m_gaussianFilter->SetUseImageSpacing(false);
     m_gaussianFilter->SetMaximumKernelWidth(m_nKernelWidth);
-    //m_gaussianFilter->Update();
-
-//    typedef otb::VectorRescaleIntensityImageFilter<
-//        ScalarImageType, ScalarImageType> RescaleFilterType;
-
-    //ScalarImageType::Pointer output = ScalarImageType::New();
-    //ScalarImageType::PixelType outMin, outMax;
-    //output->SetRegions(m_inputReader->GetOutput()->GetRequestedRegion());
-    //output->Allocate();
-
-    //outMin.SetSize( filter->GetNumberOfComponentsPerPixel() );
-    //outMax.SetSize( output->GetNumberOfComponentsPerPixel() );
-    //outMin.Fill( 0 );
-    //outMax.Fill( 255 );
-
-    // TODO: Not sure if rescaling is really needed
-    //m_rescaler = RescaleFilterType::New();
-    //m_rescaler->SetOutputMinimum(0/*itk::NumericTraits< OutputPixelType >::min()*/);
-    //m_rescaler->SetOutputMaximum( 1/* itk::NumericTraits< OutputPixelType >::max()*/);
-    //m_rescaler->SetInput(m_gaussianFilter->GetOutput());
-
 }
 
 void GaussianFilter::WriteToOutputFile()
