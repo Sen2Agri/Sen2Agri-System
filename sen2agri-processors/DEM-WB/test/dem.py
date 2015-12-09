@@ -36,6 +36,7 @@ def ReprojectCoords(coords, src_srs, tgt_srs):
         trans_coords.append([x, y])
     return trans_coords
 
+
 def resample_dataset(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y):
     dataset = gdal.Open(src_file_name, gdal.gdalconst.GA_ReadOnly)
 
@@ -71,16 +72,13 @@ def resample_dataset(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y)
     gdal.ReprojectImage(dataset, dest, dataset.GetProjection(), dest.GetProjection(),
                         gdal.GRA_Bilinear)
 
+
 def get_dtm_tiles(points):
     """
     Returns a list of dtm tiles covering the given extent
     """
-    # extract
     a_x, a_y, b_x, b_y = points
-    #logger.debug("points ")
-    #logger.debug(points)
 
-    # check a is upper left corner
     if a_x < b_x and a_y > b_y:
         a_bb_x = int(math.floor(a_x / 5) * 5)
         a_bb_y = int(math.floor((a_y + 5) / 5) * 5)
@@ -90,25 +88,17 @@ def get_dtm_tiles(points):
         print("bounding box {} {} {} {}".format(
             a_bb_x, a_bb_y, b_bb_x, b_bb_y))
 
-        # get list of zip
-        x_numbers_list = [((x + 180) / 5) + 1
+        x_numbers_list = [(x + 180) / 5 + 1
                           for x in range(min(a_bb_x, b_bb_x), max(a_bb_x, b_bb_x), 5)]
         x_numbers_list_format = ["%02d" % (x,) for x in x_numbers_list]
+
         y_numbers_list = [(60 - x) / 5
                           for x in range(min(a_bb_y, b_bb_y), max(a_bb_y, b_bb_y), 5)]
         y_numbers_list_format = ["%02d" % (x,) for x in y_numbers_list]
 
-        #logger.debug(x_numbers_list_format)
-        #logger.debug(y_numbers_list_format)
-
         srtm_zips = ["srtm_" + str(x) + "_" + str(y) + ".tif"
                      for x in x_numbers_list_format
                      for y in y_numbers_list_format]
-
-        #logger.debug("zip to take ")
-        #logger.debug(srtm_zips)
-
-        print(srtm_zips)
 
         return srtm_zips
 
@@ -259,7 +249,7 @@ def process_DTM(context):
     if context.dem_r2:
         run_command(["gdal_translate",
                      "-outsize", str(int(round(context.size_x / 2.0))), str(int(round(context.size_y
-                         / 2.0))),
+                                                                                      / 2.0))),
                      context.dem_r1,
                      context.dem_r2])
     # resample_dataset(context.dem_r1, context.dem_r2, 20, -20)
@@ -279,7 +269,7 @@ def process_DTM(context):
 
     run_command(["gdal_translate",
                  "-outsize", str(int(round(context.size_x / inv_scale))), str(int(round(context.size_y /
-                     inv_scale))),
+                                                                                        inv_scale))),
                  context.dem_r1,
                  context.dem_coarse])
     # resample_dataset(context.dem_r2, context.dem_coarse, 240, -240)
