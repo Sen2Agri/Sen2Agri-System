@@ -90,7 +90,7 @@ outL3AFile = outDir + '/L3AResult#_' + resolution + 'M.tif'
 
 WEIGHT_AOT_MIN="0.33"
 WEIGHT_AOT_MAX="1"
-AOT_MAX="50"
+AOT_MAX="0.8"
 
 COARSE_RES="240"
 SIGMA_SMALL_CLD="2"

@@ -16,7 +16,7 @@ import math
 from xml.dom import minidom
 
 
-GENERATE_MODEL = True
+GENERATE_MODEL = False
 
 def runCmd(cmdArray):
     start = time.time()
@@ -51,6 +51,7 @@ parser.add_argument('--solarzenith', help='The value for solar zenith angle', ty
 parser.add_argument('--sensorzenith', help='The value for sensor zenith angle', type=float, required=True)
 parser.add_argument('--relativeazimuth', help='The value for relative azimuth angle', type=float, required=True)
 parser.add_argument('--tileid', help="Tile id", required=False)
+parser.add_argument('--modelsfolder', help='The folder where the models are located. If not specified, is considered the outdir', required=False)
 
 args = parser.parse_args()
 
@@ -72,6 +73,23 @@ tileID="TILE_none"
 if args.tileid:
     tileID = "TILE_{}".format(args.tileid)
 
+# By default, if not specified, models folder is the given out dir.
+modelsFolder = outDir
+if args.modelsfolder:
+    if os.path.exists(args.modelsfolder):
+        if not os.path.isdir(args.modelsfolder):
+            print("Error: The specified models folder is not a folder but a file.")
+            exit(1)
+        else:
+            modelsFolder = args.modelsfolder
+    else:
+        if GENERATE_MODEL:
+            os.makedirs(args.modelsfolder)
+            modelsFolder = args.modelsfolder
+        else:
+            print("Error: The specified models folder does not exist.")
+            exit(1)
+    
 if os.path.exists(outDir):
     if not os.path.isdir(outDir):
         print("Can't create the output directory because there is a file with the same name")
@@ -101,8 +119,8 @@ class LaiModel(object):
 
         #parameters for TrainingDataGenerator
         BV_IDX="0"
-        ADD_REFLS="0"
-        RED_INDEX="0"
+        ADD_REFLS="1"
+        RED_INDEX="1"
         NIR_INDEX="2"
 
         #parameters for generating model
@@ -154,8 +172,8 @@ class LaiModel(object):
         print("SENSOR ANGLE reduced from {} to {}".format(sensorZenithAngle, sensorZenithReduced))
         print("AZIMUTH ANGLE reduced from {} to {}".format(relativeAzimuthAngle, relativeAzimuthReduced))
 
-        outModelFile = "{0}/Model_THETA_S_{1}_THETA_V_{2}_REL_PHI_{3}.txt".format(outDir, solarZenithReduced, sensorZenithReduced, relativeAzimuthReduced)
-        outErrEstFile = "{0}/Err_Est_Model_THETA_S_{1}_THETA_V_{2}_REL_PHI_{3}.txt".format(outDir, solarZenithReduced, sensorZenithReduced, relativeAzimuthReduced)
+        outModelFile = "{0}/Model_THETA_S_{1}_THETA_V_{2}_REL_PHI_{3}.txt".format(modelsFolder, solarZenithReduced, sensorZenithReduced, relativeAzimuthReduced)
+        outErrEstFile = "{0}/Err_Est_Model_THETA_S_{1}_THETA_V_{2}_REL_PHI_{3}.txt".format(modelsFolder, solarZenithReduced, sensorZenithReduced, relativeAzimuthReduced)
             
         # Generating model
         print("Generating model ...")
@@ -241,13 +259,13 @@ outFittedTimeSeries = "{}/FittedTimeSeries.tif".format(outDir)
 
 #MODELS_INPUT_LIST=""
 modelsInputList=[]
-print(outDir)
-for file in glob.glob("{}/Model_*.txt".format(outDir)):
+print(modelsFolder)
+for file in glob.glob("{}/Model_*.txt".format(modelsFolder)):
     modelsInputList.append(file)
 
 #ERR_MODELS_INPUT_LIST=""
 errModelsInputList=[]
-for file in glob.glob("{}/Err_Est_Model_*.txt".format(outDir)):
+for file in glob.glob("{}/Err_Est_Model_*.txt".format(modelsFolder)):
     errModelsInputList.append(file)
     
 
@@ -294,9 +312,9 @@ for xml in args.input:
     
     #timed_exec "try otbcli NdviRviExtraction $IMG_INV_OTB_LIBS_ROOT -xml $xml $RESOLUTION_OPTION -fts $OUT_NDVI_RVI"
     if resolution == 0:
-        runCmd(["otbcli", "NdviRviExtraction", imgInvOtbLibsLocation, "-xml", xml, "-fts", outNdviRvi])
+        runCmd(["otbcli", "NdviRviExtraction2", imgInvOtbLibsLocation, "-xml", xml, "-fts", outNdviRvi])
     else:
-        runCmd(["otbcli", "NdviRviExtraction", imgInvOtbLibsLocation, "-xml", xml, "-outres", resolution, "-fts", outNdviRvi])
+        runCmd(["otbcli", "NdviRviExtraction2", imgInvOtbLibsLocation, "-xml", xml, "-outres", resolution, "-fts", outNdviRvi])
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     #timed_exec "try otbcli GetLaiRetrievalModel $IMG_INV_OTB_LIBS_ROOT -xml $xml -ilmodels $MODELS_INPUT_LIST -ilerrmodels $ERR_MODELS_INPUT_LIST -outm $MODEL_FILE -outerr $ERR_MODEL_FILE"
     runCmd(["otbcli", "GetLaiRetrievalModel", imgInvOtbLibsLocation, "-xml", xml, "-ilmodels"] + modelsInputList + ["-ilerrmodels"] + errModelsInputList + ["-outm", modelFile, "-outerr", errModelFile])
@@ -329,9 +347,15 @@ allLaiParam=[]
 #ALL_ERR_PARAM=""
 allErrParam=[]
 #build the parameters -ilxml for -illai
-while i < cnt:
+for xml in args.input:
     #CUR_LAI_IMG=${OUT_LAI_IMG//[#]/$i}
     counterString = str(i)
+
+    lastPoint = xml.rfind('.')
+    lastSlash = xml.rfind('/')
+    if lastPoint != -1 and lastSlash != -1 and lastSlash + 1 < lastPoint:
+        counterString = xml[lastSlash + 1:lastPoint]
+    
     #curLaiImg = outLaiImg.replace("#", counterString)
     #CUR_ERR_IMG=${OUT_LAI_ERR_IMG//[#]/$i}
     #curErrImg = outLaiErrImg.replace("#", counterString)
