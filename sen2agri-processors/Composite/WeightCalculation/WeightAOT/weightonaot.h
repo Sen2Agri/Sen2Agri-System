@@ -27,10 +27,10 @@ public:
     {
     return !(*this != other);
     }
-  void Initialize(int nBand, float fQuantif, int nAotMax, float fMinWeight, float fMaxWeight) {
+  void Initialize(int nBand, float fQuantif, float fAotMax, float fMinWeight, float fMaxWeight) {
       m_nBand = nBand;
       m_fAotQuantificationVal = fQuantif;
-      m_nAotMax = nAotMax;
+      m_fAotMax = fAotMax;
       m_fMinWeightAot = fMinWeight;
       m_fMaxWeightAot = fMaxWeight;
   }
@@ -39,12 +39,12 @@ public:
   {
       float val = static_cast< float >( A[m_nBand] )/m_fAotQuantificationVal;
       if(val < 0) {
-          return -10000;
+          return 0;
       }
 
       float fRetAOT;
-      if(val < m_nAotMax) {
-          fRetAOT = m_fMinWeightAot + (m_fMaxWeightAot - m_fMinWeightAot) * (1.0 - val/m_nAotMax);
+      if(val < m_fAotMax) {
+          fRetAOT = m_fMinWeightAot + (m_fMaxWeightAot - m_fMinWeightAot) * (1.0 - val/m_fAotMax);
       } else {
           fRetAOT = m_fMinWeightAot;
       }
@@ -55,7 +55,7 @@ public:
 private:
   int m_nBand;
   float m_fAotQuantificationVal;
-  int m_nAotMax;
+  float m_fAotMax;
   float m_fMinWeightAot;
   float m_fMaxWeightAot;
 };
@@ -85,7 +85,7 @@ public:
     void SetInputImageReader(ImageSource::Pointer inputReader);
     void SetOutputFileName(std::string &outFile);
 
-    void Initialize(int nBand, float fQuantif, int nAotMax, float fMinWeight, float fMaxWeight);
+    void Initialize(int nBand, float fQuantif, float fAotMax, float fMinWeight, float fMaxWeight);
 
     const char *GetNameOfClass() { return "WeightOnAOT";}
     OutImageSource::Pointer GetOutputImageSource();
@@ -100,7 +100,7 @@ private:
 
     int m_nBand;
     float m_fAotQuantificationVal;
-    int m_nAotMax;
+    float m_fAotMax;
     float m_fMinWeightAot;
     float m_fMaxWeightAot;
 
