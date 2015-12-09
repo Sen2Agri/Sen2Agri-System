@@ -262,18 +262,12 @@ def process_DTM(context):
                          / 2.0))),
                      context.dem_r1,
                      context.dem_r2])
-        # resample_dataset(context.dem_r1, context.dem_r2, 20, -20)
-        # # run_command(["gdal_translate",
-        #              # "-outsize", str(int(round(context.size_x / 2.0))), str(int(round(context.size_y
-        #              #     / 2.0))),
-        #              "-outsize", "50%", "50%",
-        #              context.dem_r1,
-        #              context.dem_r2])
-        # run_command(["otbcli_RigidTransformResample",
-        #              "-in", context.dem_r1,
-        #              "-out", context.dem_r2,
-        #              "-transform.type.id.scalex", "0.5",
-        #              "-transform.type.id.scaley", "0.5"])
+    # resample_dataset(context.dem_r1, context.dem_r2, 20, -20)
+    # run_command(["otbcli_RigidTransformResample",
+    #              "-in", context.dem_r1,
+    #              "-out", context.dem_r2,
+    #              "-transform.type.id.scalex", "0.5",
+    #              "-transform.type.id.scaley", "0.5"])
 
     if context.mode == 'LANDSAT':
         scale = 1.0 / 8
@@ -288,18 +282,12 @@ def process_DTM(context):
                      inv_scale))),
                  context.dem_r1,
                  context.dem_coarse])
-#     resample_dtaset(context.dem_r2, context.dem_coarse, 240, -240)
-        # run_command(["gdal_translate",
-        #              # "-outsize", str(int(round(context.size_x / inv_scale))), str(int(round(context.size_y /
-        #              #     inv_scale))),
-        #              "-outsize", str(100.0 / inv_scale) + "%", str(100.0 / inv_scale) + "%",
-        #              context.dem_r1,
-        #              context.dem_coarse])
-        # run_command(["otbcli_RigidTransformResample",
-        #              "-in", context.dem_r1,
-        #              "-out", context.dem_coarse,
-        #              "-transform.type.id.scalex", str(scale),
-        #              "-transform.type.id.scaley", str(scale)])
+    # resample_dataset(context.dem_r2, context.dem_coarse, 240, -240)
+    # run_command(["otbcli_RigidTransformResample",
+    #              "-in", context.dem_r1,
+    #              "-out", context.dem_coarse,
+    #              "-transform.type.id.scalex", str(scale),
+    #              "-transform.type.id.scaley", str(scale)])
 
     run_command(["gdaldem", "slope",
                  # "-s", "111120",
