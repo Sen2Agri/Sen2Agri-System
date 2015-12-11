@@ -371,3 +371,17 @@ QString PersistenceManager::GetDashboardProducts()
 
     return {};
 }
+
+QString PersistenceManager::GetDashboardSentinelTiles(int siteId)
+{
+    RunAsync([this, siteId] { return dbProvider.GetDashboardSentinelTiles(siteId); });
+
+    return {};
+}
+
+QString PersistenceManager::GetDashboardLandsatTiles(int siteId)
+{
+    RunAsync([this, siteId] { return dbProvider.GetDashboardLandsatTiles(siteId); });
+
+    return {};
+}

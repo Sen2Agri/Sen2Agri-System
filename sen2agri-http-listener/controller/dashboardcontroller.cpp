@@ -32,6 +32,10 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
                 getDashboardJobTimeline(request, response);
             } else if (action == "GetDashboardProducts") {
                 getDashboardProducts(request, response);
+            } else if (action == "GetDashboardSentinelTiles") {
+                getDashboardSentinelTiles(request, response);
+            } else if (action == "GetDashboardLandsatTiles") {
+                getDashboardLandsatTiles(request, response);
             } else {
                 response.setStatus(400, "Bad Request");
             }
@@ -144,6 +148,56 @@ void DashboardController::getDashboardProducts(const HttpRequest &, HttpResponse
 
     const auto &data =
         WaitForResponseAndThrow(persistenceManagerClient.GetDashboardProducts());
+
+    response.setHeader("Content-Type", "application/json");
+    response.write(data.toUtf8(), true);
+}
+
+void DashboardController::getDashboardSentinelTiles(const HttpRequest &request,
+                                                  HttpResponse &response)
+{
+    const auto &siteIdStr = request.getParameter("siteId");
+    bool ok;
+    auto siteId = siteIdStr.toInt(&ok);
+
+    if (!ok) {
+        Logger::error(QStringLiteral("Invalid siteId value: %1").arg(QString::fromUtf8(siteIdStr)));
+
+        response.setStatus(400, "Bad Request");
+        return;
+    }
+
+    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
+        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
+        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
+
+    const auto &data =
+        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardSentinelTiles(siteId));
+
+    response.setHeader("Content-Type", "application/json");
+    response.write(data.toUtf8(), true);
+}
+
+void DashboardController::getDashboardLandsatTiles(const HttpRequest &request,
+                                                  HttpResponse &response)
+{
+    const auto &siteIdStr = request.getParameter("siteId");
+    bool ok;
+    auto siteId = siteIdStr.toInt(&ok);
+
+    if (!ok) {
+        Logger::error(QStringLiteral("Invalid siteId value: %1").arg(QString::fromUtf8(siteIdStr)));
+
+        response.setStatus(400, "Bad Request");
+        return;
+    }
+
+    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
+        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
+        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
+
+    const auto &data =
+        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardLandsatTiles(siteId));
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
