@@ -16,6 +16,8 @@ class DashboardController : public HttpRequestHandler
     void getDashboardJobTimeline(const HttpRequest &request, HttpResponse &response);
     
     void getDashboardProducts(const HttpRequest &request, HttpResponse &response);
+    void getDashboardSentinelTiles(const HttpRequest &request, HttpResponse &response);
+    void getDashboardLandsatTiles(const HttpRequest &request, HttpResponse &response);
 
     void cancelJob(const HttpRequest &request, HttpResponse &response);
     void pauseJob(const HttpRequest &request, HttpResponse &response);
