@@ -372,6 +372,13 @@ QString PersistenceManager::GetDashboardProducts()
     return {};
 }
 
+QString PersistenceManager::GetDashboardSites()
+{
+    RunAsync([this] { return dbProvider.GetDashboardSites(); });
+
+    return {};
+}
+
 QString PersistenceManager::GetDashboardSentinelTiles(int siteId)
 {
     RunAsync([this, siteId] { return dbProvider.GetDashboardSentinelTiles(siteId); });
