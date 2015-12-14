@@ -73,6 +73,7 @@ public:
     QString GetDashboardJobTimeline(int jobId);
     
     QString GetDashboardProducts();
+    QString GetDashboardSites();
     QString GetDashboardSentinelTiles(int siteId);
     QString GetDashboardLandsatTiles(int siteId);
 };
