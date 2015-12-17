@@ -91,4 +91,9 @@ public slots:
     QString GetDashboardProcessorStatistics();
     QString GetDashboardProductAvailability(const QDateTime since);
     QString GetDashboardJobTimeline(int jobId);
+    
+    QString GetDashboardProducts(QVariant siteId, QVariant processorId);
+    QString GetDashboardSites();
+    QString GetDashboardSentinelTiles(int siteId);
+    QString GetDashboardLandsatTiles(int siteId);
 };

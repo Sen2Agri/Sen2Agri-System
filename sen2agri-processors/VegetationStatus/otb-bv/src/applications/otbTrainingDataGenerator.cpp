@@ -92,7 +92,7 @@ private:
           itkGenericExceptionMacro(<< "You should either set addrefls to 1 OR set the redidx and niridx to valid values");
       }
       std::string outFileName = GetParameterString("outtrainfile");
-
+      bool bUseAllReflectanceBands = true;
 
       try
         {
@@ -156,7 +156,21 @@ private:
               vectRefls.pop_back();
               vectRefls.pop_back();
 
-              outline += accumulate( vectRefls.begin(), vectRefls.end(), std::string(" ") );
+              if(bUseAllReflectanceBands) {
+                  for(unsigned int i = 0; i<vectRefls.size(); i++) {
+                      outline += " ";
+                      outline += vectRefls[i];
+                  }
+              } else {
+                  // use only RED and NIR
+                  if(redIdx < (int)vectRefls.size() && nirIdx < (int)vectRefls.size()) {
+                    outline += " ";
+                    outline += vectRefls[redIdx];
+                    outline += " ";
+                    outline += vectRefls[nirIdx];
+                  }
+              }
+              //outline += accumulate( vectRefls.begin(), vectRefls.end(), std::string(" ") );
           }
           // TODO trim line
           // TODO: The angles are not added

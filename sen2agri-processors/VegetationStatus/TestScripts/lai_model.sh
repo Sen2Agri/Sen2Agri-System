@@ -43,8 +43,8 @@ GENERATED_SAMPLES_NO=100
 
 #parameters for TrainingDataGenerator
 BV_IDX=0
-ADD_REFLS=0
-RED_INDEX=0
+ADD_REFLS=1
+RED_INDEX=1
 NIR_INDEX=2
 
 #parameters for generating model

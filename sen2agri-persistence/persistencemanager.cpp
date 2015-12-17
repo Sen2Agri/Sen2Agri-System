@@ -364,3 +364,31 @@ QString PersistenceManager::GetDashboardJobTimeline(int jobId)
 
     return {};
 }
+
+QString PersistenceManager::GetDashboardProducts(QVariant siteId, QVariant processorId)
+{
+    RunAsync([this] { return dbProvider.GetDashboardProducts(siteId, processorId); });
+
+    return {};
+}
+
+QString PersistenceManager::GetDashboardSites()
+{
+    RunAsync([this] { return dbProvider.GetDashboardSites(); });
+
+    return {};
+}
+
+QString PersistenceManager::GetDashboardSentinelTiles(int siteId)
+{
+    RunAsync([this, siteId] { return dbProvider.GetDashboardSentinelTiles(siteId); });
+
+    return {};
+}
+
+QString PersistenceManager::GetDashboardLandsatTiles(int siteId)
+{
+    RunAsync([this, siteId] { return dbProvider.GetDashboardLandsatTiles(siteId); });
+
+    return {};
+}

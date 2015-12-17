@@ -26,9 +26,11 @@ RELATIVE_AZIMUTH_ANGLE=92.598371891
 #REGRESSION_TYPE="nn"
 #BEST_OF=1
 
+CUR_DATE=`date +%Y-%m-%d`
+
 #end of USER modif
 
-./lai_retrieve_processing.py --applocation /home/agrosu/sen2agri-processors-build --input \
+./lai_retrieve_processing.py --applocation ~/sen2agri-processors-build --input \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130220_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130220_N2A_ESouthAfricaD0000B0000.xml" \
@@ -52,4 +54,4 @@ RELATIVE_AZIMUTH_ANGLE=92.598371891
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130605_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130605_N2A_ESouthAfricaD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000.xml" \
---res 0 --t0 20130131 --tend 20130615 --outdir /mnt/output/L3B/SPOT4-T5/SouthAfrica --rsrfile /home/agrosu/sen2agri/sen2agri-processors/VegetationStatus/otb-bv/data/spot4hrvir1.rsr --solarzenith $SOLAR_ZENITH_ANGLE --sensorzenith $SENSOR_ZENITH_ANGLE --relativeazimuth $RELATIVE_AZIMUTH_ANGLE
+--res 0 --t0 20130131 --tend 20130615 --outdir /mnt/output/L3B/SPOT4-T5/SouthAfrica/$CUR_DATE --rsrfile ~/sen2agri/sen2agri-processors/VegetationStatus/otb-bv/data/spot4hrvir1.rsr --solarzenith $SOLAR_ZENITH_ANGLE --sensorzenith $SENSOR_ZENITH_ANGLE --relativeazimuth $RELATIVE_AZIMUTH_ANGLE --modelsfolder /mnt/output/L3B/SPOT4-T5/GeneratedModels/

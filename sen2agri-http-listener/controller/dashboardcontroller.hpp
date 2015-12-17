@@ -14,6 +14,11 @@ class DashboardController : public HttpRequestHandler
     void getDashboardProcessorStatistics(const HttpRequest &request, HttpResponse &response);
     void getDashboardProductAvailability(const HttpRequest &request, HttpResponse &response);
     void getDashboardJobTimeline(const HttpRequest &request, HttpResponse &response);
+    
+    void getDashboardProducts(const HttpRequest &request, HttpResponse &response);
+    void getDashboardSites(const HttpRequest &request, HttpResponse &response);
+    void getDashboardSentinelTiles(const HttpRequest &request, HttpResponse &response);
+    void getDashboardLandsatTiles(const HttpRequest &request, HttpResponse &response);
 
     void cancelJob(const HttpRequest &request, HttpResponse &response);
     void pauseJob(const HttpRequest &request, HttpResponse &response);

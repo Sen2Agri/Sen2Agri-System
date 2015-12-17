@@ -171,14 +171,12 @@ def create_context(args):
 
     wgs84_extent = ReprojectCoords(extent, source_srs, target_srs)
 
-    swbd_directory = os.path.join(args.working_dir, "swbd")
-    if not os.path.exists(swbd_directory):
-        os.mkdir(swbd_directory)
-
     d = dict(image=args.input,
              mode=mode,
-             dtm_directory=args.dtm, working_directory=args.working_dir,
-             swbd_directory=swbd_directory,
+             srtm_directory=args.srtm,
+             swbd_directory=args.swbd,
+             working_directory=args.working_dir,
+             swbd_list=os.path.join(args.working_dir, "swbd.txt"),
              tile_id=tile_id,
              dem_vrt=os.path.join(args.working_dir, "dem.vrt"),
              dem_nodata=os.path.join(args.working_dir, "dem.tif"),
@@ -226,7 +224,7 @@ def process_DTM(context):
                                context.wgs84_extent[2][0],
                                context.wgs84_extent[2][1]])
 
-    dtm_tiles = [os.path.join(context.dtm_directory, tile)
+    dtm_tiles = [os.path.join(context.srtm_directory, tile)
                  for tile in dtm_tiles]
 
     missing_tiles = []
@@ -235,8 +233,8 @@ def process_DTM(context):
             missing_tiles.append(tile)
 
     if missing_tiles:
-        print("The following SRTM tiles are missing: {}. Please provide them in the DTM directory ({}).".format(
-            [os.path.basename(tile) for tile in missing_tiles], context.dtm_directory))
+        print("The following SRTM tiles are missing: {}. Please provide them in the SRTM directory ({}).".format(
+            [os.path.basename(tile) for tile in missing_tiles], context.srtm_directory))
         sys.exit(1)
 
     run_command(["gdalbuildvrt",
@@ -264,18 +262,12 @@ def process_DTM(context):
                          / 2.0))),
                      context.dem_r1,
                      context.dem_r2])
-        # resample_dataset(context.dem_r1, context.dem_r2, 20, -20)
-        # # run_command(["gdal_translate",
-        #              # "-outsize", str(int(round(context.size_x / 2.0))), str(int(round(context.size_y
-        #              #     / 2.0))),
-        #              "-outsize", "50%", "50%",
-        #              context.dem_r1,
-        #              context.dem_r2])
-        # run_command(["otbcli_RigidTransformResample",
-        #              "-in", context.dem_r1,
-        #              "-out", context.dem_r2,
-        #              "-transform.type.id.scalex", "0.5",
-        #              "-transform.type.id.scaley", "0.5"])
+    # resample_dataset(context.dem_r1, context.dem_r2, 20, -20)
+    # run_command(["otbcli_RigidTransformResample",
+    #              "-in", context.dem_r1,
+    #              "-out", context.dem_r2,
+    #              "-transform.type.id.scalex", "0.5",
+    #              "-transform.type.id.scaley", "0.5"])
 
     if context.mode == 'LANDSAT':
         scale = 1.0 / 8
@@ -290,18 +282,12 @@ def process_DTM(context):
                      inv_scale))),
                  context.dem_r1,
                  context.dem_coarse])
-#     resample_dtaset(context.dem_r2, context.dem_coarse, 240, -240)
-        # run_command(["gdal_translate",
-        #              # "-outsize", str(int(round(context.size_x / inv_scale))), str(int(round(context.size_y /
-        #              #     inv_scale))),
-        #              "-outsize", str(100.0 / inv_scale) + "%", str(100.0 / inv_scale) + "%",
-        #              context.dem_r1,
-        #              context.dem_coarse])
-        # run_command(["otbcli_RigidTransformResample",
-        #              "-in", context.dem_r1,
-        #              "-out", context.dem_coarse,
-        #              "-transform.type.id.scalex", str(scale),
-        #              "-transform.type.id.scaley", str(scale)])
+    # resample_dataset(context.dem_r2, context.dem_coarse, 240, -240)
+    # run_command(["otbcli_RigidTransformResample",
+    #              "-in", context.dem_r1,
+    #              "-out", context.dem_coarse,
+    #              "-transform.type.id.scalex", str(scale),
+    #              "-transform.type.id.scaley", str(scale)])
 
     run_command(["gdaldem", "slope",
                  # "-s", "111120",
@@ -360,17 +346,16 @@ def process_WB(context):
     run_command(["otbcli",
                  "DownloadSWBDTiles",
                  "-il", context.image,
-                 "-mode.download.outdir", context.swbd_directory])
+                 "-mode", "list",
+                 "-mode.list.indir", context.swbd_directory,
+                 "-mode.list.outlist", context.swbd_list])
 
-    for file in glob.glob(os.path.join(context.swbd_directory, "*.zip")):
-        # don't use before Python 2.7.4
-        with zipfile.ZipFile(file) as zf:
-            zf.extractall(context.swbd_directory)
+    with open(context.swbd_list) as f:
+        swbd_tiles = f.read().splitlines()
 
     run_command(["otbcli_ConcatenateVectorData",
                  "-out", context.wb,
-                 "-vd"] + glob.glob(os.path.join(context.swbd_directory,
-                                                 "*.shp")))
+                 "-vd"] + swbd_tiles)
 
     run_command(["ogr2ogr",
                  "-s_srs", "EPSG:4326",
@@ -388,17 +373,17 @@ def process_WB(context):
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Creates DEM and WB data for MACCS")
-    parser.add_argument('-i', '--input', required=True, help="input image")
-    parser.add_argument('-d', '--dtm', required=True, help="SRTM dataset path")
+    parser.add_argument('input', help="input image")
+    parser.add_argument('--srtm', required=True, help="SRTM dataset path")
+    parser.add_argument('--swbd', required=True, help="SWBD dataset path")
     parser.add_argument('-w', '--working-dir', required=True,
                         help="working directory")
-    parser.add_argument('-o', '--output', required=True, help="output location")
+    parser.add_argument('output', help="output location")
 
     args = parser.parse_args()
 
     return create_context(args)
 
 context = parse_arguments()
-print(context.tile_id)
 process_DTM(context)
 process_WB(context)

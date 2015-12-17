@@ -39,21 +39,21 @@ CreateS2AnglesRaster::OutputImageType::Pointer CreateS2AnglesRaster::DoExecute()
     auto solarAngles = pHelper->GetDetailedSolarAngles();
     int nBandsForRes = pHelper->GetBandsNoForCurrentResolution();
 
-    if((viewingAngles.size() == 0) || (viewingAngles.size() != nBandsForRes) ||
+    if((viewingAngles.size() == 0) || (viewingAngles.size() != (unsigned int)nBandsForRes) ||
             (solarAngles.Zenith.Values.size() == 0) || (solarAngles.Azimuth.Values.size() == 0)) {
         itkExceptionMacro("Mission does not have any detailed viewing or solar angles or viewing angles differ from the number of bands!");
     }
 
-    if(solarAngles.Zenith.Values.size() != nGridSize ||
-        solarAngles.Azimuth.Values.size() != nGridSize ) {
+    if(solarAngles.Zenith.Values.size() != (unsigned int)nGridSize ||
+        solarAngles.Azimuth.Values.size() != (unsigned int)nGridSize ) {
         itkExceptionMacro("The width and/or height of solar angles from the xml file is/are not as expected: "
                           << solarAngles.Azimuth.Values.size() << " or " <<
                           solarAngles.Azimuth.Values.size() << " instead " << nGridSize);
     }
 
     for (int band = 0; band < nBandsForRes; band++) {
-        if(viewingAngles[band].Angles.Zenith.Values.size() != nGridSize ||
-            viewingAngles[band].Angles.Azimuth.Values.size() != nGridSize )
+        if(viewingAngles[band].Angles.Zenith.Values.size() != (unsigned int)nGridSize ||
+            viewingAngles[band].Angles.Azimuth.Values.size() != (unsigned int)nGridSize )
             itkExceptionMacro("The width and/or height of computed angles from the xml file is/are not as expected: "
                               << viewingAngles[band].Angles.Zenith.Values.size() << " or " <<
                               viewingAngles[band].Angles.Azimuth.Values.size() << " instead " << nGridSize);
@@ -65,8 +65,8 @@ CreateS2AnglesRaster::OutputImageType::Pointer CreateS2AnglesRaster::DoExecute()
     m_AnglesRaster->SetNumberOfComponentsPerPixel(nTotalAnglesNo);
     m_AnglesRaster->Allocate();
 
-    for(unsigned int i = 0; i < nGridSize; i++) {
-        for(unsigned int j = 0; j < nGridSize; j++) {
+    for(unsigned int i = 0; i < (unsigned int)nGridSize; i++) {
+        for(unsigned int j = 0; j < (unsigned int)nGridSize; j++) {
             itk::VariableLengthVector<float> vct(nTotalAnglesNo);
             vct[0] = solarAngles.Zenith.Values[i][j];
             vct[1] = solarAngles.Azimuth.Values[i][j];

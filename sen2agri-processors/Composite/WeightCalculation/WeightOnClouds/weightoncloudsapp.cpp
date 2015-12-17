@@ -31,12 +31,12 @@ namespace otb
 namespace Wrapper
 {
 
-class WeightOnCloudsApp : public Application
+class WeightOnClouds : public Application
 {
 
 public:
   /** Standard class typedefs. */
-  typedef WeightOnCloudsApp                      Self;
+  typedef WeightOnClouds                      Self;
   typedef Application                   Superclass;
   typedef itk::SmartPointer<Self>       Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
@@ -44,7 +44,7 @@ public:
   /** Standard macro */
   itkNewMacro(Self);
 
-  itkTypeMacro(WeightOnCloudsApp, otb::Application);
+  itkTypeMacro(WeightOnClouds, otb::Application);
 
 private:
   void DoInit()
@@ -81,7 +81,7 @@ private:
 
     AddParameter(ParameterType_Int, "kernelwidth", "Gaussian filter kernel width");
     SetParameterDescription("kernelwidth", "The gaussian filter kernel width.");
-    SetDefaultParameterInt("kernelwidth", 81);
+    SetDefaultParameterInt("kernelwidth", 401);
     MandatoryOff("kernelwidth");
 
     AddParameter(ParameterType_Int, "outres", "Resolution of the output image");
@@ -184,5 +184,5 @@ private:
 } // namespace Wrapper
 } // namespace otb
 
-OTB_APPLICATION_EXPORT(otb::Wrapper::WeightOnCloudsApp)
+OTB_APPLICATION_EXPORT(otb::Wrapper::WeightOnClouds)
 
