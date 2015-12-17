@@ -142,20 +142,48 @@ void DashboardController::getDashboardJobTimeline(const HttpRequest &request,
     response.write(data.toUtf8(), true);
 }
 
-void DashboardController::getDashboardProducts(const HttpRequest &, HttpResponse &response)
+void DashboardController::getDashboardProducts(const HttpRequest &request, HttpResponse &response)
 {
+    bool ok;
+	const auto &siteIdStr = request.getParameter("siteId");
+    QVariant siteId;
+	
+    if (!siteIdStr.isNull()) {
+        siteId = QVariant(siteIdStr.toInt(&ok));
+	    if (!ok) {
+	        Logger::error(QStringLiteral("Invalid siteId value: %1").arg(QString::fromUtf8(siteIdStr)));
+	
+	        response.setStatus(400, "Bad Request");
+	        return;
+	    }
+	}
+	
+	const auto &processorIdStr = request.getParameter("processorId");
+    QVariant processorId;
+    
+    if (!processorIdStr.isNull()) {
+        processorId = QVariant(processorIdStr.toInt(&ok));
+	    if (!ok) {
+	        Logger::error(QStringLiteral("Invalid processorId value: %1").arg(QString::fromUtf8(processorIdStr)));
+	
+	        response.setStatus(400, "Bad Request");
+	        return;
+	    }
+	}
+
+    
     OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
         OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
         QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
 
     const auto &data =
-        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardProducts());
+        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardProducts(siteId, processorId));
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
 }
 
-void DashboardController::getDashboardSites(const HttpRequest &, HttpResponse &response)
+void DashboardController::getDashboardSites(const HttpRequest &request, HttpResponse &response)
 {
     OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
         OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
