@@ -169,6 +169,8 @@
       <arg name="jsonData" type="s" direction="out" />
     </method>
     <method name="GetDashboardProducts">
+      <arg name="siteId" type="i" direction="in" />
+      <arg name="processorId" type="i" direction="in" />
       <arg name="jsonData" type="s" direction="out" />
     </method>
     <method name="GetDashboardSites">

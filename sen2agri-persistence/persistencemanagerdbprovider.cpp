@@ -930,13 +930,22 @@ QString PersistenceManagerDBProvider::GetDashboardJobTimeline(int jobId)
     });
 }
 
-QString PersistenceManagerDBProvider::GetDashboardProducts()
+QString PersistenceManagerDBProvider::GetDashboardProducts(QVariant siteId, QVariant processorId)
 {
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
         auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_products()"));
+            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_products(:siteId, :processorId)"));
+        if (!siteId.isNull())
+            query.bindValue(QStringLiteral(":siteId"), siteId.toInt());
+        else
+            query.bindValue(QStringLiteral(":siteId"), siteId);
+
+        if (!processorId.isNull())
+            query.bindValue(QStringLiteral(":processorId"), processorId.toInt());
+        else
+            query.bindValue(QStringLiteral(":processorId"), processorId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {

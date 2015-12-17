@@ -365,9 +365,9 @@ QString PersistenceManager::GetDashboardJobTimeline(int jobId)
     return {};
 }
 
-QString PersistenceManager::GetDashboardProducts()
+QString PersistenceManager::GetDashboardProducts(QVariant siteId, QVariant processorId)
 {
-    RunAsync([this] { return dbProvider.GetDashboardProducts(); });
+    RunAsync([this] { return dbProvider.GetDashboardProducts(siteId, processorId); });
 
     return {};
 }
