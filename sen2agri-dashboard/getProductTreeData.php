@@ -1,5 +1,7 @@
 <?php
 
+require_once('ConfigParams.php');
+
 function findSite($siteName, $siteObjArr) {
 	foreach($siteObjArr as $siteObj) {
 		if ($siteObj->text == $siteName)
@@ -37,9 +39,9 @@ $products = array();
 
 try {
 	
-	$URL = "http://sen2agri-dev:8080/dashboard/GetDashboardProducts";
-	$PRODUCT_ROOT_FOLDER = "/mnt/output";
-	$SITE_PRODUCT_RELATIVE_FOLDER = "files/Sen2AgriFiles";
+	$URL = ConfigParams::$SERVICES_DASHBOARD_PRODUCTS_URL; //"http://sen2agri-dev:8080/dashboard/GetDashboardProducts";
+	$PRODUCT_ROOT_FOLDER = ConfigParams::$PRODUCT_ROOT_FOLDER; //"/mnt/output";
+	$SITE_PRODUCT_RELATIVE_FOLDER = ConfigParams::$SITE_PRODUCT_RELATIVE_FOLDER; //"files/Sen2AgriFiles";
 	
 	//Needs extra lib
 	//$responseJson = http_get($URL);

@@ -20,3 +20,10 @@ var resume_job_url = "http://sen2agri-dev:8080/dashboard/ResumeJob";
 var cancel_job_url = "http://sen2agri-dev:8080/dashboard/CancelJob";
 
 var get_job_config_data_url = "http://sen2agri-dev:8080/dashboard/GetJobConfig";
+
+
+var services_base_url = "http://sen2agri-dev:8080";
+var get_all_sites_url = services_base_url + "/dashboard/GetDashboardSites";
+var get_sentinel2_tiles_url = services_base_url + "/dashboard/GetDashboardSentinelTiles";
+var get_landsat_tiles_url = services_base_url + "/dashboard/GetDashboardLandsatTiles";
+var get_products_url = services_base_url + "/dashboard/GetDashboardProducts";

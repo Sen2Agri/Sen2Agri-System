@@ -724,3 +724,165 @@ function update_job_timeline(json_data)
     var container = $("#visualization").get(0);
     var timeline = new vis.Timeline(container, json_data.items, json_data.groups);
 }
+
+function get_all_sites()
+{
+	$.ajax({
+		url: get_all_sites_url,
+		type: "get",
+		cache: false,
+		crosDomain: true,
+		dataType: "json",
+		data: {
+            
+		},
+		success: function(json_data)
+		{
+			update_sites(json_data);
+		},
+		error: function (responseData, textStatus, errorThrown) {
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			update_sites(new Array());
+		}
+	});
+}
+
+function update_sites(json_data)
+{
+	var siteElArr = $("select#siteId");
+	
+	$.each(siteElArr, function(index, siteEl) {
+		//Remove the old options
+		siteEl = $(siteEl);
+		siteEl.empty();
+		
+		siteEl.append('<option value="">Select a site</option>');
+		$.each(json_data, function(index, siteObj) {
+			siteEl.append('<option value="'+siteObj.id+'">'+siteObj.name+'</option>');
+		});
+		
+		siteEl.change(function (event) {
+			var siteEl = event.target;
+			var sentinel2TilesEl = $("#"+siteEl.form.id+" select#sentinel2Tiles");
+			var landsatTilesEl = $("#"+siteEl.form.id+" select#landsatTiles");
+			var productsEl = $("#"+siteEl.form.id+" select#inputFiles");
+			if(siteEl.selectedIndex > 0) {
+				get_sentinel2_tiles(siteEl.options[siteEl.selectedIndex].value, sentinel2TilesEl);
+				get_landsat_tiles(siteEl.options[siteEl.selectedIndex].value, landsatTilesEl);
+				get_products(siteEl.options[siteEl.selectedIndex].value, productsEl);
+			} else {
+				update_sentinel2_tiles(new Array(), sentinel2TilesEl);
+				update_landsat_tiles(new Array(), landsatTilesEl);
+				update_productsles(new Array(), productsEl);
+			}
+		});
+	});
+	
+	
+}
+
+function get_sentinel2_tiles(siteId, sentinel2TilesEl)
+{
+	$.ajax({
+		url: get_sentinel2_tiles_url,
+		type: "get",
+		cache: false,
+		crosDomain: true,
+		dataType: "json",
+		data: {
+			siteId: siteId
+		},
+		success: function(json_data)
+		{
+			update_sentinel2_tiles(json_data, sentinel2TilesEl);
+		},
+		error: function (responseData, textStatus, errorThrown) {
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			update_sentinel2_tiles(new Array(), sentinel2TilesEl);
+		}
+	});
+}
+
+function update_sentinel2_tiles(json_data, sentinel2TilesEl)
+{
+	//Remove the old options
+	sentinel2TilesEl.empty();
+	
+	sentinel2TilesEl.append('<option value="">Select a tile</option>');
+	
+	$.each(json_data, function(index, sentinel2TilesObj) {
+		sentinel2TilesEl.append('<option value="'+sentinel2TilesObj.code+'">'+sentinel2TilesObj.code+'</option>');
+	});
+	
+	
+}
+
+function get_landsat_tiles(siteId, landsatTilesEl)
+{
+	$.ajax({
+		url: get_landsat_tiles_url,
+		type: "get",
+		cache: false,
+		crosDomain: true,
+		dataType: "json",
+		data: {
+			siteId: siteId
+		},
+		success: function(json_data)
+		{
+			update_landsat_tiles(json_data, landsatTilesEl);
+		},
+		error: function (responseData, textStatus, errorThrown) {
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			update_landsat_tiles(new Array(), landsatTilesEl);
+		}
+	});
+}
+
+function update_landsat_tiles(json_data, landsatTilesEl)
+{
+	//Remove the old options
+	landsatTilesEl.empty();
+	
+	landsatTilesEl.append('<option value="">Select a tile</option>');
+	
+	$.each(json_data, function(index, landsatTilesObj) {
+		landsatTilesEl.append('<option value="'+landsatTilesObj.code+'">'+landsatTilesObj.code+'</option>');
+	});
+	
+	
+}
+
+function get_products(siteId, productsEl)
+{
+	$.ajax({
+		url: get_products_url,
+		type: "get",
+		cache: false,
+		crosDomain: true,
+		dataType: "json",
+		data: {
+			siteId: siteId
+		},
+		success: function(json_data)
+		{
+			update_products(json_data, productsEl);
+		},
+		error: function (responseData, textStatus, errorThrown) {
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			update_products(new Array(), productsEl);
+		}
+	});
+}
+
+function update_products(json_data, productsEl)
+{
+	//Remove the old options
+	productsEl.empty();
+	
+	$.each(json_data, function(index, productObj) {
+		productsEl.append('<option value="'+productObj.product+'">'+productObj.product+'</option>');
+	});
+	
+	
+}
