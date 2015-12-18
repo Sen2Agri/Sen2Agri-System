@@ -775,3 +775,21 @@ Q_DECLARE_METATYPE(NewProduct)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewProduct &product);
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewProduct &product);
+
+class DashboardSearch
+{
+public:
+    std::experimental::optional<int> siteId;
+    std::experimental::optional<int> processorId;
+
+    DashboardSearch();
+    DashboardSearch(std::experimental::optional<int> siteId,
+                    std::experimental::optional<int> processorId);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(DashboardSearch);
+
+QDBusArgument &operator<<(QDBusArgument &argument, const DashboardSearch &search);
+const QDBusArgument &operator>>(const QDBusArgument &argument, DashboardSearch &search);

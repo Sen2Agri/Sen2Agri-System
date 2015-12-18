@@ -61,6 +61,8 @@ void registerMetaTypes()
 
     NewProduct::registerMetaTypes();
 
+    DashboardSearch::registerMetaTypes();
+
     qDBusRegisterMetaType<ExecutionStatusList>();
 
     qDBusRegisterMetaType<StepArgument>();
@@ -1426,6 +1428,55 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, uint64_t &value)
 
     argument >> val;
     value = val;
+
+    return argument;
+}
+
+DashboardSearch::DashboardSearch()
+{
+}
+
+DashboardSearch::DashboardSearch(std::experimental::optional<int> siteId,
+                std::experimental::optional<int> processorId)
+    : siteId(siteId),
+      processorId(processorId)
+{
+}
+
+void DashboardSearch::registerMetaTypes()
+{
+    qDBusRegisterMetaType<DashboardSearch>();
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const DashboardSearch &search)
+{
+    argument.beginStructure();
+    argument << search.siteId.value_or(0) << search.processorId.value_or(0);
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, DashboardSearch &search)
+{
+    int siteId;
+    int processorId;
+
+    argument.beginStructure();
+    argument >> siteId >> processorId;
+    argument.endStructure();
+
+    if (siteId) {
+        search.siteId = siteId;
+    } else {
+        search.siteId = std::experimental::nullopt;
+    }
+
+    if (processorId) {
+        search.processorId = processorId;
+    } else {
+        search.processorId = std::experimental::nullopt;
+    }
 
     return argument;
 }
