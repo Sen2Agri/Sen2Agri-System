@@ -2,12 +2,14 @@
 BUILD_FOLDER=$1
 RES=$2
 OUT_FOLDER=$3
+SCRIPT_FOLDER=$4
 #add directories where SPOT products are to be found
-./composite_processing.py --applocation $BUILD_FOLDER --syntdate 20130228 --synthalf 25 --input \
+$SCRIPT_FOLDER/composite_processing.py --applocation $BUILD_FOLDER --syntdate 20130228 --synthalf 25 --input \
 "/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000.xml" \
 "/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000.xml" \
 "/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000.xml" \
---res $RES --t0 20130206 --tend 20130318 --outdir $OUT_FOLDER/20130228 --bandsmap bands_mapping_spot.txt
+--res $RES --t0 20130206 --tend 20130318 --outdir $OUT_FOLDER/20130228 --bandsmap $SCRIPT_FOLDER/bands_mapping_spot.txt
+exit 0
 ./composite_processing.py --applocation $BUILD_FOLDER --syntdate 20130328 --synthalf 25 --input \
 "/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000.xml" \
 "/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000.xml" \

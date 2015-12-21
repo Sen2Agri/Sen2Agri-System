@@ -365,9 +365,11 @@ QString PersistenceManager::GetDashboardJobTimeline(int jobId)
     return {};
 }
 
-QString PersistenceManager::GetDashboardProducts(QVariant siteId, QVariant processorId)
+QString PersistenceManager::GetDashboardProducts(DashboardSearch search)
 {
-    RunAsync([this] { return dbProvider.GetDashboardProducts(siteId, processorId); });
+    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const DashboardSearch &search) {
+        return dbProvider.GetDashboardProducts(search);
+    }, std::ref(dbProvider), std::move(search)));
 
     return {};
 }

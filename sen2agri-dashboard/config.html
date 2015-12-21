@@ -85,18 +85,30 @@
 									<form role="form" id="l3aform" method="post">
 										<div class="row">
 											<div class="col-md-8">
-												<!--div class="form-group form-group-sm">
+												<div class="form-group form-group-sm">
+													<label class="control-label" for="siteId">Site:</label>
+													<select class="form-control" id="siteId" name="siteId">
+													</select>
+												</div>
+												<div class="form-group form-group-sm">
+													<label class="control-label" for="sentinel2Tiles">Sentinel2 tiles:</label>
+													<select class="form-control" id="sentinel2Tiles" name="sentinel2Tiles">
+													</select>
+												</div>
+												<div class="form-group form-group-sm">
+													<label class="control-label" for="landsatTiles">Landsat tiles:</label>
+													<select class="form-control" id="landsatTiles" name="landsatTiles">
+													</select>
+												</div>
+												
+												
+												<div class="form-group form-group-sm">
 													<label class="control-label" for="inputFiles">Available input files:</label>
-													<select multiple class="form-control" id="inputFiles" name="inputFiles">
-														<option value="SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000</option>
+													<select multiple class="form-control" id="inputFiles" name="inputFiles[]">
 													</select>
 													<span class="help-block">The list of products descriptors (xml files).</span>
-												</div-->
-												<div class="form-group form-group-sm">
+												</div>
+												<!-- div class="form-group form-group-sm">
 													<label class="control-label" for="inputFiles2">Input files:</label>
 													<div class="row">
 														<div class="col-md-8">
@@ -107,7 +119,7 @@
 														</div>
 													</div>
 													<span class="help-block">The list of products descriptors (xml files).</span>
-												</div>
+												</div-->
 												<div class="form-group form-group-sm">
 													<label class="control-label" for="resolution">Resolution:</label>
 													<input type="number" min="0" max="20" step="10" class="form-control" id="resolution" name="resolution">
@@ -151,18 +163,29 @@
 									<form role="form" id="l3bform" method="post">
 										<div class="row">
 											<div class="col-md-8">
-												<!--div class="form-group form-group-sm">
+												<div class="form-group form-group-sm">
+													<label class="control-label" for="siteId">Site:</label>
+													<select class="form-control" id="siteId" name="siteId">
+													</select>
+												</div>
+												<div class="form-group form-group-sm">
+													<label class="control-label" for="sentinel2Tiles">Sentinel2 tiles:</label>
+													<select class="form-control" id="sentinel2Tiles" name="sentinel2Tiles">
+													</select>
+												</div>
+												<div class="form-group form-group-sm">
+													<label class="control-label" for="landsatTiles">Landsat tiles:</label>
+													<select class="form-control" id="landsatTiles" name="landsatTiles">
+													</select>
+												</div>
+												
+												<div class="form-group form-group-sm">
 													<label class="control-label" for="inputFiles">Available input files:</label>
-													<select multiple class="form-control" id="inputFiles" name="inputFiles">
-														<option value="SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000</option>
+													<select multiple class="form-control" id="inputFiles" name="inputFiles[]">
 													</select>
 													<span class="help-block">The list of products descriptors (xml files).</span>
-												</div-->
-												<div class="form-group form-group-sm">
+												</div>
+												<!-- div class="form-group form-group-sm">
 													<label class="control-label" for="inputFiles2">Input files:</label>
 													<div class="row">
 														<div class="col-md-8">
@@ -173,7 +196,7 @@
 														</div>
 													</div>
 													<span class="help-block">The list of products descriptors (xml files).</span>
-												</div>
+												</div-->
 												<div class="form-group form-group-sm">
 													<label class="control-label" for="resolution">Resolution:</label>
 													<input type="number" min="0" max="20" step="10" class="form-control" id="resolution" name="resolution">
@@ -238,6 +261,21 @@
 										<div class="row">
 											<div class="col-md-8">
 												<div class="form-group form-group-sm">
+													<label class="control-label" for="siteId">Site:</label>
+													<select class="form-control" id="siteId" name="siteId">
+													</select>
+												</div>
+												<div class="form-group form-group-sm">
+													<label class="control-label" for="sentinel2Tiles">Sentinel2 tiles:</label>
+													<select class="form-control" id="sentinel2Tiles" name="sentinel2Tiles">
+													</select>
+												</div>
+												<div class="form-group form-group-sm">
+													<label class="control-label" for="landsatTiles">Landsat tiles:</label>
+													<select class="form-control" id="landsatTiles" name="landsatTiles">
+													</select>
+												</div>
+												<div class="form-group form-group-sm">
 													<label class="control-label" for="ref">Reference polygons:</label>
 													<input type="file" class="form-control" id="ref" name="ref">
 													<span class="help-block">The reference polygons.</span>
@@ -247,18 +285,13 @@
 													<input type="number" min="0" step="0.01" class="form-control" id="ratio" name="ratio">
 													<span class="help-block">The ratio between the validation and training polygons.</span>
 												</div>
-												<!--div class="form-group form-group-sm">
+												<div class="form-group form-group-sm">
 													<label class="control-label" for="inputFiles">Available input files:</label>
-													<select multiple class="form-control" id="inputFiles" name="inputFiles">
-														<option value="SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000</option>
+													<select multiple class="form-control" id="inputFiles" name="inputFiles[]">
 													</select>
 													<span class="help-block">The list of products descriptors (xml files).</span>
-												</div-->
-												<div class="form-group form-group-sm">
+												</div>
+												<!-- div class="form-group form-group-sm">
 													<label class="control-label" for="inputFiles2">Input files:</label>
 													<div class="row">
 														<div class="col-md-8">
@@ -269,7 +302,7 @@
 														</div>
 													</div>
 													<span class="help-block">The list of products descriptors (xml files).</span>
-												</div>
+												</div-->
 												<div class="form-group form-group-sm">
 													<label class="control-label" for="t0">T0:</label>
 													<input type="text" pattern="[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])" class="form-control" id="t0" name="t0">
@@ -391,6 +424,21 @@
 										<div class="row">
 											<div class="col-md-8">
 												<div class="form-group form-group-sm">
+													<label class="control-label" for="siteId">Site:</label>
+													<select class="form-control" id="siteId" name="siteId">
+													</select>
+												</div>
+												<div class="form-group form-group-sm">
+													<label class="control-label" for="sentinel2Tiles">Sentinel2 tiles:</label>
+													<select class="form-control" id="sentinel2Tiles" name="sentinel2Tiles">
+													</select>
+												</div>
+												<div class="form-group form-group-sm">
+													<label class="control-label" for="landsatTiles">Landsat tiles:</label>
+													<select class="form-control" id="landsatTiles" name="landsatTiles">
+													</select>
+												</div>
+												<div class="form-group form-group-sm">
 													<label class="control-label" for="ref">Reference polygons:</label>
 													<input type="file" class="form-control" id="ref" name="ref">
 													<span class="help-block">The reference polygons.</span>
@@ -400,18 +448,13 @@
 													<input type="number" min="0" step="0.01" class="form-control" id="ratio" name="ratio">
 													<span class="help-block">The ratio between the validation and training polygons.</span>
 												</div>
-												<!--div class="form-group form-group-sm">
+												<div class="form-group form-group-sm">
 													<label class="control-label" for="inputFiles">Available input files:</label>
-													<select multiple class="form-control" id="inputFiles" name="inputFiles">
-														<option value="SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000</option>
-														<option value="SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000">Ukraine::L2A::SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000</option>
+													<select multiple class="form-control" id="inputFiles" name="inputFiles[]">
 													</select>
 													<span class="help-block">The list of products descriptors (xml files).</span>
-												</div-->
-												<div class="form-group form-group-sm">
+												</div>
+												<!-- div class="form-group form-group-sm">
 													<label class="control-label" for="inputFiles2">Input files:</label>
 													<div class="row">
 														<div class="col-md-8">
@@ -422,7 +465,7 @@
 														</div>
 													</div>
 													<span class="help-block">The list of products descriptors (xml files).</span>
-												</div>
+												</div-->
 												<div class="form-group form-group-sm">
 													<label class="control-label" for="t0">T0:</label>
 													<input type="text" pattern="[0-9]{8}" class="form-control" id="t0" name="t0">
@@ -503,15 +546,20 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 	<script src="libraries/jquery-validate/jquery.validate.min.js"></script>
 	<script src="libraries/jquery-validate/additional-methods.min.js"></script>
+	<script src="scripts/config.js"></script>
+    <script src="scripts/processing_functions.js"></script>
 	
 	<script>
 		//$("#l3aform").validate();
 		$(document).ready(function() {
+			//Load sites
+			get_all_sites();
+			
 			// validate l3aform form on keyup and submit
 			$("#l3aform").validate({
 				rules: {
-					//inputFiles: "required",
-					'inputFiles2[]': "required",
+					'inputFiles[]': "required",
+					//'inputFiles2[]': "required",
 					resolution: "required",
 					outputFolder: "required",
 					l3aDate: { required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])"},
@@ -554,8 +602,8 @@
 			// validate l3bform form on keyup and submit
 			$("#l3bform").validate({
 				rules: {
-					//inputFiles: "required",
-					'inputFiles2[]': "required",
+					'inputFiles[]': "required",
+					//'inputFiles2[]': "required",
 					resolution: "required",
 					t0: { required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])"},
 					tend: { required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])"},
@@ -598,8 +646,8 @@
 				rules: {
 					ref: "required",
 					ratio: "required",
-					//inputFiles: "required",
-					'inputFiles2[]': "required",
+					'inputFiles[]': "required",
+					//'inputFiles2[]': "required",
 					t0: { required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])"},
 					tend: { required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])"},
 					rate: "required",
@@ -654,8 +702,8 @@
 				rules: {
 					ref: "required",
 					ratio: "required",
-					//inputFiles: "required",
-					'inputFiles2[]': "required",
+					'inputFiles[]': "required",
+					//'inputFiles2[]': "required",
 					t0: { required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])"},
 					tend: { required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])"},
 					rate: "required",
@@ -694,7 +742,7 @@
 				}
 			});
 			
-			$("#btnAddFileL3A").click(function() {
+			/*$("#btnAddFileL3A").click(function() {
 				var formId = this.form.id;
 				var files = $('#'+formId+' input[name="inputFiles2[]"]');
 				$(files[files.length-1]).after('<input type="file" class="form-control" name="inputFiles2[]">');
@@ -713,7 +761,7 @@
 				var formId = this.form.id;
 				var files = $('#'+formId+' input[name="inputFiles2[]"]');
 				$(files[files.length-1]).after('<input type="file" class="form-control" name="inputFiles2[]">');
-			});
+			});*/
 		});
 	</script>
 	

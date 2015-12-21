@@ -146,10 +146,10 @@ void DashboardController::getDashboardProducts(const HttpRequest &request, HttpR
 {
     bool ok;
 	const auto &siteIdStr = request.getParameter("siteId");
-    QVariant siteId;
+    std::experimental::optional<int> siteId;
 	
     if (!siteIdStr.isNull()) {
-        siteId = QVariant(siteIdStr.toInt(&ok));
+        siteId = siteIdStr.toInt(&ok);
 	    if (!ok) {
 	        Logger::error(QStringLiteral("Invalid siteId value: %1").arg(QString::fromUtf8(siteIdStr)));
 	
@@ -159,10 +159,10 @@ void DashboardController::getDashboardProducts(const HttpRequest &request, HttpR
 	}
 	
 	const auto &processorIdStr = request.getParameter("processorId");
-    QVariant processorId;
+    std::experimental::optional<int> processorId;
     
     if (!processorIdStr.isNull()) {
-        processorId = QVariant(processorIdStr.toInt(&ok));
+        processorId = processorIdStr.toInt(&ok);
 	    if (!ok) {
 	        Logger::error(QStringLiteral("Invalid processorId value: %1").arg(QString::fromUtf8(processorIdStr)));
 	
@@ -177,13 +177,13 @@ void DashboardController::getDashboardProducts(const HttpRequest &request, HttpR
         QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
 
     const auto &data =
-        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardProducts(siteId, processorId));
+        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardProducts({siteId, processorId}));
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
 }
 
-void DashboardController::getDashboardSites(const HttpRequest &request, HttpResponse &response)
+void DashboardController::getDashboardSites(const HttpRequest &, HttpResponse &response)
 {
     OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
         OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),

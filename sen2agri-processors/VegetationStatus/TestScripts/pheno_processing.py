@@ -74,6 +74,9 @@ outSigmo = "{}/spot_sigmo.tif".format(outDir)
 #OUT_METRIC="$OUT_FOLDER/metric_estimation.tif"
 outMetric = "{}/metric_estimation.tif".format(outDir)
 
+print("Processing started: " + str(datetime.datetime.now()))
+start = time.time()
+
 #try otbcli BandsExtractor $CROPTTYPE_OTB_LIBS_ROOT/BandsExtractor/ -il $TIME_SERIES_XMLS -merge true -ndh true -out $OUT_BANDS -allmasks $OUT_MASKS -outdate $OUT_DATES
 runCmd(["otbcli", "BandsExtractor", cropTypeLocation, "-il"] + args.input + ["-merge", "true", "-ndh", "true", "-out", outBands, "-allmasks", outMasks, "-outdate", outDates])
 #try otbcli FeatureExtraction $CROPTTYPE_OTB_LIBS_ROOT/FeatureExtraction -rtocr $OUT_BANDS -ndvi $OUT_NDVI
@@ -84,6 +87,9 @@ runCmd(["otbcli", "SigmoFitting", vegetationStatusLocation, "-in", outNdvi, "-ma
 runCmd(["otbcli", "MetricsEstimation", vegetationStatusLocation, "-ipf", outSigmo, "-indates", outDates, "-opf", outMetric])
 
 runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.pheno", tileID, outMetric, "-il", args.input[0]])
+
+print("Processing finished: " + str(datetime.datetime.now()))
+print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 #os.remove(outMasks)
 #os.remove(outBands)

@@ -72,7 +72,7 @@ public:
     QString GetDashboardProductAvailability(const QDateTime &since);
     QString GetDashboardJobTimeline(int jobId);
     
-    QString GetDashboardProducts(QVariant siteId, QVariant processorId);
+    QString GetDashboardProducts(const DashboardSearch &search);
     QString GetDashboardSites();
     QString GetDashboardSentinelTiles(int siteId);
     QString GetDashboardLandsatTiles(int siteId);

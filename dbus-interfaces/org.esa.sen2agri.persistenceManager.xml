@@ -169,9 +169,9 @@
       <arg name="jsonData" type="s" direction="out" />
     </method>
     <method name="GetDashboardProducts">
-      <arg name="siteId" type="i" direction="in" />
-      <arg name="processorId" type="i" direction="in" />
+      <arg name="search" type="(ii)" direction="in" />
       <arg name="jsonData" type="s" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="DashboardSearch" />
     </method>
     <method name="GetDashboardSites">
       <arg name="jsonData" type="s" direction="out" />
