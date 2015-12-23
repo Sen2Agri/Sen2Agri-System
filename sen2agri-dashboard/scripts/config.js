@@ -27,3 +27,4 @@ var get_all_sites_url = services_base_url + "/dashboard/GetDashboardSites";
 var get_sentinel2_tiles_url = services_base_url + "/dashboard/GetDashboardSentinelTiles";
 var get_landsat_tiles_url = services_base_url + "/dashboard/GetDashboardLandsatTiles";
 var get_products_url = services_base_url + "/dashboard/GetDashboardProducts";
+var get_processors_url = services_base_url + "/dashboard/GetDashboardProcessors";

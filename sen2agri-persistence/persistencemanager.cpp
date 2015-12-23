@@ -394,3 +394,10 @@ QString PersistenceManager::GetDashboardLandsatTiles(int siteId)
 
     return {};
 }
+
+QString PersistenceManager::GetDashboardProcessors()
+{
+    RunAsync([this] { return dbProvider.GetDashboardProcessors(); });
+
+    return {};
+}

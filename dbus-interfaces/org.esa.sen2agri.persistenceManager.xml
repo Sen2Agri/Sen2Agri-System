@@ -184,5 +184,8 @@
       <arg name="siteId" type="i" direction="in" />
       <arg name="jsonData" type="s" direction="out" />
     </method>
+    <method name="GetDashboardProcessors">
+      <arg name="jsonData" type="s" direction="out" />
+    </method>
   </interface>
 </node>
