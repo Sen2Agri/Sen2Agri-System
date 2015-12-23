@@ -862,7 +862,8 @@ function get_products(siteId, productsEl)
 		crosDomain: true,
 		dataType: "json",
 		data: {
-			siteId: siteId
+			siteId: siteId,
+			processorId: l2a_proc_id
 		},
 		success: function(json_data)
 		{
@@ -885,4 +886,34 @@ function update_products(json_data, productsEl)
 	});
 	
 	
+}
+
+function get_processor_id(proc_short_name, assign_to)
+{
+	$.ajax({
+		url: get_processors_url,
+		type: "get",
+		cache: false,
+		crosDomain: true,
+		dataType: "json",
+		data: {
+			
+		},
+		success: function(json_data)
+		{
+			var found = false;
+			$.each(json_data, function(index, processorObj) {
+				if(processorObj.short_name == proc_short_name) { 
+					eval(assign_to + ' = ' + processorObj.id);
+					found = true;
+					return;
+				}
+			});
+			if(!found) eval(assign_to + ' = null;');
+		},
+		error: function (responseData, textStatus, errorThrown) {
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			eval(assign_to + ' = null;');
+		}
+	});
 }

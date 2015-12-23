@@ -551,13 +551,18 @@
 	
 	<script>
 		//$("#l3aform").validate();
+		var l2a_proc_id;
 		$(document).ready(function() {
 			//Load sites
 			get_all_sites();
+			get_processor_id('l2a', 'l2a_proc_id');
 			
 			// validate l3aform form on keyup and submit
 			$("#l3aform").validate({
 				rules: {
+					siteId: "required",
+					sentinel2Tiles: "required",
+					landsatTiles: "required",
 					'inputFiles[]': "required",
 					//'inputFiles2[]': "required",
 					resolution: "required",
@@ -602,6 +607,9 @@
 			// validate l3bform form on keyup and submit
 			$("#l3bform").validate({
 				rules: {
+					siteId: "required",
+					sentinel2Tiles: "required",
+					landsatTiles: "required",
 					'inputFiles[]': "required",
 					//'inputFiles2[]': "required",
 					resolution: "required",
@@ -644,6 +652,9 @@
 			// validate l4aform form on keyup and submit
 			$("#l4aform").validate({
 				rules: {
+					siteId: "required",
+					sentinel2Tiles: "required",
+					landsatTiles: "required",
 					ref: "required",
 					ratio: "required",
 					'inputFiles[]': "required",
@@ -700,6 +711,9 @@
 			// validate l4bform form on keyup and submit
 			$("#l4bform").validate({
 				rules: {
+					siteId: "required",
+					sentinel2Tiles: "required",
+					landsatTiles: "required",
 					ref: "required",
 					ratio: "required",
 					'inputFiles[]': "required",
