@@ -211,7 +211,6 @@ private:
       //unary functor image filter pass also the normalization values
       m_MetricsEstimationFilter = FilterType::New();
       m_functor.SetDates(inDates);
-      m_MetricsEstimationFilter->SetNumberOfThreads(1);
 
       m_MetricsEstimationFilter->SetFunctor(m_functor);
       m_MetricsEstimationFilter->SetInput(ipf_image);
