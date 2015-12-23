@@ -56,7 +56,8 @@ int main()
       xt[4] = 3.0+ m_RNG.normal64() * jitter;
       xt[5] = 0.0+ m_RNG.normal64() * jitter;
 
-      pheno::VectorType y(phF(t,xt));
+      pheno::VectorType y(nbDates);
+      phF(t,xt, y);
       pheno::VectorType yClean(y);
   
       for(size_t i=0; i<nbDates; ++i)
@@ -104,7 +105,8 @@ int main()
       if(err > err_max) err_max = err;
       err_mean += (err/nbSimus);
 
-      auto yHat(phF(t,x));
+      pheno::VectorType yHat(nbDates);
+      phF(t,x,yHat);
 
       std::stringstream fileName("");
       fileName << "/tmp/testplot-" << stdev << "-" << simu <<  ".txt";

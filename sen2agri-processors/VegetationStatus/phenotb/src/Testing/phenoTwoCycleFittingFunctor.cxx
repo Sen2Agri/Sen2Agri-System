@@ -67,8 +67,12 @@ int phenoTwoCycleFittingFunctor(int argc, char * argv[])
   const auto &days = pheno::tm_to_doy_list(dv);
   std::copy(std::begin(days), std::end(days), std::begin(ddv));
 
-  auto tmpres = pheno::normalized_sigmoid::F(ddv, x_1)*(mm1.second-mm1.first)+mm1.first
-    + pheno::normalized_sigmoid::F(ddv, x_2)*(mm2.second-mm2.first)+mm2.first;
+  VectorType tmps1(nb_dates);
+  VectorType tmps2(nb_dates);
+  pheno::normalized_sigmoid::F(ddv, x_1, tmps1);
+  pheno::normalized_sigmoid::F(ddv, x_2, tmps2);
+  auto tmpres = tmps1*(mm1.second-mm1.first)+mm1.first
+    + tmps2*(mm2.second-mm2.first)+mm2.first;
   PixelType pixel(nb_dates);
   PixelType mask(nb_dates);
   for(size_t i=0; i<nb_dates; i++)

@@ -154,7 +154,8 @@ int main(int argc, char* argv[])
           }
         else
           {
-          auto yHat(phFs(t,x));
+          pheno::VectorType yHat(nbDates);
+          phFs(t,x,yHat);
 
           // rerscale the values with min and max
           yHat = yHat*(vmax-vmin)+vmin;

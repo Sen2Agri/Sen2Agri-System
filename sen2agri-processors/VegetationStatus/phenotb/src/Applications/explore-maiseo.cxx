@@ -102,7 +102,8 @@ int main(int argc, char* argv[])
     auto err(pheno::optimize(x, fs));
     std::cout << x << std::endl;  
 
-    auto yHat(phFs(t,x));
+    pheno::VectorType yHat(t.size());
+    phFs(t,x,yHat);
 
     yHat = yHat*(vmax-vmin)+vmin;
     profile = profile*(vmax-vmin)+vmin;

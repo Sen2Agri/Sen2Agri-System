@@ -19,15 +19,13 @@
 
 using VectorType = pheno::VectorType;
 
-VectorType lai_log_ndvi(const VectorType& ndvi, const VectorType& pars)
+void lai_log_ndvi(const VectorType& ndvi, const VectorType& pars, VectorType &lai)
 {
   auto k_lai = pars[0];
   auto ndvi_inf = pars[1];
   auto ndvi_soil = pars[2];
-  VectorType lai(ndvi.size());
   for(auto i=0; i<3; ++i)
     lai[i] = -1.0/k_lai*log((ndvi[i]-ndvi_inf)/(ndvi_soil-ndvi_inf));
-  return lai;
 }
 
 

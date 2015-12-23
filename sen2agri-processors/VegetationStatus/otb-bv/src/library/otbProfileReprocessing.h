@@ -79,7 +79,8 @@ fit_csdm(const VectorType &dts, const VectorType &ts, const VectorType &ets)
   auto min_max = std::get<1>(princ_cycle);
   auto A_hat = min_max.second - min_max.first;
   auto B_hat = min_max.first;
-  auto p = pheno::normalized_sigmoid::F(date_vec, x_hat);
+  pheno::VectorType p(date_vec.size());
+  pheno::normalized_sigmoid::F(date_vec, x_hat, p);
   //fill the result vectors
   for(size_t i=0; i<ts.size(); i++)
   {

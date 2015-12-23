@@ -87,11 +87,13 @@ int main(int argc, char* argv[])
   auto phF(pheno::normalized_sigmoid::F<pheno::VectorType>);
   pheno::VectorType x1(4);
   x1[0] = 75; x1[1] = 21; x1[2] = 150; x1[3] = 15;
-  pheno::VectorType f1{phF(doys, x1)};
+  vnl_vector<double> f1(doys.size());
+  phF(doys, x1, f1);
 
   pheno::VectorType x2(4);
   x2[0] = 200; x2[1] = 21; x2[2] = 275; x2[3] = 15;
-  pheno::VectorType f2{phF(doys, x2)};
+  vnl_vector<double> f2(doys.size());
+  phF(doys, x2, f2);
 
   f1 = f1+0.25*f2;
   
@@ -104,6 +106,7 @@ int main(int argc, char* argv[])
 
   double max_dot_prod{std::numeric_limits<double>::min()};
   pheno::VectorType best_x(4);
+  pheno::VectorType tmp(doys.size());
 
   auto xt = x1;
   for(auto t0=t0min; t0<t1max; t0+=tstep)
@@ -113,7 +116,8 @@ int main(int argc, char* argv[])
           for(auto dr1=drmin; dr1<drmax; dr1+=drstep)
             {
             xt[0] = t0; xt[1] = dr0; xt[2] = t1; xt[3] = dr1;
-            auto dp = pheno::dot_prod(f1,phF(doys, xt));
+            phF(doys, xt, tmp);
+            auto dp = pheno::dot_prod(f1,tmp);
             if(max_dot_prod<dp)
               {
               max_dot_prod = dp;
@@ -124,7 +128,8 @@ int main(int argc, char* argv[])
   std::cout << x1 << " / " << best_x << " --> " << max_dot_prod << std::endl;
   std::cout << pheno::dot_prod(f1,f1) << std::endl;
 
-  pheno::VectorType best_f{phF(doys, best_x)};
+  pheno::VectorType best_f(doys.size());
+  phF(doys, best_x, best_f);
 
   for(size_t i=0; i<dates.size(); i++)
     {

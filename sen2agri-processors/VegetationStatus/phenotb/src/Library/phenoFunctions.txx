@@ -130,12 +130,11 @@ itk::VariableLengthVector<ValueType> vectorToPixel(const std::vector<ValueType>&
 namespace sigmoid{
 template <ContainerC V>
 inline
-V F(const V& t, const V& x)
+void F(const V& t, const V& x, V& result)
 {
-  V y(t.size());
-  for(size_t i=0; i<t.size(); ++i)
-    y[i] = x[4]*(1.0/(1.0+exp((x[0]-t[i])/x[1]))-1.0/(1.0+exp((x[2]-t[i])/x[3])))+x[5];
-  return y;
+  auto tsize = t.size();
+  for(size_t i=0; i<tsize; ++i)
+    result[i] = x[4]*(1.0/(1.0+exp((x[0]-t[i])/x[1]))-1.0/(1.0+exp((x[2]-t[i])/x[3])))+x[5];
 }
 template <ContainerC V>
 inline
@@ -222,13 +221,11 @@ std::tuple<T, T, T, T, T, T> pheno_metrics(const V& x, T maxvalue,
 
 template <ContainerC V>
 inline
-V F(const V& t, const V& x)
+void F(const V& t, const V& x, V& result)
 {
   auto tsize(t.size());
-  V y(tsize);
   for(size_t i=0; i<tsize; ++i)
-    y[i] = double_sigmoid(t[i], x);
-  return y;
+    result[i] = double_sigmoid(t[i], x);
 }
 
 template <ContainerC V>
@@ -283,7 +280,8 @@ ApproximationResultType Approximation(const V& profile, const V& t)
   auto phFs(F<V>);
   ParameterCostFunction fs{4, t.size(), fprofile, t, phFs};
   auto err(optimize(x, fs));
-  auto yHat(phFs(t,x));
+  V yHat(t.size());
+  phFs(t,x,yHat);
   auto residuals = prof - yHat;
   yHat = yHat*(vmax-vmin)+vmin;
   residuals = residuals*(vmax-vmin);

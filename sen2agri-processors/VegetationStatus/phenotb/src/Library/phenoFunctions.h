@@ -34,7 +34,7 @@
 
 namespace pheno
 {
-using FunctionType = std::function<VectorType (const VectorType&, const VectorType&)>;
+using FunctionType = std::function<void (const VectorType&, const VectorType&, VectorType&)>;
 
 template<ContainerC V>
 using FilterType = std::function<double (V, const V&)>;
@@ -60,9 +60,9 @@ public:
   inline
   void f(const VectorType& x, VectorType& fx) override
   {
-    auto yy = phenoFunction(t, x);
+    phenoFunction(t, x, fx);
     for(size_t i=0; i<nbDates; ++i)
-      fx[i] = (y[i] - yy[i]);
+      fx[i] = y[i] - fx[i];
   }
 
 private:
@@ -121,7 +121,7 @@ namespace normalized_sigmoid{
    x_1 (resp. x_3) is the rate of change at the left (resp. right) inflection point
 */
 template <ContainerC V>
-V F(const V& t, const V& x);
+void F(const V& t, const V& x, V& result);
 
 /// Estimates the first guess for the parameters given the profile p
 template <ContainerC V>
@@ -183,7 +183,7 @@ namespace sigmoid{
    x_5 is the background (min) value
 */
 template <ContainerC V>
-V F(const V& t, const V& x);
+void F(const V& t, const V& x, V& result);
 
 /// Estimates the first guess for the parameters given the profile p
 template <ContainerC V>
@@ -301,13 +301,18 @@ public:
 
       // The result uses either the original or the approximated value depending on the mask value
       PixelType result(nbDates);
+      VectorType tmps1(nbDates);
+      VectorType tmps2(nbDates);
+
       for(size_t i=0; i<nbDates; i++) {
           if(fabs(pix[i] - NO_DATA) < EPSILON)
               result[i] = NO_DATA;
           else {
               // Compute the approximation
-              auto tmpres = normalized_sigmoid::F(dv, x_1)*(mm1.second-mm1.first)+mm1.first
-                + normalized_sigmoid::F(dv, x_2)*(mm2.second-mm2.first)+mm2.first;
+              normalized_sigmoid::F(dv, x_1, tmps1);
+              normalized_sigmoid::F(dv, x_2, tmps2);
+              auto tmpres = tmps1*(mm1.second-mm1.first)+mm1.first
+                + tmps2*(mm2.second-mm2.first)+mm2.first;
             if(fit_only_invalid)
               result[i] = ((mv[i]==(typename PixelType::ValueType{0}))?pix[i]:tmpres[i]);
             else

@@ -41,7 +41,8 @@ NeuralNetworkType;
 std::pair<VectorType, VectorType> generate_lai(const VectorType doys)
 {
   VectorType sigmo_pars{100, 3, 200, 3, 6, 0.1};
-  auto simu_lai = pheno::sigmoid::F(doys, sigmo_pars);
+  VectorType simu_lai(doys.size());
+  pheno::sigmoid::F(doys, sigmo_pars, simu_lai);
   auto noisy_lai = simu_lai;
 
   auto rng = std::mt19937(std::random_device{}());

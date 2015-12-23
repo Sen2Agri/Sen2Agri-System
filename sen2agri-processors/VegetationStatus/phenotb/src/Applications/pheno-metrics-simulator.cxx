@@ -83,7 +83,8 @@ generate_double_sigmo_parameters(PrecisionType max_val)
 VectorType simulate_noisy_profile(VectorType dates, VectorType x, PrecisionType A, 
                                   PrecisionType B, PrecisionType noise_std)
 {
-  auto p = pheno::normalized_sigmoid::F(dates, x);
+  VectorType p(dates.size());
+  pheno::normalized_sigmoid::F(dates, x, p);
   auto m_RNG = std::mt19937(std::random_device{}());
   std::normal_distribution<> d(0, noise_std);
   for(auto& v : p)
