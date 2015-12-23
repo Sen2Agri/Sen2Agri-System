@@ -7,7 +7,7 @@ import argparse
 import csv
 from sys import argv
 import datetime
-from common import executeStep 
+from common import executeStep
 
 #Path to build folder
 defaultBuildFolder="~/sen2agri-build/"
@@ -111,11 +111,14 @@ executeStep("TemporalResampling", "otbApplicationLauncherCommandLine", "Temporal
 # Feature Extraction (Step 5)
 executeStep("FeatureExtraction", "otbApplicationLauncherCommandLine", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-fts", fts, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
 
+with open(shape_proj, 'r') as file:
+    shape_wkt = "ESRI::" + file.read()
+
 # ogr2ogr Reproject insitu data (Step 6)
-executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-t_srs", shape_proj,"-progress","-overwrite",reference_polygons_reproject, reference_polygons, skip=fromstep>6)
+executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-t_srs", shape_wkt, "-progress", "-overwrite",reference_polygons_reproject, reference_polygons, skip=fromstep>6)
 
 # ogr2ogr Crop insitu data (Step 7)
-executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-clipsrc", shape,"-progress","-overwrite",reference_polygons_clip, reference_polygons_reproject, skip=fromstep>7)
+executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-clipsrc", shape, "-progress", "-overwrite",reference_polygons_clip, reference_polygons_reproject, skip=fromstep>7)
 
 # Sample Selection (Step 8)
 executeStep("SampleSelection", "otbApplicationLauncherCommandLine","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons, "-lut", lut, skip=fromstep>8)

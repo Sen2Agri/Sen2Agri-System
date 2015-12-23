@@ -6,7 +6,7 @@ import argparse
 import csv
 from sys import argv
 import datetime
-from common import executeStep  
+from common import executeStep
 
 def inSituDataAvailable() :
 	# Temporal Features (Step 6)
@@ -24,8 +24,11 @@ def inSituDataAvailable() :
 	# Image Statistics (Step 9)
 	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", features,"-out",statistics, skip=fromstep>9)
 
-	# ogr2ogr Reproject insitu data (Step 10)
-	executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-t_srs", shape_proj,"-progress","-overwrite",reference_polygons_reproject, reference_polygons, skip=fromstep>10)
+        with open(shape_proj, 'r') as file:
+            shape_wkt = "ESRI::" + file.read()
+
+        # ogr2ogr Reproject insitu data (Step 10)
+	executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-t_srs", shape_wkt,"-progress","-overwrite",reference_polygons_reproject, reference_polygons, skip=fromstep>10)
 
 	# ogr2ogr Crop insitu data (Step 11)
 	executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-clipsrc", shape,"-progress","-overwrite",reference_polygons_clip, reference_polygons_reproject, skip=fromstep>11)
@@ -46,7 +49,7 @@ def noInSituDataAvailable() :
 	global validation_polygons
 	#Data Smoothing for NDVI (Step 15)
 	executeStep("DataSmoothing for NDVI", "otbApplicationLauncherCommandLine", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts",ndvi,"-bands", "1", "-lambda", lmbd, "-weight", weight, "-sts",ndvi_smooth, skip=fromstep>15)
-	
+
 	#Data Smoothing for Reflectances (Step 16)
 	executeStep("DataSmoothing for Reflectances", "otbApplicationLauncherCommandLine", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts",rtocr,"-bands", "4", "-lambda", lmbd, "-weight", weight, "-sts",rtocr_smooth, skip=fromstep>16, rmfiles=[] if keepfiles else [rtocr])
 
@@ -64,7 +67,7 @@ def noInSituDataAvailable() :
 
 	# Reference Map preparation (Step 19 and 20)
 	executeStep("gdalwarp for reprojecting Reference map", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-t_srs", shape_proj, reference, reprojected_reference, skip=fromstep>19)
-	
+
 	executeStep("gdalwarp for cutting Reference map", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_reference, crop_reference, skip=fromstep>20)
 
 	# Erosion (Step 21)
@@ -73,7 +76,7 @@ def noInSituDataAvailable() :
 
 	# Trimming (Step 22)
 	executeStep("Trimming", "otbApplicationLauncherCommandLine", "Trimming", os.path.join(buildFolder,"CropMask/Trimming"),"-feat", spectral_features, "-ref", eroded_reference, "-out", trimmed_reference_raster, "-alpha", alpha, "-nbsamples", "0", "-seed", random_seed, skip=fromstep>22, rmfiles=[] if keepfiles else [eroded_reference])
-	
+
 	#Train Image Classifier (Step 23)
 	executeStep("TrainImagesClassifierNew", "otbApplicationLauncherCommandLine", "TrainImagesClassifierNew", os.path.join(buildFolder,"Common/TrainImagesClassifierNew"), "-io.il", spectral_features,"-io.rs",trimmed_reference_raster,"-nodatalabel", "-10000", "-io.imstat", statistics_noinsitu, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>23)
 
