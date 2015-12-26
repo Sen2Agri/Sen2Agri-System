@@ -187,6 +187,14 @@ private:
                   float fNirVal = std::stof(vectRefls[nirIdx]);
                   float ndvi = (fNirVal-fRedVal)/(fNirVal+fRedVal+epsilon);
                   float  rvi = fNirVal/(fRedVal+epsilon);
+                  // normalize value for RVI
+                  if(rvi < 0.000001 || std::isnan(rvi)) {
+                      rvi = 0;
+                  } else {
+                      if(rvi > 30 || std::isinf(rvi)) {
+                          rvi = 30;
+                      }
+                  }
                   std::ostringstream ss;
                   ss << " " << ndvi << " " << rvi;
                   outline += ss.str();
