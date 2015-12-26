@@ -63,7 +63,6 @@ public:
     TotalWeightComputation();
 
     void SetMissionName(std::string &missionName);
-    void SetWeightOnSensor(float fWeight);
     void SetDates(std::string &L2ADate, std::string &L3ADate);
     void SetHalfSynthesisPeriodAsDays(int deltaMax);
     void SetWeightOnDateMin(float fMinWeight);

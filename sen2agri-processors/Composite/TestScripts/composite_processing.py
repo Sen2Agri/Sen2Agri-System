@@ -96,7 +96,6 @@ COARSE_RES="240"
 SIGMA_SMALL_CLD="2"
 SIGMA_LARGE_CLD="10"
 
-WEIGHT_SENSOR="0.33"
 WEIGHT_DATE_MIN="0.10"
 
 outWeights = outDir + '/L3AResult#_weights.tif'
@@ -142,8 +141,6 @@ with open(paramsFilenameXML, 'w') as paramsFileXML:
     ET.SubElement(wDATE, "weight_date_min").text = WEIGHT_DATE_MIN
     ET.SubElement(wDATE, "l3a_product_date").text = syntDate
     ET.SubElement(wDATE, "half_synthesis").text = syntHalf
-    wON = ET.SubElement(root, "Weight_ON")
-    ET.SubElement(wON, "weight_sensor").text = WEIGHT_SENSOR
     dates = ET.SubElement(root, "Dates_information")
     ET.SubElement(dates, "start_date").text = t0
     ET.SubElement(dates, "end_date").text = tend
@@ -170,8 +167,6 @@ with open(paramsFilename, 'w') as paramsFile:
     paramsFile.write("    weight date min   = " + WEIGHT_DATE_MIN + "\n")
     paramsFile.write("    l3a product date  = " + syntDate + "\n")
     paramsFile.write("    half synthesis    = " + syntHalf + "\n")
-    paramsFile.write("Weight on\n")
-    paramsFile.write("    weight sensor     = " + WEIGHT_SENSOR + "\n")
     paramsFile.write("Dates information\n")
     paramsFile.write("    start date        = " + t0 + "\n")
     paramsFile.write("    end date          = " + tend + "\n")
@@ -214,7 +209,7 @@ for xml in args.input:
 
     runCmd(["otbcli", "WeightOnClouds", weightOtbLibsRoot + '/WeightOnClouds', "-incldmsk", outCld, "-coarseres", COARSE_RES, "-sigmasmallcld", SIGMA_SMALL_CLD, "-sigmalargecld", SIGMA_LARGE_CLD, "-out", out_w_Cloud])
 
-    runCmd(["otbcli", "TotalWeight", weightOtbLibsRoot + '/TotalWeight', "-xml", xml, "-waotfile", out_w_Aot, "-wcldfile", out_w_Cloud, "-wsensor", WEIGHT_SENSOR, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", out_w_Total])
+    runCmd(["otbcli", "TotalWeight", weightOtbLibsRoot + '/TotalWeight', "-xml", xml, "-waotfile", out_w_Aot, "-wcldfile", out_w_Cloud, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", out_w_Total])
     #todo... search for previous L3A produc?
 
     runCmd(["otbcli", "UpdateSynthesis2", compositeLocation + '/UpdateSynthesis', "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", out_w_Total, "-out", mod] + prevL3A)

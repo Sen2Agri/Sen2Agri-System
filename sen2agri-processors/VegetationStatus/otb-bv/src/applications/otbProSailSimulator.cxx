@@ -140,6 +140,7 @@ private:
     SetParameterDescription("threads", 
                             "Number of parallel threads for the simulation");
     MandatoryOff("threads");
+    m_SolarZenith_Fapar = 90;
   }
 
   virtual ~ProSailSimulator()

@@ -84,6 +84,43 @@ private:
   int m_nNirBandIdx;
 };
 
+// Translates the INT reflectances in the input image into floats, taking into account
+// the quantification value
+template< class TInput, class TOutput>
+class ReflectanceTranslationFunctor
+{
+public:
+    ReflectanceTranslationFunctor() {}
+    ~ReflectanceTranslationFunctor() {}
+    void Initialize(float fQuantificationVal) {
+        m_fQuantifVal = fQuantificationVal;
+  }
+
+  bool operator!=( const ReflectanceTranslationFunctor &a) const
+  {
+      return (this->m_fQuantifVal != a.m_fQuantifVal);
+  }
+  bool operator==( const ReflectanceTranslationFunctor & other ) const
+  {
+    return !(*this != other);
+  }
+  inline TOutput operator()( const TInput & A ) const
+  {
+      TOutput ret(A.Size());
+      for(int i = 0; i<A.Size(); i++) {
+           if(fabs(A[i] - NO_DATA_VALUE) < 0.00001) {
+               ret[i] = NO_DATA_VALUE;
+           } else {
+                ret[i] = static_cast< float >(static_cast< float >(A[i]))/m_fQuantifVal;
+           }
+      }
+
+      return ret;
+  }
+private:
+  int m_fQuantifVal;
+};
+
 namespace otb
 {
 namespace Wrapper
@@ -94,6 +131,10 @@ class NdviRviExtractionApp2 : public Application
                     NdviRviFunctor<
                         ImageType::PixelType,
                         ImageType::PixelType> > FilterType;
+    typedef itk::UnaryFunctorImageFilter<ImageType,ImageType,
+                    ReflectanceTranslationFunctor<
+                        ImageType::PixelType,
+                        ImageType::PixelType> > ReflTransFilterType;
 
 public:
   typedef NdviRviExtractionApp2 Self;
@@ -207,8 +248,17 @@ private:
             SetParameterOutputImage("rvi", getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(1)).GetPointer());
         }
         if(bOutFts) {
+            // Translate the input image from short reflectance values to float (subunitaire) values
+            // translated using the quantification value
+            double fQuantifVal = pHelper->GetReflectanceQuantificationValue();
+            m_ReflTransFunctor = ReflTransFilterType::New();
+            m_ReflTransFunctor->GetFunctor().Initialize((float)fQuantifVal);
+            m_ReflTransFunctor->SetInput(m_imgReader->GetOutput());
+            int nInputBands = m_imgReader->GetOutput()->GetNumberOfComponentsPerPixel();
+            m_ReflTransFunctor->GetOutput()->SetNumberOfComponentsPerPixel(nInputBands);
+
             m_imgInputSplit = VectorImageToImageListType::New();
-            m_imgInputSplit->SetInput(m_imgReader->GetOutput());
+            m_imgInputSplit->SetInput(m_ReflTransFunctor->GetOutput());
             m_imgInputSplit->UpdateOutputInformation();
             m_imgInputSplit->GetOutput()->UpdateOutputInformation();
 
@@ -293,6 +343,7 @@ private:
 
     OutImageType::Pointer m_functorOutput;
     FilterType::Pointer m_Functor;
+    ReflTransFilterType::Pointer m_ReflTransFunctor;
 
     ReaderType::Pointer                       m_imgReader;
     ResampleFilterListType::Pointer           m_ResamplersList;
