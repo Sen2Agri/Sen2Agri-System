@@ -22,7 +22,7 @@ parser.add_argument('-input', help='The list of products descriptors', required=
 parser.add_argument('-t0', help='The start date for the temporal resampling interval (in format YYYYMMDD)', required=True, metavar='YYYYMMDD')
 parser.add_argument('-tend', help='The end date for the temporal resampling interval (in format YYYYMMDD)', required=True, metavar='YYYYMMDD')
 parser.add_argument('-rate', help='The sampling rate for the temporal series, in days (default 5)', required=False, metavar='sampling_rate', default=5)
-parser.add_argument('-radius', help='The radius used for gapfilling, in days (default 15)', required=False, metavar='radius', default=15)
+# parser.add_argument('-radius', help='The radius used for gapfilling, in days (default 15)', required=False, metavar='radius', default=15)
 parser.add_argument('-classifier', help='The classifier used for training (either rf or svm)', required=True, metavar='classifier', choices=['rf','svm'])
 parser.add_argument('-rseed', help='The random seed used for training (default 0)', required=False, metavar='random_seed', default=0)
 parser.add_argument('-mask', help='The crop mask', required=False, metavar='crop_mask', default='')
@@ -51,7 +51,8 @@ indesc = args.input
 t0=args.t0
 tend=args.tend
 sp=args.rate
-radius=args.radius
+#radius=args.radius
+radius="15"  # not used
 classifier=args.classifier
 random_seed=args.rseed
 crop_mask=args.mask

@@ -99,7 +99,7 @@ parser.add_argument('-input', help='The list of products descriptors', required=
 parser.add_argument('-t0', help='The start date for the temporal resampling interval (in format YYYYMMDD)', required=True, metavar='YYYYMMDD')
 parser.add_argument('-tend', help='The end date for the temporal resampling interval (in format YYYYMMDD)', required=True, metavar='YYYYMMDD')
 parser.add_argument('-rate', help='The sampling rate for the temporal series, in days (default 5)', required=False, metavar='sampling_rate', default=5)
-parser.add_argument('-radius', help='The radius used for gapfilling, in days (default 15)', required=False, metavar='radius', default=15)
+# parser.add_argument('-radius', help='The radius used for gapfilling, in days (default 15)', required=False, metavar='radius', default=15)
 parser.add_argument('-nbtrsample', help='The number of samples included in the training set (default 4000)', required=False, metavar='nbtrsample', default=4000)
 parser.add_argument('-rseed', help='The random seed used for training (default 0)', required=False, metavar='random_seed', default=0)
 
@@ -142,7 +142,8 @@ indesc = args.input
 t0=args.t0
 tend=args.tend
 sp=str(args.rate)
-radius=str(args.radius)
+# radius=str(args.radius)
+radius="15"  # not used
 random_seed=str(args.rseed)
 nbtrsample=str(args.nbtrsample)
 rfnbtrees=str(args.rfnbtrees)
