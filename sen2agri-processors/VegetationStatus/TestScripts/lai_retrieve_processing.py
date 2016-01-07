@@ -128,6 +128,7 @@ class LaiModel(object):
         BEST_OF="1"
 
         # Variables for Prosail Simulator
+        NOISE_VAR="0.01"
 
         #OUT_SIMU_REFLS_FILE="$OUT_FOLDER/out_simu_refls.txt"
         outSimuReflsFile = outDir + '/out_simu_refls.txt'
@@ -144,7 +145,7 @@ class LaiModel(object):
         print("Generating simulation reflectances ...")
         #try otbcli ProSailSimulator $IMG_INV_OTB_LIBS_ROOT -bvfile $OUT_GENERATED_SAMPLE_FILE -rsrfile $RSR_FILE -out $OUT_SIMU_REFLS_FILE -solarzenith $SOLAR_ZENITH_ANGLE -sensorzenith $SENSOR_ZENITH_ANGLE -azimuth $RELATIVE_AZIMUTH_ANGLE
         #runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation, "-xml", args.input[0], "-bvfile", outGeneratedSampleFile, "-rsrfile", rsrFile, "-out", outSimuReflsFile, "-solarzenith", str(solarZenithAngle), "-sensorzenith", str(sensorZenithAngle), "-azimuth", str(relativeAzimuthAngle), "-outangles", outAnglesFile])
-        runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation, "-xml", curXml, "-bvfile", outGeneratedSampleFile, "-rsrfile", rsrFile, "-out", outSimuReflsFile, "-outangles", outAnglesFile])
+        runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation, "-xml", curXml, "-bvfile", outGeneratedSampleFile, "-rsrfile", rsrFile, "-out", outSimuReflsFile, "-outangles", outAnglesFile, "-noisevar", str(NOISE_VAR)])
 
         # Generating training file
         print("Generating training file ...")
@@ -189,6 +190,7 @@ class LaiModel(object):
             ET.SubElement(proSail, "solar_zenith_angle").text = str(solarZenithAngle)
             ET.SubElement(proSail, "sensor_zenith_angle").text = str(sensorZenithAngle)
             ET.SubElement(proSail, "relative_azimuth_angle").text = str(relativeAzimuthAngle)
+            ET.SubElement(proSail, "noisevar").text = str(NOISE_VAR)
             tr = ET.SubElement(root, "TrainingDataGenerator")
             ET.SubElement(tr, "BV_index").text = BV_IDX
             ET.SubElement(tr, "add_refectances").text = ADD_REFLS
@@ -215,6 +217,7 @@ class LaiModel(object):
             paramsFile.write("    Solar zenith angle            = {}\n".format(solarZenithAngle))
             paramsFile.write("    Sensor zenith angle           = {}\n".format(sensorZenithAngle))
             paramsFile.write("    Relative azimuth angle        = {}\n".format(relativeAzimuthAngle))
+            paramsFile.write("    Noise var                     = {}\n".format(NOISE_VAR))
             paramsFile.write("TrainingDataGenerator" + "\n")
             paramsFile.write("    BV Index                      = {}\n".format(BV_IDX))
             paramsFile.write("    Add reflectances              = {}\n".format(ADD_REFLS))

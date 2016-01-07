@@ -66,9 +66,6 @@ private:
     AddParameter(ParameterType_String,  "wcldfile",   "Input cloud weight file name");
     SetParameterDescription("wcldfile", "The file name of the image containing the cloud weigth for each pixel.");
 
-    AddParameter(ParameterType_Float, "wsensor", "Weight for the given sensor type");
-    SetParameterDescription("wsensor", "The weight to be used for the given sensor type.");
-
     AddParameter(ParameterType_String, "l3adate", "L3A date, expressed in days");
     SetParameterDescription("l3adate", "The L3A date extracted from metadata, expressed in days.");
 
@@ -87,7 +84,6 @@ private:
     SetDocExampleParameterValue("xml", "example1.xml");
     SetDocExampleParameterValue("waotfile", "example2.tif");
     SetDocExampleParameterValue("wcldfile", "example3.tif");
-    SetDocExampleParameterValue("wsensor", "0.33");
     SetDocExampleParameterValue("l3adate", "20140502");
     SetDocExampleParameterValue("halfsynthesis", "50");
     SetDocExampleParameterValue("wdatemin", "0.10");
@@ -107,7 +103,6 @@ private:
         itkExceptionMacro("No xml file given...; please set the input xml");
     }
 
-    float weightSensor = GetParameterFloat("wsensor");
     auto factory = MetadataHelperFactory::New();
     auto pHelper = factory->GetMetadataHelper(inXml);
     std::string l2aDate = pHelper->GetAcquisitionDate();
@@ -121,7 +116,6 @@ private:
     // weight on sensor parameters
     std::string missionName = pHelper->GetMissionName();
     m_totalWeightComputation.SetMissionName(missionName);
-    m_totalWeightComputation.SetWeightOnSensor(weightSensor);
 
     // weight on date parameters
     m_totalWeightComputation.SetDates(l2aDate, l3aDate);

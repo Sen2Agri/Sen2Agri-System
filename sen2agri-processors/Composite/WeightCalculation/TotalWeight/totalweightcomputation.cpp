@@ -18,11 +18,6 @@ void TotalWeightComputation::SetMissionName(std::string &missionName)
     }
 }
 
-void TotalWeightComputation::SetWeightOnSensor(float fWeight)
-{
-    m_fWeightOnSensor = fWeight;
-}
-
 void TotalWeightComputation::SetDates(std::string& L2ADate, std::string& L3ADate)
 {
     //std::cout << "L2ADate: " << L2ADate << std::endl;
