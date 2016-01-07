@@ -32,5 +32,5 @@ source set_build_folder.sh
     -t0 20130216 -tend 20130616 -rate 5 \
     -rseed 0 -pixsize 20 \
     -mask /mnt/data/csudmipy/CSudmipy-O-mask/crop_mask.tif \
-    -outdir /mnt/data/csudmipy/CSudmipy-O \
+    -outdir /mnt/data/csudmipy/CSudmipy-O-type \
     -buildfolder $BUILD_FOLDER

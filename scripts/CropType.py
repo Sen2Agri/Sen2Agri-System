@@ -23,7 +23,8 @@ parser.add_argument('-t0', help='The start date for the temporal resampling inte
 parser.add_argument('-tend', help='The end date for the temporal resampling interval (in format YYYYMMDD)', required=True, metavar='YYYYMMDD')
 parser.add_argument('-rate', help='The sampling rate for the temporal series, in days (default 5)', required=False, metavar='sampling_rate', default=5)
 # parser.add_argument('-radius', help='The radius used for gapfilling, in days (default 15)', required=False, metavar='radius', default=15)
-parser.add_argument('-classifier', help='The classifier used for training (either rf or svm)', required=True, metavar='classifier', choices=['rf','svm'])
+parser.add_argument('-classifier', help='The classifier (rf or svm) used for training (default rf)',
+        required=False, metavar='classifier', choices=['rf','svm'], default=['rf'])
 parser.add_argument('-rseed', help='The random seed used for training (default 0)', required=False, metavar='random_seed', default=0)
 parser.add_argument('-mask', help='The crop mask', required=False, metavar='crop_mask', default='')
 parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)

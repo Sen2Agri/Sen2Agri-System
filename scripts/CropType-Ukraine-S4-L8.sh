@@ -36,5 +36,5 @@ source set_build_folder.sh
     -t0 20130206 -tend 20130616 -rate 5 \
     -rseed 0 -pixsize 20 \
     -mask /mnt/data/ukraine/Ukraine-mask/crop_mask.tif \
-    -outdir /mnt/data/ukraine/Ukraine \
+    -outdir /mnt/data/ukraine/Ukraine-type \
     -buildfolder $BUILD_FOLDER
