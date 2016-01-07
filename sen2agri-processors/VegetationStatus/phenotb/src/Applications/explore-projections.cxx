@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
   
   std::cout << "There are " << dates.size() << " dates.\n";
 
-  auto phF(pheno::normalized_sigmoid::F<pheno::VectorType>);
+  pheno::normalized_sigmoid::F<pheno::VectorType> phF;
   pheno::VectorType x1(4);
   x1[0] = 75; x1[1] = 21; x1[2] = 150; x1[3] = 15;
   vnl_vector<double> f1(doys.size());

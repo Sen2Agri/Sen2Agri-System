@@ -84,7 +84,7 @@ VectorType simulate_noisy_profile(VectorType dates, VectorType x, PrecisionType 
                                   PrecisionType B, PrecisionType noise_std)
 {
   VectorType p(dates.size());
-  pheno::normalized_sigmoid::F(dates, x, p);
+  pheno::normalized_sigmoid::F<VectorType>()(dates, x, p);
   auto m_RNG = std::mt19937(std::random_device{}());
   std::normal_distribution<> d(0, noise_std);
   for(auto& v : p)

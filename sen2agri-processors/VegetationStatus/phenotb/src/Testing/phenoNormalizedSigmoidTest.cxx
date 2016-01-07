@@ -228,8 +228,8 @@ int phenoNormalizedSigmoid(int argc, char * argv[])
              t));
 
     profile = pheno::gaussianWeighting(profile, t);
-    auto phFs(pheno::normalized_sigmoid::F<pheno::VectorType>);
-    pheno::ParameterCostFunction fs{params, t.size(), profile, t, phFs};
+    pheno::normalized_sigmoid::F<pheno::VectorType> phFs;
+    pheno::ParameterCostFunction<pheno::normalized_sigmoid::F<pheno::VectorType>> fs{params, t.size(), profile, t, phFs};
 
     
     auto err(pheno::optimize(x, fs));

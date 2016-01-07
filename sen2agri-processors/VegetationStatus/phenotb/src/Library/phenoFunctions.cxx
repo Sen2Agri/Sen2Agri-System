@@ -73,18 +73,6 @@ VectorType guesstimator(VectorType p, VectorType t)
 
 }// gaussian
 
-double optimize(VectorType& x, ParameterCostFunction f)
-{
-// Make a Levenberg Marquardt minimizer, attach f to it, and
-// run the minimization
-  vnl_levenberg_marquardt levmarq(f);
-  levmarq.set_f_tolerance(1e-10);
-  levmarq.set_x_tolerance(1e-100);
-  levmarq.set_g_tolerance(1e-100);
-  levmarq.minimize(x);
-  return levmarq.get_end_error();
-}
-
 double gaussianFunction(double x, double m, double s)
 {
   return exp(-vnl_math_sqr((x-m)/(s)/2.0));

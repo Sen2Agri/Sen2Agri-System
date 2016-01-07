@@ -35,6 +35,6 @@ int phenoParameterCostFunctionInstance(int argc, char * argv[])
   pheno::VectorType y(nbDates);
   phF(t,xt,y);
   // Set up a pheno::ParameterCostFunction compute object
-  pheno::ParameterCostFunction f{params, nbDates, y, t, phF};
+  pheno::ParameterCostFunction<decltype(phF)> f{params, nbDates, y, t, phF};
   return EXIT_SUCCESS;
 }

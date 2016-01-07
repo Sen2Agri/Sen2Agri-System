@@ -97,6 +97,19 @@ V smooth_profile(V profile, V t, unsigned int radius, double alpha) {
   return res;
 }
 
+template<typename FunctionType>
+double optimize(VectorType& x, ParameterCostFunction<FunctionType> f)
+{
+// Make a Levenberg Marquardt minimizer, attach f to it, and
+// run the minimization
+  vnl_levenberg_marquardt levmarq(f);
+  levmarq.set_f_tolerance(1e-10);
+  levmarq.set_x_tolerance(1e-100);
+  levmarq.set_g_tolerance(1e-100);
+  levmarq.minimize(x);
+  return levmarq.get_end_error();
+}
+
 template<typename ValueType>
 inline
 VectorType pixelToVector(const itk::VariableLengthVector<ValueType>& p)
@@ -161,7 +174,7 @@ V guesstimator_with_gaussian(V p, V t)
 {
   V xg(gaussian::guesstimator(p, t));
   auto phF(gaussian::F);
-  ParameterCostFunction f{4, t.size(), p, t, phF};
+  ParameterCostFunction<decltype(phF)> f{4, t.size(), p, t, phF};
   optimize(xg, f);
   V xs(6);
   xs[0] = xg[0] - 2*xg[1]; // maxpos - stdev
@@ -219,14 +232,6 @@ std::tuple<T, T, T, T, T, T> pheno_metrics(const V& x, T maxvalue,
 }
 
 
-template <ContainerC V>
-inline
-void F(const V& t, const V& x, V& result)
-{
-  auto tsize(t.size());
-  for(size_t i=0; i<tsize; ++i)
-    result[i] = double_sigmoid(t[i], x);
-}
 
 template <ContainerC V>
 inline
@@ -277,11 +282,10 @@ ApproximationResultType Approximation(const V& profile, const V& t)
   auto prof = (profile-vmin)/(vmax-vmin);
   auto x(guesstimator(prof, t));
   auto fprofile = gaussianWeighting(prof, t, *t_max,75.0);
-  auto phFs(F<V>);
-  ParameterCostFunction fs{4, t.size(), fprofile, t, phFs};
+  ParameterCostFunction<F<V>> fs{4, t.size(), fprofile, t, F<V>() };
   auto err(optimize(x, fs));
   V yHat(t.size());
-  phFs(t,x,yHat);
+  F<V>()(t,x,yHat);
   auto residuals = prof - yHat;
   yHat = yHat*(vmax-vmin)+vmin;
   residuals = residuals*(vmax-vmin);

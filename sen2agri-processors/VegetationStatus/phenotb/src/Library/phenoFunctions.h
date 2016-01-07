@@ -34,8 +34,6 @@
 
 namespace pheno
 {
-using FunctionType = std::function<void (const VectorType&, const VectorType&, VectorType&)>;
-
 template<ContainerC V>
 using FilterType = std::function<double (V, const V&)>;
 
@@ -48,6 +46,7 @@ using ApproximationErrorType = double;
 using ApproximationResultType = std::tuple<CoefficientType, MinMaxType, VectorType, VectorType,
                                            ApproximationErrorType>;
 
+template<typename FunctionType>
 class ParameterCostFunction : public vnl_least_squares_function
 {
 public:
@@ -94,7 +93,8 @@ V smooth_profile(V profile, V t, unsigned int radius, double alpha);
     the x vector contains the initial guess and will hold the result.
     The function returns the optimisation error
 */
-double optimize(VectorType& x, ParameterCostFunction f);
+template<typename FunctionType>
+double optimize(VectorType& x, ParameterCostFunction<FunctionType> f);
 
 /// Types of fitting errors
 enum class FittingErrors {OK, HasNan, NOK};
@@ -113,6 +113,10 @@ template <ContainerC V>
 V getParabola(const V& y, const V& t);
 
 namespace normalized_sigmoid{
+template <typename T, ContainerC V>
+inline
+T double_sigmoid(T t, const V& x);
+
 /**
    The normalised double sigmoid or double logistic function is:
    f(t) = \frac{1}{1+exp(\frac{x_0-t}{x_1})}-\frac{1}{1+exp(\frac{x_2-t}{x_3})}
@@ -121,7 +125,15 @@ namespace normalized_sigmoid{
    x_1 (resp. x_3) is the rate of change at the left (resp. right) inflection point
 */
 template <ContainerC V>
-void F(const V& t, const V& x, V& result);
+struct F
+{
+    inline void operator()(const V& t, const V& x, V& result) const
+    {
+      auto tsize(t.size());
+      for(size_t i=0; i<tsize; ++i)
+        result[i] = double_sigmoid(t[i], x);
+    }
+};
 
 /// Estimates the first guess for the parameters given the profile p
 template <ContainerC V>
@@ -309,8 +321,8 @@ public:
               result[i] = NO_DATA;
           else {
               // Compute the approximation
-              normalized_sigmoid::F(dv, x_1, tmps1);
-              normalized_sigmoid::F(dv, x_2, tmps2);
+              normalized_sigmoid::F<VectorType>()(dv, x_1, tmps1);
+              normalized_sigmoid::F<VectorType>()(dv, x_2, tmps2);
               auto tmpres = tmps1*(mm1.second-mm1.first)+mm1.first
                 + tmps2*(mm2.second-mm2.first)+mm2.first;
             if(fit_only_invalid)

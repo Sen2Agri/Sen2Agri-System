@@ -19,15 +19,17 @@
 
 using VectorType = pheno::VectorType;
 
-void lai_log_ndvi(const VectorType& ndvi, const VectorType& pars, VectorType &lai)
+struct lai_log_ndvi
 {
-  auto k_lai = pars[0];
-  auto ndvi_inf = pars[1];
-  auto ndvi_soil = pars[2];
-  for(auto i=0; i<3; ++i)
-    lai[i] = -1.0/k_lai*log((ndvi[i]-ndvi_inf)/(ndvi_soil-ndvi_inf));
-}
-
+    void operator()(const VectorType& ndvi, const VectorType& pars, VectorType &lai) const
+    {
+      auto k_lai = pars[0];
+      auto ndvi_inf = pars[1];
+      auto ndvi_soil = pars[2];
+      for(auto i=0; i<3; ++i)
+        lai[i] = -1.0/k_lai*log((ndvi[i]-ndvi_inf)/(ndvi_soil-ndvi_inf));
+    }
+};
 
 int bvLaiLogNdvi(int argc, char * argv[])
 {
@@ -58,8 +60,8 @@ int bvLaiLogNdvi(int argc, char * argv[])
     std::cout << ndvi_vec[i] << "\t" << lai_vec[i] << std::endl;
     }
 
-  auto laiFs(lai_log_ndvi);
-  pheno::ParameterCostFunction fs{params, nb_measures, lai_vec, ndvi_vec, laiFs};
+  lai_log_ndvi laiFs;
+  pheno::ParameterCostFunction<lai_log_ndvi> fs{params, nb_measures, lai_vec, ndvi_vec, laiFs};
 
   VectorType x(params);
   x[0] = 2.0;

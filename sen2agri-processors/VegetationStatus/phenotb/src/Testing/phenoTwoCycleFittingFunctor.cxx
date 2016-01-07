@@ -69,8 +69,8 @@ int phenoTwoCycleFittingFunctor(int argc, char * argv[])
 
   VectorType tmps1(nb_dates);
   VectorType tmps2(nb_dates);
-  pheno::normalized_sigmoid::F(ddv, x_1, tmps1);
-  pheno::normalized_sigmoid::F(ddv, x_2, tmps2);
+  pheno::normalized_sigmoid::F<VectorType>()(ddv, x_1, tmps1);
+  pheno::normalized_sigmoid::F<VectorType>()(ddv, x_2, tmps2);
   auto tmpres = tmps1*(mm1.second-mm1.first)+mm1.first
     + tmps2*(mm2.second-mm2.first)+mm2.first;
   PixelType pixel(nb_dates);

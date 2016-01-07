@@ -67,7 +67,7 @@ int main()
           y[i] += noise;
         }
       // Set up a pheno::ParameterCostFunction compute object
-      pheno::ParameterCostFunction f{params, nbDates, y, t, phF};
+      pheno::ParameterCostFunction<decltype(phF)> f{params, nbDates, y, t, phF};
 
       // Set up the initial guess
       double min{std::numeric_limits<double>::max()};
