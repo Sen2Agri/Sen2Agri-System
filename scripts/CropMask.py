@@ -94,16 +94,16 @@ parser = argparse.ArgumentParser(description='CropMask Python processor')
 parser.add_argument('-mission', help='The main mission for the time series', required=False, default='SPOT')
 
 parser.add_argument('-refp', help='The reference polygons', required=False, metavar='reference_polygons', default='')
-parser.add_argument('-ratio', help='The ratio between the validation and training polygons', required=False, metavar='sample_ratio', default=0.75)
+parser.add_argument('-ratio', help='The ratio between the validation and training polygons (default 0.75)', required=False, metavar='sample_ratio', default=0.75)
 parser.add_argument('-input', help='The list of products descriptors', required=True, metavar='product_descriptor', nargs='+')
 parser.add_argument('-t0', help='The start date for the temporal resampling interval (in format YYYYMMDD)', required=True, metavar='YYYYMMDD')
 parser.add_argument('-tend', help='The end date for the temporal resampling interval (in format YYYYMMDD)', required=True, metavar='YYYYMMDD')
-parser.add_argument('-rate', help='The sampling rate for the temporal series, in days', required=False, metavar='sampling_rate', default=5)
-parser.add_argument('-radius', help='The radius used for gapfilling, in days', required=False, metavar='radius', default=15)
-parser.add_argument('-nbtrsample', help='The number of samples included in the training set.', required=False, metavar='nbtrsample', default=1000)
-parser.add_argument('-rseed', help='The random seed used for training', required=False, metavar='random_seed', default=0)
+parser.add_argument('-rate', help='The sampling rate for the temporal series, in days (default 5)', required=False, metavar='sampling_rate', default=5)
+parser.add_argument('-radius', help='The radius used for gapfilling, in days (default 15)', required=False, metavar='radius', default=15)
+parser.add_argument('-nbtrsample', help='The number of samples included in the training set (default 4000)', required=False, metavar='nbtrsample', default=4000)
+parser.add_argument('-rseed', help='The random seed used for training (default 0)', required=False, metavar='random_seed', default=0)
 
-parser.add_argument('-window', help='The window, expressed in number of records, used for the temporal features extraction', required=False, metavar='window', default=6)
+parser.add_argument('-window', help='The window, expressed in number of records, used for the temporal features extraction (default 6)', required=False, metavar='window', default=6)
 parser.add_argument('-lmbd', help='The lambda parameter used in data smoothing (default 2)', required=False, metavar='lmbd', default=2)
 parser.add_argument('-weight', help='The weight factor for data smoothing (default 1)', required=False, metavar='weight', default=1)
 parser.add_argument('-nbcomp', help='The number of components used by dimensionality reduction (default 6)', required=False, metavar='nbcomp', default=6)
@@ -117,7 +117,7 @@ parser.add_argument('-alpha', help='The parameter alpha used by the mahalanobis 
 
 parser.add_argument('-rfnbtrees', help='The number of trees used for training (default 100)', required=False, metavar='rfnbtrees', default=100)
 parser.add_argument('-rfmax', help='maximum depth of the trees used for Random Forest classifier (default 25)', required=False, metavar='rfmax', default=25)
-parser.add_argument('-rfmin', help='minimum number of samples in each node used by the classifier (default 5)', required=False, metavar='rfmin', default=5)
+parser.add_argument('-rfmin', help='minimum number of samples in each node used by the classifier (default 25)', required=False, metavar='rfmin', default=25)
 
 parser.add_argument('-minarea', help="The minium number of pixel in an area where, for an equal number of crop and nocrop samples, the crop decision is taken (default 20)", required=False, metavar='minarea', default=20)
 
