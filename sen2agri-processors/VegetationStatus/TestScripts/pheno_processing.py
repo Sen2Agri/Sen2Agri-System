@@ -92,7 +92,7 @@ print("Processing finished: " + str(datetime.datetime.now()))
 print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 #os.remove(outMasks)
-#os.remove(outBands)
+os.remove(outBands)
 #os.remove(outDates)
 #os.remove(outNdvi)
 #os.remove(outSigmo)
