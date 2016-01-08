@@ -116,10 +116,10 @@ executeStep("TemporalResampling", "otbApplicationLauncherCommandLine", "Temporal
 # Feature Extraction (Step 5)
 executeStep("FeatureExtraction", "otbApplicationLauncherCommandLine", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-fts", fts, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
 
+# ogr2ogr Reproject insitu data (Step 6)
 with open(shape_proj, 'r') as file:
     shape_wkt = "ESRI::" + file.read()
 
-# ogr2ogr Reproject insitu data (Step 6)
 executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-t_srs", shape_wkt, "-progress", "-overwrite",reference_polygons_reproject, reference_polygons, skip=fromstep>6)
 
 # ogr2ogr Crop insitu data (Step 7)

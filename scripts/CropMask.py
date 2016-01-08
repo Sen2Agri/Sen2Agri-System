@@ -24,10 +24,10 @@ def inSituDataAvailable() :
 	# Image Statistics (Step 9)
 	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", features,"-out",statistics, skip=fromstep>9)
 
+        # ogr2ogr Reproject insitu data (Step 10)
         with open(shape_proj, 'r') as file:
             shape_wkt = "ESRI::" + file.read()
 
-        # ogr2ogr Reproject insitu data (Step 10)
 	executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-t_srs", shape_wkt,"-progress","-overwrite",reference_polygons_reproject, reference_polygons, skip=fromstep>10)
 
 	# ogr2ogr Crop insitu data (Step 11)
