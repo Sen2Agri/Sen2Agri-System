@@ -66,7 +66,10 @@ def noInSituDataAvailable() :
 	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", spectral_features, "-out", statistics_noinsitu, skip=fromstep>18)
 
 	# Reference Map preparation (Step 19 and 20)
-	executeStep("gdalwarp for reprojecting Reference map", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-t_srs", shape_proj, reference, reprojected_reference, skip=fromstep>19)
+        with open(shape_proj, 'r') as file:
+            shape_wkt = "ESRI::" + file.read()
+
+	executeStep("gdalwarp for reprojecting Reference map", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-t_srs", shape_wkt, reference, reprojected_reference, skip=fromstep>19)
 
 	executeStep("gdalwarp for cutting Reference map", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_reference, crop_reference, skip=fromstep>20)
 
