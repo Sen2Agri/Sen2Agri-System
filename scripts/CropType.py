@@ -24,7 +24,7 @@ parser.add_argument('-tend', help='The end date for the temporal resampling inte
 parser.add_argument('-rate', help='The sampling rate for the temporal series, in days (default 5)', required=False, metavar='sampling_rate', default=5)
 # parser.add_argument('-radius', help='The radius used for gapfilling, in days (default 15)', required=False, metavar='radius', default=15)
 parser.add_argument('-classifier', help='The classifier (rf or svm) used for training (default rf)',
-        required=False, metavar='classifier', choices=['rf','svm'], default=['rf'])
+        required=False, metavar='classifier', choices=['rf','svm'], default='rf')
 parser.add_argument('-rseed', help='The random seed used for training (default 0)', required=False, metavar='random_seed', default=0)
 parser.add_argument('-mask', help='The crop mask', required=False, metavar='crop_mask', default='')
 parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
@@ -45,7 +45,7 @@ args = parser.parse_args()
 mission=args.mission
 
 reference_polygons=args.ref
-sample_ratio=args.ratio
+sample_ratio=str(args.ratio)
 
 indesc = args.input
 
