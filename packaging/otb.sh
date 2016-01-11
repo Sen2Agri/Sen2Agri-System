@@ -6,13 +6,13 @@ sudo ln -s /usr/bin/opj2_dump /usr/bin/opj_dump
 
 mkdir OTB-BUILD
 cd OTB-BUILD
-cmake ../OTB/SuperBuild \
+cmake ../OTB-5.2.0/SuperBuild \
 	-DCMAKE_INSTALL_PREFIX=~/otb-install/usr \
-	-DCMAKE_BUILD_TYPE=RelWithDebInfo \
+	-DCMAKE_BUILD_TYPE=Release \
 	-DBUILD_TESTING=OFF \
-	-DGDAL_CONFIG=/usr/bin/gdal-config \
-	-DGDAL_INCLUDE_DIR=/usr/include/gdal \
-	-DGDAL_LIBRARY=/usr/lib64/libgdal.so \
+	-DGDAL_CONFIG=/usr/local/bin/gdal-config \
+	-DGDAL_INCLUDE_DIR=/usr/local/include \
+	-DGDAL_LIBRARY=/usr/local/lib/libgdal.so \
 	-DOTB_USE_MUPARSERX=OFF \
 	-DOTB_WRAP_PYTHON=ON \
 	-DUSE_SYSTEM_BOOST=ON \
@@ -47,5 +47,5 @@ sed -i -e "s|/home/grayshade/otb-install/|/|g" ~/otb-install/usr/lib/cmake/OTB-5
 sed -i -e "s|/home/grayshade/otb-install/|/|g" ~/otb-install/usr/lib/pkgconfig/openthreads.pc
 
 mkdir ~/tmp
-fpm -s dir -t rpm -n otb -v 5.0 -C ~/otb-install/ --workdir ~/tmp -p otb-VERSION.fc22.ARCH.rpm usr
-fpm -s dir -t rpm -n otb -v 5.2 -C ~/otb-install/ --workdir ~/tmp -p otb-VERSION.fc22.ARCH.rpm usr
+#fpm -s dir -t rpm -n otb -v 5.0 -C ~/otb-install/ --workdir ~/tmp -p otb-VERSION.fc22.ARCH.rpm usr
+fpm -s dir -t rpm -n otb -v 5.2.0 -C ~/otb-install/ --workdir ~/tmp -p otb-VERSION.centos7.ARCH.rpm usr
