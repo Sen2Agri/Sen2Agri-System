@@ -21,17 +21,17 @@
 
 namespace otb{
 template <typename PrecisionType=double>
-class  MultiLinearRegressionModel : 
+class  MultiLinearRegressionModel :
     public MachineLearningModel<PrecisionType, PrecisionType>
 {
 public:
   using VectorType = std::vector<PrecisionType>;
   using MatrixType = std::vector<VectorType>;
-  using TargetSampleType = typename 
-    MachineLearningModel<PrecisionType, 
+  using TargetSampleType = typename
+    MachineLearningModel<PrecisionType,
                          PrecisionType>::TargetSampleType;
-  using InputSampleType = typename 
-    MachineLearningModel<PrecisionType, 
+  using InputSampleType = typename
+    MachineLearningModel<PrecisionType,
                          PrecisionType>::InputSampleType;
 
   typedef itk::Statistics::ListSample<TargetSampleType> TargetListSampleType;
@@ -79,7 +79,7 @@ public:
     if(m_model.size()==0)
       {
       itkExceptionMacro(<< "Model is not initialized.")
-        }    
+        }
     if(x.size()!=(m_model.size()-1))
       {
       itkExceptionMacro(<< "Predictor vector and model have different sizes.")
@@ -88,15 +88,17 @@ public:
     PrecisionType result = m_model[0];
     for(size_t i=0; i<x.size(); i++)
       result += m_model[i+1]*x[i];
-    
+
     return result;
   }
 
-  TargetSampleType Predict(const InputSampleType & input) const
+  TargetSampleType Predict(const InputSampleType & input, double *quality = NULL) const ITK_OVERRIDE
   {
     VectorType tmp_vec(this->SampleToVector(input));
     TargetSampleType target;
     target[0] = this->Predict(tmp_vec);
+    if (quality)
+        *quality = 1.0;
     return target;
   }
 
@@ -188,7 +190,7 @@ protected:
   VectorType m_w;
   bool m_weights;
   VectorType m_model;
-  
+
 };
 }//namespace otb
 
