@@ -173,8 +173,6 @@ reference_polygons_reproject=os.path.join(args.outdir, "reference_polygons_repro
 reference_polygons_clip=os.path.join(args.outdir, "reference_clip.shp")
 training_polygons=os.path.join(args.outdir, "training_polygons.shp")
 validation_polygons=os.path.join(args.outdir, "validation_polygons.shp")
-random_training_polygons=os.path.join(args.outdir, "random_training_polygons.shp")
-random_testing_polygons=os.path.join(args.outdir, "random_testing_polygons.shp")
 
 rawtocr=os.path.join(args.outdir, "rawtocr.tif")
 tocr=os.path.join(args.outdir, "tocr.tif")
