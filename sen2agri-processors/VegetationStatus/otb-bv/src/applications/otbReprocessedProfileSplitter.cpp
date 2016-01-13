@@ -76,9 +76,9 @@ private:
         bool bUseCompression = (GetParameterInt("compress") != 0);
 
         std::string strOutFilesList = GetParameterString("outlist");
-        std::ofstream m_SimulationsFile;
+        std::ofstream filesListFile;
         try {
-            m_SimulationsFile.open(strOutFilesList.c_str(), std::ofstream::out);
+            filesListFile.open(strOutFilesList.c_str(), std::ofstream::out);
         } catch(...) {
             itkGenericExceptionMacro(<< "Could not open file " << strOutFilesList);
         }
@@ -106,6 +106,9 @@ private:
             writer = WriterType::New();
             std::ostringstream fileNameStream;
             fileNameStream << strOutPrefix << "_b" << i << ".tif";
+            // we might have also compression and we do not want that in the name file
+            // to be saved into the produced files list file
+            std::string simpleFileName = fileNameStream.str();
             if(bUseCompression) {
                 fileNameStream << "?gdal:co:COMPRESS=DEFLATE";
             }
@@ -122,10 +125,10 @@ private:
                 std::cout << err << std::endl;
                 itkExceptionMacro("Error writing output");
             }
-            m_SimulationsFile << fileName << std::endl;
+            filesListFile << simpleFileName << std::endl;
         }
 
-        m_SimulationsFile.close();
+        filesListFile.close();
 
         return;
     }

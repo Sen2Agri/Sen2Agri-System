@@ -27,10 +27,23 @@ void Simulator::HandleSendExecuteProcessor()
         NewExecutorStep step;
         step.taskId = (++m_nLastTaskId);
         step.stepName = QString("StepName_%1_%2").arg(QString::number(m_nLastTaskId), QString::number(i+1));
-        step.processorPath = "./DummyProcessor";
+        step.processorPath = "/usr/local/bin/otbcli";
         StepArgument stepArg;
-        stepArg.value = QString("gogu arguments \\s /u \" hello world \" | ghita");
+        stepArg.value = QString("MaskHandler");
         step.arguments.append(stepArg);
+        stepArg.value = QString("-xml");
+        step.arguments.append(stepArg);
+        stepArg.value = QString("/mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000.xml");
+        step.arguments.append(stepArg);
+        stepArg.value = QString("-out");
+        step.arguments.append(stepArg);
+        stepArg.value = QString("/mnt/scratch/183/1252-composite-mask-handler/all_masks_file.tif");
+        step.arguments.append(stepArg);
+        stepArg.value = QString("-sentinelres");
+        step.arguments.append(stepArg);
+        stepArg.value = QString("20");
+        step.arguments.append(stepArg);
+
         listSteps.append(step);
     }
     qDebug() << "Submitting steps to executor ...";

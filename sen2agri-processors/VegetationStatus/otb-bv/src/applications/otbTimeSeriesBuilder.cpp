@@ -25,16 +25,16 @@ namespace otb
 {
 namespace Wrapper
 {
-class TimeSeriesBuilderApp : public Application
+class TimeSeriesBuilder : public Application
 {
 public:
-  typedef TimeSeriesBuilderApp Self;
+  typedef TimeSeriesBuilder Self;
   typedef Application Superclass;
   typedef itk::SmartPointer<Self> Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
 
   itkNewMacro(Self)
-  itkTypeMacro(TimeSeriesBuilderApp, otb::Application)
+  itkTypeMacro(TimeSeriesBuilder, otb::Application)
 
 private:
 
@@ -117,6 +117,6 @@ private:
 }
 }
 
-OTB_APPLICATION_EXPORT(otb::Wrapper::TimeSeriesBuilderApp)
+OTB_APPLICATION_EXPORT(otb::Wrapper::TimeSeriesBuilder)
 
 

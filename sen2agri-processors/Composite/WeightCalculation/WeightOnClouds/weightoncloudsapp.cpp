@@ -81,7 +81,7 @@ private:
 
     AddParameter(ParameterType_Int, "kernelwidth", "Gaussian filter kernel width");
     SetParameterDescription("kernelwidth", "The gaussian filter kernel width.");
-    SetDefaultParameterInt("kernelwidth", 81);
+    SetDefaultParameterInt("kernelwidth", 801);
     MandatoryOff("kernelwidth");
 
     AddParameter(ParameterType_Int, "outres", "Resolution of the output image");
@@ -170,6 +170,36 @@ private:
 
     // Set the output image
     SetParameterOutputImage("out", m_cloudWeightComputation.GetOutputImageSource()->GetOutput());
+
+    // write debug infos if needed
+    if(0) {
+        time_t ttTime;
+        time(&ttTime);
+        std::string folderName = "/mnt/data/output_temp/temp/";
+        const size_t last_sep_pos = inCldFileName.rfind("/");
+        if(last_sep_pos != std::string::npos) {
+            folderName = inCldFileName.substr(0, last_sep_pos+1);
+        }
+        std::string undersamplerFile = folderName + std::to_string(ttTime) + "clouds_240m.tif";
+        m_underSampler.SetOutputFileName(undersamplerFile);
+        m_underSampler.WriteToOutputFile();
+
+        std::string smallCldLowRes = folderName + std::to_string(ttTime) + "small_cloud_240m.tif";
+        m_gaussianFilterSmallCloud.SetOutputFileName(smallCldLowRes);
+        m_gaussianFilterSmallCloud.WriteToOutputFile();
+
+        std::string largeCldLowRes = folderName + std::to_string(ttTime) + "large_cloud_240m.tif";
+        m_gaussianFilterLargeCloud.SetOutputFileName(largeCldLowRes);
+        m_gaussianFilterLargeCloud.WriteToOutputFile();
+
+        std::string smallCldHighRes = folderName + std::to_string(ttTime) + "small_cloud_10m.tif";
+        m_overSamplerSmallCloud.SetOutputFileName(smallCldHighRes);
+        m_overSamplerSmallCloud.WriteToOutputFile();
+
+        std::string largeCldHighRes = folderName + std::to_string(ttTime) + "large_cloud_10m.tif";
+        m_overSamplerLargeCloud.SetOutputFileName(largeCldHighRes);
+        m_overSamplerLargeCloud.WriteToOutputFile();
+    }
   }
 
   CloudMaskBinarization m_cloudMaskBinarization;

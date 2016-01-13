@@ -61,10 +61,10 @@ private:
 
     void DoInit()
     {
-        SetName("UpdateSynthesis2");
+        SetName("UpdateSynthesis");
         SetDescription("Update synthesis using the recurrent expression of the weighted average.");
 
-        SetDocName("UpdateSynthesis2");
+        SetDocName("UpdateSynthesis");
         SetDocLongDescription("long description");
         SetDocLimitations("None");
         SetDocAuthors("CIU");

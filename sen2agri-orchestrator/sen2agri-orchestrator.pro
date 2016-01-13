@@ -34,7 +34,10 @@ SOURCES += main.cpp \
     processor/dummyprocessorhandler.cpp \
     processor/croptypehandler.cpp \
     processor/cropmaskhandler.cpp \
-    tasktosubmit.cpp
+    tasktosubmit.cpp \
+    processor/compositehandler.cpp \
+    processor/lairetrievalhandler.cpp \
+    processor/phenondvihandler.cpp
 
 HEADERS += \
     pch.hpp \
@@ -45,7 +48,10 @@ HEADERS += \
     processor/dummyprocessorhandler.hpp \
     processor/croptypehandler.hpp \
     processor/cropmaskhandler.hpp \
-    tasktosubmit.hpp
+    tasktosubmit.hpp \
+    processor/compositehandler.hpp \
+    processor/lairetrievalhandler.hpp \
+    processor/phenondvihandler.hpp
 
 DISTFILES += \
     ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml \

@@ -107,7 +107,41 @@ class Sen2AgriCtl(object):
         parser_submit_job.add_argument('-s', '--site',
                                        required=True, help="site")
         parser_submit_job_subparsers = parser_submit_job.add_subparsers()
+        
+        parser_composite = parser_submit_job_subparsers.add_parser(
+            'composite', help="Submits a new composite type job")
+        parser_composite.add_argument('-i', '--input',
+                                      nargs='+', required=True,
+                                      help="input products")
+        parser_composite.add_argument(
+            '--synthesis-date',
+            required=True, help="The synthesis date (YYYYMMDD)")
+        parser_composite.add_argument(
+            '--half-synthesis',
+            required=True, help="Half synthesis interval in days")
+        parser_composite.add_argument(
+            '--composite', help="composite")
+        parser_composite.add_argument(
+            '--resolution', type=int, help="resolution in m")
+        parser_composite.add_argument(
+            '-p', '--parameter', action='append', nargs=2,
+            metavar=('KEY', 'VALUE'), help="override configuration parameter")
+        parser_composite.set_defaults(func=self.submit_composite)
 
+        parser_lai = parser_submit_job_subparsers.add_parser(
+            'lai', help="Submits a new LAI retrieval type job")
+        parser_lai.add_argument('-i', '--input',
+                                      nargs='+', required=True,
+                                      help="input products")
+        parser_lai.add_argument(
+            '--lai', help="lai")
+        parser_lai.add_argument(
+            '--resolution', type=int, help="resolution in m")
+        parser_lai.add_argument(
+            '-p', '--parameter', action='append', nargs=2,
+            metavar=('KEY', 'VALUE'), help="override configuration parameter")
+        parser_lai.set_defaults(func=self.submit_lai)
+        
         parser_crop_mask = parser_submit_job_subparsers.add_parser(
             'crop-mask', help="Submits a new crop mask job")
         parser_crop_mask.add_argument('-i', '--input',
@@ -159,6 +193,26 @@ class Sen2AgriCtl(object):
         for site in self.client.get_sites():
             print("{} {}".format(site.site_id, site.name))
 
+    def submit_composite(self, args):
+        parameters = {'input_products': args.input,
+                      'synthesis_date': args.synthesis_date,
+                      'half_synthesis': args.half_synthesis}
+
+        if args.resolution:
+            parameters['resolution'] = args.resolution
+
+        job = self.create_job(1, parameters, args)
+        self.client.submit_job(job)
+
+    def submit_lai(self, args):
+        parameters = {'input_products': args.input}
+
+        if args.resolution:
+            parameters['resolution'] = args.resolution
+
+        job = self.create_job(2, parameters, args)
+        self.client.submit_job(job)
+        
     def submit_crop_mask(self, args):
         parameters = {'input_products': args.input,
                       'reference_polygons': args.reference,
