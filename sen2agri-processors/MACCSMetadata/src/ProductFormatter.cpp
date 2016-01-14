@@ -735,7 +735,7 @@ private:
 //          assert(errno == ECHILD);
 
           std::vector<const char *> args;
-          args.emplace_back("otbApplicationLauncherCommandLine");
+          args.emplace_back("otbcli");
           args.emplace_back("Quicklook");
           args.emplace_back("-in");
           args.emplace_back(rasterFullFilePath.c_str());
