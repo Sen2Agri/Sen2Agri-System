@@ -100,6 +100,9 @@ xml_validation_metrics=os.path.join(args.outdir, "validation-metrics.xml")
 keepfiles = args.keepfiles
 fromstep = args.fromstep
 
+if not os.path.exists(args.outdir):
+    os.makedirs(args.outdir)
+
 globalStart = datetime.datetime.now()
 
 # Bands Extractor (Step 1)

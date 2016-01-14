@@ -229,6 +229,9 @@ xml_validation_metrics=os.path.join(args.outdir, "crop-mask-validation-metrics.x
 keepfiles = args.keepfiles
 fromstep = args.fromstep
 
+if not os.path.exists(args.outdir):
+    os.makedirs(args.outdir)
+
 globalStart = datetime.datetime.now()
 
 # Bands Extractor (Step 1)
