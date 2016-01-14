@@ -92,6 +92,7 @@ public:
     return result;
   }
 
+#if 0
   TargetSampleType Predict(const InputSampleType & input, double *quality = NULL) const ITK_OVERRIDE
   {
     VectorType tmp_vec(this->SampleToVector(input));
@@ -101,6 +102,15 @@ public:
         *quality = 1.0;
     return target;
   }
+#else
+  TargetSampleType Predict(const InputSampleType & input) const ITK_OVERRIDE
+  {
+    VectorType tmp_vec(this->SampleToVector(input));
+    TargetSampleType target;
+    target[0] = this->Predict(tmp_vec);
+    return target;
+  }
+#endif
 
   TargetSampleType PredictClassification(const InputSampleType & input) const
   {

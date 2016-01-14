@@ -735,7 +735,7 @@ private:
 //          assert(errno == ECHILD);
 
           std::vector<const char *> args;
-          args.emplace_back("otbApplicationLauncherCommandLine");
+          args.emplace_back("otbcli");
           args.emplace_back("Quicklook");
           args.emplace_back("-in");
           args.emplace_back(rasterFullFilePath.c_str());
@@ -875,7 +875,7 @@ private:
 
                   geoProductInfoEl.CoordReferenceSystem.HorizCSName = oSRS->GetAttrValue("PROJCS");
                   geoProductInfoEl.CoordReferenceSystem.HorizCSCode = std::string(oSRS->GetAuthorityName("PROJCS")) + ':' + oSRS->GetAuthorityCode("PROJCS");
-                  std::cout << "HorizCSName: HorizCSCode" << geoProductInfoEl.CoordReferenceSystem.HorizCSName << ': ' << geoProductInfoEl.CoordReferenceSystem.HorizCSCode << std::endl;
+                  std::cout << "HorizCSName: HorizCSCode" << geoProductInfoEl.CoordReferenceSystem.HorizCSName << ": " << geoProductInfoEl.CoordReferenceSystem.HorizCSCode << std::endl;
 
 
                   tileInfoEl.tileMetadata.TileGeometricInfo.HorizontalCSName = geoProductInfoEl.CoordReferenceSystem.HorizCSName;
