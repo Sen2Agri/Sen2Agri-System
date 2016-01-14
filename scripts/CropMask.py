@@ -4,6 +4,7 @@ import os
 import glob
 import argparse
 import csv
+import sys
 from sys import argv
 import datetime
 from common import executeStep
@@ -297,6 +298,8 @@ try:
 #Product creation (Step 35)
     executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.quality", xml_validation_metrics, skip=fromstep>35)
 
+except:
+    print sys.exc_info()
 finally:
     globalEnd = datetime.datetime.now()
     print "Processor CropMask finished in " + str(globalEnd-globalStart)

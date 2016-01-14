@@ -5,6 +5,7 @@ import os.path
 import glob
 import argparse
 import csv
+import sys
 from sys import argv
 import datetime
 from common import executeStep
@@ -171,6 +172,8 @@ try:
 #Product creation (Step 19)
     executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", "TILE_"+tilename, crop_type_map, "-processor.croptype.quality", xml_validation_metrics, skip=fromstep>19)
 
+except:
+    print sys.exc_info()
 finally:
     globalEnd = datetime.datetime.now()
     print "Processor CropType finished in " + str(globalEnd-globalStart)
