@@ -14,7 +14,7 @@ void ApplicationClosingListener::run()
 {
     // Do processing here
     QTimer::singleShot(10000, this, SLOT(SendExecuteProcessor()));
-    QTimer::singleShot(12000, this, SLOT(SendCancelProcessor()));
+    //QTimer::singleShot(12000, this, SLOT(SendCancelProcessor()));
 
     //emit finished();
 }

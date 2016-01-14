@@ -10,16 +10,16 @@ from common import executeStep
 
 def inSituDataAvailable() :
 	# Temporal Features (Step 6)
-	#executeStep("TemporalFeatures", "otbApplicationLauncherCommandLine", "TemporalFeatures", os.path.join(buildFolder,"CropMask/TemporalFeatures"),"-ndvi",ndvi,"-dates",outdays,"-window", window, "-tf",temporal_features, skip=fromstep>6)
+	#executeStep("TemporalFeatures", "otbcli", "TemporalFeatures", os.path.join(buildFolder,"CropMask/TemporalFeatures"),"-ndvi",ndvi,"-dates",outdays,"-window", window, "-tf",temporal_features, skip=fromstep>6)
 
 	# Statistic Features (Step 7)
-	#executeStep("StatisticFeatures", "otbApplicationLauncherCommandLine", "StatisticFeatures", os.path.join(buildFolder,"CropMask/StatisticFeatures"),"-ndwi",ndwi,"-brightness",brightness,"-sf",statistic_features, skip=fromstep>7, rmfiles=[] if keepfiles else [ndwi, brightness])
+	#executeStep("StatisticFeatures", "otbcli", "StatisticFeatures", os.path.join(buildFolder,"CropMask/StatisticFeatures"),"-ndwi",ndwi,"-brightness",brightness,"-sf",statistic_features, skip=fromstep>7, rmfiles=[] if keepfiles else [ndwi, brightness])
 
 	# Concatenate Features (Step 8)
 	#executeStep("ConcatenateFeatures", "otbcli_ConcatenateImages", "-il", temporal_features,statistic_features,"-out",features, skip=fromstep>8, rmfiles=[] if keepfiles else [temporal_features, statistic_features])
 
 	#Features when insitu data is available (Step 6 or 7 or 8)
-	executeStep("FeaturesWithInsitu", "otbApplicationLauncherCommandLine", "FeaturesWithInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithInsitu"),"-ndvi",ndvi,"-ndwi",ndwi,"-brightness",brightness,"-dates",outdays,"-window", window,"-bm", "true", "-out",features, skip=fromstep>6, rmfiles=[] if keepfiles else [ndwi, brightness])
+	executeStep("FeaturesWithInsitu", "otbcli", "FeaturesWithInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithInsitu"),"-ndvi",ndvi,"-ndwi",ndwi,"-brightness",brightness,"-dates",outdays,"-window", window,"-bm", "true", "-out",features, skip=fromstep>6, rmfiles=[] if keepfiles else [ndwi, brightness])
 
 	# Image Statistics (Step 9)
 	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", features,"-out",statistics, skip=fromstep>9)
@@ -34,7 +34,7 @@ def inSituDataAvailable() :
 	executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-clipsrc", shape,"-progress","-overwrite",reference_polygons_clip, reference_polygons_reproject, skip=fromstep>11)
 
 	# Sample Selection (Step 12)
-	executeStep("SampleSelection", "otbApplicationLauncherCommandLine","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons,"-nofilter","true", skip=fromstep>12)
+	executeStep("SampleSelection", "otbcli","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons,"-nofilter","true", skip=fromstep>12)
 
 	#Train Image Classifier (Step 13)
 	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", features,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vfn","CROP","-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>13)
@@ -48,19 +48,19 @@ def inSituDataAvailable() :
 def noInSituDataAvailable() :
 	global validation_polygons
 	#Data Smoothing for NDVI (Step 15)
-	executeStep("DataSmoothing for NDVI", "otbApplicationLauncherCommandLine", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts",ndvi,"-bands", "1", "-lambda", lmbd, "-weight", weight, "-sts",ndvi_smooth, skip=fromstep>15)
+	executeStep("DataSmoothing for NDVI", "otbcli", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts",ndvi,"-bands", "1", "-lambda", lmbd, "-weight", weight, "-sts",ndvi_smooth, skip=fromstep>15)
 
 	#Data Smoothing for Reflectances (Step 16)
-	executeStep("DataSmoothing for Reflectances", "otbApplicationLauncherCommandLine", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts",rtocr,"-bands", "4", "-lambda", lmbd, "-weight", weight, "-sts",rtocr_smooth, skip=fromstep>16, rmfiles=[] if keepfiles else [rtocr])
+	executeStep("DataSmoothing for Reflectances", "otbcli", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts",rtocr,"-bands", "4", "-lambda", lmbd, "-weight", weight, "-sts",rtocr_smooth, skip=fromstep>16, rmfiles=[] if keepfiles else [rtocr])
 
 	# Temporal Features (Step 16)
-	#executeStep("TemporalFeatures", "otbApplicationLauncherCommandLine", "TemporalFeaturesNoInsitu", os.path.join(buildFolder,"CropMask/TemporalFeaturesNoInsitu"),"-ndvi",ndvi_smooth,"-ts", rtocr_smooth, "-dates", outdays, "-tf", tf_noinsitu, skip=fromstep>16)
+	#executeStep("TemporalFeatures", "otbcli", "TemporalFeaturesNoInsitu", os.path.join(buildFolder,"CropMask/TemporalFeaturesNoInsitu"),"-ndvi",ndvi_smooth,"-ts", rtocr_smooth, "-dates", outdays, "-tf", tf_noinsitu, skip=fromstep>16)
 
 	# Spectral Features (Step 17)
-	#executeStep("SpectralFeatures", "otbApplicationLauncherCommandLine", "SpectralFeatures", os.path.join(buildFolder,"CropMask/SpectralFeatures"),"-ts", rtocr_smooth, "-tf", tf_noinsitu, "-sf", spectral_features, skip=fromstep>17, rmfiles=[] if keepfiles else [ndvi_smooth, rtocr_smooth, tf_noinsitu])
+	#executeStep("SpectralFeatures", "otbcli", "SpectralFeatures", os.path.join(buildFolder,"CropMask/SpectralFeatures"),"-ts", rtocr_smooth, "-tf", tf_noinsitu, "-sf", spectral_features, skip=fromstep>17, rmfiles=[] if keepfiles else [ndvi_smooth, rtocr_smooth, tf_noinsitu])
 
 	#Features when no insitu data is available (Step 17)
-	executeStep("FeaturesWithoutInsitu", "otbApplicationLauncherCommandLine", "FeaturesWithoutInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithoutInsitu"),"-ndvi",ndvi_smooth,"-ts", rtocr_smooth, "-dates", outdays , "-sf", spectral_features, skip=fromstep>17, rmfiles=[] if keepfiles else [ndvi_smooth, rtocr_smooth])
+	executeStep("FeaturesWithoutInsitu", "otbcli", "FeaturesWithoutInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithoutInsitu"),"-ndvi",ndvi_smooth,"-ts", rtocr_smooth, "-dates", outdays , "-sf", spectral_features, skip=fromstep>17, rmfiles=[] if keepfiles else [ndvi_smooth, rtocr_smooth])
 
 	# Image Statistics (Step 18)
 	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", spectral_features, "-out", statistics_noinsitu, skip=fromstep>18)
@@ -74,14 +74,14 @@ def noInSituDataAvailable() :
 	executeStep("gdalwarp for cutting Reference map", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_reference, crop_reference, skip=fromstep>20)
 
 	# Erosion (Step 21)
-	executeStep("Erosion", "otbApplicationLauncherCommandLine", "Erosion", os.path.join(buildFolder,"CropMask/Erosion"),"-in", crop_reference, "-out", eroded_reference, "-radius", erode_radius, skip=fromstep>21, rmfiles=[] if keepfiles else [crop_reference])
+	executeStep("Erosion", "otbcli", "Erosion", os.path.join(buildFolder,"CropMask/Erosion"),"-in", crop_reference, "-out", eroded_reference, "-radius", erode_radius, skip=fromstep>21, rmfiles=[] if keepfiles else [crop_reference])
 
 
 	# Trimming (Step 22)
-	executeStep("Trimming", "otbApplicationLauncherCommandLine", "Trimming", os.path.join(buildFolder,"CropMask/Trimming"),"-feat", spectral_features, "-ref", eroded_reference, "-out", trimmed_reference_raster, "-alpha", alpha, "-nbsamples", "0", "-seed", random_seed, skip=fromstep>22, rmfiles=[] if keepfiles else [eroded_reference])
+	executeStep("Trimming", "otbcli", "Trimming", os.path.join(buildFolder,"CropMask/Trimming"),"-feat", spectral_features, "-ref", eroded_reference, "-out", trimmed_reference_raster, "-alpha", alpha, "-nbsamples", "0", "-seed", random_seed, skip=fromstep>22, rmfiles=[] if keepfiles else [eroded_reference])
 
 	#Train Image Classifier (Step 23)
-	executeStep("TrainImagesClassifierNew", "otbApplicationLauncherCommandLine", "TrainImagesClassifierNew", os.path.join(buildFolder,"Common/TrainImagesClassifierNew"), "-io.il", spectral_features,"-io.rs",trimmed_reference_raster,"-nodatalabel", "-10000", "-io.imstat", statistics_noinsitu, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>23)
+	executeStep("TrainImagesClassifierNew", "otbcli", "TrainImagesClassifierNew", os.path.join(buildFolder,"Common/TrainImagesClassifierNew"), "-io.il", spectral_features,"-io.rs",trimmed_reference_raster,"-nodatalabel", "-10000", "-io.imstat", statistics_noinsitu, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>23)
 
 	#Image Classifier (Step 24)
 	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", spectral_features,"-imstat",statistics_noinsitu,"-model", model, "-out", raw_crop_mask, skip=fromstep>24, rmfiles=[] if keepfiles else [spectral_features])
@@ -229,10 +229,13 @@ xml_validation_metrics=os.path.join(args.outdir, "crop-mask-validation-metrics.x
 keepfiles = args.keepfiles
 fromstep = args.fromstep
 
+if not os.path.exists(args.outdir):
+    os.makedirs(args.outdir)
+
 globalStart = datetime.datetime.now()
 
 # Bands Extractor (Step 1)
-executeStep("BandsExtractor", "otbApplicationLauncherCommandLine", "BandsExtractor", os.path.join(buildFolder,"CropType/BandsExtractor"),"-mission",mission,"-out",rawtocr,"-mask",rawmask,"-outdate", dates, "-shape", shape, "-pixsize", pixsize,"-merge", "true", "-il", *indesc, skip=fromstep>1)
+executeStep("BandsExtractor", "otbcli", "BandsExtractor", os.path.join(buildFolder,"CropType/BandsExtractor"),"-mission",mission,"-out",rawtocr,"-mask",rawmask,"-outdate", dates, "-shape", shape, "-pixsize", pixsize,"-merge", "true", "-il", *indesc, skip=fromstep>1)
 
 # gdalwarp (Step 2 and 3)
 executeStep("gdalwarp for reflectances", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawtocr, tocr, skip=fromstep>2, rmfiles=[] if keepfiles else [rawtocr])
@@ -240,12 +243,12 @@ executeStep("gdalwarp for reflectances", "/usr/local/bin/gdalwarp", "-multi", "-
 executeStep("gdalwarp for masks", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawmask, mask, skip=fromstep>3, rmfiles=[] if keepfiles else [rawmask])
 
 # Temporal Resampling (Step 4)
-executeStep("TemporalResampling", "otbApplicationLauncherCommandLine", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", sp, "-t0", t0, "-tend", tend, "-radius", radius, "-rtocr", rtocr, "-outdays", outdays, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
+executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", sp, "-t0", t0, "-tend", tend, "-radius", radius, "-rtocr", rtocr, "-outdays", outdays, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
 
 # Select either inSitu or noInSitu branches
 if reference_polygons != "" :
 	# Feature Extraction with insitu (Step 5)
-	executeStep("FeatureExtraction", "otbApplicationLauncherCommandLine", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, "-ndwi", ndwi, "-brightness", brightness, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
+	executeStep("FeatureExtraction", "otbcli", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, "-ndwi", ndwi, "-brightness", brightness, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
 
 	#Perform insitu specific steps.
 	inSituDataAvailable()
@@ -254,7 +257,7 @@ if reference_polygons != "" :
 	executeStep("Validation for Raw Cropmask with insitu", "otbcli_ComputeConfusionMatrix", "-in", raw_crop_mask, "-out", raw_crop_mask_confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CROP", "-nodatalabel", "-10000", outf=raw_crop_mask_quality_metrics, skip=fromstep>25)
 else:
 	# Feature Extraction without insitu (Step 5)
-	executeStep("FeatureExtraction", "otbApplicationLauncherCommandLine", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, skip=fromstep>5)
+	executeStep("FeatureExtraction", "otbcli", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, skip=fromstep>5)
 
 	#Perform Noinsitu specific steps
 	noInSituDataAvailable()
@@ -263,7 +266,7 @@ else:
 	executeStep("Validation for Raw Cropmask without insitu", "otbcli_ComputeConfusionMatrix", "-in", raw_crop_mask, "-out", raw_crop_mask_confusion_matrix_validation, "-ref", "raster", "-ref.raster.in", trimmed_reference_raster, "-nodatalabel", "-10000", outf=raw_crop_mask_quality_metrics, skip=fromstep>25)
 
 #Dimension reduction (Step 26)
-executeStep("PrincipalComponentAnalysis", "otbApplicationLauncherCommandLine", "PrincipalComponentAnalysis",os.path.join(buildFolder,"CropMask/PrincipalComponentAnalysis") ,"-ndvi", ndvi, "-nc", nbcomp, "-out", pca, skip=fromstep>26, rmfiles=[] if keepfiles else [ndvi])
+executeStep("PrincipalComponentAnalysis", "otbcli", "PrincipalComponentAnalysis",os.path.join(buildFolder,"CropMask/PrincipalComponentAnalysis") ,"-ndvi", ndvi, "-nc", nbcomp, "-out", pca, skip=fromstep>26, rmfiles=[] if keepfiles else [ndvi])
 
 #Mean-Shift segmentation (Step 27, 28 and 28)
 executeStep("MeanShiftSmoothing", "otbcli_MeanShiftSmoothing", "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger, "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing, "uint32", skip=fromstep>27, rmfiles=[] if keepfiles else [pca])
@@ -273,7 +276,7 @@ executeStep("LSMSSegmentation", "otbcli_LSMSSegmentation", "-in", mean_shift_smo
 executeStep("LSMSSmallRegionsMerging", "otbcli_LSMSSmallRegionsMerging", "-in", mean_shift_smoothing,"-inseg", segmented, "-minsize", minsize, "-out", segmented_merged, "uint32", skip=fromstep>29, rmfiles=[] if keepfiles else [mean_shift_smoothing, segmented])
 
 #Majority voting (Step 30)
-executeStep("MajorityVoting", "otbApplicationLauncherCommandLine", "MajorityVoting",os.path.join(buildFolder,"CropMask/MajorityVoting") ,"-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", minarea, "-inclass", raw_crop_mask, "-inseg", segmented_merged, "-rout", crop_mask_uncut, skip=fromstep>30, rmfiles=[] if keepfiles else [segmented_merged])
+executeStep("MajorityVoting", "otbcli", "MajorityVoting",os.path.join(buildFolder,"CropMask/MajorityVoting") ,"-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", minarea, "-inclass", raw_crop_mask, "-inseg", segmented_merged, "-rout", crop_mask_uncut, skip=fromstep>30, rmfiles=[] if keepfiles else [segmented_merged])
 
 # gdalwarp (Step 31)
 executeStep("gdalwarp for crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_mask_uncut, crop_mask_uncompressed, skip=fromstep>31)
@@ -288,10 +291,10 @@ else:
 executeStep("Compression", "otbcli_Convert", "-in", crop_mask_uncompressed, "-out", crop_mask+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>33, rmfiles=[] if keepfiles else [crop_mask_uncompressed])
 
 #XML conversion (Step 34)
-executeStep("XML Conversion for Crop Mask", "otbApplicationLauncherCommandLine", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics,  skip=fromstep>34)
+executeStep("XML Conversion for Crop Mask", "otbcli", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics,  skip=fromstep>34)
 
 #Product creation (Step 35)
-executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.quality", xml_validation_metrics, skip=fromstep>35)
+executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.quality", xml_validation_metrics, skip=fromstep>35)
 
 globalEnd = datetime.datetime.now()
 

@@ -92,7 +92,7 @@ WEIGHT_AOT_MIN="0.33"
 WEIGHT_AOT_MAX="1"
 AOT_MAX="0.8"
 
-COARSE_RES="240"
+COARSE_RES="200"
 SIGMA_SMALL_CLD="2"
 SIGMA_LARGE_CLD="10"
 
@@ -212,7 +212,7 @@ for xml in args.input:
     runCmd(["otbcli", "TotalWeight", weightOtbLibsRoot + '/TotalWeight', "-xml", xml, "-waotfile", out_w_Aot, "-wcldfile", out_w_Cloud, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", out_w_Total])
     #todo... search for previous L3A produc?
 
-    runCmd(["otbcli", "UpdateSynthesis2", compositeLocation + '/UpdateSynthesis', "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", out_w_Total, "-out", mod] + prevL3A)
+    runCmd(["otbcli", "UpdateSynthesis", compositeLocation + '/UpdateSynthesis', "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", out_w_Total, "-out", mod] + prevL3A)
 
     tmpOut_w = out_w
     tmpOut_d = out_d

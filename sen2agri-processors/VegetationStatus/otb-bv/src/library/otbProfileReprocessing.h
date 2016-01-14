@@ -130,7 +130,7 @@ std::advance(dti, bwd_radius);
 std::advance(win_last, bwd_radius+fwd_radius);
 std::advance(e_win_last, bwd_radius+fwd_radius);
 std::advance(d_win_last, bwd_radius+fwd_radius);
-while(win_last!=last)
+while(1)
   {
   auto current_d = d_win_first;
   auto current_e = e_win_first;
@@ -150,6 +150,9 @@ while(win_last!=last)
     }
   *ot = weighted_value/sum_weights;
   *otf = processed_value;
+  if(win_last==last) {
+      break;
+  }
   ++win_first;
   ++win_last;
   ++e_win_first;

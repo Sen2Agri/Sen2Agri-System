@@ -125,7 +125,7 @@ namespace otb
 {
 namespace Wrapper
 {
-class NdviRviExtractionApp2 : public Application
+class NdviRviExtraction2 : public Application
 {
     typedef itk::UnaryFunctorImageFilter<ImageType,ImageType,
                     NdviRviFunctor<
@@ -137,7 +137,7 @@ class NdviRviExtractionApp2 : public Application
                         ImageType::PixelType> > ReflTransFilterType;
 
 public:
-  typedef NdviRviExtractionApp2 Self;
+  typedef NdviRviExtraction2 Self;
   typedef Application Superclass;
   typedef itk::SmartPointer<Self> Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
@@ -352,6 +352,6 @@ private:
 }
 }
 
-OTB_APPLICATION_EXPORT(otb::Wrapper::NdviRviExtractionApp2)
+OTB_APPLICATION_EXPORT(otb::Wrapper::NdviRviExtraction2)
 
 

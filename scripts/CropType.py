@@ -100,10 +100,13 @@ xml_validation_metrics=os.path.join(args.outdir, "validation-metrics.xml")
 keepfiles = args.keepfiles
 fromstep = args.fromstep
 
+if not os.path.exists(args.outdir):
+    os.makedirs(args.outdir)
+
 globalStart = datetime.datetime.now()
 
 # Bands Extractor (Step 1)
-executeStep("BandsExtractor", "otbApplicationLauncherCommandLine", "BandsExtractor", os.path.join(buildFolder,"CropType/BandsExtractor"),"-mission",mission,"-out",rawtocr,"-mask",rawmask,"-outdate", dates, "-shape", shape, "-pixsize", pixsize, "-il", *indesc, skip=fromstep>1)
+executeStep("BandsExtractor", "otbcli", "BandsExtractor", os.path.join(buildFolder,"CropType/BandsExtractor"),"-mission",mission,"-out",rawtocr,"-mask",rawmask,"-outdate", dates, "-shape", shape, "-pixsize", pixsize, "-il", *indesc, skip=fromstep>1)
 
 # gdalwarp (Step 2 and 3)
 executeStep("gdalwarp for reflectances", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawtocr, tocr, skip=fromstep>2, rmfiles=[] if keepfiles else [rawtocr])
@@ -111,10 +114,10 @@ executeStep("gdalwarp for reflectances", "/usr/local/bin/gdalwarp", "-multi", "-
 executeStep("gdalwarp for masks", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawmask, mask, skip=fromstep>3, rmfiles=[] if keepfiles else [rawmask])
 
 # Temporal Resampling (Step 4)
-executeStep("TemporalResampling", "otbApplicationLauncherCommandLine", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", sp, "-t0", t0, "-tend", tend, "-radius", radius, "-rtocr", rtocr, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
+executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", sp, "-t0", t0, "-tend", tend, "-radius", radius, "-rtocr", rtocr, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
 
 # Feature Extraction (Step 5)
-executeStep("FeatureExtraction", "otbApplicationLauncherCommandLine", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-fts", fts, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
+executeStep("FeatureExtraction", "otbcli", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-fts", fts, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
 
 # ogr2ogr Reproject insitu data (Step 6)
 with open(shape_proj, 'r') as file:
@@ -126,7 +129,7 @@ executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-t_srs", shape_wkt, "-progress
 executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-clipsrc", shape, "-progress", "-overwrite",reference_polygons_clip, reference_polygons_reproject, skip=fromstep>7)
 
 # Sample Selection (Step 8)
-executeStep("SampleSelection", "otbApplicationLauncherCommandLine","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons, "-lut", lut, skip=fromstep>8)
+executeStep("SampleSelection", "otbcli","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons, "-lut", lut, skip=fromstep>8)
 
 # Image Statistics (Step 9)
 executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", fts,"-out",statistics, skip=fromstep>9)
@@ -162,10 +165,10 @@ executeStep("ColorMapping", "otbcli_ColorMapping", "-in", crop_type_map_uncompre
 executeStep("Compression", "otbcli_Convert", "-in",  crop_type_map_uncompressed, "-out", crop_type_map+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>17, rmfiles=[] if keepfiles else [ crop_type_map_uncompressed])
 
 #XML conversion (Step 18)
-executeStep("XML Conversion for Crop Type", "otbApplicationLauncherCommandLine", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics,  skip=fromstep>18)
+executeStep("XML Conversion for Crop Type", "otbcli", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics,  skip=fromstep>18)
 
 #Product creation (Step 19)
-executeStep("ProductFormatter", "otbApplicationLauncherCommandLine", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", "TILE_"+tilename, crop_type_map, "-processor.croptype.quality", xml_validation_metrics, skip=fromstep>19)
+executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", "TILE_"+tilename, crop_type_map, "-processor.croptype.quality", xml_validation_metrics, skip=fromstep>19)
 
 globalEnd = datetime.datetime.now()
 
