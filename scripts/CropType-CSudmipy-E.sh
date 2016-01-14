@@ -24,5 +24,5 @@
     /mnt/Imagery_S2A/L2A/Spot4-T5/CSudmipy-E_LEVEL2A/SPOT4_HRVIR1_XS_20130617_N2A_CSudmipy-ED0000B0000/SPOT4_HRVIR1_XS_20130617_N2A_CSudmipy-ED0000B0000.xml \
     -t0 20130317 -tend 20130617 -rate 5 \
     -rseed 0 -pixsize 20 \
-    -mask /mnt/data/csudmipy/CSudmipy-E-mask/crop_mask.tif \
-    -outdir /mnt/data/csudmipy/CSudmipy-E-type
+    -mask /mnt/output/L4A/SPOT4-T5/CSudmipy-E/work/crop_mask.tif \
+    -outdir /mnt/output/L4B/SPOT4-T5/CSudmipy-E/work

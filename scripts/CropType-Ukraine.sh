@@ -22,5 +22,5 @@
     /mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000.xml \
     -t0 20130206 -tend 20130616 -rate 5 \
     -rseed 0 -pixsize 20 \
-    -mask /mnt/data/ukraine/Ukraine-mask/crop_mask.tif \
-    -outdir /mnt/data/ukraine/Ukraine-type
+    -mask /mnt/output/L4A/SPOT4-T5/Ukraine/work/crop_mask.tif \
+    -outdir /mnt/output/L4B/SPOT4-T5/Ukraine/work

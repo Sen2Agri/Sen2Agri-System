@@ -24,4 +24,4 @@
     /mnt/Imagery_S2A/L2A/Spot4-T5/CSudmipy-E_LEVEL2A/SPOT4_HRVIR1_XS_20130617_N2A_CSudmipy-ED0000B0000/SPOT4_HRVIR1_XS_20130617_N2A_CSudmipy-ED0000B0000.xml \
     -t0 20130217 -tend 20130617 -rate 5 \
     -rseed 0 -pixsize 20 \
-    -outdir /mnt/data/csudmipy/CSudmipy-E-mask/
+    -outdir /mnt/output/L4A/SPOT4-T5/CSudmipy-E/work

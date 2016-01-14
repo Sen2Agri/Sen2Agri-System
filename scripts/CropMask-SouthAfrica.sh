@@ -28,4 +28,4 @@
     /mnt/SouthAfrica/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000.xml \
     -t0 20130131 -tend 20130615 -rate 5 \
     -rseed 0 -pixsize 20 \
-    -outdir /mnt/data/southafrica/SouthAfrica-mask/
+    -outdir /mnt/output/L4A/SPOT4-T5/SouthAfrica/work
