@@ -19,5 +19,5 @@
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Sudmipy-West/SPOT4_HRVIR_XS_20130606_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130606_N2A_CSudmipy-OD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Sudmipy-West/SPOT4_HRVIR_XS_20130611_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130611_N2A_CSudmipy-OD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Sudmipy-West/SPOT4_HRVIR_XS_20130616_N2A_CSudmipy-OD0000B0000/SPOT4_HRVIR_XS_20130616_N2A_CSudmipy-OD0000B0000.xml" \
---t0 20130216 --tend 20130616 --outdir /mnt/data/L3B/SPOT4-T5/Midp_W/pheno-2016-01-06
+--resolution 20 --t0 20130216 --tend 20130616 --outdir /mnt/data/L3B/SPOT4-T5/Midp_W/pheno-2016-01-06
 #end of USER modif
