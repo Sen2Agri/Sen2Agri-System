@@ -123,7 +123,7 @@ try:
 
 # ogr2ogr Reproject insitu data (Step 6)
     with open(shape_proj, 'r') as file:
-    shape_wkt = "ESRI::" + file.read()
+        shape_wkt = "ESRI::" + file.read()
 
     executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-t_srs", shape_wkt, "-progress", "-overwrite",reference_polygons_reproject, reference_polygons, skip=fromstep>6)
 
@@ -138,21 +138,21 @@ try:
 
 #Train Image Classifier (Step 10)
     if classifier == "rf" :
-    executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr","0.9","-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min", rfmin,"-classifier.rf.max",rfmax, skip=fromstep>10)
+        executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr","0.9","-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min", rfmin,"-classifier.rf.max",rfmax, skip=fromstep>10)
     elif classifier == "svm":
-    executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr","0.9","-classifier","svm", "-classifier.svm.k", rbf,"-classifier.svm.opt",1, skip=fromstep>10)
+        executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr","0.9","-classifier","svm", "-classifier.svm.k", rbf,"-classifier.svm.opt",1, skip=fromstep>10)
 
 # Crop Mask Preparation (Step 11 and 12)
     if os.path.isfile(crop_mask):
-    executeStep("gdalwarp for reprojecting crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-t_srs", shape_wkt, crop_mask, reprojected_crop_mask, skip=fromstep>11)
+        executeStep("gdalwarp for reprojecting crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-t_srs", shape_wkt, crop_mask, reprojected_crop_mask, skip=fromstep>11)
 
     executeStep("gdalwarp for cutting crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_crop_mask, cropped_crop_mask, skip=fromstep>12)
 
 #Image Classifier (Step 13)
     if os.path.isfile(crop_mask):
-    executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts,"-imstat",statistics,"-model", model, "-mask", cropped_crop_mask, "-out", crop_type_map_uncut, "int16", skip=fromstep>13, rmfiles=[] if keepfiles else [fts])
+        executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts,"-imstat",statistics,"-model", model, "-mask", cropped_crop_mask, "-out", crop_type_map_uncut, "int16", skip=fromstep>13, rmfiles=[] if keepfiles else [fts])
     else:
-    executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts,"-imstat",statistics,"-model", model, "-out", crop_type_map_uncut, "int16", skip=fromstep>13, rmfiles=[] if keepfiles else [fts])
+        executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts,"-imstat",statistics,"-model", model, "-out", crop_type_map_uncut, "int16", skip=fromstep>13, rmfiles=[] if keepfiles else [fts])
 
 # gdalwarp (Step 14)
     executeStep("gdalwarp for crop type", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_type_map_uncut, crop_type_map_uncompressed, skip=fromstep>14)
