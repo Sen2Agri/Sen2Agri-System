@@ -78,7 +78,7 @@ print("Processing started: " + str(datetime.datetime.now()))
 start = time.time()
 
 #try otbcli BandsExtractor $CROPTTYPE_OTB_LIBS_ROOT/BandsExtractor/ -il $TIME_SERIES_XMLS -merge true -ndh true -out $OUT_BANDS -allmasks $OUT_MASKS -outdate $OUT_DATES
-runCmd(["otbcli", "BandsExtractor", cropTypeLocation, "-il"] + args.input + ["-merge", "true", "-ndh", "true", "-out", outBands, "-allmasks", outMasks, "-outdate", outDates])
+runCmd(["otbcli", "BandsExtractor", cropTypeLocation, "-il"] + args.input + ["-pixsize", "20", "-merge", "true", "-ndh", "true", "-out", outBands, "-allmasks", outMasks, "-outdate", outDates])
 #try otbcli FeatureExtraction $CROPTTYPE_OTB_LIBS_ROOT/FeatureExtraction -rtocr $OUT_BANDS -ndvi $OUT_NDVI
 runCmd(["otbcli", "FeatureExtraction", cropTypeLocation, "-rtocr", outBands, "-ndvi", outNdvi])
 #try otbcli SigmoFitting $VEGETATIONSTATUS_OTB_LIBS_ROOT -in $OUT_NDVI -mask $OUT_MASKS -dates $OUT_DATES -out $OUT_SIGMO
