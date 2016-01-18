@@ -244,6 +244,7 @@ if resolution != 10 and resolution != 20:
 outNdviRvi = "{}/ndvi_rvi.tif".format(outDir)
 #OUT_LAI_IMG="$OUT_FOLDER/LAI_img_#.tif"
 outLaiImg = "{}/#_LAI_img.tif".format(outDir)
+outLaiMonoMskFlgsImg = "{}/#_LAI_mono_date_mask_flags_img.tif".format(outDir)
 #OUT_LAI_ERR_IMG="$OUT_FOLDER/LAI_err_img_#.tif"
 outLaiErrImg = "{}/#_LAI_err_img.tif".format(outDir) 
 
@@ -251,6 +252,7 @@ outLaiErrImg = "{}/#_LAI_err_img.tif".format(outDir)
 outLaiTimeSeries = "{}/LAI_time_series.tif".format(outDir)
 #OUT_ERR_TIME_SERIES="$OUT_FOLDER/Err_time_series.tif"
 outErrTimeSeries = "{}/Err_time_series.tif".format(outDir)
+outMaksFlagsTimeSeries = "{}/Mask_Flags_time_series.tif".format(outDir)
 
 #OUT_REPROCESSED_TIME_SERIES="$OUT_FOLDER/ReprocessedTimeSeries.tif"
 outReprocessedTimeSeries = "{}/ReprocessedTimeSeries.tif".format(outDir)
@@ -332,11 +334,14 @@ for xml in args.input:
     curOutLaiImg = outLaiImg.replace("#", counterString)
     #CUR_OUT_LAI_ERR_IMG=${OUT_LAI_ERR_IMG//[#]/$cnt}
     curOutLaiErrImg = outLaiErrImg.replace("#", counterString)
+    curOutLaiMonoMskFlgsImg = outLaiMonoMskFlgsImg.replace("#", counterString)
     #timed_exec "try otbcli BVImageInversion $IMG_INV_OTB_LIBS_ROOT -in $OUT_NDVI_RVI -modelfile $MODEL_FILE -out $CUR_OUT_LAI_IMG"
     runCmd(["otbcli", "BVImageInversion", imgInvOtbLibsLocation, "-in", outNdviRvi, "-modelfile", modelFile, "-out", curOutLaiImg])
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     #timed_exec "try otbcli BVImageInversion $IMG_INV_OTB_LIBS_ROOT -in $OUT_NDVI_RVI -modelfile $ERR_MODEL_FILE -out $CUR_OUT_LAI_ERR_IMG"
     runCmd(["otbcli", "BVImageInversion", imgInvOtbLibsLocation, "-in", outNdviRvi, "-modelfile", errModelFile, "-out", curOutLaiErrImg])
+    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+    runCmd(["otbcli", "GenerateLaiMonoDateMaskFlags", imgInvOtbLibsLocation, "-inxml", xml, "-out", curOutLaiMonoMskFlgsImg])
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     
     cnt += 1
@@ -349,6 +354,7 @@ allXmlParam=[]
 allLaiParam=[]
 #ALL_ERR_PARAM=""
 allErrParam=[]
+allMskFlagsParam=[]
 #build the parameters -ilxml for -illai
 for xml in args.input:
     #CUR_LAI_IMG=${OUT_LAI_IMG//[#]/$i}
@@ -368,6 +374,7 @@ for xml in args.input:
     allLaiParam.append(outLaiImg.replace("#", counterString))
     #ALL_ERR_PARAM=$ALL_ERR_PARAM" "$CUR_ERR_IMG
     allErrParam.append(outLaiErrImg.replace("#", counterString))
+    allMskFlagsParam.append(outLaiMonoMskFlgsImg.replace("#", counterString))
     
     i += 1
 
@@ -376,28 +383,31 @@ runCmd(["otbcli", "TimeSeriesBuilder", imgInvOtbLibsLocation, "-il"] + allLaiPar
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 runCmd(["otbcli", "TimeSeriesBuilder", imgInvOtbLibsLocation, "-il"] + allErrParam + ["-out", outErrTimeSeries])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+runCmd(["otbcli", "TimeSeriesBuilder", imgInvOtbLibsLocation, "-il"] + allMskFlagsParam + ["-out", outMaksFlagsTimeSeries])
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+
 
 # Compute the reprocessed time series (On-line Retrieval)
-runCmd(["otbcli", "ProfileReprocessing", imgInvOtbLibsLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outReprocessedTimeSeries, "-genall", "1", "-algo", "local", "-algo.local.bwr", str(ALGO_LOCAL_BWR), "-algo.local.fwr", str(ALGO_LOCAL_FWR)])
+runCmd(["otbcli", "ProfileReprocessing", imgInvOtbLibsLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-msks", outMaksFlagsTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outReprocessedTimeSeries, "-genall", "1", "-algo", "local", "-algo.local.bwr", str(ALGO_LOCAL_BWR), "-algo.local.fwr", str(ALGO_LOCAL_FWR)])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 #split the Reprocessed time series to a number of images
-runCmd(["otbcli", "ReprocessedProfileSplitter", imgInvOtbLibsLocation, "-in", outReprocessedTimeSeries, "-outlist", reprocessedListFile, "-compress", "1"])
+runCmd(["otbcli", "ReprocessedProfileSplitter", imgInvOtbLibsLocation, "-in", outReprocessedTimeSeries, "-outlist", reprocessedListFile, "-compress", "1", "-ilxml"] + allXmlParam)
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 # Compute the fitted time series (CSDM Fitting)
-runCmd(["otbcli", "ProfileReprocessing", imgInvOtbLibsLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outFittedTimeSeries, "-genall", "1", "-algo", "fit"])
+runCmd(["otbcli", "ProfileReprocessing", imgInvOtbLibsLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-msks", outMaksFlagsTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outFittedTimeSeries, "-genall", "1", "-algo", "fit"])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.lairepr", tileID, outReprocessedTimeSeries, "-processor.vegetation.laifit", tileID, outFittedTimeSeries, "-il", args.input[0], "-gipp", paramsLaiRetrFilenameXML]
-if GENERATE_MODEL:
-    cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.lairepr", tileID, outReprocessedTimeSeries, "-processor.vegetation.laifit", tileID, outFittedTimeSeries, "-il", args.input[0], "-gipp", paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML]
-
-runCmd(cmd)
-print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+#        cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.lairepr", tileID, outReprocessedTimeSeries, "-processor.vegetation.laifit", tileID, outFittedTimeSeries, "-il", args.input[0], "-gipp", paramsLaiRetrFilenameXML]
+#        if GENERATE_MODEL:
+#            cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.lairepr", tileID, outReprocessedTimeSeries, "-processor.vegetation.laifit", tileID, outFittedTimeSeries, "-il", args.input[0], "-gipp", paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML]
+#        
+#        runCmd(cmd)
+#        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 #split the Fitted time series to a number of images
 #timed_exec "try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_FITTED_TIME_SERIES -outlist $FITTED_LIST_FILE -compress 1"
-runCmd(["otbcli", "ReprocessedProfileSplitter", imgInvOtbLibsLocation, "-in", outFittedTimeSeries, "-outlist", fittedListFile, "-compress", "1"])
+runCmd(["otbcli", "ReprocessedProfileSplitter", imgInvOtbLibsLocation, "-in", outFittedTimeSeries, "-outlist", fittedListFile, "-compress", "1", "-ilxml"] + allXmlParam)
 
 print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 

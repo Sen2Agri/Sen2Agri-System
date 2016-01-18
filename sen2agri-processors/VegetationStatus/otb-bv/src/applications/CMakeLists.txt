@@ -65,6 +65,11 @@ otb_create_application(
   NAME           ReprocessedProfileSplitter
   SOURCES        otbReprocessedProfileSplitter.cpp
   LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
-  
+
+otb_create_application(
+  NAME           GenerateLaiMonoDateMaskFlags
+  SOURCES        otbGenerateLaiMonoDateMaskFlags.cpp
+  LINK_LIBRARIES MACCSMetadata;MetadataHelper;${OTB_LIBRARIES})
+
 add_executable(testSimus testSimus.cxx)
 target_link_libraries(testSimus ${OTB_LIBRARIES} OTBBVUtil gsl gslcblas)

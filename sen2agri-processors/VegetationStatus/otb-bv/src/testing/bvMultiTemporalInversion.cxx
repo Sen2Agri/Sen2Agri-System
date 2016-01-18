@@ -141,6 +141,7 @@ int bvMultiTemporalInversion(int argc, char * argv[])
 
   VectorType estim_lai;
   VectorType estim_error;
+  VectorType msks = VectorType(simu_lai.size(), 4);
   for(size_t i=0; i<simu_lai.size(); ++i)
     {
     InputSampleType pix(simu_refls[i].data(), simu_refls[i].size()-2);
@@ -163,6 +164,7 @@ int bvMultiTemporalInversion(int argc, char * argv[])
     otb::smooth_time_series_local_window_with_error(doys,
                                                     estim_lai, 
                                                     estim_error,
+                                                    msks,
                                                     bwr,
                                                     fwr);
 
@@ -210,12 +212,14 @@ int bvMultiTemporalInversionFromFile(int argc, char * argv[])
       smooth_lai_ref.push_back(std::stod(tokens[4]));
       }
     }
+  VectorType msks = VectorType(estim_lai.size(), 4);
   VectorType smooth_lai{};
   VectorType out_flag_vec{};
   std::tie(smooth_lai, out_flag_vec) = 
     otb::smooth_time_series_local_window_with_error(doys,
                                                     estim_lai, 
                                                     estim_error, 
+                                                    msks,
                                                     bwr, fwr);
   double err{0.0};
   for(size_t i=0; i<smooth_lai.size(); ++i)

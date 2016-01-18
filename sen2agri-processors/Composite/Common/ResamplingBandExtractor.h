@@ -36,6 +36,14 @@ public:
 
 public:
     ResamplingBandExtractor();
+    InternalImageType::Pointer ExtractResampledBand(const std::string &fileName, int nChannel,
+                                                  int nCurRes = -1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
+                                                  bool bNearestNeighbourInterpolation=false);
+
+    int ExtractAllResampledBands(const std::string &fileName, otb::ImageList<otb::Wrapper::FloatImageType>::Pointer &outList,
+                                int nCurRes = -1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
+                                bool bNearestNeighbourInterpolation=false);
+
     InternalImageType::Pointer ExtractResampledBand(const ImageType::Pointer img, int nChannel, int curRes=-1,
                                                   int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
                                                   bool bNearestNeighbourInterpolation=false);

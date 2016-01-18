@@ -52,6 +52,8 @@ protected:
     std::vector<MACCSBand> GetAllMACCSBandsInfos();
     //virtual std::unique_ptr<itk::LightObject> GetMetadata() { return m_metadata; }
 
+    virtual MetadataHelper::SingleBandShortImageType::Pointer GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult);
+
 protected:
     typedef enum {S2, LANDSAT} MissionType;
     MissionType m_missionType;

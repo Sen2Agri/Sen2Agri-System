@@ -472,3 +472,6 @@ bool MACCSMetadataHelper::BandAvailableForCurrentResolution(unsigned int nBand) 
     return false;
 }
 
+MetadataHelper::SingleBandShortImageType::Pointer MACCSMetadataHelper::GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult) {
+
+}

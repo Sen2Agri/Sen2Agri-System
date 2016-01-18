@@ -2,15 +2,12 @@
 #define UPDATESYNTHESISFUNCTOR_H
 
 #include <vector>
-
-typedef enum {FLAG_NO_DATA=0, CLOUD=1, SNOW=2, WATER=3, LAND=4, CLOUD_SHADOW=5} FlagType;
+#include "GlobalDefs.h"
 
 #define WEIGHT_QUANTIF_VALUE    10000
 
-#define NO_DATA                 -10000
-#define DATE_NO_DATA            NO_DATA
-#define WEIGHT_NO_DATA          (NO_DATA/WEIGHT_QUANTIF_VALUE)      //  NO_DATA / WEIGHT_QUANTIF_VALUE
-#define NO_DATA_EPSILON         0.00001f    //
+#define DATE_NO_DATA            NO_DATA_VALUE
+#define WEIGHT_NO_DATA          (NO_DATA_VALUE/WEIGHT_QUANTIF_VALUE)      //  NO_DATA / WEIGHT_QUANTIF_VALUE
 
 class OutFunctorInfos
 {

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include "otbImage.h"
 
 #define UNUSED(expr) do { (void)(expr); } while (0)
 
@@ -37,6 +38,8 @@ struct MetadataHelperViewingAnglesGrid
     MetadataHelperAngles Angles;
 };
 
+typedef enum {MSK_CLOUD=1, MSK_SNOW=2, MSK_WATER=4, MSK_SAT=8, MSK_VALID=16, ALL=0x1F} MasksFlagType;
+
 class MetadataHelper
 {
 public:
@@ -48,10 +51,16 @@ public:
     virtual std::string GetMissionName() { return m_Mission; }
 
     virtual std::string GetAotImageFileName() { return m_AotFileName; }
+    virtual std::string GetImageFileName() { return m_ImageFileName; }
+    // The following 4 functions are not very useful here as are very specific to each sensor
+    // They should be kept only in the derived classes
     virtual std::string GetCloudImageFileName() { return m_CloudFileName; }
     virtual std::string GetWaterImageFileName() { return m_WaterFileName; }
     virtual std::string GetSnowImageFileName() { return m_SnowFileName; }
-    virtual std::string GetImageFileName() { return m_ImageFileName; }
+    virtual std::string GetSaturationImageFileName() { return m_SaturationFileName; }
+
+    typedef otb::Image<short, 2>    SingleBandShortImageType;
+    virtual SingleBandShortImageType::Pointer GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult) = 0;
 
     // returns the acquisition date in the format YYYYMMDD
     virtual std::string GetAcquisitionDate() { return m_AcquisitionDate; }
@@ -106,6 +115,7 @@ protected:
     std::string m_CloudFileName;
     std::string m_WaterFileName;
     std::string m_SnowFileName;
+    std::string m_SaturationFileName;
     std::string m_ImageFileName;
     std::string m_AcquisitionDate;
 

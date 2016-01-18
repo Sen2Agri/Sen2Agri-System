@@ -14,7 +14,7 @@
 
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
-#include "itkBinaryFunctorImageFilter.h"
+#include "itkTernaryFunctorImageFilter.h"
 
 #include <vector>
 
@@ -39,7 +39,7 @@ namespace Wrapper
 {
 
 typedef enum {ALGO_LOCAL = 0, ALGO_FIT} ALGO_TYPE;
-template< class TInput1, class TInput2, class TOutput>
+template< class TInput1, class TInput2, class TInput3, class TOutput>
 class ProfileReprocessingFunctor
 {
 public:
@@ -80,17 +80,20 @@ public:
 
 
   inline TOutput operator()(const TInput1 & A,
-                            const TInput2 & B) const
+                            const TInput2 & B,
+                            const TInput3 & C) const
   {
       //itk::VariableLengthVector vect;
     int nbBvElems = A.GetNumberOfElements();
 
     VectorType ts(nbBvElems);
     VectorType ets(nbBvElems);
+    VectorType msks(nbBvElems);
     int i;
     for(i = 0; i<nbBvElems; i++) {
         ts[i] = A[i];
         ets[i] = B[i];
+        msks[i] = C[i];
     }
 
     VectorType out_bv_vec{};
@@ -98,11 +101,11 @@ public:
 
     if(algoType == ALGO_LOCAL) {
         std::tie(out_bv_vec, out_flag_vec) =
-            smooth_time_series_local_window_with_error(date_vect, ts, ets,
+            smooth_time_series_local_window_with_error(date_vect, ts, ets,msks,
                                                        bwr, fwr);
     } else {
       std::tie(out_bv_vec, out_flag_vec) =
-        fit_csdm(date_vect, ts, ets);
+        fit_csdm(date_vect, ts, ets, msks);
     }
     if(m_bGenAll) {
         TOutput result(2*nbBvElems);
@@ -146,9 +149,11 @@ public:
 
   typedef ProfileReprocessingFunctor <InputImageType::PixelType,
                                     InputImageType::PixelType,
+                                    InputImageType::PixelType,
                                     OutImageType::PixelType>                FunctorType;
 
-  typedef itk::BinaryFunctorImageFilter<InputImageType,
+  typedef itk::TernaryFunctorImageFilter<InputImageType,
+                                        InputImageType,
                                         InputImageType,
                                         OutImageType, FunctorType> FilterType;
 
@@ -169,6 +174,9 @@ private:
 
     AddParameter(ParameterType_InputImage, "err", "Input profile file.");
     SetParameterDescription( "err", "Input file containing the profile to process. This file contains the error." );
+
+    AddParameter(ParameterType_InputImage, "msks", "Image containing time series mask flags.");
+    SetParameterDescription( "msks", "Input file containing time series mask flags. Land is expected to be with value (4)" );
 
     AddParameter(ParameterType_InputFilenameList, "ilxml", "The XML metadata files list");
 
@@ -212,6 +220,7 @@ private:
   {
       FloatVectorImageType::Pointer lai_image = this->GetParameterImage("lai");
       FloatVectorImageType::Pointer err_image = this->GetParameterImage("err");
+      FloatVectorImageType::Pointer msks_image = this->GetParameterImage("msks");
       std::vector<std::string> xmlsList = this->GetParameterStringList("ilxml");
       unsigned int nb_lai_bands = lai_image->GetNumberOfComponentsPerPixel();
       unsigned int nb_err_bands = err_image->GetNumberOfComponentsPerPixel();
@@ -254,7 +263,7 @@ private:
         if (IsParameterEnabled("algo.local.bwr"))
           bwr = GetParameterInt("algo.local.bwr");
         if (IsParameterEnabled("algo.local.fwr"))
-          bwr = GetParameterInt("algo.local.fwr");
+          fwr = GetParameterInt("algo.local.fwr");
       } else {
           algoType = ALGO_FIT;
       }
@@ -273,6 +282,7 @@ private:
       m_profileReprocessingFilter->SetFunctor(m_functor);
       m_profileReprocessingFilter->SetInput1(lai_image);
       m_profileReprocessingFilter->SetInput2(err_image);
+      m_profileReprocessingFilter->SetInput3(msks_image);
       m_profileReprocessingFilter->UpdateOutputInformation();
       if(bGenerateAll) {
         m_profileReprocessingFilter->GetOutput()->SetNumberOfComponentsPerPixel(nb_lai_bands*2);

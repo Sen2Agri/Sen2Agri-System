@@ -1,8 +1,6 @@
 #ifndef DIRECTIONALCORRECTIONFUNCTOR_H
 #define DIRECTIONALCORRECTIONFUNCTOR_H
 
-#define NO_DATA_EPSILON 0.00001f
-
 class ScaterringFunctionCoefficients
 {
 public:

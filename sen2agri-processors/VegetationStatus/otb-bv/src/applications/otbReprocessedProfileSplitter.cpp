@@ -7,6 +7,7 @@
 
 #include <vector>
 #include "otbImageFileWriter.h"
+#include "MetadataHelperFactory.h"
 
 namespace otb
 {
@@ -35,7 +36,7 @@ public:
     typedef otb::ImageListToVectorImageFilter<InternalImgListType, OutImageType>    ImageListToVectorImageFilterType;
 
     typedef otb::ImageFileReader<InputImageType> ReaderType;
-    typedef otb::ImageFileWriter<OutImageType> WriterType;
+    typedef otb::ImageFileWriter<InternalImageType> WriterType;
 
 private:
     void DoInit()
@@ -50,6 +51,8 @@ private:
         SetDocSeeAlso(" ");        
         AddDocTag(Tags::Vector);
         AddParameter(ParameterType_String,  "in",   "The BV estimation values product containing all time series");
+        AddParameter(ParameterType_InputFilenameList, "ilxml", "The XML metadata files list");
+        MandatoryOff("ilxml");
         AddParameter(ParameterType_OutputFilename, "outlist", "File containing the list of all files produced.");
         AddParameter(ParameterType_Int, "compress", "Specifies if output files should be compressed or not.");
         MandatoryOff("compress");
@@ -83,6 +86,14 @@ private:
             itkGenericExceptionMacro(<< "Could not open file " << strOutFilesList);
         }
 
+        std::vector<std::string> xmlsList;
+        if(HasValue("ilxml")) {
+            xmlsList = this->GetParameterStringList("ilxml");
+            if(xmlsList.size() != (size_t)(nTotalBands / 2)) {
+                itkExceptionMacro("Wrong number of input xml files. It should be " + (nTotalBands/2));
+            }
+        }
+
         std::string strOutPrefix = inImgStr;
         size_t pos = inImgStr.find_last_of(".");
         if (pos != std::string::npos) {
@@ -93,19 +104,29 @@ private:
         m_ImgSplit->SetInput(m_reader->GetOutput());
         m_ImgSplit->UpdateOutputInformation();
 
-        int nImgsNo = nTotalBands / 2;
-        for(int i = 0; i < nImgsNo; i++) {
-            InternalImgListType::Pointer listImgs = InternalImgListType::New();
-            listImgs->PushBack(m_ImgSplit->GetOutput()->GetNthElement(i));
-            listImgs->PushBack(m_ImgSplit->GetOutput()->GetNthElement(nImgsNo + i));
+        int nTotalBandsHalf = nTotalBands/2;
+        for(int i = 0; i < nTotalBands; i++) {
+            //InternalImgListType::Pointer listImgs = InternalImgListType::New();
+            //listImgs->PushBack(m_ImgSplit->GetOutput()->GetNthElement(i));
+            //listImgs->PushBack(m_ImgSplit->GetOutput()->GetNthElement(nImgsNo + i));
 
-            ImageListToVectorImageFilterType::Pointer concater = ImageListToVectorImageFilterType::New();
-            concater->SetInput(listImgs);
+            //ImageListToVectorImageFilterType::Pointer concater = ImageListToVectorImageFilterType::New();
+            //concater->SetInput(listImgs);
 
             WriterType::Pointer writer;
             writer = WriterType::New();
             std::ostringstream fileNameStream;
-            fileNameStream << strOutPrefix << "_b" << i << ".tif";
+
+            std::string curXml = xmlsList[(i < nTotalBandsHalf) ? i : (i-nTotalBandsHalf)];
+            auto factory = MetadataHelperFactory::New();
+            auto pHelper = factory->GetMetadataHelper(curXml);
+            std::string acquisitionDate = pHelper->GetAcquisitionDate();
+
+            if(i < nTotalBandsHalf) {
+                fileNameStream << strOutPrefix << "_" << acquisitionDate << "_img.tif";
+            } else {
+                fileNameStream << strOutPrefix << "_" << acquisitionDate << "_flags.tif";
+            }
             // we might have also compression and we do not want that in the name file
             // to be saved into the produced files list file
             std::string simpleFileName = fileNameStream.str();
@@ -114,7 +135,7 @@ private:
             }
             std::string fileName = fileNameStream.str();
             writer->SetFileName(fileName);
-            writer->SetInput(concater->GetOutput());
+            writer->SetInput(m_ImgSplit->GetOutput()->GetNthElement(i));
             try
             {
                 writer->Update();

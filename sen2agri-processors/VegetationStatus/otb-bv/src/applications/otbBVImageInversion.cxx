@@ -28,6 +28,7 @@
 #include "otbRandomForestsMachineLearningModel.h"
 #include "otbMultiLinearRegressionModel.h"
 #include "itkListSample.h"
+#include "../../../../Composite/Common/GlobalDefs.h"
 
 typedef double PrecisionType;
 typedef itk::FixedArray<PrecisionType, 1> OutputSampleType;
@@ -43,9 +44,6 @@ typedef otb::RandomForestsMachineLearningModel<PrecisionType,
                                                PrecisionType> RFRType;
 typedef otb::SVMMachineLearningModel<PrecisionType, PrecisionType> SVRType;
 typedef otb::MultiLinearRegressionModel<PrecisionType> MLRType;
-
-#define NO_DATA_VALUE   -10000.0f
-#define NO_DATA_EPSILON 0.0001f
 
 namespace otb
 {

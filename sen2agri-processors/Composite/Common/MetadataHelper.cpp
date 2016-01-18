@@ -156,3 +156,5 @@ std::string MetadataHelper::buildFullPath(const std::string& fileName)
 {
     return m_DirName + "/" + fileName;
 }
+
+

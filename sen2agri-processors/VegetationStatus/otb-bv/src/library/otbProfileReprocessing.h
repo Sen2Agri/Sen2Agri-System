@@ -16,14 +16,12 @@
 
 #include <vector>
 #include <phenoFunctions.h>
+#include "../../../../Composite/Common/GlobalDefs.h"
 
 using PrecisionType = double;
 using VectorType = std::vector<PrecisionType>;
 constexpr PrecisionType not_processed_value{0};
 constexpr PrecisionType processed_value{1};
-
-#define NO_DATA_VALUE   -10000.0f
-#define NO_DATA_EPSILON 0.0001f
 
 namespace otb
 {
@@ -35,20 +33,26 @@ T compute_weight(T delta, T err)
   return (one/(one+delta)+one/(one+err));
 }
 
-bool IsNoDataValue(float fValue)
+bool IsValidLandValue(float fValue, float fMskValue)
 {
-    return (fValue < NO_DATA_EPSILON);
+    if (fValue < NO_DATA_EPSILON) {
+        return false;
+    }
+    if(fMskValue != IMG_FLG_LAND) {
+        return false;
+    }
+    return true;
     //return fabs(fValue - NO_DATA_VALUE) < NO_DATA_EPSILON;
 }
 
 std::pair<VectorType, VectorType> 
-fit_csdm(const VectorType &dts, const VectorType &ts, const VectorType &ets)
+fit_csdm(const VectorType &dts, const VectorType &ts, const VectorType &ets, const VectorType &msks)
 {
-  assert(ts.size()==ets.size() && ts.size()==dts.size());
+  assert(ts.size()==ets.size() && ts.size()==dts.size() && ts.size()==msks.size());
   //auto result = ts;
   //auto result_flag = ts;
   auto result = VectorType(ts.size(), 0);
-  auto result_flag = VectorType(ts.size(),not_processed_value);
+  auto result_flag = VectorType(ts.size(),0);
   // std::vector to vnl_vector
   pheno::VectorType profile_vec(ts.size());
   pheno::VectorType date_vec(dts.size());
@@ -59,9 +63,9 @@ fit_csdm(const VectorType &dts, const VectorType &ts, const VectorType &ets)
     date_vec[i] = dts[i];
     }
 
-  // A date is valid if it is not NaN and the mask value == 0.
+  // A date is valid if it is not NaN and the mask value == IMG_FLG_LAND.
   auto pred = [=](int e) { return !(std::isnan(profile_vec[e])) &&
-                           !IsNoDataValue(profile_vec[e]); };
+                           IsValidLandValue(profile_vec[e], msks[e]); };
   auto f_profiles = pheno::filter_profile_fast(profile_vec, date_vec, pred);
 
   decltype(profile_vec) profile=f_profiles.first;
@@ -82,12 +86,13 @@ fit_csdm(const VectorType &dts, const VectorType &ts, const VectorType &ets)
   pheno::VectorType p(date_vec.size());
   pheno::normalized_sigmoid::F<pheno::VectorType>()(date_vec, x_hat, p);
   //fill the result vectors
+  int validDatesCnt = 0;
   for(size_t i=0; i<ts.size(); i++)
   {
-    if(!IsNoDataValue(profile_vec[i]))
+    if(IsValidLandValue(profile_vec[i], msks[i]))
     {
         result[i] = p[i]*A_hat+B_hat;
-        result_flag[i] = processed_value;
+        result_flag[i] = ++validDatesCnt;
     }
   }
 
@@ -99,72 +104,84 @@ std::pair<VectorType, VectorType>
 smooth_time_series_local_window_with_error(const VectorType &dts,
                                            const VectorType &ts,
                                            const VectorType &ets,
+                                           const VectorType &msks,
                                            size_t bwd_radius = 1,
                                            size_t fwd_radius = 1)
 {
 
-  /**
+    /**
         ------------------------------------
         |                    |             |
        win_first            current       win_last
-  */
-  assert(ts.size()==ets.size() && ts.size()==dts.size());
-  auto result = ts;
-  auto result_flag = VectorType(ts.size(),not_processed_value);
-  auto ot = result.begin();
-  auto otf = result_flag.begin();
-  auto eit = ets.begin();
-  auto last = ts.end();
-  auto win_first = ts.begin();
-  auto win_last = ts.begin();
-  auto e_win_first = ets.begin();
-  auto e_win_last = ets.begin();
-  auto dti = dts.begin();
-  auto d_win_first = dts.begin();
-  auto d_win_last = dts.begin();
-//advance iterators
-std::advance(ot, bwd_radius);
-std::advance(otf, bwd_radius);
-std::advance(eit, bwd_radius);
-std::advance(dti, bwd_radius);
-std::advance(win_last, bwd_radius+fwd_radius);
-std::advance(e_win_last, bwd_radius+fwd_radius);
-std::advance(d_win_last, bwd_radius+fwd_radius);
-while(1)
-  {
-  auto current_d = d_win_first;
-  auto current_e = e_win_first;
-  auto current_v = win_first;
-  auto past_it = d_win_last; ++past_it;
+    */
+    assert(ts.size()==ets.size() && ts.size()==dts.size() && ts.size()==msks.size());
+    auto result = ts;
+    auto result_flag = VectorType(ts.size(),not_processed_value);
+    auto ot = result.begin();
+    auto otf = result_flag.begin();
 
-  PrecisionType sum_weights{0.0};
-  PrecisionType weighted_value{0.0};
-  while(current_d != past_it)
+    auto msk_first = msks.begin();
+
+    auto eit = ets.begin();
+    auto last = ts.end();
+    auto win_first = ts.begin();
+    auto win_last = ts.begin();
+    auto e_win_first = ets.begin();
+    auto e_win_last = ets.begin();
+    auto dti = dts.begin();
+    auto d_win_first = dts.begin();
+    auto d_win_last = dts.begin();
+    //advance iterators
+    std::advance(ot, bwd_radius);
+    std::advance(otf, bwd_radius);
+    std::advance(eit, bwd_radius);
+    std::advance(dti, bwd_radius);
+    std::advance(win_last, bwd_radius+fwd_radius);
+    std::advance(e_win_last, bwd_radius+fwd_radius);
+    std::advance(d_win_last, bwd_radius+fwd_radius);
+    while(win_last!=last)
     {
-    auto cw = compute_weight(fabs(*current_d-*dti),fabs(*current_e));
-    sum_weights += cw;
-    weighted_value += (*current_v)*cw;
-    ++current_d;
-    ++current_e;
-    ++current_v;
+        auto current_d = d_win_first;
+        auto current_e = e_win_first;
+        auto current_v = win_first;
+        auto current_msk = msk_first;
+        auto past_it = d_win_last; ++past_it;
+
+        PrecisionType sum_weights{0.0};
+        PrecisionType weighted_value{0.0};
+        size_t nProcessedVals = 0;
+        while(current_d != past_it)
+        {
+            // If the mask flag is LAND, we process the value
+            if(*current_msk == IMG_FLG_LAND) {
+                auto cw = compute_weight(fabs(*current_d-*dti),fabs(*current_e));
+                sum_weights += cw;
+                weighted_value += (*current_v)*cw;
+                ++nProcessedVals;
+            }
+            ++current_d;
+            ++current_e;
+            ++current_v;
+            ++current_msk;
+        }
+
+        if(nProcessedVals >= bwd_radius) {
+            *ot = weighted_value/sum_weights;
+            *otf = nProcessedVals;
+        }
+        ++win_first;
+        ++win_last;
+        ++e_win_first;
+        ++e_win_last;
+        ++d_win_first;
+        ++d_win_last;
+        ++ot;
+        ++otf;
+        ++eit;
+        ++dti;
+        ++msk_first;
     }
-  *ot = weighted_value/sum_weights;
-  *otf = processed_value;
-  if(win_last==last) {
-      break;
-  }
-  ++win_first;
-  ++win_last;
-  ++e_win_first;
-  ++e_win_last;
-  ++d_win_first;
-  ++d_win_last;
-  ++ot;
-  ++otf;
-  ++eit;
-  ++dti;
-  }
-return std::make_pair(result,result_flag);
+    return std::make_pair(result,result_flag);
 }
 
 VectorType smooth_time_series(VectorType ts, PrecisionType alpha, 

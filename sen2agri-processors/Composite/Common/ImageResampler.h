@@ -13,6 +13,7 @@
 
 //Transform
 #include "itkScalableAffineTransform.h"
+#include "GlobalDefs.h"
 
 template <class TImage>
 class ImageResampler
@@ -72,7 +73,7 @@ ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWid
     }
 
     ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const OutputVectorType& scale,
-                                                                                             int forcedWidth, int forcedHeight, bool isMask=false) {
+                             int forcedWidth, int forcedHeight, bool isMask=false) {
          ResamplerPtr resampler = ResampleFilterType::New();
          resampler->SetInput(image);
 
@@ -127,7 +128,7 @@ ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWid
          ResamplerInputImgPixelType defaultValue;
          itk::NumericTraits<ResamplerInputImgPixelType>::SetLength(defaultValue, image->GetNumberOfComponentsPerPixel());
          if(!isMask) {
-             defaultValue = -10000;
+             defaultValue = NO_DATA_VALUE;
          }
          resampler->SetEdgePaddingValue(defaultValue);
 

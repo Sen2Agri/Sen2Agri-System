@@ -7,6 +7,44 @@ ResamplingBandExtractor::ResamplingBandExtractor()
     m_ImageReaderList = ImageReaderListType::New();
 }
 
+ResamplingBandExtractor::InternalImageType::Pointer ResamplingBandExtractor::ExtractResampledBand(
+        const std::string &filePath, int nChannel, int nCurRes, int nDesiredRes, int nForcedOutWidth, int nForcedOutHeight,
+        bool bNearestNeighbourInterpolation)
+{
+    // get a reader from the file path
+    ImageReaderType::Pointer reader = ImageReaderType::New();
+    // add it to the list and return
+    m_ImageReaderList->PushBack(reader);
+    // set the file name
+    reader->SetFileName(filePath);
+    reader->UpdateOutputInformation();
+    if(nDesiredRes > 0 && nCurRes == -1) {
+        nCurRes = reader->GetOutput()->GetSpacing()[0];
+    }
+    return ExtractResampledBand(reader->GetOutput(), nChannel, nCurRes,
+                                nDesiredRes, nForcedOutWidth, nForcedOutHeight,
+                                bNearestNeighbourInterpolation);
+}
+
+int ResamplingBandExtractor::ExtractAllResampledBands(const std::string &filePath,
+                                                      otb::ImageList<otb::Wrapper::FloatImageType>::Pointer &outList,
+                                                      int nCurRes, int nDesiredRes, int nForcedOutWidth, int nForcedOutHeight,
+                                                      bool bNearestNeighbourInterpolation)
+{
+    // get a reader from the file path
+    ImageReaderType::Pointer reader = ImageReaderType::New();
+    // add it to the list and return
+    m_ImageReaderList->PushBack(reader);
+    // set the file name
+    reader->SetFileName(filePath);
+    reader->UpdateOutputInformation();
+    if(nDesiredRes > 0 && nCurRes == -1) {
+        nCurRes = reader->GetOutput()->GetSpacing()[0];
+    }
+    return ExtractAllResampledBands(reader->GetOutput(), outList, nCurRes, nDesiredRes, nForcedOutWidth,
+                             nForcedOutHeight, bNearestNeighbourInterpolation);
+}
+
 ResamplingBandExtractor::InternalImageType::Pointer ResamplingBandExtractor::ExtractResampledBand(const ImageType::Pointer img, int nChannel, int curRes,
                                               int nDesiredRes, int nForcedOutWidth, int nForcedOutHeight, bool bNearestNeighbourInterpolation)
 {

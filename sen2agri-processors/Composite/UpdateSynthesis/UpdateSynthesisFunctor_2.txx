@@ -58,7 +58,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(const std::vector<int> p
     m_nCurrentDate = nDate;
     m_fReflQuantifValue = fReflQuantifVal;
     m_bPrevL3ABandsAvailable = bPrevL3ABandsAvailable;
-    m_fReflNoDataValue = NO_DATA/m_fReflQuantifValue;
+    m_fReflNoDataValue = NO_DATA_VALUE/m_fReflQuantifValue;
     m_arrL2ABandPresence = presenceVect;
 
     m_nNbOfL3AReflectanceBands = presenceVect.size();
@@ -188,7 +188,7 @@ template< class TInput, class TOutput>
 float UpdateSynthesisFunctor<TInput,TOutput>::GetL2AReflectanceForPixelVal(float fPixelVal)
 {
      if(fPixelVal < 0) {
-        fPixelVal = NO_DATA;
+        fPixelVal = NO_DATA_VALUE;
     }
     return (fPixelVal/m_fReflQuantifValue);
 }
@@ -196,7 +196,7 @@ float UpdateSynthesisFunctor<TInput,TOutput>::GetL2AReflectanceForPixelVal(float
 template< class TInput, class TOutput>
 void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, OutFunctorInfos& outInfos)
 {
-    outInfos.m_nCurrentPixelFlag = LAND;
+    outInfos.m_nCurrentPixelFlag = IMG_FLG_LAND;
 
     bool bAllReflsAreNoData = true;
 
@@ -240,7 +240,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, O
                 }
                 // if we have no data so far, then set also the flag as no data
                 if(bIsPrevReflNoData && bIsCurReflNoData) {
-                    outInfos.m_nCurrentPixelFlag = FLAG_NO_DATA;
+                    outInfos.m_nCurrentPixelFlag = IMG_FLG_NO_DATA;
                     outInfos.m_fCurrentPixelWeightedDate = DATE_NO_DATA;
                 } else {
                     if (!bIsCurReflNoData){
@@ -271,9 +271,9 @@ template< class TInput, class TOutput>
 void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput & A, OutFunctorInfos& outInfos)
 {
     if(IsWaterPixel(A)) {
-        outInfos.m_nCurrentPixelFlag = WATER;
+        outInfos.m_nCurrentPixelFlag = IMG_FLG_WATER;
     } else {
-       outInfos. m_nCurrentPixelFlag = SNOW;
+       outInfos. m_nCurrentPixelFlag = IMG_FLG_SNOW;
     }
     for(int i = 0; i<m_nNbOfL3AReflectanceBands; i++)
     {
@@ -304,7 +304,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
                 if(IsRedBand(i))
                 {
                     outInfos.m_fCurrentPixelWeightedDate = GetPrevL3AWeightedAvDateValue(A);
-                    outInfos.m_nCurrentPixelFlag = LAND;
+                    outInfos.m_nCurrentPixelFlag = IMG_FLG_LAND;
                 }
             }
         } else {
@@ -322,7 +322,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
 {
     short nPrevL3AFlagVal = GetPrevL3APixelFlagValue(A);
     // if flagN-1 is no-data => replace nodata with cloud
-    if(nPrevL3AFlagVal == FLAG_NO_DATA)
+    if(nPrevL3AFlagVal == IMG_FLG_NO_DATA)
     {
         //outInfos.m_nCurrentPixelFlag = CLOUD;
         bool bAllReflsAreNoData = true;
@@ -345,7 +345,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                 if(IsRedBand(i))
                 {
                     outInfos.m_fCurrentPixelWeightedDate = m_nCurrentDate;
-                    outInfos.m_nCurrentPixelFlag = CLOUD;
+                    outInfos.m_nCurrentPixelFlag = IMG_FLG_CLOUD;
                 }
             } else {
                 outInfos.m_CurrentWeightedReflectances[i] = m_fReflNoDataValue;
@@ -361,10 +361,10 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
         // This step is needed to remove the eventual false clouds when all reflectance bands are NO_DATA
         // and we previously didn't detected anything
         if(bAllReflsAreNoData) {
-            outInfos.m_nCurrentPixelFlag = FLAG_NO_DATA;
+            outInfos.m_nCurrentPixelFlag = IMG_FLG_NO_DATA;
         }
     } else {
-        if((nPrevL3AFlagVal == CLOUD) || (nPrevL3AFlagVal == CLOUD_SHADOW))
+        if((nPrevL3AFlagVal == IMG_FLG_CLOUD) || (nPrevL3AFlagVal == IMG_FLG_CLOUD_SHADOW))
         {
             // get the blue band index
             int nBlueBandIdx = GetBlueBandIndex();
@@ -387,7 +387,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                             if(IsRedBand(i))
                             {
                                 outInfos.m_fCurrentPixelWeightedDate = m_nCurrentDate;
-                                outInfos.m_nCurrentPixelFlag = CLOUD;
+                                outInfos.m_nCurrentPixelFlag = IMG_FLG_CLOUD;
                             }
                         } else {
                             outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
@@ -508,7 +508,7 @@ template< class TInput, class TOutput>
 short UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3APixelFlagValue(const TInput & A)
 {
     if(!m_bPrevL3ABandsAvailable || m_nPrevL3APixelFlagBandIndex == -1)
-        return FLAG_NO_DATA;
+        return IMG_FLG_NO_DATA;
 
     return static_cast<short>(floor(A[m_nPrevL3APixelFlagBandIndex] + 0.5));
 }
