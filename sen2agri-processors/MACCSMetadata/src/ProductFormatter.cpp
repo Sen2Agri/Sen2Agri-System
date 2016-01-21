@@ -648,12 +648,9 @@ private:
   template <typename TVector>
   OGRErr TransformPoint(const TVector &v,
                         OGRCoordinateTransformation *transform,
-                        OGRPoint &pt,
                         OGRRawPoint &ptOut)
   {
-      pt.setX(v[0]);
-      pt.setY(v[1]);
-      pt.setZ(0.0);
+      OGRPoint pt(v[0], v[1], 0.0);
 
       auto err = pt.transform(transform);
 
@@ -668,42 +665,44 @@ private:
   {
       std::vector<OGRRawPoint> extent;
 
-      auto *sourceSRS = static_cast<OGRSpatialReference *>(
+      auto sourceSRS = static_cast<OGRSpatialReference *>(
                            OSRNewSpatialReference(image->GetProjectionRef().c_str()));
+      if (!sourceSRS) {
+          return extent;
+      }
 
       auto targetSRS = static_cast<OGRSpatialReference *>(OSRNewSpatialReference(SRS_WKT_WGS84));
-
       if (!targetSRS) {
           return extent;
       }
+
       auto transform = static_cast<OGRCoordinateTransformation *>(
           OCTNewCoordinateTransformation(sourceSRS, targetSRS));
       if (!transform) {
           return extent;
       }
 
-      auto ok = true;
-      auto point = static_cast<OGRPoint *>(OGRGeometryFactory::createGeometry(wkbPoint));
       OGRRawPoint pt;
-      if (TransformPoint(image->GetUpperLeftCorner(), transform, *point, pt) == OGRERR_NONE) {
+      auto ok = true;
+      if (TransformPoint(image->GetUpperLeftCorner(), transform, pt) == OGRERR_NONE) {
           extent.emplace_back(pt);
       } else {
           ok = false;
       }
       if (ok &&
-          TransformPoint(image->GetLowerLeftCorner(), transform, *point, pt) == OGRERR_NONE) {
+          TransformPoint(image->GetLowerLeftCorner(), transform, pt) == OGRERR_NONE) {
           extent.emplace_back(pt);
       } else {
           ok = false;
       }
       if (ok &&
-          TransformPoint(image->GetLowerRightCorner(), transform, *point, pt) == OGRERR_NONE) {
+          TransformPoint(image->GetLowerRightCorner(), transform, pt) == OGRERR_NONE) {
           extent.emplace_back(pt);
       } else {
           ok = false;
       }
       if (ok &&
-          TransformPoint(image->GetUpperRightCorner(), transform, *point, pt) == OGRERR_NONE) {
+          TransformPoint(image->GetUpperRightCorner(), transform, pt) == OGRERR_NONE) {
           extent.emplace_back(pt);
       } else {
           ok = false;
@@ -712,8 +711,6 @@ private:
       if (!ok) {
           extent.clear();
       }
-
-      OGRGeometryFactory::destroyGeometry(point);
 
       OCTDestroyCoordinateTransformation(transform);
       OSRDestroySpatialReference(targetSRS);
