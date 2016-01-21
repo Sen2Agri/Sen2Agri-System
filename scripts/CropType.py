@@ -170,7 +170,7 @@ try:
     executeStep("XML Conversion for Crop Type", "otbcli", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics,  skip=fromstep>18)
 
 #Product creation (Step 19)
-    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "-01.00", "-processor", "croptype", "-processor.croptype.file", "TILE_"+tilename, crop_type_map, "-processor.croptype.quality", xml_validation_metrics, skip=fromstep>19)
+    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "01.00", "-processor", "croptype", "-processor.croptype.file", "TILE_"+tilename, crop_type_map, "-processor.croptype.quality", xml_validation_metrics, skip=fromstep>19)
 
 except:
     print sys.exc_info()
