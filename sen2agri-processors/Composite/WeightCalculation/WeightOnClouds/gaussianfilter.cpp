@@ -70,7 +70,7 @@ void GaussianFilter::BuildOutputImageSource()
     // the variance is sigma^2
     m_gaussianFilter->SetVariance(m_fSigma*m_fSigma);
     m_gaussianFilter->SetUseImageSpacing(false);
-    m_gaussianFilter->SetMaximumError(0.001);
+    //m_gaussianFilter->SetMaximumError(0.00001);
     m_gaussianFilter->SetMaximumKernelWidth(m_nKernelWidth);
 }
 
