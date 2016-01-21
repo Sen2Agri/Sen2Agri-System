@@ -177,18 +177,18 @@ private:
         }
 
         //m_ResampledBandsExtractor.ExtractAllResampledBands(m_L2AIn, m_ImageList);
-        m_ResampledBandsExtractor.ExtractAllResampledBands(m_CSM, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, true);
-        m_ResampledBandsExtractor.ExtractAllResampledBands(m_WM, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, true);
-        m_ResampledBandsExtractor.ExtractAllResampledBands(m_SM, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, true);
-        m_ResampledBandsExtractor.ExtractAllResampledBands(m_WeightsL2A, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, true);
+        m_ResampledBandsExtractor.ExtractAllResampledBands(m_CSM, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, Interpolator_NNeighbor);
+        m_ResampledBandsExtractor.ExtractAllResampledBands(m_WM, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, Interpolator_NNeighbor);
+        m_ResampledBandsExtractor.ExtractAllResampledBands(m_SM, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, Interpolator_NNeighbor);
+        m_ResampledBandsExtractor.ExtractAllResampledBands(m_WeightsL2A, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, Interpolator_NNeighbor);
 
         int nNbL3ABands = 0;
         if(HasValue("prevl3aw") && HasValue("prevl3ad") &&
            HasValue("prevl3ar") && HasValue("prevl3af")) {
-            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AWeight, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, true);
-            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AAvgDate, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, true);
+            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AWeight, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, Interpolator_NNeighbor);
+            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AAvgDate, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, Interpolator_NNeighbor);
             nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3ARefl, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight);
-            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AFlags, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, true);
+            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AFlags, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, Interpolator_NNeighbor);
         }
 
         m_Concat->SetInput(m_ImageList);

@@ -28,7 +28,7 @@ private:
     std::string                         m_DirName;
     std::string                         m_inXml;
     int                                 m_nOutRes;
-    ImageResampler<OutputImageType> m_ResampledBandsExtractor;
+    ImageResampler<OutputImageType, OutputImageType> m_ResampledBandsExtractor;
 
 };
 

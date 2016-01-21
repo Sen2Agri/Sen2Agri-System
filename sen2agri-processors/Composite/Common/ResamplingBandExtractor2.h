@@ -43,7 +43,7 @@ public:
 
     typename InternalImageType::Pointer ExtractResampledBand(const std::string &filePath, int nChannel,
                                                   int nCurRes = -1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                                  bool bNearestNeighbourInterpolation=false)
+                                                  Interpolator_Type interpolator=Interpolator_Linear)
     {
         // get a reader from the file path
         typename ImageReaderType::Pointer reader = ImageReaderType::New();
@@ -57,12 +57,12 @@ public:
         }
         return ExtractResampledBand(reader->GetOutput(), nChannel, nCurRes,
                                     nDesiredRes, nForcedOutWidth, nForcedOutHeight,
-                                    bNearestNeighbourInterpolation);
+                                    interpolator);
     }
 
     int ExtractAllResampledBands(const std::string &filePath, typename otb::ImageList<otb::Image<PixelType>>::Pointer &outList,
                                 int nCurRes = -1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                bool bNearestNeighbourInterpolation=false)
+                                Interpolator_Type interpolator=Interpolator_Linear)
     {
         // get a reader from the file path
         typename ImageReaderType::Pointer reader = ImageReaderType::New();
@@ -75,12 +75,12 @@ public:
             nCurRes = reader->GetOutput()->GetSpacing()[0];
         }
         return ExtractAllResampledBands(reader->GetOutput(), outList, nCurRes, nDesiredRes, nForcedOutWidth,
-                                 nForcedOutHeight, bNearestNeighbourInterpolation);
+                                 nForcedOutHeight, interpolator);
     }
 
     typename InternalImageType::Pointer ExtractResampledBand(const typename ImageType::Pointer img, int nChannel, int curRes=-1,
                                                   int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                                  bool bNearestNeighbourInterpolation=false)
+                                                  Interpolator_Type interpolator=Interpolator_Linear)
     {
         //Resample the cloud mask
         typename ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
@@ -89,12 +89,12 @@ public:
         extractor->UpdateOutputInformation();
         m_ExtractorList->PushBack( extractor );
 
-        return getResampledImage(curRes, nDesiredRes, nForcedOutWidth, nForcedOutHeight, extractor, bNearestNeighbourInterpolation);
+        return getResampledImage(curRes, nDesiredRes, nForcedOutWidth, nForcedOutHeight, extractor, interpolator);
     }
 
     int ExtractAllResampledBands(const typename ImageType::Pointer img, typename otb::ImageList<otb::Image<PixelType>>::Pointer &outList,
                                 int curRes=-1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                bool bNearestNeighbourInterpolation=false)
+                                Interpolator_Type interpolator=Interpolator_Linear)
     {
         int nbBands = img->GetNumberOfComponentsPerPixel();
         for(int j=0; j < nbBands; j++)
@@ -107,7 +107,7 @@ public:
             extractor->UpdateOutputInformation();
             m_ExtractorList->PushBack( extractor );
             // TODO: see if this function should receive instead the forced size of a reference image, if possible
-            outList->PushBack(getResampledImage(curRes, nDesiredRes, nForcedOutWidth, nForcedOutHeight, extractor, bNearestNeighbourInterpolation));
+            outList->PushBack(getResampledImage(curRes, nDesiredRes, nForcedOutWidth, nForcedOutHeight, extractor, interpolator));
         }
 
         return nbBands;
@@ -115,7 +115,7 @@ public:
 
     typename InternalImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes, int forcedWidth, int forcedHeight,
                                                  typename ExtractROIFilterType::Pointer extractor,
-                                                 bool bIsMask) {
+                                                 Interpolator_Type interpolator) {
         // if the resolutions are identical AND desired dimensions are not set
         if(nDesiredRes <= 0) {
             return extractor->GetOutput();
@@ -137,8 +137,8 @@ public:
         scale[0] = ((float)nDesiredRes) / nCurRes;
         scale[1] = ((float)nDesiredRes) / nCurRes;
 
-        typename ImageResampler<InternalImageType>::ResamplerPtr resampler = m_ImageResampler.getResampler(
-                    extractor->GetOutput(), scale, forcedWidth, forcedHeight, bIsMask);
+        typename ImageResampler<InternalImageType, InternalImageType>::ResamplerPtr resampler = m_ImageResampler.getResampler(
+                    extractor->GetOutput(), scale, forcedWidth, forcedHeight, interpolator);
         return resampler->GetOutput();
     }
 
@@ -147,7 +147,7 @@ public:
 private:
     typename ExtractROIFilterListType::Pointer     m_ExtractorList;
     typename ImageReaderListType::Pointer          m_ImageReaderList;
-    ImageResampler<InternalImageType>     m_ImageResampler;
+    ImageResampler<InternalImageType, InternalImageType>     m_ImageResampler;
 };
 
 #endif // RESAMPLING_BAND_EXTRACTOR_H

@@ -76,7 +76,7 @@ private:
     ImageReaderType::Pointer            m_InputImageReader;
     int m_nResolution;
     FilterType::Pointer m_Functor;
-    ImageResampler<OutputImageType> m_ResampledBandsExtractor;
+    ImageResampler<OutputImageType, OutputImageType> m_ResampledBandsExtractor;
 
 };
 

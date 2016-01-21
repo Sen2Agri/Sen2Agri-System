@@ -38,30 +38,30 @@ public:
     ResamplingBandExtractor();
     InternalImageType::Pointer ExtractResampledBand(const std::string &fileName, int nChannel,
                                                   int nCurRes = -1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                                  bool bNearestNeighbourInterpolation=false);
+                                                  Interpolator_Type interpolator=Interpolator_Linear);
 
     int ExtractAllResampledBands(const std::string &fileName, otb::ImageList<otb::Wrapper::FloatImageType>::Pointer &outList,
                                 int nCurRes = -1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                bool bNearestNeighbourInterpolation=false);
+                                Interpolator_Type interpolator=Interpolator_Linear);
 
     InternalImageType::Pointer ExtractResampledBand(const ImageType::Pointer img, int nChannel, int curRes=-1,
                                                   int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                                  bool bNearestNeighbourInterpolation=false);
+                                                  Interpolator_Type interpolator=Interpolator_Linear);
 
     int ExtractAllResampledBands(const ImageType::Pointer img, otb::ImageList<otb::Wrapper::FloatImageType>::Pointer &outList,
                                 int curRes=-1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                bool bNearestNeighbourInterpolation=false);
+                                Interpolator_Type interpolator=Interpolator_Linear);
 
     const char * GetNameOfClass() { return "ResamplingBandExtractor"; }
 
 private:
     InternalImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes, int forcedWidth, int forcedHeight,
                                                  ExtractROIFilterType::Pointer extractor,
-                                                 bool bIsMask);
+                                                 Interpolator_Type interpolator);
 private:
     ExtractROIFilterListType::Pointer     m_ExtractorList;
     ImageReaderListType::Pointer          m_ImageReaderList;
-    ImageResampler<InternalImageType>     m_ImageResampler;
+    ImageResampler<InternalImageType, InternalImageType>     m_ImageResampler;
 };
 
 #endif // RESAMPLING_BAND_EXTRACTOR_H
