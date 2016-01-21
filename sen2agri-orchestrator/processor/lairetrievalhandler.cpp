@@ -5,7 +5,7 @@
 
 #include "lairetrievalhandler.hpp"
 
-#define TasksNoPerProduct 4
+#define TasksNoPerProduct 5
 
 void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAllTasksList, int nbProducts) {
     // just create the tasks but with no information so far
@@ -15,36 +15,38 @@ void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAll
         outAllTasksList.append(TaskToSubmit{"lai-models-extractor", {}});
         outAllTasksList.append(TaskToSubmit{"lai-bv-image-invertion", {}});
         outAllTasksList.append(TaskToSubmit{"lai-bv-err-image-invertion", {}});
+        outAllTasksList.append(TaskToSubmit{"lai-mono-date-mask-flags", {}});
     }
     outAllTasksList.append(TaskToSubmit{"lai-time-series-builder", {}});
     outAllTasksList.append(TaskToSubmit{"lai-err-time-series-builder", {}});
+    outAllTasksList.append(TaskToSubmit{"lai-msk-flags-time-series-builder", {}});
     outAllTasksList.append(TaskToSubmit{"lai-local-window-reprocessing", {}});
     outAllTasksList.append(TaskToSubmit{"lai-local-window-reproc-splitter", {}});
     outAllTasksList.append(TaskToSubmit{"lai-fitted-reprocessing", {}});
     outAllTasksList.append(TaskToSubmit{"lai-fitted-reproc-splitter", {}});
-    outAllTasksList.append(TaskToSubmit{"lai-product-formatter", {}});
+    outAllTasksList.append(TaskToSubmit{"product-formatter", {}});
 
     // now fill the tasks hierarchy infos
 
-    //   ----------------------------- LOOP ---------------------------------
-    //   |                                                                  |
-    //   |                      ndvi-rvi-extraction                         |
-    //   |                              |                                   |
-    //   |                      get-lai-retrieval-model                     |
-    //   |                              |                                   |
-    //   |              -----------------------------------------           |
-    //   |              |                                       |           |
-    //   |      bv-image-inversion                 bv-err-image-inversion   |
-    //   |              |                                       |           |
-    //   |              -----------------------------------------           |
-    //   |                              |                                   |
-    //   --------------------------------------------------------------------
+    //   ----------------------------- LOOP --------------------------------------------
+    //   |                                                                              |
+    //   |                      ndvi-rvi-extraction                                     |
+    //   |                              |                                               |
+    //   |                      get-lai-retrieval-model                                 |
+    //   |                              |                                               |
+    //   |              ---------------------------------------------------             |
+    //   |              |                      |                           |            |
+    //   |      bv-image-inversion     bv-err-image-inversion   lai-mono-date-mask-flags|
+    //   |              |                      |                           |            |
+    //   |              ---------------------------------------------------             |
+    //   |                              |                                               |
+    //   -------------------------------------------------------------------------------
     //                                  |
-    //              ---------------------------------------------
-    //              |                                           |
-    //      time-series-builder                     err-time-series-builder
-    //              |                                           |
-    //              ---------------------------------------------
+    //              ---------------------------------------------------------------------------------
+    //              |                              |                              |                 |
+    //      time-series-builder         err-time-series-builder   lai-msk-flags-time-series-builder |
+    //              |                              |                              |                 |
+    //              ---------------------------------------------------------------------------------
     //                                  |
     //              ---------------------------------------------
     //              |                                           |
@@ -72,6 +74,8 @@ void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAll
         outAllTasksList[i*TasksNoPerProduct+2].parentTasks.append(outAllTasksList[i*TasksNoPerProduct+1]);
         // bv-err-image-inversion -> get-lai-retrieval-model
         outAllTasksList[i*TasksNoPerProduct+3].parentTasks.append(outAllTasksList[i*TasksNoPerProduct+1]);
+        // lai-mono-date-mask-flags -> get-lai-retrieval-model
+        outAllTasksList[i*TasksNoPerProduct+4].parentTasks.append(outAllTasksList[i*TasksNoPerProduct+1]);
     }
 
     // time-series-builder -> last bv-image-inversion AND bv-err-image-inversion
@@ -84,23 +88,29 @@ void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAll
     outAllTasksList[nCurIdx+1].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
     outAllTasksList[nCurIdx+1].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
 
-    //profile-reprocessing -> time-series-builder AND err-time-series-builder
-    outAllTasksList[nCurIdx+2].parentTasks.append(outAllTasksList[nCurIdx]);
-    outAllTasksList[nCurIdx+2].parentTasks.append(outAllTasksList[nCurIdx+1]);
+    //lai-msk-flags-time-series-builder -> last bv-image-inversion AND bv-err-image-inversion
+    outAllTasksList[nCurIdx+2].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
+    outAllTasksList[nCurIdx+2].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
 
-    //reprocessed-profile-splitter -> profile-reprocessing
+    //profile-reprocessing -> time-series-builder AND err-time-series-builder AND lai-msk-flags-time-series-builder
+    outAllTasksList[nCurIdx+3].parentTasks.append(outAllTasksList[nCurIdx]);
+    outAllTasksList[nCurIdx+3].parentTasks.append(outAllTasksList[nCurIdx+1]);
     outAllTasksList[nCurIdx+3].parentTasks.append(outAllTasksList[nCurIdx+2]);
 
-    //fitted-profile-reprocessing -> time-series-builder AND err-time-series-builder
-    outAllTasksList[nCurIdx+4].parentTasks.append(outAllTasksList[nCurIdx]);
-    outAllTasksList[nCurIdx+4].parentTasks.append(outAllTasksList[nCurIdx+1]);
+    //reprocessed-profile-splitter -> profile-reprocessing
+    outAllTasksList[nCurIdx+4].parentTasks.append(outAllTasksList[nCurIdx+3]);
+
+    //fitted-profile-reprocessing -> time-series-builder AND err-time-series-builder AND lai-msk-flags-time-series-builder
+    outAllTasksList[nCurIdx+5].parentTasks.append(outAllTasksList[nCurIdx]);
+    outAllTasksList[nCurIdx+5].parentTasks.append(outAllTasksList[nCurIdx+1]);
+    outAllTasksList[nCurIdx+5].parentTasks.append(outAllTasksList[nCurIdx+2]);
 
     //fitted-reprocessed-profile-splitter -> fitted-profile-reprocessing
-    outAllTasksList[nCurIdx+5].parentTasks.append(outAllTasksList[nCurIdx+4]);
+    outAllTasksList[nCurIdx+6].parentTasks.append(outAllTasksList[nCurIdx+5]);
 
     //product-formatter -> reprocessed-profile-splitter AND fitted-reprocessed-profile-splitter
-    outAllTasksList[nCurIdx+6].parentTasks.append(outAllTasksList[nCurIdx+3]);
-    outAllTasksList[nCurIdx+6].parentTasks.append(outAllTasksList[nCurIdx+5]);
+    outAllTasksList[nCurIdx+7].parentTasks.append(outAllTasksList[nCurIdx+4]);
+    outAllTasksList[nCurIdx+7].parentTasks.append(outAllTasksList[nCurIdx+6]);
 }
 
 void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int jobId,
@@ -109,8 +119,6 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
     const QJsonObject &parameters = QJsonDocument::fromJson(jsonParams.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(jobId, "processor.l3b.lai.");
 
-    // Get L3A Synthesis date
-    const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
     // Get the Half Synthesis interval value
     const auto &resolution = QString::number(parameters["resolution"].toInt());
 
@@ -120,6 +128,7 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
     NewStepList steps;
     QStringList monoDateLaiFileNames;
     QStringList monoDateErrLaiFileNames;
+    QStringList monoDateMskFlagsLaiFileNames;
 
     // first extract the model file names from the models folder
     QStringList modelsList;
@@ -135,72 +144,54 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
         TaskToSubmit &getLaiRetrievalModelTask = allTasksList[i*TasksNoPerProduct+1];
         TaskToSubmit &bvImageInversionTask = allTasksList[i*TasksNoPerProduct+2];
         TaskToSubmit &bvErrImageInversionTask = allTasksList[i*TasksNoPerProduct+3];
+        TaskToSubmit &genMonoDateMskFagsTask = allTasksList[i*TasksNoPerProduct+4];
 
         ctx.SubmitTasks(jobId, { ndviRviExtractorTask,
                                  getLaiRetrievalModelTask,
                                  bvImageInversionTask,
-                                 bvErrImageInversionTask
+                                 bvErrImageInversionTask,
+                                 genMonoDateMskFagsTask
         });
 
         const auto & ftsFile = ndviRviExtractorTask.GetFilePath("ndvi_rvi.tif");
         const auto & modelFileName = getLaiRetrievalModelTask.GetFilePath("model_file.txt");
         const auto & errModelFileName = getLaiRetrievalModelTask.GetFilePath("err_model_file.txt");
-        const auto & monoDateLaiFileName = bvImageInversionTask.GetFilePath("LAI_img.tif");
-        const auto & monoDateErrFileName = bvErrImageInversionTask.GetFilePath("LAI_err_img.tif");
+        const auto & monoDateLaiFileName = bvImageInversionTask.GetFilePath("LAI_mono_date_img.tif");
+        const auto & monoDateErrFileName = bvErrImageInversionTask.GetFilePath("LAI_mono_date_ERR_img.tif");
+        const auto & monoDateMskFlgsFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img.tif");
 
         // save the mono date LAI file name list
         monoDateLaiFileNames.append(monoDateLaiFileName);
         monoDateErrLaiFileNames.append(monoDateErrFileName);
+        monoDateMskFlagsLaiFileNames.append(monoDateMskFlgsFileName);
 
-        QStringList ndviRviExtractionArgs = { "NdviRviExtraction2",
-                                           "-xml", inputProduct,
-                                           "-fts", ftsFile,
-                                           "-outres", resolution
-                                            };
-        QStringList getLaiModelArgs = { "GetLaiRetrievalModel",
-                                            "-xml", inputProduct,
-                                            "-ilmodels", modelsList.join(" "),
-                                            "-ilerrmodels", errModelsList.join(" "),
-                                            "-outm", modelFileName,
-                                            "-outerr", errModelFileName
-                                      };
-        QStringList bvImageInvArgs = { "BVImageInversion",
-                                        "-in", ftsFile,
-                                        "-modelfile", modelFileName,
-                                        "-out", monoDateLaiFileName
-                                    };
-        QStringList bvErrImageInvArgs = { "BVImageInversion",
-                                          "-in", ftsFile,
-                                          "-modelfile", errModelFileName,
-                                          "-out", monoDateErrFileName
-                                      };
+        QStringList ndviRviExtractionArgs = GetNdviRviExtractionArgs(inputProduct, ftsFile, resolution);
+        QStringList getLaiModelArgs = GetLaiModelExtractorArgs(inputProduct, modelsList, errModelsList, modelFileName, errModelFileName);
+        QStringList bvImageInvArgs = GetBvImageInvArgs(ftsFile, modelFileName, monoDateLaiFileName);
+        QStringList bvErrImageInvArgs = GetBvErrImageInvArgs(ftsFile, errModelFileName, monoDateErrFileName);
+        QStringList genMonoDateMskFagsArgs = GetMonoDateMskFagsArgs(inputProduct, monoDateMskFlgsFileName);
+
         // add these steps to the steps list to be submitted
         steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtraction2", ndviRviExtractionArgs));
         steps.append(getLaiRetrievalModelTask.CreateStep("GetLaiRetrievalModel", getLaiModelArgs));
         steps.append(bvImageInversionTask.CreateStep("BVImageInversion", bvImageInvArgs));
         steps.append(bvErrImageInversionTask.CreateStep("BVImageInversion", bvErrImageInvArgs));
+        steps.append(bvErrImageInversionTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
     }
 
     int nCurIdx = i*TasksNoPerProduct;
     TaskToSubmit &imgTimeSeriesBuilderTask = allTasksList[nCurIdx];
     TaskToSubmit &errTimeSeriesBuilderTask = allTasksList[nCurIdx+1];
-    TaskToSubmit &profileReprocTask = allTasksList[nCurIdx+2];
-    TaskToSubmit &profileReprocSplitTask = allTasksList[nCurIdx+3];
-    TaskToSubmit &fittedProfileReprocTask = allTasksList[nCurIdx+4];
-    TaskToSubmit &fittedProfileReprocSplitTask = allTasksList[nCurIdx+5];
-    TaskToSubmit &productFormatterTask = allTasksList[nCurIdx+6];
-
-    const auto & allLaiTimeSeriesFileName = imgTimeSeriesBuilderTask.GetFilePath("LAI_time_series.tif");
-    const auto & allErrTimeSeriesFileName = errTimeSeriesBuilderTask.GetFilePath("Err_time_series.tif");
-
-    const auto & reprocTimeSeriesFileName = profileReprocTask.GetFilePath("ReprocessedTimeSeries.tif");
-    const auto & fittedTimeSeriesFileName = fittedProfileReprocTask.GetFilePath("FittedTimeSeries.tif");
-
-    const auto & reprocFileListFileName = profileReprocSplitTask.GetFilePath("FittedFilesList.txt");
-    const auto & fittedFileListFileName = fittedProfileReprocSplitTask.GetFilePath("ReprocessedFilesList.txt");
+    TaskToSubmit &mskFlagsTimeSeriesBuilderTask = allTasksList[nCurIdx+2];
+    TaskToSubmit &profileReprocTask = allTasksList[nCurIdx+3];
+    TaskToSubmit &profileReprocSplitTask = allTasksList[nCurIdx+4];
+    TaskToSubmit &fittedProfileReprocTask = allTasksList[nCurIdx+5];
+    TaskToSubmit &fittedProfileReprocSplitTask = allTasksList[nCurIdx+6];
+    TaskToSubmit &productFormatterTask = allTasksList[nCurIdx+7];
 
     ctx.SubmitTasks(jobId, { imgTimeSeriesBuilderTask,
                              errTimeSeriesBuilderTask,
+                             mskFlagsTimeSeriesBuilderTask,
                              profileReprocTask,
                              profileReprocSplitTask,
                              fittedProfileReprocTask,
@@ -208,63 +199,33 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
                              productFormatterTask
     });
 
-    QStringList timeSeriesBuilderArgs = { "TimeSeriesBuilder",
-                                    "-il", monoDateLaiFileNames.join(" "),
-                                    "-out", allLaiTimeSeriesFileName
-                                };
-    QStringList errTimeSeriesBuilderArgs = { "TimeSeriesBuilder",
-                                        "-il", monoDateErrLaiFileNames.join(" "),
-                                        "-out", allErrTimeSeriesFileName
-                                    };
+    const auto & allLaiTimeSeriesFileName = imgTimeSeriesBuilderTask.GetFilePath("LAI_time_series.tif");
+    const auto & allErrTimeSeriesFileName = errTimeSeriesBuilderTask.GetFilePath("Err_time_series.tif");
+    const auto & allMskFlagsTimeSeriesFileName = mskFlagsTimeSeriesBuilderTask.GetFilePath("Mask_Flags_time_series.tif");
 
-    const auto &localWindowBwr = configParameters["processor.l3b.lai.localwnd.bwr"];
-    const auto &localWindowFwr = configParameters["processor.l3b.lai.localwnd.fwr"];
-    QStringList profileReprocessingArgs = { "ProfileReprocessing",
-                                            "-lai", allLaiTimeSeriesFileName,
-                                            "-err", allErrTimeSeriesFileName,
-                                            "-ilxml", listProducts.join(" "),
-                                            "-opf", reprocTimeSeriesFileName,
-                                            "-algo", "local",
-                                            "-algo.local.bwr", localWindowBwr,
-                                            "-algo.local.fwr", localWindowFwr
-                                    };
-    QStringList reprocProfileSplitterArgs = { "ReprocessedProfileSplitter",
-                                              "-in", reprocTimeSeriesFileName,
-                                              "-outlist", reprocFileListFileName,
-                                              "-compress", "1"
-                                    };
-    QStringList fittedProfileReprocArgs = { "ProfileReprocessing",
-                                            "-lai", allLaiTimeSeriesFileName,
-                                            "-err", allErrTimeSeriesFileName,
-                                            "-ilxml", listProducts.join(" "),
-                                            "-opf", fittedTimeSeriesFileName,
-                                            "-algo", "fit"
-                                    };
-    QStringList fittedProfileReprocSplitterArgs = { "ReprocessedProfileSplitter",
-                                                    "-in", fittedTimeSeriesFileName,
-                                                    "-outlist", fittedFileListFileName,
-                                                    "-compress", "1"
-                                    };
+    const auto & reprocTimeSeriesFileName = profileReprocTask.GetFilePath("ReprocessedTimeSeries.tif");
+    const auto & fittedTimeSeriesFileName = fittedProfileReprocTask.GetFilePath("FittedTimeSeries.tif");
 
-    const auto &targetFolder = productFormatterTask.GetFilePath("");
-    const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.txt");
+    const auto & reprocFileListFileName = profileReprocSplitTask.GetFilePath("FittedFilesList.txt");
+    const auto & fittedFileListFileName = fittedProfileReprocSplitTask.GetFilePath("ReprocessedFilesList.txt");
 
-    WriteExecutionInfosFile(executionInfosPath, parameters, configParameters, listProducts);
-    QStringList productFormatterArgs = { "ProductFormatter",
-                                    "-destroot", targetFolder,
-                                    "-fileclass", "SVT1",
-                                    "-level", "L3B",
-                                    "-timeperiod", l3aSynthesisDate,
-                                    "-baseline", "01.00",
-                                    "-processor", "vegetation",
-                                    "-processor.vegetation.lairepr", reprocTimeSeriesFileName,
-                                    "-processor.vegetation.laifit", fittedTimeSeriesFileName,
-                                    "-il", listProducts.join(" "),
-                                    "-gipp", executionInfosPath
-                                };
+    QStringList timeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(monoDateLaiFileNames, allLaiTimeSeriesFileName);
+    QStringList errTimeSeriesBuilderArgs = GetErrTimeSeriesBuilderArgs(monoDateErrLaiFileNames, allErrTimeSeriesFileName);
+    QStringList mskFlagsTimeSeriesBuilderArgs = GetMskFlagsTimeSeriesBuilderArgs(monoDateMskFlagsLaiFileNames, allMskFlagsTimeSeriesFileName);
+
+    QStringList profileReprocessingArgs = GetProfileReprocessingArgs(configParameters, allLaiTimeSeriesFileName,
+                                                                     allErrTimeSeriesFileName, reprocTimeSeriesFileName, listProducts);
+    QStringList reprocProfileSplitterArgs = GetReprocProfileSplitterArgs(reprocTimeSeriesFileName, reprocFileListFileName);
+    QStringList fittedProfileReprocArgs = GetFittedProfileReprocArgs(allLaiTimeSeriesFileName, allErrTimeSeriesFileName,
+                                                                     fittedTimeSeriesFileName, listProducts);
+    QStringList fittedProfileReprocSplitterArgs = GetFittedProfileReprocSplitterArgs(fittedTimeSeriesFileName, fittedFileListFileName);
+    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, configParameters, parameters,
+                                                               listProducts, reprocTimeSeriesFileName, fittedTimeSeriesFileName);
+
     // add these steps to the steps list to be submitted
     steps.append(imgTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", timeSeriesBuilderArgs));
     steps.append(errTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", errTimeSeriesBuilderArgs));
+    steps.append(mskFlagsTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", mskFlagsTimeSeriesBuilderArgs));
     steps.append(profileReprocTask.CreateStep("ProfileReprocessing", profileReprocessingArgs));
     steps.append(profileReprocSplitTask.CreateStep("ReprocessedProfileSplitter", reprocProfileSplitterArgs));
     steps.append(fittedProfileReprocTask.CreateStep("ProfileReprocessing", fittedProfileReprocArgs));
@@ -375,3 +336,153 @@ void LaiRetrievalHandler::GetModelFileList(QStringList &outListModels, const QSt
 }
 
 
+QStringList LaiRetrievalHandler::GetNdviRviExtractionArgs(const QString &inputProduct, const QString &ftsFile, const QString &resolution) {
+    return { "NdviRviExtraction2",
+           "-xml", inputProduct,
+           "-fts", ftsFile,
+           "-outres", resolution
+    };
+}
+
+QStringList LaiRetrievalHandler::GetLaiModelExtractorArgs(const QString &inputProduct, const QStringList &modelsList, const QStringList &errModelsList,
+                                     const QString &modelFileName, const QString &errModelFileName) {
+    QStringList laiModelExtractorArgs = { "GetLaiRetrievalModel",
+                                "-xml", inputProduct,
+                                "-outm", modelFileName,
+                                "-outerr", errModelFileName,
+                                "-ilmodels"};
+    // append the list of models
+    laiModelExtractorArgs += modelsList;
+    laiModelExtractorArgs.append("-ilerrmodels");
+    laiModelExtractorArgs += errModelsList;
+    return laiModelExtractorArgs;
+}
+
+QStringList LaiRetrievalHandler::GetBvImageInvArgs(const QString &ftsFile, const QString &modelFileName, const QString &monoDateLaiFileName) {
+    return { "BVImageInversion",
+        "-in", ftsFile,
+        "-modelfile", modelFileName,
+        "-out", monoDateLaiFileName
+    };
+}
+
+QStringList LaiRetrievalHandler::GetBvErrImageInvArgs(const QString &ftsFile, const QString &errModelFileName, const QString &monoDateErrFileName)  {
+    return { "BVImageInversion",
+      "-in", ftsFile,
+      "-modelfile", errModelFileName,
+      "-out", monoDateErrFileName
+    };
+}
+
+QStringList LaiRetrievalHandler::GetMonoDateMskFagsArgs(const QString &inputProduct, const QString &monoDateMskFlgsFileName) {
+    return { "GenerateLaiMonoDateMaskFlags",
+      "-inxml", inputProduct,
+      "-out", monoDateMskFlgsFileName
+    };
+}
+
+
+QStringList LaiRetrievalHandler::GetTimeSeriesBuilderArgs(const QStringList &monoDateLaiFileNames, const QString &allLaiTimeSeriesFileName) {
+    QStringList timeSeriesBuilderArgs = { "TimeSeriesBuilder",
+      "-out", allLaiTimeSeriesFileName,
+      "-il"
+    };
+    timeSeriesBuilderArgs += monoDateLaiFileNames;
+
+    return timeSeriesBuilderArgs;
+}
+
+QStringList LaiRetrievalHandler::GetErrTimeSeriesBuilderArgs(const QStringList &monoDateErrLaiFileNames, const QString &allErrTimeSeriesFileName) {
+    QStringList timeSeriesBuilderArgs = { "TimeSeriesBuilder",
+      "-out", allErrTimeSeriesFileName,
+      "-il"
+    };
+    timeSeriesBuilderArgs += monoDateErrLaiFileNames;
+
+    return timeSeriesBuilderArgs;
+}
+
+QStringList LaiRetrievalHandler::GetMskFlagsTimeSeriesBuilderArgs(const QStringList &monoDateMskFlagsLaiFileNames, const QString &allMskFlagsTimeSeriesFileName) {
+    QStringList timeSeriesBuilderArgs = { "TimeSeriesBuilder",
+      "-out", allMskFlagsTimeSeriesFileName,
+      "-il"
+    };
+    timeSeriesBuilderArgs += monoDateMskFlagsLaiFileNames;
+
+    return timeSeriesBuilderArgs;
+}
+
+
+
+QStringList LaiRetrievalHandler::GetProfileReprocessingArgs(std::map<QString, QString> configParameters, const QString &allLaiTimeSeriesFileName,
+                                       const QString &allErrTimeSeriesFileName, const QString &reprocTimeSeriesFileName,
+                                       const QStringList &listProducts) {
+    const auto &localWindowBwr = configParameters["processor.l3b.lai.localwnd.bwr"];
+    const auto &localWindowFwr = configParameters["processor.l3b.lai.localwnd.fwr"];
+
+    QStringList profileReprocessingArgs = { "ProfileReprocessing",
+          "-lai", allLaiTimeSeriesFileName,
+          "-err", allErrTimeSeriesFileName,
+          "-opf", reprocTimeSeriesFileName,
+          "-algo", "local",
+          "-algo.local.bwr", localWindowBwr,
+          "-algo.local.fwr", localWindowFwr,
+          "-ilxml"
+    };
+    profileReprocessingArgs += listProducts;
+    return profileReprocessingArgs;
+}
+
+QStringList LaiRetrievalHandler::GetReprocProfileSplitterArgs(const QString &reprocTimeSeriesFileName, const QString &reprocFileListFileName) {
+    return { "ReprocessedProfileSplitter",
+            "-in", reprocTimeSeriesFileName,
+            "-outlist", reprocFileListFileName,
+            "-compress", "1"
+    };
+}
+QStringList LaiRetrievalHandler::GetFittedProfileReprocArgs(const QString &allLaiTimeSeriesFileName, const QString &allErrTimeSeriesFileName,
+                                       const QString &fittedTimeSeriesFileName, const QStringList &listProducts) {
+    QStringList fittedProfileReprocArgs = { "ProfileReprocessing",
+          "-lai", allLaiTimeSeriesFileName,
+          "-err", allErrTimeSeriesFileName,
+          "-opf", fittedTimeSeriesFileName,
+          "-algo", "fit",
+          "-ilxml"
+    };
+    fittedProfileReprocArgs += listProducts;
+    return fittedProfileReprocArgs;
+}
+
+QStringList LaiRetrievalHandler::GetFittedProfileReprocSplitterArgs(const QString &fittedTimeSeriesFileName, const QString &fittedFileListFileName) {
+    return { "ReprocessedProfileSplitter",
+                  "-in", fittedTimeSeriesFileName,
+                  "-outlist", fittedFileListFileName,
+                  "-compress", "1"
+    };
+}
+
+QStringList LaiRetrievalHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, std::map<QString, QString> configParameters,
+                                    const QJsonObject &parameters, const QStringList &listProducts,
+                                    const QString &reprocTimeSeriesFileName, const QString &fittedTimeSeriesFileName) {
+
+    const auto &targetFolder = productFormatterTask.GetFilePath("");
+    const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.txt");
+
+    WriteExecutionInfosFile(executionInfosPath, parameters, configParameters, listProducts);
+
+    QStringList productFormatterArgs = { "ProductFormatter",
+                              "-destroot", targetFolder,
+                              "-fileclass", "SVT1",
+                              "-level", "L3B",
+                              "-timeperiod", "",                //TODO
+                              "-baseline", "01.00",
+                              "-processor", "vegetation",
+                              "-processor.vegetation.lairepr", reprocTimeSeriesFileName,
+                              "-processor.vegetation.laifit", fittedTimeSeriesFileName,
+                              "-gipp", executionInfosPath,
+                              "-il"
+                          };
+    productFormatterArgs += listProducts;
+
+    return productFormatterArgs;
+}
