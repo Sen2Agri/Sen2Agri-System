@@ -235,7 +235,7 @@ XDocument ProductMetadataWriter::CreateProductMetadataXml(const ProductFileMetad
 
     XDocument doc(XDeclaration("1.0", "UTF-8", ""));
 
-    XElement root("Level-3A_User_Product",
+    XElement root(metadata.GeneralInfo.ProductInfo.QueryOptions.AuxListContent.ProductLevel + "_User_Product",
                       XAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"));
 
     root.Append(

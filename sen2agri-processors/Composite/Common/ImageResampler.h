@@ -15,29 +15,37 @@
 #include "itkScalableAffineTransform.h"
 #include "GlobalDefs.h"
 
-template <class TImage>
+typedef enum
+{
+  Interpolator_NNeighbor,
+  Interpolator_Linear,
+  Interpolator_BCO
+} Interpolator_Type;
+
+template <class TInput, class TOutput>
 class ImageResampler
 {
 public:
-    typedef otb::StreamingResampleImageFilter<TImage, TImage, double>                           ResampleFilterType;
+
+    typedef otb::StreamingResampleImageFilter<TInput, TOutput, double>                           ResampleFilterType;
     typedef otb::ObjectList<ResampleFilterType>                                                 ResampleFilterListType;
 
-    typedef itk::NearestNeighborInterpolateImageFunction<TImage, double>             NearestNeighborInterpolationType;
-    typedef itk::LinearInterpolateImageFunction<TImage, double>                      LinearInterpolationType;
-    typedef otb::BCOInterpolateImageFunction<TImage>                                 BCOInterpolationType;
-    typedef itk::IdentityTransform<double, TImage::ImageDimension>                   IdentityTransformType;
+    typedef itk::NearestNeighborInterpolateImageFunction<TOutput, double>             NearestNeighborInterpolationType;
+    typedef itk::LinearInterpolateImageFunction<TOutput, double>                      LinearInterpolationType;
+    typedef otb::BCOInterpolateImageFunction<TOutput>                                 BCOInterpolationType;
+    typedef itk::IdentityTransform<double, TOutput::ImageDimension>                   IdentityTransformType;
 
-    typedef itk::ScalableAffineTransform<double, TImage::ImageDimension>             ScalableTransformType;
+    typedef itk::ScalableAffineTransform<double, TOutput::ImageDimension>             ScalableTransformType;
     typedef typename ScalableTransformType::OutputVectorType     OutputVectorType;
 
     typedef typename NearestNeighborInterpolationType::Pointer NearestNeighborInterpolationTypePtr;
     typedef typename LinearInterpolationType::Pointer LinearInterpolationTypePtr;
     typedef typename IdentityTransformType::Pointer IdentityTransformTypePtr;
-    typedef typename TImage::Pointer ResamplerInputImgPtr;
-    typedef typename TImage::PixelType ResamplerInputImgPixelType;
-    typedef typename TImage::SpacingType ResamplerInputImgSpacingType;
-    typedef typename otb::StreamingResampleImageFilter<TImage, TImage, double>::Pointer ResamplerPtr;
-    typedef typename otb::StreamingResampleImageFilter<TImage, TImage, double>::SizeType ResamplerSizeType;
+    typedef typename TInput::Pointer ResamplerInputImgPtr;
+    typedef typename TInput::PixelType ResamplerInputImgPixelType;
+    typedef typename TInput::SpacingType ResamplerInputImgSpacingType;
+    typedef typename ResampleFilterType::Pointer ResamplerPtr;
+    typedef typename ResampleFilterType::SizeType ResamplerSizeType;
     typedef typename otb::ObjectList<ResampleFilterType>::Pointer   ResampleFilterListTypePtr;
 
 public:
@@ -46,17 +54,19 @@ public:
     ImageResampler()
     {
         m_ResamplersList = ResampleFilterListType::New();
+        m_BCORadius = 2;
+        m_fBCOAlpha = -0.5;
     }
 
 
 ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWidth,
-                                              const int wantedHeight, bool isMask=false)
+                          const int wantedHeight, Interpolator_Type interpolator=Interpolator_Linear)
     {
         auto sz = image->GetLargestPossibleRegion().GetSize();
         OutputVectorType scale;
         scale[0] = (float)sz[0] / wantedWidth;
         scale[1] = (float)sz[1] / wantedHeight;
-        ResamplerPtr resampler = getResampler(image, scale, wantedWidth, wantedHeight, isMask);
+        ResamplerPtr resampler = getResampler(image, scale, wantedWidth, wantedHeight, interpolator);
         ResamplerSizeType recomputedSize;
         recomputedSize[0] = wantedWidth;
         recomputedSize[1] = wantedHeight;
@@ -64,31 +74,43 @@ ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWid
         return resampler;
     }
 
-    ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const float& ratio, bool isMask=false) {
+    ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const float& ratio,
+                              Interpolator_Type interpolator=Interpolator_Linear) {
          // Scale Transform
          OutputVectorType scale;
          scale[0] = 1.0 / ratio;
          scale[1] = 1.0 / ratio;
-         return getResampler(image, scale, -1, -1, isMask);
+         return getResampler(image, scale, -1, -1, interpolator);
     }
 
     ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const OutputVectorType& scale,
-                             int forcedWidth, int forcedHeight, bool isMask=false) {
+                             int forcedWidth, int forcedHeight, Interpolator_Type interpolator=Interpolator_Linear) {
          ResamplerPtr resampler = ResampleFilterType::New();
          resampler->SetInput(image);
 
          // Set the interpolator
-         if(isMask) {
-             NearestNeighborInterpolationTypePtr interpolator = NearestNeighborInterpolationType::New();
-             resampler->SetInterpolator(interpolator);
-         }
-         else {
-            LinearInterpolationTypePtr interpolator = LinearInterpolationType::New();
-            resampler->SetInterpolator(interpolator);
-
-            //BCOInterpolationType::Pointer interpolator = BCOInterpolationType::New();
-            //interpolator->SetRadius(2);
-            //resampler->SetInterpolator(interpolator);
+         switch ( interpolator )
+         {
+             case Interpolator_Linear:
+             {
+                 typename LinearInterpolationType::Pointer interpolator = LinearInterpolationType::New();
+                 resampler->SetInterpolator(interpolator);
+             }
+             break;
+             case Interpolator_NNeighbor:
+             {
+                 typename NearestNeighborInterpolationType::Pointer interpolator = NearestNeighborInterpolationType::New();
+                 resampler->SetInterpolator(interpolator);
+             }
+             break;
+             case Interpolator_BCO:
+             {
+                 typename BCOInterpolationType::Pointer interpolator = BCOInterpolationType::New();
+                 interpolator->SetRadius(m_BCORadius);
+                 interpolator->SetAlpha(m_fBCOAlpha);
+                 resampler->SetInterpolator(interpolator);
+             }
+             break;
          }
 
          IdentityTransformTypePtr transform = IdentityTransformType::New();
@@ -98,18 +120,17 @@ ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWid
          // Evaluate spacing
          ResamplerInputImgSpacingType spacing = image->GetSpacing();
          ResamplerInputImgSpacingType OutputSpacing;
-         OutputSpacing[0] = spacing[0] * scale[0];
-         OutputSpacing[1] = spacing[1] * scale[1];
+         OutputSpacing[0] = std::round(spacing[0] * scale[0]);
+         OutputSpacing[1] = std::round(spacing[1] * scale[1]);
 
          resampler->SetOutputSpacing(OutputSpacing);
 
-         otb::Wrapper::FloatVectorImageType::PointType origin = image->GetOrigin();
-         otb::Wrapper::FloatVectorImageType::PointType outputOrigin;
+         typename TOutput::PointType origin = image->GetOrigin();
+         typename TOutput::PointType outputOrigin;
          outputOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale[0] - 1.0);
          outputOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0);
 
          resampler->SetOutputOrigin(outputOrigin);
-
          resampler->SetTransform(transform);
 
          // Evaluate size
@@ -127,7 +148,7 @@ ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWid
 
          ResamplerInputImgPixelType defaultValue;
          itk::NumericTraits<ResamplerInputImgPixelType>::SetLength(defaultValue, image->GetNumberOfComponentsPerPixel());
-         if(!isMask) {
+         if(interpolator != Interpolator_NNeighbor) {
              defaultValue = NO_DATA_VALUE;
          }
          resampler->SetEdgePaddingValue(defaultValue);
@@ -142,6 +163,8 @@ ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWid
     }
 private:
     ResampleFilterListTypePtr             m_ResamplersList;
+    int     m_BCORadius;
+    float   m_fBCOAlpha;
 };
 
 #endif // IMAGE_RESAMPLER_H

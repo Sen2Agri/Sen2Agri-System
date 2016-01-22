@@ -153,8 +153,8 @@ void CloudsInterpolation::BuildOutputImageSource()
     //      a model pixel scale tag of 9.9999 instead of 10 that can result in
     //      different number of pixels
     ImageType::SpacingType OutputSpacing;
-    OutputSpacing[0] = spacing[0] * scale[0];
-    OutputSpacing[1] = spacing[1] * scale[1];
+    OutputSpacing[0] = std::round(spacing[0] * scale[0]);
+    OutputSpacing[1] = std::round(spacing[1] * scale[1]);
 
     m_Resampler->SetOutputSpacing(OutputSpacing);
 

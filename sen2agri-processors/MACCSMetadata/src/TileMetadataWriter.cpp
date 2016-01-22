@@ -66,7 +66,7 @@ XDocument TileMetadataWriter::CreateTileMetadataXml(const TileFileMetadata &meta
     XDocument doc(XDeclaration("1.0", "UTF-8", ""),
                   XUnknown("<?xml-stylesheet type=\"text/xsl\" href=\"DISPLAY/display.xsl\"?>"));
 
-    XElement root("Level-3A_Tile_ID",
+    XElement root(metadata.ProductLevel + "_Tile_ID",
                       XAttribute("xmlns", "http://eop-cfi.esa.int/CFI"),
                       XAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance"));
 

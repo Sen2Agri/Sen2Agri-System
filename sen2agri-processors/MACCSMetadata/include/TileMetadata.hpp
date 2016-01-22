@@ -56,4 +56,5 @@ struct TileFileMetadata
     std::string TileThematicInfo;
     TileImageContent TileImageContentQI;
     std::vector<TileMask>TileMasksList;
+    std::string ProductLevel;
 };

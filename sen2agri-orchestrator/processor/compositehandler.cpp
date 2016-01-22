@@ -140,26 +140,9 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx, int jo
         TaskToSubmit &updateSynthesis = allTasksList[i*TasksNoPerProduct+5];
         TaskToSubmit &compositeSplitter = allTasksList[i*TasksNoPerProduct+6];
 
-        if(i == listProducts.size()-1) {
-            ctx.SubmitTasks(jobId, { maskHandler,
-                                     compositePreprocessing,
-                                     weightAot,
-                                     weightOnClouds,
-                                     totalWeight,
-                                     updateSynthesis,
-                                     compositeSplitter,
-                                     productFormatter
-            });
-        } else {
-            ctx.SubmitTasks(jobId, { maskHandler,
-                                     compositePreprocessing,
-                                     weightAot,
-                                     weightOnClouds,
-                                     totalWeight,
-                                     updateSynthesis,
-                                     compositeSplitter
-            });
-        }
+        ctx.SubmitTasks(jobId, { maskHandler, compositePreprocessing, weightAot, weightOnClouds,
+                                 totalWeight, updateSynthesis, compositeSplitter
+        });
 
         const auto & masksFile = maskHandler.GetFilePath("all_masks_file.tif");
         const auto & outResImgBands = compositePreprocessing.GetFilePath("img_res_bands.tif");
@@ -272,6 +255,9 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx, int jo
         steps.append(compositeSplitter.CreateStep("CompositeSplitter", compositeSplitterArgs));
     }
 
+    // submit the product formatter task
+    ctx.SubmitTasks(jobId, { productFormatter });
+
     const auto &targetFolder = productFormatter.GetFilePath("");
     const auto &executionInfosPath = productFormatter.GetFilePath("executionInfos.txt");
 
@@ -283,14 +269,15 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx, int jo
                                     "-timeperiod", l3aSynthesisDate,
                                     "-baseline", "01.00",
                                     "-processor", "composite",
-                                    "-processor.composite.refls", prevL3AProdRefls,
-                                    "-processor.composite.weights", prevL3AProdWeights,
-                                    "-processor.composite.flags", prevL3AProdFlags,
-                                    "-processor.composite.dates", prevL3AProdDates,
-                                    "-processor.composite.rgb", prevL3ARgbFile,
-                                    "-il", listProducts.join(" "),
-                                    "-gipp", executionInfosPath
+                                    "-processor.composite.refls", "TILE_none", prevL3AProdRefls,
+                                    "-processor.composite.weights", "TILE_none", prevL3AProdWeights,
+                                    "-processor.composite.flags", "TILE_none", prevL3AProdFlags,
+                                    "-processor.composite.dates", "TILE_none", prevL3AProdDates,
+                                    "-processor.composite.rgb", "TILE_none", prevL3ARgbFile,
+                                    "-gipp", executionInfosPath,
+                                    "-il", listProducts[listProducts.size()-1]
                                 };
+
     steps.append(productFormatter.CreateStep("ProductFormatter", productFormatterArgs));
 
     ctx.SubmitSteps(steps);

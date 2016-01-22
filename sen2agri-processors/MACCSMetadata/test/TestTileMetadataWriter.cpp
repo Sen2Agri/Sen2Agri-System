@@ -14,6 +14,7 @@ BOOST_AUTO_TEST_CASE(TileMetadataWriter)
     metadata.TileID = "S2A_OPER_MSI_L1C_TL_MTI__20150627T180307_A000062_T31RDP_N01.00";
     metadata.TileGeometricInfo.HorizontalCSName = "WGS84 / UTM zone 31N";
     metadata.TileGeometricInfo.HorizontalCSCode = "EPSG:32631";
+    metadata.ProductLevel = "L1C";
 
     metadata.TileGeometricInfo.TileSizeList.reserve(2);
     TileSize tileSizeEl;
