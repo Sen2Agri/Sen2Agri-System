@@ -723,17 +723,13 @@ private:
   {
       int error, status;
           pid_t pid, waitres;
-//          const char *myargs[14];
-//          char *myenv[2] = { "ITK_AUTOLOanswer=42", NULL };
-
 //          /* Make sure we have no child processes. */
 //          while (waitpid(-1, NULL, 0) != -1)
 //              ;
 //          assert(errno == ECHILD);
 
           std::vector<const char *> args;
-          args.emplace_back("otbcli");
-          args.emplace_back("Quicklook");
+          args.emplace_back("otbcli_Quicklook");
           args.emplace_back("-in");
           args.emplace_back(rasterFullFilePath.c_str());
           args.emplace_back("-out");
@@ -747,9 +743,11 @@ private:
           }
           args.emplace_back(nullptr);
 
-
-
-          error = posix_spawnp(&pid, args[0], NULL, NULL, (char *const *)args.data(), environ);
+          posix_spawnattr_t attr;
+          posix_spawnattr_init(&attr);
+          posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
+          error = posix_spawnp(&pid, args[0], NULL, &attr, (char *const *)args.data(), NULL);
+          posix_spawnattr_destroy(&attr);
 //          assert(error == 0);
           waitres = waitpid(pid, &status, 0);
 //          assert(waitres == pid);
