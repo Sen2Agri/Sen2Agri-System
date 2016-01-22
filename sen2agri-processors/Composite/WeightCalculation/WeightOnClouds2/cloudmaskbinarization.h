@@ -1,0 +1,154 @@
+#ifndef CLOUDMASKBINARIZATION_H
+#define CLOUDMASKBINARIZATION_H
+
+#include "otbWrapperTypes.h"
+#include "itkUnaryFunctorImageFilter.h"
+#include "otbImageFileReader.h"
+#include "otbImageFileWriter.h"
+#include "itkImageSource.h"
+#include "../../Common/GlobalDefs.h"
+
+namespace Functor
+{
+template< class TInput, class TOutput>
+class BinarizeCloudMask
+{
+public:
+    BinarizeCloudMask() { m_fThreshold = 0.0; }
+    ~BinarizeCloudMask() {}
+  bool operator!=( const BinarizeCloudMask & ) const
+    {
+    return false;
+    }
+  bool operator==( const BinarizeCloudMask & other ) const
+    {
+    return !(*this != other);
+    }
+  inline TOutput operator()( const TInput & A ) const
+    {
+      float val = static_cast< float >( A );
+      int nRoundedVal = std::round(val);
+
+      return ((nRoundedVal == NO_DATA_VALUE) ? NO_DATA_VALUE : ((val > (m_fThreshold + EPSILON)) ? 0.0 : 1.0));
+    }
+private:
+    float m_fThreshold;
+};
+}
+
+template <typename TInput, typename TOutput>
+class CloudMaskBinarization
+{
+public:
+    typedef itk::UnaryFunctorImageFilter<TInput,TOutput,
+                    Functor::BinarizeCloudMask<
+                        typename TInput::PixelType,
+                        typename TOutput::PixelType> > FilterType;
+
+
+    typedef itk::ImageSource<TInput> ImageSource;
+    typedef typename FilterType::Superclass::Superclass::Superclass OutImageSource;
+
+    typedef otb::ImageFileReader<TInput> ReaderType;
+    typedef otb::ImageFileWriter<TOutput> WriterType;
+
+public:
+    CloudMaskBinarization() {}
+
+    void SetInputFileName(std::string &inputImageStr) {
+        if (inputImageStr.empty())
+        {
+            std::cout << "No input Image set...; please set the input image!" << std::endl;
+            itkExceptionMacro("No input Image set...; please set the input image");
+        }
+        // Read the image
+        typename ReaderType::Pointer reader = ReaderType::New();
+        reader->SetFileName(inputImageStr);
+        try
+        {
+            m_inputReader = reader;
+        }
+        catch (itk::ExceptionObject& err)
+        {
+            std::cout << "ExceptionObject caught !" << std::endl;
+            std::cout << err << std::endl;
+            itkExceptionMacro("Error reading input");
+        }
+    }
+
+    void SetInputImageReader(typename ImageSource::Pointer reader) {
+        if (reader.IsNull())
+        {
+            std::cout << "No input Image set...; please set the input image!" << std::endl;
+            itkExceptionMacro("No input Image set...; please set the input image");
+        }
+        m_inputReader = reader;
+    }
+
+    void SetOutputFileName(std::string &outFile) {
+        m_outputFileName = outFile;
+    }
+
+    const char *GetNameOfClass() { return "CloudMaskBinarization";}
+
+    typename OutImageSource::Pointer GetOutputImageSource() {
+        BuildOutputImageSource();
+        return (typename OutImageSource::Pointer)m_filter;
+    }
+
+    int GetInputImageResolution() {
+        m_inputReader->UpdateOutputInformation();
+        typename TInput::Pointer inputImage = m_inputReader->GetOutput();
+        return inputImage->GetSpacing()[0];
+    }
+
+    void WriteToOutputFile() {
+        if(!m_outputFileName.empty())
+        {
+            typename WriterType::Pointer writer;
+            writer = WriterType::New();
+            writer->SetFileName(m_outputFileName);
+            writer->SetInput(GetOutputImageSource()->GetOutput());
+            try
+            {
+                writer->Update();
+                typename TInput::Pointer image = m_inputReader->GetOutput();
+                typename TInput::SpacingType spacing = image->GetSpacing();
+                typename TInput::PointType origin = image->GetOrigin();
+                std::cout << "=================================" << std::endl;
+                std::cout << "Input Origin : " << origin[0] << " " << origin[1] << std::endl;
+                std::cout << "Input Spacing : " << spacing[0] << " " << spacing[1] << std::endl;
+                std::cout << "Size : " << image->GetLargestPossibleRegion().GetSize()[0] << " " <<
+                             image->GetLargestPossibleRegion().GetSize()[1] << std::endl;
+
+                typename TInput::SpacingType outspacing = m_filter->GetOutput()->GetSpacing();
+                typename TInput::PointType outorigin = m_filter->GetOutput()->GetOrigin();
+                std::cout << "Output Origin : " << outorigin[0] << " " << outorigin[1] << std::endl;
+                std::cout << "Output Spacing : " << outspacing[0] << " " << outspacing[1] << std::endl;
+                std::cout << "Size : " << m_filter->GetOutput()->GetLargestPossibleRegion().GetSize()[0] << " " <<
+                             m_filter->GetOutput()->GetLargestPossibleRegion().GetSize()[1] << std::endl;
+
+                std::cout  << "=================================" << std::endl;
+                std::cout << std::endl;
+            }
+            catch (itk::ExceptionObject& err)
+            {
+                std::cout << "ExceptionObject caught !" << std::endl;
+                std::cout << err << std::endl;
+                itkExceptionMacro("Error writing output");
+            }
+        }
+    }
+
+private:
+    void BuildOutputImageSource() {
+        m_filter = FilterType::New();
+        m_filter->SetInput(m_inputReader->GetOutput());
+    }
+
+    typename ImageSource::Pointer m_inputReader;
+    std::string m_outputFileName;
+    typename FilterType::Pointer m_filter;
+};
+
+#endif // CLOUDMASKBINARIZATION_H
