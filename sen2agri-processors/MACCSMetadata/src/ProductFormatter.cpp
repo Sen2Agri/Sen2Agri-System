@@ -27,13 +27,19 @@
 #define TIF_EXTENSION      ".TIF"
 #define JPEG_EXTENSION      ".jpg"
 
-#define REFLECTANCE_SUFFIX "SRFL"
-#define WEIGHTS_SUFFIX     "SWGT"
-#define DATES_SUFFIX       "MDAT"
-#define FLAGS_SUFFIX       "MFLG"
-#define LAI_REPR_SUFFIX    "SLAIR"
-#define LAI_FIT_SUFFIX     "SLAIF"
-#define PHENO_SUFFIX       "SNVDIMET"
+#define REFLECTANCE_SUFFIX              "SRFL"
+#define WEIGHTS_SUFFIX                  "SWGT"
+#define COMPOSITE_DATES_SUFFIX          "MDAT"
+#define COMPOSITE_FLAGS_SUFFIX          "MFLG"
+#define LAI_NDVI_SUFFIX                 "SNDVI"
+#define LAI_MDATE_SUFFIX                "SLAIMONODATE"
+#define LAI_MDATE_ERR_SUFFIX            "SLAIMONOERRDATE"
+#define LAI_REPR_SUFFIX                 "SLAIR"
+#define LAI_FIT_SUFFIX                  "SLAIF"
+#define PHENO_SUFFIX                    "SNVDIMET"
+#define LAI_MONO_DATE_FLAGS_SUFFIX      "MMDATEFLG"
+#define LAI_REPROC_FLAGS_SUFFIX         "MREPROCFLG"
+#define LAI_FITTED_FLAGS_SUFFIX         "MREPROCFLG"
 
 #define GENERIC_CS_TYPE     "GEOGRAPHIC"
 #define GENERIC_GEO_TABLES  "EPSG"
@@ -101,10 +107,16 @@ std::vector<CompositeBand> CompositeBandList = {
 };
 
 typedef enum{
-    REFLECTANCE_RASTER = 0,
-    WEIGHTS_RASTER,
-    FLAGS_MASK,
-    DATES_MASK,
+    COMPOSITE_REFLECTANCE_RASTER = 0,
+    COMPOSITE_WEIGHTS_RASTER,
+    COMPOSITE_FLAGS_MASK,
+    COMPOSITE_DATES_MASK,
+    LAI_NDVI_RASTER,
+    LAI_MONO_DATE_RASTER,
+    LAI_MONO_DATE_ERR_RASTER,
+    LAI_MONO_DATE_FLAGS,
+    LAI_REPROC_FLAGS,
+    LAI_FITTED_FLAGS,
     LAI_REPR_RASTER,
     LAI_FIT_RASTER,
     CROP_MASK_RASTER,
@@ -119,6 +131,7 @@ struct rasterInfo
     rasterTypes iRasterType;
     std::string strNewRasterFileName;
     std::string strTileID;
+    bool bIsQiData;
 };
 
 struct previewInfo
@@ -212,14 +225,32 @@ private:
         MandatoryOff("processor.composite.rgb");
  //vegetation parameters
 
-         AddParameter(ParameterType_InputFilenameList, "processor.vegetation.lairepr", "LAI REPR raster files list for vegetation  separated by TILE_{tile_id} delimiter");
-         MandatoryOff("processor.vegetation.lairepr");
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laindvi", "LAI NDVI raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.laindvi");
 
-         AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laifit", "LAI FIT raster files list for vegetation  separated by TILE_{tile_id} delimiter");
-         MandatoryOff("processor.vegetation.laifit");
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laimonodate", "LAI Mono-date raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.laimonodate");
 
-         AddParameter(ParameterType_InputFilenameList, "processor.vegetation.pheno", "Metric estimation raster files list for vegetation  separated by TILE_{tile_id} delimiter");
-         MandatoryOff("processor.vegetation.pheno");
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laimonodateerr", "LAI Mono-date Error raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.laimonodateerr");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laimdateflgs", "LAI Mono date flags raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.laimdateflgs");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laireprocflgs", "LAI Reprocessing flags raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.laireprocflgs");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laifitflgs", "LAI Fitted flags raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.laifitflgs");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.lairepr", "LAI REPR raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.lairepr");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laifit", "LAI FIT raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.laifit");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.pheno", "Metric estimation raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.pheno");
 
 //crop type parameters
         AddParameter(ParameterType_InputFilenameList, "processor.croptype.file", "CROP TYPE raster file  separated by TILE_{tile_id} delimiter");
@@ -283,17 +314,17 @@ private:
            // Get reflectance raster file list
           rastersList = this->GetParameterStringList("processor.composite.refls");
           //unpack and add them in global raster list
-          UnpackRastersList(rastersList, REFLECTANCE_RASTER);
+          UnpackRastersList(rastersList, COMPOSITE_REFLECTANCE_RASTER, false);
 
           //get weights rasters list
           rastersList = this->GetParameterStringList("processor.composite.weights");
-          UnpackRastersList(rastersList, WEIGHTS_RASTER);
+          UnpackRastersList(rastersList, COMPOSITE_WEIGHTS_RASTER, true);
 
           rastersList = this->GetParameterStringList("processor.composite.flags");
-          UnpackRastersList(rastersList, FLAGS_MASK);
+          UnpackRastersList(rastersList, COMPOSITE_FLAGS_MASK, true);
 
           rastersList = this->GetParameterStringList("processor.composite.dates");
-          UnpackRastersList(rastersList, DATES_MASK);
+          UnpackRastersList(rastersList, COMPOSITE_DATES_MASK, true);
 
           rastersList = this->GetParameterStringList("processor.composite.rgb");
           std::string strTileID("");
@@ -321,17 +352,36 @@ private:
       {
           // Get LAIREPR raster file list
           std::vector<std::string> rastersList;
-          rastersList = this->GetParameterStringList("processor.vegetation.lairepr");
-          UnpackRastersList(rastersList, LAI_REPR_RASTER);
 
+          rastersList = this->GetParameterStringList("processor.vegetation.laindvi");
+          UnpackRastersList(rastersList, LAI_NDVI_RASTER, true);
+
+          rastersList = this->GetParameterStringList("processor.vegetation.laimonodate");
+          UnpackRastersList(rastersList, LAI_MONO_DATE_RASTER, true);
+
+          rastersList = this->GetParameterStringList("processor.vegetation.laimonodateerr");
+          UnpackRastersList(rastersList, LAI_MONO_DATE_ERR_RASTER, true);
+
+          rastersList = this->GetParameterStringList("processor.vegetation.laimdateflgs");
+          UnpackRastersList(rastersList, LAI_MONO_DATE_FLAGS, true);
+
+          rastersList = this->GetParameterStringList("processor.vegetation.laireprocflgs");
+          UnpackRastersList(rastersList, LAI_REPROC_FLAGS, true);
+
+          rastersList = this->GetParameterStringList("processor.vegetation.laifitflgs");
+          UnpackRastersList(rastersList, LAI_FITTED_FLAGS, true);
+
+          // LAI Reprocessed raster files list
+          rastersList = this->GetParameterStringList("processor.vegetation.lairepr");
+          UnpackRastersList(rastersList, LAI_REPR_RASTER, false);
 
           //get LAIFIT raster files list
           rastersList = this->GetParameterStringList("processor.vegetation.laifit");
-          UnpackRastersList(rastersList, LAI_FIT_RASTER);
+          UnpackRastersList(rastersList, LAI_FIT_RASTER, false);
 
           //get PHENO raster files list
           rastersList = this->GetParameterStringList("processor.vegetation.pheno");
-          UnpackRastersList(rastersList, PHENO_RASTER);
+          UnpackRastersList(rastersList, PHENO_RASTER, false);
 
      }
 
@@ -341,7 +391,7 @@ private:
 
           std::vector<std::string> rastersList;
           rastersList = this->GetParameterStringList("processor.cropmask.file");
-          UnpackRastersList(rastersList, CROP_MASK_RASTER);
+          UnpackRastersList(rastersList, CROP_MASK_RASTER, false);
 
 
           //get quality file list
@@ -354,7 +404,7 @@ private:
           // Get reflectance raster file list
           std::vector<std::string> rastersList;
           rastersList = this->GetParameterStringList("processor.croptype.file");
-          UnpackRastersList(rastersList, CROP_TYPE_RASTER);
+          UnpackRastersList(rastersList, CROP_TYPE_RASTER, false);
 
           //get quality file list
           m_qualityList = this->GetParameterStringList("processor.croptype.quality");
@@ -470,7 +520,6 @@ private:
 
           generateTileMetadataFile(tileInfoEl, strTileName);
           TransferRasterFiles(tileInfoEl);
-
       }
 
       //create product metadata file
@@ -479,17 +528,16 @@ private:
           //TransferAndRenameGIPPFiles();
           TransferAndRenameQualityFiles();
           FillProductMetadataForATile(tileInfoEl, strMainFolderFullPath + "/" + ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, METADATA_CATEG) + ".xml");
-
       }
-
  }
 
-  void UnpackRastersList(std::vector<std::string> &rastersList, rasterTypes rasterType)
+  void UnpackRastersList(std::vector<std::string> &rastersList, rasterTypes rasterType, bool bIsQiData)
   {
       rasterInfo rasterInfoEl;
       std::string strTileID("");
       bool bAlreadyExist = false;
 
+      rasterInfoEl.bIsQiData = bIsQiData;
       for (const auto &rasterFileEl : rastersList) {
           if(rasterFileEl.compare(0, 5, "TILE_") == 0)
           {
@@ -517,7 +565,6 @@ private:
               rasterInfoEl.strTileID = strTileID;
               m_rasterInfoList.emplace_back(rasterInfoEl);
           }
-
       }
   }
 
@@ -770,13 +817,11 @@ private:
       strTile = ReplaceString(strTile, TILE_LEGACY_FOLDER_CATEG, METADATA_CATEG);
 
       tileInfoEl.tileMetadata.TileID = strTile;
+      tileInfoEl.tileMetadata.ProductLevel = "Level-"  + m_strProductLevel;
 
       for (rasterInfo &rasterFileEl : m_rasterInfoList) {
-          if((rasterFileEl.strTileID == tileInfoEl.strTileID) &&
-             (rasterFileEl.iRasterType != FLAGS_MASK) &&
-             (rasterFileEl.iRasterType != DATES_MASK))
+          if((rasterFileEl.strTileID == tileInfoEl.strTileID) && !rasterFileEl.bIsQiData)
           {
-
               //std::cout << "ImageFileReader =" << rasterFileEl.strRasterFileName << std::endl;
 
               auto imageReader = ImageFileReader<FloatVectorImageType>::New();
@@ -786,10 +831,7 @@ private:
 
               iResolution = output->GetSpacing()[0];
 
-              if((!bPreview) && (((rasterFileEl.iRasterType == REFLECTANCE_RASTER) && (iResolution == 10)) ||
-                                (rasterFileEl.iRasterType == LAI_REPR_RASTER) ||
-                                (rasterFileEl.iRasterType == CROP_TYPE_RASTER) ||
-                                (rasterFileEl.iRasterType == CROP_MASK_RASTER)))
+              if((!bPreview) && IsPreviewNeeded(rasterFileEl, iResolution))
               {
                 previewInfo previewInfoEl;
                 previewInfoEl.strPreviewFileName = rasterFileEl.strRasterFileName;
@@ -798,7 +840,7 @@ private:
                 bPreview = true;
               }
 
-              if(rasterFileEl.iRasterType != REFLECTANCE_RASTER)
+              if(rasterFileEl.iRasterType != COMPOSITE_REFLECTANCE_RASTER)
               {
                   //bands no = output->GetNumberOfComponentsPerPixel()
                   Band bandEl;
@@ -910,7 +952,7 @@ private:
 
       TileMask tileMask;
       for (const auto &rasterFileEl : m_rasterInfoList) {
-         if((rasterFileEl.strTileID == tileInfoEl.strTileID) && ((rasterFileEl.iRasterType == FLAGS_MASK) || (rasterFileEl.iRasterType == DATES_MASK)))
+         if((rasterFileEl.strTileID == tileInfoEl.strTileID) && rasterFileEl.bIsQiData)
          {
               tileMask.MaskType = "";// ??? TODO
               tileMask.BandId = 0;
@@ -1046,8 +1088,7 @@ private:
       m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.BlueChannel = 0;
 
       if ((m_strProductLevel.compare("L2A") == 0) ||
-          (m_strProductLevel.compare("L3A") == 0) ||
-          (m_strProductLevel.compare("L3B") == 0))
+          (m_strProductLevel.compare("L3A") == 0))
       {
           std::cout << "Red, green and blue" << std::endl;
           m_productMetadata.GeneralInfo.ProductImageCharacteristics.ImageDisplayOrder.RedChannel = 3;
@@ -1101,7 +1142,7 @@ private:
       granuleEl.ImageFormat = IMAGE_FORMAT;
       //fill the TIFF files for current tile
       for (const auto &rasterFileEl : m_rasterInfoList) {
-          if((rasterFileEl.strTileID == tileInfoEl.strTileID) && (rasterFileEl.iRasterType != FLAGS_MASK) & (rasterFileEl.iRasterType != DATES_MASK))
+          if((rasterFileEl.strTileID == tileInfoEl.strTileID) && !rasterFileEl.bIsQiData)
           {
             granuleEl.ImageIDList.emplace_back(rasterFileEl.strNewRasterFileName);
 
@@ -1158,12 +1199,20 @@ private:
           strNewRasterFileName = ReplaceString(strNewRasterFileName, "_N" + m_strBaseline, "");
           switch(rasterFileEl.iRasterType)
               {
-                case REFLECTANCE_RASTER:
+                case COMPOSITE_REFLECTANCE_RASTER:
                   strNewRasterFileName = strNewRasterFileName + "_" + REFLECTANCE_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
-
                   break;
-                case WEIGHTS_RASTER:
+                case COMPOSITE_WEIGHTS_RASTER:
                   strNewRasterFileName = strNewRasterFileName + "_" + WEIGHTS_SUFFIX + TIF_EXTENSION;
+                  break;
+                case LAI_NDVI_RASTER:
+                  strNewRasterFileName = strNewRasterFileName + "_" + LAI_NDVI_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
+                  break;
+                case LAI_MONO_DATE_RASTER:
+                  strNewRasterFileName = strNewRasterFileName + "_" + LAI_MDATE_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
+                  break;
+                case LAI_MONO_DATE_ERR_RASTER:
+                  strNewRasterFileName = strNewRasterFileName + "_" + LAI_MDATE_ERR_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
                   break;
                 case LAI_REPR_RASTER:
                    strNewRasterFileName = strNewRasterFileName + "_" + LAI_REPR_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
@@ -1178,13 +1227,27 @@ private:
                 case CROP_MASK_RASTER:
                    strNewRasterFileName= strNewRasterFileName + TIF_EXTENSION;
                    break;
-                case DATES_MASK:
+                case COMPOSITE_DATES_MASK:
                   strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
-                  strNewRasterFileName = strNewRasterFileName + "_" + DATES_SUFFIX + TIF_EXTENSION;
+                  strNewRasterFileName = strNewRasterFileName + "_" + COMPOSITE_DATES_SUFFIX + TIF_EXTENSION;
                   break;
-                case FLAGS_MASK:
+                case COMPOSITE_FLAGS_MASK:
                   strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
-                  strNewRasterFileName = strNewRasterFileName + "_" + FLAGS_SUFFIX + TIF_EXTENSION;
+                  strNewRasterFileName = strNewRasterFileName + "_" + COMPOSITE_FLAGS_SUFFIX + TIF_EXTENSION;
+                  break;
+
+// TODO: Here we should use also the date for the mono date
+                case LAI_MONO_DATE_FLAGS:
+                  strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                  strNewRasterFileName = strNewRasterFileName + "_" + LAI_MONO_DATE_FLAGS_SUFFIX + TIF_EXTENSION;
+                  break;
+                case LAI_REPROC_FLAGS:
+                  strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                  strNewRasterFileName = strNewRasterFileName + "_" + LAI_REPROC_FLAGS_SUFFIX + TIF_EXTENSION;
+                  break;
+                case LAI_FITTED_FLAGS:
+                  strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                  strNewRasterFileName = strNewRasterFileName + "_" + LAI_FITTED_FLAGS_SUFFIX + TIF_EXTENSION;
                   break;
               }
               rasterFileEl.strNewRasterFileName = strNewRasterFileName;
@@ -1202,26 +1265,12 @@ private:
       for (const auto &rasterFileEl : m_rasterInfoList) {
           if(tileInfoEl.strTileID == rasterFileEl.strTileID)
           {
-              switch(rasterFileEl.iRasterType)
-              {
-                case REFLECTANCE_RASTER:
-                //case WEIGHTS_RASTER:
-                case LAI_REPR_RASTER:
-                case LAI_FIT_RASTER:
-                case PHENO_RASTER:
-                case CROP_TYPE_RASTER:
-                case CROP_MASK_RASTER:
-                  strImgDataPath = tileInfoEl.strTilePath + "/" + IMG_DATA_FOLDER_NAME;
-                  break;
-
-                case WEIGHTS_RASTER:
-                case DATES_MASK:
-                case FLAGS_MASK:
+              if(rasterFileEl.bIsQiData) {
                   strImgDataPath = tileInfoEl.strTilePath + "/" + QI_DATA_FOLDER_NAME;
-                  break;
+              } else {
+                  strImgDataPath = tileInfoEl.strTilePath + "/" + IMG_DATA_FOLDER_NAME;
               }
-
-               CopyFile(strImgDataPath + "/" + rasterFileEl.strNewRasterFileName, rasterFileEl.strRasterFileName);
+              CopyFile(strImgDataPath + "/" + rasterFileEl.strNewRasterFileName, rasterFileEl.strRasterFileName);
           }
         }
    }
@@ -1390,6 +1439,14 @@ private:
               itkExceptionMacro("Unable to read metadata from " << desc);
           }
       }
+  }
+
+  bool IsPreviewNeeded(const rasterInfo &rasterFileEl, int nRes) {
+        if(rasterFileEl.bIsQiData ||
+           ((rasterFileEl.iRasterType == COMPOSITE_REFLECTANCE_RASTER) && (nRes != 10))) {
+            return false;
+        }
+        return true;
   }
 
 
