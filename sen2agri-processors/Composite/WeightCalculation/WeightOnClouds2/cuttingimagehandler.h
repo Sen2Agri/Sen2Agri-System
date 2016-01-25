@@ -19,7 +19,7 @@ public:
     typedef otb::ExtractROI<typename TInput1::InternalPixelType,
                             typename TInput2::PixelType>     ExtractROIFilterType;
 
-    typedef typename ExtractROIFilterType::Superclass::Superclass::Superclass OutImageSource;
+    typedef typename itk::ImageSource<TInput2> OutImageSource;
 
 public:
     CuttingImageHandler() {

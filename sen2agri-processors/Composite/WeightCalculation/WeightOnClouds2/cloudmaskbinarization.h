@@ -48,7 +48,7 @@ public:
 
 
     typedef itk::ImageSource<TInput> ImageSource;
-    typedef typename FilterType::Superclass::Superclass::Superclass OutImageSource;
+    typedef typename itk::ImageSource<TOutput> OutImageSource;
 
     typedef otb::ImageFileReader<TInput> ReaderType;
     typedef otb::ImageFileWriter<TOutput> WriterType;

@@ -18,7 +18,7 @@ public:
     typedef itk::ImageSource<TInput2> ResampledImageSource;
     typedef itk::ZeroFluxNeumannPadImageFilter<TInput2, TInput2> EdgePaddingResizer;
 
-    typedef typename EdgePaddingResizer::Superclass::Superclass::Superclass::Superclass OutImageSource;
+    typedef typename itk::ImageSource<TInput2> OutImageSource;
 
 public:
     PaddingImageHandler() {

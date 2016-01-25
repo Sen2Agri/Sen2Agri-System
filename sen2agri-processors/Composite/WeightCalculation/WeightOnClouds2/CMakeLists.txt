@@ -3,10 +3,10 @@ otb_create_application(
   SOURCES        cloudmaskbinarization.h
                  cloudsinterpolation.h
                  gaussianfilter.h
-                 cloudweightcomputation.cpp
-                 weightoncloudsapp.cpp
+                 cloudweightcomputation.h
                  paddingimagehandler.h
                  cuttingimagehandler.h
+                 weightoncloudsapp.cpp
   LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
 
 if(BUILD_TESTING)

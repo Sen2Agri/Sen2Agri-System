@@ -6,49 +6,26 @@ CloudWeightComputation::CloudWeightComputation()
 
 void CloudWeightComputation::SetInputFileName1(std::string &inputImageStr)
 {
-    if (inputImageStr.empty())
-    {
+    if (inputImageStr.empty()) {
         std::cout << "No input Image set...; please set the input image!" << std::endl;
         itkExceptionMacro("No input Image set...; please set the input image");
     }
     // Read the image
     ReaderType::Pointer reader = ReaderType::New();
     reader->SetFileName(inputImageStr);
-    try
-    {
-        //reader->Update();
-        //m_image1 = reader->GetOutput();
-        m_inputReader1 = reader;
-    }
-    catch (itk::ExceptionObject& err)
-    {
-        std::cout << "ExceptionObject caught !" << std::endl;
-        std::cout << err << std::endl;
-        itkExceptionMacro("Error reading input");
-    }
+    m_inputReader1 = reader;
 }
 
 void CloudWeightComputation::SetInputFileName2(std::string &inputImageStr)
 {
-    if (inputImageStr.empty())
-    {
+    if (inputImageStr.empty()) {
         std::cout << "No input Image set...; please set the input image!" << std::endl;
         itkExceptionMacro("No input Image set...; please set the input image");
     }
     // Read the image
     ReaderType::Pointer reader = ReaderType::New();
     reader->SetFileName(inputImageStr);
-    try
-    {
-        //reader->Update();
-        m_inputReader2 = reader;
-    }
-    catch (itk::ExceptionObject& err)
-    {
-        std::cout << "ExceptionObject caught !" << std::endl;
-        std::cout << err << std::endl;
-        itkExceptionMacro("Error reading input");
-    }
+    m_inputReader2 = reader;
 }
 
 void CloudWeightComputation::SetInputImageReader1(CloudWeightComputation::ImageSource::Pointer inputReader)

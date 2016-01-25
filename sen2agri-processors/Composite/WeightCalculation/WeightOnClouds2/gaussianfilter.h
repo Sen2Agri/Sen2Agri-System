@@ -21,7 +21,7 @@ public:
           ImageType, ImageType>  DiscreteGaussianFilterType;
 
     typedef itk::ImageSource<TInput> ImageSource;
-    typedef DiscreteGaussianFilterType::Superclass::Superclass OutImageSource;
+    typedef itk::ImageSource<ImageType> OutImageSource;
 
 public:
     GaussianFilter() {

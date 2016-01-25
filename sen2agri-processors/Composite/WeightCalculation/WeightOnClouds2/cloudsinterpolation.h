@@ -32,7 +32,7 @@ public:
     typedef typename ScalableTransformType::OutputVectorType                         OutputVectorType;
 
     typedef itk::ImageSource<TInput> ImageSource;
-    typedef typename ResampleFilterType::Superclass::Superclass OutImageSource;
+    typedef typename itk::ImageSource<TOutput> OutImageSource;
 
 public:
     CloudsInterpolation() {
@@ -41,6 +41,7 @@ public:
         m_outForcedHeight = -1;
         m_inputRes = -1;
         m_outputRes = -1;
+        m_BCORadius = 2;
     }
 
     void SetOutputFileName(std::string &outFile) {
@@ -107,7 +108,7 @@ public:
     }
 
     void SetBicubicInterpolatorRadius(int bcoRadius) {
-        m_ImageResampler.SetBicubicInterpolatorParameters(bcoRadius);
+        m_BCORadius = bcoRadius;
     }
 
     const char *GetNameOfClass() { return "CloudsInterpolation";}
@@ -176,11 +177,13 @@ private:
         OutputVectorType scale;
         scale[0] = scaleXY;
         scale[1] = scaleXY;
+        m_ImageResampler.SetBicubicInterpolatorParameters(m_BCORadius);
         m_Resampler = m_ImageResampler.getResampler(
                     inputImage, scale, m_outForcedWidth, m_outForcedHeight, m_interpolator);
     }
 
     typename ImageSource::Pointer m_inputReader;
+    int m_BCORadius;
     int m_inputRes;
     int m_outputRes;
     Interpolator_Type m_interpolator;

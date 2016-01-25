@@ -42,37 +42,119 @@ public:
 };
 }
 
+template <typename TInput, typename TOutput=TInput>
 class CloudWeightComputation
 {
 public:
-    typedef otb::Wrapper::FloatImageType ImageType;
-    typedef itk::BinaryFunctorImageFilter< ImageType, ImageType, ImageType,
-                              Functor::WeightOnCloudsCalculation<ImageType::PixelType> > FilterType;
-    typedef otb::ImageFileReader<ImageType> ReaderType;
-    typedef otb::ImageFileWriter<ImageType> WriterType;
+    //typedef otb::Wrapper::FloatImageType ImageType;
+    typedef itk::BinaryFunctorImageFilter< TInput, TInput, TOutput,
+                              Functor::WeightOnCloudsCalculation<typename TOutput::PixelType> > FilterType;
+    typedef otb::ImageFileReader<TInput> ReaderType;
+    typedef otb::ImageFileWriter<TOutput> WriterType;
 
-    typedef itk::ImageSource<ImageType> ImageSource;
-    typedef FilterType::Superclass::Superclass OutImageSource;
+    typedef itk::ImageSource<TInput> ImageSource;
+    typedef typename itk::ImageSource<TOutput> OutImageSource;
 
 public:
-    CloudWeightComputation();
+    CloudWeightComputation() {}
 
-    void SetInputFileName1(std::string &inputImageStr);
-    void SetInputFileName2(std::string &inputImageStr);
-    void SetInputImageReader1(ImageSource::Pointer inputReader);
-    void SetInputImageReader2(ImageSource::Pointer inputReader);
-    void SetOutputFileName(std::string &outFile);
+    void SetInputFileName1(std::string &inputImageStr) {
+        if (inputImageStr.empty()) {
+            std::cout << "No input Image set...; please set the input image!" << std::endl;
+            itkExceptionMacro("No input Image set...; please set the input image");
+        }
+        // Read the image
+        typename ReaderType::Pointer reader = ReaderType::New();
+        reader->SetFileName(inputImageStr);
+        m_inputReader1 = reader;
+    }
 
-    const char *GetNameOfClass() { return "WeightOnClouds";}
-    OutImageSource::Pointer GetOutputImageSource();
-    void WriteToOutputFile();
+    void SetInputFileName2(std::string &inputImageStr) {
+        if (inputImageStr.empty()) {
+            std::cout << "No input Image set...; please set the input image!" << std::endl;
+            itkExceptionMacro("No input Image set...; please set the input image");
+        }
+        // Read the image
+        typename ReaderType::Pointer reader = ReaderType::New();
+        reader->SetFileName(inputImageStr);
+        m_inputReader2 = reader;
+    }
+
+    void SetInputImageReader1(typename ImageSource::Pointer inputReader) {
+        if (inputReader.IsNull())
+        {
+            std::cout << "No input Image set...; please set the input image!" << std::endl;
+            itkExceptionMacro("No input Image set...; please set the input image");
+        }
+        m_inputReader1 = inputReader;
+    }
+
+    void SetInputImageReader2(typename ImageSource::Pointer inputReader) {
+        if (inputReader.IsNull())
+        {
+            std::cout << "No input Image set...; please set the input image!" << std::endl;
+            itkExceptionMacro("No input Image set...; please set the input image");
+        }
+        m_inputReader2 = inputReader;
+    }
+
+    void SetOutputFileName(std::string &outFile) { m_outputFileName = outFile; }
+
+    const char *GetNameOfClass() { return "CloudWeightComputation";}
+    typename OutImageSource::Pointer GetOutputImageSource() {
+        BuildOutputImageSource();
+        return (typename OutImageSource::Pointer)m_filter;
+    }
+
+    void WriteToOutputFile() {
+        if(!m_outputFileName.empty())
+        {
+            typename WriterType::Pointer writer;
+            writer = WriterType::New();
+            writer->SetFileName(m_outputFileName);
+            writer->SetInput(GetOutputImageSource()->GetOutput());
+            try
+            {
+                writer->Update();
+                typename TInput::Pointer image1 = m_inputReader1->GetOutput();
+                typename TInput::SpacingType spacing = image1->GetSpacing();
+                typename TInput::PointType origin = image1->GetOrigin();
+                std::cout << "=============CLOUD WEIGHT COMPUTATION====================" << std::endl;
+                std::cout << "Origin : " << origin[0] << " " << origin[1] << std::endl;
+                std::cout << "Spacing : " << spacing[0] << " " << spacing[1] << std::endl;
+                typename TInput::SpacingType outspacing = m_filter->GetOutput()->GetSpacing();
+                std::cout << "Size : " << image1->GetLargestPossibleRegion().GetSize()[0] << " " <<
+                             image1->GetLargestPossibleRegion().GetSize()[1] << std::endl;
+
+                typename TOutput::PointType outorigin = m_filter->GetOutput()->GetOrigin();
+                std::cout << "Output Origin : " << outorigin[0] << " " << outorigin[1] << std::endl;
+                std::cout << "Output Spacing : " << outspacing[0] << " " << outspacing[1] << std::endl;
+                std::cout << "Size : " << m_filter->GetOutput()->GetLargestPossibleRegion().GetSize()[0] << " " <<
+                             m_filter->GetOutput()->GetLargestPossibleRegion().GetSize()[1] << std::endl;
+
+                std::cout  << "=================================" << std::endl;
+                std::cout << std::endl;
+            }
+            catch (itk::ExceptionObject& err)
+            {
+                std::cout << "ExceptionObject caught !" << std::endl;
+                std::cout << err << std::endl;
+                itkExceptionMacro("Error writing output");
+            }
+        }
+    }
 
 private:
-    void BuildOutputImageSource();
-    ImageSource::Pointer m_inputReader1;
-    ImageSource::Pointer m_inputReader2;
+    void BuildOutputImageSource() {
+        m_filter = FilterType::New();
+        m_filter->SetInput1(m_inputReader1->GetOutput());
+        m_filter->SetInput2(m_inputReader2->GetOutput());
+    }
+
+    typename ImageSource::Pointer m_inputReader1;
+    typename ImageSource::Pointer m_inputReader2;
     std::string m_outputFileName;
-    FilterType::Pointer m_filter;
+    typename FilterType::Pointer m_filter;
 };
 
 #endif // WEIGHTONCLOUDS_H

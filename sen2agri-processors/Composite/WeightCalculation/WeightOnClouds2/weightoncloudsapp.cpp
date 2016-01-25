@@ -115,8 +115,7 @@ private:
   void DoExecute()
   {
       bool bRoiCutOversampledImgs = true;
-      bool test = false;
-      bool bWriteDebugFiles = true;
+      bool bWriteDebugFiles = false;
 
     // Get the input image list
     std::string inCldFileName = GetParameterString("incldmsk");
@@ -138,41 +137,26 @@ private:
 
     long inImageWidth, inImageHeight;
 
+    m_cloudMaskBinarization.SetInputFileName(inCldFileName);
+
+    m_underSampler.SetInputImageReader(m_cloudMaskBinarization.GetOutputImageSource());
     m_underSampler.SetOutputResolution(coarseResolution);
-
-    if(test) {
-        std::string inXml = GetParameterAsString("inxml");
-        auto factory = MetadataHelperFactory::New();
-        auto pHelper = factory->GetMetadataHelper(inXml);
-        std::string cldFileName = pHelper->GetCloudImageFileName();
-        itkWarningMacro(<< "Cld file name: " << cldFileName);
-
-        m_underSampler.SetInputFileName(cldFileName);
-        m_cloudMaskBinarization.SetInputImageReader(m_underSampler.GetOutputImageSource());
-        // Compute the DistLargeCloud, Low Res
-        m_gaussianFilterSmallCloud.SetInputImageReader(m_cloudMaskBinarization.GetOutputImageSource());
-        m_gaussianFilterLargeCloud.SetInputImageReader(m_cloudMaskBinarization.GetOutputImageSource());
-    } else {
-        m_cloudMaskBinarization.SetInputFileName(inCldFileName);
-        m_underSampler.SetInputImageReader(m_cloudMaskBinarization.GetOutputImageSource());
-        // TODO: compute dynamically this value
-        m_underSampler.SetBicubicInterpolatorRadius(24);
-
-        m_padding1.SetInputImageReader(m_cloudMaskBinarization.GetOutputImageSource(), m_underSampler.GetOutputImageSource());
-
-        m_cloudMaskBinarization2.SetInputImageReader(m_padding1.GetOutputImageSource());
-        m_cloudMaskBinarization2.SetThreshold(0.5f);
-
-        // Compute the DistLargeCloud, Low Res
-        m_gaussianFilterSmallCloud.SetInputImageReader(m_cloudMaskBinarization2.GetOutputImageSource());
-        m_gaussianFilterLargeCloud.SetInputImageReader(m_cloudMaskBinarization2.GetOutputImageSource());
-    }
-
     m_underSampler.SetInputResolution(inputCloudMaskResolution);
     if(inputCloudMaskResolution == -1) {
         inputCloudMaskResolution = m_underSampler.GetInputImageResolution();
     }
+    // compute dynamically the BCO radius - it is = (2 * (coarseRes/inputRes))
+    m_underSampler.SetBicubicInterpolatorRadius(2*(coarseResolution/inputCloudMaskResolution));
     m_underSampler.GetInputImageDimension(inImageWidth, inImageHeight);
+
+    m_padding1.SetInputImageReader(m_cloudMaskBinarization.GetOutputImageSource(), m_underSampler.GetOutputImageSource());
+
+    m_cloudMaskBinarization2.SetInputImageReader(m_padding1.GetOutputImageSource());
+    m_cloudMaskBinarization2.SetThreshold(0.5f);
+
+    // Compute the DistLargeCloud, Low Res
+    m_gaussianFilterSmallCloud.SetInputImageReader(m_cloudMaskBinarization2.GetOutputImageSource());
+    m_gaussianFilterLargeCloud.SetInputImageReader(m_cloudMaskBinarization2.GetOutputImageSource());
 
     m_gaussianFilterSmallCloud.SetSigma(sigmaSmallCloud);
     m_gaussianFilterSmallCloud.SetKernelWidth(gaussianKernelWidth);
@@ -230,9 +214,7 @@ private:
         std::string coarseResStr = std::to_string(coarseResolution);
         std::string inputResStr = std::to_string(inputCloudMaskResolution);
 
-        std::string binarizedFile = strBaseName +
-                (test ? "_binarized_clouds_" + coarseResStr + "m.tif" :
-                        "_1_binarized_clouds_" + inputResStr + "m.tif");
+        std::string binarizedFile = strBaseName + "_1_binarized_clouds_" + inputResStr + "m.tif";
         m_cloudMaskBinarization.SetOutputFileName(binarizedFile);
         m_cloudMaskBinarization.WriteToOutputFile();
 
@@ -292,7 +274,7 @@ private:
   GaussianFilter<otb::Wrapper::FloatImageType, otb::Wrapper::FloatImageType> m_gaussianFilterLargeCloud;
   CloudsInterpolation<otb::Wrapper::FloatImageType, otb::Wrapper::FloatImageType> m_overSamplerSmallCloud;
   CloudsInterpolation<otb::Wrapper::FloatImageType, otb::Wrapper::FloatImageType> m_overSamplerLargeCloud;
-  CloudWeightComputation m_cloudWeightComputation;
+  CloudWeightComputation<otb::Wrapper::FloatImageType, otb::Wrapper::FloatImageType> m_cloudWeightComputation;
 
   PaddingImageHandler<otb::Wrapper::FloatImageType, otb::Wrapper::FloatImageType> m_padding1;
 
