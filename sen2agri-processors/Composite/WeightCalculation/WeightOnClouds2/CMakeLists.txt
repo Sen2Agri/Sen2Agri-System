@@ -6,6 +6,7 @@ otb_create_application(
                  cloudweightcomputation.cpp
                  weightoncloudsapp.cpp
                  paddingimagehandler.h
+                 cuttingimagehandler.h
   LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
 
 if(BUILD_TESTING)

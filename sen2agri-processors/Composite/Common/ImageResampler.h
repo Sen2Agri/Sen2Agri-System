@@ -58,6 +58,11 @@ public:
         m_fBCOAlpha = -0.5;
     }
 
+    void SetBicubicInterpolatorParameters(int BCORadius, float BCOAlpha = -0.5) {
+        m_BCORadius = BCORadius;
+        m_fBCOAlpha = BCOAlpha;
+    }
+
 
 ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWidth,
                           const int wantedHeight, Interpolator_Type interpolator=Interpolator_Linear)
@@ -127,8 +132,8 @@ ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWid
 
          typename TOutput::PointType origin = image->GetOrigin();
          typename TOutput::PointType outputOrigin;
-         outputOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale[0] - 1.0);
-         outputOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0);
+         outputOrigin[0] = std::round(origin[0] + 0.5 * spacing[0] * (scale[0] - 1.0));
+         outputOrigin[1] = std::round(origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0));
 
          resampler->SetOutputOrigin(outputOrigin);
          resampler->SetTransform(transform);
@@ -140,8 +145,11 @@ ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWid
              recomputedSize[0] = forcedWidth;
              recomputedSize[1] = forcedHeight;
          } else {
+//            recomputedSize[0] = vcl_ceil(image->GetLargestPossibleRegion().GetSize()[0] / scale[0]);
+//            recomputedSize[1] = vcl_ceil(image->GetLargestPossibleRegion().GetSize()[1] / scale[1]);
             recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
             recomputedSize[1] = image->GetLargestPossibleRegion().GetSize()[1] / scale[1];
+
          }
 
          resampler->SetOutputSize(recomputedSize);
@@ -152,11 +160,6 @@ ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWid
              defaultValue = NO_DATA_VALUE;
          }
          resampler->SetEdgePaddingValue(defaultValue);
-
-    //     recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
-    //     recomputedSize[1] = image->GetLargestPossibleRegion().GetSize()[1] / scale[1];
-
-    //     resampler->SetOutputSize(recomputedSize);
 
          m_ResamplersList->PushBack(resampler);
          return resampler;

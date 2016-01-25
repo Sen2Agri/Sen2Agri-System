@@ -69,7 +69,7 @@ public:
                 ImageType::Pointer inputImage = m_inputReader->GetOutput();
                 ImageType::SpacingType spacing = inputImage->GetSpacing();
                 ImageType::PointType origin = inputImage->GetOrigin();
-                std::cout << "=================================" << std::endl;
+                std::cout << "===============GAUSSIAN==================" << std::endl;
                 std::cout << "Origin : " << origin[0] << " " << origin[1] << std::endl;
                 std::cout << "Spacing : " << spacing[0] << " " << spacing[1] << std::endl;
                 std::cout << "Size : " << inputImage->GetLargestPossibleRegion().GetSize()[0] << " " <<

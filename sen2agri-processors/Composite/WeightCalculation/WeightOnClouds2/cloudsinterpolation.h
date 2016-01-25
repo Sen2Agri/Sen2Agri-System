@@ -37,8 +37,6 @@ public:
 public:
     CloudsInterpolation() {
         m_interpolator = Interpolator_BCO;
-        m_BCORadius = 24;
-        m_fBCOAlpha = -0.5;
         m_outForcedWidth = -1;
         m_outForcedHeight = -1;
         m_inputRes = -1;
@@ -109,7 +107,7 @@ public:
     }
 
     void SetBicubicInterpolatorRadius(int bcoRadius) {
-        m_BCORadius = bcoRadius;
+        m_ImageResampler.SetBicubicInterpolatorParameters(bcoRadius);
     }
 
     const char *GetNameOfClass() { return "CloudsInterpolation";}
@@ -136,7 +134,7 @@ public:
                 writer->Update();
                 typename TOutput::SpacingType spacing = m_inputReader->GetOutput()->GetSpacing();
                 typename TOutput::PointType origin = m_inputReader->GetOutput()->GetOrigin();
-                std::cout << "=================================" << std::endl;
+                std::cout << "==============CLOUD INTERPOLATION===================" << std::endl;
                 std::cout << "Origin : " << origin[0] << " " << origin[1] << std::endl;
                 std::cout << "Spacing : " << spacing[0] << " " << spacing[1] << std::endl;
                 std::cout << "Size : " << m_inputReader->GetOutput()->GetLargestPossibleRegion().GetSize()[0] << " " <<
@@ -185,8 +183,6 @@ private:
     typename ImageSource::Pointer m_inputReader;
     int m_inputRes;
     int m_outputRes;
-    unsigned int m_BCORadius;
-    float m_fBCOAlpha;
     Interpolator_Type m_interpolator;
     ImageResampler<TInput, TOutput>     m_ImageResampler;
     typename ImageResampler<TInput, TOutput>::ResamplerPtr m_Resampler;

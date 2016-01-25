@@ -16,6 +16,7 @@ class BinarizeCloudMask
 public:
     BinarizeCloudMask() { m_fThreshold = 0.0; }
     ~BinarizeCloudMask() {}
+    void SetThreshold(float fThreshold) { m_fThreshold = fThreshold; }
   bool operator!=( const BinarizeCloudMask & ) const
     {
     return false;
@@ -29,7 +30,7 @@ public:
       float val = static_cast< float >( A );
       int nRoundedVal = std::round(val);
 
-      return ((nRoundedVal == NO_DATA_VALUE) ? NO_DATA_VALUE : ((val > (m_fThreshold + EPSILON)) ? 0.0 : 1.0));
+      return ((nRoundedVal == NO_DATA_VALUE) ? NO_DATA_VALUE : ((val > (m_fThreshold + EPSILON)) ? 1.0 : 0.0));
     }
 private:
     float m_fThreshold;
@@ -53,7 +54,9 @@ public:
     typedef otb::ImageFileWriter<TOutput> WriterType;
 
 public:
-    CloudMaskBinarization() {}
+    CloudMaskBinarization() {
+        m_fThreshold = 0.0;
+    }
 
     void SetInputFileName(std::string &inputImageStr) {
         if (inputImageStr.empty())
@@ -102,6 +105,10 @@ public:
         return inputImage->GetSpacing()[0];
     }
 
+    void SetThreshold(float fThreshold) {
+        m_fThreshold = fThreshold;
+    }
+
     void WriteToOutputFile() {
         if(!m_outputFileName.empty())
         {
@@ -115,7 +122,7 @@ public:
                 typename TInput::Pointer image = m_inputReader->GetOutput();
                 typename TInput::SpacingType spacing = image->GetSpacing();
                 typename TInput::PointType origin = image->GetOrigin();
-                std::cout << "=================================" << std::endl;
+                std::cout << "============= CLOUD BINARIZATION ====================" << std::endl;
                 std::cout << "Input Origin : " << origin[0] << " " << origin[1] << std::endl;
                 std::cout << "Input Spacing : " << spacing[0] << " " << spacing[1] << std::endl;
                 std::cout << "Size : " << image->GetLargestPossibleRegion().GetSize()[0] << " " <<
@@ -143,12 +150,14 @@ public:
 private:
     void BuildOutputImageSource() {
         m_filter = FilterType::New();
+        m_filter->GetFunctor().SetThreshold(m_fThreshold);
         m_filter->SetInput(m_inputReader->GetOutput());
     }
 
     typename ImageSource::Pointer m_inputReader;
     std::string m_outputFileName;
     typename FilterType::Pointer m_filter;
+    float m_fThreshold;
 };
 
 #endif // CLOUDMASKBINARIZATION_H

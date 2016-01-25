@@ -103,7 +103,7 @@ void CloudWeightComputation::WriteToOutputFile()
             ImageType::Pointer image1 = m_inputReader1->GetOutput();
             ImageType::SpacingType spacing = image1->GetSpacing();
             ImageType::PointType origin = image1->GetOrigin();
-            std::cout << "=================================" << std::endl;
+            std::cout << "=============CLOUD WEIGHT COMPUTATION====================" << std::endl;
             std::cout << "Origin : " << origin[0] << " " << origin[1] << std::endl;
             std::cout << "Spacing : " << spacing[0] << " " << spacing[1] << std::endl;
             ImageType::SpacingType outspacing = m_filter->GetOutput()->GetSpacing();
