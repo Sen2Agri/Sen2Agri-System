@@ -1,7 +1,13 @@
 otb_create_application(
   NAME           WeightOnClouds
-  SOURCES        cloudmaskbinarization.cpp cloudsinterpolation.cpp cloudweightcomputation.cpp gaussianfilter.cpp weightoncloudsapp.cpp
-  LINK_LIBRARIES MACCSMetadata ${OTB_LIBRARIES})
+  SOURCES        cloudmaskbinarization.h
+                 cloudsinterpolation.h
+                 gaussianfilter.h
+                 cloudweightcomputation.h
+                 paddingimagehandler.h
+                 cuttingimagehandler.h
+                 weightoncloudsapp.cpp
+  LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
 
 if(BUILD_TESTING)
   add_subdirectory(test)
