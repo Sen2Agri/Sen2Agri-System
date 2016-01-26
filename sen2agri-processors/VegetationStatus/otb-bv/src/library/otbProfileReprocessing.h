@@ -89,11 +89,16 @@ fit_csdm(const VectorType &dts, const VectorType &ts, const VectorType &ets, con
   int validDatesCnt = 0;
   for(size_t i=0; i<ts.size(); i++)
   {
-    if(IsValidLandValue(profile_vec[i], msks[i]))
-    {
-        result[i] = p[i]*A_hat+B_hat;
+      result[i] = p[i]*A_hat+B_hat;
+      if(result[i] < 0) {
+          result[i] = 0;
+      }
+      if(IsValidLandValue(profile_vec[i], msks[i])) {
         result_flag[i] = ++validDatesCnt;
-    }
+      } else {
+        // use the last know processed value, if it exists
+        result_flag[i] = validDatesCnt;
+      }
   }
 
   return std::make_pair(result,result_flag);
@@ -131,20 +136,38 @@ smooth_time_series_local_window_with_error(const VectorType &dts,
     auto dti = dts.begin();
     auto d_win_first = dts.begin();
     auto d_win_last = dts.begin();
+    auto win_msk_first = msks.begin();
     //advance iterators
     std::advance(ot, bwd_radius);
     std::advance(otf, bwd_radius);
     std::advance(eit, bwd_radius);
     std::advance(dti, bwd_radius);
+    std::advance(win_msk_first, bwd_radius);
     std::advance(win_last, bwd_radius+fwd_radius);
     std::advance(e_win_last, bwd_radius+fwd_radius);
     std::advance(d_win_last, bwd_radius+fwd_radius);
+
+    // vector having the bwr size containing the last valid (land) values
+    VectorType lastValidValues(bwd_radius);
+    VectorType lastValidDates(bwd_radius);
+    VectorType lastValidErrs(bwd_radius);
+    size_t lastValidValuesCnt = 0;
+    for(size_t i = 0; i < bwd_radius; i++) {
+        // add the valid values, if any, from 0 to bwd
+        if(msks[i] == IMG_FLG_LAND) {
+            lastValidValues[lastValidValuesCnt] = ts[i];
+            lastValidDates[lastValidValuesCnt] = dts[i];
+            lastValidErrs[lastValidValuesCnt] = ets[i];
+            lastValidValuesCnt++;
+        }
+    }
+
     while(win_last!=last)
     {
         auto current_d = d_win_first;
         auto current_e = e_win_first;
         auto current_v = win_first;
-        auto current_msk = msk_first;
+        auto current_msk = win_msk_first;
         auto past_it = d_win_last; ++past_it;
 
         PrecisionType sum_weights{0.0};
@@ -168,6 +191,43 @@ smooth_time_series_local_window_with_error(const VectorType &dts,
         if(nProcessedVals >= bwd_radius) {
             *ot = weighted_value/sum_weights;
             *otf = nProcessedVals;
+        } else {
+            // we try to use the last valid values buffer
+            if ((nProcessedVals + lastValidValuesCnt) >= bwd_radius) {
+                // in this case we are able to compute a valid value
+                int remVals = bwd_radius - nProcessedVals;
+                for(int i = 0; i<remVals; i++) {
+                    // we take the values from the last valid one towards the beginning
+                    int idx = lastValidValuesCnt - i - 1;
+                    auto cw = compute_weight(fabs(lastValidDates[idx]-*dti),fabs(lastValidErrs[idx]));
+                    sum_weights += cw;
+                    weighted_value += (lastValidValues[idx])*cw;
+                    ++nProcessedVals;
+                }
+
+                //recompute the LAI and the flags
+                *ot = weighted_value/sum_weights;
+                *otf = nProcessedVals;
+            }
+            // otherwise, the value remains the same and the flag is not processed
+        }
+        // update the last valid values buffer if it is the case
+        if(*win_msk_first == IMG_FLG_LAND) {
+            if(lastValidValuesCnt == bwd_radius) {
+                //remove the first element in the vector
+                lastValidValues.erase(lastValidValues.begin());
+                lastValidDates.erase(lastValidDates.begin());
+                lastValidErrs.erase(lastValidErrs.begin());
+
+                lastValidValues.push_back(*win_first);
+                lastValidDates.push_back(*d_win_first);
+                lastValidErrs.push_back(*e_win_first);
+            } else {
+                lastValidValues[lastValidValuesCnt] = *win_first;
+                lastValidDates[lastValidValuesCnt] = *d_win_first;
+                lastValidErrs[lastValidValuesCnt] = *e_win_first;
+                lastValidValuesCnt++;
+            }
         }
         ++win_first;
         ++win_last;
@@ -180,6 +240,7 @@ smooth_time_series_local_window_with_error(const VectorType &dts,
         ++eit;
         ++dti;
         ++msk_first;
+        ++win_msk_first;
     }
     return std::make_pair(result,result_flag);
 }
