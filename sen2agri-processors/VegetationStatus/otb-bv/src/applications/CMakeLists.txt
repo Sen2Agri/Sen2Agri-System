@@ -67,6 +67,11 @@ otb_create_application(
   LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
 
 otb_create_application(
+  NAME           ReprocessedProfileSplitter2
+  SOURCES        otbReprocessedProfileSplitter2.cpp
+  LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
+
+otb_create_application(
   NAME           GenerateLaiMonoDateMaskFlags
   SOURCES        otbGenerateLaiMonoDateMaskFlags.cpp
   LINK_LIBRARIES MACCSMetadata;MetadataHelper;${OTB_LIBRARIES})
