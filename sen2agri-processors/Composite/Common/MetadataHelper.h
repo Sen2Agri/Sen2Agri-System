@@ -48,29 +48,36 @@ public:
 
     bool LoadMetadataFile(const std::string& file, int nResolution = -1);
 
+    // GENETAL FIELDS API
     virtual std::string GetMissionName() { return m_Mission; }
 
-    virtual std::string GetAotImageFileName() { return m_AotFileName; }
+    // MAIN RASTER API
     virtual std::string GetImageFileName() { return m_ImageFileName; }
+    virtual std::string GetNoDataValue() { return m_strNoDataValue; }
+
+    // MASKS API
     // The following 4 functions are not very useful here as are very specific to each sensor
     // They should be kept only in the derived classes
     virtual std::string GetCloudImageFileName() { return m_CloudFileName; }
     virtual std::string GetWaterImageFileName() { return m_WaterFileName; }
     virtual std::string GetSnowImageFileName() { return m_SnowFileName; }
     virtual std::string GetSaturationImageFileName() { return m_SaturationFileName; }
-
     typedef otb::Image<short, 2>    SingleBandShortImageType;
     virtual SingleBandShortImageType::Pointer GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult) = 0;
 
+    // DATE API
     // returns the acquisition date in the format YYYYMMDD
     virtual std::string GetAcquisitionDate() { return m_AcquisitionDate; }
     virtual int GetAcquisitionDateAsDoy();
 
+    // AOT API
+    virtual std::string GetAotImageFileName() { return m_AotFileName; }
     virtual double GetReflectanceQuantificationValue() {return m_ReflQuantifVal; }
     virtual float GetAotQuantificationValue() { return m_fAotQuantificationValue; }
     virtual float GetAotNoDataValue() { return m_fAotNoDataVal; }
     virtual int GetAotBandIndex() { return m_nAotBandIndex; }
 
+    // RGB bands API
     virtual int GetAbsRedBandIndex() { return m_nAbsRedBandIndex; }
     virtual int GetAbsBlueBandIndex() { return m_nAbsBlueBandIndex; }
     virtual int GetAbsGreenBandIndex() { return m_nAbsGreenBandIndex; }
@@ -81,19 +88,19 @@ public:
     virtual int GetRelGreenBandIndex() { return m_nRelGreenBandIndex; }
     virtual int GetRelNirBandIndex() { return m_nRelNirBandIndex; }
 
-    // angles
+    // ANGLES API
     virtual bool HasGlobalMeanAngles() { return m_bHasGlobalMeanAngles; }
     virtual bool HasBandMeanAngles() { return m_bHasBandMeanAngles; }
     virtual MeanAngles_Type GetSolarMeanAngles() { return m_solarMeanAngles;}
     virtual MeanAngles_Type GetSensorMeanAngles();
     virtual double GetRelativeAzimuthAngle();
     virtual MeanAngles_Type GetSensorMeanAngles(int nBand);
-
     virtual bool HasDetailedAngles() { return m_bHasDetailedAngles; }
     virtual int GetDetailedAnglesGridSize() { return m_detailedAnglesGridSize; }
     virtual MetadataHelperAngles GetDetailedSolarAngles() { return m_detailedSolarAngles; }
     virtual std::vector<MetadataHelperViewingAnglesGrid> GetDetailedViewingAngles() { return m_detailedViewingAngles; }
 
+    // BANDS HANDLING API
     virtual int GetTotalBandsNo() { return m_nTotalBandsNo; }
     virtual int GetBandsNoForCurrentResolution() { return m_nBandsNoForCurRes; }
     virtual std::string GetBandName(unsigned int nRelBandIdx, bool bRelativeIdx=true) = 0;
@@ -119,6 +126,7 @@ protected:
     std::string m_ImageFileName;
     std::string m_AcquisitionDate;
 
+    std::string m_strNoDataValue;
     double m_ReflQuantifVal;
 
     float m_fAotQuantificationValue;
