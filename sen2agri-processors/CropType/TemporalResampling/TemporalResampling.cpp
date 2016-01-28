@@ -150,9 +150,6 @@ private:
         AddParameter(ParameterType_InputImage, "mask", "Validity masks for each acquisition date");
         AddParameter(ParameterType_InputFilename, "ind", "Dates of each image acquisition");
         AddParameter(ParameterType_StringList, "sp", "Temporal sampling rate");
-        AddParameter(ParameterType_String, "t0", "Starting sampling date");
-        AddParameter(ParameterType_String, "tend", "Last date");
-        AddParameter(ParameterType_Int, "radius", "Radius of the temporal window");
 
         AddParameter(ParameterType_Choice, "mode", "Mode");
         SetParameterDescription("mode", "Specifies the choice of output dates (default: resample)");
@@ -168,7 +165,6 @@ private:
         MandatoryOff("outdays");
 
         // Set default value for parameters
-        SetDefaultParameterInt("radius", 15);
         //  Software Guide : EndCodeSnippet
 
         // Software Guide : BeginLatex
@@ -182,9 +178,6 @@ private:
         SetDocExampleParameterValue("mask", "mask.tif");
         SetDocExampleParameterValue("ind", "dates.txt");
         SetDocExampleParameterValue("sp", "SENTINEL 5 SPOT 5 LANDSAT 16");
-        SetDocExampleParameterValue("t0", "20130501");
-        SetDocExampleParameterValue("tend", "20130601");
-        SetDocExampleParameterValue("radius", "15");
         SetDocExampleParameterValue("mode", "resample");
         //  Software Guide : EndCodeSnippet
     }
@@ -210,7 +203,6 @@ private:
     //  Software Guide :BeginCodeSnippet
     void DoExecute()
     {
-
         // Read all input parameters
         imgReader = ReaderType::New();
         imgReader->SetFileName(GetParameterString("tocr"));
@@ -246,8 +238,6 @@ private:
                 std::cout << sensor.first << ": " << sensor.second << '\n';
             }
         }
-
-        int radius = GetParameterInt("radius");
 
         // Get the file that contains the dates
         std::string datesFileName = GetParameterString("ind");
@@ -327,7 +317,7 @@ private:
             dateCount += sd.outDates.size();
         }
         filter->SetNumberOfOutputBands(imageBands * dateCount);
-        filter->SetFunctor(GapFillingFunctor<ImageType::PixelType>(inData, radius, imageBands));
+        filter->SetFunctor(GapFillingFunctor<ImageType::PixelType>(inData, 0, imageBands));
 
         filter->SetInput(0, imgReader->GetOutput());
         filter->SetInput(1, maskReader->GetOutput());

@@ -9,6 +9,27 @@ from sys import argv
 import datetime
 from common import executeStep
 
+
+def get_date_interval(date_file):
+    min_date = "99999999"
+    max_date = "00000000"
+    with open(date_file) as f:
+        while True:
+            sensor = f.readline()
+            if not sensor:
+                break
+            cnt = f.readline()
+            if not cnt:
+                break
+            count = int(cnt.rstrip('\n'))
+            for i in xrange(count):
+                date = f.readline().rstrip('\n')
+                if date < min_date:
+                    min_date = date
+                elif date > max_date:
+                    max_date = date
+    return min_date, max_date
+
 def inSituDataAvailable() :
 	# Temporal Features (Step 6)
 	#executeStep("TemporalFeatures", "otbcli", "TemporalFeatures", os.path.join(buildFolder,"CropMask/TemporalFeatures"),"-ndvi",ndvi,"-dates",outdays,"-window", window, "-tf",temporal_features, skip=fromstep>6)
@@ -100,9 +121,7 @@ parser.add_argument('-mission', help='The main mission for the time series', req
 parser.add_argument('-refp', help='The reference polygons', required=False, metavar='reference_polygons', default='')
 parser.add_argument('-ratio', help='The ratio between the validation and training polygons (default 0.75)', required=False, metavar='sample_ratio', default=0.75)
 parser.add_argument('-input', help='The list of products descriptors', required=True, metavar='product_descriptor', nargs='+')
-parser.add_argument('-t0', help='The start date for the temporal resampling interval (in format YYYYMMDD)', required=True, metavar='YYYYMMDD')
-parser.add_argument('-tend', help='The end date for the temporal resampling interval (in format YYYYMMDD)', required=True, metavar='YYYYMMDD')
-parser.add_argument('-rate', help='The sampling rate for the temporal series, in days (default 5)', required=False, metavar='sampling_rate', default=5)
+parser.add_argument('-trm', help='The temporal resampling mode', choices=['resample', 'gapfill'], required=False, default='resample')
 # parser.add_argument('-radius', help='The radius used for gapfilling, in days (default 15)', required=False, metavar='radius', default=15)
 parser.add_argument('-nbtrsample', help='The number of samples included in the training set (default 4000)', required=False, metavar='nbtrsample', default=4000)
 parser.add_argument('-rseed', help='The random seed used for training (default 0)', required=False, metavar='random_seed', default=0)
@@ -143,9 +162,7 @@ sample_ratio=str(args.ratio)
 
 indesc = args.input
 
-t0=args.t0
-tend=args.tend
-sp=str(args.rate)
+trm=args.trm
 # radius=str(args.radius)
 radius="15"  # not used
 random_seed=str(args.rseed)
@@ -245,7 +262,7 @@ try:
     executeStep("gdalwarp for masks", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawmask, mask, skip=fromstep>3, rmfiles=[] if keepfiles else [rawmask])
 
 # Temporal Resampling (Step 4)
-    executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", sp, "-t0", t0, "-tend", tend, "-radius", radius, "-rtocr", rtocr, "-outdays", outdays, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
+    executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16", "-rtocr", rtocr, "-outdays", outdays, "-mode", trm, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
 
 # Select either inSitu or noInSitu branches
     if reference_polygons != "" :
@@ -296,7 +313,8 @@ try:
     executeStep("XML Conversion for Crop Mask", "otbcli", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics,  skip=fromstep>34)
 
 #Product creation (Step 35)
-    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-timeperiod", t0+"_"+tend, "-baseline", "01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.quality", xml_validation_metrics, skip=fromstep>35)
+    min_date, max_date = get_date_interval(dates)
+    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-timeperiod", min_date+"_"+max_date, "-baseline", "01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.quality", xml_validation_metrics, skip=fromstep>35)
 
 except:
     print sys.exc_info()
