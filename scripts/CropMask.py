@@ -10,26 +10,6 @@ import datetime
 from common import executeStep
 
 
-def get_date_interval(date_file):
-    min_date = "99999999"
-    max_date = "00000000"
-    with open(date_file) as f:
-        while True:
-            sensor = f.readline()
-            if not sensor:
-                break
-            cnt = f.readline()
-            if not cnt:
-                break
-            count = int(cnt.rstrip('\n'))
-            for i in xrange(count):
-                date = f.readline().rstrip('\n')
-                if date < min_date:
-                    min_date = date
-                elif date > max_date:
-                    max_date = date
-    return min_date, max_date
-
 def inSituDataAvailable() :
 	# Temporal Features (Step 6)
 	#executeStep("TemporalFeatures", "otbcli", "TemporalFeatures", os.path.join(buildFolder,"CropMask/TemporalFeatures"),"-ndvi",ndvi,"-dates",outdays,"-window", window, "-tf",temporal_features, skip=fromstep>6)
@@ -313,8 +293,7 @@ try:
     executeStep("XML Conversion for Crop Mask", "otbcli", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics,  skip=fromstep>34)
 
 #Product creation (Step 35)
-    min_date, max_date = get_date_interval(dates)
-    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-timeperiod", min_date+"_"+max_date, "-baseline", "01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.quality", xml_validation_metrics, skip=fromstep>35)
+    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-baseline", "01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.quality", xml_validation_metrics, "-il", *indesc, skip=fromstep>35)
 
 except:
     print sys.exc_info()
