@@ -1,4 +1,5 @@
 #include "Spot4MetadataHelper.h"
+#include "GlobalDefs.h"
 
 #define TOTAL_BANDS_NO      4
 
@@ -38,6 +39,8 @@ bool Spot4MetadataHelper::DoLoadMetadata()
         m_fAotQuantificationValue = 1000.0;
         m_fAotNoDataVal = 0;
         m_nAotBandIndex = 1;
+
+        m_strNoDataValue = std::to_string(NO_DATA_VALUE);
 
         // For Spot4 the bands are XS1;XS2;XS3;SWIR that correspond to RED, GREEN, NIR and SWIR
         // we have the same values for relative and absolute indexes as we have only one raster

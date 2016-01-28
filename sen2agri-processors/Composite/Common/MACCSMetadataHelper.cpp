@@ -99,6 +99,7 @@ bool MACCSMetadataHelper::DoLoadMetadata()
         m_SnowFileName = getSnowFileName();
         // set the acquisition date
         m_AcquisitionDate = m_metadata->InstanceId.AcquisitionDate;
+        m_strNoDataValue = m_metadata->ImageInformation.NoDataValue;
 
         //TODO: Add initialization for mean angles (solar and sensor)
 
@@ -473,5 +474,5 @@ bool MACCSMetadataHelper::BandAvailableForCurrentResolution(unsigned int nBand) 
 }
 
 MetadataHelper::SingleBandShortImageType::Pointer MACCSMetadataHelper::GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult) {
-
+    //TODO: Implement this function
 }

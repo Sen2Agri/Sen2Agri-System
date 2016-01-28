@@ -130,26 +130,21 @@ class LaiModel(object):
         # Variables for Prosail Simulator
         NOISE_VAR="0.01"
 
-        #OUT_SIMU_REFLS_FILE="$OUT_FOLDER/out_simu_refls.txt"
         outSimuReflsFile = outDir + '/out_simu_refls.txt'
-        #OUT_TRAINING_FILE="$OUT_FOLDER/out_training.txt"
         outTrainingFile = outDir + '/out_training.txt'
         outAnglesFile = outDir + '/out_angles.txt'
 
         #generating Input BV Distribution file
         print("Generating Input BV Distribution file ...")
-        #try otbcli BVInputVariableGeneration $IMG_INV_OTB_LIBS_ROOT -samples $GENERATED_SAMPLES_NO -out $OUT_GENERATED_SAMPLE_FILE
         runCmd(["otbcli", "BVInputVariableGeneration", imgInvOtbLibsLocation, "-samples", str(GENERATED_SAMPLES_NO), "-out",  outGeneratedSampleFile])
 
         # Generating simulation reflectances
         print("Generating simulation reflectances ...")
-        #try otbcli ProSailSimulator $IMG_INV_OTB_LIBS_ROOT -bvfile $OUT_GENERATED_SAMPLE_FILE -rsrfile $RSR_FILE -out $OUT_SIMU_REFLS_FILE -solarzenith $SOLAR_ZENITH_ANGLE -sensorzenith $SENSOR_ZENITH_ANGLE -azimuth $RELATIVE_AZIMUTH_ANGLE
         #runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation, "-xml", args.input[0], "-bvfile", outGeneratedSampleFile, "-rsrfile", rsrFile, "-out", outSimuReflsFile, "-solarzenith", str(solarZenithAngle), "-sensorzenith", str(sensorZenithAngle), "-azimuth", str(relativeAzimuthAngle), "-outangles", outAnglesFile])
         runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation, "-xml", curXml, "-bvfile", outGeneratedSampleFile, "-rsrfile", rsrFile, "-out", outSimuReflsFile, "-outangles", outAnglesFile, "-noisevar", str(NOISE_VAR)])
 
         # Generating training file
         print("Generating training file ...")
-        #try otbcli TrainingDataGenerator $IMG_INV_OTB_LIBS_ROOT -biovarsfile $OUT_GENERATED_SAMPLE_FILE -simureflsfile $OUT_SIMU_REFLS_FILE -outtrainfile $OUT_TRAINING_FILE -bvidx $BV_IDX -addrefls $ADD_REFLS -redidx $RED_INDEX -niridx $NIR_INDEX
         runCmd(["otbcli", "TrainingDataGenerator", imgInvOtbLibsLocation, "-biovarsfile", outGeneratedSampleFile, "-simureflsfile", outSimuReflsFile, "-outtrainfile", outTrainingFile, "-bvidx", str(BV_IDX), "-addrefls", str(ADD_REFLS), "-redidx", str(RED_INDEX), "-niridx", str(NIR_INDEX)])
 
         # Reading the used angles from the file and build the out model file name and the out err model file name
@@ -162,11 +157,8 @@ class LaiModel(object):
             print("Read sensor ZENITH ANGLE {}".format(sensorZenithAngle))
             print("Read Rel Azimuth ANGLE {}".format(relativeAzimuthAngle))
 
-        #SOLAR_ZENITH_REDUCED=$( getReducedAngle $SOLAR_ZENITH_ANGLE)
         solarZenithReduced = self.getReducedAngle(solarZenithAngle)
-        #SENSOR_ZENITH_REDUCED=$( getReducedAngle $SENSOR_ZENITH_ANGLE)
         sensorZenithReduced = self.getReducedAngle(sensorZenithAngle)
-        #REL_AZIMUTH_REDUCED=$( getReducedAngle $RELATIVE_AZIMUTH_ANGLE)
         relativeAzimuthReduced = self.getReducedAngle(relativeAzimuthAngle)
 
         print("SOLAR ANGLE reduced from {} to {}".format(solarZenithAngle, solarZenithReduced))
@@ -178,7 +170,6 @@ class LaiModel(object):
             
         # Generating model
         print("Generating model ...")
-        #try otbcli InverseModelLearning $IMG_INV_OTB_LIBS_ROOT -training $OUT_TRAINING_FILE -out $OUT_MODEL_FILE -errest $OUT_ERR_EST_FILE -regression $REGRESSION_TYPE -bestof $BEST_OF
         runCmd(["otbcli", "InverseModelLearning", imgInvOtbLibsLocation, "-training", outTrainingFile, "-out", outModelFile, "-errest", outErrEstFile, "-regression", str(REGRESSION_TYPE), "-bestof", str(BEST_OF)])
 
         with open(paramsLaiModelFilenameXML, 'w') as paramsFileXML:
@@ -240,49 +231,35 @@ if resolution != 10 and resolution != 20:
     print("The product will be created with the original resolution without resampling.")
     resolution=0
 
-#OUT_NDVI_RVI="$OUT_FOLDER/ndvi_rvi.tif"
-outNdviRvi = "{}/ndvi_rvi.tif".format(outDir)
-#OUT_LAI_IMG="$OUT_FOLDER/LAI_img_#.tif"
+outNdviRvi = "{}/#_NDVI_RVI.tif".format(outDir)
 outLaiImg = "{}/#_LAI_img.tif".format(outDir)
 outLaiMonoMskFlgsImg = "{}/#_LAI_mono_date_mask_flags_img.tif".format(outDir)
-#OUT_LAI_ERR_IMG="$OUT_FOLDER/LAI_err_img_#.tif"
 outLaiErrImg = "{}/#_LAI_err_img.tif".format(outDir) 
 
-#OUT_LAI_TIME_SERIES="$OUT_FOLDER/LAI_time_series.tif"
 outLaiTimeSeries = "{}/LAI_time_series.tif".format(outDir)
-#OUT_ERR_TIME_SERIES="$OUT_FOLDER/Err_time_series.tif"
 outErrTimeSeries = "{}/Err_time_series.tif".format(outDir)
 outMaksFlagsTimeSeries = "{}/Mask_Flags_time_series.tif".format(outDir)
 
-#OUT_REPROCESSED_TIME_SERIES="$OUT_FOLDER/ReprocessedTimeSeries.tif"
 outReprocessedTimeSeries = "{}/ReprocessedTimeSeries.tif".format(outDir)
-#OUT_FITTED_TIME_SERIES="$OUT_FOLDER/FittedTimeSeries.tif"
 outFittedTimeSeries = "{}/FittedTimeSeries.tif".format(outDir)
 
-#echo "Executing from $MY_PWD"
-#echo "Models folder: $MODELS_FOLDER"
-
-#MODELS_INPUT_LIST=""
 modelsInputList=[]
 print(modelsFolder)
 for file in glob.glob("{}/Model_*.txt".format(modelsFolder)):
     modelsInputList.append(file)
 
-#ERR_MODELS_INPUT_LIST=""
 errModelsInputList=[]
 for file in glob.glob("{}/Err_Est_Model_*.txt".format(modelsFolder)):
     errModelsInputList.append(file)
     
 
-#MODEL_FILE="$OUT_FOLDER/model_file.txt"
 modelFile = "{}/model_file.txt".format(outDir)
-#ERR_MODEL_FILE="$OUT_FOLDER/err_model_file.txt"
 errModelFile = "{}/err_model_file.txt".format(outDir)
 
-#FITTED_LIST_FILE="$OUT_FOLDER/FittedFilesList.txt"
-fittedListFile = "{}/FittedFilesList.txt".format(outDir)
-#REPROCESSED_LIST_FILE="$OUT_FOLDER/ReprocessedFilesList.txt"
-reprocessedListFile = "{}/ReprocessedFilesist.txt".format(outDir)
+fittedRastersListFile = "{}/FittedRastersFilesList.txt".format(outDir)
+fittedFlagsListFile = "{}/FittedFlagsFilesList.txt".format(outDir)
+reprocessedRastersListFile = "{}/ReprocessedRastersFilesist.txt".format(outDir)
+reprocessedFlagsListFile = "{}/ReprocessedFlagsFilesist.txt".format(outDir)
 
 #ProfileReprocessing parameters
 ALGO_LOCAL_BWR="2"
@@ -313,70 +290,47 @@ with open(paramsFilename, 'w') as paramsFile:
 cnt=int(0)
 print("Processing started: " + str(datetime.datetime.now()))
 start = time.time()
+
+allXmlParam=[]
+allNdviFilesList=[]
+allLaiParam=[]
+allErrParam=[]
+allMskFlagsParam=[]
+
 for xml in args.input:
-    
-    #timed_exec "try otbcli NdviRviExtraction $IMG_INV_OTB_LIBS_ROOT -xml $xml $RESOLUTION_OPTION -fts $OUT_NDVI_RVI"
-    if resolution == 0:
-        runCmd(["otbcli", "NdviRviExtraction2", imgInvOtbLibsLocation, "-xml", xml, "-fts", outNdviRvi])
-    else:
-        runCmd(["otbcli", "NdviRviExtraction2", imgInvOtbLibsLocation, "-xml", xml, "-outres", resolution, "-fts", outNdviRvi])
-    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-    #timed_exec "try otbcli GetLaiRetrievalModel $IMG_INV_OTB_LIBS_ROOT -xml $xml -ilmodels $MODELS_INPUT_LIST -ilerrmodels $ERR_MODELS_INPUT_LIST -outm $MODEL_FILE -outerr $ERR_MODEL_FILE"
-    runCmd(["otbcli", "GetLaiRetrievalModel", imgInvOtbLibsLocation, "-xml", xml, "-ilmodels"] + modelsInputList + ["-ilerrmodels"] + errModelsInputList + ["-outm", modelFile, "-outerr", errModelFile])
-    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-    
-    #CUR_OUT_LAI_IMG=${OUT_LAI_IMG//[#]/$cnt}
     counterString = str(cnt)
     lastPoint = xml.rfind('.')
     lastSlash = xml.rfind('/')
     if lastPoint != -1 and lastSlash != -1 and lastSlash + 1 < lastPoint:
         counterString = xml[lastSlash + 1:lastPoint]
+    
+    curOutNDVIImg = outNdviRvi.replace("#", counterString)
     curOutLaiImg = outLaiImg.replace("#", counterString)
-    #CUR_OUT_LAI_ERR_IMG=${OUT_LAI_ERR_IMG//[#]/$cnt}
     curOutLaiErrImg = outLaiErrImg.replace("#", counterString)
     curOutLaiMonoMskFlgsImg = outLaiMonoMskFlgsImg.replace("#", counterString)
-    #timed_exec "try otbcli BVImageInversion $IMG_INV_OTB_LIBS_ROOT -in $OUT_NDVI_RVI -modelfile $MODEL_FILE -out $CUR_OUT_LAI_IMG"
-    runCmd(["otbcli", "BVImageInversion", imgInvOtbLibsLocation, "-in", outNdviRvi, "-modelfile", modelFile, "-out", curOutLaiImg])
+    
+    if resolution == 0:
+        runCmd(["otbcli", "NdviRviExtraction2", imgInvOtbLibsLocation, "-xml", xml, "-fts", curOutNDVIImg])
+    else:
+        runCmd(["otbcli", "NdviRviExtraction2", imgInvOtbLibsLocation, "-xml", xml, "-outres", resolution, "-fts", curOutNDVIImg])
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-    #timed_exec "try otbcli BVImageInversion $IMG_INV_OTB_LIBS_ROOT -in $OUT_NDVI_RVI -modelfile $ERR_MODEL_FILE -out $CUR_OUT_LAI_ERR_IMG"
-    runCmd(["otbcli", "BVImageInversion", imgInvOtbLibsLocation, "-in", outNdviRvi, "-modelfile", errModelFile, "-out", curOutLaiErrImg])
+    runCmd(["otbcli", "GetLaiRetrievalModel", imgInvOtbLibsLocation, "-xml", xml, "-ilmodels"] + modelsInputList + ["-ilerrmodels"] + errModelsInputList + ["-outm", modelFile, "-outerr", errModelFile])
+    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+    
+    runCmd(["otbcli", "BVImageInversion", imgInvOtbLibsLocation, "-in", curOutNDVIImg, "-modelfile", modelFile, "-out", curOutLaiImg])
+    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+    runCmd(["otbcli", "BVImageInversion", imgInvOtbLibsLocation, "-in", curOutNDVIImg, "-modelfile", errModelFile, "-out", curOutLaiErrImg])
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     runCmd(["otbcli", "GenerateLaiMonoDateMaskFlags", imgInvOtbLibsLocation, "-inxml", xml, "-out", curOutLaiMonoMskFlgsImg])
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+
+    allXmlParam.append(xml)
+    allNdviFilesList.append(curOutNDVIImg)
+    allLaiParam.append(curOutLaiImg)
+    allErrParam.append(curOutLaiErrImg)
+    allMskFlagsParam.append(curOutLaiMonoMskFlgsImg)
     
     cnt += 1
-
-i = int(0)
-
-#ALL_XML_PARAM=""
-allXmlParam=[]
-#ALL_LAI_PARAM=""
-allLaiParam=[]
-#ALL_ERR_PARAM=""
-allErrParam=[]
-allMskFlagsParam=[]
-#build the parameters -ilxml for -illai
-for xml in args.input:
-    #CUR_LAI_IMG=${OUT_LAI_IMG//[#]/$i}
-    counterString = str(i)
-
-    lastPoint = xml.rfind('.')
-    lastSlash = xml.rfind('/')
-    if lastPoint != -1 and lastSlash != -1 and lastSlash + 1 < lastPoint:
-        counterString = xml[lastSlash + 1:lastPoint]
-    
-    #curLaiImg = outLaiImg.replace("#", counterString)
-    #CUR_ERR_IMG=${OUT_LAI_ERR_IMG//[#]/$i}
-    #curErrImg = outLaiErrImg.replace("#", counterString)
-    #ALL_XML_PARAM=$ALL_XML_PARAM" "${inputXML[$i]}
-    allXmlParam.append(args.input[i])
-    #ALL_LAI_PARAM=$ALL_LAI_PARAM" "$CUR_LAI_IMG
-    allLaiParam.append(outLaiImg.replace("#", counterString))
-    #ALL_ERR_PARAM=$ALL_ERR_PARAM" "$CUR_ERR_IMG
-    allErrParam.append(outLaiErrImg.replace("#", counterString))
-    allMskFlagsParam.append(outLaiMonoMskFlgsImg.replace("#", counterString))
-    
-    i += 1
 
 # Create the LAI and Error time series
 runCmd(["otbcli", "TimeSeriesBuilder", imgInvOtbLibsLocation, "-il"] + allLaiParam + ["-out", outLaiTimeSeries])
@@ -392,22 +346,43 @@ runCmd(["otbcli", "ProfileReprocessing", imgInvOtbLibsLocation, "-lai", outLaiTi
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 #split the Reprocessed time series to a number of images
-runCmd(["otbcli", "ReprocessedProfileSplitter", imgInvOtbLibsLocation, "-in", outReprocessedTimeSeries, "-outlist", reprocessedListFile, "-compress", "1", "-ilxml"] + allXmlParam)
+runCmd(["otbcli", "ReprocessedProfileSplitter2", imgInvOtbLibsLocation, "-in", outReprocessedTimeSeries, "-outrlist", reprocessedRastersListFile, "-outflist", reprocessedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 # Compute the fitted time series (CSDM Fitting)
 runCmd(["otbcli", "ProfileReprocessing", imgInvOtbLibsLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-msks", outMaksFlagsTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outFittedTimeSeries, "-genall", "1", "-algo", "fit"])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-#        cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.lairepr", tileID, outReprocessedTimeSeries, "-processor.vegetation.laifit", tileID, outFittedTimeSeries, "-il", args.input[0], "-gipp", paramsLaiRetrFilenameXML]
-#        if GENERATE_MODEL:
-#            cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.lairepr", tileID, outReprocessedTimeSeries, "-processor.vegetation.laifit", tileID, outFittedTimeSeries, "-il", args.input[0], "-gipp", paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML]
-#        
-#        runCmd(cmd)
-#        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 #split the Fitted time series to a number of images
-#timed_exec "try otbcli ReprocessedProfileSplitter $IMG_INV_OTB_LIBS_ROOT -in $OUT_FITTED_TIME_SERIES -outlist $FITTED_LIST_FILE -compress 1"
-runCmd(["otbcli", "ReprocessedProfileSplitter", imgInvOtbLibsLocation, "-in", outFittedTimeSeries, "-outlist", fittedListFile, "-compress", "1", "-ilxml"] + allXmlParam)
+runCmd(["otbcli", "ReprocessedProfileSplitter2", imgInvOtbLibsLocation, "-in", outFittedTimeSeries, "-outrlist", fittedRastersListFile, "-outflist", fittedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+
+fittedRastersFilesList = []
+with open(fittedRastersListFile) as f:
+    fittedRastersFilesList = f.readlines()
+    fittedRastersFilesList = [x.strip('\n') for x in fittedRastersFilesList]
+
+fittedFlagsFilesList = []
+with open(fittedFlagsListFile) as f:
+    fittedFlagsFilesList = f.readlines()
+    fittedFlagsFilesList = [x.strip('\n') for x in fittedFlagsFilesList]
+    
+reprocessedRastersFilesList = []
+with open(reprocessedRastersListFile) as f:
+    reprocessedRastersFilesList = f.readlines()
+    reprocessedRastersFilesList = [x.strip('\n') for x in reprocessedRastersFilesList]
+
+reprocessedFlagsFilesList = []
+with open(reprocessedFlagsListFile) as f:
+    reprocessedFlagsFilesList = f.readlines()
+    reprocessedFlagsFilesList = [x.strip('\n') for x in reprocessedFlagsFilesList]
+    
+cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.laindvi", tileID] + allNdviFilesList + ["-processor.vegetation.laimonodate", tileID] + allLaiParam + ["-processor.vegetation.laimonodateerr", tileID] + allErrParam + ["-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + ["-processor.vegetation.laireproc", tileID] + reprocessedRastersFilesList + ["-processor.vegetation.laireprocflgs", tileID] + reprocessedFlagsFilesList + ["-processor.vegetation.laifit", tileID] + fittedRastersFilesList + ["-processor.vegetation.laifitflgs", tileID] + fittedFlagsFilesList + ["-il"] + allXmlParam + ["-gipp", paramsLaiRetrFilenameXML]
+
+if GENERATE_MODEL:
+    cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.laindvi", tileID] + allNdviFilesList + ["-processor.vegetation.laimonodate", tileID] + allLaiParam + ["-processor.vegetation.laimonodateerr", tileID] + allErrParam + ["-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + ["-processor.vegetation.laireproc", tileID] + reprocessedRastersFilesList + ["-processor.vegetation.laireprocflgs", tileID] + reprocessedFlagsFilesList + ["-processor.vegetation.laifit", tileID] + fittedRastersFilesList + ["-processor.vegetation.laifitflgs", tileID] + fittedFlagsFilesList + ["-il"] + allXmlParam + ["-gipp", paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML]
+
+runCmd(cmd)
 
 print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 

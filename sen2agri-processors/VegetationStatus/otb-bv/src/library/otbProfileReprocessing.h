@@ -20,8 +20,8 @@
 
 using PrecisionType = double;
 using VectorType = std::vector<PrecisionType>;
-constexpr PrecisionType not_processed_value{0};
-constexpr PrecisionType processed_value{1};
+constexpr PrecisionType invalid_value{0};
+constexpr PrecisionType not_processed_value{1};
 
 namespace otb
 {
@@ -121,7 +121,7 @@ smooth_time_series_local_window_with_error(const VectorType &dts,
     */
     assert(ts.size()==ets.size() && ts.size()==dts.size() && ts.size()==msks.size());
     auto result = ts;
-    auto result_flag = VectorType(ts.size(),not_processed_value);
+    auto result_flag = VectorType(ts.size(), not_processed_value);
     auto ot = result.begin();
     auto otf = result_flag.begin();
     auto win_msk_first = msks.begin();
@@ -150,6 +150,12 @@ smooth_time_series_local_window_with_error(const VectorType &dts,
     VectorType lastValidDates(bwd_radius);
     VectorType lastValidErrs(bwd_radius);
     size_t lastValidValuesCnt = 0;
+
+    // as we start with the current value from the start + bwr, we must update also the
+    // statuses for the elements in the bwr
+    for(int i = 0; i < bwd_radius; i++) {
+        result_flag[i] = ((msks[i] == IMG_FLG_LAND) ? not_processed_value : invalid_value);
+    }
 
     while(win_last!=last)
     {
@@ -200,9 +206,11 @@ smooth_time_series_local_window_with_error(const VectorType &dts,
                     //recompute the LAI and the flags
                     *ot = weighted_value/sum_weights;
                     *otf = nProcessedVals;
-                }
-                // otherwise, the value remains the same and the flag is not processed
+                } // otherwise, the value and the flag remains the same (flag to 1)
             }
+        } else {
+            // set the flag to 0 and keep the LAI mono date value
+            *otf = invalid_value;
         }
         // update the last valid values buffer if it is the case
         if(*win_msk_first == IMG_FLG_LAND) {

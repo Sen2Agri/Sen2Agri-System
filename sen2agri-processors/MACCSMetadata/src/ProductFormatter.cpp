@@ -39,7 +39,7 @@
 #define PHENO_SUFFIX                    "SNVDIMET"
 #define LAI_MONO_DATE_FLAGS_SUFFIX      "MMDATEFLG"
 #define LAI_REPROC_FLAGS_SUFFIX         "MREPROCFLG"
-#define LAI_FITTED_FLAGS_SUFFIX         "MREPROCFLG"
+#define LAI_FITTED_FLAGS_SUFFIX         "MFITTEDFLG"
 
 #define GENERIC_CS_TYPE     "GEOGRAPHIC"
 #define GENERIC_GEO_TABLES  "EPSG"
@@ -132,6 +132,7 @@ struct rasterInfo
     std::string strNewRasterFileName;
     std::string strTileID;
     bool bIsQiData;
+    std::string rasterTimePeriod;
 };
 
 struct previewInfo
@@ -191,6 +192,7 @@ private:
         AddParameter(ParameterType_String, "fileclass", "File class");
         AddParameter(ParameterType_String, "level", "Product level");
         AddParameter(ParameterType_String, "timeperiod", "First product date and last product date");
+        MandatoryOff("timeperiod");
         AddParameter(ParameterType_String, "baseline", "Processing baseline");
 
         AddParameter(ParameterType_Choice, "processor", "Processor");
@@ -243,8 +245,8 @@ private:
         AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laifitflgs", "LAI Fitted flags raster files list for vegetation  separated by TILE_{tile_id} delimiter");
         MandatoryOff("processor.vegetation.laifitflgs");
 
-        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.lairepr", "LAI REPR raster files list for vegetation  separated by TILE_{tile_id} delimiter");
-        MandatoryOff("processor.vegetation.lairepr");
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laireproc", "LAI REPR raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.laireproc");
 
         AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laifit", "LAI FIT raster files list for vegetation  separated by TILE_{tile_id} delimiter");
         MandatoryOff("processor.vegetation.laifit");
@@ -290,6 +292,8 @@ private:
   }
   void DoExecute()
   {
+      // by default, we expect a "timeperiod" parameter
+      m_bDynamicallyTimePeriod = false;
 
       //get file class
       m_strFileClass = this->GetParameterString("fileclass");
@@ -298,13 +302,60 @@ private:
       m_strProductLevel = this->GetParameterString("level");
 
       //get time period (first product date and last product date)
-      m_strTimePeriod = this->GetParameterString("timeperiod");
+      if(HasValue("timeperiod")) {
+        m_strTimePeriod = this->GetParameterString("timeperiod");
+      }
 
       //get processing baseline
       m_strBaseline = this->GetParameterString("baseline");
 
       //get destination root
       m_strDestRoot = this->GetParameterString("destroot");
+
+      // Get GIPP file list
+      m_GIPPList = this->GetParameterStringList("gipp");
+
+      //read .xml or .HDR files to fill the metadata structures
+      // Get the list of input files
+      std::vector<std::string> descriptors = this->GetParameterStringList("il");
+      LoadAllDescriptors(descriptors);
+      m_strMinAcquisitionDate = *std::min_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
+      m_strMaxAcquisitionDate = *std::max_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
+      if(m_strTimePeriod.empty()) {
+          m_bDynamicallyTimePeriod = true;
+          m_strTimePeriod = m_strMinAcquisitionDate + "_" + m_strMaxAcquisitionDate;
+      }
+
+      std::string strCreationDate = currentDateTimeFormattted("%Y%m%dT%H%M%S");
+
+      std::string strMainProductFolderName = "{project_id}_{file_class}_{file_category}_{product_level}_{product_descriptor}_{originator_site}_{creation_date}_V{time_period}_{tile_id}_{processing_baseline}";
+
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{project_id}", PROJECT_ID);
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{file_class}", m_strFileClass);
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{file_category}", MAIN_FOLDER_CATEG);
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{product_level}", m_strProductLevel);
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{originator_site}", ORIGINATOR_SITE);
+
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{creation_date}", strCreationDate);
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{time_period}", m_strTimePeriod);
+      std::string strTileName = strMainProductFolderName;
+
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{tile_id}", "");
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{processing_baseline}", "");
+
+      m_strProductFileName = ReplaceString(strMainProductFolderName, "{product_descriptor}", PRODUCT_DESCRIPTOR);
+
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{product_descriptor}", "");
+      m_strProductDirectoryName = strMainProductFolderName;
+
+      std::string strMainFolderFullPath = m_strDestRoot + "/" + strMainProductFolderName;
+
+      //created all folders ierarchy
+      bool bResult = createsAllFolders(strMainFolderFullPath);
+
+      strTileName = ReplaceString(strTileName, MAIN_FOLDER_CATEG, TILE_LEGACY_FOLDER_CATEG);
+      strTileName = ReplaceString(strTileName, "{product_descriptor}", TILE_DESCRIPTOR);
+      strTileName = ReplaceString(strTileName, "{processing_baseline}", "N" + m_strBaseline);
 
       //if is composite read reflectance rasters, weights ratsters, flags masks, dates masks
       if (m_strProductLevel.compare("L3A") == 0)
@@ -342,9 +393,7 @@ private:
                   previewInfoEl.strPreviewFileName = rasterFileEl;
                   m_previewList.emplace_back(previewInfoEl);
               }
-
           }
-
      }
 
       //if is vegetation, read LAIREPR and LAIFIT raster files list
@@ -354,13 +403,13 @@ private:
           std::vector<std::string> rastersList;
 
           rastersList = this->GetParameterStringList("processor.vegetation.laindvi");
-          UnpackRastersList(rastersList, LAI_NDVI_RASTER, true);
+          UnpackRastersList(rastersList, LAI_NDVI_RASTER, false);
 
           rastersList = this->GetParameterStringList("processor.vegetation.laimonodate");
-          UnpackRastersList(rastersList, LAI_MONO_DATE_RASTER, true);
+          UnpackRastersList(rastersList, LAI_MONO_DATE_RASTER, false);
 
           rastersList = this->GetParameterStringList("processor.vegetation.laimonodateerr");
-          UnpackRastersList(rastersList, LAI_MONO_DATE_ERR_RASTER, true);
+          UnpackRastersList(rastersList, LAI_MONO_DATE_ERR_RASTER, false);
 
           rastersList = this->GetParameterStringList("processor.vegetation.laimdateflgs");
           UnpackRastersList(rastersList, LAI_MONO_DATE_FLAGS, true);
@@ -372,7 +421,7 @@ private:
           UnpackRastersList(rastersList, LAI_FITTED_FLAGS, true);
 
           // LAI Reprocessed raster files list
-          rastersList = this->GetParameterStringList("processor.vegetation.lairepr");
+          rastersList = this->GetParameterStringList("processor.vegetation.laireproc");
           UnpackRastersList(rastersList, LAI_REPR_RASTER, false);
 
           //get LAIFIT raster files list
@@ -414,51 +463,6 @@ private:
             std::cout << "TileID =" << tileInfoEl.strTileID << "  strTilePath =" << tileInfoEl.strTilePath  << std::endl;
       }
 
-      //read .xml or .HDR files to fill the metadata structures
-      // Get the list of input files
-      std::vector<std::string> descriptors = this->GetParameterStringList("il");
-
-      // Get GIPP file list
-      m_GIPPList = this->GetParameterStringList("gipp");
-
-      std::string strCreationDate = currentDateTimeFormattted("%Y%m%dT%H%M%S");
-
-      std::string strMainProductFolderName = "{project_id}_{file_class}_{file_category}_{product_level}_{product_descriptor}_{originator_site}_{creation_date}_V{time_period}_{tile_id}_{processing_baseline}";
-
-      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{project_id}", PROJECT_ID);
-      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{file_class}", m_strFileClass);
-      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{file_category}", MAIN_FOLDER_CATEG);
-      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{product_level}", m_strProductLevel);
-      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{originator_site}", ORIGINATOR_SITE);
-
-      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{creation_date}", strCreationDate);
-      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{time_period}", m_strTimePeriod);
-      std::string strTileName = strMainProductFolderName;
-
-      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{tile_id}", "");
-      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{processing_baseline}", "");
-
-      m_strProductFileName = ReplaceString(strMainProductFolderName, "{product_descriptor}", PRODUCT_DESCRIPTOR);
-
-      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{product_descriptor}", "");
-      m_strProductDirectoryName = strMainProductFolderName;
-
-      std::string strMainFolderFullPath = m_strDestRoot + "/" + strMainProductFolderName;
-
-      //created all folders ierarchy
-      bool bResult = createsAllFolders(strMainFolderFullPath);
-
-      if(bResult)
-      {
-          LoadAllDescriptors(descriptors);
-      }
-
-
-      strTileName = ReplaceString(strTileName, MAIN_FOLDER_CATEG, TILE_LEGACY_FOLDER_CATEG);
-      strTileName = ReplaceString(strTileName, "{product_descriptor}", TILE_DESCRIPTOR);
-
-      strTileName = ReplaceString(strTileName, "{processing_baseline}", "N" + m_strBaseline);
-
       if(bResult)
       {
           for (tileInfo &tileEl : m_tileIDList) {
@@ -475,25 +479,6 @@ private:
       }
 
   }
-
-  std::string m_strFileClass;
-  std::string m_strProductLevel;
-  std::string m_strTimePeriod;
-  std::string m_strDestRoot;
-  std::string m_strBaseline;
-  std::vector<previewInfo> m_previewList;
-  std::vector<std::string> m_GIPPList;
-  std::vector<std::string> m_qualityList;
-  std::vector<tileInfo> m_tileIDList;
-
-  ProductFileMetadata m_productMetadata;
-  std::vector<rasterInfo> m_rasterInfoList;
-  std::string m_strProductDirectoryName;
-
-  //bool m_bIsHDR; /* true if is  loaded a .HDR fiel, false if is a .xml file */
-  //std::string m_strTileNameRoot;
-  std::string m_strProductFileName;
-  std::vector<geoProductInfo> m_geoProductInfo;
 
   void CreateAndFillTile(tileInfo &tileInfoEl, const std::string &strMainFolderFullPath, const std::string &tileNameRoot)
   {
@@ -538,6 +523,10 @@ private:
       bool bAlreadyExist = false;
 
       rasterInfoEl.bIsQiData = bIsQiData;
+      // we do this in 2 steps (although not very optimal)
+      // first extract the tiles
+      // the number of tiles elements in the rasters list (including duplicates)
+      int allTilesCnt = 0;
       for (const auto &rasterFileEl : rastersList) {
           if(rasterFileEl.compare(0, 5, "TILE_") == 0)
           {
@@ -557,13 +546,26 @@ private:
                 tileInfoEl.strTileID = strTileID;
                 m_tileIDList.emplace_back(tileInfoEl);
               }
+              allTilesCnt++;
           }
-          else
+      }
+      // second extract the rasters
+      int curRaster = 0;
+      bool bAllRastersHaveDate = ((rastersList.size()-allTilesCnt) == m_acquisitionDatesList.size());
+      for (const auto &rasterFileEl : rastersList) {
+          if(rasterFileEl.compare(0, 5, "TILE_") != 0)
           {
               rasterInfoEl.iRasterType = rasterType;
               rasterInfoEl.strRasterFileName = rasterFileEl;
               rasterInfoEl.strTileID = strTileID;
+              // update the date
+              if(bAllRastersHaveDate) {
+                  rasterInfoEl.rasterTimePeriod = m_strMinAcquisitionDate + "_" + m_acquisitionDatesList[curRaster];
+              } else {
+                  rasterInfoEl.rasterTimePeriod = m_strTimePeriod;
+              }
               m_rasterInfoList.emplace_back(rasterInfoEl);
+              curRaster++;
           }
       }
   }
@@ -845,7 +847,7 @@ private:
                   //bands no = output->GetNumberOfComponentsPerPixel()
                   Band bandEl;
                   bool bFound;
-                  for(int j = 1; j <= output->GetNumberOfComponentsPerPixel(); j++)
+                  for(size_t j = 1; j <= output->GetNumberOfComponentsPerPixel(); j++)
                   {
                       bFound = false;
                       bandEl.Resolution = iResolution;
@@ -990,7 +992,7 @@ private:
           m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLon = geoPosEl.AreaOfInterest.UpperCornerLon;
           m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.UpperCornerLat = geoPosEl.AreaOfInterest.UpperCornerLat;
 
-          for (int j = 1; j < m_geoProductInfo.size(); j++) {
+          for (size_t j = 1; j < m_geoProductInfo.size(); j++) {
               geoPosEl = m_geoProductInfo[j];
               if(geoPosEl.AreaOfInterest.LowerCornerLon < m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon){
                   m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AreaOfInterest.LowerCornerLon = geoPosEl.AreaOfInterest.LowerCornerLon;
@@ -1039,7 +1041,7 @@ private:
           bool bIsDifferent = false;
           std::cout << "m_geoProductInfo.size() =" << m_geoProductInfo.size() << std::endl;
 
-          for (int i = 1; i < m_geoProductInfo.size(); i++) {
+          for (size_t i = 1; i < m_geoProductInfo.size(); i++) {
 
               geoPosEl = m_geoProductInfo[i];
               if(strHorizCSName != geoPosEl.CoordReferenceSystem.HorizCSName)
@@ -1191,12 +1193,12 @@ private:
 
   void ComputeNewNameOfRasterFiles(const tileInfo &tileInfoEl)
   {
-
       std::string strNewRasterFileName;
 
       for (auto &rasterFileEl : m_rasterInfoList) {
           strNewRasterFileName = tileInfoEl.strTileNameRoot;
           strNewRasterFileName = ReplaceString(strNewRasterFileName, "_N" + m_strBaseline, "");
+          strNewRasterFileName = ReplaceString(strNewRasterFileName, "_V" + m_strTimePeriod, "_V" + rasterFileEl.rasterTimePeriod);
           switch(rasterFileEl.iRasterType)
               {
                 case COMPOSITE_REFLECTANCE_RASTER:
@@ -1400,12 +1402,17 @@ private:
     specialValue.SpecialValueIndex = metadata->ImageInformation.NoDataValue;
     m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
 
+    std::string acquisitionDate = metadata->InstanceId.AcquisitionDate;
+    m_acquisitionDatesList.push_back(acquisitionDate);
   }
 
   void FillMetadataInfoForSPOT(std::unique_ptr<SPOT4Metadata> &metadata)
   {
       /* the source is a SPOT file */
       //nothing to load????
+      std::string acquisitionDate = metadata->Header.DatePdv.substr(0,4) +
+              metadata->Header.DatePdv.substr(5,2) + metadata->Header.DatePdv.substr(8,2);
+      m_acquisitionDatesList.push_back(acquisitionDate);
   }
 
   void LoadAllDescriptors(std::vector<std::string> descriptors)
@@ -1449,7 +1456,30 @@ private:
         return true;
   }
 
+private:
+  std::string m_strFileClass;
+  std::string m_strProductLevel;
+  std::string m_strTimePeriod;
+  std::string m_strDestRoot;
+  std::string m_strBaseline;
+  std::vector<previewInfo> m_previewList;
+  std::vector<std::string> m_GIPPList;
+  std::vector<std::string> m_qualityList;
+  std::vector<tileInfo> m_tileIDList;
 
+  ProductFileMetadata m_productMetadata;
+  std::vector<rasterInfo> m_rasterInfoList;
+  std::string m_strProductDirectoryName;
+
+  //bool m_bIsHDR; /* true if is  loaded a .HDR fiel, false if is a .xml file */
+  //std::string m_strTileNameRoot;
+  std::string m_strProductFileName;
+  std::vector<geoProductInfo> m_geoProductInfo;
+
+    std::vector<std::string> m_acquisitionDatesList;
+    std::string m_strMinAcquisitionDate;
+    std::string m_strMaxAcquisitionDate;
+    bool m_bDynamicallyTimePeriod;
 
 };
 }
