@@ -247,7 +247,7 @@ def create_metadata(context):
 
     return E.Earth_Explorer_Header(
             E.Fixed_Header(
-                E.Mission('SENTINEL-2'),
+                E.Mission('SENTINEL-2_'),
                 E.File_Type('AUX_REFDE2')),
             E.Variable_Header(
                 E.Specific_Product_Header(
