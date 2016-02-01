@@ -139,7 +139,7 @@ try:
     if os.path.isfile(crop_mask):
         executeStep("gdalwarp for reprojecting crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-t_srs", shape_wkt, crop_mask, reprojected_crop_mask, skip=fromstep>11)
 
-    executeStep("gdalwarp for cutting crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_crop_mask, cropped_crop_mask, skip=fromstep>12)
+        executeStep("gdalwarp for cutting crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_crop_mask, cropped_crop_mask, skip=fromstep>12)
 
 #Image Classifier (Step 13)
     if os.path.isfile(crop_mask):
