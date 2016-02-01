@@ -61,7 +61,7 @@ public:
             //compute the slope
             int im1 = i-1;
             int ip1 = i+1;
-            slope = (ndvi[ip1] - ndvi[im1]) / (m_id[ip1] - m_id[im1]);
+            slope = static_cast<double>(ndvi[ip1] - ndvi[im1]) / (m_id[ip1] - m_id[im1]);
             if (i == 1 || maxSlope < slope) {
                 maxSlope = slope;
                 index[MAXNDVISLOPE] = i;
