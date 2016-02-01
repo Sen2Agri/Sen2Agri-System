@@ -11,15 +11,6 @@ from common import executeStep
 
 
 def inSituDataAvailable() :
-	# Temporal Features (Step 6)
-	#executeStep("TemporalFeatures", "otbcli", "TemporalFeatures", os.path.join(buildFolder,"CropMask/TemporalFeatures"),"-ndvi",ndvi,"-dates",outdays,"-window", window, "-tf",temporal_features, skip=fromstep>6)
-
-	# Statistic Features (Step 7)
-	#executeStep("StatisticFeatures", "otbcli", "StatisticFeatures", os.path.join(buildFolder,"CropMask/StatisticFeatures"),"-ndwi",ndwi,"-brightness",brightness,"-sf",statistic_features, skip=fromstep>7, rmfiles=[] if keepfiles else [ndwi, brightness])
-
-	# Concatenate Features (Step 8)
-	#executeStep("ConcatenateFeatures", "otbcli_ConcatenateImages", "-il", temporal_features,statistic_features,"-out",features, skip=fromstep>8, rmfiles=[] if keepfiles else [temporal_features, statistic_features])
-
 	#Features when insitu data is available (Step 6 or 7 or 8)
 	executeStep("FeaturesWithInsitu", "otbcli", "FeaturesWithInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithInsitu"),"-ndvi",ndvi,"-ndwi",ndwi,"-brightness",brightness,"-dates",outdays,"-window", window,"-bm", "true", "-out",features, skip=fromstep>6, rmfiles=[] if keepfiles else [ndwi, brightness])
 
@@ -50,19 +41,13 @@ def inSituDataAvailable() :
 def noInSituDataAvailable() :
 	global validation_polygons
 	#Data Smoothing for NDVI (Step 15)
-	executeStep("DataSmoothing for NDVI", "otbcli", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts",ndvi,"-bands", "1", "-lambda", lmbd, "-weight", weight, "-sts",ndvi_smooth, skip=fromstep>15)
+	executeStep("DataSmoothing for NDVI", "otbcli", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts", ndvi, "-mask", mask, "-dates", dates, "-lambda", lmbd, "-sts", ndvi_smooth, "-outdays", outdays_smooth, skip=fromstep>15)
 
 	#Data Smoothing for Reflectances (Step 16)
-	executeStep("DataSmoothing for Reflectances", "otbcli", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts",rtocr,"-bands", "4", "-lambda", lmbd, "-weight", weight, "-sts",rtocr_smooth, skip=fromstep>16, rmfiles=[] if keepfiles else [rtocr])
-
-	# Temporal Features (Step 16)
-	#executeStep("TemporalFeatures", "otbcli", "TemporalFeaturesNoInsitu", os.path.join(buildFolder,"CropMask/TemporalFeaturesNoInsitu"),"-ndvi",ndvi_smooth,"-ts", rtocr_smooth, "-dates", outdays, "-tf", tf_noinsitu, skip=fromstep>16)
-
-	# Spectral Features (Step 17)
-	#executeStep("SpectralFeatures", "otbcli", "SpectralFeatures", os.path.join(buildFolder,"CropMask/SpectralFeatures"),"-ts", rtocr_smooth, "-tf", tf_noinsitu, "-sf", spectral_features, skip=fromstep>17, rmfiles=[] if keepfiles else [ndvi_smooth, rtocr_smooth, tf_noinsitu])
+	executeStep("DataSmoothing for Reflectances", "otbcli", "DataSmoothing", os.path.join(buildFolder,"CropMask/DataSmoothing"),"-ts", tocr, "-mask", mask, "-dates", dates, "-lambda", lmbd, "-sts",rtocr_smooth, skip=fromstep>16, rmfiles=[] if keepfiles else [rtocr])
 
 	#Features when no insitu data is available (Step 17)
-	executeStep("FeaturesWithoutInsitu", "otbcli", "FeaturesWithoutInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithoutInsitu"),"-ndvi",ndvi_smooth,"-ts", rtocr_smooth, "-dates", outdays , "-sf", spectral_features, skip=fromstep>17, rmfiles=[] if keepfiles else [ndvi_smooth, rtocr_smooth])
+	executeStep("FeaturesWithoutInsitu", "otbcli", "FeaturesWithoutInsitu", os.path.join(buildFolder,"CropMask/FeaturesWithoutInsitu"),"-ndvi",ndvi_smooth,"-ts", rtocr_smooth, "-dates", outdays_smooth , "-sf", spectral_features, skip=fromstep>17, rmfiles=[] if keepfiles else [ndvi_smooth, rtocr_smooth])
 
 	# Image Statistics (Step 18)
 	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", spectral_features, "-out", statistics_noinsitu, skip=fromstep>18)
@@ -191,6 +176,7 @@ statistics=os.path.join(args.outdir, "statistics.xml")
 
 ndvi_smooth=os.path.join(args.outdir, "ndvi_smooth.tif")
 rtocr_smooth=os.path.join(args.outdir, "rtocr_smooth.tif")
+outdays_smooth=os.path.join(args.outdir, "days_smooth.txt")
 tf_noinsitu=os.path.join(args.outdir, "tf_noinsitu.tif")
 spectral_features=os.path.join(args.outdir, "spectral_features.tif")
 triming_features=os.path.join(args.outdir, "triming_features.tif")
@@ -241,11 +227,11 @@ try:
 
     executeStep("gdalwarp for masks", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawmask, mask, skip=fromstep>3, rmfiles=[] if keepfiles else [rawmask])
 
-# Temporal Resampling (Step 4)
-    executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16", "-rtocr", rtocr, "-outdays", outdays, "-mode", trm, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
-
 # Select either inSitu or noInSitu branches
     if reference_polygons != "" :
+            # Temporal Resampling (Step 4)
+            executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16", "-rtocr", rtocr, "-outdays", outdays, "-mode", trm, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
+
             # Feature Extraction with insitu (Step 5)
             executeStep("FeatureExtraction", "otbcli", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, "-ndwi", ndwi, "-brightness", brightness, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
 
@@ -256,7 +242,7 @@ try:
             executeStep("Validation for Raw Cropmask with insitu", "otbcli_ComputeConfusionMatrix", "-in", raw_crop_mask, "-out", raw_crop_mask_confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CROP", "-nodatalabel", "-10000", outf=raw_crop_mask_quality_metrics, skip=fromstep>25)
     else:
             # Feature Extraction without insitu (Step 5)
-            executeStep("FeatureExtraction", "otbcli", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, skip=fromstep>5)
+            executeStep("FeatureExtraction", "otbcli", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", tocr, "-ndvi", ndvi, skip=fromstep>5)
 
             #Perform Noinsitu specific steps
             noInSituDataAvailable()
