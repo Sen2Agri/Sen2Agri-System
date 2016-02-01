@@ -20,10 +20,7 @@ parser.add_argument('-mission', help='The main mission for the series', required
 parser.add_argument('-ref', help='The reference polygons', required=True, metavar='reference_polygons')
 parser.add_argument('-ratio', help='The ratio between the validation and training polygons (default 0.75)', required=False, metavar='sample_ratio', default=0.75)
 parser.add_argument('-input', help='The list of products descriptors', required=True, metavar='product_descriptor', nargs='+')
-parser.add_argument('-t0', help='The start date for the temporal resampling interval (in format YYYYMMDD)', required=True, metavar='YYYYMMDD')
-parser.add_argument('-tend', help='The end date for the temporal resampling interval (in format YYYYMMDD)', required=True, metavar='YYYYMMDD')
 parser.add_argument('-rate', help='The sampling rate for the temporal series, in days (default 5)', required=False, metavar='sampling_rate', default=5)
-# parser.add_argument('-radius', help='The radius used for gapfilling, in days (default 15)', required=False, metavar='radius', default=15)
 parser.add_argument('-classifier', help='The classifier (rf or svm) used for training (default rf)',
         required=False, metavar='classifier', choices=['rf','svm'], default='rf')
 parser.add_argument('-rseed', help='The random seed used for training (default 0)', required=False, metavar='random_seed', default=0)
@@ -50,11 +47,7 @@ sample_ratio=str(args.ratio)
 
 indesc = args.input
 
-t0=args.t0
-tend=args.tend
 sp=args.rate
-#radius=args.radius
-radius="15"  # not used
 classifier=args.classifier
 random_seed=args.rseed
 crop_mask=args.mask
@@ -116,7 +109,7 @@ try:
     executeStep("gdalwarp for masks", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawmask, mask, skip=fromstep>3, rmfiles=[] if keepfiles else [rawmask])
 
 # Temporal Resampling (Step 4)
-    executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", sp, "-t0", t0, "-tend", tend, "-radius", radius, "-rtocr", rtocr, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
+    executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16", "-rtocr", rtocr, "-mode", "gapfill", skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
 
 # Feature Extraction (Step 5)
     executeStep("FeatureExtraction", "otbcli", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-fts", fts, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
@@ -164,13 +157,13 @@ try:
     executeStep("ColorMapping", "otbcli_ColorMapping", "-in", crop_type_map_uncompressed,"-method","custom","-method.custom.lut", lut, "-out", color_crop_type_map, "int32", skip=fromstep>16)
 
 #Compression (Step 17)
-    executeStep("Compression", "otbcli_Convert", "-in",  crop_type_map_uncompressed, "-out", crop_type_map+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>17, rmfiles=[] if keepfiles else [ crop_type_map_uncompressed])
+    executeStep("Compression", "otbcli_Convert", "-in",  crop_type_map_uncompressed, "-out", crop_type_map+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>17, rmfiles=[] if keepfiles else [crop_type_map_uncompressed])
 
 #XML conversion (Step 18)
-    executeStep("XML Conversion for Crop Type", "otbcli", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics,  skip=fromstep>18)
+    executeStep("XML Conversion for Crop Type", "otbcli", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics, skip=fromstep>18)
 
 #Product creation (Step 19)
-    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-timeperiod", t0+"_"+tend, "-baseline", "01.00", "-processor", "croptype", "-processor.croptype.file", "TILE_"+tilename, crop_type_map, "-processor.croptype.quality", xml_validation_metrics, skip=fromstep>19)
+    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-baseline", "01.00", "-processor", "croptype", "-processor.croptype.file", "TILE_"+tilename, crop_type_map, "-processor.croptype.quality", xml_validation_metrics, "-il", *indesc, skip=fromstep>19)
 
 except:
     print sys.exc_info()
