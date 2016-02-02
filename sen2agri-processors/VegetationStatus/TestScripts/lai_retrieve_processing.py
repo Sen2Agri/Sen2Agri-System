@@ -357,30 +357,10 @@ print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 runCmd(["otbcli", "ReprocessedProfileSplitter2", imgInvOtbLibsLocation, "-in", outFittedTimeSeries, "-outrlist", fittedRastersListFile, "-outflist", fittedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-fittedRastersFilesList = []
-with open(fittedRastersListFile) as f:
-    fittedRastersFilesList = f.readlines()
-    fittedRastersFilesList = [x.strip('\n') for x in fittedRastersFilesList]
-
-fittedFlagsFilesList = []
-with open(fittedFlagsListFile) as f:
-    fittedFlagsFilesList = f.readlines()
-    fittedFlagsFilesList = [x.strip('\n') for x in fittedFlagsFilesList]
-    
-reprocessedRastersFilesList = []
-with open(reprocessedRastersListFile) as f:
-    reprocessedRastersFilesList = f.readlines()
-    reprocessedRastersFilesList = [x.strip('\n') for x in reprocessedRastersFilesList]
-
-reprocessedFlagsFilesList = []
-with open(reprocessedFlagsListFile) as f:
-    reprocessedFlagsFilesList = f.readlines()
-    reprocessedFlagsFilesList = [x.strip('\n') for x in reprocessedFlagsFilesList]
-    
-cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.laindvi", tileID] + allNdviFilesList + ["-processor.vegetation.laimonodate", tileID] + allLaiParam + ["-processor.vegetation.laimonodateerr", tileID] + allErrParam + ["-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + ["-processor.vegetation.laireproc", tileID] + reprocessedRastersFilesList + ["-processor.vegetation.laireprocflgs", tileID] + reprocessedFlagsFilesList + ["-processor.vegetation.laifit", tileID] + fittedRastersFilesList + ["-processor.vegetation.laifitflgs", tileID] + fittedFlagsFilesList + ["-il"] + allXmlParam + ["-gipp", paramsLaiRetrFilenameXML]
+cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.laindvi", tileID] + allNdviFilesList + ["-processor.vegetation.laimonodate", tileID] + allLaiParam + ["-processor.vegetation.laimonodateerr", tileID] + allErrParam + ["-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + ["-processor.vegetation.filelaireproc", tileID] + reprocessedRastersListFile + ["-processor.vegetation.filelaireprocflgs", tileID] + reprocessedFlagsListFile + ["-processor.vegetation.filelaifit", tileID] + fittedRastersListFile + ["-processor.vegetation.filelaifitflgs", tileID] + fittedFlagsListFile + ["-il"] + allXmlParam + ["-gipp", paramsLaiRetrFilenameXML]
 
 if GENERATE_MODEL:
-    cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.laindvi", tileID] + allNdviFilesList + ["-processor.vegetation.laimonodate", tileID] + allLaiParam + ["-processor.vegetation.laimonodateerr", tileID] + allErrParam + ["-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + ["-processor.vegetation.laireproc", tileID] + reprocessedRastersFilesList + ["-processor.vegetation.laireprocflgs", tileID] + reprocessedFlagsFilesList + ["-processor.vegetation.laifit", tileID] + fittedRastersFilesList + ["-processor.vegetation.laifitflgs", tileID] + fittedFlagsFilesList + ["-il"] + allXmlParam + ["-gipp", paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML]
+    cmd = ["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.laindvi", tileID] + allNdviFilesList + ["-processor.vegetation.laimonodate", tileID] + allLaiParam + ["-processor.vegetation.laimonodateerr", tileID] + allErrParam + ["-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + ["-processor.vegetation.filelaireproc", tileID] + reprocessedRastersListFile + ["-processor.vegetation.filelaireprocflgs", tileID] + reprocessedFlagsListFile + ["-processor.vegetation.filelaifit", tileID] + fittedRastersListFile + ["-processor.vegetation.filelaifitflgs", tileID] + fittedFlagsListFile + ["-il"] + allXmlParam + ["-gipp", paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML]
 
 runCmd(cmd)
 

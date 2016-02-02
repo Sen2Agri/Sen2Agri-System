@@ -37,6 +37,7 @@
 #define LAI_REPR_SUFFIX                 "SLAIR"
 #define LAI_FIT_SUFFIX                  "SLAIF"
 #define PHENO_SUFFIX                    "SNVDIMET"
+#define PHENO_FLAGS_SUFFIX              "MNVDIMETFLG"
 #define LAI_MONO_DATE_FLAGS_SUFFIX      "MMDATEFLG"
 #define LAI_REPROC_FLAGS_SUFFIX         "MREPROCFLG"
 #define LAI_FITTED_FLAGS_SUFFIX         "MFITTEDFLG"
@@ -121,7 +122,8 @@ typedef enum{
     LAI_FIT_RASTER,
     CROP_MASK_RASTER,
     CROP_TYPE_RASTER,
-    PHENO_RASTER
+    PHENO_RASTER,
+    PHENO_FLAGS
 }rasterTypes;
 
 struct rasterInfo
@@ -204,6 +206,9 @@ private:
         AddChoice("processor.vegetation", "Vegetation Status product");
         SetParameterDescription("processor.vegetation", "Specifies a Vegetation Status product");
 
+        AddChoice("processor.phenondvi", "Phenological NDVI metrics product");
+        SetParameterDescription("processor.phenondvi", "Specifies a Phenological NDVI metrics product");
+
         AddChoice("processor.croptype", "Crop type product");
         SetParameterDescription("processor.croptype", "Specifies a CropType product");
 
@@ -239,20 +244,27 @@ private:
         AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laimdateflgs", "LAI Mono date flags raster files list for vegetation  separated by TILE_{tile_id} delimiter");
         MandatoryOff("processor.vegetation.laimdateflgs");
 
-        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laireprocflgs", "LAI Reprocessing flags raster files list for vegetation  separated by TILE_{tile_id} delimiter");
-        MandatoryOff("processor.vegetation.laireprocflgs");
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.filelaireproc", "File containing the LAI REPR raster files list for vegetation "
+                                                                                            "separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.filelaireproc");
 
-        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laifitflgs", "LAI Fitted flags raster files list for vegetation  separated by TILE_{tile_id} delimiter");
-        MandatoryOff("processor.vegetation.laifitflgs");
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.filelaireprocflgs", "File containing the LAI Reprocessing flags raster files "
+                                                                                                "list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.filelaireprocflgs");
 
-        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laireproc", "LAI REPR raster files list for vegetation  separated by TILE_{tile_id} delimiter");
-        MandatoryOff("processor.vegetation.laireproc");
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.filelaifit", "File containing the LAI FIT raster files list for vegetation  "
+                                                                                         "separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.filelaifit");
 
-        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.laifit", "LAI FIT raster files list for vegetation  separated by TILE_{tile_id} delimiter");
-        MandatoryOff("processor.vegetation.laifit");
+        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.filelaifitflgs", "File containing the LAI Fitted flags raster files list for "
+                                                                                             "vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.vegetation.filelaifitflgs");
 
-        AddParameter(ParameterType_InputFilenameList, "processor.vegetation.pheno", "Metric estimation raster files list for vegetation  separated by TILE_{tile_id} delimiter");
-        MandatoryOff("processor.vegetation.pheno");
+        AddParameter(ParameterType_InputFilenameList, "processor.phenondvi.metrics", "Phenological NDVI metrics raster files list for vegetation  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.phenondvi.metrics");
+        AddParameter(ParameterType_InputFilenameList, "processor.phenondvi.flags", "Flags files list for phenological NDVI metrics separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.phenondvi.flags");
+
 
 //crop type parameters
         AddParameter(ParameterType_InputFilenameList, "processor.croptype.file", "CROP TYPE raster file  separated by TILE_{tile_id} delimiter");
@@ -414,23 +426,32 @@ private:
           rastersList = this->GetParameterStringList("processor.vegetation.laimdateflgs");
           UnpackRastersList(rastersList, LAI_MONO_DATE_FLAGS, true);
 
-          rastersList = this->GetParameterStringList("processor.vegetation.laireprocflgs");
-          UnpackRastersList(rastersList, LAI_REPROC_FLAGS, true);
-
-          rastersList = this->GetParameterStringList("processor.vegetation.laifitflgs");
-          UnpackRastersList(rastersList, LAI_FITTED_FLAGS, true);
-
           // LAI Reprocessed raster files list
-          rastersList = this->GetParameterStringList("processor.vegetation.laireproc");
-          UnpackRastersList(rastersList, LAI_REPR_RASTER, false);
+          if(HasValue("processor.vegetation.filelaireproc")) {
+              rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaireproc"));
+              UnpackRastersList(rastersList, LAI_REPR_RASTER, false);
+          }
 
-          //get LAIFIT raster files list
-          rastersList = this->GetParameterStringList("processor.vegetation.laifit");
-          UnpackRastersList(rastersList, LAI_FIT_RASTER, false);
+          if(HasValue("processor.vegetation.filelaireprocflgs")) {
+              rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaireprocflgs"));
+              UnpackRastersList(rastersList, LAI_REPROC_FLAGS, true);
+          }
 
+          if(HasValue("processor.vegetation.filelaifit")) {
+              //get LAIFIT raster files list
+              rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaifit"));
+              UnpackRastersList(rastersList, LAI_FIT_RASTER, false);
+          }
+
+          if(HasValue("processor.vegetation.filelaifitflgs")) {
+              rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaifitflgs"));
+              UnpackRastersList(rastersList, LAI_FITTED_FLAGS, true);
+          }
           //get PHENO raster files list
-          rastersList = this->GetParameterStringList("processor.vegetation.pheno");
+          rastersList = this->GetParameterStringList("processor.phenondvi.metrics");
           UnpackRastersList(rastersList, PHENO_RASTER, false);
+          rastersList = this->GetParameterStringList("processor.phenondvi.flags");
+          UnpackRastersList(rastersList, PHENO_FLAGS, true);
 
      }
 
@@ -1237,8 +1258,6 @@ private:
                   strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
                   strNewRasterFileName = strNewRasterFileName + "_" + COMPOSITE_FLAGS_SUFFIX + TIF_EXTENSION;
                   break;
-
-// TODO: Here we should use also the date for the mono date
                 case LAI_MONO_DATE_FLAGS:
                   strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
                   strNewRasterFileName = strNewRasterFileName + "_" + LAI_MONO_DATE_FLAGS_SUFFIX + TIF_EXTENSION;
@@ -1251,6 +1270,11 @@ private:
                   strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
                   strNewRasterFileName = strNewRasterFileName + "_" + LAI_FITTED_FLAGS_SUFFIX + TIF_EXTENSION;
                   break;
+                case PHENO_FLAGS:
+                  strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                  strNewRasterFileName = strNewRasterFileName + "_" + PHENO_FLAGS_SUFFIX + TIF_EXTENSION;
+                  break;
+
               }
               rasterFileEl.strNewRasterFileName = strNewRasterFileName;
       }
@@ -1454,6 +1478,33 @@ private:
             return false;
         }
         return true;
+  }
+
+  std::vector<std::string> GetFileListFromFile(const std::vector<std::string> &tileAndFileName) {
+      std::vector<std::string> retList;
+      if(tileAndFileName.size() == 2) {
+          retList = GetFileListFromFile(tileAndFileName[1]);
+          retList.insert(retList.begin(), tileAndFileName[0]);
+      } else {
+          itkExceptionMacro("Invalid usage. You should provide a tile name and a file name containing file paths");
+      }
+      return retList;
+  }
+  std::vector<std::string> GetFileListFromFile(const std::string &fileName) {
+        std::ifstream file;
+        std::vector<std::string> retList;
+        file.open(fileName);
+        if (!file.is_open()) {
+            itkExceptionMacro("Can't open file " << fileName << " for reading!");
+        }
+
+        std::string value;
+        while (std::getline(file, value)) {
+          retList.push_back(value);
+        }
+        // close the file
+        file.close();
+        return retList;
   }
 
 private:
