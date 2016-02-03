@@ -4,7 +4,8 @@
 python generate_file_list_composite.py \
 --inputdir /data/s2agri/input/EOData/2013/US-Maricopa/US-Maricopa/ \
 --syntdate 20130228 --synthalf 15 --instrument HRVIR \
---outfile /data/s2agri/output/2013/US-Maricopa/composite_20130228/configuration.file
+--outfile /data/s2agri/output/2013/US-Maricopa/composite_20130228/configuration.file \
+--orbitday J1
 
 
 #run composite processors
