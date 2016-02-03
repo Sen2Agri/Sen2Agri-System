@@ -58,18 +58,19 @@ template <typename PixelType>
 class DataSmoothingFunctor
 {
 public:
-    DataSmoothingFunctor() : outputDates(), bands(1), lambda(1)
+    DataSmoothingFunctor() : bands(1), lambda(1), outputDates()
     {
     }
-    DataSmoothingFunctor(int outputDates,
-                         int bands,
+    DataSmoothingFunctor(int bands,
                          double lambda,
+                         std::vector<int> outputDates,
                          std::vector<ImageInfo> inputImages)
-        : outputDates(outputDates),
-          bands(bands),
+        : bands(bands),
           lambda(lambda),
+          outputDates(std::move(outputDates)),
           inputImages(std::move(inputImages))
     {
+        std::cout << this->outputDates.size() << '\n';
     }
 
     PixelType operator()(const PixelType &pix, const PixelType &mask) const
@@ -78,7 +79,7 @@ public:
         int pixSize = pix.Size();
 
         // Create the output pixel
-        PixelType result(pix.Size());
+        PixelType result(outputDates.size() * bands);
 
         // If the input pixel is nodata return nodata
         PixelType nodata(pixSize);
@@ -89,13 +90,20 @@ public:
             return result;
         }
 
-#if 1
         int firstDay = inputImages.front().day;
         int tempSize = inputImages.back().day - firstDay + 1;
         itk::VariableLengthVector<int> indices(tempSize);
         itk::VariableLengthVector<double> weights(tempSize);
         itk::VariableLengthVector<PixelValueType> values(tempSize);
-        computeInputIndices(mask, indices);
+
+        indices.Fill(-1);
+        for (const auto &img : inputImages) {
+            int pos = img.day - firstDay;
+            if (indices[pos] == -1 && !mask[img.index]) {
+                indices[pos] = img.index;
+            }
+        }
+
         for (int i = 0; i < tempSize; i++) {
             if (indices[i] != -1) {
                 weights[i] = 1.0;
@@ -103,6 +111,7 @@ public:
                 weights[i] = 0.0;
             }
         }
+
         itk::VariableLengthVector<PixelValueType> res(tempSize);
         for (int band = 0; band < bands; band++) {
             for (int i = 0; i < tempSize; i++) {
@@ -113,68 +122,13 @@ public:
                 }
             }
             whit1(lambda, values, weights, res);
-            int pos = 0;
-            for (const auto &img : inputImages) {
-                result[pos++ * bands + band] = res[img.day - firstDay];
-            }
-        }
-#else
-        int outputSize = inputImages.size();
-        itk::VariableLengthVector<double> weights(outputSize);
-        itk::VariableLengthVector<PixelValueType> values(outputSize);
-        for (int i = 0; i < outputSize; i++) {
-            if (mask[i]) {
-                weights[i] = 0.0;
-            } else {
-                weights[i] = 1.0;
-            }
-        }
-        itk::VariableLengthVector<PixelValueType> res(outputSize);
-        for (int band = 0; band < bands; band++) {
-            for (int i = 0; i < outputSize; i++) {
-                values[i] = pix[i * bands + band];
-            }
-            whit1(lambda, values, weights, res);
-            for (int i = 0; i < outputSize; i++) {
-                result[i * bands + band] = res[i];
+            auto pos = 0;
+            for (auto date : outputDates) {
+                result[pos++ * bands + band] = res[date - firstDay];
             }
         }
 
-#endif
         return result;
-
-//        // process each band series independently
-//        for (int band = 0; band < bands; band++) {
-//            // Create two temporary vectors c and d and the temporary result z.
-//            std::vector<double> c(numImages);
-//            std::vector<double> d(numImages);
-//            std::vector<double> z(numImages);
-
-//            // Perform the Whitaker smoothing.
-//            // The code is inspired from the R language package "ptw"
-//            int m = numImages - 1;
-//            d[0] = weights[0] + lambda;
-//            c[0] = -lambda / d[0];
-//            z[0] = weights[0] * static_cast<double>(pix[band]);
-
-//            for (int i = 1; i < m; i++) {
-//                d[i] = weights[i] + 2 * lambda - c[i - 1] * c[i - 1] * d[i - 1];
-//                c[i] = -lambda / d[i];
-//                z[i] =
-//                    weights[i] * static_cast<double>(pix[i * bands + band]) - c[i - 1] * z[i - 1];
-//            }
-//            d[m] = weights[m] + lambda - c[m - 1] * c[m - 1] * d[m - 1];
-//            z[m] = (weights[m] * static_cast<double>(pix[m * bands + band]) - c[m - 1] * z[m - 1]) /
-//                   d[m];
-
-//            result[m * bands + band] = static_cast<PixelValueType>(z[m]);
-//            for (int i = m - 1; 0 <= i; i--) {
-//                z[i] = z[i] / d[i] - c[i] * z[i + 1];
-//                result[i * bands + band] = static_cast<PixelValueType>(z[i]);
-//            }
-//        }
-
-//        return result;
     }
 
     bool operator!=(const DataSmoothingFunctor a) const
@@ -189,23 +143,10 @@ public:
     }
 
 protected:
-    int outputDates;
     int bands;
     double lambda;
+    std::vector<int> outputDates;
     std::vector<ImageInfo> inputImages;
-
-    void computeInputIndices(const PixelType &mask, itk::VariableLengthVector<int> &indices) const
-    {
-        int firstDay = inputImages.front().day;
-
-        indices.Fill(-1);
-        for (const auto &img : inputImages) {
-            int pos = img.day - firstDay;
-            if (indices[pos] == -1 && !mask[img.index]) {
-                indices[pos] = img.index;
-            }
-        }
-    }
 };
 
 #endif // TEMPORALRESAMPLING_HXX

@@ -264,10 +264,10 @@ private:
             }
         }
         auto prevDay = -1;
-        auto distinctDates = 0;
+        std::vector<int> outputDates;
         for (const auto &img : images) {
             if (img.day != prevDay) {
-                distinctDates++;
+                outputDates.emplace_back(img.day);
                 prevDay = img.day;
                 if (outFile) {
                     outFile << img.day << '\n';
@@ -278,9 +278,11 @@ private:
         int bands = m_tsReader->GetOutput()->GetNumberOfComponentsPerPixel() / images.size();
 
         // connect the functor based filter
-        m_smoothFilter->SetFunctor(DataSmoothingFunctorType(distinctDates, bands, lambda, images));
+        m_smoothFilter->SetFunctor(DataSmoothingFunctorType(bands, lambda, outputDates, images));
         m_smoothFilter->SetInput(0, m_tsReader->GetOutput());
         m_smoothFilter->SetInput(1, GetParameterInt16VectorImage("mask"));
+        m_smoothFilter->UpdateOutputInformation();
+        m_smoothFilter->GetOutput()->SetNumberOfComponentsPerPixel(outputDates.size() * bands);
         SetParameterOutputImage("sts", m_smoothFilter->GetOutput());
     }
     //  Software Guide :EndCodeSnippet
