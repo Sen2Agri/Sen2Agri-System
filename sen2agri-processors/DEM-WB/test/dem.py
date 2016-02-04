@@ -177,6 +177,7 @@ def create_context(args):
              srtm_directory=args.srtm,
              swbd_directory=args.swbd,
              working_directory=args.working_dir,
+             temp_directory=temp_directory,
              output=args.output,
              image_directory=image_directory,
              metadata_file=os.path.join(args.output, metadata_template.format(tile_id)),
@@ -432,6 +433,11 @@ context = parse_arguments()
 try:
     print(context.image_directory)
     os.makedirs(context.image_directory)
+except:
+    pass
+try:
+    print(context.temp_directory)
+    os.makedirs(context.temp_directory)
 except:
     pass
 metadata = create_metadata(context)
