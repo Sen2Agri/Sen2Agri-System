@@ -218,7 +218,11 @@ private:
       int bpi = m_TSReader->GetOutput()->GetNumberOfComponentsPerPixel() / m_NDVIReader->GetOutput()->GetNumberOfComponentsPerPixel();
 
       // connect the functor based filter
+#if 1
       m_filter->SetNumberOfOutputBands(bpi*outImages);
+#else
+      m_filter->SetNumberOfOutputBands(outImages);
+#endif
       m_filter->SetFunctor(FeaturesNoInsituFunctorType(outImages, bpi, m_inDates));
 
       m_filter->SetInput(0, m_NDVIReader->GetOutput());

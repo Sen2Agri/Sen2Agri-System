@@ -29,7 +29,6 @@ source set_build_folder.sh
     /mnt/Sen2Agri_DataSets/L2A/LANDSAT8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20131007_L8_199_030/SudouestS2A_20131007_L8_199_030.HDR \
     /mnt/Sen2Agri_DataSets/L2A/LANDSAT8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20131023_L8_199_030/SudouestS2A_20131023_L8_199_030.HDR \
     /mnt/Sen2Agri_DataSets/L2A/LANDSAT8/Sudmipy-West/MACCS_ManualFormat/SudouestS2A_20131210_L8_199_030/SudouestS2A_20131210_L8_199_030.HDR \
-    -t0 20130216 -tend 20130616 -rate 5 \
     -rseed 0 -pixsize 20 \
     -outdir /mnt/data/csudmipy/CSudmipy-O-mask/ \
     -buildfolder $BUILD_FOLDER

@@ -17,15 +17,14 @@
 
 =========================================================================*/
 
-
 //  Software Guide : BeginCommandLineArgs
 //    INPUTS: {reference polygons}, {sample ratio}
 //    OUTPUTS: {training polygons}, {validation_polygons}
 //  Software Guide : EndCommandLineArgs
 
-
 //  Software Guide : BeginLatex
-// The sample selection consists in splitting the reference data into 2 disjoint sets, the training set and the validation set.
+// The sample selection consists in splitting the reference data into 2 disjoint sets, the training
+// set and the validation set.
 // These sets are composed of polygons, not individual pixels.
 //
 //  Software Guide : EndLatex
@@ -41,7 +40,7 @@
 //  Software Guide : EndCodeSnippet
 
 // define all needed types
-typedef otb::ImageFileReader<ImageType>  ReaderType;
+typedef otb::ImageFileReader<ImageType> ReaderType;
 
 namespace otb
 {
@@ -56,7 +55,6 @@ namespace Wrapper
 {
 //  Software Guide : EndCodeSnippet
 
-
 //  Software Guide : BeginLatex
 //
 //  SampleSelection class is derived from Application class.
@@ -68,310 +66,278 @@ class TemporalResampling : public Application
 //  Software Guide : EndCodeSnippet
 {
 public:
-  //  Software Guide : BeginLatex
-  // The \code{ITK} public types for the class, the superclass and smart pointers.
-  // Software Guide : EndLatex
+    //  Software Guide : BeginLatex
+    // The \code{ITK} public types for the class, the superclass and smart pointers.
+    // Software Guide : EndLatex
 
-  //  Software Guide : BeginCodeSnippet
-  typedef TemporalResampling Self;
-  typedef Application Superclass;
-  typedef itk::SmartPointer<Self> Pointer;
-  typedef itk::SmartPointer<const Self> ConstPointer;
-  // Software Guide : EndCodeSnippet
+    //  Software Guide : BeginCodeSnippet
+    typedef TemporalResampling Self;
+    typedef Application Superclass;
+    typedef itk::SmartPointer<Self> Pointer;
+    typedef itk::SmartPointer<const Self> ConstPointer;
+    // Software Guide : EndCodeSnippet
 
-  //  Software Guide : BeginLatex
-  //  Invoke the macros necessary to respect ITK object factory mechanisms.
-  //  Software Guide : EndLatex
+    //  Software Guide : BeginLatex
+    //  Invoke the macros necessary to respect ITK object factory mechanisms.
+    //  Software Guide : EndLatex
 
-  //  Software Guide : BeginCodeSnippet
-  itkNewMacro(Self)
-;
+    //  Software Guide : BeginCodeSnippet
+    itkNewMacro(Self);
 
-  itkTypeMacro(TemporalResampling, otb::Application)
-;
-  //  Software Guide : EndCodeSnippet
-
+    itkTypeMacro(TemporalResampling, otb::Application);
+    //  Software Guide : EndCodeSnippet
 
 private:
+    //  Software Guide : BeginLatex
+    //  \code{DoInit()} method contains class information and description, parameter set up, and
+    // example values.
+    //  Software Guide : EndLatex
 
-  //  Software Guide : BeginLatex
-  //  \code{DoInit()} method contains class information and description, parameter set up, and example values.
-  //  Software Guide : EndLatex
+    void DoInit()
+    {
 
-  void DoInit()
-  {
+        // Software Guide : BeginLatex
+        // Application name and description are set using following methods :
+        // \begin{description}
+        // \item[\code{SetName()}] Name of the application.
+        // \item[\code{SetDescription()}] Set the short description of the class.
+        // \item[\code{SetDocName()}] Set long name of the application (that can be displayed
+        // \dots).
+        // \item[\code{SetDocLongDescription()}] This methods is used to describe the class.
+        // \item[\code{SetDocLimitations()}] Set known limitations (threading, invalid pixel type
+        // \dots) or bugs.
+        // \item[\code{SetDocAuthors()}] Set the application Authors. Author List. Format : "John
+        // Doe, Winnie the Pooh" \dots
+        // \item[\code{SetDocSeeAlso()}] If the application is related to one another, it can be
+        // mentioned.
+        // \end{description}
+        // Software Guide : EndLatex
+
+        //  Software Guide : BeginCodeSnippet
+        SetName("TemporalResampling");
+        SetDescription("Resample a list of images to a fixed step time interval.");
+
+        SetDocName("TemporalResampling");
+        SetDocLongDescription("Resample a list of images to a fixed step time interval.");
+        SetDocLimitations("None");
+        SetDocAuthors("LBU");
+        SetDocSeeAlso(" ");
+        //  Software Guide : EndCodeSnippet
+
+        // Software Guide : BeginLatex
+        // \code{AddDocTag()} method categorize the application using relevant tags.
+        // \code{Code/ApplicationEngine/otbWrapperTags.h} contains some predefined tags defined in
+        // \code{Tags} namespace.
+        // Software Guide : EndLatex
+
+        //  Software Guide : BeginCodeSnippet
+        AddDocTag(Tags::Vector);
+        //  Software Guide : EndCodeSnippet
+
+        // Software Guide : BeginLatex
+        // The input parameters:
+        // - ref: Vector file containing reference data
+        // - ratio: Ratio between the number of training and validation polygons per class (dafault:
+        // 0.75)
+        // The output parameters:
+        // - tp: Vector file containing reference data for training
+        // - vp: Vector file containing reference data for validation
+        // Software Guide : EndLatex
+
+        //  Software Guide : BeginCodeSnippet
+
+        AddParameter(ParameterType_InputImage, "tocr", "S2 L2A surface reflectances");
+        AddParameter(ParameterType_InputImage, "mask", "Validity masks for each acquisition date");
+        AddParameter(ParameterType_InputFilename, "ind", "Dates of each image acquisition");
+        AddParameter(ParameterType_StringList, "sp", "Temporal sampling rate");
+
+        AddParameter(ParameterType_Choice, "mode", "Mode");
+        SetParameterDescription("mode", "Specifies the choice of output dates (default: resample)");
+        AddChoice("mode.resample", "Specifies the temporal resampling mode");
+        AddChoice("mode.gapfill", "Specifies the gapfilling mode");
+        SetParameterString("mode", "resample");
+
+        AddParameter(ParameterType_OutputImage, "rtocr", "Resampled S2 L2A surface reflectances");
+
+        AddParameter(ParameterType_OutputFilename,
+                     "outdays",
+                     "The file containing the days from epoch for the resampled time series");
+        MandatoryOff("outdays");
+
+        // Set default value for parameters
+        //  Software Guide : EndCodeSnippet
+
+        // Software Guide : BeginLatex
+        // An example commandline is automatically generated. Method
+        // \code{SetDocExampleParameterValue()} is
+        // used to set parameters. Dataset should be located in  \code{OTB-Data/Examples} directory.
+        // Software Guide : EndLatex
+
+        //  Software Guide : BeginCodeSnippet
+        SetDocExampleParameterValue("tocr", "tocr.tif");
+        SetDocExampleParameterValue("mask", "mask.tif");
+        SetDocExampleParameterValue("ind", "dates.txt");
+        SetDocExampleParameterValue("sp", "SENTINEL 5 SPOT 5 LANDSAT 16");
+        SetDocExampleParameterValue("mode", "resample");
+        //  Software Guide : EndCodeSnippet
+    }
 
     // Software Guide : BeginLatex
-    // Application name and description are set using following methods :
-    // \begin{description}
-    // \item[\code{SetName()}] Name of the application.
-    // \item[\code{SetDescription()}] Set the short description of the class.
-    // \item[\code{SetDocName()}] Set long name of the application (that can be displayed \dots).
-    // \item[\code{SetDocLongDescription()}] This methods is used to describe the class.
-    // \item[\code{SetDocLimitations()}] Set known limitations (threading, invalid pixel type \dots) or bugs.
-    // \item[\code{SetDocAuthors()}] Set the application Authors. Author List. Format : "John Doe, Winnie the Pooh" \dots
-    // \item[\code{SetDocSeeAlso()}] If the application is related to one another, it can be mentioned.
-    // \end{description}
+    // \code{DoUpdateParameters()} is called as soon as a parameter value change. Section
+    // \ref{sec:appDoUpdateParameters}
+    // gives a complete description of this method.
     // Software Guide : EndLatex
-
-    //  Software Guide : BeginCodeSnippet
-      SetName("TemporalResampling");
-      SetDescription("Resample a list of images to a fixed step time interval.");
-
-      SetDocName("TemporalResampling");
-      SetDocLongDescription("Resample a list of images to a fixed step time interval.");
-      SetDocLimitations("None");
-      SetDocAuthors("LBU");
-      SetDocSeeAlso(" ");
+    //  Software Guide :BeginCodeSnippet
+    void DoUpdateParameters()
+    {
+        // Nothing to do.
+    }
     //  Software Guide : EndCodeSnippet
 
-
     // Software Guide : BeginLatex
-    // \code{AddDocTag()} method categorize the application using relevant tags.
-    // \code{Code/ApplicationEngine/otbWrapperTags.h} contains some predefined tags defined in \code{Tags} namespace.
+    // The algorithm consists in a random sampling without replacement of the polygons of each class
+    // with
+    // probability p = sample_ratio value for the training set and
+    // 1 - p for the validation set.
     // Software Guide : EndLatex
+    //  Software Guide :BeginCodeSnippet
+    void DoExecute()
+    {
+        // Read all input parameters
+        imgReader = ReaderType::New();
+        imgReader->SetFileName(GetParameterString("tocr"));
 
-    //  Software Guide : BeginCodeSnippet
-    AddDocTag(Tags::Vector);
-    //  Software Guide : EndCodeSnippet
+        maskReader = ReaderType::New();
+        maskReader->SetFileName(GetParameterString("mask"));
 
-    // Software Guide : BeginLatex
-    // The input parameters:
-    // - ref: Vector file containing reference data
-    // - ratio: Ratio between the number of training and validation polygons per class (dafault: 0.75)
-    // The output parameters:
-    // - tp: Vector file containing reference data for training
-    // - vp: Vector file containing reference data for validation
-    // Software Guide : EndLatex
+        imgReader->GetOutput()->UpdateOutputInformation();
+        maskReader->GetOutput()->UpdateOutputInformation();
 
-    //  Software Guide : BeginCodeSnippet
+        // get the interval used for the output images
+        bool resample = GetParameterString("mode") == "resample";
+        std::map<std::string, int> sp;
+        if (HasValue("sp")) {
+            const auto &spValues = GetParameterStringList("sp");
+            auto n = spValues.size();
+            if (n % 2) {
+                itkExceptionMacro("Parameter 'sp' must be a list of string and number pairs.");
+            }
 
-    AddParameter(ParameterType_InputImage, "tocr", "S2 L2A surface reflectances");
-    AddParameter(ParameterType_InputImage, "mask", "Validity masks for each acquisition date");
-    AddParameter(ParameterType_InputFilename, "ind", "Dates of each image acquisition");
-    AddParameter(ParameterType_Int, "sp", "Temporal sampling rate");
-    AddParameter(ParameterType_String, "t0", "Starting sampling date");
-    AddParameter(ParameterType_String, "tend", "Last date");
-    AddParameter(ParameterType_Int, "radius", "Radius of the temporal window ");
+            for (size_t i = 0; i < n; i += 2) {
+                const auto sensor = spValues[i];
+                const auto rateStr = spValues[i + 1];
+                auto rate = std::stoi(rateStr);
+                if (rate <= 0) {
+                    itkExceptionMacro("Invalid sampling rate " << rateStr << " for sensor " << sensor)
+                }
+                sp[sensor] = rate;
+            }
 
-    AddParameter(ParameterType_OutputImage, "rtocr", "Resampled S2 L2A surface reflectances");
+            std::cout << "Sampling rates by sensor:\n";
+            for (const auto &sensor : sp) {
+                std::cout << sensor.first << ": " << sensor.second << '\n';
+            }
+        }
 
-    AddParameter(ParameterType_OutputFilename, "outdays", "The file containing the days from epoch for the resampled time series");
-    MandatoryOff("outdays");
+        // Get the file that contains the dates
+        std::string datesFileName = GetParameterString("ind");
+        std::ifstream datesFile;
+        datesFile.open(datesFileName);
+        if (!datesFile.is_open()) {
+            itkExceptionMacro("Can't open dates file for reading!");
+        }
 
-    // Set default value for parameters
-    SetDefaultParameterInt("sp", 5);
-    SetDefaultParameterInt("radius", 15);
-     //  Software Guide : EndCodeSnippet
+        // build the input data vector
+        std::vector<SensorData> inData;
+        std::string value;
+        while (std::getline(datesFile, value) && value.size() > 0) {
+            // the first line is the mission name
+            SensorData sd;
+            sd.sensorName = value;
 
-    // Software Guide : BeginLatex
-    // An example commandline is automatically generated. Method \code{SetDocExampleParameterValue()} is
-    // used to set parameters. Dataset should be located in  \code{OTB-Data/Examples} directory.
-    // Software Guide : EndLatex
+            // read the number of input dates
+            if (!std::getline(datesFile, value)) {
+                itkExceptionMacro("Invald dates file!. Cannot read the number of images for sensor "
+                                  << sd.sensorName);
+            }
+            int numInput = std::stoi(value);
+            // read the input dates
+            for (int i = 0; i < numInput; i++) {
+                if (!std::getline(datesFile, value)) {
+                    itkExceptionMacro("Invald dates file! Cannot read date "
+                                      << (i + 1) << " for sensor " << sd.sensorName);
+                }
+                sd.inDates.push_back(getDaysFromEpoch(value));
+            }
 
-    //  Software Guide : BeginCodeSnippet
-    SetDocExampleParameterValue("tocr", "tocr.tif");
-    SetDocExampleParameterValue("mask", "mask.tif");
-    SetDocExampleParameterValue("ind", "dates.txt");
-    SetDocExampleParameterValue("sp", "5");
-    SetDocExampleParameterValue("t0", "20130501");
-    SetDocExampleParameterValue("tend", "20130601");
-    SetDocExampleParameterValue("radius", "15");
-    //  Software Guide : EndCodeSnippet
-  }
+            if (resample) {
+                auto it = sp.find(sd.sensorName);
+                if (it == sp.end()) {
+                    itkExceptionMacro("Sampling rate required for sensor " << sd.sensorName);
+                }
+                auto rate = it->second;
+                for (int date = sd.inDates.front(); date <= sd.inDates.back(); date += rate) {
+                    sd.outDates.emplace_back(date);
+                }
+            } else {
+                sd.outDates.insert(sd.outDates.end(), sd.inDates.begin(), sd.inDates.end());
+            }
 
-  // Software Guide : BeginLatex
-  // \code{DoUpdateParameters()} is called as soon as a parameter value change. Section \ref{sec:appDoUpdateParameters}
-  // gives a complete description of this method.
-  // Software Guide : EndLatex
-  //  Software Guide :BeginCodeSnippet
-  void DoUpdateParameters()
-  {
-      // Nothing to do.
-  }
-  //  Software Guide : EndCodeSnippet
+            // add the data to the vector
+            inData.emplace_back(sd);
+        }
 
-  // Software Guide : BeginLatex
-  // The algorithm consists in a random sampling without replacement of the polygons of each class with
-  // probability p = sample_ratio value for the training set and
-  // 1 - p for the validation set.
-  // Software Guide : EndLatex
-  //  Software Guide :BeginCodeSnippet
-  void DoExecute()
-  {
+        // close the file
+        datesFile.close();
 
-      //Read all input parameters
-      imgReader = ReaderType::New();
-      imgReader->SetFileName(GetParameterString("tocr"));
+        if (HasValue("outdays")) {
+            // create the output days file
+            std::ofstream outDaysFile(GetParameterString("outdays"));
+            if (!outDaysFile) {
+                itkExceptionMacro("Can't open output days file for writing!");
+            }
 
-      maskReader = ReaderType::New();
-      maskReader->SetFileName(GetParameterString("mask"));
+            for (const auto &sd : inData) {
+                for (auto date : sd.outDates) {
+                    outDaysFile << sd.sensorName << ' ' << date << '\n';
+                }
+            }
+        }
 
-      imgReader->GetOutput()->UpdateOutputInformation();
-      maskReader->GetOutput()->UpdateOutputInformation();
+        // The number of image bands can be computed as the ratio between the bands in the image and
+        // the bands in the mask
+        int imageBands = imgReader->GetOutput()->GetNumberOfComponentsPerPixel() /
+                         maskReader->GetOutput()->GetNumberOfComponentsPerPixel();
 
-      // get the interval used for the output images
-      int sp = GetParameterInt("sp");
-      int t0 = getDaysFromEpoch(GetParameterString("t0"));
-      int tend = getDaysFromEpoch(GetParameterString("tend"));
-      int radius = GetParameterInt("radius");
+        // Create the instance of the filter which will perform all computations
+        filter = BinaryFunctorImageFilterWithNBands::New();
 
+        int dateCount = 0;
+        for (const auto &sd : inData) {
+            dateCount += sd.outDates.size();
+        }
+        filter->SetNumberOfOutputBands(imageBands * dateCount);
+        filter->SetFunctor(GapFillingFunctor<ImageType::PixelType>(inData, 0, imageBands));
 
-      // compute the output dates vector
-      std::vector<int> outDates;
-      for( int i = t0; i <= tend; i += sp) {
-          outDates.push_back(i);
-      }
+        filter->SetInput(0, imgReader->GetOutput());
+        filter->SetInput(1, maskReader->GetOutput());
 
-      // Get the file that contains the dates
-      std::string datesFileName = GetParameterString("ind");
-      std::ifstream datesFile;
-      datesFile.open(datesFileName);
-      if (!datesFile.is_open()) {
-          itkExceptionMacro("Can't open dates file for reading!");
-      }
-
-      // build the input data vector
-      std::vector<SensorData> inData;
-      std::string value;
-      int offset = 0;
-      while (std::getline(datesFile, value) && value.size() > 0) {
-          // the first line is the mission name
-          SensorData sd;
-          sd.sensorName = value;
-          sd.outNum = 0;
-
-          // set the offset
-          sd.offset = offset;
-
-          // read the number of input dates
-          if (!std::getline(datesFile, value)) {
-              itkExceptionMacro("Invald dates file!. Cannot read the number of iamges for sensor " << sd.sensorName);
-          }
-          int numInput = std::stoi(value);
-          // read the input dates
-          for (int i=0; i<numInput; i++) {
-              if (!std::getline(datesFile, value)) {
-                  itkExceptionMacro("Invald dates file! Cannot read date " << (i+1) << " for sensor " << sd.sensorName);
-              }
-              sd.inDates.push_back(getDaysFromEpoch(value));
-          }
-
-          // update the offset
-          offset += numInput;
-
-          // add the data to the vector
-          inData.push_back(sd);
-      }
-
-      // decide what are the output rasters build for each sensor
-      std::vector<int> outDateStatus(outDates.size(), -1);
-      for (unsigned int i=0; i<outDates.size(); i++) {
-          int outDate = outDates[i];
-
-          //check if the date can be covered by the sensor data
-          for (SensorData& sd : inData) {
-              if (outDate >= sd.inDates[0] && outDate <= sd.inDates[sd.inDates.size()-1]) {
-                  // the date is covered
-                  outDateStatus[i] = -2;
-
-                  // update the covered output dates interval
-                  if (sd.outNum == 0) {
-                      sd.outStart = outDate;
-                  }
-                  sd.outEnd = outDate;
-                  sd.outNum++;
-              }
-          }
-      }
-
-      // check if there are uncovered dates
-      for (unsigned int i=0; i<outDates.size(); i++) {
-          if (outDateStatus[i] == -1) {
-              int outDate = outDates[i];
-
-              int distance = INT_MAX;
-              for (unsigned int j=0; j<inData.size(); j++) {
-                  SensorData& sd = inData[j];
-                  int sensorDist = std::min(std::abs(sd.inDates[0]-outDate), std::abs(sd.inDates[sd.inDates.size()-1]-outDate));
-                  if (sensorDist < distance) {
-                      distance = sensorDist;
-                      outDateStatus[i] = j;
-                  }
-              }
-          }
-      }
-
-      // distribute last dates to the corresponding sensors
-      for (unsigned int i=0; i<outDates.size(); i++) {
-          if (outDateStatus[i] >= 0) {
-              int outDate = outDates[i];
-              SensorData& sd = inData[outDateStatus[i]];
-
-              if (sd.outStart > outDate) {
-                  sd.outStart = outDate;
-              }
-              if (sd.outEnd < outDate) {
-                  sd.outEnd = outDate;
-              }
-              sd.outNum++;
-          }
-      }
-
-
-
-      // close the file
-      datesFile.close();
-
-      if (HasValue("outdays")) {
-          // create the output days file
-          std::ofstream outDaysFile;
-          outDaysFile.open(GetParameterString("outdays"));
-          if (!outDaysFile.is_open()) {
-              itkExceptionMacro("Can't open output days file for writing!");
-          }
-
-          // add one entry for each day and each sensor that covers the output date
-          for (int outDay : outDates) {
-              for (SensorData& sd : inData) {
-                  if (outDay >= sd.outStart && outDay <= sd.outEnd) {
-                      outDaysFile <<  outDay << std::endl;
-                  }
-              }
-          }
-
-          // close the file if it is opened.
-          outDaysFile.close();
-      }
-
-
-      // The number of image bands can be computed as the ratio between the bands in the image and the bands in the mask
-      int imageBands = imgReader->GetOutput()->GetNumberOfComponentsPerPixel() / maskReader->GetOutput()->GetNumberOfComponentsPerPixel();
-
-
-      // Create the instance of the filter which will perform all computations
-      filter = BinaryFunctorImageFilterWithNBands::New();
-      filter->SetNumberOfOutputBands(imageBands * outDates.size());
-      filter->SetFunctor(GapFillingFunctor<ImageType::PixelType>(inData, outDates, radius, imageBands));
-
-      filter->SetInput(0, imgReader->GetOutput());
-      filter->SetInput(1, maskReader->GetOutput());
-
-      SetParameterOutputImage("rtocr", filter->GetOutput());
-  }
-  //  Software Guide :EndCodeSnippet
+        SetParameterOutputImage("rtocr", filter->GetOutput());
+    }
+    //  Software Guide :EndCodeSnippet
 private:
-  ReaderType::Pointer imgReader;
-  ReaderType::Pointer maskReader;
-  BinaryFunctorImageFilterWithNBands::Pointer filter;
+    ReaderType::Pointer imgReader;
+    ReaderType::Pointer maskReader;
+    BinaryFunctorImageFilterWithNBands::Pointer filter;
 
-  inline int getDaysFromEpoch(const std::string& date) {
-      struct tm tm = {};
-      if (strptime(date.c_str(), "%Y%m%d", &tm) == NULL) {
-          itkExceptionMacro("Invalid value for a date: " + date);
-      }
-      return mktime(&tm) / 86400;
-  }
+    inline int getDaysFromEpoch(const std::string &date)
+    {
+        struct tm tm = {};
+        if (strptime(date.c_str(), "%Y%m%d", &tm) == NULL) {
+            itkExceptionMacro("Invalid value for a date: " + date);
+        }
+        return mktime(&tm) / 86400;
+    }
 };
 }
 }
@@ -382,5 +348,3 @@ private:
 //  Software Guide :BeginCodeSnippet
 OTB_APPLICATION_EXPORT(otb::Wrapper::TemporalResampling)
 //  Software Guide :EndCodeSnippet
-
-
