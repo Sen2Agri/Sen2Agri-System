@@ -563,7 +563,7 @@ private:
 
       BandMathImageFilterType::Pointer maskWaterMath = BandMathImageFilterType::New();
       maskWaterMath->SetNthInput(0, extractor->GetOutput());
-      maskWaterMath->SetExpression("((b1 == 2) || (rint(b1/2 - 0,01)-(rint(rint(b1/2 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
+      maskWaterMath->SetExpression("((b1 == 2) || (rint(b1/2 - 0.01)-(rint(rint(b1/2 - 0.01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
       maskWaterMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskWaterMath);
       // resample if needed
@@ -575,7 +575,7 @@ private:
 
       BandMathImageFilterType::Pointer maskSnowMath = BandMathImageFilterType::New();
       maskSnowMath->SetNthInput(0, extractor->GetOutput());
-      maskSnowMath->SetExpression("((b1 == 4) || (rint(b1/4 - 0,01)-(rint(rint(b1/4 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
+      maskSnowMath->SetExpression("((b1 == 4) || (rint(b1/4 - 0.01)-(rint(rint(b1/4 - 0.01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
       maskSnowMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskSnowMath);
       // resample if needed
@@ -678,7 +678,7 @@ private:
 
       BandMathImageFilterType::Pointer maskSnowMath = BandMathImageFilterType::New();
       maskSnowMath->SetNthInput(0, extractor->GetOutput());
-      maskSnowMath->SetExpression("((b1 == 32) || (rint(b1/32 - 0,01)-(rint(rint(b1/32 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
+      maskSnowMath->SetExpression("((b1 == 32) || (rint(b1/32 - 0.01)-(rint(rint(b1/32 - 0.01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
       maskSnowMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskSnowMath);
 
@@ -795,7 +795,7 @@ private:
 
       BandMathImageFilterType::Pointer maskSnowMath = BandMathImageFilterType::New();
       maskSnowMath->SetNthInput(0, extractor->GetOutput());
-      maskSnowMath->SetExpression("((b1 == 32) || (rint(b1/32 - 0,01)-(rint(rint(b1/32 - 0,01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
+      maskSnowMath->SetExpression("((b1 == 32) || (rint(b1/32 - 0.01)-(rint(rint(b1/32 - 0.01)/2-0.01) * 2) == 0)) ? 1 : 0 ");
       maskSnowMath->UpdateOutputInformation();
       m_BandMathList->PushBack(maskSnowMath);
 
