@@ -6,9 +6,9 @@
 #include <QObject>
 #include <QDBusContext>
 
+#include "persistencemanager.hpp"
 #include "orchestratorworker.hpp"
 #include "processorhandler.hpp"
-#include "persistencemanager_interface.h"
 
 class Orchestrator : public QObject, protected QDBusContext
 {
@@ -24,7 +24,7 @@ public slots:
     void NotifyEventsAvailable();
 
 private:
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient;
+    PersistenceManagerDBProvider persistenceManager;
     OrgEsaSen2agriProcessorsExecutorInterface executorClient;
     OrchestratorWorker worker;
 

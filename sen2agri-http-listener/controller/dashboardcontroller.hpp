@@ -4,10 +4,14 @@
 #include <httpserver/httpresponse.h>
 #include <httpserver/httprequesthandler.h>
 
+#include "persistencemanager.hpp"
+
 class DashboardController : public HttpRequestHandler
 {
     Q_OBJECT
     Q_DISABLE_COPY(DashboardController)
+
+    PersistenceManagerDBProvider &persistenceManager;
 
     void getDashboardCurrentJobData(const HttpRequest &request, HttpResponse &response);
     void getDashboardServerResourceData(const HttpRequest &request, HttpResponse &response);
@@ -28,7 +32,7 @@ class DashboardController : public HttpRequestHandler
     void notifyOrchestrator();
 
 public:
-    DashboardController();
+    DashboardController(PersistenceManagerDBProvider &persistenceManager);
 
     void service(HttpRequest &request, HttpResponse &response);
 };

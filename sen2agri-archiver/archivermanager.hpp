@@ -1,12 +1,12 @@
 #ifndef ARCHIVERMANAGER_H
 #define ARCHIVERMANAGER_H
+
 #include <QCoreApplication>
 #include <QTimer>
 #include <QMap>
 #include <QStringList>
-#include "persistencemanager_interface.h"
 
-
+#include "persistencemanager.hpp"
 
 class ArchiverManager final : public QObject
 {
@@ -50,7 +50,7 @@ private:
 
     CONFIG_PARAM    readConfigParams;
     QMap<QString, QList<FILE_INFO>> files;
-    OrgEsaSen2agriPersistenceManagerInterface clientInterface;
+    PersistenceManagerDBProvider clientInterface;
     QTimer mExitTimer;
 };
 

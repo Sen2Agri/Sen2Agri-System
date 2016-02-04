@@ -1,5 +1,0 @@
-[D-BUS Service]
-Name=org.esa.sen2agri.persistenceManager
-Exec=/usr/bin/sen2agri-persistence
-User=sen2agri-service
-SystemdService=sen2agri-persistence.service

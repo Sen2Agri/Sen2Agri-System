@@ -2,17 +2,20 @@
 #include "stopwatch.hpp"
 #include "logger.hpp"
 #include "dbus_future_utils.hpp"
-#include "persistencemanager_interface.h"
 #include "orchestrator_interface.h"
 
-DashboardController::DashboardController() {}
+DashboardController::DashboardController(PersistenceManagerDBProvider &persistenceManager)
+    : persistenceManager(persistenceManager)
+{
+}
 
 void DashboardController::service(HttpRequest &request, HttpResponse &response)
 {
     Stopwatch sw(__func__);
     Q_UNUSED(sw);
 
-    try {
+    try
+    {
         const auto &path = request.getPath();
         const auto &method = request.getMethod();
         const auto &action = path.mid(path.indexOf('/', 1) + 1);
@@ -54,7 +57,9 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
                 response.setStatus(400, "Bad Request");
             }
         }
-    } catch (const std::exception &e) {
+    }
+    catch (const std::exception &e)
+    {
         response.setStatus(500, "Internal Server Error");
 
         Logger::error(e.what());
@@ -63,12 +68,7 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
 
 void DashboardController::getDashboardCurrentJobData(const HttpRequest &, HttpResponse &response)
 {
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
-
-    const auto &data =
-        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardCurrentJobData());
+    const auto &data = persistenceManager.GetDashboardCurrentJobData();
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
@@ -77,12 +77,7 @@ void DashboardController::getDashboardCurrentJobData(const HttpRequest &, HttpRe
 void DashboardController::getDashboardServerResourceData(const HttpRequest &,
                                                          HttpResponse &response)
 {
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
-
-    const auto &data =
-        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardServerResourceData());
+    const auto &data = persistenceManager.GetDashboardServerResourceData();
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
@@ -91,12 +86,7 @@ void DashboardController::getDashboardServerResourceData(const HttpRequest &,
 void DashboardController::getDashboardProcessorStatistics(const HttpRequest &,
                                                           HttpResponse &response)
 {
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
-
-    const auto &data =
-        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardProcessorStatistics());
+    const auto &data = persistenceManager.GetDashboardProcessorStatistics();
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
@@ -108,12 +98,7 @@ void DashboardController::getDashboardProductAvailability(const HttpRequest &req
     const auto &value = request.getParameter("since");
     const auto &since = QDateTime::fromString(value, Qt::ISODate);
 
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
-
-    const auto &data =
-        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardProductAvailability(since));
+    const auto &data = persistenceManager.GetDashboardProductAvailability(since);
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
@@ -133,12 +118,7 @@ void DashboardController::getDashboardJobTimeline(const HttpRequest &request,
         return;
     }
 
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
-
-    const auto &data =
-        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardJobTimeline(jobId));
+    const auto &data = persistenceManager.GetDashboardJobTimeline(jobId);
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
@@ -147,39 +127,35 @@ void DashboardController::getDashboardJobTimeline(const HttpRequest &request,
 void DashboardController::getDashboardProducts(const HttpRequest &request, HttpResponse &response)
 {
     bool ok;
-	const auto &siteIdStr = request.getParameter("siteId");
+    const auto &siteIdStr = request.getParameter("siteId");
     std::experimental::optional<int> siteId;
-	
+
     if (!siteIdStr.isNull()) {
         siteId = siteIdStr.toInt(&ok);
-	    if (!ok) {
-	        Logger::error(QStringLiteral("Invalid siteId value: %1").arg(QString::fromUtf8(siteIdStr)));
-	
-	        response.setStatus(400, "Bad Request");
-	        return;
-	    }
-	}
-	
-	const auto &processorIdStr = request.getParameter("processorId");
+        if (!ok) {
+            Logger::error(
+                QStringLiteral("Invalid siteId value: %1").arg(QString::fromUtf8(siteIdStr)));
+
+            response.setStatus(400, "Bad Request");
+            return;
+        }
+    }
+
+    const auto &processorIdStr = request.getParameter("processorId");
     std::experimental::optional<int> processorId;
-    
+
     if (!processorIdStr.isNull()) {
         processorId = processorIdStr.toInt(&ok);
-	    if (!ok) {
-	        Logger::error(QStringLiteral("Invalid processorId value: %1").arg(QString::fromUtf8(processorIdStr)));
-	
-	        response.setStatus(400, "Bad Request");
-	        return;
-	    }
-	}
+        if (!ok) {
+            Logger::error(QStringLiteral("Invalid processorId value: %1")
+                              .arg(QString::fromUtf8(processorIdStr)));
 
-    
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
+            response.setStatus(400, "Bad Request");
+            return;
+        }
+    }
 
-    const auto &data =
-        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardProducts({siteId, processorId}));
+    const auto &data = persistenceManager.GetDashboardProducts({ siteId, processorId });
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
@@ -187,19 +163,14 @@ void DashboardController::getDashboardProducts(const HttpRequest &request, HttpR
 
 void DashboardController::getDashboardSites(const HttpRequest &, HttpResponse &response)
 {
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
-
-    const auto &data =
-        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardSites());
+    const auto &data = persistenceManager.GetDashboardSites();
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
 }
 
 void DashboardController::getDashboardSentinelTiles(const HttpRequest &request,
-                                                  HttpResponse &response)
+                                                    HttpResponse &response)
 {
     const auto &siteIdStr = request.getParameter("siteId");
     bool ok;
@@ -212,19 +183,14 @@ void DashboardController::getDashboardSentinelTiles(const HttpRequest &request,
         return;
     }
 
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
-
-    const auto &data =
-        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardSentinelTiles(siteId));
+    const auto &data = persistenceManager.GetDashboardSentinelTiles(siteId);
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
 }
 
 void DashboardController::getDashboardLandsatTiles(const HttpRequest &request,
-                                                  HttpResponse &response)
+                                                   HttpResponse &response)
 {
     const auto &siteIdStr = request.getParameter("siteId");
     bool ok;
@@ -237,12 +203,7 @@ void DashboardController::getDashboardLandsatTiles(const HttpRequest &request,
         return;
     }
 
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
-
-    const auto &data =
-        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardLandsatTiles(siteId));
+    const auto &data = persistenceManager.GetDashboardLandsatTiles(siteId);
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
@@ -250,12 +211,7 @@ void DashboardController::getDashboardLandsatTiles(const HttpRequest &request,
 
 void DashboardController::getDashboardProcessors(const HttpRequest &, HttpResponse &response)
 {
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
-
-    const auto &data =
-        WaitForResponseAndThrow(persistenceManagerClient.GetDashboardProcessors());
+    const auto &data = persistenceManager.GetDashboardProcessors();
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
@@ -274,11 +230,7 @@ void DashboardController::cancelJob(const HttpRequest &request, HttpResponse &re
         return;
     }
 
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
-
-    WaitForResponseAndThrow(persistenceManagerClient.InsertJobCancelledEvent({ jobId }));
+    persistenceManager.InsertEvent(JobCancelledEvent(jobId));
 
     notifyOrchestrator();
 }
@@ -296,11 +248,7 @@ void DashboardController::pauseJob(const HttpRequest &request, HttpResponse &res
         return;
     }
 
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
-
-    WaitForResponseAndThrow(persistenceManagerClient.InsertJobPausedEvent({ jobId }));
+    persistenceManager.InsertEvent(JobPausedEvent(jobId));
 
     notifyOrchestrator();
 }
@@ -318,11 +266,7 @@ void DashboardController::resumeJob(const HttpRequest &request, HttpResponse &re
         return;
     }
 
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
-
-    WaitForResponseAndThrow(persistenceManagerClient.InsertJobCancelledEvent({ jobId }));
+    persistenceManager.InsertEvent(JobResumedEvent(jobId));
 
     notifyOrchestrator();
 }
@@ -331,7 +275,8 @@ void DashboardController::notifyOrchestrator()
 {
     OrgEsaSen2agriOrchestratorInterface orchestratorClient(
         OrgEsaSen2agriOrchestratorInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/orchestrator"), QDBusConnection::systemBus());
+        QStringLiteral("/org/esa/sen2agri/orchestrator"),
+        QDBusConnection::systemBus());
 
     auto promise = orchestratorClient.NotifyEventsAvailable();
     promise.waitForFinished();

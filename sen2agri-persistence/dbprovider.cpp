@@ -5,12 +5,14 @@
 #include "dbprovider.hpp"
 #include "logger.hpp"
 
-DBProvider::DBProvider(const Settings &settings) : settings(settings) {}
+DBProvider::DBProvider(const Settings &settings) : settings(settings)
+{
+}
 
 SqlDatabaseRAII DBProvider::getDatabase(const QString &name) const
 {
-    return SqlDatabaseRAII(name, settings.hostName, settings.databaseName, settings.userName,
-                           settings.password);
+    return SqlDatabaseRAII(
+        name, settings.hostName, settings.databaseName, settings.userName, settings.password);
 }
 
 bool DBProvider::shouldRetryTransaction(const sql_error &e)

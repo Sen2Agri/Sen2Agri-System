@@ -5,6 +5,7 @@
 
 #include "logger.hpp"
 #include "orchestratorworker.hpp"
+#include "persistencemanager.hpp"
 #include "dbus_future_utils.hpp"
 
 static StepArgumentList getStepArguments(const JobStepToRun &step);
@@ -13,9 +14,9 @@ getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunLi
 
 OrchestratorWorker::OrchestratorWorker(
     std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
-    OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient,
+    PersistenceManagerDBProvider &persistenceManagerClient,
     OrgEsaSen2agriProcessorsExecutorInterface &executorClient)
-    : persistenceManagerClient(persistenceManagerClient),
+    : persistenceManager(persistenceManagerClient),
       executorClient(executorClient),
       handlerMap(handlerMap)
 {
@@ -32,7 +33,7 @@ void OrchestratorWorker::RescanEvents()
 
     try {
         while (true) {
-            EventProcessingContext ctx(persistenceManagerClient);
+            EventProcessingContext ctx(persistenceManager);
 
             const auto &events = ctx.GetNewEvents();
             if (events.empty()) {
@@ -61,7 +62,7 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
     }
 
     try {
-        EventProcessingContext innerCtx(persistenceManagerClient);
+        EventProcessingContext innerCtx(persistenceManager);
 
         switch (event.type) {
             case EventType::TaskRunnable:

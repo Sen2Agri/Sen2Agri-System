@@ -4,17 +4,17 @@
 #include <vector>
 #include <QFileInfo>
 
+#include "persistencemanager.hpp"
 #include "model.hpp"
 
 #include "tasktosubmit.hpp"
-#include "persistencemanager_interface.h"
 
 class EventProcessingContext
 {
-    OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient;
+    PersistenceManagerDBProvider &persistenceManager;
 
 public:
-    EventProcessingContext(OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient);
+    EventProcessingContext(PersistenceManagerDBProvider &persistenceManager);
 
     std::map<QString, QString> GetJobConfigurationParameters(int jobId, QString prefix);
 

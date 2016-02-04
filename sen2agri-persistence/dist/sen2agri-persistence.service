@@ -1,9 +1,0 @@
-[Unit]
-Description=Persistence Layer for Sen2Agri
-Wants=network-online.target
-After=network-online.target
-
-[Service]
-BusName=org.esa.sen2agri.persistenceManager
-ExecStart=/usr/bin/sen2agri-persistence
-User=sen2agri-service

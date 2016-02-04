@@ -12,7 +12,7 @@
 
 class DBProvider
 {
-    const Settings &settings;
+    Settings settings;
 
     DBProvider(const DBProvider &) = delete;
     DBProvider &operator=(const DBProvider &) = delete;

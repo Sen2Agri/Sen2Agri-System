@@ -1,61 +1,47 @@
 #pragma once
 
-#include <QObject>
-#include <QDBusAbstractAdaptor>
-#include <QDBusContext>
-#include <QDBusConnection>
-#include <QDBusMessage>
-
-#include "persistencemanagerdbprovider.hpp"
-#include "asyncdbustask.hpp"
+#include "sqldatabaseraii.hpp"
+#include "dbprovider.hpp"
 #include "model.hpp"
 #include "settings.hpp"
+#include "serializedevent.hpp"
 
-class PersistenceManager : public QObject, protected QDBusContext
+class PersistenceManagerDBProvider
 {
-    Q_OBJECT
+    DBProvider provider;
 
-    PersistenceManagerDBProvider dbProvider;
+    SqlDatabaseRAII getDatabase() const;
 
-    template <typename F>
-    void RunAsync(F &&f)
-    {
-        setDelayedReply(true);
-
-        if (auto task = makeAsyncDBusTask(message(), connection(), std::forward<F>(f))) {
-            QThreadPool::globalInstance()->start(task);
-        } else {
-            sendErrorReply(QDBusError::NoMemory);
-        }
-    }
-
-    bool IsCallerAdmin();
+    PersistenceManagerDBProvider(const PersistenceManagerDBProvider &) = delete;
+    PersistenceManagerDBProvider &operator=(const PersistenceManagerDBProvider &) = delete;
 
 public:
-    explicit PersistenceManager(const Settings &settings, QObject *parent = 0);
+    PersistenceManagerDBProvider(const Settings &settings);
 
-signals:
+    void TestConnection();
 
-public slots:
     ConfigurationSet GetConfigurationSet();
 
-    ConfigurationParameterValueList GetConfigurationParameters(QString prefix);
-    JobConfigurationParameterValueList GetJobConfigurationParameters(int jobId, QString prefix);
+    ConfigurationParameterValueList GetConfigurationParameters(const QString &prefix);
+    JobConfigurationParameterValueList GetJobConfigurationParameters(int jobId,
+                                                                     const QString &prefix);
 
-    KeyedMessageList UpdateConfigurationParameters(ConfigurationUpdateActionList parameters);
-    KeyedMessageList UpdateJobConfigurationParameters(int jobId,
-                                                      JobConfigurationUpdateActionList parameters);
+    KeyedMessageList UpdateConfigurationParameters(const ConfigurationUpdateActionList &actions,
+                                                   bool isAdmin);
+    KeyedMessageList
+    UpdateJobConfigurationParameters(int jobId, const JobConfigurationUpdateActionList &actions);
 
     ProductToArchiveList GetProductsToArchive();
-    void MarkProductsArchived(ArchivedProductList products);
+    void MarkProductsArchived(const ArchivedProductList &products);
 
-    int SubmitJob(NewJob job);
-    int SubmitTask(NewTask task);
-    void SubmitSteps(NewStepList steps);
+    int SubmitJob(const NewJob &job);
+    int SubmitTask(const NewTask &task);
+    void SubmitSteps(const NewStepList &steps);
 
-    void MarkStepPendingStart(int taskId, QString name);
-    void MarkStepStarted(int taskId, QString name);
-    bool MarkStepFinished(int taskId, QString name, ExecutionStatistics statistics);
+    void MarkStepPendingStart(int taskId, const QString &name);
+    void MarkStepStarted(int taskId, const QString &name);
+    bool MarkStepFinished(int taskId, const QString &name, const ExecutionStatistics &statistics);
+    void MarkStepFailed(int taskId, const QString &name, const ExecutionStatistics &statistics);
 
     void MarkJobPaused(int jobId);
     void MarkJobResumed(int jobId);
@@ -64,35 +50,29 @@ public slots:
     void MarkJobFailed(int jobId);
     void MarkJobNeedsInput(int jobId);
 
-    TaskIdList GetJobTasksByStatus(int jobId, ExecutionStatusList statusList);
+    TaskIdList GetJobTasksByStatus(int jobId, const ExecutionStatusList &statusList);
     JobStepToRunList GetTaskStepsForStart(int taskId);
     JobStepToRunList GetJobStepsForResume(int jobId);
 
     StepConsoleOutputList GetTaskConsoleOutputs(int taskId);
 
-    void InsertTaskAddedEvent(TaskRunnableEvent event);
-    void InsertTaskFinishedEvent(TaskFinishedEvent event);
-    void InsertProductAvailableEvent(ProductAvailableEvent event);
-    void InsertJobCancelledEvent(JobCancelledEvent event);
-    void InsertJobPausedEvent(JobPausedEvent event);
-    void InsertJobResumedEvent(JobResumedEvent event);
-    void InsertJobSubmittedEvent(JobSubmittedEvent event);
+    void InsertEvent(const SerializedEvent &event);
 
     UnprocessedEventList GetNewEvents();
     void MarkEventProcessingStarted(int eventId);
     void MarkEventProcessingComplete(int eventId);
 
-    void InsertNodeStatistics(NodeStatistics statistics);
+    void InsertNodeStatistics(const NodeStatistics &statistics);
 
-    int InsertProduct(NewProduct product);
+    int InsertProduct(const NewProduct &product);
 
     QString GetDashboardCurrentJobData();
     QString GetDashboardServerResourceData();
     QString GetDashboardProcessorStatistics();
-    QString GetDashboardProductAvailability(const QDateTime since);
+    QString GetDashboardProductAvailability(const QDateTime &since);
     QString GetDashboardJobTimeline(int jobId);
     
-    QString GetDashboardProducts(DashboardSearch search);
+    QString GetDashboardProducts(const DashboardSearch &search);
     QString GetDashboardSites();
     QString GetDashboardSentinelTiles(int siteId);
     QString GetDashboardLandsatTiles(int siteId);

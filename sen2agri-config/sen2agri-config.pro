@@ -1,6 +1,6 @@
 include(../common.pri)
 
-QT       += core gui widgets dbus
+QT       += core gui widgets dbus sql concurrent
 
 TARGET = sen2agri-config
 TEMPLATE = app
@@ -8,11 +8,6 @@ TEMPLATE = app
 DESTDIR = bin
 
 INCLUDEPATH += ../Optional
-
-interface.files = ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
-interface.header_flags = -i ../sen2agri-common/model.hpp
-
-DBUS_INTERFACES += interface
 
 SOURCES += main.cpp\
     maindialog.cpp \
@@ -27,6 +22,13 @@ HEADERS  += maindialog.hpp \
     parameterkey.hpp
 
 FORMS    += maindialog.ui
+
+LIBS += -L$$OUT_PWD/../sen2agri-persistence/ -lsen2agri-persistence
+
+INCLUDEPATH += $$PWD/../sen2agri-persistence
+DEPENDPATH += $$PWD/../sen2agri-persistence
+
+PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-persistence/libsen2agri-persistence.a
 
 LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
 

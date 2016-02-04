@@ -1,7 +1,7 @@
 #ifndef PERSISTENCEITFMODULE_H
 #define PERSISTENCEITFMODULE_H
 
-#include "persistencemanager_interface.h"
+#include "persistencemanager.hpp"
 #include "processorexecutioninfos.h"
 
 /**
@@ -33,7 +33,7 @@ signals:
 
 private:
     PersistenceItfModule();
-    OrgEsaSen2agriPersistenceManagerInterface clientInterface;
+    PersistenceManagerDBProvider clientInterface;
 
     bool GetProcessorPathForName(const ConfigurationParameterValueList &configuration,
                                 const QString &name, QString &path);

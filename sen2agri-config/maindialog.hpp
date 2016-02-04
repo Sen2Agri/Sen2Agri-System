@@ -6,7 +6,7 @@
 
 #include "configmodel.hpp"
 #include "parameterchangelistener.hpp"
-#include "persistencemanager_interface.h"
+#include "persistencemanager.hpp"
 
 namespace Ui
 {
@@ -29,7 +29,7 @@ private slots:
 private:
     Ui::MainDialog *ui;
     ConfigModel configModel;
-    OrgEsaSen2agriPersistenceManagerInterface clientInterface;
+    PersistenceManagerDBProvider clientInterface;
     std::vector<int> tabCategory;
     std::map<int, std::vector<ParameterChangeListener *>> parameterChangeListeners;
     std::vector<QComboBox *> siteLists;

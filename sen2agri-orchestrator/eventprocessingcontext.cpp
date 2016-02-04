@@ -7,16 +7,16 @@
 #include "eventprocessingcontext.hpp"
 
 EventProcessingContext::EventProcessingContext(
-    OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient)
-    : persistenceManagerClient(persistenceManagerClient)
+    PersistenceManagerDBProvider &persistenceManager)
+    : persistenceManager(persistenceManager)
 {
 }
 
 std::map<QString, QString> EventProcessingContext::GetJobConfigurationParameters(int jobId,
                                                                                  QString prefix)
 {
-    const auto &paramList = WaitForResponseAndThrow(
-        persistenceManagerClient.GetJobConfigurationParameters(jobId, prefix));
+    const auto &paramList =
+        persistenceManager.GetJobConfigurationParameters(jobId, prefix);
 
     std::map<QString, QString> result;
     for (const auto &p : paramList) {
@@ -28,7 +28,7 @@ std::map<QString, QString> EventProcessingContext::GetJobConfigurationParameters
 
 int EventProcessingContext::SubmitTask(const NewTask &task)
 {
-    auto taskId = WaitForResponseAndThrow(persistenceManagerClient.SubmitTask(task));
+    auto taskId = persistenceManager.SubmitTask(task);
 
     const auto &path = GetOutputPath(task.jobId, taskId, task.module);
     if (!QDir::root().mkpath(path)) {
@@ -41,78 +41,78 @@ int EventProcessingContext::SubmitTask(const NewTask &task)
 
 void EventProcessingContext::SubmitSteps(const NewStepList &steps)
 {
-    WaitForResponseAndThrow(persistenceManagerClient.SubmitSteps(steps));
+    persistenceManager.SubmitSteps(steps);
 }
 
 void EventProcessingContext::MarkJobPaused(int jobId)
 {
-    WaitForResponseAndThrow(persistenceManagerClient.MarkJobPaused(jobId));
+    persistenceManager.MarkJobPaused(jobId);
 }
 
 void EventProcessingContext::MarkJobResumed(int jobId)
 {
-    WaitForResponseAndThrow(persistenceManagerClient.MarkJobResumed(jobId));
+    persistenceManager.MarkJobResumed(jobId);
 }
 
 void EventProcessingContext::MarkJobCancelled(int jobId)
 {
-    WaitForResponseAndThrow(persistenceManagerClient.MarkJobCancelled(jobId));
+    persistenceManager.MarkJobCancelled(jobId);
 }
 
 void EventProcessingContext::MarkJobFinished(int jobId)
 {
-    WaitForResponseAndThrow(persistenceManagerClient.MarkJobFinished(jobId));
+    persistenceManager.MarkJobFinished(jobId);
 }
 
 void EventProcessingContext::MarkJobFailed(int jobId)
 {
-    WaitForResponseAndThrow(persistenceManagerClient.MarkJobFailed(jobId));
+    persistenceManager.MarkJobFailed(jobId);
 }
 
 void EventProcessingContext::MarkJobNeedsInput(int jobId)
 {
-    WaitForResponseAndThrow(persistenceManagerClient.MarkJobNeedsInput(jobId));
+    persistenceManager.MarkJobNeedsInput(jobId);
 }
 
 TaskIdList EventProcessingContext::GetJobTasksByStatus(int jobId,
                                                        const ExecutionStatusList &statusList)
 {
-    return WaitForResponseAndThrow(persistenceManagerClient.GetJobTasksByStatus(jobId, statusList));
+    return persistenceManager.GetJobTasksByStatus(jobId, statusList);
 }
 
 JobStepToRunList EventProcessingContext::GetTaskStepsForStart(int taskId)
 {
-    return WaitForResponseAndThrow(persistenceManagerClient.GetTaskStepsForStart(taskId));
+    return persistenceManager.GetTaskStepsForStart(taskId);
 }
 
 JobStepToRunList EventProcessingContext::GetJobStepsForResume(int jobId)
 {
-    return WaitForResponseAndThrow(persistenceManagerClient.GetJobStepsForResume(jobId));
+    return persistenceManager.GetJobStepsForResume(jobId);
 }
 
 StepConsoleOutputList EventProcessingContext::GetTaskConsoleOutputs(int taskId)
 {
-    return WaitForResponseAndThrow(persistenceManagerClient.GetTaskConsoleOutputs(taskId));
+    return persistenceManager.GetTaskConsoleOutputs(taskId);
 }
 
 UnprocessedEventList EventProcessingContext::GetNewEvents()
 {
-    return WaitForResponseAndThrow(persistenceManagerClient.GetNewEvents());
+    return persistenceManager.GetNewEvents();
 }
 
 void EventProcessingContext::MarkEventProcessingStarted(int eventId)
 {
-    WaitForResponseAndThrow(persistenceManagerClient.MarkEventProcessingStarted(eventId));
+    persistenceManager.MarkEventProcessingStarted(eventId);
 }
 
 void EventProcessingContext::MarkEventProcessingComplete(int eventId)
 {
-    WaitForResponseAndThrow(persistenceManagerClient.MarkEventProcessingComplete(eventId));
+    persistenceManager.MarkEventProcessingComplete(eventId);
 }
 
 int EventProcessingContext::InsertProduct(const NewProduct &product)
 {
-    return WaitForResponseAndThrow(persistenceManagerClient.InsertProduct(product));
+    return persistenceManager.InsertProduct(product);
 }
 
 QStringList EventProcessingContext::GetProductFiles(const QString &path,
@@ -132,8 +132,8 @@ QString EventProcessingContext::GetOutputPath(int jobId, int taskId, const QStri
 QString EventProcessingContext::GetScratchPath(int jobId)
 {
     const auto &parameters =
-        WaitForResponseAndThrow(persistenceManagerClient.GetJobConfigurationParameters(
-            jobId, QStringLiteral("general.scratch-path")));
+        persistenceManager.GetJobConfigurationParameters(
+            jobId, QStringLiteral("general.scratch-path"));
 
     if (parameters.empty()) {
         throw std::runtime_error("Please configure the \"general.scratch-path\" parameter with the "
