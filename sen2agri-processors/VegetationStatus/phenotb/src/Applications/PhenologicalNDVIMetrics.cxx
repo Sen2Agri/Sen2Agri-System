@@ -18,78 +18,19 @@
 
 #include "phenoFunctions.h"
 
-/*std::vector<float> pix_dummy = {
-    251,
-    200,
-    213,
-    4066,
-    2456,
-    4173,
-    5986,
-    8232,
-    9017,
-    9273,
-    9428,
-    2806,
-    3556,
-    5145,
-    8547,
-    8646,
-    5639
-};
-
-std::vector<int> msk_dummy ={
-    1,
-    1,
-    1,
-    1,
-    1,
-    0,
-    0,
-    0,
-    0,
-    0,
-    0,
-    1,
-    1,
-    1,
-    0,
-    0,
-    0
-};
-std::vector<int> days1 = {37,
-                          57,
-                          77,
-                          92,
-                          102,
-                          107,
-                          112,
-                          117,
-                          122,
-                          127,
-                          132,
-                          137,
-                          147,
-                          152,
-                          157,
-                          162,
-                          167
-};
-*/
-
 // we have 4 phenological parameters and 1 band for the flags
 #define RESULT_BANDS_NO     5
 namespace pheno
 {
 template <typename PixelType>
-class PhenologicalNDVIMeticsFunctor
+class PhenologicalNDVIMetricsFunctor
 {
 protected:
   VectorType dv;
 
 public:
   struct DifferentSizes {};
-  PhenologicalNDVIMeticsFunctor() {};
+  PhenologicalNDVIMetricsFunctor() {};
 
   void SetDates(const std::vector<tm>& d) {
     dv = VectorType{static_cast<unsigned int>(d.size())};
@@ -110,9 +51,9 @@ public:
 
     VectorType vec(nbDates);
     for(size_t i=0; i<nbDates; i++)
-      {
+    {
       vec[i] = pix[i] / 10000;
-      }
+    }
 
 
     // A date is valid if it is not NaN and the mask value == 0.
@@ -132,69 +73,36 @@ public:
       }
 
     auto approx = normalized_sigmoid::TwoCycleApproximation(profile, t);
-/*    auto x_1 = std::get<0>(std::get<1>(approx));
-    auto mm1 = std::get<1>(std::get<1>(approx));
-    auto x_2 = std::get<0>(std::get<2>(approx));
-    auto mm2 = std::get<1>(std::get<2>(approx));
-*/
     auto princ_cycle = std::get<1>(approx);
     auto x_hat = std::get<0>(princ_cycle);
     auto min_max = std::get<1>(princ_cycle);
     auto A_hat = min_max.second - min_max.first;
     auto B_hat = min_max.first;
 
-/* Debug only
-    auto x0_hat = x_hat[0];
-    auto x1_hat = x_hat[1];
-    auto x2_hat = x_hat[2];
-    auto x3_hat = x_hat[3];
-*/
-
-      // The result uses either the original or the approximated value depending on the mask value
-//      PixelType result(nbDates);
-//      VectorType tmps1(nbDates);
-//      VectorType tmps2(nbDates);
-
-//      // Compute the approximation
-//      normalized_sigmoid::F<VectorType>()(dv, x_1, tmps1);
-//      normalized_sigmoid::F<VectorType>()(dv, x_2, tmps2);
-
-//      normalized_sigmoid::F<VectorType>()(dv, x_hat, tmps1);
-//      auto tmpres = tmps1*(mm1.second-mm1.first)+mm1.first
-//        + tmps2*(mm2.second-mm2.first)+mm2.first;
-
-//      double dgx0, t0, t1, t2, t3, dgx2;
-//      std::tie(dgx0, t0, t1, t2, t3, dgx2) =
-//          pheno::normalized_sigmoid::pheno_metrics<double>(tmpres);
-
      double dgx0, t0, t1, t2, t3, dgx2;
      std::tie(dgx0, t0, t1, t2, t3, dgx2) =
          pheno::normalized_sigmoid::pheno_metrics<double>(x_hat, A_hat, B_hat);
 
-    result[0] = x_hat[0];
-    result[1] = t0;
-    result[2] = (t2-t1);
-    result[3] = t3;
     // add also the number of valid dates that were used in the processing
-    result[4] = profile.size();
+    // The metrics have to fulfill some constraints in order to be considered as valid:
+    //    t0<x0<t1<t2<t3
+    if((t0 < x_hat[0]) && (x_hat[0] < t1) && (t1 < t2) && (t2 < t3) && ((t3 - t0) < 365)) {
+        result[0] = x_hat[0];
+        result[1] = t0;
+        result[2] = (t2-t1);
+        result[3] = t3;
+        result[4] = profile.size();
+    }
 
-      /*result[0] = dgx0;
-      result[1] = t0;
-      result[2] = t1;
-      result[3] = t2;
-      result[4] = t3;
-      result[5] = dgx2;
-      */
-
-      return result;
+    return result;
   }
 
-  bool operator!=(const PhenologicalNDVIMeticsFunctor a)
+  bool operator!=(const PhenologicalNDVIMetricsFunctor a)
   {
     return (this->dates != a.dates) || (this->dv != a.dv) ;
   }
 
-  bool operator==(const PhenologicalNDVIMeticsFunctor a)
+  bool operator==(const PhenologicalNDVIMetricsFunctor a)
   {
     return !(*this == a);
   }
@@ -221,7 +129,7 @@ public:
   itkTypeMacro(PhenologicalNDVIMetrics, otb::Application);
 
   using FunctorType =
-    pheno::PhenologicalNDVIMeticsFunctor<FloatVectorImageType::PixelType>;
+    pheno::PhenologicalNDVIMetricsFunctor<FloatVectorImageType::PixelType>;
   using FilterType = pheno::BinaryFunctorImageFilterWithNBands<FloatVectorImageType,
                                                                FloatVectorImageType,
                                                                FunctorType>;

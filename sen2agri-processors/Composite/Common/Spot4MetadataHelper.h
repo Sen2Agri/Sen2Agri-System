@@ -5,76 +5,88 @@
 #include "ResamplingBandExtractor2.h"
 
 #include "../../MACCSMetadata/include/SPOT4MetadataReader.hpp"
+#include "itkNaryFunctorImageFilter.h"
+
 typedef itk::SPOT4MetadataReader                                   SPOT4MetadataReaderType;
-#include "itkUnaryFunctorImageFilter.h"
-#include "itkBinaryFunctorImageFilter.h"
-#include "itkTernaryFunctorImageFilter.h"
 
 class Spot4MetadataHelper : public MetadataHelper
 {
-    template< class TInput1, class TOutput>
-    class MaskHandlerFunctor
+    template< class TInput, class TOutput>
+    class NaryMaskHandlerFunctor
     {
     public:
-        MaskHandlerFunctor(){}
+        NaryMaskHandlerFunctor(){}
         void Initialize(MasksFlagType nMaskFlags, bool binarizeResult) { m_MaskFlags = nMaskFlags; m_bBinarizeResult = binarizeResult;}
-        MaskHandlerFunctor& operator =(const MaskHandlerFunctor& copy) {
+        NaryMaskHandlerFunctor& operator =(const NaryMaskHandlerFunctor& copy) {
             m_MaskFlags=copy.m_MaskFlags;
             m_bBinarizeResult = copy.m_bBinarizeResult;
             return *this;
         }
-        bool operator!=( const MaskHandlerFunctor & other) const { return true; }
-        bool operator==( const MaskHandlerFunctor & other ) const { return !(*this != other); }
-        TOutput operator()( const TInput1 & A) {
-            return Spot4MetadataHelper::computeGlobalMaskPixelValue(A, m_MaskFlags, m_bBinarizeResult);
+        bool operator!=( const NaryMaskHandlerFunctor & a) const { return   (this->m_MaskFlags != a.m_MaskFlags) ||
+                                                                            (this->m_bBinarizeResult != a.m_bBinarizeResult) ;}
+        bool operator==( const NaryMaskHandlerFunctor & a ) const { return !(*this != a); }
+
+        TOutput operator()( const std::vector< TInput > & B) {
+            switch (B.size())
+            {
+            case 1:
+                if((m_MaskFlags & MSK_CLOUD) != 0) {
+                    if(B[0] != 0) return m_bBinarizeResult ? 1 : IMG_FLG_CLOUD;
+                } else if((m_MaskFlags & MSK_SAT) != 0) {
+                    if(B[0] != 0) return m_bBinarizeResult ? 1 : IMG_FLG_SATURATION;
+                } else {
+                    // in this case we have div file (snow, water etc)
+                    if((B[0] & 0x01) != 0) return m_bBinarizeResult ? 1 : IMG_FLG_NO_DATA;
+                    if(((m_MaskFlags & MSK_WATER) != 0) && ((B[0] & 0x02) != 0)) return m_bBinarizeResult ? 1 : IMG_FLG_WATER;
+                    if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[0] & 0x04) != 0)) return m_bBinarizeResult ? 1 : IMG_FLG_SNOW;
+                }
+                break;
+            case 2:
+                // we have values only for 2 of them and they are the first two
+                // we determine them based on the flag type
+                if((m_MaskFlags & MSK_CLOUD) != 0) {
+                    if(B[0] != 0) return m_bBinarizeResult ? 1 : IMG_FLG_CLOUD;
+                    if((m_MaskFlags & MSK_SAT) != 0) {
+                        // in this case in the second value val2 we have saturation
+                        if(B[1] != 0) return m_bBinarizeResult ? 1 : IMG_FLG_SATURATION;
+                    } else {
+                        // in this case we have div file (snow, water etc)
+                        if((B[1] & 0x01) != 0) return m_bBinarizeResult ? 1 : IMG_FLG_NO_DATA;
+                        if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x02) != 0)) return m_bBinarizeResult ? 1 : IMG_FLG_WATER;
+                        if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[1] & 0x04) != 0)) return m_bBinarizeResult ? 1 : IMG_FLG_SNOW;
+                    }
+                } else {
+                    // it means that we have in val1 and val2 the value from div file and from saturation
+                    if((B[0] & 0x01) != 0) return m_bBinarizeResult ? 1 : IMG_FLG_NO_DATA;
+                    if(((m_MaskFlags & MSK_WATER) != 0) && ((B[0] & 0x02) != 0)) return m_bBinarizeResult ? 1 : IMG_FLG_WATER;
+                    if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[0] & 0x04) != 0)) return m_bBinarizeResult ? 1 : IMG_FLG_SNOW;
+
+                    if(B[1] != 0) return m_bBinarizeResult ? 1 : IMG_FLG_SATURATION;
+                }
+                break;
+            case 3:
+                if((B[1] & 0x01) != 0) return m_bBinarizeResult ? 1 : IMG_FLG_NO_DATA;
+                if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x02) != 0)) return m_bBinarizeResult ? 1 : IMG_FLG_WATER;
+                if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[1] & 0x04) != 0)) return m_bBinarizeResult ? 1 : IMG_FLG_SNOW;
+
+                // if we have cloud,
+                if(B[0] != 0) return m_bBinarizeResult ? 1 : IMG_FLG_CLOUD;
+                if(B[2] != 0) return m_bBinarizeResult ? 1 : IMG_FLG_SATURATION;
+            }
+            return m_bBinarizeResult ? 0 : IMG_FLG_LAND;
         }
-    protected:
+    private:
         MasksFlagType m_MaskFlags;
         bool m_bBinarizeResult;
     };
 
-    template< class TInput1, class TInput2, class TOutput>
-    class BinaryMaskHandlerFunctor : public MaskHandlerFunctor<TInput1, TOutput>
-    {
-    public:
-        BinaryMaskHandlerFunctor(){}
-        TOutput operator()( const TInput1 & A , const TInput2 & B) {
-            return Spot4MetadataHelper::computeGlobalMaskPixelValue(A, B, this->m_MaskFlags, this->m_bBinarizeResult);
-        }
-    };
-
-    template< class TInput1, class TInput2, class TInput3, class TOutput>
-    class TernaryMaskHandlerFunctor : public MaskHandlerFunctor<TInput1, TOutput>
-    {
-    public:
-        TernaryMaskHandlerFunctor(){}
-        TOutput operator()( const TInput1 & A , const TInput2 & B, const TInput3 & C) {
-            return  Spot4MetadataHelper::computeGlobalMaskPixelValue(A, B, C, this->m_MaskFlags, this->m_bBinarizeResult);
-        }
-    };
 
 public:
-    typedef MaskHandlerFunctor<MetadataHelper::SingleBandShortImageType::PixelType,
-                                    MetadataHelper::SingleBandShortImageType::PixelType>        MaskHandlerFunctorType;
-    typedef itk::UnaryFunctorImageFilter< MetadataHelper::SingleBandShortImageType,
-                                          MetadataHelper::SingleBandShortImageType,
-                                          MaskHandlerFunctorType >                              MaskHandlerFilterType;
-    typedef BinaryMaskHandlerFunctor<MetadataHelper::SingleBandShortImageType::PixelType,
-                                    MetadataHelper::SingleBandShortImageType::PixelType,
-                                    MetadataHelper::SingleBandShortImageType::PixelType>        BinaryMaskHandlerFunctorType;
-    typedef itk::BinaryFunctorImageFilter< MetadataHelper::SingleBandShortImageType,
-                                          MetadataHelper::SingleBandShortImageType,
-                                          MetadataHelper::SingleBandShortImageType,
-                                          BinaryMaskHandlerFunctorType >                        BinaryMaskHandlerFilterType;
-    typedef TernaryMaskHandlerFunctor<MetadataHelper::SingleBandShortImageType::PixelType,
-                                        MetadataHelper::SingleBandShortImageType::PixelType,
-                                        MetadataHelper::SingleBandShortImageType::PixelType,
-                                        MetadataHelper::SingleBandShortImageType::PixelType>    TernaryMaskHandlerFunctorType;
-    typedef itk::TernaryFunctorImageFilter< MetadataHelper::SingleBandShortImageType,
-                                          MetadataHelper::SingleBandShortImageType,
-                                          MetadataHelper::SingleBandShortImageType,
-                                          MetadataHelper::SingleBandShortImageType,
-                                          TernaryMaskHandlerFunctorType >                       TernaryMaskHandlerFilterType;
+    typedef NaryMaskHandlerFunctor<MetadataHelper::SingleBandShortImageType::PixelType,
+                                        MetadataHelper::SingleBandShortImageType::PixelType>    NaryMaskHandlerFunctorType;
+    typedef itk::NaryFunctorImageFilter< MetadataHelper::SingleBandShortImageType,
+                                        MetadataHelper::SingleBandShortImageType,
+                                        NaryMaskHandlerFunctorType>                             NaryFunctorImageFilterType;
 
     Spot4MetadataHelper();
 
@@ -85,10 +97,6 @@ public:
     virtual int GetRelativeBandIndex(unsigned int nAbsBandIdx) { return nAbsBandIdx; }
 
     virtual MetadataHelper::SingleBandShortImageType::Pointer GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult);
-
-    static int computeGlobalMaskPixelValue(int val1, int val2, int val3, MasksFlagType nMaskFlags, bool binarizeResult);
-    static int computeGlobalMaskPixelValue(int val1, int val2, MasksFlagType nMaskFlags, bool binarizeResult);
-    static int computeGlobalMaskPixelValue(int val1, MasksFlagType nMaskFlags, bool binarizeResult);
 
 protected:
     virtual bool DoLoadMetadata();
@@ -106,12 +114,8 @@ protected:
 
     ResamplingBandExtractor2<short> m_bandsExtractor;
 
-    MaskHandlerFunctorType m_maskHandlerFunctor;
-    MaskHandlerFilterType::Pointer m_maskHandlerFilter;
-    BinaryMaskHandlerFunctorType m_binaryMaskHandlerFunctor;
-    BinaryMaskHandlerFilterType::Pointer m_binaryMaskHandlerFilter;
-    TernaryMaskHandlerFunctorType m_ternaryMaskHandlerFunctor;
-    TernaryMaskHandlerFilterType::Pointer m_ternaryMaskHandlerFilter;
+    NaryMaskHandlerFunctorType m_maskHandlerFunctor;
+    NaryFunctorImageFilterType::Pointer m_maskHandlerFilter;
 
 };
 

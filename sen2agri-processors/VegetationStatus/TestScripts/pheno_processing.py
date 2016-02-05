@@ -80,9 +80,12 @@ outMetricFlags = "{}/metric_estimation_flags.tif".format(outDir)
 print("Processing started: " + str(datetime.datetime.now()))
 start = time.time()
 
-#runCmd(["otbcli", "BandsExtractor", cropTypeLocation, "-il"] + args.input + ["-pixsize", args.resolution, "-merge", "true", "-ndh", "true", "-out", outBands, "-allmasks", outMasks, "-outdate", outDates])
-#runCmd(["otbcli", "FeatureExtraction", cropTypeLocation, "-rtocr", outBands, "-ndvi", outNdvi])
-#runCmd(["otbcli", "PhenologicalNDVIMetrics", vegetationStatusLocation, "-in", outNdvi, "-mask", outMasks, "-dates", outDates,"-out", outMetric])
+runCmd(["otbcli", "BandsExtractor", cropTypeLocation, "-il"] + args.input + ["-pixsize", args.resolution, "-merge", "true", "-ndh", "true", "-out", outBands, "-allmasks", outMasks, "-outdate", outDates])
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+runCmd(["otbcli", "FeatureExtraction", cropTypeLocation, "-rtocr", outBands, "-ndvi", outNdvi])
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+runCmd(["otbcli", "PhenologicalNDVIMetrics", vegetationStatusLocation, "-in", outNdvi, "-mask", outMasks, "-dates", outDates,"-out", outMetric])
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 # DEPRECATED CALLS
 #runCmd(["otbcli", "SigmoFitting2", vegetationStatusLocation, "-in", outNdvi, "-mask", outMasks, "-dates", outDates,"-out", outSigmo])

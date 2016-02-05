@@ -302,6 +302,19 @@ std::string MACCSMetadataHelper::getSnowFileName()
     return getWaterFileName();
 }
 
+std::string MACCSMetadataHelper::getQualityFileName()
+{
+    if(m_missionType == S2) {
+        if(m_nResolution == 10) {
+            return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_QLT_R1");
+        } else {
+            return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_QLT_R2");
+        }
+    } else {
+        return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_QLT");
+    }
+}
+
 // Return the path to a file for which the name end in the ending
 std::string MACCSMetadataHelper::getMACCSImageFileName(const std::vector<MACCSFileInformation>& imageFiles,
                                                        const std::string& ending) {
@@ -474,5 +487,35 @@ bool MACCSMetadataHelper::BandAvailableForCurrentResolution(unsigned int nBand) 
 }
 
 MetadataHelper::SingleBandShortImageType::Pointer MACCSMetadataHelper::GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult) {
-    //TODO: Implement this function
+    // Saturation is the first band from the Quality Image
+    // Validity is the 3rd band from the Quality Image
+    // Water is the bit 3 in the MSK image
+    // Snow is the bit 5 in the MSK image
+    // Cloud should be 0 in the CLD image
+
+    std::vector< MetadataHelper::SingleBandShortImageType::Pointer> vecImgs;
+    // extract the cld, div and saturation mask image bands
+    if((nMaskFlags & MSK_CLOUD) != 0) {
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getCloudFileName(), 1));
+    }
+
+    if((nMaskFlags & MSK_SAT) != 0) {
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getQualityFileName(), 1));
+    }
+    if((nMaskFlags & MSK_VALID) != 0) {
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getQualityFileName(), 3));
+    }
+
+    if((nMaskFlags & MSK_SNOW) != 0 || (nMaskFlags & MSK_WATER) != 0 ) {
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getWaterFileName(), 1));
+    }
+
+    m_maskHandlerFunctor.Initialize(nMaskFlags, binarizeResult);
+    m_maskHandlerFilter = NaryFunctorImageFilterType::New();
+    m_maskHandlerFilter->SetFunctor(m_maskHandlerFunctor);
+    for(size_t i = 0; i<vecImgs.size(); i++) {
+        m_maskHandlerFilter->SetInput(i, vecImgs[i]);
+    }
+    return m_maskHandlerFilter->GetOutput();
 }
+

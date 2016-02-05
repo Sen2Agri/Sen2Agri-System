@@ -1,12 +1,7 @@
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
-#include "otbImage.h"
-#include "otbVectorImage.h"
-#include "otbVectorImageToImageListFilter.h"
-#include "otbImageListToVectorImageFilter.h"
 
 #include <vector>
-#include "otbImageFileWriter.h"
 #include "MetadataHelperFactory.h"
 
 namespace otb
@@ -33,7 +28,7 @@ private:
     void DoInit()
     {
         SetName("GenerateLaiMonoDateMaskFlags");
-        SetDescription("Extracts the BV estimation values products one band for each raster.");
+        SetDescription("Extracts the flag masks for the given product.");
 
         SetDocName("GenerateLaiMonoDateMaskFlags");
         SetDocLongDescription("long description");
@@ -65,23 +60,23 @@ private:
 
         WriterType::Pointer writer;
         writer = WriterType::New();
+        std::string fileName(outImg);
         if(bUseCompression) {
-            outImg += std::string("?gdal:co:COMPRESS=DEFLATE");;
-        }
-        writer->SetFileName(outImg);
-        writer->SetInput(imgMsk);
-        try
-        {
-            writer->Update();
-        }
-        catch (itk::ExceptionObject& err)
-        {
-            std::cout << "ExceptionObject caught !" << std::endl;
-            std::cout << err << std::endl;
-            itkExceptionMacro("Error writing output");
+            fileName += std::string("?gdal:co:COMPRESS=DEFLATE");;
         }
 
-        return;
+        // Create an output parameter to write the current output image
+        OutputImageParameter::Pointer paramOut = OutputImageParameter::New();
+        // Set the filename of the current output image
+        paramOut->SetFileName(outImg);
+        paramOut->SetValue(imgMsk);
+        paramOut->SetPixelType(ImagePixelType_int16);
+        // Add the current level to be written
+        paramOut->InitializeWriters();
+        std::ostringstream osswriter;
+        osswriter<< "Wrinting flags "<< outImg;
+        AddProcess(paramOut->GetWriter(), osswriter.str());
+        paramOut->Write();
     }
 };
 

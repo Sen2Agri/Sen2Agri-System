@@ -80,7 +80,7 @@ namespace Wrapper
 
 class CompositeSplitter : public Application
 {
-public:    
+public:
 
     //  Software Guide : BeginLatex
     // The \code{ITK} public types for the class, the superclass and smart pointers.
@@ -135,7 +135,7 @@ private:
         SetDocLongDescription("long description");
         SetDocLimitations("None");
         SetDocAuthors("AG");
-        SetDocSeeAlso(" ");        
+        SetDocSeeAlso(" ");
         AddDocTag(Tags::Vector);
         AddParameter(ParameterType_InputImage, "in", "L3A product");
         AddParameter(ParameterType_String, "xml", "General xml input file for L2A");

@@ -2,7 +2,7 @@
 
 #USER modif
 #add directories where SPOT products are to be found
-./pheno_processing.py --applocation /home/agrosu/sen2agri-processors-build --input \
+./pheno_processing.py --applocation ~/sen2agri-processors-build --input \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000.xml" \
@@ -20,5 +20,5 @@
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130606_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130606_N2A_EUkraineD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000.xml" \
---resolution 20 --t0 20130206 --tend 20130616 --outdir /mnt/output/L3B/SPOT4-T5/Ukraine/pheno-2015-12-17
+--resolution 20 --t0 20130206 --tend 20130616 --outdir /mnt/output/L3B/SPOT4-T5/Ukraine/pheno-2016-02-05
 #end of USER modif
