@@ -94,15 +94,15 @@ PREV_L3A=""
 for xml in "${inputXML[@]}"
 do
 
-try otbcli SpotMaskHandler $COMPOSITE_OTB_LIBS_ROOT/SpotMaskHandler/ -xml $xml -out $OUT_SPOT_MASKS"?gdal:co:COMPRESS=DEFLATE"
+try otbcli SpotMaskHandler $COMPOSITE_OTB_LIBS_ROOT/SpotMaskHandler/ -xml $xml -out $OUT_SPOT_MASKS
 
-try otbcli ResampleAtS2Res $COMPOSITE_OTB_LIBS_ROOT/ResampleAtS2Res/ -xml $xml -spotmask $OUT_SPOT_MASKS -outres$RESOLUTION $OUT_IMG_BANDS"?gdal:co:COMPRESS=DEFLATE" -outcmres$RESOLUTION $OUT_CLD"?gdal:co:COMPRESS=DEFLATE" -outwmres$RESOLUTION $OUT_WAT"?gdal:co:COMPRESS=DEFLATE" -outsmres$RESOLUTION $OUT_SNOW"?gdal:co:COMPRESS=DEFLATE" -outaotres$RESOLUTION $OUT_AOT"?gdal:co:COMPRESS=DEFLATE"
+try otbcli ResampleAtS2Res $COMPOSITE_OTB_LIBS_ROOT/ResampleAtS2Res/ -xml $xml -spotmask $OUT_SPOT_MASKS -outres$RESOLUTION $OUT_IMG_BANDS -outcmres$RESOLUTION $OUT_CLD -outwmres$RESOLUTION $OUT_WAT -outsmres$RESOLUTION $OUT_SNOW -outaotres$RESOLUTION $OUT_AOT
 
-try otbcli WeightAOT $WEIGHT_OTB_LIBS_ROOT/WeightAOT/ -in $OUT_AOT -xml $xml -waotmin $WEIGHT_AOT_MIN -waotmax $WEIGHT_AOT_MAX -aotmax $AOT_MAX -out $OUT_WEIGHT_AOT_FILE"?gdal:co:COMPRESS=DEFLATE"
+try otbcli WeightAOT $WEIGHT_OTB_LIBS_ROOT/WeightAOT/ -in $OUT_AOT -xml $xml -waotmin $WEIGHT_AOT_MIN -waotmax $WEIGHT_AOT_MAX -aotmax $AOT_MAX -out $OUT_WEIGHT_AOT_FILE
 
-try otbcli WeightOnClouds $WEIGHT_OTB_LIBS_ROOT/WeightOnClouds/ -incldmsk $OUT_CLD -coarseres $COARSE_RES -sigmasmallcld $SIGMA_SMALL_CLD -sigmalargecld $SIGMA_LARGE_CLD -out $OUT_WEIGHT_CLOUD_FILE"?gdal:co:COMPRESS=DEFLATE"
+try otbcli WeightOnClouds $WEIGHT_OTB_LIBS_ROOT/WeightOnClouds/ -incldmsk $OUT_CLD -coarseres $COARSE_RES -sigmasmallcld $SIGMA_SMALL_CLD -sigmalargecld $SIGMA_LARGE_CLD -out $OUT_WEIGHT_CLOUD_FILE
 
-try otbcli TotalWeight $WEIGHT_OTB_LIBS_ROOT/TotalWeight/ -xml $xml -waotfile $OUT_WEIGHT_AOT_FILE -wcldfile $OUT_WEIGHT_CLOUD_FILE -wsensor $WEIGHT_SENSOR -l3adate $L3A_DATE -halfsynthesis $HALF_SYNTHESIS -wdatemin $WEIGHT_DATE_MIN -out $OUT_TOTAL_WEIGHT_FILE"?gdal:co:COMPRESS=DEFLATE"
+try otbcli TotalWeight $WEIGHT_OTB_LIBS_ROOT/TotalWeight/ -xml $xml -waotfile $OUT_WEIGHT_AOT_FILE -wcldfile $OUT_WEIGHT_CLOUD_FILE -wsensor $WEIGHT_SENSOR -l3adate $L3A_DATE -halfsynthesis $HALF_SYNTHESIS -wdatemin $WEIGHT_DATE_MIN -out $OUT_TOTAL_WEIGHT_FILE
 
 mod=${OUT_L3A_FILE//[#]/$i}
 i=$((i+1))
@@ -113,7 +113,7 @@ PREV_L3A="-prevl3a $mod"
 echo "-----------------------------------------------------------"
 done
 
-#rm -fr $OUT_SPOT_MASKS $OUT_IMG_BANDS $OUT_IMG_BANDS_ALL $OUT_CLD $OUT_WAT $OUT_SNOW $OUT_AOT $OUT_WEIGHT_AOT_FILE $OUT_WEIGHT_CLOUD_FILE $OUT_TOTAL_WEIGHT_FILE
+rm -fr $OUT_SPOT_MASKS $OUT_IMG_BANDS $OUT_IMG_BANDS_ALL $OUT_CLD $OUT_WAT $OUT_SNOW $OUT_AOT $OUT_WEIGHT_AOT_FILE $OUT_WEIGHT_CLOUD_FILE $OUT_TOTAL_WEIGHT_FILE
 
 
 #otbcli UpdateSynthesis $COMPOSITE_OTB_LIBS_ROOT/UpdateSynthesis/ -in $OUT_IMG_10M_ALL -allinone 1 -res 10 -xml $INPUT_SPOT_XML_FILE -csm $OUT_CLD_10M -wm $OUT_WAT_10M -sm $OUT_SNOW_10M -wl2a $OUT_TOTAL_WEIGHT_FILE -out $OUT_L3A_FILE_ALL
