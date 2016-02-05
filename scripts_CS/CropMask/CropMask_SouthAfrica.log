@@ -1,0 +1,1010 @@
+-------------------------
+RUN Crop Mask SouthAfrica
+-------------------------
+
+Running BandsExtractor with pixel size 10m, main mission SPOT and with merging
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif...: 100% [**************************************************] (3e+03 seconds)
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif...: 100% [**************************************************] (2e+03 seconds)
+ (0.01 seconds)
+Executing BandsExtractor at 2015-12-09 09:31:32.080955
+otbApplicationLauncherCommandLine BandsExtractor /data/s2agri/sen2agri-processors-build/CropType/BandsExtractor -mission SPOT -out /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif -mask /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif -outdate /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/dates.txt -shape /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/shape.shp -pixsize 10 -merge true -il /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150414_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150414_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150429_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150429_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150504_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150504_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150509_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150509_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150514_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150514_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150519_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150519_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150524_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150524_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150608_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150608_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150613_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150613_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150618_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150618_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150623_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150623_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150628_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150628_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150703_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150703_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150708_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150708_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150718_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150718_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150728_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150728_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150807_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150807_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150817_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150817_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150822_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150822_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150827_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150827_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150901_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150901_N2A_SouthAfricaD0000B0000.xml /data/s2agri/input/Spot5-T5/SouthAfrica/SouthAfrica/SPOT5_HRG2_XS_20150911_N2A_SouthAfricaD0000B0000/SPOT5_HRG2_XS_20150911_N2A_SouthAfricaD0000B0000.xml 
+BandsExtractor done at 2015-12-09 11:11:34.988913. Duration: 1:40:02.907958
+Executing gdalwarp for reflectances at 2015-12-09 11:11:34.989275
+/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata "-10000" -overwrite -cCreating output file that is 7621P x 7381L.
+Processing input file /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif.
+0...10...20...30...40...50...60...70...80...90...100 - done.
+Creating output file that is 7621P x 7381L.
+Processing input file /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif.
+0...10...20...30...40...50...60...70...80...90...100 - done.
+
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif...: 100% [**************************************************] (4e+02 seconds)
+
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif...: 100% [**************************************************] (1e+02 seconds)
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif...: 100% [**************************************************] (1e+02 seconds)
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif...: 100% [**************************************************] (1e+02 seconds)
+
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif...: 100% [**************************************************] (2e+02 seconds)
+
+
+Processing Image (1/1): 0% [                                                  ]
+Processing Image (1/1): 2% [*                                                 ]
+Processing Image (1/1): 4% [**                                                ]
+Processing Image (1/1): 6% [***                                               ]
+Processing Image (1/1): 8% [****                                              ]
+Processing Image (1/1): 10% [*****                                             ]
+Processing Image (1/1): 12% [******                                            ]
+Processing Image (1/1): 14% [*******                                           ]
+Processing Image (1/1): 16% [********                                          ]
+Processing Image (1/1): 18% [*********                                         ]
+Processing Image (1/1): 20% [**********                                        ]
+Processing Image (1/1): 22% [***********                                       ]
+Processing Image (1/1): 24% [************                                      ]
+Processing Image (1/1): 26% [*************                                     ]
+Processing Image (1/1): 28% [**************                                    ]
+Processing Image (1/1): 30% [***************                                   ]
+Processing Image (1/1): 32% [****************                                  ]
+Processing Image (1/1): 34% [*****************                                 ]
+Processing Image (1/1): 36% [******************                                ]
+Processing Image (1/1): 38% [*******************                               ]
+Processing Image (1/1): 40% [********************                              ]
+Processing Image (1/1): 42% [*********************                             ]
+Processing Image (1/1): 44% [**********************                            ]
+Processing Image (1/1): 46% [***********************                           ]
+Processing Image (1/1): 48% [************************                          ]
+Processing Image (1/1): 50% [*************************                         ]
+Processing Image (1/1): 52% [**************************                        ]
+Processing Image (1/1): 54% [***************************                       ]
+Processing Image (1/1): 56% [****************************                      ]
+Processing Image (1/1): 58% [*****************************                     ]
+Processing Image (1/1): 60% [******************************                    ]
+Processing Image (1/1): 62% [*******************************                   ]
+Processing Image (1/1): 64% [********************************                  ]
+Processing Image (1/1): 66% [*********************************                 ]
+Processing Image (1/1): 68% [**********************************                ]
+Processing Image (1/1): 70% [***********************************               ]
+Processing Image (1/1): 72% [************************************              ]
+Processing Image (1/1): 74% [*************************************             ]
+Processing Image (1/1): 76% [**************************************            ]
+Processing Image (1/1): 78% [***************************************           ]
+Processing Image (1/1): 80% [****************************************          ]
+Processing Image (1/1): 82% [*****************************************         ]
+Processing Image (1/1): 84% [******************************************        ]
+Processing Image (1/1): 86% [*******************************************       ]
+Processing Image (1/1): 88% [********************************************      ]
+Processing Image (1/1): 90% [*********************************************     ]
+Processing Image (1/1): 92% [**********************************************    ]
+Processing Image (1/1): 94% [***********************************************   ]
+Processing Image (1/1): 96% [************************************************  ]
+Processing Image (1/1): 98% [************************************************* ]
+Processing Image (1/1): 100% [**************************************************] (2e+01 seconds)
+0...10...20...30...40...50...60...70...80...90...100 - done.
+0...10...20...30...40...50...60...70...80...90...100 - done.
+utline /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/shape.shp -crop_to_cutline /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawtocr.tif /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/tocr.tif 
+gdalwarp for reflectances done at 2015-12-09 19:57:48.862191. Duration: 8:46:13.872916
+Executing gdalwarp for masks at 2015-12-09 19:57:52.859485
+/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata "-10000" -overwrite -cutline /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/shape.shp -crop_to_cutline /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rawmask.tif /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mask.tif 
+gdalwarp for masks done at 2015-12-09 20:11:17.402038. Duration: 0:13:24.542553
+Executing TemporalResampling at 2015-12-09 20:11:18.480919
+otbApplicationLauncherCommandLine TemporalResampling /data/s2agri/sen2agri-processors-build/CropType/TemporalResampling -tocr /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/tocr.tif -mask /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mask.tif -ind /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/dates.txt -sp 5 -t0 20150414 -tend 20150911 -radius 100 -rtocr /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif -outdays /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/days.txt 
+TemporalResampling done at 2015-12-09 20:17:49.052738. Duration: 0:06:30.571819
+Executing FeatureExtraction at 2015-12-09 20:17:52.544687
+otbApplicationLauncherCommandLine FeatureExtraction /data/s2agri/sen2agri-processors-build/CropType/FeatureExtraction -rtocr /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/rtocr.tif -ndvi /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif -ndwi /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif -brightness /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif 
+FeatureExtraction done at 2015-12-09 20:22:56.150736. Duration: 0:05:03.606049
+Executing FeaturesWithInsitu at 2015-12-09 20:23:00.172178
+otbApplicationLauncherCommandLine FeaturesWithInsitu /data/s2agri/sen2agri-processors-build/CropMask/FeaturesWithInsitu -ndvi /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif -ndwi /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndwi.tif -brightness /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/brightness.tif -dates /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/days.txt -window 6 -bm false -out /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif 
+FeaturesWithInsitu done at 2015-12-09 20:25:33.614794. Duration: 0:02:33.442616
+Executing ComputeImagesStatistics at 2015-12-09 20:25:35.606396
+otbcli_ComputeImagesStatistics -il /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif -out /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/statistics.xml 
+ComputeImagesStatistics done at 2015-12-09 20:25:56.203253. Duration: 0:00:20.596857
+Executing ogr2ogr at 2015-12-09 20:25:56.203321
+/usr/local/bin/ogr2ogr -t_srs /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/shape.prj -progress -overwrite /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/reference_polygons_reproject.shp /data/s2agri/input/inSitu/2015/SouthAfrica/ZA_FRST_LC_FO_2015_SummerCrop.shp 
+ogr2ogr done at 2015-12-09 20:25:56.276636. Duration: 0:00:00.073315
+Executing ogr2ogr at 2015-12-09 20:25:56.276674
+/usr/local/bin/ogr2ogr -clipsrc /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/shape.shp -progress -overwrite /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/reference_clip.shp /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/reference_polygons_reproject.shp 
+ogr2ogr done at 2015-12-09 20:25:57.760055. Duration: 0:00:01.483381
+Executing SampleSelection at 2015-12-09 20:25:57.760104
+otbApplicationLauncherCommandLine SampleSelection /data/s2agri/sen2agri-processors-build/CropType/SampleSelection -ref /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/reference_clip.shp -ratio 0.75 -seed 0 -tp /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/training_polygons.shp -vp /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/validation
+2015 Dec 09 20:25:58  :  Application.logger  (INFO) Found 1 features with CODE = 0. Using 1 for training and 0 for validation. 
+2015 Dec 09 20:25:58  :  Application.logger  (INFO) Found 88 features with CODE = 1. Using 66 for training and 22 for validation. 
+2015 Dec 09 20:25:58  :  Application.logger  (INFO) Found 40 features with CODE = 2. Using 30 for training and 10 for validation. 
+2015 Dec 09 20:25:58  :  Application.logger  (INFO) Found 22 features with CODE = 9. Using 17 for training and 5 for validation. 
+2015 Dec 09 20:25:58  :  Application.logger  (INFO) Found 322 features with CODE = 12. Using 242 for training and 80 for validation. 
+2015 Dec 09 20:25:58  :  Application.logger  (INFO) Found 96 features with CODE = 41. Using 72 for training and 24 for validation. 
+2015 Dec 09 20:25:58  :  Application.logger  (INFO) Found 8 features with CODE = 51. Using 6 for training and 2 for validation. 
+2015 Dec 09 20:25:58  :  Application.logger  (INFO) Found 35 features with CODE = 71. Using 26 for training and 9 for validation. 
+2015 Dec 09 20:25:58  :  Application.logger  (INFO) Found 1 features with CODE = 212. Using 1 for training and 0 for validation. 
+2015 Dec 09 20:25:58  :  Application.logger  (INFO) Found 1 features with CODE = 231. Using 1 for training and 0 for validation. 
+2015 Dec 09 20:25:58  :  Application.logger  (INFO) Found 40 features with CODE = 438. Using 30 for training and 10 for validation. 
+2015 Dec 09 20:25:58  :  Application.logger  (INFO) Total features: 654, Training features: 492, Validation features: 162
+
+2015 Dec 09 20:25:59  :  Application.logger  (DEBUG) Entering DoExecute
+2015 Dec 09 20:25:59  :  Application.logger  (INFO) Elevation management: setting default height above ellipsoid to 0 meters
+2015 Dec 09 20:26:41  :  Application.logger  (INFO) Number of training samples: 7935
+2015 Dec 09 20:26:41  :  Application.logger  (INFO) Size of training set: 7935
+2015 Dec 09 20:26:41  :  Application.logger  (INFO) Size of validation set: 645669
+2015 Dec 09 20:26:41  :  Application.logger  (INFO) Size of labeled training set: 7935
+2015 Dec 09 20:26:41  :  Application.logger  (INFO) Size of labeled validation set: 645669
+predicted list size == 645669
+validationLabeledListSample size == 645669
+2015 Dec 09 20:27:07  :  Application.logger  (INFO) training performances
+2015 Dec 09 20:27:07  :  Application.logger  (INFO) Confusion matrix (rows = reference labels, columns = produced labels):
+       [0] [1] 
+[   0] 124395   8229 
+[   1]  54268 458777 
+
+2015 Dec 09 20:27:07  :  Application.logger  (INFO) Precision of class [0] vs all: 0.696255
+2015 Dec 09 20:27:07  :  Application.logger  (INFO) Recall of class    [0] vs all: 0.937952
+2015 Dec 09 20:27:07  :  Application.logger  (INFO) F-score of class   [0] vs all: 0.79923
+
+2015 Dec 09 20:27:07  :  Application.logger  (INFO) Precision of class [1] vs all: 0.982379
+2015 Dec 09 20:27:07  :  Application.logger  (INFO) Recall of class    [1] vs all: 0.894224
+2015 Dec 09 20:27:07  :  Application.logger  (INFO) F-score of class   [1] vs all: 0.936231
+
+2015 Dec 09 20:27:07  :  Application.logger  (INFO) Global performance, Kappa index: 0.737286
+2015 Dec 09 20:27:07  :  Application.logger  (INFO) mapOfIndicesValid[0] = 0
+2015 Dec 09 20:27:07  :  Application.logger  (INFO) mapOfIndicesValid[1] = 1
+
+2015 Dec 09 20:27:08  :  Application.logger  (INFO) Loading model
+2015 Dec 09 20:27:09  :  Application.logger  (INFO) Model loaded
+2015 Dec 09 20:27:09  :  Application.logger  (INFO) Input image normalization activated.
+2015 Dec 09 20:27:09  :  Application.logger  (INFO) mean used: [225.974, -1089.11, -2758.5, -2514.21, -3335.25, -2458.04, -220.585, -3253.78, -4706.91, -788.929, -3266.63, -3261.11, 6356.03, -3257.37, -3248.58, -3279.03, -3278.97, -1689.33, -3453.97, -2406.24, -2382.21, -2824.23, -2963.13, -3086.33, -3012.76, -3010.81, -3249.05]
+2015 Dec 09 20:27:09  :  Application.logger  (INFO) standard deviation used: [7215.65, 6248.18, 5065.87, 5248, 4660.22, 5291.12, 6885.77, 4712.25, 14807.9, 7342.91, 4703.22, 4707.17, 13436.1, 4709.7, 4715.94, 4694.55, 4694.59, 5834.96, 4666.28, 5335.48, 5352.84, 5017.23, 4915.57, 4829.5, 4880.76, 4882.16, 4715.52]
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif...: 100% [**************************************************] (1e+02 seconds)
+
+
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif...: 100% [**************************************************] (1e+04 seconds)
+
+2015 Dec 09 23:26:40  :  Application.logger  (INFO) Margin of 201 pixels applied to each tile to stabilized mean shift filtering.
+
+2015 Dec 09 23:26:40  :  Application.logger  (INFO) Mode Search is disabled.
+
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif...: 100% [**************************************************] (4e+02 seconds)
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif...: 100% [**************************************************] (4e+02 seconds)
+
+2015 Dec 09 23:40:16  :  Application.logger  (INFO) Temporary directory /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask will be used
+2015 Dec 09 23:40:16  :  Application.logger  (INFO) Number of tiles: 16 x 15
+2015 Dec 09 23:40:16  :  Application.logger  (INFO) Tile shifting ...
+2015 Dec 09 23:41:30  :  Application.logger  (INFO) LUT creation ...
+2015 Dec 09 23:41:35  :  Application.logger  (INFO) LUT size: 4665926 segments
+2015 Dec 09 23:41:35  :  Application.logger  (INFO) Tiles relabelisation ...
+2015 Dec 09 23:41:40  :  Application.logger  (INFO) Small regions pruning ...
+2015 Dec 09 23:41:40  :  Application.logger  (INFO) 0 small regions will be removed
+2015 Dec 09 23:41:44  :  Application.logger  (INFO) Creating temporary vrt file: /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.vrt
+2015 Dec 09 23:41:44  :  Application.logger  (INFO) Elapsed time: 101.72 seconds
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif...: 100% [**************************************************] (0.4 seconds)
+2015 Dec 09 23:41:44  :  Application.logger  (INFO) Final clean-up ...
+
+2015 Dec 09 23:41:48  :  Application.logger  (INFO) Number of tiles: 16 x 15
+2015 Dec 09 23:41:48  :  Application.logger  (INFO) Sums calculation ...
+2015 Dec 09 23:42:09  :  Application.logger  (INFO) Building LUT for small regions merging ...
+2015 Dec 09 23:43:11  :  Application.logger  (INFO) Elapsed time: 116.58 seconds
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif...: 100% [**************************************************] (0.8 seconds)
+_polygons.shp -nofilter true 
+SampleSelection done at 2015-12-09 20:25:58.023886. Duration: 0:00:00.263782
+Executing TrainImagesClassifier at 2015-12-09 20:25:58.023943
+otbcli_TrainImagesClassifier -io.il /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif -io.vd /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/training_polygons.shp -io.imstat /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/statistics.xml -rand 0 -sample.bm 0 -io.confmatout /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/confusion-matrix.csv -io.out /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop-mask-model.txt -sample.mt 4000 -sample.mv -1 -sample.vfn CROP -classifier rf -classifier.rf.nbtrees 100 -classifier.rf.min 25 -classifier.rf.max 25 
+TrainImagesClassifier done at 2015-12-09 20:27:07.819289. Duration: 0:01:09.795346
+Executing ImageClassifier at 2015-12-09 20:27:07.819361
+otbcli_ImageClassifier -in /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/concat_features.tif -imstat /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/statistics.xml -model /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop-mask-model.txt -out /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif 
+ImageClassifier done at 2015-12-09 20:29:25.683230. Duration: 0:02:17.863869
+Executing Validation for Raw Cropmask at 2015-12-09 20:29:26.635136
+otbcli_ComputeConfusionMatrix -in /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif -out /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw-crop-mask-confusion-matrix-validation.csv -ref vector -ref.vector.in /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/validation_polygons.shp -ref.vector.field CROP -nodatalabel -10000 > /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw-crop-mask-quality-metrics.txt
+Validation for Raw Cropmask done at 2015-12-09 20:29:28.140295. Duration: 0:00:01.505159
+Executing PrincipalComponentAnalysis at 2015-12-09 20:29:28.140378
+otbApplicationLauncherCommandLine PrincipalComponentAnalysis /data/s2agri/sen2agri-processors-build/CropMask/PrincipalComponentAnalysis -ndvi /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/ndvi.tif -nc 6 -out /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif 
+PrincipalComponentAnalysis done at 2015-12-09 23:26:38.392908. Duration: 2:57:10.252530
+Executing MeanShiftSmoothing at 2015-12-09 23:26:39.558773
+otbcli_MeanShiftSmoothing -in /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/pca.tif -modesearch 0 -spatialr 10 -ranger 0.65 -maxiter 20 -foutpos /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif -fout /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif uint32 
+MeanShiftSmoothing done at 2015-12-09 23:40:15.370673. Duration: 0:13:35.811900
+Executing LSMSSegmentation at 2015-12-09 23:40:15.586736
+otbcli_LSMSSegmentation -in /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif -inpos /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing_spatial.tif -spatialr 10 -ranger 0.65 -minsize 0 -tmpdir /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask -out /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif uint32 
+LSMSSegmentation done at 2015-12-09 23:41:44.946147. Duration: 0:01:29.359411
+Executing LSMSSmallRegionsMerging at 2015-12-09 23:41:45.016949
+otbcli_LSMSSmallRegionsMerging -in /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/mean_shift_smoothing.tif -inseg /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented.tif -minsize 10 -out /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/segmented_merged.tif uint32 
+LSMSSmallRegionsMerging done at 2015-12-09 23:43:12.377676. Duration: 0:01:27.360727
+Executing MajorityVoting at 2015-12-09 23:43:12.626619
+otbApplicationLauncherCommandLine MajorityVoting /data/s2agri/sen2agri-processors-build/CropMask/MajorityVoting -nodatasegvalue 0 -nodataclassifvalue -10000 -minarea 20 -inclass /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/raw_crop_mask.tif -inseg /data/s2agri/output/So
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif...: 100% [**************************************************] (2e+01 seconds)
+Creating output file that is 7621P x 7381L.
+Processing input file /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif.
+0...10...20...30...40...50...60...70...80...90...100 - done.
+
+
+
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 0% [                                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 2% [*                                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 4% [**                                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 6% [***                                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 8% [****                                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 10% [*****                                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 12% [******                                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 14% [*******                                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 16% [********                                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 18% [*********                                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 20% [**********                                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 22% [***********                                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 24% [************                                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 26% [*************                                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 28% [**************                                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 30% [***************                                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 32% [****************                                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 34% [*****************                                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 36% [******************                                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 38% [*******************                               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 40% [********************                              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 42% [*********************                             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 44% [**********************                            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 46% [***********************                           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 48% [************************                          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 50% [*************************                         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 52% [**************************                        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 54% [***************************                       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 56% [****************************                      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 58% [*****************************                     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 60% [******************************                    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 62% [*******************************                   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 64% [********************************                  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 66% [*********************************                 ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 68% [**********************************                ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 70% [***********************************               ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 72% [************************************              ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 74% [*************************************             ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 76% [**************************************            ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 78% [***************************************           ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 80% [****************************************          ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 82% [*****************************************         ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 84% [******************************************        ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 86% [*******************************************       ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 88% [********************************************      ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 90% [*********************************************     ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 92% [**********************************************    ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 94% [***********************************************   ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 96% [************************************************  ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 98% [************************************************* ]
+Writing /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE...: 100% [**************************************************] (2 seconds)
+
+
+TileID =T15SVC  strTilePath =
+HorizCSName: HorizCSCodeWGS 84 / UTM zone 35S14880EPSG:32735
+
+ERROR: Could not find application "Quicklook"
+ERROR: Module search path: /data/s2agri/sen2agri-processors-build/MACCSMetadata/src:
+ERROR: Available modules :
+	ProductFormatter
+ERROR: No loaded application...
+strHorizCSName WGS 84 / UTM zone 35S
+strHorizCSCode EPSG:32735
+m_geoProductInfo.size() =1
+CoordRefSystem.HorizCSName =WGS 84 / UTM zone 35S  CoordRefSystem.HorizCSName.empty() =0
+uthAfrica/SouthAfrica/cropMask/segmented_merged.tif -rout /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif 
+MajorityVoting done at 2015-12-09 23:43:37.084502. Duration: 0:00:24.457883
+Executing gdalwarp for crop mask at 2015-12-09 23:43:37.128266
+/usr/local/bin/gdalwarp -multi -wm 2048 -dstnodata "-10000" -overwrite -cutline /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/shape.shp -crop_to_cutline /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncut.tif /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncomp.tif 
+gdalwarp for crop mask done at 2015-12-09 23:43:38.577233. Duration: 0:00:01.448967
+Executing Validation for Cropmask at 2015-12-09 23:43:38.577297
+otbcli_ComputeConfusionMatrix -in /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncomp.tif -out /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop-mask-confusion-matrix-validation.csv -ref vector -ref.vector.in /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/validation_polygons.shp -ref.vector.field CROP -nodatalabel -10000 > /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop-mask-quality-metrics.txt
+Validation for Cropmask done at 2015-12-09 23:43:40.128630. Duration: 0:00:01.551333
+Executing Compression at 2015-12-09 23:43:40.128716
+otbcli_Convert -in /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask_uncomp.tif -out /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif?gdal:co:COMPRESS=DEFLATE int16 
+Compression done at 2015-12-09 23:43:43.136387. Duration: 0:00:03.007671
+Executing XML Conversion for Crop Mask at 2015-12-09 23:43:43.177445
+otbApplicationLauncherCommandLine XMLStatistics /data/s2agri/sen2agri-processors-build/Common/XMLStatistics -confmat /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop-mask-confusion-matrix-validation.csv -quality /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop-mask-quality-metrics.txt -root CropMask -out /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop-mask-validation-metrics.xml 
+XML Conversion for Crop Mask done at 2015-12-09 23:43:43.427758. Duration: 0:00:00.250313
+Executing ProductFormatter at 2015-12-09 23:43:43.427831
+otbApplicationLauncherCommandLine ProductFormatter /data/s2agri/sen2agri-processors-build/MACCSMetadata/src -destroot /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask-product -fileclass SVT1 -level L4A -timeperiod 20150414_20150911 -baseline -01.00 -processor cropmask -processor.cropmask.file TILE_T15SVC /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop_mask.tif -processor.cropmask.quality /data/s2agri/output/SouthAfrica/SouthAfrica/cropMask/crop-mask-validation-metrics.xml 
+ProductFormatter done at 2015-12-09 23:43:43.966002. Duration: 0:00:00.538171
+Processor CropMask finished in 14:12:11.885113
