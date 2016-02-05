@@ -15,7 +15,7 @@ private:
     void HandleNewProductInJob(EventProcessingContext &ctx, int jobId, const QString &jsonParams,
                                const QStringList &listProducts);
     void GetModelFileList(QStringList &outListModels, const QString &strPattern, std::map<QString, QString> &configParameters);
-    void WriteExecutionInfosFile(const QString &executionInfosPath, const QJsonObject &parameters,
+    void WriteExecutionInfosFile(const QString &executionInfosPath,
                                 std::map<QString, QString> &configParameters,
                                 const QStringList &listProducts);
 
@@ -30,15 +30,31 @@ private:
     QStringList GetErrTimeSeriesBuilderArgs(const QStringList &monoDateErrLaiFileNames, const QString &allErrTimeSeriesFileName);
     QStringList GetMskFlagsTimeSeriesBuilderArgs(const QStringList &monoDateMskFlagsLaiFileNames, const QString &allMskFlagsTimeSeriesFileName);
     QStringList GetProfileReprocessingArgs(std::map<QString, QString> configParameters, const QString &allLaiTimeSeriesFileName,
-                                           const QString &allErrTimeSeriesFileName, const QString &reprocTimeSeriesFileName,
-                                           const QStringList &listProducts);
-    QStringList GetReprocProfileSplitterArgs(const QString &reprocTimeSeriesFileName, const QString &reprocFileListFileName);
+                                           const QString &allErrTimeSeriesFileName, const QString &allMsksTimeSeriesFileName,
+                                           const QString &reprocTimeSeriesFileName, const QStringList &listProducts);
+    QStringList GetReprocProfileSplitterArgs(const QString &reprocTimeSeriesFileName, const QString &reprocFileListFileName,
+                                             const QString &reprocFlagsFileListFileName, const QStringList &allXmlsFileName);
     QStringList GetFittedProfileReprocArgs(const QString &allLaiTimeSeriesFileName, const QString &allErrTimeSeriesFileName,
-                                           const QString &fittedTimeSeriesFileName, const QStringList &listProducts);
-    QStringList GetFittedProfileReprocSplitterArgs(const QString &fittedTimeSeriesFileName, const QString &fittedFileListFileName);
+                                           const QString &allMsksTimeSeriesFileName, const QString &fittedTimeSeriesFileName,
+                                           const QStringList &listProducts);
+    QStringList GetFittedProfileReprocSplitterArgs(const QString &fittedTimeSeriesFileName, const QString &fittedFileListFileName,
+                                                   const QString &fittedFlagsFileListFileName, const QStringList &allXmlsFileName);
     QStringList GetProductFormatterArgs(TaskToSubmit &productFormatterTask, std::map<QString, QString> configParameters,
-                                        const QJsonObject &parameters, const QStringList &listProducts,
-                                        const QString &reprocTimeSeriesFileName, const QString &fittedTimeSeriesFileName);
+                                        const QStringList &listProducts, const QStringList &listNdvis,
+                                        const QStringList &listLaiMonoDate, const QStringList &listLaiMonoDateErr,
+                                        const QStringList &listLaiMonoDateFlgs, const QString &fileLaiReproc,
+                                        const QString &fileLaiReprocFlgs, const QString &fileLaiFit, const QString &fileLaiFitFlgs,
+                                        const QString &tileId);
+
+private:
+    int m_nTimeSeriesBuilderIdx;
+    int m_nErrTimeSeriesBuilderIdx;
+    int m_nLaiMskFlgsTimeSeriesBuilderIdx;
+    int m_nProfileReprocessingIdx;
+    int m_nReprocessedProfileSplitterIdx;
+    int m_nFittedProfileReprocessingIdx;
+    int m_nFittedProfileReprocessingSplitterIdx;
+    int m_nProductFormatterIdx;
 };
 
 #endif // LAIRETRIEVALHANDLER_HPP

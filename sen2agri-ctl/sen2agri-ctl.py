@@ -141,6 +141,20 @@ class Sen2AgriCtl(object):
             '-p', '--parameter', action='append', nargs=2,
             metavar=('KEY', 'VALUE'), help="override configuration parameter")
         parser_lai.set_defaults(func=self.submit_lai)
+
+        parser_pheno_ndvi = parser_submit_job_subparsers.add_parser(
+            'phenondvi', help="Submits a new Phenological NDVI Metrics type job")
+        parser_pheno_ndvi.add_argument('-i', '--input',
+                                      nargs='+', required=True,
+                                      help="input products")
+        parser_pheno_ndvi.add_argument(
+            '--phenondvi', help="phenondvi")
+        parser_pheno_ndvi.add_argument(
+            '--resolution', type=int, help="resolution in m")
+        parser_pheno_ndvi.add_argument(
+            '-p', '--parameter', action='append', nargs=2,
+            metavar=('KEY', 'VALUE'), help="override configuration parameter")
+        parser_pheno_ndvi.set_defaults(func=self.submit_pheno_ndvi)
         
         parser_crop_mask = parser_submit_job_subparsers.add_parser(
             'crop-mask', help="Submits a new crop mask job")
@@ -211,6 +225,15 @@ class Sen2AgriCtl(object):
             parameters['resolution'] = args.resolution
 
         job = self.create_job(2, parameters, args)
+        self.client.submit_job(job)
+
+    def submit_pheno_ndvi(self, args):
+        parameters = {'input_products': args.input}
+
+        if args.resolution:
+            parameters['resolution'] = args.resolution
+
+        job = self.create_job(3, parameters, args)
         self.client.submit_job(job)
         
     def submit_crop_mask(self, args):

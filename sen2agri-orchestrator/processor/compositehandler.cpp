@@ -4,6 +4,7 @@
 #include <fstream>
 
 #include "compositehandler.hpp"
+#include "processorhandlerhelper.h"
 
 #define TasksNoPerProduct 7
 
@@ -190,6 +191,7 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx, int jo
                                         "-out", outWeightAotFile
                                     };
         QStringList weightOnCloudArgs = { "WeightOnClouds",
+                                        "-inxml", inputProduct,
                                         "-incldmsk", cldResImg,
                                         "-coarseres", coarseRes,
                                         "-sigmasmallcld", sigmaSmallCloud,
@@ -262,6 +264,8 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx, int jo
     const auto &executionInfosPath = productFormatter.GetFilePath("executionInfos.txt");
 
     WriteExecutionInfosFile(executionInfosPath, parameters, configParameters, listProducts);
+
+    QString tileId = ProcessorHandlerHelper::GetTileId(listProducts);
     QStringList productFormatterArgs = { "ProductFormatter",
                                     "-destroot", targetFolder,
                                     "-fileclass", "SVT1",
@@ -269,11 +273,11 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx, int jo
                                     "-timeperiod", l3aSynthesisDate,
                                     "-baseline", "01.00",
                                     "-processor", "composite",
-                                    "-processor.composite.refls", "TILE_none", prevL3AProdRefls,
-                                    "-processor.composite.weights", "TILE_none", prevL3AProdWeights,
-                                    "-processor.composite.flags", "TILE_none", prevL3AProdFlags,
-                                    "-processor.composite.dates", "TILE_none", prevL3AProdDates,
-                                    "-processor.composite.rgb", "TILE_none", prevL3ARgbFile,
+                                    "-processor.composite.refls", tileId, prevL3AProdRefls,
+                                    "-processor.composite.weights", tileId, prevL3AProdWeights,
+                                    "-processor.composite.flags", tileId, prevL3AProdFlags,
+                                    "-processor.composite.dates", tileId, prevL3AProdDates,
+                                    "-processor.composite.rgb", tileId, prevL3ARgbFile,
                                     "-gipp", executionInfosPath,
                                     "-il", listProducts[listProducts.size()-1]
                                 };
@@ -384,29 +388,7 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
-    if (event.module == "compute-confusion-matrix") {
-        const auto &outputs = ctx.GetTaskConsoleOutputs(event.taskId);
-        for (const auto &output : outputs) {
-            QRegularExpression reK("Kappa index: (\\d+(?:\\.\\d*)?)");
-            QRegularExpression reAcc("Overall accuracy index: (\\d+(?:\\.\\d*)?)");
-
-            const auto &mK = reK.match(output.stdOutText);
-            const auto &mAcc = reAcc.match(output.stdOutText);
-
-            const auto &statisticsPath =
-                ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "statistics.txt";
-            QFile file(statisticsPath);
-            if (!file.open(QIODevice::WriteOnly)) {
-                throw std::runtime_error(QStringLiteral("Unable to open %1: %2")
-                                             .arg(statisticsPath)
-                                             .arg(file.errorString())
-                                             .toStdString());
-            }
-
-            QTextStream s(&file);
-            s << mK.captured(1) << ' ' << mAcc.captured(1);
-        }
-
+    if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
     }
 

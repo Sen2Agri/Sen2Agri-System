@@ -4,7 +4,9 @@
 #include <fstream>
 
 #include "lairetrievalhandler.hpp"
+#include "processorhandlerhelper.h"
 
+// The number of tasks that are executed for each product before executing time series tasks
 #define TasksNoPerProduct 5
 
 void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAllTasksList, int nbProducts) {
@@ -58,6 +60,9 @@ void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAll
     //                                  |
     //                          product-formatter
     //
+
+    // NOTE: In this moment, the products in loop are not executed in parallel. To do this, the if(i > 0) below
+    //      should be removed but in this case, the time-series-builders should wait for all the monodate images
     int i;
     for(i = 0; i<nbProducts; i++) {
         if(i > 0) {
@@ -79,38 +84,45 @@ void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAll
     }
 
     // time-series-builder -> last bv-image-inversion AND bv-err-image-inversion
-    int nCurIdx = i*TasksNoPerProduct;
+    m_nTimeSeriesBuilderIdx = i*TasksNoPerProduct;
     int nPrevBvErrImgInvIdx = (i-1)*TasksNoPerProduct + (TasksNoPerProduct-1);
-    outAllTasksList[nCurIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
-    outAllTasksList[nCurIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
+    outAllTasksList[m_nTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
+    outAllTasksList[m_nTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
 
     //err-time-series-builder -> last bv-image-inversion AND bv-err-image-inversion
-    outAllTasksList[nCurIdx+1].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
-    outAllTasksList[nCurIdx+1].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
+    m_nErrTimeSeriesBuilderIdx = m_nTimeSeriesBuilderIdx+1;
+    outAllTasksList[m_nErrTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
+    outAllTasksList[m_nErrTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
 
     //lai-msk-flags-time-series-builder -> last bv-image-inversion AND bv-err-image-inversion
-    outAllTasksList[nCurIdx+2].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
-    outAllTasksList[nCurIdx+2].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
+    m_nLaiMskFlgsTimeSeriesBuilderIdx = m_nErrTimeSeriesBuilderIdx+1;
+    outAllTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
+    outAllTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
 
     //profile-reprocessing -> time-series-builder AND err-time-series-builder AND lai-msk-flags-time-series-builder
-    outAllTasksList[nCurIdx+3].parentTasks.append(outAllTasksList[nCurIdx]);
-    outAllTasksList[nCurIdx+3].parentTasks.append(outAllTasksList[nCurIdx+1]);
-    outAllTasksList[nCurIdx+3].parentTasks.append(outAllTasksList[nCurIdx+2]);
+    m_nProfileReprocessingIdx = m_nLaiMskFlgsTimeSeriesBuilderIdx+1;
+    outAllTasksList[m_nProfileReprocessingIdx].parentTasks.append(outAllTasksList[m_nTimeSeriesBuilderIdx]);
+    outAllTasksList[m_nProfileReprocessingIdx].parentTasks.append(outAllTasksList[m_nErrTimeSeriesBuilderIdx]);
+    outAllTasksList[m_nProfileReprocessingIdx].parentTasks.append(outAllTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx]);
 
     //reprocessed-profile-splitter -> profile-reprocessing
-    outAllTasksList[nCurIdx+4].parentTasks.append(outAllTasksList[nCurIdx+3]);
+    m_nReprocessedProfileSplitterIdx = m_nProfileReprocessingIdx+1;
+    outAllTasksList[m_nReprocessedProfileSplitterIdx].parentTasks.append(outAllTasksList[m_nProfileReprocessingIdx]);
 
     //fitted-profile-reprocessing -> time-series-builder AND err-time-series-builder AND lai-msk-flags-time-series-builder
-    outAllTasksList[nCurIdx+5].parentTasks.append(outAllTasksList[nCurIdx]);
-    outAllTasksList[nCurIdx+5].parentTasks.append(outAllTasksList[nCurIdx+1]);
-    outAllTasksList[nCurIdx+5].parentTasks.append(outAllTasksList[nCurIdx+2]);
+    m_nFittedProfileReprocessingIdx = m_nReprocessedProfileSplitterIdx+1;
+    outAllTasksList[m_nFittedProfileReprocessingIdx].parentTasks.append(outAllTasksList[m_nTimeSeriesBuilderIdx]);
+    outAllTasksList[m_nFittedProfileReprocessingIdx].parentTasks.append(outAllTasksList[m_nErrTimeSeriesBuilderIdx]);
+    outAllTasksList[m_nFittedProfileReprocessingIdx].parentTasks.append(outAllTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx]);
 
     //fitted-reprocessed-profile-splitter -> fitted-profile-reprocessing
-    outAllTasksList[nCurIdx+6].parentTasks.append(outAllTasksList[nCurIdx+5]);
+    m_nFittedProfileReprocessingSplitterIdx = m_nFittedProfileReprocessingIdx+1;
+    outAllTasksList[m_nFittedProfileReprocessingSplitterIdx].parentTasks.append(outAllTasksList[m_nFittedProfileReprocessingIdx]);
 
     //product-formatter -> reprocessed-profile-splitter AND fitted-reprocessed-profile-splitter
-    outAllTasksList[nCurIdx+7].parentTasks.append(outAllTasksList[nCurIdx+4]);
-    outAllTasksList[nCurIdx+7].parentTasks.append(outAllTasksList[nCurIdx+6]);
+    m_nProductFormatterIdx = m_nFittedProfileReprocessingSplitterIdx+1;
+    outAllTasksList[m_nProductFormatterIdx].parentTasks.append(outAllTasksList[m_nReprocessedProfileSplitterIdx]);
+    outAllTasksList[m_nProductFormatterIdx].parentTasks.append(outAllTasksList[m_nFittedProfileReprocessingSplitterIdx]);
 }
 
 void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int jobId,
@@ -119,13 +131,30 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
     const QJsonObject &parameters = QJsonDocument::fromJson(jsonParams.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(jobId, "processor.l3b.lai.");
 
-    // Get the Half Synthesis interval value
+    // Get the resolution value
     const auto &resolution = QString::number(parameters["resolution"].toInt());
+    bool bGenerateMonodate = false;
+    bool bGenerateReproc = false;
+    bool bGenerateFitted = false;
+
+    if(parameters.contains("monodate"))
+        bGenerateMonodate = true;
+    if(parameters.contains("reproc"))
+        bGenerateReproc = true;
+    if(parameters.contains("fitted"))
+        bGenerateFitted = true;
+    // if no flag was set, then set them all
+    if(!bGenerateMonodate && !bGenerateReproc && !bGenerateFitted) {
+        bGenerateMonodate = true;
+        bGenerateReproc = true;
+        bGenerateFitted = true;
+    }
 
     QList<TaskToSubmit> allTasksList;
     CreateNewProductInJobTasks(allTasksList, listProducts.size());
 
     NewStepList steps;
+    QStringList ndviFileNames;
     QStringList monoDateLaiFileNames;
     QStringList monoDateErrLaiFileNames;
     QStringList monoDateMskFlagsLaiFileNames;
@@ -161,6 +190,7 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
         const auto & monoDateMskFlgsFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img.tif");
 
         // save the mono date LAI file name list
+        ndviFileNames.append(ftsFile);
         monoDateLaiFileNames.append(monoDateLaiFileName);
         monoDateErrLaiFileNames.append(monoDateErrFileName);
         monoDateMskFlagsLaiFileNames.append(monoDateMskFlgsFileName);
@@ -176,18 +206,16 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
         steps.append(getLaiRetrievalModelTask.CreateStep("GetLaiRetrievalModel", getLaiModelArgs));
         steps.append(bvImageInversionTask.CreateStep("BVImageInversion", bvImageInvArgs));
         steps.append(bvErrImageInversionTask.CreateStep("BVImageInversion", bvErrImageInvArgs));
-        steps.append(bvErrImageInversionTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
+        steps.append(genMonoDateMskFagsTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
     }
-
-    int nCurIdx = i*TasksNoPerProduct;
-    TaskToSubmit &imgTimeSeriesBuilderTask = allTasksList[nCurIdx];
-    TaskToSubmit &errTimeSeriesBuilderTask = allTasksList[nCurIdx+1];
-    TaskToSubmit &mskFlagsTimeSeriesBuilderTask = allTasksList[nCurIdx+2];
-    TaskToSubmit &profileReprocTask = allTasksList[nCurIdx+3];
-    TaskToSubmit &profileReprocSplitTask = allTasksList[nCurIdx+4];
-    TaskToSubmit &fittedProfileReprocTask = allTasksList[nCurIdx+5];
-    TaskToSubmit &fittedProfileReprocSplitTask = allTasksList[nCurIdx+6];
-    TaskToSubmit &productFormatterTask = allTasksList[nCurIdx+7];
+    TaskToSubmit &imgTimeSeriesBuilderTask = allTasksList[m_nTimeSeriesBuilderIdx];
+    TaskToSubmit &errTimeSeriesBuilderTask = allTasksList[m_nErrTimeSeriesBuilderIdx];
+    TaskToSubmit &mskFlagsTimeSeriesBuilderTask = allTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx];
+    TaskToSubmit &profileReprocTask = allTasksList[m_nProfileReprocessingIdx];
+    TaskToSubmit &profileReprocSplitTask = allTasksList[m_nReprocessedProfileSplitterIdx];
+    TaskToSubmit &fittedProfileReprocTask = allTasksList[m_nFittedProfileReprocessingIdx];
+    TaskToSubmit &fittedProfileReprocSplitTask = allTasksList[m_nFittedProfileReprocessingSplitterIdx];
+    TaskToSubmit &productFormatterTask = allTasksList[m_nProductFormatterIdx];
 
     ctx.SubmitTasks(jobId, { imgTimeSeriesBuilderTask,
                              errTimeSeriesBuilderTask,
@@ -206,21 +234,33 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
     const auto & reprocTimeSeriesFileName = profileReprocTask.GetFilePath("ReprocessedTimeSeries.tif");
     const auto & fittedTimeSeriesFileName = fittedProfileReprocTask.GetFilePath("FittedTimeSeries.tif");
 
-    const auto & reprocFileListFileName = profileReprocSplitTask.GetFilePath("FittedFilesList.txt");
-    const auto & fittedFileListFileName = fittedProfileReprocSplitTask.GetFilePath("ReprocessedFilesList.txt");
+    const auto & fittedFileListFileName = fittedProfileReprocSplitTask.GetFilePath("FittedFilesList.txt");
+    const auto & fittedFlagsFileListFileName = fittedProfileReprocSplitTask.GetFilePath("FittedFlagsFilesList.txt");
+
+    const auto & reprocFileListFileName = profileReprocSplitTask.GetFilePath("ReprocessedFilesList.txt");
+    const auto & reprocFlagsFileListFileName = profileReprocSplitTask.GetFilePath("ReprocessedFlagsFilesList.txt");
 
     QStringList timeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(monoDateLaiFileNames, allLaiTimeSeriesFileName);
     QStringList errTimeSeriesBuilderArgs = GetErrTimeSeriesBuilderArgs(monoDateErrLaiFileNames, allErrTimeSeriesFileName);
     QStringList mskFlagsTimeSeriesBuilderArgs = GetMskFlagsTimeSeriesBuilderArgs(monoDateMskFlagsLaiFileNames, allMskFlagsTimeSeriesFileName);
 
     QStringList profileReprocessingArgs = GetProfileReprocessingArgs(configParameters, allLaiTimeSeriesFileName,
-                                                                     allErrTimeSeriesFileName, reprocTimeSeriesFileName, listProducts);
-    QStringList reprocProfileSplitterArgs = GetReprocProfileSplitterArgs(reprocTimeSeriesFileName, reprocFileListFileName);
+                                                                     allErrTimeSeriesFileName, allMskFlagsTimeSeriesFileName,
+                                                                     reprocTimeSeriesFileName, listProducts);
+    QStringList reprocProfileSplitterArgs = GetReprocProfileSplitterArgs(reprocTimeSeriesFileName, reprocFileListFileName,
+                                                                         reprocFlagsFileListFileName, listProducts);
     QStringList fittedProfileReprocArgs = GetFittedProfileReprocArgs(allLaiTimeSeriesFileName, allErrTimeSeriesFileName,
-                                                                     fittedTimeSeriesFileName, listProducts);
-    QStringList fittedProfileReprocSplitterArgs = GetFittedProfileReprocSplitterArgs(fittedTimeSeriesFileName, fittedFileListFileName);
-    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, configParameters, parameters,
-                                                               listProducts, reprocTimeSeriesFileName, fittedTimeSeriesFileName);
+                                                                     allMskFlagsTimeSeriesFileName, fittedTimeSeriesFileName, listProducts);
+    QStringList fittedProfileReprocSplitterArgs = GetFittedProfileReprocSplitterArgs(fittedTimeSeriesFileName, fittedFileListFileName,
+                                                                                     fittedFlagsFileListFileName, listProducts);
+
+    // Get the tile ID from the product XML name. We extract it from the first product in the list as all
+    // producs should be for the same tile
+    QString tileId = ProcessorHandlerHelper::GetTileId(listProducts);
+    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, configParameters,
+                                                               listProducts, ndviFileNames, monoDateLaiFileNames, monoDateErrLaiFileNames,
+                                                               monoDateMskFlagsLaiFileNames, fittedFileListFileName, fittedFlagsFileListFileName,
+                                                               reprocFileListFileName, reprocFlagsFileListFileName, tileId);
 
     // add these steps to the steps list to be submitted
     steps.append(imgTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", timeSeriesBuilderArgs));
@@ -229,21 +269,21 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
     steps.append(profileReprocTask.CreateStep("ProfileReprocessing", profileReprocessingArgs));
     steps.append(profileReprocSplitTask.CreateStep("ReprocessedProfileSplitter", reprocProfileSplitterArgs));
     steps.append(fittedProfileReprocTask.CreateStep("ProfileReprocessing", fittedProfileReprocArgs));
-    steps.append(fittedProfileReprocSplitTask.CreateStep("ReprocessedProfileSplitter", fittedProfileReprocSplitterArgs));
+    steps.append(fittedProfileReprocSplitTask.CreateStep("ReprocessedProfileSplitter2", fittedProfileReprocSplitterArgs));
     steps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
 
     ctx.SubmitSteps(steps);
 }
 
-void LaiRetrievalHandler::WriteExecutionInfosFile(const QString &executionInfosPath, const QJsonObject &parameters,
+void LaiRetrievalHandler::WriteExecutionInfosFile(const QString &executionInfosPath,
                                                std::map<QString, QString> &configParameters,
                                                const QStringList &listProducts) {
     std::ofstream executionInfosFile;
     try
     {
         // Get the parameters from the configuration
-        const auto &bwr = configParameters["processor.l3b.bwr"];
-        const auto &fwr = configParameters["processor.l3a.fwr"];
+        const auto &bwr = configParameters["processor.l3b.lai.localwnd.bwr"];
+        const auto &fwr = configParameters["processor.l3b.lai.localwnd.fwr"];
 
         executionInfosFile.open(executionInfosPath.toStdString().c_str(), std::ofstream::out);
         executionInfosFile << "<?xml version=\"1.0\" ?>" << std::endl;
@@ -288,29 +328,7 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
-    if (event.module == "compute-confusion-matrix") {
-        const auto &outputs = ctx.GetTaskConsoleOutputs(event.taskId);
-        for (const auto &output : outputs) {
-            QRegularExpression reK("Kappa index: (\\d+(?:\\.\\d*)?)");
-            QRegularExpression reAcc("Overall accuracy index: (\\d+(?:\\.\\d*)?)");
-
-            const auto &mK = reK.match(output.stdOutText);
-            const auto &mAcc = reAcc.match(output.stdOutText);
-
-            const auto &statisticsPath =
-                ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "statistics.txt";
-            QFile file(statisticsPath);
-            if (!file.open(QIODevice::WriteOnly)) {
-                throw std::runtime_error(QStringLiteral("Unable to open %1: %2")
-                                             .arg(statisticsPath)
-                                             .arg(file.errorString())
-                                             .toStdString());
-            }
-
-            QTextStream s(&file);
-            s << mK.captured(1) << ' ' << mAcc.captured(1);
-        }
-
+    if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
     }
 
@@ -412,17 +430,16 @@ QStringList LaiRetrievalHandler::GetMskFlagsTimeSeriesBuilderArgs(const QStringL
     return timeSeriesBuilderArgs;
 }
 
-
-
 QStringList LaiRetrievalHandler::GetProfileReprocessingArgs(std::map<QString, QString> configParameters, const QString &allLaiTimeSeriesFileName,
-                                       const QString &allErrTimeSeriesFileName, const QString &reprocTimeSeriesFileName,
-                                       const QStringList &listProducts) {
+                                       const QString &allErrTimeSeriesFileName, const QString &allMsksTimeSeriesFileName,
+                                       const QString &reprocTimeSeriesFileName, const QStringList &listProducts) {
     const auto &localWindowBwr = configParameters["processor.l3b.lai.localwnd.bwr"];
     const auto &localWindowFwr = configParameters["processor.l3b.lai.localwnd.fwr"];
 
     QStringList profileReprocessingArgs = { "ProfileReprocessing",
           "-lai", allLaiTimeSeriesFileName,
           "-err", allErrTimeSeriesFileName,
+          "-msks", allMsksTimeSeriesFileName,
           "-opf", reprocTimeSeriesFileName,
           "-algo", "local",
           "-algo.local.bwr", localWindowBwr,
@@ -433,18 +450,26 @@ QStringList LaiRetrievalHandler::GetProfileReprocessingArgs(std::map<QString, QS
     return profileReprocessingArgs;
 }
 
-QStringList LaiRetrievalHandler::GetReprocProfileSplitterArgs(const QString &reprocTimeSeriesFileName, const QString &reprocFileListFileName) {
-    return { "ReprocessedProfileSplitter",
+QStringList LaiRetrievalHandler::GetReprocProfileSplitterArgs(const QString &reprocTimeSeriesFileName, const QString &reprocFileListFileName,
+                                                              const QString &reprocFlagsFileListFileName,
+                                                              const QStringList &allXmlsFileName) {
+    QStringList args = { "ReprocessedProfileSplitter2",
             "-in", reprocTimeSeriesFileName,
-            "-outlist", reprocFileListFileName,
-            "-compress", "1"
+            "-outrlist", reprocFileListFileName,
+            "-outflist", reprocFlagsFileListFileName,
+            "-compress", "1",
+            "-ilxml"
     };
+    args += allXmlsFileName;
+    return args;
 }
+
 QStringList LaiRetrievalHandler::GetFittedProfileReprocArgs(const QString &allLaiTimeSeriesFileName, const QString &allErrTimeSeriesFileName,
-                                       const QString &fittedTimeSeriesFileName, const QStringList &listProducts) {
+                                       const QString &allMsksTimeSeriesFileName, const QString &fittedTimeSeriesFileName, const QStringList &listProducts) {
     QStringList fittedProfileReprocArgs = { "ProfileReprocessing",
           "-lai", allLaiTimeSeriesFileName,
           "-err", allErrTimeSeriesFileName,
+          "-msks", allMsksTimeSeriesFileName,
           "-opf", fittedTimeSeriesFileName,
           "-algo", "fit",
           "-ilxml"
@@ -453,36 +478,74 @@ QStringList LaiRetrievalHandler::GetFittedProfileReprocArgs(const QString &allLa
     return fittedProfileReprocArgs;
 }
 
-QStringList LaiRetrievalHandler::GetFittedProfileReprocSplitterArgs(const QString &fittedTimeSeriesFileName, const QString &fittedFileListFileName) {
-    return { "ReprocessedProfileSplitter",
-                  "-in", fittedTimeSeriesFileName,
-                  "-outlist", fittedFileListFileName,
-                  "-compress", "1"
+QStringList LaiRetrievalHandler::GetFittedProfileReprocSplitterArgs(const QString &fittedTimeSeriesFileName, const QString &fittedFileListFileName,
+                                                                    const QString &fittedFlagsFileListFileName,
+                                                                    const QStringList &allXmlsFileName) {
+    QStringList args = { "ReprocessedProfileSplitter2",
+                "-in", fittedTimeSeriesFileName,
+                "-outrlist", fittedFileListFileName,
+                "-outflist", fittedFlagsFileListFileName,
+                "-compress", "1",
+                "-ilxml"
     };
+    args += allXmlsFileName;
+    return args;
 }
 
 QStringList LaiRetrievalHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, std::map<QString, QString> configParameters,
-                                    const QJsonObject &parameters, const QStringList &listProducts,
-                                    const QString &reprocTimeSeriesFileName, const QString &fittedTimeSeriesFileName) {
+                                    const QStringList &listProducts, const QStringList &listNdvis,
+                                    const QStringList &listLaiMonoDate, const QStringList &listLaiMonoDateErr,
+                                    const QStringList &listLaiMonoDateFlgs, const QString &fileLaiReproc,
+                                    const QString &fileLaiReprocFlgs, const QString &fileLaiFit,
+                                    const QString &fileLaiFitFlgs, const QString &tileId) {
 
     const auto &targetFolder = productFormatterTask.GetFilePath("");
-    const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.txt");
+    const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
-    WriteExecutionInfosFile(executionInfosPath, parameters, configParameters, listProducts);
+    WriteExecutionInfosFile(executionInfosPath, configParameters, listProducts);
 
     QStringList productFormatterArgs = { "ProductFormatter",
-                              "-destroot", targetFolder,
-                              "-fileclass", "SVT1",
-                              "-level", "L3B",
-                              "-timeperiod", "",                //TODO
-                              "-baseline", "01.00",
-                              "-processor", "vegetation",
-                              "-processor.vegetation.lairepr", reprocTimeSeriesFileName,
-                              "-processor.vegetation.laifit", fittedTimeSeriesFileName,
-                              "-gipp", executionInfosPath,
-                              "-il"
-                          };
+                            "-destroot", targetFolder,
+                            "-fileclass", "SVT1",
+                            "-level", "L3B",
+                            "-baseline", "01.00",
+                            "-processor", "vegetation",
+                            "-processor.vegetation.laindvi"};
+    productFormatterArgs += tileId;
+    productFormatterArgs += listNdvis;
+    productFormatterArgs += "-processor.vegetation.laimonodate";
+    productFormatterArgs += tileId;
+    productFormatterArgs += listLaiMonoDate;
+    productFormatterArgs += "-processor.vegetation.laimonodateerr";
+    productFormatterArgs += tileId;
+    productFormatterArgs += listLaiMonoDateErr;
+    productFormatterArgs += "-processor.vegetation.laimdateflgs";
+    productFormatterArgs += tileId;
+    productFormatterArgs += listLaiMonoDateFlgs;
+    productFormatterArgs += "-processor.vegetation.filelaireproc";
+    productFormatterArgs += tileId;
+    productFormatterArgs += fileLaiReproc;
+    productFormatterArgs += "-processor.vegetation.filelaireprocflgs";
+    productFormatterArgs += tileId;
+    productFormatterArgs += fileLaiReprocFlgs;
+    productFormatterArgs += "-processor.vegetation.filelaifit";
+    productFormatterArgs += tileId;
+    productFormatterArgs += fileLaiFit;
+    productFormatterArgs += "-processor.vegetation.filelaifitflgs";
+    productFormatterArgs += tileId;
+    productFormatterArgs += fileLaiFitFlgs;
+    productFormatterArgs += "-gipp";
+    productFormatterArgs += executionInfosPath;
+    productFormatterArgs += "-il";
     productFormatterArgs += listProducts;
 
     return productFormatterArgs;
+}
+
+bool IsMonoDateProcessingNeeded() {
+    return false;
+}
+
+bool IsNDaysReprocessingNeeded() {
+    return false;
 }
