@@ -1,25 +1,25 @@
-#!/bin/bash
+#!/bin/bash -l
 #USER modif
 
-#add directories where SPOT products are to be found
-/home/achenebert/src/sen2agri-processors/Composite/TestScripts/composite_processing.py --applocation /data/s2agri/sen2agri-processors-build \
---syntdate 20150430 --synthalf 25 --input \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150412_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150412_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150417_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150417_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150507_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150507_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150512_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150512_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150522_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150522_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150606_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150606_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150611_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150611_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150701_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150701_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150706_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150706_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150716_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150716_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150726_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150726_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150731_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150731_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150805_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150805_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150810_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150810_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150815_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150815_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150820_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150820_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150825_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150825_N2A_ToulaRussiaD0000B0000.xml" \
-"/data/s2agri/input/Spot5-T5/Russia/Toula/SPOT5_HRG2_XS_20150830_N2A_ToulaRussiaD0000B0000/SPOT5_HRG2_XS_20150830_N2A_ToulaRussiaD0000B0000.xml" \
---res 10 --t0 20150410 --tend 20150525 --outdir /data/s2agri/output/Russia/Toula/composite/Composite_Russia_April --bandsmap /home/achenebert/src/sen2agri/sen2agri-processors/Composite/TestScripts/bands_mapping_spot5.txt
+
+dateList="20150401 20150501 20150601 20150701 20150801 20150901"   
+for date in $dateList    
+do   
+
+echo "synthesis date =" $date
+
+# generate the configuration file with list of product to use
+python generate_file_list_composite.py \
+--inputdir /data/s2agri/input/EOData/2015/Russia/Toula/ \
+--syntdate $date --synthalf 25 --instrument HRG2 \
+--outfile /data/s2agri/output/2015/Russia/composite_$date/configuration.file
+
+#run composite processors
+python /home/msavinaud/dev/s2agri/src/sen2agri-processors/Composite/TestScripts/composite_processing_CS.py \
+--applocation /data/s2agri/sen2agri-processors-build-thor \
+--configfile /data/s2agri/output/2015/Russia/composite_$date/configuration.file \
+--res 10 \
+--outdir /data/s2agri/output/2015/Russia/composite_$date \
+--bandsmap /home/msavinaud/dev/s2agri/src/sen2agri-processors/Composite/TestScripts/bands_mapping_spot5.txt
+           
+done
