@@ -5,6 +5,8 @@ import dbus
 import json
 import numbers
 import sys
+import psycopg2
+import psycopg2.extras
 
 
 class Site(object):
@@ -16,34 +18,6 @@ class Site(object):
     def __cmp__(self, other):
         if hasattr(other, 'site_id'):
             return self.site_id.__cmp__(other.site_id)
-
-
-class ConfigurationValue(object):
-
-    def __init__(self, key, value):
-        self.key = key
-        self.value = value
-
-    def __str__(self):
-        return str({"key": self.key, "value": self.value})
-
-    def __repr__(self):
-        return str(self)
-
-    def to_dbus(self):
-        return dbus.Struct([self.key, self.value])
-
-
-class ConfigurationValueList(object):
-
-    def __init__(self, values):
-        self.values = values
-
-    def __str__(self):
-        return str(self.values)
-
-    def to_dbus(self):
-        return map(lambda cv: cv.to_dbus(), self.values)
 
 
 class NewJob(object):
@@ -72,21 +46,47 @@ class Sen2AgriClient(object):
                                     '/org/esa/sen2agri/persistenceManager')
 
     def get_sites(self):
+        cur = self.get_cursor()
+        cur.execute("""SELECT * FROM sp_get_sites()""")
+        rows = cur.fetchall()
+
         sites = []
-        for site in self.proxy.GetConfigurationSet()[3]:
-            sites.append(Site(int(site[0]), str(site[1])))
+        for row in rows:
+            sites.append(Site(row['id'], row['name']))
 
         return sorted(sites)
 
     def submit_job(self, job):
-        jobId = self.proxy.SubmitJob(job.to_dbus())
+        cur = self.get_cursor()
+        cur.execute("""SELECT * FROM sp_submit_job(%(name)s :: character varying, %(description)s ::
+        character varying, %(processor_id)s :: smallint,
+                       %(site_id)s :: smallint, %(start_type_id)s :: smallint, %(parameters)s ::
+                       json, %(configuration)s :: json)""",
+                    {"name": job.name,
+                     "description": job.description,
+                     "processor_id": job.processor_id,
+                     "site_id": job.site_id,
+                     "start_type_id": job.start_type,
+                     "parameters": job.parameters,
+                     "configuration": json.JSONEncoder().encode([dict(c) for c in job.configuration]) # [{"key": c.key, "value": c.value} for c in job.configuration]
+                    })
+        rows =cur.fetchall()
+
+        jobId = rows[0][0]
 
         bus = dbus.SystemBus()
         orchestrator_proxy = bus.get_object('org.esa.sen2agri.orchestrator',
                                             '/org/esa/sen2agri/orchestrator')
         orchestrator_proxy.NotifyEventsAvailable()
 
-	return jobId
+        return jobId
+
+    def get_connection(self):
+        return psycopg2.connect(
+            "dbname='sen2agri' user='admin' host='localhost' password='sen2agri'")
+
+    def get_cursor(self):
+        return self.get_connection().cursor(cursor_factory=psycopg2.extras.DictCursor)
 
 
 class Sen2AgriCtl(object):
@@ -107,7 +107,7 @@ class Sen2AgriCtl(object):
         parser_submit_job.add_argument('-s', '--site',
                                        required=True, help="site")
         parser_submit_job_subparsers = parser_submit_job.add_subparsers()
-        
+
         parser_composite = parser_submit_job_subparsers.add_parser(
             'composite', help="Submits a new composite type job")
         parser_composite.add_argument('-i', '--input',
@@ -145,8 +145,8 @@ class Sen2AgriCtl(object):
         parser_pheno_ndvi = parser_submit_job_subparsers.add_parser(
             'phenondvi', help="Submits a new Phenological NDVI Metrics type job")
         parser_pheno_ndvi.add_argument('-i', '--input',
-                                      nargs='+', required=True,
-                                      help="input products")
+                                       nargs='+', required=True,
+                                       help="input products")
         parser_pheno_ndvi.add_argument(
             '--phenondvi', help="phenondvi")
         parser_pheno_ndvi.add_argument(
@@ -155,7 +155,7 @@ class Sen2AgriCtl(object):
             '-p', '--parameter', action='append', nargs=2,
             metavar=('KEY', 'VALUE'), help="override configuration parameter")
         parser_pheno_ndvi.set_defaults(func=self.submit_pheno_ndvi)
-        
+
         parser_crop_mask = parser_submit_job_subparsers.add_parser(
             'crop-mask', help="Submits a new crop mask job")
         parser_crop_mask.add_argument('-i', '--input',
@@ -235,7 +235,7 @@ class Sen2AgriCtl(object):
 
         job = self.create_job(3, parameters, args)
         self.client.submit_job(job)
-        
+
     def submit_crop_mask(self, args):
         parameters = {'input_products': args.input,
                       'reference_polygons': args.reference,
@@ -291,8 +291,8 @@ def config_from_parameters(parameters):
     config = []
     if parameters:
         for param in parameters:
-            config.append(ConfigurationValue(param[0], param[1]))
-    return ConfigurationValueList(config)
+            config.append({'key': param[0], 'value': param[1]})
+    return config
 
 if __name__ == '__main__':
     try:
