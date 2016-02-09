@@ -42,7 +42,7 @@ BEGIN
 	WHERE id = ANY (runnable_task_ids)
 	AND step.status_id = 5; --Paused
 
-    processor_id := (SELECT processor_id FROM job WHERE id = _job_id);
+    processor_id := (SELECT job.processor_id FROM job WHERE id = _job_id);
 
     IF runnable_task_ids IS NOT NULL THEN
         -- Add events for all the runnable tasks
