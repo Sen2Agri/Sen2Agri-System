@@ -32,11 +32,6 @@ class NewJob(object):
         self.parameters = parameters
         self.configuration = configuration
 
-    def to_dbus(self):
-        return dbus.Struct([self.name, self.description, self.processor_id,
-                            self.site_id, self.start_type, self.parameters,
-                            self.configuration.to_dbus()])
-
 
 class Sen2AgriClient(object):
 
@@ -70,7 +65,7 @@ class Sen2AgriClient(object):
                      "parameters": job.parameters,
                      "configuration": json.JSONEncoder().encode([dict(c) for c in job.configuration]) # [{"key": c.key, "value": c.value} for c in job.configuration]
                     })
-        rows =cur.fetchall()
+        rows = cur.fetchall()
 
         jobId = rows[0][0]
 
@@ -216,7 +211,9 @@ class Sen2AgriCtl(object):
             parameters['resolution'] = args.resolution
 
         job = self.create_job(1, parameters, args)
-        self.client.submit_job(job)
+        job_id = self.client.submit_job(job)
+
+	print("Submitted job {}".format(job_id))
 
     def submit_lai(self, args):
         parameters = {'input_products': args.input}
@@ -225,7 +222,9 @@ class Sen2AgriCtl(object):
             parameters['resolution'] = args.resolution
 
         job = self.create_job(2, parameters, args)
-        self.client.submit_job(job)
+        job_id = self.client.submit_job(job)
+
+	print("Submitted job {}".format(job_id))
 
     def submit_pheno_ndvi(self, args):
         parameters = {'input_products': args.input}
@@ -234,7 +233,9 @@ class Sen2AgriCtl(object):
             parameters['resolution'] = args.resolution
 
         job = self.create_job(3, parameters, args)
-        self.client.submit_job(job)
+        job_id = self.client.submit_job(job)
+
+	print("Submitted job {}".format(job_id))
 
     def submit_crop_mask(self, args):
         parameters = {'input_products': args.input,
@@ -246,7 +247,9 @@ class Sen2AgriCtl(object):
             parameters['resolution'] = args.resolution
 
         job = self.create_job(4, parameters, args)
-        self.client.submit_job(job)
+        job_id = self.client.submit_job(job)
+
+	print("Submitted job {}".format(job_id))
 
     def submit_crop_type(self, args):
         parameters = {'input_products': args.input,
@@ -260,9 +263,9 @@ class Sen2AgriCtl(object):
             parameters['resolution'] = args.resolution
 
         job = self.create_job(5, parameters, args)
-        jobId = self.client.submit_job(job)
+        job_id = self.client.submit_job(job)
 
-	print("Submitted job {}".format(jobId))
+	print("Submitted job {}".format(job_id))
 
     def create_job(self, processor_id, parameters, args):
         config = config_from_parameters(args.parameter)
