@@ -9,7 +9,8 @@
 Orchestrator::Orchestrator(std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
                            QObject *parent)
     : QObject(parent),
-      persistenceManager(Settings::readSettings(getConfigurationFile(*QCoreApplication::instance()))),
+      persistenceManager(
+          Settings::readSettings(getConfigurationFile(*QCoreApplication::instance()))),
       executorClient(OrgEsaSen2agriProcessorsExecutorInterface::staticInterfaceName(),
                      QStringLiteral("/org/esa/sen2agri/processorsExecutor"),
                      QDBusConnection::systemBus()),

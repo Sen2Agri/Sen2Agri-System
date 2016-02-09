@@ -7,7 +7,7 @@
 #include "processorhandlerhelper.h"
 
 void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
-                                             const JobSubmittedEvent &event)
+                                              const JobSubmittedEvent &event)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     const auto &inputProducts = parameters["input_products"].toArray();
@@ -25,57 +25,65 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     TaskToSubmit metricsSplitterTask{ "pheno-ndvi-metrics-splitter", { metricsEstimationTask } };
     TaskToSubmit productFormatterTask{ "product-formatter", { metricsSplitterTask } };
 
-    ctx.SubmitTasks(event.jobId,
-                    { bandsExtractorTask, featureExtractionTask, metricsEstimationTask, metricsSplitterTask, productFormatterTask});
+    ctx.SubmitTasks(event.jobId, { bandsExtractorTask, featureExtractionTask, metricsEstimationTask,
+                                   metricsSplitterTask, productFormatterTask });
 
     const auto &rawReflBands = bandsExtractorTask.GetFilePath("reflectances.tif");
     const auto &allMasksImg = bandsExtractorTask.GetFilePath("mask_summary.tif");
     const auto &dates = bandsExtractorTask.GetFilePath("dates.txt");
-    const auto &ndviImg= featureExtractionTask.GetFilePath("ndvi.tif");
-    const auto &metricsEstimationImg= metricsEstimationTask.GetFilePath("metric_estimation.tif");
-    const auto &metricsParamsImg= metricsSplitterTask.GetFilePath("metric_parameters_img.tif");
-    const auto &metricsFlagsImg= metricsSplitterTask.GetFilePath("metric_flags_img.tif");
+    const auto &ndviImg = featureExtractionTask.GetFilePath("ndvi.tif");
+    const auto &metricsEstimationImg = metricsEstimationTask.GetFilePath("metric_estimation.tif");
+    const auto &metricsParamsImg = metricsSplitterTask.GetFilePath("metric_parameters_img.tif");
+    const auto &metricsFlagsImg = metricsSplitterTask.GetFilePath("metric_flags_img.tif");
     const auto &targetFolder = productFormatterTask.GetFilePath("");
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
-    QStringList bandsExtractorArgs = { "BandsExtractor",
-                                       "-pixsize", resolution,
-                                       "-merge", "true",
-                                       "-ndh", "true",
-                                       "-out", rawReflBands,
-                                       "-allmasks", allMasksImg,
-                                       "-outdate", dates,
-                                       "-il"};
+    QStringList bandsExtractorArgs = {
+        "BandsExtractor", "-pixsize",   resolution,  "-merge",    "true",     "-ndh", "true",
+        "-out",           rawReflBands, "-allmasks", allMasksImg, "-outdate", dates,  "-il"
+    };
     bandsExtractorArgs += listProducts;
 
-    QStringList featureExtractionArgs = { "FeatureExtraction",
-                                          "-rtocr", rawReflBands,
-                                          "-ndvi", ndviImg };
+    QStringList featureExtractionArgs = { "FeatureExtraction", "-rtocr", rawReflBands, "-ndvi",
+                                          ndviImg };
 
-    QStringList metricsEstimationArgs = { "PhenologicalNDVIMetrics",
-                                     "-in", ndviImg,
-                                     "-mask", allMasksImg,
-                                     "-dates", dates,
-                                     "-out", metricsEstimationImg };
+    QStringList metricsEstimationArgs = {
+        "PhenologicalNDVIMetrics", "-in", ndviImg, "-mask", allMasksImg, "-dates", dates, "-out",
+        metricsEstimationImg
+    };
 
     QStringList metricsSplitterArgs = { "PhenoMetricsSplitter",
-                                     "-in", metricsEstimationImg,
-                                     "-outparams", metricsParamsImg,
-                                     "-outflags", metricsFlagsImg,
-                                     "-compress", "1"};
+                                        "-in",
+                                        metricsEstimationImg,
+                                        "-outparams",
+                                        metricsParamsImg,
+                                        "-outflags",
+                                        metricsFlagsImg,
+                                        "-compress",
+                                        "1" };
 
     WriteExecutionInfosFile(executionInfosPath, listProducts);
     QString tileId = ProcessorHandlerHelper::GetTileId(listProducts);
     QStringList productFormatterArgs = { "ProductFormatter",
-                                         "-destroot", targetFolder,
-                                         "-fileclass", "SVT1",
-                                         "-level", "L3B",
-                                         "-baseline", "01.00",
-                                         "-processor", "phenondvi",
-                                         "-processor.phenondvi.metrics", tileId, metricsParamsImg,
-                                         "-processor.phenondvi.flags", tileId, metricsFlagsImg,
-                                         "-gipp", executionInfosPath,
-                                         "-il"};
+                                         "-destroot",
+                                         targetFolder,
+                                         "-fileclass",
+                                         "SVT1",
+                                         "-level",
+                                         "L3B",
+                                         "-baseline",
+                                         "01.00",
+                                         "-processor",
+                                         "phenondvi",
+                                         "-processor.phenondvi.metrics",
+                                         tileId,
+                                         metricsParamsImg,
+                                         "-processor.phenondvi.flags",
+                                         tileId,
+                                         metricsFlagsImg,
+                                         "-gipp",
+                                         executionInfosPath,
+                                         "-il" };
     productFormatterArgs += listProducts;
 
     NewStepList steps = {
@@ -87,11 +95,10 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     };
 
     ctx.SubmitSteps(steps);
-
 }
 
 void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
-                                             const TaskFinishedEvent &event)
+                                              const TaskFinishedEvent &event)
 {
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
@@ -105,26 +112,24 @@ void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 }
 
 void PhenoNdviHandler::WriteExecutionInfosFile(const QString &executionInfosPath,
-                                               const QStringList &listProducts) {
+                                               const QStringList &listProducts)
+{
     std::ofstream executionInfosFile;
-    try
-    {
+    try {
         executionInfosFile.open(executionInfosPath.toStdString().c_str(), std::ofstream::out);
         executionInfosFile << "<?xml version=\"1.0\" ?>" << std::endl;
         executionInfosFile << "<metadata>" << std::endl;
         executionInfosFile << "  <General>" << std::endl;
         executionInfosFile << "  </General>" << std::endl;
         executionInfosFile << "  <XML_files>" << std::endl;
-        for (int i = 0; i<listProducts.size(); i++) {
-            executionInfosFile << "    <XML_" << std::to_string(i) << ">" << listProducts[i].toStdString()
-                               << "</XML_" << std::to_string(i) << ">" << std::endl;
+        for (int i = 0; i < listProducts.size(); i++) {
+            executionInfosFile << "    <XML_" << std::to_string(i) << ">"
+                               << listProducts[i].toStdString() << "</XML_" << std::to_string(i)
+                               << ">" << std::endl;
         }
         executionInfosFile << "  </XML_files>" << std::endl;
         executionInfosFile << "</metadata>" << std::endl;
         executionInfosFile.close();
-    }
-    catch(...)
-    {
-
+    } catch (...) {
     }
 }

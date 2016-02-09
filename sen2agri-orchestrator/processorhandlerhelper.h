@@ -1,7 +1,6 @@
 #ifndef PROCESSORHANDLERHELPER_H
 #define PROCESSORHANDLERHELPER_H
 
-
 class ProcessorHandlerHelper
 {
 public:

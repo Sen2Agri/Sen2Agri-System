@@ -738,12 +738,16 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, EventType &event)
 
 TaskRunnableEvent::TaskRunnableEvent() : jobId(), taskId() {}
 
-TaskRunnableEvent::TaskRunnableEvent(int jobId, int taskId) : jobId(jobId), taskId(taskId) {}
+TaskRunnableEvent::TaskRunnableEvent(int jobId, int processorId, int taskId)
+    : jobId(jobId), processorId(processorId), taskId(taskId)
+{
+}
 
 QString TaskRunnableEvent::toJson() const
 {
     QJsonObject node;
     node[QStringLiteral("job_id")] = jobId;
+    node[QStringLiteral("processor_id")] = jobId;
     node[QStringLiteral("task_id")] = taskId;
 
     return QString::fromUtf8(QJsonDocument(node).toJson());
@@ -755,6 +759,7 @@ TaskRunnableEvent TaskRunnableEvent::fromJson(const QString &json)
     const auto &object = doc.object();
 
     return { object.value(QStringLiteral("job_id")).toInt(),
+             object.value(QStringLiteral("processor_id")).toInt(),
              object.value(QStringLiteral("task_id")).toInt() };
 }
 
@@ -1432,21 +1437,15 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, uint64_t &value)
     return argument;
 }
 
-DashboardSearch::DashboardSearch()
-{
-}
+DashboardSearch::DashboardSearch() {}
 
 DashboardSearch::DashboardSearch(std::experimental::optional<int> siteId,
-                std::experimental::optional<int> processorId)
-    : siteId(siteId),
-      processorId(processorId)
+                                 std::experimental::optional<int> processorId)
+    : siteId(siteId), processorId(processorId)
 {
 }
 
-void DashboardSearch::registerMetaTypes()
-{
-    qDBusRegisterMetaType<DashboardSearch>();
-}
+void DashboardSearch::registerMetaTypes() { qDBusRegisterMetaType<DashboardSearch>(); }
 
 QDBusArgument &operator<<(QDBusArgument &argument, const DashboardSearch &search)
 {

@@ -6,8 +6,7 @@
 
 #include "eventprocessingcontext.hpp"
 
-EventProcessingContext::EventProcessingContext(
-    PersistenceManagerDBProvider &persistenceManager)
+EventProcessingContext::EventProcessingContext(PersistenceManagerDBProvider &persistenceManager)
     : persistenceManager(persistenceManager)
 {
 }
@@ -15,8 +14,7 @@ EventProcessingContext::EventProcessingContext(
 std::map<QString, QString> EventProcessingContext::GetJobConfigurationParameters(int jobId,
                                                                                  QString prefix)
 {
-    const auto &paramList =
-        persistenceManager.GetJobConfigurationParameters(jobId, prefix);
+    const auto &paramList = persistenceManager.GetJobConfigurationParameters(jobId, prefix);
 
     std::map<QString, QString> result;
     for (const auto &p : paramList) {
@@ -44,15 +42,9 @@ void EventProcessingContext::SubmitSteps(const NewStepList &steps)
     persistenceManager.SubmitSteps(steps);
 }
 
-void EventProcessingContext::MarkJobPaused(int jobId)
-{
-    persistenceManager.MarkJobPaused(jobId);
-}
+void EventProcessingContext::MarkJobPaused(int jobId) { persistenceManager.MarkJobPaused(jobId); }
 
-void EventProcessingContext::MarkJobResumed(int jobId)
-{
-    persistenceManager.MarkJobResumed(jobId);
-}
+void EventProcessingContext::MarkJobResumed(int jobId) { persistenceManager.MarkJobResumed(jobId); }
 
 void EventProcessingContext::MarkJobCancelled(int jobId)
 {
@@ -64,10 +56,7 @@ void EventProcessingContext::MarkJobFinished(int jobId)
     persistenceManager.MarkJobFinished(jobId);
 }
 
-void EventProcessingContext::MarkJobFailed(int jobId)
-{
-    persistenceManager.MarkJobFailed(jobId);
-}
+void EventProcessingContext::MarkJobFailed(int jobId) { persistenceManager.MarkJobFailed(jobId); }
 
 void EventProcessingContext::MarkJobNeedsInput(int jobId)
 {
@@ -131,9 +120,8 @@ QString EventProcessingContext::GetOutputPath(int jobId, int taskId, const QStri
 
 QString EventProcessingContext::GetScratchPath(int jobId)
 {
-    const auto &parameters =
-        persistenceManager.GetJobConfigurationParameters(
-            jobId, QStringLiteral("general.scratch-path"));
+    const auto &parameters = persistenceManager.GetJobConfigurationParameters(
+        jobId, QStringLiteral("general.scratch-path"));
 
     if (parameters.empty()) {
         throw std::runtime_error("Please configure the \"general.scratch-path\" parameter with the "

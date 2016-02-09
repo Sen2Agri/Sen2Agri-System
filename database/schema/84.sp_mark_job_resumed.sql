@@ -4,6 +4,7 @@ IN _job_id int
 DECLARE unrunnable_task_ids int[];
 DECLARE runnable_task_ids int[];
 DECLARE runnable_task_id int;
+DECLARE processor_id processor.id%TYPE;
 BEGIN
 
 	IF (SELECT current_setting('transaction_isolation') NOT ILIKE 'REPEATABLE READ') THEN
@@ -41,17 +42,19 @@ BEGIN
 	WHERE id = ANY (runnable_task_ids)
 	AND step.status_id = 5; --Paused
 
+    processor_id := (SELECT processor_id FROM job WHERE id = _job_id);
+
     IF runnable_task_ids IS NOT NULL THEN
         -- Add events for all the runnable tasks
         FOREACH runnable_task_id IN ARRAY runnable_task_ids
-        LOOP            
+        LOOP
                 INSERT INTO event(
                 type_id,
                 data,
                 submitted_timestamp)
                 VALUES (
                 1, -- TaskRunnable
-                ('{"job_id":' || _job_id || ', "task_id":' || runnable_task_id || '}') :: json,
+                ('{"job_id":' || _job_id || ', "processor_id":' || processor_id || ', "task_id":' || runnable_task_id || '}') :: json,
                 now());
         END LOOP;
     END IF;

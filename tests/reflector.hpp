@@ -73,4 +73,5 @@ public slots:
     StepConsoleOutput ReflectStepConsoleOutput(const StepConsoleOutput &value);
     StepConsoleOutputList ReflectStepConsoleOutputList(const StepConsoleOutputList &value);
     NewProduct ReflectNewProduct(const NewProduct &value);
+    DashboardSearch ReflectDashboardSearch(const DashboardSearch &value);
 };

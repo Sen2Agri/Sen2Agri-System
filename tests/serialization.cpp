@@ -500,3 +500,12 @@ void Serialization::newProduct()
     NewProduct emptyValue;
     compare(WaitForResponseAndThrow(client->ReflectNewProduct(emptyValue)), emptyValue);
 }
+
+void Serialization::dashboardSearch()
+{
+    const auto &value = maker<DashboardSearch>::make();
+    compare(WaitForResponseAndThrow(client->ReflectDashboardSearch(value)), value);
+
+    DashboardSearch emptyValue;
+    compare(WaitForResponseAndThrow(client->ReflectDashboardSearch(emptyValue)), emptyValue);
+}

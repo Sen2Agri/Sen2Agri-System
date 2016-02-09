@@ -12,8 +12,7 @@
 
 int main(int argc, char *argv[])
 {
-    try
-    {
+    try {
         Logger::installMessageHandler();
 
         QCoreApplication app(argc, argv);
@@ -62,9 +61,7 @@ int main(int argc, char *argv[])
         Q_UNUSED(listener);
 
         return app.exec();
-    }
-    catch (const std::exception &e)
-    {
+    } catch (const std::exception &e) {
         Logger::fatal(e.what());
 
         return EXIT_FAILURE;

@@ -55,8 +55,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 
         ConfigurationSet result;
         while (query.next()) {
-            result.categories.append({ query.value(idCol).toInt(),
-                                       query.value(nameCol).toString(),
+            result.categories.append({ query.value(idCol).toInt(), query.value(nameCol).toString(),
                                        query.value(allowPerSiteCusomizationCol).toBool() });
         }
 
@@ -90,11 +89,10 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
         auto categoryCol = dataRecord.indexOf(QStringLiteral("config_category_id"));
 
         while (query.next()) {
-            result.parameterInfo.append({ query.value(keyCol).toString(),
-                                          query.value(categoryCol).toInt(),
-                                          query.value(friendlyNameCol).toString(),
-                                          query.value(dataTypeCol).toString(),
-                                          query.value(isAdvancedCol).toBool() });
+            result.parameterInfo.append(
+                { query.value(keyCol).toString(), query.value(categoryCol).toInt(),
+                  query.value(friendlyNameCol).toString(), query.value(dataTypeCol).toString(),
+                  query.value(isAdvancedCol).toBool() });
         }
 
         query = db.prepareQuery(QStringLiteral("select * from sp_get_parameters(:prefix)"));
@@ -662,8 +660,7 @@ JobStepToRunList PersistenceManagerDBProvider::GetTaskStepsForStart(int taskId)
 
         JobStepToRunList result;
         while (query.next()) {
-            result.append({ query.value(taskIdCol).toInt(),
-                            query.value(moduleCol).toString(),
+            result.append({ query.value(taskIdCol).toInt(), query.value(moduleCol).toString(),
                             query.value(stepNameCol).toString(),
                             query.value(parametersCol).toString() });
         }
@@ -694,8 +691,7 @@ JobStepToRunList PersistenceManagerDBProvider::GetJobStepsForResume(int jobId)
 
         JobStepToRunList result;
         while (query.next()) {
-            result.append({ query.value(taskIdCol).toInt(),
-                            query.value(moduleCol).toString(),
+            result.append({ query.value(taskIdCol).toInt(), query.value(moduleCol).toString(),
                             query.value(stepNameCol).toString(),
                             query.value(parametersCol).toString() });
         }
@@ -726,8 +722,7 @@ StepConsoleOutputList PersistenceManagerDBProvider::GetTaskConsoleOutputs(int ta
 
         StepConsoleOutputList result;
         while (query.next()) {
-            result.append({ query.value(taskIdCol).toInt(),
-                            query.value(stepNameCol).toString(),
+            result.append({ query.value(taskIdCol).toInt(), query.value(stepNameCol).toString(),
                             query.value(stdOutTextCol).toString(),
                             query.value(stdErrTextCol).toString() });
         }
@@ -935,8 +930,8 @@ QString PersistenceManagerDBProvider::GetDashboardProducts(const DashboardSearch
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_products(:siteId, :processorId)"));
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_dashboard_products(:siteId, :processorId)"));
         if (search.siteId)
             query.bindValue(QStringLiteral(":siteId"), *search.siteId);
         else
@@ -966,8 +961,7 @@ QString PersistenceManagerDBProvider::GetDashboardSites()
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_sites()"));
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_sites()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -988,8 +982,8 @@ QString PersistenceManagerDBProvider::GetDashboardSentinelTiles(int siteId)
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_sentinel_tiles(:siteId)"));
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_dashboard_sentinel_tiles(:siteId)"));
         query.bindValue(QStringLiteral(":siteId"), siteId);
 
         query.setForwardOnly(true);
@@ -1011,8 +1005,8 @@ QString PersistenceManagerDBProvider::GetDashboardLandsatTiles(int siteId)
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_landsat_tiles(:siteId)"));
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_dashboard_landsat_tiles(:siteId)"));
         query.bindValue(QStringLiteral(":siteId"), siteId);
 
         query.setForwardOnly(true);
@@ -1034,8 +1028,7 @@ QString PersistenceManagerDBProvider::GetDashboardProcessors()
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_processors()"));
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_processors()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -1150,8 +1143,7 @@ static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &que
 
     ConfigurationParameterValueList result;
     while (query.next()) {
-        result.append({ query.value(keyCol).toString(),
-                        to_optional<int>(query.value(siteIdCol)),
+        result.append({ query.value(keyCol).toString(), to_optional<int>(query.value(siteIdCol)),
                         query.value(valueCol).toString() });
     }
 
