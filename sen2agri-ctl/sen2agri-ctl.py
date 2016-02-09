@@ -41,9 +41,11 @@ class Sen2AgriClient(object):
                                     '/org/esa/sen2agri/persistenceManager')
 
     def get_sites(self):
-        cur = self.get_cursor()
+        connection = self.get_connection()
+        cur = self.get_cursor(connection)
         cur.execute("""SELECT * FROM sp_get_sites()""")
         rows = cur.fetchall()
+        connection.commit()
 
         sites = []
         for row in rows:
@@ -52,7 +54,8 @@ class Sen2AgriClient(object):
         return sorted(sites)
 
     def submit_job(self, job):
-        cur = self.get_cursor()
+        connection = self.get_connection()
+        cur = self.get_cursor(connection)
         cur.execute("""SELECT * FROM sp_submit_job(%(name)s :: character varying, %(description)s ::
         character varying, %(processor_id)s :: smallint,
                        %(site_id)s :: smallint, %(start_type_id)s :: smallint, %(parameters)s ::
@@ -66,6 +69,7 @@ class Sen2AgriClient(object):
                      "configuration": json.JSONEncoder().encode([dict(c) for c in job.configuration]) # [{"key": c.key, "value": c.value} for c in job.configuration]
                     })
         rows = cur.fetchall()
+        connection.commit()
 
         jobId = rows[0][0]
 
@@ -80,8 +84,8 @@ class Sen2AgriClient(object):
         return psycopg2.connect(
             "dbname='sen2agri' user='admin' host='localhost' password='sen2agri'")
 
-    def get_cursor(self):
-        return self.get_connection().cursor(cursor_factory=psycopg2.extras.DictCursor)
+    def get_cursor(self, connection):
+        return connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
 
 class Sen2AgriCtl(object):
