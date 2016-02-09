@@ -70,4 +70,5 @@ private slots:
     void stepConsoleOutput();
     void stepConsoleOutputList();
     void newProduct();
+    void dashboardSearch();
 };

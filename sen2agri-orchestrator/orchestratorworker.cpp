@@ -12,10 +12,9 @@ static StepArgumentList getStepArguments(const JobStepToRun &step);
 static NewExecutorStepList
 getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps);
 
-OrchestratorWorker::OrchestratorWorker(
-    std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
-    PersistenceManagerDBProvider &persistenceManagerClient,
-    OrgEsaSen2agriProcessorsExecutorInterface &executorClient)
+OrchestratorWorker::OrchestratorWorker(std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
+                                       PersistenceManagerDBProvider &persistenceManagerClient,
+                                       OrgEsaSen2agriProcessorsExecutorInterface &executorClient)
     : persistenceManager(persistenceManagerClient),
       executorClient(executorClient),
       handlerMap(handlerMap)
@@ -147,9 +146,9 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobCanc
 {
     Logger::info(QStringLiteral("Processing job cancelled event with job id %1").arg(event.jobId));
 
-    const auto &tasks = ctx.GetJobTasksByStatus(
-        event.jobId,
-        { ExecutionStatus::Submitted, ExecutionStatus::Running, ExecutionStatus::Paused });
+    const auto &tasks =
+        ctx.GetJobTasksByStatus(event.jobId, { ExecutionStatus::Submitted, ExecutionStatus::Running,
+                                               ExecutionStatus::Paused });
 
     try {
         WaitForResponseAndThrow(executorClient.CancelTasks(tasks));
@@ -203,9 +202,9 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const StepFai
                      .arg(event.taskId)
                      .arg(event.jobId));
 
-    const auto &tasks = ctx.GetJobTasksByStatus(
-        event.jobId,
-        { ExecutionStatus::Running, ExecutionStatus::Error, ExecutionStatus::Submitted });
+    const auto &tasks =
+        ctx.GetJobTasksByStatus(event.jobId, { ExecutionStatus::Running, ExecutionStatus::Error,
+                                               ExecutionStatus::Submitted });
 
     try {
         WaitForResponseAndThrow(executorClient.CancelTasks(tasks));

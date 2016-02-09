@@ -430,10 +430,11 @@ class TaskRunnableEvent
 {
 public:
     int jobId;
+    int processorId;
     int taskId;
 
     TaskRunnableEvent();
-    TaskRunnableEvent(int jobId, int taskId);
+    TaskRunnableEvent(int jobId, int processorId, int taskId);
 
     QString toJson() const;
 

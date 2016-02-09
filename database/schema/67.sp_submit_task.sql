@@ -7,6 +7,7 @@ IN _preceding_task_ids json
 DECLARE return_id int;
 DECLARE preceding_task_ids int[];
 DECLARE status_id smallint;
+DECLARE processor_id processor.id%TYPE;
 BEGIN
 
 	BEGIN
@@ -21,19 +22,21 @@ BEGIN
 		status_id := 3; --NeedsInput
 	END IF;
 
+    processor_id := (SELECT processor_id FROM job WHERE id = _job_id);
+
 	INSERT INTO task(
-	job_id, 
-	module_short_name, 
-	parameters, 
-	submit_timestamp, 
-	status_id, 
+	job_id,
+	module_short_name,
+	parameters,
+	submit_timestamp,
+	status_id,
 	status_timestamp,
 	preceding_task_ids)
 	VALUES (
-	_job_id, 
-	_module_short_name, 
-	_parameters, 
-	now(), 
+	_job_id,
+	_module_short_name,
+	_parameters,
+	now(),
 	status_id,
 	now(),
 	preceding_task_ids) RETURNING id INTO return_id;
@@ -45,7 +48,7 @@ BEGIN
 		submitted_timestamp)
 		VALUES (
 		1, -- TaskRunnable
-		('{"job_id":' || _job_id || ', "task_id":' || return_id || '}') :: json,
+		('{"job_id":' || _job_id || ', "processor_id":' || processor_id || ', "task_id":' || return_id || '}') :: json,
 		now()
 		);
 	END IF;

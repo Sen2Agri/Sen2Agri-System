@@ -36,10 +36,7 @@ MainDialog::MainDialog(QWidget *parent)
     loadConfiguration(0, 0);
 }
 
-MainDialog::~MainDialog()
-{
-    delete ui;
-}
+MainDialog::~MainDialog() { delete ui; }
 
 void MainDialog::loadConfiguration(int currentTab, int currentSite)
 {
@@ -50,13 +47,11 @@ void MainDialog::loadConfiguration(int currentTab, int currentSite)
 
     auto watcher = new QFutureWatcher<ConfigurationSet>(this);
     watcher->setFuture(future);
-    connect(watcher,
-            &QFutureWatcher<ConfigurationSet>::finished,
-            [this, future, currentTab, currentSite] {
+    connect(watcher, &QFutureWatcher<ConfigurationSet>::finished, [this, future, currentTab,
+                                                                   currentSite] {
         setEnabled(true);
 
-        try
-        {
+        try {
             loadModel(future.result());
 
             if (currentTab < ui->tabWidget->count()) {
@@ -73,9 +68,7 @@ void MainDialog::loadConfiguration(int currentTab, int currentSite)
                     }
                 }
             }
-        }
-        catch (const std::exception &e)
-        {
+        } catch (const std::exception &e) {
             ui->innerLayout->removeWidget(ui->tabWidget);
 
             auto spacer = new QWidget(this);
@@ -85,9 +78,7 @@ void MainDialog::loadConfiguration(int currentTab, int currentSite)
             ui->innerLayout->addWidget(
                 new QLabel(QStringLiteral("An error occurred while loading the configuration:"),
                            this),
-                1,
-                0,
-                Qt::AlignHCenter);
+                1, 0, Qt::AlignHCenter);
 
             ui->innerLayout->addWidget(new QLabel(e.what(), this), 2, 0, Qt::AlignHCenter);
 
@@ -126,8 +117,8 @@ void MainDialog::loadModel(const ConfigurationSet &configuration)
                 siteLists.emplace_back(nullptr);
             }
 
-            parentLayout->addRow(createFieldsWidget(
-                std::experimental::nullopt, cat.categoryId, siteLists.back(), widget));
+            parentLayout->addRow(createFieldsWidget(std::experimental::nullopt, cat.categoryId,
+                                                    siteLists.back(), widget));
 
             ui->tabWidget->addTab(widget, cat.name);
             tabCategory.emplace_back(cat.categoryId);
@@ -146,23 +137,22 @@ QComboBox *MainDialog::createSiteList(int categoryId, QWidget *parent)
     parameterChangeListeners.emplace(
         std::make_pair(categoryId, std::vector<ParameterChangeListener *>()));
 
-    connect(siteList,
-            static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
+    connect(siteList, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged),
             [this, siteList](int) {
-        std::experimental::optional<int> siteId;
-        if (auto siteIdVal = siteList->currentData().toInt()) {
-            siteId = siteIdVal;
-        }
+                std::experimental::optional<int> siteId;
+                if (auto siteIdVal = siteList->currentData().toInt()) {
+                    siteId = siteIdVal;
+                }
 
-        auto categoryId = tabCategory[ui->tabWidget->currentIndex()];
-        for (const auto l : parameterChangeListeners[categoryId]) {
-            delete l;
-        }
-        parameterChangeListeners[categoryId].clear();
+                auto categoryId = tabCategory[ui->tabWidget->currentIndex()];
+                for (const auto l : parameterChangeListeners[categoryId]) {
+                    delete l;
+                }
+                parameterChangeListeners[categoryId].clear();
 
-        auto widget = ui->tabWidget->currentWidget();
-        switchSite(siteId, categoryId, siteList, widget);
-    });
+                auto widget = ui->tabWidget->currentWidget();
+                switchSite(siteId, categoryId, siteList, widget);
+            });
 
     return siteList;
 }
@@ -177,8 +167,7 @@ void MainDialog::switchSite(std::experimental::optional<int> siteId,
     layout->removeItem(item);
     item->widget()->deleteLater();
     delete item;
-    layout->setWidget(1,
-                      QFormLayout::SpanningRole,
+    layout->setWidget(1, QFormLayout::SpanningRole,
                       createFieldsWidget(siteId, categoryId, siteList, parentWidget));
 }
 
@@ -192,13 +181,12 @@ QWidget *MainDialog::createFieldsWidget(std::experimental::optional<int> siteId,
 
     for (const auto &param : configModel.parameters()) {
         if (param.categoryId == categoryId) {
-            if (auto editWidget = createEditRow(
-                    categoryId, param, { param.key, siteId }, siteList, fieldsWidget)) {
+            if (auto editWidget = createEditRow(categoryId, param, { param.key, siteId }, siteList,
+                                                fieldsWidget)) {
                 layout->addRow(new QLabel(param.friendlyName, fieldsWidget), editWidget);
             } else {
                 QMessageBox::critical(
-                    this,
-                    QStringLiteral("Error"),
+                    this, QStringLiteral("Error"),
                     QStringLiteral(
                         "Unable to create editor widget for parameter %1 with data type %2")
                         .arg(param.key)
@@ -246,19 +234,16 @@ void MainDialog::done(int result)
             }
 
             QMessageBox::critical(
-                this,
-                QStringLiteral("Error"),
+                this, QStringLiteral("Error"),
                 QStringLiteral("Please make sure that the following parameters are valid:\n\n") +
                     errors);
         }
     } else {
         if (!configModel.hasChanges() ||
-            QMessageBox::question(this,
-                                  QStringLiteral("Save changes"),
+            QMessageBox::question(this, QStringLiteral("Save changes"),
                                   QStringLiteral("Are you sure you want to close the "
                                                  "application without saving the changes?"),
-                                  QMessageBox::Yes,
-                                  QMessageBox::No) == QMessageBox::Yes) {
+                                  QMessageBox::Yes, QMessageBox::No) == QMessageBox::Yes) {
             QDialog::done(result);
         }
     }
@@ -281,19 +266,16 @@ void MainDialog::saveChanges()
 
     auto watcher = new QFutureWatcher<KeyedMessageList>(this);
     watcher->setFuture(future);
-    connect(watcher,
-            &QFutureWatcher<KeyedMessageList>::finished,
-            [this, future, currentTab, currentSite] {
+    connect(watcher, &QFutureWatcher<KeyedMessageList>::finished, [this, future, currentTab,
+                                                                   currentSite] {
         setEnabled(true);
 
-        try
-        {
+        try {
             const auto &result = future.result();
             if (result.empty()) {
                 loadConfiguration(currentTab, currentSite);
 
-                QMessageBox::information(this,
-                                         QStringLiteral("Information"),
+                QMessageBox::information(this, QStringLiteral("Information"),
                                          QStringLiteral("The changes were saved successfully"));
             } else {
                 auto message = QStringLiteral("The following %1 could not be saved:\n\n")
@@ -306,25 +288,16 @@ void MainDialog::saveChanges()
 
                 QMessageBox::critical(this, QStringLiteral("Error"), message);
             }
-        }
-        catch (const std::exception &e)
-        {
-            QMessageBox::critical(this,
-                                  QStringLiteral("Error"),
+        } catch (const std::exception &e) {
+            QMessageBox::critical(this, QStringLiteral("Error"),
                                   QStringLiteral("Unable to save the changes: %1").arg(e.what()));
         }
     });
 }
 
-void MainDialog::on_buttonBox_accepted()
-{
-    accept();
-}
+void MainDialog::on_buttonBox_accepted() { accept(); }
 
-void MainDialog::on_buttonBox_rejected()
-{
-    reject();
-}
+void MainDialog::on_buttonBox_rejected() { reject(); }
 
 QWidget *MainDialog::createEditRow(int categoryId,
                                    const ConfigurationParameterInfo &parameter,
@@ -399,21 +372,20 @@ QWidget *MainDialog::createEditRow(int categoryId,
     }
 
     if (!isDisabled) {
-        auto listener = new ParameterChangeListener(
-            configModel, parameter, parameterKey, parameter.friendlyName, editWidget);
+        auto listener = new ParameterChangeListener(configModel, parameter, parameterKey,
+                                                    parameter.friendlyName, editWidget);
         if (siteList) {
-            connect(listener,
-                    &ParameterChangeListener::validityChanged,
+            connect(listener, &ParameterChangeListener::validityChanged,
                     [this, siteList](bool isValid) {
-                if (isValid) {
-                    if (!--invalidFields) {
-                        siteList->setEnabled(true);
-                    }
-                } else {
-                    invalidFields++;
-                    siteList->setEnabled(false);
-                }
-            });
+                        if (isValid) {
+                            if (!--invalidFields) {
+                                siteList->setEnabled(true);
+                            }
+                        } else {
+                            invalidFields++;
+                            siteList->setEnabled(false);
+                        }
+                    });
         }
         parameterChangeListeners[categoryId].emplace_back(listener);
     }
@@ -450,8 +422,9 @@ QWidget *MainDialog::createEditRow(int categoryId,
     return container;
 }
 
-void
-MainDialog::toggleSiteSpecific(const ParameterKey &parameter, QPushButton *button, QWidget *widget)
+void MainDialog::toggleSiteSpecific(const ParameterKey &parameter,
+                                    QPushButton *button,
+                                    QWidget *widget)
 {
     const auto &globalValue = configModel.getGlobalValue(parameter);
 

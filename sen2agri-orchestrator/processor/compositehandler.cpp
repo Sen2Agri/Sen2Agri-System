@@ -9,19 +9,19 @@
 #define TasksNoPerProduct 7
 
 void CompositeHandler::HandleProductAvailableImpl(EventProcessingContext &ctx,
-                            const ProductAvailableEvent &event)
+                                                  const ProductAvailableEvent &event)
 {
     // TODO: Here we must get all job IDs for the current processor id
     std::vector<int> jobIds;
 
     // for each job ID, check if the job accepts the current product
-    for(unsigned int i = 0; i<jobIds.size(); i++) {
+    for (unsigned int i = 0; i < jobIds.size(); i++) {
         // Check if the product can be processed by the current job
-        if(IsProductAcceptableForJob(jobIds[i], event)) {
+        if (IsProductAcceptableForJob(jobIds[i], event)) {
             // create a list with products that will have in this case only one element
             QStringList listProducts;
             // Get the product path from the productId
-            QString strProductPath ; // TODO = ctx.GetProductPathFromId(event.productId);
+            QString strProductPath; // TODO = ctx.GetProductPathFromId(event.productId);
             listProducts.append(strProductPath);
             // process the received L2A product in the current job
             HandleNewProductInJob(ctx, jobIds[i], "", listProducts);
@@ -29,73 +29,97 @@ void CompositeHandler::HandleProductAvailableImpl(EventProcessingContext &ctx,
             // if the product is not acceptable for the current job, it might be outside the
             // synthesis interval
 
-            // TODO: If the product date is after the L3A date + HalfSynthesis interval, then we can mark the job finished
+            // TODO: If the product date is after the L3A date + HalfSynthesis interval, then we can
+            // mark the job finished
             //      ==> Is this enough as condition to finish the composition?
-            //      ==> If we can take into account also the current time + offset (days), how much should be that offset?
+            //      ==> If we can take into account also the current time + offset (days), how much
+            //      should be that offset?
         }
     }
-    // TODO: we must get the last created L3A product that fits the half synthesis (is inside the synthesi interval) and job's L3A product date
-    //      ==> The intermediate L3A products should be saved in DB or they should be kept in the job's temporary repository?
+    // TODO: we must get the last created L3A product that fits the half synthesis (is inside the
+    // synthesi interval) and job's L3A product date
+    //      ==> The intermediate L3A products should be saved in DB or they should be kept in the
+    //      job's temporary repository?
     //      ==> If not kept in the DB, then we should get the last created L3A product
-    //      ==> Anyway, the L3A product should be specific to a job as an L3A intermediate file could be created with other parameters
+    //      ==> Anyway, the L3A product should be specific to a job as an L3A intermediate file
+    //      could be created with other parameters
 
     // TODO: After inserting a new product, we should delete the old L3A products
     // TODO: Maybe some internal status params should be added in DB!!!
     //      Additionally, keep the original event parameters that generated job creation!!!
 
-    // PROBLEM: How to handle the case when a processing is in progress for one job and we receive a new accepted
-    // product with a date later than the current processing one? In this case, the processing should be delayed until
+    // PROBLEM: How to handle the case when a processing is in progress for one job and we receive a
+    // new accepted
+    // product with a date later than the current processing one? In this case, the processing
+    // should be delayed until
     // the finishing of the current one.
     //      ==> Does the context handles the submitted steps sequentially???
-    //      ==> What happens if we receive products with an older date than the current processed ones???
+    //      ==> What happens if we receive products with an older date than the current processed
+    //      ones???
 }
 
-void CompositeHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAllTasksList, int nbProducts) {
+void CompositeHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAllTasksList,
+                                                  int nbProducts)
+{
     // just create the tasks but with no information so far
-    for(int i = 0; i<nbProducts; i++) {
-        outAllTasksList.append(TaskToSubmit{"composite-mask-handler", {}});
-        outAllTasksList.append(TaskToSubmit{"composite-preprocessing", {}});
-        outAllTasksList.append(TaskToSubmit{"composite-weigh-aot", {}});
-        outAllTasksList.append(TaskToSubmit{"composite-weigh-on-clouds", {}});
-        outAllTasksList.append(TaskToSubmit{"composite-total-weight", {}});
-        outAllTasksList.append(TaskToSubmit{"composite-update-synthesis", {}});
-        outAllTasksList.append(TaskToSubmit{"composite-splitter", {}});
+    for (int i = 0; i < nbProducts; i++) {
+        outAllTasksList.append(TaskToSubmit{ "composite-mask-handler", {} });
+        outAllTasksList.append(TaskToSubmit{ "composite-preprocessing", {} });
+        outAllTasksList.append(TaskToSubmit{ "composite-weigh-aot", {} });
+        outAllTasksList.append(TaskToSubmit{ "composite-weigh-on-clouds", {} });
+        outAllTasksList.append(TaskToSubmit{ "composite-total-weight", {} });
+        outAllTasksList.append(TaskToSubmit{ "composite-update-synthesis", {} });
+        outAllTasksList.append(TaskToSubmit{ "composite-splitter", {} });
     }
     // The product formatter task will be at the end and only once (not for each product)
-    outAllTasksList.append(TaskToSubmit{"product-formatter", {}});
+    outAllTasksList.append(TaskToSubmit{ "product-formatter", {} });
 
     // now fill the tasks hierarchy infos
     int i;
-    for(i = 0; i<nbProducts; i++) {
-        if(i > 0) {
+    for (i = 0; i < nbProducts; i++) {
+        if (i > 0) {
             // update the mask handler with the reference of the previous composite splitter
-            int nMaskHandlerIdx = i*TasksNoPerProduct;
-            int nPrevCompositeSplitterIdx = (i-1)*TasksNoPerProduct + (TasksNoPerProduct-1);
-            outAllTasksList[nMaskHandlerIdx].parentTasks.append(outAllTasksList[nPrevCompositeSplitterIdx]);
+            int nMaskHandlerIdx = i * TasksNoPerProduct;
+            int nPrevCompositeSplitterIdx = (i - 1) * TasksNoPerProduct + (TasksNoPerProduct - 1);
+            outAllTasksList[nMaskHandlerIdx].parentTasks.append(
+                outAllTasksList[nPrevCompositeSplitterIdx]);
         }
         // the others comme naturally updated
         // composite-preprocessing -> mask-handler
-        outAllTasksList[i*TasksNoPerProduct+1].parentTasks.append(outAllTasksList[i*TasksNoPerProduct]);
+        outAllTasksList[i * TasksNoPerProduct + 1].parentTasks.append(
+            outAllTasksList[i * TasksNoPerProduct]);
         // weigh-aot -> composite-preprocessing
-        outAllTasksList[i*TasksNoPerProduct+2].parentTasks.append(outAllTasksList[i*TasksNoPerProduct+1]);
-        //weigh-on-clouds -> composite-preprocessing
-        outAllTasksList[i*TasksNoPerProduct+3].parentTasks.append(outAllTasksList[i*TasksNoPerProduct+1]);
-        //total-weight -> weigh-aot and weigh-on-clouds
-        outAllTasksList[i*TasksNoPerProduct+4].parentTasks.append(outAllTasksList[i*TasksNoPerProduct+2]);
-        outAllTasksList[i*TasksNoPerProduct+4].parentTasks.append(outAllTasksList[i*TasksNoPerProduct+3]);
-        //update-synthesis -> total-weight
-        outAllTasksList[i*TasksNoPerProduct+5].parentTasks.append(outAllTasksList[i*TasksNoPerProduct+4]);
-        //composite-splitter -> update-synthesis
-        outAllTasksList[i*TasksNoPerProduct+6].parentTasks.append(outAllTasksList[i*TasksNoPerProduct+5]);
+        outAllTasksList[i * TasksNoPerProduct + 2].parentTasks.append(
+            outAllTasksList[i * TasksNoPerProduct + 1]);
+        // weigh-on-clouds -> composite-preprocessing
+        outAllTasksList[i * TasksNoPerProduct + 3].parentTasks.append(
+            outAllTasksList[i * TasksNoPerProduct + 1]);
+        // total-weight -> weigh-aot and weigh-on-clouds
+        outAllTasksList[i * TasksNoPerProduct + 4].parentTasks.append(
+            outAllTasksList[i * TasksNoPerProduct + 2]);
+        outAllTasksList[i * TasksNoPerProduct + 4].parentTasks.append(
+            outAllTasksList[i * TasksNoPerProduct + 3]);
+        // update-synthesis -> total-weight
+        outAllTasksList[i * TasksNoPerProduct + 5].parentTasks.append(
+            outAllTasksList[i * TasksNoPerProduct + 4]);
+        // composite-splitter -> update-synthesis
+        outAllTasksList[i * TasksNoPerProduct + 6].parentTasks.append(
+            outAllTasksList[i * TasksNoPerProduct + 5]);
     }
-    //product-formatter -> the last composite-splitter
-    outAllTasksList[outAllTasksList.size()-1].parentTasks.append(outAllTasksList[outAllTasksList.size()-2]);
+    // product-formatter -> the last composite-splitter
+    outAllTasksList[outAllTasksList.size() - 1].parentTasks.append(
+        outAllTasksList[outAllTasksList.size() - 2]);
 }
 
-void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx, int jobId, const QString &jsonParams, const QStringList &listProducts) {
+void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx,
+                                             int jobId,
+                                             const QString &jsonParams,
+                                             const QStringList &listProducts)
+{
 
     const QJsonObject &parameters = QJsonDocument::fromJson(jsonParams.toUtf8()).object();
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(jobId, "processor.l3a.");
+    std::map<QString, QString> configParameters =
+        ctx.GetJobConfigurationParameters(jobId, "processor.l3a.");
 
     // Get L3A Synthesis date
     const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
@@ -128,97 +152,74 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx, int jo
     QString prevL3ARgbFile;
 
     // the product formatter is the last in the task list
-    TaskToSubmit &productFormatter = allTasksList[allTasksList.size()-1];
+    TaskToSubmit &productFormatter = allTasksList[allTasksList.size() - 1];
 
-    for (int i = 0; i<listProducts.size(); i++) {
+    for (int i = 0; i < listProducts.size(); i++) {
         const auto &inputProduct = listProducts[i];
 
-        TaskToSubmit &maskHandler = allTasksList[i*TasksNoPerProduct];
-        TaskToSubmit &compositePreprocessing = allTasksList[i*TasksNoPerProduct+1];
-        TaskToSubmit &weightAot = allTasksList[i*TasksNoPerProduct+2];
-        TaskToSubmit &weightOnClouds = allTasksList[i*TasksNoPerProduct+3];
-        TaskToSubmit &totalWeight = allTasksList[i*TasksNoPerProduct+4];
-        TaskToSubmit &updateSynthesis = allTasksList[i*TasksNoPerProduct+5];
-        TaskToSubmit &compositeSplitter = allTasksList[i*TasksNoPerProduct+6];
+        TaskToSubmit &maskHandler = allTasksList[i * TasksNoPerProduct];
+        TaskToSubmit &compositePreprocessing = allTasksList[i * TasksNoPerProduct + 1];
+        TaskToSubmit &weightAot = allTasksList[i * TasksNoPerProduct + 2];
+        TaskToSubmit &weightOnClouds = allTasksList[i * TasksNoPerProduct + 3];
+        TaskToSubmit &totalWeight = allTasksList[i * TasksNoPerProduct + 4];
+        TaskToSubmit &updateSynthesis = allTasksList[i * TasksNoPerProduct + 5];
+        TaskToSubmit &compositeSplitter = allTasksList[i * TasksNoPerProduct + 6];
 
         ctx.SubmitTasks(jobId, { maskHandler, compositePreprocessing, weightAot, weightOnClouds,
-                                 totalWeight, updateSynthesis, compositeSplitter
-        });
+                                 totalWeight, updateSynthesis, compositeSplitter });
 
-        const auto & masksFile = maskHandler.GetFilePath("all_masks_file.tif");
-        const auto & outResImgBands = compositePreprocessing.GetFilePath("img_res_bands.tif");
-        const auto & cldResImg = compositePreprocessing.GetFilePath("cld_res.tif");
-        const auto & waterResImg = compositePreprocessing.GetFilePath("water_res.tif");
-        const auto & snowResImg = compositePreprocessing.GetFilePath("snow_res.tif");
-        const auto & aotResImg = compositePreprocessing.GetFilePath("aot_res.tif");
+        const auto &masksFile = maskHandler.GetFilePath("all_masks_file.tif");
+        const auto &outResImgBands = compositePreprocessing.GetFilePath("img_res_bands.tif");
+        const auto &cldResImg = compositePreprocessing.GetFilePath("cld_res.tif");
+        const auto &waterResImg = compositePreprocessing.GetFilePath("water_res.tif");
+        const auto &snowResImg = compositePreprocessing.GetFilePath("snow_res.tif");
+        const auto &aotResImg = compositePreprocessing.GetFilePath("aot_res.tif");
 
-        const auto & outWeightAotFile = weightAot.GetFilePath("weight_aot.tif");
+        const auto &outWeightAotFile = weightAot.GetFilePath("weight_aot.tif");
 
-        const auto & outWeightCldFile = weightOnClouds.GetFilePath("weight_cloud.tif");
+        const auto &outWeightCldFile = weightOnClouds.GetFilePath("weight_cloud.tif");
 
-        const auto & outTotalWeighFile = totalWeight.GetFilePath("weight_total.tif");
+        const auto &outTotalWeighFile = totalWeight.GetFilePath("weight_total.tif");
 
-        const auto & outL3AResultFile = updateSynthesis.GetFilePath("L3AResult.tif");
+        const auto &outL3AResultFile = updateSynthesis.GetFilePath("L3AResult.tif");
 
-        const auto & outL3AResultReflsFile = compositeSplitter.GetFilePath("L3AResult_refls.tif");
-        const auto & outL3AResultWeightsFile = compositeSplitter.GetFilePath("L3AResult_weights.tif");
-        const auto & outL3AResultFlagsFile = compositeSplitter.GetFilePath("L3AResult_flags.tif");
-        const auto & outL3AResultDatesFile = compositeSplitter.GetFilePath("L3AResult_dates.tif");
-        const auto & outL3AResultRgbFile = compositeSplitter.GetFilePath("L3AResult_rgb.tif");
+        const auto &outL3AResultReflsFile = compositeSplitter.GetFilePath("L3AResult_refls.tif");
+        const auto &outL3AResultWeightsFile =
+            compositeSplitter.GetFilePath("L3AResult_weights.tif");
+        const auto &outL3AResultFlagsFile = compositeSplitter.GetFilePath("L3AResult_flags.tif");
+        const auto &outL3AResultDatesFile = compositeSplitter.GetFilePath("L3AResult_dates.tif");
+        const auto &outL3AResultRgbFile = compositeSplitter.GetFilePath("L3AResult_rgb.tif");
 
-        QStringList maskHandlerArgs = { "MaskHandler",
-                                           "-xml", inputProduct,
-                                           "-out", masksFile,
-                                           "-sentinelres", resolution};
-        QStringList compositePreprocessingArgs = { "CompositePreprocessing2",
-                                            "-xml", inputProduct,
-                                            "-bmap", bandsMapping,
-                                            "-res", resolution,
-                                            //"-scatcoef", scatCoeffs,  //TODO:
-                                            "-msk", masksFile,
-                                            "-outres", outResImgBands,
-                                            "-outcmres", cldResImg,
-                                            "-outwmres", waterResImg,
-                                            "-outsmres", snowResImg,
-                                            "-outaotres", aotResImg
-                                      };
-        QStringList weightAotArgs = { "WeightAOT",
-                                        "-xml", inputProduct,
-                                        "-in", aotResImg,
-                                        "-waotmin", weightAOTMin,
-                                        "-waotmax", weightAOTMax,
-                                        "-aotmax", AOTMax,
-                                        "-out", outWeightAotFile
-                                    };
-        QStringList weightOnCloudArgs = { "WeightOnClouds",
-                                        "-inxml", inputProduct,
-                                        "-incldmsk", cldResImg,
-                                        "-coarseres", coarseRes,
-                                        "-sigmasmallcld", sigmaSmallCloud,
-                                        "-sigmalargecld", sigmaLargeCloud,
-                                        "-out", outWeightCldFile
-                                    };
+        QStringList maskHandlerArgs = { "MaskHandler", "-xml",         inputProduct, "-out",
+                                        masksFile,     "-sentinelres", resolution };
+        QStringList compositePreprocessingArgs = { "CompositePreprocessing2", "-xml", inputProduct,
+                                                   "-bmap", bandsMapping, "-res", resolution,
+                                                   //"-scatcoef", scatCoeffs,  //TODO:
+                                                   "-msk", masksFile, "-outres", outResImgBands,
+                                                   "-outcmres", cldResImg, "-outwmres", waterResImg,
+                                                   "-outsmres", snowResImg, "-outaotres",
+                                                   aotResImg };
+        QStringList weightAotArgs = { "WeightAOT",     "-xml",     inputProduct, "-in",
+                                      aotResImg,       "-waotmin", weightAOTMin, "-waotmax",
+                                      weightAOTMax,    "-aotmax",  AOTMax,       "-out",
+                                      outWeightAotFile };
+        QStringList weightOnCloudArgs = { "WeightOnClouds", "-inxml",         inputProduct,
+                                          "-incldmsk",      cldResImg,        "-coarseres",
+                                          coarseRes,        "-sigmasmallcld", sigmaSmallCloud,
+                                          "-sigmalargecld", sigmaLargeCloud,  "-out",
+                                          outWeightCldFile };
 
-        QStringList totalWeightArgs = { "TotalWeight",
-                                        "-xml", inputProduct,
-                                        "-waotfile", outWeightAotFile,
-                                        "-wcldfile", outWeightCldFile,
-                                        "-l3adate", l3aSynthesisDate,
-                                        "-halfsynthesis", synthalf,
-                                        "-wdatemin", weightDateMin,
-                                        "-out", outTotalWeighFile
-                                    };
-        QStringList updateSynthesisArgs = { "UpdateSynthesis",
-                                            "-in", outResImgBands,
-                                            "-bmap", bandsMapping,
-                                            "-xml", inputProduct,
-                                            "-csm", cldResImg,
-                                            "-wm", waterResImg,
-                                            "-sm", snowResImg,
-                                            "-wl2a", outTotalWeighFile,
-                                            "-out", outL3AResultFile
-                                        };
-        if(i > 0) {
+        QStringList totalWeightArgs = { "TotalWeight",    "-xml",           inputProduct,
+                                        "-waotfile",      outWeightAotFile, "-wcldfile",
+                                        outWeightCldFile, "-l3adate",       l3aSynthesisDate,
+                                        "-halfsynthesis", synthalf,         "-wdatemin",
+                                        weightDateMin,    "-out",           outTotalWeighFile };
+        QStringList updateSynthesisArgs = { "UpdateSynthesis", "-in",   outResImgBands,    "-bmap",
+                                            bandsMapping,      "-xml",  inputProduct,      "-csm",
+                                            cldResImg,         "-wm",   waterResImg,       "-sm",
+                                            snowResImg,        "-wl2a", outTotalWeighFile, "-out",
+                                            outL3AResultFile };
+        if (i > 0) {
             updateSynthesisArgs.append("-prevl3aw");
             updateSynthesisArgs.append(prevL3AProdWeights);
             updateSynthesisArgs.append("-prevl3ad");
@@ -230,15 +231,22 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx, int jo
         }
 
         QStringList compositeSplitterArgs = { "CompositeSplitter2",
-                                        "-in", outL3AResultFile,
-                                        "-xml", inputProduct,
-                                        "-bmap", bandsMapping,
-                                        "-outweights", outL3AResultWeightsFile,
-                                        "-outdates", outL3AResultDatesFile,
-                                        "-outrefls", outL3AResultReflsFile,
-                                        "-outflags", outL3AResultFlagsFile,
-                                        "-outrgb", outL3AResultRgbFile
-                                    };
+                                              "-in",
+                                              outL3AResultFile,
+                                              "-xml",
+                                              inputProduct,
+                                              "-bmap",
+                                              bandsMapping,
+                                              "-outweights",
+                                              outL3AResultWeightsFile,
+                                              "-outdates",
+                                              outL3AResultDatesFile,
+                                              "-outrefls",
+                                              outL3AResultReflsFile,
+                                              "-outflags",
+                                              outL3AResultFlagsFile,
+                                              "-outrgb",
+                                              outL3AResultRgbFile };
 
         // save the created L3A product file for the next product creation
         prevL3AProdRefls = outL3AResultReflsFile;
@@ -249,7 +257,8 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx, int jo
 
         // add these steps to the steps list to be submitted
         steps.append(maskHandler.CreateStep("MaskHandler", maskHandlerArgs));
-        steps.append(compositePreprocessing.CreateStep("CompositePreprocessing", compositePreprocessingArgs));
+        steps.append(compositePreprocessing.CreateStep("CompositePreprocessing",
+                                                       compositePreprocessingArgs));
         steps.append(weightAot.CreateStep("WeightAOT", weightAotArgs));
         steps.append(weightOnClouds.CreateStep("WeightOnClouds", weightOnCloudArgs));
         steps.append(totalWeight.CreateStep("TotalWeight", totalWeightArgs));
@@ -267,32 +276,50 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx, int jo
 
     QString tileId = ProcessorHandlerHelper::GetTileId(listProducts);
     QStringList productFormatterArgs = { "ProductFormatter",
-                                    "-destroot", targetFolder,
-                                    "-fileclass", "SVT1",
-                                    "-level", "L3A",
-                                    "-timeperiod", l3aSynthesisDate,
-                                    "-baseline", "01.00",
-                                    "-processor", "composite",
-                                    "-processor.composite.refls", tileId, prevL3AProdRefls,
-                                    "-processor.composite.weights", tileId, prevL3AProdWeights,
-                                    "-processor.composite.flags", tileId, prevL3AProdFlags,
-                                    "-processor.composite.dates", tileId, prevL3AProdDates,
-                                    "-processor.composite.rgb", tileId, prevL3ARgbFile,
-                                    "-gipp", executionInfosPath,
-                                    "-il", listProducts[listProducts.size()-1]
-                                };
+                                         "-destroot",
+                                         targetFolder,
+                                         "-fileclass",
+                                         "SVT1",
+                                         "-level",
+                                         "L3A",
+                                         "-timeperiod",
+                                         l3aSynthesisDate,
+                                         "-baseline",
+                                         "01.00",
+                                         "-processor",
+                                         "composite",
+                                         "-processor.composite.refls",
+                                         tileId,
+                                         prevL3AProdRefls,
+                                         "-processor.composite.weights",
+                                         tileId,
+                                         prevL3AProdWeights,
+                                         "-processor.composite.flags",
+                                         tileId,
+                                         prevL3AProdFlags,
+                                         "-processor.composite.dates",
+                                         tileId,
+                                         prevL3AProdDates,
+                                         "-processor.composite.rgb",
+                                         tileId,
+                                         prevL3ARgbFile,
+                                         "-gipp",
+                                         executionInfosPath,
+                                         "-il",
+                                         listProducts[listProducts.size() - 1] };
 
     steps.append(productFormatter.CreateStep("ProductFormatter", productFormatterArgs));
 
     ctx.SubmitSteps(steps);
 }
 
-void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath, const QJsonObject &parameters,
+void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath,
+                                               const QJsonObject &parameters,
                                                std::map<QString, QString> &configParameters,
-                                               const QStringList &listProducts) {
+                                               const QStringList &listProducts)
+{
     std::ofstream executionInfosFile;
-    try
-    {
+    try {
         // Get L3A Synthesis date
         const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
         // Get the Half Synthesis interval value
@@ -316,63 +343,76 @@ void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath
         executionInfosFile << "<?xml version=\"1.0\" ?>" << std::endl;
         executionInfosFile << "<metadata>" << std::endl;
         executionInfosFile << "  <General>" << std::endl;
-        executionInfosFile << "    <bands_mapping_file>" << bandsMapping.toStdString() << "</bands_mapping_file>" << std::endl;
-        executionInfosFile << "    <scattering_coefficients_file>"<< scatCoeffs.toStdString() <<"</scattering_coefficients_file>" << std::endl;
+        executionInfosFile << "    <bands_mapping_file>" << bandsMapping.toStdString()
+                           << "</bands_mapping_file>" << std::endl;
+        executionInfosFile << "    <scattering_coefficients_file>" << scatCoeffs.toStdString()
+                           << "</scattering_coefficients_file>" << std::endl;
         executionInfosFile << "  </General>" << std::endl;
 
         executionInfosFile << "  <Weight_AOT>" << std::endl;
-        executionInfosFile << "    <weight_aot_min>" << weightAOTMin.toStdString() << "</weight_aot_min>" << std::endl;
-        executionInfosFile << "    <weight_aot_max>"<< weightAOTMax.toStdString() <<"</weight_aot_max>" << std::endl;
+        executionInfosFile << "    <weight_aot_min>" << weightAOTMin.toStdString()
+                           << "</weight_aot_min>" << std::endl;
+        executionInfosFile << "    <weight_aot_max>" << weightAOTMax.toStdString()
+                           << "</weight_aot_max>" << std::endl;
         executionInfosFile << "    <aot_max>" << AOTMax.toStdString() << "</aot_max>" << std::endl;
         executionInfosFile << "  </Weight_AOT>" << std::endl;
 
         executionInfosFile << "  <Weight_On_Clouds>" << std::endl;
-        executionInfosFile << "    <coarse_res>" << coarseRes.toStdString() << "</coarse_res>" << std::endl;
-        executionInfosFile << "    <sigma_small_cloud>" << sigmaSmallCloud.toStdString() << "</sigma_small_cloud>" << std::endl;
-        executionInfosFile << "    <sigma_large_cloud>" << sigmaLargeCloud.toStdString() << "</sigma_large_cloud>" << std::endl;
+        executionInfosFile << "    <coarse_res>" << coarseRes.toStdString() << "</coarse_res>"
+                           << std::endl;
+        executionInfosFile << "    <sigma_small_cloud>" << sigmaSmallCloud.toStdString()
+                           << "</sigma_small_cloud>" << std::endl;
+        executionInfosFile << "    <sigma_large_cloud>" << sigmaLargeCloud.toStdString()
+                           << "</sigma_large_cloud>" << std::endl;
         executionInfosFile << "  </Weight_On_Clouds>" << std::endl;
 
         executionInfosFile << "  <Weight_On_Date>" << std::endl;
-        executionInfosFile << "    <weight_date_min>" <<weightDateMin.toStdString() << "</weight_date_min>" << std::endl;
-        executionInfosFile << "    <l3a_product_date>" << l3aSynthesisDate.toStdString() << "</l3a_product_date>" << std::endl;
-        executionInfosFile << "    <half_synthesis>" << synthalf.toStdString() << "</half_synthesis>" << std::endl;
+        executionInfosFile << "    <weight_date_min>" << weightDateMin.toStdString()
+                           << "</weight_date_min>" << std::endl;
+        executionInfosFile << "    <l3a_product_date>" << l3aSynthesisDate.toStdString()
+                           << "</l3a_product_date>" << std::endl;
+        executionInfosFile << "    <half_synthesis>" << synthalf.toStdString()
+                           << "</half_synthesis>" << std::endl;
         executionInfosFile << "  </Weight_On_Date>" << std::endl;
 
         executionInfosFile << "  <Dates_information>" << std::endl;
         // TODO: We should get these infos somehow but without parsing here anything
-        //executionInfosFile << "    <start_date>" << 2013031 << "</start_date>" << std::endl;
-        //executionInfosFile << "    <end_date>" << 20130422 << "</end_date>" << std::endl;
-        executionInfosFile << "    <synthesis_date>" << l3aSynthesisDate.toStdString() << "</synthesis_date>" << std::endl;
-        executionInfosFile << "    <synthesis_half>" << synthalf.toStdString() << "</synthesis_half>" << std::endl;
+        // executionInfosFile << "    <start_date>" << 2013031 << "</start_date>" << std::endl;
+        // executionInfosFile << "    <end_date>" << 20130422 << "</end_date>" << std::endl;
+        executionInfosFile << "    <synthesis_date>" << l3aSynthesisDate.toStdString()
+                           << "</synthesis_date>" << std::endl;
+        executionInfosFile << "    <synthesis_half>" << synthalf.toStdString()
+                           << "</synthesis_half>" << std::endl;
         executionInfosFile << "  </Dates_information>" << std::endl;
 
         executionInfosFile << "  <XML_files>" << std::endl;
-        for (int i = 0; i<listProducts.size(); i++) {
-            executionInfosFile << "    <XML_" << std::to_string(i) << ">" << listProducts[i].toStdString()
-                               << "</XML_" << std::to_string(i) << ">" << std::endl;
+        for (int i = 0; i < listProducts.size(); i++) {
+            executionInfosFile << "    <XML_" << std::to_string(i) << ">"
+                               << listProducts[i].toStdString() << "</XML_" << std::to_string(i)
+                               << ">" << std::endl;
         }
         executionInfosFile << "  </XML_files>" << std::endl;
         executionInfosFile << "</metadata>" << std::endl;
         executionInfosFile.close();
-    }
-    catch(...)
-    {
-
+    } catch (...) {
     }
 }
 
 // This function removes the files from the list that are outside the synthesis interval
 // and that should not be used in the composition
-void CompositeHandler::FilterInputProducts(QStringList &listFiles, int productDate, int halfSynthesis)
+void CompositeHandler::FilterInputProducts(QStringList &listFiles,
+                                           int productDate,
+                                           int halfSynthesis)
 {
-    // TODO: we should extract here the date of the product to compare it with tha synthesis interval
+    // TODO: we should extract here the date of the product to compare it with tha synthesis
+    // interval
     Q_UNUSED(listFiles);
     Q_UNUSED(productDate);
     Q_UNUSED(halfSynthesis);
 }
 
 void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
-                                             const JobSubmittedEvent &event)
+                                              const JobSubmittedEvent &event)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     const auto &inputProducts = parameters["input_products"].toArray();
@@ -386,7 +426,7 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 }
 
 void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
-                                             const TaskFinishedEvent &event)
+                                              const TaskFinishedEvent &event)
 {
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
@@ -399,8 +439,8 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     //                        QDateTime::currentDateTimeUtc() });
 }
 
-
-bool CompositeHandler::IsProductAcceptableForJob(int jobId, const ProductAvailableEvent &event) {
+bool CompositeHandler::IsProductAcceptableForJob(int jobId, const ProductAvailableEvent &event)
+{
     Q_UNUSED(jobId);
     Q_UNUSED(event);
 

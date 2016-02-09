@@ -130,6 +130,7 @@ void compare(const ExecutionStatistics &v1, const ExecutionStatistics &v2)
 void compare(const TaskRunnableEvent &v1, const TaskRunnableEvent &v2)
 {
     compare(v1.jobId, v2.jobId);
+    compare(v1.processorId, v2.processorId);
     compare(v1.taskId, v2.taskId);
 }
 
@@ -227,4 +228,10 @@ void compare(const NewProduct &v1, const NewProduct &v2)
     compare(v1.taskId, v2.taskId);
     compare(v1.fullPath, v2.fullPath);
     compare(v1.createdTimestamp, v2.createdTimestamp);
+}
+
+void compare(const DashboardSearch &v1, const DashboardSearch &v2)
+{
+    compare(v1.siteId, v2.siteId);
+    compare(v1.processorId, v2.processorId);
 }

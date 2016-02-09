@@ -302,5 +302,11 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewProduct" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NewProduct" />
     </method>
+    <method name="ReflectDashboardSearch">
+      <arg name="value" type="DashboardSearch" direction="in" />
+      <arg name="result" type="DashboardSearch" direction="out" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="DashboardSearch" />
+      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="DashboardSearch" />
+    </method>
   </interface>
 </node>

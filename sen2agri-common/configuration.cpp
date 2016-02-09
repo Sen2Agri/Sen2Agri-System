@@ -10,8 +10,8 @@
 QString getConfigurationFile(const QCoreApplication &app)
 {
     QCommandLineParser parser;
-    QCommandLineOption configFileOption(
-        QStringLiteral("f"), QStringLiteral("Use this config file"), QStringLiteral("config file"));
+    QCommandLineOption configFileOption(QStringLiteral("f"), QStringLiteral("Use this config file"),
+                                        QStringLiteral("config file"));
     parser.addOption(configFileOption);
     parser.addHelpOption();
     parser.process(app);

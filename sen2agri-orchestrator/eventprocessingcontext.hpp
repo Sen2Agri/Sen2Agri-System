@@ -57,8 +57,7 @@ public:
         NewStepList steps;
         for (const auto &file : GetProductFiles(inputPath, pattern)) {
             steps.push_back(
-                { taskId,
-                  QFileInfo(file).baseName(),
+                { taskId, QFileInfo(file).baseName(),
                   QString::fromUtf8(QJsonDocument(f(input + file, outputPath + file)).toJson()) });
         }
 
