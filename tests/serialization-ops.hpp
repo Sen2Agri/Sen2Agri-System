@@ -241,7 +241,7 @@ struct maker<JobPausedEvent> {
 
 template <>
 struct maker<JobResumedEvent> {
-    static JobResumedEvent make() { return { maker<int>::make() }; }
+    static JobResumedEvent make() { return { maker<int>::make(), maker<int>::make() }; }
 };
 
 template <>
@@ -290,7 +290,7 @@ struct maker<NewExecutorStep> {
     static NewExecutorStep make()
     {
         return { maker<int>::make(), maker<QString>::make(), maker<QString>::make(),
-                 maker<StepArgumentList>::make() };
+                 maker<QString>::make(), maker<QString>::make(), maker<StepArgumentList>::make() };
     }
 };
 

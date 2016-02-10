@@ -27,12 +27,12 @@ int main(int argc, char *argv[])
         registerMetaTypes();
 
         std::map<int, std::unique_ptr<ProcessorHandler>> handlers;
-        handlers.emplace(1, std::make_unique<CompositeHandler>());
-        handlers.emplace(2, std::make_unique<LaiRetrievalHandler>());
-        handlers.emplace(3, std::make_unique<PhenoNdviHandler>());
-        handlers.emplace(4, std::make_unique<CropMaskHandler>());
-        handlers.emplace(5, std::make_unique<CropTypeHandler>());
-        handlers.emplace(6, std::make_unique<DummyProcessorHandler>());
+        handlers.emplace(COMPOSITE_ID, std::make_unique<CompositeHandler>());
+        handlers.emplace(LAI_RETRIEVAL_ID, std::make_unique<LaiRetrievalHandler>());
+        handlers.emplace(PHENO_NDVI_ID, std::make_unique<PhenoNdviHandler>());
+        handlers.emplace(CROP_MASK_ID, std::make_unique<CropMaskHandler>());
+        handlers.emplace(CROP_TYPE_ID, std::make_unique<CropTypeHandler>());
+        handlers.emplace(DUMMY_HANDLER_ID, std::make_unique<DummyProcessorHandler>());
 
         Orchestrator orchestrator(handlers);
 

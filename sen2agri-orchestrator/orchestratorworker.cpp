@@ -10,7 +10,9 @@
 
 static StepArgumentList getStepArguments(const JobStepToRun &step);
 static NewExecutorStepList
-getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps);
+getExecutorStepList(EventProcessingContext &ctx, int processorId, int jobId, const JobStepToRunList &steps);
+static void getExecutorExecutionParameters(EventProcessingContext &ctx, int jobId, int processorId,
+                                           QString &outQos, QString &outPartition);
 
 OrchestratorWorker::OrchestratorWorker(std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
                                        PersistenceManagerDBProvider &persistenceManagerClient,
@@ -111,13 +113,14 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskRunnableEvent &event)
 {
-    Logger::info(QStringLiteral("Processing task runnable event with task id %1 and job id %2")
+    Logger::info(QStringLiteral("Processing task runnable event with processor id %1 task id %2 and job id %3")
+                     .arg(event.processorId)
                      .arg(event.taskId)
                      .arg(event.jobId));
 
     const auto &steps = ctx.GetTaskStepsForStart(event.taskId);
 
-    const auto &stepsToSubmit = getExecutorStepList(ctx, event.jobId, steps);
+    const auto &stepsToSubmit = getExecutorStepList(ctx, event.processorId, event.jobId, steps);
 
     WaitForResponseAndThrow(executorClient.SubmitSteps(stepsToSubmit));
 }
@@ -181,7 +184,7 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobResu
 
     const auto &steps = ctx.GetJobStepsForResume(event.jobId);
 
-    const auto &stepsToSubmit = getExecutorStepList(ctx, event.jobId, steps);
+    const auto &stepsToSubmit = getExecutorStepList(ctx, event.processorId, event.jobId, steps);
 
     WaitForResponseAndThrow(executorClient.SubmitSteps(stepsToSubmit));
     ctx.MarkJobResumed(event.jobId);
@@ -276,10 +279,11 @@ static StepArgumentList getStepArguments(const JobStepToRun &step)
 }
 
 static NewExecutorStepList
-getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps)
+getExecutorStepList(EventProcessingContext &ctx, int processorId, int jobId, const JobStepToRunList &steps)
 {
     const auto &modulePaths = getModulePathMap(
         ctx.GetJobConfigurationParameters(jobId, QStringLiteral("executor.module.path.")));
+
 
     NewExecutorStepList stepsToSubmit;
     stepsToSubmit.reserve(steps.size());
@@ -292,9 +296,32 @@ getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunLi
                                          .toStdString());
         }
 
+        QString qos, partition;
+        getExecutorExecutionParameters(ctx, jobId, processorId, qos, partition);
         const auto &arguments = getStepArguments(s);
-        stepsToSubmit.append({ s.taskId, it->second, s.stepName, arguments });
+        stepsToSubmit.append({ s.taskId, it->second, s.stepName, qos, partition, arguments });
     }
 
     return stepsToSubmit;
+}
+
+void getExecutorExecutionParameters(EventProcessingContext &ctx, int jobId, int processorId, QString &outQos, QString &outPartition) {
+    ProcessorDescriptionList procDescrs = ctx.GetProcessorDescriptions();
+    for(ProcessorDescription procDescr: procDescrs) {
+        if(procDescr.processorId == processorId) {
+            QString str = QStringLiteral("executor.processor.qos.");
+            str.append(procDescr.shortName);
+            std::map<QString, QString> mapCfg = ctx.GetJobConfigurationParameters(jobId, str);
+            if(mapCfg.size() > 0) {
+                outQos = mapCfg[str];
+            }
+
+            str = QStringLiteral("executor.processor.partition.");
+            str.append(procDescr.shortName);
+            mapCfg = ctx.GetJobConfigurationParameters(jobId, str);
+            if(mapCfg.size() > 0) {
+                outPartition = mapCfg[str];
+            }
+        }
+    }
 }

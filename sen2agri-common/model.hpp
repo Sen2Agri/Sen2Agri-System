@@ -7,6 +7,15 @@
 
 #include <optional.hpp>
 
+
+typedef enum {COMPOSITE_ID = 1,
+              LAI_RETRIEVAL_ID = 2,
+              PHENO_NDVI_ID = 3,
+              CROP_MASK_ID = 4,
+              CROP_TYPE_ID = 5,
+              DUMMY_HANDLER_ID =6
+             } ProcessorIdType;
+
 void registerMetaTypes();
 
 class ConfigurationParameterInfo
@@ -535,9 +544,10 @@ class JobResumedEvent
 {
 public:
     int jobId;
+    int processorId;
 
     JobResumedEvent();
-    JobResumedEvent(int jobId);
+    JobResumedEvent(int jobId, int processorId);
 
     QString toJson() const;
 
@@ -685,12 +695,16 @@ public:
     int taskId;
     QString processorPath;
     QString stepName;
+    QString qos;
+    QString partition;
     StepArgumentList arguments;
 
     NewExecutorStep();
     NewExecutorStep(int taskId,
                     QString processorPath,
                     QString stepName,
+                    QString qos,
+                    QString partition,
                     StepArgumentList arguments);
 
     static void registerMetaTypes();
@@ -790,7 +804,30 @@ public:
     static void registerMetaTypes();
 };
 
-Q_DECLARE_METATYPE(DashboardSearch);
+Q_DECLARE_METATYPE(DashboardSearch)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const DashboardSearch &search);
 const QDBusArgument &operator>>(const QDBusArgument &argument, DashboardSearch &search);
+
+class ProcessorDescription
+{
+public:
+    int processorId;
+    QString shortName;
+    QString fullName;
+
+    ProcessorDescription();
+    ProcessorDescription(int processorId,
+               QString shortName,
+               QString fullName);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(ProcessorDescription)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ProcessorDescription &product);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorDescription &product);
+
+typedef QList<ProcessorDescription> ProcessorDescriptionList;
+

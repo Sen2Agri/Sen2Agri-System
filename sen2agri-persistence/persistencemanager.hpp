@@ -77,4 +77,6 @@ public:
     QString GetDashboardSentinelTiles(int siteId);
     QString GetDashboardLandsatTiles(int siteId);
     QString GetDashboardProcessors();
+
+    ProcessorDescriptionList GetProcessorDescriptions();
 };

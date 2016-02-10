@@ -15,7 +15,8 @@ void OrchestratorRequestsHandler::SubmitSteps(const NewExecutorStepList &steps)
     RequestParamsSubmitSteps *pReqParams = new RequestParamsSubmitSteps();
 
     for (stepIt = steps.begin(); stepIt != steps.end(); stepIt++) {
-        ExecutionStep& execStep = pReqParams->AddExecutionStep((*stepIt).taskId, (*stepIt).stepName, (*stepIt).processorPath);
+        ExecutionStep& execStep = pReqParams->AddExecutionStep((*stepIt).taskId, (*stepIt).stepName, (*stepIt).qos,
+                                                               (*stepIt).partition, (*stepIt).processorPath);
         for (stepArgIt = (*stepIt).arguments.begin(); stepArgIt != (*stepIt).arguments.end(); stepArgIt++) {
             execStep.AddArgument((*stepArgIt).value);
         }
