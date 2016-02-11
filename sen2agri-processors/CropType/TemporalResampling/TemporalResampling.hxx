@@ -211,18 +211,19 @@ private:
 
 /** Binary functor image filter which produces a vector image with a
 * number of bands different from the input images */
+template<typename ImageType, typename Functor>
 class ITK_EXPORT BinaryFunctorImageFilterWithNBands
     : public itk::BinaryFunctorImageFilter<ImageType,
                                            ImageType,
                                            ImageType,
-                                           GapFillingFunctor<ImageType::PixelType> >
+                                           Functor >
 {
 public:
     typedef BinaryFunctorImageFilterWithNBands Self;
     typedef itk::BinaryFunctorImageFilter<ImageType,
                                           ImageType,
                                           ImageType,
-                                          GapFillingFunctor<ImageType::PixelType> > Superclass;
+                                          Functor > Superclass;
     typedef itk::SmartPointer<Self> Pointer;
     typedef itk::SmartPointer<const Self> ConstPointer;
 

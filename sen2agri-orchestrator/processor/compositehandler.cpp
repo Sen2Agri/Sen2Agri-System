@@ -194,11 +194,14 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx,
                                         masksFile,     "-sentinelres", resolution };
         QStringList compositePreprocessingArgs = { "CompositePreprocessing2", "-xml", inputProduct,
                                                    "-bmap", bandsMapping, "-res", resolution,
-                                                   //"-scatcoef", scatCoeffs,  //TODO:
                                                    "-msk", masksFile, "-outres", outResImgBands,
                                                    "-outcmres", cldResImg, "-outwmres", waterResImg,
                                                    "-outsmres", snowResImg, "-outaotres",
                                                    aotResImg };
+        if(scatCoeffs.length() > 0) {
+            compositePreprocessingArgs.append("-scatcoef");
+            compositePreprocessingArgs.append(scatCoeffs);
+        }
         QStringList weightAotArgs = { "WeightAOT",     "-xml",     inputProduct, "-in",
                                       aotResImg,       "-waotmin", weightAOTMin, "-waotmax",
                                       weightAOTMax,    "-aotmax",  AOTMax,       "-out",

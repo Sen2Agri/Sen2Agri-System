@@ -22,16 +22,8 @@ int main(int argc, char *argv[])
 
         registerMetaTypes();
 
-        // Create the QEventLoop
-        QEventLoop pause;
-        // connect the QHttp.requestFinished() Signal to the QEventLoop.quit() Slot
-        QObject::connect(PersistenceItfModule::GetInstance(), SIGNAL(OnConfigurationReceived()),
-                         &pause, SLOT(quit()));
-        // The code that will run during the QEventLoop
         // get the configuration from the persistence manager
         PersistenceItfModule::GetInstance()->RequestConfiguration();
-        // Execute the QEventLoop - it will quit when the above finished due to the connect()
-        pause.exec();
 
         // Initialize the server for receiving the messages from the executing Processor Wrappers
         QString strIpVal;

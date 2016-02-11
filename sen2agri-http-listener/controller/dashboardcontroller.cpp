@@ -263,7 +263,17 @@ void DashboardController::resumeJob(const HttpRequest &request, HttpResponse &re
         return;
     }
 
-    persistenceManager.InsertEvent(JobResumedEvent(jobId));
+    const auto &processorIdStr = request.getParameter("processorId");
+    auto processorId = processorIdStr.toInt(&ok);
+    if (!ok) {
+        Logger::error(QStringLiteral("Invalid processorId value: %1")
+                          .arg(QString::fromUtf8(processorIdStr)));
+
+        response.setStatus(400, "Bad Request");
+        return;
+    }
+
+    persistenceManager.InsertEvent(JobResumedEvent(jobId, processorId));
 
     notifyOrchestrator();
 }

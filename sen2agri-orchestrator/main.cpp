@@ -10,13 +10,6 @@
 #include "orchestrator.hpp"
 #include "orchestrator_adaptor.h"
 
-#include "processor/cropmaskhandler.hpp"
-#include "processor/croptypehandler.hpp"
-#include "processor/compositehandler.hpp"
-#include "processor/lairetrievalhandler.hpp"
-#include "processor/phenondvihandler.hpp"
-#include "processor/dummyprocessorhandler.hpp"
-
 int main(int argc, char *argv[])
 {
     try {
@@ -26,15 +19,7 @@ int main(int argc, char *argv[])
 
         registerMetaTypes();
 
-        std::map<int, std::unique_ptr<ProcessorHandler>> handlers;
-        handlers.emplace(1, std::make_unique<CompositeHandler>());
-        handlers.emplace(2, std::make_unique<LaiRetrievalHandler>());
-        handlers.emplace(3, std::make_unique<PhenoNdviHandler>());
-        handlers.emplace(4, std::make_unique<CropMaskHandler>());
-        handlers.emplace(5, std::make_unique<CropTypeHandler>());
-        handlers.emplace(6, std::make_unique<DummyProcessorHandler>());
-
-        Orchestrator orchestrator(handlers);
+        Orchestrator orchestrator;
 
         new OrchestratorAdaptor(&orchestrator);
 

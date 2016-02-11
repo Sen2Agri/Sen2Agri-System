@@ -5,6 +5,8 @@ import dbus
 import json
 import numbers
 import sys
+import psycopg2
+import psycopg2.extras
 
 
 class Site(object):
@@ -17,34 +19,15 @@ class Site(object):
         if hasattr(other, 'site_id'):
             return self.site_id.__cmp__(other.site_id)
 
+class Processor(object):
 
-class ConfigurationValue(object):
+    def __init__(self, id, short_name):
+        self.id = id
+        self.short_name = short_name
 
-    def __init__(self, key, value):
-        self.key = key
-        self.value = value
-
-    def __str__(self):
-        return str({"key": self.key, "value": self.value})
-
-    def __repr__(self):
-        return str(self)
-
-    def to_dbus(self):
-        return dbus.Struct([self.key, self.value])
-
-
-class ConfigurationValueList(object):
-
-    def __init__(self, values):
-        self.values = values
-
-    def __str__(self):
-        return str(self.values)
-
-    def to_dbus(self):
-        return map(lambda cv: cv.to_dbus(), self.values)
-
+    def __cmp__(self, other):
+        if hasattr(other, 'id'):
+            return self.id.__cmp__(other.id)
 
 class NewJob(object):
 
@@ -58,11 +41,6 @@ class NewJob(object):
         self.parameters = parameters
         self.configuration = configuration
 
-    def to_dbus(self):
-        return dbus.Struct([self.name, self.description, self.processor_id,
-                            self.site_id, self.start_type, self.parameters,
-                            self.configuration.to_dbus()])
-
 
 class Sen2AgriClient(object):
 
@@ -72,21 +50,66 @@ class Sen2AgriClient(object):
                                     '/org/esa/sen2agri/persistenceManager')
 
     def get_sites(self):
+        connection = self.get_connection()
+        cur = self.get_cursor(connection)
+        cur.execute("""SELECT * FROM sp_get_sites()""")
+        rows = cur.fetchall()
+        connection.commit()
+        connection.close()
+
         sites = []
-        for site in self.proxy.GetConfigurationSet()[3]:
-            sites.append(Site(int(site[0]), str(site[1])))
+        for row in rows:
+            sites.append(Site(row['id'], row['name']))
 
         return sorted(sites)
 
+    def get_processors(self):
+        connection = self.get_connection()
+        cur = self.get_cursor(connection)
+        cur.execute("""SELECT * FROM sp_get_processors()""")
+        rows = cur.fetchall()
+        connection.commit()
+
+        processors = []
+        for row in rows:
+            processors.append(Processor(row['id'], row['short_name']))
+
+        return sorted(processors)
+        
     def submit_job(self, job):
-        jobId = self.proxy.SubmitJob(job.to_dbus())
+        connection = self.get_connection()
+        cur = self.get_cursor(connection)
+        cur.execute("""SELECT * FROM sp_submit_job(%(name)s :: character varying, %(description)s ::
+        character varying, %(processor_id)s :: smallint,
+                       %(site_id)s :: smallint, %(start_type_id)s :: smallint, %(parameters)s ::
+                       json, %(configuration)s :: json)""",
+                    {"name": job.name,
+                     "description": job.description,
+                     "processor_id": job.processor_id,
+                     "site_id": job.site_id,
+                     "start_type_id": job.start_type,
+                     "parameters": job.parameters,
+                     "configuration": json.JSONEncoder().encode([dict(c) for c in job.configuration]) # [{"key": c.key, "value": c.value} for c in job.configuration]
+                    })
+        rows = cur.fetchall()
+        connection.commit()
+        connection.close()
+
+        jobId = rows[0][0]
 
         bus = dbus.SystemBus()
         orchestrator_proxy = bus.get_object('org.esa.sen2agri.orchestrator',
                                             '/org/esa/sen2agri/orchestrator')
         orchestrator_proxy.NotifyEventsAvailable()
 
-	return jobId
+        return jobId
+
+    def get_connection(self):
+        return psycopg2.connect(
+            "dbname='sen2agri' user='admin' host='localhost' password='sen2agri'")
+
+    def get_cursor(self, connection):
+        return connection.cursor(cursor_factory=psycopg2.extras.DictCursor)
 
 
 class Sen2AgriCtl(object):
@@ -107,7 +130,7 @@ class Sen2AgriCtl(object):
         parser_submit_job.add_argument('-s', '--site',
                                        required=True, help="site")
         parser_submit_job_subparsers = parser_submit_job.add_subparsers()
-        
+
         parser_composite = parser_submit_job_subparsers.add_parser(
             'composite', help="Submits a new composite type job")
         parser_composite.add_argument('-i', '--input',
@@ -145,8 +168,8 @@ class Sen2AgriCtl(object):
         parser_pheno_ndvi = parser_submit_job_subparsers.add_parser(
             'phenondvi', help="Submits a new Phenological NDVI Metrics type job")
         parser_pheno_ndvi.add_argument('-i', '--input',
-                                      nargs='+', required=True,
-                                      help="input products")
+                                       nargs='+', required=True,
+                                       help="input products")
         parser_pheno_ndvi.add_argument(
             '--phenondvi', help="phenondvi")
         parser_pheno_ndvi.add_argument(
@@ -155,7 +178,7 @@ class Sen2AgriCtl(object):
             '-p', '--parameter', action='append', nargs=2,
             metavar=('KEY', 'VALUE'), help="override configuration parameter")
         parser_pheno_ndvi.set_defaults(func=self.submit_pheno_ndvi)
-        
+
         parser_crop_mask = parser_submit_job_subparsers.add_parser(
             'crop-mask', help="Submits a new crop mask job")
         parser_crop_mask.add_argument('-i', '--input',
@@ -211,58 +234,41 @@ class Sen2AgriCtl(object):
         parameters = {'input_products': args.input,
                       'synthesis_date': args.synthesis_date,
                       'half_synthesis': args.half_synthesis}
-
         if args.resolution:
             parameters['resolution'] = args.resolution
-
-        job = self.create_job(1, parameters, args)
-        self.client.submit_job(job)
+        self.submit_job('l3a', parameters, args)
 
     def submit_lai(self, args):
         parameters = {'input_products': args.input}
-
         if args.resolution:
             parameters['resolution'] = args.resolution
-
-        job = self.create_job(2, parameters, args)
-        self.client.submit_job(job)
+        self.submit_job('l3b', parameters, args)
 
     def submit_pheno_ndvi(self, args):
         parameters = {'input_products': args.input}
-
         if args.resolution:
             parameters['resolution'] = args.resolution
+        self.submit_job('l3b_pheno', parameters, args)
 
-        job = self.create_job(3, parameters, args)
-        self.client.submit_job(job)
-        
     def submit_crop_mask(self, args):
         parameters = {'input_products': args.input,
                       'reference_polygons': args.reference,
                       'date_start': args.date_start,
                       'date_end': args.date_end}
-
         if args.resolution:
             parameters['resolution'] = args.resolution
-
-        job = self.create_job(4, parameters, args)
-        self.client.submit_job(job)
+        self.submit_job('l4a', parameters, args)
 
     def submit_crop_type(self, args):
         parameters = {'input_products': args.input,
                       'reference_polygons': args.reference,
                       'date_start': args.date_start,
                       'date_end': args.date_end}
-
         if args.crop_mask:
             parameters['crop_mask'] = args.crop_mask
         if args.resolution:
             parameters['resolution'] = args.resolution
-
-        job = self.create_job(5, parameters, args)
-        jobId = self.client.submit_job(job)
-
-	print("Submitted job {}".format(jobId))
+        self.submit_job('l4b', parameters, args)
 
     def create_job(self, processor_id, parameters, args):
         config = config_from_parameters(args.parameter)
@@ -275,6 +281,16 @@ class Sen2AgriCtl(object):
                      json.JSONEncoder().encode(parameters), config)
         return job
 
+    def submit_job(self, processor_short_name, parameters, args):
+        processor_id = self.get_processor_id(processor_short_name)
+        if processor_id is None:
+            raise RuntimeError("Invalid processor id '{}'".format(processor_short_name))
+        
+        job = self.create_job(processor_id, parameters, args)
+        job_id = self.client.submit_job(job)
+        print("Submitted job {} for processor name {} having processor id {}".format(job_id, processor_short_name, processor_id))
+
+        
     def get_site_id(self, name):
         if isinstance(name, numbers.Integral):
             return name
@@ -286,13 +302,23 @@ class Sen2AgriCtl(object):
 
         return None
 
+    def get_processor_id(self, name):
+        if isinstance(name, numbers.Integral):
+            return name
+
+        processors = self.client.get_processors()
+        for processor in processors:
+            if processor.short_name == name:
+                return processor.id
+
+        return None
 
 def config_from_parameters(parameters):
     config = []
     if parameters:
         for param in parameters:
-            config.append(ConfigurationValue(param[0], param[1]))
-    return ConfigurationValueList(config)
+            config.append({'key': param[0], 'value': param[1]})
+    return config
 
 if __name__ == '__main__':
     try:

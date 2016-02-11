@@ -87,6 +87,8 @@ typedef itk::SPOT4MetadataReader                                   SPOT4Metadata
 
 typedef otb::StreamingResampleImageFilter<InternalImageType, InternalImageType, double>    ResampleFilterType;
 typedef otb::ObjectList<ResampleFilterType>                           ResampleFilterListType;
+typedef otb::BCOInterpolateImageFunction<InternalImageType,
+                                            double>          BicubicInterpolationType;
 typedef itk::LinearInterpolateImageFunction<InternalImageType,
                                             double>          LinearInterpolationType;
 typedef itk::NearestNeighborInterpolateImageFunction<InternalImageType, double>             NearestNeighborInterpolationType;
@@ -1141,7 +1143,7 @@ private:
            NearestNeighborInterpolationType::Pointer interpolator = NearestNeighborInterpolationType::New();
            resampler->SetInterpolator(interpolator);
        } else {
-           LinearInterpolationType::Pointer interpolator = LinearInterpolationType::New();
+           BicubicInterpolationType::Pointer interpolator = BicubicInterpolationType::New();
            resampler->SetInterpolator(interpolator);
        }
 

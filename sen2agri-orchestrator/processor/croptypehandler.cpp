@@ -70,7 +70,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &rawmask = bandsExtractor.GetFilePath("rawmask.tif");
     const auto &dates = bandsExtractor.GetFilePath("dates.txt");
     const auto &shape = bandsExtractor.GetFilePath("shape.shp");
-    const auto &shapePrj = bandsExtractor.GetFilePath("shape.prj");
+    //const auto &shapePrj = bandsExtractor.GetFilePath("shape.prj");
 
     // const auto &refPolysReprojected =
     // reprojectPolys.GetFilePath("reference_polygons_reproject.shp");

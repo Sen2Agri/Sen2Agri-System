@@ -310,7 +310,7 @@ private:
                          maskReader->GetOutput()->GetNumberOfComponentsPerPixel();
 
         // Create the instance of the filter which will perform all computations
-        filter = BinaryFunctorImageFilterWithNBands::New();
+        filter = BinaryFunctorImageFilterWithNBands<ImageType, GapFillingFunctor<ImageType::PixelType>>::New();
 
         int dateCount = 0;
         for (const auto &sd : inData) {
@@ -328,7 +328,7 @@ private:
 private:
     ReaderType::Pointer imgReader;
     ReaderType::Pointer maskReader;
-    BinaryFunctorImageFilterWithNBands::Pointer filter;
+    BinaryFunctorImageFilterWithNBands<ImageType, GapFillingFunctor<ImageType::PixelType>>::Pointer filter;
 
     inline int getDaysFromEpoch(const std::string &date)
     {

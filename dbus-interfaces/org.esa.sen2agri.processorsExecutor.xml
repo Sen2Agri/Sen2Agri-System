@@ -2,7 +2,7 @@
 <node>
   <interface name="org.esa.sen2agri.processorsExecutor" dest="org.esa.sen2agri.processorsExecutor" path="/org/esa/sen2agri/processorsExecutor" gen-namespace="Sen2Agri" orig-namespace="Sen2Agri">
     <method name="SubmitSteps">
-      <arg name="steps" type="a(issas)" direction="in" />
+      <arg name="steps" type="a(iissas)" direction="in" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewExecutorStepList" />
     </method>
     <method name="CancelTasks">
