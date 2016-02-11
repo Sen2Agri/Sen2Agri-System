@@ -19,6 +19,15 @@ class Site(object):
         if hasattr(other, 'site_id'):
             return self.site_id.__cmp__(other.site_id)
 
+class Processor(object):
+
+    def __init__(self, id, short_name):
+        self.id = id
+        self.short_name = short_name
+
+    def __cmp__(self, other):
+        if hasattr(other, 'id'):
+            return self.id.__cmp__(other.id)
 
 class NewJob(object):
 
@@ -53,6 +62,19 @@ class Sen2AgriClient(object):
 
         return sorted(sites)
 
+    def get_processors(self):
+        connection = self.get_connection()
+        cur = self.get_cursor(connection)
+        cur.execute("""SELECT * FROM sp_get_processors()""")
+        rows = cur.fetchall()
+        connection.commit()
+
+        processors = []
+        for row in rows:
+            processors.append(Processor(row['id'], row['short_name']))
+
+        return sorted(processors)
+        
     def submit_job(self, job):
         connection = self.get_connection()
         cur = self.get_cursor(connection)
@@ -210,66 +232,41 @@ class Sen2AgriCtl(object):
         parameters = {'input_products': args.input,
                       'synthesis_date': args.synthesis_date,
                       'half_synthesis': args.half_synthesis}
-
         if args.resolution:
             parameters['resolution'] = args.resolution
-
-        job = self.create_job(1, parameters, args)
-        job_id = self.client.submit_job(job)
-
-	print("Submitted job {}".format(job_id))
+        self.submit_job('l3a', parameters, args)
 
     def submit_lai(self, args):
         parameters = {'input_products': args.input}
-
         if args.resolution:
             parameters['resolution'] = args.resolution
-
-        job = self.create_job(2, parameters, args)
-        job_id = self.client.submit_job(job)
-
-	print("Submitted job {}".format(job_id))
+        self.submit_job('l3b', parameters, args)
 
     def submit_pheno_ndvi(self, args):
         parameters = {'input_products': args.input}
-
         if args.resolution:
             parameters['resolution'] = args.resolution
-
-        job = self.create_job(3, parameters, args)
-        job_id = self.client.submit_job(job)
-
-	print("Submitted job {}".format(job_id))
+        self.submit_job('l3b_pheno', parameters, args)
 
     def submit_crop_mask(self, args):
         parameters = {'input_products': args.input,
                       'reference_polygons': args.reference,
                       'date_start': args.date_start,
                       'date_end': args.date_end}
-
         if args.resolution:
             parameters['resolution'] = args.resolution
-
-        job = self.create_job(4, parameters, args)
-        job_id = self.client.submit_job(job)
-
-	print("Submitted job {}".format(job_id))
+        self.submit_job('l4a', parameters, args)
 
     def submit_crop_type(self, args):
         parameters = {'input_products': args.input,
                       'reference_polygons': args.reference,
                       'date_start': args.date_start,
                       'date_end': args.date_end}
-
         if args.crop_mask:
             parameters['crop_mask'] = args.crop_mask
         if args.resolution:
             parameters['resolution'] = args.resolution
-
-        job = self.create_job(5, parameters, args)
-        job_id = self.client.submit_job(job)
-
-	print("Submitted job {}".format(job_id))
+        self.submit_job('l4b', parameters, args)
 
     def create_job(self, processor_id, parameters, args):
         config = config_from_parameters(args.parameter)
@@ -282,6 +279,16 @@ class Sen2AgriCtl(object):
                      json.JSONEncoder().encode(parameters), config)
         return job
 
+    def submit_job(self, processor_short_name, parameters, args):
+        processor_id = self.get_processor_id(processor_short_name)
+        if processor_id is None:
+            raise RuntimeError("Invalid processor id '{}'".format(processor_short_name))
+        
+        job = self.create_job(processor_id, parameters, args)
+        job_id = self.client.submit_job(job)
+        print("Submitted job {} for processor name {} having processor id {}".format(job_id, processor_short_name, processor_id))
+
+        
     def get_site_id(self, name):
         if isinstance(name, numbers.Integral):
             return name
@@ -293,6 +300,16 @@ class Sen2AgriCtl(object):
 
         return None
 
+    def get_processor_id(self, name):
+        if isinstance(name, numbers.Integral):
+            return name
+
+        processors = self.client.get_processors()
+        for processor in processors:
+            if processor.short_name == name:
+                return processor.id
+
+        return None
 
 def config_from_parameters(parameters):
     config = []

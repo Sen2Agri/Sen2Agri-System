@@ -22,7 +22,7 @@ BEGIN
 		status_id := 3; --NeedsInput
 	END IF;
 
-    processor_id := (SELECT processor_id FROM job WHERE id = _job_id);
+        processor_id := (SELECT job.processor_id FROM job WHERE id = _job_id);
 
 	INSERT INTO task(
 	job_id,

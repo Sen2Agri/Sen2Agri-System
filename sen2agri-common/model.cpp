@@ -736,7 +736,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, EventType &event)
     return argument;
 }
 
-TaskRunnableEvent::TaskRunnableEvent() : jobId(), taskId() {}
+TaskRunnableEvent::TaskRunnableEvent() : jobId(), processorId(), taskId() {}
 
 TaskRunnableEvent::TaskRunnableEvent(int jobId, int processorId, int taskId)
     : jobId(jobId), processorId(processorId), taskId(taskId)
@@ -747,7 +747,7 @@ QString TaskRunnableEvent::toJson() const
 {
     QJsonObject node;
     node[QStringLiteral("job_id")] = jobId;
-    node[QStringLiteral("processor_id")] = jobId;
+    node[QStringLiteral("processor_id")] = processorId;
     node[QStringLiteral("task_id")] = taskId;
 
     return QString::fromUtf8(QJsonDocument(node).toJson());
@@ -768,7 +768,7 @@ void TaskRunnableEvent::registerMetaTypes() { qDBusRegisterMetaType<TaskRunnable
 QDBusArgument &operator<<(QDBusArgument &argument, const TaskRunnableEvent &event)
 {
     argument.beginStructure();
-    argument << event.jobId << event.taskId;
+    argument << event.jobId << event.taskId << event.processorId;
     argument.endStructure();
 
     return argument;
@@ -777,7 +777,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const TaskRunnableEvent &even
 const QDBusArgument &operator>>(const QDBusArgument &argument, TaskRunnableEvent &event)
 {
     argument.beginStructure();
-    argument >> event.jobId >> event.taskId;
+    argument >> event.jobId >> event.taskId >> event.processorId;
     argument.endStructure();
 
     return argument;
@@ -954,12 +954,13 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobPausedEvent &e
 
 JobResumedEvent::JobResumedEvent() : jobId() {}
 
-JobResumedEvent::JobResumedEvent(int jobId) : jobId(jobId) {}
+JobResumedEvent::JobResumedEvent(int jobId, int processorId) : jobId(jobId), processorId(processorId) {}
 
 QString JobResumedEvent::toJson() const
 {
     QJsonObject node;
     node[QStringLiteral("job_id")] = jobId;
+    node[QStringLiteral("processor_id")] = processorId;
 
     return QString::fromUtf8(QJsonDocument(node).toJson());
 }
@@ -969,7 +970,8 @@ JobResumedEvent JobResumedEvent::fromJson(const QString &json)
     const auto &doc = QJsonDocument::fromJson(json.toUtf8());
     const auto &object = doc.object();
 
-    return { object.value(QStringLiteral("job_id")).toInt() };
+    return { object.value(QStringLiteral("job_id")).toInt(),
+             object.value(QStringLiteral("processor_id")).toInt() };
 }
 
 void JobResumedEvent::registerMetaTypes() { qDBusRegisterMetaType<JobResumedEvent>(); }
@@ -977,7 +979,7 @@ void JobResumedEvent::registerMetaTypes() { qDBusRegisterMetaType<JobResumedEven
 QDBusArgument &operator<<(QDBusArgument &argument, const JobResumedEvent &event)
 {
     argument.beginStructure();
-    argument << event.jobId;
+    argument << event.jobId << event.processorId;
     argument.endStructure();
 
     return argument;
@@ -986,7 +988,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const JobResumedEvent &event)
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobResumedEvent &event)
 {
     argument.beginStructure();
-    argument >> event.jobId;
+    argument >> event.processorId >> event.jobId;
     argument.endStructure();
 
     return argument;
@@ -1237,13 +1239,15 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, StepArgument &ste
     return argument;
 }
 
-NewExecutorStep::NewExecutorStep() : taskId() {}
+NewExecutorStep::NewExecutorStep() : processorId(), taskId() {}
 
-NewExecutorStep::NewExecutorStep(int taskId,
+NewExecutorStep::NewExecutorStep(int processorId,
+                                 int taskId,
                                  QString processorPath,
                                  QString stepName,
                                  StepArgumentList arguments)
-    : taskId(taskId),
+    : processorId(processorId),
+      taskId(taskId),
       processorPath(std::move(processorPath)),
       stepName(std::move(stepName)),
       arguments(std::move(arguments))
@@ -1261,7 +1265,7 @@ void NewExecutorStep::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NewExecutorStep &step)
 {
     argument.beginStructure();
-    argument << step.taskId << step.processorPath << step.stepName << step.arguments;
+    argument << step.processorId << step.taskId << step.processorPath << step.stepName << step.arguments;
     argument.endStructure();
 
     return argument;
@@ -1270,7 +1274,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewExecutorStep &step)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewExecutorStep &step)
 {
     argument.beginStructure();
-    argument >> step.taskId >> step.processorPath >> step.stepName >> step.arguments;
+    argument >> step.processorId >> step.taskId >> step.processorPath >> step.stepName >> step.arguments;
     argument.endStructure();
 
     return argument;
@@ -1479,3 +1483,37 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, DashboardSearch &
 
     return argument;
 }
+
+ProcessorDescription::ProcessorDescription() : processorId() {}
+
+ProcessorDescription::ProcessorDescription(
+               int processorId,
+               QString shortName,
+               QString fullName)
+    : processorId(processorId),
+      shortName(std::move(shortName)),
+      fullName(std::move(fullName))
+{
+}
+
+void ProcessorDescription::registerMetaTypes() { qDBusRegisterMetaType<ProcessorDescription>(); }
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ProcessorDescription &processor)
+{
+    argument.beginStructure();
+    argument << processor.processorId << processor.shortName << processor.fullName;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorDescription &processor)
+{
+    argument.beginStructure();
+    argument >> processor.processorId >> processor.shortName >> processor.fullName;
+    argument.endStructure();
+
+    return argument;
+}
+
+

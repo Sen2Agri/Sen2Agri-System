@@ -68,6 +68,32 @@ void PersistenceItfModule::RequestConfiguration()
     }
 }
 
+QString PersistenceItfModule::GetExecutorQos(int processorId) {
+    QString qos;
+    ProcessorDescriptionList procDescrs = clientInterface.GetProcessorDescriptions();
+    for(ProcessorDescription procDescr: procDescrs) {
+        if(procDescr.processorId == processorId) {
+            const auto &strProcQosKey = QString("executor.processor.%1.qos").arg(procDescr.shortName);
+            const auto &keys = clientInterface.GetConfigurationParameters(strProcQosKey);
+            GetValueForKey(keys, strProcQosKey, qos);
+        }
+    }
+    return qos;
+}
+
+QString PersistenceItfModule::GetExecutorPartition(int processorId) {
+    QString qos;
+    ProcessorDescriptionList procDescrs = clientInterface.GetProcessorDescriptions();
+    for(ProcessorDescription procDescr: procDescrs) {
+        if(procDescr.processorId == processorId) {
+            const auto &strProcQosKey = QString("executor.processor.%1.partition").arg(procDescr.shortName);
+            const auto &keys = clientInterface.GetConfigurationParameters(strProcQosKey);
+            GetValueForKey(keys, strProcQosKey, qos);
+        }
+    }
+    return qos;
+}
+
 void PersistenceItfModule::SaveMainConfigKeys(const ConfigurationParameterValueList &configuration)
 {
     for (const auto &p : configuration) {
@@ -120,9 +146,15 @@ bool PersistenceItfModule::GetProcessorPathForName(
     const ConfigurationParameterValueList &configuration, const QString &name, QString &path)
 {
     const auto &strPathKey = QString("executor.processor.%1.path").arg(name);
+    return GetValueForKey(configuration, strPathKey, path);
+}
+
+bool PersistenceItfModule::GetValueForKey(
+    const ConfigurationParameterValueList &configuration, const QString &key, QString &value)
+{
     for (const auto &p : configuration) {
-        if (p.key == strPathKey) {
-            path = p.value;
+        if (p.key == key) {
+            value = p.value;
             return true;
         }
     }

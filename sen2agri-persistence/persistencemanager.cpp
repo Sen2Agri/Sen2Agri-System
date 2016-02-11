@@ -1163,3 +1163,28 @@ static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query)
 
     return result;
 }
+
+ProcessorDescriptionList PersistenceManagerDBProvider::GetProcessorDescriptions() {
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        ProcessorDescriptionList result;
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_processors()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto idCol = dataRecord.indexOf(QStringLiteral("id"));
+        auto shortNameCol = dataRecord.indexOf(QStringLiteral("short_name"));
+        auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
+
+        while (query.next()) {
+            result.append({ query.value(idCol).toInt(), query.value(shortNameCol).toString(), query.value(nameCol).toString() });
+        }
+
+        return result;
+    });
+}
