@@ -11,8 +11,6 @@
 static StepArgumentList getStepArguments(const JobStepToRun &step);
 static NewExecutorStepList
 getExecutorStepList(EventProcessingContext &ctx, int processorId, int jobId, const JobStepToRunList &steps);
-static void getExecutorExecutionParameters(EventProcessingContext &ctx, int jobId, int processorId,
-                                           QString &outQos, QString &outPartition);
 
 OrchestratorWorker::OrchestratorWorker(std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
                                        PersistenceManagerDBProvider &persistenceManagerClient,
@@ -296,32 +294,9 @@ getExecutorStepList(EventProcessingContext &ctx, int processorId, int jobId, con
                                          .toStdString());
         }
 
-        QString qos, partition;
-        getExecutorExecutionParameters(ctx, jobId, processorId, qos, partition);
         const auto &arguments = getStepArguments(s);
-        stepsToSubmit.append({ s.taskId, it->second, s.stepName, qos, partition, arguments });
+        stepsToSubmit.append({ processorId, s.taskId, it->second, s.stepName, arguments });
     }
 
     return stepsToSubmit;
-}
-
-void getExecutorExecutionParameters(EventProcessingContext &ctx, int jobId, int processorId, QString &outQos, QString &outPartition) {
-    ProcessorDescriptionList procDescrs = ctx.GetProcessorDescriptions();
-    for(ProcessorDescription procDescr: procDescrs) {
-        if(procDescr.processorId == processorId) {
-            QString str = QStringLiteral("executor.processor.qos.");
-            str.append(procDescr.shortName);
-            std::map<QString, QString> mapCfg = ctx.GetJobConfigurationParameters(jobId, str);
-            if(mapCfg.size() > 0) {
-                outQos = mapCfg[str];
-            }
-
-            str = QStringLiteral("executor.processor.partition.");
-            str.append(procDescr.shortName);
-            mapCfg = ctx.GetJobConfigurationParameters(jobId, str);
-            if(mapCfg.size() > 0) {
-                outPartition = mapCfg[str];
-            }
-        }
-    }
 }
