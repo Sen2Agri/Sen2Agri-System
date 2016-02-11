@@ -203,8 +203,8 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
 
         QStringList listParams;
         QString strParam;
-        QString strQos = executionStep.GetQos();
-        QString strPartition = executionStep.GetPartition();
+        QString strQos = PersistenceItfModule::GetInstance()->GetExecutorQos(executionStep.GetProcessorId());
+        QString strPartition = PersistenceItfModule::GetInstance()->GetExecutorPartition(executionStep.GetProcessorId());
         if(!strQos.isEmpty()) {
             listParams.push_back(SRUN_QOS_PARAM);
             listParams.push_back(strQos);

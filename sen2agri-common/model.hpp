@@ -692,19 +692,17 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, StepArgument &ste
 class NewExecutorStep
 {
 public:
+    int processorId;
     int taskId;
     QString processorPath;
     QString stepName;
-    QString qos;
-    QString partition;
     StepArgumentList arguments;
 
     NewExecutorStep();
-    NewExecutorStep(int taskId,
+    NewExecutorStep(int processorId,
+                    int taskId,
                     QString processorPath,
                     QString stepName,
-                    QString qos,
-                    QString partition,
                     StepArgumentList arguments);
 
     static void registerMetaTypes();

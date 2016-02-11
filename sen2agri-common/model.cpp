@@ -1239,17 +1239,17 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, StepArgument &ste
     return argument;
 }
 
-NewExecutorStep::NewExecutorStep() : taskId() {}
+NewExecutorStep::NewExecutorStep() : processorId(), taskId() {}
 
-NewExecutorStep::NewExecutorStep(int taskId,
+NewExecutorStep::NewExecutorStep(int processorId,
+                                 int taskId,
                                  QString processorPath,
-                                 QString stepName, QString qos, QString partition,
+                                 QString stepName,
                                  StepArgumentList arguments)
-    : taskId(taskId),
+    : processorId(processorId),
+      taskId(taskId),
       processorPath(std::move(processorPath)),
       stepName(std::move(stepName)),
-      qos(std::move(qos)),
-      partition(std::move(partition)),
       arguments(std::move(arguments))
 {
 }
@@ -1265,7 +1265,7 @@ void NewExecutorStep::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NewExecutorStep &step)
 {
     argument.beginStructure();
-    argument << step.taskId << step.processorPath << step.stepName << step.qos << step.partition << step.arguments;
+    argument << step.processorId << step.taskId << step.processorPath << step.stepName << step.arguments;
     argument.endStructure();
 
     return argument;
@@ -1274,7 +1274,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewExecutorStep &step)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewExecutorStep &step)
 {
     argument.beginStructure();
-    argument >> step.taskId >> step.processorPath >> step.stepName >> step.qos >> step.partition >> step.arguments;
+    argument >> step.processorId >> step.taskId >> step.processorPath >> step.stepName >> step.arguments;
     argument.endStructure();
 
     return argument;
