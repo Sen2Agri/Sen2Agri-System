@@ -23,7 +23,7 @@ std::map<int, std::unique_ptr<ProcessorHandler>> & GetHandlersMap(PersistenceMan
             //handlers.emplace(procDescr.processorId, std::make_unique<MACCSHandler>());
         } else if(procDescr.shortName == "l3a") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<CompositeHandler>());
-        } else if(procDescr.shortName == "l3b_lai") {
+        } else if(procDescr.shortName == "l3b") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<LaiRetrievalHandler>());
         } else if(procDescr.shortName == "l3b_pheno") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<PhenoNdviHandler>());
