@@ -55,6 +55,7 @@ class Sen2AgriClient(object):
         cur.execute("""SELECT * FROM sp_get_sites()""")
         rows = cur.fetchall()
         connection.commit()
+        connection.close()
 
         sites = []
         for row in rows:
@@ -92,6 +93,7 @@ class Sen2AgriClient(object):
                     })
         rows = cur.fetchall()
         connection.commit()
+        connection.close()
 
         jobId = rows[0][0]
 
