@@ -1,7 +1,7 @@
 include(../common.pri)
 
 QT -= gui
-QT += core dbus
+QT += core dbus sql
 
 DESTDIR = bin
 
@@ -38,12 +38,15 @@ DBUS_INTERFACES += orchestrator_interface
 #    dist/org.esa.sen2agri.orchestrator.service \
 #    dist/sen2agri-orchestrator.service
 
+LIBS += -L$$OUT_PWD/../sen2agri-persistence/ -lsen2agri-persistence
 LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
 
-INCLUDEPATH += $$PWD/../sen2agri-common
-DEPENDPATH += $$PWD/../sen2agri-common
+
+INCLUDEPATH += $$PWD/../sen2agri-common $$PWD/../sen2agri-persistence
+DEPENDPATH += $$PWD/../sen2agri-common $$PWD/../sen2agri-persistence
 
 PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a
+PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-persistence/libsen2agri-persistence.a
 
 target.path = /usr/bin
 
