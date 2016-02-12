@@ -39,7 +39,7 @@ OTB_CREATE_APPLICATION(NAME           ProfileReprocessing
 otb_create_application(
   NAME           TrainingDataGenerator
   SOURCES        otbTrainingDataGenerator.cpp
-  LINK_LIBRARIES ${OTB_LIBRARIES})
+  LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
   
 otb_create_application(
   NAME           NdviRviExtraction
