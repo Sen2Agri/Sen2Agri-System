@@ -172,15 +172,20 @@ protected:
                                       const std::string& ending);
     std::string getMACCSImageFileName(const std::vector<MACCSAnnexInformation>& maskFiles,
                                       const std::string& ending);
+    bool getMACCSImageFileName(const MACCSFileInformation& fileInfo,
+                                      const std::string& ending, std::string& retStr);
     std::string getMACCSImageHdrName(const std::vector<MACCSAnnexInformation>& maskFiles,
                                      const std::string& ending);
     std::string getMACCSImageHdrName(const std::vector<MACCSFileInformation>& imageFiles,
                                                           const std::string& ending);
+    bool getMACCSImageHdrName(const MACCSFileInformation& fileInfo,
+                              const std::string& ending, std::string &retStr);
     void ReadSpecificMACCSImgHdrFile();
     void ReadSpecificMACCSAotHdrFile();
     void ReadSpecificMACCSCldHdrFile();
     void ReadSpecificMACCSMskHdrFile();
     int getBandIndex(const std::vector<MACCSBand>& bands, const std::string& name);
+    bool CheckFileExistence(std::string &fileName);
 
     void InitializeS2Angles();
     bool BandAvailableForCurrentResolution(unsigned int nBand);

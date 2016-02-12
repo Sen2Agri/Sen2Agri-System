@@ -789,7 +789,7 @@ private:
       return extent;
   }
 
-  void generateQuicklook(const std::string &rasterFullFilePath, const std::vector<std::string> &channels,const std::string &jpegFullFilePath)
+  bool generateQuicklook(const std::string &rasterFullFilePath, const std::vector<std::string> &channels,const std::string &jpegFullFilePath)
   {
       int error, status;
           pid_t pid, waitres;
@@ -817,11 +817,17 @@ private:
           posix_spawnattr_init(&attr);
           posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
           error = posix_spawnp(&pid, args[0], NULL, &attr, (char *const *)args.data(), NULL);
+          if(error != 0) {
+              otbAppLogWARNING("Error creating process for otbcli_Quicklook. The preview file will not be created. Error was: " << error);
+              return false;
+          }
           posix_spawnattr_destroy(&attr);
-//          assert(error == 0);
           waitres = waitpid(pid, &status, 0);
-//          assert(waitres == pid);
-//          assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+          if(waitres == pid && (WIFEXITED(status) && WEXITSTATUS(status) == 0)) {
+              return true;
+          }
+          otbAppLogWARNING("Error running otbcli_Quicklook. The preview file might not be created. The return of otbcli_Quicklook was: " << status);
+          return false;
   }
 
   void generateTileMetadataFile(tileInfo &tileInfoEl, const std::string &strTileName)
@@ -1388,16 +1394,14 @@ private:
                  //std::cout << "ProductPreviewFullPath = " << strProductPreviewFullPath << std::endl;
 
                  //transform .tif file in .jpg file directly in product directory
-                 generateQuicklook(previewFileEl.strPreviewFileName, strChannelsList, strProductPreviewFullPath);
+                 if(generateQuicklook(previewFileEl.strPreviewFileName, strChannelsList, strProductPreviewFullPath)) {
 
-                //build producty preview file name for tile
-                 strTilePreviewFullPath = tileID.strTileNameWithoutExt + JPEG_EXTENSION;
-                 strTilePreviewFullPath = ReplaceString(strTilePreviewFullPath, METADATA_CATEG, QUICK_L0OK_IMG_CATEG);
+                     //build producty preview file name for tile
+                     strTilePreviewFullPath = tileID.strTileNameWithoutExt + JPEG_EXTENSION;
+                     strTilePreviewFullPath = ReplaceString(strTilePreviewFullPath, METADATA_CATEG, QUICK_L0OK_IMG_CATEG);
 
-                 //std::cout << "TilePreviewFullPath = " << strTilePreviewFullPath << std::endl;
-
-                 CopyFile(strTilePreviewFullPath, strProductPreviewFullPath);
-
+                     CopyFile(strTilePreviewFullPath, strProductPreviewFullPath);
+                 }
                  //remove  file with extension jpg.aux.xml generated after preview obtained
 
                  std::string strFileToBeRemoved = strProductPreviewFullPath + ".aux.xml";
@@ -1495,7 +1499,7 @@ private:
         std::vector<std::string> retList;
         file.open(fileName);
         if (!file.is_open()) {
-            itkExceptionMacro("Can't open file " << fileName << " for reading!");
+            return retList;
         }
 
         std::string value;
