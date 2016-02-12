@@ -47,7 +47,7 @@ CUR_DATE=`date +%Y-%m-%d`
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130606_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130606_N2A_EUkraineD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000.xml" \
---res 0 --t0 20130206 --tend 20130616 --outdir /mnt/output/L3B/SPOT4-T5/Ukraine/$CUR_DATE --rsrfile ~/sen2agri/sen2agri-processors/VegetationStatus/otb-bv/data/spot4hrvir1.rsr --solarzenith $SOLAR_ZENITH_ANGLE --sensorzenith $SENSOR_ZENITH_ANGLE --relativeazimuth $RELATIVE_AZIMUTH_ANGLE --modelsfolder /mnt/output/L3B/SPOT4-T5/GeneratedModels/
+--res 0 --t0 20130206 --tend 20130616 --outdir /mnt/output/L3B/SPOT4-T5/Ukraine/$CUR_DATE --rsrcfg ~/sen2agri/sen2agri-processors/VegetationStatus/TestScripts/rsr_cfg.txt --modelsfolder /mnt/output/L3B/SPOT4-T5/GeneratedModels/ --generatemodel YES --genreprocessedlai YES --genfittedlai YES
 
 
 

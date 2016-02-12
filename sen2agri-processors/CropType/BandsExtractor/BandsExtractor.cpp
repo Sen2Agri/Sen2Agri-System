@@ -957,10 +957,14 @@ private:
               maskMath->SetNthInput(1, desc.maskSat);
               maskMath->SetNthInput(2, desc.maskValid);
               maskMath->SetNthInput(3, m_borderMask->GetOutput());
+//              maskMath->SetNthInput(4, desc.maskWater);
+//              maskMath->SetNthInput(5, desc.maskSnow);
 
 #ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
+//              m_maskExpression = "(b1 == 0) && (b2 == 0) && (b3 == 1) && (b4 == 1) && (b5 == 0) && (b6 == 0) ? 0 : 1";
               m_maskExpression = "(b1 == 0) && (b2 == 0) && (b3 == 1) && (b4 == 1) ? 0 : 1";
 #else
+//              m_maskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 1) and (b4 == 1) and (b5 == 0) and (b6 == 0), 0, 1)";
               m_maskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 1) and (b4 == 1), 0, 1)";
 #endif
 
@@ -984,7 +988,7 @@ private:
 #ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
               m_allMaskExpression = "(b1 == 0) && (b2 == 0) && (b3 == 1) && (b4 == 0) && (b5 == 0) ? 0 : 1";
 #else
-              m_allMaskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 1) and && (b4 == 0) and (b5 == 0) , 0, 1)";
+              m_allMaskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 1) and (b4 == 0) and (b5 == 0) , 0, 1)";
 #endif
 
               allMaskMath->SetExpression(m_allMaskExpression);

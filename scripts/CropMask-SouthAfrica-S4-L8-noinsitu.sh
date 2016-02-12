@@ -2,8 +2,8 @@
 
 source set_build_folder.sh
 
-./CropType.py \
-    -ref /mnt/Sen2Agri_DataSets/In-Situ_TDS/SouthAfrica/ZA_FST_LC_FO_2013.shp \
+./CropMask.py \
+    -refr /mnt/data/reference/Reference_SouthAfrica.tif \
     -input \
     /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South\ Africa/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130131_N2A_ESouthAfricaD0000B0000.xml \
     /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South\ Africa/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130205_N2A_ESouthAfricaD0000B0000.xml \
@@ -42,7 +42,6 @@ source set_build_folder.sh
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/South\ Africa/MACCS_Manual_Format/SouthAfricaS2A_20131104_L8_171_079/SouthAfricaS2A_20131104_L8_171_079.HDR \
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/South\ Africa/MACCS_Manual_Format/SouthAfricaS2A_20131120_L8_171_079/SouthAfricaS2A_20131120_L8_171_079.HDR \
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/South\ Africa/MACCS_Manual_Format/SouthAfricaS2A_20131222_L8_171_079/SouthAfricaS2A_20131222_L8_171_079.HDR \
-    -rseed 0 -pixsize 20 \
-    -outdir /mnt/data/southafrica/SouthAfrica-type \
-    -trm gapfill -keepfiles \
+    -rseed 0 -pixsize 20 -keepfiles -trm gapfill -fromstep 27 \
+    -outdir /mnt/data/southafrica/SouthAfrica-mask-noinsitu/ \
     -buildfolder $BUILD_FOLDER

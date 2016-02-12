@@ -52,10 +52,10 @@ class LaiModel(object):
 		GENERATED_SAMPLES_NO="40000"
 
 		#parameters for TrainingDataGenerator
-		BV_IDX="0"
+		#BV_IDX="0"
 		ADD_REFLS="1"
-		RED_INDEX="1"
-		NIR_INDEX="2"
+		#RED_INDEX="1"
+		#NIR_INDEX="2"
 
 		#parameters for generating model
 		REGRESSION_TYPE="nn"
@@ -76,25 +76,35 @@ class LaiModel(object):
 
 		# Generating simulation reflectances
 		print("Generating simulation reflectances ...")
-		#runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation, "-xml", args.input[0], "-bvfile", outGeneratedSampleFile, "-rsrfile", rsrFile, "-out", outSimuReflsFile, "-solarzenith", str(solarZenithAngle), "-sensorzenith", str(sensorZenithAngle), "-azimuth", str(relativeAzimuthAngle), "-outangles", outAnglesFile])
-		runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation, 
-		        "-xml", curXml, 
-		        "-bvfile", outGeneratedSampleFile, 
-		        "-rsrfile", rsrFile, 
-		        "-out", outSimuReflsFile, 
-		        "-outangles", outAnglesFile, 
-		        "-noisevar", str(NOISE_VAR)])
+        if not rsrCfg:
+            if not rsrFile:
+                print("Please provide the rsrcfg or rsrfile!")
+                exit(1)
+            else:
+                runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation, 
+                        "-xml", curXml, 
+                        "-bvfile", outGeneratedSampleFile, 
+                        "-rsrfile", rsrFile, 
+                        "-out", outSimuReflsFile, 
+                        "-outangles", outAnglesFile, 
+                        "-noisevar", str(NOISE_VAR)])
+        else:
+            runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation, 
+                    "-xml", curXml, 
+                    "-bvfile", outGeneratedSampleFile, 
+                    "-rsrcfg", rsrCfg, 
+                    "-out", outSimuReflsFile, 
+                    "-outangles", outAnglesFile, 
+                    "-noisevar", str(NOISE_VAR)])
 
 		# Generating training file
 		print("Generating training file ...")
 		runCmd(["otbcli", "TrainingDataGenerator", imgInvOtbLibsLocation, 
+		        "-xml", curXml,         
 		        "-biovarsfile", outGeneratedSampleFile, 
 		        "-simureflsfile", outSimuReflsFile, 
 		        "-outtrainfile", outTrainingFile, 
-		        "-bvidx", str(BV_IDX), 
-		        "-addrefls", str(ADD_REFLS), 
-		        "-redidx", str(RED_INDEX), 
-		        "-niridx", str(NIR_INDEX)])
+		        "-addrefls", str(ADD_REFLS)])
 
 		# Reading the used angles from the file and build the out model file name and the out err model file name
 		with open(outAnglesFile) as f:
@@ -147,10 +157,10 @@ class LaiModel(object):
 			ET.SubElement(proSail, "relative_azimuth_angle").text = str(relativeAzimuthAngle)
 			ET.SubElement(proSail, "noisevar").text = str(NOISE_VAR)
 			tr = ET.SubElement(root, "TrainingDataGenerator")
-			ET.SubElement(tr, "BV_index").text = BV_IDX
+			ET.SubElement(tr, "BV_index").text = "0"
 			ET.SubElement(tr, "add_refectances").text = ADD_REFLS
-			ET.SubElement(tr, "RED_band_index").text = RED_INDEX
-			ET.SubElement(tr, "NIR_band_index").text = NIR_INDEX
+			#ET.SubElement(tr, "RED_band_index").text = RED_INDEX
+			#ET.SubElement(tr, "NIR_band_index").text = NIR_INDEX
 			iv = ET.SubElement(root, "Weight_ON")
 			ET.SubElement(iv, "regression_type").text = REGRESSION_TYPE
 			ET.SubElement(iv, "best_of").text = BEST_OF
@@ -170,10 +180,10 @@ class LaiModel(object):
 			paramsFile.write("    Relative azimuth angle        = {}\n".format(relativeAzimuthAngle))
 			paramsFile.write("    Noise var                     = {}\n".format(NOISE_VAR))
 			paramsFile.write("TrainingDataGenerator" + "\n")
-			paramsFile.write("    BV Index                      = {}\n".format(BV_IDX))
+			paramsFile.write("    BV Index                      = {}\n".format(0))
 			paramsFile.write("    Add reflectances              = {}\n".format(ADD_REFLS))
-			paramsFile.write("    RED Band Index                = {}\n".format(RED_INDEX))
-			paramsFile.write("    NIR Band Index                = {}\n".format(NIR_INDEX))
+			#paramsFile.write("    RED Band Index                = {}\n".format(RED_INDEX))
+			#paramsFile.write("    NIR Band Index                = {}\n".format(NIR_INDEX))
 			paramsFile.write("Inverse model generation (InverseModelLearning)\n")
 			paramsFile.write("    Regression type               = {}\n".format(REGRESSION_TYPE))
 			paramsFile.write("    Best of                       = {}\n".format(BEST_OF))
@@ -193,7 +203,8 @@ if __name__ == '__main__':
 	parser.add_argument('--tend', help='The end date for the multi-date LAI retrieval pocedure (in format YYYYMMDD)',
 						required=True, metavar='YYYYMMDD')
 	parser.add_argument('--outdir', help="Output directory", required=True)
-	parser.add_argument('--rsrfile', help='The RSR file (/path/filename)', required=True)
+	parser.add_argument('--rsrfile', help='The RSR file (/path/filename)', required=False)
+	parser.add_argument('--rsrcfg', help='The RSR configuration file each mission (/path/filename)', required=False)
 	parser.add_argument('--tileid', help="Tile id", required=False)
 	parser.add_argument('--modelsfolder', help='The folder where the models are located. If not specified, is considered the outdir', required=False)
 	parser.add_argument('--generatemodel', help='Generate the model (YES/NO)', required=False)
@@ -206,6 +217,7 @@ if __name__ == '__main__':
 	tend = args.tend
 	outDir = args.outdir
 	rsrFile = args.rsrfile
+	rsrCfg = args.rsrcfg    
 	generateModel = args.generatemodel
 
 	if (generateModel == "YES"):

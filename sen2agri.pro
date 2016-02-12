@@ -10,7 +10,8 @@ SUBDIRS += sen2agri-common \
     sen2agri-monitor-agent \
     sen2agri-processor-wrapper \
     QtWebApp \
-    tests
+    tests \
+    sen2agri-scheduler
 
 sen2agri-config.depends = sen2agri-common
 sen2agri-persistence.depends = sen2agri-common

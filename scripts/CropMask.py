@@ -97,7 +97,7 @@ parser.add_argument('-weight', help='The weight factor for data smoothing (defau
 parser.add_argument('-nbcomp', help='The number of components used by dimensionality reduction (default 6)', required=False, metavar='nbcomp', default=6)
 parser.add_argument('-spatialr', help='The spatial radius of the neighborhood used for segmentation (default 10)', required=False, metavar='spatialr', default=10)
 parser.add_argument('-ranger', help='The range radius defining the radius (expressed in radiometry unit) in the multispectral space (default 0.65)', required=False, metavar='ranger', default=0.65)
-parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) in segmentation. (default 10)', required=False, metavar='minsize', default=10)
+parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) in segmentation.  (default 10)', required=False, metavar='minsize', default=200)
 
 parser.add_argument('-refr', help='The reference raster when insitu data is not available', required=False, metavar='reference', default='')
 parser.add_argument('-eroderad', help='The radius used for erosion (default 1)', required=False, metavar='erode_radius', default='1')
@@ -174,6 +174,7 @@ statistic_features=os.path.join(args.outdir, "sf.tif")
 features=os.path.join(args.outdir, "concat_features.tif")
 statistics=os.path.join(args.outdir, "statistics.xml")
 
+rndvi=os.path.join(args.outdir, "rndvi.tif")
 ndvi_smooth=os.path.join(args.outdir, "ndvi_smooth.tif")
 rtocr_smooth=os.path.join(args.outdir, "rtocr_smooth.tif")
 outdays_smooth=os.path.join(args.outdir, "days_smooth.txt")
@@ -230,7 +231,7 @@ try:
 # Select either inSitu or noInSitu branches
     if reference_polygons != "" :
             # Temporal Resampling (Step 4)
-            executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16", "-rtocr", rtocr, "-outdays", outdays, "-mode", trm, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
+            executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16", "-rtocr", rtocr, "-outdays", outdays, "-mode", trm, "-merge", "1", skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
 
             # Feature Extraction with insitu (Step 5)
             executeStep("FeatureExtraction", "otbcli", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, "-ndwi", ndwi, "-brightness", brightness, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
@@ -240,9 +241,19 @@ try:
 
             #Validation (Step 25)
             executeStep("Validation for Raw Cropmask with insitu", "otbcli_ComputeConfusionMatrix", "-in", raw_crop_mask, "-out", raw_crop_mask_confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CROP", "-nodatalabel", "-10000", outf=raw_crop_mask_quality_metrics, skip=fromstep>25)
+
+            rndvi=ndvi
     else:
-            # Feature Extraction without insitu (Step 5)
-            executeStep("FeatureExtraction", "otbcli", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", tocr, "-ndvi", ndvi, skip=fromstep>5)
+	    # Temporal Resampling (Step 5)
+            executeStep("TemporalResampling", "otbcli", "TemporalResampling",
+                    os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask",
+                    mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16",
+                    "-rtocr", rtocr, "-mode", trm, "-merge", "1", skip=fromstep>5)
+
+            # Feature Extraction without insitu (Step 6)
+            executeStep("FeatureExtraction", "otbcli", "FeatureExtraction",
+                    os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr,
+                    "-ndvi", rndvi, skip=fromstep>6)
 
             #Perform Noinsitu specific steps
             noInSituDataAvailable()
@@ -251,14 +262,16 @@ try:
             executeStep("Validation for Raw Cropmask without insitu", "otbcli_ComputeConfusionMatrix", "-in", raw_crop_mask, "-out", raw_crop_mask_confusion_matrix_validation, "-ref", "raster", "-ref.raster.in", trimmed_reference_raster, "-nodatalabel", "-10000", outf=raw_crop_mask_quality_metrics, skip=fromstep>25)
 
 #Dimension reduction (Step 26)
-    executeStep("PrincipalComponentAnalysis", "otbcli", "PrincipalComponentAnalysis",os.path.join(buildFolder,"CropMask/PrincipalComponentAnalysis") ,"-ndvi", ndvi, "-nc", nbcomp, "-out", pca, skip=fromstep>26, rmfiles=[] if keepfiles else [ndvi])
+    executeStep("PrincipalComponentAnalysis", "otbcli",
+            "PrincipalComponentAnalysis",os.path.join(buildFolder,"CropMask/PrincipalComponentAnalysis")
+            ,"-ndvi", rndvi, "-nc", nbcomp, "-out", pca, skip=fromstep>26, rmfiles=[] if keepfiles else [ndvi])
 
 #Mean-Shift segmentation (Step 27, 28 and 28)
-    executeStep("MeanShiftSmoothing", "otbcli_MeanShiftSmoothing", "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger, "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing, "uint32", skip=fromstep>27, rmfiles=[] if keepfiles else [pca])
+    # executeStep("MeanShiftSmoothing", "otbcli_MeanShiftSmoothing", "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger, "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing, "uint32", skip=fromstep>27, rmfiles=[] if keepfiles else [pca])
 
-    executeStep("LSMSSegmentation", "otbcli_LSMSSegmentation", "-in", mean_shift_smoothing,"-inpos", mean_shift_smoothing_spatial, "-spatialr", spatialr, "-ranger", ranger, "-minsize", "0", "-tmpdir", tmpfolder, "-out", segmented, "uint32", skip=fromstep>28, rmfiles=[] if keepfiles else [mean_shift_smoothing_spatial])
+    # executeStep("LSMSSegmentation", "otbcli_LSMSSegmentation", "-in", mean_shift_smoothing,"-inpos", mean_shift_smoothing_spatial, "-spatialr", spatialr, "-ranger", ranger, "-minsize", "0", "-tmpdir", tmpfolder, "-out", segmented, "uint32", skip=fromstep>28, rmfiles=[] if keepfiles else [mean_shift_smoothing_spatial])
 
-    executeStep("LSMSSmallRegionsMerging", "otbcli_LSMSSmallRegionsMerging", "-in", mean_shift_smoothing,"-inseg", segmented, "-minsize", minsize, "-out", segmented_merged, "uint32", skip=fromstep>29, rmfiles=[] if keepfiles else [mean_shift_smoothing, segmented])
+    # executeStep("LSMSSmallRegionsMerging", "otbcli_LSMSSmallRegionsMerging", "-in", mean_shift_smoothing,"-inseg", segmented, "-minsize", minsize, "-out", segmented_merged, "uint32", skip=fromstep>29, rmfiles=[] if keepfiles else [mean_shift_smoothing, segmented])
 
 #Majority voting (Step 30)
     executeStep("MajorityVoting", "otbcli", "MajorityVoting",os.path.join(buildFolder,"CropMask/MajorityVoting") ,"-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", minarea, "-inclass", raw_crop_mask, "-inseg", segmented_merged, "-rout", crop_mask_uncut, skip=fromstep>30, rmfiles=[] if keepfiles else [segmented_merged])
