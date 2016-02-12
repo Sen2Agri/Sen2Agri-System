@@ -174,6 +174,7 @@ statistic_features=os.path.join(args.outdir, "sf.tif")
 features=os.path.join(args.outdir, "concat_features.tif")
 statistics=os.path.join(args.outdir, "statistics.xml")
 
+rndvi=os.path.join(args.outdir, "rndvi.tif")
 ndvi_smooth=os.path.join(args.outdir, "ndvi_smooth.tif")
 rtocr_smooth=os.path.join(args.outdir, "rtocr_smooth.tif")
 outdays_smooth=os.path.join(args.outdir, "days_smooth.txt")
@@ -230,7 +231,7 @@ try:
 # Select either inSitu or noInSitu branches
     if reference_polygons != "" :
             # Temporal Resampling (Step 4)
-            executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16", "-rtocr", rtocr, "-outdays", outdays, "-mode", trm, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
+            executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16", "-rtocr", rtocr, "-outdays", outdays, "-mode", trm, "-merge", "1", skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
 
             # Feature Extraction with insitu (Step 5)
             executeStep("FeatureExtraction", "otbcli", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, "-ndwi", ndwi, "-brightness", brightness, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
@@ -244,8 +245,13 @@ try:
             # Feature Extraction without insitu (Step 5)
             executeStep("FeatureExtraction", "otbcli", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", tocr, "-ndvi", ndvi, skip=fromstep>5)
 
+	    # Temporal Resampling (Step 6)
+            executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", ndvi, "-mask", mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16", "-rtocr", rndvi, "-mode", trm, "-merge", "1", skip=fromstep>6)
+
             #Perform Noinsitu specific steps
             noInSituDataAvailable()
+
+	    ndvi = rndvi
 
             #Validation (Step 25)
             executeStep("Validation for Raw Cropmask without insitu", "otbcli_ComputeConfusionMatrix", "-in", raw_crop_mask, "-out", raw_crop_mask_confusion_matrix_validation, "-ref", "raster", "-ref.raster.in", trimmed_reference_raster, "-nodatalabel", "-10000", outf=raw_crop_mask_quality_metrics, skip=fromstep>25)
