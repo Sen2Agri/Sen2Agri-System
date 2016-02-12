@@ -20,6 +20,7 @@ parser.add_argument('-mission', help='The main mission for the series', required
 parser.add_argument('-ref', help='The reference polygons', required=True, metavar='reference_polygons')
 parser.add_argument('-ratio', help='The ratio between the validation and training polygons (default 0.75)', required=False, metavar='sample_ratio', default=0.75)
 parser.add_argument('-input', help='The list of products descriptors', required=True, metavar='product_descriptor', nargs='+')
+parser.add_argument('-trm', help='The temporal resampling mode', choices=['resample', 'gapfill'], required=False, default='resample')
 parser.add_argument('-rate', help='The sampling rate for the temporal series, in days (default 5)', required=False, metavar='sampling_rate', default=5)
 parser.add_argument('-classifier', help='The classifier (rf or svm) used for training (default rf)',
         required=False, metavar='classifier', choices=['rf','svm'], default='rf')
@@ -48,6 +49,7 @@ sample_ratio=str(args.ratio)
 indesc = args.input
 
 sp=args.rate
+trm=args.trm
 classifier=args.classifier
 random_seed=args.rseed
 crop_mask=args.mask
@@ -109,7 +111,7 @@ try:
     executeStep("gdalwarp for masks", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawmask, mask, skip=fromstep>3, rmfiles=[] if keepfiles else [rawmask])
 
 # Temporal Resampling (Step 4)
-    executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16", "-rtocr", rtocr, "-mode", "gapfill", skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
+    executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16", "-rtocr", rtocr, "-mode", trm, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
 
 # Feature Extraction (Step 5)
     executeStep("FeatureExtraction", "otbcli", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-fts", fts, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
@@ -131,9 +133,16 @@ try:
 
 #Train Image Classifier (Step 10)
     if classifier == "rf" :
-        executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr","0.9","-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min", rfmin,"-classifier.rf.max",rfmax, skip=fromstep>10)
+        executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il",
+                fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed,
+                "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt",
+                "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr","0.1","-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min", rfmin,"-classifier.rf.max",rfmax, skip=fromstep>10)
     elif classifier == "svm":
-        executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr","0.9","-classifier","svm", "-classifier.svm.k", rbf,"-classifier.svm.opt",1, skip=fromstep>10)
+        executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il",
+                fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed,
+                "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt",
+                "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr","0.1","-classifier","svm",
+                "-classifier.svm.k", "rbf","-classifier.svm.opt","1", skip=fromstep>10)
 
 # Crop Mask Preparation (Step 11 and 12)
     if os.path.isfile(crop_mask):
