@@ -829,3 +829,45 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorDescript
 
 typedef QList<ProcessorDescription> ProcessorDescriptionList;
 
+//** For scheduler component
+struct ScheduledTaskStatus
+{
+    int id;
+    int taskId;
+
+    QDateTime nextScheduledRunTime;
+
+    QDateTime lastSuccesfullScheduledRun; // last succ. scheduleded launch
+    QDateTime lastSuccesfullTimestamp; // the moment of last launch
+    QDateTime lastRetryTime;
+
+    QDateTime estimatedRunTime; // last succ. scheduleded launch
+};
+
+enum RepeatType {
+    REPEATTYPE_ONCE = 0,
+    REPEATTYPE_CYCLIC = 1,
+    REPEATTYPE_ONDATE = 2
+};
+struct ScheduledTask
+{
+    ScheduledTask(int, QString,int, QString,int, int, int, QDateTime, int, int, ScheduledTaskStatus& );
+
+    int taskId;
+    QString	taskName;
+    int processorId;
+    QString processorParameters;
+
+    int repeatType; /*once, cyclic, on_date*/
+    int repeatAfterDays; /* nr of days to cycle the task */
+    int repeatOnMonthDay; /* the day of the month to run the task */
+
+    QDateTime firstScheduledRunTime; /* first configured run-time */
+
+    int  retryPeriod; /* minutes or hours ? to retry if the preconditions are not met */
+
+    int taskPriority;
+
+    ScheduledTaskStatus taskStatus;
+};
+//** END For scheduler component

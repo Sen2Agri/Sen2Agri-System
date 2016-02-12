@@ -79,4 +79,7 @@ public:
     QString GetDashboardProcessors();
 
     ProcessorDescriptionList GetProcessorDescriptions();
+
+    std::vector<ScheduledTask> GetScheduledTasks( );
+    void UpdateScheduledTasksStatus( std::vector<ScheduledTaskStatus>& taskList);
 };

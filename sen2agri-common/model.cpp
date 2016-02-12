@@ -1517,3 +1517,18 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorDescript
 }
 
 
+ScheduledTask::ScheduledTask(int ti, QString tn ,int pi, QString pp ,int rt, int rad, int rmd,
+                             QDateTime  fst, int rp, int tp, ScheduledTaskStatus& ts):
+ taskId(ti),
+ taskName(tn),
+ processorId(pi),
+ processorParameters(pp),
+ repeatType(rt),
+ repeatAfterDays(rad),
+ repeatOnMonthDay(rmd),
+ firstScheduledRunTime(fst),
+ retryPeriod(rp),
+ taskPriority(tp),
+ taskStatus(ts)
+{
+}
