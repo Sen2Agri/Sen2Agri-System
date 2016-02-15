@@ -30,8 +30,10 @@ def inSituDataAvailable() :
 	executeStep("SampleSelection", "otbcli","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons,"-nofilter","true", skip=fromstep>12)
 
 	#Train Image Classifier (Step 13)
-	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", features,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vfn","CROP","-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>13)
-
+	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il",
+                features,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed,
+                "-sample.bm", "0", "-sample.vtr", "0.5", "-io.confmatout",
+                confmatout,"-io.out",model,"-sample.mt", "4000","-sample.mv","-1","-sample.vfn","CROP","-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>13)
 	#Image Classifier (Step 14)
 	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", features,"-imstat",statistics,"-model", model, "-out", raw_crop_mask, skip=fromstep>14, rmfiles=[] if keepfiles else [features])
 
@@ -86,7 +88,7 @@ parser.add_argument('-mission', help='The main mission for the time series', req
 parser.add_argument('-refp', help='The reference polygons', required=False, metavar='reference_polygons', default='')
 parser.add_argument('-ratio', help='The ratio between the validation and training polygons (default 0.75)', required=False, metavar='sample_ratio', default=0.75)
 parser.add_argument('-input', help='The list of products descriptors', required=True, metavar='product_descriptor', nargs='+')
-parser.add_argument('-trm', help='The temporal resampling mode', choices=['resample', 'gapfill'], required=False, default='resample')
+parser.add_argument('-trm', help='The temporal resampling mode (default gapfill)', choices=['resample', 'gapfill'], required=False, default='gapfill')
 # parser.add_argument('-radius', help='The radius used for gapfilling, in days (default 15)', required=False, metavar='radius', default=15)
 parser.add_argument('-nbtrsample', help='The number of samples included in the training set (default 4000)', required=False, metavar='nbtrsample', default=4000)
 parser.add_argument('-rseed', help='The random seed used for training (default 0)', required=False, metavar='random_seed', default=0)
@@ -97,7 +99,7 @@ parser.add_argument('-weight', help='The weight factor for data smoothing (defau
 parser.add_argument('-nbcomp', help='The number of components used by dimensionality reduction (default 6)', required=False, metavar='nbcomp', default=6)
 parser.add_argument('-spatialr', help='The spatial radius of the neighborhood used for segmentation (default 10)', required=False, metavar='spatialr', default=10)
 parser.add_argument('-ranger', help='The range radius defining the radius (expressed in radiometry unit) in the multispectral space (default 0.65)', required=False, metavar='ranger', default=0.65)
-parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) in segmentation.  (default 10)', required=False, metavar='minsize', default=200)
+parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) in segmentation.  (default 200)', required=False, metavar='minsize', default=200)
 
 parser.add_argument('-refr', help='The reference raster when insitu data is not available', required=False, metavar='reference', default='')
 parser.add_argument('-eroderad', help='The radius used for erosion (default 1)', required=False, metavar='erode_radius', default='1')
@@ -115,7 +117,7 @@ parser.add_argument('-outdir', help="Output directory", default=defaultBuildFold
 parser.add_argument('-buildfolder', help="Build folder", default=defaultBuildFolder)
 parser.add_argument('-targetfolder', help="The folder where the target product is built", default="")
 
-parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)", default=False, action='store_true')
+parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)", default=True, action='store_true')
 parser.add_argument('-fromstep', help="Run from the selected step (default 1)", type=int, default=1)
 
 args = parser.parse_args()
@@ -267,14 +269,14 @@ try:
             ,"-ndvi", rndvi, "-nc", nbcomp, "-out", pca, skip=fromstep>26, rmfiles=[] if keepfiles else [ndvi])
 
 #Mean-Shift segmentation (Step 27, 28 and 29)
-    # executeStep("MeanShiftSmoothing", "otbcli_MeanShiftSmoothing", "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger, "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing, "uint32", skip=fromstep>27, rmfiles=[] if keepfiles else [pca])
+    executeStep("MeanShiftSmoothing", "otbcli_MeanShiftSmoothing", "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger, "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing, skip=fromstep>27, rmfiles=[] if keepfiles else [pca])
 
-    # executeStep("LSMSSegmentation", "otbcli_LSMSSegmentation", "-in", mean_shift_smoothing,"-inpos", mean_shift_smoothing_spatial, "-spatialr", spatialr, "-ranger", ranger, "-minsize", "0", "-tmpdir", tmpfolder, "-out", segmented, "uint32", skip=fromstep>28, rmfiles=[] if keepfiles else [mean_shift_smoothing_spatial])
+    executeStep("LSMSSegmentation", "otbcli_LSMSSegmentation", "-in", mean_shift_smoothing,"-inpos", mean_shift_smoothing_spatial, "-spatialr", spatialr, "-ranger", ranger, "-minsize", "0", "-tmpdir", tmpfolder, "-out", segmented, "uint32", skip=fromstep>28, rmfiles=[] if keepfiles else [mean_shift_smoothing_spatial])
 
-    # executeStep("LSMSSmallRegionsMerging", "otbcli_LSMSSmallRegionsMerging", "-in", mean_shift_smoothing,"-inseg", segmented, "-minsize", minsize, "-out", segmented_merged, "uint32", skip=fromstep>29, rmfiles=[] if keepfiles else [mean_shift_smoothing, segmented])
+    executeStep("LSMSSmallRegionsMerging", "otbcli_LSMSSmallRegionsMerging", "-in", mean_shift_smoothing,"-inseg", segmented, "-minsize", minsize, "-out", segmented_merged, "uint32", skip=fromstep>29, rmfiles=[] if keepfiles else [mean_shift_smoothing, segmented])
 
 #Segmentation (Step 29)
-    executeStep("Segmentation", "otbcli_Segmentation", "-in", pca, "-filter", "meanshift", "-filter.meanshift.spatialr", spatialr, "-filter.meanshift.ranger", ranger, "-filter.meanshift.maxiter", "100", "-filter.meanshift.minsize", minsize, "-mode", "raster", "-mode.raster.out", segmented_merged, "uint32", skip=fromstep>29, rmfiles=[] if keepfiles else [pca])
+    # executeStep("Segmentation", "otbcli_Segmentation", "-in", pca, "-filter", "meanshift", "-filter.meanshift.spatialr", spatialr, "-filter.meanshift.ranger", ranger, "-filter.meanshift.maxiter", "100", "-filter.meanshift.minsize", minsize, "-mode", "raster", "-mode.raster.out", segmented_merged, "uint32", skip=fromstep>29, rmfiles=[] if keepfiles else [pca])
 
 #Majority voting (Step 30)
     executeStep("MajorityVoting", "otbcli", "MajorityVoting",os.path.join(buildFolder,"CropMask/MajorityVoting") ,"-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", minarea, "-inclass", raw_crop_mask, "-inseg", segmented_merged, "-rout", crop_mask_uncut, skip=fromstep>30, rmfiles=[] if keepfiles else [segmented_merged])
