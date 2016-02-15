@@ -21,6 +21,8 @@ signals:
 
 public slots:
     void NotifyEventsAvailable();
+    JobDefinition GetJobDefinition(const ProcessingRequest &request);
+    void SubmitJob(const JobDefinition &job);
 
 private:
     PersistenceManagerDBProvider persistenceManager;

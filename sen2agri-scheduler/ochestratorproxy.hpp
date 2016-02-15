@@ -3,22 +3,12 @@
 
 #include <QString>
 #include <QVariant>
-
-struct ProcessingRequest
-{
-    int processorId;
-    QString parametersJson; // or map<string, string>
-};
-
-struct JobDefinition
-{
-    bool isValid;
-    int processorId;
-    QString jobDefinitionJson;
-};
+#include "model.hpp"
+#include "orchestrator_interface.h"
 
 class OchestratorProxy
 {
+    OrgEsaSen2agriOrchestratorInterface orchestrator;
 public:
     OchestratorProxy();
     virtual ~OchestratorProxy();

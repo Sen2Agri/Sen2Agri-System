@@ -1517,3 +1517,53 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorDescript
 }
 
 
+ScheduledTask::ScheduledTask(int ti, QString tn ,int pi, QString pp ,int rt, int rad, int rmd,
+                             QDateTime  fst, int rp, int tp, ScheduledTaskStatus& ts):
+ taskId(ti),
+ taskName(tn),
+ processorId(pi),
+ processorParameters(pp),
+ repeatType(rt),
+ repeatAfterDays(rad),
+ repeatOnMonthDay(rmd),
+ firstScheduledRunTime(fst),
+ retryPeriod(rp),
+ taskPriority(tp),
+ taskStatus(ts)
+{
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &request)
+{
+    argument.beginStructure();
+    argument << request.processorId << request.parametersJson ;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessingRequest &request)
+{
+    argument.beginStructure();
+    argument >> request.processorId >> request.parametersJson ;
+    argument.endStructure();
+
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobDefinition &job)
+{
+    argument.beginStructure();
+    argument << job.isValid << job.jobDefinitionJson << job.processorId;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobDefinition &job)
+{
+    argument.beginStructure();
+    argument >> job.isValid >> job.jobDefinitionJson >> job.processorId;
+    argument.endStructure();
+
+    return argument;
+}
