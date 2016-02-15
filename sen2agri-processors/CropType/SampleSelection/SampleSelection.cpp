@@ -215,7 +215,8 @@ private:
       if (sourceLayer.GetGeomType() != wkbPolygon) {
           itkExceptionMacro("The first layer must contain polygons!");
       }
-      if (!GetParameterEmpty("nofilter")) {
+      auto filter = !GetParameterEmpty("nofilter");
+      if (filter) {
           std::cout << "Excluding non-crop features\n";
           auto ret = sourceLayer.ogr().SetAttributeFilter("CROP=1");
           if (ret != OGRERR_NONE) {
@@ -229,7 +230,7 @@ private:
 
       // read all features from the source field and add them to the multimap
       for (ogr::Feature& feature : sourceLayer) {
-          if (feature.ogr().GetFieldAsInteger("CROP")) {
+          if (!filter || feature.ogr().GetFieldAsInteger("CROP")) {
             featuresMap.insert(std::pair<int, ogr::Feature>(feature.ogr().GetFieldAsInteger("CODE"), feature.Clone()));
           }
       }
