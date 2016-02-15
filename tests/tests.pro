@@ -47,6 +47,11 @@ interface.header_flags = -i ../sen2agri-common/model.hpp
 
 DBUS_INTERFACES += interface
 
+orchestrator_interface.files = ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml
+orchestrator_interface.header_flags = -i ../sen2agri-common/model.hpp
+
+DBUS_INTERFACES += orchestrator_interface
+
 HEADERS += \
     testqstring.hpp \
     serialization.hpp \
