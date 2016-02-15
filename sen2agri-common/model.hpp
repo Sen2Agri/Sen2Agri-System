@@ -852,6 +852,7 @@ enum RepeatType {
 struct ScheduledTask
 {
     ScheduledTask(int, QString,int, QString,int, int, int, QDateTime, int, int, ScheduledTaskStatus& );
+    ScheduledTask() {}
 
     int taskId;
     QString	taskName;
@@ -871,3 +872,26 @@ struct ScheduledTask
     ScheduledTaskStatus taskStatus;
 };
 //** END For scheduler component
+
+
+//** For orchestartor API
+struct ProcessingRequest
+{
+    int processorId;
+    QString parametersJson; // or map<string, string>
+};
+Q_DECLARE_METATYPE(ProcessingRequest)
+QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &request);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessingRequest &request);
+
+struct JobDefinition
+{
+    bool isValid;
+    int processorId;
+    QString jobDefinitionJson;
+};
+Q_DECLARE_METATYPE(JobDefinition)
+QDBusArgument &operator<<(QDBusArgument &argument, const JobDefinition &job);
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobDefinition &job);
+
+//** END for orchestartor API

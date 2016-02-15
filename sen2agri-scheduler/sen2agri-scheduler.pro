@@ -42,8 +42,10 @@ LIBS += -L$$OUT_PWD/../sen2agri-persistence/ -lsen2agri-persistence
 LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
 
 
-INCLUDEPATH += $$PWD/../sen2agri-common $$PWD/../sen2agri-persistence
-DEPENDPATH += $$PWD/../sen2agri-common $$PWD/../sen2agri-persistence
+INCLUDEPATH += $$PWD/../sen2agri-common
+INCLUDEPATH += $$PWD/../sen2agri-persistence
+DEPENDPATH += $$PWD/../sen2agri-common
+DEPENDPATH += $$PWD/../sen2agri-persistence
 
 PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a
 PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-persistence/libsen2agri-persistence.a

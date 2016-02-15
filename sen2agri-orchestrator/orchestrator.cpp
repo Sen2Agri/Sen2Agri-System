@@ -59,3 +59,18 @@ Orchestrator::Orchestrator(QObject *parent)
 void Orchestrator::NotifyEventsAvailable() { RescanEvents(); }
 
 void Orchestrator::RescanEvents() { worker.RescanEvents(); }
+
+JobDefinition Orchestrator::GetJobDefinition(const ProcessingRequest &request)
+{
+    JobDefinition jd;
+    jd.isValid = true; // TODO: can the job be executed ??
+    jd.processorId = request.processorId;
+    jd.jobDefinitionJson = request.parametersJson;
+
+    return jd;
+}
+
+void Orchestrator::SubmitJob(const JobDefinition &job)
+{
+    // TODO: execute job
+}

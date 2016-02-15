@@ -1532,3 +1532,38 @@ ScheduledTask::ScheduledTask(int ti, QString tn ,int pi, QString pp ,int rt, int
  taskStatus(ts)
 {
 }
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &request)
+{
+    argument.beginStructure();
+    argument << request.processorId << request.parametersJson ;
+    argument.endStructure();
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessingRequest &request)
+{
+    argument.beginStructure();
+    argument >> request.processorId >> request.parametersJson ;
+    argument.endStructure();
+
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const JobDefinition &job)
+{
+    argument.beginStructure();
+    argument << job.isValid << job.jobDefinitionJson << job.processorId;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobDefinition &job)
+{
+    argument.beginStructure();
+    argument >> job.isValid >> job.jobDefinitionJson >> job.processorId;
+    argument.endStructure();
+
+    return argument;
+}
