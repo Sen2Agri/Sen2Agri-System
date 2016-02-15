@@ -20,7 +20,7 @@ parser.add_argument('-mission', help='The main mission for the series', required
 parser.add_argument('-ref', help='The reference polygons', required=True, metavar='reference_polygons')
 parser.add_argument('-ratio', help='The ratio between the validation and training polygons (default 0.75)', required=False, metavar='sample_ratio', default=0.75)
 parser.add_argument('-input', help='The list of products descriptors', required=True, metavar='product_descriptor', nargs='+')
-parser.add_argument('-trm', help='The temporal resampling mode', choices=['resample', 'gapfill'], required=False, default='resample')
+parser.add_argument('-trm', help='The temporal resampling mode (default gapfill)', choices=['resample', 'gapfill'], required=False, default='gapfill')
 parser.add_argument('-rate', help='The sampling rate for the temporal series, in days (default 5)', required=False, metavar='sampling_rate', default=5)
 parser.add_argument('-classifier', help='The classifier (rf or svm) used for training (default rf)',
         required=False, metavar='classifier', choices=['rf','svm'], default='rf')
