@@ -257,6 +257,11 @@ try:
                     os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr,
                     "-ndvi", rndvi, skip=fromstep>6)
 
+            # Feature Extraction without insitu (Step 6)
+            executeStep("FeatureExtraction", "otbcli", "FeatureExtraction",
+                    os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", tocr,
+                    "-ndvi", ndvi, skip=fromstep>6)
+
             #Perform Noinsitu specific steps
             noInSituDataAvailable()
 
