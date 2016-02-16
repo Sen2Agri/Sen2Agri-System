@@ -161,6 +161,12 @@ class Sen2AgriCtl(object):
         parser_lai.add_argument(
             '--resolution', type=int, help="resolution in m")
         parser_lai.add_argument(
+            '--reproc', type=int, help="boolean specifying if reprocessing should be done")
+        parser_lai.add_argument(
+            '--fitted', type=int, help="boolean specifying if fitted should be done")
+        parser_lai.add_argument(
+            '--genmodel', type=int, help="boolean specifying if models should be generated")
+        parser_lai.add_argument(
             '-p', '--parameter', action='append', nargs=2,
             metavar=('KEY', 'VALUE'), help="override configuration parameter")
         parser_lai.set_defaults(func=self.submit_lai)
@@ -242,6 +248,12 @@ class Sen2AgriCtl(object):
         parameters = {'input_products': args.input}
         if args.resolution:
             parameters['resolution'] = args.resolution
+        if args.genmodel:
+            parameters['genmodel'] = args.genmodel
+        if args.reproc:
+            parameters['reproc'] = args.reproc
+        if args.fitted:
+            parameters['fitted'] = args.fitted
         self.submit_job('l3b', parameters, args)
 
     def submit_pheno_ndvi(self, args):

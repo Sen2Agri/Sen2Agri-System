@@ -29,6 +29,8 @@
 #include "otbMultiLinearRegressionModel.h"
 #include "itkListSample.h"
 #include "../../../../Composite/Common/GlobalDefs.h"
+#include "MetadataHelperFactory.h"
+#include "dirent.h"
 
 typedef double PrecisionType;
 typedef itk::FixedArray<PrecisionType, 1> OutputSampleType;
@@ -195,6 +197,19 @@ private:
     SetParameterDescription( "modelfile", "File containing paths to the regression model.");
     MandatoryOff("modelfile");
 
+    AddParameter(ParameterType_InputFilename, "xml",
+                 "Input XML file of a product containing angles. If specified, the angles above will be ignored.");
+    SetParameterDescription( "xml", "Input XML file of a product containing angles." );
+    MandatoryOff("xml");
+
+    AddParameter(ParameterType_String, "modelsfolder", "Folder containing the regression models.");
+    SetParameterDescription( "modelsfolder", "Folder containing the regression models.");
+    MandatoryOff("modelsfolder");
+
+    AddParameter(ParameterType_String, "modelprefix", "Prefix of the desired model found in the specified folder.");
+    SetParameterDescription( "modelprefix", "Prefix of the desired model found in the specified folder.");
+    MandatoryOff("modelprefix");
+
     AddParameter(ParameterType_OutputImage, "out", "Output Image");
     SetParameterDescription("out","Output image.");
 
@@ -220,7 +235,32 @@ private:
   {
         std::string modelFileName;
         if(!HasValue("model") && !HasValue("modelfile")) {
-            itkExceptionMacro("You should specify at least model or the modelslist file name");
+            if(HasValue("modelsfolder") && HasValue("modelprefix") && HasValue("xml")) {
+                std::vector<std::string> modelFiles;
+                std::string modelsFolder = GetParameterString("modelsfolder");
+                std::string modelsPrefix = GetParameterString("modelprefix");
+                getModelsListFromFolder(modelsFolder, modelsPrefix, modelFiles);
+                if(modelFiles.size() > 0) {
+                    std::string inMetadataXml = GetParameterString("xml");
+                    if (inMetadataXml.empty())
+                    {
+                        itkExceptionMacro("No input metadata XML set...; please set the input XML");
+                    }
+                    auto factory = MetadataHelperFactory::New();
+                    // we are interested only in the 10m resolution as here we have the RED and NIR
+                    std::unique_ptr<MetadataHelper> pHelper = factory->GetMetadataHelper(inMetadataXml);
+                    std::string foundModelName = getModelFileName(modelFiles, pHelper);
+                    if(foundModelName == "") {
+                        itkGenericExceptionMacro(<< "No suitable model name with the prefix " << modelsPrefix <<
+                                                 " was found for the product " << inMetadataXml
+                                                 << " in the folder " << modelsFolder);
+                    }
+                    modelFileName = foundModelName;
+                }
+            }
+            if(modelFileName.size() == 0)
+                itkExceptionMacro("You should specify at least (model or the modelslist file name) or "
+                                  "(modelsfolder & modelprefix & xml)");
         } else {
             if(HasValue("model")) {
                 modelFileName = GetParameterString("model");
@@ -316,6 +356,115 @@ private:
       isFile.close();
 
   }
+
+  void getModelsListFromFolder(const std::string &folderName, const std::string &modelPrefix, std::vector<std::string> &outModelsList) {
+      DIR *dir;
+      struct dirent *ent;
+      if ((dir = opendir (folderName.c_str())) != NULL) {
+        /* print all the files and directories within directory */
+        while ((ent = readdir (dir)) != NULL) {
+            std::string fileName = ent->d_name;
+            if(fileName.find(modelPrefix) == 0) {
+                outModelsList.push_back(folderName + "/" + fileName);
+            }
+        }
+        closedir (dir);
+      } else {
+          itkGenericExceptionMacro(<< "Cannot open folder " << folderName << "\n");
+      }
+  }
+
+  std::string getModelFileName(const std::vector<std::string> &modelsList, const std::unique_ptr<MetadataHelper> &pHelper) {
+      double fSolarZenith;
+      double fSensorZenith;
+      double fRelAzimuth;
+
+      MeanAngles_Type solarAngles = pHelper->GetSolarMeanAngles();
+      double relativeAzimuth = pHelper->GetRelativeAzimuthAngle();
+
+      for(int i = 0; i<(int)modelsList.size(); i++) {
+          std::string modelName = modelsList[i];
+
+          if(parseModelFileName(modelName, fSolarZenith, fSensorZenith, fRelAzimuth)) {
+              if(pHelper->HasBandMeanAngles()) {
+                  int nTotalBandsNo = pHelper->GetTotalBandsNo();
+                  for(int j = 0; j<nTotalBandsNo; j++) {
+                      MeanAngles_Type sensorBandAngles = pHelper->GetSensorMeanAngles(j);
+                      if(inRange(fSolarZenith, 0.5, solarAngles.zenith) &&
+                         inRange(fSensorZenith, 0.5, sensorBandAngles.zenith) &&
+                         inRange(fRelAzimuth, 0.5, relativeAzimuth))
+                      {
+                          return modelName;
+                      }
+                  }
+              } else if(pHelper->HasGlobalMeanAngles()) {
+                MeanAngles_Type sensorBandAngles = pHelper->GetSensorMeanAngles();
+                if(inRange(fSolarZenith, 0.5, solarAngles.zenith) &&
+                   inRange(fSensorZenith, 0.5, sensorBandAngles.zenith) &&
+                   inRange(fRelAzimuth, 0.5, relativeAzimuth))
+                {
+                    return modelName;
+                }
+              } else {
+                  otbAppLogWARNING("There are no angles for this mission? " << pHelper->GetMissionName());
+              }
+          } else {
+              otbAppLogWARNING("Invalid model name found in list: " << modelName);
+          }
+      }
+
+      otbAppLogWARNING("NO APPROPRIATE MODEL NAME FOUND!");
+      if(modelsList.size() > 0) {
+        otbAppLogWARNING("Using the first model in the list: " << modelsList[0]);
+        return modelsList[0];
+      }
+      return "";
+  }
+
+  bool parseModelFileName(const std::string &modelFileName, double &solarZenith, double &sensorZenith, double &relAzimuth) {
+      //The expected file name format is:
+      // [FILEPREFIX_]THETA_S_<solarzenith>_THETA_V_<sensorzenith>_REL_PHI_%f
+      std::size_t nThetaSPos = modelFileName.find("_THETA_S_");
+      if (nThetaSPos == std::string::npos)
+        return false;
+
+      std::size_t nThetaVPos = modelFileName.find("_THETA_V_");
+      if (nThetaVPos == std::string::npos)
+        return false;
+
+      std::size_t nRelPhiPos = modelFileName.find("_REL_PHI_");
+      if (nRelPhiPos == std::string::npos)
+        return false;
+
+      std::size_t nExtPos = modelFileName.find(".txt");
+      if (nExtPos == std::string::npos)
+        return false;
+
+      int nThetaSStartIdx = nThetaSPos + strlen("_THETA_S_");
+      std::string strThetaS = modelFileName.substr(nThetaSStartIdx, nThetaVPos - nThetaSStartIdx);
+
+      int nThetaVStartIdx = nThetaVPos + strlen("_THETA_V_");
+      std::string strThetaV = modelFileName.substr(nThetaVStartIdx, nRelPhiPos - nThetaVStartIdx);
+
+      int nRelPhiStartIdx = nRelPhiPos + strlen("_REL_PHI_");
+      std::string strRelPhi = modelFileName.substr(nRelPhiStartIdx, nExtPos - nRelPhiStartIdx);
+
+      solarZenith = ::atof(strThetaS.c_str());
+      sensorZenith = ::atof(strThetaV.c_str());
+      relAzimuth = ::atof(strRelPhi.c_str());
+
+      return true;
+  }
+
+  bool inRange(double middle, double distance, double value) {
+        if((value >= (middle - distance)) &&
+           (value <= (middle + distance))) {
+              return true;
+        }
+
+        return false;
+  }
+
 
   FilterType::Pointer bv_filter;
 };

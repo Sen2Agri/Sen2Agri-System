@@ -219,6 +219,7 @@ private:
                         std::string cfgRsrFileName = line.substr(lastindex+1);
                         if(productMissionName == missionName) {
                             rsrFileName = cfgRsrFileName;
+                            break;
                         }
                     }
                 }
@@ -315,6 +316,9 @@ private:
     otbAppLogINFO("Processing simulations ..." << std::endl);
     auto bv_vec = parse_bv_sample_file(m_SampleFile);
     auto sampleCount = bv_vec.size();
+    if(sampleCount == 0) {
+        itkGenericExceptionMacro(<< "Found 0 simulation in the file " << bvFileName);
+    }
     otbAppLogINFO("" << sampleCount << " samples read."<< std::endl);
 
     std::vector<SimulationType> simus{sampleCount};

@@ -67,6 +67,9 @@ class LaiModel(object):
         outSimuReflsFile = outDir + '/out_simu_refls.txt'
         outTrainingFile = outDir + '/out_training.txt'
         outAnglesFile = outDir + '/out_angles.txt'
+        imgModelFileName = outDir + '/img_model.txt'
+        errEstModelFileName = outDir + '/err_est_model.txt'
+        newModelsNamesFile = outDir + '/new_models_names.txt'
 
         #generating Input BV Distribution file
         print("Generating Input BV Distribution file ...")
@@ -124,27 +127,21 @@ class LaiModel(object):
         print("SENSOR ANGLE reduced from {} to {}".format(sensorZenithAngle, sensorZenithReduced))
         print("AZIMUTH ANGLE reduced from {} to {}".format(relativeAzimuthAngle, relativeAzimuthReduced))
 
-        outModelFile = "{0}/Model_THETA_S_{1}_THETA_V_{2}_REL_PHI_{3}.txt".format(
-                       modelsFolder, 
-                       solarZenithReduced, 
-                       sensorZenithReduced, 
-                       relativeAzimuthReduced)
-        outErrEstFile = "{0}/Err_Est_Model_THETA_S_{1}_THETA_V_{2}_REL_PHI_{3}.txt".format(
-                       modelsFolder, 
-                       solarZenithReduced, 
-                       sensorZenithReduced, 
-                       relativeAzimuthReduced)
-        self.modelFile=outModelFile
-        self.modelErrFile=outErrEstFile
-            
         # Generating model
         print("Generating model ...")
         runCmd(["otbcli", "InverseModelLearning", imgInvOtbLibsLocation, 
                 "-training", outTrainingFile, 
-                "-out", outModelFile, 
-                "-errest", outErrEstFile, 
+                "-out", imgModelFileName, 
+                "-errest", errEstModelFileName, 
                 "-regression", str(REGRESSION_TYPE), 
-                "-bestof", str(BEST_OF)])
+                "-bestof", str(BEST_OF),
+                "-xml", curXml,
+                "-computedmodelnames", newModelsNamesFile,
+                "-newnamesoutfolder", modelsFolder])
+        with open(newModelsNamesFile) as f:
+            content = f.readlines()
+            self.modelFile = content[0]
+            self.modelErrFile = content[1]
 
         with open(paramsLaiModelFilenameXML, 'w') as paramsFileXML:
             root = ET.Element('metadata')
@@ -164,8 +161,8 @@ class LaiModel(object):
             iv = ET.SubElement(root, "Weight_ON")
             ET.SubElement(iv, "regression_type").text = REGRESSION_TYPE
             ET.SubElement(iv, "best_of").text = BEST_OF
-            ET.SubElement(iv, "generated_model_filename").text = outModelFile
-            ET.SubElement(iv, "generated_error_estimation_model_file_name").text = outErrEstFile
+            ET.SubElement(iv, "generated_model_filename").text = self.modelFile
+            ET.SubElement(iv, "generated_error_estimation_model_file_name").text = self.modelErrFile
             
             paramsFileXML.write(prettify(root))
 
@@ -187,8 +184,8 @@ class LaiModel(object):
             paramsFile.write("Inverse model generation (InverseModelLearning)\n")
             paramsFile.write("    Regression type               = {}\n".format(REGRESSION_TYPE))
             paramsFile.write("    Best of                       = {}\n".format(BEST_OF))
-            paramsFile.write("    Generated model file name     = {}\n".format(outModelFile))
-            paramsFile.write("    Generated error estimation model file name = {}\n".format(outErrEstFile))
+            paramsFile.write("    Generated model file name     = {}\n".format(self.modelFile))
+            paramsFile.write("    Generated error estimation model file name = {}\n".format(self.modelErrFile))
 
 
 if __name__ == '__main__': 
@@ -280,18 +277,6 @@ if __name__ == '__main__':
     outLaiMonoMskFlgsImg = "{}/#_LAI_mono_date_mask_flags_img.tif".format(outDir)
     outLaiErrImg = "{}/#_LAI_err_img.tif".format(outDir) 
 
-    modelsInputList=[]
-    print(modelsFolder)
-    for file in glob.glob("{}/Model_*.txt".format(modelsFolder)):
-        modelsInputList.append(file)
-
-    errModelsInputList=[]
-    for file in glob.glob("{}/Err_Est_Model_*.txt".format(modelsFolder)):
-        errModelsInputList.append(file)
-        
-    modelFile = "{}/model_file.txt".format(outDir)
-    errModelFile = "{}/err_model_file.txt".format(outDir)
-
     cnt=int(0)
     print("Processing started: " + str(datetime.datetime.now()))
     start = time.time()
@@ -325,18 +310,20 @@ if __name__ == '__main__':
             "-outres", resolution, 
             "-fts", curOutNDVIImg])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-        runCmd(["otbcli", "GetLaiRetrievalModel", imgInvOtbLibsLocation, "-xml", xml, "-ilmodels"] + modelsInputList + ["-ilerrmodels"] + errModelsInputList + ["-outm", modelFile, "-outerr", errModelFile])
-        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
         
         runCmd(["otbcli", "BVImageInversion", imgInvOtbLibsLocation, 
                 "-in", curOutNDVIImg, 
-                "-modelfile", modelFile, 
-                "-out", curOutLaiImg])
+                "-out", curOutLaiImg,
+                "-xml", xml,
+                "-modelsfolder", modelsFolder,
+                "-modelprefix", "Model_"])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
         runCmd(["otbcli", "BVImageInversion", imgInvOtbLibsLocation, 
                 "-in", curOutNDVIImg, 
-                "-modelfile", errModelFile, 
-                "-out", curOutLaiErrImg])
+                "-out", curOutLaiErrImg,
+                "-xml", xml,
+                "-modelsfolder", modelsFolder,
+                "-modelprefix", "Err_Est_Model_"])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
         runCmd(["otbcli", "GenerateLaiMonoDateMaskFlags", imgInvOtbLibsLocation, 
                 "-inxml", xml, 

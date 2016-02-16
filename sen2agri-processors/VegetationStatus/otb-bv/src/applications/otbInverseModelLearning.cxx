@@ -29,6 +29,7 @@
 #include "otbRandomForestsMachineLearningModel.h"
 #include "otbMultiLinearRegressionModel.h"
 #include "itkListSample.h"
+#include "MetadataHelperFactory.h"
 
 namespace otb
 {
@@ -102,6 +103,21 @@ private:
     SetParameterDescription("bestof", "");
     MandatoryOff("bestof");
 
+    AddParameter(ParameterType_InputFilename, "xml",
+                 "Input XML file of a product containing angles.");
+    SetParameterDescription( "xml", "Input XML file of a product containing angles." );
+    MandatoryOff("xml");
+
+    AddParameter(ParameterType_String, "computedmodelnames",
+                 "Output files containing the new computed file names for the regression model and for the regression model for the error.");
+    SetParameterDescription( "computedmodelnames", "File containing the new computed regression model file names in the format containing the angles." );
+    MandatoryOff("computedmodelnames");
+
+    AddParameter(ParameterType_String, "newnamesoutfolder",
+                 "Folder where the model files with the new names should be placed.");
+    SetParameterDescription( "newnamesoutfolder", "Folder where the model files with the new names should be placed." );
+    MandatoryOff("newnamesoutfolder");
+
   }
 
   virtual ~InverseModelLearning()
@@ -129,6 +145,58 @@ private:
       itkGenericExceptionMacro(<< "Could not open file " << trainingFileName);
       }
 
+    std::string newModelName;
+    std::string newErrEstModelName;
+    if(HasValue("xml")) {
+        std::string inMetadataXml = GetParameterString("xml");
+        auto factory = MetadataHelperFactory::New();
+        // we are interested only in the 10m resolution as here we have the RED and NIR
+        auto pHelper = factory->GetMetadataHelper(inMetadataXml);
+
+        MeanAngles_Type solarAngles = pHelper->GetSolarMeanAngles();
+        double relativeAzimuth = pHelper->GetRelativeAzimuthAngle();
+
+        MeanAngles_Type sensorBandAngles;
+        bool hasAngles = true;
+        if(pHelper->HasBandMeanAngles()) {
+            // we use the angle of the first band
+            sensorBandAngles = pHelper->GetSensorMeanAngles(0);
+        } else if(pHelper->HasGlobalMeanAngles()) {
+            sensorBandAngles = pHelper->GetSensorMeanAngles();
+        } else {
+            hasAngles = false;
+            otbAppLogWARNING("There are no angles for this mission? " << pHelper->GetMissionName());
+        }
+        if(hasAngles) {
+            std::string computedModelFolder = GetParameterString("newnamesoutfolder");
+            std::ostringstream modelsStringStream;
+            modelsStringStream << computedModelFolder << "/Model_THETA_S_" << get_reduced_angle(solarAngles.zenith)
+                               << "_THETA_V_" << get_reduced_angle(sensorBandAngles.zenith)
+                               << "_REL_PHI_" << get_reduced_angle(relativeAzimuth) << ".txt";
+            newModelName = modelsStringStream.str();
+            std::ostringstream errEstStringStream;
+            errEstStringStream << computedModelFolder << "/Err_Est_Model_THETA_S_" << get_reduced_angle(solarAngles.zenith)
+                               << "_THETA_V_" << get_reduced_angle(sensorBandAngles.zenith)
+                               << "_REL_PHI_" << get_reduced_angle(relativeAzimuth) << ".txt";
+            newErrEstModelName = errEstStringStream.str();
+            if(HasValue("computedmodelnames")) {
+                std::string computedModelNamesFile = GetParameterString("computedmodelnames");
+                try
+                  {
+                    std::ofstream computedModelNamesStream;
+                    computedModelNamesStream.open(computedModelNamesFile.c_str());
+                    computedModelNamesStream << newModelName;
+                    computedModelNamesStream << std::endl;
+                    computedModelNamesStream << newErrEstModelName;
+                    computedModelNamesStream.close();
+                  }
+                catch(...)
+                  {
+                  itkGenericExceptionMacro(<< "Could not open file " << computedModelNamesFile);
+                  }
+            }
+        }
+    }
     std::size_t nbInputVariables = countColumns(trainingFileName) - 1;
 
     otbAppLogINFO("Found " << nbInputVariables << " input variables in "
@@ -214,6 +282,11 @@ private:
       rmse = EstimateMLRRegresionModel(inputListSample, outputListSample, 
                                        nbModels);
     otbAppLogINFO("RMSE = " << rmse << std::endl);
+
+    // Copy also the error model file to the new file if specified
+    if(newModelName.length() > 0)
+          copy_file(GetParameterString("out"), newModelName);
+
     if (IsParameterEnabled("errest"))
       {
       otbAppLogINFO("Learning regression model for the error " << std::endl);
@@ -234,6 +307,9 @@ private:
         EstimateErrorModel<MLRType>(inputListSample_err, 
                                     outputListSample_err,
                                     nbInputVariables);
+      // Copy also the error model file to the new file if specified
+      if(newErrEstModelName.length() > 0)
+            copy_file(GetParameterString("errest"), newErrEstModelName);
       }
   }
 
@@ -408,6 +484,22 @@ private:
     err_regression->Train();
     err_regression->Save(GetParameterString("errest"));
   }
+
+    void copy_file(const std::string &srcFile, const std::string &destFile) {
+        std::ifstream  src(srcFile, std::ios::binary);
+        std::ofstream  dst(destFile, std::ios::binary);
+        if(src.is_open() && dst.is_open()) {
+            dst << src.rdbuf();
+        } else {
+            otbAppLogWARNING("Impossible to open files for copying (src " << srcFile << " or dst " << destFile << ")!");
+        }
+    }
+
+    float get_reduced_angle(float fVal) {
+         int nReducedVal = fVal * 10;
+         return ((float)nReducedVal)/10;
+    }
+
 protected:
   NormalizationVectorType var_minmax;
 };
