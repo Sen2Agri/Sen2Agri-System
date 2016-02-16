@@ -2,13 +2,13 @@
 
 source set_build_folder.sh
 
-    # /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000.xml \
-    # /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000.xml \
-    # /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000.xml \
 
 ./CropMask.py \
     -refr /mnt/data/reference/Reference_Ukraine.tif \
     -input \
+    /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000.xml \
+    /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000.xml \
+    /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000.xml \
     /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130402_N2A_EUkraineD0000B0000.xml \
     /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130412_N2A_EUkraineD0000B0000.xml \
     /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130417_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130417_N2A_EUkraineD0000B0000.xml \
@@ -34,6 +34,6 @@ source set_build_folder.sh
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20130822_L8_181_025/EUkraineS2A_20130822_L8_181_025.HDR \
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20131110_L8_181_025/EUkraineS2A_20131110_L8_181_025.HDR \
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20131228_L8_181_025/EUkraineS2A_20131228_L8_181_025.HDR \
-    -rseed 0 -pixsize 20 -keepfiles \
+    -rseed 0 -pixsize 20 \
     -outdir /mnt/data/ukraine/Ukraine-mask-noinsitu/ \
     -buildfolder $BUILD_FOLDER
