@@ -306,7 +306,7 @@ try:
     executeStep("XML Conversion for Crop Mask", "otbcli", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics,  skip=fromstep>34)
 
 #Product creation (Step 35)
-    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-baseline", "01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.rawfile", "TILE_"+tilename, raw_crop_mask, "-processor.cropmask.quality", "TILE_"+tilename, xml_validation_metrics, "-il", *indesc, skip=fromstep>35)
+    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-baseline", "01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.rawfile", "TILE_"+tilename, raw_crop_mask, "-processor.cropmask.quality",  "TILE_"+tilename, xml_validation_metrics, "-il", *indesc, skip=fromstep>35)
 
 except:
     print sys.exc_info()
