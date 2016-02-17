@@ -18,9 +18,11 @@ SOURCES += main.cpp \
     taskloader.cpp \
     schedulerapp.cpp \
     taskplanner.cpp \
-    ochestratorproxy.cpp \
+    orchestratorproxy.cpp \
     resourcereader.cpp \
-    runestimator.cpp
+    runestimator.cpp \
+    databasetaskloader.cpp \
+    dbusorchestratorproxy.cpp
 
 #adaptor.files = ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml
 #adaptor.header_flags = -i ../sen2agri-common/model.hpp
@@ -73,5 +75,7 @@ HEADERS += \
     schedulerapp.hpp \
     taskplanner.hpp \
     resourcereader.hpp \
-    ochestratorproxy.hpp \
-    runestimator.hpp
+    orchestratorproxy.hpp \
+    runestimator.hpp \
+    databasetaskloader.hpp \
+    dbusorchestratorproxy.hpp

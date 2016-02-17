@@ -5,9 +5,9 @@
 #include "taskloader.hpp"
 #include "taskplanner.hpp"
 #include "resourcereader.hpp"
-#include "ochestratorproxy.hpp"
+#include "orchestratorproxy.hpp"
 
-SchedulerApp::SchedulerApp(QObject *parent, TaskLoader * loader, OchestratorProxy * orchestrator)
+SchedulerApp::SchedulerApp(QObject *parent, TaskLoader * loader, OrchestratorProxy * orchestrator)
     : QObject(parent),
       m_nTimerId(0),
       m_loader(loader),

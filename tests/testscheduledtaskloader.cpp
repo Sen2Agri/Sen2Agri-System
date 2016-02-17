@@ -13,7 +13,7 @@ std::vector<ScheduledTask> TestScheduledTaskLoader::LoadFromDatabase( )
     return m_dbTasks;
 }
 
-void TestScheduledTaskLoader::UpdateStatusinDatabase( std::vector<ScheduledTask>& tasks)
+void TestScheduledTaskLoader::UpdateStatusinDatabase( const std::vector<ScheduledTask>& tasks)
 {
     m_dbTasks = tasks;
 }
