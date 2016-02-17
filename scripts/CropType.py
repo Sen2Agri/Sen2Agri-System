@@ -70,6 +70,9 @@ validation_polygons=os.path.join(args.outdir, "validation_polygons.shp")
 rawtocr=os.path.join(args.outdir, "rawtocr.tif")
 tocr=os.path.join(args.outdir, "tocr.tif")
 rawmask=os.path.join(args.outdir, "rawmask.tif")
+
+statusFlags=os.path.join(args.outdir, "status_flags.tif")
+
 mask=os.path.join(args.outdir, "mask.tif")
 dates=os.path.join(args.outdir, "dates.txt")
 shape=os.path.join(args.outdir, "shape.shp")
@@ -103,7 +106,7 @@ globalStart = datetime.datetime.now()
 
 try:
 # Bands Extractor (Step 1)
-    executeStep("BandsExtractor", "otbcli", "BandsExtractor", os.path.join(buildFolder,"CropType/BandsExtractor"),"-mission",mission,"-out",rawtocr,"-mask",rawmask,"-outdate", dates, "-shape", shape, "-pixsize", pixsize, "-il", *indesc, skip=fromstep>1)
+    executeStep("BandsExtractor", "otbcli", "BandsExtractor", os.path.join(buildFolder,"CropType/BandsExtractor"),"-mission",mission,"-out",rawtocr,"-mask",rawmask,"-statusflags", statusFlags,"-outdate", dates, "-shape", shape, "-pixsize", pixsize, "-il", *indesc, skip=fromstep>1)
 
 # gdalwarp (Step 2 and 3)
     executeStep("gdalwarp for reflectances", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawtocr, tocr, skip=fromstep>2, rmfiles=[] if keepfiles else [rawtocr])
@@ -172,7 +175,7 @@ try:
     executeStep("XML Conversion for Crop Type", "otbcli", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics, skip=fromstep>18)
 
 #Product creation (Step 19)
-    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-baseline", "01.00", "-processor", "croptype", "-processor.croptype.file", "TILE_"+tilename, crop_type_map, "-processor.croptype.quality", xml_validation_metrics, "-il", *indesc, skip=fromstep>19)
+    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-baseline", "01.00", "-processor", "croptype", "-processor.croptype.file", "TILE_"+tilename, crop_type_map, "-processor.croptype.flags", "TILE_"+tilename, statusFlags, "-processor.croptype.quality",  "TILE_"+tilename, xml_validation_metrics, "-il", *indesc, skip=fromstep>19)
 
 except:
     print sys.exc_info()

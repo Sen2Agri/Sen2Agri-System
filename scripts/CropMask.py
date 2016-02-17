@@ -35,7 +35,7 @@ def inSituDataAvailable() :
                 "-sample.bm", "0", "-sample.vtr", "0.5", "-io.confmatout",
                 confmatout,"-io.out",model,"-sample.mt", "4000","-sample.mv","-1","-sample.vfn","CROP","-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>13)
 	#Image Classifier (Step 14)
-	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", features,"-imstat",statistics,"-model", model, "-out", raw_crop_mask, skip=fromstep>14, rmfiles=[] if keepfiles else [features])
+	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", features,"-imstat",statistics,"-model", model, "-out", raw_crop_mask_uncompressed, skip=fromstep>14, rmfiles=[] if keepfiles else [features])
 
 	return;
 #end inSituDataAvailable
@@ -73,7 +73,7 @@ def noInSituDataAvailable() :
 	executeStep("TrainImagesClassifierNew", "otbcli", "TrainImagesClassifierNew", os.path.join(buildFolder,"Common/TrainImagesClassifierNew"), "-io.il", spectral_features,"-io.rs",trimmed_reference_raster,"-nodatalabel", "-10000", "-io.imstat", statistics_noinsitu, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>23)
 
 	#Image Classifier (Step 24)
-	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", spectral_features,"-imstat",statistics_noinsitu,"-model", model, "-out", raw_crop_mask, skip=fromstep>24, rmfiles=[] if keepfiles else [spectral_features])
+	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", spectral_features,"-imstat",statistics_noinsitu,"-model", model, "-out", raw_crop_mask_uncompressed, skip=fromstep>24, rmfiles=[] if keepfiles else [spectral_features])
 
 	return
 #end noInSituDataAvailable
@@ -162,6 +162,9 @@ validation_polygons=os.path.join(args.outdir, "validation_polygons.shp")
 rawtocr=os.path.join(args.outdir, "rawtocr.tif")
 tocr=os.path.join(args.outdir, "tocr.tif")
 rawmask=os.path.join(args.outdir, "rawmask.tif")
+
+statusFlags=os.path.join(args.outdir, "status_flags.tif")
+
 mask=os.path.join(args.outdir, "mask.tif")
 dates=os.path.join(args.outdir, "dates.txt")
 outdays=os.path.join(args.outdir, "days.txt")
@@ -224,7 +227,7 @@ globalStart = datetime.datetime.now()
 
 try:
 # Bands Extractor (Step 1)
-    executeStep("BandsExtractor", "otbcli", "BandsExtractor", os.path.join(buildFolder,"CropType/BandsExtractor"),"-mission",mission,"-out",rawtocr,"-mask",rawmask,"-outdate", dates, "-shape", shape, "-pixsize", pixsize,"-merge", "false", "-il", *indesc, skip=fromstep>1)
+    executeStep("BandsExtractor", "otbcli", "BandsExtractor", os.path.join(buildFolder,"CropType/BandsExtractor"),"-mission",mission,"-out",rawtocr,"-mask",rawmask, "-statusflags", statusFlags, "-outdate", dates, "-shape", shape, "-pixsize", pixsize,"-merge", "false", "-il", *indesc, skip=fromstep>1)
 
 # gdalwarp (Step 2 and 3)
     executeStep("gdalwarp for reflectances", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawtocr, tocr, skip=fromstep>2, rmfiles=[] if keepfiles else [rawtocr])
@@ -306,7 +309,7 @@ try:
     executeStep("XML Conversion for Crop Mask", "otbcli", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics,  skip=fromstep>34)
 
 #Product creation (Step 35)
-    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-baseline", "01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.rawfile", "TILE_"+tilename, raw_crop_mask, "-processor.cropmask.quality",  "TILE_"+tilename, xml_validation_metrics, "-il", *indesc, skip=fromstep>35)
+    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-baseline", "01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.rawfile", "TILE_"+tilename, raw_crop_mask, "-processor.cropmask.quality",  "TILE_"+tilename, xml_validation_metrics, "-processor.cropmask.flags", "TILE_"+tilename, statusFlags, "-il", *indesc, skip=fromstep>35)
 
 except:
     print sys.exc_info()
