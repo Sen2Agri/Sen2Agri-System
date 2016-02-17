@@ -7,4 +7,4 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-install(TARGETS otbapp_Erosion DESTINATION lib/otb/applications/)
+install(TARGETS otbapp_Erosion DESTINATION usr/lib/otb/applications/)
