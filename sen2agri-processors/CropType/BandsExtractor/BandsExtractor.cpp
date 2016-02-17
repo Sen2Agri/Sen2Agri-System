@@ -1064,6 +1064,7 @@ private:
           m_AllMasks->SetInput(m_AllMasksList);
           m_MskStatusFlagsExtractorFunctor = MaskStatusFlagsExtractorFilterType::New();
           m_MskStatusFlagsExtractorFunctor->SetInput(m_AllMasks->GetOutput());
+          m_MskStatusFlagsExtractorFunctor->UpdateOutputInformation();
           m_MskStatusFlagsExtractorFunctor->GetOutput()->SetNumberOfComponentsPerPixel(1);
           SetParameterOutputImage("statusflags", m_MskStatusFlagsExtractorFunctor->GetOutput());
       }
