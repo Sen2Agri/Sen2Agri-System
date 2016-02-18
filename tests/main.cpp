@@ -10,7 +10,13 @@ int main(int argc, char *argv[])
     QCoreApplication app(argc, argv);
     Q_UNUSED(app);
 
-    //Serialization tc;
-    SchedulerTests tc;
-    return QTest::qExec(&tc, argc, argv);
+    int r = 0;
+
+    Serialization tcSer;
+    r |= QTest::qExec(&tcSer, argc, argv);
+
+    SchedulerTests tcSch;
+    r |= QTest::qExec(&tcSch, argc, argv);
+
+    return r ? 1 : 0;
 }
