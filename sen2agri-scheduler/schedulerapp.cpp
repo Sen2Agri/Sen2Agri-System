@@ -7,7 +7,7 @@
 #include "resourcereader.hpp"
 #include "orchestratorproxy.hpp"
 
-SchedulerApp::SchedulerApp(QObject *parent, TaskLoader * loader, OrchestratorProxy * orchestrator)
+SchedulerApp::SchedulerApp(TaskLoader * loader, OrchestratorProxy * orchestrator, QObject *parent)
     : QObject(parent),
       m_nTimerId(0),
       m_loader(loader),

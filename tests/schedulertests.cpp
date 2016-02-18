@@ -25,7 +25,7 @@ void SchedulerTests::testNoReadyTasks()
 {
     TestOrcherstratorProxy orchestrator;
     TestScheduledTaskLoader loader;
-    SchedulerApp sapp(0, &loader, &orchestrator);
+    SchedulerApp sapp(&loader, &orchestrator);
     ScheduledTask st;
     std::vector<ScheduledTask> dbTasks;
 
@@ -70,7 +70,7 @@ void SchedulerTests::testFirstReadyTask()
 {
     TestOrcherstratorProxy orchestrator;
     TestScheduledTaskLoader loader;
-    SchedulerApp sapp(0, &loader, &orchestrator);
+    SchedulerApp sapp(&loader, &orchestrator);
     ScheduledTask st;
     std::vector<ScheduledTask> dbTasks;
 
@@ -117,7 +117,7 @@ void SchedulerTests::testSecondRetryTask()
 {
     TestOrcherstratorProxy orchestrator;
     TestScheduledTaskLoader loader;
-    SchedulerApp sapp(0, &loader, &orchestrator);
+    SchedulerApp sapp(&loader, &orchestrator);
     ScheduledTask st;
     std::vector<ScheduledTask> dbTasks;
 
@@ -163,7 +163,7 @@ void SchedulerTests::testPriority()
 {
     TestOrcherstratorProxy orchestrator;
     TestScheduledTaskLoader loader;
-    SchedulerApp sapp(0, &loader, &orchestrator);
+    SchedulerApp sapp(&loader, &orchestrator);
     ScheduledTask st;
     std::vector<ScheduledTask> dbTasks;
 

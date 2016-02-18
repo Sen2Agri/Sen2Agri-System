@@ -2,10 +2,11 @@
 #define SCHEDULERAPP_H
 
 #include <QObject>
-#include "databasetaskloader.hpp"
+
 #include "taskplanner.hpp"
 #include "resourcereader.hpp"
 #include "dbusorchestratorproxy.hpp"
+#include "taskloader.hpp"
 
 class SchedulerTests;
 
@@ -15,9 +16,9 @@ class SchedulerApp : public QObject
     friend class SchedulerTests;
 
 public:
-    SchedulerApp(QObject *parent = 0,
-                 TaskLoader * loader = new DatabaseTaskLoader (),
-                 OrchestratorProxy * orchestrator = new DBusOrchestratorProxy () );
+    SchedulerApp(TaskLoader * loader,
+                 OrchestratorProxy * orchestrator,
+                 QObject *parent = 0);
 
     virtual ~SchedulerApp();
     void StartRunning();
