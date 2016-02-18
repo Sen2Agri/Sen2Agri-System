@@ -4,17 +4,17 @@
 #include <vector>
 #include <QFileInfo>
 
+#include "persistencemanager.hpp"
 #include "model.hpp"
 
 #include "tasktosubmit.hpp"
-#include "persistencemanager_interface.h"
 
 class EventProcessingContext
 {
-    OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient;
+    PersistenceManagerDBProvider &persistenceManager;
 
 public:
-    EventProcessingContext(OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient);
+    EventProcessingContext(PersistenceManagerDBProvider &persistenceManager);
 
     std::map<QString, QString> GetJobConfigurationParameters(int jobId, QString prefix);
 
@@ -33,6 +33,8 @@ public:
     JobStepToRunList GetJobStepsForResume(int jobId);
 
     StepConsoleOutputList GetTaskConsoleOutputs(int taskId);
+
+    ProcessorDescriptionList GetProcessorDescriptions();
 
     UnprocessedEventList GetNewEvents();
     void MarkEventProcessingStarted(int eventId);
@@ -57,8 +59,7 @@ public:
         NewStepList steps;
         for (const auto &file : GetProductFiles(inputPath, pattern)) {
             steps.push_back(
-                { taskId,
-                  QFileInfo(file).baseName(),
+                { taskId, QFileInfo(file).baseName(),
                   QString::fromUtf8(QJsonDocument(f(input + file, outputPath + file)).toJson()) });
         }
 

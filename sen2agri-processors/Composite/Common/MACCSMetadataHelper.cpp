@@ -1,6 +1,8 @@
 #include "MACCSMetadataHelper.h"
 #include "ViewingAngles.hpp"
 
+#include <sys/stat.h>
+
 MACCSMetadataHelper::MACCSMetadataHelper()
 {
     m_missionType = S2;
@@ -302,14 +304,26 @@ std::string MACCSMetadataHelper::getSnowFileName()
     return getWaterFileName();
 }
 
+std::string MACCSMetadataHelper::getQualityFileName()
+{
+    if(m_missionType == S2) {
+        if(m_nResolution == 10) {
+            return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_QLT_R1");
+        } else {
+            return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_QLT_R2");
+        }
+    } else {
+        return getMACCSImageFileName(m_metadata->ProductOrganization.AnnexFiles, "_QLT");
+    }
+}
+
 // Return the path to a file for which the name end in the ending
 std::string MACCSMetadataHelper::getMACCSImageFileName(const std::vector<MACCSFileInformation>& imageFiles,
                                                        const std::string& ending) {
+    std::string retStr;
     for (const MACCSFileInformation& fileInfo : imageFiles) {
-        if (fileInfo.LogicalName.length() >= ending.length() &&
-                0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
-            return m_DirName + "/" + fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF";
-        }
+        if(getMACCSImageFileName(fileInfo, ending, retStr))
+            return retStr;
     }
     return "";
 }
@@ -317,24 +331,34 @@ std::string MACCSMetadataHelper::getMACCSImageFileName(const std::vector<MACCSFi
 // Return the path to a file for which the name end in the ending
 std::string MACCSMetadataHelper::getMACCSImageFileName(const std::vector<MACCSAnnexInformation>& maskFiles,
                                                        const std::string& ending) {
+    std::string retStr;
     for (const MACCSAnnexInformation& fileInfo : maskFiles) {
-        if (fileInfo.File.LogicalName.length() >= ending.length() &&
-                0 == fileInfo.File.LogicalName.compare (fileInfo.File.LogicalName.length() - ending.length(), ending.length(), ending)) {
-            return m_DirName + "/" + fileInfo.File.FileLocation.substr(0, fileInfo.File.FileLocation.find_last_of('.')) + ".DBL.TIF";
-        }
+        if(getMACCSImageFileName(fileInfo.File, ending, retStr))
+            return retStr;
     }
     return "";
+}
+
+bool MACCSMetadataHelper::getMACCSImageFileName(const MACCSFileInformation& fileInfo,
+                                                       const std::string& ending, std::string& retStr) {
+    if (fileInfo.LogicalName.length() >= ending.length() &&
+            0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
+        retStr = m_DirName + "/" + fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF";
+        if(!CheckFileExistence(retStr)) {
+            itkWarningMacro("Cannot find the file (even with lowercase extension): " << retStr);
+        }
+        return true;
+    }
+    return false;
 }
 
 // Return the path to a file for which the name end in the ending
 std::string MACCSMetadataHelper::getMACCSImageHdrName(const std::vector<MACCSAnnexInformation>& maskFiles,
                                                       const std::string& ending) {
-
+    std::string retStr;
     for (const MACCSAnnexInformation& fileInfo : maskFiles) {
-        if (fileInfo.File.LogicalName.length() >= ending.length() &&
-                0 == fileInfo.File.LogicalName.compare (fileInfo.File.LogicalName.length() - ending.length(), ending.length(), ending)) {
-            return m_DirName + "/" + fileInfo.File.FileLocation;
-        }
+        if(getMACCSImageHdrName(fileInfo.File, ending, retStr))
+            return retStr;
     }
     return "";
 }
@@ -342,15 +366,56 @@ std::string MACCSMetadataHelper::getMACCSImageHdrName(const std::vector<MACCSAnn
 // Return the path to a file for which the name end in the ending
 std::string MACCSMetadataHelper::getMACCSImageHdrName(const std::vector<MACCSFileInformation>& imageFiles,
                                                       const std::string& ending) {
-
+    std::string retStr;
     for (const MACCSFileInformation& fileInfo : imageFiles) {
-        if (fileInfo.LogicalName.length() >= ending.length() &&
-                0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
-            return m_DirName + "/" + fileInfo.FileLocation;
-        }
+        if(getMACCSImageHdrName(fileInfo, ending, retStr))
+            return retStr;
     }
     return "";
 }
+
+bool MACCSMetadataHelper::getMACCSImageHdrName(const MACCSFileInformation& fileInfo,
+                                                      const std::string& ending, std::string &retStr) {
+    if (fileInfo.LogicalName.length() >= ending.length() &&
+            0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
+        retStr = m_DirName + "/" + fileInfo.FileLocation;
+        if(!CheckFileExistence(retStr)) {
+            itkWarningMacro("Cannot find the file (even with lowercase extension): " << retStr);
+        }
+        return true;
+    }
+    return false;
+}
+
+/**
+ * @brief MACCSMetadataHelper::CheckFileExistence
+ * Checks if the file exists and if not, it tries to change the extension to small capitals letters.
+ * If the file with the changed extension exists, it is returned instead otherwise it is not modified
+ * @param fileName - in/out parameter
+ * @return
+ */
+bool MACCSMetadataHelper::CheckFileExistence(std::string &fileName) {
+    struct stat buf;
+    bool ret = true;
+    if(stat(fileName.c_str(), &buf) == -1) {
+        // the file does not exists
+        size_t lastindex = fileName.find_last_of(".");
+        if((lastindex != std::string::npos) && (lastindex != (fileName.length()-1))) {
+            std::string rawname = fileName.substr(0, lastindex);
+            std::string ext = fileName.substr(lastindex+1);
+            std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
+            std::string recomputedName = rawname + "." + ext;
+            if(stat(recomputedName.c_str(), &buf) != -1) {
+                fileName = recomputedName;
+            } else {
+                ret = false;
+            }
+
+        }
+    }
+    return ret;
+}
+
 
 // Get the id of the band. Return -1 if band not found.
 int MACCSMetadataHelper::getBandIndex(const std::vector<MACCSBand>& bands, const std::string& name) {
@@ -474,5 +539,35 @@ bool MACCSMetadataHelper::BandAvailableForCurrentResolution(unsigned int nBand) 
 }
 
 MetadataHelper::SingleBandShortImageType::Pointer MACCSMetadataHelper::GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult) {
-    //TODO: Implement this function
+    // Saturation is the first band from the Quality Image
+    // Validity is the 3rd band from the Quality Image
+    // Water is the bit 3 in the MSK image
+    // Snow is the bit 5 in the MSK image
+    // Cloud should be 0 in the CLD image
+
+    std::vector< MetadataHelper::SingleBandShortImageType::Pointer> vecImgs;
+    // extract the cld, div and saturation mask image bands
+    if((nMaskFlags & MSK_CLOUD) != 0) {
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getCloudFileName(), 1));
+    }
+
+    if((nMaskFlags & MSK_SAT) != 0) {
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getQualityFileName(), 1));
+    }
+    if((nMaskFlags & MSK_VALID) != 0) {
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getQualityFileName(), 3));
+    }
+
+    if((nMaskFlags & MSK_SNOW) != 0 || (nMaskFlags & MSK_WATER) != 0 ) {
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getWaterFileName(), 1));
+    }
+
+    m_maskHandlerFunctor.Initialize(nMaskFlags, binarizeResult);
+    m_maskHandlerFilter = NaryFunctorImageFilterType::New();
+    m_maskHandlerFilter->SetFunctor(m_maskHandlerFunctor);
+    for(size_t i = 0; i<vecImgs.size(); i++) {
+        m_maskHandlerFilter->SetInput(i, vecImgs[i]);
+    }
+    return m_maskHandlerFilter->GetOutput();
 }
+

@@ -4,10 +4,12 @@
 #include "stopwatch.hpp"
 #include "logger.hpp"
 #include "dbus_future_utils.hpp"
-#include "persistencemanager_interface.h"
 #include "orchestrator_interface.h"
 
-StatisticsController::StatisticsController() {}
+StatisticsController::StatisticsController(PersistenceManagerDBProvider &persistenceManager)
+    : persistenceManager(persistenceManager)
+{
+}
 
 void StatisticsController::service(HttpRequest &request, HttpResponse &response)
 {
@@ -43,13 +45,8 @@ void StatisticsController::saveDashboardData(const HttpRequest &request, HttpRes
 {
     const auto &obj = QJsonDocument::fromJson(request.getBody()).object();
 
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
-
-    WaitForResponseAndThrow(persistenceManagerClient.InsertNodeStatistics(
-        { obj[QStringLiteral("hostname")].toString(),
-          obj[QStringLiteral("cpu_user")].toDouble(),
+    persistenceManager.InsertNodeStatistics(
+        { obj[QStringLiteral("hostname")].toString(), obj[QStringLiteral("cpu_user")].toDouble(),
           obj[QStringLiteral("cpu_system")].toDouble(),
           static_cast<int64_t>(obj[QStringLiteral("mem_total_kb")].toDouble()),
           static_cast<int64_t>(obj[QStringLiteral("mem_used_kb")].toDouble()),
@@ -59,17 +56,13 @@ void StatisticsController::saveDashboardData(const HttpRequest &request, HttpRes
           obj[QStringLiteral("load_avg_5m")].toDouble(),
           obj[QStringLiteral("load_avg_15m")].toDouble(),
           static_cast<int64_t>(obj[QStringLiteral("disk_total_bytes")].toDouble()),
-          static_cast<int64_t>(obj[QStringLiteral("disk_used_bytes")].toDouble()) }));
+          static_cast<int64_t>(obj[QStringLiteral("disk_used_bytes")].toDouble()) });
 }
 
 void StatisticsController::getMonitorAgentParameters(const HttpRequest &, HttpResponse &response)
 {
-    OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-        OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-        QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
-
-    auto parameters = WaitForResponseAndThrow(
-        persistenceManagerClient.GetConfigurationParameters(QStringLiteral("monitor-agent.")));
+    auto parameters =
+        persistenceManager.GetConfigurationParameters(QStringLiteral("monitor-agent."));
 
     QJsonObject obj;
     for (const auto &p : parameters) {

@@ -89,7 +89,7 @@ private:
         std::vector<std::string> xmlsList;
         if(HasValue("ilxml")) {
             xmlsList = this->GetParameterStringList("ilxml");
-            if(xmlsList.size() != (size_t)(nTotalBands / 2)) {
+            if((nTotalBands != 2) && (xmlsList.size() != (size_t)(nTotalBands / 2))) {
                 itkExceptionMacro("Wrong number of input xml files. It should be " + (nTotalBands/2));
             }
         }
@@ -110,6 +110,11 @@ private:
             std::ostringstream fileNameStream;
 
             std::string curXml = xmlsList[(i < nTotalBandsHalf) ? i : (i-nTotalBandsHalf)];
+            // if we did not generated all dates, we have only 2 bands and we consider
+            // the last XML in the list
+            if(nTotalBands == 2) {
+                curXml = xmlsList[xmlsList.size()-1];
+            }
             auto factory = MetadataHelperFactory::New();
             auto pHelper = factory->GetMetadataHelper(curXml);
             std::string acquisitionDate = pHelper->GetAcquisitionDate();

@@ -18,10 +18,14 @@ public:
     const QString &GetExecutionTime() const;
     const QString &GetStdOutText() const;
     const QString &GetStdErrText() const;
+    const QString &GetStatusText() const;
+    int GetExitCode() const;
 
 private:
     QString m_strJobName;
     QString m_strMsgType;
+    QString m_strStatusText;
+    int m_nExitCode;
     // no longer used
     QString m_strLogMsg;
     QString m_strExecTime;

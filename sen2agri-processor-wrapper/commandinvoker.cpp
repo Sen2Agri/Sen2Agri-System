@@ -8,9 +8,10 @@ CommandInvoker::~CommandInvoker() {}
 
 void CommandInvoker::SetListener(ICommandInvokerListener *pListener) { m_pListener = pListener; }
 
-bool CommandInvoker::InvokeCommand(QString &strCmd, QStringList &listParams, bool bIsAsync)
+bool CommandInvoker::InvokeCommand(QString &strCmd, QStringList &listParams, bool bIsAsync, int &exitCode)
 {
     bool bRet = true;
+    exitCode = -1;
 
     m_stdOutText.clear();
     m_stdErrText.clear();
@@ -25,6 +26,13 @@ bool CommandInvoker::InvokeCommand(QString &strCmd, QStringList &listParams, boo
                 // NOTE: this uses the default timeout.
                 // we don't know what happened, but reading the standard output can't hurt
                 m_process.waitForReadyRead();
+                if(m_process.exitStatus() == QProcess::CrashExit) {
+                    bRet = false;
+                }
+            }
+            exitCode = m_process.exitCode();
+            if(exitCode != 0) {
+                bRet = false;
             }
 
             const auto &stdOut = m_process.readAllStandardOutput();

@@ -74,20 +74,28 @@ outNdvi = "{}/spot_ndvi.tif".format(outDir)
 outSigmo = "{}/spot_sigmo.tif".format(outDir)
 #OUT_METRIC="$OUT_FOLDER/metric_estimation.tif"
 outMetric = "{}/metric_estimation.tif".format(outDir)
+outMetricParams = "{}/metric_estimation_params.tif".format(outDir)
+outMetricFlags = "{}/metric_estimation_flags.tif".format(outDir)
 
 print("Processing started: " + str(datetime.datetime.now()))
 start = time.time()
 
-#try otbcli BandsExtractor $CROPTTYPE_OTB_LIBS_ROOT/BandsExtractor/ -il $TIME_SERIES_XMLS -merge true -ndh true -out $OUT_BANDS -allmasks $OUT_MASKS -outdate $OUT_DATES
 runCmd(["otbcli", "BandsExtractor", cropTypeLocation, "-il"] + args.input + ["-pixsize", args.resolution, "-merge", "true", "-ndh", "true", "-out", outBands, "-allmasks", outMasks, "-outdate", outDates])
-#try otbcli FeatureExtraction $CROPTTYPE_OTB_LIBS_ROOT/FeatureExtraction -rtocr $OUT_BANDS -ndvi $OUT_NDVI
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 runCmd(["otbcli", "FeatureExtraction", cropTypeLocation, "-rtocr", outBands, "-ndvi", outNdvi])
-#try otbcli SigmoFitting $VEGETATIONSTATUS_OTB_LIBS_ROOT -in $OUT_NDVI -mask $OUT_MASKS -dates $OUT_DATES -out $OUT_SIGMO
-runCmd(["otbcli", "SigmoFitting", vegetationStatusLocation, "-in", outNdvi, "-mask", outMasks, "-dates", outDates,"-out", outSigmo])
-#try otbcli MetricsEstimation $VEGETATIONSTATUS_OTB_LIBS_ROOT -ipf $OUT_SIGMO -indates $OUT_DATES -opf $OUT_METRIC
-runCmd(["otbcli", "MetricsEstimation", vegetationStatusLocation, "-ipf", outSigmo, "-indates", outDates, "-opf", outMetric])
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+runCmd(["otbcli", "PhenologicalNDVIMetrics", vegetationStatusLocation, "-in", outNdvi, "-mask", outMasks, "-dates", outDates,"-out", outMetric])
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "vegetation", "-processor.vegetation.pheno", tileID, outMetric, "-il", args.input[0]])
+# DEPRECATED CALLS
+#runCmd(["otbcli", "SigmoFitting2", vegetationStatusLocation, "-in", outNdvi, "-mask", outMasks, "-dates", outDates,"-out", outSigmo])
+#try otbcli MetricsEstimation $VEGETATIONSTATUS_OTB_LIBS_ROOT -ipf $OUT_SIGMO -indates $OUT_DATES -opf $OUT_METRIC
+#runCmd(["otbcli", "MetricsEstimation2", vegetationStatusLocation, "-ipf", outSigmo, "-opf", outMetric])
+
+runCmd(["otbcli", "PhenoMetricsSplitter", vegetationStatusLocation, "-in", outMetric, "-outparams", outMetricParams, "-outflags", outMetricFlags, "-compress", "1"])
+print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+
+runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "phenondvi", "-processor.phenondvi.metrics", tileID, outMetricParams, "-processor.phenondvi.flags", tileID, outMetricFlags, "-il"] + args.input)
 
 print("Processing finished: " + str(datetime.datetime.now()))
 print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))

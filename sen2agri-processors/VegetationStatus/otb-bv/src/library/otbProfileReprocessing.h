@@ -123,126 +123,129 @@ smooth_time_series_local_window_with_error(const VectorType &dts,
     auto result = ts;
     auto result_flag = VectorType(ts.size(), not_processed_value);
     auto ot = result.begin();
-    auto otf = result_flag.begin();
-    auto win_msk_first = msks.begin();
-    auto mski = msks.begin();
-    auto eit = ets.begin();
-    auto last = ts.end();
-    auto win_first = ts.begin();
-    auto win_last = ts.begin();
-    auto e_win_first = ets.begin();
-    auto e_win_last = ets.begin();
-    auto dti = dts.begin();
-    auto d_win_first = dts.begin();
-    auto d_win_last = dts.begin();
-    //advance iterators
-    std::advance(ot, bwd_radius);
-    std::advance(otf, bwd_radius);
-    std::advance(eit, bwd_radius);
-    std::advance(dti, bwd_radius);
-    std::advance(mski, bwd_radius);
-    std::advance(win_last, bwd_radius+fwd_radius);
-    std::advance(e_win_last, bwd_radius+fwd_radius);
-    std::advance(d_win_last, bwd_radius+fwd_radius);
+    // we process only if we have at least a number of values equals with bwd + fwd + 1
+    if(ts.size() > (bwd_radius + fwd_radius)) {
+        auto otf = result_flag.begin();
+        auto win_msk_first = msks.begin();
+        auto mski = msks.begin();
+        auto eit = ets.begin();
+        auto last = ts.end();
+        auto win_first = ts.begin();
+        auto win_last = ts.begin();
+        auto e_win_first = ets.begin();
+        auto e_win_last = ets.begin();
+        auto dti = dts.begin();
+        auto d_win_first = dts.begin();
+        auto d_win_last = dts.begin();
+        //advance iterators
+        std::advance(ot, bwd_radius);
+        std::advance(otf, bwd_radius);
+        std::advance(eit, bwd_radius);
+        std::advance(dti, bwd_radius);
+        std::advance(mski, bwd_radius);
+        std::advance(win_last, bwd_radius+fwd_radius);
+        std::advance(e_win_last, bwd_radius+fwd_radius);
+        std::advance(d_win_last, bwd_radius+fwd_radius);
 
-    // vector having the bwr size containing the last valid (land) values
-    VectorType lastValidValues(bwd_radius);
-    VectorType lastValidDates(bwd_radius);
-    VectorType lastValidErrs(bwd_radius);
-    size_t lastValidValuesCnt = 0;
+        // vector having the bwr size containing the last valid (land) values
+        VectorType lastValidValues(bwd_radius);
+        VectorType lastValidDates(bwd_radius);
+        VectorType lastValidErrs(bwd_radius);
+        size_t lastValidValuesCnt = 0;
 
-    // as we start with the current value from the start + bwr, we must update also the
-    // statuses for the elements in the bwr
-    for(int i = 0; i < bwd_radius; i++) {
-        result_flag[i] = ((msks[i] == IMG_FLG_LAND) ? not_processed_value : invalid_value);
-    }
+        // as we start with the current value from the start + bwr, we must update also the
+        // statuses for the elements in the bwr
+        for(size_t i = 0; i < bwd_radius; i++) {
+            result_flag[i] = ((msks[i] == IMG_FLG_LAND) ? not_processed_value : invalid_value);
+        }
 
-    while(win_last!=last)
-    {
-        // we set something for the current date only if we have land
-        if(*mski == IMG_FLG_LAND) {
-            auto current_d = d_win_first;
-            auto current_e = e_win_first;
-            auto current_v = win_first;
-            auto current_msk = win_msk_first;
-            auto past_it = d_win_last; ++past_it;
+        while(win_last!=last)
+        {
+            // we set something for the current date only if we have land
+            if(*mski == IMG_FLG_LAND) {
+                auto current_d = d_win_first;
+                auto current_e = e_win_first;
+                auto current_v = win_first;
+                auto current_msk = win_msk_first;
+                auto past_it = d_win_last; ++past_it;
 
-            PrecisionType sum_weights{0.0};
-            PrecisionType weighted_value{0.0};
-            size_t nProcessedVals = 0;
-            while(current_d != past_it)
-            {
-                // If the mask flag is LAND, we process the value
-                if(*current_msk == IMG_FLG_LAND) {
-                    auto cw = compute_weight(fabs(*current_d-*dti),fabs(*current_e));
-                    sum_weights += cw;
-                    weighted_value += (*current_v)*cw;
-                    ++nProcessedVals;
-                }
-                ++current_d;
-                ++current_e;
-                ++current_v;
-                ++current_msk;
-            }
-
-            if(nProcessedVals > bwd_radius) {
-                *ot = weighted_value/sum_weights;
-                *otf = nProcessedVals;
-            } else {
-                // we try to use the last valid values buffer
-                // we add 1 as we have to consider also the current value
-                if ((nProcessedVals + lastValidValuesCnt) >= (bwd_radius+1)) {
-                    // in this case we are able to compute a valid value
-                    int remVals = bwd_radius - nProcessedVals + 1;
-                    for(int i = 0; i<remVals; i++) {
-                        // we take the values from the last valid one towards the beginning
-                        int idx = lastValidValuesCnt - i - 1;
-                        auto cw = compute_weight(fabs(lastValidDates[idx]-*dti),fabs(lastValidErrs[idx]));
+                PrecisionType sum_weights{0.0};
+                PrecisionType weighted_value{0.0};
+                size_t nProcessedVals = 0;
+                while(current_d != past_it)
+                {
+                    // If the mask flag is LAND, we process the value
+                    if(*current_msk == IMG_FLG_LAND) {
+                        auto cw = compute_weight(fabs(*current_d-*dti),fabs(*current_e));
                         sum_weights += cw;
-                        weighted_value += (lastValidValues[idx])*cw;
+                        weighted_value += (*current_v)*cw;
                         ++nProcessedVals;
                     }
+                    ++current_d;
+                    ++current_e;
+                    ++current_v;
+                    ++current_msk;
+                }
 
-                    //recompute the LAI and the flags
+                if(nProcessedVals > bwd_radius) {
                     *ot = weighted_value/sum_weights;
                     *otf = nProcessedVals;
-                } // otherwise, the value and the flag remains the same (flag to 1)
-            }
-        } else {
-            // set the flag to 0 and keep the LAI mono date value
-            *otf = invalid_value;
-        }
-        // update the last valid values buffer if it is the case
-        if(*win_msk_first == IMG_FLG_LAND) {
-            if(lastValidValuesCnt < bwd_radius) {
-                lastValidValues[lastValidValuesCnt] = *win_first;
-                lastValidDates[lastValidValuesCnt] = *d_win_first;
-                lastValidErrs[lastValidValuesCnt] = *e_win_first;
-                lastValidValuesCnt++;
+                } else {
+                    // we try to use the last valid values buffer
+                    // we add 1 as we have to consider also the current value
+                    if ((nProcessedVals + lastValidValuesCnt) >= (bwd_radius+1)) {
+                        // in this case we are able to compute a valid value
+                        int remVals = bwd_radius - nProcessedVals + 1;
+                        for(int i = 0; i<remVals; i++) {
+                            // we take the values from the last valid one towards the beginning
+                            int idx = lastValidValuesCnt - i - 1;
+                            auto cw = compute_weight(fabs(lastValidDates[idx]-*dti),fabs(lastValidErrs[idx]));
+                            sum_weights += cw;
+                            weighted_value += (lastValidValues[idx])*cw;
+                            ++nProcessedVals;
+                        }
+
+                        //recompute the LAI and the flags
+                        *ot = weighted_value/sum_weights;
+                        *otf = nProcessedVals;
+                    } // otherwise, the value and the flag remains the same (flag to 1)
+                }
             } else {
-                //remove the first element in the vector
-                lastValidValues.erase(lastValidValues.begin());
-                lastValidDates.erase(lastValidDates.begin());
-                lastValidErrs.erase(lastValidErrs.begin());
-
-                lastValidValues.push_back(*win_first);
-                lastValidDates.push_back(*d_win_first);
-                lastValidErrs.push_back(*e_win_first);
+                // set the flag to 0 and keep the LAI mono date value
+                *otf = invalid_value;
             }
-        }
+            // update the last valid values buffer if it is the case
+            if(*win_msk_first == IMG_FLG_LAND) {
+                if(lastValidValuesCnt < bwd_radius) {
+                    lastValidValues[lastValidValuesCnt] = *win_first;
+                    lastValidDates[lastValidValuesCnt] = *d_win_first;
+                    lastValidErrs[lastValidValuesCnt] = *e_win_first;
+                    lastValidValuesCnt++;
+                } else {
+                    //remove the first element in the vector
+                    lastValidValues.erase(lastValidValues.begin());
+                    lastValidDates.erase(lastValidDates.begin());
+                    lastValidErrs.erase(lastValidErrs.begin());
 
-        ++win_first;
-        ++win_last;
-        ++e_win_first;
-        ++e_win_last;
-        ++d_win_first;
-        ++d_win_last;
-        ++ot;
-        ++otf;
-        ++eit;
-        ++dti;
-        ++win_msk_first;
-        ++mski;
+                    lastValidValues.push_back(*win_first);
+                    lastValidDates.push_back(*d_win_first);
+                    lastValidErrs.push_back(*e_win_first);
+                }
+            }
+
+            ++win_first;
+            ++win_last;
+            ++e_win_first;
+            ++e_win_last;
+            ++d_win_first;
+            ++d_win_last;
+            ++ot;
+            ++otf;
+            ++eit;
+            ++dti;
+            ++win_msk_first;
+            ++mski;
+        }
     }
     return std::make_pair(result,result_flag);
 }

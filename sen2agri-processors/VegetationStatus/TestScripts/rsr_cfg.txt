@@ -1,0 +1,4 @@
+SPOT4=../otb-bv/data/spot4hrvir1.rsr
+LANDSAT_8=../otb-bv/data/landsat8_7b.rsr
+SENTINEL-2A=../otb-bv/data/Sentinel2.rsr
+SENTINEL-2B=../otb-bv/data/Sentinel2.rsr

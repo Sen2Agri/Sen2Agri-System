@@ -215,8 +215,13 @@ private:
       if (sourceLayer.GetGeomType() != wkbPolygon) {
           itkExceptionMacro("The first layer must contain polygons!");
       }
-      if (!GetParameterEmpty("nofilter")) {
-          sourceLayer.ogr().SetAttributeFilter("CROP=1");
+      auto filter = !GetParameterEmpty("nofilter");
+      if (filter) {
+          std::cout << "Excluding non-crop features\n";
+          auto ret = sourceLayer.ogr().SetAttributeFilter("CROP=1");
+          if (ret != OGRERR_NONE) {
+              std::cerr << "SetAttributeFilter() failed: " << ret << '\n';
+          }
       }
 
       int featureCount = sourceLayer.GetFeatureCount(true);
@@ -225,24 +230,28 @@ private:
 
       // read all features from the source field and add them to the multimap
       for (ogr::Feature& feature : sourceLayer) {
-          featuresMap.insert(std::pair<int, ogr::Feature>(feature.ogr().GetFieldAsInteger("CODE"), feature.Clone()));
+          if (!filter || feature.ogr().GetFieldAsInteger("CROP")) {
+            featuresMap.insert(std::pair<int, ogr::Feature>(feature.ogr().GetFieldAsInteger("CODE"), feature.Clone()));
+          }
       }
+      std::cerr << '\n';
+
 
       // create the layers for the target files
       otb::ogr::Layer tpLayer = ogrTp->CreateLayer(sourceLayer.GetName(), sourceLayer.GetSpatialRef()->Clone(), sourceLayer.GetGeomType());
       otb::ogr::Layer vpLayer = ogrVp->CreateLayer(sourceLayer.GetName(), sourceLayer.GetSpatialRef()->Clone(), sourceLayer.GetGeomType());
 
       // add the fields
-      OGRFeatureDefn* layerDefn = sourceLayer.ogr().GetLayerDefn();
+      OGRFeatureDefn &layerDefn = sourceLayer.GetLayerDefn();
 
-      for (int i = 0; i < layerDefn->GetFieldCount(); i++ ) {
-          OGRFieldDefn* fieldDefn = layerDefn->GetFieldDefn(i);
-          tpLayer.ogr().CreateField(fieldDefn);
-          vpLayer.ogr().CreateField(fieldDefn);
+      for (int i = 0; i < layerDefn.GetFieldCount(); i++ ) {
+          OGRFieldDefn &fieldDefn = *layerDefn.GetFieldDefn(i);
+          tpLayer.CreateField(fieldDefn);
+          vpLayer.CreateField(fieldDefn);
       }
 
-      OGRFeatureDefn* tpLayerDefn = tpLayer.ogr().GetLayerDefn();
-      OGRFeatureDefn* vpLayerDefn = vpLayer.ogr().GetLayerDefn();
+      OGRFeatureDefn &tpLayerDefn = tpLayer.GetLayerDefn();
+      OGRFeatureDefn &vpLayerDefn = vpLayer.GetLayerDefn();
 
       std::ofstream outLUTFile;
 
@@ -303,37 +312,34 @@ private:
 
           // select the target file for this feature
           if ((random <= ratio && featTrainingCount < featTrainingTarget) || featValidationCount == featValidationTarget) {
-              ogr::Feature feat(*tpLayerDefn);
+              ogr::Feature feat(tpLayerDefn);
               // Add field values from input Layer
-              for (int i = 0; i < tpLayerDefn->GetFieldCount(); i++) {
-                  OGRFieldDefn* fieldDefn = tpLayerDefn->GetFieldDefn(i);
+              for (int i = 0; i < tpLayerDefn.GetFieldCount(); i++) {
+                  OGRFieldDefn* fieldDefn = tpLayerDefn.GetFieldDefn(i);
                   feat.ogr().SetField(fieldDefn->GetNameRef(), f.ogr().GetRawFieldRef(i));
               }
 
               // Set the geometry
-              feat.ogr().SetGeometry(f.ogr().GetGeometryRef()->clone());
+              feat.SetGeometry(f.GetGeometry()->clone());
 
               tpLayer.CreateFeature(feat);
               featTrainingCount++;
           } else {
-              ogr::Feature feat(*vpLayerDefn);
+              ogr::Feature feat(vpLayerDefn);
               // Add field values from input Layer
-              for (int i = 0; i < vpLayerDefn->GetFieldCount(); i++) {
-                  OGRFieldDefn* fieldDefn = vpLayerDefn->GetFieldDefn(i);
+              for (int i = 0; i < vpLayerDefn.GetFieldCount(); i++) {
+                  OGRFieldDefn* fieldDefn = vpLayerDefn.GetFieldDefn(i);
+
                   feat.ogr().SetField(fieldDefn->GetNameRef(), f.ogr().GetRawFieldRef(i));
               }
 
               // Set the geometry
-              feat.ogr().SetGeometry(f.ogr().GetGeometryRef()->clone());
+              feat.SetGeometry(f.GetGeometry()->clone());
 
               vpLayer.CreateFeature(feat);
               featValidationCount++;
           }
       }
-
-      // save the output files
-      tpLayer.ogr().CommitTransaction();
-      vpLayer.ogr().CommitTransaction();
 
       ogrTp->SyncToDisk();
       ogrVp->SyncToDisk();

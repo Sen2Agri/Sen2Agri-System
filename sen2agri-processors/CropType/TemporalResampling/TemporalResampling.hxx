@@ -4,78 +4,69 @@
 #include "itkBinaryFunctorImageFilter.h"
 #include "otbVectorImage.h"
 
-#define NOVALUEPIXEL    -10000.0
+#define NOVALUEPIXEL -10000.0
 
 typedef otb::VectorImage<short, 2> ImageType;
 
-typedef std::vector<int>                RasterDates;
+typedef std::vector<int> RasterDates;
 
-struct Indeces {
+struct Indices
+{
     int minLo;
     int maxLo;
     int minHi;
     int maxHi;
 };
 
-struct SensorData {
+struct SensorData
+{
     // the name of the sensor (for information only)
     std::string sensorName;
     // the dates of the input
     RasterDates inDates;
-    // the offset for the first band in the input raster
-    int         offset;
-    // the number of output raster created for this sensor
-    int         outNum;
-    // the date of the first output raster that should be created for this sensor
-    int         outStart;
-    // the date of the last output raster that should be created for this sensor
-    int         outEnd;
+    std::vector<int> outDates;
 };
-
 
 template <typename PixelType>
 class GapFillingFunctor
 {
 public:
-  GapFillingFunctor() : od(0), radius(0), bands(0) {}
-  GapFillingFunctor(std::vector<SensorData>& inData, RasterDates& outDates, int r, int b) : inputData(inData), od(outDates), radius(r), bands(b) {radius = 365000;}
-
-  PixelType operator()(PixelType pix, PixelType mask) const
-  {
-
-    // compute the number of image dates.
-    int outImages = od.size();
-
-    // Create the output pixel
-    int outSize = 0;
-    for (const SensorData& sd : inputData) {
-        outSize += sd.outNum;
+    GapFillingFunctor() : radius(0), bands(0)
+    {
     }
-    PixelType result(outSize * bands);
-    int outPixelId = 0;
+    GapFillingFunctor(std::vector<SensorData> &inData, int r, int b)
+        : inputData(inData), radius(r), bands(b)
+    {
+        radius = 365000;
 
+        outputSize = 0;
+        for (const SensorData &sd : inputData) {
+            outputSize += sd.outDates.size();
+        }
+    }
 
-    // loop through the output dates.
-    for (int outDateIndex = 0; outDateIndex < outImages; outDateIndex++) {
-        // get the value of the corresponding output date
-        int outDate = od.at(outDateIndex);
+    PixelType operator()(PixelType pix, PixelType mask) const
+    {
+        // Create the output pixel
+        PixelType result(outputSize * bands);
 
-        // Build the output for each sensor, if needed
-        for (const SensorData& sd : inputData) {
-            if (sd.outStart <= outDate && sd.outEnd >= outDate) {
-                Indeces ind = {0, 0, 0, 0};
-                // get the indeces intervals
-                ind = getDateIndeces(sd, outDate);
+        int outPixelId = 0;
+        int offset = 0;
+        for (const auto &sd : inputData) {
+            for (auto outDate : sd.outDates) {
+                Indices ind = { 0, 0, 0, 0 };
+                // get the indices intervals
+                ind = getDateIndices(sd, outDate);
 
                 // get the id of the first valid date before or equal to the output date
-                int beforeId = getPixelDateIndex(ind.maxLo, ind.minLo, mask, sd);
+                int beforeId = getPixelDateIndex(ind.maxLo, ind.minLo, mask, offset);
 
                 // get the id of the first valid date after or equal to the output date
-                int afterId = getPixelDateIndex(ind.minHi, ind.maxHi, mask, sd);
+                int afterId = getPixelDateIndex(ind.minHi, ind.maxHi, mask, offset);
 
                 // build the offseted ids
-                int beforeRasterId = beforeId + sd.offset;
-                int afterRasterId = afterId + sd.offset;
+                int beforeRasterId = beforeId + offset;
+                int afterRasterId = afterId + offset;
 
                 // for each band
                 for (int band = 0; band < bands; band++) {
@@ -93,175 +84,178 @@ public:
                         // use only the before value which is equal to the after value
                         result[outPixelId] = pix[beforeRasterId * bands + band];
                     } else {
-                        // use liniar interpolation to compute the pixel value
-                        float x1 = sd.inDates.at(beforeId);
+                        // use linear interpolation to compute the pixel value
+                        float x1 = sd.inDates[beforeId];
                         float y1 = pix[beforeRasterId * bands + band];
-                        float x2 = sd.inDates.at(afterId);
+                        float x2 = sd.inDates[afterId];
                         float y2 = pix[afterRasterId * bands + band];
-
                         float a = (y1 - y2) / (x1 - x2);
                         float b = y1 - a * x1;
 
-                        result[outPixelId] = (short)(a * outDate + b);
+                        result[outPixelId] = static_cast<typename PixelType::ValueType>(a * outDate + b);
                     }
                     outPixelId++;
-
                 }
+            }
+            offset += sd.inDates.size();
+        }
+
+        return result;
+    }
+
+    bool operator!=(const GapFillingFunctor a) const
+    {
+        return (this->radius != a.radius) || (this->bands != a.bands);
+    }
+
+    bool operator==(const GapFillingFunctor a) const
+    {
+        return !(*this != a);
+    }
+
+protected:
+    // input data
+    std::vector<SensorData> inputData;
+    // the radius for date search
+    int radius;
+    // the number of bands per image
+    int bands;
+    // the number of output size in days
+    int outputSize;
+
+private:
+    // get the indices of the input dates which are before and after the centerDate and within the
+    // radius.
+    Indices
+    getDateIndices(const SensorData &sd, int centerDate) const
+    {
+        Indices indices = { -1, -1, -1, -1 };
+
+        for (int i = 0; i < sd.inDates.size(); i++) {
+            // get input date
+            int inputDate = sd.inDates[i];
+
+            if (inputDate > centerDate + radius) {
+                // all future dates are after the center date.
+                break;
+            }
+
+            if (inputDate < centerDate - radius) {
+                // the date is before the interval
+                continue;
+            }
+
+            // The first time this point is reached will offer the index for the minimum value of
+            // the minLo value
+            if (indices.minLo == -1) {
+                indices.minLo = i;
+            }
+
+            if (inputDate == centerDate) {
+                // this date is at least the end of the before interval and the begining of the
+                // after interval
+                indices.maxLo = i;
+                indices.minHi = i;
+                indices.maxHi = i;
+            } else if (inputDate < centerDate) {
+                // this is a candidate maxLo Date
+                indices.maxLo = i;
+            } else {
+                // this can be the minHi if not already set in the previous step (at date equality)
+                if (indices.minHi == -1) {
+                    indices.minHi = i;
+                }
+
+                // this is a candidate maxHi
+                indices.maxHi = i;
             }
         }
 
+        return indices;
     }
 
-    return result;
-  }
+    // Get the date index of the first valid pixel or -1 if none found
+    int getPixelDateIndex(int startIndex, int endIndex, const PixelType &mask, int offset)
+        const
+    {
 
-  bool operator!=(const GapFillingFunctor a) const
-  {
-    return (this->od != a.od) || (this->radius != a.radius) || (this->bands != a.bands) ;
-  }
+        if (startIndex == -1 || endIndex == -1) {
+            return -1;
+        }
 
-  bool operator==(const GapFillingFunctor a) const
-  {
-    return !(*this != a);
-  }
+        int index = startIndex;
+        bool done = false;
 
-protected:
-  // input data
-  std::vector<SensorData> inputData;
-  // output dates vector
-  std::vector<int> od;
-  // the radius for date search
-  int radius;
-  // the number of bands per image
-  int bands;
+        while (!done) {
+            // if the pixel is masked then continue
+            if (mask[index + offset] != 0) {
+                // if it was the last index then stop and return -1
+                if (index == endIndex) {
+                    index = -1;
+                    done = true;
+                } else if (startIndex < endIndex) {
+                    index++;
+                } else {
+                    index--;
+                }
 
-private:
-  // get the indeces of the input dates which are before and after the centerDate and within the radius.
-  Indeces getDateIndeces(const SensorData& sd, int centerDate) const {
-      Indeces indeces = {-1, -1, -1, -1};
+            } else {
+                // the search is done
+                done = true;
+            }
+        }
 
-      for (int i=0; i < sd.inDates.size(); i++) {
-          // get input date
-          int inputDate = sd.inDates.at(i);
-
-          if (inputDate > centerDate + radius) {
-              // all future dates are after the center date.
-              break;
-          }
-
-          if (inputDate < centerDate - radius) {
-              // the date is before the interval
-              continue;
-          }
-
-          // The first time this point is reached will offer the index for the minimum value of the minLo value
-          if (indeces.minLo == -1) {
-              indeces.minLo = i;
-          }
-
-          if (inputDate == centerDate) {
-              // this date is at least the end of the before interval and the begining of the after interval
-              indeces.maxLo = i;
-              indeces.minHi = i;
-              indeces.maxHi = i;
-          } else if (inputDate < centerDate) {
-              // this is a candidate maxLo Date
-              indeces.maxLo = i;
-          } else {
-              // this can be the minHi if not already set in the previous step (at date equality)
-              if (indeces.minHi == -1) {
-                  indeces.minHi = i;
-              }
-
-              // this is a candidate maxHi
-              indeces.maxHi = i;
-          }
-      }
-
-      return indeces;
-  }
-
-  // Get the date index of the first valid pixel or -1 if none found
-  int getPixelDateIndex(int startIndex, int endIndex, const PixelType& mask, const SensorData& sd ) const {
-
-      if (startIndex == -1 || endIndex == -1) {
-          return -1;
-      }
-
-      int index = startIndex;
-      bool done = false;
-
-      while (!done) {
-          // if the pixel is masked then continue
-          if (mask[index+sd.offset] != 0) {
-              // if it was the last index then stop and return -1
-              if (index == endIndex) {
-                  index = -1;
-                  done = true;
-              } else if (startIndex < endIndex) {
-                  index ++;
-              } else {
-                  index --;
-              }
-
-          } else {
-              // the search is done
-              done = true;
-          }
-      }
-
-      return index;
-  }
-
+        return index;
+    }
 };
-
 
 /** Binary functor image filter which produces a vector image with a
 * number of bands different from the input images */
-class ITK_EXPORT BinaryFunctorImageFilterWithNBands :
-    public itk::BinaryFunctorImageFilter< ImageType, ImageType,
-                                          ImageType, GapFillingFunctor<ImageType::PixelType> >
+template<typename ImageType, typename Functor>
+class ITK_EXPORT BinaryFunctorImageFilterWithNBands
+    : public itk::BinaryFunctorImageFilter<ImageType,
+                                           ImageType,
+                                           ImageType,
+                                           Functor >
 {
 public:
-  typedef BinaryFunctorImageFilterWithNBands Self;
-  typedef itk::BinaryFunctorImageFilter< ImageType, ImageType,
-                                         ImageType, GapFillingFunctor<ImageType::PixelType> > Superclass;
-  typedef itk::SmartPointer<Self>       Pointer;
-  typedef itk::SmartPointer<const Self> ConstPointer;
+    typedef BinaryFunctorImageFilterWithNBands Self;
+    typedef itk::BinaryFunctorImageFilter<ImageType,
+                                          ImageType,
+                                          ImageType,
+                                          Functor > Superclass;
+    typedef itk::SmartPointer<Self> Pointer;
+    typedef itk::SmartPointer<const Self> ConstPointer;
 
-  /** Method for creation through the object factory. */
-  itkNewMacro(Self)
-  ;
+    /** Method for creation through the object factory. */
+    itkNewMacro(Self);
 
-  /** Macro defining the type*/
-  itkTypeMacro(BinaryFunctorImageFilterWithNBands, SuperClass)
-  ;
+    /** Macro defining the type*/
+    itkTypeMacro(BinaryFunctorImageFilterWithNBands, SuperClass);
 
-  /** Accessors for the number of bands*/
-  itkSetMacro(NumberOfOutputBands, unsigned int)
-  ;
-  itkGetConstMacro(NumberOfOutputBands, unsigned int)
-  ;
+    /** Accessors for the number of bands*/
+    itkSetMacro(NumberOfOutputBands, unsigned int);
+    itkGetConstMacro(NumberOfOutputBands, unsigned int);
 
 protected:
-  BinaryFunctorImageFilterWithNBands() {}
-  virtual ~BinaryFunctorImageFilterWithNBands() {}
+    BinaryFunctorImageFilterWithNBands()
+    {
+    }
+    virtual ~BinaryFunctorImageFilterWithNBands()
+    {
+    }
 
-  void GenerateOutputInformation()
-  {
-    Superclass::GenerateOutputInformation();
-    this->GetOutput()->SetNumberOfComponentsPerPixel( m_NumberOfOutputBands );
-  }
+    void GenerateOutputInformation()
+    {
+        Superclass::GenerateOutputInformation();
+        this->GetOutput()->SetNumberOfComponentsPerPixel(m_NumberOfOutputBands);
+    }
+
 private:
-  BinaryFunctorImageFilterWithNBands(const Self &); //purposely not implemented
-  void operator =(const Self&); //purposely not implemented
+    BinaryFunctorImageFilterWithNBands(const Self &); // purposely not implemented
+    void operator=(const Self &); // purposely not implemented
 
-  unsigned int m_NumberOfOutputBands;
-
-
+    unsigned int m_NumberOfOutputBands;
 };
 
-
-
 #endif // TEMPORALRESAMPLING_HXX
-

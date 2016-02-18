@@ -6,7 +6,9 @@
 #include "logger.hpp"
 #include "requestmapper.hpp"
 #include "dbus_future_utils.hpp"
-#include "persistencemanager_interface.h"
+#include "persistencemanager.hpp"
+#include "settings.hpp"
+#include "configuration.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -17,12 +19,11 @@ int main(int argc, char *argv[])
 
         registerMetaTypes();
 
-        OrgEsaSen2agriPersistenceManagerInterface persistenceManagerClient(
-            OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-            QStringLiteral("/org/esa/sen2agri/persistenceManager"), QDBusConnection::systemBus());
+        PersistenceManagerDBProvider persistenceManager(
+            Settings::readSettings(getConfigurationFile(app)));
 
-        const auto &params = WaitForResponseAndThrow(
-            persistenceManagerClient.GetConfigurationParameters(QStringLiteral("http-listener.")));
+        const auto &params =
+            persistenceManager.GetConfigurationParameters(QStringLiteral("http-listener."));
 
         std::experimental::optional<QString> root;
         std::experimental::optional<int> port;
@@ -51,7 +52,7 @@ int main(int argc, char *argv[])
         fileSettings.setValue(QStringLiteral("path"), *root);
         StaticFileController staticFileController(&fileSettings);
 
-        RequestMapper mapper(staticFileController);
+        RequestMapper mapper(staticFileController, persistenceManager);
 
         QSettings listenerSettings;
         listenerSettings.setValue(QStringLiteral("port"), *port);

@@ -1,6 +1,6 @@
 include(../common.pri)
 
-QT       += core dbus
+QT       += core dbus sql
 
 QT       -= gui
 
@@ -14,20 +14,21 @@ DESTDIR = bin
 
 INCLUDEPATH += ../Optional
 
-dbus_interface.files = ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
-dbus_interface.header_flags = -i ../sen2agri-common/model.hpp
-
-DBUS_INTERFACES += dbus_interface
-
 SOURCES += main.cpp \
     archivermanager.cpp
 
 HEADERS += \
     archivermanager.hpp \
-    pch.hpp \
     pch.hpp
 
 DISTFILES +=
+
+LIBS += -L$$OUT_PWD/../sen2agri-persistence/ -lsen2agri-persistence
+
+INCLUDEPATH += $$PWD/../sen2agri-persistence
+DEPENDPATH += $$PWD/../sen2agri-persistence
+
+PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-persistence/libsen2agri-persistence.a
 
 LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
 

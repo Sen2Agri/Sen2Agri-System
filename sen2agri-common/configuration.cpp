@@ -2,18 +2,13 @@
 #include <QCommandLineParser>
 #include <QCommandLineOption>
 #include <QProcessEnvironment>
+#include <QDir>
 
 #include "configuration.hpp"
 #include "logger.hpp"
 
 QString getConfigurationFile(const QCoreApplication &app)
 {
-    const auto &appName = QCoreApplication::applicationName();
-    if (appName.isEmpty()) {
-        throw std::runtime_error(
-            "Please call QCoreApplication::setApplicationName() with a valid name.");
-    }
-
     QCommandLineParser parser;
     QCommandLineOption configFileOption(QStringLiteral("f"), QStringLiteral("Use this config file"),
                                         QStringLiteral("config file"));
@@ -25,9 +20,10 @@ QString getConfigurationFile(const QCoreApplication &app)
     if (parser.isSet(configFileOption)) {
         configFile = parser.value(configFileOption);
     } else {
-        configFile = QProcessEnvironment::systemEnvironment().value(
-            QStringLiteral("SEN2AGRI_CONFIG_DIR"), QStringLiteral("/etc/sen2agri"));
-        configFile += QStringLiteral("/%1.conf").arg(appName);
+        configFile = QDir::cleanPath(
+            QProcessEnvironment::systemEnvironment().value(QStringLiteral("SEN2AGRI_CONFIG_DIR"),
+                                                           QStringLiteral("/etc/sen2agri")) +
+            QDir::separator() + QStringLiteral("sen2agri.conf"));
     }
 
     Logger::info(QStringLiteral("Reading settings from %1").arg(configFile));

@@ -12,7 +12,6 @@
 
 #include "eventprocessingcontext.hpp"
 #include "processorhandler.hpp"
-#include "persistencemanager_interface.h"
 #include "processorsexecutor_interface.h"
 
 class OrchestratorWorker : public QObject
@@ -21,7 +20,7 @@ class OrchestratorWorker : public QObject
 
 public:
     OrchestratorWorker(std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
-                       OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient,
+                       PersistenceManagerDBProvider &persistenceManager,
                        OrgEsaSen2agriProcessorsExecutorInterface &executorClient);
 
 signals:
@@ -31,7 +30,7 @@ public slots:
 
 private:
     QThread workerThread;
-    OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient;
+    PersistenceManagerDBProvider &persistenceManager;
     OrgEsaSen2agriProcessorsExecutorInterface &executorClient;
     std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap;
 

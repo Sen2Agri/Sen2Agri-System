@@ -75,11 +75,8 @@ template <>
 struct maker<ConfigurationParameterInfo> {
     static ConfigurationParameterInfo make()
     {
-        return { maker<QString>::make(),
-                 maker<int>::make(),
-                 maker<QString>::make(),
-                 maker<QString>::make(),
-                 maker<bool>::make() };
+        return { maker<QString>::make(), maker<int>::make(), maker<QString>::make(),
+                 maker<QString>::make(), maker<bool>::make() };
     }
 };
 
@@ -87,8 +84,7 @@ template <>
 struct maker<ConfigurationParameterValue> {
     static ConfigurationParameterValue make()
     {
-        return { maker<QString>::make(),
-                 maker<std::experimental::optional<int>>::make(),
+        return { maker<QString>::make(), maker<std::experimental::optional<int>>::make(),
                  maker<QString>::make() };
     }
 };
@@ -120,8 +116,7 @@ struct maker<ConfigurationSet> {
     {
         return { maker<ConfigurationCategoryList>::make(),
                  maker<ConfigurationParameterInfoList>::make(),
-                 maker<ConfigurationParameterValueList>::make(),
-                 maker<SiteList>::make(),
+                 maker<ConfigurationParameterValueList>::make(), maker<SiteList>::make(),
                  maker<bool>::make() };
     }
 };
@@ -130,8 +125,7 @@ template <>
 struct maker<ConfigurationUpdateAction> {
     static ConfigurationUpdateAction make()
     {
-        return { maker<QString>::make(),
-                 maker<std::experimental::optional<int>>::make(),
+        return { maker<QString>::make(), maker<std::experimental::optional<int>>::make(),
                  maker<std::experimental::optional<QString>>::make() };
     }
 };
@@ -175,9 +169,12 @@ template <>
 struct maker<NewJob> {
     static NewJob make()
     {
-        return { maker<QString>::make(),                         maker<QString>::make(),
-                 maker<int>::make(),                             maker<int>::make(),
-                 maker<JobStartType>::make(),                    maker<QString>::make(),
+        return { maker<QString>::make(),
+                 maker<QString>::make(),
+                 maker<int>::make(),
+                 maker<int>::make(),
+                 maker<JobStartType>::make(),
+                 maker<QString>::make(),
                  maker<JobConfigurationUpdateActionList>::make() };
     }
 };
@@ -186,9 +183,7 @@ template <>
 struct maker<NewTask> {
     static NewTask make()
     {
-        return { maker<int>::make(),
-                 maker<QString>::make(),
-                 maker<QString>::make(),
+        return { maker<int>::make(), maker<QString>::make(), maker<QString>::make(),
                  maker<TaskIdList>::make() };
     }
 };
@@ -214,16 +209,18 @@ struct maker<ExecutionStatistics> {
 
 template <>
 struct maker<TaskRunnableEvent> {
-    static TaskRunnableEvent make() { return { maker<int>::make(), maker<int>::make() }; }
+    static TaskRunnableEvent make()
+    {
+        return { maker<int>::make(), maker<int>::make(), maker<int>::make() };
+    }
 };
 
 template <>
 struct maker<TaskFinishedEvent> {
     static TaskFinishedEvent make()
     {
-        return {
-            maker<int>::make(), maker<int>::make(), maker<int>::make(), maker<QString>::make()
-        };
+        return { maker<int>::make(), maker<int>::make(), maker<int>::make(),
+                 maker<QString>::make() };
     }
 };
 
@@ -244,7 +241,7 @@ struct maker<JobPausedEvent> {
 
 template <>
 struct maker<JobResumedEvent> {
-    static JobResumedEvent make() { return { maker<int>::make() }; }
+    static JobResumedEvent make() { return { maker<int>::make(), maker<int>::make() }; }
 };
 
 template <>
@@ -267,11 +264,8 @@ template <>
 struct maker<UnprocessedEvent> {
     static UnprocessedEvent make()
     {
-        return { maker<int>::make(),
-                 maker<EventType>::make(),
-                 maker<QString>::make(),
-                 maker<QDateTime>::make(),
-                 maker<std::experimental::optional<QDateTime>>::make() };
+        return { maker<int>::make(), maker<EventType>::make(), maker<QString>::make(),
+                 maker<QDateTime>::make(), maker<std::experimental::optional<QDateTime>>::make() };
     }
 };
 
@@ -295,9 +289,7 @@ template <>
 struct maker<NewExecutorStep> {
     static NewExecutorStep make()
     {
-        return { maker<int>::make(),
-                 maker<QString>::make(),
-                 maker<QString>::make(),
+        return { maker<int>::make(), maker<int>::make(), maker<QString>::make(), maker<QString>::make(),
                  maker<StepArgumentList>::make() };
     }
 };
@@ -306,9 +298,7 @@ template <>
 struct maker<JobStepToRun> {
     static JobStepToRun make()
     {
-        return { maker<int>::make(),
-                 maker<QString>::make(),
-                 maker<QString>::make(),
+        return { maker<int>::make(), maker<QString>::make(), maker<QString>::make(),
                  maker<QString>::make() };
     }
 };
@@ -317,9 +307,7 @@ template <>
 struct maker<StepConsoleOutput> {
     static StepConsoleOutput make()
     {
-        return { maker<int>::make(),
-                 maker<QString>::make(),
-                 maker<QString>::make(),
+        return { maker<int>::make(), maker<QString>::make(), maker<QString>::make(),
                  maker<QString>::make() };
     }
 };
@@ -328,11 +316,17 @@ template <>
 struct maker<NewProduct> {
     static NewProduct make()
     {
-        return { maker<ProductType>::make(),
-                 maker<int>::make(),
-                 maker<int>::make(),
-                 maker<QString>::make(),
-                 maker<QDateTime>::make() };
+        return { maker<ProductType>::make(), maker<int>::make(), maker<int>::make(),
+                 maker<QString>::make(), maker<QDateTime>::make() };
+    }
+};
+
+template <>
+struct maker<DashboardSearch> {
+    static DashboardSearch make()
+    {
+        return { maker<std::experimental::optional<int>>::make(),
+                 maker<std::experimental::optional<int>>::make() };
     }
 };
 
@@ -387,3 +381,4 @@ void compare(const NewExecutorStep &v1, const NewExecutorStep &v2);
 void compare(const JobStepToRun &v1, const JobStepToRun &v2);
 void compare(const StepConsoleOutput &v1, const StepConsoleOutput &v2);
 void compare(const NewProduct &v1, const NewProduct &v2);
+void compare(const DashboardSearch &v1, const DashboardSearch &v2);

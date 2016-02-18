@@ -168,6 +168,7 @@ def create_context(args):
 
     directory_template = "S2A_TEST_AUX_REFDE2_{0}_0001.DBL.DIR"
     image_directory = os.path.join(args.output, directory_template.format(tile_id))
+    temp_directory = os.path.join(args.working_dir, directory_template.format(tile_id))
 
     metadata_template = "S2A_TEST_AUX_REFDE2_{0}_0001.HDR"
 
@@ -176,24 +177,25 @@ def create_context(args):
              srtm_directory=args.srtm,
              swbd_directory=args.swbd,
              working_directory=args.working_dir,
+             temp_directory=temp_directory,
              output=args.output,
              image_directory=image_directory,
              metadata_file=os.path.join(args.output, metadata_template.format(tile_id)),
-             swbd_list=os.path.join(args.working_dir, "swbd.txt"),
+             swbd_list=os.path.join(temp_directory, "swbd.txt"),
              tile_id=tile_id,
-             dem_vrt=os.path.join(args.working_dir, "dem.vrt"),
-             dem_nodata=os.path.join(args.working_dir, "dem.tif"),
+             dem_vrt=os.path.join(temp_directory, "dem.vrt"),
+             dem_nodata=os.path.join(temp_directory, "dem.tif"),
              dem_coarse=os.path.join(image_directory, format_filename(image_directory, tile_id,
                  "ALC")),
-             slope_degrees=os.path.join(args.working_dir, "slope_degrees.tif"),
-             aspect_degrees=os.path.join(args.working_dir, "aspect_degrees.tif"),
+             slope_degrees=os.path.join(temp_directory, "slope_degrees.tif"),
+             aspect_degrees=os.path.join(temp_directory, "aspect_degrees.tif"),
              slope_coarse=os.path.join(image_directory, format_filename(image_directory, tile_id,
                  "SLC")),
              aspect_coarse=os.path.join(image_directory, format_filename(image_directory, tile_id,
                  "ASC")),
-             wb=os.path.join(args.working_dir, "wb.shp"),
+             wb=os.path.join(temp_directory, "wb.shp"),
              wb_reprojected=os.path.join(
-                 args.working_dir, "wb_reprojected.shp"),
+                 temp_directory, "wb_reprojected.shp"),
              water_mask=os.path.join(image_directory, format_filename(image_directory, tile_id,
                  "MSK")),
              size_x=size_x, size_y=size_y,
@@ -247,7 +249,7 @@ def create_metadata(context):
 
     return E.Earth_Explorer_Header(
             E.Fixed_Header(
-                E.Mission('SENTINEL-2'),
+                E.Mission('SENTINEL-2_'),
                 E.File_Type('AUX_REFDE2')),
             E.Variable_Header(
                 E.Specific_Product_Header(
@@ -431,6 +433,11 @@ context = parse_arguments()
 try:
     print(context.image_directory)
     os.makedirs(context.image_directory)
+except:
+    pass
+try:
+    print(context.temp_directory)
+    os.makedirs(context.temp_directory)
 except:
     pass
 metadata = create_metadata(context)

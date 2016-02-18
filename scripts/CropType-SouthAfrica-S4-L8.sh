@@ -42,7 +42,7 @@ source set_build_folder.sh
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/South\ Africa/MACCS_Manual_Format/SouthAfricaS2A_20131104_L8_171_079/SouthAfricaS2A_20131104_L8_171_079.HDR \
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/South\ Africa/MACCS_Manual_Format/SouthAfricaS2A_20131120_L8_171_079/SouthAfricaS2A_20131120_L8_171_079.HDR \
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/South\ Africa/MACCS_Manual_Format/SouthAfricaS2A_20131222_L8_171_079/SouthAfricaS2A_20131222_L8_171_079.HDR \
-    -t0 20130131 -tend 20130615 -rate 5 -pixsize 20 \
-    -rseed 0 -mask /mnt/data/southafrica/SouthAfrica-mask/crop_mask.tif \
+    -rseed 0 -pixsize 20 \
     -outdir /mnt/data/southafrica/SouthAfrica-type \
+    -trm gapfill -keepfiles \
     -buildfolder $BUILD_FOLDER

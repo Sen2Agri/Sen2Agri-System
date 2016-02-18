@@ -33,8 +33,6 @@ source set_build_folder.sh
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20130822_L8_181_025/EUkraineS2A_20130822_L8_181_025.HDR \
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20131110_L8_181_025/EUkraineS2A_20131110_L8_181_025.HDR \
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20131228_L8_181_025/EUkraineS2A_20131228_L8_181_025.HDR \
-    -t0 20130206 -tend 20130616 -rate 5 \
     -rseed 0 -pixsize 20 \
-    -mask /mnt/data/ukraine/Ukraine-mask/crop_mask.tif \
     -outdir /mnt/data/ukraine/Ukraine-type \
     -buildfolder $BUILD_FOLDER

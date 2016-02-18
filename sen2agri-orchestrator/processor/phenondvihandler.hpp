@@ -10,7 +10,9 @@ private:
                                 const JobSubmittedEvent &event) override;
     void HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 const TaskFinishedEvent &event) override;
+
+    void WriteExecutionInfosFile(const QString &executionInfosPath,
+                                 const QStringList &listProducts);
 };
 
 #endif // PHENONDVIHANDLER_HPP
-

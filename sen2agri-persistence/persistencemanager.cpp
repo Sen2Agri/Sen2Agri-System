@@ -1,403 +1,1293 @@
-#include <functional>
-
-#include <QtSql>
-#include <QDBusConnectionInterface>
-#include <QDBusMessage>
-#include <QThreadPool>
-
-#include "make_unique.hpp"
-#include "credential_utils.hpp"
 #include "persistencemanager.hpp"
 
-PersistenceManager::PersistenceManager(const Settings &settings, QObject *parent)
-    : QObject(parent), dbProvider(settings)
+#include <QJsonArray>
+#include <QJsonDocument>
+#include <QJsonObject>
+
+#include <set>
+
+#include <math.h>
+
+#include "optional_util.hpp"
+#include "json_conversions.hpp"
+
+static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions);
+static QString getJobConfigurationUpsertJson(const JobConfigurationUpdateActionList &actions);
+static QString getArchivedProductsJson(const ArchivedProductList &products);
+static QString getParentTasksJson(const TaskIdList &tasks);
+static QString getNewStepsJson(const NewStepList &steps);
+static QString getScheduledTasksStatusesJson(const std::vector<ScheduledTaskStatus> &statuses);
+
+static QString getExecutionStatusListJson(const ExecutionStatusList &statusList);
+
+static void bindStepExecutionStatistics(QSqlQuery &query, const ExecutionStatistics &statistics);
+
+static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query);
+static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query);
+
+PersistenceManagerDBProvider::PersistenceManagerDBProvider(const Settings &settings)
+    : provider(settings)
 {
-    try {
-        dbProvider.TestConnection();
-    } catch (const std::runtime_error &e) {
-        Logger::error(e.what());
-    }
 }
 
-bool PersistenceManager::IsCallerAdmin()
+SqlDatabaseRAII PersistenceManagerDBProvider::getDatabase() const
 {
-    const auto &reply = connection().interface()->serviceUid(message().service());
-    if (!reply.isValid()) {
-        Logger::error(QStringLiteral("Unable to determine caller credentials: %1")
-                          .arg(reply.error().message()));
-
-        return false;
-    }
-
-    try {
-        // TODO what to do with this?
-        static const char adminGroupName[] = "sen2agri-admin";
-
-        return isUserInGroup(reply.value(), adminGroupName);
-    } catch (const std::runtime_error &e) {
-        Logger::error(e.what());
-        return false;
-    }
+    return provider.getDatabase(QStringLiteral("PersistenceManager"));
 }
 
-ConfigurationSet PersistenceManager::GetConfigurationSet()
+void PersistenceManagerDBProvider::TestConnection() { getDatabase(); }
+
+ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 {
-    auto isCallerAdmin = IsCallerAdmin();
+    auto db = getDatabase();
 
-    RunAsync([this, isCallerAdmin] {
-        auto configuration = dbProvider.GetConfigurationSet();
-        configuration.isAdmin = isCallerAdmin;
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_categories()"));
 
-        return configuration;
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto idCol = dataRecord.indexOf(QStringLiteral("id"));
+        auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
+        auto allowPerSiteCusomizationCol =
+            dataRecord.indexOf(QStringLiteral("allow_per_site_customization"));
+
+        ConfigurationSet result;
+        while (query.next()) {
+            result.categories.append({ query.value(idCol).toInt(), query.value(nameCol).toString(),
+                                       query.value(allowPerSiteCusomizationCol).toBool() });
+        }
+
+        query = db.prepareQuery(QStringLiteral("select * from sp_get_sites()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        dataRecord = query.record();
+        idCol = dataRecord.indexOf(QStringLiteral("id"));
+        nameCol = dataRecord.indexOf(QStringLiteral("name"));
+
+        while (query.next()) {
+            result.sites.append({ query.value(idCol).toInt(), query.value(nameCol).toString() });
+        }
+
+        query = db.prepareQuery(QStringLiteral("select * from sp_get_config_metadata()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        dataRecord = query.record();
+        auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
+        auto friendlyNameCol = dataRecord.indexOf(QStringLiteral("friendly_name"));
+        auto dataTypeCol = dataRecord.indexOf(QStringLiteral("type"));
+        auto isAdvancedCol = dataRecord.indexOf(QStringLiteral("is_advanced"));
+        auto categoryCol = dataRecord.indexOf(QStringLiteral("config_category_id"));
+
+        while (query.next()) {
+            result.parameterInfo.append(
+                { query.value(keyCol).toString(), query.value(categoryCol).toInt(),
+                  query.value(friendlyNameCol).toString(), query.value(dataTypeCol).toString(),
+                  query.value(isAdvancedCol).toBool() });
+        }
+
+        query = db.prepareQuery(QStringLiteral("select * from sp_get_parameters(:prefix)"));
+        query.bindValue(QStringLiteral(":prefix"), QString());
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        result.parameterValues = mapConfigurationParameters(query);
+
+        std::set<QString> globalValues;
+        for (const auto &value : result.parameterValues) {
+            if (!value.siteId) {
+                globalValues.emplace(value.key);
+            }
+        }
+
+        auto endGlobalValues = std::end(globalValues);
+        for (const auto &parameter : result.parameterInfo) {
+            if (globalValues.find(parameter.key) == endGlobalValues) {
+                throw std::runtime_error(QStringLiteral("Missing global value for parameter %1")
+                                             .arg(parameter.key)
+                                             .toStdString());
+            }
+        }
+
+        return result;
+    });
+}
+
+ConfigurationParameterValueList
+PersistenceManagerDBProvider::GetConfigurationParameters(const QString &prefix)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_parameters(:prefix)"));
+        query.bindValue(QStringLiteral(":prefix"), prefix);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        return mapConfigurationParameters(query);
+    });
+}
+
+JobConfigurationParameterValueList
+PersistenceManagerDBProvider::GetJobConfigurationParameters(int jobId, const QString &prefix)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_job_parameters(:job_id, :prefix)"));
+        query.bindValue(QStringLiteral(":job_id"), jobId);
+        query.bindValue(QStringLiteral(":prefix"), prefix);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
+        auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
+
+        JobConfigurationParameterValueList result;
+        while (query.next()) {
+            result.append({ query.value(keyCol).toString(), query.value(valueCol).toString() });
+        }
+
+        return result;
+    });
+}
+
+KeyedMessageList PersistenceManagerDBProvider::UpdateConfigurationParameters(
+    const ConfigurationUpdateActionList &actions, bool isAdmin)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_upsert_parameters(:parameters, :isAdmin)"));
+
+        query.bindValue(QStringLiteral(":parameters"), getConfigurationUpsertJson(actions));
+        query.bindValue(QStringLiteral(":isAdmin"), isAdmin);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        return mapUpdateConfigurationResult(query);
+    });
+}
+
+KeyedMessageList PersistenceManagerDBProvider::UpdateJobConfigurationParameters(
+    int jobId, const JobConfigurationUpdateActionList &parameters)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_upsert_job_parameters(:job_id, :parameters)"));
+
+        query.bindValue(QStringLiteral(":job_id"), jobId);
+        query.bindValue(QStringLiteral(":parameters"), getJobConfigurationUpsertJson(parameters));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        return mapUpdateConfigurationResult(query);
+    });
+}
+
+ProductToArchiveList PersistenceManagerDBProvider::GetProductsToArchive()
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_products_to_archive()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto productIdCol = dataRecord.indexOf(QStringLiteral("product_id"));
+        auto currentPathCol = dataRecord.indexOf(QStringLiteral("current_path"));
+        auto archivePathCol = dataRecord.indexOf(QStringLiteral("archive_path"));
+
+        ProductToArchiveList result;
+        while (query.next()) {
+            result.append({ query.value(productIdCol).toInt(),
+                            query.value(currentPathCol).toString(),
+                            query.value(archivePathCol).toString() });
+        }
+
+        return result;
+    });
+}
+
+void PersistenceManagerDBProvider::MarkProductsArchived(const ArchivedProductList &products)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_products_archived(:products)"));
+        query.bindValue(QStringLiteral(":products"), getArchivedProductsJson(products));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
+int PersistenceManagerDBProvider::SubmitJob(const NewJob &job)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_submit_job(:name, :description, "
+                           ":processorId, :siteId, :startTypeId, :parameters, :configuration)"));
+        query.bindValue(QStringLiteral(":name"), job.name);
+        query.bindValue(QStringLiteral(":description"), job.description);
+        query.bindValue(QStringLiteral(":processorId"), job.processorId);
+        query.bindValue(QStringLiteral(":siteId"), job.siteId);
+        query.bindValue(QStringLiteral(":startTypeId"), static_cast<int>(job.startType));
+        query.bindValue(QStringLiteral(":parameters"), job.parametersJson);
+        query.bindValue(QStringLiteral(":configuration"),
+                        getJobConfigurationUpsertJson(job.configuration));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error("Expecting a return value from sp_submit_job, but none found");
+        }
+
+        return query.value(0).toInt();
+    });
+}
+
+int PersistenceManagerDBProvider::SubmitTask(const NewTask &task)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral(
+            "select * from sp_submit_task(:jobId, :module, :parameters, :parentTasks)"));
+        query.bindValue(QStringLiteral(":jobId"), task.jobId);
+        query.bindValue(QStringLiteral(":module"), task.module);
+        query.bindValue(QStringLiteral(":parameters"), task.parametersJson);
+        query.bindValue(QStringLiteral(":parentTasks"), getParentTasksJson(task.parentTasks));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error(
+                "Expecting a return value from sp_submit_task, but none found");
+        }
+
+        return query.value(0).toInt();
+    });
+}
+
+void PersistenceManagerDBProvider::SubmitSteps(const NewStepList &steps)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_submit_steps(:steps)"));
+        query.bindValue(QStringLiteral(":steps"), getNewStepsJson(steps));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkStepPendingStart(int taskId, const QString &name)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select sp_mark_step_pending_start(:taskId, :name)"));
+        query.bindValue(QStringLiteral(":taskId"), taskId);
+        query.bindValue(QStringLiteral(":name"), name);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkStepStarted(int taskId, const QString &name)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        db.transaction();
+
+        auto query = db.createQuery();
+
+        query.setForwardOnly(true);
+        if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
+            throw_query_error(db, query);
+        }
+
+        query = db.prepareQuery(QStringLiteral("select sp_mark_step_started(:taskId, :name)"));
+        query.bindValue(QStringLiteral(":taskId"), taskId);
+        query.bindValue(QStringLiteral(":name"), name);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+        query.finish();
+
+        db.commit();
+    });
+}
+
+bool PersistenceManagerDBProvider::MarkStepFinished(int taskId,
+                                                    const QString &name,
+                                                    const ExecutionStatistics &statistics)
+{
+    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
+
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        db.transaction();
+
+        auto query = db.createQuery();
+
+        query.setForwardOnly(true);
+        if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
+            throw_query_error(db, query);
+        }
+
+        query = db.prepareQuery(QStringLiteral(
+            "select sp_mark_step_finished(:taskId, :name, :node, :exitCode, :userCpuMs, "
+            ":systemCpuMs, :durationMs, :maxRssKb, :maxVmSizeKb, :diskReadBytes, "
+            ":diskWriteBytes, :stdOutText, :stdErrText)"));
+        query.bindValue(QStringLiteral(":taskId"), taskId);
+        query.bindValue(QStringLiteral(":name"), name);
+        bindStepExecutionStatistics(query, statistics);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error(
+                "Expecting a return value from sp_mark_step_finished, but none found");
+        }
+
+        auto isTaskFinished = query.value(0).toBool();
+
+        query.finish();
+
+        db.commit();
+
+        return isTaskFinished;
+    });
+}
+
+void PersistenceManagerDBProvider::MarkStepFailed(int taskId,
+                                                  const QString &name,
+                                                  const ExecutionStatistics &statistics)
+{
+    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
+
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        db.transaction();
+
+        auto query = db.createQuery();
+
+        query.setForwardOnly(true);
+        if (!query.exec(QStringLiteral("set transaction isolation level repeatable read"))) {
+            throw_query_error(db, query);
+        }
+
+        query = db.prepareQuery(
+            QStringLiteral("select sp_mark_step_failed(:taskId, :name, :node, :exitCode, "
+                           ":userCpuMs, :systemCpuMs, :durationMs, :maxRssKb, :maxVmSizeKb, "
+                           ":diskReadBytes, :diskWriteBytes, :stdOutText, :stdErrText)"));
+        query.bindValue(QStringLiteral(":taskId"), taskId);
+        query.bindValue(QStringLiteral(":name"), name);
+        bindStepExecutionStatistics(query, statistics);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+        query.finish();
+
+        db.commit();
+    });
+}
+
+void PersistenceManagerDBProvider::MarkJobCancelled(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_cancelled(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkJobPaused(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_paused(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkJobResumed(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_resumed(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkJobFinished(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_finished(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkJobFailed(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_failed(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkJobNeedsInput(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_mark_job_needs_input(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
+UnprocessedEventList PersistenceManagerDBProvider::GetNewEvents()
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_new_events()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto eventIdCol = dataRecord.indexOf(QStringLiteral("id"));
+        auto eventTypeCol = dataRecord.indexOf(QStringLiteral("type_id"));
+        auto eventDataCol = dataRecord.indexOf(QStringLiteral("data"));
+        auto submittedCol = dataRecord.indexOf(QStringLiteral("submitted_timestamp"));
+        auto processingStartedCol =
+            dataRecord.indexOf(QStringLiteral("processing_started_timestamp"));
+
+        UnprocessedEventList result;
+        while (query.next()) {
+            result.append({ query.value(eventIdCol).toInt(),
+                            static_cast<EventType>(query.value(eventTypeCol).toInt()),
+                            query.value(eventDataCol).toString(),
+                            query.value(submittedCol).toDateTime(),
+                            to_optional<QDateTime>(query.value(processingStartedCol)) });
+        }
+
+        return result;
+    });
+}
+
+void PersistenceManagerDBProvider::MarkEventProcessingStarted(int eventId)
+{
+    auto db = getDatabase();
+
+    provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select sp_mark_event_processing_started(:eventId)"));
+        query.bindValue(QStringLiteral(":eventId"), eventId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::MarkEventProcessingComplete(int eventId)
+{
+    auto db = getDatabase();
+
+    provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select sp_mark_event_processing_completed(:eventId)"));
+        query.bindValue(QStringLiteral(":eventId"), eventId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
+TaskIdList PersistenceManagerDBProvider::GetJobTasksByStatus(int jobId,
+                                                             const ExecutionStatusList &statusList)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_job_tasks_by_status(:jobId, :statusList)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+        query.bindValue(QStringLiteral(":statusList"), getExecutionStatusListJson(statusList));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto taskIdCol = dataRecord.indexOf(QStringLiteral("task_id"));
+
+        TaskIdList result;
+        while (query.next()) {
+            result.append({ query.value(taskIdCol).toInt() });
+        }
+
+        return result;
+    });
+}
+
+JobStepToRunList PersistenceManagerDBProvider::GetTaskStepsForStart(int taskId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_task_steps_for_start(:taskId)"));
+        query.bindValue(QStringLiteral(":taskId"), taskId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto taskIdCol = dataRecord.indexOf(QStringLiteral("task_id"));
+        auto moduleCol = dataRecord.indexOf(QStringLiteral("module_short_name"));
+        auto stepNameCol = dataRecord.indexOf(QStringLiteral("step_name"));
+        auto parametersCol = dataRecord.indexOf(QStringLiteral("parameters"));
+
+        JobStepToRunList result;
+        while (query.next()) {
+            result.append({ query.value(taskIdCol).toInt(), query.value(moduleCol).toString(),
+                            query.value(stepNameCol).toString(),
+                            query.value(parametersCol).toString() });
+        }
+
+        return result;
+    });
+}
+
+JobStepToRunList PersistenceManagerDBProvider::GetJobStepsForResume(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_job_steps_for_resume(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto taskIdCol = dataRecord.indexOf(QStringLiteral("task_id"));
+        auto moduleCol = dataRecord.indexOf(QStringLiteral("module_short_name"));
+        auto stepNameCol = dataRecord.indexOf(QStringLiteral("step_name"));
+        auto parametersCol = dataRecord.indexOf(QStringLiteral("parameters"));
+
+        JobStepToRunList result;
+        while (query.next()) {
+            result.append({ query.value(taskIdCol).toInt(), query.value(moduleCol).toString(),
+                            query.value(stepNameCol).toString(),
+                            query.value(parametersCol).toString() });
+        }
+
+        return result;
+    });
+}
+
+StepConsoleOutputList PersistenceManagerDBProvider::GetTaskConsoleOutputs(int taskId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_task_console_outputs(:taskId)"));
+        query.bindValue(QStringLiteral(":taskId"), taskId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto taskIdCol = dataRecord.indexOf(QStringLiteral("task_id"));
+        auto stepNameCol = dataRecord.indexOf(QStringLiteral("step_name"));
+        auto stdOutTextCol = dataRecord.indexOf(QStringLiteral("stdout_text"));
+        auto stdErrTextCol = dataRecord.indexOf(QStringLiteral("stderr_text"));
+
+        StepConsoleOutputList result;
+        while (query.next()) {
+            result.append({ query.value(taskIdCol).toInt(), query.value(stepNameCol).toString(),
+                            query.value(stdOutTextCol).toString(),
+                            query.value(stdErrTextCol).toString() });
+        }
+
+        return result;
+    });
+}
+
+void PersistenceManagerDBProvider::InsertEvent(const SerializedEvent &event)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select sp_insert_event(:eventType, :eventData)"));
+        query.bindValue(QStringLiteral(":eventType"), static_cast<int>(event.type));
+        query.bindValue(QStringLiteral(":eventData"), event.data);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::InsertNodeStatistics(const NodeStatistics &statistics)
+{
+    static_assert(sizeof(qlonglong) == sizeof(int64_t), "qlonglong must be 64-bit");
+
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select sp_insert_node_statistics(:node, :cpuUser, :cpuSystem, "
+                           ":memTotalKb, :memUsedKb, :swapTotalKb, :swapUsedKb, :loadAvg1, "
+                           ":loadAvg5, :loadAvg15, :diskTotalBytes, :diskUsedBytes, :timestamp)"));
+        query.bindValue(QStringLiteral(":node"), statistics.node);
+        query.bindValue(QStringLiteral(":cpuUser"),
+                        static_cast<int16_t>(lrint(1000.0 * statistics.cpuUser)));
+        query.bindValue(QStringLiteral(":cpuSystem"),
+                        static_cast<int16_t>(lrint(1000.0 * statistics.cpuSystem)));
+        query.bindValue(QStringLiteral(":memTotalKb"), qlonglong{ statistics.memTotalKb });
+        query.bindValue(QStringLiteral(":memUsedKb"), qlonglong{ statistics.memUsedKb });
+        query.bindValue(QStringLiteral(":swapTotalKb"), qlonglong{ statistics.swapTotalKb });
+        query.bindValue(QStringLiteral(":swapUsedKb"), qlonglong{ statistics.swapUsedKb });
+        query.bindValue(QStringLiteral(":loadAvg1"),
+                        static_cast<int16_t>(lrint(100.0 * statistics.loadAvg1)));
+        query.bindValue(QStringLiteral(":loadAvg5"),
+                        static_cast<int16_t>(lrint(100.0 * statistics.loadAvg5)));
+        query.bindValue(QStringLiteral(":loadAvg15"),
+                        static_cast<int16_t>(lrint(100.0 * statistics.loadAvg15)));
+        query.bindValue(QStringLiteral(":diskTotalBytes"), qlonglong{ statistics.diskTotalBytes });
+        query.bindValue(QStringLiteral(":diskUsedBytes"), qlonglong{ statistics.diskUsedBytes });
+        query.bindValue(QStringLiteral(":timestamp"), QDateTime::currentDateTimeUtc());
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
+int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_insert_product(:productType, "
+                                           ":processorId, :taskId, :fullPath, :createdTimestamp)"));
+        query.bindValue(QStringLiteral(":productType"), static_cast<int>(product.productType));
+        query.bindValue(QStringLiteral(":processorId"), product.processorId);
+        query.bindValue(QStringLiteral(":taskId"), product.taskId);
+        query.bindValue(QStringLiteral(":fullPath"), product.fullPath);
+        query.bindValue(QStringLiteral(":createdTimestamp"), product.createdTimestamp);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error(
+                "Expecting a return value from sp_insert_product, but none found");
+        }
+
+        return query.value(0).toInt();
+    });
+}
+
+QString PersistenceManagerDBProvider::GetDashboardCurrentJobData()
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_current_job_data()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error(
+                "Expecting a return value from sp_get_dashboard_current_job_data, but none found");
+        }
+
+        return query.value(0).toString();
+    });
+}
+
+QString PersistenceManagerDBProvider::GetDashboardServerResourceData()
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_dashboard_server_resource_data()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error("Expecting a return value from "
+                                     "sp_get_dashboard_server_resource_data, but none found");
+        }
+
+        return query.value(0).toString();
+    });
+}
+
+QString PersistenceManagerDBProvider::GetDashboardProcessorStatistics()
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_dashboard_processor_statistics()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error("Expecting a return value from "
+                                     "sp_get_dashboard_processor_statistics, but none found");
+        }
+
+        return query.value(0).toString();
+    });
+}
+
+QString PersistenceManagerDBProvider::GetDashboardProductAvailability(const QDateTime &since)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_dashboard_product_availability(:since)"));
+        query.bindValue(QStringLiteral(":since"), since);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error("Expecting a return value from "
+                                     "sp_get_dashboard_product_availability, but none found");
+        }
+
+        return query.value(0).toString();
+    });
+}
+
+QString PersistenceManagerDBProvider::GetDashboardJobTimeline(int jobId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_job_timeline(:jobId)"));
+        query.bindValue(QStringLiteral(":jobId"), jobId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error("Expecting a return value from "
+                                     "sp_get_dashboard_job_timeline, but none found");
+        }
+
+        return query.value(0).toString();
+    });
+}
+
+QString PersistenceManagerDBProvider::GetDashboardProducts(const DashboardSearch &search)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_dashboard_products(:siteId, :processorId)"));
+        if (search.siteId)
+            query.bindValue(QStringLiteral(":siteId"), *search.siteId);
+        else
+            query.bindValue(QStringLiteral(":siteId"), QVariant());
+
+        if (search.processorId)
+            query.bindValue(QStringLiteral(":processorId"), *search.processorId);
+        else
+            query.bindValue(QStringLiteral(":processorId"), QVariant());
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error(
+                "Expecting a return value from sp_get_dashboard_products, but none found");
+        }
+
+        return query.value(0).toString();
+    });
+}
+
+QString PersistenceManagerDBProvider::GetDashboardSites()
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_sites()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error(
+                "Expecting a return value from sp_get_dashboard_sites, but none found");
+        }
+
+        return query.value(0).toString();
+    });
+}
+
+QString PersistenceManagerDBProvider::GetDashboardSentinelTiles(int siteId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_dashboard_sentinel_tiles(:siteId)"));
+        query.bindValue(QStringLiteral(":siteId"), siteId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error(
+                "Expecting a return value from sp_get_dashboard_sentinel_tiles, but none found");
+        }
+
+        return query.value(0).toString();
+    });
+}
+
+QString PersistenceManagerDBProvider::GetDashboardLandsatTiles(int siteId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(
+            QStringLiteral("select * from sp_get_dashboard_landsat_tiles(:siteId)"));
+        query.bindValue(QStringLiteral(":siteId"), siteId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error(
+                "Expecting a return value from sp_get_dashboard_landsat_tiles, but none found");
+        }
+
+        return query.value(0).toString();
+    });
+}
+
+QString PersistenceManagerDBProvider::GetDashboardProcessors()
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_processors()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        if (!query.next()) {
+            throw std::runtime_error(
+                "Expecting a return value from sp_get_dashboard_processors, but none found");
+        }
+
+        return query.value(0).toString();
+    });
+}
+
+std::vector<ScheduledTask> PersistenceManagerDBProvider::GetScheduledTasks( )
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_scheduled_tasks()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto taskIdCol = dataRecord.indexOf(QStringLiteral("task_id"));
+        auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
+        auto processorIdCol = dataRecord.indexOf(QStringLiteral("processor_id"));
+        auto processorParamsCol = dataRecord.indexOf(QStringLiteral("processor_params"));
+
+        auto repeatTypeCol = dataRecord.indexOf(QStringLiteral("repeat_type"));
+        auto repeatAfterDaysCol = dataRecord.indexOf(QStringLiteral("repeat_after_days"));
+        auto repeatOnMonthDayCol = dataRecord.indexOf(QStringLiteral("repeat_on_month_day"));
+
+        auto retrySecondsCol = dataRecord.indexOf(QStringLiteral("retry_seconds"));
+        auto priorityCol = dataRecord.indexOf(QStringLiteral("priority"));
+        auto firstRunTimeCol = dataRecord.indexOf(QStringLiteral("first_run_time"));
+
+
+        auto statusIdCol = dataRecord.indexOf(QStringLiteral("status_id"));
+        auto nextScheduleCol = dataRecord.indexOf(QStringLiteral("next_schedule"));
+        auto lastScheduledRunCol = dataRecord.indexOf(QStringLiteral("last_scheduled_run"));
+
+        auto lastRunTimestampCol = dataRecord.indexOf(QStringLiteral("last_run_timestamp"));
+        auto lastRetryTimestampCol = dataRecord.indexOf(QStringLiteral("last_retry_timestamp"));
+        auto estimatedNextRunTimeCol = dataRecord.indexOf(QStringLiteral("estimated_next_run_time"));
+
+
+        std::vector<ScheduledTask> taskList;
+        while (query.next()) {
+            ScheduledTaskStatus ss;
+            ss.id = query.value(statusIdCol).toInt();
+            ss.taskId = query.value(taskIdCol).toInt();
+            ss.nextScheduledRunTime.fromString( query.value(nextScheduleCol).toString(), Qt::ISODate);
+            ss.lastSuccesfullScheduledRun.fromString(query.value(lastScheduledRunCol).toString(), Qt::ISODate);
+            ss.lastSuccesfullTimestamp.fromString(query.value(lastRunTimestampCol).toString(), Qt::ISODate);
+            ss.lastRetryTime.fromString(query.value(lastRetryTimestampCol).toString(), Qt::ISODate);
+            ss.estimatedRunTime.fromString(query.value(estimatedNextRunTimeCol).toString(), Qt::ISODate);
+
+            taskList.emplace_back(query.value(taskIdCol).toInt(),
+                                  query.value(nameCol).toString(),
+                                  query.value(processorIdCol).toInt(),
+                                  query.value(processorParamsCol).toString(),
+                                  query.value(repeatTypeCol).toInt(),
+                                  query.value(repeatAfterDaysCol).toInt(),
+                                  query.value(repeatOnMonthDayCol).toInt(),
+                                  QDateTime().fromString(query.value(firstRunTimeCol).toString(), Qt::ISODate),
+                                  query.value(retrySecondsCol).toInt(),
+                                  query.value(priorityCol).toInt(),
+                                  ss
+                                  );
+        }
+
+        return taskList;
     });
 
-    return {};
 }
 
-ConfigurationParameterValueList PersistenceManager::GetConfigurationParameters(QString prefix)
+void PersistenceManagerDBProvider::UpdateScheduledTasksStatus( std::vector<ScheduledTaskStatus>& statuses)
 {
-    // a bit of overkill to avoid copying the argument
-    // using c++14 generalized capture would avoid the need to use std::bind
-    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const QString &prefix) {
-        return dbProvider.GetConfigurationParameters(prefix);
-    }, std::ref(dbProvider), std::move(prefix)));
+    auto db = getDatabase();
 
-    return {};
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_submit_statuses(:statuses)"));
+        query.bindValue(QStringLiteral(":statuses"), getScheduledTasksStatusesJson(statuses));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
 }
 
-JobConfigurationParameterValueList PersistenceManager::GetJobConfigurationParameters(int jobId,
-                                                                                     QString prefix)
+static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions)
 {
-    RunAsync(
-        std::bind([](PersistenceManagerDBProvider &dbProvider, int jobId, const QString &prefix) {
-            return dbProvider.GetJobConfigurationParameters(jobId, prefix);
-        }, std::ref(dbProvider), jobId, std::move(prefix)));
+    QJsonArray array;
+    for (const auto &p : actions) {
+        QJsonObject node;
+        node[QStringLiteral("key")] = p.key;
+        node[QStringLiteral("site_id")] = p.siteId ? QJsonValue(p.siteId.value()) : QJsonValue();
+        node[QStringLiteral("value")] = p.value ? QJsonValue(p.value.value()) : QJsonValue();
+        array.append(std::move(node));
+    }
 
-    return {};
+    return jsonToString(array);
 }
 
-KeyedMessageList
-PersistenceManager::UpdateConfigurationParameters(ConfigurationUpdateActionList parameters)
+static QString getJobConfigurationUpsertJson(const JobConfigurationUpdateActionList &actions)
 {
-    RunAsync(std::bind(
-        [](PersistenceManagerDBProvider &dbProvider,
-           const ConfigurationUpdateActionList &parameters, bool isCallerAdmin) {
-            return dbProvider.UpdateConfigurationParameters(parameters, isCallerAdmin);
-        },
-        std::ref(dbProvider), std::move(parameters), IsCallerAdmin()));
+    QJsonArray array;
+    for (const auto &p : actions) {
+        QJsonObject node;
+        node[QStringLiteral("key")] = p.key;
+        node[QStringLiteral("value")] = p.value;
+        array.append(std::move(node));
+    }
 
-    return {};
+    return jsonToString(array);
 }
 
-KeyedMessageList
-PersistenceManager::UpdateJobConfigurationParameters(int jobId,
-                                                     JobConfigurationUpdateActionList parameters)
+static QString getArchivedProductsJson(const ArchivedProductList &products)
 {
-    RunAsync(std::bind(
-        [](PersistenceManagerDBProvider &dbProvider, int jobId,
-           const JobConfigurationUpdateActionList &parameters) {
-            return dbProvider.UpdateJobConfigurationParameters(jobId, parameters);
-        },
-        std::ref(dbProvider), jobId, std::move(parameters)));
+    QJsonArray array;
+    for (const auto &p : products) {
+        QJsonObject node;
+        node[QStringLiteral("product_id")] = p.productId;
+        node[QStringLiteral("archive_path")] = p.archivePath;
+        array.append(std::move(node));
+    }
 
-    return {};
+    return jsonToString(array);
 }
 
-ProductToArchiveList PersistenceManager::GetProductsToArchive()
+static QString getParentTasksJson(const TaskIdList &tasks)
 {
-    RunAsync([this] { return dbProvider.GetProductsToArchive(); });
+    QJsonArray array;
+    for (const auto &task : tasks) {
+        array.append(task);
+    }
 
-    return {};
+    return jsonToString(array);
 }
 
-void PersistenceManager::MarkProductsArchived(ArchivedProductList products)
+static QString getNewStepsJson(const NewStepList &steps)
 {
-    RunAsync(std::bind(
-        [](PersistenceManagerDBProvider &dbProvider, const ArchivedProductList &products) {
-            dbProvider.MarkProductsArchived(products);
-        },
-        std::ref(dbProvider), std::move(products)));
+    QJsonArray array;
+    for (const auto &s : steps) {
+        QJsonObject node;
+        node[QStringLiteral("task_id")] = s.taskId;
+        node[QStringLiteral("name")] = s.name;
+        node[QStringLiteral("parameters")] =
+            QJsonDocument::fromJson(s.parametersJson.toUtf8()).object();
+        array.append(std::move(node));
+    }
+
+    return jsonToString(array);
 }
 
-int PersistenceManager::SubmitJob(NewJob job)
+static QString getScheduledTasksStatusesJson(const std::vector<ScheduledTaskStatus>& statuses)
 {
-    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const NewJob &job) {
-        return dbProvider.SubmitJob(job);
-    }, std::ref(dbProvider), std::move(job)));
+    QJsonArray array;
+    for (const auto &s : statuses) {
+        QJsonObject node;
+        node[QStringLiteral("id")] = s.id;
+        node[QStringLiteral("next_schedule")] = s.nextScheduledRunTime.toString(Qt::ISODate);
+        node[QStringLiteral("last_scheduled_run")] = s.lastSuccesfullScheduledRun.toString(Qt::ISODate);
+        node[QStringLiteral("last_run_timestamp")] = s.lastSuccesfullTimestamp.toString(Qt::ISODate);
+        node[QStringLiteral("last_retry_timestamp")] = s.lastRetryTime.toString(Qt::ISODate);
+        node[QStringLiteral("estimated_next_run_time")] = s.estimatedRunTime.toString(Qt::ISODate);
 
-    return {};
+        array.append(std::move(node));
+    }
+
+    return jsonToString(array);
 }
 
-int PersistenceManager::SubmitTask(NewTask task)
+static QString getExecutionStatusListJson(const ExecutionStatusList &statusList)
 {
-    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const NewTask &task) {
-        return dbProvider.SubmitTask(task);
-    }, std::ref(dbProvider), std::move(task)));
+    QJsonArray array;
+    for (const auto &s : statusList) {
+        array.append(static_cast<int>(s));
+    }
 
-    return {};
+    return jsonToString(array);
 }
 
-void PersistenceManager::SubmitSteps(NewStepList steps)
+static void bindStepExecutionStatistics(QSqlQuery &query, const ExecutionStatistics &statistics)
 {
-    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const NewStepList &steps) {
-        return dbProvider.SubmitSteps(steps);
-    }, std::ref(dbProvider), std::move(steps)));
+    query.bindValue(QStringLiteral(":node"), statistics.node);
+    query.bindValue(QStringLiteral(":exitCode"), statistics.exitCode);
+    query.bindValue(QStringLiteral(":userCpuMs"), qlonglong{ statistics.userCpuMs });
+    query.bindValue(QStringLiteral(":systemCpuMs"), qlonglong{ statistics.systemCpuMs });
+    query.bindValue(QStringLiteral(":durationMs"), qlonglong{ statistics.durationMs });
+    query.bindValue(QStringLiteral(":maxRssKb"), statistics.maxRssKb);
+    query.bindValue(QStringLiteral(":maxVmSizeKb"), statistics.maxVmSizeKb);
+    query.bindValue(QStringLiteral(":diskReadBytes"), qlonglong{ statistics.diskReadBytes });
+    query.bindValue(QStringLiteral(":diskWriteBytes"), qlonglong{ statistics.diskWriteBytes });
+    query.bindValue(QStringLiteral(":stdOutText"), statistics.stdOutText);
+    query.bindValue(QStringLiteral(":stdErrText"), statistics.stdErrText);
 }
 
-void PersistenceManager::MarkStepPendingStart(int taskId, QString name)
+static ConfigurationParameterValueList mapConfigurationParameters(QSqlQuery &query)
 {
-    RunAsync(
-        std::bind([](PersistenceManagerDBProvider &dbProvider, int taskId, const QString &name) {
-            dbProvider.MarkStepPendingStart(taskId, name);
-        }, std::ref(dbProvider), taskId, std::move(name)));
+    auto dataRecord = query.record();
+    auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
+    auto siteIdCol = dataRecord.indexOf(QStringLiteral("site_id"));
+    auto valueCol = dataRecord.indexOf(QStringLiteral("value"));
+
+    ConfigurationParameterValueList result;
+    while (query.next()) {
+        result.append({ query.value(keyCol).toString(), to_optional<int>(query.value(siteIdCol)),
+                        query.value(valueCol).toString() });
+    }
+
+    return result;
 }
 
-void PersistenceManager::MarkStepStarted(int taskId, QString name)
+static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query)
 {
-    RunAsync(
-        std::bind([](PersistenceManagerDBProvider &dbProvider, int taskId, const QString &name) {
-            dbProvider.MarkStepStarted(taskId, name);
-        }, std::ref(dbProvider), taskId, std::move(name)));
+    auto dataRecord = query.record();
+    auto keyCol = dataRecord.indexOf(QStringLiteral("key"));
+    auto errorMessageCol = dataRecord.indexOf(QStringLiteral("error_message"));
+
+    KeyedMessageList result;
+    while (query.next()) {
+        result.append({ query.value(keyCol).toString(), query.value(errorMessageCol).toString() });
+    }
+
+    return result;
 }
 
-bool PersistenceManager::MarkStepFinished(int taskId, QString name, ExecutionStatistics statistics)
-{
-    RunAsync(std::bind(
-        [](PersistenceManagerDBProvider &dbProvider, int taskId, const QString &name,
-           const ExecutionStatistics &statistics) {
-            if (statistics.exitCode) {
-                dbProvider.MarkStepFailed(taskId, name, statistics);
-                return true;
-            } else {
-                return dbProvider.MarkStepFinished(taskId, name, statistics);
-            }
-        },
-        std::ref(dbProvider), taskId, std::move(name), std::move(statistics)));
+ProcessorDescriptionList PersistenceManagerDBProvider::GetProcessorDescriptions() {
+    auto db = getDatabase();
 
-    return {};
+    return provider.handleTransactionRetry(__func__, [&] {
+        ProcessorDescriptionList result;
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_processors()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto idCol = dataRecord.indexOf(QStringLiteral("id"));
+        auto shortNameCol = dataRecord.indexOf(QStringLiteral("short_name"));
+        auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
+
+        while (query.next()) {
+            result.append({ query.value(idCol).toInt(), query.value(shortNameCol).toString(), query.value(nameCol).toString() });
+        }
+
+        return result;
+    });
 }
 
-void PersistenceManager::MarkJobPaused(int jobId)
-{
-    RunAsync([this, jobId]() { dbProvider.MarkJobPaused(jobId); });
-}
-
-void PersistenceManager::MarkJobResumed(int jobId)
-{
-    RunAsync([this, jobId]() { dbProvider.MarkJobResumed(jobId); });
-}
-
-void PersistenceManager::MarkJobCancelled(int jobId)
-{
-    RunAsync([this, jobId]() { dbProvider.MarkJobCancelled(jobId); });
-}
-
-void PersistenceManager::MarkJobFinished(int jobId)
-{
-    RunAsync([this, jobId]() { dbProvider.MarkJobFinished(jobId); });
-}
-
-void PersistenceManager::MarkJobFailed(int jobId)
-{
-    RunAsync([this, jobId]() { dbProvider.MarkJobFailed(jobId); });
-}
-
-void PersistenceManager::MarkJobNeedsInput(int jobId)
-{
-    RunAsync([this, jobId]() { dbProvider.MarkJobNeedsInput(jobId); });
-}
-
-TaskIdList PersistenceManager::GetJobTasksByStatus(int jobId, ExecutionStatusList statusList)
-{
-    RunAsync(std::bind(
-        [](PersistenceManagerDBProvider &dbProvider, int jobId,
-           const ExecutionStatusList &statusList) {
-            return dbProvider.GetJobTasksByStatus(jobId, statusList);
-        },
-        std::ref(dbProvider), jobId, std::move(statusList)));
-
-    return {};
-}
-
-JobStepToRunList PersistenceManager::GetTaskStepsForStart(int taskId)
-{
-    RunAsync([this, taskId] { return dbProvider.GetTaskStepsForStart(taskId); });
-
-    return {};
-}
-
-JobStepToRunList PersistenceManager::GetJobStepsForResume(int jobId)
-{
-    RunAsync([this, jobId] { return dbProvider.GetJobStepsForResume(jobId); });
-
-    return {};
-}
-
-StepConsoleOutputList PersistenceManager::GetTaskConsoleOutputs(int taskId)
-{
-    RunAsync([this, taskId] { return dbProvider.GetTaskConsoleOutputs(taskId); });
-
-    return {};
-}
-
-void PersistenceManager::InsertTaskAddedEvent(TaskRunnableEvent event)
-{
-    RunAsync(
-        std::bind([](PersistenceManagerDBProvider &dbProvider, const TaskRunnableEvent &event) {
-            dbProvider.InsertEvent(event);
-        }, std::ref(dbProvider), std::move(event)));
-}
-
-void PersistenceManager::InsertTaskFinishedEvent(TaskFinishedEvent event)
-{
-    RunAsync(
-        std::bind([](PersistenceManagerDBProvider &dbProvider, const TaskFinishedEvent &event) {
-            dbProvider.InsertEvent(event);
-        }, std::ref(dbProvider), std::move(event)));
-}
-
-void PersistenceManager::InsertProductAvailableEvent(ProductAvailableEvent event)
-{
-    RunAsync(
-        std::bind([](PersistenceManagerDBProvider &dbProvider, const ProductAvailableEvent &event) {
-            dbProvider.InsertEvent(event);
-        }, std::ref(dbProvider), std::move(event)));
-}
-
-void PersistenceManager::InsertJobCancelledEvent(JobCancelledEvent event)
-{
-    RunAsync(
-        std::bind([](PersistenceManagerDBProvider &dbProvider, const JobCancelledEvent &event) {
-            dbProvider.InsertEvent(event);
-        }, std::ref(dbProvider), std::move(event)));
-}
-
-void PersistenceManager::InsertJobPausedEvent(JobPausedEvent event)
-{
-    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const JobPausedEvent &event) {
-        dbProvider.InsertEvent(event);
-    }, std::ref(dbProvider), std::move(event)));
-}
-
-void PersistenceManager::InsertJobResumedEvent(JobResumedEvent event)
-{
-    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const JobResumedEvent &event) {
-        dbProvider.InsertEvent(event);
-    }, std::ref(dbProvider), std::move(event)));
-}
-
-void PersistenceManager::InsertJobSubmittedEvent(JobSubmittedEvent event)
-{
-    RunAsync(
-        std::bind([](PersistenceManagerDBProvider &dbProvider, const JobSubmittedEvent &event) {
-            dbProvider.InsertEvent(event);
-        }, std::ref(dbProvider), std::move(event)));
-}
-
-UnprocessedEventList PersistenceManager::GetNewEvents()
-{
-    RunAsync([this] { return dbProvider.GetNewEvents(); });
-
-    return {};
-}
-
-void PersistenceManager::MarkEventProcessingStarted(int eventId)
-{
-    RunAsync([this, eventId] { return dbProvider.MarkEventProcessingStarted(eventId); });
-}
-
-void PersistenceManager::MarkEventProcessingComplete(int eventId)
-{
-    RunAsync([this, eventId] { return dbProvider.MarkEventProcessingComplete(eventId); });
-}
-
-void PersistenceManager::InsertNodeStatistics(NodeStatistics statistics)
-{
-    RunAsync(
-        std::bind([](PersistenceManagerDBProvider &dbProvider, const NodeStatistics &statistics) {
-            dbProvider.InsertNodeStatistics(statistics);
-        }, std::ref(dbProvider), std::move(statistics)));
-}
-
-int PersistenceManager::InsertProduct(NewProduct product)
-{
-    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const NewProduct &product) {
-        return dbProvider.InsertProduct(product);
-    }, std::ref(dbProvider), std::move(product)));
-
-    return {};
-}
-
-QString PersistenceManager::GetDashboardCurrentJobData()
-{
-    RunAsync([this] { return dbProvider.GetDashboardCurrentJobData(); });
-
-    return {};
-}
-
-QString PersistenceManager::GetDashboardServerResourceData()
-{
-    RunAsync([this] { return dbProvider.GetDashboardServerResourceData(); });
-
-    return {};
-}
-
-QString PersistenceManager::GetDashboardProcessorStatistics()
-{
-    RunAsync([this] { return dbProvider.GetDashboardProcessorStatistics(); });
-
-    return {};
-}
-
-QString PersistenceManager::GetDashboardProductAvailability(QDateTime since)
-{
-    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const QDateTime &since) {
-        return dbProvider.GetDashboardProductAvailability(since);
-    }, std::ref(dbProvider), std::move(since)));
-
-    return {};
-}
-
-QString PersistenceManager::GetDashboardJobTimeline(int jobId)
-{
-    RunAsync([this, jobId] { return dbProvider.GetDashboardJobTimeline(jobId); });
-
-    return {};
-}
-
-QString PersistenceManager::GetDashboardProducts(DashboardSearch search)
-{
-    RunAsync(std::bind([](PersistenceManagerDBProvider &dbProvider, const DashboardSearch &search) {
-        return dbProvider.GetDashboardProducts(search);
-    }, std::ref(dbProvider), std::move(search)));
-
-    return {};
-}
-
-QString PersistenceManager::GetDashboardSites()
-{
-    RunAsync([this] { return dbProvider.GetDashboardSites(); });
-
-    return {};
-}
-
-QString PersistenceManager::GetDashboardSentinelTiles(int siteId)
-{
-    RunAsync([this, siteId] { return dbProvider.GetDashboardSentinelTiles(siteId); });
-
-    return {};
-}
-
-QString PersistenceManager::GetDashboardLandsatTiles(int siteId)
-{
-    RunAsync([this, siteId] { return dbProvider.GetDashboardLandsatTiles(siteId); });
-
-    return {};
-}
-
-QString PersistenceManager::GetDashboardProcessors()
-{
-    RunAsync([this] { return dbProvider.GetDashboardProcessors(); });
-
-    return {};
-}

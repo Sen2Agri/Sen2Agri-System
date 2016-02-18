@@ -12,7 +12,7 @@ public:
     CommandInvoker();
     ~CommandInvoker();
 
-    bool InvokeCommand(QString &strCmd, QStringList &listParams, bool bIsAsync);
+    bool InvokeCommand(QString &strCmd, QStringList &listParams, bool bIsAsync, int &exitCode);
     void StopCurCmdExec();
     const QString& GetStandardOutputLog() const;
     const QString& GetStandardErrorLog() const;

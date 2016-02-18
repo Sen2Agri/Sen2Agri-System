@@ -84,7 +84,7 @@ std::vector<int> tm_to_doy_list(const std::vector<std::tm> &times)
   constexpr float secondsPerDayF = static_cast<float>(secondsPerDay);
 
   std::transform(std::begin(seconds), std::end(seconds), std::begin(res),
-                 [](std::time_t time) { return static_cast<int>(lrintf(time / secondsPerDayF)); });
+                 [](std::time_t time) { return static_cast<int>(lrintf(time / secondsPerDayF)+1); });
 
   return res;
 }

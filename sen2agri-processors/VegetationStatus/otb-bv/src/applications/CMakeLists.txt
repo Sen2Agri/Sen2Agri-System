@@ -22,7 +22,7 @@ OTB_CREATE_APPLICATION(NAME           ProSailSimulator
 
 OTB_CREATE_APPLICATION(NAME           InverseModelLearning
   SOURCES        otbInverseModelLearning.cxx
-  LINK_LIBRARIES ${OTB_LIBRARIES};OTBBVUtil;gsl;gslcblas)
+  LINK_LIBRARIES MACCSMetadata;MetadataHelper;${OTB_LIBRARIES};OTBBVUtil;gsl;gslcblas)
 
 OTB_CREATE_APPLICATION(NAME           BVInversion
   SOURCES        otbBVInversion.cxx
@@ -30,7 +30,7 @@ OTB_CREATE_APPLICATION(NAME           BVInversion
 
 OTB_CREATE_APPLICATION(NAME           BVImageInversion
   SOURCES        otbBVImageInversion.cxx
-  LINK_LIBRARIES ${OTB_LIBRARIES};OTBBVUtil;gsl;gslcblas)
+  LINK_LIBRARIES MACCSMetadata;MetadataHelper;${OTB_LIBRARIES};OTBBVUtil;gsl;gslcblas)
   
 OTB_CREATE_APPLICATION(NAME           ProfileReprocessing
   SOURCES        otbProfileReprocessing.cxx
@@ -39,7 +39,7 @@ OTB_CREATE_APPLICATION(NAME           ProfileReprocessing
 otb_create_application(
   NAME           TrainingDataGenerator
   SOURCES        otbTrainingDataGenerator.cpp
-  LINK_LIBRARIES ${OTB_LIBRARIES})
+  LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
   
 otb_create_application(
   NAME           NdviRviExtraction

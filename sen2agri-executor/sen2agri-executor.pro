@@ -1,6 +1,6 @@
 include(../common.pri)
 
-QT       += core dbus network
+QT       += core dbus network sql
 QT       -= gui
 
 TARGET = sen2agri-executor
@@ -20,11 +20,6 @@ dbus_interface.files = ../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xm
 dbus_interface.header_flags = -i ../sen2agri-common/model.hpp
 
 DBUS_ADAPTORS += dbus_interface
-
-dbus_interface2.files = ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml
-dbus_interface2.header_flags = -i ../sen2agri-common/model.hpp
-
-DBUS_INTERFACES += dbus_interface2
 
 dbus_interface3.files = ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml
 dbus_interface3.header_flags = -i ../sen2agri-common/model.hpp
@@ -75,17 +70,9 @@ HEADERS += \
 
 OTHER_FILES += \
     ../dbus-interfaces/org.esa.sen2agri.processorsExecutor.xml \
-    ../dbus-interfaces/org.esa.sen2agri.persistenceManager.xml \
     dist/org.esa.sen2agri.processorsExecutor.conf \
     dist/org.esa.sen2agri.processorsExecutor.service \
     dist/sen2agri-executor.service
-
-LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
-
-INCLUDEPATH += $$PWD/../sen2agri-common
-DEPENDPATH += $$PWD/../sen2agri-common
-
-PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a
 
 target.path = /usr/bin
 
@@ -102,3 +89,17 @@ systemd-service.path = /usr/lib/systemd/system
 systemd-service.files = dist/sen2agri-executor.service
 
 INSTALLS += target interface dbus-policy dbus-service systemd-service
+
+LIBS += -L$$OUT_PWD/../sen2agri-persistence/ -lsen2agri-persistence
+
+INCLUDEPATH += $$PWD/../sen2agri-persistence
+DEPENDPATH += $$PWD/../sen2agri-persistence
+
+PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-persistence/libsen2agri-persistence.a
+
+LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
+
+INCLUDEPATH += $$PWD/../sen2agri-common
+DEPENDPATH += $$PWD/../sen2agri-common
+
+PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a

@@ -5,17 +5,17 @@
 
 #include "logger.hpp"
 #include "orchestratorworker.hpp"
+#include "persistencemanager.hpp"
 #include "dbus_future_utils.hpp"
 
 static StepArgumentList getStepArguments(const JobStepToRun &step);
 static NewExecutorStepList
-getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps);
+getExecutorStepList(EventProcessingContext &ctx, int processorId, int jobId, const JobStepToRunList &steps);
 
-OrchestratorWorker::OrchestratorWorker(
-    std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
-    OrgEsaSen2agriPersistenceManagerInterface &persistenceManagerClient,
-    OrgEsaSen2agriProcessorsExecutorInterface &executorClient)
-    : persistenceManagerClient(persistenceManagerClient),
+OrchestratorWorker::OrchestratorWorker(std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
+                                       PersistenceManagerDBProvider &persistenceManagerClient,
+                                       OrgEsaSen2agriProcessorsExecutorInterface &executorClient)
+    : persistenceManager(persistenceManagerClient),
       executorClient(executorClient),
       handlerMap(handlerMap)
 {
@@ -32,7 +32,7 @@ void OrchestratorWorker::RescanEvents()
 
     try {
         while (true) {
-            EventProcessingContext ctx(persistenceManagerClient);
+            EventProcessingContext ctx(persistenceManager);
 
             const auto &events = ctx.GetNewEvents();
             if (events.empty()) {
@@ -61,7 +61,7 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
     }
 
     try {
-        EventProcessingContext innerCtx(persistenceManagerClient);
+        EventProcessingContext innerCtx(persistenceManager);
 
         switch (event.type) {
             case EventType::TaskRunnable:
@@ -111,13 +111,14 @@ void OrchestratorWorker::DispatchEvent(EventProcessingContext &ctx,
 
 void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const TaskRunnableEvent &event)
 {
-    Logger::info(QStringLiteral("Processing task runnable event with task id %1 and job id %2")
+    Logger::info(QStringLiteral("Processing task runnable event with processor id %1 task id %2 and job id %3")
+                     .arg(event.processorId)
                      .arg(event.taskId)
                      .arg(event.jobId));
 
     const auto &steps = ctx.GetTaskStepsForStart(event.taskId);
 
-    const auto &stepsToSubmit = getExecutorStepList(ctx, event.jobId, steps);
+    const auto &stepsToSubmit = getExecutorStepList(ctx, event.processorId, event.jobId, steps);
 
     WaitForResponseAndThrow(executorClient.SubmitSteps(stepsToSubmit));
 }
@@ -146,9 +147,9 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobCanc
 {
     Logger::info(QStringLiteral("Processing job cancelled event with job id %1").arg(event.jobId));
 
-    const auto &tasks = ctx.GetJobTasksByStatus(
-        event.jobId,
-        { ExecutionStatus::Submitted, ExecutionStatus::Running, ExecutionStatus::Paused });
+    const auto &tasks =
+        ctx.GetJobTasksByStatus(event.jobId, { ExecutionStatus::Submitted, ExecutionStatus::Running,
+                                               ExecutionStatus::Paused });
 
     try {
         WaitForResponseAndThrow(executorClient.CancelTasks(tasks));
@@ -181,7 +182,7 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const JobResu
 
     const auto &steps = ctx.GetJobStepsForResume(event.jobId);
 
-    const auto &stepsToSubmit = getExecutorStepList(ctx, event.jobId, steps);
+    const auto &stepsToSubmit = getExecutorStepList(ctx, event.processorId, event.jobId, steps);
 
     WaitForResponseAndThrow(executorClient.SubmitSteps(stepsToSubmit));
     ctx.MarkJobResumed(event.jobId);
@@ -202,9 +203,9 @@ void OrchestratorWorker::ProcessEvent(EventProcessingContext &ctx, const StepFai
                      .arg(event.taskId)
                      .arg(event.jobId));
 
-    const auto &tasks = ctx.GetJobTasksByStatus(
-        event.jobId,
-        { ExecutionStatus::Running, ExecutionStatus::Error, ExecutionStatus::Submitted });
+    const auto &tasks =
+        ctx.GetJobTasksByStatus(event.jobId, { ExecutionStatus::Running, ExecutionStatus::Error,
+                                               ExecutionStatus::Submitted });
 
     try {
         WaitForResponseAndThrow(executorClient.CancelTasks(tasks));
@@ -276,10 +277,11 @@ static StepArgumentList getStepArguments(const JobStepToRun &step)
 }
 
 static NewExecutorStepList
-getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunList &steps)
+getExecutorStepList(EventProcessingContext &ctx, int processorId, int jobId, const JobStepToRunList &steps)
 {
     const auto &modulePaths = getModulePathMap(
         ctx.GetJobConfigurationParameters(jobId, QStringLiteral("executor.module.path.")));
+
 
     NewExecutorStepList stepsToSubmit;
     stepsToSubmit.reserve(steps.size());
@@ -293,7 +295,7 @@ getExecutorStepList(EventProcessingContext &ctx, int jobId, const JobStepToRunLi
         }
 
         const auto &arguments = getStepArguments(s);
-        stepsToSubmit.append({ s.taskId, it->second, s.stepName, arguments });
+        stepsToSubmit.append({ processorId, s.taskId, it->second, s.stepName, arguments });
     }
 
     return stepsToSubmit;

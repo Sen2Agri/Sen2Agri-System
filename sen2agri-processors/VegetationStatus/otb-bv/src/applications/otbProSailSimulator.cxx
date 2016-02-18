@@ -91,8 +91,13 @@ private:
     AddParameter(ParameterType_InputFilename, "rsrfile", 
                  "Input file containing the relative spectral responses.");
     SetParameterDescription( "rsrfile", "Input file containing ." );
-    MandatoryOn("rsrfile");
-    
+    MandatoryOff("rsrfile");
+
+    AddParameter(ParameterType_InputFilename, "rsrcfg",
+                 "Input file containing RSR files for each sensor type. This should be used only with xml parameter.");
+    SetParameterDescription( "rsrcfg", "Input file containing RSR files for each sensor type. This should be used only with the xml parameter." );
+    MandatoryOff("rsrcfg");
+
     AddParameter(ParameterType_OutputFilename, "out", "Output file");
     SetParameterDescription( "out", 
                              "Filename where the simulations are saved. The last 2 bands are fcover and fapar." );
@@ -169,17 +174,12 @@ private:
     if(IsParameterEnabled("solarzenithf"))
       m_SolarZenith_Fapar = GetParameterFloat("solarzenithf");
     m_SensorZenith = GetParameterFloat("sensorzenith");
-    std::string rsrFileName = GetParameterString("rsrfile");
-    //The first 2 columns of the rsr file correspond to the wavelenght and the solar radiation
-    auto cols = countColumns(rsrFileName);
-    assert(cols > 2);
-    size_t nbBands{cols-2};
-    otbAppLogINFO("Simulating " << nbBands << " spectral bands."<<std::endl);
-    auto satRSR = SatRSRType::New();
-    satRSR->SetNbBands(nbBands);
-    satRSR->SetSortBands(false);
-    satRSR->Load(rsrFileName);
+    std::string rsrFileName;
+    if(HasValue("rsrfile")) {
+        rsrFileName = GetParameterString("rsrfile");
+    }
 
+    std::string productMissionName;
     if(HasValue("xml")) {
         std::string inMetadataXml = GetParameterString("xml");
         auto factory = MetadataHelperFactory::New();
@@ -205,15 +205,50 @@ private:
             m_SensorZenith = sensorBandAngles.zenith;
             m_Azimuth = relativeAzimuth;
         }
-    }
 
+        if(HasValue("rsrcfg")) {
+            std::string rsrCfgFile = GetParameterString("rsrcfg");
+            std::ifstream  data(rsrCfgFile);
+            if(data.is_open()) {
+                productMissionName = pHelper->GetMissionName();
+                std::string line;
+                while(std::getline(data,line)) {
+                    size_t lastindex = line.find_last_of("=");
+                    if((lastindex != std::string::npos) && (lastindex != (line.length()-1))) {
+                        std::string missionName = line.substr(0, lastindex);
+                        std::string cfgRsrFileName = line.substr(lastindex+1);
+                        if(productMissionName == missionName) {
+                            rsrFileName = cfgRsrFileName;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                itkGenericExceptionMacro(<< "Could not open RSR configuration file " << rsrCfgFile);
+            }
+        }
+    }
     if(std::isnan(m_SolarZenith) || std::isnan(m_SensorZenith) || std::isnan(m_Azimuth)) {
         itkGenericExceptionMacro(<< "Please provide all angles or a valid XML file!");
     }
 
     writeAnglesFile();
 
-    
+    if(rsrFileName.length() == 0) {
+        itkGenericExceptionMacro(<< "Please provide the rsrcfg or rsrfile. "
+                                    "If you provided rsrcfg file, be sure that you provided the xml parameter "
+                                    "and have configured the mission " << productMissionName);
+    }
+    //The first 2 columns of the rsr file correspond to the wavelenght and the solar radiation
+    auto cols = countColumns(rsrFileName);
+    assert(cols > 2);
+    size_t nbBands{cols-2};
+    otbAppLogINFO("Simulating " << nbBands << " spectral bands."<<std::endl);
+    auto satRSR = SatRSRType::New();
+    satRSR->SetNbBands(nbBands);
+    satRSR->SetSortBands(false);
+    satRSR->Load(rsrFileName);
+
     std::stringstream ss;
     ss << "Bands for sensor" << std::endl;
     for(size_t i = 0; i< nbBands; ++i)
@@ -281,6 +316,9 @@ private:
     otbAppLogINFO("Processing simulations ..." << std::endl);
     auto bv_vec = parse_bv_sample_file(m_SampleFile);
     auto sampleCount = bv_vec.size();
+    if(sampleCount == 0) {
+        itkGenericExceptionMacro(<< "Found 0 simulation in the file " << bvFileName);
+    }
     otbAppLogINFO("" << sampleCount << " samples read."<< std::endl);
 
     std::vector<SimulationType> simus{sampleCount};

@@ -41,7 +41,22 @@ otb_create_application(NAME           SigmoFitting
 otb_create_application(NAME           MetricsEstimation
   SOURCES        MetricsEstimation.cxx
   LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno)
-  
+
+otb_create_application(NAME           SigmoFitting2
+  SOURCES        SigmoFitting2.cxx
+  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno)
+
+otb_create_application(NAME           MetricsEstimation2
+  SOURCES        MetricsEstimation2.cxx
+  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno)
+
+otb_create_application(NAME           PhenologicalNDVIMetrics
+  SOURCES        PhenologicalNDVIMetrics.cxx
+  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno)
+
+otb_create_application(NAME           PhenoMetricsSplitter
+  SOURCES        otbPhenoMetricsSplitter.cpp
+  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno)
 
 add_executable(test-sigmo test-sigmo.cxx)
 target_link_libraries(test-sigmo ${OTB_LIBRARIES} OTBPheno)

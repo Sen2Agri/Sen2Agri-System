@@ -28,7 +28,9 @@ QString SCANCEL_CMD("scancel --name=");
 #else
 
 QString SRUN_CMD("srun");
-QString SRUN_PARAM("--job-name");
+QString SRUN_JOB_NAME_PARAM("--job-name");
+QString SRUN_QOS_PARAM("--qos");
+QString SRUN_PARTITION_PARAM("--partition");
 
 QString SACCT_CMD("sacct");
 
@@ -39,7 +41,12 @@ QString
 
 QString SCANCEL_CMD("scancel");
 QString SCANCEL_CMD_ARGS("--name");
+
+QString SBATCH_CMD("sbatch");
 #endif
+
+#define SACCT_RETRY_CNT                 10
+#define SACCT_RETRY_TIMEOUT_IN_MSEC     1000
 
 RessourceManagerItf::RessourceManagerItf()
 {
@@ -196,7 +203,18 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
 
         QStringList listParams;
         QString strParam;
-        listParams.push_back(SRUN_PARAM);
+        QString strQos = PersistenceItfModule::GetInstance()->GetExecutorQos(executionStep.GetProcessorId());
+        QString strPartition = PersistenceItfModule::GetInstance()->GetExecutorPartition(executionStep.GetProcessorId());
+        if(!strQos.isEmpty()) {
+            listParams.push_back(SRUN_QOS_PARAM);
+            listParams.push_back(strQos);
+
+        }
+        if(!strPartition.isEmpty()) {
+            listParams.push_back(SRUN_PARTITION_PARAM);
+            listParams.push_back(strPartition);
+        }
+        listParams.push_back(SRUN_JOB_NAME_PARAM);
         listParams.push_back(strJobName);
         listParams.push_back(strProcWrpExecStr);
 
@@ -224,12 +242,45 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
         Logger::debug(QString("HandleStartProcessor: Executing command %1 with params %2")
                           .arg(SRUN_CMD, paramsStr));
 
-        CommandInvoker cmdInvoker;
-        if (!cmdInvoker.InvokeCommand(SRUN_CMD, listParams, true)) {
-            Logger::error(QString("Unable to execute SLURM srun command for the processor %1")
+        QTemporaryFile tempFile;
+        if (tempFile.open()) {
+            // TODO: The simplest way would be to send an inline shell script but I don't know why it doesn't work
+            //QString cmd = QString(" <<EOF\n#!/bin/sh\nsrun %1\nEOF").arg(paramsStr);
+            QString cmd = QString("#!/bin/sh\nsrun %1").arg(paramsStr);
+           tempFile.write(cmd.toStdString().c_str(), cmd.length());
+           tempFile.flush();
+           if(!tempFile.setPermissions(QFile::ReadOwner|
+                                       QFile::WriteOwner|
+                                       QFile::ExeOwner|
+                                       QFile::ReadGroup|
+                                       QFile::ExeGroup|
+                                       QFile::ReadOther|QFile::ExeOther)) {
+               Logger::error(QString("Unable to execute SLURM sbatch command for the processor %1. "
+                                     "The execution permissions cannot be set for the script!")
+                                 .arg(executionStep.GetProcessorPath()));
+               return false;
+           }
+        } else {
+            Logger::error(QString("Unable to execute SLURM sbatch command for the processor %1. "
+                                  "The script cannot be created!")
                               .arg(executionStep.GetProcessorPath()));
             return false;
         }
+        QStringList sbatchParams;
+        //sbatchParams.push_back(QString(" <<EOF\n#!/bin/sh\nsrun %1\nEOF").arg(paramsStr));
+        sbatchParams.push_back(tempFile.fileName());
+
+        Logger::debug(QString("HandleStartProcessor: Executing command %1 with params %2")
+                          .arg(SBATCH_CMD, sbatchParams.at(0)));
+
+        CommandInvoker cmdInvoker;
+        if (!cmdInvoker.InvokeCommand(SBATCH_CMD, sbatchParams, false)) {
+            Logger::error(QString("Unable to execute SLURM sbatch command for the processor %1. The error was: \"%s\"")
+                              .arg(executionStep.GetProcessorPath(), cmdInvoker.GetExecutionLog()));
+            return false;
+        }
+        Logger::debug(QString("HandleStartProcessor: Sbatch command returned: \"%1\"")
+                          .arg(cmdInvoker.GetExecutionLog()));
 
         // send the name of the job and the time to the persistence manager
         PersistenceItfModule::GetInstance()->MarkStepPendingStart(executionStep.GetTaskId(),
@@ -313,9 +364,16 @@ void RessourceManagerItf::HandleProcessorEndedMsg(RequestParamsExecutionInfos *p
 {
     // Get the job name and the execution time
     QString strJobName = pReqParams->GetJobName();
+    QString strStatusText = pReqParams->GetStatusText();
+    int nExitCode = pReqParams->GetExitCode();
     QString executionDuration = pReqParams->GetExecutionTime();
     int nTaskId = -1, nStepIdx = -1;
     QString strStepName;
+
+    Logger::debug(QString("HandleProcessorEndedMsg: Received message from job name %1 with status %2 and exit code %3")
+                      .arg(strJobName)
+                      .arg(strStatusText)
+                      .arg(nExitCode));
 
     // check if it a correct job name and extract the information from it
     if (ParseJobName(strJobName, nTaskId, strStepName, nStepIdx)) {
@@ -327,28 +385,38 @@ void RessourceManagerItf::HandleProcessorEndedMsg(RequestParamsExecutionInfos *p
                           .arg(SACCT_CMD)
                           .arg(args.join(' ')));
 
-        if (cmdInvoker.InvokeCommand(SACCT_CMD, args, false)) {
-            QString strLog = cmdInvoker.GetExecutionLog();
-            SlurmSacctResultParser slurmSacctParser;
-            QList<ProcessorExecutionInfos> procExecResults;
-            if (slurmSacctParser.ParseResults(strLog, procExecResults, &strJobName) > 0) {
-                ProcessorExecutionInfos jobExecInfos = procExecResults.at(0);
-                jobExecInfos.strExecutionDuration = executionDuration;
-                jobExecInfos.strJobStatus = ProcessorExecutionInfos::g_strFinished;
-
-                jobExecInfos.strStdOutText = pReqParams->GetStdOutText();
-                jobExecInfos.strStdErrText = pReqParams->GetStdErrText();
-
-                // Send the statistic infos to the persistence interface module
-                if (PersistenceItfModule::GetInstance()->MarkStepFinished(nTaskId, strStepName,
-                                                                          jobExecInfos)) {
-                    OrchestratorClient().NotifyEventsAvailable();
+        int retryCnt = 0;
+        ProcessorExecutionInfos jobExecInfos;
+        jobExecInfos.strJobName = strJobName;
+        while(retryCnt < SACCT_RETRY_CNT) {
+            if (cmdInvoker.InvokeCommand(SACCT_CMD, args, false)) {
+                QString strLog = cmdInvoker.GetExecutionLog();
+                SlurmSacctResultParser slurmSacctParser;
+                QList<ProcessorExecutionInfos> procExecResults;
+                if (slurmSacctParser.ParseResults(strLog, procExecResults, &strJobName) > 0) {
+                    jobExecInfos = procExecResults.at(0);
+                    break;
+                } else {
+                    Logger::error(
+                        QString("Unable to parse SACCT results for job name %1. Retrying ...").arg(strJobName));
+                    msleep(SACCT_RETRY_TIMEOUT_IN_MSEC);
                 }
-
             } else {
                 Logger::error(
-                    QString("Unable to parse SACCT results for job name %1").arg(strJobName));
+                    QString("Error executing SACCT for job name %1").arg(strJobName));
+                break;
             }
+            retryCnt++;
+        }
+        jobExecInfos.strExecutionDuration = executionDuration;
+        jobExecInfos.strJobStatus = ProcessorExecutionInfos::g_strFinished;
+        jobExecInfos.strStdOutText = pReqParams->GetStdOutText();
+        jobExecInfos.strStdErrText = pReqParams->GetStdErrText();
+        jobExecInfos.strExitCode = QString::number(nExitCode);
+        // Send the statistic infos to the persistence interface module
+        if (PersistenceItfModule::GetInstance()->MarkStepFinished(nTaskId, strStepName,
+                                                                  jobExecInfos)) {
+            OrchestratorClient().NotifyEventsAvailable();
         }
     } else {
         Logger::error(

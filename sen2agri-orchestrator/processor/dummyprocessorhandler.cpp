@@ -48,9 +48,7 @@ void DummyProcessorHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 void DummyProcessorHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                                    const TaskFinishedEvent &event)
 {
-    ctx.InsertProduct({ ProductType::TestProduct,
-                        event.processorId,
-                        event.taskId,
+    ctx.InsertProduct({ ProductType::TestProduct, event.processorId, event.taskId,
                         ctx.GetOutputPath(event.jobId, event.taskId, event.module),
                         QDateTime::currentDateTimeUtc() });
 }

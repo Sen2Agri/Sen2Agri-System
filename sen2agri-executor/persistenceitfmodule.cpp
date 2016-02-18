@@ -3,18 +3,16 @@ using namespace std;
 
 #include "persistenceitfmodule.h"
 #include "configurationmgr.h"
+#include "settings.hpp"
+#include "configuration.hpp"
 
-PersistenceItfModule::PersistenceItfModule() :
-    clientInterface(OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-                                                  QStringLiteral("/org/esa/sen2agri/persistenceManager"),
-                                                  QDBusConnection::systemBus())
+PersistenceItfModule::PersistenceItfModule()
+    : clientInterface(Settings::readSettings(getConfigurationFile(*QCoreApplication::instance())))
 {
-
 }
 
 PersistenceItfModule::~PersistenceItfModule()
 {
-
 }
 
 /*static*/
@@ -24,18 +22,19 @@ PersistenceItfModule *PersistenceItfModule::GetInstance()
     return &instance;
 }
 
-
-void PersistenceItfModule::MarkStepPendingStart(int taskId, QString& name)
+void PersistenceItfModule::MarkStepPendingStart(int taskId, QString &name)
 {
     clientInterface.MarkStepPendingStart(taskId, name);
 }
 
-void PersistenceItfModule::MarkStepStarted(int taskId, QString& name)
+void PersistenceItfModule::MarkStepStarted(int taskId, QString &name)
 {
     clientInterface.MarkStepStarted(taskId, name);
 }
 
-bool PersistenceItfModule::MarkStepFinished(int taskId, QString &name, ProcessorExecutionInfos &statistics)
+bool PersistenceItfModule::MarkStepFinished(int taskId,
+                                            QString &name,
+                                            ProcessorExecutionInfos &statistics)
 {
     // Convert ProcessorExecutionInfos to ExecutionStatistics
     ExecutionStatistics newStats;
@@ -56,82 +55,106 @@ bool PersistenceItfModule::MarkStepFinished(int taskId, QString &name, Processor
 
 void PersistenceItfModule::RequestConfiguration()
 {
-    auto mainKeys = clientInterface.GetConfigurationParameters("executor.");
-    connect(new QDBusPendingCallWatcher(mainKeys, this), &QDBusPendingCallWatcher::finished,
-            [this, mainKeys]() {
-                if (mainKeys.isValid()) {
-                    ConfigurationParameterValueList keys = mainKeys.value();
-                    SaveMainConfigKeys(keys);
-                    //SaveProcessorsConfigKeys(keys);
-                    emit OnConfigurationReceived();
-                } else if (mainKeys.isError()) {
-                    qDebug() << mainKeys.error().message();
-                }
-    });
+    try
+    {
+        const auto &keys = clientInterface.GetConfigurationParameters("executor.");
+        SaveMainConfigKeys(keys);
+        // SaveProcessorsConfigKeys(keys);
+        emit OnConfigurationReceived();
+    }
+    catch (const std::exception &e)
+    {
+        qDebug() << e.what();
+    }
+}
+
+QString PersistenceItfModule::GetExecutorQos(int processorId) {
+    QString qos;
+    ProcessorDescriptionList procDescrs = clientInterface.GetProcessorDescriptions();
+    for(ProcessorDescription procDescr: procDescrs) {
+        if(procDescr.processorId == processorId) {
+            const auto &strProcQosKey = QString("executor.processor.%1.qos").arg(procDescr.shortName);
+            const auto &keys = clientInterface.GetConfigurationParameters(strProcQosKey);
+            GetValueForKey(keys, strProcQosKey, qos);
+        }
+    }
+    return qos;
+}
+
+QString PersistenceItfModule::GetExecutorPartition(int processorId) {
+    QString qos;
+    ProcessorDescriptionList procDescrs = clientInterface.GetProcessorDescriptions();
+    for(ProcessorDescription procDescr: procDescrs) {
+        if(procDescr.processorId == processorId) {
+            const auto &strProcQosKey = QString("executor.processor.%1.partition").arg(procDescr.shortName);
+            const auto &keys = clientInterface.GetConfigurationParameters(strProcQosKey);
+            GetValueForKey(keys, strProcQosKey, qos);
+        }
+    }
+    return qos;
 }
 
 void PersistenceItfModule::SaveMainConfigKeys(const ConfigurationParameterValueList &configuration)
 {
     for (const auto &p : configuration) {
-        if(p.key == "executor.listen-ip")
-        {
+        if (p.key == "executor.listen-ip") {
             QString strKey("SRV_IP_ADDR");
             ConfigurationMgr::GetInstance()->SetValue(strKey, p.value);
         }
-        if(p.key == "executor.listen-port")
-        {
+        if (p.key == "executor.listen-port") {
             QString strKey("SRV_PORT_NO");
             ConfigurationMgr::GetInstance()->SetValue(strKey, p.value);
         }
-        if(p.key == "executor.wrapper-path")
-        {
+        if (p.key == "executor.wrapper-path") {
             QString strKey("PROCESSOR_WRAPPER_PATH");
             ConfigurationMgr::GetInstance()->SetValue(strKey, p.value);
         }
     }
 }
 
-void PersistenceItfModule::SaveProcessorsConfigKeys(const ConfigurationParameterValueList &configuration)
+void
+PersistenceItfModule::SaveProcessorsConfigKeys(const ConfigurationParameterValueList &configuration)
 {
     int nCurProc = 0;
     for (const auto &p : configuration) {
         QStringList listKeys = p.key.split('.');
         // normally, the first 2 should be "executor" and "processor"
         // we do not check them again
-        if((listKeys.size() == 4) &&
-                (listKeys.at(3).compare("name", Qt::CaseInsensitive) == 0)) {
+        if ((listKeys.size() == 4) && (listKeys.at(3).compare("name", Qt::CaseInsensitive) == 0)) {
             QString strProcessorName = listKeys.at(2);
-            if(!strProcessorName.isEmpty() && !p.value.isEmpty())
-            {
+            if (!strProcessorName.isEmpty() && !p.value.isEmpty()) {
                 QString strProcessorPath;
-                if(GetProcessorPathForName(configuration, strProcessorName, strProcessorPath) &&
-                        !strProcessorPath.isEmpty())
-                {
-                    QString strNameKey = QString("PROCESSOR_%1_NAME").arg(nCurProc+1);
+                if (GetProcessorPathForName(configuration, strProcessorName, strProcessorPath) &&
+                    !strProcessorPath.isEmpty()) {
+                    QString strNameKey = QString("PROCESSOR_%1_NAME").arg(nCurProc + 1);
                     ConfigurationMgr::GetInstance()->SetValue(strNameKey, p.value);
-                    QString strPathKey = QString("PROCESSOR_%1_PATH").arg(nCurProc+1);
+                    QString strPathKey = QString("PROCESSOR_%1_PATH").arg(nCurProc + 1);
                     ConfigurationMgr::GetInstance()->SetValue(strPathKey, strProcessorPath);
                     nCurProc++;
                 }
             }
         }
     }
-    if(nCurProc > 0)
-    {
+    if (nCurProc > 0) {
         QString strKey = QString("PROCESSORS_NUMBER");
         QString strVal = QString::number(nCurProc);
         ConfigurationMgr::GetInstance()->SetValue(strKey, strVal);
     }
 }
 
-bool PersistenceItfModule::GetProcessorPathForName(const ConfigurationParameterValueList &configuration,
-                                          const QString &name, QString &path)
+bool PersistenceItfModule::GetProcessorPathForName(
+    const ConfigurationParameterValueList &configuration, const QString &name, QString &path)
 {
-    QString strPathKey = QString("executor.processor.%1.path").arg(name);
+    const auto &strPathKey = QString("executor.processor.%1.path").arg(name);
+    return GetValueForKey(configuration, strPathKey, path);
+}
+
+bool PersistenceItfModule::GetValueForKey(
+    const ConfigurationParameterValueList &configuration, const QString &key, QString &value)
+{
     for (const auto &p : configuration) {
-        if(p.key == strPathKey)
-        {
-            path = p.value;
+        if (p.key == key) {
+            value = p.value;
             return true;
         }
     }
@@ -152,14 +175,14 @@ long PersistenceItfModule::ParseTimeStr(QString &strTime)
     int listSize = list.size();
     QString firstElem = list.at(0);
     QStringList listDate = firstElem.split('-');
-    if(listDate.size() > 1) {
+    if (listDate.size() > 1) {
         strDays = listDate.at(0);
         strHours = listDate.at(1);
         strMinutes = list.at(1);
         strSeconds = list.at(2);
     } else {
         // we have no separator for the days
-        if(listSize == 3) {
+        if (listSize == 3) {
             strHours = list.at(0);
             strMinutes = list.at(1);
             strSeconds = list.at(2);
@@ -172,18 +195,16 @@ long PersistenceItfModule::ParseTimeStr(QString &strTime)
         }
     }
     QStringList listSS = strSeconds.split('.');
-    if(listSS.size() == 2) {
+    if (listSS.size() == 2) {
         strSeconds = listSS.at(0);
         strMillis = listSS.at(1);
     } else if (listSS.size() != 1) {
         // unknown format
         return -1;
     }
-    long millis = (strDays.toLong()*86400 +
-            strHours.toLong()*3600 +
-            strMinutes.toLong()*60 +
-            strSeconds.toLong()) * 1000 +
-            strMillis.toLong();
+    long millis = (strDays.toLong() * 86400 + strHours.toLong() * 3600 + strMinutes.toLong() * 60 +
+                   strSeconds.toLong()) *
+                      1000 +
+                  strMillis.toLong();
     return millis;
 }
-

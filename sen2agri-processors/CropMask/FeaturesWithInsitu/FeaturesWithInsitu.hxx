@@ -13,7 +13,7 @@ class FeaturesWithInsituFunctor
 {
 public:
   FeaturesWithInsituFunctor() : bands(0), w(2), delta(500), id(0), tsoil(2000) {}
-  FeaturesWithInsituFunctor(int bands, int w, PixelValueType delta, std::vector<int> id, PixelValueType tsoil) : bands(bands), w(w), delta(delta), id(id), tsoil(tsoil) {}
+  FeaturesWithInsituFunctor(int bands, int w, PixelValueType delta, std::vector<int> id, PixelValueType tsoil) : bands(bands), w(w), delta(delta), id(std::move(id)), tsoil(tsoil) {}
 
   PixelType operator()(PixelType ndvi,PixelType ndwi, PixelType brightness) const
   {
@@ -310,7 +310,7 @@ class FeaturesWithInsituBMFunctor
 {
 public:
   FeaturesWithInsituBMFunctor() : bands(0), w(2), delta(500), id(0), tsoil(2000) {}
-  FeaturesWithInsituBMFunctor(int bands, int w, PixelValueType delta, std::vector<int> id, PixelValueType tsoil) : bands(bands), w(w), delta(delta), id(id), tsoil(tsoil) {}
+  FeaturesWithInsituBMFunctor(int bands, int w, PixelValueType delta, std::vector<int> id, PixelValueType tsoil) : bands(bands), w(w), delta(delta), id(std::move(id)), tsoil(tsoil) {}
 
   PixelType operator()(PixelType ndvi,PixelType ndwi, PixelType brightness) const
   {
@@ -424,7 +424,7 @@ public:
     for (int i = 0; i < pixSize; i++) {
         double meanMaxCurrent = 0.0;
 
-        // compute the start and end ideces based on the window
+        // compute the start and end indices based on the window
         int startIndex = std::max(0, i-w);
         int endIndex = std::min(pixSize-1, i+w);
         int count = endIndex - startIndex + 1;

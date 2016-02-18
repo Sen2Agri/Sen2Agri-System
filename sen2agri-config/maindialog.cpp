@@ -11,76 +11,23 @@
 #include <QDateEdit>
 #include <QTableWidget>
 #include <QFormLayout>
+#include <QtConcurrent>
+#include <QFutureWatcher>
 
 #include <optional.hpp>
 
 #include "maindialog.hpp"
 #include "ui_maindialog.h"
 #include "parameterchangelistener.hpp"
+#include "settings.hpp"
+#include "configuration.hpp"
 
 using std::end;
-
-static void addParameter(ConfigurationSet &configuration,
-                         const ConfigurationParameterInfo &parameter,
-                         std::experimental::optional<int> siteId,
-                         const QString &value)
-{
-    auto found = false;
-    for (const auto &p : configuration.parameterInfo) {
-        if (p.key == parameter.key) {
-            found = true;
-            break;
-        }
-    }
-
-    if (!found) {
-        configuration.parameterInfo.append(parameter);
-    }
-
-    configuration.parameterValues.append({ parameter.key, siteId, value });
-}
-
-static ConfigurationSet getStubConfiguration()
-{
-    ConfigurationSet configuration;
-
-    configuration.categories.append({ 1, "General", true });
-    configuration.categories.append({ 2, "Not used", true });
-    configuration.categories.append({ 3, "L2A", true });
-
-    addParameter(configuration, { "test.foo", 1, "Foo", "string", false },
-                 std::experimental::nullopt, "Foo value");
-    addParameter(configuration, { "test.foo", 1, "Foo", "string", false }, 1,
-                 "Foo value for site 1");
-    addParameter(configuration, { "test.bar", 1, "Bar", "file", false }, std::experimental::nullopt,
-                 "/etc/sen2agri/sen2agri-persistence.conf");
-    addParameter(configuration, { "test.baz", 1, "Baz", "directory", false },
-                 std::experimental::nullopt, "/etc/sen2agri");
-    addParameter(configuration, { "test.qux", 1, "Qux", "int", false }, std::experimental::nullopt,
-                 "12");
-    addParameter(configuration, { "test.date", 1, "Date", "date", false },
-                 std::experimental::nullopt, "2015-01-02");
-    addParameter(configuration, { "test.date.ro", 1, "Date RO", "date", true },
-                 std::experimental::nullopt, "2015-05-05");
-    addParameter(configuration, { "test.bool", 1, "Bool", "bool", false },
-                 std::experimental::nullopt, "false");
-    addParameter(configuration, { "test.bool.ro", 1, "Bool RO", "bool", true },
-                 std::experimental::nullopt, "true");
-    addParameter(configuration, { "test.quux", 3, "Quux", "string", true },
-                 std::experimental::nullopt, "hello");
-
-    configuration.sites.append({ 1, "Site 1" });
-    configuration.sites.append({ 2, "Site 2" });
-
-    return configuration;
-}
 
 MainDialog::MainDialog(QWidget *parent)
     : QDialog(parent),
       ui(new Ui::MainDialog),
-      clientInterface(OrgEsaSen2agriPersistenceManagerInterface::staticInterfaceName(),
-                      QStringLiteral("/org/esa/sen2agri/persistenceManager"),
-                      QDBusConnection::systemBus()),
+      clientInterface(Settings::readSettings(getConfigurationFile(*QCoreApplication::instance()))),
       invalidFields(),
       isAdmin()
 {
@@ -96,55 +43,52 @@ void MainDialog::loadConfiguration(int currentTab, int currentSite)
     setEnabled(false);
     ui->tabWidget->clear();
 
-    auto promise = clientInterface.GetConfigurationSet();
-    connect(new QDBusPendingCallWatcher(promise, this), &QDBusPendingCallWatcher::finished,
-            [this, promise, currentTab, currentSite] {
-                setEnabled(true);
+    auto future = QtConcurrent::run([this]() { return clientInterface.GetConfigurationSet(); });
 
-                if (promise.isValid()) {
-                    loadModel(promise.value());
+    auto watcher = new QFutureWatcher<ConfigurationSet>(this);
+    watcher->setFuture(future);
+    connect(watcher, &QFutureWatcher<ConfigurationSet>::finished, [this, future, currentTab,
+                                                                   currentSite] {
+        setEnabled(true);
 
-                    if (currentTab < ui->tabWidget->count()) {
-                        ui->tabWidget->setCurrentIndex(currentTab);
+        try {
+            loadModel(future.result());
 
-                        if (currentSite) {
-                            auto siteList = siteLists[currentTab];
-                            auto siteCount = siteList->count();
-                            for (int i = 0; i < siteCount; i++) {
-                                if (siteList->itemData(i).toInt() == currentSite) {
-                                    siteList->setCurrentIndex(i);
-                                    break;
-                                }
-                            }
+            if (currentTab < ui->tabWidget->count()) {
+                ui->tabWidget->setCurrentIndex(currentTab);
+
+                if (currentSite) {
+                    auto siteList = siteLists[currentTab];
+                    auto siteCount = siteList->count();
+                    for (int i = 0; i < siteCount; i++) {
+                        if (siteList->itemData(i).toInt() == currentSite) {
+                            siteList->setCurrentIndex(i);
+                            break;
                         }
                     }
-                } else if (promise.isError()) {
-#if 1
-                    loadModel(getStubConfiguration());
-#else
-                    ui->innerLayout->removeWidget(ui->tabWidget);
-
-                    auto spacer = new QWidget(this);
-                    spacer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-                    ui->innerLayout->addWidget(spacer, 0, 0);
-
-                    ui->innerLayout->addWidget(
-                        new QLabel(
-                            QStringLiteral("An error occurred while loading the configuration:"),
-                            this),
-                        1, 0, Qt::AlignHCenter);
-
-                    ui->innerLayout->addWidget(new QLabel(promise.error().message(), this), 2, 0,
-                                               Qt::AlignHCenter);
-
-                    spacer = new QWidget(this);
-                    spacer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-                    ui->innerLayout->addWidget(spacer, 3, 0);
-
-                    ui->buttonBox->setStandardButtons(QDialogButtonBox::Close);
-#endif
                 }
-            });
+            }
+        } catch (const std::exception &e) {
+            ui->innerLayout->removeWidget(ui->tabWidget);
+
+            auto spacer = new QWidget(this);
+            spacer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+            ui->innerLayout->addWidget(spacer, 0, 0);
+
+            ui->innerLayout->addWidget(
+                new QLabel(QStringLiteral("An error occurred while loading the configuration:"),
+                           this),
+                1, 0, Qt::AlignHCenter);
+
+            ui->innerLayout->addWidget(new QLabel(e.what(), this), 2, 0, Qt::AlignHCenter);
+
+            spacer = new QWidget(this);
+            spacer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+            ui->innerLayout->addWidget(spacer, 3, 0);
+
+            ui->buttonBox->setStandardButtons(QDialogButtonBox::Close);
+        }
+    });
 }
 
 void MainDialog::loadModel(const ConfigurationSet &configuration)
@@ -316,36 +260,39 @@ void MainDialog::saveChanges()
         currentSite = siteList->currentData().toInt();
     }
 
-    auto promise = clientInterface.UpdateConfigurationParameters(configModel.getChanges());
-    connect(new QDBusPendingCallWatcher(promise, this), &QDBusPendingCallWatcher::finished,
-            [this, promise, currentTab, currentSite] {
-                setEnabled(true);
+    auto future = QtConcurrent::run([this]() {
+        return clientInterface.UpdateConfigurationParameters(configModel.getChanges(), true);
+    });
 
-                if (promise.isError()) {
-                    QMessageBox::critical(this, QStringLiteral("Error"),
-                                          QStringLiteral("Unable to save the changes: %1")
-                                              .arg(promise.error().message()));
-                } else if (promise.isValid()) {
-                    const auto &result = promise.value();
-                    if (result.empty()) {
-                        loadConfiguration(currentTab, currentSite);
+    auto watcher = new QFutureWatcher<KeyedMessageList>(this);
+    watcher->setFuture(future);
+    connect(watcher, &QFutureWatcher<KeyedMessageList>::finished, [this, future, currentTab,
+                                                                   currentSite] {
+        setEnabled(true);
 
-                        QMessageBox::information(
-                            this, QStringLiteral("Information"),
-                            QStringLiteral("The changes were saved successfully"));
-                    } else {
-                        auto message = QStringLiteral("The following %1 could not be saved:\n\n")
-                                           .arg(result.size() == 1 ? QStringLiteral("parameter")
-                                                                   : QStringLiteral("parameters"));
+        try {
+            const auto &result = future.result();
+            if (result.empty()) {
+                loadConfiguration(currentTab, currentSite);
 
-                        for (const auto &e : result) {
-                            message += QStringLiteral("%1: %2\n").arg(e.key, e.text);
-                        }
+                QMessageBox::information(this, QStringLiteral("Information"),
+                                         QStringLiteral("The changes were saved successfully"));
+            } else {
+                auto message = QStringLiteral("The following %1 could not be saved:\n\n")
+                                   .arg(result.size() == 1 ? QStringLiteral("parameter")
+                                                           : QStringLiteral("parameters"));
 
-                        QMessageBox::critical(this, QStringLiteral("Error"), message);
-                    }
+                for (const auto &e : result) {
+                    message += QStringLiteral("%1: %2\n").arg(e.key, e.text);
                 }
-            });
+
+                QMessageBox::critical(this, QStringLiteral("Error"), message);
+            }
+        } catch (const std::exception &e) {
+            QMessageBox::critical(this, QStringLiteral("Error"),
+                                  QStringLiteral("Unable to save the changes: %1").arg(e.what()));
+        }
+    });
 }
 
 void MainDialog::on_buttonBox_accepted() { accept(); }

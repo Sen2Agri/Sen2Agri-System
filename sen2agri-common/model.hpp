@@ -7,6 +7,15 @@
 
 #include <optional.hpp>
 
+
+typedef enum {COMPOSITE_ID = 1,
+              LAI_RETRIEVAL_ID = 2,
+              PHENO_NDVI_ID = 3,
+              CROP_MASK_ID = 4,
+              CROP_TYPE_ID = 5,
+              DUMMY_HANDLER_ID =6
+             } ProcessorIdType;
+
 void registerMetaTypes();
 
 class ConfigurationParameterInfo
@@ -430,10 +439,11 @@ class TaskRunnableEvent
 {
 public:
     int jobId;
+    int processorId;
     int taskId;
 
     TaskRunnableEvent();
-    TaskRunnableEvent(int jobId, int taskId);
+    TaskRunnableEvent(int jobId, int processorId, int taskId);
 
     QString toJson() const;
 
@@ -534,9 +544,10 @@ class JobResumedEvent
 {
 public:
     int jobId;
+    int processorId;
 
     JobResumedEvent();
-    JobResumedEvent(int jobId);
+    JobResumedEvent(int jobId, int processorId);
 
     QString toJson() const;
 
@@ -681,13 +692,15 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, StepArgument &ste
 class NewExecutorStep
 {
 public:
+    int processorId;
     int taskId;
     QString processorPath;
     QString stepName;
     StepArgumentList arguments;
 
     NewExecutorStep();
-    NewExecutorStep(int taskId,
+    NewExecutorStep(int processorId,
+                    int taskId,
                     QString processorPath,
                     QString stepName,
                     StepArgumentList arguments);
@@ -789,7 +802,96 @@ public:
     static void registerMetaTypes();
 };
 
-Q_DECLARE_METATYPE(DashboardSearch);
+Q_DECLARE_METATYPE(DashboardSearch)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const DashboardSearch &search);
 const QDBusArgument &operator>>(const QDBusArgument &argument, DashboardSearch &search);
+
+class ProcessorDescription
+{
+public:
+    int processorId;
+    QString shortName;
+    QString fullName;
+
+    ProcessorDescription();
+    ProcessorDescription(int processorId,
+               QString shortName,
+               QString fullName);
+
+    static void registerMetaTypes();
+};
+
+Q_DECLARE_METATYPE(ProcessorDescription)
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ProcessorDescription &product);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorDescription &product);
+
+typedef QList<ProcessorDescription> ProcessorDescriptionList;
+
+//** For scheduler component
+struct ScheduledTaskStatus
+{
+    int id;
+    int taskId;
+
+    QDateTime nextScheduledRunTime;
+
+    QDateTime lastSuccesfullScheduledRun; // last succ. scheduleded launch
+    QDateTime lastSuccesfullTimestamp; // the moment of last launch
+    QDateTime lastRetryTime;
+
+    QDateTime estimatedRunTime; // last succ. scheduleded launch
+};
+
+enum RepeatType {
+    REPEATTYPE_ONCE = 0,
+    REPEATTYPE_CYCLIC = 1,
+    REPEATTYPE_ONDATE = 2
+};
+struct ScheduledTask
+{
+    ScheduledTask(int, QString,int, QString,int, int, int, QDateTime, int, int, ScheduledTaskStatus& );
+    ScheduledTask() {}
+
+    int taskId;
+    QString	taskName;
+    int processorId;
+    QString processorParameters;
+
+    int repeatType; /*once, cyclic, on_date*/
+    int repeatAfterDays; /* nr of days to cycle the task */
+    int repeatOnMonthDay; /* the day of the month to run the task */
+
+    QDateTime firstScheduledRunTime; /* first configured run-time */
+
+    int  retryPeriod; /* minutes or hours ? to retry if the preconditions are not met */
+
+    int taskPriority;
+
+    ScheduledTaskStatus taskStatus;
+};
+//** END For scheduler component
+
+
+//** For orchestartor API
+struct ProcessingRequest
+{
+    int processorId;
+    QString parametersJson; // or map<string, string>
+};
+Q_DECLARE_METATYPE(ProcessingRequest)
+QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &request);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessingRequest &request);
+
+struct JobDefinition
+{
+    bool isValid;
+    int processorId;
+    QString jobDefinitionJson;
+};
+Q_DECLARE_METATYPE(JobDefinition)
+QDBusArgument &operator<<(QDBusArgument &argument, const JobDefinition &job);
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobDefinition &job);
+
+//** END for orchestartor API

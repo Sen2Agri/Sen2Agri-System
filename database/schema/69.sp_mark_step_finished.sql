@@ -96,7 +96,7 @@ BEGIN
 		('{"job_id":' || job.id || ', "processor_id":' || job.processor_id || ', "task_id":' || _task_id || ', "module_short_name":"' || task.module_short_name || '"}') :: json,
 		now()
 		FROM job INNER JOIN task ON job.id = task.job_id WHERE task.id = _task_id;
-	
+
 		-- Get the list of tasks that depended on this one and were in status 3 NeedsInput
 		WITH tasks_preceded AS (
 			SELECT id, preceding_task_ids  FROM task WHERE
@@ -121,14 +121,14 @@ BEGIN
         IF runnable_task_ids IS NOT NULL THEN
             -- Add events for all the runnable tasks
             FOREACH runnable_task_id IN ARRAY runnable_task_ids
-            LOOP            
+            LOOP
 		    INSERT INTO event(
 		    type_id,
 		    data,
 		    submitted_timestamp)
 		    SELECT
 		    1, -- TaskRunnable
-		    ('{"job_id":' || job_id || ', "task_id":' || runnable_task_id || '}') :: json,
+		    ('{"job_id":' || job_id || ', "processor_id":' || job.processor_id || ', "task_id":' || runnable_task_id || '}') :: json,
 		    now()
 		    FROM job INNER JOIN task ON job.id = task.job_id WHERE task.id = runnable_task_id;
             END LOOP;
