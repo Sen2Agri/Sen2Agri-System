@@ -3,30 +3,27 @@
 #include "databasetaskloader.hpp"
 #include "persistencemanager.hpp"
 #include "configuration.hpp"
-
-static  PersistenceManagerDBProvider persistenceManager(
-        Settings::readSettings(getConfigurationFile(*QCoreApplication::instance())));
+#include "make_unique.hpp"
 
 DatabaseTaskLoader::DatabaseTaskLoader()
+    : persistenceManager(
+          Settings::readSettings(getConfigurationFile(*QCoreApplication::instance())))
 {
-
 }
 
 DatabaseTaskLoader::~DatabaseTaskLoader()
 {
-
 }
 
-std::vector<ScheduledTask> DatabaseTaskLoader::LoadFromDatabase( )
+std::vector<ScheduledTask> DatabaseTaskLoader::LoadFromDatabase()
 {
     return persistenceManager.GetScheduledTasks();
 }
 
-void DatabaseTaskLoader::UpdateStatusinDatabase(const std::vector<ScheduledTask>& taskList)
+void DatabaseTaskLoader::UpdateStatusinDatabase(const std::vector<ScheduledTask> &taskList)
 {
     std::vector<ScheduledTaskStatus> statusList;
-    for (const auto &t : taskList)
-    {
+    for (const auto &t : taskList) {
         statusList.push_back(t.taskStatus);
     }
     persistenceManager.UpdateScheduledTasksStatus(statusList);
