@@ -11,10 +11,12 @@ from lxml.builder import E
 #import logging
 import math
 import os
+from os.path import isfile, isdir, join
+import glob
 import sys
 import pipes
 import zipfile
-
+from multiprocessing import Pool
 
 def GetExtent(gt, cols, rows):
     ext = []
@@ -40,6 +42,7 @@ def ReprojectCoords(coords, src_srs, tgt_srs):
 
 
 def resample_dataset(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y):
+    print("{}|{}|{}|{}".format(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y))
     dataset = gdal.Open(src_file_name, gdal.gdalconst.GA_ReadOnly)
 
     src_x_size = dataset.RasterXSize
@@ -112,17 +115,33 @@ def run_command(args):
 
 def get_landsat_tile_id(image):
     m = re.match("[A-Z][A-Z]\d(\d{6})\d{4}\d{3}[A-Z]{3}\d{2}_B\d{1,2}\.TIF", image)
-    return m and ('LANDSAT', m.group(1))
+    return m and ('L8', m.group(1))
 
 
 def get_sentinel2_tile_id(image):
     m = re.match("\w+_T(\w{5})_B\d{2}\.\w{3}", image)
-    return m and ('SENTINEL', m.group(1))
+    return m and ('S2', m.group(1))
 
 
 def get_tile_id(image):
     name = os.path.basename(image)
     return get_landsat_tile_id(name) or get_sentinel2_tile_id(name)
+
+
+def get_landsat_dir_info(name):
+    m = re.match("[A-Z][A-Z]\d\d{6}(\d{4}\d{3})[A-Z]{3}\d{2}", name)
+    return m and ('L8', m.group(1))
+
+
+def get_sentinel2_dir_info(name):
+    m = re.match("S2A\w+_(\d{8}T\d{6})\w+.SAFE", name)
+    
+    return m and ('S2', m.group(1))
+
+
+def get_dir_info(dir_name):
+    name = os.path.basename(dir_name)
+    return get_sentinel2_dir_info(name) or get_landsat_dir_info(name)
 
 
 class Context(object):
@@ -131,104 +150,132 @@ class Context(object):
         self.__dict__.update(kwargs)
 
 
-def format_filename(output_directory, tile_id, suffix):
-    filename_template = "L8_TEST_AUX_REFDE2_{0}_0001_{1}.TIF"
-    filename_template = "S2__TEST_AUX_REFDE2_{0}____5001_{1}.TIF"
-    filename_template = "S2A_TEST_AUX_REFDE2_{0}_0001_{1}.TIF"
-    directory_template = "S2A_TEST_AUX_REFDE2_{0}_0001.DBL.DIR"
+def format_filename(mode, output_directory, tile_id, suffix):
+    filename_template = "{0}_TEST_AUX_REFDE2_{1}_0001_{2}.TIF"
 
-    return filename_template.format(tile_id, suffix)
-    directory = os.path.join(output_directory, directory_template.format(tile_id))
-    return os.path.join(directory,
-                        filename_template.format(tile_id, suffix))
+    return filename_template.format(mode, tile_id, suffix)
 
 
 def create_context(args):
-    mode, tile_id = get_tile_id(args.input)
+    dir_base = args.input
+    if dir_base.rfind('/') + 1 == len(dir_base):
+        dir_base = dir_base[0:len(dir_base)-1]
+    mode, date = get_dir_info(dir_base)
+    context_array = []
+    #if mode == None:
+        #print("Error in reading directory, is not in S2 neither L8 format")
+        #return context_array    
 
-    dataset = gdal.Open(args.input, gdal.gdalconst.GA_ReadOnly)
-
-    size_x = dataset.RasterXSize
-    size_y = dataset.RasterYSize
-
-    geo_transform = dataset.GetGeoTransform()
-
-    spacing_x = geo_transform[1]
-    spacing_y = geo_transform[5]
-
-    extent = GetExtent(geo_transform, size_x, size_y)
-
-    source_srs = osr.SpatialReference()
-    source_srs.ImportFromWkt(dataset.GetProjection())
-    epsg_code = source_srs.GetAttrValue("AUTHORITY", 1)
-    target_srs = osr.SpatialReference()
-    target_srs.ImportFromEPSG(4326)
-
-    wgs84_extent = ReprojectCoords(extent, source_srs, target_srs)
-
-    directory_template = "S2A_TEST_AUX_REFDE2_{0}_0001.DBL.DIR"
-    image_directory = os.path.join(args.output, directory_template.format(tile_id))
-    temp_directory = os.path.join(args.working_dir, directory_template.format(tile_id))
-
-    metadata_template = "S2A_TEST_AUX_REFDE2_{0}_0001.HDR"
-
-    d = dict(image=args.input,
-             mode=mode,
-             srtm_directory=args.srtm,
-             swbd_directory=args.swbd,
-             working_directory=args.working_dir,
-             temp_directory=temp_directory,
-             output=args.output,
-             image_directory=image_directory,
-             metadata_file=os.path.join(args.output, metadata_template.format(tile_id)),
-             swbd_list=os.path.join(temp_directory, "swbd.txt"),
-             tile_id=tile_id,
-             dem_vrt=os.path.join(temp_directory, "dem.vrt"),
-             dem_nodata=os.path.join(temp_directory, "dem.tif"),
-             dem_coarse=os.path.join(image_directory, format_filename(image_directory, tile_id,
-                 "ALC")),
-             slope_degrees=os.path.join(temp_directory, "slope_degrees.tif"),
-             aspect_degrees=os.path.join(temp_directory, "aspect_degrees.tif"),
-             slope_coarse=os.path.join(image_directory, format_filename(image_directory, tile_id,
-                 "SLC")),
-             aspect_coarse=os.path.join(image_directory, format_filename(image_directory, tile_id,
-                 "ASC")),
-             wb=os.path.join(temp_directory, "wb.shp"),
-             wb_reprojected=os.path.join(
-                 temp_directory, "wb_reprojected.shp"),
-             water_mask=os.path.join(image_directory, format_filename(image_directory, tile_id,
-                 "MSK")),
-             size_x=size_x, size_y=size_y,
-             spacing_x=spacing_x, spacing_y=spacing_y,
-             extent=extent, wgs84_extent=wgs84_extent,
-             epsg_code=epsg_code)
-
-    if mode == 'LANDSAT':
-        d['dem_r1'] = os.path.join(image_directory, format_filename(image_directory, tile_id,
-            "ALT"))
-        d['slope_r1'] = os.path.join(image_directory, format_filename(image_directory, tile_id,
-            "SLP"))
-        d['aspect_r1'] = os.path.join(image_directory, format_filename(image_directory, tile_id,
-            "ASP"))
-
-        d['dem_r2'] = None
-        d['slope_r2'] = None
-        d['aspect_r2'] = None
+    images = []
+    tiles_to_process = []
+    if args.tiles_list is not None:
+        tiles_to_process = args.tiles_list
+    if mode == 'L8':
+        images.append("{}/{}_B1.TIF".format(dir_base, os.path.basename(dir_base)))
+    elif mode == 'S2':
+        dir_base += "/GRANULE/"
+        tile_dirs = ["{}{}".format(dir_base, f) for f in os.listdir(dir_base) if isdir(join(dir_base, f))]
+        for tile_dir in tile_dirs:            
+            tile_dir += "/IMG_DATA/"
+            image_band2 = glob.glob("{}*_B02.*".format(tile_dir))
+            if len(image_band2) == 1:
+                if len(tiles_to_process) > 0:
+                    mode_f, tile_id = get_tile_id(image_band2[0])
+                    for tile in tiles_to_process:
+                        if tile == tile_id:
+                            images.append(image_band2[0])
+                            break
+                else:
+                    images.append(image_band2[0])
     else:
-        d['dem_r1'] = os.path.join(image_directory, format_filename(image_directory, tile_id,
-            "ALT_R1"))
-        d['dem_r2'] = os.path.join(image_directory, format_filename(image_directory, tile_id,
-            "ALT_R2"))
-        d['slope_r1'] = os.path.join(image_directory, format_filename(image_directory, tile_id,
-            "SLP_R1"))
-        d['slope_r2'] = os.path.join(image_directory, format_filename(image_directory, tile_id,
-            "SLP_R2"))
-        d['aspect_r1'] = os.path.join(image_directory, format_filename(image_directory, tile_id,
-            "ASP_R1"))
-        d['aspect_r2'] = os.path.join(image_directory, format_filename(image_directory, tile_id,
-            "ASP_R2"))
+        return context_array
+    for image_filename in images:
+        mode, tile_id = get_tile_id(image_filename)
 
-    return Context(**d)
+        dataset = gdal.Open(image_filename, gdal.gdalconst.GA_ReadOnly)
+
+        size_x = dataset.RasterXSize
+        size_y = dataset.RasterYSize
+
+        geo_transform = dataset.GetGeoTransform()
+
+        spacing_x = geo_transform[1]
+        spacing_y = geo_transform[5]
+
+        extent = GetExtent(geo_transform, size_x, size_y)
+
+        source_srs = osr.SpatialReference()
+        source_srs.ImportFromWkt(dataset.GetProjection())
+        epsg_code = source_srs.GetAttrValue("AUTHORITY", 1)
+        target_srs = osr.SpatialReference()
+        target_srs.ImportFromEPSG(4326)
+
+        wgs84_extent = ReprojectCoords(extent, source_srs, target_srs)
+
+        directory_template = "{0}_TEST_AUX_REFDE2_{1}_{2}_0001.DBL.DIR"
+        image_directory = os.path.join(args.output, directory_template.format(mode, tile_id, date))
+        temp_directory = os.path.join(args.working_dir, directory_template.format(mode, tile_id, date))
+
+        metadata_template = "{0}_TEST_AUX_REFDE2_{1}_{2}_0001.HDR"
+
+        d = dict(image=image_filename,
+                 mode=mode,
+                 srtm_directory=args.srtm,
+                 swbd_directory=args.swbd,
+                 working_directory=args.working_dir,
+                 temp_directory=temp_directory,
+                 output=args.output,
+                 image_directory=image_directory,
+                 metadata_file=os.path.join(args.output, metadata_template.format(mode, tile_id, date)),
+                 swbd_list=os.path.join(temp_directory, "swbd.txt"),
+                 tile_id=tile_id,
+                 dem_vrt=os.path.join(temp_directory, "dem.vrt"),
+                 dem_nodata=os.path.join(temp_directory, "dem.tif"),
+                 dem_coarse=os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
+                     "ALC")),
+                 slope_degrees=os.path.join(temp_directory, "slope_degrees.tif"),
+                 aspect_degrees=os.path.join(temp_directory, "aspect_degrees.tif"),
+                 slope_coarse=os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
+                     "SLC")),
+                 aspect_coarse=os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
+                     "ASC")),
+                 wb=os.path.join(temp_directory, "wb.shp"),
+                 wb_reprojected=os.path.join(
+                     temp_directory, "wb_reprojected.shp"),
+                 water_mask=os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
+                     "MSK")),
+                 size_x=size_x, size_y=size_y,
+                 spacing_x=spacing_x, spacing_y=spacing_y,
+                 extent=extent, wgs84_extent=wgs84_extent,
+                 epsg_code=epsg_code)
+
+        if mode == 'L8':
+            d['dem_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
+                "ALT"))
+            d['slope_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
+                "SLP"))
+            d['aspect_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
+                "ASP"))
+
+            d['dem_r2'] = None
+            d['slope_r2'] = None
+            d['aspect_r2'] = None
+        else:
+            d['dem_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
+                "ALT_R1"))
+            d['dem_r2'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
+                "ALT_R2"))
+            d['slope_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
+                "SLP_R1"))
+            d['slope_r2'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
+                "SLP_R2"))
+            d['aspect_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
+                "ASP_R1"))
+            d['aspect_r2'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
+                "ASP_R2"))
+
+        context_array.append(Context(**d))
+    return context_array
 
 
 def create_metadata(context):
@@ -246,10 +293,13 @@ def create_metadata(context):
                         E.Relative_File_Path(os.path.relpath(f, context.output)),
                         sn=str(index)))
             index = index + 1
-
+    mission = "LANDSAT_8"
+    if context.mode == 'S2':
+        mission = "SENTINEL-2_"
+    
     return E.Earth_Explorer_Header(
             E.Fixed_Header(
-                E.Mission('SENTINEL-2_'),
+                E.Mission(mission),
                 E.File_Type('AUX_REFDE2')),
             E.Variable_Header(
                 E.Specific_Product_Header(
@@ -314,7 +364,7 @@ def process_DTM(context):
         #              "-transform.type.id.scalex", "0.5",
         #              "-transform.type.id.scaley", "0.5"])
 
-    if context.mode == 'LANDSAT':
+    if context.mode == 'L8':
         scale = 1.0 / 8
         inv_scale = 8.0
     else:
@@ -327,7 +377,7 @@ def process_DTM(context):
     #                                                                                     inv_scale))),
     #              context.dem_r1,
     #              context.dem_coarse])
-    resample_dataset(context.dem_r2, context.dem_coarse, 240, -240)
+    resample_dataset(context.dem_r1, context.dem_coarse, 240, -240)
     # run_command(["otbcli_RigidTransformResample",
     #              "-in", context.dem_r1,
     #              "-out", context.dem_coarse,
@@ -415,34 +465,84 @@ def process_WB(context):
                  "-mode.binary.foreground", "1"])
 
 
-def parse_arguments():
+def process_context(context):
+    try:
+        print(context.image_directory)
+        os.makedirs(context.image_directory)
+    except:
+        pass
+    try:
+        print(context.temp_directory)
+        os.makedirs(context.temp_directory)
+    except:
+        pass
+    metadata = create_metadata(context)
+    with open(context.metadata_file, 'w') as f:
+        lxml.etree.ElementTree(metadata).write(f, pretty_print=True)
+
+    process_DTM(context)
+    process_WB(context)
+    try:
+        os.remove(context.swbd_list)
+    except:
+        pass
+    try:
+        os.remove(context.dem_vrt)
+    except:
+        pass
+    try:
+        os.remove(context.dem_nodata)
+    except:
+        pass
+    try:
+        os.remove(context.slope_degrees)
+    except:
+        pass
+    try:
+        os.remove(context.aspect_degrees)
+    except:
+        pass
+    try:
+        os.remove(context.wb)
+    except:
+        pass
+    try:
+        os.remove(context.wb_reprojected)
+    except:
+        pass
+    try:
+        os.rmdir(context.temp_directory)
+    except:
+        print("Couldn't remove the temp dir {}".format(context.temp_directory))
+
+def parse_arguments():    
     parser = argparse.ArgumentParser(
         description="Creates DEM and WB data for MACCS")
     parser.add_argument('input', help="input image")
     parser.add_argument('--srtm', required=True, help="SRTM dataset path")
     parser.add_argument('--swbd', required=True, help="SWBD dataset path")
+    parser.add_argument('-l', '--tiles-list', required=False, nargs='+', help="If set, only these tiles will be processed")
     parser.add_argument('-w', '--working-dir', required=True,
                         help="working directory")
+    parser.add_argument('-p', '--processes-number', required=False,
+                        help="number of processed to run", default="3")
     parser.add_argument('output', help="output location")
 
     args = parser.parse_args()
 
-    return create_context(args)
+    return int(args.processes_number), create_context(args)
 
-context = parse_arguments()
-try:
-    print(context.image_directory)
-    os.makedirs(context.image_directory)
-except:
-    pass
-try:
-    print(context.temp_directory)
-    os.makedirs(context.temp_directory)
-except:
-    pass
-metadata = create_metadata(context)
-with open(context.metadata_file, 'w') as f:
-    lxml.etree.ElementTree(metadata).write(f, pretty_print=True)
+proc_number, contexts = parse_arguments()
 
-process_DTM(context)
-process_WB(context)
+if len(contexts) == 0:
+    print("No context could be created")
+    sys.exit(-1)
+
+if int(proc_number) == 1:
+    for context in contexts:
+        process_context(context)
+else:
+    p = Pool(int(proc_number))
+    p.map(process_context, contexts)
+
+
