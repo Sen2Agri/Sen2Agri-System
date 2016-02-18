@@ -4,6 +4,7 @@ RETURNS TABLE (
     name scheduled_task.name%TYPE,
     
     processor_id scheduled_task.processor_id%TYPE,
+    site_id scheduled_task.site_id%TYPE,    
     processor_params scheduled_task.processor_params%TYPE,
 
     repeat_type scheduled_task.repeat_type%TYPE,

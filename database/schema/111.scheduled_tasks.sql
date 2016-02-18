@@ -3,6 +3,7 @@
   id smallserial,
   name character varying NOT NULL,
   processor_id smallserial,
+  site_id smallserial,
   processor_params character varying,
 
   repeat_type smallint,
