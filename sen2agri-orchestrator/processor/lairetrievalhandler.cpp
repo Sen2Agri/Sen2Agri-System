@@ -7,14 +7,28 @@
 #include "processorhandlerhelper.h"
 
 // The number of tasks that are executed for each product before executing time series tasks
-#define TasksNoPerProduct 5
+#define LAI_TASKS_PER_PRODUCT       4
+#define MODEL_GEN_TASKS_PER_PRODUCT 4
 
-void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAllTasksList, int nbProducts, bool bNDayReproc, bool bFittedReproc) {
+#define DEFAULT_GENERATED_SAMPLES_NO    "40000"
+#define DEFAULT_NOISE_VAR               "0.01"
+#define DEFAULT_BEST_OF                 "1"
+#define DEFAULT_REGRESSOR               "nn"
+
+void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAllTasksList, int nbProducts, bool bGenModels, bool bNDayReproc, bool bFittedReproc) {
     // just create the tasks but with no information so far
     // first we add the tasks to be performed for each product
+    int TasksNoPerProduct = LAI_TASKS_PER_PRODUCT;
+    if(bGenModels)
+        TasksNoPerProduct += MODEL_GEN_TASKS_PER_PRODUCT;
     for(int i = 0; i<nbProducts; i++) {
+        if(bGenModels) {
+            outAllTasksList.append(TaskToSubmit{ "lai-bv-input-variable-generation", {} });
+            outAllTasksList.append(TaskToSubmit{ "lai-prosail-simulator", {} });
+            outAllTasksList.append(TaskToSubmit{ "lai-training-data-generator", {} });
+            outAllTasksList.append(TaskToSubmit{ "lai-inverse-model-learning", {} });
+        }
         outAllTasksList.append(TaskToSubmit{"lai-ndvi-rvi-extractor", {}});
-        outAllTasksList.append(TaskToSubmit{"lai-models-extractor", {}});
         outAllTasksList.append(TaskToSubmit{"lai-bv-image-invertion", {}});
         outAllTasksList.append(TaskToSubmit{"lai-bv-err-image-invertion", {}});
         outAllTasksList.append(TaskToSubmit{"lai-mono-date-mask-flags", {}});
@@ -38,9 +52,15 @@ void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAll
 
     //   ----------------------------- LOOP --------------------------------------------
     //   |                                                                              |
-    //   |                      ndvi-rvi-extraction                                     |
+    //   |                      bv-input-variable-generation   (optional)               |
     //   |                              |                                               |
-    //   |                      get-lai-retrieval-model                                 |
+    //   |                      prosail-simulator              (optional)               |
+    //   |                              |                                               |
+    //   |                      training-data-generator        (optional)               |
+    //   |                              |                                               |
+    //   |                      inverse-model-learning         (optional)               |
+    //   |                              |                                               |
+    //   |                      ndvi-rvi-extraction                                     |
     //   |                              |                                               |
     //   |              ---------------------------------------------------             |
     //   |              |                      |                           |            |
@@ -70,22 +90,26 @@ void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAll
     //      should be removed but in this case, the time-series-builders should wait for all the monodate images
     int i;
     for(i = 0; i<nbProducts; i++) {
-        if(i > 0) {
-            // update the ndvi-rvi-extractor with the reference of the previous bv-err-image-inversion
-            int nNdviRviExtractorIdx = i*TasksNoPerProduct;
-            int nPrevBvErrImgInvIdx = (i-1)*TasksNoPerProduct + (TasksNoPerProduct-1);
-            outAllTasksList[nNdviRviExtractorIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
-            outAllTasksList[nNdviRviExtractorIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
+        int loopFirstIdx = i*TasksNoPerProduct;
+        // initialize the ndviRvi task index
+        int ndviRviExtrIdx = loopFirstIdx;
+        // add the tasks for generating models
+        if(bGenModels) {
+            int prosailSimulatorIdx = loopFirstIdx+1;
+            outAllTasksList[prosailSimulatorIdx].parentTasks.append(outAllTasksList[loopFirstIdx]);
+            outAllTasksList[prosailSimulatorIdx+1].parentTasks.append(outAllTasksList[prosailSimulatorIdx]);
+            outAllTasksList[prosailSimulatorIdx+2].parentTasks.append(outAllTasksList[prosailSimulatorIdx+1]);
+            // now update the index for the ndviRvi task and set its parent to the inverse-model-learning task
+            ndviRviExtrIdx += MODEL_GEN_TASKS_PER_PRODUCT;
+            outAllTasksList[ndviRviExtrIdx].parentTasks.append(outAllTasksList[prosailSimulatorIdx+2]);
         }
         // the others comme naturally updated
-        // get-lai-retrieval-model -> ndvi-rvi-extraction
-        outAllTasksList[i*TasksNoPerProduct+1].parentTasks.append(outAllTasksList[i*TasksNoPerProduct]);
-        // bv-image-inversion -> get-lai-retrieval-model
-        outAllTasksList[i*TasksNoPerProduct+2].parentTasks.append(outAllTasksList[i*TasksNoPerProduct+1]);
-        // bv-err-image-inversion -> get-lai-retrieval-model
-        outAllTasksList[i*TasksNoPerProduct+3].parentTasks.append(outAllTasksList[i*TasksNoPerProduct+1]);
-        // lai-mono-date-mask-flags -> get-lai-retrieval-model
-        outAllTasksList[i*TasksNoPerProduct+4].parentTasks.append(outAllTasksList[i*TasksNoPerProduct+1]);
+        // bv-image-inversion -> ndvi-rvi-extraction
+        outAllTasksList[ndviRviExtrIdx+1].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
+        // bv-err-image-inversion -> ndvi-rvi-extraction
+        outAllTasksList[ndviRviExtrIdx+2].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
+        // lai-mono-date-mask-flags -> ndvi-rvi-extraction
+        outAllTasksList[ndviRviExtrIdx+3].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
     }
     int nCurIdx = i*TasksNoPerProduct;
     if(bNDayReproc || bFittedReproc) {
@@ -152,44 +176,49 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
 
     // Get the resolution value
     const auto &resolution = QString::number(parameters["resolution"].toInt());
+    bool bGenModels = IsGenerateModelNeeded(parameters);
     bool bNDayReproc = IsNDaysReprocessingNeeded(parameters);
-    bool bFittedReproc = IsNDaysReprocessingNeeded(parameters);
+    bool bFittedReproc = IsFittedReprocessingNeeded(parameters);
 
     QList<TaskToSubmit> allTasksList;
-    CreateNewProductInJobTasks(allTasksList, listProducts.size(), bNDayReproc, bFittedReproc);
+    CreateNewProductInJobTasks(allTasksList, listProducts.size(), bGenModels, bNDayReproc, bFittedReproc);
+
+    QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
+    for(TaskToSubmit &task: allTasksList) {
+        allTasksListRef.append(task);
+    }
+    // submit all tasks
+    ctx.SubmitTasks(jobId, allTasksListRef);
 
     NewStepList steps;
     QStringList ndviFileNames;
     QStringList monoDateLaiFileNames;
     QStringList monoDateErrLaiFileNames;
     QStringList monoDateMskFlagsLaiFileNames;
-
     // first extract the model file names from the models folder
-    QStringList modelsList;
-    QStringList errModelsList;
-    GetModelFileList(modelsList, "Model_*.txt", configParameters);
-    GetModelFileList(errModelsList, "Err_Est_Model_*.txt", configParameters);
+    int TasksNoPerProduct = LAI_TASKS_PER_PRODUCT;
+    if(bGenModels) {
+        GetStepsToGenModel(configParameters, listProducts, allTasksList, steps);
+        TasksNoPerProduct += MODEL_GEN_TASKS_PER_PRODUCT;
+    }
+
+    const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
 
     int i;
     for (i = 0; i<listProducts.size(); i++) {
         const auto &inputProduct = listProducts[i];
-
-        TaskToSubmit &ndviRviExtractorTask = allTasksList[i*TasksNoPerProduct];
-        TaskToSubmit &getLaiRetrievalModelTask = allTasksList[i*TasksNoPerProduct+1];
-        TaskToSubmit &bvImageInversionTask = allTasksList[i*TasksNoPerProduct+2];
-        TaskToSubmit &bvErrImageInversionTask = allTasksList[i*TasksNoPerProduct+3];
-        TaskToSubmit &genMonoDateMskFagsTask = allTasksList[i*TasksNoPerProduct+4];
-
-        ctx.SubmitTasks(jobId, { ndviRviExtractorTask,
-                                 getLaiRetrievalModelTask,
-                                 bvImageInversionTask,
-                                 bvErrImageInversionTask,
-                                 genMonoDateMskFagsTask
-        });
+        // initialize the ndviRvi task index
+        int ndviRviExtrIdx = i*TasksNoPerProduct;
+        if(bGenModels) {
+            // now update the index for the ndviRvi task
+            ndviRviExtrIdx += MODEL_GEN_TASKS_PER_PRODUCT;
+        }
+        TaskToSubmit &ndviRviExtractorTask = allTasksList[ndviRviExtrIdx];
+        TaskToSubmit &bvImageInversionTask = allTasksList[ndviRviExtrIdx+1];
+        TaskToSubmit &bvErrImageInversionTask = allTasksList[ndviRviExtrIdx+2];
+        TaskToSubmit &genMonoDateMskFagsTask = allTasksList[ndviRviExtrIdx+3];
 
         const auto & ftsFile = ndviRviExtractorTask.GetFilePath("ndvi_rvi.tif");
-        const auto & modelFileName = getLaiRetrievalModelTask.GetFilePath("model_file.txt");
-        const auto & errModelFileName = getLaiRetrievalModelTask.GetFilePath("err_model_file.txt");
         const auto & monoDateLaiFileName = bvImageInversionTask.GetFilePath("LAI_mono_date_img.tif");
         const auto & monoDateErrFileName = bvErrImageInversionTask.GetFilePath("LAI_mono_date_ERR_img.tif");
         const auto & monoDateMskFlgsFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img.tif");
@@ -201,14 +230,12 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
         monoDateMskFlagsLaiFileNames.append(monoDateMskFlgsFileName);
 
         QStringList ndviRviExtractionArgs = GetNdviRviExtractionArgs(inputProduct, ftsFile, resolution);
-        QStringList getLaiModelArgs = GetLaiModelExtractorArgs(inputProduct, modelsList, errModelsList, modelFileName, errModelFileName);
-        QStringList bvImageInvArgs = GetBvImageInvArgs(ftsFile, modelFileName, monoDateLaiFileName);
-        QStringList bvErrImageInvArgs = GetBvErrImageInvArgs(ftsFile, errModelFileName, monoDateErrFileName);
+        QStringList bvImageInvArgs = GetBvImageInvArgs(ftsFile, inputProduct, modelsFolder, monoDateLaiFileName);
+        QStringList bvErrImageInvArgs = GetBvErrImageInvArgs(ftsFile, inputProduct, modelsFolder, monoDateErrFileName);
         QStringList genMonoDateMskFagsArgs = GetMonoDateMskFagsArgs(inputProduct, monoDateMskFlgsFileName);
 
         // add these steps to the steps list to be submitted
         steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtraction2", ndviRviExtractionArgs));
-        steps.append(getLaiRetrievalModelTask.CreateStep("GetLaiRetrievalModel", getLaiModelArgs));
         steps.append(bvImageInversionTask.CreateStep("BVImageInversion", bvImageInvArgs));
         steps.append(bvErrImageInversionTask.CreateStep("BVImageInversion", bvErrImageInvArgs));
         steps.append(genMonoDateMskFagsTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
@@ -223,10 +250,6 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
         TaskToSubmit &imgTimeSeriesBuilderTask = allTasksList[m_nTimeSeriesBuilderIdx];
         TaskToSubmit &errTimeSeriesBuilderTask = allTasksList[m_nErrTimeSeriesBuilderIdx];
         TaskToSubmit &mskFlagsTimeSeriesBuilderTask = allTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx];
-        ctx.SubmitTasks(jobId, { imgTimeSeriesBuilderTask,
-                                 errTimeSeriesBuilderTask,
-                                 mskFlagsTimeSeriesBuilderTask,
-        });
 
         const auto & allLaiTimeSeriesFileName = imgTimeSeriesBuilderTask.GetFilePath("LAI_time_series.tif");
         const auto & allErrTimeSeriesFileName = errTimeSeriesBuilderTask.GetFilePath("Err_time_series.tif");
@@ -243,7 +266,6 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
         if(bNDayReproc) {
             TaskToSubmit &profileReprocTask = allTasksList[m_nProfileReprocessingIdx];
             TaskToSubmit &profileReprocSplitTask = allTasksList[m_nReprocessedProfileSplitterIdx];
-            ctx.SubmitTasks(jobId, { profileReprocTask, profileReprocSplitTask });
 
             const auto & reprocTimeSeriesFileName = profileReprocTask.GetFilePath("ReprocessedTimeSeries.tif");
             reprocFileListFileName = profileReprocSplitTask.GetFilePath("ReprocessedFilesList.txt");
@@ -261,7 +283,6 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
         if(bFittedReproc) {
             TaskToSubmit &fittedProfileReprocTask = allTasksList[m_nFittedProfileReprocessingIdx];
             TaskToSubmit &fittedProfileReprocSplitTask = allTasksList[m_nFittedProfileReprocessingSplitterIdx];
-             ctx.SubmitTasks(jobId, { fittedProfileReprocTask, fittedProfileReprocSplitTask});
 
             const auto & fittedTimeSeriesFileName = fittedProfileReprocTask.GetFilePath("FittedTimeSeries.tif");
             fittedFileListFileName = fittedProfileReprocSplitTask.GetFilePath("FittedFilesList.txt");
@@ -278,15 +299,14 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
 
     // finally format the product
     TaskToSubmit &productFormatterTask = allTasksList[m_nProductFormatterIdx];
-    ctx.SubmitTasks(jobId, { productFormatterTask});
 
     // Get the tile ID from the product XML name. We extract it from the first product in the list as all
     // producs should be for the same tile
     QString tileId = ProcessorHandlerHelper::GetTileId(listProducts);
     QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, configParameters, parameters,
                                                                listProducts, ndviFileNames, monoDateLaiFileNames, monoDateErrLaiFileNames,
-                                                               monoDateMskFlagsLaiFileNames, fittedFileListFileName, fittedFlagsFileListFileName,
-                                                               reprocFileListFileName, reprocFlagsFileListFileName, tileId);
+                                                               monoDateMskFlagsLaiFileNames, reprocFileListFileName, reprocFlagsFileListFileName,
+                                                               fittedFileListFileName, fittedFlagsFileListFileName, tileId);
 
     // add these steps to the steps list to be submitted
     steps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
@@ -381,33 +401,23 @@ QStringList LaiRetrievalHandler::GetNdviRviExtractionArgs(const QString &inputPr
     };
 }
 
-QStringList LaiRetrievalHandler::GetLaiModelExtractorArgs(const QString &inputProduct, const QStringList &modelsList, const QStringList &errModelsList,
-                                     const QString &modelFileName, const QString &errModelFileName) {
-    QStringList laiModelExtractorArgs = { "GetLaiRetrievalModel",
-                                "-xml", inputProduct,
-                                "-outm", modelFileName,
-                                "-outerr", errModelFileName,
-                                "-ilmodels"};
-    // append the list of models
-    laiModelExtractorArgs += modelsList;
-    laiModelExtractorArgs.append("-ilerrmodels");
-    laiModelExtractorArgs += errModelsList;
-    return laiModelExtractorArgs;
-}
-
-QStringList LaiRetrievalHandler::GetBvImageInvArgs(const QString &ftsFile, const QString &modelFileName, const QString &monoDateLaiFileName) {
+QStringList LaiRetrievalHandler::GetBvImageInvArgs(const QString &ftsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateLaiFileName) {
     return { "BVImageInversion",
         "-in", ftsFile,
-        "-modelfile", modelFileName,
-        "-out", monoDateLaiFileName
+        "-out", monoDateLaiFileName,
+        "-xml", xmlFile,
+        "-modelsfolder", modelsFolder,
+        "-modelprefix", "Model_"
     };
 }
 
-QStringList LaiRetrievalHandler::GetBvErrImageInvArgs(const QString &ftsFile, const QString &errModelFileName, const QString &monoDateErrFileName)  {
+QStringList LaiRetrievalHandler::GetBvErrImageInvArgs(const QString &ftsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateErrFileName)  {
     return { "BVImageInversion",
-      "-in", ftsFile,
-      "-modelfile", errModelFileName,
-      "-out", monoDateErrFileName
+        "-in", ftsFile,
+        "-out", monoDateErrFileName,
+        "-xml", xmlFile,
+        "-modelsfolder", modelsFolder,
+        "-modelprefix", "Err_Est_Model_"
     };
 }
 
@@ -575,4 +585,104 @@ bool LaiRetrievalHandler::IsFittedReprocessingNeeded(const QJsonObject &paramete
     if(parameters.contains("fitted"))
         return true;
     return false;
+}
+
+bool LaiRetrievalHandler::IsGenerateModelNeeded(const QJsonObject &parameters) {
+    if(parameters.contains("genmodel"))
+        return true;
+    return false;
+}
+
+void LaiRetrievalHandler::GetStepsToGenModel(std::map<QString, QString> &configParameters,
+                                             const QStringList &listProducts,
+                                             QList<TaskToSubmit> &allTasksList,
+                                             NewStepList &steps)
+{
+    const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
+    const auto &rsrCfgFile = configParameters["processor.l3b.lai.rsrcfgfile"];
+    int i = 0;
+    int TasksNoPerProduct = LAI_TASKS_PER_PRODUCT + MODEL_GEN_TASKS_PER_PRODUCT;
+    for(const QString& curXml : listProducts) {
+        int loopFirstIdx = i*TasksNoPerProduct;
+        TaskToSubmit &bvInputVariableGenerationTask = allTasksList[loopFirstIdx];
+        TaskToSubmit &prosailSimulatorTask = allTasksList[loopFirstIdx+1];
+        TaskToSubmit &trainingDataGeneratorTask = allTasksList[loopFirstIdx+2];
+        TaskToSubmit &inverseModelLearningTask = allTasksList[loopFirstIdx+3];
+
+        const auto & generatedSampleFile = bvInputVariableGenerationTask.GetFilePath("out_bv_dist_samples.txt");
+        const auto & simuReflsFile = prosailSimulatorTask.GetFilePath("out_simu_refls.txt");
+        const auto & anglesFile = prosailSimulatorTask.GetFilePath("out_angles.txt");
+        const auto & trainingFile = trainingDataGeneratorTask.GetFilePath("out_training.txt");
+        const auto & modelFile = inverseModelLearningTask.GetFilePath("out_model.txt");
+        const auto & errEstModelFile = inverseModelLearningTask.GetFilePath("out_err_est_model.txt");
+
+
+        QStringList BVInputVariableGenerationArgs = GetBVInputVariableGenerationArgs(configParameters, generatedSampleFile);
+        QStringList ProSailSimulatorArgs = GetProSailSimulatorArgs(curXml, generatedSampleFile, rsrCfgFile, simuReflsFile, anglesFile, configParameters);
+        QStringList TrainingDataGeneratorArgs = GetTrainingDataGeneratorArgs(curXml, generatedSampleFile, simuReflsFile, trainingFile);
+        QStringList InverseModelLearningArgs = GetInverseModelLearningArgs(trainingFile, curXml, modelFile, errEstModelFile, modelsFolder, configParameters);
+
+        steps.append(bvInputVariableGenerationTask.CreateStep("BVInputVariableGeneration", BVInputVariableGenerationArgs));
+        steps.append(prosailSimulatorTask.CreateStep("ProSailSimulator", ProSailSimulatorArgs));
+        steps.append(trainingDataGeneratorTask.CreateStep("TrainingDataGenerator", TrainingDataGeneratorArgs));
+        steps.append(inverseModelLearningTask.CreateStep("InverseModelLearning", InverseModelLearningArgs));
+        i++;
+    }
+}
+
+QStringList LaiRetrievalHandler::GetBVInputVariableGenerationArgs(std::map<QString, QString> &configParameters, const QString &strGenSampleFile) {
+    QString samplesNo = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.samples", DEFAULT_GENERATED_SAMPLES_NO);
+    return { "BVInputVariableGeneration",
+                "-samples", samplesNo,
+                "-out", strGenSampleFile
+    };
+}
+
+QStringList LaiRetrievalHandler::GetProSailSimulatorArgs(const QString &product, const QString &bvFileName, const QString &rsrCfgFileName,
+                                                         const QString &outSimuReflsFile, const QString &outAngles, std::map<QString, QString> &configParameters) {
+    QString noiseVar = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.noisevar", DEFAULT_NOISE_VAR);
+    return { "ProSailSimulator",
+                "-xml", product,
+                "-bvfile", bvFileName,
+                "-rsrcfg", rsrCfgFileName,
+                "-out", outSimuReflsFile,
+                "-outangles", outAngles,
+                "-noisevar", noiseVar
+    };
+}
+
+QStringList LaiRetrievalHandler::GetTrainingDataGeneratorArgs(const QString &product, const QString &biovarsFile,
+                                                              const QString &simuReflsFile, const QString &outTrainingFile) {
+    return { "TrainingDataGenerator",
+                "-xml", product,
+                "-biovarsfile", biovarsFile,
+                "-simureflsfile", simuReflsFile,
+                "-outtrainfile", outTrainingFile,
+                "-addrefls", "1"
+    };
+}
+
+QStringList LaiRetrievalHandler::GetInverseModelLearningArgs(const QString &trainingFile, const QString &product, const QString &modelFile,
+                                                             const QString &errEstFile, const QString &modelsFolder,
+                                                             std::map<QString, QString> &configParameters) {
+    QString bestOf = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.bestof", DEFAULT_BEST_OF);
+    QString regressor = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.regressor", DEFAULT_REGRESSOR);
+
+    return { "InverseModelLearning",
+                "-training", trainingFile,
+                "-out", modelFile,
+                "-errest", errEstFile,
+                "-regression", regressor,
+                "-bestof", bestOf,
+                "-xml", product,
+                "-newnamesoutfolder", modelsFolder
+    };
+}
+
+const QString& LaiRetrievalHandler::GetDefaultCfgVal(std::map<QString, QString> &configParameters, const QString &key, const QString &defVal) {
+    auto search = configParameters.find(key);
+    if(search != configParameters.end()) {
+        return search->second;
+    }
+    return defVal;
 }

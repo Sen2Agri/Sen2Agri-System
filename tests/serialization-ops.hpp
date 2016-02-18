@@ -289,8 +289,8 @@ template <>
 struct maker<NewExecutorStep> {
     static NewExecutorStep make()
     {
-        return { maker<int>::make(), maker<QString>::make(), maker<QString>::make(),
-                 maker<QString>::make(), maker<QString>::make(), maker<StepArgumentList>::make() };
+        return { maker<int>::make(), maker<int>::make(), maker<QString>::make(), maker<QString>::make(),
+                 maker<StepArgumentList>::make() };
     }
 };
 

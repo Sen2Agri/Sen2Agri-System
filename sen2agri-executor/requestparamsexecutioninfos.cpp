@@ -24,6 +24,9 @@ bool RequestParamsExecutionInfos::ParseMessage(const QByteArray &message)
     const auto &obj = document.object();
     m_strJobName = obj["JOB_NAME"].toString();
     m_strMsgType = obj["MSG_TYPE"].toString();
+    m_strStatusText = obj["STATUS"].toString();
+    QString strExitCode = obj["EXIT_CODE"].toString();
+    m_nExitCode = strExitCode.toInt();
     // no longer used
     m_strLogMsg = obj["LOG_MSG"].toString();
     m_strExecTime = obj["EXEC_TIME"].toString();
@@ -78,4 +81,14 @@ const QString& RequestParamsExecutionInfos::GetStdOutText() const
 const QString& RequestParamsExecutionInfos::GetStdErrText() const
 {
     return m_strStdErrText;
+}
+
+const QString& RequestParamsExecutionInfos::GetStatusText() const
+{
+    return m_strStatusText;
+}
+
+int RequestParamsExecutionInfos::GetExitCode() const
+{
+    return m_nExitCode;
 }

@@ -4,13 +4,12 @@ ExecutionStep::ExecutionStep()
 {
 }
 
-ExecutionStep::ExecutionStep(int nTaskId, const QString &strName, const QString &strQos, const QString &strPartition,
+ExecutionStep::ExecutionStep(int nProcessorId, int nTaskId, const QString &strName,
                              const QString &strProcPath)
 {
+    m_nProcessorId = nProcessorId;
     m_nTaskId = nTaskId;
     m_strStepName = strName;
-    m_strQos = strQos;
-    m_strPartition = strPartition;
     m_strProcessorPath = strProcPath;
 }
 
@@ -18,34 +17,14 @@ ExecutionStep::~ExecutionStep()
 {
 }
 
-void ExecutionStep::SetTaskId(int nTaskId)
-{
-    m_nTaskId = nTaskId;
-}
-
-void ExecutionStep::SetStepName(const QString &strName)
-{
-    m_strStepName = strName;
-}
-
-void ExecutionStep::SetQos(const QString &strQos)
-{
-    m_strQos = strQos;
-}
-
-void ExecutionStep::SetPartition(const QString &strPartition)
-{
-    m_strPartition = strPartition;
-}
-
-void ExecutionStep::SetProcessorPath(const QString &strProcPath)
-{
-    m_strProcessorPath = strProcPath;
-}
-
 void ExecutionStep::AddArgument(const QString &strArg)
 {
     m_listArgs.push_back(strArg);
+}
+
+int ExecutionStep::GetProcessorId()
+{
+    return m_nProcessorId;
 }
 
 int ExecutionStep::GetTaskId()
@@ -56,16 +35,6 @@ int ExecutionStep::GetTaskId()
 QString& ExecutionStep::GetStepName()
 {
     return m_strStepName;
-}
-
-QString& ExecutionStep::GetQos()
-{
-    return m_strQos;
-}
-
-QString& ExecutionStep::GetPartition()
-{
-    return m_strPartition;
 }
 
 QString& ExecutionStep::GetProcessorPath()
@@ -86,6 +55,7 @@ ExecutionStep& ExecutionStep::operator=(const ExecutionStep &rhs)
 
     m_nTaskId = rhs.m_nTaskId;
     m_strStepName = rhs.m_strStepName;
+    m_nProcessorId = rhs.m_nProcessorId;
     m_strProcessorPath = rhs.m_strProcessorPath;
     m_listArgs = rhs.m_listArgs;
     return *this;
@@ -96,10 +66,11 @@ RequestParamsSubmitSteps::RequestParamsSubmitSteps()
 {
 }
 
-ExecutionStep& RequestParamsSubmitSteps::AddExecutionStep(int nTaskId, const QString &strStepName,
-        const QString &strQos, const QString &strPartition, const QString &strProcPath)
+ExecutionStep& RequestParamsSubmitSteps::AddExecutionStep(int nProcessorId, int nTaskId,
+                                                          const QString &strStepName,
+                                                          const QString &strProcPath)
 {
-    ExecutionStep execStep(nTaskId, strStepName, strQos, strPartition, strProcPath);
+    ExecutionStep execStep(nProcessorId, nTaskId, strStepName, strProcPath);
     m_executionSteps.append(execStep);
     return m_executionSteps.last();
 }

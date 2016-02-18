@@ -99,6 +99,7 @@ QString getJobStartedJson(const QString &jobName)
 QString getJobFinishedJson(const QString &jobName,
                            int64_t execTime,
                            const QString &status,
+                           int exitCode,
                            const QString &stdOutText,
                            const QString &stdErrText)
 {
@@ -107,6 +108,7 @@ QString getJobFinishedJson(const QString &jobName,
     obj["JOB_NAME"] = jobName;
     obj["EXEC_TIME"] = QString::number(execTime);
     obj["STATUS"] = status;
+    obj["EXIT_CODE"] = QString::number(exitCode);
     obj["STDOUT_TEXT"] = stdOutText;
     obj["STDERR_TEXT"] = stdErrText;
     return QString::fromUtf8(QJsonDocument(obj).toJson());
@@ -138,7 +140,8 @@ bool ProcessorWrapper::ExecuteProcessor()
     }
 
     bool bRet;
-    bRet = cmdInvoker.InvokeCommand(m_strProcPath, m_listProcParams, false);
+    int exitCode;
+    bRet = cmdInvoker.InvokeCommand(m_strProcPath, m_listProcParams, false, exitCode);
 
     Logger::info(QStringLiteral("Job %1 finished").arg(m_strJobName));
 
@@ -152,7 +155,7 @@ bool ProcessorWrapper::ExecuteProcessor()
         //      STATUS: <OK/FAIL>
         // }
         const auto &strJson =
-            getJobFinishedJson(m_strJobName, endTime - startTime, bRet ? "OK" : "FAILED",
+            getJobFinishedJson(m_strJobName, endTime - startTime, bRet ? "OK" : "FAILED", exitCode,
                                cmdInvoker.GetStandardOutputLog(), cmdInvoker.GetStandardErrorLog());
         Logger::debug(QStringLiteral("Sending message %1").arg(strJson));
         m_pClient->SendMessage(strJson);

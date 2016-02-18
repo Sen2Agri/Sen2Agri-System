@@ -70,7 +70,6 @@ public:
           outputDates(std::move(outputDates)),
           inputImages(std::move(inputImages))
     {
-        std::cout << this->outputDates.size() << '\n';
     }
 
     PixelType operator()(const PixelType &pix, const PixelType &mask) const

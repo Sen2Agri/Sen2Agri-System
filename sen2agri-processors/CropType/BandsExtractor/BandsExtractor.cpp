@@ -67,6 +67,37 @@
 
 #define EPSILON     1e-6
 
+namespace Functor
+{
+template< class TInput, class TOutput>
+class MaskStatusFlagsExtractor
+{
+public:
+    MaskStatusFlagsExtractor() { }
+    ~MaskStatusFlagsExtractor() {}
+  bool operator!=( const MaskStatusFlagsExtractor & ) const
+    {
+    return false;
+    }
+  bool operator==( const MaskStatusFlagsExtractor & other ) const
+    {
+    return !(*this != other);
+    }
+  inline TOutput operator()( const TInput & A ) const
+    {
+      TOutput ret(1);
+      int validLandCnt = 0;
+      for(int i = 0; i<A.Size(); i++) {
+            if(A[i] == 0) {
+                validLandCnt++;
+            }
+      }
+      ret[0] = validLandCnt;
+      return ret;
+    }
+};
+}
+
 typedef otb::VectorImage<short, 2>                                 ImageType;
 typedef otb::Image<short, 2>                                       InternalImageType;
 
@@ -101,6 +132,12 @@ typedef otb::ObjectList<BandMathImageFilterType>                    BandMathImag
 
 typedef otb::StreamingStatisticsImageFilter<InternalImageType> StreamingStatisticsImageFilterType;
 typedef otb::LabelImageToVectorDataFilter<InternalImageType>   LabelImageToVectorDataFilterType;
+
+typedef itk::UnaryFunctorImageFilter<ImageType,ImageType,
+                Functor::MaskStatusFlagsExtractor<
+                    ImageType::PixelType,
+                    ImageType::PixelType> > MaskStatusFlagsExtractorFilterType;
+
 
 struct SourceImageMetadata {
     MACCSFileMetadata  msccsFileMetadata;
@@ -279,6 +316,9 @@ private:
 
     AddParameter(ParameterType_OutputImage, "allmasks", "The concatenated masks for cloud, water, snow, saturation, etc.");
     MandatoryOff("allmasks");
+
+    AddParameter(ParameterType_OutputImage, "statusflags", "A raster containing the number of dates for each pixel that have valid land values.");
+    MandatoryOff("statusflags");
 
     AddParameter(ParameterType_OutputFilename, "outdate", "The file containing the dates for the images");
     AddParameter(ParameterType_OutputVectorData, "shape", "The file containing the border shape");
@@ -957,10 +997,14 @@ private:
               maskMath->SetNthInput(1, desc.maskSat);
               maskMath->SetNthInput(2, desc.maskValid);
               maskMath->SetNthInput(3, m_borderMask->GetOutput());
+//              maskMath->SetNthInput(4, desc.maskWater);
+//              maskMath->SetNthInput(5, desc.maskSnow);
 
 #ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
+//              m_maskExpression = "(b1 == 0) && (b2 == 0) && (b3 == 1) && (b4 == 1) && (b5 == 0) && (b6 == 0) ? 0 : 1";
               m_maskExpression = "(b1 == 0) && (b2 == 0) && (b3 == 1) && (b4 == 1) ? 0 : 1";
 #else
+//              m_maskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 1) and (b4 == 1) and (b5 == 0) and (b6 == 0), 0, 1)";
               m_maskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 1) and (b4 == 1), 0, 1)";
 #endif
 
@@ -971,7 +1015,7 @@ private:
               m_MasksList->PushBack(maskMath->GetOutput());
            }
 
-          if(HasValue("allmasks")) {
+          if(HasValue("allmasks") || HasValue("statusflags")) {
               // build the general mask
 
               BandMathImageFilterType::Pointer allMaskMath = BandMathImageFilterType::New();
@@ -984,7 +1028,7 @@ private:
 #ifdef OTB_MUPARSER_HAS_CXX_LOGICAL_OPERATORS
               m_allMaskExpression = "(b1 == 0) && (b2 == 0) && (b3 == 1) && (b4 == 0) && (b5 == 0) ? 0 : 1";
 #else
-              m_allMaskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 1) and && (b4 == 0) and (b5 == 0) , 0, 1)";
+              m_allMaskExpression = "if((b1 == 0) and (b2 == 0) and (b3 == 1) and (b4 == 0) and (b5 == 0) , 0, 1)";
 #endif
 
               allMaskMath->SetExpression(m_allMaskExpression);
@@ -1004,15 +1048,26 @@ private:
       datesFile.close();
 
       m_Concatener->SetInput( m_ImageList );
-      if(HasValue("mask"))
-        m_Masks->SetInput(m_MasksList);
-      if(HasValue("allmasks"))
-        m_AllMasks->SetInput(m_AllMasksList);
-
       SetParameterOutputImage("out", m_Concatener->GetOutput());
-      SetParameterOutputImage("mask", m_Masks->GetOutput());
-      if(HasValue("allmasks"))
+
+      if(HasValue("mask")) {
+        m_Masks->SetInput(m_MasksList);
+        SetParameterOutputImage("mask", m_Masks->GetOutput());
+      }
+
+      if(HasValue("allmasks")) {
+          m_AllMasks->SetInput(m_AllMasksList);
           SetParameterOutputImage("allmasks", m_AllMasks->GetOutput());
+      }
+
+      if(HasValue("statusflags")) {
+          m_AllMasks->SetInput(m_AllMasksList);
+          m_MskStatusFlagsExtractorFunctor = MaskStatusFlagsExtractorFilterType::New();
+          m_MskStatusFlagsExtractorFunctor->SetInput(m_AllMasks->GetOutput());
+          m_MskStatusFlagsExtractorFunctor->UpdateOutputInformation();
+          m_MskStatusFlagsExtractorFunctor->GetOutput()->SetNumberOfComponentsPerPixel(1);
+          SetParameterOutputImage("statusflags", m_MskStatusFlagsExtractorFunctor->GetOutput());
+      }
   }
 
   // Sort the descriptors based on the aquisition date
@@ -1229,6 +1284,7 @@ private:
   BandMathImageFilterType::Pointer      m_borderMask;
 
   LabelImageToVectorDataFilterType::Pointer m_ShapeBuilder;
+  MaskStatusFlagsExtractorFilterType::Pointer m_MskStatusFlagsExtractorFunctor;
 };
 }
 }

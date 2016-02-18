@@ -215,8 +215,13 @@ private:
       if (sourceLayer.GetGeomType() != wkbPolygon) {
           itkExceptionMacro("The first layer must contain polygons!");
       }
-      if (!GetParameterEmpty("nofilter")) {
-          sourceLayer.ogr().SetAttributeFilter("CROP=1");
+      auto filter = !GetParameterEmpty("nofilter");
+      if (filter) {
+          std::cout << "Excluding non-crop features\n";
+          auto ret = sourceLayer.ogr().SetAttributeFilter("CROP=1");
+          if (ret != OGRERR_NONE) {
+              std::cerr << "SetAttributeFilter() failed: " << ret << '\n';
+          }
       }
 
       int featureCount = sourceLayer.GetFeatureCount(true);
@@ -225,8 +230,11 @@ private:
 
       // read all features from the source field and add them to the multimap
       for (ogr::Feature& feature : sourceLayer) {
-          featuresMap.insert(std::pair<int, ogr::Feature>(feature.ogr().GetFieldAsInteger("CODE"), feature.Clone()));
+          if (!filter || feature.ogr().GetFieldAsInteger("CROP")) {
+            featuresMap.insert(std::pair<int, ogr::Feature>(feature.ogr().GetFieldAsInteger("CODE"), feature.Clone()));
+          }
       }
+      std::cerr << '\n';
 
 
       // create the layers for the target files

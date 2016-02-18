@@ -1,6 +1,8 @@
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 
+#include "MetadataHelperFactory.h"
+
 namespace otb
 {
 namespace Wrapper
@@ -53,17 +55,27 @@ private:
         SetDefaultParameterInt("bvidx", 0);
         MandatoryOff("bvidx");
 
-        AddParameter(ParameterType_Int, "redidx", "The index of the RED band in the simulated reflectances file.");
+        AddParameter(ParameterType_Int, "redidx", "The index of the RED band in the simulated reflectances file. This is used only with addrefls and is ignored if useallrefls is set.");
         SetDefaultParameterInt("redidx", -1);
         MandatoryOff("redidx");
 
-        AddParameter(ParameterType_Int, "niridx", "The index of the NIR band in the simulated reflectances file.");
+        AddParameter(ParameterType_Int, "niridx", "The index of the NIR band in the simulated reflectances file. This is used only with addrefls and is ignored if useallrefls is set.");
         SetDefaultParameterInt("niridx", -1);
         MandatoryOff("niridx");
 
         AddParameter(ParameterType_Int, "addrefls", "Specifies if the simulated reflectance values bands should be also added in the training file or only NDVI and RVI.");
         SetDefaultParameterInt("addrefls", 1);
         MandatoryOff("addrefls");
+
+        AddParameter(ParameterType_Int, "useallrefls", "Boolean specifying if all reflectances should be used. If this is set to 1, then the RED and NIR indexes are not needed anymore.");
+        SetDefaultParameterInt("useallrefls", 1);
+        MandatoryOff("useallrefls");
+
+        AddParameter(ParameterType_InputFilename, "xml",
+                     "Input XML file of a product that will be used to get the red and nir band indexes if redidx or niridx are not specified.");
+        SetParameterDescription( "xml", "Input XML file of a product." );
+        MandatoryOff("xml");
+
 
         AddParameter(ParameterType_OutputFilename, "outtrainfile", "Output training file");
 
@@ -74,6 +86,8 @@ private:
         SetDocExampleParameterValue("redidx", "0");
         SetDocExampleParameterValue("niridx", "2");
         SetDocExampleParameterValue("addrefls", "1");
+        SetDocExampleParameterValue("useallrefls", "1");
+        SetDocExampleParameterValue("xml", "product.xml");
         SetDocExampleParameterValue("outtrainfile", "training.txt");
   }
 
@@ -92,7 +106,21 @@ private:
           itkGenericExceptionMacro(<< "You should either set addrefls to 1 OR set the redidx and niridx to valid values");
       }
       std::string outFileName = GetParameterString("outtrainfile");
-      bool bUseAllReflectanceBands = true;
+      bool bUseAllReflectanceBands = (GetParameterInt("useallrefls") != 0);
+
+      if(redIdx == -1 || nirIdx == -1) {
+          if(HasValue("xml")) {
+              std::string inMetadataXml = GetParameterString("xml");
+              auto factory = MetadataHelperFactory::New();
+              // we are interested only in the 10m resolution as here we have the RED and NIR
+              auto pHelper = factory->GetMetadataHelper(inMetadataXml);
+              // the bands are 1 based
+              if(redIdx == -1)
+                redIdx = pHelper->GetRelNirBandIndex();
+              if(nirIdx == -1)
+                nirIdx = pHelper->GetRelRedBandIndex();
+          }
+      }
 
       try
         {

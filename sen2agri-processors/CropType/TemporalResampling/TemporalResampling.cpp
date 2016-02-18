@@ -36,6 +36,7 @@
 #include <time.h>
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
+#include "TemporalMerging.hxx"
 #include "TemporalResampling.hxx"
 //  Software Guide : EndCodeSnippet
 
@@ -164,6 +165,10 @@ private:
                      "The file containing the days from epoch for the resampled time series");
         MandatoryOff("outdays");
 
+        AddParameter(ParameterType_Empty, "merge", "Merge the output in one unique time series");
+        MandatoryOff("merge");
+
+
         // Set default value for parameters
         //  Software Guide : EndCodeSnippet
 
@@ -203,6 +208,9 @@ private:
     //  Software Guide :BeginCodeSnippet
     void DoExecute()
     {
+        // get the merging parameter
+        bool merge = GetParameterEmpty("merge");
+
         // Read all input parameters
         imgReader = ReaderType::New();
         imgReader->SetFileName(GetParameterString("tocr"));
@@ -290,7 +298,7 @@ private:
         // close the file
         datesFile.close();
 
-        if (HasValue("outdays")) {
+        if (HasValue("outdays") && !merge) {
             // create the output days file
             std::ofstream outDaysFile(GetParameterString("outdays"));
             if (!outDaysFile) {
@@ -310,7 +318,7 @@ private:
                          maskReader->GetOutput()->GetNumberOfComponentsPerPixel();
 
         // Create the instance of the filter which will perform all computations
-        filter = BinaryFunctorImageFilterWithNBands::New();
+        filter = BinaryFunctorImageFilterWithNBands<ImageType, GapFillingFunctor<ImageType::PixelType>>::New();
 
         int dateCount = 0;
         for (const auto &sd : inData) {
@@ -322,13 +330,64 @@ private:
         filter->SetInput(0, imgReader->GetOutput());
         filter->SetInput(1, maskReader->GetOutput());
 
-        SetParameterOutputImage("rtocr", filter->GetOutput());
+        if (merge) {
+            std::vector<ImageInfo> imgInfos;
+            int priority = 10;
+            int index = 0;
+            for (const auto &sd : inData) {
+                for (auto date : sd.outDates) {
+                    ImageInfo ii(index++, date, priority);
+                    imgInfos.push_back(ii);
+                }
+                priority--;
+            }
+            std::sort(imgInfos.begin(), imgInfos.end(), TemporalResampling::SortImages);
+
+            // count the number of output images and create the out days file
+            int lastDay = -1;
+            int numOutputImages = 0;
+            for (auto& imgInfo : imgInfos) {
+                if (lastDay != imgInfo.day) {
+                    numOutputImages++;
+                    lastDay = imgInfo.day;
+                }
+            }
+
+            if (HasValue("outdays")) {
+                // create the output days file
+                std::ofstream outDaysFile(GetParameterString("outdays"));
+                if (!outDaysFile) {
+                    itkExceptionMacro("Can't open output days file for writing!");
+                }
+
+                int lastDay = -1;
+                for (auto& imgInfo : imgInfos) {
+                    if (lastDay != imgInfo.day) {
+                        outDaysFile << imgInfo.day << '\n';
+                        lastDay = imgInfo.day;
+                    }
+                }
+            }
+
+            // Create the instance of the merger
+            merger = BinaryFunctorImageFilterWithNBands<ImageType, TemporalMergingFunctor<ImageType::PixelType>>::New();
+            merger->SetNumberOfOutputBands(imageBands * numOutputImages);
+            merger->SetFunctor(TemporalMergingFunctor<ImageType::PixelType>(imgInfos, numOutputImages, imageBands));
+
+            merger->SetInput(0, filter->GetOutput());
+            merger->SetInput(1, maskReader->GetOutput());
+
+            SetParameterOutputImage("rtocr", merger->GetOutput());
+        } else {
+            SetParameterOutputImage("rtocr", filter->GetOutput());
+        }
     }
     //  Software Guide :EndCodeSnippet
 private:
     ReaderType::Pointer imgReader;
     ReaderType::Pointer maskReader;
-    BinaryFunctorImageFilterWithNBands::Pointer filter;
+    BinaryFunctorImageFilterWithNBands<ImageType, GapFillingFunctor<ImageType::PixelType>>::Pointer filter;
+    BinaryFunctorImageFilterWithNBands<ImageType, TemporalMergingFunctor<ImageType::PixelType>>::Pointer merger;
 
     inline int getDaysFromEpoch(const std::string &date)
     {
@@ -337,6 +396,11 @@ private:
             itkExceptionMacro("Invalid value for a date: " + date);
         }
         return mktime(&tm) / 86400;
+    }
+
+    // Sort the descriptors based on the aquisition date
+    static bool SortImages(const ImageInfo& o1, const ImageInfo& o2) {
+        return (o1.day < o2.day) || ((o1.day == o2.day) && (o1.priority > o2.priority));
     }
 };
 }

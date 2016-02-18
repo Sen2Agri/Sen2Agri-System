@@ -16,6 +16,8 @@ static QString getJobConfigurationUpsertJson(const JobConfigurationUpdateActionL
 static QString getArchivedProductsJson(const ArchivedProductList &products);
 static QString getParentTasksJson(const TaskIdList &tasks);
 static QString getNewStepsJson(const NewStepList &steps);
+static QString getScheduledTasksStatusesJson(const std::vector<ScheduledTaskStatus> &statuses);
+
 static QString getExecutionStatusListJson(const ExecutionStatusList &statusList);
 
 static void bindStepExecutionStatistics(QSqlQuery &query, const ExecutionStatistics &statistics);
@@ -1044,6 +1046,88 @@ QString PersistenceManagerDBProvider::GetDashboardProcessors()
     });
 }
 
+std::vector<ScheduledTask> PersistenceManagerDBProvider::GetScheduledTasks( )
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_scheduled_tasks()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto taskIdCol = dataRecord.indexOf(QStringLiteral("task_id"));
+        auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
+        auto processorIdCol = dataRecord.indexOf(QStringLiteral("processor_id"));
+        auto processorParamsCol = dataRecord.indexOf(QStringLiteral("processor_params"));
+
+        auto repeatTypeCol = dataRecord.indexOf(QStringLiteral("repeat_type"));
+        auto repeatAfterDaysCol = dataRecord.indexOf(QStringLiteral("repeat_after_days"));
+        auto repeatOnMonthDayCol = dataRecord.indexOf(QStringLiteral("repeat_on_month_day"));
+
+        auto retrySecondsCol = dataRecord.indexOf(QStringLiteral("retry_seconds"));
+        auto priorityCol = dataRecord.indexOf(QStringLiteral("priority"));
+        auto firstRunTimeCol = dataRecord.indexOf(QStringLiteral("first_run_time"));
+
+
+        auto statusIdCol = dataRecord.indexOf(QStringLiteral("status_id"));
+        auto nextScheduleCol = dataRecord.indexOf(QStringLiteral("next_schedule"));
+        auto lastScheduledRunCol = dataRecord.indexOf(QStringLiteral("last_scheduled_run"));
+
+        auto lastRunTimestampCol = dataRecord.indexOf(QStringLiteral("last_run_timestamp"));
+        auto lastRetryTimestampCol = dataRecord.indexOf(QStringLiteral("last_retry_timestamp"));
+        auto estimatedNextRunTimeCol = dataRecord.indexOf(QStringLiteral("estimated_next_run_time"));
+
+
+        std::vector<ScheduledTask> taskList;
+        while (query.next()) {
+            ScheduledTaskStatus ss;
+            ss.id = query.value(statusIdCol).toInt();
+            ss.taskId = query.value(taskIdCol).toInt();
+            ss.nextScheduledRunTime.fromString( query.value(nextScheduleCol).toString(), Qt::ISODate);
+            ss.lastSuccesfullScheduledRun.fromString(query.value(lastScheduledRunCol).toString(), Qt::ISODate);
+            ss.lastSuccesfullTimestamp.fromString(query.value(lastRunTimestampCol).toString(), Qt::ISODate);
+            ss.lastRetryTime.fromString(query.value(lastRetryTimestampCol).toString(), Qt::ISODate);
+            ss.estimatedRunTime.fromString(query.value(estimatedNextRunTimeCol).toString(), Qt::ISODate);
+
+            taskList.emplace_back(query.value(taskIdCol).toInt(),
+                                  query.value(nameCol).toString(),
+                                  query.value(processorIdCol).toInt(),
+                                  query.value(processorParamsCol).toString(),
+                                  query.value(repeatTypeCol).toInt(),
+                                  query.value(repeatAfterDaysCol).toInt(),
+                                  query.value(repeatOnMonthDayCol).toInt(),
+                                  QDateTime().fromString(query.value(firstRunTimeCol).toString(), Qt::ISODate),
+                                  query.value(retrySecondsCol).toInt(),
+                                  query.value(priorityCol).toInt(),
+                                  ss
+                                  );
+        }
+
+        return taskList;
+    });
+
+}
+
+void PersistenceManagerDBProvider::UpdateScheduledTasksStatus( std::vector<ScheduledTaskStatus>& statuses)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_submit_statuses(:statuses)"));
+        query.bindValue(QStringLiteral(":statuses"), getScheduledTasksStatusesJson(statuses));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
 static QString getConfigurationUpsertJson(const ConfigurationUpdateActionList &actions)
 {
     QJsonArray array;
@@ -1103,6 +1187,24 @@ static QString getNewStepsJson(const NewStepList &steps)
         node[QStringLiteral("name")] = s.name;
         node[QStringLiteral("parameters")] =
             QJsonDocument::fromJson(s.parametersJson.toUtf8()).object();
+        array.append(std::move(node));
+    }
+
+    return jsonToString(array);
+}
+
+static QString getScheduledTasksStatusesJson(const std::vector<ScheduledTaskStatus>& statuses)
+{
+    QJsonArray array;
+    for (const auto &s : statuses) {
+        QJsonObject node;
+        node[QStringLiteral("id")] = s.id;
+        node[QStringLiteral("next_schedule")] = s.nextScheduledRunTime.toString(Qt::ISODate);
+        node[QStringLiteral("last_scheduled_run")] = s.lastSuccesfullScheduledRun.toString(Qt::ISODate);
+        node[QStringLiteral("last_run_timestamp")] = s.lastSuccesfullTimestamp.toString(Qt::ISODate);
+        node[QStringLiteral("last_retry_timestamp")] = s.lastRetryTime.toString(Qt::ISODate);
+        node[QStringLiteral("estimated_next_run_time")] = s.estimatedRunTime.toString(Qt::ISODate);
+
         array.append(std::move(node));
     }
 
@@ -1188,3 +1290,4 @@ ProcessorDescriptionList PersistenceManagerDBProvider::GetProcessorDescriptions(
         return result;
     });
 }
+

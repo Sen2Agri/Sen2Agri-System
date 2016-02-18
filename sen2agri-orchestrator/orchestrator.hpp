@@ -15,13 +15,14 @@ class Orchestrator : public QObject, protected QDBusContext
     Q_OBJECT
 
 public:
-    explicit Orchestrator(std::map<int, std::unique_ptr<ProcessorHandler>> &handlerMap,
-                          QObject *parent = 0);
+    explicit Orchestrator(QObject *parent = 0);
 
 signals:
 
 public slots:
     void NotifyEventsAvailable();
+    JobDefinition GetJobDefinition(const ProcessingRequest &request);
+    void SubmitJob(const JobDefinition &job);
 
 private:
     PersistenceManagerDBProvider persistenceManager;

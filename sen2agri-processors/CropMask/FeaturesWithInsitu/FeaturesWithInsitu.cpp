@@ -31,34 +31,17 @@
 //  Software Guide : BeginCodeSnippet
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
-#include "otbMultiChannelExtractROI.h"
 #include "otbImageList.h"
-#include "otbVectorImageToImageListFilter.h"
-#include "otbImageListToVectorImageFilter.h"
 #include "FeaturesWithInsitu.hxx"
 
-typedef otb::MultiChannelExtractROI<PixelValueType, PixelValueType> ExtractChannelsFilterType;
-typedef otb::ObjectList<ExtractChannelsFilterType> ExtractChannelsFilterListType;
 typedef otb::ImageFileReader<ImageType> ReaderType;
 typedef FeaturesWithInsituFunctor<ImageType::PixelType> FeaturesWithInsituFunctorType;
 typedef FeaturesWithInsituBMFunctor<ImageType::PixelType> FeaturesWithInsituBMFunctorType;
 
 typedef TernaryFunctorImageFilterWithNBands<FeaturesWithInsituFunctorType>
 TernaryFunctorImageFilterWithNBandsType;
-typedef otb::ObjectList<TernaryFunctorImageFilterWithNBandsType>
-TernaryFunctorImageFilterWithNBandsListType;
-
 typedef TernaryFunctorImageFilterWithNBands<FeaturesWithInsituBMFunctorType>
 TernaryFunctorImageFilterBMWithNBandsType;
-typedef otb::ObjectList<TernaryFunctorImageFilterBMWithNBandsType>
-TernaryFunctorImageFilterBMWithNBandsListType;
-
-typedef otb::Image<PixelValueType, 2> SingleImageType;
-
-typedef otb::ImageList<SingleImageType> ImageListType;
-typedef otb::VectorImageToImageListFilter<ImageType, ImageListType> SplitFilterType;
-typedef otb::ObjectList<SplitFilterType> SplitFilterListType;
-typedef otb::ImageListToVectorImageFilter<ImageListType, ImageType> ConcatenateFilterType;
 
 //  Software Guide : EndCodeSnippet
 
@@ -224,12 +207,6 @@ private:
         m_ndviReader = ReaderType::New();
         m_ndwiReader = ReaderType::New();
         m_brightnessReader = ReaderType::New();
-        m_filters = TernaryFunctorImageFilterWithNBandsListType::New();
-        m_filtersBM = TernaryFunctorImageFilterBMWithNBandsListType::New();
-        m_extractChannelsFilters = ExtractChannelsFilterListType::New();
-        m_imageList = ImageListType::New();
-        m_splitFilters = SplitFilterListType::New();
-        m_concatenateFilter = ConcatenateFilterType::New();
     }
     //  Software Guide : EndCodeSnippet
 
@@ -263,34 +240,12 @@ private:
 
         // read the file and save the dates as second from Epoch to a vector
         std::string value;
-        std::string sensor;
         std::string date;
         std::vector<std::string> sensors;
         while (std::getline(datesFile, value)) {
             std::istringstream ss(value);
-            ss >> sensor >> date;
-            sensors.emplace_back(std::move(sensor));
+            ss >> date;
             m_inDates.emplace_back(std::stoi(date));
-        }
-
-        std::vector<std::tuple<int, int> > spans;
-        auto numImages = m_inDates.size();
-        sensor.clear();
-        int spanStart = 0;
-        sensor = sensors[0];
-        for (size_t i = 1; i < numImages; i++) {
-            if (sensors[i] != sensor) {
-                spans.emplace_back(static_cast<int>(spanStart), static_cast<int>(i));
-                spanStart = i;
-            }
-
-            sensor = sensors[i];
-        }
-
-        spans.emplace_back(static_cast<int>(spanStart), static_cast<int>(numImages));
-
-        for (const auto &s : spans) {
-            std::cerr << std::get<0>(s) << ' ' << std::get<1>(s) << '\n';
         }
 
         // close the file
@@ -306,88 +261,42 @@ private:
         m_brightnessReader->SetFileName(GetParameterString("brightness"));
         m_brightnessReader->UpdateOutputInformation();
 
-        for (const auto &span : spans) {
-            auto spanStart = std::get<0>(span);
-            auto spanEnd = std::get<1>(span);
-
-            TernaryFunctorImageFilterBMWithNBandsType::Pointer filterBM;
-            TernaryFunctorImageFilterWithNBandsType::Pointer filter;
-
-            // connect the functor based filter
-            if (m_bm) {
-                filterBM = TernaryFunctorImageFilterBMWithNBandsType::New();
-                m_filtersBM->PushBack(filterBM);
-                filterBM->SetNumberOfOutputBands(m_bands);
-                filterBM->SetFunctor(
-                    FeaturesWithInsituBMFunctorType(m_bands,
-                                                    m_w,
-                                                    static_cast<short>(m_delta * 10000),
-                                                    std::vector<int>(m_inDates.begin() + spanStart, m_inDates.begin() + spanEnd),
-                                                    static_cast<short>(m_tsoil * 10000)));
-            } else {
-                filter = TernaryFunctorImageFilterWithNBandsType::New();
-                m_filters->PushBack(filter);
-                filter->SetNumberOfOutputBands(m_bands);
-                filter->SetFunctor(
-                    FeaturesWithInsituFunctorType(m_bands,
-                                                  m_w,
-                                                  static_cast<short>(m_delta * 10000),
-                                                  std::vector<int>(m_inDates.begin() + spanStart, m_inDates.begin() + spanEnd),
-                                                  static_cast<short>(m_tsoil * 10000)));
-            }
-
-            auto extractChannelsFilter = ExtractChannelsFilterType::New();
-            m_extractChannelsFilters->PushBack(extractChannelsFilter);
-            extractChannelsFilter->SetInput(m_ndviReader->GetOutput());
-            extractChannelsFilter->SetFirstChannel(spanStart + 1);
-            extractChannelsFilter->SetLastChannel(spanEnd);
-            auto ndviOutput = extractChannelsFilter->GetOutput();
-
-            extractChannelsFilter = ExtractChannelsFilterType::New();
-            m_extractChannelsFilters->PushBack(extractChannelsFilter);
-            extractChannelsFilter->SetInput(m_ndwiReader->GetOutput());
-            extractChannelsFilter->SetFirstChannel(spanStart + 1);
-            extractChannelsFilter->SetLastChannel(spanEnd);
-            auto ndwiOutput = extractChannelsFilter->GetOutput();
-
-            extractChannelsFilter = ExtractChannelsFilterType::New();
-            m_extractChannelsFilters->PushBack(extractChannelsFilter);
-            extractChannelsFilter->SetInput(m_brightnessReader->GetOutput());
-            extractChannelsFilter->SetFirstChannel(spanStart + 1);
-            extractChannelsFilter->SetLastChannel(spanEnd);
-            auto brightnessOutput = extractChannelsFilter->GetOutput();
-
-            if (m_bm) {
-                filterBM->SetInput(0, ndviOutput);
-                filterBM->SetInput(1, ndwiOutput);
-                filterBM->SetInput(2, brightnessOutput);
-            } else {
-                filter->SetInput(0, ndviOutput);
-                filter->SetInput(1, ndwiOutput);
-                filter->SetInput(2, brightnessOutput);
-            }
-
-            if (m_bm) {
-                auto splitFilter = SplitFilterType::New();
-                splitFilter->SetInput(filterBM->GetOutput());
-                splitFilter->UpdateOutputInformation();
-                for (unsigned int i = 0; i < splitFilter->GetOutput()->Size(); i++) {
-                    m_imageList->PushBack(splitFilter->GetOutput()->GetNthElement(i));
-                }
-                m_splitFilters->PushBack(splitFilter);
-            } else {
-                auto splitFilter = SplitFilterType::New();
-                splitFilter->SetInput(filter->GetOutput());
-                splitFilter->UpdateOutputInformation();
-                for (unsigned int i = 0; i < splitFilter->GetOutput()->Size(); i++) {
-                    m_imageList->PushBack(splitFilter->GetOutput()->GetNthElement(i));
-                }
-                m_splitFilters->PushBack(splitFilter);
-            }
+        // connect the functor based filter
+        if (m_bm) {
+            m_filterBM = TernaryFunctorImageFilterBMWithNBandsType::New();
+            m_filterBM->SetNumberOfOutputBands(m_bands);
+            m_filterBM->SetFunctor(
+                FeaturesWithInsituBMFunctorType(m_bands,
+                                                m_w,
+                                                static_cast<short>(m_delta * 10000),
+                                                m_inDates,
+                                                static_cast<short>(m_tsoil * 10000)));
+        } else {
+            m_filter = TernaryFunctorImageFilterWithNBandsType::New();
+            m_filter->SetNumberOfOutputBands(m_bands);
+            m_filter->SetFunctor(
+                FeaturesWithInsituFunctorType(m_bands,
+                                              m_w,
+                                              static_cast<short>(m_delta * 10000),
+                                              m_inDates,
+                                              static_cast<short>(m_tsoil * 10000)));
         }
 
-        m_concatenateFilter->SetInput(m_imageList);
-        SetParameterOutputImage("out", m_concatenateFilter->GetOutput());
+        if (m_bm) {
+            m_filterBM->SetInput(0, m_ndviReader->GetOutput());
+            m_filterBM->SetInput(1, m_ndwiReader->GetOutput());
+            m_filterBM->SetInput(2, m_brightnessReader->GetOutput());
+        } else {
+            m_filter->SetInput(0, m_ndviReader->GetOutput());
+            m_filter->SetInput(1, m_ndwiReader->GetOutput());
+            m_filter->SetInput(2, m_brightnessReader->GetOutput());
+        }
+
+        if (m_bm) {
+            SetParameterOutputImage("out", m_filterBM->GetOutput());
+        } else {
+            SetParameterOutputImage("out", m_filter->GetOutput());
+        }
     }
     //  Software Guide :EndCodeSnippet
 
@@ -407,12 +316,8 @@ private:
     ReaderType::Pointer m_ndviReader;
     ReaderType::Pointer m_ndwiReader;
     ReaderType::Pointer m_brightnessReader;
-    TernaryFunctorImageFilterWithNBandsListType::Pointer m_filters;
-    TernaryFunctorImageFilterBMWithNBandsListType::Pointer m_filtersBM;
-    ExtractChannelsFilterListType::Pointer m_extractChannelsFilters;
-    ImageListType::Pointer m_imageList;
-    SplitFilterListType::Pointer m_splitFilters;
-    ConcatenateFilterType::Pointer m_concatenateFilter;
+    TernaryFunctorImageFilterWithNBandsType::Pointer m_filter;
+    TernaryFunctorImageFilterBMWithNBandsType::Pointer m_filterBM;
 };
 }
 }

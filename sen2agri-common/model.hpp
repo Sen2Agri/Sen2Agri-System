@@ -692,19 +692,17 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, StepArgument &ste
 class NewExecutorStep
 {
 public:
+    int processorId;
     int taskId;
     QString processorPath;
     QString stepName;
-    QString qos;
-    QString partition;
     StepArgumentList arguments;
 
     NewExecutorStep();
-    NewExecutorStep(int taskId,
+    NewExecutorStep(int processorId,
+                    int taskId,
                     QString processorPath,
                     QString stepName,
-                    QString qos,
-                    QString partition,
                     StepArgumentList arguments);
 
     static void registerMetaTypes();
@@ -831,3 +829,69 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorDescript
 
 typedef QList<ProcessorDescription> ProcessorDescriptionList;
 
+//** For scheduler component
+struct ScheduledTaskStatus
+{
+    int id;
+    int taskId;
+
+    QDateTime nextScheduledRunTime;
+
+    QDateTime lastSuccesfullScheduledRun; // last succ. scheduleded launch
+    QDateTime lastSuccesfullTimestamp; // the moment of last launch
+    QDateTime lastRetryTime;
+
+    QDateTime estimatedRunTime; // last succ. scheduleded launch
+};
+
+enum RepeatType {
+    REPEATTYPE_ONCE = 0,
+    REPEATTYPE_CYCLIC = 1,
+    REPEATTYPE_ONDATE = 2
+};
+struct ScheduledTask
+{
+    ScheduledTask(int, QString,int, QString,int, int, int, QDateTime, int, int, ScheduledTaskStatus& );
+    ScheduledTask() {}
+
+    int taskId;
+    QString	taskName;
+    int processorId;
+    QString processorParameters;
+
+    int repeatType; /*once, cyclic, on_date*/
+    int repeatAfterDays; /* nr of days to cycle the task */
+    int repeatOnMonthDay; /* the day of the month to run the task */
+
+    QDateTime firstScheduledRunTime; /* first configured run-time */
+
+    int  retryPeriod; /* minutes or hours ? to retry if the preconditions are not met */
+
+    int taskPriority;
+
+    ScheduledTaskStatus taskStatus;
+};
+//** END For scheduler component
+
+
+//** For orchestartor API
+struct ProcessingRequest
+{
+    int processorId;
+    QString parametersJson; // or map<string, string>
+};
+Q_DECLARE_METATYPE(ProcessingRequest)
+QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &request);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessingRequest &request);
+
+struct JobDefinition
+{
+    bool isValid;
+    int processorId;
+    QString jobDefinitionJson;
+};
+Q_DECLARE_METATYPE(JobDefinition)
+QDBusArgument &operator<<(QDBusArgument &argument, const JobDefinition &job);
+const QDBusArgument &operator>>(const QDBusArgument &argument, JobDefinition &job);
+
+//** END for orchestartor API

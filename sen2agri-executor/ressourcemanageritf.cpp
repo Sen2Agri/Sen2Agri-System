@@ -203,8 +203,8 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
 
         QStringList listParams;
         QString strParam;
-        QString strQos = executionStep.GetQos();
-        QString strPartition = executionStep.GetPartition();
+        QString strQos = PersistenceItfModule::GetInstance()->GetExecutorQos(executionStep.GetProcessorId());
+        QString strPartition = PersistenceItfModule::GetInstance()->GetExecutorPartition(executionStep.GetProcessorId());
         if(!strQos.isEmpty()) {
             listParams.push_back(SRUN_QOS_PARAM);
             listParams.push_back(strQos);
@@ -364,9 +364,16 @@ void RessourceManagerItf::HandleProcessorEndedMsg(RequestParamsExecutionInfos *p
 {
     // Get the job name and the execution time
     QString strJobName = pReqParams->GetJobName();
+    QString strStatusText = pReqParams->GetStatusText();
+    int nExitCode = pReqParams->GetExitCode();
     QString executionDuration = pReqParams->GetExecutionTime();
     int nTaskId = -1, nStepIdx = -1;
     QString strStepName;
+
+    Logger::debug(QString("HandleProcessorEndedMsg: Received message from job name %1 with status %2 and exit code %3")
+                      .arg(strJobName)
+                      .arg(strStatusText)
+                      .arg(nExitCode));
 
     // check if it a correct job name and extract the information from it
     if (ParseJobName(strJobName, nTaskId, strStepName, nStepIdx)) {
@@ -405,6 +412,7 @@ void RessourceManagerItf::HandleProcessorEndedMsg(RequestParamsExecutionInfos *p
         jobExecInfos.strJobStatus = ProcessorExecutionInfos::g_strFinished;
         jobExecInfos.strStdOutText = pReqParams->GetStdOutText();
         jobExecInfos.strStdErrText = pReqParams->GetStdErrText();
+        jobExecInfos.strExitCode = QString::number(nExitCode);
         // Send the statistic infos to the persistence interface module
         if (PersistenceItfModule::GetInstance()->MarkStepFinished(nTaskId, strStepName,
                                                                   jobExecInfos)) {

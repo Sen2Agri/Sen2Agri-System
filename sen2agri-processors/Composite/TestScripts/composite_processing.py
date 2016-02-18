@@ -16,7 +16,7 @@ from xml.dom import minidom
 
 def runCmd(cmdArray):
     start = time.time()
-    print(" ".join(map(pipes.quote, cmdArray)))    
+    print(" ".join(map(pipes.quote, cmdArray)))
     res = subprocess.call(cmdArray)
     print("OTB app finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     if res != 0:
@@ -42,10 +42,6 @@ parser.add_argument(
     '--input', help='The list of products xml descriptors', required=True, nargs='+')
 parser.add_argument(
     '--res', help='The requested resolution in meters', required=True)
-parser.add_argument('--t0', help='The start date for the temporal resampling interval (in format YYYYMMDD)',
-                    required=True, metavar='YYYYMMDD')
-parser.add_argument('--tend', help='The end date for the temporal resampling interval (in format YYYYMMDD)',
-                    required=True, metavar='YYYYMMDD')
 parser.add_argument('--outdir', help="Output directory", required=True)
 parser.add_argument(
     '--bandsmap', help="Bands mapping file location", required=True)
@@ -59,8 +55,6 @@ REMOVE_TEMP=False
 
 args = parser.parse_args()
 
-t0 = args.t0
-tend = args.tend
 syntDate = args.syntdate
 syntHalf = args.synthalf
 resolution = args.res
@@ -142,8 +136,6 @@ with open(paramsFilenameXML, 'w') as paramsFileXML:
     ET.SubElement(wDATE, "l3a_product_date").text = syntDate
     ET.SubElement(wDATE, "half_synthesis").text = syntHalf
     dates = ET.SubElement(root, "Dates_information")
-    ET.SubElement(dates, "start_date").text = t0
-    ET.SubElement(dates, "end_date").text = tend
     ET.SubElement(dates, "synthesis_date").text = syntDate
     ET.SubElement(dates, "synthesis_half").text = syntHalf
     usedXMLs = ET.SubElement(root, "XML_files")
@@ -168,14 +160,12 @@ with open(paramsFilename, 'w') as paramsFile:
     paramsFile.write("    l3a product date  = " + syntDate + "\n")
     paramsFile.write("    half synthesis    = " + syntHalf + "\n")
     paramsFile.write("Dates information\n")
-    paramsFile.write("    start date        = " + t0 + "\n")
-    paramsFile.write("    end date          = " + tend + "\n")
     paramsFile.write("    synthesis date    = " + syntDate + "\n")
     paramsFile.write("    synthesis half    = " + syntHalf + "\n")
     paramsFile.write(" ")
     paramsFile.write("Used XML files\n")
     for xml in args.input:
-        paramsFile.write("  " + xml + "\n")        
+        paramsFile.write("  " + xml + "\n")
 
 prevL3A=[]
 i = 0
@@ -183,9 +173,9 @@ i = 0
 print("Processing started: " + str(datetime.datetime.now()))
 start = time.time()
 for xml in args.input:
-    
+
     runCmd(["otbcli", "MaskHandler", compositeLocation + '/MaskHandler', "-xml", xml, "-out", outSpotMasks, "-sentinelres", resolution])
-    
+
     counterString = str(i)
     mod=outL3AFile.replace("#", counterString)
     out_w=outWeights.replace("#", counterString)
@@ -193,18 +183,18 @@ for xml in args.input:
     out_r=outRefls.replace("#", counterString)
     out_f=outFlags.replace("#", counterString)
     out_rgb=outRGB.replace("#", counterString)
-    
+
     out_w_Aot=outWeightAotFile.replace("#", counterString)
     out_w_Cloud=outWeightCloudFile.replace("#", counterString)
     out_w_Total=outTotalWeightFile.replace("#", counterString)
-    
+
     if fullScatCoeffs:
         cmd = ["otbcli", "CompositePreprocessing2", compositeLocation + '/CompositePreprocessing', "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-scatcoef", fullScatCoeffs, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
     else:
         cmd = ["otbcli", "CompositePreprocessing2", compositeLocation + '/CompositePreprocessing', "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
-    
+
     runCmd(cmd)
-   
+
     runCmd(["otbcli", "WeightAOT", weightOtbLibsRoot + '/WeightAOT', "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", out_w_Aot])
 
     runCmd(["otbcli", "WeightOnClouds", weightOtbLibsRoot + '/WeightOnClouds', "-inxml", xml, "-incldmsk", outCld, "-coarseres", COARSE_RES, "-sigmasmallcld", SIGMA_SMALL_CLD, "-sigmalargecld", SIGMA_LARGE_CLD, "-out", out_w_Cloud])
@@ -220,11 +210,11 @@ for xml in args.input:
     tmpOut_f = out_f
     tmpOut_rgb = out_rgb
 
-    if USE_COMPRESSION:         
-        tmpOut_w += '?gdal:co:COMPRESS=DEFLATE' 
+    if USE_COMPRESSION:
+        tmpOut_w += '?gdal:co:COMPRESS=DEFLATE'
         tmpOut_d += '?gdal:co:COMPRESS=DEFLATE'
         tmpOut_r += '?gdal:co:COMPRESS=DEFLATE'
-        tmpOut_f += '?gdal:co:COMPRESS=DEFLATE' 
+        tmpOut_f += '?gdal:co:COMPRESS=DEFLATE'
         tmpOut_rgb += '?gdal:co:COMPRESS=DEFLATE'
 
     runCmd(["otbcli", "CompositeSplitter2", compositeLocation + '/CompositeSplitter', "-in", mod, "-xml", xml, "-bmap", bandsMap, "-outweights", tmpOut_w, "-outdates", tmpOut_d, "-outrefls", tmpOut_r, "-outflags", tmpOut_f, "-outrgb", tmpOut_rgb])
@@ -234,17 +224,17 @@ for xml in args.input:
     if REMOVE_TEMP:
         try:
             os.remove(outWeightAotFile.replace("#", counterString))
-        except:            
+        except:
             pass
         try:
             os.remove(outWeightCloudFile.replace("#", counterString))
-        except:            
+        except:
             pass
         try:
             os.remove(outTotalWeightFile.replace("#", counterString))
-        except:            
+        except:
             pass
-    
+
     runCmd(["rm", "-fr", mod, outSpotMasks, outImgBands, outCld, outWat, outSnow, outAot])
     if REMOVE_TEMP and i > 0:
         counterString = str(i - 1)
@@ -256,23 +246,23 @@ for xml in args.input:
         print(outRGB.replace("#", counterString))
         try:
             os.remove(outWeights.replace("#", counterString))
-        except:            
+        except:
             pass
         try:
             os.remove(outDates.replace("#", counterString))
-        except:            
+        except:
             pass
         try:
             os.remove(outRefls.replace("#", counterString))
-        except:            
+        except:
             pass
         try:
             os.remove(outFlags.replace("#", counterString))
-        except:            
+        except:
             pass
         try:
             os.remove(outRGB.replace("#", counterString))
-        except:            
+        except:
             pass
     i += 1
 if i == 0:
@@ -309,7 +299,7 @@ if REMOVE_TEMP:
 #        os.remove(outRGB.replace("#", counterString))
 #    except:
 #        pass
-    
+
 
 print("Processing finished: " + str(datetime.datetime.now()))
 print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))

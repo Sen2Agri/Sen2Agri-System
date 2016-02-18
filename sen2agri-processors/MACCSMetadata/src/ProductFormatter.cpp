@@ -41,6 +41,9 @@
 #define LAI_MONO_DATE_FLAGS_SUFFIX      "MMDATEFLG"
 #define LAI_REPROC_FLAGS_SUFFIX         "MREPROCFLG"
 #define LAI_FITTED_FLAGS_SUFFIX         "MFITTEDFLG"
+#define CROP_MASK_RAW_IMG_SUFFIX        "RAW"
+#define CROP_MASK_FLAGS_SUFFIX          "MCMFLG"
+#define CROP_TYPE_FLAGS_SUFFIX          "MCTFLG"
 
 #define GENERIC_CS_TYPE     "GEOGRAPHIC"
 #define GENERIC_GEO_TABLES  "EPSG"
@@ -121,9 +124,12 @@ typedef enum{
     LAI_REPR_RASTER,
     LAI_FIT_RASTER,
     CROP_MASK_RASTER,
+    RAW_CROP_MASK_RASTER,
     CROP_TYPE_RASTER,
     PHENO_RASTER,
-    PHENO_FLAGS
+    PHENO_FLAGS,
+    CROP_MASK_FLAGS,
+    CROP_TYPE_FLAGS
 }rasterTypes;
 
 struct rasterInfo
@@ -135,6 +141,12 @@ struct rasterInfo
     std::string strTileID;
     bool bIsQiData;
     std::string rasterTimePeriod;
+};
+
+struct qualityInfo
+{
+    std::string strFileName;
+    std::string strTileID;
 };
 
 struct previewInfo
@@ -273,12 +285,21 @@ private:
         AddParameter(ParameterType_InputFilenameList, "processor.croptype.quality", "CROP TYPE quality file");
         MandatoryOff("processor.croptype.quality");
 
+        AddParameter(ParameterType_InputFilenameList, "processor.croptype.flags", "CROP TYPE flags file");
+        MandatoryOff("processor.croptype.flags");
+
 //crop mask parameters
         AddParameter(ParameterType_InputFilenameList, "processor.cropmask.file", "CROP MASK raster file  separated by TILE_{tile_id} delimiter");
         MandatoryOff("processor.cropmask.file");
 
+        AddParameter(ParameterType_InputFilenameList, "processor.cropmask.rawfile", "CROP MASK raw raster file  separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.cropmask.rawfile");
+
         AddParameter(ParameterType_InputFilenameList, "processor.cropmask.quality", "CROP MASK quality file");
         MandatoryOff("processor.cropmask.quality");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.cropmask.flags", "CROP MASK flags files");
+        MandatoryOff("processor.cropmask.flags");
 
         AddParameter(ParameterType_InputFilenameList, "il", "The xml files");
         MandatoryOff("il");
@@ -459,25 +480,38 @@ private:
       if (m_strProductLevel.compare("L4A") == 0)
       {
 
-          std::vector<std::string> rastersList;
-          rastersList = this->GetParameterStringList("processor.cropmask.file");
-          UnpackRastersList(rastersList, CROP_MASK_RASTER, false);
+          std::vector<std::string> filesList;
+          filesList = this->GetParameterStringList("processor.cropmask.file");
+          UnpackRastersList(filesList, CROP_MASK_RASTER, false);
 
+          filesList = this->GetParameterStringList("processor.cropmask.rawfile");
+          UnpackRastersList(filesList, RAW_CROP_MASK_RASTER, false);
 
           //get quality file list
-          m_qualityList = this->GetParameterStringList("processor.cropmask.quality");
+          filesList = this->GetParameterStringList("processor.cropmask.quality");
+          UnpackNonRastersList(filesList);
+
+          // get the CropMask flags
+          filesList = this->GetParameterStringList("processor.cropmask.flags");
+          UnpackRastersList(filesList, CROP_MASK_FLAGS, true);
       }
 
       //if is CROP TYPE, read raster file
       if (m_strProductLevel.compare("L4B") == 0)
       {
           // Get reflectance raster file list
-          std::vector<std::string> rastersList;
-          rastersList = this->GetParameterStringList("processor.croptype.file");
-          UnpackRastersList(rastersList, CROP_TYPE_RASTER, false);
+          std::vector<std::string> filesList;
+          filesList = this->GetParameterStringList("processor.croptype.file");
+          UnpackRastersList(filesList, CROP_TYPE_RASTER, false);
 
           //get quality file list
-          m_qualityList = this->GetParameterStringList("processor.croptype.quality");
+          filesList = this->GetParameterStringList("processor.croptype.quality");
+          UnpackNonRastersList(filesList);
+
+          // get the CropType flags
+          filesList = this->GetParameterStringList("processor.croptype.flags");
+          UnpackRastersList(filesList, CROP_TYPE_FLAGS, true);
+
       }
 
       for (const auto &tileInfoEl : m_tileIDList ) {
@@ -532,7 +566,7 @@ private:
       if(bResult)
       {
           //TransferAndRenameGIPPFiles();
-          TransferAndRenameQualityFiles();
+          TransferAndRenameQualityFiles(tileInfoEl);
           FillProductMetadataForATile(tileInfoEl, strMainFolderFullPath + "/" + ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, METADATA_CATEG) + ".xml");
       }
  }
@@ -540,36 +574,13 @@ private:
   void UnpackRastersList(std::vector<std::string> &rastersList, rasterTypes rasterType, bool bIsQiData)
   {
       rasterInfo rasterInfoEl;
-      std::string strTileID("");
-      bool bAlreadyExist = false;
-
       rasterInfoEl.bIsQiData = bIsQiData;
+
       // we do this in 2 steps (although not very optimal)
       // first extract the tiles
       // the number of tiles elements in the rasters list (including duplicates)
       int allTilesCnt = 0;
-      for (const auto &rasterFileEl : rastersList) {
-          if(rasterFileEl.compare(0, 5, "TILE_") == 0)
-          {
-              //if is TILE separator, read tileID
-              strTileID = rasterFileEl.substr(5, rasterFileEl.length() - 5);
-              bAlreadyExist = false;
-              for (const auto &tileIDEl : m_tileIDList) {
-                  if(tileIDEl.strTileID == strTileID)
-                  {
-                      bAlreadyExist = true;
-                      break;
-                  }
-              }
-              if(!bAlreadyExist)
-              {
-                tileInfo tileInfoEl;
-                tileInfoEl.strTileID = strTileID;
-                m_tileIDList.emplace_back(tileInfoEl);
-              }
-              allTilesCnt++;
-          }
-      }
+      std::string strTileID = UnpackTiles(rastersList, allTilesCnt);
       // second extract the rasters
       int curRaster = 0;
       bool bAllRastersHaveDate = ((rastersList.size()-allTilesCnt) == m_acquisitionDatesList.size());
@@ -587,6 +598,54 @@ private:
               }
               m_rasterInfoList.emplace_back(rasterInfoEl);
               curRaster++;
+          }
+      }
+  }
+
+  std::string UnpackTiles(std::vector<std::string> &filesList, int &nTotalFoundTiles) {
+      std::string strTileID("");
+      // only the first tile is processed
+      bool bProcessed = false;
+      bool bAlreadyExist = false;
+      nTotalFoundTiles = 0;
+      for (const auto &file : filesList) {
+          if(file.compare(0, 5, "TILE_") == 0)
+          {
+              if(!bProcessed) {
+                  //if is TILE separator, read tileID
+                  strTileID = file.substr(5, file.length() - 5);
+                  bAlreadyExist = false;
+                  for (const auto &tileIDEl : m_tileIDList) {
+                      if(tileIDEl.strTileID == strTileID)
+                      {
+                          bAlreadyExist = true;
+                          break;
+                      }
+                  }
+                  if(!bAlreadyExist)
+                  {
+                    tileInfo tileInfoEl;
+                    tileInfoEl.strTileID = strTileID;
+                    m_tileIDList.emplace_back(tileInfoEl);
+                  }
+                  bProcessed = true;
+              }
+              nTotalFoundTiles++;
+          }
+      }
+      return strTileID;
+  }
+
+  void UnpackNonRastersList(std::vector<std::string> &filesList) {
+      int allTilesCnt = 0;
+      qualityInfo qualityInfoEl;
+      std::string strTileID = UnpackTiles(filesList, allTilesCnt);
+      for (const auto &fileEl : filesList) {
+          if(fileEl.compare(0, 5, "TILE_") != 0)
+          {
+              qualityInfoEl.strFileName = fileEl;
+              qualityInfoEl.strTileID = strTileID;
+              m_qualityList.emplace_back(qualityInfoEl);
           }
       }
   }
@@ -789,7 +848,7 @@ private:
       return extent;
   }
 
-  void generateQuicklook(const std::string &rasterFullFilePath, const std::vector<std::string> &channels,const std::string &jpegFullFilePath)
+  bool generateQuicklook(const std::string &rasterFullFilePath, const std::vector<std::string> &channels,const std::string &jpegFullFilePath)
   {
       int error, status;
           pid_t pid, waitres;
@@ -817,11 +876,17 @@ private:
           posix_spawnattr_init(&attr);
           posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
           error = posix_spawnp(&pid, args[0], NULL, &attr, (char *const *)args.data(), NULL);
+          if(error != 0) {
+              otbAppLogWARNING("Error creating process for otbcli_Quicklook. The preview file will not be created. Error was: " << error);
+              return false;
+          }
           posix_spawnattr_destroy(&attr);
-//          assert(error == 0);
           waitres = waitpid(pid, &status, 0);
-//          assert(waitres == pid);
-//          assert(WIFEXITED(status) && WEXITSTATUS(status) == 0);
+          if(waitres == pid && (WIFEXITED(status) && WEXITSTATUS(status) == 0)) {
+              return true;
+          }
+          otbAppLogWARNING("Error running otbcli_Quicklook. The preview file might not be created. The return of otbcli_Quicklook was: " << status);
+          return false;
   }
 
   void generateTileMetadataFile(tileInfo &tileInfoEl, const std::string &strTileName)
@@ -1250,37 +1315,45 @@ private:
                 case CROP_MASK_RASTER:
                    strNewRasterFileName= strNewRasterFileName + TIF_EXTENSION;
                    break;
+                case RAW_CROP_MASK_RASTER:
+                    strNewRasterFileName = strNewRasterFileName + "_" + CROP_MASK_RAW_IMG_SUFFIX + TIF_EXTENSION;
+                    break;
                 case COMPOSITE_DATES_MASK:
-                  strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
-                  strNewRasterFileName = strNewRasterFileName + "_" + COMPOSITE_DATES_SUFFIX + TIF_EXTENSION;
-                  break;
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + COMPOSITE_DATES_SUFFIX + TIF_EXTENSION;
+                    break;
                 case COMPOSITE_FLAGS_MASK:
-                  strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
-                  strNewRasterFileName = strNewRasterFileName + "_" + COMPOSITE_FLAGS_SUFFIX + TIF_EXTENSION;
-                  break;
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + COMPOSITE_FLAGS_SUFFIX + TIF_EXTENSION;
+                    break;
                 case LAI_MONO_DATE_FLAGS:
-                  strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
-                  strNewRasterFileName = strNewRasterFileName + "_" + LAI_MONO_DATE_FLAGS_SUFFIX + TIF_EXTENSION;
-                  break;
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + LAI_MONO_DATE_FLAGS_SUFFIX + TIF_EXTENSION;
+                    break;
                 case LAI_REPROC_FLAGS:
-                  strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
-                  strNewRasterFileName = strNewRasterFileName + "_" + LAI_REPROC_FLAGS_SUFFIX + TIF_EXTENSION;
-                  break;
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + LAI_REPROC_FLAGS_SUFFIX + TIF_EXTENSION;
+                    break;
                 case LAI_FITTED_FLAGS:
-                  strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
-                  strNewRasterFileName = strNewRasterFileName + "_" + LAI_FITTED_FLAGS_SUFFIX + TIF_EXTENSION;
-                  break;
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + LAI_FITTED_FLAGS_SUFFIX + TIF_EXTENSION;
+                    break;
                 case PHENO_FLAGS:
-                  strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
-                  strNewRasterFileName = strNewRasterFileName + "_" + PHENO_FLAGS_SUFFIX + TIF_EXTENSION;
-                  break;
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + PHENO_FLAGS_SUFFIX + TIF_EXTENSION;
+                    break;
+                case CROP_MASK_FLAGS:
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + CROP_MASK_FLAGS_SUFFIX + TIF_EXTENSION;
+                    break;
+                case CROP_TYPE_FLAGS:
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + CROP_TYPE_FLAGS_SUFFIX + TIF_EXTENSION;
+                    break;
 
               }
               rasterFileEl.strNewRasterFileName = strNewRasterFileName;
       }
-
-
-
   }
 
   void TransferRasterFiles(const tileInfo &tileInfoEl)
@@ -1336,18 +1409,32 @@ private:
     }
   }
 
-  void TransferAndRenameQualityFiles()
+  void TransferAndRenameQualityFiles(const tileInfo &tileInfoEl)
   {
       std::string strNewQualityFileName;
 
       for (const auto &qualityFileEl : m_qualityList) {
-          boost::filesystem::path p(qualityFileEl);
-          strNewQualityFileName = m_strProductFileName;
-          strNewQualityFileName = ReplaceString(strNewQualityFileName, MAIN_FOLDER_CATEG, QUALITY_CATEG);
-          strNewQualityFileName = strNewQualityFileName + p.extension().string();
+          if(qualityFileEl.strTileID.length() != 0) {
+            if(tileInfoEl.strTileID == qualityFileEl.strTileID)
+            {
+                std::string strImgDataPath = tileInfoEl.strTilePath + "/" + QI_DATA_FOLDER_NAME;
+                boost::filesystem::path p(qualityFileEl.strFileName);
+                strNewQualityFileName = tileInfoEl.strTileNameRoot;
+                strNewQualityFileName = ReplaceString(strNewQualityFileName, "_N" + m_strBaseline, "");
+                strNewQualityFileName = ReplaceString(strNewQualityFileName, TILE_LEGACY_FOLDER_CATEG, QUALITY_CATEG);
+                strNewQualityFileName = strNewQualityFileName + p.extension().string();
+                CopyFile(strImgDataPath + "/" + strNewQualityFileName, qualityFileEl.strFileName);
+            }
+          } else {
+              boost::filesystem::path p(qualityFileEl.strFileName);
+              strNewQualityFileName = m_strProductFileName;
+              strNewQualityFileName = ReplaceString(strNewQualityFileName, MAIN_FOLDER_CATEG, QUALITY_CATEG);
+              strNewQualityFileName = strNewQualityFileName + p.extension().string();
 
-           //quality files are copied to tileDirectory/QI_DATA
-          CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + AUX_DATA_FOLDER_NAME + "/" + strNewQualityFileName, qualityFileEl);
+               //quality files are copied to tileDirectory/QI_DATA
+              CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName +
+                       "/" + AUX_DATA_FOLDER_NAME + "/" + strNewQualityFileName, qualityFileEl.strFileName);
+          }
     }
   }
   void TransferPreviewFiles()
@@ -1388,16 +1475,14 @@ private:
                  //std::cout << "ProductPreviewFullPath = " << strProductPreviewFullPath << std::endl;
 
                  //transform .tif file in .jpg file directly in product directory
-                 generateQuicklook(previewFileEl.strPreviewFileName, strChannelsList, strProductPreviewFullPath);
+                 if(generateQuicklook(previewFileEl.strPreviewFileName, strChannelsList, strProductPreviewFullPath)) {
 
-                //build producty preview file name for tile
-                 strTilePreviewFullPath = tileID.strTileNameWithoutExt + JPEG_EXTENSION;
-                 strTilePreviewFullPath = ReplaceString(strTilePreviewFullPath, METADATA_CATEG, QUICK_L0OK_IMG_CATEG);
+                     //build producty preview file name for tile
+                     strTilePreviewFullPath = tileID.strTileNameWithoutExt + JPEG_EXTENSION;
+                     strTilePreviewFullPath = ReplaceString(strTilePreviewFullPath, METADATA_CATEG, QUICK_L0OK_IMG_CATEG);
 
-                 //std::cout << "TilePreviewFullPath = " << strTilePreviewFullPath << std::endl;
-
-                 CopyFile(strTilePreviewFullPath, strProductPreviewFullPath);
-
+                     CopyFile(strTilePreviewFullPath, strProductPreviewFullPath);
+                 }
                  //remove  file with extension jpg.aux.xml generated after preview obtained
 
                  std::string strFileToBeRemoved = strProductPreviewFullPath + ".aux.xml";
@@ -1495,7 +1580,7 @@ private:
         std::vector<std::string> retList;
         file.open(fileName);
         if (!file.is_open()) {
-            itkExceptionMacro("Can't open file " << fileName << " for reading!");
+            return retList;
         }
 
         std::string value;
@@ -1515,7 +1600,7 @@ private:
   std::string m_strBaseline;
   std::vector<previewInfo> m_previewList;
   std::vector<std::string> m_GIPPList;
-  std::vector<std::string> m_qualityList;
+  std::vector<qualityInfo> m_qualityList;
   std::vector<tileInfo> m_tileIDList;
 
   ProductFileMetadata m_productMetadata;

@@ -22,7 +22,7 @@ OTB_CREATE_APPLICATION(NAME           ProSailSimulator
 
 OTB_CREATE_APPLICATION(NAME           InverseModelLearning
   SOURCES        otbInverseModelLearning.cxx
-  LINK_LIBRARIES ${OTB_LIBRARIES};OTBBVUtil;gsl;gslcblas)
+  LINK_LIBRARIES MACCSMetadata;MetadataHelper;${OTB_LIBRARIES};OTBBVUtil;gsl;gslcblas)
 
 OTB_CREATE_APPLICATION(NAME           BVInversion
   SOURCES        otbBVInversion.cxx
@@ -30,7 +30,7 @@ OTB_CREATE_APPLICATION(NAME           BVInversion
 
 OTB_CREATE_APPLICATION(NAME           BVImageInversion
   SOURCES        otbBVImageInversion.cxx
-  LINK_LIBRARIES ${OTB_LIBRARIES};OTBBVUtil;gsl;gslcblas)
+  LINK_LIBRARIES MACCSMetadata;MetadataHelper;${OTB_LIBRARIES};OTBBVUtil;gsl;gslcblas)
   
 OTB_CREATE_APPLICATION(NAME           ProfileReprocessing
   SOURCES        otbProfileReprocessing.cxx
@@ -39,13 +39,8 @@ OTB_CREATE_APPLICATION(NAME           ProfileReprocessing
 otb_create_application(
   NAME           TrainingDataGenerator
   SOURCES        otbTrainingDataGenerator.cpp
-  LINK_LIBRARIES ${OTB_LIBRARIES})
-  
-otb_create_application(
-  NAME           NdviRviExtraction
-  SOURCES        otbNdviRviExtraction.cpp
   LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
-
+  
 otb_create_application(
   NAME           NdviRviExtraction2
   SOURCES        otbNdviRviExtraction2.cpp
@@ -62,11 +57,6 @@ otb_create_application(
   LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
 
 otb_create_application(
-  NAME           ReprocessedProfileSplitter
-  SOURCES        otbReprocessedProfileSplitter.cpp
-  LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
-
-otb_create_application(
   NAME           ReprocessedProfileSplitter2
   SOURCES        otbReprocessedProfileSplitter2.cpp
   LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
@@ -78,3 +68,16 @@ otb_create_application(
 
 add_executable(testSimus testSimus.cxx)
 target_link_libraries(testSimus ${OTB_LIBRARIES} OTBBVUtil gsl gslcblas)
+
+install(TARGETS otbapp_BVInputVariableGeneration DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_ProSailSimulator DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_InverseModelLearning DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_BVInversion DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_BVImageInversion DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_ProfileReprocessing DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_TrainingDataGenerator DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_NdviRviExtraction2 DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_TimeSeriesBuilder DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_GetLaiRetrievalModel DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_ReprocessedProfileSplitter2 DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_GenerateLaiMonoDateMaskFlags DESTINATION usr/lib/otb/applications/)

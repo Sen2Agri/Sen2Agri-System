@@ -30,10 +30,12 @@ def inSituDataAvailable() :
 	executeStep("SampleSelection", "otbcli","SampleSelection", os.path.join(buildFolder,"CropType/SampleSelection"), "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons,"-nofilter","true", skip=fromstep>12)
 
 	#Train Image Classifier (Step 13)
-	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il", features,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vfn","CROP","-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>13)
-
+	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il",
+                features,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed,
+                "-sample.bm", "0", "-sample.vtr", "0.5", "-io.confmatout",
+                confmatout,"-io.out",model,"-sample.mt", "4000","-sample.mv","-1","-sample.vfn","CROP","-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>13)
 	#Image Classifier (Step 14)
-	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", features,"-imstat",statistics,"-model", model, "-out", raw_crop_mask, skip=fromstep>14, rmfiles=[] if keepfiles else [features])
+	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", features,"-imstat",statistics,"-model", model, "-out", raw_crop_mask_uncompressed, skip=fromstep>14, rmfiles=[] if keepfiles else [features])
 
 	return;
 #end inSituDataAvailable
@@ -71,7 +73,7 @@ def noInSituDataAvailable() :
 	executeStep("TrainImagesClassifierNew", "otbcli", "TrainImagesClassifierNew", os.path.join(buildFolder,"Common/TrainImagesClassifierNew"), "-io.il", spectral_features,"-io.rs",trimmed_reference_raster,"-nodatalabel", "-10000", "-io.imstat", statistics_noinsitu, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","-1","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>23)
 
 	#Image Classifier (Step 24)
-	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", spectral_features,"-imstat",statistics_noinsitu,"-model", model, "-out", raw_crop_mask, skip=fromstep>24, rmfiles=[] if keepfiles else [spectral_features])
+	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", spectral_features,"-imstat",statistics_noinsitu,"-model", model, "-out", raw_crop_mask_uncompressed, skip=fromstep>24, rmfiles=[] if keepfiles else [spectral_features])
 
 	return
 #end noInSituDataAvailable
@@ -86,7 +88,7 @@ parser.add_argument('-mission', help='The main mission for the time series', req
 parser.add_argument('-refp', help='The reference polygons', required=False, metavar='reference_polygons', default='')
 parser.add_argument('-ratio', help='The ratio between the validation and training polygons (default 0.75)', required=False, metavar='sample_ratio', default=0.75)
 parser.add_argument('-input', help='The list of products descriptors', required=True, metavar='product_descriptor', nargs='+')
-parser.add_argument('-trm', help='The temporal resampling mode', choices=['resample', 'gapfill'], required=False, default='resample')
+parser.add_argument('-trm', help='The temporal resampling mode (default gapfill)', choices=['resample', 'gapfill'], required=False, default='gapfill')
 # parser.add_argument('-radius', help='The radius used for gapfilling, in days (default 15)', required=False, metavar='radius', default=15)
 parser.add_argument('-nbtrsample', help='The number of samples included in the training set (default 4000)', required=False, metavar='nbtrsample', default=4000)
 parser.add_argument('-rseed', help='The random seed used for training (default 0)', required=False, metavar='random_seed', default=0)
@@ -97,7 +99,7 @@ parser.add_argument('-weight', help='The weight factor for data smoothing (defau
 parser.add_argument('-nbcomp', help='The number of components used by dimensionality reduction (default 6)', required=False, metavar='nbcomp', default=6)
 parser.add_argument('-spatialr', help='The spatial radius of the neighborhood used for segmentation (default 10)', required=False, metavar='spatialr', default=10)
 parser.add_argument('-ranger', help='The range radius defining the radius (expressed in radiometry unit) in the multispectral space (default 0.65)', required=False, metavar='ranger', default=0.65)
-parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) in segmentation. (default 10)', required=False, metavar='minsize', default=10)
+parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) in segmentation.  (default 200)', required=False, metavar='minsize', default=200)
 
 parser.add_argument('-refr', help='The reference raster when insitu data is not available', required=False, metavar='reference', default='')
 parser.add_argument('-eroderad', help='The radius used for erosion (default 1)', required=False, metavar='erode_radius', default='1')
@@ -115,7 +117,7 @@ parser.add_argument('-outdir', help="Output directory", default=defaultBuildFold
 parser.add_argument('-buildfolder', help="Build folder", default=defaultBuildFolder)
 parser.add_argument('-targetfolder', help="The folder where the target product is built", default="")
 
-parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)", default=False, action='store_true')
+parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)", default=True, action='store_true')
 parser.add_argument('-fromstep', help="Run from the selected step (default 1)", type=int, default=1)
 
 args = parser.parse_args()
@@ -160,6 +162,9 @@ validation_polygons=os.path.join(args.outdir, "validation_polygons.shp")
 rawtocr=os.path.join(args.outdir, "rawtocr.tif")
 tocr=os.path.join(args.outdir, "tocr.tif")
 rawmask=os.path.join(args.outdir, "rawmask.tif")
+
+statusFlags=os.path.join(args.outdir, "status_flags.tif")
+
 mask=os.path.join(args.outdir, "mask.tif")
 dates=os.path.join(args.outdir, "dates.txt")
 outdays=os.path.join(args.outdir, "days.txt")
@@ -174,6 +179,7 @@ statistic_features=os.path.join(args.outdir, "sf.tif")
 features=os.path.join(args.outdir, "concat_features.tif")
 statistics=os.path.join(args.outdir, "statistics.xml")
 
+rndvi=os.path.join(args.outdir, "rndvi.tif")
 ndvi_smooth=os.path.join(args.outdir, "ndvi_smooth.tif")
 rtocr_smooth=os.path.join(args.outdir, "rtocr_smooth.tif")
 outdays_smooth=os.path.join(args.outdir, "days_smooth.txt")
@@ -198,6 +204,7 @@ segmented_merged=os.path.join(args.outdir, "segmented_merged.tif")
 
 confmatout=os.path.join(args.outdir, "confusion-matrix.csv")
 model=os.path.join(args.outdir, "crop-mask-model.txt")
+raw_crop_mask_uncompressed=os.path.join(args.outdir, "raw_crop_mask_uncompressed.tif")
 raw_crop_mask=os.path.join(args.outdir, "raw_crop_mask.tif")
 raw_crop_mask_confusion_matrix_validation=os.path.join(args.outdir, "raw-crop-mask-confusion-matrix-validation.csv")
 raw_crop_mask_quality_metrics=os.path.join(args.outdir, "raw-crop-mask-quality-metrics.txt")
@@ -220,7 +227,7 @@ globalStart = datetime.datetime.now()
 
 try:
 # Bands Extractor (Step 1)
-    executeStep("BandsExtractor", "otbcli", "BandsExtractor", os.path.join(buildFolder,"CropType/BandsExtractor"),"-mission",mission,"-out",rawtocr,"-mask",rawmask,"-outdate", dates, "-shape", shape, "-pixsize", pixsize,"-merge", "false", "-il", *indesc, skip=fromstep>1)
+    executeStep("BandsExtractor", "otbcli", "BandsExtractor", os.path.join(buildFolder,"CropType/BandsExtractor"),"-mission",mission,"-out",rawtocr,"-mask",rawmask, "-statusflags", statusFlags, "-outdate", dates, "-shape", shape, "-pixsize", pixsize,"-merge", "false", "-il", *indesc, skip=fromstep>1)
 
 # gdalwarp (Step 2 and 3)
     executeStep("gdalwarp for reflectances", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawtocr, tocr, skip=fromstep>2, rmfiles=[] if keepfiles else [rawtocr])
@@ -230,7 +237,7 @@ try:
 # Select either inSitu or noInSitu branches
     if reference_polygons != "" :
             # Temporal Resampling (Step 4)
-            executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16", "-rtocr", rtocr, "-outdays", outdays, "-mode", trm, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
+            executeStep("TemporalResampling", "otbcli", "TemporalResampling", os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16", "-rtocr", rtocr, "-outdays", outdays, "-mode", trm, "-merge", "1", skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
 
             # Feature Extraction with insitu (Step 5)
             executeStep("FeatureExtraction", "otbcli", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr, "-ndvi", ndvi, "-ndwi", ndwi, "-brightness", brightness, skip=fromstep>5, rmfiles=[] if keepfiles else [rtocr])
@@ -239,29 +246,51 @@ try:
             inSituDataAvailable()
 
             #Validation (Step 25)
-            executeStep("Validation for Raw Cropmask with insitu", "otbcli_ComputeConfusionMatrix", "-in", raw_crop_mask, "-out", raw_crop_mask_confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CROP", "-nodatalabel", "-10000", outf=raw_crop_mask_quality_metrics, skip=fromstep>25)
+            executeStep("Validation for Raw Cropmask with insitu", "otbcli_ComputeConfusionMatrix", "-in", raw_crop_mask_uncompressed, "-out", raw_crop_mask_confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CROP", "-nodatalabel", "-10000", outf=raw_crop_mask_quality_metrics, skip=fromstep>25)
+
+            rndvi=ndvi
     else:
-            # Feature Extraction without insitu (Step 5)
-            executeStep("FeatureExtraction", "otbcli", "FeatureExtraction", os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", tocr, "-ndvi", ndvi, skip=fromstep>5)
+	    # Temporal Resampling (Step 5)
+            executeStep("TemporalResampling", "otbcli", "TemporalResampling",
+                    os.path.join(buildFolder,"CropType/TemporalResampling"), "-tocr", tocr, "-mask",
+                    mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16",
+                    "-rtocr", rtocr, "-mode", trm, "-merge", "1", skip=fromstep>5)
+
+            # Feature Extraction without insitu (Step 6)
+            executeStep("FeatureExtraction", "otbcli", "FeatureExtraction",
+                    os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", rtocr,
+                    "-ndvi", rndvi, skip=fromstep>6)
+
+            # Feature Extraction without insitu (Step 6)
+            executeStep("FeatureExtraction", "otbcli", "FeatureExtraction",
+                    os.path.join(buildFolder,"CropType/FeatureExtraction"), "-rtocr", tocr,
+                    "-ndvi", ndvi, skip=fromstep>6)
 
             #Perform Noinsitu specific steps
             noInSituDataAvailable()
 
             #Validation (Step 25)
-            executeStep("Validation for Raw Cropmask without insitu", "otbcli_ComputeConfusionMatrix", "-in", raw_crop_mask, "-out", raw_crop_mask_confusion_matrix_validation, "-ref", "raster", "-ref.raster.in", trimmed_reference_raster, "-nodatalabel", "-10000", outf=raw_crop_mask_quality_metrics, skip=fromstep>25)
+            executeStep("Validation for Raw Cropmask without insitu", "otbcli_ComputeConfusionMatrix", "-in", raw_crop_mask_uncompressed, "-out", raw_crop_mask_confusion_matrix_validation, "-ref", "raster", "-ref.raster.in", trimmed_reference_raster, "-nodatalabel", "-10000", outf=raw_crop_mask_quality_metrics, skip=fromstep>25)
 
 #Dimension reduction (Step 26)
-    executeStep("PrincipalComponentAnalysis", "otbcli", "PrincipalComponentAnalysis",os.path.join(buildFolder,"CropMask/PrincipalComponentAnalysis") ,"-ndvi", ndvi, "-nc", nbcomp, "-out", pca, skip=fromstep>26, rmfiles=[] if keepfiles else [ndvi])
+    executeStep("PrincipalComponentAnalysis", "otbcli",
+            "PrincipalComponentAnalysis",os.path.join(buildFolder,"CropMask/PrincipalComponentAnalysis")
+            ,"-ndvi", rndvi, "-nc", nbcomp, "-out", pca, skip=fromstep>26, rmfiles=[] if keepfiles else [ndvi])
 
-#Mean-Shift segmentation (Step 27, 28 and 28)
-    executeStep("MeanShiftSmoothing", "otbcli_MeanShiftSmoothing", "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger, "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing, "uint32", skip=fromstep>27, rmfiles=[] if keepfiles else [pca])
+#Mean-Shift segmentation (Step 27, 28 and 29)
+    executeStep("MeanShiftSmoothing", "otbcli_MeanShiftSmoothing", "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger, "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing, skip=fromstep>27, rmfiles=[] if keepfiles else [pca])
 
-    executeStep("LSMSSegmentation", "otbcli_LSMSSegmentation", "-in", mean_shift_smoothing,"-inpos", mean_shift_smoothing_spatial, "-spatialr", spatialr, "-ranger", ranger, "-minsize", "0", "-tmpdir", tmpfolder, "-out", segmented, "uint32", skip=fromstep>28, rmfiles=[] if keepfiles else [mean_shift_smoothing_spatial])
+    executeStep("LSMSSegmentation", "otbcli_LSMSSegmentation", "-in", mean_shift_smoothing,"-inpos",
+            mean_shift_smoothing_spatial, "-spatialr", spatialr, "-ranger", ranger, "-minsize",
+            "0", "-tilesizex", "1024", "-tilesizey", "1024", "-tmpdir", tmpfolder, "-out", segmented, "uint32", skip=fromstep>28, rmfiles=[] if keepfiles else [mean_shift_smoothing_spatial])
 
-    executeStep("LSMSSmallRegionsMerging", "otbcli_LSMSSmallRegionsMerging", "-in", mean_shift_smoothing,"-inseg", segmented, "-minsize", minsize, "-out", segmented_merged, "uint32", skip=fromstep>29, rmfiles=[] if keepfiles else [mean_shift_smoothing, segmented])
+    executeStep("LSMSSmallRegionsMerging", "otbcli_LSMSSmallRegionsMerging", "-in", mean_shift_smoothing,"-inseg", segmented, "-minsize", minsize, "-tilesizex", "1024", "-tilesizey", "1024", "-out", segmented_merged, "uint32", skip=fromstep>29, rmfiles=[] if keepfiles else [mean_shift_smoothing, segmented])
+
+#Segmentation (Step 29)
+    # executeStep("Segmentation", "otbcli_Segmentation", "-in", pca, "-filter", "meanshift", "-filter.meanshift.spatialr", spatialr, "-filter.meanshift.ranger", ranger, "-filter.meanshift.maxiter", "100", "-filter.meanshift.minsize", minsize, "-mode", "raster", "-mode.raster.out", segmented_merged, "uint32", skip=fromstep>29, rmfiles=[] if keepfiles else [pca])
 
 #Majority voting (Step 30)
-    executeStep("MajorityVoting", "otbcli", "MajorityVoting",os.path.join(buildFolder,"CropMask/MajorityVoting") ,"-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", minarea, "-inclass", raw_crop_mask, "-inseg", segmented_merged, "-rout", crop_mask_uncut, skip=fromstep>30, rmfiles=[] if keepfiles else [segmented_merged])
+    executeStep("MajorityVoting", "otbcli", "MajorityVoting",os.path.join(buildFolder,"CropMask/MajorityVoting") ,"-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", minarea, "-inclass", raw_crop_mask_uncompressed, "-inseg", segmented_merged, "-rout", crop_mask_uncut, skip=fromstep>30, rmfiles=[] if keepfiles else [segmented_merged])
 
 # gdalwarp (Step 31)
     executeStep("gdalwarp for crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_mask_uncut, crop_mask_uncompressed, skip=fromstep>31)
@@ -274,12 +303,13 @@ try:
 
 #Compression (Step 33)
     executeStep("Compression", "otbcli_Convert", "-in", crop_mask_uncompressed, "-out", crop_mask+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>33, rmfiles=[] if keepfiles else [crop_mask_uncompressed])
+    executeStep("Compression", "otbcli_Convert", "-in", raw_crop_mask_uncompressed, "-out", raw_crop_mask+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>33, rmfiles=[] if keepfiles else [raw_crop_mask_uncompressed])
 
 #XML conversion (Step 34)
     executeStep("XML Conversion for Crop Mask", "otbcli", "XMLStatistics", os.path.join(buildFolder,"Common/XMLStatistics"), "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics,  skip=fromstep>34)
 
 #Product creation (Step 35)
-    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-baseline", "01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.quality", xml_validation_metrics, "-il", *indesc, skip=fromstep>35)
+    executeStep("ProductFormatter", "otbcli", "ProductFormatter", os.path.join(buildFolder,"MACCSMetadata/src"), "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-baseline", "01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.rawfile", "TILE_"+tilename, raw_crop_mask, "-processor.cropmask.quality",  "TILE_"+tilename, xml_validation_metrics, "-processor.cropmask.flags", "TILE_"+tilename, statusFlags, "-il", *indesc, skip=fromstep>35)
 
 except:
     print sys.exc_info()

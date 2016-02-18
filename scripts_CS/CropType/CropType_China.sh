@@ -17,5 +17,5 @@
 /data/s2agri/input/EOData/2015/China/Shandong/SPOT5_HRG2_XS_20150821_N2A_ShandongChinaD0000B0000/SPOT5_HRG2_XS_20150821_N2A_ShandongChinaD0000B0000.xml \
 /data/s2agri/input/EOData/2015/China/Shandong/SPOT5_HRG2_XS_20150826_N2A_ShandongChinaD0000B0000/SPOT5_HRG2_XS_20150826_N2A_ShandongChinaD0000B0000.xml \
 /data/s2agri/input/EOData/2015/China/Shandong/SPOT5_HRG2_XS_20150915_N2A_ShandongChinaD0000B0000/SPOT5_HRG2_XS_20150915_N2A_ShandongChinaD0000B0000.xml \
--t0 20150414 -tend 20150911 -rate 5 -radius 100 -classifier rf -rfnbtrees 100 -rfmax 25 -rfmin 25 -rseed 0 -mask /data/s2agri/output/China/Shandong/cropMask/crop_mask.tif -tilename T15SVC -pixsize 10 \
+-rate 5 -classifier rf -rfnbtrees 100 -rfmax 25 -rfmin 25 -rseed 0 -mask /data/s2agri/output/China/Shandong/cropMask/crop_mask.tif -tilename T15SVC -pixsize 10 \
 -outdir /data/s2agri/output/China/Shandong/cropType -targetfolder /data/s2agri/output/China/Shandong/cropType-product -buildfolder /data/s2agri/sen2agri-processors-build/
