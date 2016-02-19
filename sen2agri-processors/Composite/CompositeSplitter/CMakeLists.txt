@@ -1,9 +1,4 @@
 otb_create_application(
-  NAME           CompositeSplitter
-  SOURCES        CompositeSplitter.cpp
-  LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
-
-otb_create_application(
   NAME           CompositeSplitter2
   SOURCES        CompositeSplitter2.cpp
   LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
@@ -11,3 +6,5 @@ otb_create_application(
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
+
+install(TARGETS otbapp_CompositeSplitter2 DESTINATION usr/lib/otb/applications/)

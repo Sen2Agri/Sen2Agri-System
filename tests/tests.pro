@@ -26,14 +26,16 @@ SOURCES += main.cpp \
 SOURCES += ../sen2agri-scheduler/taskloader.cpp \
     ../sen2agri-scheduler/schedulerapp.cpp \
     ../sen2agri-scheduler/taskplanner.cpp \
-    ../sen2agri-scheduler/ochestratorproxy.cpp \
+    ../sen2agri-scheduler/orchestratorproxy.cpp \
     ../sen2agri-scheduler/resourcereader.cpp \
     ../sen2agri-scheduler/runestimator.cpp
 
 LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
 
-INCLUDEPATH += $$PWD/../sen2agri-common $$PWD/../sen2agri-scheduler
-DEPENDPATH += $$PWD/../sen2agri-common $$PWD/../sen2agri-scheduler
+INCLUDEPATH += $$PWD/../sen2agri-common
+INCLUDEPATH += $$PWD/../sen2agri-scheduler
+DEPENDPATH += $$PWD/../sen2agri-common
+DEPENDPATH += $$PWD/../sen2agri-scheduler
 
 PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a
 
@@ -68,7 +70,7 @@ HEADERS += \
     ../sen2agri-scheduler/schedulerapp.hpp \
     ../sen2agri-scheduler/taskplanner.hpp \
     ../sen2agri-scheduler/resourcereader.hpp \
-    ../sen2agri-scheduler/ochestratorproxy.hpp \
+    ../sen2agri-scheduler/orchestratorproxy.hpp \
     ../sen2agri-scheduler/runestimator.hpp
 
 DISTFILES += \

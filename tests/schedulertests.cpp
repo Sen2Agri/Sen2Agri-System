@@ -25,12 +25,12 @@ void SchedulerTests::testNoReadyTasks()
 {
     TestOrcherstratorProxy orchestrator;
     TestScheduledTaskLoader loader;
-    SchedulerApp sapp(0, &loader, &orchestrator);
+    SchedulerApp sapp(&loader, &orchestrator);
     ScheduledTask st;
     std::vector<ScheduledTask> dbTasks;
 
     // Task 1
-    st.processorId = 1; st.taskPriority = 1;
+    st.processorId = 1; st.siteId = 1; st.taskPriority = 1;
     st.repeatType = REPEATTYPE_ONDATE;
     st.repeatOnMonthDay = QDateTime::currentDateTime().addDays(1).date().day();
     st.firstScheduledRunTime = QDateTime::currentDateTime().addDays(1);
@@ -38,7 +38,7 @@ void SchedulerTests::testNoReadyTasks()
     dbTasks.push_back(st);
 
     // Task 2
-    st.processorId = 2; st.taskPriority = 1;
+    st.processorId = 2; st.siteId = 2; st.taskPriority = 1;
     st.repeatType = REPEATTYPE_CYCLIC; st.repeatAfterDays = 2;
     st.firstScheduledRunTime = QDateTime::currentDateTime().addSecs(100);
     st.retryPeriod = 1;
@@ -53,7 +53,7 @@ void SchedulerTests::testNoReadyTasks()
     QVERIFY(orchestrator.getSubmitedJobs().empty());
 
     // Task 3
-    st.processorId = 3; st.taskPriority = 1;
+    st.processorId = 3; st.siteId = 3; st.taskPriority = 1;
     st.repeatType = REPEATTYPE_ONCE; st.repeatAfterDays = 0;
     st.firstScheduledRunTime = QDateTime::currentDateTime().addSecs(-100);
     st.retryPeriod = 1;
@@ -70,12 +70,12 @@ void SchedulerTests::testFirstReadyTask()
 {
     TestOrcherstratorProxy orchestrator;
     TestScheduledTaskLoader loader;
-    SchedulerApp sapp(0, &loader, &orchestrator);
+    SchedulerApp sapp(&loader, &orchestrator);
     ScheduledTask st;
     std::vector<ScheduledTask> dbTasks;
 
     // Task 1
-    st.processorId = 1; st.taskPriority = 1;
+    st.processorId = 1; st.siteId = 1; st.taskPriority = 1;
     st.repeatType = REPEATTYPE_ONDATE;
     st.repeatOnMonthDay = QDateTime::currentDateTime().date().day();
     st.retryPeriod = 1;
@@ -83,14 +83,14 @@ void SchedulerTests::testFirstReadyTask()
     dbTasks.push_back(st);
 
     // Task 2
-    st.processorId = 2; st.taskPriority = 1;
+    st.processorId = 2; st.siteId = 2; st.taskPriority = 1;
     st.repeatType = REPEATTYPE_CYCLIC; st.repeatAfterDays = 1;
     st.retryPeriod = 1;
     st.firstScheduledRunTime = QDateTime::currentDateTime().addSecs(-100);
     dbTasks.push_back(st);
 
     // Task 3
-    st.processorId = 3; st.taskPriority = 1;
+    st.processorId = 3; st.siteId = 3; st.taskPriority = 1;
     st.repeatType = REPEATTYPE_ONCE; st.repeatAfterDays = 0;
     st.firstScheduledRunTime = QDateTime::currentDateTime().addSecs(1000);
     st.retryPeriod = 1;
@@ -117,12 +117,12 @@ void SchedulerTests::testSecondRetryTask()
 {
     TestOrcherstratorProxy orchestrator;
     TestScheduledTaskLoader loader;
-    SchedulerApp sapp(0, &loader, &orchestrator);
+    SchedulerApp sapp(&loader, &orchestrator);
     ScheduledTask st;
     std::vector<ScheduledTask> dbTasks;
 
     // Task 1
-    st.processorId = 1; st.taskPriority = 1;
+    st.processorId = 1; st.siteId = 1; st.taskPriority = 1;
     st.repeatType = REPEATTYPE_ONDATE;
     st.repeatOnMonthDay = QDateTime::currentDateTime().date().day();
     st.firstScheduledRunTime = QDateTime::currentDateTime().addSecs(100);
@@ -130,14 +130,14 @@ void SchedulerTests::testSecondRetryTask()
     dbTasks.push_back(st);
 
     // Task 2
-    st.processorId = 2; st.taskPriority = 1;
+    st.processorId = 2; st.siteId = 2; st.taskPriority = 1;
     st.repeatType = REPEATTYPE_CYCLIC; st.repeatAfterDays = 1;
     st.retryPeriod = 0;
     st.firstScheduledRunTime = QDateTime::currentDateTime().addSecs(-100);
     dbTasks.push_back(st);
 
     // Task 3
-    st.processorId = 3; st.taskPriority = 1;
+    st.processorId = 3; st.siteId = 3; st.taskPriority = 1;
     st.repeatType = REPEATTYPE_ONCE; st.repeatAfterDays = 0;
     st.firstScheduledRunTime = QDateTime::currentDateTime().addSecs(100);
     st.retryPeriod = 1;
@@ -163,12 +163,12 @@ void SchedulerTests::testPriority()
 {
     TestOrcherstratorProxy orchestrator;
     TestScheduledTaskLoader loader;
-    SchedulerApp sapp(0, &loader, &orchestrator);
+    SchedulerApp sapp(&loader, &orchestrator);
     ScheduledTask st;
     std::vector<ScheduledTask> dbTasks;
 
     // Task 1
-    st.processorId = 1; st.taskPriority = 3;
+    st.processorId = 1; st.siteId = 1; st.taskPriority = 3;
     st.repeatType = REPEATTYPE_ONDATE;
     st.repeatOnMonthDay = QDateTime::currentDateTime().date().day();
     st.firstScheduledRunTime = QDateTime::currentDateTime().addSecs(-100);
@@ -176,14 +176,14 @@ void SchedulerTests::testPriority()
     dbTasks.push_back(st);
 
     // Task 2
-    st.processorId = 2; st.taskPriority = 2;
+    st.processorId = 2; st.siteId = 2; st.taskPriority = 2;
     st.repeatType = REPEATTYPE_CYCLIC; st.repeatAfterDays = 1;
     st.retryPeriod = 0;
     st.firstScheduledRunTime = QDateTime::currentDateTime().addSecs(-100);
     dbTasks.push_back(st);
 
     // Task 3
-    st.processorId = 3; st.taskPriority = 1;
+    st.processorId = 3; st.siteId = 3; st.taskPriority = 1;
     st.repeatType = REPEATTYPE_ONCE; st.repeatAfterDays = 0;
     st.firstScheduledRunTime = QDateTime::currentDateTime().addSecs(-100);
     st.retryPeriod = 1;

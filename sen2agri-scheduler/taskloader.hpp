@@ -7,10 +7,9 @@
 class TaskLoader
 {
 public:
-    TaskLoader();
     virtual ~TaskLoader();
-    virtual std::vector<ScheduledTask> LoadFromDatabase( );
-    virtual void UpdateStatusinDatabase( std::vector<ScheduledTask>& );
+    virtual std::vector<ScheduledTask> LoadFromDatabase( ) = 0;
+    virtual void UpdateStatusinDatabase( const std::vector<ScheduledTask>& ) = 0;
 };
 
 #endif // TASKLOADER_H

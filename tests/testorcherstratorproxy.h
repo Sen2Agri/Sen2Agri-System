@@ -1,9 +1,9 @@
 #ifndef TESTORCHERSTRATORPROXY_H
 #define TESTORCHERSTRATORPROXY_H
 
-#include "ochestratorproxy.hpp"
+#include "orchestratorproxy.hpp"
 
-class TestOrcherstratorProxy : public OchestratorProxy
+class TestOrcherstratorProxy : public OrchestratorProxy
 {
 public:
     TestOrcherstratorProxy();

@@ -5,6 +5,7 @@
 
 #include "lairetrievalhandler.hpp"
 #include "processorhandlerhelper.h"
+#include "json_conversions.hpp"
 
 // The number of tasks that are executed for each product before executing time series tasks
 #define LAI_TASKS_PER_PRODUCT       4
@@ -168,11 +169,11 @@ void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAll
     }
 }
 
-void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int jobId,
-                                                const QString &jsonParams, const QStringList &listProducts) {
+void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                                                const QStringList &listProducts) {
 
-    const QJsonObject &parameters = QJsonDocument::fromJson(jsonParams.toUtf8()).object();
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(jobId, "processor.l3b.lai.");
+    const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.lai.");
 
     // Get the resolution value
     const auto &resolution = QString::number(parameters["resolution"].toInt());
@@ -188,7 +189,7 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
         allTasksListRef.append(task);
     }
     // submit all tasks
-    ctx.SubmitTasks(jobId, allTasksListRef);
+    ctx.SubmitTasks(event.jobId, allTasksListRef);
 
     NewStepList steps;
     QStringList ndviFileNames;
@@ -303,10 +304,9 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, int
     // Get the tile ID from the product XML name. We extract it from the first product in the list as all
     // producs should be for the same tile
     QString tileId = ProcessorHandlerHelper::GetTileId(listProducts);
-    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, configParameters, parameters,
-                                                               listProducts, ndviFileNames, monoDateLaiFileNames, monoDateErrLaiFileNames,
-                                                               monoDateMskFlagsLaiFileNames, reprocFileListFileName, reprocFlagsFileListFileName,
-                                                               fittedFileListFileName, fittedFlagsFileListFileName, tileId);
+    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event, listProducts, ndviFileNames, monoDateLaiFileNames,
+                                                               monoDateErrLaiFileNames, monoDateMskFlagsLaiFileNames, reprocFileListFileName,
+                                                               reprocFlagsFileListFileName, fittedFileListFileName, fittedFlagsFileListFileName, tileId);
 
     // add these steps to the steps list to be submitted
     steps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
@@ -361,7 +361,7 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
         listProducts.append(ctx.findProductFile(inputProduct.toString()));
     }
     // process the received L2A products in the current job
-    HandleNewProductInJob(ctx, event.jobId, event.parametersJson, listProducts);
+    HandleNewProductInJob(ctx, event, listProducts);
 }
 
 void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
@@ -369,13 +369,16 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 {
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
-    }
+        // Insert the product into the database
+        ctx.InsertProduct({ ProductType::L3BLaiProductTypeId,
+            event.processorId,
+            event.taskId,
+            ctx.GetOutputPath(event.jobId, event.taskId, "product-formatter"),
+            QDateTime::currentDateTimeUtc() });
 
-    //    ctx.InsertProduct({ ProductType::TestProduct,
-    //                        event.processorId,
-    //                        event.taskId,
-    //                        ctx.GetOutputPath(event.jobId, event.taskId),
-    //                        QDateTime::currentDateTimeUtc() });
+        // Now remove the job folder containing temporary files
+        RemoveJobFolder(ctx, event.jobId);
+    }
 }
 
 void LaiRetrievalHandler::GetModelFileList(QStringList &outListModels, const QString &strPattern, std::map<QString, QString> &configParameters)
@@ -391,7 +394,6 @@ void LaiRetrievalHandler::GetModelFileList(QStringList &outListModels, const QSt
         }
     }
 }
-
 
 QStringList LaiRetrievalHandler::GetNdviRviExtractionArgs(const QString &inputProduct, const QString &ftsFile, const QString &resolution) {
     return { "NdviRviExtraction2",
@@ -521,14 +523,18 @@ QStringList LaiRetrievalHandler::GetFittedProfileReprocSplitterArgs(const QStrin
     return args;
 }
 
-QStringList LaiRetrievalHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, std::map<QString, QString> configParameters,
-                                    const QJsonObject &parameters, const QStringList &listProducts, const QStringList &listNdvis,
+QStringList LaiRetrievalHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                                    const QStringList &listProducts, const QStringList &listNdvis,
                                     const QStringList &listLaiMonoDate, const QStringList &listLaiMonoDateErr,
                                     const QStringList &listLaiMonoDateFlgs, const QString &fileLaiReproc,
                                     const QString &fileLaiReprocFlgs, const QString &fileLaiFit,
                                     const QString &fileLaiFitFlgs, const QString &tileId) {
 
-    const auto &targetFolder = productFormatterTask.GetFilePath("");
+    const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.lai.");
+
+    //const auto &targetFolder = productFormatterTask.GetFilePath("");
+    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.parametersJson);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
     WriteExecutionInfosFile(executionInfosPath, configParameters, listProducts);
@@ -685,4 +691,54 @@ const QString& LaiRetrievalHandler::GetDefaultCfgVal(std::map<QString, QString> 
         return search->second;
     }
     return defVal;
+}
+
+
+QString LaiRetrievalHandler::GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams,
+                                                      const ProductList &listProducts,
+                                                      bool &bIsValid)
+{
+    bIsValid = false;
+    if(!procInfoParams.contains("resolution")) {
+        return "Cannot execute LAIRetrieval processor. The parameters should contain the resolution!";
+    }
+
+    // we need no parameters from the processor info parameters
+    ProductList usedProductList;
+    for(const Product &product: listProducts) {
+        if(product.productTypeId == ProductType::L2AProductTypeId) {
+            usedProductList.append(product);
+        }
+    }
+    if(usedProductList.size() == 0) {
+        return QString("Cannot execute LaiRetrieval processor. No L2A product was found!");
+    }
+
+    // for this we can check the RSR file presence or other things
+    //bool bGenModels = IsGenerateModelNeeded(procInfoParams);
+    bool bNDayReproc = IsNDaysReprocessingNeeded(procInfoParams);
+    bool bFittedReproc = IsFittedReprocessingNeeded(procInfoParams);
+    if(bNDayReproc) {
+        if(usedProductList.size() < 3) {
+            return QString("Cannot execute LaiRetrieval processor. Reprocessing requested but have only %1 products available!")
+                           .arg(usedProductList.size());
+        }
+    }
+
+    if(bFittedReproc) {
+        if(usedProductList.size() < 4) {
+            return QString("Cannot execute LaiRetrieval processor. Fitted reprocessing requested but have only %1 products available!").
+                           arg(usedProductList.size());
+        }
+    }
+
+    QJsonObject mainObj(procInfoParams);
+    QJsonArray inputProductsArr;
+    for (const auto &p : usedProductList) {
+        inputProductsArr.append(p.fullPath);
+    }
+    mainObj[QStringLiteral("input_products")] = inputProductsArr;
+    bIsValid = true;
+
+    return jsonToString(mainObj);
 }

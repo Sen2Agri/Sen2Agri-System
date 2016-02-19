@@ -7,4 +7,4 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-install(TARGETS otbapp_CreateFootprint DESTINATION lib/otb/applications/)
+install(TARGETS otbapp_CreateFootprint DESTINATION usr/lib/otb/applications/)

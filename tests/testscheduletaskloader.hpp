@@ -9,8 +9,8 @@ public:
     TestScheduledTaskLoader();
     virtual ~TestScheduledTaskLoader();
     // app API
-    virtual std::vector<ScheduledTask> LoadFromDatabase( );
-    virtual void UpdateStatusinDatabase( std::vector<ScheduledTask>& );
+    virtual std::vector<ScheduledTask> LoadFromDatabase( ) override;
+    virtual void UpdateStatusinDatabase( const std::vector<ScheduledTask>& ) override;
 
     // test interface
     void setDBTasks(std::vector<ScheduledTask>& tasks);

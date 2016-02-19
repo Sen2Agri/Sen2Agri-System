@@ -2,10 +2,11 @@
 #define SCHEDULERAPP_H
 
 #include <QObject>
-#include "taskloader.hpp"
+
 #include "taskplanner.hpp"
 #include "resourcereader.hpp"
-#include "ochestratorproxy.hpp"
+#include "dbusorchestratorproxy.hpp"
+#include "taskloader.hpp"
 
 class SchedulerTests;
 
@@ -15,9 +16,9 @@ class SchedulerApp : public QObject
     friend class SchedulerTests;
 
 public:
-    SchedulerApp(QObject *parent = 0,
-                 TaskLoader * loader = new TaskLoader (),
-                 OchestratorProxy * orchestrator = new OchestratorProxy () );
+    SchedulerApp(TaskLoader * loader,
+                 OrchestratorProxy * orchestrator,
+                 QObject *parent = 0);
 
     virtual ~SchedulerApp();
     void StartRunning();
@@ -30,7 +31,7 @@ protected:
 private:
     int m_nTimerId;
     TaskLoader* m_loader;
-    OchestratorProxy* m_orchestrator;
+    OrchestratorProxy* m_orchestrator;
 };
 
 #endif // SCHEDULERAPP_H

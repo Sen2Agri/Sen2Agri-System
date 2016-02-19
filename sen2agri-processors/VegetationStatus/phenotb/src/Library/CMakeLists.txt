@@ -14,3 +14,5 @@
 
 add_library(OTBPheno dateUtils.cxx phenoFunctions.cxx miscUtils.cxx)
 target_link_libraries(OTBPheno ITKOptimizers boost_regex)
+
+install(TARGETS OTBPheno DESTINATION usr/lib)

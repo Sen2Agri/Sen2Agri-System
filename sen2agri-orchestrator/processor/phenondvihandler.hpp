@@ -13,6 +13,8 @@ private:
 
     void WriteExecutionInfosFile(const QString &executionInfosPath,
                                  const QStringList &listProducts);
+
+    QString GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams, const ProductList &listProducts, bool &bIsValid);
 };
 
 #endif // PHENONDVIHANDLER_HPP

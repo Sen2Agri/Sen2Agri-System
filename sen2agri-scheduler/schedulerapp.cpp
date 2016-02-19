@@ -1,13 +1,14 @@
 #include <QDebug>
 #include <qcoreevent.h>
+#include "logger.hpp"
 
 #include "schedulerapp.hpp"
 #include "taskloader.hpp"
 #include "taskplanner.hpp"
 #include "resourcereader.hpp"
-#include "ochestratorproxy.hpp"
+#include "orchestratorproxy.hpp"
 
-SchedulerApp::SchedulerApp(QObject *parent, TaskLoader * loader, OchestratorProxy * orchestrator)
+SchedulerApp::SchedulerApp(TaskLoader * loader, OrchestratorProxy * orchestrator, QObject *parent)
     : QObject(parent),
       m_nTimerId(0),
       m_loader(loader),
@@ -22,8 +23,10 @@ SchedulerApp::~SchedulerApp()
 
 void SchedulerApp::StartRunning()
 {
-    if (m_nTimerId == 0)
+    if (m_nTimerId == 0) {
+        RunOnce();
         m_nTimerId = startTimer(60000);  // 1-minute timer
+    }
 }
 
 void SchedulerApp::StopRunning()
@@ -42,6 +45,9 @@ void SchedulerApp::RunOnce()
     try
     {
         taskList = m_loader->LoadFromDatabase();
+        if(taskList.size() == 0)
+            return;
+
         planner.computeNextRunTime(taskList);
         // save the updated nextScheduleTime to database
         m_loader->UpdateStatusinDatabase(taskList);
@@ -51,10 +57,10 @@ void SchedulerApp::RunOnce()
         planner.orderByPriority(readyList);
 
         // we'll use a defensive strategy : only one task will be launched in a cycle
-        bool oneLaunched = false;
         for (auto& task : readyList)
         {
             prequest.processorId = task.processorId;
+            prequest.siteId = task.siteId;
             prequest.parametersJson = task.processorParameters;
             jd = m_orchestrator->GetJobDefinition(prequest);
             // if the task can be launched according to Orchestrator
@@ -65,7 +71,6 @@ void SchedulerApp::RunOnce()
                 task.taskStatus.lastSuccesfullTimestamp = QDateTime::currentDateTime();
                 task.taskStatus.lastSuccesfullScheduledRun = task.taskStatus.nextScheduledRunTime;
                 // Defensive strategy
-                oneLaunched = true;
                 break;
             }
             else
@@ -79,6 +84,7 @@ void SchedulerApp::RunOnce()
     }
     catch (std::exception e)
     {
+        Logger::error(QStringLiteral("Exception caught during planning tasks: %1").arg(e.what()));
         qCritical() << "Exception caught during planning tasks : " << e.what();
         // What if the exception is from saving into database ?
     }

@@ -27,28 +27,11 @@ target_link_libraries(explore-sirhyus ${OTB_LIBRARIES} OTBPheno)
 add_executable(explore-projections explore-projections.cxx)
 target_link_libraries(explore-projections ${OTB_LIBRARIES} OTBPheno)
 
-
 add_executable(explore-lai explore-lai.cxx)
 target_link_libraries(explore-lai ${OTB_LIBRARIES} OTBPheno)
 
 add_executable(explore-sg explore-sg.cxx)
 target_link_libraries(explore-sg ${OTB_LIBRARIES} OTBPheno)
-
-otb_create_application(NAME           SigmoFitting
-  SOURCES        SigmoFitting.cxx
-  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno)
-
-otb_create_application(NAME           MetricsEstimation
-  SOURCES        MetricsEstimation.cxx
-  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno)
-
-otb_create_application(NAME           SigmoFitting2
-  SOURCES        SigmoFitting2.cxx
-  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno)
-
-otb_create_application(NAME           MetricsEstimation2
-  SOURCES        MetricsEstimation2.cxx
-  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno)
 
 otb_create_application(NAME           PhenologicalNDVIMetrics
   SOURCES        PhenologicalNDVIMetrics.cxx
@@ -69,3 +52,6 @@ target_link_libraries(pheno-metrics-simulator ${OTB_LIBRARIES} OTBPheno)
 
 add_executable(pheno-metrics-estimator pheno-metrics-estimator.cxx)
 target_link_libraries(pheno-metrics-estimator ${OTB_LIBRARIES} OTBPheno)
+
+install(TARGETS otbapp_PhenologicalNDVIMetrics DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_PhenoMetricsSplitter DESTINATION usr/lib/otb/applications/)

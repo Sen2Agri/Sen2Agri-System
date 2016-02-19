@@ -4,4 +4,4 @@ otb_create_application(NAME DownloadSWBDTiles
                        SOURCES otbDownloadSWBDTiles.cxx
                        LINK_LIBRARIES OTBCommon OTBCurlAdapters "${Boost_LIBRARIES}")
 
-install(TARGETS otbapp_DownloadSWBDTiles DESTINATION lib/otb/applications/)
+install(TARGETS otbapp_DownloadSWBDTiles DESTINATION usr/lib/otb/applications/)

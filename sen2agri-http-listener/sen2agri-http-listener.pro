@@ -41,7 +41,14 @@ LIBS += -L$$OUT_PWD/../QtWebApp/ $$QTWEBAPP
 INCLUDEPATH += $$PWD/../QtWebApp
 DEPENDPATH += $$PWD/../QtWebApp
 
-PRE_TARGETDEPS += $$OUT_PWD/../QtWebApp/libQtWebAppd.so
+CONFIG(debug, debug|release) {
+    LIBQTWEBAPP = $$OUT_PWD/../QtWebApp/libQtWebAppd.so
+}
+CONFIG(release, debug|release) {
+    LIBQTWEBAPP = $$OUT_PWD/../QtWebApp/libQtWebApp.so
+}
+
+PRE_TARGETDEPS += $$LIBQTWEBAPP
 
 LIBS += -L$$OUT_PWD/../sen2agri-persistence/ -lsen2agri-persistence
 
