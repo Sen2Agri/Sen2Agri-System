@@ -84,11 +84,6 @@ StepConsoleOutputList EventProcessingContext::GetTaskConsoleOutputs(int taskId)
     return persistenceManager.GetTaskConsoleOutputs(taskId);
 }
 
-ProcessorDescriptionList EventProcessingContext::GetProcessorDescriptions()
-{
-    return persistenceManager.GetProcessorDescriptions();
-}
-
 UnprocessedEventList EventProcessingContext::GetNewEvents()
 {
     return persistenceManager.GetNewEvents();

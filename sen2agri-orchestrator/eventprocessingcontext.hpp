@@ -34,8 +34,6 @@ public:
 
     StepConsoleOutputList GetTaskConsoleOutputs(int taskId);
 
-    ProcessorDescriptionList GetProcessorDescriptions();
-
     UnprocessedEventList GetNewEvents();
     void MarkEventProcessingStarted(int eventId);
     void MarkEventProcessingComplete(int eventId);
