@@ -43,6 +43,7 @@ public:
     int InsertProduct(const NewProduct &product);
 
     QStringList GetProductFiles(const QString &path, const QString &pattern) const;
+    QString GetOutputPath(int jobId);
     QString GetOutputPath(int jobId, int taskId, const QString &module);
 
     void SubmitTasks(int jobId, const QList<std::reference_wrapper<TaskToSubmit>> &tasks);

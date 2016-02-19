@@ -69,6 +69,9 @@ void registerMetaTypes()
     qDBusRegisterMetaType<StepArgumentList>();
 
     qDBusRegisterMetaType<TaskIdList>();
+
+    qDBusRegisterMetaType<ProcessingRequest>();
+    qDBusRegisterMetaType<JobDefinition>();
 }
 
 ConfigurationParameterInfo::ConfigurationParameterInfo() : categoryId(), isAdvanced() {}
@@ -404,7 +407,7 @@ Product::Product() : productId(), processorId(), productTypeId(), siteId() {}
 
 Product::Product(int productId,
                  int processorId,
-                 int productTypeId,
+                 ProductType productTypeId,
                  int siteId,
                  QString fullPath,
                  QDateTime created)
@@ -1517,11 +1520,12 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorDescript
 }
 
 
-ScheduledTask::ScheduledTask(int ti, QString tn ,int pi, QString pp ,int rt, int rad, int rmd,
+ScheduledTask::ScheduledTask(int ti, QString tn ,int pi, int si, QString pp ,int rt, int rad, int rmd,
                              QDateTime  fst, int rp, int tp, ScheduledTaskStatus& ts):
  taskId(ti),
  taskName(tn),
  processorId(pi),
+ siteId(si),
  processorParameters(pp),
  repeatType(rt),
  repeatAfterDays(rad),
@@ -1536,7 +1540,7 @@ ScheduledTask::ScheduledTask(int ti, QString tn ,int pi, QString pp ,int rt, int
 QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &request)
 {
     argument.beginStructure();
-    argument << request.processorId << request.parametersJson ;
+    argument << request.processorId << request.siteId << request.parametersJson ;
     argument.endStructure();
     return argument;
 }
@@ -1544,7 +1548,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &requ
 const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessingRequest &request)
 {
     argument.beginStructure();
-    argument >> request.processorId >> request.parametersJson ;
+    argument >> request.processorId >> request.siteId >> request.parametersJson ;
     argument.endStructure();
 
     return argument;

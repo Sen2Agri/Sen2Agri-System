@@ -147,7 +147,7 @@ template <>
 struct maker<Product> {
     static Product make()
     {
-        return { maker<int>::make(), maker<int>::make(),     maker<int>::make(),
+        return { maker<int>::make(), maker<int>::make(),     maker<ProductType>::make(),
                  maker<int>::make(), maker<QString>::make(), maker<QDateTime>::make() };
     }
 };

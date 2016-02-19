@@ -5,6 +5,7 @@
 
 #include "phenondvihandler.hpp"
 #include "processorhandlerhelper.h"
+#include "json_conversions.hpp"
 
 void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
@@ -35,7 +36,8 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &metricsEstimationImg = metricsEstimationTask.GetFilePath("metric_estimation.tif");
     const auto &metricsParamsImg = metricsSplitterTask.GetFilePath("metric_parameters_img.tif");
     const auto &metricsFlagsImg = metricsSplitterTask.GetFilePath("metric_flags_img.tif");
-    const auto &targetFolder = productFormatterTask.GetFilePath("");
+    //const auto &targetFolder = productFormatterTask.GetFilePath("");
+    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.parametersJson);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
     QStringList bandsExtractorArgs = {
@@ -102,13 +104,16 @@ void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 {
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
-    }
+        // Insert the product into the database
+        ctx.InsertProduct({ ProductType::L3BPhenoProductTypeId,
+            event.processorId,
+            event.taskId,
+            ctx.GetOutputPath(event.jobId, event.taskId, "product-formatter"),
+            QDateTime::currentDateTimeUtc() });
 
-    //    ctx.InsertProduct({ ProductType::TestProduct,
-    //                        event.processorId,
-    //                        event.taskId,
-    //                        ctx.GetOutputPath(event.jobId, event.taskId),
-    //                        QDateTime::currentDateTimeUtc() });
+        // Now remove the job folder containing temporary files
+        RemoveJobFolder(ctx, event.jobId);
+    }
 }
 
 void PhenoNdviHandler::WriteExecutionInfosFile(const QString &executionInfosPath,
@@ -132,4 +137,34 @@ void PhenoNdviHandler::WriteExecutionInfosFile(const QString &executionInfosPath
         executionInfosFile.close();
     } catch (...) {
     }
+}
+
+QString PhenoNdviHandler::GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams,
+                                                      const ProductList &listProducts,
+                                                      bool &bIsValid)
+{
+    bIsValid = false;
+    if(!procInfoParams.contains("resolution")) {
+        return "Cannot execute PhenoNDVI processor. The parameters should contain the resolution!";
+    }
+
+    ProductList usedProductList;
+    for(const Product &product: listProducts) {
+        if(product.productTypeId == ProductType::L2AProductTypeId) {
+            usedProductList.append(product);
+        }
+    }
+    // for PhenoNDVI we need at least 4 products available in order to be able to create a L3B product
+    if(usedProductList.size() >= 4) {
+        QJsonObject mainObj(procInfoParams);
+        QJsonArray inputProductsArr;
+        for (const auto &p : usedProductList) {
+            inputProductsArr.append(p.fullPath);
+        }
+        mainObj[QStringLiteral("input_products")] = inputProductsArr;
+        bIsValid = true;
+
+        return jsonToString(mainObj);
+    }
+    return QString("Cannot execute PhenoNDVI processor. There should be at least 4 products but we have only %1 L2A products available!").arg(usedProductList.size());
 }

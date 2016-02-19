@@ -12,7 +12,7 @@ private:
                                 const TaskFinishedEvent &event) override;
 
     void CreateNewProductInJobTasks(QList<TaskToSubmit> &outAllTasksList, int nbProducts, bool bGenModels, bool bNDayReproc, bool bFittedReproc);
-    void HandleNewProductInJob(EventProcessingContext &ctx, int jobId, const QString &jsonParams,
+    void HandleNewProductInJob(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                const QStringList &listProducts);
     void GetModelFileList(QStringList &outListModels, const QString &strPattern, std::map<QString, QString> &configParameters);
     void WriteExecutionInfosFile(const QString &executionInfosPath,
@@ -37,8 +37,8 @@ private:
                                            const QStringList &listProducts);
     QStringList GetFittedProfileReprocSplitterArgs(const QString &fittedTimeSeriesFileName, const QString &fittedFileListFileName,
                                                    const QString &fittedFlagsFileListFileName, const QStringList &allXmlsFileName);
-    QStringList GetProductFormatterArgs(TaskToSubmit &productFormatterTask, std::map<QString, QString> configParameters,
-                                        const QJsonObject &parameters,
+    QStringList GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx,
+                                        const JobSubmittedEvent &event,
                                         const QStringList &listProducts, const QStringList &listNdvis,
                                         const QStringList &listLaiMonoDate, const QStringList &listLaiMonoDateErr,
                                         const QStringList &listLaiMonoDateFlgs, const QString &fileLaiReproc,
@@ -59,6 +59,9 @@ private:
     QStringList GetInverseModelLearningArgs(const QString &trainingFile, const QString &product, const QString &anglesFile,
                                             const QString &errEstFile, const QString &modelsFolder, std::map<QString, QString> &configParameters);
     const QString& GetDefaultCfgVal(std::map<QString, QString> &configParameters, const QString &key, const QString &defVal);
+
+    QString GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams, const ProductList &listProducts, bool &bIsValid);
+
 private:
     int m_nTimeSeriesBuilderIdx;
     int m_nErrTimeSeriesBuilderIdx;

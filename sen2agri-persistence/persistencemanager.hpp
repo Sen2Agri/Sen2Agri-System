@@ -65,6 +65,7 @@ public:
     void InsertNodeStatistics(const NodeStatistics &statistics);
 
     int InsertProduct(const NewProduct &product);
+    ProductList GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate);
 
     QString GetDashboardCurrentJobData();
     QString GetDashboardServerResourceData();
@@ -79,7 +80,12 @@ public:
     QString GetDashboardProcessors();
 
     ProcessorDescriptionList GetProcessorDescriptions();
+    QString GetProcessorShortName(int processorId);
+    SiteList GetSiteDescriptions();
+    QString GetSiteName(int siteId);
 
     std::vector<ScheduledTask> GetScheduledTasks( );
     void UpdateScheduledTasksStatus( std::vector<ScheduledTaskStatus>& taskList);
+
+    void InsertScheduledTask( ScheduledTask& task);
 };

@@ -23,6 +23,7 @@ public:
                        PersistenceManagerDBProvider &persistenceManager,
                        OrgEsaSen2agriProcessorsExecutorInterface &executorClient);
 
+    ProcessorHandler &GetHandler(int processorId);
 signals:
 
 public slots:
@@ -47,6 +48,4 @@ private:
     void ProcessEvent(EventProcessingContext &ctx, const JobResumedEvent &event);
     void ProcessEvent(EventProcessingContext &ctx, const JobSubmittedEvent &event);
     void ProcessEvent(EventProcessingContext &ctx, const StepFailedEvent &event);
-
-    ProcessorHandler &GetHandler(int processorId);
 };

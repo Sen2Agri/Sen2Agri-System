@@ -70,28 +70,20 @@ void PersistenceItfModule::RequestConfiguration()
 
 QString PersistenceItfModule::GetExecutorQos(int processorId) {
     QString qos;
-    ProcessorDescriptionList procDescrs = clientInterface.GetProcessorDescriptions();
-    for(ProcessorDescription procDescr: procDescrs) {
-        if(procDescr.processorId == processorId) {
-            const auto &strProcQosKey = QString("executor.processor.%1.qos").arg(procDescr.shortName);
-            const auto &keys = clientInterface.GetConfigurationParameters(strProcQosKey);
-            GetValueForKey(keys, strProcQosKey, qos);
-        }
-    }
+    const auto &strProcQosKey = QString("executor.processor.%1.qos")
+            .arg(clientInterface.GetProcessorShortName(processorId));
+    const auto &keys = clientInterface.GetConfigurationParameters(strProcQosKey);
+    GetValueForKey(keys, strProcQosKey, qos);
     return qos;
 }
 
 QString PersistenceItfModule::GetExecutorPartition(int processorId) {
-    QString qos;
-    ProcessorDescriptionList procDescrs = clientInterface.GetProcessorDescriptions();
-    for(ProcessorDescription procDescr: procDescrs) {
-        if(procDescr.processorId == processorId) {
-            const auto &strProcQosKey = QString("executor.processor.%1.partition").arg(procDescr.shortName);
-            const auto &keys = clientInterface.GetConfigurationParameters(strProcQosKey);
-            GetValueForKey(keys, strProcQosKey, qos);
-        }
-    }
-    return qos;
+    QString partition;
+    const auto &strProcPartKey = QString("executor.processor.%1.qos")
+            .arg(clientInterface.GetProcessorShortName(processorId));
+    const auto &keys = clientInterface.GetConfigurationParameters(strProcPartKey);
+    GetValueForKey(keys, strProcPartKey, partition);
+    return partition;
 }
 
 void PersistenceItfModule::SaveMainConfigKeys(const ConfigurationParameterValueList &configuration)

@@ -115,6 +115,13 @@ QStringList EventProcessingContext::GetProductFiles(const QString &path,
     return QDir(path).entryList(QStringList() << pattern, QDir::Files);
 }
 
+QString EventProcessingContext::GetOutputPath(int jobId)
+{
+    QString jobIdPath = GetScratchPath(jobId);
+    jobIdPath = jobIdPath.left(jobIdPath.indexOf("{job_id}") + sizeof("{job_id}"));
+    return jobIdPath.replace(QLatin1String("{job_id}"), QString::number(jobId));
+}
+
 QString EventProcessingContext::GetOutputPath(int jobId, int taskId, const QString &module)
 {
     return GetScratchPath(jobId)

@@ -1,5 +1,33 @@
 #include "processorhandler.hpp"
 
+#include <QDir>
+#include <QFile>
+#include <QFileInfo>
+#include <QFileInfoList>
+
+bool removeDir(const QString & dirName)
+{
+    bool result = true;
+    QDir dir(dirName);
+
+    if (dir.exists(dirName)) {
+        Q_FOREACH(QFileInfo info, dir.entryInfoList(QDir::NoDotAndDotDot | QDir::System | QDir::Hidden  | QDir::AllDirs | QDir::Files, QDir::DirsFirst)) {
+            if (info.isDir()) {
+                result = removeDir(info.absoluteFilePath());
+            }
+            else {
+                result = QFile::remove(info.absoluteFilePath());
+            }
+
+            if (!result) {
+                return result;
+            }
+        }
+        result = dir.rmdir(dirName);
+    }
+    return result;
+}
+
 ProcessorHandler::~ProcessorHandler() {}
 
 void ProcessorHandler::HandleProductAvailable(EventProcessingContext &ctx,
@@ -23,4 +51,35 @@ void ProcessorHandler::HandleTaskFinished(EventProcessingContext &ctx,
 void ProcessorHandler::HandleProductAvailableImpl(EventProcessingContext &,
                                                   const ProductAvailableEvent &)
 {
+}
+
+QString ProcessorHandler::GetProcessingDefinitionJson(const QJsonObject &procInfoParams, const ProductList &listProducts, bool &bIsValid) {
+    return GetProcessingDefinitionJsonImpl(procInfoParams, listProducts, bIsValid);
+}
+
+QString ProcessorHandler::GetFinalProductFolder(EventProcessingContext &ctx, int jobId, const QString & parametersJson) {
+    const auto &parameters = QJsonDocument::fromJson(parametersJson.toUtf8()).object();
+    auto configParameters = ctx.GetJobConfigurationParameters(
+                jobId, "archiver.archive_path");
+
+    QString processorName = parameters["processor_short_name"].toString();
+    QString siteName = parameters["site_name"].toString();
+    auto it = configParameters.find("archiver.archive_path");
+    if (it == std::end(configParameters)) {
+        throw std::runtime_error(QStringLiteral("No final product folder configured for site %1 and processor %2")
+                                     .arg(siteName)
+                                     .arg(processorName)
+                                     .toStdString());
+    }
+    QString folderName = (*it).second;
+    folderName = folderName.replace("{site}", siteName);
+    folderName = folderName.replace("{processor}", processorName);
+
+    return folderName;
+}
+
+bool ProcessorHandler::RemoveJobFolder(EventProcessingContext &ctx, int jobId)
+{
+    QString jobOutputPath = ctx.GetOutputPath(jobId);
+    return removeDir(jobOutputPath);
 }
