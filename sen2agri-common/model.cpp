@@ -783,10 +783,15 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, TaskRunnableEvent
     return argument;
 }
 
-TaskFinishedEvent::TaskFinishedEvent() : processorId(), jobId(), taskId() {}
+TaskFinishedEvent::TaskFinishedEvent() : processorId(), jobId(), siteId(), taskId() {}
 
-TaskFinishedEvent::TaskFinishedEvent(int processorId, int jobId, int taskId, QString module)
-    : processorId(processorId), jobId(jobId), taskId(taskId), module(std::move(module))
+TaskFinishedEvent::TaskFinishedEvent(
+    int processorId, int jobId, int siteId, int taskId, QString module)
+    : processorId(processorId),
+      jobId(jobId),
+      siteId(siteId),
+      taskId(taskId),
+      module(std::move(module))
 {
 }
 
@@ -795,6 +800,7 @@ QString TaskFinishedEvent::toJson() const
     QJsonObject node;
     node[QStringLiteral("processor_id")] = processorId;
     node[QStringLiteral("job_id")] = jobId;
+    node[QStringLiteral("site_id")] = siteId;
     node[QStringLiteral("task_id")] = taskId;
     node[QStringLiteral("module_short_name")] = module;
 
@@ -808,6 +814,7 @@ TaskFinishedEvent TaskFinishedEvent::fromJson(const QString &json)
 
     return { object.value(QStringLiteral("processor_id")).toInt(),
              object.value(QStringLiteral("job_id")).toInt(),
+             object.value(QStringLiteral("site_id")).toInt(),
              object.value(QStringLiteral("task_id")).toInt(),
              object.value(QStringLiteral("module_short_name")).toString() };
 }
@@ -954,7 +961,10 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobPausedEvent &e
 
 JobResumedEvent::JobResumedEvent() : jobId() {}
 
-JobResumedEvent::JobResumedEvent(int jobId, int processorId) : jobId(jobId), processorId(processorId) {}
+JobResumedEvent::JobResumedEvent(int jobId, int processorId)
+    : jobId(jobId), processorId(processorId)
+{
+}
 
 QString JobResumedEvent::toJson() const
 {
@@ -1265,7 +1275,8 @@ void NewExecutorStep::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NewExecutorStep &step)
 {
     argument.beginStructure();
-    argument << step.processorId << step.taskId << step.processorPath << step.stepName << step.arguments;
+    argument << step.processorId << step.taskId << step.processorPath << step.stepName
+             << step.arguments;
     argument.endStructure();
 
     return argument;
@@ -1274,7 +1285,8 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewExecutorStep &step)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewExecutorStep &step)
 {
     argument.beginStructure();
-    argument >> step.processorId >> step.taskId >> step.processorPath >> step.stepName >> step.arguments;
+    argument >> step.processorId >> step.taskId >> step.processorPath >> step.stepName >>
+        step.arguments;
     argument.endStructure();
 
     return argument;
@@ -1486,13 +1498,8 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, DashboardSearch &
 
 ProcessorDescription::ProcessorDescription() : processorId() {}
 
-ProcessorDescription::ProcessorDescription(
-               int processorId,
-               QString shortName,
-               QString fullName)
-    : processorId(processorId),
-      shortName(std::move(shortName)),
-      fullName(std::move(fullName))
+ProcessorDescription::ProcessorDescription(int processorId, QString shortName, QString fullName)
+    : processorId(processorId), shortName(std::move(shortName)), fullName(std::move(fullName))
 {
 }
 
@@ -1516,27 +1523,35 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorDescript
     return argument;
 }
 
-
-ScheduledTask::ScheduledTask(int ti, QString tn ,int pi, QString pp ,int rt, int rad, int rmd,
-                             QDateTime  fst, int rp, int tp, ScheduledTaskStatus& ts):
- taskId(ti),
- taskName(tn),
- processorId(pi),
- processorParameters(pp),
- repeatType(rt),
- repeatAfterDays(rad),
- repeatOnMonthDay(rmd),
- firstScheduledRunTime(fst),
- retryPeriod(rp),
- taskPriority(tp),
- taskStatus(ts)
+ScheduledTask::ScheduledTask(int ti,
+                             QString tn,
+                             int pi,
+                             QString pp,
+                             int rt,
+                             int rad,
+                             int rmd,
+                             QDateTime fst,
+                             int rp,
+                             int tp,
+                             ScheduledTaskStatus &ts)
+    : taskId(ti),
+      taskName(tn),
+      processorId(pi),
+      processorParameters(pp),
+      repeatType(rt),
+      repeatAfterDays(rad),
+      repeatOnMonthDay(rmd),
+      firstScheduledRunTime(fst),
+      retryPeriod(rp),
+      taskPriority(tp),
+      taskStatus(ts)
 {
 }
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &request)
 {
     argument.beginStructure();
-    argument << request.processorId << request.parametersJson ;
+    argument << request.processorId << request.parametersJson;
     argument.endStructure();
     return argument;
 }
@@ -1544,7 +1559,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &requ
 const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessingRequest &request)
 {
     argument.beginStructure();
-    argument >> request.processorId >> request.parametersJson ;
+    argument >> request.processorId >> request.parametersJson;
     argument.endStructure();
 
     return argument;

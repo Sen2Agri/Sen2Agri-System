@@ -462,11 +462,12 @@ class TaskFinishedEvent
 public:
     int processorId;
     int jobId;
+    int siteId;
     int taskId;
     QString module;
 
     TaskFinishedEvent();
-    TaskFinishedEvent(int processorId, int jobId, int taskId, QString module);
+    TaskFinishedEvent(int processorId, int jobId, int siteId, int taskId, QString module);
 
     QString toJson() const;
 
