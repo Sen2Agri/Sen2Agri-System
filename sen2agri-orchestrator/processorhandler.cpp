@@ -57,13 +57,13 @@ QString ProcessorHandler::GetProcessingDefinitionJson(const QJsonObject &procInf
     return GetProcessingDefinitionJsonImpl(procInfoParams, listProducts, bIsValid);
 }
 
-QString ProcessorHandler::GetFinalProductFolder(EventProcessingContext &ctx, int jobId, const QString & parametersJson) {
-    const auto &parameters = QJsonDocument::fromJson(parametersJson.toUtf8()).object();
+QString ProcessorHandler::GetFinalProductFolder(EventProcessingContext &ctx, int jobId,
+                                                int processorId, int siteId) {
     auto configParameters = ctx.GetJobConfigurationParameters(
                 jobId, "archiver.archive_path");
 
-    QString processorName = parameters["processor_short_name"].toString();
-    QString siteName = parameters["site_name"].toString();
+    QString processorName = ctx.GetProcessorShortName(processorId);
+    QString siteName = ctx.GetSiteName(siteId);
     auto it = configParameters.find("archiver.archive_path");
     if (it == std::end(configParameters)) {
         throw std::runtime_error(QStringLiteral("No final product folder configured for site %1 and processor %2")

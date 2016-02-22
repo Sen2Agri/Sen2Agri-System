@@ -17,7 +17,7 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 
     QStringList listProducts;
     for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFile(inputProduct.toString()));
+        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
     }
 
     TaskToSubmit bandsExtractorTask{ "bands-extractor", {} };
@@ -37,7 +37,7 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &metricsParamsImg = metricsSplitterTask.GetFilePath("metric_parameters_img.tif");
     const auto &metricsFlagsImg = metricsSplitterTask.GetFilePath("metric_flags_img.tif");
     //const auto &targetFolder = productFormatterTask.GetFilePath("");
-    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.parametersJson);
+    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
     QStringList bandsExtractorArgs = {
@@ -104,15 +104,19 @@ void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 {
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
+
+        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
+
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L3BPhenoProductTypeId,
             event.processorId,
             event.taskId,
-            ctx.GetOutputPath(event.jobId, event.taskId, "product-formatter"),
+            productFolder,
             QDateTime::currentDateTimeUtc() });
 
         // Now remove the job folder containing temporary files
-        RemoveJobFolder(ctx, event.jobId);
+        // TODO: Reinsert this line - commented only for debug purposes
+        //RemoveJobFolder(ctx, event.jobId);
     }
 }
 

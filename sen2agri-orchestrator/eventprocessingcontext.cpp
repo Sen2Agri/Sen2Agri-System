@@ -165,20 +165,11 @@ void EventProcessingContext::SubmitTasks(int jobId,
     }
 }
 
-QString EventProcessingContext::findProductFile(const QString &path)
+QStringList EventProcessingContext::findProductFiles(const QString &path)
 {
-    QString result;
+    QStringList result;
     for (const auto &file : QDir(path).entryList({ "*.HDR", "*.xml" }, QDir::Files)) {
-        if (!result.isEmpty()) {
-            throw std::runtime_error(
-                QStringLiteral(
-                    "More than one HDR or xml file in path %1. Unable to determine the product "
-                    "metadata file.")
-                    .arg(path)
-                    .toStdString());
-        }
-
-        result = file;
+        result.append(path + file);
     }
 
     if (result.isEmpty()) {
@@ -189,6 +180,15 @@ QString EventProcessingContext::findProductFile(const QString &path)
                 .arg(path)
                 .toStdString());
     }
+    return result;
+}
 
-    return path + result;
+QString EventProcessingContext::GetProcessorShortName(int processorId)
+{
+    return persistenceManager.GetProcessorShortName(processorId);
+}
+
+QString EventProcessingContext::GetSiteName(int siteId)
+{
+    return persistenceManager.GetSiteName(siteId);
 }

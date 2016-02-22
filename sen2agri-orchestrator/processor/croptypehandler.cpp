@@ -14,7 +14,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     QStringList listProducts;
     const auto &inputProducts = parameters["input_products"].toArray();
     for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFile(inputProduct.toString()));
+        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
     }
 
     const auto &gdalwarpMem = resourceParameters["resources.gdalwarp.working-mem"];
@@ -113,7 +113,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &cropTypeMap = compression.GetFilePath("crop_type_map.tif");
     const auto &xmlValidationMetrics = xmlMetrics.GetFilePath("validation-metrics.xml");
     //const auto &targetFolder = productFormatter.GetFilePath("");
-    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.parametersJson);
+    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
     QString tileId = ProcessorHandlerHelper::GetTileId(listProducts);
 
     QStringList bandsExtractorArgs = { "BandsExtractor", "-out", rawtocr,  "-mask", rawmask,
@@ -246,26 +246,19 @@ void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
 
-        auto archiveConfigParameters = ctx.GetJobConfigurationParameters(
-                    event.jobId, "archiver.archive_path");
+        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
+
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L4BProductTypeId,
             event.processorId,
             event.taskId,
-            ctx.GetOutputPath(event.jobId, event.taskId, "product-formatter"),
+            productFolder,
             QDateTime::currentDateTimeUtc() });
 
         // Now remove the job folder containing temporary files
-        RemoveJobFolder(ctx, event.jobId);
+        // TODO: Reinsert this line - commented only for debug purposes
+        //RemoveJobFolder(ctx, event.jobId);
     }
-
-
-    // Insert the product into the database
-//    ctx.InsertProduct({ ProductType::L3BProductTypeId,
-//        event.processorId,
-//        event.taskId,
-//        ctx.GetOutputPath(event.jobId, event.taskId, "product-formatter"),
-//        QDateTime::currentDateTimeUtc() });
 }
 
 QString CropTypeHandler::GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams,

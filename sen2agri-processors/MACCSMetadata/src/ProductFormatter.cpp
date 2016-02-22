@@ -698,7 +698,7 @@ private:
       {
           //fail to create main destination product folder
           bResult = false;
-          itkExceptionMacro("Fail to create destination directory!");
+          itkExceptionMacro("Fail to create destination directory " << strMainFolderPath);
       }
 
       /* create TILES subfolder */

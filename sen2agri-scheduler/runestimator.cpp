@@ -8,6 +8,7 @@ RunEstimator::RunEstimator()
 
 QDateTime RunEstimator::estimateFreeTime(NodeLoad& rn)
 {
+    Q_UNUSED(rn);
     // TODO:
     //      - the node is already free ? => time = now
     // else

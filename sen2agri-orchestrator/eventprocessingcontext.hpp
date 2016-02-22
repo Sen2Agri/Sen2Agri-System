@@ -34,6 +34,9 @@ public:
 
     StepConsoleOutputList GetTaskConsoleOutputs(int taskId);
 
+    QString GetProcessorShortName(int processorId);
+    QString GetSiteName(int siteId);
+
     UnprocessedEventList GetNewEvents();
     void MarkEventProcessingStarted(int eventId);
     void MarkEventProcessingComplete(int eventId);
@@ -65,7 +68,7 @@ public:
         return steps;
     }
 
-    static QString findProductFile(const QString &path);
+    static QStringList findProductFiles(const QString &path);
 
 private:
     QString GetScratchPath(int jobId);

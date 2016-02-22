@@ -280,7 +280,7 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx,
     ctx.SubmitTasks(jobId, { productFormatter });
 
     //const auto &targetFolder = productFormatter.GetFilePath("");
-    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.parametersJson);
+    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
     const auto &executionInfosPath = productFormatter.GetFilePath("executionInfos.txt");
 
     WriteExecutionInfosFile(executionInfosPath, parameters, configParameters, listProducts);
@@ -430,7 +430,7 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 
     QStringList listProducts;
     for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFile(inputProduct.toString()));
+        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
     }
     // process the received L2A products in the current job
     HandleNewProductInJob(ctx, event, event.parametersJson, listProducts);
@@ -442,15 +442,18 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
 
+        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
+
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L3AProductTypeId,
             event.processorId,
             event.taskId,
-            ctx.GetOutputPath(event.jobId, event.taskId, "product-formatter"),
+            productFolder,
             QDateTime::currentDateTimeUtc() });
 
         // Now remove the job folder containing temporary files
-        RemoveJobFolder(ctx, event.jobId);
+        // TODO: Reinsert this line - commented only for debug purposes
+        //RemoveJobFolder(ctx, event.jobId);
     }
 }
 

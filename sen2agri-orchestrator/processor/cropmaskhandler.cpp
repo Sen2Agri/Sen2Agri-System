@@ -102,7 +102,7 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                        "-outdate",       dates,  "-shape", shape,   "-il" };
 
     for (const auto &inputProduct : inputProducts) {
-        bandsExtractorArgs.append(ctx.findProductFile(inputProduct.toString()));
+        bandsExtractorArgs.append(ctx.findProductFiles(inputProduct.toString()));
     }
 
     QStringList trainImagesClassifierArgs = {

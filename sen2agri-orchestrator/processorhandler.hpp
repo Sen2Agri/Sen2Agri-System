@@ -15,7 +15,7 @@ public:
     QString GetProcessingDefinitionJson(const QJsonObject &procInfoParams, const ProductList &listProducts, bool &bIsValid);
 
 protected:
-    QString GetFinalProductFolder(EventProcessingContext &ctx, int jobId, const QString& parametersJson);
+    QString GetFinalProductFolder(EventProcessingContext &ctx, int jobId, int processorId, int siteId);
     bool RemoveJobFolder(EventProcessingContext &ctx, int jobId);
 
 private:

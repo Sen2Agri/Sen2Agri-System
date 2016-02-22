@@ -358,8 +358,14 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 
     QStringList listProducts;
     for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFile(inputProduct.toString()));
+        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
     }
+    QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
+    for(auto tile : mapTiles.keys())
+    {
+       QStringList listTemporalTiles = mapTiles.value(tile);
+    }
+
     // process the received L2A products in the current job
     HandleNewProductInJob(ctx, event, listProducts);
 }
@@ -369,12 +375,11 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 {
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
+        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L3BLaiProductTypeId,
-            event.processorId,
-            event.taskId,
-            ctx.GetOutputPath(event.jobId, event.taskId, "product-formatter"),
-            QDateTime::currentDateTimeUtc() });
+            event.processorId, event.taskId,
+            productFolder, QDateTime::currentDateTimeUtc() });
 
         // Now remove the job folder containing temporary files
         RemoveJobFolder(ctx, event.jobId);
@@ -534,7 +539,7 @@ QStringList LaiRetrievalHandler::GetProductFormatterArgs(TaskToSubmit &productFo
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.lai.");
 
     //const auto &targetFolder = productFormatterTask.GetFilePath("");
-    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.parametersJson);
+    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
     WriteExecutionInfosFile(executionInfosPath, configParameters, listProducts);

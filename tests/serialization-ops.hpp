@@ -220,7 +220,7 @@ struct maker<TaskFinishedEvent> {
     static TaskFinishedEvent make()
     {
         return { maker<int>::make(), maker<int>::make(), maker<int>::make(),
-                 maker<QString>::make() };
+                 maker<int>::make(), maker<QString>::make() };
     }
 };
 
@@ -248,7 +248,7 @@ template <>
 struct maker<JobSubmittedEvent> {
     static JobSubmittedEvent make()
     {
-        return { maker<int>::make(), maker<int>::make(), maker<QString>::make() };
+        return { maker<int>::make(), maker<int>::make(), maker<int>::make(), maker<QString>::make() };
     }
 };
 
