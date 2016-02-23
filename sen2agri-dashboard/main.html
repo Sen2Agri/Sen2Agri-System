@@ -249,45 +249,15 @@
 			
 			$('#tree').on('nodeSelected', function(event, data) {
 				
-				/*vector.getSource().forEachFeature(function (feature) {
-					
-					if(feature.getId() == data['productId']) {
-						
-						displayProductImage(data['productImageUrl'], data['productImageWidth'], data['productImageHeight'], feature.getGeometry().getExtent());
-						
-						panToLocation(feature.getGeometry().getExtent());
-						
-						var selectedFeatures = selectMethod.getFeatures();
-						selectedFeatures.clear();
-						selectedFeatures.push(feature);
-						
-						
-					}
-				});*/
-				
-				/*features.forEachFeature(function (feature) {
-					
-					if(feature.getId() == data['productId']) {
-						
-						displayProductImage(data['productImageUrl'], data['productImageWidth'], data['productImageHeight'], feature.getGeometry().getExtent());
-						
-						panToLocation(feature.getGeometry().getExtent());
-						
-						var selectedFeatures = selectMethod.getFeatures();
-						selectedFeatures.clear();
-						selectedFeatures.push(feature);
-						
-					}
-				});*/
 				
 				var extent;
-				
+							
 				var selectedFeatures = vector.getSource();//selectMethod.getFeatures();
 				selectedFeatures.clear();
 				
 				if(data['productCoord']) {
 					extent = ol.extent.applyTransform(data['productCoord'], ol.proj.getTransform("EPSG:4326", "EPSG:3857"));
-					
+					//console.log(data.productCoord);		
 					var feature = new ol.Feature({
 						geometry: ol.geom.Polygon.fromExtent(extent)
 					});
@@ -302,6 +272,21 @@
 						
 				panToLocation(extent);
 				
+				//Create polygone for the site
+				var olCoordArr = new Array();
+				//console.log(data);
+			    for(var i=0; i<data.siteCoord.length;i++){
+					pointCoords = data.siteCoord[i].split(" ");
+					olCoordArr.push([Number(pointCoords[0]), Number(pointCoords[1])]);
+				}
+			   // console.log(olCoordArr);
+				polygon = new ol.geom.Polygon([olCoordArr]);
+			
+				polygon.transform('EPSG:4326', 'EPSG:3857');
+				// Create feature with polygon.
+				var feature2 = new ol.Feature(polygon);
+
+				selectedFeatures.addFeature(feature2);
 				
 			});
 		};
