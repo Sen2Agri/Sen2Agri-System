@@ -11,7 +11,7 @@
 #define MAXRED 4
 #define INDEXSIZE 5
 
-typedef short PixelValueType;
+typedef float PixelValueType;
 typedef otb::VectorImage<PixelValueType, 2> ImageType;
 
 template <typename PixelType>
