@@ -23,8 +23,8 @@ struct ImageInfo
 };
 
 void whit1(double lambda,
-           itk::VariableLengthVector<PixelValueType> &values,
-           itk::VariableLengthVector<double> &weights,
+           const itk::VariableLengthVector<PixelValueType> &values,
+           const itk::VariableLengthVector<double> &weights,
            itk::VariableLengthVector<PixelValueType> &result)
 {
     int numImages = values.Size();
