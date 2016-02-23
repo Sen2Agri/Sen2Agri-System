@@ -33,24 +33,26 @@ void whit1(double lambda,
     std::vector<double> d(numImages);
     std::vector<double> z(numImages);
 
+    const double eps = 0.0001;
+
     // Perform the Whitaker smoothing.
     // The code is inspired from the R language package "ptw"
     int m = numImages - 1;
     d[0] = weights[0] + lambda;
-    c[0] = -lambda / d[0];
+    c[0] = fabs(d[0]) > eps ? -lambda / d[0] : 0.0;
     z[0] = weights[0] * static_cast<double>(values[0]);
 
     for (int i = 1; i < m; i++) {
         d[i] = weights[i] + 2 * lambda - c[i - 1] * c[i - 1] * d[i - 1];
-        c[i] = -lambda / d[i];
+        c[i] = fabs(d[i]) > eps ? -lambda / d[i] : 0.0;
         z[i] = weights[i] * static_cast<double>(values[i]) - c[i - 1] * z[i - 1];
     }
     d[m] = weights[m] + lambda - c[m - 1] * c[m - 1] * d[m - 1];
-    z[m] = (weights[m] * static_cast<double>(values[m]) - c[m - 1] * z[m - 1]) / d[m];
+    z[m] = fabs(d[m]) > eps ? (weights[m] * static_cast<double>(values[m]) - c[m - 1] * z[m - 1]) / d[m] : 0.0;
 
     result[m] = static_cast<PixelValueType>(z[m]);
     for (int i = m - 1; 0 <= i; i--) {
-        z[i] = z[i] / d[i] - c[i] * z[i + 1];
+        z[i] = (fabs(d[i]) > eps ? z[i] / d[i] : 0.0) - c[i] * z[i + 1];
         result[i] = static_cast<PixelValueType>(z[i]);
     }
 }
