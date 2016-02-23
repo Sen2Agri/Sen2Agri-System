@@ -5,12 +5,17 @@
 
 #include "compositehandler.hpp"
 #include "processorhandlerhelper.h"
+#include "json_conversions.hpp"
 
 #define TasksNoPerProduct 7
 
 void CompositeHandler::HandleProductAvailableImpl(EventProcessingContext &ctx,
                                                   const ProductAvailableEvent &event)
 {
+    Q_UNUSED(ctx);
+    // in this moment, we do not handle the products as they appear but maybe later it can be useful
+    // for some other processors. The code below can be used as an example.
+    return;
     // TODO: Here we must get all job IDs for the current processor id
     std::vector<int> jobIds;
 
@@ -24,7 +29,7 @@ void CompositeHandler::HandleProductAvailableImpl(EventProcessingContext &ctx,
             QString strProductPath; // TODO = ctx.GetProductPathFromId(event.productId);
             listProducts.append(strProductPath);
             // process the received L2A product in the current job
-            HandleNewProductInJob(ctx, jobIds[i], "", listProducts);
+            //HandleNewProductInJob(ctx, jobIds[i], "", listProducts);
         } else {
             // if the product is not acceptable for the current job, it might be outside the
             // synthesis interval
@@ -112,14 +117,16 @@ void CompositeHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAllTas
 }
 
 void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx,
-                                             int jobId,
+                                             const JobSubmittedEvent &event,
                                              const QString &jsonParams,
                                              const QStringList &listProducts)
 {
-
+    int jobId = event.jobId;
     const QJsonObject &parameters = QJsonDocument::fromJson(jsonParams.toUtf8()).object();
     std::map<QString, QString> configParameters =
         ctx.GetJobConfigurationParameters(jobId, "processor.l3a.");
+    std::map<QString, QString> archiveConfigParameters = ctx.GetJobConfigurationParameters(
+                jobId, "archiver.archive_path");
 
     // Get L3A Synthesis date
     const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
@@ -272,7 +279,8 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx,
     // submit the product formatter task
     ctx.SubmitTasks(jobId, { productFormatter });
 
-    const auto &targetFolder = productFormatter.GetFilePath("");
+    //const auto &targetFolder = productFormatter.GetFilePath("");
+    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
     const auto &executionInfosPath = productFormatter.GetFilePath("executionInfos.txt");
 
     WriteExecutionInfosFile(executionInfosPath, parameters, configParameters, listProducts);
@@ -422,10 +430,10 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 
     QStringList listProducts;
     for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFile(inputProduct.toString()));
+        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
     }
     // process the received L2A products in the current job
-    HandleNewProductInJob(ctx, event.jobId, event.parametersJson, listProducts);
+    HandleNewProductInJob(ctx, event, event.parametersJson, listProducts);
 }
 
 void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
@@ -433,13 +441,20 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 {
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
-    }
 
-    //    ctx.InsertProduct({ ProductType::TestProduct,
-    //                        event.processorId,
-    //                        event.taskId,
-    //                        ctx.GetOutputPath(event.jobId, event.taskId),
-    //                        QDateTime::currentDateTimeUtc() });
+        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
+
+        // Insert the product into the database
+        ctx.InsertProduct({ ProductType::L3AProductTypeId,
+            event.processorId,
+            event.taskId,
+            productFolder,
+            QDateTime::currentDateTimeUtc() });
+
+        // Now remove the job folder containing temporary files
+        // TODO: Reinsert this line - commented only for debug purposes
+        //RemoveJobFolder(ctx, event.jobId);
+    }
 }
 
 bool CompositeHandler::IsProductAcceptableForJob(int jobId, const ProductAvailableEvent &event)
@@ -448,4 +463,38 @@ bool CompositeHandler::IsProductAcceptableForJob(int jobId, const ProductAvailab
     Q_UNUSED(event);
 
     return false;
+}
+
+QString CompositeHandler::GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams,
+                                                      const ProductList &listProducts,
+                                                      bool &bIsValid)
+{
+    bIsValid = false;
+    if(!procInfoParams.contains("resolution")) {
+        return "Cannot execute PhenoNDVI processor. The parameters should contain the resolution!";
+    }
+
+    ProductList usedProductList;
+    for(const Product &product: listProducts) {
+        if(product.productTypeId == ProductType::L2AProductTypeId) {
+            usedProductList.append(product);
+        }
+    }
+
+    // for PhenoNDVI we need at least 4 products available in order to be able to create a L3B product
+    if(usedProductList.size() >= 4) {
+        QJsonObject mainObj(procInfoParams);
+        if(!mainObj.contains("resolution")) {
+            return "Cannot execute Composite processor. The parameters should contain the resolution!";
+        }
+        QJsonArray inputProductsArr;
+        for (const auto &p : usedProductList) {
+            inputProductsArr.append(p.fullPath);
+        }
+        mainObj[QStringLiteral("input_products")] = inputProductsArr;
+        bIsValid = true;
+
+        return jsonToString(mainObj);
+    }
+    return QString("Cannot execute Composite processor. There should be at least 4 products but we have only %1 L2A products available!").arg(usedProductList.size());
 }

@@ -17,6 +17,7 @@ static QString getArchivedProductsJson(const ArchivedProductList &products);
 static QString getParentTasksJson(const TaskIdList &tasks);
 static QString getNewStepsJson(const NewStepList &steps);
 static QString getScheduledTasksStatusesJson(const std::vector<ScheduledTaskStatus> &statuses);
+static QString getScheduledTaskJson(const ScheduledTask& task);
 
 static QString getExecutionStatusListJson(const ExecutionStatusList &statusList);
 
@@ -815,6 +816,43 @@ int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
     });
 }
 
+ProductList PersistenceManagerDBProvider::GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_products("
+                                           ":siteId, :productTypeId, :startDate, :endDate)"));
+        query.bindValue(QStringLiteral(":siteId"), siteId);
+        query.bindValue(QStringLiteral(":productTypeId"), productTypeId);
+        query.bindValue(QStringLiteral(":startDate"), startDate);
+        query.bindValue(QStringLiteral(":endDate"), endDate);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto productIdCol = dataRecord.indexOf(QStringLiteral("ProductId"));
+        auto processorIdCol = dataRecord.indexOf(QStringLiteral("ProcessorId"));
+        auto productTypeIdCol = dataRecord.indexOf(QStringLiteral("ProductTypeId"));
+        auto siteIdCol = dataRecord.indexOf(QStringLiteral("SiteId"));
+        auto fullPathCol = dataRecord.indexOf(QStringLiteral("full_path"));
+        auto creationDateCol = dataRecord.indexOf(QStringLiteral("created_timestamp"));
+
+        ProductList result;
+        while (query.next()) {
+            result.append({ query.value(productIdCol).toInt(), query.value(processorIdCol).toInt(),
+                            static_cast<ProductType>(query.value(productTypeIdCol).toInt()), query.value(siteIdCol).toInt(),
+                            query.value(fullPathCol).toString(), QDateTime().fromString(query.value(creationDateCol).toString(), Qt::ISODate) });
+        }
+
+        return result;
+    });
+}
+
 QString PersistenceManagerDBProvider::GetDashboardCurrentJobData()
 {
     auto db = getDatabase();
@@ -1063,6 +1101,7 @@ std::vector<ScheduledTask> PersistenceManagerDBProvider::GetScheduledTasks( )
         auto taskIdCol = dataRecord.indexOf(QStringLiteral("task_id"));
         auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
         auto processorIdCol = dataRecord.indexOf(QStringLiteral("processor_id"));
+        auto siteIdCol = dataRecord.indexOf(QStringLiteral("site_id"));
         auto processorParamsCol = dataRecord.indexOf(QStringLiteral("processor_params"));
 
         auto repeatTypeCol = dataRecord.indexOf(QStringLiteral("repeat_type"));
@@ -1097,6 +1136,7 @@ std::vector<ScheduledTask> PersistenceManagerDBProvider::GetScheduledTasks( )
             taskList.emplace_back(query.value(taskIdCol).toInt(),
                                   query.value(nameCol).toString(),
                                   query.value(processorIdCol).toInt(),
+                                  query.value(siteIdCol).toInt(),
                                   query.value(processorParamsCol).toString(),
                                   query.value(repeatTypeCol).toInt(),
                                   query.value(repeatAfterDaysCol).toInt(),
@@ -1118,8 +1158,24 @@ void PersistenceManagerDBProvider::UpdateScheduledTasksStatus( std::vector<Sched
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral("select sp_submit_statuses(:statuses)"));
-        query.bindValue(QStringLiteral(":statuses"), getScheduledTasksStatusesJson(statuses));
+        auto query = db.prepareQuery(QStringLiteral("select sp_submit_scheduled_tasks_statuses(:statuses)"));
+        QString retJson = getScheduledTasksStatusesJson(statuses);
+        query.bindValue(QStringLiteral(":statuses"), retJson);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+    });
+}
+
+void PersistenceManagerDBProvider::InsertScheduledTask( ScheduledTask& task)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query = db.prepareQuery(QStringLiteral("select sp_insert_scheduled_task(:task)"));
+        query.bindValue(QStringLiteral(":task"), getScheduledTaskJson(task));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -1211,6 +1267,24 @@ static QString getScheduledTasksStatusesJson(const std::vector<ScheduledTaskStat
     return jsonToString(array);
 }
 
+static QString getScheduledTaskJson(const ScheduledTask& task)
+{
+    QJsonObject node;
+    node[QStringLiteral("id")] = task.taskId;
+    node[QStringLiteral("name")] = task.taskName;
+    node[QStringLiteral("processor_id")] = task.processorId;
+    node[QStringLiteral("site_id")] = task.siteId;
+    node[QStringLiteral("processor_params")] = task.processorParameters;
+    node[QStringLiteral("repeat_type")] = task.repeatType;
+    node[QStringLiteral("repeat_after_days")] = task.repeatAfterDays;
+    node[QStringLiteral("repeat_on_month_day")] = task.repeatOnMonthDay;
+    node[QStringLiteral("first_run_time")] = task.firstScheduledRunTime.toString(Qt::ISODate);
+    node[QStringLiteral("retry_seconds")] = task.retryPeriod;
+    node[QStringLiteral("priority")] = task.taskPriority;
+
+    return jsonToString(node);
+}
+
 static QString getExecutionStatusListJson(const ExecutionStatusList &statusList)
 {
     QJsonArray array;
@@ -1290,4 +1364,50 @@ ProcessorDescriptionList PersistenceManagerDBProvider::GetProcessorDescriptions(
         return result;
     });
 }
+
+SiteList PersistenceManagerDBProvider::GetSiteDescriptions()
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        SiteList result;
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_sites()"));
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto idCol = dataRecord.indexOf(QStringLiteral("id"));
+        auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
+
+        while (query.next()) {
+            result.append({ query.value(idCol).toInt(), query.value(nameCol).toString() });
+        }
+        return result;
+    });
+}
+
+QString PersistenceManagerDBProvider::GetProcessorShortName(int processorId) {
+    ProcessorDescriptionList listProcDescr = GetProcessorDescriptions();
+    for(const ProcessorDescription &procDescr: listProcDescr) {
+        if(procDescr.processorId == processorId) {
+            return procDescr.shortName;
+        }
+    }
+    return "";
+}
+
+
+QString PersistenceManagerDBProvider::GetSiteName(int siteId) {
+    SiteList listSiteDescr = GetSiteDescriptions();
+    for(const Site &siteDescr: listSiteDescr) {
+        if(siteDescr.siteId == siteId) {
+            return siteDescr.name;
+        }
+    }
+    return "";
+}
+
 

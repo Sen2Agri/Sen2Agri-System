@@ -217,12 +217,24 @@ Q_DECLARE_METATYPE(KeyedMessageList)
 QDBusArgument &operator<<(QDBusArgument &argument, const KeyedMessage &message);
 const QDBusArgument &operator>>(const QDBusArgument &argument, KeyedMessage &message);
 
+enum class ProductType { TestProductTypeId = 0,
+                         L2AProductTypeId,
+                         L3AProductTypeId,
+                         L3BLaiProductTypeId,
+                         L3BPhenoProductTypeId,
+                         L4AProductTypeId,
+                         L4BProductTypeId,
+                       };
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ProductType &productType);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProductType &productType);
+
 class Product
 {
 public:
     int productId;
     int processorId;
-    int productTypeId;
+    ProductType productTypeId;
     int siteId;
     QString fullPath;
     QDateTime created;
@@ -230,7 +242,7 @@ public:
     Product();
     Product(int productId,
             int processorId,
-            int productTypeId,
+            ProductType productTypeId,
             int siteId,
             QString fullPath,
             QDateTime created);
@@ -461,12 +473,13 @@ class TaskFinishedEvent
 {
 public:
     int processorId;
+    int siteId;
     int jobId;
     int taskId;
     QString module;
 
     TaskFinishedEvent();
-    TaskFinishedEvent(int processorId, int jobId, int taskId, QString module);
+    TaskFinishedEvent(int processorId, int siteId, int jobId, int taskId, QString module);
 
     QString toJson() const;
 
@@ -566,10 +579,11 @@ class JobSubmittedEvent
 public:
     int jobId;
     int processorId;
+    int siteId;
     QString parametersJson;
 
     JobSubmittedEvent();
-    JobSubmittedEvent(int jobId, int processorId, QString parametersJson);
+    JobSubmittedEvent(int jobId, int processorId, int siteId, QString parametersJson);
 
     QString toJson() const;
 
@@ -760,11 +774,6 @@ Q_DECLARE_METATYPE(StepConsoleOutputList)
 QDBusArgument &operator<<(QDBusArgument &argument, const StepConsoleOutput &stepOutput);
 const QDBusArgument &operator>>(const QDBusArgument &argument, StepConsoleOutput &stepOutput);
 
-enum class ProductType { TestProduct = 1 };
-
-QDBusArgument &operator<<(QDBusArgument &argument, const ProductType &productType);
-const QDBusArgument &operator>>(const QDBusArgument &argument, ProductType &productType);
-
 class NewProduct
 {
 public:
@@ -851,12 +860,14 @@ enum RepeatType {
 };
 struct ScheduledTask
 {
-    ScheduledTask(int, QString,int, QString,int, int, int, QDateTime, int, int, ScheduledTaskStatus& );
+    ScheduledTask(int ti, QString tn ,int pi, int si, QString pp ,int rt, int rad, int rmd,
+                  QDateTime  fst, int rp, int tp, ScheduledTaskStatus& ts);
     ScheduledTask() {}
 
     int taskId;
     QString	taskName;
     int processorId;
+    int siteId;
     QString processorParameters;
 
     int repeatType; /*once, cyclic, on_date*/
@@ -878,6 +889,7 @@ struct ScheduledTask
 struct ProcessingRequest
 {
     int processorId;
+    int siteId;
     QString parametersJson; // or map<string, string>
 };
 Q_DECLARE_METATYPE(ProcessingRequest)
@@ -888,6 +900,7 @@ struct JobDefinition
 {
     bool isValid;
     int processorId;
+    int siteId;
     QString jobDefinitionJson;
 };
 Q_DECLARE_METATYPE(JobDefinition)

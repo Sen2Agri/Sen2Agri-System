@@ -14,7 +14,7 @@ private:
                                 const TaskFinishedEvent &event) override;
 
     void HandleNewProductInJob(EventProcessingContext &ctx,
-                               int jobId,
+                               const JobSubmittedEvent &event,
                                const QString &jsonParams,
                                const QStringList &listProducts);
     bool IsProductAcceptableForJob(int jobId, const ProductAvailableEvent &event);
@@ -25,6 +25,9 @@ private:
                                  const QJsonObject &parameters,
                                  std::map<QString, QString> &configParameters,
                                  const QStringList &listProducts);
+
+    QString GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams, const ProductList &listProducts, bool &bIsValid);
+
 };
 
 #endif // COMPOSITEHANDLER_HPP

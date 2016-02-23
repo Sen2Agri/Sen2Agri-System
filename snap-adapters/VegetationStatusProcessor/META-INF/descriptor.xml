@@ -86,40 +86,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>solZenAngle</name>
-      <dataType>java.lang.Float</dataType>
-      <defaultValue>67.3722</defaultValue>
-      <description>solar zenith angle</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>senZenAngle</name>
-      <dataType>java.lang.Float</dataType>
-      <defaultValue>0.23422731</defaultValue>
-      <description>sensor zenith angle</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>relAzmAngle</name>
-      <dataType>java.lang.Float</dataType>
-      <defaultValue>133.75078</defaultValue>
-      <description>relative azimuth angle</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>t0</name>
+      <name>startDate</name>
       <dataType>java.lang.String</dataType>
       <defaultValue>20130206</defaultValue>
       <description>The start date for the temporal resampling interval (in format YYYYMMDD)</description>
@@ -130,7 +97,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>tend</name>
+      <name>endDate</name>
       <dataType>java.lang.String</dataType>
       <defaultValue>20130616</defaultValue>
       <description>The end date for the temporal resampling interval (in format YYYYMMDD)</description>
@@ -140,8 +107,84 @@
       <parameterType>RegularParameter</parameterType>
       <toolParameterDescriptors/>
     </parameter>
+    <parameter>
+      <name>RSRConfigFile</name>
+      <dataType>java.io.File</dataType>
+      <description>The RSR configuration file each mission (/path/filename)</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>tileId</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>T0000</defaultValue>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>modelsFolder</name>
+      <dataType>java.lang.String</dataType>
+      <description></description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>generateModel</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>NO</defaultValue>
+      <description>Generate the model (YES/NO)</description>
+      <unit></unit>
+      <valueSet>
+        <string>YES</string>
+        <string>NO</string>
+      </valueSet>
+      <pattern></pattern>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>generateReprocessedLai</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>NO</defaultValue>
+      <description>Generate the reprocessed N-Days LAI (YES/NO)</description>
+      <label></label>
+      <valueSet>
+        <string>YES</string>
+        <string>NO</string>
+      </valueSet>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>generateFittedLai</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>NO</defaultValue>
+      <description>Generate the Fitted LAI (YES/NO)</description>
+      <interval></interval>
+      <valueSet>
+        <string>YES</string>
+        <string>NO</string>
+      </valueSet>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
   </parameters>
-  <source>user</source>
+  <source>package</source>
   <isSystem>false</isSystem>
   <isHandlingOutputName>true</isHandlingOutputName>
   <sourceProductDescriptors/>

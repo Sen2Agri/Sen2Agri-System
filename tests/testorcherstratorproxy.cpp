@@ -16,6 +16,7 @@ JobDefinition TestOrcherstratorProxy::GetJobDefinition(const ProcessingRequest &
     JobDefinition jd;
     jd.isValid = m_validJobs;
     jd.processorId = request.processorId;
+    jd.siteId = request.siteId;
     jd.jobDefinitionJson = request.parametersJson;
 
     return jd;

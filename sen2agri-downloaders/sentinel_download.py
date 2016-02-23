@@ -26,7 +26,7 @@ def unzipFile(outputDir, fileToUnzip):
         else:
             createRecursiveDirs(outputDir)
             print("zip OK for {}. Start to unzip".format(fileToUnzip))
-            if runCmd(["unzip -ojDDd " + outputDir + " " + fileToUnzip]):
+            if runCmd(["unzip -d " + outputDir + " " + fileToUnzip]):
                 print("unziping failed for {}".format(fileToUnzip))
             else:
                 print("unziping ok for {}".format(fileToUnzip))
@@ -72,10 +72,10 @@ def downloadFromAmazon(s2Obj, aoiFile, db):
     log(aoiFile.writeDir, "Downloading from amazon ")
 
     if float(s2Obj.cloud) < float(aoiFile.maxCloudCoverage) and len(aoiFile.aoiTiles) > 0:
-        commandArray = ["java", "-jar", "AWSS2ProductDownload-1.0.jar", "--out", aoiFile.writeDir, "--tiles"]
+        commandArray = ["java", "-jar", "AWSS2ProductDownload-0.1.jar", "--out", aoiFile.writeDir, "--tiles"]
         for tile in aoiFile.aoiTiles:
             commandArray.append(tile)
-        commandArray.append("--in")
+        commandArray.append("-p")
         commandArray.append(s2Obj.productname)
         if runCmd(commandArray, False) != 0:
             log(aoiFile.writeDir, "the java donwloader command didn't work for {}".format(s2Obj.filename))
@@ -117,7 +117,8 @@ def downloadFromScihub(s2Obj, aoiFile, db):
             #write the filename in history
             if not db.updateSentinelHistory(aoiFile.siteId, s2Obj.filename,  "{}/{}".format(aoiFile.writeDir, s2Obj.filename)):
                 log(aoiFile.writeDir, "Could not insert into database site_id {} the product name {}".format(aoiFile.siteId, s2Obj.filename))
-            unzipFile(aoiFile.writeDir, fullFilename)            
+            else:
+                unzipFile(aoiFile.writeDir, fullFilename)            
         else:
             log(aoiFile.writeDir, "No wget command because either it's already downloaded and unzipped, either the no_download option was used")
     else:

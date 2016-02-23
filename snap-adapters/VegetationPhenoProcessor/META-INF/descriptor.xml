@@ -64,7 +64,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>t0</name>
+      <name>startDate</name>
       <dataType>java.lang.String</dataType>
       <defaultValue>20130206</defaultValue>
       <description>The start date for the temporal resampling interval (in format YYYYMMDD)</description>
@@ -75,7 +75,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>tend</name>
+      <name>endDate</name>
       <dataType>java.lang.String</dataType>
       <defaultValue>20130616</defaultValue>
       <description>The enddate for the temporal resampling interval (in format YYYYMMDD)</description>
@@ -86,7 +86,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>tileid</name>
+      <name>tileId</name>
       <dataType>java.lang.String</dataType>
       <defaultValue>T0000</defaultValue>
       <description>Tile id</description>
@@ -96,8 +96,18 @@
       <parameterType>RegularParameter</parameterType>
       <toolParameterDescriptors/>
     </parameter>
+    <parameter>
+      <name>resolution</name>
+      <dataType>java.lang.Integer</dataType>
+      <description>Resample to this resolution. Use the same resolution as input files if you don&apos;t want any resample</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
   </parameters>
-  <source>user</source>
+  <source>package</source>
   <isSystem>false</isSystem>
   <isHandlingOutputName>true</isHandlingOutputName>
   <sourceProductDescriptors/>

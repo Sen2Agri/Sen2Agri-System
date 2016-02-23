@@ -51,7 +51,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>refp</name>
+      <name>refPolygons</name>
       <dataType>java.io.File</dataType>
       <defaultValue>/mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp</defaultValue>
       <description>The reference polygons</description>
@@ -73,51 +73,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>t0</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>20130206</defaultValue>
-      <description>The start date for the temporal resampling interval (in format YYYYMMDD)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>tend</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>20130616</defaultValue>
-      <description>The end date for the temporal resampling interval (in format YYYYMMDD)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>rate</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>10</defaultValue>
-      <description>The sampling rate for the temporal series, in days</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>radius</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>100</defaultValue>
-      <description>The radius used for gapfilling, in days</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>nbtrsample</name>
+      <name>noSamples</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>4000</defaultValue>
       <description>The number of samples included in the training set.</description>
@@ -128,7 +84,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>rseed</name>
+      <name>randomSeed</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>0</defaultValue>
       <description>The random seed used for training</description>
@@ -139,7 +95,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>lmbd</name>
+      <name>lambdaParam</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>2</defaultValue>
       <description>The lambda parameter used in data smoothing (default 2)</description>
@@ -160,7 +116,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>weight</name>
+      <name>weightFactor</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>1</defaultValue>
       <description>The weight factor for data smoothing (default 1)</description>
@@ -171,7 +127,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>nbcomp</name>
+      <name>noComponents</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>6</defaultValue>
       <description>The number of components used by dimensionality reduction (default 6)</description>
@@ -182,7 +138,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>spatialr</name>
+      <name>spatialRadius</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>10</defaultValue>
       <description>The spatial radius of the neighborhood used for segmentation (default 10)</description>
@@ -193,7 +149,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>ranger</name>
+      <name>rangeRadius</name>
       <dataType>java.lang.Float</dataType>
       <defaultValue>0.65</defaultValue>
       <description>The range radius defining the radius (expressed in radiometry unit) in the multispectral space (default 0.65)</description>
@@ -215,7 +171,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>rfnbtrees</name>
+      <name>noTrainingTrees</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>100</defaultValue>
       <description>The number of trees used for training (default 100)</description>
@@ -226,7 +182,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>rfmax</name>
+      <name>maxDepthTrees</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>25</defaultValue>
       <description>maximum depth of the trees used for Random Forest classifier (default 25)</description>
@@ -237,7 +193,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>rfmin</name>
+      <name>minDepthTrees</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>5</defaultValue>
       <description>minimum number of samples in each node used by the classifier (default 5)</description>
@@ -248,9 +204,9 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>pixsize</name>
+      <name>pixelSize</name>
       <dataType>java.lang.Integer</dataType>
-      <defaultValue>20</defaultValue>
+      <defaultValue>10</defaultValue>
       <description>The size, in meters, of a pixel (default 10)</description>
       <valueSet/>
       <notNull>false</notNull>
@@ -259,7 +215,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>eroderad</name>
+      <name>erosionRadius</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>1</defaultValue>
       <description>The radius used for erosion (default 1)</description>
@@ -270,7 +226,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>alpha</name>
+      <name>alphaParam</name>
       <dataType>java.lang.Float</dataType>
       <defaultValue>0.01</defaultValue>
       <description>The parameter alpha used by the mahalanobis function (default 0.01)</description>
@@ -292,7 +248,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>minarea</name>
+      <name>minPixelArea</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>20</defaultValue>
       <description>The minium number of pixel in an area where, for an equal number of crop and nocrop samples, the crop decision is taken (default 20)</description>
@@ -303,7 +259,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>tilename</name>
+      <name>tileName</name>
       <dataType>java.lang.String</dataType>
       <defaultValue>T0000</defaultValue>
       <description>The name of the tile</description>
@@ -313,8 +269,40 @@
       <parameterType>RegularParameter</parameterType>
       <toolParameterDescriptors/>
     </parameter>
+    <parameter>
+      <name>tempResampling</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>gapfill</defaultValue>
+      <description>The temporal resampling mode</description>
+      <label></label>
+      <valueSet>
+        <string>resample</string>
+        <string>gapfill</string>
+      </valueSet>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>mission</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>SPOT</defaultValue>
+      <description>The main mission for the time series</description>
+      <label></label>
+      <interval></interval>
+      <valueSet>
+        <string>SPOT</string>
+        <string>LANDSAT</string>
+        <string>SENTINEL</string>
+      </valueSet>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
   </parameters>
-  <source>user</source>
+  <source>package</source>
   <isSystem>false</isSystem>
   <isHandlingOutputName>true</isHandlingOutputName>
   <sourceProductDescriptors/>

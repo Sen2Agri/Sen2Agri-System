@@ -66,17 +66,6 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>t0</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>20130206</defaultValue>
-      <description>date format YYYYMMDD</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
       <name>halfSynthesis</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>50</defaultValue>
@@ -109,18 +98,7 @@
       <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>tend</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>20130318</defaultValue>
-      <description>date format YYYYMMDD</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>syntdate</name>
+      <name>synthesysDate</name>
       <dataType>java.lang.String</dataType>
       <defaultValue>20130226</defaultValue>
       <description>L3A synthesys date (format YYYYMMDD)</description>
@@ -130,8 +108,19 @@
       <parameterType>RegularParameter</parameterType>
       <toolParameterDescriptors/>
     </parameter>
+    <parameter>
+      <name>tileId</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>T0000</defaultValue>
+      <description>Tile id</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
   </parameters>
-  <source>user</source>
+  <source>package</source>
   <isSystem>false</isSystem>
   <isHandlingOutputName>true</isHandlingOutputName>
   <sourceProductDescriptors/>

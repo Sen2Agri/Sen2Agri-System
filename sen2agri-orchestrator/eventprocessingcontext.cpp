@@ -84,11 +84,6 @@ StepConsoleOutputList EventProcessingContext::GetTaskConsoleOutputs(int taskId)
     return persistenceManager.GetTaskConsoleOutputs(taskId);
 }
 
-ProcessorDescriptionList EventProcessingContext::GetProcessorDescriptions()
-{
-    return persistenceManager.GetProcessorDescriptions();
-}
-
 UnprocessedEventList EventProcessingContext::GetNewEvents()
 {
     return persistenceManager.GetNewEvents();
@@ -113,6 +108,13 @@ QStringList EventProcessingContext::GetProductFiles(const QString &path,
                                                     const QString &pattern) const
 {
     return QDir(path).entryList(QStringList() << pattern, QDir::Files);
+}
+
+QString EventProcessingContext::GetOutputPath(int jobId)
+{
+    QString jobIdPath = GetScratchPath(jobId);
+    jobIdPath = jobIdPath.left(jobIdPath.indexOf("{job_id}") + sizeof("{job_id}"));
+    return jobIdPath.replace(QLatin1String("{job_id}"), QString::number(jobId));
 }
 
 QString EventProcessingContext::GetOutputPath(int jobId, int taskId, const QString &module)
@@ -163,20 +165,11 @@ void EventProcessingContext::SubmitTasks(int jobId,
     }
 }
 
-QString EventProcessingContext::findProductFile(const QString &path)
+QStringList EventProcessingContext::findProductFiles(const QString &path)
 {
-    QString result;
+    QStringList result;
     for (const auto &file : QDir(path).entryList({ "*.HDR", "*.xml" }, QDir::Files)) {
-        if (!result.isEmpty()) {
-            throw std::runtime_error(
-                QStringLiteral(
-                    "More than one HDR or xml file in path %1. Unable to determine the product "
-                    "metadata file.")
-                    .arg(path)
-                    .toStdString());
-        }
-
-        result = file;
+        result.append(path + file);
     }
 
     if (result.isEmpty()) {
@@ -187,6 +180,15 @@ QString EventProcessingContext::findProductFile(const QString &path)
                 .arg(path)
                 .toStdString());
     }
+    return result;
+}
 
-    return path + result;
+QString EventProcessingContext::GetProcessorShortName(int processorId)
+{
+    return persistenceManager.GetProcessorShortName(processorId);
+}
+
+QString EventProcessingContext::GetSiteName(int siteId)
+{
+    return persistenceManager.GetSiteName(siteId);
 }

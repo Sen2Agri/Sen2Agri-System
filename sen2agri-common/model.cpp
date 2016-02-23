@@ -69,6 +69,9 @@ void registerMetaTypes()
     qDBusRegisterMetaType<StepArgumentList>();
 
     qDBusRegisterMetaType<TaskIdList>();
+
+    qDBusRegisterMetaType<ProcessingRequest>();
+    qDBusRegisterMetaType<JobDefinition>();
 }
 
 ConfigurationParameterInfo::ConfigurationParameterInfo() : categoryId(), isAdvanced() {}
@@ -404,7 +407,7 @@ Product::Product() : productId(), processorId(), productTypeId(), siteId() {}
 
 Product::Product(int productId,
                  int processorId,
-                 int productTypeId,
+                 ProductType productTypeId,
                  int siteId,
                  QString fullPath,
                  QDateTime created)
@@ -783,10 +786,10 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, TaskRunnableEvent
     return argument;
 }
 
-TaskFinishedEvent::TaskFinishedEvent() : processorId(), jobId(), taskId() {}
+TaskFinishedEvent::TaskFinishedEvent() : processorId(), siteId(), jobId(), taskId() {}
 
-TaskFinishedEvent::TaskFinishedEvent(int processorId, int jobId, int taskId, QString module)
-    : processorId(processorId), jobId(jobId), taskId(taskId), module(std::move(module))
+TaskFinishedEvent::TaskFinishedEvent(int processorId, int siteId, int jobId, int taskId, QString module)
+    : processorId(processorId), siteId(siteId), jobId(jobId), taskId(taskId), module(std::move(module))
 {
 }
 
@@ -794,6 +797,7 @@ QString TaskFinishedEvent::toJson() const
 {
     QJsonObject node;
     node[QStringLiteral("processor_id")] = processorId;
+    node[QStringLiteral("site_id")] = siteId;
     node[QStringLiteral("job_id")] = jobId;
     node[QStringLiteral("task_id")] = taskId;
     node[QStringLiteral("module_short_name")] = module;
@@ -807,6 +811,7 @@ TaskFinishedEvent TaskFinishedEvent::fromJson(const QString &json)
     const auto &object = doc.object();
 
     return { object.value(QStringLiteral("processor_id")).toInt(),
+             object.value(QStringLiteral("site_id")).toInt(),
              object.value(QStringLiteral("job_id")).toInt(),
              object.value(QStringLiteral("task_id")).toInt(),
              object.value(QStringLiteral("module_short_name")).toString() };
@@ -817,7 +822,7 @@ void TaskFinishedEvent::registerMetaTypes() { qDBusRegisterMetaType<TaskFinished
 QDBusArgument &operator<<(QDBusArgument &argument, const TaskFinishedEvent &event)
 {
     argument.beginStructure();
-    argument << event.processorId << event.jobId << event.taskId << event.module;
+    argument << event.processorId << event.siteId << event.jobId << event.taskId << event.module;
     argument.endStructure();
 
     return argument;
@@ -826,7 +831,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const TaskFinishedEvent &even
 const QDBusArgument &operator>>(const QDBusArgument &argument, TaskFinishedEvent &event)
 {
     argument.beginStructure();
-    argument >> event.processorId >> event.jobId >> event.taskId >> event.module;
+    argument >> event.processorId >> event.siteId >> event.jobId >> event.taskId >> event.module;
     argument.endStructure();
 
     return argument;
@@ -994,10 +999,10 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobResumedEvent &
     return argument;
 }
 
-JobSubmittedEvent::JobSubmittedEvent() : jobId(), processorId() {}
+JobSubmittedEvent::JobSubmittedEvent() : jobId(), processorId(), siteId() {}
 
-JobSubmittedEvent::JobSubmittedEvent(int jobId, int processorId, QString parametersJson)
-    : jobId(jobId), processorId(processorId), parametersJson(std::move(parametersJson))
+JobSubmittedEvent::JobSubmittedEvent(int jobId, int processorId, int siteId, QString parametersJson)
+    : jobId(jobId), processorId(processorId), siteId(siteId), parametersJson(std::move(parametersJson))
 {
 }
 
@@ -1006,6 +1011,7 @@ QString JobSubmittedEvent::toJson() const
     QJsonObject node;
     node[QStringLiteral("job_id")] = jobId;
     node[QStringLiteral("processor_id")] = processorId;
+    node[QStringLiteral("site_id")] = siteId;
     node[QStringLiteral("parameters")] = parametersJson;
 
     return QString::fromUtf8(QJsonDocument(node).toJson());
@@ -1018,6 +1024,7 @@ JobSubmittedEvent JobSubmittedEvent::fromJson(const QString &json)
 
     return { object.value(QStringLiteral("job_id")).toInt(),
              object.value(QStringLiteral("processor_id")).toInt(),
+             object.value(QStringLiteral("site_id")).toInt(),
              jsonToString(object.value(QStringLiteral("parameters")).toObject()) };
 }
 
@@ -1026,7 +1033,7 @@ void JobSubmittedEvent::registerMetaTypes() { qDBusRegisterMetaType<JobSubmitted
 QDBusArgument &operator<<(QDBusArgument &argument, const JobSubmittedEvent &event)
 {
     argument.beginStructure();
-    argument << event.jobId << event.processorId << event.parametersJson;
+    argument << event.jobId << event.processorId << event.siteId << event.parametersJson;
     argument.endStructure();
 
     return argument;
@@ -1035,7 +1042,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const JobSubmittedEvent &even
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobSubmittedEvent &event)
 {
     argument.beginStructure();
-    argument >> event.jobId >> event.processorId >> event.parametersJson;
+    argument >> event.jobId >> event.processorId >> event.siteId >> event.parametersJson;
     argument.endStructure();
 
     return argument;
@@ -1517,11 +1524,12 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorDescript
 }
 
 
-ScheduledTask::ScheduledTask(int ti, QString tn ,int pi, QString pp ,int rt, int rad, int rmd,
+ScheduledTask::ScheduledTask(int ti, QString tn ,int pi, int si, QString pp ,int rt, int rad, int rmd,
                              QDateTime  fst, int rp, int tp, ScheduledTaskStatus& ts):
  taskId(ti),
  taskName(tn),
  processorId(pi),
+ siteId(si),
  processorParameters(pp),
  repeatType(rt),
  repeatAfterDays(rad),
@@ -1536,7 +1544,7 @@ ScheduledTask::ScheduledTask(int ti, QString tn ,int pi, QString pp ,int rt, int
 QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &request)
 {
     argument.beginStructure();
-    argument << request.processorId << request.parametersJson ;
+    argument << request.processorId << request.siteId << request.parametersJson ;
     argument.endStructure();
     return argument;
 }
@@ -1544,7 +1552,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &requ
 const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessingRequest &request)
 {
     argument.beginStructure();
-    argument >> request.processorId >> request.parametersJson ;
+    argument >> request.processorId >> request.siteId >> request.parametersJson ;
     argument.endStructure();
 
     return argument;

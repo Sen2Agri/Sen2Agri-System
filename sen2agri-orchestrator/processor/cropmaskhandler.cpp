@@ -102,7 +102,7 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                        "-outdate",       dates,  "-shape", shape,   "-il" };
 
     for (const auto &inputProduct : inputProducts) {
-        bandsExtractorArgs.append(ctx.findProductFile(inputProduct.toString()));
+        bandsExtractorArgs.append(ctx.findProductFiles(inputProduct.toString()));
     }
 
     QStringList trainImagesClassifierArgs = {
@@ -204,9 +204,18 @@ void CropMaskHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
         ctx.MarkJobFinished(event.jobId);
     }
 
-    //    ctx.InsertProduct({ ProductType::TestProduct,
-    //                        event.processorId,
-    //                        event.taskId,
-    //                        ctx.GetOutputPath(event.jobId, event.taskId),
-    //                        QDateTime::currentDateTimeUtc() });
+    // Insert the product into the database
+//    ctx.InsertProduct({ ProductType::L4AProductTypeId,
+//        event.processorId,
+//        event.taskId,
+//        ctx.GetOutputPath(event.jobId, event.taskId, "product-formatter"),
+//        QDateTime::currentDateTimeUtc() });
+}
+
+QString CropMaskHandler::GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams,
+                                                      const ProductList &listProducts,
+                                                      bool &bIsValid)
+{
+    bIsValid = false;
+    return QString("Cannot execute CropMaskHandler processor.!");
 }
