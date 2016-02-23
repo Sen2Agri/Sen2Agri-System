@@ -65,7 +65,7 @@ try {
 			$siteObj->text = $productRow->site;
 			$siteObj->selectable = false;
 			$siteObj->nodes = array();
-			$products[] = $siteObj;
+			$products[] = $siteObj;			
 		}
 		
 		$processorObj = findProcessor($productRow->processor, $siteObj->nodes);
@@ -84,6 +84,8 @@ try {
 			$productObj->href = normalizePath($productRow->full_path);
 			$productObj->href = str_replace($PRODUCT_ROOT_FOLDER, $SITE_PRODUCT_RELATIVE_FOLDER, $productObj->href);
 			$productObj->productCoord = array_map('floatval', explode(",", str_replace(array("(", ")"), "", $productRow->footprint)));
+			$productObj->siteCoord = explode(",", str_replace(array("POLYGON((", ")"), "", $productRow->site_coord));
+			
 			$productObj->productImageUrl = normalizePath(dirname($productRow->full_path)."/".$productRow->quicklook_image);
 			$productObj->productImageUrl = str_replace($PRODUCT_ROOT_FOLDER, $SITE_PRODUCT_RELATIVE_FOLDER, $productObj->productImageUrl);
 			
