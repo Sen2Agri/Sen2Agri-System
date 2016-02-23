@@ -18,7 +18,7 @@ from xml.dom import minidom
 
 def runCmd(cmdArray):
     start = time.time()
-    print(" ".join(map(pipes.quote, cmdArray)))    
+    print(" ".join(map(pipes.quote, cmdArray)))
     res = subprocess.call(cmdArray)
     print("OTB app finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     if res != 0:
@@ -53,10 +53,6 @@ solarZenithAngle = args.solarzenith
 sensorZenithAngle = args.sensorzenith
 relativeAzimuthAngle = args.relativeazimuth
 
-vegetationStatusLocation = "{}/VegetationStatus".format(appLocation)
-productFormatterLocation = "{}/MACCSMetadata/src".format(appLocation)
-imgInvOtbLibsLocation = vegetationStatusLocation + '/otb-bv/src/applications'
-
 # By default, if not specified, models folder is the given out dir.
 modelsFolder = outDir
 if args.modelsfolder:
@@ -69,7 +65,7 @@ if args.modelsfolder:
     else:
         os.makedirs(args.modelsfolder)
         modelsFolder = args.modelsfolder
-    
+
 if os.path.exists(outDir):
     if not os.path.isdir(outDir):
         print("Can't create the output directory because there is a file with the same name")
@@ -88,7 +84,7 @@ class LaiModel(object):
     def getReducedAngle(self, decimal):
         dec, int = math.modf(decimal * 10)
         return (int / 10)
-    
+
     def generateModel(self, curXml):
         outGeneratedSampleFile = outDir + '/out_bv_dist_samples.txt'
         # THESE ARE DEFAULT PARAMETERS - THEY WILL BE OVERWRITTEN BY THE PARAMETERS IN
@@ -118,18 +114,18 @@ class LaiModel(object):
         #generating Input BV Distribution file
         print("Generating Input BV Distribution file ...")
         #try otbcli BVInputVariableGeneration $IMG_INV_OTB_LIBS_ROOT -samples $GENERATED_SAMPLES_NO -out $OUT_GENERATED_SAMPLE_FILE
-        runCmd(["otbcli", "BVInputVariableGeneration", imgInvOtbLibsLocation, "-samples", str(GENERATED_SAMPLES_NO), "-out",  outGeneratedSampleFile])
+        runCmd(["otbcli", "BVInputVariableGeneration", appLocation, "-samples", str(GENERATED_SAMPLES_NO), "-out",  outGeneratedSampleFile])
 
         # Generating simulation reflectances
         print("Generating simulation reflectances ...")
         #try otbcli ProSailSimulator $IMG_INV_OTB_LIBS_ROOT -bvfile $OUT_GENERATED_SAMPLE_FILE -rsrfile $RSR_FILE -out $OUT_SIMU_REFLS_FILE -solarzenith $SOLAR_ZENITH_ANGLE -sensorzenith $SENSOR_ZENITH_ANGLE -azimuth $RELATIVE_AZIMUTH_ANGLE
         #runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation, "-xml", args.input[0], "-bvfile", outGeneratedSampleFile, "-rsrfile", rsrFile, "-out", outSimuReflsFile, "-solarzenith", str(solarZenithAngle), "-sensorzenith", str(sensorZenithAngle), "-azimuth", str(relativeAzimuthAngle), "-outangles", outAnglesFile])
-        runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation, "-xml", curXml, "-bvfile", outGeneratedSampleFile, "-rsrfile", rsrFile, "-out", outSimuReflsFile, "-outangles", outAnglesFile])
+        runCmd(["otbcli", "ProSailSimulator", appLocation, "-xml", curXml, "-bvfile", outGeneratedSampleFile, "-rsrfile", rsrFile, "-out", outSimuReflsFile, "-outangles", outAnglesFile])
 
         # Generating training file
         print("Generating training file ...")
         #try otbcli TrainingDataGenerator $IMG_INV_OTB_LIBS_ROOT -biovarsfile $OUT_GENERATED_SAMPLE_FILE -simureflsfile $OUT_SIMU_REFLS_FILE -outtrainfile $OUT_TRAINING_FILE -bvidx $BV_IDX -addrefls $ADD_REFLS -redidx $RED_INDEX -niridx $NIR_INDEX
-        runCmd(["otbcli", "TrainingDataGenerator", imgInvOtbLibsLocation, "-biovarsfile", outGeneratedSampleFile, "-simureflsfile", outSimuReflsFile, "-outtrainfile", outTrainingFile, "-bvidx", str(BV_IDX), "-addrefls", str(ADD_REFLS), "-redidx", str(RED_INDEX), "-niridx", str(NIR_INDEX)])
+        runCmd(["otbcli", "TrainingDataGenerator", appLocation, "-biovarsfile", outGeneratedSampleFile, "-simureflsfile", outSimuReflsFile, "-outtrainfile", outTrainingFile, "-bvidx", str(BV_IDX), "-addrefls", str(ADD_REFLS), "-redidx", str(RED_INDEX), "-niridx", str(NIR_INDEX)])
 
         # Reading the used angles from the file and build the out model file name and the out err model file name
         with open(outAnglesFile) as f:
@@ -154,11 +150,11 @@ class LaiModel(object):
 
         outModelFile = "{0}/Model_THETA_S_{1}_THETA_V_{2}_REL_PHI_{3}.txt".format(modelsFolder, solarZenithReduced, sensorZenithReduced, relativeAzimuthReduced)
         outErrEstFile = "{0}/Err_Est_Model_THETA_S_{1}_THETA_V_{2}_REL_PHI_{3}.txt".format(modelsFolder, solarZenithReduced, sensorZenithReduced, relativeAzimuthReduced)
-            
+
         # Generating model
         print("Generating model ...")
         #try otbcli InverseModelLearning $IMG_INV_OTB_LIBS_ROOT -training $OUT_TRAINING_FILE -out $OUT_MODEL_FILE -errest $OUT_ERR_EST_FILE -regression $REGRESSION_TYPE -bestof $BEST_OF
-        runCmd(["otbcli", "InverseModelLearning", imgInvOtbLibsLocation, "-training", outTrainingFile, "-out", outModelFile, "-errest", outErrEstFile, "-regression", str(REGRESSION_TYPE), "-bestof", str(BEST_OF)])
+        runCmd(["otbcli", "InverseModelLearning", appLocation, "-training", outTrainingFile, "-out", outModelFile, "-errest", outErrEstFile, "-regression", str(REGRESSION_TYPE), "-bestof", str(BEST_OF)])
 
         with open(paramsLaiModelFilenameXML, 'w') as paramsFileXML:
             root = ET.Element('metadata')
@@ -181,8 +177,8 @@ class LaiModel(object):
             ET.SubElement(iv, "generated_error_estimation_model_file_name").text = outErrEstFile
             #   usedXMLs = ET.SubElement(root, "XML_files")
             #   i = 0
-            #   for xml in args.input:    
-            #   ET.SubElement(usedXMLs, "XML_" + str(i)).text = xml   
+            #   for xml in args.input:
+            #   ET.SubElement(usedXMLs, "XML_" + str(i)).text = xml
             #   i += 1
             paramsFileXML.write(prettify(root))
 

@@ -26,5 +26,5 @@
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130605_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130605_N2A_ESouthAfricaD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000.xml" \
---resolution 20 --t0 20130131 --tend 20130615 --outdir /mnt/output/L3B/SPOT4-T5/SouthAfrica/pheno-2015-12-18
+--resolution 20 --outdir /mnt/output/L3B/SPOT4-T5/SouthAfrica/pheno-2015-12-18
 #end of USER modif
