@@ -59,7 +59,7 @@ BEGIN
 	submitted_timestamp)
 	VALUES (
 	7, -- JobSubmitted
-	('{"job_id":' || return_id || ', "processor_id":' || _processor_id || ', "parameters":' || _parameters || '}') :: json,
+	('{"job_id":' || return_id || ', "processor_id":' || _processor_id || ', "site_id":' || _site_id || ', "parameters":' || _parameters || '}') :: json,
 	now()
 	);
 

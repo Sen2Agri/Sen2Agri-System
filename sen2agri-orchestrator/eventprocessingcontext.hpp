@@ -34,7 +34,8 @@ public:
 
     StepConsoleOutputList GetTaskConsoleOutputs(int taskId);
 
-    ProcessorDescriptionList GetProcessorDescriptions();
+    QString GetProcessorShortName(int processorId);
+    QString GetSiteName(int siteId);
 
     UnprocessedEventList GetNewEvents();
     void MarkEventProcessingStarted(int eventId);
@@ -43,6 +44,7 @@ public:
     int InsertProduct(const NewProduct &product);
 
     QStringList GetProductFiles(const QString &path, const QString &pattern) const;
+    QString GetOutputPath(int jobId);
     QString GetOutputPath(int jobId, int taskId, const QString &module);
 
     void SubmitTasks(int jobId, const QList<std::reference_wrapper<TaskToSubmit>> &tasks);
@@ -66,7 +68,7 @@ public:
         return steps;
     }
 
-    static QString findProductFile(const QString &path);
+    static QStringList findProductFiles(const QString &path);
 
 private:
     QString GetScratchPath(int jobId);

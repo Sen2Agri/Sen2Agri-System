@@ -44,11 +44,6 @@ class NewJob(object):
 
 class Sen2AgriClient(object):
 
-    def __init__(self):
-        bus = dbus.SystemBus()
-        self.proxy = bus.get_object('org.esa.sen2agri.persistenceManager',
-                                    '/org/esa/sen2agri/persistenceManager')
-
     def get_sites(self):
         connection = self.get_connection()
         cur = self.get_cursor(connection)

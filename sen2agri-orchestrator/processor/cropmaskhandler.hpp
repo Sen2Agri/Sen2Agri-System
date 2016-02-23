@@ -9,4 +9,7 @@ private:
                                 const JobSubmittedEvent &event) override;
     void HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 const TaskFinishedEvent &event) override;
+
+    QString GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams, const ProductList &listProducts, bool &bIsValid);
+
 };

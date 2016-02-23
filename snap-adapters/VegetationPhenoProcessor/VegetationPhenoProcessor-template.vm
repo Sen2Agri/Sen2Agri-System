@@ -3,10 +3,12 @@ $SENTINEL_BUILD_PATH
 --input
 $inputFiles
 --t0
-$t0
+$startDate
 --tend
-$tend
+$endDate
 --outdir
 $WORKING_DIR_PATH/Vegetation/out
 --tileid
 $tileid
+--resolution
+$resolution

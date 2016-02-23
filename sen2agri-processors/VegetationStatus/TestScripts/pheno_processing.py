@@ -17,7 +17,7 @@ from xml.dom import minidom
 
 def runCmd(cmdArray):
     start = time.time()
-    print(" ".join(map(pipes.quote, cmdArray)))    
+    print(" ".join(map(pipes.quote, cmdArray)))
     res = subprocess.call(cmdArray)
     print("OTB app finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     if res != 0:
@@ -29,10 +29,6 @@ parser = argparse.ArgumentParser(description='Phenological NDVI processor')
 
 parser.add_argument('--applocation', help='The path where the sen2agri is built', required=True)
 parser.add_argument('--input', help='The list of products xml descriptors', required=True, nargs='+')
-parser.add_argument('--t0', help='The start date for the temporal resampling interval (in format YYYYMMDD)',
-                    required=True, metavar='YYYYMMDD')
-parser.add_argument('--tend', help='The end date for the temporal resampling interval (in format YYYYMMDD)',
-                    required=True, metavar='YYYYMMDD')
 parser.add_argument('--outdir', help="Output directory", required=True)
 parser.add_argument('--tileid', help="Tile id", required=False)
 parser.add_argument('--resolution', help="Resample to this resolution. Use the same resolution as input files if you don't want any resample", required=True)
@@ -41,12 +37,6 @@ args = parser.parse_args()
 
 appLocation = args.applocation
 outDir = args.outdir
-t0 = args.t0
-tend = args.tend
-
-vegetationStatusLocation = "{}/VegetationStatus/phenotb/src/Applications".format(appLocation)
-cropTypeLocation = "{}/CropType".format(appLocation)
-productFormatterLocation = "{}/MACCSMetadata/src".format(appLocation)
 
 tileID="TILE_none"
 if args.tileid:
@@ -80,11 +70,11 @@ outMetricFlags = "{}/metric_estimation_flags.tif".format(outDir)
 print("Processing started: " + str(datetime.datetime.now()))
 start = time.time()
 
-runCmd(["otbcli", "BandsExtractor", cropTypeLocation, "-il"] + args.input + ["-pixsize", args.resolution, "-merge", "true", "-ndh", "true", "-out", outBands, "-allmasks", outMasks, "-outdate", outDates])
+runCmd(["otbcli", "BandsExtractor", appLocation, "-il"] + args.input + ["-pixsize", args.resolution, "-merge", "true", "-ndh", "true", "-out", outBands, "-allmasks", outMasks, "-outdate", outDates])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-runCmd(["otbcli", "FeatureExtraction", cropTypeLocation, "-rtocr", outBands, "-ndvi", outNdvi])
+runCmd(["otbcli", "FeatureExtraction", appLocation, "-rtocr", outBands, "-ndvi", outNdvi])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-runCmd(["otbcli", "PhenologicalNDVIMetrics", vegetationStatusLocation, "-in", outNdvi, "-mask", outMasks, "-dates", outDates,"-out", outMetric])
+runCmd(["otbcli", "PhenologicalNDVIMetrics", appLocation, "-in", outNdvi, "-mask", outMasks, "-dates", outDates,"-out", outMetric])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 # DEPRECATED CALLS
@@ -92,10 +82,10 @@ print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 #try otbcli MetricsEstimation $VEGETATIONSTATUS_OTB_LIBS_ROOT -ipf $OUT_SIGMO -indates $OUT_DATES -opf $OUT_METRIC
 #runCmd(["otbcli", "MetricsEstimation2", vegetationStatusLocation, "-ipf", outSigmo, "-opf", outMetric])
 
-runCmd(["otbcli", "PhenoMetricsSplitter", vegetationStatusLocation, "-in", outMetric, "-outparams", outMetricParams, "-outflags", outMetricFlags, "-compress", "1"])
+runCmd(["otbcli", "PhenoMetricsSplitter", appLocation, "-in", outMetric, "-outparams", outMetricParams, "-outflags", outMetricFlags, "-compress", "1"])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "phenondvi", "-processor.phenondvi.metrics", tileID, outMetricParams, "-processor.phenondvi.flags", tileID, outMetricFlags, "-il"] + args.input)
+runCmd(["otbcli", "ProductFormatter", appLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-baseline", "01.00", "-processor", "phenondvi", "-processor.phenondvi.metrics", tileID, outMetricParams, "-processor.phenondvi.flags", tileID, outMetricFlags, "-il"] + args.input)
 
 print("Processing finished: " + str(datetime.datetime.now()))
 print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))

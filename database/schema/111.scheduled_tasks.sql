@@ -32,6 +32,6 @@ CREATE TABLE scheduled_task_status
 
   estimated_next_run_time character varying,
 
-  CONSTRAINT scheduled_task_pkey PRIMARY KEY (id)
+  CONSTRAINT scheduled_task_status_pkey PRIMARY KEY (id)
 );
 

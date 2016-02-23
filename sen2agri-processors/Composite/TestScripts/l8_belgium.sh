@@ -5,4 +5,4 @@
 "/mnt/Sen2Agri_DataSets/L2A/Landsat8/Belgium/MACCS_ManualFormat/BelgiumS2A_20130728_L8_198_025/BelgiumS2A_20130728_L8_198_025.HDR" \
 "/mnt/Sen2Agri_DataSets/L2A/Landsat8/Belgium/MACCS_ManualFormat/BelgiumS2A_20130930_L8_198_025/BelgiumS2A_20130930_L8_198_025.HDR" \
 "/mnt/Sen2Agri_DataSets/L2A/Landsat8/Belgium/MACCS_ManualFormat/BelgiumS2A_20131203_L8_198_025/BelgiumS2A_20131203_L8_198_025.HDR" \
---res 30 --t0 20130726 --tend 20131203 --outdir /mnt/output/L3A/Landsat/Belgium --bandsmap ~/sen2agri/sen2agri-processors/Composite/TestScripts/bands_mapping_L8.txt
+--res 30 --outdir /mnt/output/L3A/Landsat/Belgium --bandsmap ~/sen2agri/sen2agri-processors/Composite/TestScripts/bands_mapping_L8.txt

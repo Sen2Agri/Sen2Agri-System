@@ -30,4 +30,7 @@ private:
     OrchestratorWorker worker;
 
     void RescanEvents();
+
+    QString GetProcessorShortName(int processorId);
+    QString GetSiteName(int siteId);
 };

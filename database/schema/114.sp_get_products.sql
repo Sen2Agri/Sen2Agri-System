@@ -7,13 +7,14 @@ CREATE OR REPLACE FUNCTION sp_get_products(
     IN product_type_id smallint DEFAULT NULL::smallint,
     IN start_time timestamp with time zone DEFAULT NULL::timestamp with time zone,
     IN end_time timestamp with time zone DEFAULT NULL::timestamp with time zone)
-  RETURNS TABLE("Product" character varying, "ProductType" character varying, "ProductTypeId" smallint, "Processor" character varying, 
+  RETURNS TABLE("ProductId" integer, "Product" character varying, "ProductType" character varying, "ProductTypeId" smallint, "Processor" character varying, 
 		"ProcessorId" smallint, "Site" character varying, "SiteId" smallint, task_id integer, full_path character varying, 
 		quicklook_image character varying, footprint polygon, created_timestamp timestamp with time zone) AS
 $BODY$
 BEGIN
 	RETURN QUERY
-	  	SELECT 	P.name AS Product, 
+	  	SELECT 	P.id AS ProductId,
+			P.name AS Product, 
   			PT.name AS ProductType, 
   			P.product_type_id AS ProductTypeId, 
             PR.name AS Processor,

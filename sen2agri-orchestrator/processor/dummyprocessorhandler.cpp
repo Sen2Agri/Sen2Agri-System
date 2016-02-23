@@ -48,7 +48,19 @@ void DummyProcessorHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 void DummyProcessorHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                                    const TaskFinishedEvent &event)
 {
-    ctx.InsertProduct({ ProductType::TestProduct, event.processorId, event.taskId,
+    ctx.InsertProduct({ ProductType::TestProductTypeId, event.processorId, event.taskId,
                         ctx.GetOutputPath(event.jobId, event.taskId, event.module),
                         QDateTime::currentDateTimeUtc() });
+}
+
+QString DummyProcessorHandler::GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams,
+                                                      const ProductList &listProducts,
+                                                      bool &bIsValid)
+{
+    Q_UNUSED(procInfoParams);
+    Q_UNUSED(listProducts);
+
+    bIsValid = false;
+
+    return QString("Cannot execute DummyProcessor processor.!");
 }
