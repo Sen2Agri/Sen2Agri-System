@@ -3,10 +3,11 @@
 
 #include "otbVectorImage.h"
 
-typedef short PixelValueType;
+typedef float PixelValueType;
 typedef otb::VectorImage<PixelValueType, 2> ImageType;
+typedef otb::VectorImage<short, 2> MaskImageType;
 
-#define GETNDVI(b) (static_cast<double>(pix[b]) / 10000.0)
+#define GETNDVI(b) (static_cast<double>(pix[b]))
 
 struct ImageInfo
 {
@@ -54,7 +55,7 @@ void whit1(double lambda,
     }
 }
 
-template <typename PixelType>
+template <typename PixelType, typename MaskPixelType>
 class DataSmoothingFunctor
 {
 public:
@@ -72,7 +73,7 @@ public:
     {
     }
 
-    PixelType operator()(const PixelType &pix, const PixelType &mask) const
+    PixelType operator()(const PixelType &pix, const MaskPixelType &mask) const
     {
         // compute the size of the input pixel
         int pixSize = pix.Size();

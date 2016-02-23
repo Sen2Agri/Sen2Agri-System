@@ -39,8 +39,8 @@
 #include "DataSmoothing.hxx"
 
 typedef otb::ImageFileReader<ImageType> ReaderType;
-typedef DataSmoothingFunctor<ImageType::PixelType> DataSmoothingFunctorType;
-typedef itk::BinaryFunctorImageFilter<ImageType, ImageType, ImageType, DataSmoothingFunctorType>
+typedef DataSmoothingFunctor<ImageType::PixelType, MaskImageType::PixelType> DataSmoothingFunctorType;
+typedef itk::BinaryFunctorImageFilter<ImageType, MaskImageType, ImageType, DataSmoothingFunctorType>
 DataSmoothingFilterType;
 typedef otb::ConcatenateVectorImageFilter<ImageType, ImageType, ImageType>
 ConcatenateVectorImageFilterType;
@@ -279,8 +279,8 @@ private:
 
         // connect the functor based filter
         m_smoothFilter->SetFunctor(DataSmoothingFunctorType(bands, lambda, outputDates, images));
-        m_smoothFilter->SetInput(0, m_tsReader->GetOutput());
-        m_smoothFilter->SetInput(1, GetParameterInt16VectorImage("mask"));
+        m_smoothFilter->SetInput1(m_tsReader->GetOutput());
+        m_smoothFilter->SetInput2(GetParameterInt16VectorImage("mask"));
         m_smoothFilter->UpdateOutputInformation();
         m_smoothFilter->GetOutput()->SetNumberOfComponentsPerPixel(outputDates.size() * bands);
         SetParameterOutputImage("sts", m_smoothFilter->GetOutput());

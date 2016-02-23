@@ -4,7 +4,7 @@
 #include "itkBinaryFunctorImageFilter.h"
 #include "otbVectorImage.h"
 
-typedef short                                PixelValueType;
+typedef float                                PixelValueType;
 typedef otb::VectorImage<PixelValueType, 2>  ImageType;
 
 

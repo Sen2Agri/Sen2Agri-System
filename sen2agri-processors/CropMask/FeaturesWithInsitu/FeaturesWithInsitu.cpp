@@ -268,18 +268,18 @@ private:
             m_filterBM->SetFunctor(
                 FeaturesWithInsituBMFunctorType(m_bands,
                                                 m_w,
-                                                static_cast<short>(m_delta * 10000),
+                                                m_delta,
                                                 m_inDates,
-                                                static_cast<short>(m_tsoil * 10000)));
+                                                m_tsoil));
         } else {
             m_filter = TernaryFunctorImageFilterWithNBandsType::New();
             m_filter->SetNumberOfOutputBands(m_bands);
             m_filter->SetFunctor(
                 FeaturesWithInsituFunctorType(m_bands,
                                               m_w,
-                                              static_cast<short>(m_delta * 10000),
+                                              m_delta,
                                               m_inDates,
-                                              static_cast<short>(m_tsoil * 10000)));
+                                              m_tsoil));
         }
 
         if (m_bm) {
