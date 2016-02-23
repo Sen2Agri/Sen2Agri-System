@@ -29,10 +29,6 @@ parser = argparse.ArgumentParser(description='Phenological NDVI processor')
 
 parser.add_argument('--applocation', help='The path where the sen2agri is built', required=True)
 parser.add_argument('--input', help='The list of products xml descriptors', required=True, nargs='+')
-parser.add_argument('--t0', help='The start date for the temporal resampling interval (in format YYYYMMDD)',
-                    required=True, metavar='YYYYMMDD')
-parser.add_argument('--tend', help='The end date for the temporal resampling interval (in format YYYYMMDD)',
-                    required=True, metavar='YYYYMMDD')
 parser.add_argument('--outdir', help="Output directory", required=True)
 parser.add_argument('--tileid', help="Tile id", required=False)
 parser.add_argument('--resolution', help="Resample to this resolution. Use the same resolution as input files if you don't want any resample", required=True)
@@ -41,8 +37,6 @@ args = parser.parse_args()
 
 appLocation = args.applocation
 outDir = args.outdir
-t0 = args.t0
-tend = args.tend
 
 tileID="TILE_none"
 if args.tileid:
@@ -91,7 +85,7 @@ print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 runCmd(["otbcli", "PhenoMetricsSplitter", appLocation, "-in", outMetric, "-outparams", outMetricParams, "-outflags", outMetricFlags, "-compress", "1"])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-runCmd(["otbcli", "ProductFormatter", appLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-processor", "phenondvi", "-processor.phenondvi.metrics", tileID, outMetricParams, "-processor.phenondvi.flags", tileID, outMetricFlags, "-il"] + args.input)
+runCmd(["otbcli", "ProductFormatter", appLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-baseline", "01.00", "-processor", "phenondvi", "-processor.phenondvi.metrics", tileID, outMetricParams, "-processor.phenondvi.flags", tileID, outMetricFlags, "-il"] + args.input)
 
 print("Processing finished: " + str(datetime.datetime.now()))
 print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))

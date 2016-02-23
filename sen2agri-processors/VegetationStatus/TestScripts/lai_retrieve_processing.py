@@ -195,10 +195,6 @@ if __name__ == '__main__':
     parser.add_argument('--applocation', help='The path where the sen2agri is built', required=True)
     parser.add_argument('--input', help='The list of products xml descriptors', required=True, nargs='+')
     parser.add_argument('--res', help='The requested resolution in meters', required=True)
-    parser.add_argument('--t0', help='The start date for the multi-date LAI retrieval pocedure (in format YYYYMMDD)',
-                        required=True, metavar='YYYYMMDD')
-    parser.add_argument('--tend', help='The end date for the multi-date LAI retrieval pocedure (in format YYYYMMDD)',
-                        required=True, metavar='YYYYMMDD')
     parser.add_argument('--outdir', help="Output directory", required=True)
     parser.add_argument('--rsrfile', help='The RSR file (/path/filename)', required=False)
     parser.add_argument('--rsrcfg', help='The RSR configuration file each mission (/path/filename)', required=False)
@@ -212,8 +208,6 @@ if __name__ == '__main__':
 
     appLocation = args.applocation
     resolution = args.res
-    t0 = args.t0
-    tend = args.tend
     outDir = args.outdir
     rsrFile = args.rsrfile
     rsrCfg = args.rsrcfg
@@ -405,7 +399,6 @@ if __name__ == '__main__':
             "-destroot", outDir,
             "-fileclass", "SVT1",
             "-level", "L3B",
-            "-timeperiod", t0 + '_' + tend,
             "-baseline", "01.00",
             "-processor", "vegetation",
             "-processor.vegetation.laindvi", tileID] + allNdviFilesList + [
@@ -424,7 +417,6 @@ if __name__ == '__main__':
                 "-destroot", outDir,
                 "-fileclass", "SVT1",
                 "-level", "L3B",
-                "-timeperiod", t0 + '_' + tend,
                 "-baseline", "01.00",
                 "-processor", "vegetation",
                 "-processor.vegetation.laindvi", tileID] + allNdviFilesList + [

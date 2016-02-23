@@ -54,4 +54,4 @@ CUR_DATE=`date +%Y-%m-%d`
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130605_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130605_N2A_ESouthAfricaD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000.xml" \
---res 0 --t0 20130131 --tend 20130615 --outdir /mnt/output/L3B/SPOT4-T5/SouthAfrica/$CUR_DATE --rsrfile ~/sen2agri/sen2agri-processors/VegetationStatus/otb-bv/data/spot4hrvir1.rsr --solarzenith $SOLAR_ZENITH_ANGLE --sensorzenith $SENSOR_ZENITH_ANGLE --relativeazimuth $RELATIVE_AZIMUTH_ANGLE --modelsfolder /mnt/output/L3B/SPOT4-T5/GeneratedModels/
+--res 0 --outdir /mnt/output/L3B/SPOT4-T5/SouthAfrica/$CUR_DATE --rsrfile ~/sen2agri/sen2agri-processors/VegetationStatus/otb-bv/data/spot4hrvir1.rsr --solarzenith $SOLAR_ZENITH_ANGLE --sensorzenith $SENSOR_ZENITH_ANGLE --relativeazimuth $RELATIVE_AZIMUTH_ANGLE --modelsfolder /mnt/output/L3B/SPOT4-T5/GeneratedModels/
