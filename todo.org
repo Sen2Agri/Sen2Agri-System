@@ -32,4 +32,4 @@
 * TODO fix exception propagation in sen2agri-config
 * DONE add siteId argument where missing in sen2agri-http-listener
 * TODO fix capitalization and wording in "demmacs" category
-* TODO add this file to git
+* DONE add this file to git
