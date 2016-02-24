@@ -21,6 +21,7 @@
 #include <string>
 #include <thread>
 #include <boost/lexical_cast.hpp>
+#include <boost/filesystem.hpp>
 #include <random>
 
 #include "otbBVUtil.h"
@@ -239,7 +240,17 @@ private:
                                     "If you provided rsrcfg file, be sure that you provided the xml parameter "
                                     "and have configured the mission " << productMissionName);
     }
+
+    boost::filesystem::path rsrFilePath(rsrFileName);
+    if (rsrFilePath.is_relative()) {
+        boost::filesystem::path rsrCfgPath(GetParameterString("rsrcfg"));
+        rsrCfgPath.remove_filename();
+        rsrFilePath = rsrCfgPath / rsrFilePath;
+        rsrFileName = rsrFilePath.string();
+    }
+
     //The first 2 columns of the rsr file correspond to the wavelenght and the solar radiation
+    otbAppLogINFO("Using rsr file " << rsrFileName);
     auto cols = countColumns(rsrFileName);
     assert(cols > 2);
     size_t nbBands{cols-2};
