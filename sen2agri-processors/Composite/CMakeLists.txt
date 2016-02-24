@@ -9,3 +9,14 @@ add_subdirectory(CreateS2AnglesRaster)
 add_subdirectory(DirectionalCorrection)
 add_subdirectory(CompositePreprocessing)
 
+install(FILES TestScripts/composite_processing.py 
+        DESTINATION usr/bin/)
+
+install(FILES TestScripts/bands_mapping_s2.txt 
+              TestScripts/bands_mapping_Spot4_L8.txt 
+              TestScripts/bands_mapping_spot5.txt 
+              TestScripts/bands_mapping_spot.txt 
+              TestScripts/scattering_coeffs_10m.txt
+              TestScripts/scattering_coeffs_20m.txt 
+        DESTINATION usr/share/sen2agri/)
+
