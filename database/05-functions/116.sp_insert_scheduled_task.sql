@@ -53,12 +53,9 @@ BEGIN
 		'0',
 		'0'
 	);
-    
+
 	RETURN _return_id;
 
 END;
 $BODY$
-  LANGUAGE plpgsql VOLATILE
-  COST 100;
-ALTER FUNCTION sp_insert_scheduled_task(character varying,integer,integer,smallint,smallint,smallint,character varying,integer,smallint,json)
-  OWNER TO admin;
+  LANGUAGE plpgsql VOLATILE;

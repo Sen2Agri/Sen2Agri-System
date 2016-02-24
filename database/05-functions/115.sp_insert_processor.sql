@@ -25,7 +25,4 @@ BEGIN
 
 END;
 $BODY$
-  LANGUAGE plpgsql VOLATILE
-  COST 100;
-ALTER FUNCTION sp_insert_processor(character varying, character varying, character varying)
-  OWNER TO admin;
+  LANGUAGE plpgsql VOLATILE;
