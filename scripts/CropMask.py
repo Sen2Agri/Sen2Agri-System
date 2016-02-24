@@ -115,7 +115,7 @@ parser.add_argument('-outdir', help="Output directory", default=".")
 parser.add_argument('-buildfolder', help="Build folder", default="")
 parser.add_argument('-targetfolder', help="The folder where the target product is built", default="")
 
-parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)", default=True, action='store_true')
+parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)", default=False, action='store_true')
 parser.add_argument('-fromstep', help="Run from the selected step (default 1)", type=int, default=1)
 
 args = parser.parse_args()
