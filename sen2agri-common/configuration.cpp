@@ -9,6 +9,11 @@
 
 QString getConfigurationFile(const QCoreApplication &app)
 {
+    return getConfigurationFileEx(app, QStringLiteral("sen2agri.conf"));
+}
+
+QString getConfigurationFileEx(const QCoreApplication &app, const QString &preferredFileName)
+{
     QCommandLineParser parser;
     QCommandLineOption configFileOption(QStringLiteral("f"), QStringLiteral("Use this config file"),
                                         QStringLiteral("config file"));
@@ -23,7 +28,7 @@ QString getConfigurationFile(const QCoreApplication &app)
         configFile = QDir::cleanPath(
             QProcessEnvironment::systemEnvironment().value(QStringLiteral("SEN2AGRI_CONFIG_DIR"),
                                                            QStringLiteral("/etc/sen2agri")) +
-            QDir::separator() + QStringLiteral("sen2agri.conf"));
+            QDir::separator() + preferredFileName);
     }
 
     Logger::info(QStringLiteral("Reading settings from %1").arg(configFile));
