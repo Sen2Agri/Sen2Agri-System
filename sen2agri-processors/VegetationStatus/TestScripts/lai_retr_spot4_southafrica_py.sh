@@ -7,14 +7,14 @@
 #GENERATED_SAMPLES_NO=100
 
 #parameters for ProSailSimulator
-SOLAR_ZENITH_ANGLE=44.535870023
-SENSOR_ZENITH_ANGLE=0.2342802113
+#SOLAR_ZENITH_ANGLE=44.535870023
+#SENSOR_ZENITH_ANGLE=0.2342802113
 # Computed as PHI_V - 180 - PHI_S
 # if (rel_az < -180.0) then rel_az = rel_az + 360.0
 # if (rel_az > 180.0) then rel_az = rel_az - 360.0
 # PHI_V>-73.809703566</PHI_V>
 #<PHI_S>145.43902353</PHI_S>
-RELATIVE_AZIMUTH_ANGLE=92.598371891
+#RELATIVE_AZIMUTH_ANGLE=92.598371891
 
 #parameters for TrainingDataGenerator
 #BV_IDX=0
@@ -54,4 +54,4 @@ CUR_DATE=`date +%Y-%m-%d`
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130605_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130605_N2A_ESouthAfricaD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130610_N2A_ESouthAfricaD0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/South Africa/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000/SPOT4_HRVIR1_XS_20130615_N2A_ESouthAfricaD0000B0000.xml" \
---res 0 --outdir /mnt/output/L3B/SPOT4-T5/SouthAfrica/$CUR_DATE --rsrfile ~/sen2agri/sen2agri-processors/VegetationStatus/otb-bv/data/spot4hrvir1.rsr --solarzenith $SOLAR_ZENITH_ANGLE --sensorzenith $SENSOR_ZENITH_ANGLE --relativeazimuth $RELATIVE_AZIMUTH_ANGLE --modelsfolder /mnt/output/L3B/SPOT4-T5/GeneratedModels/
+--res 0 --outdir /mnt/output/L3B/SPOT4-T5/SouthAfrica/$CUR_DATE --rsrfile /usr/share/sen2agri/spot4hrvir1.rsr --generatemodel YES --genreprocessedlai YES --genfittedlai YES
