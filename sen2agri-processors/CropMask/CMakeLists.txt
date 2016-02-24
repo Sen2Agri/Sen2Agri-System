@@ -9,3 +9,6 @@ add_subdirectory(Trimming)
 add_subdirectory(Erosion)
 add_subdirectory(FeaturesWithInsitu)
 add_subdirectory(FeaturesWithoutInsitu)
+
+install(FILES ../../scripts/CropMask.py  
+        DESTINATION usr/bin/)

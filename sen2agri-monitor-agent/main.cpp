@@ -13,18 +13,22 @@
 
 int main(int argc, char *argv[])
 {
-    try {
+    try
+    {
         Logger::installMessageHandler();
 
         QCoreApplication app(argc, argv);
 
-        const auto &settings = Settings::readSettings(getConfigurationFile(app));
+        const auto &settings = Settings::readSettings(
+            getConfigurationFileEx(app, QStringLiteral("sen2agri-monitor-agent.conf")));
 
         Monitor monitor(settings);
         Q_UNUSED(monitor);
 
         return app.exec();
-    } catch (const std::exception &e) {
+    }
+    catch (const std::exception &e)
+    {
         Logger::fatal(e.what());
 
         return EXIT_FAILURE;

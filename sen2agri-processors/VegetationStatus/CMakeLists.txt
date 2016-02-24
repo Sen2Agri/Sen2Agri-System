@@ -7,3 +7,16 @@ set(PHENOTB_LIBRARY OTBPheno)
 add_subdirectory(otb-bv/src)
 add_subdirectory(phenotb/src)
 add_subdirectory(temporalgapfilling/src)
+
+install(FILES TestScripts/lai_retrieve_processing.py 
+              TestScripts/pheno_processing.py
+        DESTINATION usr/bin/)
+
+install(FILES TestScripts/rsr_cfg.txt 
+              otb-bv/data/landsat8_4b.rsr
+              otb-bv/data/landsat8_7b.rsr
+              otb-bv/data/landsat8.rsr
+              otb-bv/data/Sentinel2.rsr
+              otb-bv/data/spot4hrvir1.rsr
+              otb-bv/data/spot5hrg1.rsr
+        DESTINATION usr/share/sen2agri/)

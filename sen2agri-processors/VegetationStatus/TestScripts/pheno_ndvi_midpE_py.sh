@@ -2,7 +2,7 @@
 
 #USER modif
 #add directories where SPOT products are to be found
-./pheno_processing.py --applocation /home/agrosu/sen2agri-processors-build --input \
+./pheno_processing.py --applocation ~/sen2agri-processors-build --input \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Sudmipy-East/SPOT4_HRVIR1_XS_20130217_N2A_CSudmipy-ED0000B0000/SPOT4_HRVIR1_XS_20130217_N2A_CSudmipy-ED0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Sudmipy-East/SPOT4_HRVIR1_XS_20130222_N2A_CSudmipy-ED0000B0000/SPOT4_HRVIR1_XS_20130222_N2A_CSudmipy-ED0000B0000.xml" \
 "/mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Sudmipy-East/SPOT4_HRVIR1_XS_20130227_N2A_CSudmipy-ED0000B0000/SPOT4_HRVIR1_XS_20130227_N2A_CSudmipy-ED0000B0000.xml" \

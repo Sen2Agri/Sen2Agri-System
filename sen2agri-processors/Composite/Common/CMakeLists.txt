@@ -24,4 +24,4 @@ target_link_libraries(MetadataHelper
 
 target_include_directories(MetadataHelper PUBLIC .)
 
-install(TARGETS MetadataHelper DESTINATION usr/lib)
+install(TARGETS MetadataHelper DESTINATION usr/lib/)

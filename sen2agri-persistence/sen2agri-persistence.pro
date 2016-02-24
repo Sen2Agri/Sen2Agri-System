@@ -30,7 +30,7 @@ HEADERS += \
     serializedevent.hpp \
     credential_utils.hpp
 
-DISTFILES += dist/sen2agri-persistence.conf
+DISTFILES += dist/sen2agri.conf
 
 LIBS += -L$$OUT_PWD/../sen2agri-common/ -lsen2agri-common
 
@@ -40,6 +40,6 @@ DEPENDPATH += $$PWD/../sen2agri-common
 PRE_TARGETDEPS += $$OUT_PWD/../sen2agri-common/libsen2agri-common.a
 
 conf.path = /etc/sen2agri
-conf.files = dist/sen2agri-persistence.conf
+conf.files = dist/sen2agri.conf
 
 INSTALLS += conf

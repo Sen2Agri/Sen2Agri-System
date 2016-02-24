@@ -52,6 +52,8 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
                 pauseJob(request, response);
             } else if (action == "ResumeJob") {
                 resumeJob(request, response);
+            } else if (action == "NotifyOrchestrator") {
+                notifyOrchestrator();
             } else {
                 response.setStatus(400, "Bad Request");
             }
