@@ -5,9 +5,8 @@
 #include "otbVectorImage.h"
 
 #define NODATA          -10000
-#define SCALE           10000
 
-typedef short                                PixelValueType;
+typedef float                                PixelValueType;
 typedef otb::VectorImage<PixelValueType, 2>  ImageType;
 
 
@@ -46,9 +45,9 @@ public:
             result[outIndex++] = rtocr[inIndex + j];
         }
         // compute the ndvi
-        result[outIndex++] = (b3==NODATA || b2==NODATA) ? NODATA : ((std::abs(b3+b2)<0.000001) ? 0 : SCALE * (b3-b2)/(b3+b2));
+        result[outIndex++] = (b3==NODATA || b2==NODATA) ? NODATA : ((std::abs(b3+b2)<0.000001) ? 0 : static_cast<float>(b3-b2)/(b3+b2));
         // compute the ndwi
-        result[outIndex++] = (b4==NODATA || b3==NODATA) ? NODATA : ((std::abs(b4+b3)<0.000001) ? 0 : SCALE * (b4-b3)/(b4+b3));
+        result[outIndex++] = (b4==NODATA || b3==NODATA) ? NODATA : ((std::abs(b4+b3)<0.000001) ? 0 : static_cast<float>(b4-b3)/(b4+b3));
         // compute the brightness
         result[outIndex++] = b1==NODATA ? NODATA : std::sqrt(b1*b1 + b2*b2 + b3*b3 + b4*b4);
     }
@@ -100,7 +99,7 @@ public:
         int b2 = rtocr[inIndex + 1];
         int b3 = rtocr[inIndex + 2];
         // compute the ndvi
-        result[outIndex++] = (b3==NODATA || b2==NODATA) ? NODATA : ((std::abs(b3+b2)<0.000001) ? 0 : SCALE * (b3-b2)/(b3+b2));
+        result[outIndex++] = (b3==NODATA || b2==NODATA) ? NODATA : ((std::abs(b3+b2)<0.000001) ? 0 : static_cast<float>(b3-b2)/(b3+b2));
     }
 
     return result;
@@ -150,7 +149,7 @@ public:
         int b3 = rtocr[inIndex + 2];
         int b4 = rtocr[inIndex + 3];
         // compute the ndwi
-        result[outIndex++] = (b4==NODATA || b3==NODATA) ? NODATA : ((std::abs(b4+b3)<0.000001) ? 0 : SCALE * (b4-b3)/(b4+b3));
+        result[outIndex++] = (b4==NODATA || b3==NODATA) ? NODATA : ((std::abs(b4+b3)<0.000001) ? 0 : static_cast<float>(b4-b3)/(b4+b3));
     }
 
     return result;
