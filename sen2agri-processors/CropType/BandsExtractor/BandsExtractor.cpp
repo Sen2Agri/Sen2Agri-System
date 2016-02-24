@@ -1185,13 +1185,30 @@ private:
   }
 
   InternalImageType::Pointer getResampledBand(const InternalImageType::Pointer& image, const float curRes, const bool isMask) {
-//       if(std::abs(m_pixSize - curRes) < EPSILON) {
-//           return image;
-//       }
+       const float invRatio = static_cast<float>(m_pixSize) / curRes;
+
+       // Scale Transform
+       OutputVectorType scale;
+       scale[0] = invRatio;
+       scale[1] = invRatio;
+
+       auto imageSize = image->GetLargestPossibleRegion().GetSize();
+
+       // Evaluate size
+       ResampleFilterType::SizeType recomputedSize;
+       if (m_imageWidth != 0 && m_imageHeight != 0) {
+           recomputedSize[0] = m_imageWidth;
+           recomputedSize[1] = m_imageHeight;
+       } else {
+           recomputedSize[0] = imageSize[0] / scale[0];
+           recomputedSize[1] = imageSize[1] / scale[1];
+       }
+
+       if (imageSize == recomputedSize)
+           return image;
+
        ResampleFilterType::Pointer resampler = ResampleFilterType::New();
        resampler->SetInput(image);
-
-       const float ratio = (float)curRes / (float)m_pixSize;
 
        // Set the interpolator
        if (isMask) {
@@ -1205,10 +1222,6 @@ private:
        IdentityTransformType::Pointer transform = IdentityTransformType::New();
 
        resampler->SetOutputParametersFromImage( image );
-       // Scale Transform
-       OutputVectorType scale;
-       scale[0] = 1.0 / ratio;
-       scale[1] = 1.0 / ratio;
 
        // Evaluate spacing
        InternalImageType::SpacingType spacing = image->GetSpacing();
@@ -1226,16 +1239,6 @@ private:
        resampler->SetOutputOrigin(m_imageOrigin);
 
        resampler->SetTransform(transform);
-
-       // Evaluate size
-       ResampleFilterType::SizeType recomputedSize;
-       if (m_imageWidth != 0 && m_imageHeight != 0) {
-           recomputedSize[0] = m_imageWidth;
-           recomputedSize[1] = m_imageHeight;
-       } else {
-           recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
-           recomputedSize[1] = image->GetLargestPossibleRegion().GetSize()[1] / scale[1];
-       }
 
        resampler->SetOutputSize(recomputedSize);
 
