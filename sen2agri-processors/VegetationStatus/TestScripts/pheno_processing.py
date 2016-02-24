@@ -27,7 +27,7 @@ def runCmd(cmdArray):
 
 parser = argparse.ArgumentParser(description='Phenological NDVI processor')
 
-parser.add_argument('--applocation', help='The path where the sen2agri is built', required=True)
+parser.add_argument('--applocation', help='The path where the sen2agri is built', default="")
 parser.add_argument('--input', help='The list of products xml descriptors', required=True, nargs='+')
 parser.add_argument('--outdir', help="Output directory", required=True)
 parser.add_argument('--tileid', help="Tile id", required=False)
