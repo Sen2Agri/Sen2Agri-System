@@ -1,0 +1,35 @@
+* DONE remove multiplication by 10000 for the NDVI values, switch to float
+* DONE avoid resampler in BandsExtractor
+* DONE look into SNAP removing files from disk
+* DONE add install clause for OTBBVUtil
+* DONE add http listener method to nudge the orchestrator
+* DONE make the Python scripts work without the app location argument
+* DONE group database scripts by type
+* DONE make crop type and mask work without -keepfiles
+* TODO remove temporary files when -keepfiles is not set
+* DONE deploy sen2agri.conf via qmake
+* DONE deploy Python scripts via cmake
+* DONE deploy Composite band mapping files via cmake
+* TODO move quality flags outside of BandsExtractor
+* TODO replace BandMath usage in BandsExtractor
+* TODO rewrite crop type and mask to fix the step ordering
+* DONE check why the monitor agent doesn't work anymore
+* DONE check why the dashboard is empty
+* TODO add downloader systemd units
+* TODO make the monitor agent look at multiple scratch drives
+* TODO we're using systemd and journal isn't going away, drop syslog()
+* DONE find out who changed my hostname
+* TODO check crop type and mask DPM to see where to use SVM
+* DONE add tile tables to source control
+* DONE index the tile tables
+* DONE add orbit files to source control
+* TODO simplify site bounds
+* TODO update product folder in website config
+* TODO reorganize snap-adapters on git
+* TODO consolidate dashboard settings
+* TODO add visibility setting in config_metadata
+* DONE see why sen2agri-config doesn't run any more
+* TODO fix exception propagation in sen2agri-config
+* DONE add siteId argument where missing in sen2agri-http-listener
+* TODO fix capitalization and wording in "demmacs" category
+* TODO add this file to git
