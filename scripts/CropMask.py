@@ -7,7 +7,7 @@ import csv
 import sys
 from sys import argv
 import datetime
-from common import executeStep
+from sen2agri_common import executeStep
 
 
 def inSituDataAvailable() :
@@ -78,8 +78,6 @@ def noInSituDataAvailable() :
 	return
 #end noInSituDataAvailable
 
-#Path to build folder
-defaultBuildFolder="~/sen2agri-build/"
 
 parser = argparse.ArgumentParser(description='CropMask Python processor')
 
@@ -113,8 +111,8 @@ parser.add_argument('-minarea', help="The minium number of pixel in an area wher
 
 parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
 parser.add_argument('-tilename', help="The name of the tile", default="T0000")
-parser.add_argument('-outdir', help="Output directory", default=defaultBuildFolder)
-parser.add_argument('-buildfolder', help="Build folder", default=defaultBuildFolder)
+parser.add_argument('-outdir', help="Output directory", default=".")
+parser.add_argument('-buildfolder', help="Build folder", default="")
 parser.add_argument('-targetfolder', help="The folder where the target product is built", default="")
 
 parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)", default=True, action='store_true')

@@ -192,12 +192,12 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='LAI retrieval processor')
 
-    parser.add_argument('--applocation', help='The path where the sen2agri is built', required=True)
+    parser.add_argument('--applocation', help='The path where the sen2agri is built', default="")
     parser.add_argument('--input', help='The list of products xml descriptors', required=True, nargs='+')
     parser.add_argument('--res', help='The requested resolution in meters', required=True)
     parser.add_argument('--outdir', help="Output directory", required=True)
     parser.add_argument('--rsrfile', help='The RSR file (/path/filename)', required=False)
-    parser.add_argument('--rsrcfg', help='The RSR configuration file each mission (/path/filename)', required=False)
+    parser.add_argument('--rsrcfg', help='The RSR configuration file each mission (default /usr/share/sen2agri/rsr_cfg.txt)', default='/usr/share/sen2agri/rsr_cfg.txt')
     parser.add_argument('--tileid', help="Tile id", required=False)
     parser.add_argument('--modelsfolder', help='The folder where the models are located. If not specified, is considered the outdir', required=False)
     parser.add_argument('--generatemodel', help='Generate the model (YES/NO)', required=False)

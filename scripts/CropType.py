@@ -8,10 +8,7 @@ import csv
 import sys
 from sys import argv
 import datetime
-from common import executeStep
-
-#Path to build folder
-defaultBuildFolder="~/sen2agri-build/"
+from sen2agri_common import executeStep
 
 parser = argparse.ArgumentParser(description='CropType Python processor')
 
@@ -28,8 +25,8 @@ parser.add_argument('-rseed', help='The random seed used for training (default 0
 parser.add_argument('-mask', help='The crop mask', required=False, metavar='crop_mask', default='')
 parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)', required=False, metavar='pixsize', default=10)
 parser.add_argument('-tilename', help="The name of the tile", default="T0000")
-parser.add_argument('-outdir', help="Output directory", default=defaultBuildFolder)
-parser.add_argument('-buildfolder', help="Build folder", default=defaultBuildFolder)
+parser.add_argument('-outdir', help="Output directory", default=".")
+parser.add_argument('-buildfolder', help="Build folder", default="")
 parser.add_argument('-targetfolder', help="The folder where the target product is built", default="")
 
 parser.add_argument('-rfnbtrees', help='The number of trees used for training (default 100)', required=False, metavar='rfnbtrees', default=100)
