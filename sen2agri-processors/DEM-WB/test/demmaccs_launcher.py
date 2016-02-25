@@ -11,12 +11,12 @@ from common import *
 
 parser = argparse.ArgumentParser(
     description="Launcher for DEM MACCS script")
-parser.add_argument('-c', '--config', required=True,  help="configuration file")
+parser.add_argument('-c', '--config', default="/etc/sen2agri/sen2agri.conf", help="configuration file")
 
 args = parser.parse_args()
 
 
-config = Config("Demmaccs")
+config = Config()
 if not config.loadConfig(args.config):
     print("Could not load the config from configuration file")
     sys.exit(-1)

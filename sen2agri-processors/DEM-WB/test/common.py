@@ -32,13 +32,13 @@ DATABASE_DEMMACCS_LAUNCHER = "demmaccs.launcher"
 DATABASE_DEMMACCS_WORKING_DIR = "demmacs.working-path"
 def run_command(cmd_array, use_shell=False):
     start = time.time()
-    print(" ".join(map(pipes.quote, cmd_array)))    
+    print(" ".join(map(pipes.quote, cmd_array)))
     res = 0
     if not FAKE_COMMAND:
         res = subprocess.call(cmd_array, shell=use_shell)
     print("App finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     if res != 0:
-        print("Application error")        
+        print("Application error")
     return res
 
 
@@ -48,7 +48,7 @@ def create_recursive_dirs(dir_name):
         os.makedirs(dir_name)
     except:
         pass
-    #check if it already exists.... otherwise the makedirs function will raise an exception 
+    #check if it already exists.... otherwise the makedirs function will raise an exception
     if os.path.exists(dir_name):
         if not os.path.isdir(dir_name):
             print("Can't create the directory because there is a file with the same name: {}".format(dir_name))
@@ -62,8 +62,7 @@ def create_recursive_dirs(dir_name):
 
 
 class Config(object):
-    def __init__(self, section):
-        self.section="[{}]".format(section)
+    def __init__(self):
         self.host = ""
         self.database = ""
         self.user = ""
@@ -79,19 +78,19 @@ class Config(object):
                     elif found_section:
                         elements = line.split('=')
                         if len(elements) == 2:
-                            if elements[0].lower() == "host":
+                            if elements[0].lower() == "hostname":
                                 self.host = elements[1]
-                            elif elements[0].lower() == "database" or elements[0].lower() == "db":
+                            elif elements[0].lower() == "databasename":
                                 self.database = elements[1]
-                            elif elements[0].lower() == "user":                            
+                            elif elements[0].lower() == "username":
                                 self.user = elements[1]
-                            elif elements[0].lower() == "pass" or elements[0].lower() == "password":                            
+                            elif elements[0].lower() == "password":
                                 self.password = elements[1]
                             else:
                                 print("Unkown key for {} section".format(self.section))
                         else:
                             print("Error in config file, found more than on keys, line: {}".format(line))
-                    elif line == self.section:
+                    elif line == "[Database]":
                         found_section = True
         except:
             print("Error in opening the config file ".format(str(configFile)))
@@ -126,7 +125,7 @@ class L1CInfo(object):
         connectString = "dbname='{}' user='{}' host='{}' password='{}'".format(self.database_name, self.user, self.server_ip, self.password)
         print("connectString:={}".format(connectString))
         try:
-            self.conn = psycopg2.connect(connectString)            
+            self.conn = psycopg2.connect(connectString)
             self.cursor = self.conn.cursor()
             self.is_connected = True
         except:
@@ -151,7 +150,7 @@ class L1CInfo(object):
             rows = self.cursor.fetchall()
         except:
             self.database_disconnect()
-            return None        
+            return None
         output_path = ""
         gips_path = ""
         srtm_path = ""
@@ -163,7 +162,7 @@ class L1CInfo(object):
 
         for row in rows:
             if len(row) != 3:
-                continue            
+                continue
             if row[0] == DATABASE_DEMMACCS_OUTPUT_PATH:
                 output_path = row[2]
             if row[0] == DATABASE_DEMMACCS_GIPS_PATH:
@@ -180,12 +179,12 @@ class L1CInfo(object):
                 launcher = row[2]
             elif row[0] == DATABASE_DEMMACCS_WORKING_DIR:
                 working_dir = row[2]
-            
+
         self.database_disconnect()
         if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_ip_address) == 0 or len(maccs_launcher) == 0 or len(launcher) == 0 or len(working_dir) == 0:
             return None
         return DEMMACSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, launcher, working_dir)
-        
+
     def get_short_name(self, table, use_id):
         if not self.database_connect():
             return ""
