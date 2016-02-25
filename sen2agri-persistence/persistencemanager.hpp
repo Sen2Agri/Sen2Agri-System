@@ -83,6 +83,7 @@ public:
     QString GetProcessorShortName(int processorId);
     SiteList GetSiteDescriptions();
     QString GetSiteName(int siteId);
+    QString GetSiteShortName(int siteId);
 
     std::vector<ScheduledTask> GetScheduledTasks( );
     void UpdateScheduledTasksStatus( std::vector<ScheduledTaskStatus>& taskList);

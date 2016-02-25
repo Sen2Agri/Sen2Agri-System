@@ -107,7 +107,7 @@ struct maker<ConfigurationCategory> {
 
 template <>
 struct maker<Site> {
-    static Site make() { return { maker<int>::make(), maker<QString>::make() }; }
+    static Site make() { return { maker<int>::make(), maker<QString>::make(), maker<QString>::make() }; }
 };
 
 template <>

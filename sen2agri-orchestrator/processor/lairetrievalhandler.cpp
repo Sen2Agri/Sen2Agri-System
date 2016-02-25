@@ -177,9 +177,9 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, con
 
     // Get the resolution value
     const auto &resolution = QString::number(parameters["resolution"].toInt());
-    bool bGenModels = IsGenerateModelNeeded(parameters);
-    bool bNDayReproc = IsNDaysReprocessingNeeded(parameters);
-    bool bFittedReproc = IsFittedReprocessingNeeded(parameters);
+    bool bGenModels = parameters.contains("genmodel");
+    bool bNDayReproc = parameters.contains("reproc");
+    bool bFittedReproc = parameters.contains("fitted");
 
     QList<TaskToSubmit> allTasksList;
     CreateNewProductInJobTasks(allTasksList, listProducts.size(), bGenModels, bNDayReproc, bFittedReproc);
@@ -375,7 +375,7 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 {
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
-        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
+        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L3BLaiProductTypeId,
             event.processorId, event.taskId,
@@ -539,7 +539,7 @@ QStringList LaiRetrievalHandler::GetProductFormatterArgs(TaskToSubmit &productFo
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.lai.");
 
     //const auto &targetFolder = productFormatterTask.GetFilePath("");
-    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
+    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
     WriteExecutionInfosFile(executionInfosPath, configParameters, listProducts);
@@ -562,7 +562,7 @@ QStringList LaiRetrievalHandler::GetProductFormatterArgs(TaskToSubmit &productFo
     productFormatterArgs += "-processor.vegetation.laimdateflgs";
     productFormatterArgs += tileId;
     productFormatterArgs += listLaiMonoDateFlgs;
-    if(IsNDaysReprocessingNeeded(parameters)) {
+    if(parameters.contains("reproc")) {
         productFormatterArgs += "-processor.vegetation.filelaireproc";
         productFormatterArgs += tileId;
         productFormatterArgs += fileLaiReproc;
@@ -570,7 +570,7 @@ QStringList LaiRetrievalHandler::GetProductFormatterArgs(TaskToSubmit &productFo
         productFormatterArgs += tileId;
         productFormatterArgs += fileLaiReprocFlgs;
     }
-    if(IsFittedReprocessingNeeded(parameters)) {
+    if(parameters.contains("fitted")) {
         productFormatterArgs += "-processor.vegetation.filelaifit";
         productFormatterArgs += tileId;
         productFormatterArgs += fileLaiFit;
@@ -584,24 +584,6 @@ QStringList LaiRetrievalHandler::GetProductFormatterArgs(TaskToSubmit &productFo
     productFormatterArgs += listProducts;
 
     return productFormatterArgs;
-}
-
-bool LaiRetrievalHandler::IsNDaysReprocessingNeeded(const QJsonObject &parameters) {
-    if(parameters.contains("reproc"))
-        return true;
-    return false;
-}
-
-bool LaiRetrievalHandler::IsFittedReprocessingNeeded(const QJsonObject &parameters) {
-    if(parameters.contains("fitted"))
-        return true;
-    return false;
-}
-
-bool LaiRetrievalHandler::IsGenerateModelNeeded(const QJsonObject &parameters) {
-    if(parameters.contains("genmodel"))
-        return true;
-    return false;
 }
 
 void LaiRetrievalHandler::GetStepsToGenModel(std::map<QString, QString> &configParameters,
@@ -699,51 +681,40 @@ const QString& LaiRetrievalHandler::GetDefaultCfgVal(std::map<QString, QString> 
 }
 
 
-QString LaiRetrievalHandler::GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams,
-                                                      const ProductList &listProducts,
-                                                      bool &bIsValid)
+ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
+                                                          const ConfigurationParameterValueMap &requestOverrideCfgValues)
 {
-    bIsValid = false;
-    if(!procInfoParams.contains("resolution")) {
-        return "Cannot execute LAIRetrieval processor. The parameters should contain the resolution!";
+    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processors.l3b."), siteId, requestOverrideCfgValues);
+
+    ProcessorJobDefinitionParams params;
+    params.isValid = false;
+
+    //int generateModels = mapCfg["processors.l3b.generate_models"].value.toInt();
+    int generateLai = mapCfg["processors.l3b.reprocess"].value.toInt();
+    int generateReprocess = mapCfg["processors.l3b.reprocess"].value.toInt();
+    int generateFitted = mapCfg["processors.l3b.fitted"].value.toInt();
+    int productionInterval = mapCfg["processors.l3b.production_interval"].value.toInt();
+
+    QDateTime startDate;
+    QDateTime endDate = QDateTime::fromTime_t(scheduledDate);
+    if(generateLai || generateReprocess) {
+        startDate = endDate.addDays(-productionInterval);
+    } else if(generateFitted) {
+        ConfigurationParameterValueMap seasonCfgValues = ctx.GetConfigurationParameters(SEASON_CFG_KEY_PREFIX, -1, requestOverrideCfgValues);
+        // set the start date at the end of start season
+        startDate = QDateTime::fromString(seasonCfgValues[START_OF_SEASON_CFG_KEY].value, "yyyymmdd");
     }
 
-    // we need no parameters from the processor info parameters
-    ProductList usedProductList;
-    for(const Product &product: listProducts) {
-        if(product.productTypeId == ProductType::L2AProductTypeId) {
-            usedProductList.append(product);
+    params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
+    if (params.productList.size() > 0) {
+        if(generateFitted) {
+            if(params.productList.size() > 4) {
+                params.isValid = true;
+            }
+        } else if (generateReprocess > 2) {
+            params.isValid = true;
         }
     }
-    if(usedProductList.size() == 0) {
-        return QString("Cannot execute LaiRetrieval processor. No L2A product was found!");
-    }
 
-    // for this we can check the RSR file presence or other things
-    //bool bGenModels = IsGenerateModelNeeded(procInfoParams);
-    bool bNDayReproc = IsNDaysReprocessingNeeded(procInfoParams);
-    bool bFittedReproc = IsFittedReprocessingNeeded(procInfoParams);
-    if(bNDayReproc) {
-        if(usedProductList.size() < 3) {
-            return QString("Cannot execute LaiRetrieval processor. Reprocessing requested but have only %1 products available!")
-                           .arg(usedProductList.size());
-        }
-    }
-
-    if(bFittedReproc) {
-        if(usedProductList.size() < 4) {
-            return QString("Cannot execute LaiRetrieval processor. Fitted reprocessing requested but have only %1 products available!").
-                           arg(usedProductList.size());
-        }
-    }
-
-    QJsonObject mainObj(procInfoParams);
-    QJsonArray inputProductsArr;
-    for (const auto &p : usedProductList) {
-        inputProductsArr.append(p.fullPath);
-    }
-    mainObj[QStringLiteral("input_products")] = inputProductsArr;
-    bIsValid = true;
-
-    return jsonToString(mainObj);
+    return params;
 }

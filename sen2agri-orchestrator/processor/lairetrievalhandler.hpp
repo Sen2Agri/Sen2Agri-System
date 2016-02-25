@@ -45,10 +45,6 @@ private:
                                         const QString &fileLaiReprocFlgs, const QString &fileLaiFit, const QString &fileLaiFitFlgs,
                                         const QString &tileId);
 
-    bool IsNDaysReprocessingNeeded(const QJsonObject &parameters);
-    bool IsFittedReprocessingNeeded(const QJsonObject &parameters);
-
-    bool IsGenerateModelNeeded(const QJsonObject &parameters);
     void GetStepsToGenModel(std::map<QString, QString> &configParameters, const QStringList &listProducts,
                             QList<TaskToSubmit> &allTasksList, NewStepList &steps);
     QStringList GetBVInputVariableGenerationArgs(std::map<QString, QString> &configParameters, const QString &strGenSampleFile);
@@ -60,7 +56,8 @@ private:
                                             const QString &errEstFile, const QString &modelsFolder, std::map<QString, QString> &configParameters);
     const QString& GetDefaultCfgVal(std::map<QString, QString> &configParameters, const QString &key, const QString &defVal);
 
-    QString GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams, const ProductList &listProducts, bool &bIsValid);
+    virtual ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
+                                                const ConfigurationParameterValueMap &requestOverrideCfgValues);
 
 private:
     int m_nTimeSeriesBuilderIdx;

@@ -188,6 +188,9 @@ class Sen2AgriCtl(object):
         parser_crop_mask.add_argument('-r', '--reference',
                                       required=True, metavar="SHAPEFILE",
                                       help="reference polygons")
+        parser_crop_mask.add_argument('-refr', '--reference-raster',
+                                      required=False, 
+                                      help="reference raster for noinsitu")
         parser_crop_mask.add_argument(
             '--date-start',
             required=True, help="temporal resampling start date (YYYYMMDD)")
@@ -262,6 +265,8 @@ class Sen2AgriCtl(object):
                       'reference_polygons': args.reference,
                       'date_start': args.date_start,
                       'date_end': args.date_end}
+        if args.reference_raster:
+            parameters['reference_raster'] = args.reference_raster
         if args.resolution:
             parameters['resolution'] = args.resolution
         self.submit_job('l4a', parameters, args)

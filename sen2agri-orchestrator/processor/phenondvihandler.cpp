@@ -37,7 +37,7 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &metricsParamsImg = metricsSplitterTask.GetFilePath("metric_parameters_img.tif");
     const auto &metricsFlagsImg = metricsSplitterTask.GetFilePath("metric_flags_img.tif");
     //const auto &targetFolder = productFormatterTask.GetFilePath("");
-    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
+    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
     QStringList bandsExtractorArgs = {
@@ -105,7 +105,7 @@ void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
 
-        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
+        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
 
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L3BPhenoProductTypeId,
@@ -143,32 +143,22 @@ void PhenoNdviHandler::WriteExecutionInfosFile(const QString &executionInfosPath
     }
 }
 
-QString PhenoNdviHandler::GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams,
-                                                      const ProductList &listProducts,
-                                                      bool &bIsValid)
+ProcessorJobDefinitionParams PhenoNdviHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
+                                                const ConfigurationParameterValueMap &requestOverrideCfgValues)
 {
-    bIsValid = false;
-    if(!procInfoParams.contains("resolution")) {
-        return "Cannot execute PhenoNDVI processor. The parameters should contain the resolution!";
-    }
+    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString(START_OF_SEASON_CFG_KEY), -1, requestOverrideCfgValues);
 
-    ProductList usedProductList;
-    for(const Product &product: listProducts) {
-        if(product.productTypeId == ProductType::L2AProductTypeId) {
-            usedProductList.append(product);
-        }
-    }
+    ProcessorJobDefinitionParams params;
+    params.isValid = false;
+
+    QDateTime startDate = QDateTime::fromString(mapCfg[START_OF_SEASON_CFG_KEY].value, "yyyymmdd");
+    QDateTime endDate = QDateTime::fromTime_t(scheduledDate);
+
+    params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
     // for PhenoNDVI we need at least 4 products available in order to be able to create a L3B product
-    if(usedProductList.size() >= 4) {
-        QJsonObject mainObj(procInfoParams);
-        QJsonArray inputProductsArr;
-        for (const auto &p : usedProductList) {
-            inputProductsArr.append(p.fullPath);
-        }
-        mainObj[QStringLiteral("input_products")] = inputProductsArr;
-        bIsValid = true;
-
-        return jsonToString(mainObj);
+    if(params.productList.size() >= 4) {
+        params.isValid = true;
     }
-    return QString("Cannot execute PhenoNDVI processor. There should be at least 4 products but we have only %1 L2A products available!").arg(usedProductList.size());
+    //return QString("Cannot execute PhenoNDVI processor. There should be at least 4 products but we have only %1 L2A products available!").arg(usedProductList.size());
+    return params;
 }

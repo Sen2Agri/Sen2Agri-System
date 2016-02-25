@@ -14,7 +14,8 @@ private:
     void WriteExecutionInfosFile(const QString &executionInfosPath,
                                  const QStringList &listProducts);
 
-    QString GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams, const ProductList &listProducts, bool &bIsValid);
+    virtual ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
+                                                const ConfigurationParameterValueMap &requestOverrideCfgValues);
 };
 
 #endif // PHENONDVIHANDLER_HPP
