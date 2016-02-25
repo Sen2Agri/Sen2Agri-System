@@ -59,11 +59,8 @@ def create_recursive_dirs(dir_name):
         print("Can't create the directory due to access rights {}".format(dir_name))
         return False
     return True
-
-
 class Config(object):
-    def __init__(self, section):
-        self.section="[{}]".format(section)
+    def __init__(self):
         self.host = ""
         self.database = ""
         self.user = ""
@@ -79,20 +76,21 @@ class Config(object):
                     elif found_section:
                         elements = line.split('=')
                         if len(elements) == 2:
-                            if elements[0].lower() == "host":
+                            if elements[0].lower() == "hostname":
                                 self.host = elements[1]
-                            elif elements[0].lower() == "database" or elements[0].lower() == "db":
+                            elif elements[0].lower() == "databasename":
                                 self.database = elements[1]
-                            elif elements[0].lower() == "user":                            
+                            elif elements[0].lower() == "username":
                                 self.user = elements[1]
-                            elif elements[0].lower() == "pass" or elements[0].lower() == "password":                            
+                            elif elements[0].lower() == "password":
                                 self.password = elements[1]
                             else:
-                                print("Unkown key for {} section".format(self.section))
+                                print("Unkown key for [Database] section")
                         else:
                             print("Error in config file, found more than on keys, line: {}".format(line))
-                    elif line == self.section:
-                        found_section = True
+                    elif line == "[Database]":
+                        foundDwnSection = True
+
         except:
             print("Error in opening the config file ".format(str(configFile)))
             return False

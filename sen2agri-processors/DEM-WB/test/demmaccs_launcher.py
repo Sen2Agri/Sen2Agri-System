@@ -52,5 +52,6 @@ for l1c in l1c_list:
     if run_command([demmaccs_config.launcher, "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "-p", "5", "--gip-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-address", demmaccs_config.maccs_ip_address, "--maccs-launcher", demmaccs_config.maccs_launcher, l1c[2], demmaccs_config.output_path]):
         processed_ids.append(l1c[0])
 
+
 l1c_db.mark_as_processed(processed_ids)
 
