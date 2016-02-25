@@ -156,7 +156,7 @@ else:
     parser.add_option("-a","--apihub", dest="apihub", action="store",type="string",  \
             help="File with credentials for the scihub server",default='./apihub.txt')
     parser.add_option("-c","--config", dest="config", action="store",type="string",  \
-                      help="File with credentials for the scihub server",default=None)
+                      help="File with credentials for the database",default=None)
     parser.add_option("-l","--location", dest="location", action="store",type="string",  \
             help="The location from where the product should be donwloaded: scihub or amazon",default='None')
 
