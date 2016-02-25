@@ -85,7 +85,7 @@ def downloadFromAmazon(s2Obj, aoiFile, db):
             log(aoiFile.writeDir, "Could not insert into database site_id {} the product name {}".format(aoiFile.siteId, s2Obj.filename))
         print ("stopUPDATE")
     else:
-        log(aoiFile.writeDir, "Too many clouds to download this product or no tiles to download".format(s2Obj.filename)) 
+        log(aoiFile.writeDir, "Too many clouds to download this product or no tiles to download".format(s2Obj.filename))
 
 def downloadFromScihub(s2Obj, aoiFile, db):
     unzipped_file_exists= os.path.exists(("%s/%s")%(aoiFile.writeDir, s2Obj.filename))
@@ -119,12 +119,12 @@ def downloadFromScihub(s2Obj, aoiFile, db):
             if not db.updateSentinelHistory(aoiFile.siteId, s2Obj.filename,  "{}/{}".format(aoiFile.writeDir, s2Obj.filename)):
                 log(aoiFile.writeDir, "Could not insert into database site_id {} the product name {}".format(aoiFile.siteId, s2Obj.filename))
             else:
-                unzipFile(aoiFile.writeDir, fullFilename)            
+                unzipFile(aoiFile.writeDir, fullFilename)
         else:
             log(aoiFile.writeDir, "No wget command because either it's already downloaded and unzipped, either the no_download option was used")
     else:
-        log(aoiFile.writeDir, "Too many clouds to download this product".format(s2Obj.filename)) 
-            
+        log(aoiFile.writeDir, "Too many clouds to download this product".format(s2Obj.filename))
+
 
 ###########################################################################
 
@@ -156,7 +156,7 @@ else:
     parser.add_option("-a","--apihub", dest="apihub", action="store",type="string",  \
             help="File with credentials for the scihub server",default='./apihub.txt')
     parser.add_option("-c","--config", dest="config", action="store",type="string",  \
-                      help="File with credentials for the database",default=None)
+                      help="File with credentials for the database",default="/etc/sen2agri/sen2agri.conf")
     parser.add_option("-l","--location", dest="location", action="store",type="string",  \
             help="The location from where the product should be donwloaded: scihub or amazon",default='None')
 
@@ -177,7 +177,7 @@ else:
     for aoi in aoiDatabase:
         aoi.printInfo()
         print("------------------------")
-            
+
     if len(aoiDatabase) <= 0:
         print("Could not get DB info")
         sys.exit(-1)
@@ -195,7 +195,7 @@ try:
 except :
     print("error with password file ".format(str(apihubFile)))
     sys.exit(-2)
-			
+
 
 #==================================================
 #      prepare wget command line to search catalog
@@ -243,18 +243,18 @@ for aoiFile in aoiDatabase:
     query = "{}{}".format(query, query_date)
 
     #commande_wget = '%s %s %s "%s%s&rows=1000"'%(wg,auth,search_output,url_search,query)
-    commande_wget = wg + auth + search_output 
+    commande_wget = wg + auth + search_output
     commande_wget.append(url_search+query+"&rows=1000")
 #+ [url_search+query+"&rows=1000"]
     log(aoiFile.writeDir, commande_wget)
 
     if runCmd(commande_wget, False) != 0:
     #if runCmd([wg, auth, search_output, url_search+query+"&rows=1000"], False) != 0:
-        log(aoiFile.writeDir, "Could not get the catalog output for {}".format(query_geom))        
+        log(aoiFile.writeDir, "Could not get the catalog output for {}".format(query_geom))
         continue
     if exitFlag:
         sys.exit(0)
-        
+
     #=======================
     # parse catalog output
     #=======================
@@ -274,29 +274,29 @@ for aoiFile in aoiDatabase:
                 commande_wget = wg + auth + search_output + [url_search+query]
                 log(aoiFile.writeDir, "Changing the pagination to {0} to get all of the existing files, command: {1}".format(totalRes, commande_wget))
                 if runCmd(commande_wget, False) != 0:
-                    log(aoiFile.writeDir, "Could not get the catalog output (re-pagination) for {}".format(query_geom))        
+                    log(aoiFile.writeDir, "Could not get the catalog output (re-pagination) for {}".format(query_geom))
                     continue
                 xml=minidom.parse("query_results.xml")
             except ValueError:
                 log(aoiFile.writeDir, "Exception: it was expected for the word in position 5 (starting from 0) to be an int. It ain't. The checked string is: {}".format(subtitle))
-                log(aoiFile.writeDir, "Could not get the catalog output (exception for re-pagination) for {}".format(query_geom))        
+                log(aoiFile.writeDir, "Could not get the catalog output (exception for re-pagination) for {}".format(query_geom))
                 continue
-            
+
     products=xml.getElementsByTagName("entry")
     s2Objs = []
     for prod in products:
         ident=prod.getElementsByTagName("id")[0].firstChild.data
-        link=prod.getElementsByTagName("link")[0].attributes.items()[0][1] 
+        link=prod.getElementsByTagName("link")[0].attributes.items()[0][1]
         #to avoid wget to remove $ special character
-        link=link.replace('$','\\$')    
-        
+        link=link.replace('$','\\$')
+
         for node in prod.getElementsByTagName("str"):
             (name,value)=node.attributes.items()[0]
             if value=="filename":
                 filename= str(node.toxml()).split('>')[1].split('<')[0]   #ugly, but minidom is not straightforward
             elif value=="s2datatakeid":
                 datatakeid=str(node.toxml()).split('>')[1].split('<')[0]
-        
+
         for node in prod.getElementsByTagName("double"):
             (name,value)=node.attributes.items()[0]
             if value=="cloudcoverpercentage":
