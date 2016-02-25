@@ -6,7 +6,7 @@ class ConfigParams {
 	static $WEB_BASE_URL = 'http://sen2agri-dev';
 	
 	static $PRODUCT_ROOT_FOLDER = '/mnt/output';
-	static $SITE_PRODUCT_RELATIVE_FOLDER = 'files/Sen2AgriFiles';
+	static $SITE_PRODUCT_RELATIVE_FOLDER = 'http://sen2agri-dev:8080/files/Sen2AgriFiles';
 	
 	static $SERVICES_DASHBOARD_PRODUCTS_URL;
 	static $SERVICES_DASHBOARD_SENTINEL_TILES_URL;

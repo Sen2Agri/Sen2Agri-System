@@ -261,21 +261,26 @@ div.panel_scheduled {
 
 div.panel_job_container {
 	margin-top: 3px; 
-	height: 50%;
+	height: 60%;
 	width: 98%;
 	margin-right: 2%;
-	height: 50%;
 }
 
 div.div-scheduled{
 	margin-left:5px;
 	
 }
-/*
-.form-group-sm {
-	height: 22px;
-}*/
+
+div.panel_job {
+	height: 100%;
+	width: 98%;
+	overflow: auto;
+	margin-bottom: 0px;
+	margin-left: 2%;
+}
+
 /*end scheduled tasks*/
+
 div.panel_configuration {
 	height: 100%;
 	width: 98%;
