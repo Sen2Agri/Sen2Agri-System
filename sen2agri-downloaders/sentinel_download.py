@@ -21,12 +21,12 @@ def unzipFile(outputDir, fileToUnzip):
     retValue = False
     print("fileToUnzip={}".format(fileToUnzip))
     if (os.path.isfile(fileToUnzip)):
-        if runCmd(["zip --test "+fileToUnzip]):
+        if runCmd(["zip", "--test", fileToUnzip], False):
             print("zip failed for {}".format(fileToUnzip))
         else:
             createRecursiveDirs(outputDir)
             print("zip OK for {}. Start to unzip".format(fileToUnzip))
-            if runCmd(["unzip -d " + outputDir + " " + fileToUnzip]):
+            if runCmd(["unzip", "-d", outputDir,fileToUnzip], False):
                 print("unziping failed for {}".format(fileToUnzip))
             else:
                 print("unziping ok for {}".format(fileToUnzip))
@@ -103,14 +103,15 @@ def downloadFromScihub(s2Obj, aoiFile, db):
     #==================================download product
 
     if float(s2Obj.cloud) < float(aoiFile.maxCloudCoverage) :
-        commande_wget='%s %s --continue --tries=0 --output-document=%s/%s "%s"'%(wg, auth, aoiFile.writeDir, s2Obj.filename + ".zip", s2Obj.link)
+        #commande_wget='%s %s --continue --tries=0 --output-document=%s/%s "%s"'%(wg, auth, aoiFile.writeDir, s2Obj.filename + ".zip", s2Obj.link)
+        commande_wget=wg + auth + ["--continue", "--tries", "0", "--output-document", aoiFile.writeDir+s2Obj.filename+".zip", s2Obj.link]
         #do not download the product if it was already downloaded and unzipped, or if no_download option was selected.
 
         log(aoiFile.writeDir, "Command wget:{}".format(commande_wget))
         if unzipped_file_exists==False and options.no_download==False:
             log(aoiFile.writeDir, "Start download:")
 
-            if runCmd([commande_wget]) != 0:
+            if runCmd(commande_wget, False) != 0:
                 #sys.exit(-1)
                 log(aoiFile.writeDir, "wget command didn't work for {}".format(s2Obj.filename))
                 return
@@ -200,13 +201,13 @@ except :
 #      prepare wget command line to search catalog
 #==================================================
 
-wg="wget --no-check-certificate"
-auth='--user="%s" --password="%s"'%(account,passwd)
+wg = ["wget", "--no-check-certificate"]
+auth = ["--user",account, "--password", passwd]
 
 for aoiFile in aoiDatabase:
-    query_geom='footprint:\\"Intersects({})\\"'.format(aoiFile.polygon)
+    query_geom = 'footprint:"Intersects({})"'.format(aoiFile.polygon)
     queryResultsFilename = aoiFile.writeDir+"/"+str(aoiFile.siteName)+"_query_results.xml"
-    search_output="--output-document="+queryResultsFilename
+    search_output = ["--output-document", queryResultsFilename]
     query='%s filename:S2A*'%(query_geom)
     createRecursiveDirs(aoiFile.writeDir)
 
@@ -241,10 +242,13 @@ for aoiFile in aoiDatabase:
     query_date = " ingestiondate:[{} TO {}]".format(start_date, end_date)
     query = "{}{}".format(query, query_date)
 
-    commande_wget = '%s %s %s "%s%s&rows=1000"'%(wg,auth,search_output,url_search,query)
+    #commande_wget = '%s %s %s "%s%s&rows=1000"'%(wg,auth,search_output,url_search,query)
+    commande_wget = wg + auth + search_output 
+    commande_wget.append(url_search+query+"&rows=1000")
+#+ [url_search+query+"&rows=1000"]
     log(aoiFile.writeDir, commande_wget)
 
-    if runCmd([commande_wget]) != 0:
+    if runCmd(commande_wget, False) != 0:
     #if runCmd([wg, auth, search_output, url_search+query+"&rows=1000"], False) != 0:
         log(aoiFile.writeDir, "Could not get the catalog output for {}".format(query_geom))        
         continue
@@ -266,9 +270,10 @@ for aoiFile in aoiDatabase:
             try:
                 totalRes=int(words[5]) + 1
                 query = query + "&rows=" + str(totalRes)
-                commande_wget='%s %s %s "%s%s"'%(wg,auth,search_output,url_search,query)
+                #commande_wget='%s %s %s "%s%s"'%(wg,auth,search_output,url_search,query)
+                commande_wget = wg + auth + search_output + [url_search+query]
                 log(aoiFile.writeDir, "Changing the pagination to {0} to get all of the existing files, command: {1}".format(totalRes, commande_wget))
-                if runCmd([commande_wget]) != 0:
+                if runCmd(commande_wget, False) != 0:
                     log(aoiFile.writeDir, "Could not get the catalog output (re-pagination) for {}".format(query_geom))        
                     continue
                 xml=minidom.parse("query_results.xml")

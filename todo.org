@@ -33,3 +33,6 @@
 * DONE add siteId argument where missing in sen2agri-http-listener
 * TODO fix capitalization and wording in "demmacs" category
 * DONE add this file to git
+* TODO add indexes to the database tables
+* TODO add foreign keys to the database tables
+* TODO remove numbering from sql scripts

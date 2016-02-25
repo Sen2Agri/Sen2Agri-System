@@ -17,6 +17,8 @@ import sys
 import time, datetime
 import pipes
 import shutil
+import psycopg2
+import psycopg2.errorcodes
 
 FAKE_COMMAND = 0
 
@@ -61,12 +63,12 @@ class Config(object):
     def loadConfig(self, configFile):
         try:
             with open(configFile, 'r') as config:
-                foundDwnSection = False
+                found_section = False
                 for line in config:
                     line = line.strip(" \n\t\r")
-                    if foundDwnSection and line.startswith('['):
+                    if found_section and line.startswith('['):
                         break
-                    elif foundDwnSection:
+                    elif found_section:
                         elements = line.split('=')
                         if len(elements) == 2:
                             if elements[0].lower() == "host":
@@ -82,11 +84,77 @@ class Config(object):
                         else:
                             print("Error in config file, found more than on keys, line: {}".format(line))
                     elif line == self.section:
-                        foundDwnSection = True
-                        
+                        found_section = True
         except:
             print("Error in opening the config file ".format(str(configFile)))
             return False
         if len(self.host) <= 0 or len(self.database) <= 0:
             return False
+        return True
+
+
+class L1CInfo(object):
+    def __init__(self, server_ip, database_name, user, password, log_file=None):
+        self.server_ip = server_ip
+        self.database_name = database_name
+        self.user = user
+        self.password = password
+        self.is_connected = False;
+        self.log_file = log_file
+
+    def database_connect(self):
+        if self.is_connected:
+            return True
+        connectString = "dbname='{}' user='{}' host='{}' password='{}'".format(self.database_name, self.user, self.server_ip, self.password)
+        print("connectString:={}".format(connectString))
+        try:
+            self.conn = psycopg2.connect(connectString)            
+            self.cursor = self.conn.cursor()
+            self.is_connected = True
+        except:
+            print("Unable to connect to the database")
+            exceptionType, exceptionValue, exceptionTraceback = sys.exc_info()
+            # Exit the script and print an error telling what happened.
+            print("Database connection failed!\n ->{}".format(exceptionValue))
+            self.is_connected = False
+            return False
+        return True
+
+    def database_disconnect(self):
+        if self.conn:
+            self.conn.close()
+            self.is_connected = False
+
+    def get_unprocessed_l1c(self):
+        if not self.database_connect():
+            return []
+        try:
+            self.cursor.execute("select id, full_path from downloader_history where processed=false")
+            rows = self.cursor.fetchall()
+        except:
+            self.database_disconnect()
+            return []
+        retArray = []
+        for row in rows:
+            retArray.append(row)                    
+        self.database_disconnect()        
+        return retArray
+
+    def update_history(self, l1c_list_ids):
+        if not self.database_connect():
+            return False
+        if len(l1c_list_ids) == 0:
+            return True
+        try:
+            condition = "id={}".format(l1c_list_ids[0])
+            for l1c_id in l1c_list_ids[1:]:
+                conditon += " or id={}".format(l1c_id)
+            print("condition={}".format(condition))
+            self.cursor.execute("update downloader_history set processed=true where {}".format(condition))
+            self.conn.commit()
+        except:
+            print("Database update query FAILED!!!!!")
+            self.database_disconnect()
+            return False
+        self.database_disconnect()
         return True
