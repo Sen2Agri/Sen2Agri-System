@@ -5,7 +5,7 @@
     <method name="NotifyEventsAvailable">
     </method>
     <method name="GetJobDefinition">
-      <arg name="request" type="(iis)" direction="in" />
+      <arg name="request" type="(iiis)" direction="in" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="ProcessingRequest" />
       <arg name="job" type="(biis)" direction="out" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="JobDefinition" />
