@@ -13,13 +13,15 @@ SOURCES += main.cpp\
     maindialog.cpp \
     configmodel.cpp \
     parameterchangelistener.cpp \
-    parameterkey.cpp
+    parameterkey.cpp \
+    runtimeerror.cpp
 
 HEADERS  += maindialog.hpp \
     pch.hpp \
     configmodel.hpp \
     parameterchangelistener.hpp \
-    parameterkey.hpp
+    parameterkey.hpp \
+    runtimeerror.hpp
 
 FORMS    += maindialog.ui
 
