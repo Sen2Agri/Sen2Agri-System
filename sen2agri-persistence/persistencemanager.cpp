@@ -72,9 +72,10 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
         dataRecord = query.record();
         idCol = dataRecord.indexOf(QStringLiteral("id"));
         nameCol = dataRecord.indexOf(QStringLiteral("name"));
+        auto shortNameCol = dataRecord.indexOf(QStringLiteral("short_name"));
 
         while (query.next()) {
-            result.sites.append({ query.value(idCol).toInt(), query.value(nameCol).toString() });
+            result.sites.append({ query.value(idCol).toInt(), query.value(nameCol).toString(), query.value(shortNameCol).toString() });
         }
 
         query = db.prepareQuery(QStringLiteral("select * from sp_get_config_metadata()"));
@@ -1381,9 +1382,10 @@ SiteList PersistenceManagerDBProvider::GetSiteDescriptions()
         auto dataRecord = query.record();
         auto idCol = dataRecord.indexOf(QStringLiteral("id"));
         auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
+        auto shortNameCol = dataRecord.indexOf(QStringLiteral("short_name"));
 
         while (query.next()) {
-            result.append({ query.value(idCol).toInt(), query.value(nameCol).toString() });
+            result.append({ query.value(idCol).toInt(), query.value(nameCol).toString(), query.value(shortNameCol).toString() });
         }
         return result;
     });
@@ -1399,12 +1401,21 @@ QString PersistenceManagerDBProvider::GetProcessorShortName(int processorId) {
     return "";
 }
 
-
 QString PersistenceManagerDBProvider::GetSiteName(int siteId) {
     SiteList listSiteDescr = GetSiteDescriptions();
     for(const Site &siteDescr: listSiteDescr) {
         if(siteDescr.siteId == siteId) {
             return siteDescr.name;
+        }
+    }
+    return "";
+}
+
+QString PersistenceManagerDBProvider::GetSiteShortName(int siteId) {
+    SiteList listSiteDescr = GetSiteDescriptions();
+    for(const Site &siteDescr: listSiteDescr) {
+        if(siteDescr.siteId == siteId) {
+            return siteDescr.shortName;
         }
     }
     return "";

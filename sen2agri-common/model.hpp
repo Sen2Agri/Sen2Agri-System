@@ -59,9 +59,11 @@ public:
 };
 
 typedef QList<ConfigurationParameterValue> ConfigurationParameterValueList;
+typedef QMap<QString, ConfigurationParameterValue> ConfigurationParameterValueMap;
 
 Q_DECLARE_METATYPE(ConfigurationParameterValue)
 Q_DECLARE_METATYPE(ConfigurationParameterValueList)
+Q_DECLARE_METATYPE(ConfigurationParameterValueMap)
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationParameterValue &parameter);
 const QDBusArgument &operator>>(const QDBusArgument &argument,
@@ -114,9 +116,10 @@ class Site
 public:
     int siteId;
     QString name;
+    QString shortName;
 
     Site();
-    Site(int siteId, QString name);
+    Site(int siteId, QString name, QString shortName);
 
     static void registerMetaTypes();
 };
@@ -890,6 +893,7 @@ struct ProcessingRequest
 {
     int processorId;
     int siteId;
+    int ttNextScheduledRunTime;
     QString parametersJson; // or map<string, string>
 };
 Q_DECLARE_METATYPE(ProcessingRequest)
@@ -906,5 +910,15 @@ struct JobDefinition
 Q_DECLARE_METATYPE(JobDefinition)
 QDBusArgument &operator<<(QDBusArgument &argument, const JobDefinition &job);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobDefinition &job);
+
+struct ProcessorJobDefinitionParams
+{
+    bool isValid;
+    ProductList productList;
+    QString jsonParameters;
+};
+Q_DECLARE_METATYPE(ProcessorJobDefinitionParams)
+QDBusArgument &operator<<(QDBusArgument &argument, const ProcessorJobDefinitionParams &job);
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorJobDefinitionParams &job);
 
 //** END for orchestartor API

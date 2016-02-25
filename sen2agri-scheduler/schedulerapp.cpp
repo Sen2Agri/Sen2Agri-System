@@ -61,6 +61,7 @@ void SchedulerApp::RunOnce()
         {
             prequest.processorId = task.processorId;
             prequest.siteId = task.siteId;
+            prequest.ttNextScheduledRunTime = (int)task.taskStatus.nextScheduledRunTime.toTime_t();
             prequest.parametersJson = task.processorParameters;
             jd = m_orchestrator->GetJobDefinition(prequest);
             // if the task can be launched according to Orchestrator

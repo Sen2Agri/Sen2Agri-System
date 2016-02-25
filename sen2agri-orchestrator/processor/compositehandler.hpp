@@ -26,7 +26,8 @@ private:
                                  std::map<QString, QString> &configParameters,
                                  const QStringList &listProducts);
 
-    QString GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams, const ProductList &listProducts, bool &bIsValid);
+    virtual ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
+                                                const ConfigurationParameterValueMap &requestOverrideCfgValues);
 
 };
 
