@@ -1,0 +1,10 @@
+[Unit]
+Description=Landsat 8 downloader timer
+
+[Timer]
+Unit=sen2agri-landsat-downloader.timer
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target
