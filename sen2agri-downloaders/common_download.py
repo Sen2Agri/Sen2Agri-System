@@ -92,9 +92,9 @@ class OptionParser (optparse.OptionParser):
 
 ###########################################################################
 
-
 class Config(object):
     def __init__(self):
+        self.section="[{}]".format(section)
         self.host = ""
         self.database = ""
         self.user = ""
@@ -102,12 +102,12 @@ class Config(object):
     def loadConfig(self, configFile):
         try:
             with open(configFile, 'r') as config:
-                foundDwnSection = False
+                found_section = False
                 for line in config:
                     line = line.strip(" \n\t\r")
-                    if foundDwnSection and line.startswith('['):
+                    if found_section and line.startswith('['):
                         break
-                    elif foundDwnSection:
+                    elif found_section:
                         elements = line.split('=')
                         if len(elements) == 2:
                             if elements[0].lower() == "hostname":
@@ -119,7 +119,7 @@ class Config(object):
                             elif elements[0].lower() == "password":
                                 self.password = elements[1]
                             else:
-                                print("Unkown key for [Downloader] section")
+                                print("Unkown key for {} section".format(self.section))
                         else:
                             print("Error in config file, found more than on keys, line: {}".format(line))
                     elif line == "[Database]":

@@ -22,6 +22,14 @@ import psycopg2.errorcodes
 
 FAKE_COMMAND = 0
 
+DATABASE_DEMMACCS_GIPS_PATH = "demmaccs.gips-path"
+DATABASE_DEMMACCS_OUTPUT_PATH = "demmaccs.output-path"
+DATABASE_DEMMACCS_SRTM_PATH = "demmaccs.srtm-path"
+DATABASE_DEMMACCS_SWBD_PATH = "demmaccs.swbd-path"
+DATABASE_DEMMACCS_MACCS_IP_ADDRESS = "demmaccs.maccs-ip-address"
+DATABASE_DEMMACCS_MACCS_LAUNCHER = "demmaccs.maccs-launcher"
+DATABASE_DEMMACCS_LAUNCHER = "demmaccs.launcher"
+DATABASE_DEMMACCS_WORKING_DIR = "demmacs.working-path"
 def run_command(cmd_array, use_shell=False):
     start = time.time()
     print(" ".join(map(pipes.quote, cmd_array)))    
@@ -92,6 +100,16 @@ class Config(object):
             return False
         return True
 
+class DEMMACSConfig(object):
+    def __init__(self, output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, launcher, working_dir):
+        self.output_path = output_path
+        self.gips_path = gips_path
+        self.srtm_path = srtm_path
+        self.swbd_path = swbd_path
+        self.maccs_ip_address = maccs_ip_address
+        self.maccs_launcher = maccs_launcher
+        self.launcher = launcher
+        self.working_dir = working_dir
 
 class L1CInfo(object):
     def __init__(self, server_ip, database_name, user, password, log_file=None):
@@ -125,22 +143,80 @@ class L1CInfo(object):
             self.conn.close()
             self.is_connected = False
 
+    def get_demmacs_config(self):
+        if not self.database_connect():
+            return None
+        try:
+            self.cursor.execute("select * from sp_get_parameters('demmaccs')")
+            rows = self.cursor.fetchall()
+        except:
+            self.database_disconnect()
+            return None        
+        output_path = ""
+        gips_path = ""
+        srtm_path = ""
+        swbd_path = ""
+        maccs_ip_address = ""
+        maccs_launcher = ""
+        launcher = ""
+        working_dir = ""
+
+        for row in rows:
+            if len(row) != 3:
+                continue            
+            if row[0] == DATABASE_DEMMACCS_OUTPUT_PATH:
+                output_path = row[2]
+            if row[0] == DATABASE_DEMMACCS_GIPS_PATH:
+                gips_path = row[2]
+            elif row[0] == DATABASE_DEMMACCS_SRTM_PATH:
+                srtm_path = row[2]
+            elif row[0] == DATABASE_DEMMACCS_SWBD_PATH:
+                swbd_path = row[2]
+            elif row[0] == DATABASE_DEMMACCS_MACCS_IP_ADDRESS:
+                maccs_ip_address = row[2]
+            elif row[0] == DATABASE_DEMMACCS_MACCS_LAUNCHER:
+                maccs_launcher = row[2]
+            elif row[0] == DATABASE_DEMMACCS_LAUNCHER:
+                launcher = row[2]
+            elif row[0] == DATABASE_DEMMACCS_WORKING_DIR:
+                working_dir = row[2]
+            
+        self.database_disconnect()
+        if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_ip_address) == 0 or len(maccs_launcher) == 0 or len(launcher) == 0 or len(working_dir) == 0:
+            return None
+        return DEMMACSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, launcher, working_dir)
+        
+    def get_short_name(self, table, use_id):
+        if not self.database_connect():
+            return ""
+        if table != "site" and table != "processor":
+            return ""
+        try:
+            self.cursor.execute("select short_name from {} where id={}".format(table, use_id))
+            rows = self.cursor.fetchall()
+        except:
+            self.database_disconnect()
+            return ""
+        self.database_disconnect()
+        print("rows[0][0] = {}".format(rows[0][0]))
+        return rows[0][0]
+
     def get_unprocessed_l1c(self):
         if not self.database_connect():
             return []
         try:
-            self.cursor.execute("select id, full_path from downloader_history where processed=false")
+            self.cursor.execute("select id, site_id, full_path from downloader_history where processed=false")
             rows = self.cursor.fetchall()
         except:
             self.database_disconnect()
             return []
         retArray = []
         for row in rows:
-            retArray.append(row)                    
-        self.database_disconnect()        
+            retArray.append(row)
+        self.database_disconnect()
         return retArray
 
-    def update_history(self, l1c_list_ids):
+    def mark_as_processed(self, l1c_list_ids):
         if not self.database_connect():
             return False
         if len(l1c_list_ids) == 0:

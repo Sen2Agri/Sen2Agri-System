@@ -53,13 +53,10 @@ parser = argparse.ArgumentParser(
 parser.add_argument('input', help="input L1C directory")
 parser.add_argument('-w', '--working-dir', required=True,
                     help="working directory")
-parser.add_argument('-d', '--dem-working-dir', required=True,
-                    help="working directory for DEM")
 parser.add_argument('--srtm', required=True, help="SRTM dataset path")
 parser.add_argument('--swbd', required=True, help="SWBD dataset path")
 parser.add_argument('-p', '--processes-number-dem', required=False,
                         help="number of processed to run", default="3")
-parser.add_argument('--dem-output-dir', required=True, help="output directory for DEM")
 parser.add_argument('--gip-dir', required=True, help="directory where gip are to be found")
 parser.add_argument('--maccs-address', required=True, help="the ip address of the pc where MACCS is to be found")
 parser.add_argument('--maccs-launcher', required=True, help="the shell from the remote pc which launches the MACCS")
@@ -67,47 +64,68 @@ parser.add_argument('output', help="output location")
 
 args = parser.parse_args()
 
+own_pid = os.getpid()
+working_dir = "{}/{}".format(args.working_dir,own_pid)
+dem_working_dir = "{}_DEM_TMP".format(working_dir)
+dem_output_dir = "{}_DEM_OUT".format(working_dir)
+print("working_dir = {}".format(working_dir))
+print("dem_working_dir = {}".format(dem_working_dir))
+print("dem_output_dir = {}".format(dem_output_dir))
+
+if not create_recursive_dirs(dem_output_dir):
+    print("Could not create the output directory for DEM")
+    sys.exit(-1)
+
 if not create_recursive_dirs(args.output):
     print("Could not use the output directory")
     sys.exit(-1)
 
-if not create_recursive_dirs(args.working_dir):
-    print("Could not use the output directory")
+if not create_recursive_dirs(working_dir):
+    print("Could not use the temporary directory")
     sys.exit(-1)
 
-if run_command(["./dem.py", "--srtm", args.srtm, "--swbd", args.swbd, "-p", args.processes_number_dem, "-w", args.dem_working_dir, args.input, args.dem_output_dir]) != 0:
+if run_command(["./dem.py", "--srtm", args.srtm, "--swbd", args.swbd, "-p", args.processes_number_dem, "-w", dem_working_dir, args.input, dem_output_dir]) != 0:
     print("DEM failed")
     sys.exit(-1)
 
-if not create_sym_links([args.input], args.working_dir):
+if not create_sym_links([args.input], working_dir):
     print("Could not create sym links for {}".format(args.input))
     sys.exit(-1)
 
 gips = glob.glob("{}/*.*".format(args.gip_dir))
-if not create_sym_links(gips, args.working_dir):
+if not create_sym_links(gips, working_dir):
     print("Symbolic links for GIP files could not be created in the output directory")
     sys.exit(-1)
 
-print("args.dem_working_dir = {}".format(args.dem_output_dir))
-dem_hdrs = glob.glob("{}/*.HDR".format(args.dem_output_dir))
+print("dem_output_dir = {}".format(dem_output_dir))
+dem_hdrs = glob.glob("{}/*.HDR".format(dem_output_dir))
 print("dem_hdrs = {}".format(dem_hdrs))
 for dem_hdr in dem_hdrs:    
     basename, tile_id = get_dem_hdr_info(dem_hdr)
-    dem_dir = glob.glob("{0}/{1}.DBL.DIR".format(args.dem_output_dir, basename))
+    dem_dir = glob.glob("{0}/{1}.DBL.DIR".format(dem_output_dir, basename))
     if len(dem_dir) != 1:
         print("Could not find the DEM directory tile for {}".format(dem_hdr))
         continue
-    if not create_sym_links([dem_hdr, dem_dir[0]], args.working_dir):
+    if not create_sym_links([dem_hdr, dem_dir[0]], working_dir):
         print("Could not create sym links for {0} and {1}".format(dem_hdr, dem_dir[0]))
         continue
-    if run_command(["ssh", "sen2agri-service@{}".format(args.maccs_address), args.maccs_launcher, args.working_dir, tile_id, args.output]) != 0:
+    time.sleep(10)
+    if run_command(["ssh", "sen2agri-service@{}".format(args.maccs_address), args.maccs_launcher, working_dir, tile_id, args.output]) != 0:
         print("MACCS didn't work !")
-    remove_sym_links([dem_hdr, dem_dir[0]], args.working_dir)
-
-remove_sym_links(gips, args.working_dir)
-remove_sym_links([args.input], args.working_dir)
+    sys.exit(0)
+    #remove_sym_links([dem_hdr, dem_dir[0]], working_dir)
+'''
 try:
-    os.rmdir(args.working_dir)
+    shutil.rmtree(dem_working_dir)
 except:
-    print("Couldn't remove the temp dir {}".format(args.working_dir))
+    print("Couldn't remove the temp dir {}".format(dem_working_dir))
+try:
+    shutil.rmtree(dem_output_dir)
+except:
+    print("Couldn't remove the temp dir {}".format(dem_output_dir))
+try:
+    shutil.rmtree(working_dir)
+except:
+    print("Couldn't remove the temp dir {}".format(working_dir))
 
+'''
