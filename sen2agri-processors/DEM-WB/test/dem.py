@@ -17,6 +17,8 @@ import sys
 import pipes
 import zipfile
 from multiprocessing import Pool
+from common import *
+
 
 def GetExtent(gt, cols, rows):
     ext = []
@@ -108,9 +110,9 @@ def get_dtm_tiles(points):
         return srtm_zips
 
 
-def run_command(args):
-    print(" ".join(map(pipes.quote, args)))
-    subprocess.call(args)
+#def run_command(args):
+#    print(" ".join(map(pipes.quote, args)))
+#    subprocess.call(args)
 
 
 def get_landsat_tile_id(image):
@@ -181,10 +183,8 @@ def create_context(args):
             if len(image_band2) == 1:
                 if len(tiles_to_process) > 0:
                     mode_f, tile_id = get_tile_id(image_band2[0])
-                    for tile in tiles_to_process:
-                        if tile == tile_id:
-                            images.append(image_band2[0])
-                            break
+                    if tile_id in tiles_to_process:                      
+                        images.append(image_band2[0])
                 else:
                     images.append(image_band2[0])
     else:
@@ -213,7 +213,11 @@ def create_context(args):
         wgs84_extent = ReprojectCoords(extent, source_srs, target_srs)
 
         directory_template = "{0}_TEST_AUX_REFDE2_{1}_{2}_0001.DBL.DIR"
+        if not create_recursive_dirs(args.output):
+            return context_array
         image_directory = os.path.join(args.output, directory_template.format(mode, tile_id, date))
+        if not create_recursive_dirs(args.working_dir):
+            return context_array
         temp_directory = os.path.join(args.working_dir, directory_template.format(mode, tile_id, date))
 
         metadata_template = "{0}_TEST_AUX_REFDE2_{1}_{2}_0001.HDR"
@@ -518,7 +522,7 @@ def process_context(context):
 def parse_arguments():    
     parser = argparse.ArgumentParser(
         description="Creates DEM and WB data for MACCS")
-    parser.add_argument('input', help="input image")
+    parser.add_argument('input', help="input L1C directory")
     parser.add_argument('--srtm', required=True, help="SRTM dataset path")
     parser.add_argument('--swbd', required=True, help="SWBD dataset path")
     parser.add_argument('-l', '--tiles-list', required=False, nargs='+', help="If set, only these tiles will be processed")

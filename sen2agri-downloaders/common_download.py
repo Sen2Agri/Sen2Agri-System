@@ -193,12 +193,13 @@ class AOIDatabase(object):
             print(" ".join(self.aoiHistoryFiles))
 
 class AOIInfo(object):
-    def __init__(self, serverIP, databaseName, user, password):
+    def __init__(self, serverIP, databaseName, user, password, logFile):
         self.serverIP = serverIP
         self.databaseName = databaseName
         self.user = user
         self.password = password
         self.isConnected = False;
+        self.logFile = logFile
     def databaseConnect(self):
         if self.isConnected:
             return True
@@ -209,7 +210,7 @@ class AOIInfo(object):
             self.cursor = self.conn.cursor()
             self.isConnected = True
         except:
-            print "I am unable to connect to the database"
+            print "Unable to connect to the database"
             self.isConnected = False
             return False
         return True
@@ -257,7 +258,6 @@ class AOIInfo(object):
                     baseQuerySite += " where \"site_id\" is null"
                     try:
                         self.cursor.execute(query)
-                        print("AFTER EXECUTE")
                         if self.cursor.rowcount <= 0:
                             print("query={}".format(baseQuerySite))
                             self.cursor.execute(baseQuerySite)
@@ -314,22 +314,23 @@ class AOIInfo(object):
             self.conn.commit()
         except:
             print("DATABASE INSERT query FAILED!!!!!")
+            self.databaseDisconnect()
             return False
         self.databaseDisconnect()
         return True
 
 
 class SentinelAOIInfo(AOIInfo):
-    def __init__(self, serverIP, databaseName, user, password):
-        AOIInfo.__init__(self, serverIP, databaseName, user, password)
+    def __init__(self, serverIP, databaseName, user, password, logFile=None):
+        AOIInfo.__init__(self, serverIP, databaseName, user, password, logFile)
     def getSentinelAOI(self):
         return self.getAOI(SENTINEL2_SATELLITE_ID)
     def updateSentinelHistory(self, siteId, productName, fullPath):
         return self.updateHistory(siteId, SENTINEL2_SATELLITE_ID, productName, fullPath)
 
 class LandsatAOIInfo(AOIInfo):
-    def __init__(self, serverIP, databaseName, user, password):
-        AOIInfo.__init__(self, serverIP, databaseName, user, password)
+    def __init__(self, serverIP, databaseName, user, password, logFile=None):
+        AOIInfo.__init__(self, serverIP, databaseName, user, password, logFile)
     def getLandsatAOI(self):
         return self.getAOI(LANDSAT8_SATELLITE_ID)
     def updateLandsatHistory(self, siteId, productName, fullPath):
