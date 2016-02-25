@@ -94,7 +94,6 @@ class OptionParser (optparse.OptionParser):
 
 class Config(object):
     def __init__(self):
-        self.section="[{}]".format(section)
         self.host = ""
         self.database = ""
         self.user = ""
@@ -119,7 +118,7 @@ class Config(object):
                             elif elements[0].lower() == "password":
                                 self.password = elements[1]
                             else:
-                                print("Unkown key for {} section".format(self.section))
+                                print("Unkown key for [Database] section")
                         else:
                             print("Error in config file, found more than on keys, line: {}".format(line))
                     elif line == "[Database]":

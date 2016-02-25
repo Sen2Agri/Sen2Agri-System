@@ -59,8 +59,6 @@ def create_recursive_dirs(dir_name):
         print("Can't create the directory due to access rights {}".format(dir_name))
         return False
     return True
-
-
 class Config(object):
     def __init__(self):
         self.host = ""
@@ -87,7 +85,7 @@ class Config(object):
                             elif elements[0].lower() == "password":
                                 self.password = elements[1]
                             else:
-                                print("Unkown key for {} section".format(self.section))
+                                print("Unkown key for [Database] section")
                         else:
                             print("Error in config file, found more than on keys, line: {}".format(line))
                     elif line == "[Database]":

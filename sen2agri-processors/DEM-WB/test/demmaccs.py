@@ -109,12 +109,10 @@ for dem_hdr in dem_hdrs:
     if not create_sym_links([dem_hdr, dem_dir[0]], working_dir):
         print("Could not create sym links for {0} and {1}".format(dem_hdr, dem_dir[0]))
         continue
-    time.sleep(10)
     if run_command(["ssh", "sen2agri-service@{}".format(args.maccs_address), args.maccs_launcher, working_dir, tile_id, args.output]) != 0:
         print("MACCS didn't work !")
-    sys.exit(0)
-    #remove_sym_links([dem_hdr, dem_dir[0]], working_dir)
-'''
+    remove_sym_links([dem_hdr, dem_dir[0]], working_dir)
+
 try:
     shutil.rmtree(dem_working_dir)
 except:
@@ -128,4 +126,3 @@ try:
 except:
     print("Couldn't remove the temp dir {}".format(working_dir))
 
-'''
