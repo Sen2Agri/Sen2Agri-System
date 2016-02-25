@@ -7,7 +7,7 @@ BEGIN
     CASE _satellite_id
         WHEN 1 THEN -- sentinel2
             RETURN QUERY
-                SELECT DISTINCT shape_tiles_s2.tileid
+                SELECT shape_tiles_s2.tile_id :: CHARACTER VARYING
                 FROM site
                 INNER JOIN shape_tiles_s2 ON ST_Intersects(shape_tiles_s2.geog, site.geog)
                 WHERE site.id = _site_id;

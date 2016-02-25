@@ -224,7 +224,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationCate
 
 Site::Site() : siteId() {}
 
-Site::Site(int siteId, QString name) : siteId(siteId), name(std::move(name)) {}
+Site::Site(int siteId, QString name, QString shortName) : siteId(siteId), name(std::move(name)), shortName(std::move(shortName)) {}
 
 void Site::registerMetaTypes()
 {
@@ -235,7 +235,7 @@ void Site::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const Site &site)
 {
     argument.beginStructure();
-    argument << site.siteId << site.name;
+    argument << site.siteId << site.name << site.shortName;
     argument.endStructure();
 
     return argument;
@@ -244,7 +244,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Site &site)
 const QDBusArgument &operator>>(const QDBusArgument &argument, Site &site)
 {
     argument.beginStructure();
-    argument >> site.siteId >> site.name;
+    argument >> site.siteId >> site.name >> site.shortName;
     argument.endStructure();
 
     return argument;
@@ -1544,7 +1544,7 @@ ScheduledTask::ScheduledTask(int ti, QString tn ,int pi, int si, QString pp ,int
 QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &request)
 {
     argument.beginStructure();
-    argument << request.processorId << request.siteId << request.parametersJson ;
+    argument << request.processorId << request.siteId << request.ttNextScheduledRunTime << request.parametersJson ;
     argument.endStructure();
     return argument;
 }
@@ -1552,7 +1552,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &requ
 const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessingRequest &request)
 {
     argument.beginStructure();
-    argument >> request.processorId >> request.siteId >> request.parametersJson ;
+    argument >> request.processorId >> request.siteId >> request.ttNextScheduledRunTime >> request.parametersJson ;
     argument.endStructure();
 
     return argument;
@@ -1571,6 +1571,24 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobDefinition &jo
 {
     argument.beginStructure();
     argument >> job.isValid >> job.jobDefinitionJson >> job.processorId;
+    argument.endStructure();
+
+    return argument;
+}
+
+QDBusArgument &operator<<(QDBusArgument &argument, const ProcessorJobDefinitionParams &job)
+{
+    argument.beginStructure();
+    argument << job.isValid << job.productList << job.jsonParameters;
+    argument.endStructure();
+
+    return argument;
+}
+
+const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorJobDefinitionParams &job)
+{
+    argument.beginStructure();
+    argument >> job.isValid >> job.productList >> job.jsonParameters;
     argument.endStructure();
 
     return argument;

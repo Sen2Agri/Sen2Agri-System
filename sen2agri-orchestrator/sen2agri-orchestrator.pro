@@ -35,7 +35,8 @@ SOURCES += main.cpp \
     processor/compositehandler.cpp \
     processor/lairetrievalhandler.cpp \
     processor/phenondvihandler.cpp \
-    processorhandlerhelper.cpp
+    processorhandlerhelper.cpp \
+    schedulingcontext.cpp
 
 HEADERS += \
     pch.hpp \
@@ -50,7 +51,8 @@ HEADERS += \
     processor/compositehandler.hpp \
     processor/lairetrievalhandler.hpp \
     processor/phenondvihandler.hpp \
-    processorhandlerhelper.h
+    processorhandlerhelper.h \
+    schedulingcontext.h
 
 DISTFILES += \
     ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml \

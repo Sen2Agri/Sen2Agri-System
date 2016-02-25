@@ -14,14 +14,17 @@
 #include "processor/phenondvihandler.hpp"
 #include "processor/dummyprocessorhandler.hpp"
 #include "json_conversions.hpp"
+#include "schedulingcontext.h"
 
 std::map<int, std::unique_ptr<ProcessorHandler>> & GetHandlersMap(PersistenceManagerDBProvider &persistenceManager) {
     ProcessorDescriptionList processorsDescriptions = persistenceManager.GetProcessorDescriptions();
     static std::map<int, std::unique_ptr<ProcessorHandler>> handlersMap;
     for(ProcessorDescription procDescr: processorsDescriptions) {
+        bool bAdded = true;
         if(procDescr.shortName == "l2a") {
             // TODO:
             //handlers.emplace(procDescr.processorId, std::make_unique<MACCSHandler>());
+            bAdded = false;
         } else if(procDescr.shortName == "l3a") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<CompositeHandler>());
         } else if(procDescr.shortName == "l3b") {
@@ -35,9 +38,15 @@ std::map<int, std::unique_ptr<ProcessorHandler>> & GetHandlersMap(PersistenceMan
         } else if(procDescr.shortName == "dummy") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<DummyProcessorHandler>());
         } else {
+            bAdded = false;
             throw std::runtime_error(
                 QStringLiteral("Invalid processor configuration found in database: %1, exiting.")
                     .arg(procDescr.shortName).toStdString());
+        }
+        if(bAdded) {
+            auto it = handlersMap.find(procDescr.processorId);
+            ProcessorHandler &handler = *it->second;
+            handler.SetProcessorDescription(procDescr);
         }
     }
 
@@ -63,57 +72,56 @@ void Orchestrator::RescanEvents() { worker.RescanEvents(); }
 
 JobDefinition Orchestrator::GetJobDefinition(const ProcessingRequest &request)
 {
+    ConfigurationParameterValueMap requestOverrideCfgValues;
+
+    QJsonObject retObj;
     const auto &doc = QJsonDocument::fromJson(request.parametersJson.toUtf8());
-    if (!doc.isObject()) {
-        throw std::runtime_error(
-            QStringLiteral("Unexpected step parameter JSON schema: root node should be an "
-                           "object. The parameter JSON was: '%1'").arg(request.parametersJson).toStdString());
-    }
-    const auto &inObj = doc.object();
-    // Get the general parameters node
-    const auto &generalParamsNode = inObj[QStringLiteral("general_params")];
-    if (!generalParamsNode.isObject()) {
-        throw std::runtime_error(
-            QStringLiteral("Unexpected step parameter JSON schema: node 'parameters' should be an "
-                           "object. The parameter JSON was: '%1'").arg(request.parametersJson).toStdString());
-    }
-    // Get the start and end date from the parameters
-    const auto &generalParamsObj = generalParamsNode.toObject();
-    QJsonValue startDateValue = generalParamsObj.value(QStringLiteral("start_date"));
-    QJsonValue endDateValue = generalParamsObj.value(QStringLiteral("end_date"));
-    QString startDate = startDateValue.isDouble() ? QString::number(startDateValue.toInt()) : startDateValue.toString();
-    QString endDate = endDateValue.isDouble() ? QString::number(endDateValue.toInt()) : endDateValue.toString();
-    QDateTime startDateTime = QDateTime::fromString(startDate, "yyyyMMdd");
-    QDateTime endDateTime = QDateTime::fromString(endDate, "yyyyMMdd");
-    // Get all available products for the given site (for all processors) and let each handler decide what it needs
-    // TODO: this is not quite OK as we usually need only the products from the previous level
-    // but we might have situations when we need a product from CropMask needed by a CropType
-    ProductList availableProducts = persistenceManager.GetProducts(request.siteId, -1, startDateTime, endDateTime);
+    if (doc.isObject()) {
+        const auto &inObj = doc.object();
+        const auto &configParamNode = inObj[QStringLiteral("config_params")];
+        if (configParamNode.isObject()) {
+            const auto &configParamObj = configParamNode.toObject();
+            for(QJsonObject::const_iterator iter = configParamObj.begin(); iter != configParamObj.end (); ++iter)
+            {
+                requestOverrideCfgValues[iter.key()] = {iter.key(), -1, iter.value().toString()};
+            }
 
-    // Get the specific processor information node
-    const auto &processorParamsNode = inObj[QStringLiteral("processor_params")];
-    if (!processorParamsNode.isObject()) {
-        throw std::runtime_error(
-            QStringLiteral("Unexpected step parameter JSON schema: node 'processor_params' should be an "
-                           "object. The parameter JSON was: '%1'").arg(request.parametersJson).toStdString());
+            // pass the config params to the submitted job later
+            retObj[QStringLiteral("config_params")] = configParamObj;
+        }
     }
-    const QJsonObject &processorParamsObj = processorParamsNode.toObject();
+
+    SchedulingContext ctx(persistenceManager);
+
     ProcessorHandler &handler = worker.GetHandler(request.processorId);
-
-    // Get the job definition from the processor handler
     JobDefinition jobDef;
     jobDef.processorId = request.processorId;
     jobDef.siteId = request.siteId;
-    QString processingDefJson = handler.GetProcessingDefinitionJson(processorParamsObj, availableProducts, jobDef.isValid);
+
+    ProcessorJobDefinitionParams procDefParams = handler.GetProcessingDefinition(ctx, request.siteId, request.ttNextScheduledRunTime, requestOverrideCfgValues);
+
+    jobDef.isValid = procDefParams.isValid;
     if(jobDef.isValid) {
-        // Create a new object
-        QJsonObject retObj(inObj);
-        // overwrite the processor params with the one from the processor
-        retObj[QStringLiteral("processor_params")] = stringToJsonObject(processingDefJson);
+        QJsonArray inputProductsArr;
+        for (const auto &p : procDefParams.productList) {
+            inputProductsArr.append(p.fullPath);
+        }
+        QJsonObject processorParamsObj;
+        // add the input products key to the processor params
+        processorParamsObj[QStringLiteral("input_products")] = inputProductsArr;
+
+        // now add any other parameters computed by the processor handler
+        const auto &docProcParams = QJsonDocument::fromJson(procDefParams.jsonParameters.toUtf8());
+        if (docProcParams.isObject()) {
+            const auto &docProcParamsObj = docProcParams.object();
+            for(QJsonObject::const_iterator iter = docProcParamsObj.begin(); iter != docProcParamsObj.end (); ++iter)
+            {
+                processorParamsObj[iter.key()] = iter.value().toString();
+            }
+        }
+
+        retObj[QStringLiteral("processor_params")] = processorParamsObj;
         jobDef.jobDefinitionJson = jsonToString(retObj);
-    } else {
-        // the returned value normally should contain the error text
-        jobDef.jobDefinitionJson = processingDefJson;
     }
     return jobDef;
 }

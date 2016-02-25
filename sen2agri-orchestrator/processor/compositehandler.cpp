@@ -125,16 +125,14 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx,
     const QJsonObject &parameters = QJsonDocument::fromJson(jsonParams.toUtf8()).object();
     std::map<QString, QString> configParameters =
         ctx.GetJobConfigurationParameters(jobId, "processor.l3a.");
-    std::map<QString, QString> archiveConfigParameters = ctx.GetJobConfigurationParameters(
-                jobId, "archiver.archive_path");
 
     // Get L3A Synthesis date
     const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
-    // Get the Half Synthesis interval value
-    const auto &synthalf = parameters["half_synthesis"].toString();
     const auto &resolution = QString::number(parameters["resolution"].toInt());
 
     // Get the parameters from the configuration
+    // Get the Half Synthesis interval value
+    const auto &synthalf = configParameters["processor.l3a.half_synthesis"];
     const auto &bandsMapping = configParameters["processor.l3a.bandsmapping"];
     const auto &scatCoeffs = configParameters["processor.l3a.preproc.scatcoeffs"];
 
@@ -280,7 +278,7 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx,
     ctx.SubmitTasks(jobId, { productFormatter });
 
     //const auto &targetFolder = productFormatter.GetFilePath("");
-    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
+    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
     const auto &executionInfosPath = productFormatter.GetFilePath("executionInfos.txt");
 
     WriteExecutionInfosFile(executionInfosPath, parameters, configParameters, listProducts);
@@ -442,7 +440,7 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
 
-        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.processorId, event.siteId);
+        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
 
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L3AProductTypeId,
@@ -465,36 +463,31 @@ bool CompositeHandler::IsProductAcceptableForJob(int jobId, const ProductAvailab
     return false;
 }
 
-QString CompositeHandler::GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams,
-                                                      const ProductList &listProducts,
-                                                      bool &bIsValid)
+ProcessorJobDefinitionParams CompositeHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
+                                                          const ConfigurationParameterValueMap &requestOverrideCfgValues)
 {
-    bIsValid = false;
-    if(!procInfoParams.contains("resolution")) {
-        return "Cannot execute PhenoNDVI processor. The parameters should contain the resolution!";
-    }
+    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processors.l3a."), siteId, requestOverrideCfgValues);
 
-    ProductList usedProductList;
-    for(const Product &product: listProducts) {
-        if(product.productTypeId == ProductType::L2AProductTypeId) {
-            usedProductList.append(product);
-        }
-    }
+    ProcessorJobDefinitionParams params;
+    params.isValid = false;
 
-    // for PhenoNDVI we need at least 4 products available in order to be able to create a L3B product
-    if(usedProductList.size() >= 4) {
-        QJsonObject mainObj(procInfoParams);
-        if(!mainObj.contains("resolution")) {
-            return "Cannot execute Composite processor. The parameters should contain the resolution!";
-        }
-        QJsonArray inputProductsArr;
-        for (const auto &p : usedProductList) {
-            inputProductsArr.append(p.fullPath);
-        }
-        mainObj[QStringLiteral("input_products")] = inputProductsArr;
-        bIsValid = true;
+    int halfSynthesis = mapCfg["processors.l3a.half_synthesis"].value.toInt();
+    int synthDateOffset = mapCfg["processors.l3a.synth_date_sched_offset"].value.toInt();
 
-        return jsonToString(mainObj);
+    // extract the scheduled date
+    QDateTime qScheduledDate = QDateTime::fromTime_t(scheduledDate);
+    // compute the half synthesis date
+    QDateTime halfSynthesisDate = qScheduledDate.addDays(-synthDateOffset);
+    // compute the start and date time
+    QDateTime startDate = qScheduledDate.addDays(-halfSynthesis);
+    QDateTime endDate = qScheduledDate.addDays(halfSynthesis);
+
+    params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
+    // we need at least 1 product available in order to be able to create a L3A product
+    if(params.productList.size() > 0) {
+        params.isValid = true;
+        params.jsonParameters = "{ \"synthesis_date\": \"" + halfSynthesisDate.toString("yyyymmdd") + "\"}";
     }
-    return QString("Cannot execute Composite processor. There should be at least 4 products but we have only %1 L2A products available!").arg(usedProductList.size());
+    //return QString("Cannot execute Composite processor. There should be at least 4 products but we have only %1 L2A products available!").arg(usedProductList.size());
+    return params;
 }

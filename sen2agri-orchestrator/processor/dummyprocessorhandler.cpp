@@ -53,14 +53,14 @@ void DummyProcessorHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                         QDateTime::currentDateTimeUtc() });
 }
 
-QString DummyProcessorHandler::GetProcessingDefinitionJsonImpl(const QJsonObject &procInfoParams,
-                                                      const ProductList &listProducts,
-                                                      bool &bIsValid)
+ProcessorJobDefinitionParams DummyProcessorHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx,
+                                                                                    int siteId, int productTime,
+                                                const ConfigurationParameterValueMap &requestOverrideCfgValues)
 {
-    Q_UNUSED(procInfoParams);
-    Q_UNUSED(listProducts);
+    Q_UNUSED(ctx);
+    Q_UNUSED(siteId);
 
-    bIsValid = false;
+    //bIsValid = false;
 
-    return QString("Cannot execute DummyProcessor processor.!");
+    //return QString("Cannot execute DummyProcessor processor.!");
 }

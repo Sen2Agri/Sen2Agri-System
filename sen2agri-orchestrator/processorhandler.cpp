@@ -5,6 +5,8 @@
 #include <QFileInfo>
 #include <QFileInfoList>
 
+#include "schedulingcontext.h"
+
 bool removeDir(const QString & dirName)
 {
     bool result = true;
@@ -48,24 +50,27 @@ void ProcessorHandler::HandleTaskFinished(EventProcessingContext &ctx,
     HandleTaskFinishedImpl(ctx, event);
 }
 
+ProcessorJobDefinitionParams ProcessorHandler::GetProcessingDefinition(SchedulingContext &ctx, int siteId, int scheduledDate,
+                                                        const ConfigurationParameterValueMap &requestOverrideCfgValues) {
+    return GetProcessingDefinitionImpl(ctx, siteId, scheduledDate, requestOverrideCfgValues);
+}
+
 void ProcessorHandler::HandleProductAvailableImpl(EventProcessingContext &,
                                                   const ProductAvailableEvent &)
 {
 }
 
-QString ProcessorHandler::GetProcessingDefinitionJson(const QJsonObject &procInfoParams, const ProductList &listProducts, bool &bIsValid) {
-    return GetProcessingDefinitionJsonImpl(procInfoParams, listProducts, bIsValid);
+QString ProcessorHandler::GetFinalProductFolder(EventProcessingContext &ctx, int jobId,
+                                                int siteId) {
+    auto configParameters = ctx.GetJobConfigurationParameters(jobId, PRODUCTS_LOCATION_CFG_KEY);
+    QString siteName = ctx.GetSiteName(siteId);
+
+    return GetFinalProductFolder(configParameters, siteName, processorDescr.shortName);
 }
 
-QString ProcessorHandler::GetFinalProductFolder(EventProcessingContext &ctx, int jobId,
-                                                int processorId, int siteId) {
-    auto configParameters = ctx.GetJobConfigurationParameters(
-                jobId, "archiver.archive_path");
-
-    QString processorName = ctx.GetProcessorShortName(processorId);
-    QString siteName = ctx.GetSiteName(siteId);
-    auto it = configParameters.find("archiver.archive_path");
-    if (it == std::end(configParameters)) {
+QString ProcessorHandler::GetFinalProductFolder(const std::map<QString, QString> &cfgKeys, const QString &siteName, const QString &processorName) {
+    auto it = cfgKeys.find(PRODUCTS_LOCATION_CFG_KEY);
+    if (it == std::end(cfgKeys)) {
         throw std::runtime_error(QStringLiteral("No final product folder configured for site %1 and processor %2")
                                      .arg(siteName)
                                      .arg(processorName)
@@ -83,3 +88,4 @@ bool ProcessorHandler::RemoveJobFolder(EventProcessingContext &ctx, int jobId)
     QString jobOutputPath = ctx.GetOutputPath(jobId);
     return removeDir(jobOutputPath);
 }
+
