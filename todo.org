@@ -29,10 +29,16 @@
 * TODO consolidate dashboard settings
 * TODO add visibility setting in config_metadata
 * DONE see why sen2agri-config doesn't run any more
-* TODO fix exception propagation in sen2agri-config
+* DONE fix exception propagation in sen2agri-config
 * DONE add siteId argument where missing in sen2agri-http-listener
 * TODO fix capitalization and wording in "demmacs" category
 * DONE add this file to git
 * TODO add indexes to the database tables
 * TODO add foreign keys to the database tables
 * TODO remove numbering from sql scripts
+* TODO remove unused executor config keys
+* DONE remove temporary files made by the DEM script
+* DONE use the SRID in S2 tile footprints
+* TODO update the S2 tile footprints
+* TODO add a function to remove a parameter
+* TODO move DEM scripts from the test directory
