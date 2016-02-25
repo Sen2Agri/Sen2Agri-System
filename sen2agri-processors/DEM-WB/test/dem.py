@@ -465,6 +465,9 @@ def process_WB(context):
                  "-mode.binary.foreground", "1"])
 
 
+def change_extension(file, new_extension):
+    return os.path.splitext(file)[0] + new_extension
+
 def process_context(context):
     try:
         print(context.image_directory)
@@ -482,34 +485,20 @@ def process_context(context):
 
     process_DTM(context)
     process_WB(context)
-    try:
-        os.remove(context.swbd_list)
-    except:
-        pass
-    try:
-        os.remove(context.dem_vrt)
-    except:
-        pass
-    try:
-        os.remove(context.dem_nodata)
-    except:
-        pass
-    try:
-        os.remove(context.slope_degrees)
-    except:
-        pass
-    try:
-        os.remove(context.aspect_degrees)
-    except:
-        pass
-    try:
-        os.remove(context.wb)
-    except:
-        pass
-    try:
-        os.remove(context.wb_reprojected)
-    except:
-        pass
+
+    files = [context.swbd_list, context.dem_vrt, context.dem_nodata, context.slope_degrees,
+            context.aspect_degrees, context.wb, context.wb_reprojected]
+
+    for file in [context.wb, context.wb_reprojected]:
+        for extension in [".shx", ".prj", ".dbf"]:
+            files.append(change_extension(file, extension))
+
+    for file in files:
+        try:
+            os.remove(file)
+        except:
+            pass
+
     try:
         os.rmdir(context.temp_directory)
     except:
