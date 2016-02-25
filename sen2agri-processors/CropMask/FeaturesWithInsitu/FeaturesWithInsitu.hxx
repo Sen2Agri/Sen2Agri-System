@@ -4,7 +4,7 @@
 #include "itkTernaryFunctorImageFilter.h"
 #include "otbVectorImage.h"
 
-typedef short                                PixelValueType;
+typedef float                                PixelValueType;
 typedef otb::VectorImage<PixelValueType, 2>  ImageType;
 
 
@@ -12,7 +12,7 @@ template <typename PixelType>
 class FeaturesWithInsituFunctor
 {
 public:
-  FeaturesWithInsituFunctor() : bands(0), w(2), delta(500), id(0), tsoil(2000) {}
+  FeaturesWithInsituFunctor() : bands(0), w(2), delta(0.05), id(0), tsoil(0.2) {}
   FeaturesWithInsituFunctor(int bands, int w, PixelValueType delta, std::vector<int> id, PixelValueType tsoil) : bands(bands), w(w), delta(delta), id(std::move(id)), tsoil(tsoil) {}
 
   PixelType operator()(PixelType ndvi,PixelType ndwi, PixelType brightness) const
@@ -309,7 +309,7 @@ template <typename PixelType>
 class FeaturesWithInsituBMFunctor
 {
 public:
-  FeaturesWithInsituBMFunctor() : bands(0), w(2), delta(500), id(0), tsoil(2000) {}
+  FeaturesWithInsituBMFunctor() : bands(0), w(2), delta(0.05), id(0), tsoil(0.2) {}
   FeaturesWithInsituBMFunctor(int bands, int w, PixelValueType delta, std::vector<int> id, PixelValueType tsoil) : bands(bands), w(w), delta(delta), id(std::move(id)), tsoil(tsoil) {}
 
   PixelType operator()(PixelType ndvi,PixelType ndwi, PixelType brightness) const

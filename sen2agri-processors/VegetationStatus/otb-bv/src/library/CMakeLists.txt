@@ -14,3 +14,4 @@
 
 add_library(OTBBVUtil otbBVUtil.cxx)
 
+install(TARGETS OTBBVUtil DESTINATION usr/lib/)

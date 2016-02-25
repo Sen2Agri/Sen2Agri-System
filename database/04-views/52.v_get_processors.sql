@@ -1,0 +1,1 @@
+﻿CREATE OR REPLACE VIEW v_get_processors AS SELECT * FROM processor;
