@@ -1,9 +1,13 @@
 CREATE OR REPLACE FUNCTION sp_insert_product(
     _product_type_id product.product_type_id%TYPE,
     _processor_id product.processor_id%TYPE,
-    _task_id product.task_id%TYPE,
+    _site_id site.id%TYPE,
+    _job_id job.id%TYPE,
     _full_path product.full_path%TYPE,
-    _created_timestamp product.created_timestamp%TYPE
+    _created_timestamp product.created_timestamp%TYPE,
+    _name product.name%TYPE,
+    _quicklook_image product.quicklook_image%TYPE,
+    _footprint GEOGRAPHY
 ) RETURNS product.id%TYPE
 AS $$
 DECLARE return_id product.id%TYPE;
@@ -11,21 +15,24 @@ BEGIN
     INSERT INTO product(
         product_type_id,
         processor_id,
-        task_id,
+        job_id,
         site_id,
         full_path,
-        created_timestamp
+        created_timestamp,
+        "name",
+        quicklook_image,
+        footprint
     )
     VALUES (
         _product_type_id,
         _processor_id,
-        _task_id,
-        (SELECT job.site_id
-         FROM task
-         INNER JOIN job ON job.id = task.job_id
-         WHERE task.id = _task_id),
+        _job_id,
+        _site_id,
         _full_path,
-        _created_timestamp
+        COALESCE(_created_timestamp, now()),
+        _name,
+        _quicklook_image,
+        _footprint :: POLYGON
     )
     RETURNING id INTO return_id;
 
