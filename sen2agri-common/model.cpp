@@ -59,8 +59,6 @@ void registerMetaTypes()
     JobStepToRun::registerMetaTypes();
     StepConsoleOutput::registerMetaTypes();
 
-    NewProduct::registerMetaTypes();
-
     DashboardSearch::registerMetaTypes();
 
     qDBusRegisterMetaType<ExecutionStatusList>();
@@ -74,7 +72,9 @@ void registerMetaTypes()
     qDBusRegisterMetaType<JobDefinition>();
 }
 
-ConfigurationParameterInfo::ConfigurationParameterInfo() : categoryId(), isAdvanced() {}
+ConfigurationParameterInfo::ConfigurationParameterInfo() : categoryId(), isAdvanced()
+{
+}
 
 ConfigurationParameterInfo::ConfigurationParameterInfo(
     QString key, int categoryId, QString friendlyName, QString dataType, bool isAdvanced)
@@ -113,7 +113,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument,
     return argument;
 }
 
-ConfigurationParameterValue::ConfigurationParameterValue() {}
+ConfigurationParameterValue::ConfigurationParameterValue()
+{
+}
 
 ConfigurationParameterValue::ConfigurationParameterValue(QString key,
                                                          std::experimental::optional<int> siteId,
@@ -156,7 +158,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument,
     return argument;
 }
 
-JobConfigurationParameterValue::JobConfigurationParameterValue() {}
+JobConfigurationParameterValue::JobConfigurationParameterValue()
+{
+}
 
 JobConfigurationParameterValue::JobConfigurationParameterValue(QString key, QString value)
     : key(move(key)), value(move(value))
@@ -189,7 +193,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument,
     return argument;
 }
 
-ConfigurationCategory::ConfigurationCategory() : categoryId(), allowPerSiteCustomization() {}
+ConfigurationCategory::ConfigurationCategory() : categoryId(), allowPerSiteCustomization()
+{
+}
 
 ConfigurationCategory::ConfigurationCategory(int categoryId,
                                              QString name,
@@ -222,9 +228,14 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationCate
     return argument;
 }
 
-Site::Site() : siteId() {}
+Site::Site() : siteId()
+{
+}
 
-Site::Site(int siteId, QString name, QString shortName) : siteId(siteId), name(std::move(name)), shortName(std::move(shortName)) {}
+Site::Site(int siteId, QString name, QString shortName)
+    : siteId(siteId), name(std::move(name)), shortName(std::move(shortName))
+{
+}
 
 void Site::registerMetaTypes()
 {
@@ -250,7 +261,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Site &site)
     return argument;
 }
 
-ConfigurationSet::ConfigurationSet() : isAdmin() {}
+ConfigurationSet::ConfigurationSet() : isAdmin()
+{
+}
 
 ConfigurationSet::ConfigurationSet(ConfigurationCategoryList categories,
                                    ConfigurationParameterInfoList parameterInfo,
@@ -265,7 +278,10 @@ ConfigurationSet::ConfigurationSet(ConfigurationCategoryList categories,
 {
 }
 
-void ConfigurationSet::registerMetaTypes() { qDBusRegisterMetaType<ConfigurationSet>(); }
+void ConfigurationSet::registerMetaTypes()
+{
+    qDBusRegisterMetaType<ConfigurationSet>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ConfigurationSet &configuration)
 {
@@ -287,7 +303,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationSet 
     return argument;
 }
 
-ConfigurationUpdateAction::ConfigurationUpdateAction() {}
+ConfigurationUpdateAction::ConfigurationUpdateAction()
+{
+}
 
 ConfigurationUpdateAction::ConfigurationUpdateAction(QString key,
                                                      std::experimental::optional<int> siteId,
@@ -341,7 +359,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ConfigurationUpda
     return argument;
 }
 
-JobConfigurationUpdateAction::JobConfigurationUpdateAction() {}
+JobConfigurationUpdateAction::JobConfigurationUpdateAction()
+{
+}
 
 JobConfigurationUpdateAction::JobConfigurationUpdateAction(QString key, QString value)
     : key(std::move(key)), value(std::move(value))
@@ -372,7 +392,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobConfigurationU
     return argument;
 }
 
-KeyedMessage::KeyedMessage() {}
+KeyedMessage::KeyedMessage()
+{
+}
 
 KeyedMessage::KeyedMessage(QString key, QString message)
     : key(std::move(key)), text(std::move(message))
@@ -403,7 +425,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, KeyedMessage &mes
     return argument;
 }
 
-Product::Product() : productId(), processorId(), productTypeId(), siteId() {}
+Product::Product() : productId(), processorId(), productTypeId(), siteId()
+{
+}
 
 Product::Product(int productId,
                  int processorId,
@@ -446,7 +470,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Product &product)
     return argument;
 }
 
-ProductToArchive::ProductToArchive() : productId() {}
+ProductToArchive::ProductToArchive() : productId()
+{
+}
 
 ProductToArchive::ProductToArchive(int productId, QString currentPath, QString archivePath)
     : productId(productId), currentPath(std::move(currentPath)), archivePath(std::move(archivePath))
@@ -477,7 +503,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProductToArchive 
     return argument;
 }
 
-ArchivedProduct::ArchivedProduct() : productId(), archivePath() {}
+ArchivedProduct::ArchivedProduct() : productId(), archivePath()
+{
+}
 
 ArchivedProduct::ArchivedProduct(int productId, QString archivePath)
     : productId(productId), archivePath(std::move(archivePath))
@@ -545,7 +573,9 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatusList &st
     return argument;
 }
 
-NewJob::NewJob() : processorId(), siteId(), startType() {}
+NewJob::NewJob() : processorId(), siteId(), startType()
+{
+}
 
 NewJob::NewJob(QString name,
                QString description,
@@ -564,7 +594,10 @@ NewJob::NewJob(QString name,
 {
 }
 
-void NewJob::registerMetaTypes() { qDBusRegisterMetaType<NewJob>(); }
+void NewJob::registerMetaTypes()
+{
+    qDBusRegisterMetaType<NewJob>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewJob &job)
 {
@@ -586,7 +619,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewJob &job)
     return argument;
 }
 
-NewTask::NewTask() : jobId() {}
+NewTask::NewTask() : jobId()
+{
+}
 
 NewTask::NewTask(int jobId, QString module, QString parametersJson, TaskIdList parentTasks)
     : jobId(jobId),
@@ -596,7 +631,10 @@ NewTask::NewTask(int jobId, QString module, QString parametersJson, TaskIdList p
 {
 }
 
-void NewTask::registerMetaTypes() { qDBusRegisterMetaType<NewTask>(); }
+void NewTask::registerMetaTypes()
+{
+    qDBusRegisterMetaType<NewTask>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NewTask &task)
 {
@@ -616,7 +654,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NewTask &task)
     return argument;
 }
 
-NewStep::NewStep() : taskId() {}
+NewStep::NewStep() : taskId()
+{
+}
 
 NewStep::NewStep(int taskId, QString name, QString parametersJson)
     : taskId(taskId), name(std::move(name)), parametersJson(std::move(parametersJson))
@@ -700,7 +740,10 @@ ExecutionStatistics::ExecutionStatistics(QString node,
 {
 }
 
-void ExecutionStatistics::registerMetaTypes() { qDBusRegisterMetaType<ExecutionStatistics>(); }
+void ExecutionStatistics::registerMetaTypes()
+{
+    qDBusRegisterMetaType<ExecutionStatistics>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ExecutionStatistics &statistics)
 {
@@ -739,7 +782,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, EventType &event)
     return argument;
 }
 
-TaskRunnableEvent::TaskRunnableEvent() : jobId(), processorId(), taskId() {}
+TaskRunnableEvent::TaskRunnableEvent() : jobId(), processorId(), taskId()
+{
+}
 
 TaskRunnableEvent::TaskRunnableEvent(int jobId, int processorId, int taskId)
     : jobId(jobId), processorId(processorId), taskId(taskId)
@@ -766,7 +811,10 @@ TaskRunnableEvent TaskRunnableEvent::fromJson(const QString &json)
              object.value(QStringLiteral("task_id")).toInt() };
 }
 
-void TaskRunnableEvent::registerMetaTypes() { qDBusRegisterMetaType<TaskRunnableEvent>(); }
+void TaskRunnableEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<TaskRunnableEvent>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const TaskRunnableEvent &event)
 {
@@ -786,10 +834,17 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, TaskRunnableEvent
     return argument;
 }
 
-TaskFinishedEvent::TaskFinishedEvent() : processorId(), siteId(), jobId(), taskId() {}
+TaskFinishedEvent::TaskFinishedEvent() : processorId(), siteId(), jobId(), taskId()
+{
+}
 
-TaskFinishedEvent::TaskFinishedEvent(int processorId, int siteId, int jobId, int taskId, QString module)
-    : processorId(processorId), siteId(siteId), jobId(jobId), taskId(taskId), module(std::move(module))
+TaskFinishedEvent::TaskFinishedEvent(
+    int processorId, int siteId, int jobId, int taskId, QString module)
+    : processorId(processorId),
+      siteId(siteId),
+      jobId(jobId),
+      taskId(taskId),
+      module(std::move(module))
 {
 }
 
@@ -817,7 +872,10 @@ TaskFinishedEvent TaskFinishedEvent::fromJson(const QString &json)
              object.value(QStringLiteral("module_short_name")).toString() };
 }
 
-void TaskFinishedEvent::registerMetaTypes() { qDBusRegisterMetaType<TaskFinishedEvent>(); }
+void TaskFinishedEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<TaskFinishedEvent>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const TaskFinishedEvent &event)
 {
@@ -837,9 +895,13 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, TaskFinishedEvent
     return argument;
 }
 
-ProductAvailableEvent::ProductAvailableEvent() : productId() {}
+ProductAvailableEvent::ProductAvailableEvent() : productId()
+{
+}
 
-ProductAvailableEvent::ProductAvailableEvent(int productId) : productId(productId) {}
+ProductAvailableEvent::ProductAvailableEvent(int productId) : productId(productId)
+{
+}
 
 QString ProductAvailableEvent::toJson() const
 {
@@ -857,7 +919,10 @@ ProductAvailableEvent ProductAvailableEvent::fromJson(const QString &json)
     return { object.value(QStringLiteral("product_id")).toInt() };
 }
 
-void ProductAvailableEvent::registerMetaTypes() { qDBusRegisterMetaType<ProductAvailableEvent>(); }
+void ProductAvailableEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<ProductAvailableEvent>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ProductAvailableEvent &event)
 {
@@ -877,9 +942,13 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProductAvailableE
     return argument;
 }
 
-JobCancelledEvent::JobCancelledEvent() : jobId() {}
+JobCancelledEvent::JobCancelledEvent() : jobId()
+{
+}
 
-JobCancelledEvent::JobCancelledEvent(int jobId) : jobId(jobId) {}
+JobCancelledEvent::JobCancelledEvent(int jobId) : jobId(jobId)
+{
+}
 
 QString JobCancelledEvent::toJson() const
 {
@@ -897,7 +966,10 @@ JobCancelledEvent JobCancelledEvent::fromJson(const QString &json)
     return { object.value(QStringLiteral("job_id")).toInt() };
 }
 
-void JobCancelledEvent::registerMetaTypes() { qDBusRegisterMetaType<JobCancelledEvent>(); }
+void JobCancelledEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<JobCancelledEvent>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const JobCancelledEvent &event)
 {
@@ -917,9 +989,13 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobCancelledEvent
     return argument;
 }
 
-JobPausedEvent::JobPausedEvent() : jobId() {}
+JobPausedEvent::JobPausedEvent() : jobId()
+{
+}
 
-JobPausedEvent::JobPausedEvent(int jobId) : jobId(jobId) {}
+JobPausedEvent::JobPausedEvent(int jobId) : jobId(jobId)
+{
+}
 
 QString JobPausedEvent::toJson() const
 {
@@ -937,7 +1013,10 @@ JobPausedEvent JobPausedEvent::fromJson(const QString &json)
     return { object.value(QStringLiteral("job_id")).toInt() };
 }
 
-void JobPausedEvent::registerMetaTypes() { qDBusRegisterMetaType<JobPausedEvent>(); }
+void JobPausedEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<JobPausedEvent>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const JobPausedEvent &event)
 {
@@ -957,9 +1036,14 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobPausedEvent &e
     return argument;
 }
 
-JobResumedEvent::JobResumedEvent() : jobId() {}
+JobResumedEvent::JobResumedEvent() : jobId()
+{
+}
 
-JobResumedEvent::JobResumedEvent(int jobId, int processorId) : jobId(jobId), processorId(processorId) {}
+JobResumedEvent::JobResumedEvent(int jobId, int processorId)
+    : jobId(jobId), processorId(processorId)
+{
+}
 
 QString JobResumedEvent::toJson() const
 {
@@ -979,7 +1063,10 @@ JobResumedEvent JobResumedEvent::fromJson(const QString &json)
              object.value(QStringLiteral("processor_id")).toInt() };
 }
 
-void JobResumedEvent::registerMetaTypes() { qDBusRegisterMetaType<JobResumedEvent>(); }
+void JobResumedEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<JobResumedEvent>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const JobResumedEvent &event)
 {
@@ -999,10 +1086,15 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobResumedEvent &
     return argument;
 }
 
-JobSubmittedEvent::JobSubmittedEvent() : jobId(), processorId(), siteId() {}
+JobSubmittedEvent::JobSubmittedEvent() : jobId(), processorId(), siteId()
+{
+}
 
 JobSubmittedEvent::JobSubmittedEvent(int jobId, int processorId, int siteId, QString parametersJson)
-    : jobId(jobId), processorId(processorId), siteId(siteId), parametersJson(std::move(parametersJson))
+    : jobId(jobId),
+      processorId(processorId),
+      siteId(siteId),
+      parametersJson(std::move(parametersJson))
 {
 }
 
@@ -1028,7 +1120,10 @@ JobSubmittedEvent JobSubmittedEvent::fromJson(const QString &json)
              jsonToString(object.value(QStringLiteral("parameters")).toObject()) };
 }
 
-void JobSubmittedEvent::registerMetaTypes() { qDBusRegisterMetaType<JobSubmittedEvent>(); }
+void JobSubmittedEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<JobSubmittedEvent>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const JobSubmittedEvent &event)
 {
@@ -1048,7 +1143,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobSubmittedEvent
     return argument;
 }
 
-StepFailedEvent::StepFailedEvent() : jobId(), taskId() {}
+StepFailedEvent::StepFailedEvent() : jobId(), taskId()
+{
+}
 
 StepFailedEvent::StepFailedEvent(int jobId, int taskId, QString stepName)
     : jobId(jobId), taskId(taskId), stepName(std::move(stepName))
@@ -1075,7 +1172,10 @@ StepFailedEvent StepFailedEvent::fromJson(const QString &json)
              object.value(QStringLiteral("step_name")).toString() };
 }
 
-void StepFailedEvent::registerMetaTypes() { qDBusRegisterMetaType<StepFailedEvent>(); }
+void StepFailedEvent::registerMetaTypes()
+{
+    qDBusRegisterMetaType<StepFailedEvent>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const StepFailedEvent &event)
 {
@@ -1095,7 +1195,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, StepFailedEvent &
     return argument;
 }
 
-UnprocessedEvent::UnprocessedEvent() : eventId(), type() {}
+UnprocessedEvent::UnprocessedEvent() : eventId(), type()
+{
+}
 
 UnprocessedEvent::UnprocessedEvent(int eventId,
                                    EventType type,
@@ -1192,7 +1294,10 @@ NodeStatistics::NodeStatistics(QString node,
 {
 }
 
-void NodeStatistics::registerMetaTypes() { qDBusRegisterMetaType<NodeStatistics>(); }
+void NodeStatistics::registerMetaTypes()
+{
+    qDBusRegisterMetaType<NodeStatistics>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const NodeStatistics &statistics)
 {
@@ -1218,9 +1323,13 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, NodeStatistics &s
     return argument;
 }
 
-StepArgument::StepArgument() {}
+StepArgument::StepArgument()
+{
+}
 
-StepArgument::StepArgument(QString value) : value(std::move(value)) {}
+StepArgument::StepArgument(QString value) : value(std::move(value))
+{
+}
 
 void StepArgument::registerMetaTypes()
 {
@@ -1246,7 +1355,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, StepArgument &ste
     return argument;
 }
 
-NewExecutorStep::NewExecutorStep() : processorId(), taskId() {}
+NewExecutorStep::NewExecutorStep() : processorId(), taskId()
+{
+}
 
 NewExecutorStep::NewExecutorStep(int processorId,
                                  int taskId,
@@ -1272,7 +1383,8 @@ void NewExecutorStep::registerMetaTypes()
 QDBusArgument &operator<<(QDBusArgument &argument, const NewExecutorStep &step)
 {
     argument.beginStructure();
-    argument << step.processorId << step.taskId << step.processorPath << step.stepName << step.arguments;
+    argument << step.processorId << step.taskId << step.processorPath << step.stepName
+             << step.arguments;
     argument.endStructure();
 
     return argument;
@@ -1281,13 +1393,16 @@ QDBusArgument &operator<<(QDBusArgument &argument, const NewExecutorStep &step)
 const QDBusArgument &operator>>(const QDBusArgument &argument, NewExecutorStep &step)
 {
     argument.beginStructure();
-    argument >> step.processorId >> step.taskId >> step.processorPath >> step.stepName >> step.arguments;
+    argument >> step.processorId >> step.taskId >> step.processorPath >> step.stepName >>
+        step.arguments;
     argument.endStructure();
 
     return argument;
 }
 
-JobStepToRun::JobStepToRun() : taskId() {}
+JobStepToRun::JobStepToRun() : taskId()
+{
+}
 
 JobStepToRun::JobStepToRun(int taskId, QString module, QString stepName, QString parametersJson)
     : taskId(taskId),
@@ -1321,7 +1436,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, JobStepToRun &ste
     return argument;
 }
 
-StepConsoleOutput::StepConsoleOutput() : taskId() {}
+StepConsoleOutput::StepConsoleOutput() : taskId()
+{
+}
 
 StepConsoleOutput::StepConsoleOutput(int taskId,
                                      QString stepName,
@@ -1373,41 +1490,29 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProductType &prod
     return argument;
 }
 
-NewProduct::NewProduct() : productType(), processorId(), taskId() {}
+NewProduct::NewProduct() : productType(), processorId(), siteId(), jobId()
+{
+}
 
 NewProduct::NewProduct(ProductType productType,
                        int processorId,
-                       int taskId,
+                       int siteId,
+                       int jobId,
                        QString fullPath,
-                       QDateTime createdTimestamp)
+                       QDateTime createdTimestamp,
+                       QString name,
+                       QString quicklookImage,
+                       QString footprint)
     : productType(productType),
       processorId(processorId),
-      taskId(taskId),
+      siteId(siteId),
+      jobId(jobId),
       fullPath(std::move(fullPath)),
-      createdTimestamp(std::move(createdTimestamp))
+      createdTimestamp(std::move(createdTimestamp)),
+      name(std::move(name)),
+      quicklookImage(std::move(quicklookImage)),
+      footprint(std::move(footprint))
 {
-}
-
-void NewProduct::registerMetaTypes() { qDBusRegisterMetaType<NewProduct>(); }
-
-QDBusArgument &operator<<(QDBusArgument &argument, const NewProduct &product)
-{
-    argument.beginStructure();
-    argument << product.productType << product.processorId << product.taskId << product.fullPath
-             << product.createdTimestamp;
-    argument.endStructure();
-
-    return argument;
-}
-
-const QDBusArgument &operator>>(const QDBusArgument &argument, NewProduct &product)
-{
-    argument.beginStructure();
-    argument >> product.productType >> product.processorId >> product.taskId >> product.fullPath >>
-        product.createdTimestamp;
-    argument.endStructure();
-
-    return argument;
 }
 
 QDBusArgument &operator<<(QDBusArgument &argument, int64_t value)
@@ -1448,7 +1553,9 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, uint64_t &value)
     return argument;
 }
 
-DashboardSearch::DashboardSearch() {}
+DashboardSearch::DashboardSearch()
+{
+}
 
 DashboardSearch::DashboardSearch(std::experimental::optional<int> siteId,
                                  std::experimental::optional<int> processorId)
@@ -1456,7 +1563,10 @@ DashboardSearch::DashboardSearch(std::experimental::optional<int> siteId,
 {
 }
 
-void DashboardSearch::registerMetaTypes() { qDBusRegisterMetaType<DashboardSearch>(); }
+void DashboardSearch::registerMetaTypes()
+{
+    qDBusRegisterMetaType<DashboardSearch>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const DashboardSearch &search)
 {
@@ -1491,19 +1601,19 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, DashboardSearch &
     return argument;
 }
 
-ProcessorDescription::ProcessorDescription() : processorId() {}
-
-ProcessorDescription::ProcessorDescription(
-               int processorId,
-               QString shortName,
-               QString fullName)
-    : processorId(processorId),
-      shortName(std::move(shortName)),
-      fullName(std::move(fullName))
+ProcessorDescription::ProcessorDescription() : processorId()
 {
 }
 
-void ProcessorDescription::registerMetaTypes() { qDBusRegisterMetaType<ProcessorDescription>(); }
+ProcessorDescription::ProcessorDescription(int processorId, QString shortName, QString fullName)
+    : processorId(processorId), shortName(std::move(shortName)), fullName(std::move(fullName))
+{
+}
+
+void ProcessorDescription::registerMetaTypes()
+{
+    qDBusRegisterMetaType<ProcessorDescription>();
+}
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ProcessorDescription &processor)
 {
@@ -1523,28 +1633,38 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorDescript
     return argument;
 }
 
-
-ScheduledTask::ScheduledTask(int ti, QString tn ,int pi, int si, QString pp ,int rt, int rad, int rmd,
-                             QDateTime  fst, int rp, int tp, ScheduledTaskStatus& ts):
- taskId(ti),
- taskName(tn),
- processorId(pi),
- siteId(si),
- processorParameters(pp),
- repeatType(rt),
- repeatAfterDays(rad),
- repeatOnMonthDay(rmd),
- firstScheduledRunTime(fst),
- retryPeriod(rp),
- taskPriority(tp),
- taskStatus(ts)
+ScheduledTask::ScheduledTask(int ti,
+                             QString tn,
+                             int pi,
+                             int si,
+                             QString pp,
+                             int rt,
+                             int rad,
+                             int rmd,
+                             QDateTime fst,
+                             int rp,
+                             int tp,
+                             ScheduledTaskStatus &ts)
+    : taskId(ti),
+      taskName(tn),
+      processorId(pi),
+      siteId(si),
+      processorParameters(pp),
+      repeatType(rt),
+      repeatAfterDays(rad),
+      repeatOnMonthDay(rmd),
+      firstScheduledRunTime(fst),
+      retryPeriod(rp),
+      taskPriority(tp),
+      taskStatus(ts)
 {
 }
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &request)
 {
     argument.beginStructure();
-    argument << request.processorId << request.siteId << request.ttNextScheduledRunTime << request.parametersJson ;
+    argument << request.processorId << request.siteId << request.ttNextScheduledRunTime
+             << request.parametersJson;
     argument.endStructure();
     return argument;
 }
@@ -1552,7 +1672,8 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ProcessingRequest &requ
 const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessingRequest &request)
 {
     argument.beginStructure();
-    argument >> request.processorId >> request.siteId >> request.ttNextScheduledRunTime >> request.parametersJson ;
+    argument >> request.processorId >> request.siteId >> request.ttNextScheduledRunTime >>
+        request.parametersJson;
     argument.endStructure();
 
     return argument;

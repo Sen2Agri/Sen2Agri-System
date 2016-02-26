@@ -492,15 +492,6 @@ void Serialization::stepConsoleOutputList()
     compare(WaitForResponseAndThrow(client->ReflectStepConsoleOutputList(emptyValue)), emptyValue);
 }
 
-void Serialization::newProduct()
-{
-    const auto &value = maker<NewProduct>::make();
-    compare(WaitForResponseAndThrow(client->ReflectNewProduct(value)), value);
-
-    NewProduct emptyValue;
-    compare(WaitForResponseAndThrow(client->ReflectNewProduct(emptyValue)), emptyValue);
-}
-
 void Serialization::dashboardSearch()
 {
     const auto &value = maker<DashboardSearch>::make();

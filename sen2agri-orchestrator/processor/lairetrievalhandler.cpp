@@ -378,8 +378,14 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L3BLaiProductTypeId,
-            event.processorId, event.taskId,
-            productFolder, QDateTime::currentDateTimeUtc() });
+                            event.processorId,
+                            event.jobId,
+                            event.siteId,
+                            productFolder,
+                            QDateTime::currentDateTimeUtc(),
+                            "name",
+                            "quicklook",
+                            "POLYGON(())" });
 
         // Now remove the job folder containing temporary files
         //RemoveJobFolder(ctx, event.jobId);

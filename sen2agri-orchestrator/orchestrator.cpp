@@ -12,7 +12,6 @@
 #include "processor/compositehandler.hpp"
 #include "processor/lairetrievalhandler.hpp"
 #include "processor/phenondvihandler.hpp"
-#include "processor/dummyprocessorhandler.hpp"
 #include "json_conversions.hpp"
 #include "schedulingcontext.h"
 
@@ -35,8 +34,6 @@ std::map<int, std::unique_ptr<ProcessorHandler>> & GetHandlersMap(PersistenceMan
             handlersMap.emplace(procDescr.processorId, std::make_unique<CropMaskHandler>());
         } else if(procDescr.shortName == "l4b") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<CropTypeHandler>());
-        } else if(procDescr.shortName == "dummy") {
-            handlersMap.emplace(procDescr.processorId, std::make_unique<DummyProcessorHandler>());
         } else {
             bAdded = false;
             throw std::runtime_error(

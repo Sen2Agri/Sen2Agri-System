@@ -444,10 +444,14 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L3AProductTypeId,
-            event.processorId,
-            event.taskId,
-            productFolder,
-            QDateTime::currentDateTimeUtc() });
+                            event.processorId,
+                            event.jobId,
+                            event.siteId,
+                            productFolder,
+                            QDateTime::currentDateTimeUtc(),
+                            "name",
+                            "quicklook",
+                            "POLYGON(())" });
 
         // Now remove the job folder containing temporary files
         // TODO: Reinsert this line - commented only for debug purposes
