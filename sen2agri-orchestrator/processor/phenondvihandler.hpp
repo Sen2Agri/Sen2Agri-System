@@ -14,8 +14,8 @@ private:
     void WriteExecutionInfosFile(const QString &executionInfosPath,
                                  const QStringList &listProducts);
 
-    virtual ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
-                                                const ConfigurationParameterValueMap &requestOverrideCfgValues);
+    ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
+                                                const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
 };
 
 #endif // PHENONDVIHANDLER_HPP

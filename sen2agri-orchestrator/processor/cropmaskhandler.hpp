@@ -10,8 +10,8 @@ private:
     void HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 const TaskFinishedEvent &event) override;
 
-    virtual ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
-                                                const ConfigurationParameterValueMap &requestOverrideCfgValues);
+    ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
+                                                const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
 
     void HandleInsituJob(EventProcessingContext &ctx, const JobSubmittedEvent &event);
     void HandleNoInsituJob(EventProcessingContext &ctx, const JobSubmittedEvent &event);
