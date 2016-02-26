@@ -3,5 +3,6 @@ Description=Runs MACCS on L1C products
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/demmaccs_launcher.py
+#ExecStart=/usr/bin/demmaccs_launcher.py
+ExecStart=/usr/share/sen2agri/sen2agri-demmacs/demmaccs_launcher.py
 User=sen2agri-service
