@@ -21,7 +21,8 @@ BEGIN
         created_timestamp,
         "name",
         quicklook_image,
-        footprint
+        footprint,
+        geog
     )
     VALUES (
         _product_type_id,
@@ -32,7 +33,10 @@ BEGIN
         COALESCE(_created_timestamp, now()),
         _name,
         _quicklook_image,
-        _footprint :: POLYGON
+        (SELECT '(' || string_agg(REPLACE(replace(ST_AsText(geom) :: text, 'POINT', ''), ' ', ','), ',') || ')'
+         from ST_DumpPoints(ST_Envelope(_footprint :: geometry))
+         WHERE path[2] IN (1, 3)) :: POLYGON,
+         _footprint
     )
     RETURNING id INTO return_id;
 
