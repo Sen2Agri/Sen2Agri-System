@@ -4,6 +4,7 @@
 #include <QProcess>
 #include <QFileDialog>
 #include <QLabel>
+#include <QScrollArea>
 #include <QComboBox>
 #include <QCheckBox>
 #include <QPushButton>
@@ -126,8 +127,14 @@ void MainDialog::loadModel(const ConfigurationSet &configuration)
 
     for (const auto &cat : configModel.categories()) {
         if (usedCategories.contains(cat.categoryId)) {
-            auto widget = new QWidget(ui->tabWidget);
+            auto scrollArea = new QScrollArea(ui->tabWidget);
+
+            auto widget = new QWidget(scrollArea);
             auto parentLayout = new QFormLayout(widget);
+            widget->setBackgroundRole(QPalette::Light);
+
+            scrollArea->setWidget(widget);
+            scrollArea->setWidgetResizable(true);
 
             if (cat.allowPerSiteCustomization) {
                 auto siteList = createSiteList(cat.categoryId, widget);
@@ -140,7 +147,7 @@ void MainDialog::loadModel(const ConfigurationSet &configuration)
             parentLayout->addRow(createFieldsWidget(
                 std::experimental::nullopt, cat.categoryId, siteLists.back(), widget));
 
-            ui->tabWidget->addTab(widget, cat.name);
+            ui->tabWidget->addTab(scrollArea, cat.name);
             tabCategory.emplace_back(cat.categoryId);
         }
     }
