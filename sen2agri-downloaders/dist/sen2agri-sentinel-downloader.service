@@ -1,0 +1,7 @@
+[Unit]
+Description=Downloads Sentinel-2 products
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/sentinel_download.py -a /etc/sen2agri/apihub.txt -l amazon
+User=sen2agri-service

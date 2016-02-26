@@ -1,0 +1,10 @@
+[Unit]
+Description=Sentinel-2 downloader timer
+
+[Timer]
+Unit=sen2agri-sentinel-downloader.timer
+OnCalendar=daily
+Persistent=true
+
+[Install]
+WantedBy=timers.target

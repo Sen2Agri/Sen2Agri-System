@@ -1,0 +1,7 @@
+[Unit]
+Description=Downloads Landsat 8 products
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/landsat_download.py -u /etc/sen2agri/usgs.txt -z yes
+User=sen2agri-service

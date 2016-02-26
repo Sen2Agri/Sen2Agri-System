@@ -15,17 +15,17 @@ LANDSAT8_SATELLITE_ID = int(2)
 
 def runCmd(cmdArray, useShell=True):
     start = time.time()
-    print(" ".join(map(pipes.quote, cmdArray)))    
+    print(" ".join(map(pipes.quote, cmdArray)))
     res = 0
     if not FAKE_COMMAND:
         res = subprocess.call(cmdArray, shell=useShell)
     print("App finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     if res != 0:
-        print("Application error")        
+        print("Application error")
     return res
 
 def createRecursiveDirs(dirName):
-    #check if it already exists.... otherwise the makedirs function will raise an exception 
+    #check if it already exists.... otherwise the makedirs function will raise an exception
     if os.path.exists(dirName):
         if not os.path.isdir(dirName):
             print("Can't create the output directory because there is a file with the same name")
@@ -69,9 +69,9 @@ def checkIfSeason(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearArra
         if currentMonth >= startSeasonMonth and currentMonth <= 12:
             #endSeasonYear = currentYear + 1
             yearArray[1] = currentYear + 1
-        else: 
+        else:
             if currentMonth >= 1:
-                #startSeasonYear = currentYear - 1        
+                #startSeasonYear = currentYear - 1
                 yearArray[0] = currentYear - 1
     log(logDir, "StartSeasonYear:{} | EndSeasonYear:{}".format(yearArray[0], yearArray[1]))
     currentDate = datetime.date.today()
@@ -82,16 +82,15 @@ def checkIfSeason(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearArra
 
 ###########################################################################
 class OptionParser (optparse.OptionParser):
- 
+
     def check_required (self, opt):
       option = self.get_option(opt)
       # Assumes the option's 'default' is set to None!
       if getattr(self.values, option.dest) is None:
           self.error("{} option not supplied".format(option))
-          
- 
-###########################################################################
 
+
+###########################################################################
 
 class Config(object):
     def __init__(self):
@@ -102,29 +101,29 @@ class Config(object):
     def loadConfig(self, configFile):
         try:
             with open(configFile, 'r') as config:
-                foundDwnSection = False
+                found_section = False
                 for line in config:
                     line = line.strip(" \n\t\r")
-                    if foundDwnSection and line.startswith('['):
+                    if found_section and line.startswith('['):
                         break
-                    elif foundDwnSection:
+                    elif found_section:
                         elements = line.split('=')
                         if len(elements) == 2:
-                            if elements[0].lower() == "host":
+                            if elements[0].lower() == "hostname":
                                 self.host = elements[1]
-                            elif elements[0].lower() == "database" or elements[0].lower() == "db":
+                            elif elements[0].lower() == "databasename":
                                 self.database = elements[1]
-                            elif elements[0].lower() == "user":                            
+                            elif elements[0].lower() == "username":
                                 self.user = elements[1]
-                            elif elements[0].lower() == "pass" or elements[0].lower() == "password":                            
+                            elif elements[0].lower() == "password":
                                 self.password = elements[1]
                             else:
-                                print("Unkown key for [Downloader] section")
+                                print("Unkown key for [Database] section")
                         else:
                             print("Error in config file, found more than on keys, line: {}".format(line))
-                    elif line == "[Downloader]":
+                    elif line == "[Database]":
                         foundDwnSection = True
-                        
+
         except:
             print("Error in opening the config file ".format(str(configFile)))
             return False
@@ -160,7 +159,7 @@ class AOIDatabase(object):
         self.endWinterSeason = configParams[3]
         self.maxCloudCoverage = int(configParams[4])
         self.writeDir = configParams[5]
-        
+
 
     def fillHistory(self, dbInfo):
         self.aoiHistoryFiles = dbInfo
@@ -184,7 +183,7 @@ class AOIDatabase(object):
             print("tiles: NONE")
         else:
             print("tiles:")
-            print(" ".join(self.aoiTiles))    
+            print(" ".join(self.aoiTiles))
 
         if len(self.aoiHistoryFiles) <= 0:
             print("historyFiles: NONE")
@@ -206,7 +205,7 @@ class AOIInfo(object):
         try:
             connectString = "dbname='{}' user='{}' host='{}' password='{}'".format(self.databaseName, self.user, self.serverIP, self.password)
             print("connectString:={}".format(connectString))
-            self.conn = psycopg2.connect(connectString)            
+            self.conn = psycopg2.connect(connectString)
             self.cursor = self.conn.cursor()
             self.isConnected = True
         except:
@@ -249,7 +248,7 @@ class AOIInfo(object):
                 baseQuery = "select * from sp_get_parameters(\'downloader."
                 whereQuery = "where \"site_id\"="
                 suffixArray = ["summer-season.start\')", "summer-season.end\')", "winter-season.start\')", "winter-season.end\')", "max-cloud-coverage\')", "{}write-dir\')".format(writeDirSatelliteName)]
-                dbHandler = True 
+                dbHandler = True
                 configArray = []
                 for suffix in suffixArray:
                     baseQuerySite = "{}{}".format(baseQuery, suffix)
@@ -276,22 +275,22 @@ class AOIInfo(object):
                     except Exception, e:
                         print("exception in query for downloader.{}:".format(suffix))
                         print("{}".format(e))
-                        self.databaseDisconnect()        
+                        self.databaseDisconnect()
                         dbHandler = False
-                        break                    
+                        break
                 print("-------------------------")
                 if dbHandler:
                     currentAOI.setConfigParams(configArray)
                     try:
                         self.cursor.execute("select \"product_name\" from downloader_history where \"satellite_id\"={} and \"site_id\"={}".format(satelliteId, currentAOI.siteId))
-                        if self.cursor.rowcount > 0: 
-                            result = self.cursor.fetchall()       
+                        if self.cursor.rowcount > 0:
+                            result = self.cursor.fetchall()
                             for res in result:
                                 if len(res) == 1:
                                     currentAOI.appendHistoryFile(res[0])
                         self.cursor.execute("select * from sp_get_site_tiles({} :: smallint, {})".format(currentAOI.siteId, satelliteId))
-                        if self.cursor.rowcount > 0: 
-                            result = self.cursor.fetchall()       
+                        if self.cursor.rowcount > 0:
+                            result = self.cursor.fetchall()
                             for res in result:
                                 if len(res) == 1:
                                     currentAOI.appendTile(res[0])
@@ -299,11 +298,11 @@ class AOIInfo(object):
                         print("exception = {}".format(e))
                         print("Error in getting the downloaded files")
                         dbHandler = False
-                        self.databaseDisconnect()        
-                if dbHandler:                    
+                        self.databaseDisconnect()
+                if dbHandler:
                     retArray.append(currentAOI)
-                    
-        self.databaseDisconnect()        
+
+        self.databaseDisconnect()
         return retArray
     def updateHistory(self, siteId, satelliteId, productName, fullPath):
         if not self.databaseConnect():

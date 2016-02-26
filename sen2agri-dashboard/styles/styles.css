@@ -1,301 +1,443 @@
 /* This file contains the styles for the dashboard page. */
-
 html, body {
-    height: 100%;
+	height: 100%;
 }
 
 .container {
-    height: 100%;
-    display: table;
+	height: 100%;
+	display: table;
 }
 
 .nav-tabs {
-    margin-top: 10px;
-    margin-bottom: 0;
-    font-weight: bold;
-    min-width: 80vw;
+	margin-top: 10px;
+	margin-bottom: 0;
+	font-weight: bold;
+	min-width: 80vw;
 }
 
 .tab-content {
-    border-left: 1px solid #ddd;
-    border-right: 1px solid #ddd;
-    border-bottom: 1px solid #ddd;
-    border-radius: 0px 0px 5px 5px;
-    padding: 10px;
-    margin-bottom: 10px;
-    font-size: 12px;
-    height: 93vh;
-    min-width: 80vw;
+	border-left: 1px solid #ddd;
+	border-right: 1px solid #ddd;
+	border-bottom: 1px solid #ddd;
+	border-radius: 0px 0px 5px 5px;
+	padding: 10px;
+	margin-bottom: 10px;
+	font-size: 12px;
+	height: 93vh;
+	min-width: 80vw;
 }
 
 .tab-pane {
-    height: 100%;
+	height: 100%;
 }
 
 div.panel {
-    margin-bottom: 10px;
+	margin-bottom: 10px;
 }
 
 div.panel-heading {
-    font-weight: bold;
+	font-weight: bold;
 }
 
 div.panel-heading.smaller_padding {
-    padding: 2px 15px;
+	padding: 2px 15px;
 }
 
 div.panel div.full_width {
-    width: 98%;
-    margin-left: auto;
-    margin-right: auto;
+	width: 98%;
+	margin-left: auto;
+	margin-right: auto;
 }
 
 div.panel div.full_height {
-    height: 95%;
-    margin-top: auto;
-    margin-bottom: auto;
+	height: 95%;
+	margin-top: auto;
+	margin-bottom: auto;
 }
 
 div.panel table {
-    border-collapse: initial
+	border-collapse: initial
 }
 
 div.panel table.full_width {
-    width: 98%;
-    margin-left: auto;
-    margin-right: auto;
+	width: 98%;
+	margin-left: auto;
+	margin-right: auto;
 }
 
 div.panel table.full_height {
-    height: 95%;
-    margin-top: auto;
-    margin-bottom: auto;
+	height: 95%;
+	margin-top: auto;
+	margin-bottom: auto;
 }
 
 div.panel table.table th {
-    margin: auto;
-    vertical-align: middle;
-    text-align: center;
+	margin: auto;
+	vertical-align: middle;
+	text-align: center;
 }
 
 div.panel table.table td {
-    margin: auto;
-    vertical-align: middle;
-    text-align: center;
-    font-size: 10px;
+	margin: auto;
+	vertical-align: middle;
+	text-align: center;
+	font-size: 10px;
 }
 
-div.panel table.default_panel_style th, div.panel table.default_panel_style td {
-    /*padding: 13px 5px;*/
-    text-align: left;
+div.panel table.default_panel_style th, div.panel table.default_panel_style td
+	{
+	/*padding: 13px 5px;*/
+	text-align: left;
 }
 
 div.panel table.default_panel_style tr :nth-child(1) {
-    padding-left: 10%;
-    width: 50%;
+	padding-left: 10%;
+	width: 50%;
 }
 
 div.panel table.default_panel_style tr :nth-child(2) {
+	
 }
-
 
 div.panel table.server_resources_table {
-    height: 87%;
-    width: 48%;
-    display: inline-block;
-    margin-left: 10px;
-    margin-right: 10px;
-    margin-top: 5px;
-    margin-bottom: 5px;
-    box-sizing: border-box;
+	height: 87%;
+	width: 48%;
+	display: inline-block;
+	margin-left: 10px;
+	margin-right: 10px;
+	margin-top: 5px;
+	margin-bottom: 5px;
+	box-sizing: border-box;
 }
 
-
-div.panel table.server_resources_table tbody{
-    display: table;
-    height: 100%;
-    width: 100%;
+div.panel table.server_resources_table tbody {
+	display: table;
+	height: 100%;
+	width: 100%;
 }
 
 div.panel table.server_resources_table tr {
-    display: table-row;
-    height: 18%;
+	display: table-row;
+	height: 18%;
 }
 
 div.panel table.server_resources_table tr:first-child {
-    display: table-row;
-    height: 10%;
+	display: table-row;
+	height: 10%;
 }
 
 div.panel table.server_resources_table tr:last-child {
-    display: table-row;
-    height: 0%;
+	display: table-row;
+	height: 0%;
 }
 
 div.panel table.server_resources_table th:nth-child(1) {
-    text-align: left;
+	text-align: left;
 }
 
-div.panel table.server_resources_table tr td{
-    padding: 0px;
+div.panel table.server_resources_table tr td {
+	padding: 0px;
 }
 
 div.panel table.server_resources_table tr td:nth-child(1) {
-    width: 10%;
+	width: 10%;
 }
 
 div.panel table.server_resources_table tr td:nth-child(2) {
-    width: 20%;
+	width: 20%;
 }
 
 div.panel table.server_resources_table tr td:nth-child(3) {
-    width: 70%;
+	width: 70%;
 }
 
-div.panel table.server_resources_table div.server_resources_table_graph {
-    display: inline-block;
-    height: 90%;
-    min-height: 65px;
-    width: 100%;
+div.panel table.server_resources_table div.server_resources_table_graph
+	{
+	display: inline-block;
+	height: 90%;
+	min-height: 65px;
+	width: 100%;
 }
 
 div.float_left {
-    float: left;
+	float: left;
 }
 
 div.full_height {
-    height: 100%;
+	height: 100%;
 }
 
 div.full_width {
-    width: 100%;
+	width: 100%;
 }
 
-
 #pnl_current_jobs_container {
-    height: 50%;
-    width: 100%;
+	height: 50%;
+	width: 100%;
 }
 
 #pnl_current_jobs {
-    height: 98%;
-    width: 100%;
-    overflow: auto;
-    bottom: 2%;
-    font-size: 0.75em;
+	height: 98%;
+	width: 100%;
+	overflow: auto;
+	bottom: 2%;
+	font-size: 0.75em;
 }
 
 #pnl_current_jobs table:first-of-type tr td {
-    padding: 8px 2px;
+	padding: 8px 2px;
 }
 
 #pnl_current_jobs table:first-of-type tr td:last-of-type {
-    min-width: 190px;
+	min-width: 190px;
 }
 
 #pnl_server_resources_container {
-    height: 50%;
-    width: 100%;
+	height: 50%;
+	width: 100%;
 }
 
 #pnl_server_resources {
-    height: 100%;
-    width: 100%;
-    overflow: auto;
-    margin-bottom: 0px;
-    font-size: 0.75em;
+	height: 100%;
+	width: 100%;
+	overflow: auto;
+	margin-bottom: 0px;
+	font-size: 0.75em;
 }
 
-
 div.panel_resources_and_output_container {
-    height: 100%;
-    width: 50%;
-    float: left;
+	height: 50%;
+	/*height: 100%;*/
+	width: 50%;
+	float: left;
 }
 
 div.panel_resources_container {
-    height: 50%;
-    width: 100%;
+	height: 50%;
+	width: 100%;
 }
 
 div.panel_resources {
-    height: 98%;
-    width: 100%;
-    overflow: auto;
-    bottom: 2%;
+	height: 98%;
+	width: 100%;
+	overflow: auto;
+	bottom: 2%;
 }
 
 div.panel_output_container {
-    height: 50%;
-    width: 100%;
+	height: 50%;
+	width: 100%;
 }
 
 div.panel_output {
-    height: 100%;
-    width: 100%;
-    overflow: auto;
-    margin-bottom: 0px;
+	height: 100%;
+	width: 100%;
+	overflow: auto;
+	margin-bottom: 0px;
 }
 
 div.panel_configuration_container {
-    height: 100%;
-    width: 50%;
-    float: left;
+	height: 50%;
+	/* height: 100%;*/
+	width: 50%;
+	float: left;
 }
 
+/*added for  scheduled tasks*/
+div.panel_scheduled_container {
+	clear: both;
+	margin-top: 4px; 
+	height: 48%;
+	width: 100%;
+	float: left;
+}
+
+div.panel_scheduled {
+	height: 100%;
+	width: 100%;
+	overflow: auto;
+	margin-bottom: 0px;
+}
+
+div.panel_job_container {
+	margin-top: 3px; 
+	height: 60%;
+	width: 98%;
+	margin-right: 2%;
+}
+
+div.div-scheduled{
+	margin-left:5px;
+	
+}
+
+div.panel_job {
+	height: 100%;
+	width: 98%;
+	overflow: auto;
+	margin-bottom: 0px;
+	margin-left: 2%;
+}
+
+/*end scheduled tasks*/
+
 div.panel_configuration {
-    height: 100%;
-    width: 98%;
-    overflow: auto;
-    margin-bottom: 0px;
-    margin-left: 2%;
+	height: 100%;
+	width: 98%;
+	overflow: auto;
+	margin-bottom: 0px;
+	margin-left: 2%;
 }
 
 div.dropdown .btn .caret {
-    margin-left: 3px;
+	margin-left: 3px;
 }
 
 div.parent_for_pop_up {
-    display: none;
-    position:fixed;
-    top: 0%;
-    left: 0%;
-    width: 100%;
-    height: 100%;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 990;
-    background-color:rgba(0, 0, 0, 0.6);
+	display: none;
+	position: fixed;
+	top: 0%;
+	left: 0%;
+	width: 100%;
+	height: 100%;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
+	z-index: 990;
+	background-color: rgba(0, 0, 0, 0.6);
 }
 
 div.pop_up {
-    display: none;
-    position: absolute;
-    overflow: visible;
-    margin: auto;
-    z-index: 999;
-    background-color: #FFFFFF;
-    border: 1px solid #222222;
-    box-shadow: 5px 5px 5px #888888;
-    padding: 10px;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
+	display: none;
+	position: absolute;
+	overflow: visible;
+	margin: auto;
+	z-index: 999;
+	background-color: #FFFFFF;
+	border: 1px solid #222222;
+	box-shadow: 5px 5px 5px #888888;
+	padding: 10px;
+	left: 50%;
+	top: 50%;
+	transform: translate(-50%, -50%);
 }
 
-div.pop_up #close_button{
-    position: absolute;
-    top: 0px;
-    right: 0px;
-    margin: 2px;
+div.pop_up #close_button {
+	position: absolute;
+	top: 0px;
+	right: 0px;
+	margin: 2px;
 }
 
 .hand_cursor:hover {
-    cursor:pointer;
+	cursor: pointer;
 }
 
 * {
-    box-sizing: content-box;
+	box-sizing: content-box;
 }
 
+#submitedform {
+	color: green;
+}
+
+#alert {
+	dysplay: none;
+}
+
+.form-group-sm {
+	height: 22px;
+}
+
+#div_startdate {
+	display: none;
+}
+
+#div_repeatafter {
+	display: none;
+}
+
+#div_oneverydate {
+	display: none;
+}
+
+.form-group-sm .form-control {
+	height: 22px;
+}
+
+.form-group-sm select.form-control {
+	height: 22px;
+	line-height: 22px;
+}
+
+label.error {
+	color: #ff0000;
+	font-size: 12px;
+}
+
+/* LOGIN STYLES -------------------------------------------------- */
+#signin {
+	display: block;
+	background-color: #ffffff;
+	margin: 0px auto;
+	border-radius: 4px;
+	border: 1px solid #D8DDE6;
+	color: #16325c;
+	width: 300px;
+	padding: 20px;
+}
+#signin label {
+	font-size: 12px;
+	font-weight: 400;
+	color: #54698d;
+	margin: 0px;
+}
+#signin input[type="text"], #signin input[type="password"] {
+	display: block;
+	padding: 12px;
+	width: 100%;
+	margin-top: 8px;
+	margin-bottom: 16px;
+	height: auto !important;
+	border: 1px solid #D8DDE6;
+	border-radius: 4px;
+	background-color: #ffffff;
+	font-family: SFS, Arial, sans-serif;
+	box-sizing: border-box;
+	-webkit-appearance: none;
+	font-size: 14px;
+}
+#signin input[type="submit"] {
+	width: 100%;
+	background-color: #93BA47;
+	color: white;
+	font: 22px/40px "Roboto Condensed", Arial, Helvetica, sans-serif;
+	text-shadow: 0px -1px 0px #607725;
+	transition: all 0.1s;
+	border: 1px solid transparent;
+	border-radius: 4px;
+}
+.vspace { height: 50px; }
+.inactivemenu li {
+	font: 22px/40px "Roboto Condensed", Arial, Helvetica, sans-serif;
+	text-transform: lowercase;
+	text-decoration: none;
+	color: #CACACA;
+	cursor: default;
+	text-shadow: 0px 1px 0px #607725;
+}
+.error {
+	color: red;
+	text-align: center;
+	padding-top: 20px;
+	
+}
+.message_footer {
+    top: -48px;
+	padding-right: 100px;
+    display: block;
+    position: relative;
+	float: right;
+	font-size: 12px;
+}
+/* END LOGIN STYLES ---------------------------------------------- */

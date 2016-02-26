@@ -755,10 +755,11 @@ function update_sites(json_data)
 		//Remove the old options
 		siteEl = $(siteEl);
 		siteEl.empty();
-		
 		siteEl.append('<option value="">Select a site</option>');
 		$.each(json_data, function(index, siteObj) {
-			siteEl.append('<option value="'+siteObj.id+'">'+siteObj.name+'</option>');
+			if ((jsonSiteId) == 0 || (siteObj.id == jsonSiteId)) {
+				siteEl.append('<option value="'+siteObj.id+'">'+siteObj.name+'</option>');
+			};
 		});
 		
 		siteEl.change(function (event) {

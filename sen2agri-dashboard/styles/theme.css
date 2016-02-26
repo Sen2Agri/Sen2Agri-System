@@ -323,7 +323,7 @@ p.readmore a {
     text-align: center;
 }
 
-.tabControl { min-height: 500px; position: relative; width: 100%; /*font-family: "Roboto Condensed", Arial, Helvetica, sans-serif; font-size: 1em;*/ }
+.tabControl { min-height: 1000px; position: relative; width: 100%; /*font-family: "Roboto Condensed", Arial, Helvetica, sans-serif; font-size: 1em;*/ }
 .tabControl > div { display: inline-block; }
 .tabControl > div > a { margin-left: -1px; position: relative; left: 1px; text-decoration: none; color: black; background: white; display: block; float: left; padding: 5px 10px; border: 1px solid #ccc; border-bottom: 1px solid white; }
 .tabControl > div:not(:target) > a { border-bottom: 0; background: -moz-linear-gradient(top, white, #eee); }
