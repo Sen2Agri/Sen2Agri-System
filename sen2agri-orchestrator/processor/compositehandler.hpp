@@ -7,7 +7,7 @@ class CompositeHandler : public ProcessorHandler
 {
 private:
     void HandleProductAvailableImpl(EventProcessingContext &ctx,
-                                    const ProductAvailableEvent &event);
+                                    const ProductAvailableEvent &event) override;
     void HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                 const JobSubmittedEvent &event) override;
     void HandleTaskFinishedImpl(EventProcessingContext &ctx,
@@ -26,8 +26,8 @@ private:
                                  std::map<QString, QString> &configParameters,
                                  const QStringList &listProducts);
 
-    virtual ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
-                                                const ConfigurationParameterValueMap &requestOverrideCfgValues);
+    ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
+                                                const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
 
 };
 

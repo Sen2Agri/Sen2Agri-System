@@ -56,8 +56,8 @@ private:
                                             const QString &errEstFile, const QString &modelsFolder, std::map<QString, QString> &configParameters);
     const QString& GetDefaultCfgVal(std::map<QString, QString> &configParameters, const QString &key, const QString &defVal);
 
-    virtual ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
-                                                const ConfigurationParameterValueMap &requestOverrideCfgValues);
+    ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
+                                                const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
 
 private:
     int m_nTimeSeriesBuilderIdx;
