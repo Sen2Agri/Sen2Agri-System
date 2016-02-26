@@ -336,7 +336,7 @@ div.pop_up #close_button {
 * {
 	box-sizing: content-box;
 }
-
+/*
 #submitedform {
 	color: green;
 }
@@ -374,7 +374,7 @@ label.error {
 	color: #ff0000;
 	font-size: 12px;
 }
-
+*/
 /* LOGIN STYLES -------------------------------------------------- */
 #signin {
 	display: block;
