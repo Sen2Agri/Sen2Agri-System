@@ -178,7 +178,7 @@ QComboBox *MainDialog::createSiteList(int categoryId, QWidget *parent)
         }
         parameterChangeListeners[categoryId].clear();
 
-        auto widget = ui->tabWidget->currentWidget();
+        auto widget = static_cast<QScrollArea *>(ui->tabWidget->currentWidget())->widget();
         switchSite(siteId, categoryId, siteList, widget);
     });
 
