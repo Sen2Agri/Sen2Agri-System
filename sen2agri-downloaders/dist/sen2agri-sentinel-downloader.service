@@ -3,5 +3,6 @@ Description=Downloads Sentinel-2 products
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/sentinel_download.py -a /etc/sen2agri/apihub.txt -l amazon
+#ExecStart=/usr/bin/sentinel_download.py -a /etc/sen2agri/apihub.txt -l amazon
+ExecStart=/usr/share/sen2agri/sen2agri-downloaders/sentinel_download.py -a /usr/share/sen2agri/sen2agri-downloaders/apihub.txt -l amazon
 User=sen2agri-service

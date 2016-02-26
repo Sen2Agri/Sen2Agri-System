@@ -1,42 +1,4 @@
-﻿<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
-          "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml">
-<head>
-    <title>Sentinel-2 for Agriculture</title>
-	<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-	<meta http-equiv="Pragma" content="no-cache" />
-	<meta http-equiv="Expires" content="0" />
-    <meta name="keywords" content="" />
-    <meta name="description" content="" />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <meta http-equiv="content-language" content="" />
-    <link href="http://fonts.googleapis.com/css?family=Roboto+Condensed&amp;subset=latin,latin-ext" rel="stylesheet" type="text/css" />
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css" />
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css" />
-    <link rel="stylesheet" href="libraries/nvd3-1.1.11/nv.d3.css" />
-    <link rel="stylesheet" href="styles/styles.css" />
-    <link rel="stylesheet" href="styles/theme.css" />
-</head>
-<body>
-    <div id="header" style="height:120px;">
-        <div id="header2" style="background-image: url(images/logo2.png); background-repeat: no-repeat;">
-            <!--div id="logo" style="margin-top: -50px;">
-                <h1><a href="#">&nbsp;</a></h1>
-                <p id="subtitle">Sentinel-2 for Agriculture Monitoring</p>
-            </div-->
-        </div>
-    </div>
-    <div id="menu">
-        <div id="menu2">
-            <ul>
-                <li><a href="main.html">Products</a></li>
-                <li><a href="system.html">System Overview</a></li>
-                <li><a href="dashboard.html#tab_l2a">Dashboard</a></li>
-                <li><a href="config.html">Configuration</a></li>
-                <!--<li><a href="#">Contact</a></li>-->
-            </ul>
-        </div>
-    </div>
+﻿<?php include 'master.php'; ?>
     <div id="main">
         <div id="main2">
             <div id="main3">
@@ -72,18 +34,6 @@
             </div>
         </div>
     </div><!-- main --><!-- main2 --><!-- main3 -->
-    <div id="bar">
-        <div id="bar2">
-            <div id="bar3">
-                <div class="clearing" style="height:20px;">&nbsp;</div>
-            </div>
-        </div>
-    </div><!-- bar --><!-- bar2 --><!-- bar3 -->
-    <div id="footer" style="height: 20px;">
-        <div id="footer2" style="height: 20px; text-align: center; vertical-align: middle; padding: 0 0 0 0;">
-            <span>Copyright &copy; 2015 CS ROMANIA SA</span>
-        </div>
-    </div>
     <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
@@ -95,5 +45,4 @@
     <script src="scripts/helpers.js"></script>
     <script src="scripts/processing_functions.js"></script>
     <script src="scripts/processing_server.js"></script>
-</body>
-</html>
+<?php include 'ms_foot.php'; ?>
