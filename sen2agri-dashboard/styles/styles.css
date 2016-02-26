@@ -344,3 +344,100 @@ div.pop_up #close_button {
 #alert {
 	dysplay: none;
 }
+
+.form-group-sm {
+	height: 22px;
+}
+
+#div_startdate {
+	display: none;
+}
+
+#div_repeatafter {
+	display: none;
+}
+
+#div_oneverydate {
+	display: none;
+}
+
+.form-group-sm .form-control {
+	height: 22px;
+}
+
+.form-group-sm select.form-control {
+	height: 22px;
+	line-height: 22px;
+}
+
+label.error {
+	color: #ff0000;
+	font-size: 12px;
+}
+
+/* LOGIN STYLES -------------------------------------------------- */
+#signin {
+	display: block;
+	background-color: #ffffff;
+	margin: 0px auto;
+	border-radius: 4px;
+	border: 1px solid #D8DDE6;
+	color: #16325c;
+	width: 300px;
+	padding: 20px;
+}
+#signin label {
+	font-size: 12px;
+	font-weight: 400;
+	color: #54698d;
+	margin: 0px;
+}
+#signin input[type="text"], #signin input[type="password"] {
+	display: block;
+	padding: 12px;
+	width: 100%;
+	margin-top: 8px;
+	margin-bottom: 16px;
+	height: auto !important;
+	border: 1px solid #D8DDE6;
+	border-radius: 4px;
+	background-color: #ffffff;
+	font-family: SFS, Arial, sans-serif;
+	box-sizing: border-box;
+	-webkit-appearance: none;
+	font-size: 14px;
+}
+#signin input[type="submit"] {
+	width: 100%;
+	background-color: #93BA47;
+	color: white;
+	font: 22px/40px "Roboto Condensed", Arial, Helvetica, sans-serif;
+	text-shadow: 0px -1px 0px #607725;
+	transition: all 0.1s;
+	border: 1px solid transparent;
+	border-radius: 4px;
+}
+.vspace { height: 50px; }
+.inactivemenu li {
+	font: 22px/40px "Roboto Condensed", Arial, Helvetica, sans-serif;
+	text-transform: lowercase;
+	text-decoration: none;
+	color: #CACACA;
+	cursor: default;
+	text-shadow: 0px 1px 0px #607725;
+}
+.error {
+	color: red;
+	text-align: center;
+	padding-top: 20px;
+	
+}
+.message_footer {
+    top: -48px;
+	padding-right: 100px;
+    display: block;
+    position: relative;
+	float: right;
+	font-size: 12px;
+}
+/* END LOGIN STYLES ---------------------------------------------- */
