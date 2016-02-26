@@ -17,7 +17,7 @@ static QString getArchivedProductsJson(const ArchivedProductList &products);
 static QString getParentTasksJson(const TaskIdList &tasks);
 static QString getNewStepsJson(const NewStepList &steps);
 static QString getScheduledTasksStatusesJson(const std::vector<ScheduledTaskStatus> &statuses);
-static QString getScheduledTaskJson(const ScheduledTask& task);
+static QString getScheduledTaskJson(const ScheduledTask &task);
 
 static QString getExecutionStatusListJson(const ExecutionStatusList &statusList);
 
@@ -36,7 +36,10 @@ SqlDatabaseRAII PersistenceManagerDBProvider::getDatabase() const
     return provider.getDatabase(QStringLiteral("PersistenceManager"));
 }
 
-void PersistenceManagerDBProvider::TestConnection() { getDatabase(); }
+void PersistenceManagerDBProvider::TestConnection()
+{
+    getDatabase();
+}
 
 ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 {
@@ -75,7 +78,8 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
         auto shortNameCol = dataRecord.indexOf(QStringLiteral("short_name"));
 
         while (query.next()) {
-            result.sites.append({ query.value(idCol).toInt(), query.value(nameCol).toString(), query.value(shortNameCol).toString() });
+            result.sites.append({ query.value(idCol).toInt(), query.value(nameCol).toString(),
+                                  query.value(shortNameCol).toString() });
         }
 
         query = db.prepareQuery(QStringLiteral("select * from sp_get_config_metadata()"));
@@ -94,7 +98,7 @@ ConfigurationSet PersistenceManagerDBProvider::GetConfigurationSet()
 
         while (query.next()) {
             result.parameterInfo.append(
-                { query.value(keyCol).toString(), query.value(categoryCol).toInt(),
+                { query.value(keyCol).toString(),          query.value(categoryCol).toInt(),
                   query.value(friendlyNameCol).toString(), query.value(dataTypeCol).toString(),
                   query.value(isAdvancedCol).toBool() });
         }
@@ -664,9 +668,9 @@ JobStepToRunList PersistenceManagerDBProvider::GetTaskStepsForStart(int taskId)
 
         JobStepToRunList result;
         while (query.next()) {
-            result.append({ query.value(taskIdCol).toInt(), query.value(moduleCol).toString(),
-                            query.value(stepNameCol).toString(),
-                            query.value(parametersCol).toString() });
+            result.append(
+                { query.value(taskIdCol).toInt(),      query.value(moduleCol).toString(),
+                  query.value(stepNameCol).toString(), query.value(parametersCol).toString() });
         }
 
         return result;
@@ -695,9 +699,9 @@ JobStepToRunList PersistenceManagerDBProvider::GetJobStepsForResume(int jobId)
 
         JobStepToRunList result;
         while (query.next()) {
-            result.append({ query.value(taskIdCol).toInt(), query.value(moduleCol).toString(),
-                            query.value(stepNameCol).toString(),
-                            query.value(parametersCol).toString() });
+            result.append(
+                { query.value(taskIdCol).toInt(),      query.value(moduleCol).toString(),
+                  query.value(stepNameCol).toString(), query.value(parametersCol).toString() });
         }
 
         return result;
@@ -726,9 +730,9 @@ StepConsoleOutputList PersistenceManagerDBProvider::GetTaskConsoleOutputs(int ta
 
         StepConsoleOutputList result;
         while (query.next()) {
-            result.append({ query.value(taskIdCol).toInt(), query.value(stepNameCol).toString(),
-                            query.value(stdOutTextCol).toString(),
-                            query.value(stdErrTextCol).toString() });
+            result.append(
+                { query.value(taskIdCol).toInt(),        query.value(stepNameCol).toString(),
+                  query.value(stdOutTextCol).toString(), query.value(stdErrTextCol).toString() });
         }
 
         return result;
@@ -794,14 +798,18 @@ int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_insert_product(:productType, "
-                                           ":processorId, :taskId, :fullPath, :createdTimestamp)"));
+        auto query = db.prepareQuery(QStringLiteral(
+            "select * from sp_insert_product(:productType, :processorId, :siteId, :jobId, "
+            ":fullPath, :createdTimestamp, :name, :quicklookImage, :footprint)"));
         query.bindValue(QStringLiteral(":productType"), static_cast<int>(product.productType));
         query.bindValue(QStringLiteral(":processorId"), product.processorId);
-        query.bindValue(QStringLiteral(":taskId"), product.taskId);
+        query.bindValue(QStringLiteral(":siteId"), product.siteId);
+        query.bindValue(QStringLiteral(":jobId"), product.jobId);
         query.bindValue(QStringLiteral(":fullPath"), product.fullPath);
         query.bindValue(QStringLiteral(":createdTimestamp"), product.createdTimestamp);
+        query.bindValue(QStringLiteral(":name"), product.name);
+        query.bindValue(QStringLiteral(":quicklookImage"), product.quicklookImage);
+        query.bindValue(QStringLiteral(":footprint"), product.footprint);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -817,7 +825,10 @@ int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
     });
 }
 
-ProductList PersistenceManagerDBProvider::GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate)
+ProductList PersistenceManagerDBProvider::GetProducts(int siteId,
+                                                      int productTypeId,
+                                                      const QDateTime &startDate,
+                                                      const QDateTime &endDate)
 {
     auto db = getDatabase();
 
@@ -846,8 +857,10 @@ ProductList PersistenceManagerDBProvider::GetProducts(int siteId, int productTyp
         ProductList result;
         while (query.next()) {
             result.append({ query.value(productIdCol).toInt(), query.value(processorIdCol).toInt(),
-                            static_cast<ProductType>(query.value(productTypeIdCol).toInt()), query.value(siteIdCol).toInt(),
-                            query.value(fullPathCol).toString(), QDateTime().fromString(query.value(creationDateCol).toString(), Qt::ISODate) });
+                            static_cast<ProductType>(query.value(productTypeIdCol).toInt()),
+                            query.value(siteIdCol).toInt(), query.value(fullPathCol).toString(),
+                            QDateTime().fromString(query.value(creationDateCol).toString(),
+                                                   Qt::ISODate) });
         }
 
         return result;
@@ -1085,13 +1098,12 @@ QString PersistenceManagerDBProvider::GetDashboardProcessors()
     });
 }
 
-std::vector<ScheduledTask> PersistenceManagerDBProvider::GetScheduledTasks( )
+std::vector<ScheduledTask> PersistenceManagerDBProvider::GetScheduledTasks()
 {
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_get_scheduled_tasks()"));
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_scheduled_tasks()"));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -1113,53 +1125,57 @@ std::vector<ScheduledTask> PersistenceManagerDBProvider::GetScheduledTasks( )
         auto priorityCol = dataRecord.indexOf(QStringLiteral("priority"));
         auto firstRunTimeCol = dataRecord.indexOf(QStringLiteral("first_run_time"));
 
-
         auto statusIdCol = dataRecord.indexOf(QStringLiteral("status_id"));
         auto nextScheduleCol = dataRecord.indexOf(QStringLiteral("next_schedule"));
         auto lastScheduledRunCol = dataRecord.indexOf(QStringLiteral("last_scheduled_run"));
 
         auto lastRunTimestampCol = dataRecord.indexOf(QStringLiteral("last_run_timestamp"));
         auto lastRetryTimestampCol = dataRecord.indexOf(QStringLiteral("last_retry_timestamp"));
-        auto estimatedNextRunTimeCol = dataRecord.indexOf(QStringLiteral("estimated_next_run_time"));
-
+        auto estimatedNextRunTimeCol =
+            dataRecord.indexOf(QStringLiteral("estimated_next_run_time"));
 
         std::vector<ScheduledTask> taskList;
         while (query.next()) {
             ScheduledTaskStatus ss;
             ss.id = query.value(statusIdCol).toInt();
             ss.taskId = query.value(taskIdCol).toInt();
-            ss.nextScheduledRunTime.fromString( query.value(nextScheduleCol).toString(), Qt::ISODate);
-            ss.lastSuccesfullScheduledRun.fromString(query.value(lastScheduledRunCol).toString(), Qt::ISODate);
-            ss.lastSuccesfullTimestamp.fromString(query.value(lastRunTimestampCol).toString(), Qt::ISODate);
+            ss.nextScheduledRunTime.fromString(query.value(nextScheduleCol).toString(),
+                                               Qt::ISODate);
+            ss.lastSuccesfullScheduledRun.fromString(query.value(lastScheduledRunCol).toString(),
+                                                     Qt::ISODate);
+            ss.lastSuccesfullTimestamp.fromString(query.value(lastRunTimestampCol).toString(),
+                                                  Qt::ISODate);
             ss.lastRetryTime.fromString(query.value(lastRetryTimestampCol).toString(), Qt::ISODate);
-            ss.estimatedRunTime.fromString(query.value(estimatedNextRunTimeCol).toString(), Qt::ISODate);
+            ss.estimatedRunTime.fromString(query.value(estimatedNextRunTimeCol).toString(),
+                                           Qt::ISODate);
 
-            taskList.emplace_back(query.value(taskIdCol).toInt(),
-                                  query.value(nameCol).toString(),
-                                  query.value(processorIdCol).toInt(),
-                                  query.value(siteIdCol).toInt(),
-                                  query.value(processorParamsCol).toString(),
-                                  query.value(repeatTypeCol).toInt(),
-                                  query.value(repeatAfterDaysCol).toInt(),
-                                  query.value(repeatOnMonthDayCol).toInt(),
-                                  QDateTime().fromString(query.value(firstRunTimeCol).toString(), Qt::ISODate),
-                                  query.value(retrySecondsCol).toInt(),
-                                  query.value(priorityCol).toInt(),
-                                  ss
-                                  );
+            taskList.emplace_back(
+                query.value(taskIdCol).toInt(),
+                query.value(nameCol).toString(),
+                query.value(processorIdCol).toInt(),
+                query.value(siteIdCol).toInt(),
+                query.value(processorParamsCol).toString(),
+                query.value(repeatTypeCol).toInt(),
+                query.value(repeatAfterDaysCol).toInt(),
+                query.value(repeatOnMonthDayCol).toInt(),
+                QDateTime().fromString(query.value(firstRunTimeCol).toString(), Qt::ISODate),
+                query.value(retrySecondsCol).toInt(),
+                query.value(priorityCol).toInt(),
+                ss);
         }
 
         return taskList;
     });
-
 }
 
-void PersistenceManagerDBProvider::UpdateScheduledTasksStatus( std::vector<ScheduledTaskStatus>& statuses)
+void
+PersistenceManagerDBProvider::UpdateScheduledTasksStatus(std::vector<ScheduledTaskStatus> &statuses)
 {
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
-        auto query = db.prepareQuery(QStringLiteral("select sp_submit_scheduled_tasks_statuses(:statuses)"));
+        auto query =
+            db.prepareQuery(QStringLiteral("select sp_submit_scheduled_tasks_statuses(:statuses)"));
         QString retJson = getScheduledTasksStatusesJson(statuses);
         query.bindValue(QStringLiteral(":statuses"), retJson);
 
@@ -1170,7 +1186,7 @@ void PersistenceManagerDBProvider::UpdateScheduledTasksStatus( std::vector<Sched
     });
 }
 
-void PersistenceManagerDBProvider::InsertScheduledTask( ScheduledTask& task)
+void PersistenceManagerDBProvider::InsertScheduledTask(ScheduledTask &task)
 {
     auto db = getDatabase();
 
@@ -1250,15 +1266,17 @@ static QString getNewStepsJson(const NewStepList &steps)
     return jsonToString(array);
 }
 
-static QString getScheduledTasksStatusesJson(const std::vector<ScheduledTaskStatus>& statuses)
+static QString getScheduledTasksStatusesJson(const std::vector<ScheduledTaskStatus> &statuses)
 {
     QJsonArray array;
     for (const auto &s : statuses) {
         QJsonObject node;
         node[QStringLiteral("id")] = s.id;
         node[QStringLiteral("next_schedule")] = s.nextScheduledRunTime.toString(Qt::ISODate);
-        node[QStringLiteral("last_scheduled_run")] = s.lastSuccesfullScheduledRun.toString(Qt::ISODate);
-        node[QStringLiteral("last_run_timestamp")] = s.lastSuccesfullTimestamp.toString(Qt::ISODate);
+        node[QStringLiteral("last_scheduled_run")] =
+            s.lastSuccesfullScheduledRun.toString(Qt::ISODate);
+        node[QStringLiteral("last_run_timestamp")] =
+            s.lastSuccesfullTimestamp.toString(Qt::ISODate);
         node[QStringLiteral("last_retry_timestamp")] = s.lastRetryTime.toString(Qt::ISODate);
         node[QStringLiteral("estimated_next_run_time")] = s.estimatedRunTime.toString(Qt::ISODate);
 
@@ -1268,7 +1286,7 @@ static QString getScheduledTasksStatusesJson(const std::vector<ScheduledTaskStat
     return jsonToString(array);
 }
 
-static QString getScheduledTaskJson(const ScheduledTask& task)
+static QString getScheduledTaskJson(const ScheduledTask &task)
 {
     QJsonObject node;
     node[QStringLiteral("id")] = task.taskId;
@@ -1341,7 +1359,8 @@ static KeyedMessageList mapUpdateConfigurationResult(QSqlQuery &query)
     return result;
 }
 
-ProcessorDescriptionList PersistenceManagerDBProvider::GetProcessorDescriptions() {
+ProcessorDescriptionList PersistenceManagerDBProvider::GetProcessorDescriptions()
+{
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
@@ -1359,7 +1378,8 @@ ProcessorDescriptionList PersistenceManagerDBProvider::GetProcessorDescriptions(
         auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
 
         while (query.next()) {
-            result.append({ query.value(idCol).toInt(), query.value(shortNameCol).toString(), query.value(nameCol).toString() });
+            result.append({ query.value(idCol).toInt(), query.value(shortNameCol).toString(),
+                            query.value(nameCol).toString() });
         }
 
         return result;
@@ -1385,40 +1405,42 @@ SiteList PersistenceManagerDBProvider::GetSiteDescriptions()
         auto shortNameCol = dataRecord.indexOf(QStringLiteral("short_name"));
 
         while (query.next()) {
-            result.append({ query.value(idCol).toInt(), query.value(nameCol).toString(), query.value(shortNameCol).toString() });
+            result.append({ query.value(idCol).toInt(), query.value(nameCol).toString(),
+                            query.value(shortNameCol).toString() });
         }
         return result;
     });
 }
 
-QString PersistenceManagerDBProvider::GetProcessorShortName(int processorId) {
+QString PersistenceManagerDBProvider::GetProcessorShortName(int processorId)
+{
     ProcessorDescriptionList listProcDescr = GetProcessorDescriptions();
-    for(const ProcessorDescription &procDescr: listProcDescr) {
-        if(procDescr.processorId == processorId) {
+    for (const ProcessorDescription &procDescr : listProcDescr) {
+        if (procDescr.processorId == processorId) {
             return procDescr.shortName;
         }
     }
     return "";
 }
 
-QString PersistenceManagerDBProvider::GetSiteName(int siteId) {
+QString PersistenceManagerDBProvider::GetSiteName(int siteId)
+{
     SiteList listSiteDescr = GetSiteDescriptions();
-    for(const Site &siteDescr: listSiteDescr) {
-        if(siteDescr.siteId == siteId) {
+    for (const Site &siteDescr : listSiteDescr) {
+        if (siteDescr.siteId == siteId) {
             return siteDescr.name;
         }
     }
     return "";
 }
 
-QString PersistenceManagerDBProvider::GetSiteShortName(int siteId) {
+QString PersistenceManagerDBProvider::GetSiteShortName(int siteId)
+{
     SiteList listSiteDescr = GetSiteDescriptions();
-    for(const Site &siteDescr: listSiteDescr) {
-        if(siteDescr.siteId == siteId) {
+    for (const Site &siteDescr : listSiteDescr) {
+        if (siteDescr.siteId == siteId) {
             return siteDescr.shortName;
         }
     }
     return "";
 }
-
-

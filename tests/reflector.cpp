@@ -186,6 +186,4 @@ StepConsoleOutputList Reflector::ReflectStepConsoleOutputList(const StepConsoleO
     return value;
 }
 
-NewProduct Reflector::ReflectNewProduct(const NewProduct &value) { return value; }
-
 DashboardSearch Reflector::ReflectDashboardSearch(const DashboardSearch &value) { return value; }
