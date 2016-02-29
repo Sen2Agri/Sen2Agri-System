@@ -368,10 +368,35 @@ function update_plot(element_id, series_data, series_idxs)
 
 }
 
+function move_to_first_jobs_page()
+{
+	jsonJobsPage = 1;
+	get_current_job_data();
+}
+
+function move_to_last_jobs_page()
+{
+	jsonJobsPage = jsonJobsPage;
+	get_current_job_data();
+}
+
+function move_to_previous_jobs_page()
+{
+	jsonJobsPage --;
+    jsonJobsPage = jsonJobsPage < 1 ? 1 : jsonJobsPage;
+	get_current_job_data();
+}
+
+function move_to_next_jobs_page()
+{
+	jsonJobsPage ++;
+	get_current_job_data();
+}
+
 function get_current_job_data()
 {
 	$.ajax({
-		url: get_current_job_data_url,
+		url: get_current_job_data_url + "?page=" + jsonJobsPage,
 		type: "get",
 		cache: false,
 		crosDomain: true,
