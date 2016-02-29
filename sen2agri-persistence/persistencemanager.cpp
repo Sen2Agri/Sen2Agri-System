@@ -903,13 +903,14 @@ Product PersistenceManagerDBProvider::GetProduct(const QString &productName)
 }
 
 
-QString PersistenceManagerDBProvider::GetDashboardCurrentJobData()
+QString PersistenceManagerDBProvider::GetDashboardCurrentJobData(int page)
 {
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(__func__, [&] {
         auto query =
-            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_current_job_data()"));
+            db.prepareQuery(QStringLiteral("select * from sp_get_dashboard_current_job_data(:page)"));
+        query.bindValue(QStringLiteral(":page"), page);
 
         query.setForwardOnly(true);
         if (!query.exec()) {

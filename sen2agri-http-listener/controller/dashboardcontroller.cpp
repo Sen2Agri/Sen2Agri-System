@@ -65,9 +65,20 @@ void DashboardController::service(HttpRequest &request, HttpResponse &response)
     }
 }
 
-void DashboardController::getDashboardCurrentJobData(const HttpRequest &, HttpResponse &response)
+void DashboardController::getDashboardCurrentJobData(const HttpRequest &request, HttpResponse &response)
 {
-    const auto &data = persistenceManager.GetDashboardCurrentJobData();
+    const auto &pageStr = request.getParameter("page");
+    bool ok;
+    auto page = pageStr.toInt(&ok);
+
+    if (!ok) {
+        Logger::error(QStringLiteral("Invalid page value: %1").arg(QString::fromUtf8(pageStr)));
+
+        response.setStatus(400, "Bad Request");
+        return;
+    }
+
+    const auto &data = persistenceManager.GetDashboardCurrentJobData(page);
 
     response.setHeader("Content-Type", "application/json");
     response.write(data.toUtf8(), true);
