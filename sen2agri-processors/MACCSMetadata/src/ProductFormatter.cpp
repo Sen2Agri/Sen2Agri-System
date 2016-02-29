@@ -589,20 +589,28 @@ private:
 
   void UnpackRastersList(std::vector<std::string> &rastersList, rasterTypes rasterType, bool bIsQiData)
   {
+      std::string strTileID;
       rasterInfo rasterInfoEl;
       rasterInfoEl.bIsQiData = bIsQiData;
 
-      // we do this in 2 steps (although not very optimal)
-      // first extract the tiles
-      // the number of tiles elements in the rasters list (including duplicates)
-      int allTilesCnt = 0;
-      std::string strTileID = UnpackTiles(rastersList, allTilesCnt);
+      // get the number of tiles elements in the rasters list (including duplicates)
+      //std::string strTileID = UnpackTiles(rastersList, allTilesCnt);
+      int allTilesCnt = CountTiles(rastersList);
       // second extract the rasters
       int curRaster = 0;
       bool bAllRastersHaveDate = ((rastersList.size()-allTilesCnt) == m_acquisitionDatesList.size());
       for (const auto &rasterFileEl : rastersList) {
-          if(rasterFileEl.compare(0, 5, "TILE_") != 0)
+          if(rasterFileEl.compare(0, 5, "TILE_") == 0)
           {
+              //if is TILE separator, read tileID
+              strTileID = rasterFileEl.substr(5, rasterFileEl.length() - 5);
+              if(!IsTilePresent(strTileID))
+              {
+                tileInfo tileInfoEl;
+                tileInfoEl.strTileID = strTileID;
+                m_tileIDList.emplace_back(tileInfoEl);
+              }
+          } else  {
               rasterInfoEl.iRasterType = rasterType;
               rasterInfoEl.strRasterFileName = rasterFileEl;
               rasterInfoEl.strTileID = strTileID;
@@ -618,52 +626,45 @@ private:
       }
   }
 
-  std::string UnpackTiles(std::vector<std::string> &filesList, int &nTotalFoundTiles) {
-      std::string strTileID("");
-      // only the first tile is processed
-      bool bProcessed = false;
-      bool bAlreadyExist = false;
-      nTotalFoundTiles = 0;
+  int CountTiles(std::vector<std::string> &filesList) {
+      int nTotalFoundTiles = 0;
       for (const auto &file : filesList) {
           if(file.compare(0, 5, "TILE_") == 0)
-          {
-              if(!bProcessed) {
-                  //if is TILE separator, read tileID
-                  strTileID = file.substr(5, file.length() - 5);
-                  bAlreadyExist = false;
-                  for (const auto &tileIDEl : m_tileIDList) {
-                      if(tileIDEl.strTileID == strTileID)
-                      {
-                          bAlreadyExist = true;
-                          break;
-                      }
-                  }
-                  if(!bAlreadyExist)
-                  {
-                    tileInfo tileInfoEl;
-                    tileInfoEl.strTileID = strTileID;
-                    m_tileIDList.emplace_back(tileInfoEl);
-                  }
-                  bProcessed = true;
-              }
               nTotalFoundTiles++;
-          }
       }
-      return strTileID;
+      return nTotalFoundTiles;
   }
 
   void UnpackNonRastersList(std::vector<std::string> &filesList) {
-      int allTilesCnt = 0;
       qualityInfo qualityInfoEl;
-      std::string strTileID = UnpackTiles(filesList, allTilesCnt);
+      std::string strTileID;
       for (const auto &fileEl : filesList) {
-          if(fileEl.compare(0, 5, "TILE_") != 0)
+          if(fileEl.compare(0, 5, "TILE_") == 0)
           {
+              //if is TILE separator, read tileID
+              strTileID = fileEl.substr(5, fileEl.length() - 5);
+              if(!IsTilePresent(fileEl.substr(5, fileEl.length() - 5)))
+              {
+                tileInfo tileInfoEl;
+                tileInfoEl.strTileID = strTileID;
+                m_tileIDList.emplace_back(tileInfoEl);
+              }
+          } else  {
               qualityInfoEl.strFileName = fileEl;
               qualityInfoEl.strTileID = strTileID;
               m_qualityList.emplace_back(qualityInfoEl);
           }
       }
+  }
+
+  bool IsTilePresent(const std::string &strTileID) {
+      for (const auto &tileIDEl : m_tileIDList) {
+          if(tileIDEl.strTileID == strTileID)
+          {
+              return true;
+          }
+      }
+      return false;
   }
 
   // Get current date/time, format is YYYYMMDDThhmmss
