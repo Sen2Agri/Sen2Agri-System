@@ -29,6 +29,9 @@ protected:
     void RunOnce();
 
 private:
+    QString GetTaskParametersJson(const ScheduledTask &task);
+
+private:
     int m_nTimerId;
     TaskLoader* m_loader;
     OrchestratorProxy* m_orchestrator;

@@ -7,6 +7,7 @@
 #include "taskplanner.hpp"
 #include "resourcereader.hpp"
 #include "orchestratorproxy.hpp"
+#include "json_conversions.hpp"
 
 SchedulerApp::SchedulerApp(TaskLoader * loader, OrchestratorProxy * orchestrator, QObject *parent)
     : QObject(parent),
@@ -62,7 +63,7 @@ void SchedulerApp::RunOnce()
             prequest.processorId = task.processorId;
             prequest.siteId = task.siteId;
             prequest.ttNextScheduledRunTime = (int)task.taskStatus.nextScheduledRunTime.toTime_t();
-            prequest.parametersJson = task.processorParameters;
+            prequest.parametersJson = GetTaskParametersJson(task);
             jd = m_orchestrator->GetJobDefinition(prequest);
             // if the task can be launched according to Orchestrator
             if ( jd.isValid )
@@ -105,4 +106,16 @@ void SchedulerApp::timerEvent(QTimerEvent *event)
     {
         qDebug() << "Timer with NO ResourcesAvailable" << event->timerId();
     }
+}
+
+QString SchedulerApp::GetTaskParametersJson(const ScheduledTask &task) {
+    QJsonObject jsonObj;
+    QJsonObject genParamsObj;
+    genParamsObj["task_name"] = task.taskName;
+    genParamsObj["task_description"] = "";
+    genParamsObj["task_type"] = "scheduled";
+    jsonObj["general_params"] = genParamsObj;
+    jsonObj["processor_params"] = task.processorParameters;
+
+    return jsonToString(jsonObj);
 }
