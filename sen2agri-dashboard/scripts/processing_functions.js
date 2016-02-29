@@ -51,7 +51,7 @@ function update_current_jobs(json_data)
 		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.tasks_completed + " / " + job.tasks_remaining + "</td>" +
 		"<td>" + job.current_tasks[0].current_task_module + "</td>" +
 		"<td>" + job.current_tasks[0].current_task_steps_completed + " / " + job.current_tasks[0].current_task_steps_remaining + "</td>" +
-		"<td rowspan=\"" + job.current_tasks.length + "\">" + action_buttons + "</td>" +
+		//"<td rowspan=\"" + job.current_tasks.length + "\">" + action_buttons + "</td>" +
 		"</tr>";
 
 		$("#pnl_current_jobs table:first").append(new_row);
