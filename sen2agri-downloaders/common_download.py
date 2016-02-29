@@ -122,7 +122,7 @@ class Config(object):
                         else:
                             print("Error in config file, found more than on keys, line: {}".format(line))
                     elif line == "[Database]":
-                        foundDwnSection = True
+                        found_section = True
 
         except:
             print("Error in opening the config file ".format(str(configFile)))
