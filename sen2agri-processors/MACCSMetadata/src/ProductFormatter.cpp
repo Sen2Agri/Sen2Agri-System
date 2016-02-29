@@ -399,7 +399,7 @@ private:
             }
             catch(...)
             {
-                itkGenericExceptionMacro(<< "Could not open file " << outFileName);
+                itkGenericExceptionMacro(<< "Could not open file " << outPropsFileName);
             }
       }
       strTileName = ReplaceString(strTileName, MAIN_FOLDER_CATEG, TILE_LEGACY_FOLDER_CATEG);

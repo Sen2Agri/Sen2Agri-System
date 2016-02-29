@@ -72,3 +72,23 @@ QStringList ProcessorHandlerHelper::GetProductTileIds(const QStringList &listFil
     }
     return result;
 }
+
+QStringList ProcessorHandlerHelper::GetTextFileLines(const QString &filePath) {
+    QFile inputFile(filePath);
+    QStringList lines;
+    if (inputFile.open(QIODevice::ReadOnly))
+    {
+       QTextStream in(&inputFile);
+       while (!in.atEnd())
+       {
+          lines.append(in.readLine());
+       }
+       inputFile.close();
+    }
+    return lines;
+}
+
+QString ProcessorHandlerHelper::GetFileNameFromPath(const QString &filePath) {
+    QFileInfo fileInfo(filePath);
+    return fileInfo.fileName();
+}

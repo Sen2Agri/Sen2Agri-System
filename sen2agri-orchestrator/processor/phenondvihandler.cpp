@@ -137,6 +137,8 @@ void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
 
+        QString prodName = GetProductFormatterProducName(ctx, event);
+
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L3BPhenoProductTypeId,
                             event.processorId,
@@ -144,7 +146,7 @@ void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                             event.siteId,
                             productFolder,
                             QDateTime::currentDateTimeUtc(),
-                            "name",
+                            prodName,
                             "quicklook",
                             "POLYGON(())" });
 
@@ -180,6 +182,7 @@ void PhenoNdviHandler::WriteExecutionInfosFile(const QString &executionInfosPath
 QStringList PhenoNdviHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                     const QStringList &listProducts, const QList<PhenoProductFormatterParams> &productParams) {
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
+    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUC_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.txt");
     QStringList productFormatterArgs = { "ProductFormatter",
                                          "-destroot",
@@ -188,15 +191,19 @@ QStringList PhenoNdviHandler::GetProductFormatterArgs(TaskToSubmit &productForma
                                          "-level", "L3B",
                                          "-baseline", "01.00",
                                          "-processor", "phenondvi",
-                                         "-gipp", executionInfosPath};
+                                         "-gipp", executionInfosPath,
+                                         "-outprops", outPropsPath};
     productFormatterArgs += "-il";
     productFormatterArgs += listProducts;
 
+    productFormatterArgs += "-processor.phenondvi.metrics";
     for(const PhenoProductFormatterParams &params: productParams) {
-        productFormatterArgs += "-processor.phenondvi.metrics";
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.metricsParamsImg;
-        productFormatterArgs += "-processor.phenondvi.flags";
+    }
+
+    productFormatterArgs += "-processor.phenondvi.flags";
+    for(const PhenoProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.metricsFlagsImg;
     }

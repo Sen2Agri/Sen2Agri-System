@@ -415,6 +415,9 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
+
+        QString prodName = GetProductFormatterProducName(ctx, event);
+
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L3BLaiProductTypeId,
                             event.processorId,
@@ -422,7 +425,7 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                             event.siteId,
                             productFolder,
                             QDateTime::currentDateTimeUtc(),
-                            "name",
+                            prodName,
                             "quicklook",
                             /* POLYGON */ "(())" });
 
@@ -581,6 +584,7 @@ QStringList LaiRetrievalHandler::GetProductFormatterArgs(TaskToSubmit &productFo
 
     //const auto &targetFolder = productFormatterTask.GetFilePath("");
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
+    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUC_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
     WriteExecutionInfosFile(executionInfosPath, configParameters, listProducts);
@@ -591,33 +595,53 @@ QStringList LaiRetrievalHandler::GetProductFormatterArgs(TaskToSubmit &productFo
                             "-level", "L3B",
                             "-baseline", "01.00",
                             "-processor", "vegetation",
-                            "-gipp", executionInfosPath};
+                            "-gipp", executionInfosPath,
+                            "-outprops", outPropsPath};
+    productFormatterArgs += "-processor.vegetation.laindvi";
     for(const LAIProductFormatterParams &params: productParams) {
-        productFormatterArgs += "-processor.vegetation.laindvi";
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.listNdvi;
-        productFormatterArgs += "-processor.vegetation.laimonodate";
+    }
+
+    productFormatterArgs += "-processor.vegetation.laimonodate";
+    for(const LAIProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.listLaiMonoDate;
-        productFormatterArgs += "-processor.vegetation.laimonodateerr";
+    }
+
+    productFormatterArgs += "-processor.vegetation.laimonodateerr";
+    for(const LAIProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.listLaiMonoDateErr;
-        productFormatterArgs += "-processor.vegetation.laimdateflgs";
+    }
+
+    productFormatterArgs += "-processor.vegetation.laimdateflgs";
+    for(const LAIProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.listLaiMonoDateFlgs;
-        if(parameters.contains("reproc")) {
-            productFormatterArgs += "-processor.vegetation.filelaireproc";
+    }
+
+    if(parameters.contains("reproc")) {
+        productFormatterArgs += "-processor.vegetation.filelaireproc";
+        for(const LAIProductFormatterParams &params: productParams) {
             productFormatterArgs += params.tileId;
             productFormatterArgs += params.fileLaiReproc;
-            productFormatterArgs += "-processor.vegetation.filelaireprocflgs";
+        }
+        productFormatterArgs += "-processor.vegetation.filelaireprocflgs";
+        for(const LAIProductFormatterParams &params: productParams) {
             productFormatterArgs += params.tileId;
             productFormatterArgs += params.fileLaiReprocFlgs;
         }
-        if(parameters.contains("fitted")) {
-            productFormatterArgs += "-processor.vegetation.filelaifit";
+    }
+
+    if(parameters.contains("fitted")) {
+        productFormatterArgs += "-processor.vegetation.filelaifit";
+        for(const LAIProductFormatterParams &params: productParams) {
             productFormatterArgs += params.tileId;
             productFormatterArgs += params.fileLaiFit;
-            productFormatterArgs += "-processor.vegetation.filelaifitflgs";
+        }
+        productFormatterArgs += "-processor.vegetation.filelaifitflgs";
+        for(const LAIProductFormatterParams &params: productParams) {
             productFormatterArgs += params.tileId;
             productFormatterArgs += params.fileLaiFitFlgs;
         }

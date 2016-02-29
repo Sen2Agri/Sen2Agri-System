@@ -204,6 +204,7 @@ void CropMaskHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
         ctx.MarkJobFinished(event.jobId);
 
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
+        QString prodName = GetProductFormatterProducName(ctx, event);
 
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L4AProductTypeId,
@@ -212,7 +213,7 @@ void CropMaskHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                             event.siteId,
                             productFolder,
                             QDateTime::currentDateTimeUtc(),
-                            "name",
+                            prodName,
                             "quicklook",
                             "POLYGON(())" });
 
@@ -769,29 +770,39 @@ QStringList CropMaskHandler::GetGdalWarpArgs(const QString &inImg, const QString
 
 QStringList CropMaskHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                     const QStringList &listProducts, const QList<CropMaskProductFormatterParams> &productParams) {
-    Q_UNUSED(productFormatterTask);
 
+    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUC_FORMATTER_OUT_PROPS_FILE);
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
     QStringList productFormatterArgs = { "ProductFormatter",
                                          "-destroot", targetFolder,
                                          "-fileclass", "SVT1",
                                          "-level", "L4A",
                                          "-baseline", "01.00",
-                                         "-processor", "cropmask"};
+                                         "-processor", "cropmask",
+                                         "-outprops", outPropsPath};
     productFormatterArgs += "-il";
     productFormatterArgs += listProducts;
 
+    productFormatterArgs += "-processor.cropmask.file";
     for(const CropMaskProductFormatterParams &params: productParams) {
-        productFormatterArgs += "-processor.cropmask.file";
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.crop_mask;
-        productFormatterArgs += "-processor.cropmask.rawfile";
+    }
+
+    productFormatterArgs += "-processor.cropmask.rawfile";
+    for(const CropMaskProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.raw_crop_mask;
-        productFormatterArgs += "-processor.cropmask.quality";
+    }
+
+    productFormatterArgs += "-processor.cropmask.quality";
+    for(const CropMaskProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.xml_validation_metrics;
-        productFormatterArgs += "-processor.cropmask.flags";
+    }
+
+    productFormatterArgs += "-processor.cropmask.flags";
+    for(const CropMaskProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.statusFlags;
     }

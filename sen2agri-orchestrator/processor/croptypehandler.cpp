@@ -354,6 +354,8 @@ void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
 
+        QString prodName = GetProductFormatterProducName(ctx, event);
+
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L4BProductTypeId,
                             event.processorId,
@@ -361,7 +363,7 @@ void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                             event.siteId,
                             productFolder,
                             QDateTime::currentDateTimeUtc(),
-                            "name",
+                            prodName,
                             "quicklook",
                             "POLYGON(())" });
 
@@ -373,26 +375,32 @@ void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 
 QStringList CropTypeHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                     const QStringList &listProducts, const QList<CropTypeProductFormatterParams> &productParams) {
-    Q_UNUSED(productFormatterTask);
-
+    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUC_FORMATTER_OUT_PROPS_FILE);
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
     QStringList productFormatterArgs = { "ProductFormatter",
                                          "-destroot", targetFolder,
                                          "-fileclass", "SVT1",
                                          "-level", "L4B",
                                          "-baseline", "01.00",
-                                         "-processor", "croptype"};
+                                         "-processor", "croptype",
+                                         "-outprops", outPropsPath};
     productFormatterArgs += "-il";
     productFormatterArgs += listProducts;
 
+    productFormatterArgs += "-processor.croptype.file";
     for(const CropTypeProductFormatterParams &params: productParams) {
-        productFormatterArgs += "-processor.croptype.file";
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.cropTypeMap;
-        productFormatterArgs += "-processor.cropmask.flags";
+    }
+
+    productFormatterArgs += "-processor.cropmask.flags";
+    for(const CropTypeProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.xmlValidationMetrics;
-        productFormatterArgs += "-processor.cropmask.flags";
+    }
+
+    productFormatterArgs += "-processor.cropmask.flags";
+    for(const CropTypeProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.statusFlags;
     }

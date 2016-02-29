@@ -438,6 +438,16 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
         ctx.MarkJobFinished(event.jobId);
 
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
+        QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "/" + PRODUC_FORMATTER_OUT_PROPS_FILE;
+        QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
+        QString prodName = "UnknownProductName";
+        if(fileLines.size() > 0) {
+            QString name = ProcessorHandlerHelper::GetFileNameFromPath(fileLines[0]);
+            if(name.trimmed() != "") {
+                prodName = name;
+            }
+        }
+        prodName = GetProductFormatterProducName(ctx, event);
 
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L3AProductTypeId,
@@ -446,7 +456,7 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                             event.siteId,
                             productFolder,
                             QDateTime::currentDateTimeUtc(),
-                            "name",
+                            prodName,
                             "quicklook",
                             /*POLYGON*/"(())" });
 
@@ -464,6 +474,7 @@ QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productForma
 
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.txt");
+    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUC_FORMATTER_OUT_PROPS_FILE);
     const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
 
     WriteExecutionInfosFile(executionInfosPath, parameters, configParameters, listProducts);
@@ -475,23 +486,33 @@ QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productForma
                                          "-timeperiod", l3aSynthesisDate,
                                          "-baseline", "01.00",
                                          "-processor", "composite",
-                                         "-gipp", executionInfosPath};
+                                         "-gipp", executionInfosPath,
+                                         "-outprops", outPropsPath};
     productFormatterArgs += "-il";
     productFormatterArgs += listProducts[listProducts.size() - 1];
+
+    productFormatterArgs += "-processor.composite.refls";
     for(const CompositeProductFormatterParams &params: productParams) {
-        productFormatterArgs += "-processor.composite.refls";
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.prevL3AProdRefls;
-        productFormatterArgs += "-processor.composite.weights";
+    }
+    productFormatterArgs += "-processor.composite.weights";
+    for(const CompositeProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.prevL3AProdWeights;
-        productFormatterArgs += "-processor.composite.flags";
+    }
+    productFormatterArgs += "-processor.composite.flags";
+    for(const CompositeProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.prevL3AProdFlags;
-        productFormatterArgs += "-processor.composite.dates";
+    }
+    productFormatterArgs += "-processor.composite.dates";
+    for(const CompositeProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.prevL3AProdDates;
-        productFormatterArgs += "-processor.composite.rgb";
+    }
+    productFormatterArgs += "-processor.composite.rgb";
+    for(const CompositeProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.prevL3ARgbFile;
     }
