@@ -1682,7 +1682,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessingRequest
 QDBusArgument &operator<<(QDBusArgument &argument, const JobDefinition &job)
 {
     argument.beginStructure();
-    argument << job.isValid << job.jobDefinitionJson << job.processorId;
+    argument << job.isValid << job.jobDefinitionJson << job.processorId << job.siteId;
     argument.endStructure();
 
     return argument;
@@ -1691,7 +1691,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const JobDefinition &job)
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobDefinition &job)
 {
     argument.beginStructure();
-    argument >> job.isValid >> job.jobDefinitionJson >> job.processorId;
+    argument >> job.isValid >> job.jobDefinitionJson >> job.processorId >> job.siteId;
     argument.endStructure();
 
     return argument;

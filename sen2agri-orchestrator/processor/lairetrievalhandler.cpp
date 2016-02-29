@@ -747,16 +747,16 @@ const QString& LaiRetrievalHandler::GetDefaultCfgVal(std::map<QString, QString> 
 ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                           const ConfigurationParameterValueMap &requestOverrideCfgValues)
 {
-    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processors.l3b."), siteId, requestOverrideCfgValues);
+    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.l3b."), siteId, requestOverrideCfgValues);
 
     ProcessorJobDefinitionParams params;
     params.isValid = false;
 
-    //int generateModels = mapCfg["processors.l3b.generate_models"].value.toInt();
-    int generateLai = mapCfg["processors.l3b.reprocess"].value.toInt();
-    int generateReprocess = mapCfg["processors.l3b.reprocess"].value.toInt();
-    int generateFitted = mapCfg["processors.l3b.fitted"].value.toInt();
-    int productionInterval = mapCfg["processors.l3b.production_interval"].value.toInt();
+    //int generateModels = mapCfg["processor.l3b.generate_models"].value.toInt();
+    int generateLai = mapCfg["processor.l3b.mono_date_lai"].value.toInt();
+    int generateReprocess = mapCfg["processor.l3b.reprocess"].value.toInt();
+    int generateFitted = mapCfg["processor.l3b.fitted"].value.toInt();
+    int productionInterval = mapCfg["processor.l3b.production_interval"].value.toInt();
 
     QDateTime startDate;
     QDateTime endDate = QDateTime::fromTime_t(scheduledDate);

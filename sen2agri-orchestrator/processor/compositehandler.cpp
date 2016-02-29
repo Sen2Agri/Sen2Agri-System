@@ -129,7 +129,10 @@ CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessi
 
     // Get L3A Synthesis date
     const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
-    const auto &resolution = QString::number(parameters["resolution"].toInt());
+    int resolution = parameters["resolution"].toInt();
+    if(resolution == 0)
+        resolution = 10;    // TODO: We should configure the default resolution in DB
+    const auto &resolutionStr = QString::number(resolution);
 
     // Get the parameters from the configuration
     // Get the Half Synthesis interval value
@@ -200,9 +203,9 @@ CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessi
         const auto &outL3AResultRgbFile = compositeSplitter.GetFilePath("L3AResult_rgb.tif");
 
         QStringList maskHandlerArgs = { "MaskHandler", "-xml",         inputProduct, "-out",
-                                        masksFile,     "-sentinelres", resolution };
+                                        masksFile,     "-sentinelres", resolutionStr };
         QStringList compositePreprocessingArgs = { "CompositePreprocessing2", "-xml", inputProduct,
-                                                   "-bmap", bandsMapping, "-res", resolution,
+                                                   "-bmap", bandsMapping, "-res", resolutionStr,
                                                    "-msk", masksFile, "-outres", outResImgBands,
                                                    "-outcmres", cldResImg, "-outwmres", waterResImg,
                                                    "-outsmres", snowResImg, "-outaotres",
@@ -532,21 +535,25 @@ bool CompositeHandler::IsProductAcceptableForJob(int jobId, const ProductAvailab
 ProcessorJobDefinitionParams CompositeHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                           const ConfigurationParameterValueMap &requestOverrideCfgValues)
 {
-    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processors.l3a."), siteId, requestOverrideCfgValues);
+    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.l3a."), siteId, requestOverrideCfgValues);
 
     ProcessorJobDefinitionParams params;
     params.isValid = false;
 
-    int halfSynthesis = mapCfg["processors.l3a.half_synthesis"].value.toInt();
-    int synthDateOffset = mapCfg["processors.l3a.synth_date_sched_offset"].value.toInt();
+    int halfSynthesis = mapCfg["processor.l3a.half_synthesis"].value.toInt();
+    if(halfSynthesis == 0)
+        halfSynthesis = 15;
+    int synthDateOffset = mapCfg["processor.l3a.synth_date_sched_offset"].value.toInt();
+    if(synthDateOffset == 0)
+        synthDateOffset = 30;
 
     // extract the scheduled date
     QDateTime qScheduledDate = QDateTime::fromTime_t(scheduledDate);
     // compute the half synthesis date
     QDateTime halfSynthesisDate = qScheduledDate.addDays(-synthDateOffset);
     // compute the start and date time
-    QDateTime startDate = qScheduledDate.addDays(-halfSynthesis);
-    QDateTime endDate = qScheduledDate.addDays(halfSynthesis);
+    QDateTime startDate = halfSynthesisDate.addDays(-halfSynthesis);
+    QDateTime endDate = halfSynthesisDate.addDays(halfSynthesis);
 
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
     // we need at least 1 product available in order to be able to create a L3A product
