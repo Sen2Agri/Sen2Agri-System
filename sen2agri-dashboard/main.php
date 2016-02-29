@@ -7,15 +7,15 @@
 						<td colspan=3"><h3>Available products</h3></td>
 					</tr>
 					<tr>
-						<td><div id="tree" style="height:550px; width:500px; overflow: scroll; border: 1px solid;"></div></td>
+						<td><div id="tree" style="height:550px; width:350px; overflow: scroll; border: 1px solid; font-size: 13px"></div></td>
 						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
-						<td><div id="map" class="map" style="height:550px; width:500px; border: 1px solid;"></div></td>
+						<td><div id="map" class="map" style="height:550px; width:665px; border: 1px solid;"></div></td>
 					</tr>
 				</table>
             </div>
         </div>
     </div><!-- main --><!-- main2 --><!-- main3 -->
-   
+	
     <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
@@ -138,14 +138,15 @@
 
 		var panToLocation = function(extent) {
 		  var pan = ol.animation.pan({
-		    duration: 2000,
+		    duration: 1000,
 		    source: /** @type {ol.Coordinate} */ (view.getCenter())
 		  });
 		  map.beforeRender(pan);
 		  //view.setCenter(location);
 		  //view.setZoom(zoom);
 		  view.fit(extent, map.getSize());
-		  view.setZoom(view.getZoom()-1);
+		  var zoom = view.getZoom()-3;
+		  view.setZoom(zoom);
 		};
 
 		initInteraction();

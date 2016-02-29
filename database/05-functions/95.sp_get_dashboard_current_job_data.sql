@@ -1,5 +1,10 @@
-﻿CREATE OR REPLACE FUNCTION sp_get_dashboard_current_job_data() 
-RETURNS json AS $$
+-- Function: sp_get_dashboard_current_job_data()
+
+-- DROP FUNCTION sp_get_dashboard_current_job_data();
+
+CREATE OR REPLACE FUNCTION sp_get_dashboard_current_job_data()
+  RETURNS json AS
+$BODY$
 DECLARE current_job RECORD;
 DECLARE temp_json json;
 DECLARE temp_json2 json;
@@ -65,14 +70,20 @@ BEGIN
 		current_task_steps_completed,
 		current_task_steps_remaining
 		)
-		SELECT 
-		module.name,
-		(SELECT count(*) FROM step WHERE step.task_id = task.id AND step.status_id IN (6,7,8)),	-- Finished, Cancelled, Error
-		(SELECT count(*) FROM step WHERE step.task_id = task.id AND step.status_id NOT IN (6,7,8))
-		FROM task 
-		INNER JOIN module ON task.module_short_name = module.short_name
-		WHERE task.job_id = current_job.id AND task.status_id IN (1,4) -- Submitted, Running
-		ORDER BY task.id;
+        WITH modules as (SELECT DISTINCT task.module_short_name FROM task WHERE task.job_id = 542)
+		SELECT modules.module_short_name,
+		(select count(*) from task where task.job_id = 542 and task.module_short_name = modules.module_short_name AND task.status_id = 4),
+		(select count(*) from task where task.job_id = 542 and task.module_short_name = modules.module_short_name)
+		FROM modules
+		ORDER BY modules.module_short_name;
+-- 		SELECT 
+-- 		task.module_short_name,
+-- 		(SELECT count(*) FROM step WHERE step.task_id = task.id AND step.status_id IN (6,7,8)),	-- Finished, Cancelled, Error
+-- 		(SELECT count(*) FROM step WHERE step.task_id = task.id AND step.status_id NOT IN (6,7,8))
+-- 		FROM task 
+-- 		WHERE task.job_id = current_job.id AND task.status_id IN (1,4) -- Submitted, Running
+-- 		GROUP BY task.module_short_name
+-- 		ORDER BY task.id;
 
 		IF current_job.status_id != 5 /*Paused*/ THEN
 			temp_json := json_build_array(1,3,4);
@@ -98,5 +109,8 @@ BEGIN
 	RETURN temp_json2;
 
 END;
-$$ LANGUAGE plpgsql;
-
+$BODY$
+  LANGUAGE plpgsql VOLATILE
+  COST 100;
+ALTER FUNCTION sp_get_dashboard_current_job_data()
+  OWNER TO admin;
