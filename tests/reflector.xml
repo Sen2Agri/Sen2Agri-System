@@ -296,12 +296,6 @@
       <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="StepConsoleOutputList" />
       <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="StepConsoleOutputList" />
     </method>
-    <method name="ReflectNewProduct">
-      <arg name="value" type="NewProduct" direction="in" />
-      <arg name="result" type="NewProduct" direction="out" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.In0" value="NewProduct" />
-      <annotation name="org.qtproject.QtDBus.QtTypeName.Out0" value="NewProduct" />
-    </method>
     <method name="ReflectDashboardSearch">
       <arg name="value" type="DashboardSearch" direction="in" />
       <arg name="result" type="DashboardSearch" direction="out" />

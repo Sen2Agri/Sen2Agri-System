@@ -3,5 +3,6 @@ Description=Downloads Landsat 8 products
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/landsat_download.py -u /etc/sen2agri/usgs.txt -z yes
+#ExecStart=/usr/bin/landsat_download.py -u /etc/sen2agri/usgs.txt -z yes
+ExecStart=/usr/share/sen2agri/sen2agri-downloaders/landsat_download.py -u  /usr/share/sen2agri/sen2agri-downloaders/usgs.txt -z yes
 User=sen2agri-service

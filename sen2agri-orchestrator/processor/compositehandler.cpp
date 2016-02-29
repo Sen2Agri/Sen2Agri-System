@@ -63,8 +63,9 @@ void CompositeHandler::HandleProductAvailableImpl(EventProcessingContext &ctx,
     //      ones???
 }
 
-void CompositeHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAllTasksList,
-                                                  int nbProducts)
+void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
+                                                QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList,
+                                                 int nbProducts)
 {
     // just create the tasks but with no information so far
     for (int i = 0; i < nbProducts; i++) {
@@ -77,7 +78,7 @@ void CompositeHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAllTas
         outAllTasksList.append(TaskToSubmit{ "composite-splitter", {} });
     }
     // The product formatter task will be at the end and only once (not for each product)
-    outAllTasksList.append(TaskToSubmit{ "product-formatter", {} });
+    //outAllTasksList.append(TaskToSubmit{ "product-formatter", {} });
 
     // now fill the tasks hierarchy infos
     int i;
@@ -112,17 +113,17 @@ void CompositeHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAllTas
             outAllTasksList[i * TasksNoPerProduct + 5]);
     }
     // product-formatter -> the last composite-splitter
-    outAllTasksList[outAllTasksList.size() - 1].parentTasks.append(
-        outAllTasksList[outAllTasksList.size() - 2]);
+    outProdFormatterParentsList.append(outAllTasksList[outAllTasksList.size() - 1]);
+//    outAllTasksList[outAllTasksList.size() - 1].parentTasks.append(
+//        outAllTasksList[outAllTasksList.size() - 2]);
 }
 
-void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx,
+CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
                                              const JobSubmittedEvent &event,
-                                             const QString &jsonParams,
                                              const QStringList &listProducts)
 {
     int jobId = event.jobId;
-    const QJsonObject &parameters = QJsonDocument::fromJson(jsonParams.toUtf8()).object();
+    const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters =
         ctx.GetJobConfigurationParameters(jobId, "processor.l3a.");
 
@@ -146,10 +147,13 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx,
 
     const auto &weightDateMin = configParameters["processor.l3a.weight.total.weightdatemin"];
 
-    QList<TaskToSubmit> allTasksList;
-    CreateNewProductInJobTasks(allTasksList, listProducts.size());
+    CompositeGlobalExecutionInfos globalExecInfos;
+    QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
+    QList<std::reference_wrapper<const TaskToSubmit>> &prodFormParTsksList = globalExecInfos.prodFormatParams.parentsTasksRef;
+    CreateTasksForNewProducts(allTasksList, prodFormParTsksList, listProducts.size());
 
-    NewStepList steps;
+    NewStepList &steps = globalExecInfos.allStepsList;
+
     QString prevL3AProdRefls;
     QString prevL3AProdWeights;
     QString prevL3AProdFlags;
@@ -157,7 +161,7 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx,
     QString prevL3ARgbFile;
 
     // the product formatter is the last in the task list
-    TaskToSubmit &productFormatter = allTasksList[allTasksList.size() - 1];
+    //TaskToSubmit &productFormatter = allTasksList[allTasksList.size() - 1];
 
     for (int i = 0; i < listProducts.size(); i++) {
         const auto &inputProduct = listProducts[i];
@@ -274,52 +278,17 @@ void CompositeHandler::HandleNewProductInJob(EventProcessingContext &ctx,
         steps.append(compositeSplitter.CreateStep("CompositeSplitter", compositeSplitterArgs));
     }
 
-    // submit the product formatter task
-    ctx.SubmitTasks(jobId, { productFormatter });
+    CompositeProductFormatterParams &productFormatterParams = globalExecInfos.prodFormatParams;
+    productFormatterParams.prevL3AProdRefls = prevL3AProdRefls;
+    productFormatterParams.prevL3AProdWeights = prevL3AProdWeights;
+    productFormatterParams.prevL3AProdFlags = prevL3AProdFlags;
+    productFormatterParams.prevL3AProdDates = prevL3AProdDates;
+    productFormatterParams.prevL3ARgbFile = prevL3ARgbFile;
+    // Get the tile ID from the product XML name. We extract it from the first product in the list as all
+    // producs should be for the same tile
+    productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
 
-    //const auto &targetFolder = productFormatter.GetFilePath("");
-    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
-    const auto &executionInfosPath = productFormatter.GetFilePath("executionInfos.txt");
-
-    WriteExecutionInfosFile(executionInfosPath, parameters, configParameters, listProducts);
-
-    QString tileId = ProcessorHandlerHelper::GetTileId(listProducts);
-    QStringList productFormatterArgs = { "ProductFormatter",
-                                         "-destroot",
-                                         targetFolder,
-                                         "-fileclass",
-                                         "SVT1",
-                                         "-level",
-                                         "L3A",
-                                         "-timeperiod",
-                                         l3aSynthesisDate,
-                                         "-baseline",
-                                         "01.00",
-                                         "-processor",
-                                         "composite",
-                                         "-processor.composite.refls",
-                                         tileId,
-                                         prevL3AProdRefls,
-                                         "-processor.composite.weights",
-                                         tileId,
-                                         prevL3AProdWeights,
-                                         "-processor.composite.flags",
-                                         tileId,
-                                         prevL3AProdFlags,
-                                         "-processor.composite.dates",
-                                         tileId,
-                                         prevL3AProdDates,
-                                         "-processor.composite.rgb",
-                                         tileId,
-                                         prevL3ARgbFile,
-                                         "-gipp",
-                                         executionInfosPath,
-                                         "-il",
-                                         listProducts[listProducts.size() - 1] };
-
-    steps.append(productFormatter.CreateStep("ProductFormatter", productFormatterArgs));
-
-    ctx.SubmitSteps(steps);
+    return globalExecInfos;
 }
 
 void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath,
@@ -430,8 +399,36 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     for (const auto &inputProduct : inputProducts) {
         listProducts.append(ctx.findProductFiles(inputProduct.toString()));
     }
-    // process the received L2A products in the current job
-    HandleNewProductInJob(ctx, event, event.parametersJson, listProducts);
+    if(listProducts.size() == 0) {
+        ctx.MarkJobFailed(event.jobId);
+        return;
+    }
+
+    QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
+    QList<CompositeProductFormatterParams> listParams;
+
+    TaskToSubmit productFormatterTask{"product-formatter", {}};
+    NewStepList allSteps;
+    //container for all task
+    QList<TaskToSubmit> allTasksList;
+    for(auto tile : mapTiles.keys())
+    {
+       QStringList listTemporalTiles = mapTiles.value(tile);
+       CompositeGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles);
+       listParams.append(infos.prodFormatParams);
+       productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
+       allTasksList.append(infos.allTasksList);
+       allSteps.append(infos.allStepsList);
+    }
+
+    ctx.SubmitTasks(event.jobId, {productFormatterTask});
+
+    // finally format the product
+    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event, listProducts, listParams);
+
+    // add these steps to the steps list to be submitted
+    allSteps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
+    ctx.SubmitSteps(allSteps);
 }
 
 void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
@@ -441,19 +438,88 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
         ctx.MarkJobFinished(event.jobId);
 
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
+        QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "/" + PRODUC_FORMATTER_OUT_PROPS_FILE;
+        QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
+        QString prodName = "UnknownProductName";
+        if(fileLines.size() > 0) {
+            QString name = ProcessorHandlerHelper::GetFileNameFromPath(fileLines[0]);
+            if(name.trimmed() != "") {
+                prodName = name;
+            }
+        }
+        prodName = GetProductFormatterProducName(ctx, event);
 
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L3AProductTypeId,
-            event.processorId,
-            event.taskId,
-            productFolder,
-            QDateTime::currentDateTimeUtc() });
+                            event.processorId,
+                            event.jobId,
+                            event.siteId,
+                            productFolder,
+                            QDateTime::currentDateTimeUtc(),
+                            prodName,
+                            "quicklook",
+                            /*POLYGON*/"(())" });
 
         // Now remove the job folder containing temporary files
         // TODO: Reinsert this line - commented only for debug purposes
         //RemoveJobFolder(ctx, event.jobId);
     }
 }
+
+QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                                    const QStringList &listProducts, const QList<CompositeProductFormatterParams> &productParams) {
+
+    const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3a.lai.");
+
+    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
+    const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.txt");
+    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUC_FORMATTER_OUT_PROPS_FILE);
+    const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
+
+    WriteExecutionInfosFile(executionInfosPath, parameters, configParameters, listProducts);
+
+    QStringList productFormatterArgs = { "ProductFormatter",
+                                         "-destroot", targetFolder,
+                                         "-fileclass", "SVT1",
+                                         "-level", "L3A",
+                                         "-timeperiod", l3aSynthesisDate,
+                                         "-baseline", "01.00",
+                                         "-processor", "composite",
+                                         "-gipp", executionInfosPath,
+                                         "-outprops", outPropsPath};
+    productFormatterArgs += "-il";
+    productFormatterArgs += listProducts[listProducts.size() - 1];
+
+    productFormatterArgs += "-processor.composite.refls";
+    for(const CompositeProductFormatterParams &params: productParams) {
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.prevL3AProdRefls;
+    }
+    productFormatterArgs += "-processor.composite.weights";
+    for(const CompositeProductFormatterParams &params: productParams) {
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.prevL3AProdWeights;
+    }
+    productFormatterArgs += "-processor.composite.flags";
+    for(const CompositeProductFormatterParams &params: productParams) {
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.prevL3AProdFlags;
+    }
+    productFormatterArgs += "-processor.composite.dates";
+    for(const CompositeProductFormatterParams &params: productParams) {
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.prevL3AProdDates;
+    }
+    productFormatterArgs += "-processor.composite.rgb";
+    for(const CompositeProductFormatterParams &params: productParams) {
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.prevL3ARgbFile;
+    }
+
+    return productFormatterArgs;
+}
+
 
 bool CompositeHandler::IsProductAcceptableForJob(int jobId, const ProductAvailableEvent &event)
 {

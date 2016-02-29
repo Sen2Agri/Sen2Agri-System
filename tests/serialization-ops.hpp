@@ -313,15 +313,6 @@ struct maker<StepConsoleOutput> {
 };
 
 template <>
-struct maker<NewProduct> {
-    static NewProduct make()
-    {
-        return { maker<ProductType>::make(), maker<int>::make(), maker<int>::make(),
-                 maker<QString>::make(), maker<QDateTime>::make() };
-    }
-};
-
-template <>
 struct maker<DashboardSearch> {
     static DashboardSearch make()
     {
@@ -380,5 +371,4 @@ void compare(const StepArgument &v1, const StepArgument &v2);
 void compare(const NewExecutorStep &v1, const NewExecutorStep &v2);
 void compare(const JobStepToRun &v1, const JobStepToRun &v2);
 void compare(const StepConsoleOutput &v1, const StepConsoleOutput &v2);
-void compare(const NewProduct &v1, const NewProduct &v2);
 void compare(const DashboardSearch &v1, const DashboardSearch &v2);

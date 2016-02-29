@@ -13,14 +13,18 @@ class ConfigParams {
 	static $SERVICES_DASHBOARD_LANDSAT_TILES_URL;
 	
 	static function init() {
-		self::$SERVICES_DASHBOARD_PRODUCTS_URL = self::$SERVICES_BASE_URL.'/GetDashboardProducts';
+		self::$SERVICES_DASHBOARD_PRODUCTS_URL = self::$SERVICES_BASE_URL.'/GetDashboardProducts';	
 		self::$SERVICES_DASHBOARD_SENTINEL_TILES_URL = self::$SERVICES_BASE_URL.'/GetDashboardSentinelTiles'; 
 		self::$SERVICES_DASHBOARD_LANDSAT_TILES_URL = self::$SERVICES_BASE_URL.'/GetDashboardLandsatTiles';
+		
+		// set siteId parameter
+		session_start();
+		if (isset($_SESSION['siteId']) && !empty($_SESSION['siteId'])) {
+			self::$SERVICES_DASHBOARD_PRODUCTS_URL = self::$SERVICES_BASE_URL.'/GetDashboardProducts?siteId='.$_SESSION['siteId'];
+		}
 	}
-	
 }
 
 ConfigParams::init();
-
 
 ?>

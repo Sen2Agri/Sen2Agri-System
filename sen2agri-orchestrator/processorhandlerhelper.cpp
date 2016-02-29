@@ -9,12 +9,22 @@ QString ProcessorHandlerHelper::GetTileId(const QString &xmlFileName, bool *ok)
     // First remove the extension
     QFileInfo info(xmlFileName);
     QString fileNameWithoutExtension = info.completeBaseName();
+    QString extension = info.suffix();
     // Split the name by "_" and search the part having _Txxxxx (_T followed by 5 characters)
     QStringList pieces = fileNameWithoutExtension.split("_");
     for (const QString &piece : pieces) {
         if ((piece.length() == 6) && (piece.at(0) == 'T')) {
             if(ok) *ok = true;
             return QString("TILE_" + piece);
+        }
+    }
+    if(QString::compare(extension, "hdr", Qt::CaseInsensitive) == 0) {
+        // check if is S2
+        if(pieces[0].indexOf("S2") != -1 && pieces.size() == 9 && pieces[5] == "") {
+            if(ok) *ok = true;
+            return QString("TILE_" + pieces[4]);
+        } else if(pieces[0].indexOf("L8") != -1) {
+            // TODO
         }
     }
 
@@ -61,4 +71,24 @@ QStringList ProcessorHandlerHelper::GetProductTileIds(const QStringList &listFil
         }
     }
     return result;
+}
+
+QStringList ProcessorHandlerHelper::GetTextFileLines(const QString &filePath) {
+    QFile inputFile(filePath);
+    QStringList lines;
+    if (inputFile.open(QIODevice::ReadOnly))
+    {
+       QTextStream in(&inputFile);
+       while (!in.atEnd())
+       {
+          lines.append(in.readLine());
+       }
+       inputFile.close();
+    }
+    return lines;
+}
+
+QString ProcessorHandlerHelper::GetFileNameFromPath(const QString &filePath) {
+    QFileInfo fileInfo(filePath);
+    return fileInfo.fileName();
 }

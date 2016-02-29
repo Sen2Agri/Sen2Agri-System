@@ -69,6 +69,5 @@ private slots:
     void jobStepToRunList();
     void stepConsoleOutput();
     void stepConsoleOutputList();
-    void newProduct();
     void dashboardSearch();
 };

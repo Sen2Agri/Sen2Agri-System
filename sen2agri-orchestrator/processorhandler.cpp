@@ -6,6 +6,7 @@
 #include <QFileInfoList>
 
 #include "schedulingcontext.h"
+#include "processorhandlerhelper.h"
 
 bool removeDir(const QString & dirName)
 {
@@ -89,3 +90,17 @@ bool ProcessorHandler::RemoveJobFolder(EventProcessingContext &ctx, int jobId)
     return removeDir(jobOutputPath);
 }
 
+QString ProcessorHandler::GetProductFormatterProducName(EventProcessingContext &ctx,
+                                                        const TaskFinishedEvent &event) {
+    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) +
+            "/" + PRODUC_FORMATTER_OUT_PROPS_FILE;
+    QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
+    QString prodName = "UnknownProductName";
+    if(fileLines.size() > 0) {
+        QString name = ProcessorHandlerHelper::GetFileNameFromPath(fileLines[0]);
+        if(name.trimmed() != "") {
+            prodName = name;
+        }
+    }
+    return prodName;
+}
