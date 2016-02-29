@@ -814,7 +814,7 @@ def create_xml_mosaic_metadata(context):
 
    #update node <PREVIEW_IMAGE> -- which is subnode for Query_Options
    node = get_node_element_upon_name(dom, 'PREVIEW_IMAGE')
-   update_text_xml_node(node, "false")
+   update_text_xml_node(node, "true")
 
    #update text for <Bbox> coordinates <LOWER_CORNER> and <UPPER_CORNER>
    node = get_node_element_upon_name(dom, 'LOWER_CORNER')
@@ -823,12 +823,19 @@ def create_xml_mosaic_metadata(context):
    update_text_xml_node(node, context.xml_info_from_mosaic_dict["upper_corner_val"])
 
    #update <Band_List> node
-   #remove existing nodes <BAND_NAME>
+   #get nodes <Band_List> if these nodes exists
    node = get_node_element_upon_name(dom, 'Band_List')
    if node :
       remove_xml_node(node, 'BAND_NAME')
+   else :
+      #get parent node on which Band_List should reside
+      node = get_node_element_upon_name(dom, 'Query_Options')
+      #create subnode Band_List as child of Query_Options
+      create_xml_node(dom, node, 'Band_List', [], '')
 
-   #add nodes BAND_NAME for each band extracted
+   #add nodes BAND_NAME, as subnode for Band_List for each band extracted
+   node = get_node_element_upon_name(dom, 'Band_List')
+
    for bandId  in range(context.xml_info_from_mosaic_dict["nb_mosaic_bands"]):
       textNode = "B" + str(bandId + 1)
       create_xml_node(dom, node, 'BAND_NAME', [], textNode)
