@@ -11,7 +11,6 @@ import time
 import signal
 from common_download import *
 
-
 #############################################################################
 # CONSTANTS
 MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED = int(2)
@@ -66,13 +65,14 @@ class Sentinel2Obj(object):
 ###########################################################################
 
 def downloadFromAmazon(s2Obj, aoiFile, db):
+    global dirname
     if aoiFile.fileExists(s2Obj.filename):
         log(aoiFile.writeDir, "FILE ALREADY DOWNLOADED, SKIP IT! {}".format(s2Obj.filename))
         return
     log(aoiFile.writeDir, "Downloading from amazon ")
 
     if float(s2Obj.cloud) < float(aoiFile.maxCloudCoverage) and len(aoiFile.aoiTiles) > 0:
-        commandArray = ["java", "-jar", "AWSS2ProductDownload-0.1.jar", "--out", aoiFile.writeDir, "--tiles"]
+        commandArray = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/AWSS2ProductDownload-0.1.jar", "--out", aoiFile.writeDir, "--tiles"]
         for tile in aoiFile.aoiTiles:
             commandArray.append(tile)
         commandArray.append("-p")

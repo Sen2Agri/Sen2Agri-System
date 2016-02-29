@@ -441,3 +441,9 @@ label.error {
 	font-size: 12px;
 }
 /* END LOGIN STYLES ---------------------------------------------- */
+
+/* bootstrap.min STYLES OVERWRITE -------------------------------- */
+.list-group-item {
+	padding: 5px 15px;
+}
+/* END bootstrap.min STYLES OVERWRITE ---------------------------- */

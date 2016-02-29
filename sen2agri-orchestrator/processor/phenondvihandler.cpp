@@ -7,27 +7,41 @@
 #include "processorhandlerhelper.h"
 #include "json_conversions.hpp"
 
-void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
-                                              const JobSubmittedEvent &event)
+void PhenoNdviHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
+                                                QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList)
+{
+    outAllTasksList.append(TaskToSubmit{ "bands-extractor", {} });
+    outAllTasksList.append(TaskToSubmit{ "feature-extraction", {outAllTasksList[0]} });
+    outAllTasksList.append(TaskToSubmit{ "pheno-ndvi-metrics", {outAllTasksList[1]} });
+    outAllTasksList.append(TaskToSubmit{ "pheno-ndvi-metrics-splitter", {outAllTasksList[2]} });
+
+    // product formatter needs completion of pheno-ndvi-metrics-splitter
+    outProdFormatterParentsList.append(outAllTasksList[3]);
+}
+
+PhenoGlobalExecutionInfos PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
+                                          const JobSubmittedEvent &event,
+                                          const QStringList &listProducts)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    const auto &inputProducts = parameters["input_products"].toArray();
     // Get the resolution value
     const auto &resolution = QString::number(parameters["resolution"].toInt());
 
-    QStringList listProducts;
-    for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
+    PhenoGlobalExecutionInfos globalExecInfos;
+    QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
+    QList<std::reference_wrapper<const TaskToSubmit>> &prodFormParTsksList = globalExecInfos.prodFormatParams.parentsTasksRef;
+    CreateTasksForNewProducts(allTasksList, prodFormParTsksList);
+
+    QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
+    for(TaskToSubmit &task: allTasksList) {
+        allTasksListRef.append(task);
     }
+    ctx.SubmitTasks(event.jobId, allTasksListRef);
 
-    TaskToSubmit bandsExtractorTask{ "bands-extractor", {} };
-    TaskToSubmit featureExtractionTask{ "feature-extraction", { bandsExtractorTask } };
-    TaskToSubmit metricsEstimationTask{ "pheno-ndvi-metrics", { featureExtractionTask } };
-    TaskToSubmit metricsSplitterTask{ "pheno-ndvi-metrics-splitter", { metricsEstimationTask } };
-    TaskToSubmit productFormatterTask{ "product-formatter", { metricsSplitterTask } };
-
-    ctx.SubmitTasks(event.jobId, { bandsExtractorTask, featureExtractionTask, metricsEstimationTask,
-                                   metricsSplitterTask, productFormatterTask });
+    TaskToSubmit &bandsExtractorTask = allTasksList[0];
+    TaskToSubmit &featureExtractionTask = allTasksList[1];
+    TaskToSubmit &metricsEstimationTask = allTasksList[2];
+    TaskToSubmit &metricsSplitterTask = allTasksList[3];
 
     const auto &rawReflBands = bandsExtractorTask.GetFilePath("reflectances.tif");
     const auto &allMasksImg = bandsExtractorTask.GetFilePath("mask_summary.tif");
@@ -36,9 +50,6 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     const auto &metricsEstimationImg = metricsEstimationTask.GetFilePath("metric_estimation.tif");
     const auto &metricsParamsImg = metricsSplitterTask.GetFilePath("metric_parameters_img.tif");
     const auto &metricsFlagsImg = metricsSplitterTask.GetFilePath("metric_flags_img.tif");
-    //const auto &targetFolder = productFormatterTask.GetFilePath("");
-    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
-    const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
     QStringList bandsExtractorArgs = {
         "BandsExtractor", "-pixsize",   resolution,  "-merge",    "true",     "-ndh", "true",
@@ -46,58 +57,77 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     };
     bandsExtractorArgs += listProducts;
 
-    QStringList featureExtractionArgs = { "FeatureExtraction", "-rtocr", rawReflBands, "-ndvi",
-                                          ndviImg };
+    QStringList featureExtractionArgs = { "FeatureExtraction", "-rtocr", rawReflBands, "-ndvi", ndviImg };
 
-    QStringList metricsEstimationArgs = {
-        "PhenologicalNDVIMetrics", "-in", ndviImg, "-mask", allMasksImg, "-dates", dates, "-out",
-        metricsEstimationImg
+    QStringList metricsEstimationArgs = {"PhenologicalNDVIMetrics",
+        "-in", ndviImg, "-mask", allMasksImg, "-dates", dates, "-out", metricsEstimationImg
     };
 
     QStringList metricsSplitterArgs = { "PhenoMetricsSplitter",
-                                        "-in",
-                                        metricsEstimationImg,
-                                        "-outparams",
-                                        metricsParamsImg,
-                                        "-outflags",
-                                        metricsFlagsImg,
-                                        "-compress",
-                                        "1" };
+                                        "-in", metricsEstimationImg,
+                                        "-outparams", metricsParamsImg,
+                                        "-outflags", metricsFlagsImg,
+                                        "-compress", "1" };
 
-    WriteExecutionInfosFile(executionInfosPath, listProducts);
-    QString tileId = ProcessorHandlerHelper::GetTileId(listProducts);
-    QStringList productFormatterArgs = { "ProductFormatter",
-                                         "-destroot",
-                                         targetFolder,
-                                         "-fileclass",
-                                         "SVT1",
-                                         "-level",
-                                         "L3B",
-                                         "-baseline",
-                                         "01.00",
-                                         "-processor",
-                                         "phenondvi",
-                                         "-processor.phenondvi.metrics",
-                                         tileId,
-                                         metricsParamsImg,
-                                         "-processor.phenondvi.flags",
-                                         tileId,
-                                         metricsFlagsImg,
-                                         "-gipp",
-                                         executionInfosPath,
-                                         "-il" };
-    productFormatterArgs += listProducts;
-
-    NewStepList steps = {
+    globalExecInfos.allStepsList = {
         bandsExtractorTask.CreateStep("BandsExtractor", bandsExtractorArgs),
         featureExtractionTask.CreateStep("FeatureExtraction", featureExtractionArgs),
         metricsEstimationTask.CreateStep("PhenologicalNDVIMetrics", metricsEstimationArgs),
         metricsSplitterTask.CreateStep("PhenoMetricsSplitter", metricsSplitterArgs),
-        productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs)
     };
 
-    ctx.SubmitSteps(steps);
+    PhenoProductFormatterParams &productFormatterParams = globalExecInfos.prodFormatParams;
+    productFormatterParams.metricsParamsImg = metricsParamsImg;
+    productFormatterParams.metricsFlagsImg = metricsFlagsImg;
+    // Get the tile ID from the product XML name. We extract it from the first product in the list as all
+    // producs should be for the same tile
+    productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
+
+    return globalExecInfos;
 }
+
+void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
+                                              const JobSubmittedEvent &event)
+{
+    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
+    const auto &inputProducts = parameters["input_products"].toArray();
+
+    QStringList listProducts;
+    for (const auto &inputProduct : inputProducts) {
+        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
+    }
+    if(listProducts.size() == 0) {
+        ctx.MarkJobFailed(event.jobId);
+        return;
+    }
+
+    QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
+    QList<PhenoProductFormatterParams> listParams;
+
+    TaskToSubmit productFormatterTask{"product-formatter", {}};
+    NewStepList allSteps;
+    //container for all task
+    QList<TaskToSubmit> allTasksList;
+    for(auto tile : mapTiles.keys())
+    {
+       QStringList listTemporalTiles = mapTiles.value(tile);
+       PhenoGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles);
+       listParams.append(infos.prodFormatParams);
+       productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
+       allTasksList.append(infos.allTasksList);
+       allSteps.append(infos.allStepsList);
+    }
+
+    ctx.SubmitTasks(event.jobId, {productFormatterTask});
+
+    // finally format the product
+    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event, listProducts, listParams);
+
+    // add these steps to the steps list to be submitted
+    allSteps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
+    ctx.SubmitSteps(allSteps);
+}
+
 
 void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                               const TaskFinishedEvent &event)
@@ -107,6 +137,8 @@ void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
 
+        QString prodName = GetProductFormatterProducName(ctx, event);
+
         // Insert the product into the database
         ctx.InsertProduct({ ProductType::L3BPhenoProductTypeId,
                             event.processorId,
@@ -114,7 +146,7 @@ void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                             event.siteId,
                             productFolder,
                             QDateTime::currentDateTimeUtc(),
-                            "name",
+                            prodName,
                             "quicklook",
                             "POLYGON(())" });
 
@@ -145,6 +177,37 @@ void PhenoNdviHandler::WriteExecutionInfosFile(const QString &executionInfosPath
         executionInfosFile.close();
     } catch (...) {
     }
+}
+
+QStringList PhenoNdviHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                                    const QStringList &listProducts, const QList<PhenoProductFormatterParams> &productParams) {
+    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
+    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUC_FORMATTER_OUT_PROPS_FILE);
+    const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.txt");
+    QStringList productFormatterArgs = { "ProductFormatter",
+                                         "-destroot",
+                                         targetFolder,
+                                         "-fileclass", "SVT1",
+                                         "-level", "L3B",
+                                         "-baseline", "01.00",
+                                         "-processor", "phenondvi",
+                                         "-gipp", executionInfosPath,
+                                         "-outprops", outPropsPath};
+    productFormatterArgs += "-il";
+    productFormatterArgs += listProducts;
+
+    productFormatterArgs += "-processor.phenondvi.metrics";
+    for(const PhenoProductFormatterParams &params: productParams) {
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.metricsParamsImg;
+    }
+
+    productFormatterArgs += "-processor.phenondvi.flags";
+    for(const PhenoProductFormatterParams &params: productParams) {
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.metricsFlagsImg;
+    }
+    return productFormatterArgs;
 }
 
 ProcessorJobDefinitionParams PhenoNdviHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,

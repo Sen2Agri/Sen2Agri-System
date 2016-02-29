@@ -10,6 +10,8 @@
 #define START_OF_SEASON_CFG_KEY "general.start_of_season"
 #define END_OF_SEASON_CFG_KEY "general.end_of_season"
 
+#define PRODUC_FORMATTER_OUT_PROPS_FILE "product_properties.txt"
+
 class ProcessorHandler
 {
 public:
@@ -27,6 +29,7 @@ protected:
     QString GetFinalProductFolder(EventProcessingContext &ctx, int jobId, int siteId);
     QString GetFinalProductFolder(const std::map<QString, QString> &cfgKeys, const QString &siteName, const QString &processorName);
     bool RemoveJobFolder(EventProcessingContext &ctx, int jobId);
+    QString GetProductFormatterProducName(EventProcessingContext &ctx, const TaskFinishedEvent &event);
 
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,
