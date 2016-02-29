@@ -70,7 +70,7 @@ class Sen2AgriClient(object):
             processors.append(Processor(row['id'], row['short_name']))
 
         return sorted(processors)
-        
+
     def submit_job(self, job):
         connection = self.get_connection()
         cur = self.get_cursor(connection)
@@ -189,7 +189,7 @@ class Sen2AgriCtl(object):
                                       required=True, metavar="SHAPEFILE",
                                       help="reference polygons")
         parser_crop_mask.add_argument('-refr', '--reference-raster',
-                                      required=False, 
+                                      required=False,
                                       help="reference raster for noinsitu")
         parser_crop_mask.add_argument(
             '--date-start',
@@ -252,7 +252,7 @@ class Sen2AgriCtl(object):
             parameters['reproc'] = args.reproc
         if args.fitted:
             parameters['fitted'] = args.fitted
-        self.submit_job('l3b', parameters, args)
+        self.submit_job('l3b_lai', parameters, args)
 
     def submit_pheno_ndvi(self, args):
         parameters = {'input_products': args.input}
@@ -297,12 +297,12 @@ class Sen2AgriCtl(object):
         processor_id = self.get_processor_id(processor_short_name)
         if processor_id is None:
             raise RuntimeError("Invalid processor id '{}'".format(processor_short_name))
-        
+
         job = self.create_job(processor_id, parameters, args)
         job_id = self.client.submit_job(job)
         print("Submitted job {} for processor name {} having processor id {}".format(job_id, processor_short_name, processor_id))
 
-        
+
     def get_site_id(self, name):
         if isinstance(name, numbers.Integral):
             return name

@@ -21,6 +21,7 @@ import psycopg2
 import psycopg2.errorcodes
 
 FAKE_COMMAND = 0
+DEBUG = True
 
 DATABASE_DEMMACCS_GIPS_PATH = "demmaccs.gips-path"
 DATABASE_DEMMACCS_OUTPUT_PATH = "demmaccs.output-path"
@@ -29,7 +30,9 @@ DATABASE_DEMMACCS_SWBD_PATH = "demmaccs.swbd-path"
 DATABASE_DEMMACCS_MACCS_IP_ADDRESS = "demmaccs.maccs-ip-address"
 DATABASE_DEMMACCS_MACCS_LAUNCHER = "demmaccs.maccs-launcher"
 DATABASE_DEMMACCS_LAUNCHER = "demmaccs.launcher"
-DATABASE_DEMMACCS_WORKING_DIR = "demmacs.working-path"
+DATABASE_DEMMACCS_WORKING_DIR = "demmaccs.working-dir"
+
+
 def run_command(cmd_array, use_shell=False):
     start = time.time()
     print(" ".join(map(pipes.quote, cmd_array)))
@@ -42,6 +45,20 @@ def run_command(cmd_array, use_shell=False):
     return res
 
 
+def log(location, info, log_filename = None):
+    if log_filename == None:
+        log_filename = "log.txt"
+    print("log_filename{}".format(log_filename))
+    try:
+        logfile = os.path.join(location, log_filename)
+        if DEBUG:
+            print("{}".format(info))
+        log = open(logfile, 'a')
+        log.write("{}:{}\n".format(str(datetime.datetime.now()),str(info)))
+        log.close()
+    except:
+        print("Could NOT write inside the log file {}".format(logfile))
+        
 def create_recursive_dirs(dir_name):
     try:
         #create recursive dir
@@ -71,6 +88,7 @@ class Config(object):
                 found_section = False
                 for line in config:
                     line = line.strip(" \n\t\r")
+                    print(line)
                     if found_section and line.startswith('['):
                         break
                     elif found_section:
@@ -142,12 +160,15 @@ class L1CInfo(object):
 
     def get_demmacs_config(self):
         if not self.database_connect():
+            print("1")
             return None
         try:
             self.cursor.execute("select * from sp_get_parameters('demmaccs')")
+            print("2")
             rows = self.cursor.fetchall()
         except:
             self.database_disconnect()
+            print("3")
             return None
         output_path = ""
         gips_path = ""
@@ -161,6 +182,7 @@ class L1CInfo(object):
         for row in rows:
             if len(row) != 3:
                 continue
+            print(row[0])
             if row[0] == DATABASE_DEMMACCS_OUTPUT_PATH:
                 output_path = row[2]
             if row[0] == DATABASE_DEMMACCS_GIPS_PATH:
@@ -180,6 +202,7 @@ class L1CInfo(object):
 
         self.database_disconnect()
         if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_ip_address) == 0 or len(maccs_launcher) == 0 or len(launcher) == 0 or len(working_dir) == 0:
+            print("{} {} {} {} {} {} {} {}".format(len(output_path), len(gips_path), len(srtm_path), len(swbd_path), len(maccs_ip_address), len(maccs_launcher), len(launcher), len(working_dir)))
             return None
         return DEMMACSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, launcher, working_dir)
 
@@ -227,6 +250,50 @@ class L1CInfo(object):
             self.conn.commit()
         except:
             print("Database update query FAILED!!!!!")
+            self.database_disconnect()
+            return False
+        self.database_disconnect()
+        return True
+
+    def mark_product_as_present(self, l1c_id, processor_id, site_id, full_path, product_name, footprint):
+        #input params:
+        #l1c_id is the id for the found L1C product in the downloader_history table. It shall be marked as being processed
+        #product type by default is 1
+        #processor id
+        #site id
+        #job id has to be NULL
+        #full path is the whole path to the product including the name
+        #created timestamp NULL
+        #name product (basename from the full path)
+        #quicklook image has to be NULL
+        #footprint
+        if not self.database_connect():
+            return False
+        try:
+            self.cursor.execute("""update downloader_history set processed=true where id=%(l1c_id)s :: smallint """, {"l1c_id" : l1c_id})
+            self.cursor.execute("""select * from sp_insert_product(%(product_type_id)s :: smallint,
+                               %(processor_id)s :: smallint, 
+                               %(site_id)s :: smallint, 
+                               %(job_id)s :: smallint, 
+                               %(full_path)s :: character varying,
+                               %(created_timestamp)s :: timestamp,
+                               %(name)s :: character varying,
+                               %(quicklook_image)s :: character varying,
+                               %(footprint)s)""",
+                                {
+                                    "product_type_id" : 1,
+                                    "processor_id" : processor_id,
+                                    "site_id" : site_id,
+                                    "job_id" : None,
+                                    "full_path" : full_path,
+                                    "created_timestamp" : None,
+                                    "name" : product_name,
+                                    "quicklook_image" : None,
+                                    "footprint" : footprint
+                                })
+            self.conn.commit()
+        except Exception, e:
+            print("Database update query failed: {}".format(e))            
             self.database_disconnect()
             return False
         self.database_disconnect()

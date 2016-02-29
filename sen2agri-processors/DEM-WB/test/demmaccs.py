@@ -10,8 +10,12 @@ import pipes
 import shutil
 from common import *
 
+general_log_path = "/tmp/"
+general_log_filename = "demmacs"
 
 def create_sym_links(filenames, target_directory):
+    global general_log_path
+    global general_log_filename
     for file_to_sym_link in filenames:
         #target name
         if file_to_sym_link.endswith("/"):
@@ -21,7 +25,7 @@ def create_sym_links(filenames, target_directory):
         target = target_directory+"/" + basename
         #does it already exist?
         if os.path.isfile(target) or os.path.isdir(target):
-            print("Path exists")
+            log(general_log_path, "Path exists", general_log_filename)
             #skip it
             continue
         #create it
@@ -60,69 +64,90 @@ parser.add_argument('-p', '--processes-number-dem', required=False,
 parser.add_argument('--gip-dir', required=True, help="directory where gip are to be found")
 parser.add_argument('--maccs-address', required=True, help="the ip address of the pc where MACCS is to be found")
 parser.add_argument('--maccs-launcher', required=True, help="the shell from the remote pc which launches the MACCS")
+parser.add_argument('--dem-launcher', required=True, help="executable for DEM")
 parser.add_argument('output', help="output location")
 
 args = parser.parse_args()
 
+if not create_recursive_dirs(args.output):
+    log(general_log_path, "Could not use the output directory", general_log_filename)
+    sys.exit(-1)
+
+general_log_path = args.output
 own_pid = os.getpid()
 working_dir = "{}/{}".format(args.working_dir,own_pid)
 dem_working_dir = "{}_DEM_TMP".format(working_dir)
 dem_output_dir = "{}_DEM_OUT".format(working_dir)
-print("working_dir = {}".format(working_dir))
-print("dem_working_dir = {}".format(dem_working_dir))
-print("dem_output_dir = {}".format(dem_output_dir))
+
+log(general_log_path,"working_dir = {}".format(working_dir), general_log_filename)
+log(general_log_path,"dem_working_dir = {}".format(dem_working_dir), general_log_filename)
+log(general_log_path,"dem_output_dir = {}".format(dem_output_dir), general_log_filename)
+log(general_log_path, "Started at {}:".format(time.time()), general_log_filename)
+general_start = time.time()
 
 if not create_recursive_dirs(dem_output_dir):
-    print("Could not create the output directory for DEM")
-    sys.exit(-1)
-
-if not create_recursive_dirs(args.output):
-    print("Could not use the output directory")
+    log(general_log_path, "Could not create the output directory for DEM", general_log_filename)
     sys.exit(-1)
 
 if not create_recursive_dirs(working_dir):
-    print("Could not use the temporary directory")
+    log(general_log_path, "Could not use the temporary directory", general_log_filename)
     sys.exit(-1)
 
-if run_command(["./dem.py", "--srtm", args.srtm, "--swbd", args.swbd, "-p", args.processes_number_dem, "-w", dem_working_dir, args.input, dem_output_dir]) != 0:
-    print("DEM failed")
+start = time.time()
+if run_command([args.dem_launcher, "--srtm", args.srtm, "--swbd", args.swbd, "-p", args.processes_number_dem, "-w", dem_working_dir, args.input, dem_output_dir]) != 0:
+    log(general_log_path, "DEM failed", general_log_filename)
     sys.exit(-1)
+
+log(general_log_path, "DEM finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))), general_log_filename)
 
 if not create_sym_links([args.input], working_dir):
-    print("Could not create sym links for {}".format(args.input))
+    log(general_log_path, "Could not create sym links for {}".format(args.input), general_log_filename)
     sys.exit(-1)
 
 gips = glob.glob("{}/*.*".format(args.gip_dir))
 if not create_sym_links(gips, working_dir):
-    print("Symbolic links for GIP files could not be created in the output directory")
+    log(general_log_path, "Symbolic links for GIP files could not be created in the output directory", general_log_filename)
     sys.exit(-1)
 
-print("dem_output_dir = {}".format(dem_output_dir))
+log(general_log_path, "dem_output_dir = {}".format(dem_output_dir), general_log_filename)
 dem_hdrs = glob.glob("{}/*.HDR".format(dem_output_dir))
-print("dem_hdrs = {}".format(dem_hdrs))
+log(general_log_path, "dem_hdrs = {}".format(dem_hdrs), general_log_filename)
 for dem_hdr in dem_hdrs:    
     basename, tile_id = get_dem_hdr_info(dem_hdr)
     dem_dir = glob.glob("{0}/{1}.DBL.DIR".format(dem_output_dir, basename))
     if len(dem_dir) != 1:
-        print("Could not find the DEM directory tile for {}".format(dem_hdr))
+        log(general_log_path, "Could not find the DEM directory tile for {}".format(dem_hdr), general_log_filename)
         continue
     if not create_sym_links([dem_hdr, dem_dir[0]], working_dir):
-        print("Could not create sym links for {0} and {1}".format(dem_hdr, dem_dir[0]))
+        log(general_log_path, "Could not create sym links for {0} and {1}".format(dem_hdr, dem_dir[0]), general_log_filename)
         continue
-    if run_command(["ssh", "sen2agri-service@{}".format(args.maccs_address), args.maccs_launcher, working_dir, tile_id, args.output]) != 0:
-        print("MACCS didn't work !")
+    start = time.time()
+    if run_command(["ssh", "sen2agri-service@{}".format(args.maccs_address), 
+                    args.maccs_launcher, 
+                    "--input", working_dir, 
+                    "--TileId", tile_id, 
+                    "--output", args.output,
+                    "--mode", "L2INIT", 
+                    "--loglevel", "DEBUG",
+                    "--enableTest", "false",
+                    "--CheckXMLFilesWithSchema", "false",
+                    "--conf", "UserConfiguration"]) != 0:
+        log(general_log_path, "MACCS didn't work for {}!".format(working_dir), general_log_filename)
+    log(general_log_path, "MACCS finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))), general_log_filename)
     remove_sym_links([dem_hdr, dem_dir[0]], working_dir)
 
 try:
     shutil.rmtree(dem_working_dir)
 except:
-    print("Couldn't remove the temp dir {}".format(dem_working_dir))
+    log(general_log_path, "Couldn't remove the temp dir {}".format(dem_working_dir), general_log_filename)
 try:
     shutil.rmtree(dem_output_dir)
 except:
-    print("Couldn't remove the temp dir {}".format(dem_output_dir))
+    log(general_log_path, "Couldn't remove the temp dir {}".format(dem_output_dir), general_log_filename)
 try:
     shutil.rmtree(working_dir)
 except:
-    print("Couldn't remove the temp dir {}".format(working_dir))
+    log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), general_log_filename)
 
+log(general_log_path, "Ended at {}:".format(time.time()), general_log_filename)
+log(general_log_path, "Total execution {}:".format(datetime.timedelta(seconds=(time.time() - general_start))), general_log_filename)

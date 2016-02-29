@@ -48,6 +48,6 @@ void RunEstimator::estimateTasks(std::vector<ScheduledTask> tasks)
         }
         // estimate the processor will run on this node
         task.taskStatus.estimatedRunTime = quickestFree;
-        freeTime[quickestNode].addSecs(0); // task.averageExecutionTime;
+        freeTime[quickestNode] = freeTime[quickestNode].addSecs(0); // task.averageExecutionTime;
     }
 }
