@@ -208,6 +208,8 @@ private:
         AddParameter(ParameterType_String, "timeperiod", "First product date and last product date");
         MandatoryOff("timeperiod");
         AddParameter(ParameterType_String, "baseline", "Processing baseline");
+        AddParameter(ParameterType_String, "outprops", "File containing processing properties like the product main folder");
+        MandatoryOff("outprops");
 
         AddParameter(ParameterType_Choice, "processor", "Processor");
         SetParameterDescription("processor", "Specifies the product type");
@@ -386,6 +388,20 @@ private:
       //created all folders ierarchy
       bool bResult = createsAllFolders(strMainFolderFullPath);
 
+      if(HasValue("outprops")) {
+            std::string outPropsFileName = this->GetParameterString("outprops");
+            std::ofstream outPropsFile;
+            try
+            {
+                outPropsFile.open(outPropsFileName.c_str(), std::ofstream::out);
+                outPropsFile << strMainFolderFullPath << std::endl;
+                outPropsFile.close();
+            }
+            catch(...)
+            {
+                itkGenericExceptionMacro(<< "Could not open file " << outFileName);
+            }
+      }
       strTileName = ReplaceString(strTileName, MAIN_FOLDER_CATEG, TILE_LEGACY_FOLDER_CATEG);
       strTileName = ReplaceString(strTileName, "{product_descriptor}", TILE_DESCRIPTOR);
       strTileName = ReplaceString(strTileName, "{processing_baseline}", "N" + m_strBaseline);

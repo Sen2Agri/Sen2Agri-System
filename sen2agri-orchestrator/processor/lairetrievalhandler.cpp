@@ -16,7 +16,9 @@
 #define DEFAULT_BEST_OF                 "1"
 #define DEFAULT_REGRESSOR               "nn"
 
-void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAllTasksList, int nbProducts, bool bGenModels, bool bNDayReproc, bool bFittedReproc) {
+void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
+                                                    QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList,
+                                                     int nbProducts, bool bGenModels, bool bNDayReproc, bool bFittedReproc) {
     // just create the tasks but with no information so far
     // first we add the tasks to be performed for each product
     int TasksNoPerProduct = LAI_TASKS_PER_PRODUCT;
@@ -47,7 +49,7 @@ void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAll
             outAllTasksList.append(TaskToSubmit{"lai-fitted-reproc-splitter", {}});
         }
     }
-    outAllTasksList.append(TaskToSubmit{"product-formatter", {}});
+    //outAllTasksList.append(TaskToSubmit{"product-formatter", {}});
 
     // now fill the tasks hierarchy infos
 
@@ -111,6 +113,12 @@ void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAll
         outAllTasksList[ndviRviExtrIdx+2].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
         // lai-mono-date-mask-flags -> ndvi-rvi-extraction
         outAllTasksList[ndviRviExtrIdx+3].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
+        // add the parent tasks for the product formatter, if it is the case
+        if(!bNDayReproc && !bFittedReproc) {
+            for(int j = 0; j<3; j++) {
+                outProdFormatterParentsList.append(outAllTasksList[ndviRviExtrIdx+j+1]);
+            }
+        }
     }
     int nCurIdx = i*TasksNoPerProduct;
     if(bNDayReproc || bFittedReproc) {
@@ -154,22 +162,28 @@ void LaiRetrievalHandler::CreateNewProductInJobTasks(QList<TaskToSubmit> &outAll
             outAllTasksList[m_nFittedProfileReprocessingSplitterIdx].parentTasks.append(outAllTasksList[m_nFittedProfileReprocessingIdx]);
         }
         //product-formatter -> reprocessed-profile-splitter OR fitted-reprocessed-profile-splitter (OR BOTH)
-        m_nProductFormatterIdx = nCurIdx;
-        if(bNDayReproc)
-            outAllTasksList[m_nProductFormatterIdx].parentTasks.append(outAllTasksList[m_nReprocessedProfileSplitterIdx]);
-        if(bFittedReproc)
-            outAllTasksList[m_nProductFormatterIdx].parentTasks.append(outAllTasksList[m_nFittedProfileReprocessingSplitterIdx]);
+//        m_nProductFormatterIdx = nCurIdx;
+        if(bNDayReproc) {
+            outProdFormatterParentsList.append(outAllTasksList[m_nReprocessedProfileSplitterIdx]);
+//            outAllTasksList[m_nProductFormatterIdx].parentTasks.append(outAllTasksList[m_nReprocessedProfileSplitterIdx]);
+        }
+        if(bFittedReproc) {
+            outProdFormatterParentsList.append(outAllTasksList[m_nFittedProfileReprocessingSplitterIdx]);
+//            outAllTasksList[m_nProductFormatterIdx].parentTasks.append(outAllTasksList[m_nFittedProfileReprocessingSplitterIdx]);
+        }
     } else {
-        //product-formatter -> last bv-image-inversion AND bv-err-image-inversion
-        m_nProductFormatterIdx = nCurIdx;
-        int nPrevBvErrImgInvIdx = (i-1)*TasksNoPerProduct + (TasksNoPerProduct-1);
-        outAllTasksList[m_nProductFormatterIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
-        outAllTasksList[m_nProductFormatterIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
-
+        //product-formatter -> last bv-image-inversion AND bv-err-image-inversion and lai-mono-date-mask-flags
+        //m_nProductFormatterIdx = nCurIdx;
+        int nPrevBvErrImgInvIdx = (i-1)*TasksNoPerProduct + (TasksNoPerProduct-2);
+        outProdFormatterParentsList.append(outAllTasksList[nPrevBvErrImgInvIdx-2]);
+        outProdFormatterParentsList.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
+        outProdFormatterParentsList.append(outAllTasksList[nPrevBvErrImgInvIdx]);
+        //outAllTasksList[m_nProductFormatterIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
+        //outAllTasksList[m_nProductFormatterIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
     }
 }
 
-void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+LAIGlobalExecutionInfos LaiRetrievalHandler::HandleNewTilesList(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                                 const QStringList &listProducts) {
 
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
@@ -181,8 +195,11 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, con
     bool bNDayReproc = parameters.contains("reproc");
     bool bFittedReproc = parameters.contains("fitted");
 
-    QList<TaskToSubmit> allTasksList;
-    CreateNewProductInJobTasks(allTasksList, listProducts.size(), bGenModels, bNDayReproc, bFittedReproc);
+    // The returning value
+    LAIGlobalExecutionInfos globalExecInfos;
+    QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
+    QList<std::reference_wrapper<const TaskToSubmit>> &prodFormParTsksList = globalExecInfos.prodFormatParams.parentsTasksRef;
+    CreateTasksForNewProducts(allTasksList, prodFormParTsksList, listProducts.size(), bGenModels, bNDayReproc, bFittedReproc);
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     for(TaskToSubmit &task: allTasksList) {
@@ -191,7 +208,7 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, con
     // submit all tasks
     ctx.SubmitTasks(event.jobId, allTasksListRef);
 
-    NewStepList steps;
+    NewStepList &steps = globalExecInfos.allStepsList;
     QStringList ndviFileNames;
     QStringList monoDateLaiFileNames;
     QStringList monoDateErrLaiFileNames;
@@ -298,20 +315,21 @@ void LaiRetrievalHandler::HandleNewProductInJob(EventProcessingContext &ctx, con
         }
     }
 
-    // finally format the product
-    TaskToSubmit &productFormatterTask = allTasksList[m_nProductFormatterIdx];
-
+    LAIProductFormatterParams &productFormatterParams = globalExecInfos.prodFormatParams;
+    //productFormatterParams.parentsTasksRef = prodFormParTsksList;
+    productFormatterParams.listNdvi = ndviFileNames;
+    productFormatterParams.listLaiMonoDate = monoDateLaiFileNames;
+    productFormatterParams.listLaiMonoDateErr = monoDateErrLaiFileNames;
+    productFormatterParams.listLaiMonoDateFlgs = monoDateMskFlagsLaiFileNames;
+    productFormatterParams.fileLaiReproc = reprocFileListFileName;
+    productFormatterParams.fileLaiReprocFlgs = reprocFlagsFileListFileName;
+    productFormatterParams.fileLaiFit = fittedFileListFileName;
+    productFormatterParams.fileLaiFitFlgs = fittedFlagsFileListFileName;
     // Get the tile ID from the product XML name. We extract it from the first product in the list as all
     // producs should be for the same tile
-    QString tileId = ProcessorHandlerHelper::GetTileId(listProducts);
-    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event, listProducts, ndviFileNames, monoDateLaiFileNames,
-                                                               monoDateErrLaiFileNames, monoDateMskFlagsLaiFileNames, reprocFileListFileName,
-                                                               reprocFlagsFileListFileName, fittedFileListFileName, fittedFlagsFileListFileName, tileId);
+    productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
 
-    // add these steps to the steps list to be submitted
-    steps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
-
-    ctx.SubmitSteps(steps);
+    return globalExecInfos;
 }
 
 void LaiRetrievalHandler::WriteExecutionInfosFile(const QString &executionInfosPath,
@@ -360,14 +378,35 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     for (const auto &inputProduct : inputProducts) {
         listProducts.append(ctx.findProductFiles(inputProduct.toString()));
     }
+    if(listProducts.size() == 0) {
+        ctx.MarkJobFailed(event.jobId);
+        return;
+    }
     QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
+    QList<LAIProductFormatterParams> listParams;
+
+    TaskToSubmit productFormatterTask{"product-formatter", {}};
+    NewStepList allSteps;
+    //container for all task
+    QList<TaskToSubmit> allTasksList;
     for(auto tile : mapTiles.keys())
     {
        QStringList listTemporalTiles = mapTiles.value(tile);
+       LAIGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles);
+       listParams.append(infos.prodFormatParams);
+       productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
+       allTasksList.append(infos.allTasksList);
+       allSteps.append(infos.allStepsList);
     }
 
-    // process the received L2A products in the current job
-    HandleNewProductInJob(ctx, event, listProducts);
+    ctx.SubmitTasks(event.jobId, {productFormatterTask});
+
+    // finally format the product
+    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event, listProducts, listParams);
+
+    // add these steps to the steps list to be submitted
+    allSteps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
+    ctx.SubmitSteps(allSteps);
 }
 
 void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
@@ -385,7 +424,7 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                             QDateTime::currentDateTimeUtc(),
                             "name",
                             "quicklook",
-                            "POLYGON(())" });
+                            /* POLYGON */ "(())" });
 
         // Now remove the job folder containing temporary files
         //RemoveJobFolder(ctx, event.jobId);
@@ -535,11 +574,7 @@ QStringList LaiRetrievalHandler::GetFittedProfileReprocSplitterArgs(const QStrin
 }
 
 QStringList LaiRetrievalHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                    const QStringList &listProducts, const QStringList &listNdvis,
-                                    const QStringList &listLaiMonoDate, const QStringList &listLaiMonoDateErr,
-                                    const QStringList &listLaiMonoDateFlgs, const QString &fileLaiReproc,
-                                    const QString &fileLaiReprocFlgs, const QString &fileLaiFit,
-                                    const QString &fileLaiFitFlgs, const QString &tileId) {
+                                    const QStringList &listProducts, const QList<LAIProductFormatterParams> &productParams) {
 
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.lai.");
@@ -556,39 +591,37 @@ QStringList LaiRetrievalHandler::GetProductFormatterArgs(TaskToSubmit &productFo
                             "-level", "L3B",
                             "-baseline", "01.00",
                             "-processor", "vegetation",
-                            "-processor.vegetation.laindvi"};
-    productFormatterArgs += tileId;
-    productFormatterArgs += listNdvis;
-    productFormatterArgs += "-processor.vegetation.laimonodate";
-    productFormatterArgs += tileId;
-    productFormatterArgs += listLaiMonoDate;
-    productFormatterArgs += "-processor.vegetation.laimonodateerr";
-    productFormatterArgs += tileId;
-    productFormatterArgs += listLaiMonoDateErr;
-    productFormatterArgs += "-processor.vegetation.laimdateflgs";
-    productFormatterArgs += tileId;
-    productFormatterArgs += listLaiMonoDateFlgs;
-    if(parameters.contains("reproc")) {
-        productFormatterArgs += "-processor.vegetation.filelaireproc";
-        productFormatterArgs += tileId;
-        productFormatterArgs += fileLaiReproc;
-        productFormatterArgs += "-processor.vegetation.filelaireprocflgs";
-        productFormatterArgs += tileId;
-        productFormatterArgs += fileLaiReprocFlgs;
+                            "-gipp", executionInfosPath};
+    for(const LAIProductFormatterParams &params: productParams) {
+        productFormatterArgs += "-processor.vegetation.laindvi";
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.listNdvi;
+        productFormatterArgs += "-processor.vegetation.laimonodate";
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.listLaiMonoDate;
+        productFormatterArgs += "-processor.vegetation.laimonodateerr";
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.listLaiMonoDateErr;
+        productFormatterArgs += "-processor.vegetation.laimdateflgs";
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.listLaiMonoDateFlgs;
+        if(parameters.contains("reproc")) {
+            productFormatterArgs += "-processor.vegetation.filelaireproc";
+            productFormatterArgs += params.tileId;
+            productFormatterArgs += params.fileLaiReproc;
+            productFormatterArgs += "-processor.vegetation.filelaireprocflgs";
+            productFormatterArgs += params.tileId;
+            productFormatterArgs += params.fileLaiReprocFlgs;
+        }
+        if(parameters.contains("fitted")) {
+            productFormatterArgs += "-processor.vegetation.filelaifit";
+            productFormatterArgs += params.tileId;
+            productFormatterArgs += params.fileLaiFit;
+            productFormatterArgs += "-processor.vegetation.filelaifitflgs";
+            productFormatterArgs += params.tileId;
+            productFormatterArgs += params.fileLaiFitFlgs;
+        }
     }
-    if(parameters.contains("fitted")) {
-        productFormatterArgs += "-processor.vegetation.filelaifit";
-        productFormatterArgs += tileId;
-        productFormatterArgs += fileLaiFit;
-        productFormatterArgs += "-processor.vegetation.filelaifitflgs";
-        productFormatterArgs += tileId;
-        productFormatterArgs += fileLaiFitFlgs;
-    }
-    productFormatterArgs += "-gipp";
-    productFormatterArgs += executionInfosPath;
-    productFormatterArgs += "-il";
-    productFormatterArgs += listProducts;
-
     return productFormatterArgs;
 }
 

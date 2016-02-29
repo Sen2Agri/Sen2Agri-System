@@ -3,6 +3,28 @@
 
 #include "processorhandler.hpp"
 
+typedef struct {
+
+    NewStepList steps;
+    QList<std::reference_wrapper<const TaskToSubmit>> parentsTasksRef;
+    // args
+     QStringList listNdvi;
+     QStringList listLaiMonoDate;
+     QStringList listLaiMonoDateErr;
+     QStringList listLaiMonoDateFlgs;
+     QString fileLaiReproc;
+     QString fileLaiReprocFlgs;
+     QString fileLaiFit;
+     QString fileLaiFitFlgs;
+     QString tileId;
+} LAIProductFormatterParams;
+
+typedef struct {
+    QList<TaskToSubmit> allTasksList;
+    NewStepList allStepsList;
+    LAIProductFormatterParams prodFormatParams;
+} LAIGlobalExecutionInfos;
+
 class LaiRetrievalHandler : public ProcessorHandler
 {
 private:
@@ -11,9 +33,13 @@ private:
     void HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 const TaskFinishedEvent &event) override;
 
-    void CreateNewProductInJobTasks(QList<TaskToSubmit> &outAllTasksList, int nbProducts, bool bGenModels, bool bNDayReproc, bool bFittedReproc);
-    void HandleNewProductInJob(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+    void CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
+                                   QList<std::reference_wrapper<const TaskToSubmit> > &outProdFormatterParentsList,
+                                   int nbProducts, bool bGenModels, bool bNDayReproc, bool bFittedReproc);
+
+    LAIGlobalExecutionInfos HandleNewTilesList(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                const QStringList &listProducts);
+
     void GetModelFileList(QStringList &outListModels, const QString &strPattern, std::map<QString, QString> &configParameters);
     void WriteExecutionInfosFile(const QString &executionInfosPath,
                                 std::map<QString, QString> &configParameters,
@@ -39,11 +65,7 @@ private:
                                                    const QString &fittedFlagsFileListFileName, const QStringList &allXmlsFileName);
     QStringList GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx,
                                         const JobSubmittedEvent &event,
-                                        const QStringList &listProducts, const QStringList &listNdvis,
-                                        const QStringList &listLaiMonoDate, const QStringList &listLaiMonoDateErr,
-                                        const QStringList &listLaiMonoDateFlgs, const QString &fileLaiReproc,
-                                        const QString &fileLaiReprocFlgs, const QString &fileLaiFit, const QString &fileLaiFitFlgs,
-                                        const QString &tileId);
+                                        const QStringList &listProducts, const QList<LAIProductFormatterParams> &productParams);
 
     void GetStepsToGenModel(std::map<QString, QString> &configParameters, const QStringList &listProducts,
                             QList<TaskToSubmit> &allTasksList, NewStepList &steps);
@@ -67,7 +89,7 @@ private:
     int m_nReprocessedProfileSplitterIdx;
     int m_nFittedProfileReprocessingIdx;
     int m_nFittedProfileReprocessingSplitterIdx;
-    int m_nProductFormatterIdx;
+    //int m_nProductFormatterIdx;
 };
 
 #endif // LAIRETRIEVALHANDLER_HPP
