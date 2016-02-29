@@ -2,7 +2,7 @@
 Description=Landsat 8 downloader timer
 
 [Timer]
-Unit=sen2agri-landsat-downloader.timer
+Unit=sen2agri-landsat-downloader.service
 OnCalendar=daily
 Persistent=true
 
