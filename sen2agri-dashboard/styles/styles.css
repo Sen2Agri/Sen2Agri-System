@@ -261,7 +261,7 @@ div.panel_scheduled {
 
 div.panel_job_container {
 	margin-top: 3px; 
-	height: 71%;
+	/*height: 71%;*/
 	width: 98%;
 	margin-right: 2%;
 }
@@ -444,7 +444,7 @@ label.error {
 }
 
 input.right {
-    float: right;
+  /*  float: right;*/
   /*  border-color:#204d74;*/
  	font-weight:200;
     color:#fff;

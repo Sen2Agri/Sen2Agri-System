@@ -1,6 +1,52 @@
 ﻿<?php include 'master.php';?>
 <?php
-if (isset ( $_POST ['schedule_edit'] )=='Save'){
+
+//Submited add new job; insert job in datebase with id $schedule_id
+if (isset ( $_REQUEST ['schedule_saveJob'] )=='Save'){
+	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+	
+	//$schedule_id = "13";
+	$job_name = $_REQUEST ['jobname'];
+	$processorId = $_REQUEST['processorId'];
+	$site_id = 4;
+	$schedule_type = $_REQUEST ['schedule_add'];
+	
+	if($schedule_type =='0'){
+		$repeatafter = "0";
+		$oneverydate = "0";
+		$startdate = $_REQUEST ['startdate'];
+	} elseif ($schedule_type =='1'){
+		$repeatafter = $_REQUEST ['repeatafter'];
+		$oneverydate = "0";
+		$startdate = $_REQUEST ['startdate'];
+	}elseif ($schedule_type =='2'){
+		$repeatafter = "0";
+		$oneverydate = $_REQUEST ['oneverydate'];
+		$startdate = $_REQUEST ['startdate'];
+	}
+	
+	$pg_date = date('Y-m-d H:i:s', strtotime($startdate));
+	
+	/*INSERT INTO scheduled_task(
+            id, name, processor_id, site_id, processor_params, repeat_type, 
+            repeat_after_days, repeat_on_month_day, retry_seconds, priority, 
+            first_run_time)
+    VALUES (6,'compsoite2',2,2,null,1,
+            1,20,2,1,
+            '2015-02-28 08:48:11')
+            */
+	$sql_insert = "INSERT INTO scheduled_task(
+             name, processor_id, site_id, processor_params, repeat_type, 
+            repeat_after_days, repeat_on_month_day, retry_seconds, priority, 
+            first_run_time)
+    		VALUES ('".$job_name."',".$processorId.",".$site_id.",null,".$schedule_type.",".$repeatafter.",".$oneverydate.",60,
+            1,'".$pg_date."')";
+
+	$result = pg_query($db,$sql_insert) or die("Could not execute.");
+}
+
+//Submited edit job; update job with id $schedule_id in datebase
+if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
 
 	$schedule_id = $_REQUEST ['scheduledID'];
@@ -8,31 +54,30 @@ if (isset ( $_POST ['schedule_edit'] )=='Save'){
 	$startdate = $_REQUEST ['startdate'];
 	$repeatafter = $_REQUEST ['repeatafter'];
 	$oneverydate = $_REQUEST ['oneverydate'];
-	echo $startdate;
+	
+	$pg_date = date('Y-m-d H:i:s', strtotime($startdate));
 	
 	if($schedule_type =='0'){
 		$sql = "UPDATE scheduled_task ".
-				"SET repeat_type = ".$schedule_type.", first_run_time = ".$startdate." ".
+				"SET repeat_type = ".$schedule_type.", first_run_time = '".$pg_date."' ".
 				"WHERE id=".$schedule_id."";
 	} elseif ($schedule_type =='1'){
 		$sql = "UPDATE scheduled_task ".
 				"SET repeat_type = ".$schedule_type.",".
-				"first_run_time = ".$startdate.",".
+				"first_run_time = '".$pg_date."',".
 				"repeat_after_days = ".$repeatafter." ".
 				"WHERE id=$schedule_id";
 	}else{
 	
 		$sql = "UPDATE scheduled_task ".
 			"SET repeat_type = ".$schedule_type.",".
-			"first_run_time = ".$startdate.",".
+			"first_run_time = '".$pg_date."',".
 			"repeat_after_days = ".$repeatafter.",".
 			"repeat_on_month_day = ".$oneverydate."".
 			"WHERE id=$schedule_id";
 	}
-	//echo $sql;
-	//$result = pg_query($db,$sql) or die("Could not execute.");
-}elseif (isset ( $_POST ['schedule_edit'] )=='AddJob'){
-	
+
+	$result = pg_query($db,$sql) or die("Could not execute.");
 }
 ?>
 <?php include 'dashboardCreatJobs.php';?>
@@ -80,9 +125,24 @@ if (isset ( $_POST ['schedule_edit'] )=='Save'){
 								<div class="panel panel-default panel_scheduled"
 									id="pnl_l2a_scheduled">
 									<div class="panel-heading">Scheduled Jobs
-									<input  class="right" name="schedule_edit" type="submit" class="btn btn-primary" value="AddJob"></div>
+									
+									<form id="form_add_sched" method="post">
+									<!--<button name="schedule_add" type="button" value="AddJob">  -->
+									<input  class="right" name="schedule_add" type="submit" class="btn btn-primary" value="AddJob">
+									<input type="hidden" name="processorId" value="1">
+									</form> 
+									
+									</div>
+									
 									<!-- l2a processor_id = 1 -->
-									<?php update_scheduled_jobs_layout(2);?>
+									<?php 
+									if(isset ( $_REQUEST ['schedule_add'] ) &&  isset ($_REQUEST['processorId'])){
+										if ($_REQUEST ['schedule_add']=='AddJob' && $_REQUEST['processorId']=='1'){
+										
+												add_new_scheduled_jobs_layout(1);
+									}}?>
+										
+									<?php update_scheduled_jobs_layout(1);?>
 								</div>
 							</div>
 							<!-- Scheduled ---------------------------->
@@ -125,9 +185,26 @@ if (isset ( $_POST ['schedule_edit'] )=='Save'){
 								id="pnl_l3a_scheduled_container">
 								<div class="panel panel-default panel_scheduled"
 									id="pnl_l3a_scheduled">
-									<div class="panel-heading">Scheduled Jobs</div>
+									
+									<div class="panel-heading">Scheduled Jobs
+									
+									<form id="form_add_sched" method="post">
+									<!--<button name="schedule_add" type="button" value="AddJob">  -->
+									<input class="right" name="schedule_add" type="submit" class="btn btn-primary" value="AddJob">
+									<input type="hidden" name="processorId" value="2">
+									</form> 
+									
+									</div>
+									
 									<!-- l3a processor_id = 2 -->
-									<?php update_scheduled_jobs_layout(2)?>
+									<?php 
+									if(isset ( $_REQUEST ['schedule_add'] ) &&  isset ($_REQUEST['processorId'])){
+										if ($_REQUEST ['schedule_add']=='AddJob' && $_REQUEST['processorId']=='2'){
+										
+												add_new_scheduled_jobs_layout(2);
+										}}?>
+										
+									<?php update_scheduled_jobs_layout(2);?>
 
 								</div>
 							</div>
@@ -172,9 +249,28 @@ if (isset ( $_POST ['schedule_edit'] )=='Save'){
 								id="pnl_l3b_scheduled_container">
 								<div class="panel panel-default panel_scheduled"
 									id="pnl_l3b_scheduled">
-									<div class="panel-heading">Scheduled Jobs</div>
+
+									<div class="panel-heading">Scheduled Jobs
+									
+									<form id="form_add_sched" method="post">
+									<!--<button name="schedule_add" type="button" value="AddJob">  -->
+									<input class="right" name="schedule_add" type="submit" class="btn btn-primary" value="AddJob">
+									<input type="hidden" name="processorId" value="3">
+									</form> 
+									
+									</div>
+									
 									<!-- l3b lai processor_id = 3 -->
-									<?php update_scheduled_jobs_layout(3)?>
+									<?php 
+									
+									if(isset ( $_REQUEST ['schedule_add'] ) &&  isset ($_REQUEST['processorId'])){
+										if ($_REQUEST ['schedule_add']=='AddJob' && $_REQUEST['processorId']=='3'){
+																			
+												add_new_scheduled_jobs_layout(3);
+									}}?>
+										
+									<?php update_scheduled_jobs_layout(3);?>
+									
 
 								</div>
 							</div>
@@ -222,9 +318,26 @@ if (isset ( $_POST ['schedule_edit'] )=='Save'){
 								id="pnl_l4a_scheduled_container">
 								<div class="panel panel-default panel_scheduled"
 									id="pnl_l4a_scheduled">
-									<div class="panel-heading">Scheduled Jobs</div>
+									
+									<div class="panel-heading">Scheduled Jobs
+									
+									<form id="form_add_sched" method="post">
+									<!--<button name="schedule_add" type="button" value="AddJob">  -->
+									<input  class="right" name="schedule_add" type="submit" class="btn btn-primary" value="AddJob">
+									<input type="hidden" name="processorId" value="4">
+									</form> 
+									
+									</div>
+									
 									<!-- l4a processor_id = 4 -->
-									<?php update_scheduled_jobs_layout(4)?>
+									<?php 
+									if(isset ( $_REQUEST ['schedule_add'] ) &&  isset ($_REQUEST['processorId'])){
+									if ($_REQUEST ['schedule_add']=='AddJob' && $_REQUEST['processorId']=='4'){
+										
+												add_new_scheduled_jobs_layout(4);
+									}}?>
+										
+									<?php update_scheduled_jobs_layout(4);?>
 
 								</div>
 							</div>
@@ -277,9 +390,27 @@ if (isset ( $_POST ['schedule_edit'] )=='Save'){
 								id="pnl_l4b_scheduled_container">
 								<div class="panel panel-default panel_scheduled"
 									id="pnl_l4b_scheduled">
-									<div class="panel-heading">Scheduled Jobs</div>
+																											
+									<div class="panel-heading">Scheduled Jobs
+									
+									<form id="form_add_sched" method="post">
+									<input  class="right" name="schedule_add" type="submit" class="btn btn-primary" value="AddJob">
+									<input type="hidden" name="processorId" value="5">
+									</form> 
+									
+									</div>
+									
 									<!-- l4b processor_id = 5 -->
-									<?php update_scheduled_jobs_layout(5)?>
+									<?php 
+									
+									if(isset ( $_REQUEST ['schedule_add'] ) &&  isset ($_REQUEST['processorId'])){
+										if ($_REQUEST ['schedule_add']=='AddJob' && $_REQUEST['processorId']=='5'){
+										
+												add_new_scheduled_jobs_layout(5);
+										}}?>
+										
+									<?php update_scheduled_jobs_layout(5);?>
+									
 
 								</div>
 							</div>
@@ -321,32 +452,53 @@ if (isset ( $_POST ['schedule_edit'] )=='Save'){
 <!--Jquery datepicker -->
 <script>
 		$(document).ready(function() {
-			$("#startdate").datepicker();
+			//$(".startdate").datepicker();
+			$( ".startdate" ).datepicker({ dateFormat: "yy-mm-dd" });
 			//$("#oneverydate").datepicker();
 		});
-	</script>
+</script>
 <!--end Jquery datepicker -->
 
 <!-- Check what job type was selected -->
 <script>
-		function selectedSchedule() {
+		function selectedSchedule(param) {
 			var selectedValue = document.getElementById("schedule").value;
 			if (selectedValue == "") {
-				document.getElementById("div_startdate").style.display = "none";
-				document.getElementById("div_repeatafter").style.display = "none";
-				document.getElementById("div_startdate").style.display = "none";
+				document.getElementById("div_startdate"+param).style.display = "none";
+				document.getElementById("div_repeatafter"+param).style.display = "none";
+				document.getElementById("div_startdate"+param).style.display = "none";
 			} else if (selectedValue == "0") {
-				document.getElementById("div_startdate").style.display = "none";
-				document.getElementById("div_repeatafter").style.display = "none";
-				document.getElementById("div_startdate").style.display = "inline";
+				document.getElementById("div_startdate"+param).style.display = "none";
+				document.getElementById("div_repeatafter"+param).style.display = "none";
+				document.getElementById("div_startdate"+param).style.display = "inline";
 			} else if (selectedValue == "1") {
-				document.getElementById("div_oneverydate").style.display = "none";
-				document.getElementById("div_startdate").style.display = "inline";
-				document.getElementById("div_repeatafter").style.display = "inline";
+				document.getElementById("div_oneverydate"+param).style.display = "none";
+				document.getElementById("div_startdate"+param).style.display = "inline";
+				document.getElementById("div_repeatafter"+param).style.display = "inline";
 			} else if (selectedValue == "2") {
-				document.getElementById("div_repeatafter").style.display = "none";
-				document.getElementById("div_startdate").style.display = "inline";
-				document.getElementById("div_oneverydate").style.display = "inline";
+				document.getElementById("div_repeatafter"+param).style.display = "none";
+				document.getElementById("div_startdate"+param).style.display = "inline";
+				document.getElementById("div_oneverydate"+param).style.display = "inline";
+			}
+		}
+		function selectedScheduleAdd(param) {
+			var selectedValue = document.getElementById("schedule_add"+param).value;
+			if (selectedValue == "") {
+				document.getElementById("div_startdate"+param).style.display = "none";
+				document.getElementById("div_repeatafter"+param).style.display = "none";
+				document.getElementById("div_startdate"+param).style.display = "none";
+			} else if (selectedValue == "0") {
+				document.getElementById("div_startdate"+param).style.display = "none";
+				document.getElementById("div_repeatafter"+param).style.display = "none";
+				document.getElementById("div_startdate"+param).style.display = "inline";
+			} else if (selectedValue == "1") {
+				document.getElementById("div_oneverydate"+param).style.display = "none";
+				document.getElementById("div_startdate"+param).style.display = "inline";
+				document.getElementById("div_repeatafter"+param).style.display = "inline";
+			} else if (selectedValue == "2") {
+				document.getElementById("div_repeatafter"+param).style.display = "none";
+				document.getElementById("div_startdate"+param).style.display = "inline";
+				document.getElementById("div_oneverydate"+param).style.display = "inline";
 			}
 		}
 	</script>
