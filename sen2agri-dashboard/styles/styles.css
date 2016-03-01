@@ -446,9 +446,11 @@ label.error {
 input.right {
     float: right;
   /*  border-color:#204d74;*/
+ 	font-weight:200;
     color:#fff;
-    background-color: #3366CC;
-    padding: 2px;
+    background-color: #336699;
+   padding-left: 4px;
+	padding-right: 4px;
 
 }
 /* END LOGIN STYLES ---------------------------------------------- */

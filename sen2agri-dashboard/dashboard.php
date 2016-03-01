@@ -1,6 +1,6 @@
 ﻿<?php include 'master.php';?>
 <?php
-if (isset ( $_POST ['schedule_edit'] )) {
+if (isset ( $_POST ['schedule_edit'] )=='Save'){
 	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
 
 	$schedule_id = $_REQUEST ['scheduledID'];
@@ -9,8 +9,7 @@ if (isset ( $_POST ['schedule_edit'] )) {
 	$repeatafter = $_REQUEST ['repeatafter'];
 	$oneverydate = $_REQUEST ['oneverydate'];
 	echo $startdate;
-	//$startdate="2015-02-28";
-	//in baza de date adauga "1985" ???
+	
 	if($schedule_type =='0'){
 		$sql = "UPDATE scheduled_task ".
 				"SET repeat_type = ".$schedule_type.", first_run_time = ".$startdate." ".
@@ -32,9 +31,11 @@ if (isset ( $_POST ['schedule_edit'] )) {
 	}
 	//echo $sql;
 	//$result = pg_query($db,$sql) or die("Could not execute.");
+}elseif (isset ( $_POST ['schedule_edit'] )=='AddJob'){
+	
 }
 ?>
-<?php include 'dashboardScript.php';?>
+<?php include 'dashboardCreatJobs.php';?>
 
 
 <div id="main">
@@ -79,7 +80,7 @@ if (isset ( $_POST ['schedule_edit'] )) {
 								<div class="panel panel-default panel_scheduled"
 									id="pnl_l2a_scheduled">
 									<div class="panel-heading">Scheduled Jobs
-									<input  class="right" name="addjob" type="submit"class="btn btn-primary" value="AddJob"></div>
+									<input  class="right" name="schedule_edit" type="submit" class="btn btn-primary" value="AddJob"></div>
 									<!-- l2a processor_id = 1 -->
 									<?php update_scheduled_jobs_layout(2);?>
 								</div>
@@ -334,15 +335,15 @@ if (isset ( $_POST ['schedule_edit'] )) {
 				document.getElementById("div_startdate").style.display = "none";
 				document.getElementById("div_repeatafter").style.display = "none";
 				document.getElementById("div_startdate").style.display = "none";
-			} else if (selectedValue == "Once") {
+			} else if (selectedValue == "0") {
 				document.getElementById("div_startdate").style.display = "none";
 				document.getElementById("div_repeatafter").style.display = "none";
 				document.getElementById("div_startdate").style.display = "inline";
-			} else if (selectedValue == "Cycle") {
+			} else if (selectedValue == "1") {
 				document.getElementById("div_oneverydate").style.display = "none";
 				document.getElementById("div_startdate").style.display = "inline";
 				document.getElementById("div_repeatafter").style.display = "inline";
-			} else if (selectedValue == "Repeat") {
+			} else if (selectedValue == "2") {
 				document.getElementById("div_repeatafter").style.display = "none";
 				document.getElementById("div_startdate").style.display = "inline";
 				document.getElementById("div_oneverydate").style.display = "inline";
