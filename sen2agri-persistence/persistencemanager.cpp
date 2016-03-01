@@ -1209,14 +1209,14 @@ std::vector<ScheduledTask> PersistenceManagerDBProvider::GetScheduledTasks()
             ScheduledTaskStatus ss;
             ss.id = query.value(statusIdCol).toInt();
             ss.taskId = query.value(taskIdCol).toInt();
-            ss.nextScheduledRunTime.fromString(query.value(nextScheduleCol).toString(),
+            ss.nextScheduledRunTime = QDateTime::fromString(query.value(nextScheduleCol).toString(),
                                                Qt::ISODate);
-            ss.lastSuccesfullScheduledRun.fromString(query.value(lastScheduledRunCol).toString(),
+            ss.lastSuccesfullScheduledRun = QDateTime::fromString(query.value(lastScheduledRunCol).toString(),
                                                      Qt::ISODate);
-            ss.lastSuccesfullTimestamp.fromString(query.value(lastRunTimestampCol).toString(),
+            ss.lastSuccesfullTimestamp = QDateTime::fromString(query.value(lastRunTimestampCol).toString(),
                                                   Qt::ISODate);
-            ss.lastRetryTime.fromString(query.value(lastRetryTimestampCol).toString(), Qt::ISODate);
-            ss.estimatedRunTime.fromString(query.value(estimatedNextRunTimeCol).toString(),
+            ss.lastRetryTime = QDateTime::fromString(query.value(lastRetryTimestampCol).toString(), Qt::ISODate);
+            ss.estimatedRunTime = QDateTime::fromString(query.value(estimatedNextRunTimeCol).toString(),
                                            Qt::ISODate);
 
             taskList.emplace_back(
@@ -1228,7 +1228,7 @@ std::vector<ScheduledTask> PersistenceManagerDBProvider::GetScheduledTasks()
                 query.value(repeatTypeCol).toInt(),
                 query.value(repeatAfterDaysCol).toInt(),
                 query.value(repeatOnMonthDayCol).toInt(),
-                QDateTime().fromString(query.value(firstRunTimeCol).toString(), Qt::ISODate),
+                QDateTime::fromString(query.value(firstRunTimeCol).toString(), Qt::ISODate),
                 query.value(retrySecondsCol).toInt(),
                 query.value(priorityCol).toInt(),
                 ss);
