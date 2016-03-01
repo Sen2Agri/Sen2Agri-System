@@ -1,6 +1,19 @@
 <?php 
 
 function add_new_scheduled_jobs_layout($processorId){
+	
+	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+	$sql_select = "SELECT id,name FROM site	";
+	$result = pg_query($db,$sql_select) or die("Could not execute.");
+
+	$option_site ="";
+	while ($row = pg_fetch_row($result)){
+		$option ="<option value=\"".$row[0]."\">".$row[1]."</option>";
+		
+		$option_site = $option_site.$option;
+	}
+	
+	
 	// Set up the DOM elements
 	$div = "<div class=\"panel_job_container\" id=\"pnl_l2a_job_container\">".
 			"<div class=\"panel panel-default panel_job\" id=\"pnl_l2a_job\">".
@@ -11,9 +24,15 @@ function add_new_scheduled_jobs_layout($processorId){
 			"</label>".
 			"</span>".
 			"<input type=\"hidden\" value=\"".$processorId."\" name=\"processorId\">".
-			"<span class=\"form-group form-group-sm div-scheduled\">".
-			"<label class=\"control-label\" for=\"siteName\">Site: <input type=\"text\" class=\"schedule_format\"></label>".
+			" <span class=\"form-group form-group-sm div-scheduled\">".
+			"<label class=\"control-label\" for=\"schedule\"> Schedule:</label> " .
+			"<span class=\"schedule_format\">".
+			"<select id=\"sitename\" name=\"sitename\">".
+			"<option value=\"\" selected>Select site</option>".
+			".$option_site.".
+			"</select>".
 			"</span>".
+			"</span>".	
 			" <span class=\"form-group form-group-sm div-scheduled\">".
 			"<label class=\"control-label\" for=\"schedule\"> Schedule:</label> " .
 			"<span class=\"schedule_format\">".
@@ -77,15 +96,6 @@ function update_scheduled_jobs_layout($processor_id)
 			FROM scheduled_task as st,site
    			WHERE st.processor_id=$processor_id AND st.site_id=site.id";
 	
-	/*$sql =" SELECT st.name,
-	site.name,
-	st.repeat_type,
-	st.first_run_time,
-	st.repeat_after_days,
-	st.repeat_on_month_day
-	FROM scheduled_task as st,site
-	WHERE st.site_id=site.id";*/
-	
 	
 	$result = pg_query($db,$sql) or die("Could not execute.");
 	while ($row = pg_fetch_row($result)){
@@ -93,7 +103,6 @@ function update_scheduled_jobs_layout($processor_id)
 		// Set up the DOM elements
 		$div = "<div class=\"panel_job_container\" id=\"pnl_l2a_job_container\">".
 		"<div class=\"panel panel-default panel_job\" id=\"pnl_l2a_job\">".
-		/*"<div class=\"panel-heading\"  id=\"job_name\"> ".$row[1]."</div>".*/
 		"<form role=\"form\" id=\"l2aform\" name=\"l2aform\" method=\"post\" action=\"".$action."\" style=\"padding:10px;\">".
 		"<span class=\"form-group form-group-sm div-scheduled\">".
 		"<label class=\"control-label\" for=\"jobname\">Job Name: <span class=\"schedule_format\">".$row[1]."</span>".
@@ -114,7 +123,6 @@ function update_scheduled_jobs_layout($processor_id)
 		"</span>".
 		"<span class=\"form-group form-group-sm div-scheduled\" id=\"div_startdate".$row[0]."\" style=\"".(($row[3] == 0 || $row[3] == 1 || $row[3] == 2) ?  "display:inline" : "display:none")."\">".
 		"<label class=\"control-label\" for=\"startdate\">Date:</label>".
-	//	"<input type=\"text\" id=\"startdate\" value=\"$row[3]\"> ".
 		"<input type=\"text\" name=\"startdate\"  class=\"startdate\" value=\"".$row[4]."\" > ".
 		"</span>".
 		"<span class=\"form-group form-group-sm div-scheduled\" id=\"div_repeatafter".$row[0]."\" style=\"".(($row[3] == 1) ?  "display:inline" : "display:none")."\">".

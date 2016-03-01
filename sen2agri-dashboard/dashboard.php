@@ -8,7 +8,7 @@ if (isset ( $_REQUEST ['schedule_saveJob'] )=='Save'){
 	//$schedule_id = "13";
 	$job_name = $_REQUEST ['jobname'];
 	$processorId = $_REQUEST['processorId'];
-	$site_id = 4;
+	$site_id = $_REQUEST['sitename'];
 	$schedule_type = $_REQUEST ['schedule_add'];
 	
 	if($schedule_type =='0'){
@@ -27,14 +27,6 @@ if (isset ( $_REQUEST ['schedule_saveJob'] )=='Save'){
 	
 	$pg_date = date('Y-m-d H:i:s', strtotime($startdate));
 	
-	/*INSERT INTO scheduled_task(
-            id, name, processor_id, site_id, processor_params, repeat_type, 
-            repeat_after_days, repeat_on_month_day, retry_seconds, priority, 
-            first_run_time)
-    VALUES (6,'compsoite2',2,2,null,1,
-            1,20,2,1,
-            '2015-02-28 08:48:11')
-            */
 	$sql_insert = "INSERT INTO scheduled_task(
              name, processor_id, site_id, processor_params, repeat_type, 
             repeat_after_days, repeat_on_month_day, retry_seconds, priority, 
