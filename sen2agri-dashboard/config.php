@@ -937,7 +937,7 @@
 													$.ajax({
 											        url: $(form).attr('action'),
 											        type: $(form).attr('method'),
-											        data: $(form).serialize(),
+											        data: new FormData(form),
 											        success: function(response) {
 											           alert("Your form was submitted!");
 									                   //clear inputs after submit
@@ -990,7 +990,7 @@
 													$.ajax({
 														url: $(form).attr('action'),
 														type: $(form).attr('method'),
-														data: $(form).serialize(),
+														data: new FormData(form),
 														success: function(response) {
 															alert("Your form was submitted!");
 															//clear inputs after submit
@@ -1019,6 +1019,7 @@
 																	"has-error");
 												}
 											});
+
 						});
 	</script>
 <?php include 'ms_foot.php'; ?>
