@@ -68,6 +68,7 @@ public:
         return steps;
     }
 
+    QString GetProductAbsolutePath(const QString &path);
     QStringList findProductFiles(const QString &path);
 
 private:

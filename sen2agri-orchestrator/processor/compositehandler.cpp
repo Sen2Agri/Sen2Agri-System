@@ -440,32 +440,25 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
 
-        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
-        QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "/" + PRODUC_FORMATTER_OUT_PROPS_FILE;
-        QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
-        QString prodName = "UnknownProductName";
-        if(fileLines.size() > 0) {
-            QString name = ProcessorHandlerHelper::GetFileNameFromPath(fileLines[0]);
-            if(name.trimmed() != "") {
-                prodName = name;
-            }
+        QString prodName = GetProductFormatterProducName(ctx, event);
+        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId) + "/" + prodName;
+        if(prodName != "") {
+            QString quicklook = GetProductFormatterQuicklook(ctx, event);
+            QString footPrint = GetProductFormatterFootprint(ctx, event);
+            // Insert the product into the database
+            ctx.InsertProduct({ ProductType::L3AProductTypeId,
+                                event.processorId,
+                                event.jobId,
+                                event.siteId,
+                                productFolder,
+                                QDateTime::currentDateTimeUtc(),
+                                prodName,
+                                quicklook,
+                                footPrint});
+            // Now remove the job folder containing temporary files
+            // TODO: Reinsert this line - commented only for debug purposes
+            //RemoveJobFolder(ctx, event.jobId);
         }
-        prodName = GetProductFormatterProducName(ctx, event);
-
-        // Insert the product into the database
-        ctx.InsertProduct({ ProductType::L3AProductTypeId,
-                            event.processorId,
-                            event.jobId,
-                            event.siteId,
-                            productFolder,
-                            QDateTime::currentDateTimeUtc(),
-                            prodName,
-                            "quicklook",
-                            /*POLYGON*/"(())" });
-
-        // Now remove the job folder containing temporary files
-        // TODO: Reinsert this line - commented only for debug purposes
-        //RemoveJobFolder(ctx, event.jobId);
     }
 }
 
