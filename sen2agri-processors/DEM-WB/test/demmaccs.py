@@ -11,7 +11,7 @@ import shutil
 from common import *
 
 general_log_path = "/tmp/"
-general_log_filename = "demmacs"
+general_log_filename = "demmaccs.log"
 
 def create_sym_links(filenames, target_directory):
     global general_log_path
@@ -112,6 +112,7 @@ if not create_sym_links(gips, working_dir):
 log(general_log_path, "dem_output_dir = {}".format(dem_output_dir), general_log_filename)
 dem_hdrs = glob.glob("{}/*.HDR".format(dem_output_dir))
 log(general_log_path, "dem_hdrs = {}".format(dem_hdrs), general_log_filename)
+number_of_processed_tiles = 0
 for dem_hdr in dem_hdrs:    
     basename, tile_id = get_dem_hdr_info(dem_hdr)
     dem_dir = glob.glob("{0}/{1}.DBL.DIR".format(dem_output_dir, basename))
@@ -132,10 +133,12 @@ for dem_hdr in dem_hdrs:
                     "--enableTest", "false",
                     "--CheckXMLFilesWithSchema", "false",
                     "--conf", "UserConfiguration"]) != 0:
-        log(general_log_path, "MACCS didn't work for {}!".format(working_dir), general_log_filename)
+        log(general_log_path, "MACCS didn't work for {} | TileID: {}!".format(args.input, tile_id), general_log_filename)
+    else:
+        number_of_processed_tiles += 1
     log(general_log_path, "MACCS finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))), general_log_filename)
     remove_sym_links([dem_hdr, dem_dir[0]], working_dir)
-
+'''
 try:
     shutil.rmtree(dem_working_dir)
 except:
@@ -148,6 +151,8 @@ try:
     shutil.rmtree(working_dir)
 except:
     log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), general_log_filename)
-
+'''
 log(general_log_path, "Ended at {}:".format(time.time()), general_log_filename)
 log(general_log_path, "Total execution {}:".format(datetime.timedelta(seconds=(time.time() - general_start))), general_log_filename)
+if number_of_processed_tiles == 0:
+    sys.exit(1)

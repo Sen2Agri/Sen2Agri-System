@@ -31,7 +31,7 @@ DATABASE_DEMMACCS_MACCS_IP_ADDRESS = "demmaccs.maccs-ip-address"
 DATABASE_DEMMACCS_MACCS_LAUNCHER = "demmaccs.maccs-launcher"
 DATABASE_DEMMACCS_LAUNCHER = "demmaccs.launcher"
 DATABASE_DEMMACCS_WORKING_DIR = "demmaccs.working-dir"
-
+DATABASE_DEMMACCS_DEM_LAUNCHER = "demmaccs.dem-launcher"
 
 def run_command(cmd_array, use_shell=False):
     start = time.time()
@@ -115,8 +115,8 @@ class Config(object):
             return False
         return True
 
-class DEMMACSConfig(object):
-    def __init__(self, output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, launcher, working_dir):
+class DEMMACCSConfig(object):
+    def __init__(self, output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, launcher, working_dir, dem_launcher):
         self.output_path = output_path
         self.gips_path = gips_path
         self.srtm_path = srtm_path
@@ -125,6 +125,7 @@ class DEMMACSConfig(object):
         self.maccs_launcher = maccs_launcher
         self.launcher = launcher
         self.working_dir = working_dir
+        self.dem_launcher = dem_launcher
 
 class L1CInfo(object):
     def __init__(self, server_ip, database_name, user, password, log_file=None):
@@ -158,7 +159,7 @@ class L1CInfo(object):
             self.conn.close()
             self.is_connected = False
 
-    def get_demmacs_config(self):
+    def get_demmaccs_config(self):
         if not self.database_connect():
             print("1")
             return None
@@ -178,6 +179,7 @@ class L1CInfo(object):
         maccs_launcher = ""
         launcher = ""
         working_dir = ""
+        dem_launcher = ""
 
         for row in rows:
             if len(row) != 3:
@@ -199,12 +201,14 @@ class L1CInfo(object):
                 launcher = row[2]
             elif row[0] == DATABASE_DEMMACCS_WORKING_DIR:
                 working_dir = row[2]
+            elif row[0] == DATABASE_DEMMACCS_DEM_LAUNCHER:
+                dem_launcher = row[2]
 
         self.database_disconnect()
-        if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_ip_address) == 0 or len(maccs_launcher) == 0 or len(launcher) == 0 or len(working_dir) == 0:
-            print("{} {} {} {} {} {} {} {}".format(len(output_path), len(gips_path), len(srtm_path), len(swbd_path), len(maccs_ip_address), len(maccs_launcher), len(launcher), len(working_dir)))
+        if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_ip_address) == 0 or len(maccs_launcher) == 0 or len(launcher) == 0 or len(working_dir) == 0 or len(dem_launcher) == 0:
+            print("{} {} {} {} {} {} {} {} {}".format(len(output_path), len(gips_path), len(srtm_path), len(swbd_path), len(maccs_ip_address), len(maccs_launcher), len(launcher), len(working_dir), len(dem_launcher)))
             return None
-        return DEMMACSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, launcher, working_dir)
+        return DEMMACCSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, launcher, working_dir, dem_launcher)
 
     def get_short_name(self, table, use_id):
         if not self.database_connect():

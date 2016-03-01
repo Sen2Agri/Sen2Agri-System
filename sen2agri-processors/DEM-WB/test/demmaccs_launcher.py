@@ -12,7 +12,7 @@ from common import *
 from osgeo import ogr
 
 general_log_path = "/tmp/"
-general_log_filename = "demmacs_launcher"
+general_log_filename = "demmaccs_launcher"
 
 def GetExtent(gt, cols, rows):
     ext = []
@@ -78,6 +78,20 @@ def get_footprint(image_filename):
     return wgs84_extent
 
 
+def get_created_date(product_name):
+    created_date = None
+    if product_name.startswith("S2"):
+        m = re.match("\w+R\d{3}_V(\d{8}T\d{6})\.\w{3}", product_name)
+        if m != None:
+            created_date = m.group(1)
+    elif product_name.startswith("LC8"):
+        m = re.match("LC8\d{6}(\d{7})LGN\d{2}", product_name)
+        if m != None:            
+            created_date = m.group(1)
+    print("get_created_date = {}".format(created_date))
+    return created_date
+
+
 parser = argparse.ArgumentParser(
     description="Launcher for DEM MACCS script")
 parser.add_argument('-c', '--config', default="/etc/sen2agri/sen2agri.conf", help="configuration file")
@@ -91,7 +105,7 @@ if not config.loadConfig(args.config):
     sys.exit(-1)
 
 l1c_db = L1CInfo(config.host, config.database, config.user, config.password)
-demmaccs_config = l1c_db.get_demmacs_config()
+demmaccs_config = l1c_db.get_demmaccs_config()
 if demmaccs_config is None:
     log(general_log_path, "Could not load the config from database", general_log_filename)
     sys.exit(-1)
@@ -120,7 +134,7 @@ for l1c in l1c_list:
     if l2a_basename.startswith("S2"):
         l2a_basename = l2a_basename.replace("L1C", "L2A")
     elif l2a_basename.startswith("LC8"):
-        l2a_basename += "L2A"
+        l2a_basename += "_L2A"
     else:
         log(general_log_path, "The L1C product names is bad:{}".format(l2a_basename), general_log_filename)
         sys.exit(-1)
@@ -131,12 +145,12 @@ for l1c in l1c_list:
     if not output_path.endswith("/"):
         output_path += "/"
     output_path = output_path + l2a_basename + "/"
-    log(output_path, "Creating the output path {}".format(output_path), "demmacs_launcher.log")
-    log(output_path, "Launching demmaccs.py", "demmacs_launcher.log")
-    if run_command([demmaccs_config.launcher, "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "-p", "5", "--gip-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-address", demmaccs_config.maccs_ip_address, "--maccs-launcher", demmaccs_config.maccs_launcher, "--dem-launcher", "/home/agrosu/sen2agri/sen2agri-processors/DEM-WB/test/dem.py", l1c[2], output_path]) == 0:
+    log(output_path, "Creating the output path {}".format(output_path), "demmaccs_launcher.log")
+    log(output_path, "Launching demmaccs.py", "demmaccs_launcher.log")
+    if run_command([demmaccs_config.launcher, "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "-p", "5", "--gip-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-address", demmaccs_config.maccs_ip_address, "--maccs-launcher", demmaccs_config.maccs_launcher, "--dem-launcher", demmaccs_config.dem_launcher, l1c[2], output_path]) == 0:
         #processed_ids.append(l1c[0])
         tiles_dir_list = (glob.glob("{}/*.DBL.DIR".format(output_path)))
-        log(output_path, "Creating common footprint for tiles: DBL.DIR List: {}".format(tiles_dir_list), "demmacs_launcher.log")
+        log(output_path, "Creating common footprint for tiles: DBL.DIR List: {}".format(tiles_dir_list), "demmaccs_launcher.log")
 
         wgs84_extent_list = []
         for tile_dir in tiles_dir_list:
@@ -144,13 +158,19 @@ for l1c in l1c_list:
             if len(tile_img) > 0:
                 wgs84_extent_list.append(get_footprint(tile_img[0]))
         wkt = get_envelope(wgs84_extent_list)
+        
         if len(wkt) == 0:
-            log(output_path, "Could not create the footprint", "demmacs_launcher.log")
+            log(output_path, "Could not create the footprint", "demmaccs_launcher.log")
         else:
-            log(output_path, "Mark the state as present in the database for product {}".format(output_path), "demmacs_launcher.log")
-            l1c_db.mark_product_as_present(l1c[0], 1, l1c[1], output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt)
+            created_date = get_created_date(os.path.basename(output_path[:len(output_path) - 1]))
+            if created_date != None:
+                print("created_date = {}".format(created_date))
+                log(output_path, "Mark the state as present in the database for product {}".format(output_path), "demmaccs_launcher.log")
+                l1c_db.mark_product_as_present(l1c[0], 1, l1c[1], output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt)
+            else:
+                print("Could not get the acquisition date from the product name")
     else:
-        log(output_path, "demmaccs.py script didn't work!", "demmacs_launcher.log")
+        log(output_path, "demmaccs.py script didn't work!", "demmaccs_launcher.log")
 
 
 

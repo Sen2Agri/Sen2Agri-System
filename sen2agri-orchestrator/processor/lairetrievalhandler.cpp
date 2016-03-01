@@ -414,23 +414,26 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 {
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
-        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
 
         QString prodName = GetProductFormatterProducName(ctx, event);
+        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId) + "/" + prodName;
+        if(prodName != "") {
+            QString quicklook = GetProductFormatterQuicklook(ctx, event);
+            QString footPrint = GetProductFormatterFootprint(ctx, event);
+            // Insert the product into the database
+            ctx.InsertProduct({ ProductType::L3BLaiProductTypeId,
+                                event.processorId,
+                                event.jobId,
+                                event.siteId,
+                                productFolder,
+                                QDateTime::currentDateTimeUtc(),
+                                prodName,
+                                quicklook,
+                                footPrint});
 
-        // Insert the product into the database
-        ctx.InsertProduct({ ProductType::L3BLaiProductTypeId,
-                            event.processorId,
-                            event.jobId,
-                            event.siteId,
-                            productFolder,
-                            QDateTime::currentDateTimeUtc(),
-                            prodName,
-                            "quicklook",
-                            /* POLYGON */ "(())" });
-
-        // Now remove the job folder containing temporary files
-        //RemoveJobFolder(ctx, event.jobId);
+            // Now remove the job folder containing temporary files
+            //RemoveJobFolder(ctx, event.jobId);
+        }
     }
 }
 

@@ -251,7 +251,7 @@ def get_list_img_file_names(prodDir, srcDirProcess, imgDataFolder):
     list_file_paths = []  # List which will store all of the full filepaths.
      	
     #imgFolder : IMG_DATA or QI_DATA  srcDirProcess : TILES
-    full_folder_path=os.path.join(prodDir, srcDirProcess, '*', imgDataFolder, '*')
+    full_folder_path=os.path.join(prodDir, srcDirProcess, '*', imgDataFolder, '*.TIF')
 
     #retrieve all TIF files on that path
     list_file_paths=glob.glob(full_folder_path)  # Add discovered files to the list.
@@ -411,7 +411,7 @@ def format_file_name_output(fileName):
 def post_process_mosaic_images(context, dataFolder):
 
    #obtain mosaic files
-   list_file_paths=glob.glob(os.path.join(dataFolder, '*'))
+   list_file_paths=glob.glob(os.path.join(dataFolder, '*.TIF'))
 
    #when none or one mosaic file produced -- nothing to do furher 
    if len(list_file_paths) == 0:
