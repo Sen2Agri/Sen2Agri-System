@@ -558,9 +558,9 @@ function update_l3b_statistics(json_data)
 	$("#pnl_l3b_output table:first tr.to_be_refreshed").remove();
 	$("#pnl_l3b_configuration table:first tr.to_be_refreshed").remove();
 
-	fill_key_value_table("#pnl_l3b_resources", json_data.l3b_statistics.resources);
-	fill_key_value_table("#pnl_l3b_output", json_data.l3b_statistics.output);
-	fill_key_value_table("#pnl_l3b_configuration", json_data.l3b_statistics.configuration);
+	fill_key_value_table("#pnl_l3b_resources", json_data.l3b_lai_statistics.resources);
+	fill_key_value_table("#pnl_l3b_output", json_data.l3b_lai_statistics.output);
+	fill_key_value_table("#pnl_l3b_configuration", json_data.l3b_lai_statistics.configuration);
 }
 
 function update_l4a_statistics(json_data)
