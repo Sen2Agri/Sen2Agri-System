@@ -28,8 +28,8 @@ if (isset ( $_REQUEST ['schedule_saveJob'] )=='Save'){
 
     $result = pg_query_params($db,
         'SELECT * FROM sp_insert_scheduled_task($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
-        array($job_name, $processorId, $site_id, $schedule_type, $repeatafter, $oneverydate, 60, 1, $pg_date, NULL));
-    or die("Could not execute.");
+        array($job_name, $processorId, $site_id, $schedule_type, $repeatafter, $oneverydate, $pg_date, 60, 1, NULL))
+        or die("Could not execute.");
 
 /*
     $sql_insert = "INSERT INTO scheduled_task(
