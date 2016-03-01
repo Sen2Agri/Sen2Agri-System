@@ -596,6 +596,11 @@
 													descriptors (xml files).</span>
 											</div>
 											<div class="form-group form-group-sm">
+												<label class="control-label" for="cropMasks">Crop masks:</label>
+												<select multiple class="form-control" id="cropMasks" name="cropMasks[]"></select>
+												<span class="help-block">The list of crop mask products.</span>
+											</div>
+											<div class="form-group form-group-sm">
 												<label class="control-label" for="resolution">Resolution:</label>
 												<!-- <input type="number" min="0" max="20" step="10"
 													class="form-control" id="resolution" name="resolution"
@@ -698,13 +703,14 @@
 <script>
 		//$("#l3aform").validate();
 		var l2a_proc_id;
+		var l4a_proc_id;
 		$(document)
 				.ready(
 						function() {
 							//Load sites
 							get_all_sites();
 							get_processor_id('l2a', 'l2a_proc_id');
-
+							get_processor_id('l4a', 'l4a_proc_id');
 							// validate l3aform form on keyup and submit
 							$("#l3aform")
 									.validate(
@@ -967,6 +973,7 @@
 													landsatTiles : "required",
 													//refp : "required",
 													'inputFiles[]' : "required",
+													'cropMasks[]' : "required",
 												/*resolution : "required",
 												 */
 												},
@@ -986,7 +993,8 @@
 											           alert("Your form was submitted!");
 									                   //clear inputs after submit
 									                   $("#l4bform")[0].reset();
-									              	   $("#inputFiles").val('');				
+									              	   $("#inputFiles").val('');
+													   $("#cropMasks").val('');
 											                 }     
 											         });
 											 },

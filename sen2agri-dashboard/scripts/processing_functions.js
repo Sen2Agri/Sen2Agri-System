@@ -792,20 +792,58 @@ function update_sites(json_data)
 			var sentinel2TilesEl = $("#"+siteEl.form.id+" select#sentinel2Tiles");
 			var landsatTilesEl = $("#"+siteEl.form.id+" select#landsatTiles");
 			var productsEl = $("#"+siteEl.form.id+" select#inputFiles");
+			var cropMasksEl = $("#"+siteEl.form.id+" select#cropMasks");
 			if(siteEl.selectedIndex > 0) {
 				get_sentinel2_tiles(siteEl.options[siteEl.selectedIndex].value, sentinel2TilesEl);
 				get_landsat_tiles(siteEl.options[siteEl.selectedIndex].value, landsatTilesEl);
 				get_products(siteEl.options[siteEl.selectedIndex].value, productsEl);
+				get_crop_masks(siteEl.options[siteEl.selectedIndex].value, cropMasksEl);
 			} else {
 				update_sentinel2_tiles(new Array(), sentinel2TilesEl);
 				update_landsat_tiles(new Array(), landsatTilesEl);
-				update_productsles(new Array(), productsEl);
+				update_products(new Array(), productsEl);
+				update_crop_masks(new Array(), cropMasksEl);
 			}
 		});
 	});
 	
 	
 }
+
+function get_crop_masks(siteId, cropMasksEl)
+{
+	$.ajax({
+		url: get_products_url,
+		type: "get",
+		cache: false,
+		crosDomain: true,
+		dataType: "json",
+		data: {
+			siteId: siteId,
+			processorId: l4a_proc_id
+		},
+		success: function(json_data)
+		{
+			update_crop_masks(json_data, cropMasksEl);
+		},
+		error: function (responseData, textStatus, errorThrown) {
+			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			update_crop_masks(new Array(), cropMasksEl);
+		}
+	});
+}
+function update_crop_masks(json_data, cropMasksEl)
+{
+	//Remove the old options
+	cropMasksEl.empty();
+	
+	$.each(json_data, function(index, productObj) {
+		cropMasksEl.append('<option value="'+productObj.product+'">'+productObj.product+'</option>');
+	});
+	
+	
+}
+
 
 function get_sentinel2_tiles(siteId, sentinel2TilesEl)
 {
