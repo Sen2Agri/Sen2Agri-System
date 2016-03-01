@@ -3,7 +3,7 @@
   id serial,
   product_type_id smallint NOT NULL,
   processor_id smallint NOT NULL,
-  task_id int NOT NULL,
+  job_id int NOT NULL,
   site_id smallint NOT NULL,
   full_path varchar NOT NULL,
   created_timestamp timestamp with time zone NOT NULL DEFAULT now(),

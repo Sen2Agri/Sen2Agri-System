@@ -208,6 +208,8 @@ private:
         AddParameter(ParameterType_String, "timeperiod", "First product date and last product date");
         MandatoryOff("timeperiod");
         AddParameter(ParameterType_String, "baseline", "Processing baseline");
+        AddParameter(ParameterType_String, "outprops", "File containing processing properties like the product main folder");
+        MandatoryOff("outprops");
 
         AddParameter(ParameterType_Choice, "processor", "Processor");
         SetParameterDescription("processor", "Specifies the product type");
@@ -309,6 +311,10 @@ private:
         AddParameter(ParameterType_InputFilenameList, "gipp", "The GIPP files");
         MandatoryOff("gipp");
 
+        AddParameter(ParameterType_Int, "aggregatescale", "The aggregate rescale resolution");
+        MandatoryOff("aggregatescale");
+        SetDefaultParameterInt("aggregatescale", 60);
+
         SetDocExampleParameterValue("destroot", "/home/ata/sen2agri/sen2agri-processors-build/Testing/Temporary/Dest");
         SetDocExampleParameterValue("fileclass", "SVT1");
         SetDocExampleParameterValue("level", "L3A");
@@ -361,7 +367,7 @@ private:
 
       std::string strCreationDate = currentDateTimeFormattted("%Y%m%dT%H%M%S");
 
-      std::string strMainProductFolderName = "{project_id}_{file_class}_{file_category}_{product_level}_{product_descriptor}_{originator_site}_{creation_date}_V{time_period}_{tile_id}_{processing_baseline}";
+      std::string strMainProductFolderName = "{project_id}_{file_class}_{file_category}_{product_level}_{product_descriptor}_{originator_site}_{creation_date}_V{time_period}_T{tile_id}_{processing_baseline}";
 
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "{project_id}", PROJECT_ID);
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "{file_class}", m_strFileClass);
@@ -373,7 +379,7 @@ private:
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "{time_period}", m_strTimePeriod);
       std::string strTileName = strMainProductFolderName;
 
-      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{tile_id}", "");
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_T{tile_id}", "");
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{processing_baseline}", "");
 
       m_strProductFileName = ReplaceString(strMainProductFolderName, "{product_descriptor}", PRODUCT_DESCRIPTOR);
@@ -386,6 +392,20 @@ private:
       //created all folders ierarchy
       bool bResult = createsAllFolders(strMainFolderFullPath);
 
+      if(HasValue("outprops")) {
+            std::string outPropsFileName = this->GetParameterString("outprops");
+            std::ofstream outPropsFile;
+            try
+            {
+                outPropsFile.open(outPropsFileName.c_str(), std::ofstream::out);
+                outPropsFile << strMainFolderFullPath << std::endl;
+                outPropsFile.close();
+            }
+            catch(...)
+            {
+                itkGenericExceptionMacro(<< "Could not open file " << outPropsFileName);
+            }
+      }
       strTileName = ReplaceString(strTileName, MAIN_FOLDER_CATEG, TILE_LEGACY_FOLDER_CATEG);
       strTileName = ReplaceString(strTileName, "{product_descriptor}", TILE_DESCRIPTOR);
       strTileName = ReplaceString(strTileName, "{processing_baseline}", "N" + m_strBaseline);
@@ -531,8 +551,9 @@ private:
           TransferPreviewFiles();
           TransferAndRenameGIPPFiles();
           generateProductMetadataFile(strMainFolderFullPath + "/" + ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, METADATA_CATEG) + ".xml");
+          bool bAgSuccess = ExecuteAgregateTiles(strMainFolderFullPath, this->GetParameterInt("aggregatescale"));
+          std::cout << "Aggregating tiles " << (bAgSuccess ? "SUCCESS!" : "FAILED!") << std::endl;
       }
-
   }
 
   void CreateAndFillTile(tileInfo &tileInfoEl, const std::string &strMainFolderFullPath, const std::string &tileNameRoot)
@@ -573,20 +594,28 @@ private:
 
   void UnpackRastersList(std::vector<std::string> &rastersList, rasterTypes rasterType, bool bIsQiData)
   {
+      std::string strTileID;
       rasterInfo rasterInfoEl;
       rasterInfoEl.bIsQiData = bIsQiData;
 
-      // we do this in 2 steps (although not very optimal)
-      // first extract the tiles
-      // the number of tiles elements in the rasters list (including duplicates)
-      int allTilesCnt = 0;
-      std::string strTileID = UnpackTiles(rastersList, allTilesCnt);
+      // get the number of tiles elements in the rasters list (including duplicates)
+      //std::string strTileID = UnpackTiles(rastersList, allTilesCnt);
+      int allTilesCnt = CountTiles(rastersList);
       // second extract the rasters
       int curRaster = 0;
       bool bAllRastersHaveDate = ((rastersList.size()-allTilesCnt) == m_acquisitionDatesList.size());
       for (const auto &rasterFileEl : rastersList) {
-          if(rasterFileEl.compare(0, 5, "TILE_") != 0)
+          if(rasterFileEl.compare(0, 5, "TILE_") == 0)
           {
+              //if is TILE separator, read tileID
+              strTileID = rasterFileEl.substr(5, rasterFileEl.length() - 5);
+              if(!IsTilePresent(strTileID))
+              {
+                tileInfo tileInfoEl;
+                tileInfoEl.strTileID = strTileID;
+                m_tileIDList.emplace_back(tileInfoEl);
+              }
+          } else  {
               rasterInfoEl.iRasterType = rasterType;
               rasterInfoEl.strRasterFileName = rasterFileEl;
               rasterInfoEl.strTileID = strTileID;
@@ -602,52 +631,45 @@ private:
       }
   }
 
-  std::string UnpackTiles(std::vector<std::string> &filesList, int &nTotalFoundTiles) {
-      std::string strTileID("");
-      // only the first tile is processed
-      bool bProcessed = false;
-      bool bAlreadyExist = false;
-      nTotalFoundTiles = 0;
+  int CountTiles(std::vector<std::string> &filesList) {
+      int nTotalFoundTiles = 0;
       for (const auto &file : filesList) {
           if(file.compare(0, 5, "TILE_") == 0)
-          {
-              if(!bProcessed) {
-                  //if is TILE separator, read tileID
-                  strTileID = file.substr(5, file.length() - 5);
-                  bAlreadyExist = false;
-                  for (const auto &tileIDEl : m_tileIDList) {
-                      if(tileIDEl.strTileID == strTileID)
-                      {
-                          bAlreadyExist = true;
-                          break;
-                      }
-                  }
-                  if(!bAlreadyExist)
-                  {
-                    tileInfo tileInfoEl;
-                    tileInfoEl.strTileID = strTileID;
-                    m_tileIDList.emplace_back(tileInfoEl);
-                  }
-                  bProcessed = true;
-              }
               nTotalFoundTiles++;
-          }
       }
-      return strTileID;
+      return nTotalFoundTiles;
   }
 
   void UnpackNonRastersList(std::vector<std::string> &filesList) {
-      int allTilesCnt = 0;
       qualityInfo qualityInfoEl;
-      std::string strTileID = UnpackTiles(filesList, allTilesCnt);
+      std::string strTileID;
       for (const auto &fileEl : filesList) {
-          if(fileEl.compare(0, 5, "TILE_") != 0)
+          if(fileEl.compare(0, 5, "TILE_") == 0)
           {
+              //if is TILE separator, read tileID
+              strTileID = fileEl.substr(5, fileEl.length() - 5);
+              if(!IsTilePresent(fileEl.substr(5, fileEl.length() - 5)))
+              {
+                tileInfo tileInfoEl;
+                tileInfoEl.strTileID = strTileID;
+                m_tileIDList.emplace_back(tileInfoEl);
+              }
+          } else  {
               qualityInfoEl.strFileName = fileEl;
               qualityInfoEl.strTileID = strTileID;
               m_qualityList.emplace_back(qualityInfoEl);
           }
       }
+  }
+
+  bool IsTilePresent(const std::string &strTileID) {
+      for (const auto &tileIDEl : m_tileIDList) {
+          if(tileIDEl.strTileID == strTileID)
+          {
+              return true;
+          }
+      }
+      return false;
   }
 
   // Get current date/time, format is YYYYMMDDThhmmss
@@ -754,7 +776,7 @@ private:
   void FillBandList()
   {
       Band bandEl;
-      if ((m_strProductLevel.compare("L3A") == 0) && (CompositeBandList.empty()))
+      if (m_strProductLevel.compare("L3A") == 0)
               //if is composite product, fill bands
       {
 
@@ -1590,6 +1612,54 @@ private:
         // close the file
         file.close();
         return retList;
+  }
+
+  bool ExecuteAgregateTiles(const std::string &strMainFolderFullPath, int rescaleRes) {
+      std::cout << "Starting aggregating tiles for product " << strMainFolderFullPath << std::endl;
+      if(rescaleRes <= 20) {
+          rescaleRes = 60;
+      }
+      std::vector<const char *> args;
+      args.emplace_back("-prodfolder");
+      args.emplace_back(strMainFolderFullPath.c_str());
+      args.emplace_back("-rescaleval");
+      std::string rescaleStr = std::to_string(rescaleRes);
+      args.emplace_back(rescaleStr.c_str());
+      return ExecuteExternalProgram("aggregate_tiles.py", args);
+  }
+
+  bool ExecuteExternalProgram(const char *appExe, std::vector<const char *> appArgs) {
+      int error, status;
+          pid_t pid, waitres;
+//          /* Make sure we have no child processes. */
+//          while (waitpid(-1, NULL, 0) != -1)
+//              ;
+//          assert(errno == ECHILD);
+
+
+          std::vector<const char *> args;
+          args.emplace_back(appExe);
+          for(unsigned int i = 0; i<appArgs.size(); i++) {
+                args.emplace_back(appArgs[i]);
+          }
+          args.emplace_back(nullptr);
+
+          posix_spawnattr_t attr;
+          posix_spawnattr_init(&attr);
+          posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
+          error = posix_spawnp(&pid, args[0], NULL, &attr, (char *const *)args.data(), environ);
+          if(error != 0) {
+              otbAppLogWARNING("Error creating process for " << appExe << ". The resulting files will not be created. Error was: " << error);
+              return false;
+          }
+          posix_spawnattr_destroy(&attr);
+          waitres = waitpid(pid, &status, 0);
+          if(waitres == pid && (WIFEXITED(status) && WEXITSTATUS(status) == 0)) {
+              return true;
+          }
+          otbAppLogWARNING("Error running " << appExe << ". The resulting file(s) might not be created. The return was: " << status);
+          return false;
+
   }
 
 private:

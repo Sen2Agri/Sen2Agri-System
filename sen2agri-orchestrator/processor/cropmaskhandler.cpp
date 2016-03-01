@@ -5,17 +5,140 @@
 #include "cropmaskhandler.hpp"
 #include "processorhandlerhelper.h"
 
-void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
-                                             const JobSubmittedEvent &event)
+QList<std::reference_wrapper<TaskToSubmit>> CropMaskHandler::CreateInSituTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
+                                                QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList)
+{
+    outAllTasksList.append(TaskToSubmit{ "bands-extractor", {}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[0]}} );
+    outAllTasksList.append(TaskToSubmit{ "temporal-resampling", {outAllTasksList[1]}} );
+    outAllTasksList.append(TaskToSubmit{ "feature-extraction", {outAllTasksList[2]}} );
+    outAllTasksList.append(TaskToSubmit{ "features-with-insitu", {outAllTasksList[3]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-images-statistics", {outAllTasksList[4]}} );
+    outAllTasksList.append(TaskToSubmit{ "ogr2ogr", {outAllTasksList[5]}} );
+    outAllTasksList.append(TaskToSubmit{ "ogr2ogr", {outAllTasksList[6]}} );
+    outAllTasksList.append(TaskToSubmit{ "sample-selection", {outAllTasksList[7]}} );
+    outAllTasksList.append(TaskToSubmit{ "train-images-classifier", {outAllTasksList[8]}} );
+    outAllTasksList.append(TaskToSubmit{ "image-classifier", {outAllTasksList[9]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[10]}} );
+    outAllTasksList.append(TaskToSubmit{ "principal-component-analysis", {outAllTasksList[11]}} );
+    outAllTasksList.append(TaskToSubmit{ "mean-shift-smoothing", {outAllTasksList[12]}} );
+    outAllTasksList.append(TaskToSubmit{ "lsms-segmentation", {outAllTasksList[13]}} );
+    outAllTasksList.append(TaskToSubmit{ "lsms-small-regions-merging", {outAllTasksList[14]}} );
+    outAllTasksList.append(TaskToSubmit{ "majority-voting", {outAllTasksList[15]}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[16]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[17]}} );
+    outAllTasksList.append(TaskToSubmit{ "image-compression", {outAllTasksList[18]}} );
+    outAllTasksList.append(TaskToSubmit{ "xml-statistics", {outAllTasksList[19]}} );
+
+    // product formatter needs completion of xml-statistics
+    outProdFormatterParentsList.append(outAllTasksList[20]);
+
+    QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
+    for(TaskToSubmit &task: outAllTasksList) {
+        allTasksListRef.append(task);
+    }
+    return allTasksListRef;
+}
+
+QList<std::reference_wrapper<TaskToSubmit>> CropMaskHandler::CreateNoInSituTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
+                                                QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList)
+{
+    outAllTasksList.append(TaskToSubmit{ "bands-extractor", {}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[0]}} );
+    outAllTasksList.append(TaskToSubmit{ "temporal-resampling", {outAllTasksList[1]}} );
+    outAllTasksList.append(TaskToSubmit{ "feature-extraction", {outAllTasksList[2]}} );
+    outAllTasksList.append(TaskToSubmit{ "data-smoothing", {outAllTasksList[3]}} );
+    outAllTasksList.append(TaskToSubmit{ "features-without-insitu", {outAllTasksList[4]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-image-statistics", {outAllTasksList[5]}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[6]}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[7]}} );
+    outAllTasksList.append(TaskToSubmit{ "erosion", {outAllTasksList[8]}} );
+    outAllTasksList.append(TaskToSubmit{ "trimming", {outAllTasksList[9]}} );
+    outAllTasksList.append(TaskToSubmit{ "train-images-classifier-new", {outAllTasksList[10]}} );
+    outAllTasksList.append(TaskToSubmit{ "image-classifier", {outAllTasksList[11]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[12]}} );
+    outAllTasksList.append(TaskToSubmit{ "principal-component-analysis", {outAllTasksList[13]}} );
+    outAllTasksList.append(TaskToSubmit{ "mean-shift-smoothing", {outAllTasksList[14]}} );
+    outAllTasksList.append(TaskToSubmit{ "lsms-segmentation", {outAllTasksList[15]}} );
+    outAllTasksList.append(TaskToSubmit{ "lsms-small-regions-merging", {outAllTasksList[16]}} );
+    outAllTasksList.append(TaskToSubmit{ "majority-voting", {outAllTasksList[17]}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[18]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[19]}} );
+    outAllTasksList.append(TaskToSubmit{ "image-compression", {outAllTasksList[20]}} );
+    outAllTasksList.append(TaskToSubmit{ "xml-statistics", {outAllTasksList[21]}} );
+
+    // product formatter needs completion of xml-statistics
+    outProdFormatterParentsList.append(outAllTasksList[22]);
+
+    QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
+    for(TaskToSubmit &task: outAllTasksList) {
+        allTasksListRef.append(task);
+    }
+    return allTasksListRef;
+}
+
+CropMaskGlobalExecutionInfos CropMaskHandler::HandleNewTilesList(EventProcessingContext &ctx,
+                                             const JobSubmittedEvent &event, const QStringList &listProducts)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
+    CropMaskGlobalExecutionInfos globalExecInfos;
+    QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     const auto &referencePolygons = parameters["reference_polygons"].toString();
     if(referencePolygons.size() > 0) {
-        HandleInsituJob(ctx, event);
+        allTasksListRef = CreateInSituTasksForNewProducts(globalExecInfos.allTasksList,
+                                                          globalExecInfos.prodFormatParams.parentsTasksRef);
+        ctx.SubmitTasks(event.jobId, allTasksListRef);
+        HandleInsituJob(ctx, event, listProducts, globalExecInfos);
     } else {
-        HandleNoInsituJob(ctx, event);
+        allTasksListRef = CreateNoInSituTasksForNewProducts(globalExecInfos.allTasksList,
+                                                            globalExecInfos.prodFormatParams.parentsTasksRef);
+        ctx.SubmitTasks(event.jobId, allTasksListRef);
+        HandleNoInsituJob(ctx, event, listProducts, globalExecInfos);
     }
+    return globalExecInfos;
+}
+
+void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
+                                              const JobSubmittedEvent &event)
+{
+    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
+    const auto &inputProducts = parameters["input_products"].toArray();
+
+    QStringList listProducts;
+    for (const auto &inputProduct : inputProducts) {
+        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
+    }
+    if(listProducts.size() == 0) {
+        ctx.MarkJobFailed(event.jobId);
+        return;
+    }
+
+    QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
+    QList<CropMaskProductFormatterParams> listParams;
+
+    TaskToSubmit productFormatterTask{"product-formatter", {}};
+    NewStepList allSteps;
+    //container for all task
+    QList<TaskToSubmit> allTasksList;
+    for(auto tile : mapTiles.keys())
+    {
+       QStringList listTemporalTiles = mapTiles.value(tile);
+       CropMaskGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles);
+       listParams.append(infos.prodFormatParams);
+       productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
+       allTasksList.append(infos.allTasksList);
+       allSteps.append(infos.allStepsList);
+    }
+
+    ctx.SubmitTasks(event.jobId, {productFormatterTask});
+
+    // finally format the product
+    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event, listProducts, listParams);
+
+    // add these steps to the steps list to be submitted
+    allSteps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
+    ctx.SubmitSteps(allSteps);
 }
 
 void CropMaskHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
@@ -78,23 +201,32 @@ void CropMaskHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     else if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
 
-        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
-
-        // Insert the product into the database
-        ctx.InsertProduct({ ProductType::L4AProductTypeId,
-            event.processorId,
-            event.taskId,
-            productFolder,
-            QDateTime::currentDateTimeUtc() });
-
-        // Now remove the job folder containing temporary files
-        // TODO: Reinsert this line - commented only for debug purposes
-        //RemoveJobFolder(ctx, event.jobId);
+        QString prodName = GetProductFormatterProducName(ctx, event);
+        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId) + "/" + prodName;
+        if(prodName != "") {
+            QString quicklook = GetProductFormatterQuicklook(ctx, event);
+            QString footPrint = GetProductFormatterFootprint(ctx, event);
+            // Insert the product into the database
+            ctx.InsertProduct({ ProductType::L4AProductTypeId,
+                                event.processorId,
+                                event.jobId,
+                                event.siteId,
+                                productFolder,
+                                QDateTime::currentDateTimeUtc(),
+                                prodName,
+                                quicklook,
+                                footPrint });
+            // Now remove the job folder containing temporary files
+            // TODO: Reinsert this line - commented only for debug purposes
+            //RemoveJobFolder(ctx, event.jobId);
+        }
     }
 }
 
 void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
-                                             const JobSubmittedEvent &event)
+                                      const JobSubmittedEvent &event,
+                                      const QStringList &listProducts,
+                                      CropMaskGlobalExecutionInfos &globalExecInfos)
 
 {
     auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4a.");
@@ -105,12 +237,6 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
     const auto &referencePolygons = parameters["reference_polygons"].toString();
-
-    QStringList listProducts;
-    const auto &inputProducts = parameters["input_products"].toArray();
-    for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
-    }
 
     auto mission = parameters["processor.l4a.mission"].toString();
     if(mission.length() == 0) mission = "SPOT";
@@ -158,67 +284,31 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
     const auto &classifierSvmKernel = configParameters["processor.l4a.classifier.svm.k"];
     const auto &classifierSvmOptimize = configParameters["processor.l4a.classifier.svm.opt"];
 
-    /* Tasks:
+    QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
 
-        BandsExtractor
-        gdalwarp for reflectances
-        gdalwarp for masks
-        TemporalResampling
-        FeatureExtraction
+    TaskToSubmit &bandsExtractorTask = allTasksList[0];
+    TaskToSubmit &gdalWarpTask = allTasksList[1];
+    TaskToSubmit &temporalResamplingTask = allTasksList[2];
+    TaskToSubmit &featureExtractionTask = allTasksList[3];
+    TaskToSubmit &featureWithInSituTask = allTasksList[4];
+    TaskToSubmit &computeImagesStatisticsTask = allTasksList[5];
+    TaskToSubmit &ogr2ogrTask = allTasksList[6];
+    TaskToSubmit &ogr2ogrTask2 = allTasksList[7];
+    TaskToSubmit &sampleSelectionTask = allTasksList[8];
+    TaskToSubmit &trainImagesClassifierTask = allTasksList[9];
+    TaskToSubmit &imageClassifierTask = allTasksList[10];
+    TaskToSubmit &computeConfusionMatrixTask = allTasksList[11];
 
-        FeaturesWithInsitu
-        ComputeImagesStatistics
-        ogr2ogr
-        ogr2ogr
-        SampleSelection
-        TrainImagesClassifier
-        ImageClassifier
-        otbcli_ComputeConfusionMatrix
-
-        PrincipalComponentAnalysis
-        MeanShiftSmoothing
-        LSMSSegmentation
-        LSMSSmallRegionsMerging
-        Segmentation
-        MajorityVoting
-        gdalwarp for crop mask
-        otbcli_ComputeConfusionMatrix
-        otbcli_Convert
-        otbcli_Convert
-        XMLStatistics
-        ProductFormatter
-    */
-    TaskToSubmit bandsExtractorTask{ "bands-extractor", {} };
-    TaskToSubmit gdalWarpTask{ "gdalwarp", { bandsExtractorTask } };
-    TaskToSubmit temporalResamplingTask { "temporal-resampling", { gdalWarpTask } };
-    TaskToSubmit featureExtractionTask { "feature-extraction", { temporalResamplingTask } };
-    TaskToSubmit featureWithInSituTask { "features-with-insitu", { featureExtractionTask } };
-    TaskToSubmit computeImagesStatisticsTask{ "compute-images-statistics", { featureWithInSituTask } };
-    TaskToSubmit ogr2ogrTask{ "ogr2ogr", { computeImagesStatisticsTask } };
-    TaskToSubmit ogr2ogrTask2{ "ogr2ogr", { ogr2ogrTask } };
-    TaskToSubmit sampleSelectionTask{ "sample-selection", { ogr2ogrTask2 } };
-    TaskToSubmit trainImagesClassifierTask{ "train-images-classifier",
-                                        { sampleSelectionTask } };
-    TaskToSubmit imageClassifierTask{ "image-classifier", { trainImagesClassifierTask } };
-    TaskToSubmit computeConfusionMatrixTask{ "compute-confusion-matrix", { imageClassifierTask } };
-
-    TaskToSubmit principalComponentAnalysisTask { "principal-component-analysis", { computeConfusionMatrixTask } };
-    TaskToSubmit meanShiftSmoothingTask { "mean-shift-smoothing", { principalComponentAnalysisTask } };
-    TaskToSubmit lsmsSegmentationTask { "lsms-segmentation", { meanShiftSmoothingTask} };
-    TaskToSubmit lsmsSmallRegionsMergingTask { "lsms-small-regions-merging", { lsmsSegmentationTask } };
-    TaskToSubmit majorityVotingTask { "majority-voting", { lsmsSmallRegionsMergingTask } };
-    TaskToSubmit gdalWarpTask2 { "gdalwarp", { majorityVotingTask} };
-    TaskToSubmit computeConfusionMatrixTask2 { "compute-confusion-matrix", { gdalWarpTask2 } };
-    TaskToSubmit convertTask { "image-compression", { computeConfusionMatrixTask2 } };
-    TaskToSubmit xmlStatisticsTask { "xml-statistics", { convertTask } };
-    TaskToSubmit productFormatterTask{ "product-formatter", { xmlStatisticsTask } };
-
-    ctx.SubmitTasks(event.jobId,
-                    { bandsExtractorTask, gdalWarpTask, temporalResamplingTask, featureExtractionTask, featureWithInSituTask,
-                      computeImagesStatisticsTask, ogr2ogrTask, ogr2ogrTask2, sampleSelectionTask, trainImagesClassifierTask,
-                      imageClassifierTask, computeConfusionMatrixTask, principalComponentAnalysisTask, meanShiftSmoothingTask,
-                      lsmsSegmentationTask, lsmsSmallRegionsMergingTask, majorityVotingTask, gdalWarpTask2,
-                    computeConfusionMatrixTask2, convertTask, xmlStatisticsTask, productFormatterTask});
+    TaskToSubmit &principalComponentAnalysisTask = allTasksList[12];
+    TaskToSubmit &meanShiftSmoothingTask = allTasksList[13];
+    TaskToSubmit &lsmsSegmentationTask = allTasksList[14];
+    TaskToSubmit &lsmsSmallRegionsMergingTask = allTasksList[15];
+    TaskToSubmit &majorityVotingTask = allTasksList[16];
+    TaskToSubmit &gdalWarpTask2 = allTasksList[17];
+    TaskToSubmit &computeConfusionMatrixTask2 = allTasksList[18];
+    TaskToSubmit &convertTask = allTasksList[19];
+    TaskToSubmit &xmlStatisticsTask = allTasksList[20];
+    //TaskToSubmit productFormatterTask{ "product-formatter", { xmlStatisticsTask } };
 
     const auto &rawtocr = bandsExtractorTask.GetFilePath("rawtocr.tif");
     const auto &rawmask = bandsExtractorTask.GetFilePath("rawmask.tif");
@@ -279,9 +369,6 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
 
 // /////
 
-    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
-    QString tileId = ProcessorHandlerHelper::GetTileId(listProducts);
-
     QStringList trainImagesClassifierArgs = {
         "-io.il",      features,   "-io.vd",         trainingPolys,
         "-io.imstat",  statistics, "-rand",          randomSeed,
@@ -308,7 +395,7 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
     QStringList imageClassifierArgs = { "-in",    features, "-imstat", statistics,
                                         "-model", model,    "-out",    raw_crop_mask_uncompressed };
 
-    NewStepList steps = {
+    globalExecInfos.allStepsList = {
         bandsExtractorTask.CreateStep("BandsExtractor", GetBandsExtractorArgs(mission, rawtocr, rawmask, statusFlags, dates, shape,
                                         listProducts, resolution)),
         gdalWarpTask.CreateStep("ClipRasterImage",
@@ -370,26 +457,20 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
         xmlStatisticsTask.CreateStep("XMLStatistics", { "XMLStatistics", "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics }),
     };
 
-    QStringList productFormatterArgs = { "ProductFormatter",
-                                         "-destroot", targetFolder,
-                                         "-fileclass", "SVT1",
-                                         "-level", "L4A",
-                                         "-baseline", "01.00",
-                                         "-processor", "cropmask",
-                                         "-processor.cropmask.file", tileId, crop_mask,
-                                         "-processor.cropmask.rawfile", tileId, raw_crop_mask,
-                                         "-processor.cropmask.quality", tileId, xml_validation_metrics,
-                                         "-processor.cropmask.flags", tileId, statusFlags,
-                                         "-il"};
-    productFormatterArgs += listProducts;
-    steps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
-
-    ctx.SubmitSteps(steps);
-
+    CropMaskProductFormatterParams &productFormatterParams = globalExecInfos.prodFormatParams;
+    productFormatterParams.crop_mask = crop_mask;
+    productFormatterParams.raw_crop_mask = raw_crop_mask;
+    productFormatterParams.raw_crop_mask = xml_validation_metrics;
+    productFormatterParams.raw_crop_mask = statusFlags;
+    // Get the tile ID from the product XML name. We extract it from the first product in the list as all
+    // producs should be for the same tile
+    productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
 }
 
 void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
-                                             const JobSubmittedEvent &event)
+                                        const JobSubmittedEvent &event,
+                                        const QStringList &listProducts,
+                                        CropMaskGlobalExecutionInfos &globalExecInfos)
 {
     auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4a.");
     auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.");
@@ -397,12 +478,6 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
     const auto &gdalwarpMem = resourceParameters["resources.gdalwarp.working-mem"];
 
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-
-    QStringList listProducts;
-    const auto &inputProducts = parameters["input_products"].toArray();
-    for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
-    }
 
     const auto &reference = parameters["reference_raster"].toString();
 
@@ -465,70 +540,30 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
     const auto &classifierSvmKernel = configParameters["processor.l4a.classifier.svm.k"];
     const auto &classifierSvmOptimize = configParameters["processor.l4a.classifier.svm.opt"];
 
-    /* Tasks:
-
-        BandsExtractor
-        gdalwarp for reflectances
-        gdalwarp for masks
-        TemporalResampling
-        FeatureExtraction
-
-        DataSmoothing (2 times)
-        FeaturesWithoutInsitu
-        ComputeImagesStatistics
-        gdalwarp (2 times)
-        Erosion
-        Trimming
-        TrainImagesClassifierNew
-        ImageClassifier
-        otbcli_ComputeConfusionMatrix
-
-        PrincipalComponentAnalysis
-        MeanShiftSmoothing
-        LSMSSegmentation
-        LSMSSmallRegionsMerging
-        Segmentation
-        MajorityVoting
-        gdalwarp for crop mask
-        otbcli_ComputeConfusionMatrix
-        otbcli_Convert
-        otbcli_Convert
-        XMLStatistics
-        ProductFormatter
-    */
-    TaskToSubmit bandsExtractorTask{ "bands-extractor", {} };
-    TaskToSubmit gdalWarpTask{ "gdalwarp", { bandsExtractorTask } };
-    TaskToSubmit temporalResamplingTask { "temporal-resampling", { gdalWarpTask } };
-    TaskToSubmit featureExtractionTask { "feature-extraction", { temporalResamplingTask } };
-
-    TaskToSubmit dataSmoothingTask { "data-smoothing", { featureExtractionTask } };
-    TaskToSubmit featuresWithoutInsituTask{ "features-without-insitu", { dataSmoothingTask } };
-    TaskToSubmit computeImageStatisticsTask{ "compute-image-statistics", { featuresWithoutInsituTask } };
-    TaskToSubmit gdalWarpTask2{ "gdalwarp", { computeImageStatisticsTask } };
-    TaskToSubmit gdalWarpTask2_1{ "gdalwarp", { gdalWarpTask2 } };
-    TaskToSubmit erosionTask{ "erosion", { gdalWarpTask2_1 } };
-    TaskToSubmit trimmingTask{ "trimming", { erosionTask } };
-    TaskToSubmit trainImagesClassifierNewTask{ "train-images-classifier-new", { trimmingTask } };
-    TaskToSubmit imageClassifierTask{ "image-classifier", { trainImagesClassifierNewTask } };
-    TaskToSubmit computeConfusionMatrixTask{ "compute-confusion-matrix", { imageClassifierTask } };
-
-    TaskToSubmit principalComponentAnalysisTask { "principal-component-analysis", { computeConfusionMatrixTask } };
-    TaskToSubmit meanShiftSmoothingTask { "mean-shift-smoothing", { principalComponentAnalysisTask } };
-    TaskToSubmit lsmsSegmentationTask { "lsms-segmentation", { meanShiftSmoothingTask} };
-    TaskToSubmit lsmsSmallRegionsMergingTask { "lsms-small-regions-merging", { lsmsSegmentationTask } };
-    TaskToSubmit majorityVotingTask { "majority-voting", { lsmsSmallRegionsMergingTask } };
-    TaskToSubmit gdalWarpTask3 { "gdalwarp", { majorityVotingTask} };
-    TaskToSubmit computeConfusionMatrixTask2 { "compute-confusion-matrix", { gdalWarpTask3 } };
-    TaskToSubmit convertTask { "image-compression", { computeConfusionMatrixTask2 } };
-    TaskToSubmit xmlStatisticsTask { "xml-statistics", { convertTask } };
-    TaskToSubmit productFormatterTask{ "product-formatter", { xmlStatisticsTask } };
-
-    ctx.SubmitTasks(event.jobId,
-                    { bandsExtractorTask, gdalWarpTask, temporalResamplingTask, featureExtractionTask, dataSmoothingTask,
-                      featuresWithoutInsituTask, computeImageStatisticsTask, gdalWarpTask2, gdalWarpTask2_1, erosionTask, trimmingTask,
-                      trainImagesClassifierNewTask, imageClassifierTask, computeConfusionMatrixTask, principalComponentAnalysisTask,
-                      meanShiftSmoothingTask, lsmsSegmentationTask, lsmsSmallRegionsMergingTask, majorityVotingTask, gdalWarpTask3,
-                    computeConfusionMatrixTask2, convertTask, xmlStatisticsTask, productFormatterTask});
+    QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
+    TaskToSubmit &bandsExtractorTask = allTasksList[0];
+    TaskToSubmit &gdalWarpTask = allTasksList[1];
+    TaskToSubmit &temporalResamplingTask = allTasksList[2];
+    TaskToSubmit &featureExtractionTask = allTasksList[3];
+    TaskToSubmit &dataSmoothingTask = allTasksList[4];
+    TaskToSubmit &featuresWithoutInsituTask = allTasksList[5];
+    TaskToSubmit &computeImageStatisticsTask = allTasksList[6];
+    TaskToSubmit &gdalWarpTask2 = allTasksList[7];
+    TaskToSubmit &gdalWarpTask2_1 = allTasksList[8];
+    TaskToSubmit &erosionTask = allTasksList[9];
+    TaskToSubmit &trimmingTask = allTasksList[10];
+    TaskToSubmit &trainImagesClassifierNewTask = allTasksList[11];
+    TaskToSubmit &imageClassifierTask = allTasksList[12];
+    TaskToSubmit &computeConfusionMatrixTask = allTasksList[13];
+    TaskToSubmit &principalComponentAnalysisTask = allTasksList[14];
+    TaskToSubmit &meanShiftSmoothingTask = allTasksList[15];
+    TaskToSubmit &lsmsSegmentationTask = allTasksList[16];
+    TaskToSubmit &lsmsSmallRegionsMergingTask = allTasksList[17];
+    TaskToSubmit &majorityVotingTask = allTasksList[18];
+    TaskToSubmit &gdalWarpTask3 = allTasksList[19];
+    TaskToSubmit &computeConfusionMatrixTask2 = allTasksList[20];
+    TaskToSubmit &convertTask = allTasksList[21];
+    TaskToSubmit &xmlStatisticsTask = allTasksList[22];
 
     const auto &rawtocr = bandsExtractorTask.GetFilePath("rawtocr.tif");
     const auto &rawmask = bandsExtractorTask.GetFilePath("rawmask.tif");
@@ -588,9 +623,6 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
 
     const auto &xml_validation_metrics = xmlStatisticsTask.GetFilePath("crop-mask-validation-metrics.xml");
 
-    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
-    QString tileId = ProcessorHandlerHelper::GetTileId(listProducts);
-
     QStringList trainImagesClassifierArgs = {"TrainImagesClassifierNew",
         "-io.il",           spectral_features,  "-io.rs",       trimmed_reference_raster,
         "-nodatalabel",     "\"-10000\"",           "-io.imstat",   statistics_noinsitu,
@@ -617,7 +649,7 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
     QStringList imageClassifierArgs = { "-in",    spectral_features, "-imstat", statistics_noinsitu,
                                         "-model", model,    "-out",    raw_crop_mask_uncompressed };
 
-    NewStepList steps = {
+    globalExecInfos.allStepsList = {
         bandsExtractorTask.CreateStep("BandsExtractor", GetBandsExtractorArgs(mission, rawtocr, rawmask, statusFlags, dates, shape, listProducts, resolution)),
         gdalWarpTask.CreateStep("ClipRasterImage",
                               { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
@@ -684,21 +716,14 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
         xmlStatisticsTask.CreateStep("XMLStatistics", { "XMLStatistics", "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics }),
     };
 
-    QStringList productFormatterArgs = { "ProductFormatter",
-                                         "-destroot", targetFolder,
-                                         "-fileclass", "SVT1",
-                                         "-level", "L4A",
-                                         "-baseline", "01.00",
-                                         "-processor", "cropmask",
-                                         "-processor.cropmask.file", tileId, crop_mask,
-                                         "-processor.cropmask.rawfile", tileId, raw_crop_mask,
-                                         "-processor.cropmask.quality", tileId, xml_validation_metrics,
-                                         "-processor.cropmask.flags", tileId, statusFlags,
-                                         "-il"};
-    productFormatterArgs += listProducts;
-    steps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
-
-    ctx.SubmitSteps(steps);
+    CropMaskProductFormatterParams &productFormatterParams = globalExecInfos.prodFormatParams;
+    productFormatterParams.crop_mask = crop_mask;
+    productFormatterParams.raw_crop_mask = raw_crop_mask;
+    productFormatterParams.raw_crop_mask = xml_validation_metrics;
+    productFormatterParams.raw_crop_mask = statusFlags;
+    // Get the tile ID from the product XML name. We extract it from the first product in the list as all
+    // producs should be for the same tile
+    productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
 }
 
 QStringList CropMaskHandler::GetBandsExtractorArgs(const QString &mission, const QString &outImg, const QString &mask, const QString &statusFlags,
@@ -742,6 +767,49 @@ QStringList CropMaskHandler::GetGdalWarpArgs(const QString &inImg, const QString
 
     return retList;
 }
+
+QStringList CropMaskHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                                    const QStringList &listProducts, const QList<CropMaskProductFormatterParams> &productParams) {
+
+    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUC_FORMATTER_OUT_PROPS_FILE);
+    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
+    QStringList productFormatterArgs = { "ProductFormatter",
+                                         "-destroot", targetFolder,
+                                         "-fileclass", "SVT1",
+                                         "-level", "L4A",
+                                         "-baseline", "01.00",
+                                         "-processor", "cropmask",
+                                         "-outprops", outPropsPath};
+    productFormatterArgs += "-il";
+    productFormatterArgs += listProducts;
+
+    productFormatterArgs += "-processor.cropmask.file";
+    for(const CropMaskProductFormatterParams &params: productParams) {
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.crop_mask;
+    }
+
+    productFormatterArgs += "-processor.cropmask.rawfile";
+    for(const CropMaskProductFormatterParams &params: productParams) {
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.raw_crop_mask;
+    }
+
+    productFormatterArgs += "-processor.cropmask.quality";
+    for(const CropMaskProductFormatterParams &params: productParams) {
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.xml_validation_metrics;
+    }
+
+    productFormatterArgs += "-processor.cropmask.flags";
+    for(const CropMaskProductFormatterParams &params: productParams) {
+        productFormatterArgs += params.tileId;
+        productFormatterArgs += params.statusFlags;
+    }
+
+    return productFormatterArgs;
+}
+
 
 ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues)

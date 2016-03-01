@@ -9,8 +9,16 @@
                             <div class="panel-heading">Server Resources</div>
                         </div>
                     </div>
+
+
                     <div class="panel panel-default" id="pnl_current_jobs">
                         <div class="panel-heading">Current Jobs</div>
+						<div style="float: right; padding: 10px;">
+							<button type="button" class="btn btn-default" onclick="move_to_first_jobs_page();">&lt;&lt;</button>
+							<button type="button" class="btn btn-default" onclick="move_to_previous_jobs_page();">Previous Page</button>
+							<button type="button" class="btn btn-default" onclick="move_to_next_jobs_page()">Next Page</button>
+							<button type="button" class="btn btn-default disabled" onclick="move_to_last_jobs_page();">&gt;&gt;</button>
+						</div>
                         <table class="table full_width">
                             <tr>
                                 <th rowspan="2">Id</th>
@@ -19,13 +27,13 @@
                                 <th rowspan="2">Triggered By</th>
                                 <th rowspan="2">Triggered On</th>
                                 <th rowspan="2">Status</th>
-                                <th rowspan="2">Tasks Completed/Running</th>
+                                <th rowspan="2" style="width: 1px;">Tasks Completed / Running</th>
                                 <th colspan="2">Current Task</th>
-                                <th rowspan="2">Actions</th>
+                                <!--<th rowspan="2">Actions</th>-->
                             </tr>
                             <tr>
                                 <th>Module</th>
-                                <th>Tiles Completed/Running</th>
+                                <th>Tiles Completed / Running</th>
                             </tr>
                         </table>
                     </div>

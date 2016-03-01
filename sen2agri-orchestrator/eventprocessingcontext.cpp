@@ -165,11 +165,29 @@ void EventProcessingContext::SubmitTasks(int jobId,
     }
 }
 
+QString EventProcessingContext::GetProductAbsolutePath(const QString &path) {
+    QFileInfo fileInfo(path);
+    QString absPath = path;
+    if(!fileInfo.isAbsolute()) {
+        // if we have the product name, we need to get the product path from the database
+        Product product = persistenceManager.GetProduct(path);
+        absPath = product.fullPath;
+    }
+    return absPath;
+}
+
 QStringList EventProcessingContext::findProductFiles(const QString &path)
 {
     QStringList result;
-    for (const auto &file : QDir(path).entryList({ "*.HDR", "*.xml" }, QDir::Files)) {
-        result.append(path + file);
+    QFileInfo fileInfo(path);
+    QString absPath = path;
+    if(!fileInfo.isAbsolute()) {
+        // if we have the product name, we need to get the product path from the database
+        Product product = persistenceManager.GetProduct(path);
+        absPath = product.fullPath;
+    }
+    for (const auto &file : QDir(absPath).entryList({ "*.HDR", "*.xml" }, QDir::Files)) {
+        result.append(absPath + file);
     }
 
     if (result.isEmpty()) {
@@ -177,7 +195,7 @@ QStringList EventProcessingContext::findProductFiles(const QString &path)
             QStringLiteral(
                 "Unable to find an HDR or xml file in path %1. Unable to determine the product "
                 "metadata file.")
-                .arg(path)
+                .arg(absPath)
                 .toStdString());
     }
     return result;

@@ -17,6 +17,7 @@
     </div>
 	<script type="text/javascript">
 		var jsonSiteId = <?php echo empty($_SESSION['siteId']) ? "0" : "".$_SESSION['siteId'] ?>;
+		var jsonJobsPage = 1;
 	</script>
 </body>
 </html>

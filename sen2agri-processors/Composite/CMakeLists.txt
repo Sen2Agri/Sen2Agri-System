@@ -10,7 +10,10 @@ add_subdirectory(DirectionalCorrection)
 add_subdirectory(CompositePreprocessing)
 
 install(FILES TestScripts/composite_processing.py 
-        DESTINATION usr/bin/)
+        DESTINATION usr/bin/
+	PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+        GROUP_READ GROUP_EXECUTE 
+        WORLD_READ WORLD_EXECUTE)
 
 install(FILES TestScripts/bands_mapping_s2.txt 
               TestScripts/bands_mapping_Spot4_L8.txt 

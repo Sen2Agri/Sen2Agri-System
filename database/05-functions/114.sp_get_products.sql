@@ -1,15 +1,15 @@
--- Function: sp_get_products(smallint, smallint, timestamp with time, timestamp with time)
+-- Function: sp_get_products(smallint, smallint, timestamp with time zone, timestamp with time zone)
 
--- DROP FUNCTION sp_get_products(smallint, smallint, timestamp with time, timestamp with time);
+-- DROP FUNCTION sp_get_products(smallint, smallint, timestamp with time zone, timestamp with time zone);
 
 CREATE OR REPLACE FUNCTION sp_get_products(
     IN site_id smallint DEFAULT NULL::smallint,
     IN product_type_id smallint DEFAULT NULL::smallint,
     IN start_time timestamp with time zone DEFAULT NULL::timestamp with time zone,
     IN end_time timestamp with time zone DEFAULT NULL::timestamp with time zone)
-  RETURNS TABLE("ProductId" integer, "Product" character varying, "ProductType" character varying, "ProductTypeId" smallint, "Processor" character varying,
-		"ProcessorId" smallint, "Site" character varying, "SiteId" smallint, task_id integer, full_path character varying,
-		quicklook_image character varying, footprint polygon, created_timestamp timestamp with time zone) AS
+  RETURNS TABLE("ProductId" integer, "Product" character varying, "ProductType" character varying, "ProductTypeId" smallint, "Processor" character varying, 
+                "ProcessorId" smallint, "Site" character varying, "SiteId" smallint, full_path character varying,
+                quicklook_image character varying, footprint polygon, created_timestamp timestamp with time zone) AS
 $BODY$
 BEGIN
 	RETURN QUERY
@@ -21,7 +21,6 @@ BEGIN
 	    P.processor_id AS ProcessorId,
             S.name AS Site,
             P.site_id AS SiteId,
-            P.task_id,
             P.full_path,
             P.quicklook_image,
             P.footprint,

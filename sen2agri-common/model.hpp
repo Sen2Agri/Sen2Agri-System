@@ -7,15 +7,6 @@
 
 #include <optional.hpp>
 
-
-typedef enum {COMPOSITE_ID = 1,
-              LAI_RETRIEVAL_ID = 2,
-              PHENO_NDVI_ID = 3,
-              CROP_MASK_ID = 4,
-              CROP_TYPE_ID = 5,
-              DUMMY_HANDLER_ID =6
-             } ProcessorIdType;
-
 void registerMetaTypes();
 
 class ConfigurationParameterInfo
@@ -220,14 +211,14 @@ Q_DECLARE_METATYPE(KeyedMessageList)
 QDBusArgument &operator<<(QDBusArgument &argument, const KeyedMessage &message);
 const QDBusArgument &operator>>(const QDBusArgument &argument, KeyedMessage &message);
 
-enum class ProductType { TestProductTypeId = 0,
-                         L2AProductTypeId,
-                         L3AProductTypeId,
-                         L3BLaiProductTypeId,
-                         L3BPhenoProductTypeId,
-                         L4AProductTypeId,
-                         L4BProductTypeId,
-                       };
+enum class ProductType {
+    L2AProductTypeId = 1,
+    L3AProductTypeId = 2,
+    L3BLaiProductTypeId = 3,
+    L3BPhenoProductTypeId = 4,
+    L4AProductTypeId = 5,
+    L4BProductTypeId = 6
+};
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ProductType &productType);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ProductType &productType);
@@ -302,7 +293,11 @@ Q_DECLARE_METATYPE(ArchivedProductList)
 QDBusArgument &operator<<(QDBusArgument &argument, const ArchivedProduct &message);
 const QDBusArgument &operator>>(const QDBusArgument &argument, ArchivedProduct &message);
 
-enum class JobStartType { Triggered = 1, Requested = 2, Scheduled = 3 };
+enum class JobStartType {
+    Triggered = 1,
+    Requested = 2,
+    Scheduled = 3
+};
 
 QDBusArgument &operator<<(QDBusArgument &argument, JobStartType startType);
 const QDBusArgument &operator>>(const QDBusArgument &argument, JobStartType &startType);
@@ -782,24 +777,27 @@ class NewProduct
 public:
     ProductType productType;
     int processorId;
-    int taskId;
+    int siteId;
+    int jobId;
     QString fullPath;
     QDateTime createdTimestamp;
+    QString name;
+    QString quicklookImage;
+    QString footprint;
 
     NewProduct();
     NewProduct(ProductType productType,
                int processorId,
-               int taskId,
+               int siteId,
+               int jobId,
                QString fullPath,
-               QDateTime createdTimestamp);
+               QDateTime createdTimestamp,
+               QString name,
+               QString quicklookImage,
+               QString footprint);
 
     static void registerMetaTypes();
 };
-
-Q_DECLARE_METATYPE(NewProduct)
-
-QDBusArgument &operator<<(QDBusArgument &argument, const NewProduct &product);
-const QDBusArgument &operator>>(const QDBusArgument &argument, NewProduct &product);
 
 class DashboardSearch
 {
@@ -827,9 +825,7 @@ public:
     QString fullName;
 
     ProcessorDescription();
-    ProcessorDescription(int processorId,
-               QString shortName,
-               QString fullName);
+    ProcessorDescription(int processorId, QString shortName, QString fullName);
 
     static void registerMetaTypes();
 };
@@ -850,7 +846,7 @@ struct ScheduledTaskStatus
     QDateTime nextScheduledRunTime;
 
     QDateTime lastSuccesfullScheduledRun; // last succ. scheduleded launch
-    QDateTime lastSuccesfullTimestamp; // the moment of last launch
+    QDateTime lastSuccesfullTimestamp;    // the moment of last launch
     QDateTime lastRetryTime;
 
     QDateTime estimatedRunTime; // last succ. scheduleded launch
@@ -863,30 +859,41 @@ enum RepeatType {
 };
 struct ScheduledTask
 {
-    ScheduledTask(int ti, QString tn ,int pi, int si, QString pp ,int rt, int rad, int rmd,
-                  QDateTime  fst, int rp, int tp, ScheduledTaskStatus& ts);
-    ScheduledTask() {}
+    ScheduledTask(int ti,
+                  QString tn,
+                  int pi,
+                  int si,
+                  QString pp,
+                  int rt,
+                  int rad,
+                  int rmd,
+                  QDateTime fst,
+                  int rp,
+                  int tp,
+                  ScheduledTaskStatus &ts);
+    ScheduledTask()
+    {
+    }
 
     int taskId;
-    QString	taskName;
+    QString taskName;
     int processorId;
     int siteId;
     QString processorParameters;
 
-    int repeatType; /*once, cyclic, on_date*/
-    int repeatAfterDays; /* nr of days to cycle the task */
+    int repeatType;       /*once, cyclic, on_date*/
+    int repeatAfterDays;  /* nr of days to cycle the task */
     int repeatOnMonthDay; /* the day of the month to run the task */
 
     QDateTime firstScheduledRunTime; /* first configured run-time */
 
-    int  retryPeriod; /* minutes or hours ? to retry if the preconditions are not met */
+    int retryPeriod; /* minutes or hours ? to retry if the preconditions are not met */
 
     int taskPriority;
 
     ScheduledTaskStatus taskStatus;
 };
 //** END For scheduler component
-
 
 //** For orchestartor API
 struct ProcessingRequest

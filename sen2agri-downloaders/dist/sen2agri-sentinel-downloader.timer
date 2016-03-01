@@ -2,7 +2,7 @@
 Description=Sentinel-2 downloader timer
 
 [Timer]
-Unit=sen2agri-sentinel-downloader.timer
+Unit=sen2agri-sentinel-downloader.service
 OnCalendar=daily
 Persistent=true
 

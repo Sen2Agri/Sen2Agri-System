@@ -68,7 +68,8 @@ public:
         return steps;
     }
 
-    static QStringList findProductFiles(const QString &path);
+    QString GetProductAbsolutePath(const QString &path);
+    QStringList findProductFiles(const QString &path);
 
 private:
     QString GetScratchPath(int jobId);

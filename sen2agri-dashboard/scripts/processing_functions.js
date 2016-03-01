@@ -51,7 +51,7 @@ function update_current_jobs(json_data)
 		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.tasks_completed + " / " + job.tasks_remaining + "</td>" +
 		"<td>" + job.current_tasks[0].current_task_module + "</td>" +
 		"<td>" + job.current_tasks[0].current_task_steps_completed + " / " + job.current_tasks[0].current_task_steps_remaining + "</td>" +
-		"<td rowspan=\"" + job.current_tasks.length + "\">" + action_buttons + "</td>" +
+		//"<td rowspan=\"" + job.current_tasks.length + "\">" + action_buttons + "</td>" +
 		"</tr>";
 
 		$("#pnl_current_jobs table:first").append(new_row);
@@ -368,10 +368,35 @@ function update_plot(element_id, series_data, series_idxs)
 
 }
 
+function move_to_first_jobs_page()
+{
+	jsonJobsPage = 1;
+	get_current_job_data();
+}
+
+function move_to_last_jobs_page()
+{
+	jsonJobsPage = jsonJobsPage;
+	get_current_job_data();
+}
+
+function move_to_previous_jobs_page()
+{
+	jsonJobsPage --;
+    jsonJobsPage = jsonJobsPage < 1 ? 1 : jsonJobsPage;
+	get_current_job_data();
+}
+
+function move_to_next_jobs_page()
+{
+	jsonJobsPage ++;
+	get_current_job_data();
+}
+
 function get_current_job_data()
 {
 	$.ajax({
-		url: get_current_job_data_url,
+		url: get_current_job_data_url + "?page=" + jsonJobsPage,
 		type: "get",
 		cache: false,
 		crosDomain: true,

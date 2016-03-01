@@ -16,6 +16,7 @@ Following steps are performed in order to obtain the mosaic from all tiles of th
        - Post process operation for files found into folder LEGACY_DATA/IMG_DATA. This is performed in order to concatenate all mosaic files produced
          on previous step (all files having or not biosferical suffix are concatenated into a single final aggragate/mosaic image)
        - Generation of the metadata xml file containing valuable information about the generated aggragate/mosaic image
+       - Generation of the quicklook preview file of the generated aggragate/mosaic image
 
 Usage :
     python aggregate_tiles.py -prodfolder path/to/my/product/directory -rescaleval 60
@@ -43,6 +44,11 @@ import datetime
 def run_command(args):
     print(" ".join(map(pipes.quote, args)))
     subprocess.call(args)
+#----------------------------------------------------------------
+def quicklook_mosaic(inpFileName, outFileName):
+    run_command(["otbcli_Quicklook",
+                 "-in",inpFileName,
+                 "-out", outFileName])
 #----------------------------------------------------------------
 def process_mosaic_images(interpolName, listOfImages, imgAggregatedName):
     run_command(["otbcli",
@@ -157,6 +163,8 @@ def create_context(args):
              #xml metadata information
              out_metadata_file_name = "none",
              xml_info_from_mosaic_dict = defaultdict(lambda: "empty"),
+             #quicklook generation
+             quicklook_out_filename = "none",
              #other useful information -- arguments values
              destRootFolder = "LEGACY_DATA",
              prodFolderName = args.prodfolder,
@@ -243,7 +251,7 @@ def get_list_img_file_names(prodDir, srcDirProcess, imgDataFolder):
     list_file_paths = []  # List which will store all of the full filepaths.
      	
     #imgFolder : IMG_DATA or QI_DATA  srcDirProcess : TILES
-    full_folder_path=os.path.join(prodDir, srcDirProcess, '*', imgDataFolder, '*')
+    full_folder_path=os.path.join(prodDir, srcDirProcess, '*', imgDataFolder, '*.TIF')
 
     #retrieve all TIF files on that path
     list_file_paths=glob.glob(full_folder_path)  # Add discovered files to the list.
@@ -403,7 +411,7 @@ def format_file_name_output(fileName):
 def post_process_mosaic_images(context, dataFolder):
 
    #obtain mosaic files
-   list_file_paths=glob.glob(os.path.join(dataFolder, '*'))
+   list_file_paths=glob.glob(os.path.join(dataFolder, '*.TIF'))
 
    #when none or one mosaic file produced -- nothing to do furher 
    if len(list_file_paths) == 0:
@@ -580,7 +588,7 @@ def reprojectCoords(coords, src_srs, tgt_srs):
         trans_coords.append([x, y])
     return trans_coords
 #----------------------------------------------------------------
-def getDatasetGdal(dataset):
+def getReprojectedDatasetGdal(dataset):
 
     size_x = dataset.RasterXSize
     size_y = dataset.RasterYSize
@@ -655,7 +663,7 @@ def build_info_from_mosaic(mosaicFileName):
    dataset = gdal.Open(mosaicFileName, gdal.gdalconst.GA_ReadOnly)
 
    #Corner coordinates transformed as "EPSG:4236"  from mosaic file for LOWER_CORNER/UPPER_CORNER xml node
-   all_coord_points = getDatasetGdal(dataset)
+   all_coord_points = getReprojectedDatasetGdal(dataset)
 
    lower_corner_val = str(all_coord_points[1][0]) + " " + str(all_coord_points[1][1])
    mosaic_dict["lower_corner_val"] = lower_corner_val
@@ -675,6 +683,15 @@ def build_info_from_mosaic(mosaicFileName):
 
    mosaic_dict["xdim"] = str(src_geo_transform[1]) # w-e pixel resolution
    mosaic_dict["ydim"] = str(src_geo_transform[5]) # n-s pixel resolution (negative value)
+
+   #extent position extraction
+   extent_list_val = str(format(all_coord_points[0][0], '.6f')) + " " + str(format(all_coord_points[0][1], '.6f')) + " " + \
+   str(format(all_coord_points[1][0], '.6f')) + " " + str(format(all_coord_points[1][1], '.6f')) + " " + \
+   str(format(all_coord_points[2][0], '.6f')) + " " + str(format(all_coord_points[2][1], '.6f')) + " " + \
+   str(format(all_coord_points[3][0], '.6f')) + " " + str(format(all_coord_points[3][1], '.6f')) + " " + \
+   str(format(all_coord_points[0][0], '.6f')) + " " + str(format(all_coord_points[0][1], '.6f'))
+
+   mosaic_dict["extent_list_val"] = extent_list_val
 
    #size of mosaic file for node Size and subnodes NROWS/NCOLS xml node
    mosaic_dict["nrows"] = str(dataset.RasterXSize)
@@ -797,7 +814,7 @@ def create_xml_mosaic_metadata(context):
 
    #update node <PREVIEW_IMAGE> -- which is subnode for Query_Options
    node = get_node_element_upon_name(dom, 'PREVIEW_IMAGE')
-   update_text_xml_node(node, "false")
+   update_text_xml_node(node, "true")
 
    #update text for <Bbox> coordinates <LOWER_CORNER> and <UPPER_CORNER>
    node = get_node_element_upon_name(dom, 'LOWER_CORNER')
@@ -806,12 +823,19 @@ def create_xml_mosaic_metadata(context):
    update_text_xml_node(node, context.xml_info_from_mosaic_dict["upper_corner_val"])
 
    #update <Band_List> node
-   #remove existing nodes <BAND_NAME>
+   #get nodes <Band_List> if these nodes exists
    node = get_node_element_upon_name(dom, 'Band_List')
    if node :
       remove_xml_node(node, 'BAND_NAME')
+   else :
+      #get parent node on which Band_List should reside
+      node = get_node_element_upon_name(dom, 'Query_Options')
+      #create subnode Band_List as child of Query_Options
+      create_xml_node(dom, node, 'Band_List', [], '')
 
-   #add nodes BAND_NAME for each band extracted
+   #add nodes BAND_NAME, as subnode for Band_List for each band extracted
+   node = get_node_element_upon_name(dom, 'Band_List')
+
    for bandId  in range(context.xml_info_from_mosaic_dict["nb_mosaic_bands"]):
       textNode = "B" + str(bandId + 1)
       create_xml_node(dom, node, 'BAND_NAME', [], textNode)
@@ -830,10 +854,10 @@ def create_xml_mosaic_metadata(context):
       for listElem in item[1]:
          create_xml_node(dom, nodeSub, 'IMAGE_ID', [], listElem)
 
-   #remove node <Product_Footprint>
-   node = get_node_element_upon_name(dom, 'Geometric_Info')
+   #update node <EXT_POS_LIST>  -- child of Global_Footprint
+   node = get_node_element_upon_name(dom, 'EXT_POS_LIST')
    if node :
-      remove_xml_node(node, 'Product_Footprint')
+      update_text_xml_node(node, context.xml_info_from_mosaic_dict["extent_list_val"])
 
    #remove node <Coordinate_Reference_System>
    node = get_node_element_upon_name(dom, 'Geometric_Info')
@@ -925,6 +949,26 @@ def create_xml_mosaic_metadata(context):
 
    #discard nodes references
    dom.unlink()
+#------------------------------------------------------------------
+def create_mosaic_quicklook(context):
+
+   #set output name for quicklook file of the LEGACY_DATA folder : create the name
+   #starting from mosaic file name of the product; strip TIF extension and replace by JPG
+   compFileName = (os.path.basename(context.post_process_out_filename).split('.'))[0] + ".jpg"
+   #replace MTD by PVI
+   fileOut = compFileName.replace("_DAT_","_PVI_")
+
+   #compute full path name and save it - this file reside into LEGACY_DATA
+   context.quicklook_out_filename = os.path.join(context.prodFolderName, context.destRootFolder, fileOut)
+
+   #call otb application QuickLook  
+   quicklook_mosaic(context.post_process_out_filename, context.quicklook_out_filename)
+
+   #remove rezidual files generated by otb application QuickLook (aux)
+   list_file_paths=glob.glob(os.path.join(context.prodFolderName, context.destRootFolder,'*.aux*'))
+   for file in list_file_paths:
+        os.remove(file)
+
 ###################################################################################################
 #################################  MAIN ###########################################################
 ###################################################################################################
@@ -952,8 +996,13 @@ print("--------->Post Process Mosaic files")
 post_process_mosaic_images(context,os.path.join(context.prodFolderName, context.destRootFolder, "IMG_DATA"))
 
 #call metadata create file in order to generate the XML
-print("--------->END: XML metadata creation")
+print("--------->XML metadata creation")
 create_xml_mosaic_metadata(context)
+
+#call generate quicklook file in order to generate preview of the mosaic file
+print("--------->QUICKLOOK generation")
+create_mosaic_quicklook(context)
+print("--------->END...")
 
 #execution time
 execTimeSec = datetime.datetime.now() - startTime
