@@ -904,6 +904,38 @@ Product PersistenceManagerDBProvider::GetProduct(const QString &productName)
         });
 }
 
+ProductList PersistenceManagerDBProvider::GetProductsForTile(const QString &tileId, int satelliteId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(
+        __func__, [&] {
+            auto query = db.prepareQuery(QStringLiteral("select * from sp_get_products_for_tile("
+                                                        ":tileId, :satelliteId)"));
+            query.bindValue(QStringLiteral(":tileId"), tileId);
+            query.bindValue(QStringLiteral(":satelliteId"), satelliteId);
+            query.setForwardOnly(true);
+            if (!query.exec()) {
+                throw_query_error(db, query);
+            }
+
+            auto dataRecord = query.record();
+            auto fullPathCol = dataRecord.indexOf(QStringLiteral("full_path"));
+            auto productDateCol = dataRecord.indexOf(QStringLiteral("product_date"));
+
+            ProductList result;
+            while (query.next()) {
+                Product product;
+                product.fullPath = query.value(fullPathCol).toString();
+                product.created = query.value(productDateCol).toDateTime();
+
+                result.append(std::move(product));
+            }
+
+            return result;
+        });
+}
+
 QString PersistenceManagerDBProvider::GetDashboardCurrentJobData(int page)
 {
     auto db = getDatabase();
