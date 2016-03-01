@@ -9,9 +9,9 @@ python generate_file_list_composite.py \
 
 #run composite processors
 python /home/msavinaud/dev/s2agri/src/sen2agri-processors/Composite/TestScripts/composite_processing_CS.py \
---applocation /data/s2agri/sen2agri-processors-build-thor \
+--applocation /home/msavinaud/dev/s2agri/build/ \
 --configfile /data/s2agri/output/2013/Ukraine/composite_20130328/configuration.file \
 --res 20 \
---outdir /data/s2agri/output/2013/Ukraine/composite_20130328 \
+--outdir /data/s2agri/output/2013/Ukraine/composite_20130328_bis \
 --bandsmap /home/msavinaud/dev/s2agri/src/sen2agri-processors/Composite/TestScripts/bands_mapping_spot.txt
 
