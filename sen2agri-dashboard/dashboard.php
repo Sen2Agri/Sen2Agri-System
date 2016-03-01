@@ -1,11 +1,10 @@
 ﻿<?php include 'master.php';?>
 <?php
 
-//Submited add new job; insert job in datebase with id $schedule_id
+//Submited add new job; insert job in database with id $schedule_id
 if (isset ( $_REQUEST ['schedule_saveJob'] )=='Save'){
 	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
 	
-	//$schedule_id = "13";
 	$job_name = $_REQUEST ['jobname'];
 	$processorId = $_REQUEST['processorId'];
 	$site_id = $_REQUEST['sitename'];
@@ -37,7 +36,7 @@ if (isset ( $_REQUEST ['schedule_saveJob'] )=='Save'){
 	$result = pg_query($db,$sql_insert) or die("Could not execute.");
 }
 
-//Submited edit job; update job with id $schedule_id in datebase
+//Submited edit job; update job with id $schedule_id in database
 if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
 
@@ -119,8 +118,7 @@ if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 									<div class="panel-heading">Scheduled Jobs
 									
 									<form id="form_add_sched" method="post">
-									<!--<button name="schedule_add" type="button" value="AddJob">  -->
-									<input  class="right" name="schedule_add" type="submit" class="btn btn-primary" value="AddJob">
+									<input name="schedule_add" type="submit" class="right " value="AddJob">
 									<input type="hidden" name="processorId" value="1">
 									</form> 
 									
@@ -180,9 +178,8 @@ if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 									
 									<div class="panel-heading">Scheduled Jobs
 									
-									<form id="form_add_sched" method="post">
-									<!--<button name="schedule_add" type="button" value="AddJob">  -->
-									<input class="right" name="schedule_add" type="submit" class="btn btn-primary" value="AddJob">
+									<form id="form_add_sched" method="post" class="form">
+									<input name="schedule_add" type="submit" class="right " value="AddJob">
 									<input type="hidden" name="processorId" value="2">
 									</form> 
 									
@@ -242,11 +239,10 @@ if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 								<div class="panel panel-default panel_scheduled"
 									id="pnl_l3b_scheduled">
 
-									<div class="panel-heading">Scheduled Jobs
+									<div class="panel-heading"><div>Scheduled Jobs</div>
 									
 									<form id="form_add_sched" method="post">
-									<!--<button name="schedule_add" type="button" value="AddJob">  -->
-									<input class="right" name="schedule_add" type="submit" class="btn btn-primary" value="AddJob">
+									<input name="schedule_add" type="submit" class="right " value="AddJob">
 									<input type="hidden" name="processorId" value="3">
 									</form> 
 									
@@ -314,8 +310,7 @@ if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 									<div class="panel-heading">Scheduled Jobs
 									
 									<form id="form_add_sched" method="post">
-									<!--<button name="schedule_add" type="button" value="AddJob">  -->
-									<input  class="right" name="schedule_add" type="submit" class="btn btn-primary" value="AddJob">
+									<input name="schedule_add" type="submit" class="right " value="AddJob">
 									<input type="hidden" name="processorId" value="4">
 									</form> 
 									
@@ -386,7 +381,7 @@ if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 									<div class="panel-heading">Scheduled Jobs
 									
 									<form id="form_add_sched" method="post">
-									<input  class="right" name="schedule_add" type="submit" class="btn btn-primary" value="AddJob">
+									<input name="schedule_add" type="submit" class="right " value="AddJob">
 									<input type="hidden" name="processorId" value="5">
 									</form> 
 									
@@ -429,8 +424,8 @@ if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 <script src="scripts/config.js"></script>
 <script src="scripts/helpers.js"></script>
 <script src="scripts/processing_functions.js"></script>
-<!-- <script src="scripts/processing.js"></script> -->
-<script src="scripts/dashoboardScript.js"></script>
+<script src="scripts/processing.js"></script>
+
 
 <!-- includes for  datepicker-->
 <link rel="stylesheet"
@@ -444,9 +439,7 @@ if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 <!--Jquery datepicker -->
 <script>
 		$(document).ready(function() {
-			//$(".startdate").datepicker();
 			$( ".startdate" ).datepicker({ dateFormat: "yy-mm-dd" });
-			//$("#oneverydate").datepicker();
 		});
 </script>
 <!--end Jquery datepicker -->

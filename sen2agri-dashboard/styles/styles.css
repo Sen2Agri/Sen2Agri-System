@@ -266,9 +266,9 @@ div.panel_job_container {
 	margin-right: 2%;
 }
 
-div.div-scheduled{
+.div-scheduled{
 	margin-left:5px;
-	
+   /* width:50px;*/
 }
 
 div.panel_job {
@@ -357,6 +357,11 @@ div.pop_up #close_button {
 	display: none;
 }
 */
+
+.control-max-width{
+	display:inline-block;
+	width:140px;
+}
 .form-group-sm .form-control {
 	height: 22px;
 }
@@ -444,7 +449,7 @@ label.error {
 }
 
 input.right {
-  /*  float: right;*/
+   /* float: right;*/
   /*  border-color:#204d74;*/
  	font-weight:200;
     color:#fff;
