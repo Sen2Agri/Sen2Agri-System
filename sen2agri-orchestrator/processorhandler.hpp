@@ -30,6 +30,8 @@ protected:
     QString GetFinalProductFolder(const std::map<QString, QString> &cfgKeys, const QString &siteName, const QString &processorName);
     bool RemoveJobFolder(EventProcessingContext &ctx, int jobId);
     QString GetProductFormatterProducName(EventProcessingContext &ctx, const TaskFinishedEvent &event);
+    QString GetProductFormatterQuicklook(EventProcessingContext &ctx, const TaskFinishedEvent &event);
+    QString GetProductFormatterFootprint(EventProcessingContext &ctx, const TaskFinishedEvent &event);
 
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,

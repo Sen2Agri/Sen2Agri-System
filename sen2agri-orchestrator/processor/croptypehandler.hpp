@@ -31,9 +31,10 @@ private:
                                                     QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList,
                                                     bool bCropMaskEmpty);
     CropTypeGlobalExecutionInfos HandleNewTilesList(EventProcessingContext &ctx,
-                                                 const JobSubmittedEvent &event, const QStringList &listProducts);
+                                                 const JobSubmittedEvent &event, const QStringList &listProducts, const QString &cropMask);
     QStringList GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                         const QStringList &listProducts, const QList<CropTypeProductFormatterParams> &productParams);
+    QMap<QString, QString> GetCropMasks(const QString &cropMaskDir);
 
     ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues) override;

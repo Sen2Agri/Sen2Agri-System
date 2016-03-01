@@ -39,7 +39,7 @@ QList<std::reference_wrapper<TaskToSubmit>> CropTypeHandler::CreateTasksForNewPr
     return allTasksListRef;
 }
 CropTypeGlobalExecutionInfos CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
-                                             const JobSubmittedEvent &event, const QStringList &listProducts)
+                                             const JobSubmittedEvent &event, const QStringList &listProducts, const QString &cropMask)
 {
     auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4b.");
     auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.");
@@ -48,11 +48,12 @@ CropTypeGlobalExecutionInfos CropTypeHandler::HandleNewTilesList(EventProcessing
     const auto &gdalwarpMem = resourceParameters["resources.gdalwarp.working-mem"];
     const auto &referencePolygons = parameters["reference_polygons"].toString();
 
-    const auto &cropMask = parameters["crop_mask"].toString();
+    //const auto &cropMask = parameters["crop_mask"].toString();
     auto mission = parameters["processor.l4b.mission"].toString();
     if(mission.length() == 0) mission = "SPOT";
 
-    const auto &resolution = parameters["resolution"].toInt();
+    int resolution = parameters["resolution"].toInt();
+    if(resolution == 0)         resolution = 10;    // TODO: We should configure the default resolution in DB
     const auto &resolutionStr = QString::number(resolution);
 
     auto randomSeed = parameters["processor.l4b.random_seed"].toString();
@@ -271,6 +272,25 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
 
     QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
+
+    // get the crop mask
+    auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4b.");
+    const auto &cropMask = configParameters["processor.l4b.crop_mask"];
+    QString cropMaskAbsolutePath = ctx.GetProductAbsolutePath(cropMask);
+    QMap<QString, QString> mapCropMasks;
+    if (QFileInfo(cropMaskAbsolutePath).isDir()) {
+        mapCropMasks = GetCropMasks(cropMaskAbsolutePath);
+    } else {
+        // we have only one file for all tiles - but in this case we should have only one tile
+        if(mapTiles.size() != 1){
+            ctx.MarkJobFailed(event.jobId);
+            return;
+        }
+        for(const auto &e : mapTiles.keys()) {
+            mapCropMasks[e] = cropMaskAbsolutePath;
+        }
+    }
+
     QList<CropTypeProductFormatterParams> listParams;
 
     TaskToSubmit productFormatterTask{"product-formatter", {}};
@@ -280,7 +300,8 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     for(auto tile : mapTiles.keys())
     {
        QStringList listTemporalTiles = mapTiles.value(tile);
-       CropTypeGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles);
+       QString cropMask = mapCropMasks.value(tile);
+       CropTypeGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles, cropMask);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
        allTasksList.append(infos.allTasksList);
@@ -352,24 +373,26 @@ void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
 
-        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
-
         QString prodName = GetProductFormatterProducName(ctx, event);
+        QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId) + "/" + prodName;
+        if(prodName != "") {
+            QString quicklook = GetProductFormatterQuicklook(ctx, event);
+            QString footPrint = GetProductFormatterFootprint(ctx, event);
+            // Insert the product into the database
+            ctx.InsertProduct({ ProductType::L4BProductTypeId,
+                                event.processorId,
+                                event.jobId,
+                                event.siteId,
+                                productFolder,
+                                QDateTime::currentDateTimeUtc(),
+                                prodName,
+                                quicklook,
+                                footPrint});
 
-        // Insert the product into the database
-        ctx.InsertProduct({ ProductType::L4BProductTypeId,
-                            event.processorId,
-                            event.jobId,
-                            event.siteId,
-                            productFolder,
-                            QDateTime::currentDateTimeUtc(),
-                            prodName,
-                            "quicklook",
-                            "POLYGON(())" });
-
-        // Now remove the job folder containing temporary files
-        // TODO: Reinsert this line - commented only for debug purposes
-        //RemoveJobFolder(ctx, event.jobId);
+            // Now remove the job folder containing temporary files
+            // TODO: Reinsert this line - commented only for debug purposes
+            //RemoveJobFolder(ctx, event.jobId);
+        }
     }
 }
 
@@ -393,13 +416,13 @@ QStringList CropTypeHandler::GetProductFormatterArgs(TaskToSubmit &productFormat
         productFormatterArgs += params.cropTypeMap;
     }
 
-    productFormatterArgs += "-processor.cropmask.flags";
+    productFormatterArgs += "-processor.croptype.quality";
     for(const CropTypeProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.xmlValidationMetrics;
     }
 
-    productFormatterArgs += "-processor.cropmask.flags";
+    productFormatterArgs += "-processor.croptype.flags";
     for(const CropTypeProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
         productFormatterArgs += params.statusFlags;
@@ -448,4 +471,26 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
     params.jsonParameters = "{ \"crop_mask_folder\": \"" + cropMaskFolder + "\"}";
 
     return params;
+}
+
+QMap<QString, QString> CropTypeHandler::GetCropMasks(const QString &cropMaskDir) {
+    QMap<QString, QString> mapCropMasks;
+    QDirIterator it(cropMaskDir, QStringList() << "*", QDir::Dirs);
+    while (it.hasNext()) {
+        QString subDir = it.next();
+        // get the dir name
+        QString dirName = QFileInfo(subDir).fileName();
+        // remove the part after _N
+        QString cropMaskName = dirName.left(dirName.lastIndexOf("_N"));
+        // Extract the tile name from the crop mask name
+
+        // Split the name by "_" and search the part having _Txxxxx (_T followed by 5 characters)
+        QStringList pieces = cropMaskName.split("_");
+        for (const QString &piece : pieces) {
+            if ((piece.length() == 10) && (piece.at(0) == 'T')) {
+                mapCropMasks[piece.right(piece.length()-1)] = cropMaskName + "/" + cropMaskName + ".tif";
+            }
+        }
+    }
+    return mapCropMasks;
 }

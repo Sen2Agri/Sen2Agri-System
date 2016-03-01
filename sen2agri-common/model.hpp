@@ -7,15 +7,6 @@
 
 #include <optional.hpp>
 
-typedef enum {
-    COMPOSITE_ID = 1,
-    LAI_RETRIEVAL_ID = 2,
-    PHENO_NDVI_ID = 3,
-    CROP_MASK_ID = 4,
-    CROP_TYPE_ID = 5,
-    DUMMY_HANDLER_ID = 6
-} ProcessorIdType;
-
 void registerMetaTypes();
 
 class ConfigurationParameterInfo
@@ -222,11 +213,11 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, KeyedMessage &mes
 
 enum class ProductType {
     L2AProductTypeId = 1,
-    L3AProductTypeId,
-    L3BLaiProductTypeId,
-    L3BPhenoProductTypeId,
-    L4AProductTypeId,
-    L4BProductTypeId,
+    L3AProductTypeId = 2,
+    L3BLaiProductTypeId = 3,
+    L3BPhenoProductTypeId = 4,
+    L4AProductTypeId = 5,
+    L4BProductTypeId = 6
 };
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ProductType &productType);

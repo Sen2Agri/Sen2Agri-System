@@ -95,7 +95,7 @@ QString ProcessorHandler::GetProductFormatterProducName(EventProcessingContext &
     QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) +
             "/" + PRODUC_FORMATTER_OUT_PROPS_FILE;
     QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
-    QString prodName = "UnknownProductName";
+    QString prodName("");
     if(fileLines.size() > 0) {
         QString name = ProcessorHandlerHelper::GetFileNameFromPath(fileLines[0]);
         if(name.trimmed() != "") {
@@ -103,4 +103,89 @@ QString ProcessorHandler::GetProductFormatterProducName(EventProcessingContext &
         }
     }
     return prodName;
+}
+
+QString ProcessorHandler::GetProductFormatterQuicklook(EventProcessingContext &ctx,
+                                                        const TaskFinishedEvent &event) {
+    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) +
+            "/" + PRODUC_FORMATTER_OUT_PROPS_FILE;
+    QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
+    QString quickLookName("");
+    if(fileLines.size() > 0) {
+        const QString &mainFolderName = fileLines[0];
+        QString legacyFolder = mainFolderName + "/LEGACY_DATA/";
+
+        QDirIterator it(legacyFolder, QStringList() << "*.jpg", QDir::Files);
+        // get the last shape file found
+        QString quickLookFullName;
+        while (it.hasNext()) {
+            quickLookFullName = it.next();
+            QFileInfo quickLookFileInfo(quickLookFullName);
+            QString quickLookTmpName = quickLookFileInfo.fileName();
+            if(quickLookTmpName.indexOf("_PVI_")) {
+                return quickLookTmpName;
+            }
+
+        }
+    }
+    return quickLookName;
+}
+
+QString ProcessorHandler::GetProductFormatterFootprint(EventProcessingContext &ctx,
+                                                        const TaskFinishedEvent &event) {
+    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) +
+            "/" + PRODUC_FORMATTER_OUT_PROPS_FILE;
+    QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
+    if(fileLines.size() > 0) {
+        const QString &mainFolderName = fileLines[0];
+        QString legacyFolder = mainFolderName + "/LEGACY_DATA/";
+
+        QDirIterator it(legacyFolder, QStringList() << "*.xml", QDir::Files);
+        // get the last shape file found
+        QString footprintFullName;
+        while (it.hasNext()) {
+            footprintFullName = it.next();
+            // check only the name if it contains MTD
+            QFileInfo footprintFileInfo(footprintFullName);
+            if(footprintFileInfo.fileName().indexOf("_MTD_")) {
+                // parse the XML file
+                QFile inputFile(footprintFullName);
+                if (inputFile.open(QIODevice::ReadOnly))
+                {
+                   QTextStream in(&inputFile);
+                   while (!in.atEnd()) {
+                        QString curLine = in.readLine();
+                        // we assume we have only one line
+                        QString startTag("<EXT_POS_LIST>");
+                        int extposlistStartIdx = curLine.indexOf(startTag);
+                        if(extposlistStartIdx >= 0) {
+                            int extposlistEndIdxIdx = curLine.indexOf("</EXT_POS_LIST>");
+                            if(extposlistEndIdxIdx >= 0) {
+                                int startIdx = extposlistStartIdx + startTag.length();
+                                QString extensionPointsStr = curLine.mid(startIdx,extposlistEndIdxIdx-startIdx);
+                                QStringList extPointsList = extensionPointsStr.split(" ");
+                                if((extPointsList.size() > 8) && (extPointsList.size() % 2) == 0) {
+                                    QString footprint = "POLYGON((";
+                                    for(int i = 0; i<extPointsList.size(); i++) {
+                                        if(i > 0)
+                                            footprint.append(", ");
+                                        footprint.append(extPointsList[i]);
+
+                                        footprint.append(" ");
+                                        footprint.append(extPointsList[++i]);
+                                    }
+                                    footprint += "))";
+                                    inputFile.close();
+                                    return footprint;
+                                }
+                            }
+                        }
+                   }
+                   inputFile.close();
+                }
+            }
+
+        }
+    }
+    return "POLYGON((0.0 0.0, 0.0 0.0, 0.0 0.0, 0.0 0.0, 0.0 0.0";
 }

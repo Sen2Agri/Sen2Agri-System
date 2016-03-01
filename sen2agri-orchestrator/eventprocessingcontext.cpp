@@ -165,6 +165,17 @@ void EventProcessingContext::SubmitTasks(int jobId,
     }
 }
 
+QString EventProcessingContext::GetProductAbsolutePath(const QString &path) {
+    QFileInfo fileInfo(path);
+    QString absPath = path;
+    if(!fileInfo.isAbsolute()) {
+        // if we have the product name, we need to get the product path from the database
+        Product product = persistenceManager.GetProduct(path);
+        absPath = product.fullPath;
+    }
+    return absPath;
+}
+
 QStringList EventProcessingContext::findProductFiles(const QString &path)
 {
     QStringList result;

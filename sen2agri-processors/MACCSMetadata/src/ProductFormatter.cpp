@@ -311,6 +311,10 @@ private:
         AddParameter(ParameterType_InputFilenameList, "gipp", "The GIPP files");
         MandatoryOff("gipp");
 
+        AddParameter(ParameterType_Int, "aggregatescale", "The aggregate rescale resolution");
+        MandatoryOff("aggregatescale");
+        SetDefaultParameterInt("aggregatescale", 60);
+
         SetDocExampleParameterValue("destroot", "/home/ata/sen2agri/sen2agri-processors-build/Testing/Temporary/Dest");
         SetDocExampleParameterValue("fileclass", "SVT1");
         SetDocExampleParameterValue("level", "L3A");
@@ -363,7 +367,7 @@ private:
 
       std::string strCreationDate = currentDateTimeFormattted("%Y%m%dT%H%M%S");
 
-      std::string strMainProductFolderName = "{project_id}_{file_class}_{file_category}_{product_level}_{product_descriptor}_{originator_site}_{creation_date}_V{time_period}_{tile_id}_{processing_baseline}";
+      std::string strMainProductFolderName = "{project_id}_{file_class}_{file_category}_{product_level}_{product_descriptor}_{originator_site}_{creation_date}_V{time_period}_T{tile_id}_{processing_baseline}";
 
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "{project_id}", PROJECT_ID);
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "{file_class}", m_strFileClass);
@@ -375,7 +379,7 @@ private:
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "{time_period}", m_strTimePeriod);
       std::string strTileName = strMainProductFolderName;
 
-      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{tile_id}", "");
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_T{tile_id}", "");
       strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{processing_baseline}", "");
 
       m_strProductFileName = ReplaceString(strMainProductFolderName, "{product_descriptor}", PRODUCT_DESCRIPTOR);
@@ -547,8 +551,9 @@ private:
           TransferPreviewFiles();
           TransferAndRenameGIPPFiles();
           generateProductMetadataFile(strMainFolderFullPath + "/" + ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, METADATA_CATEG) + ".xml");
+          bool bAgSuccess = ExecuteAgregateTiles(strMainFolderFullPath, this->GetParameterInt("aggregatescale"));
+          std::cout << "Aggregating tiles " << (bAgSuccess ? "SUCCESS!" : "FAILED!") << std::endl;
       }
-
   }
 
   void CreateAndFillTile(tileInfo &tileInfoEl, const std::string &strMainFolderFullPath, const std::string &tileNameRoot)
@@ -771,7 +776,7 @@ private:
   void FillBandList()
   {
       Band bandEl;
-      if ((m_strProductLevel.compare("L3A") == 0) && (CompositeBandList.empty()))
+      if (m_strProductLevel.compare("L3A") == 0)
               //if is composite product, fill bands
       {
 
@@ -1607,6 +1612,54 @@ private:
         // close the file
         file.close();
         return retList;
+  }
+
+  bool ExecuteAgregateTiles(const std::string &strMainFolderFullPath, int rescaleRes) {
+      std::cout << "Starting aggregating tiles for product " << strMainFolderFullPath << std::endl;
+      if(rescaleRes <= 20) {
+          rescaleRes = 60;
+      }
+      std::vector<const char *> args;
+      args.emplace_back("-prodfolder");
+      args.emplace_back(strMainFolderFullPath.c_str());
+      args.emplace_back("-rescaleval");
+      std::string rescaleStr = std::to_string(rescaleRes);
+      args.emplace_back(rescaleStr.c_str());
+      return ExecuteExternalProgram("aggregate_tiles.py", args);
+  }
+
+  bool ExecuteExternalProgram(const char *appExe, std::vector<const char *> appArgs) {
+      int error, status;
+          pid_t pid, waitres;
+//          /* Make sure we have no child processes. */
+//          while (waitpid(-1, NULL, 0) != -1)
+//              ;
+//          assert(errno == ECHILD);
+
+
+          std::vector<const char *> args;
+          args.emplace_back(appExe);
+          for(unsigned int i = 0; i<appArgs.size(); i++) {
+                args.emplace_back(appArgs[i]);
+          }
+          args.emplace_back(nullptr);
+
+          posix_spawnattr_t attr;
+          posix_spawnattr_init(&attr);
+          posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
+          error = posix_spawnp(&pid, args[0], NULL, &attr, (char *const *)args.data(), environ);
+          if(error != 0) {
+              otbAppLogWARNING("Error creating process for " << appExe << ". The resulting files will not be created. Error was: " << error);
+              return false;
+          }
+          posix_spawnattr_destroy(&attr);
+          waitres = waitpid(pid, &status, 0);
+          if(waitres == pid && (WIFEXITED(status) && WEXITSTATUS(status) == 0)) {
+              return true;
+          }
+          otbAppLogWARNING("Error running " << appExe << ". The resulting file(s) might not be created. The return was: " << status);
+          return false;
+
   }
 
 private:
