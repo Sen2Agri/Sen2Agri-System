@@ -187,5 +187,48 @@ QString ProcessorHandler::GetProductFormatterFootprint(EventProcessingContext &c
 
         }
     }
-    return "POLYGON((0.0 0.0, 0.0 0.0, 0.0 0.0, 0.0 0.0, 0.0 0.0";
+    return "POLYGON((0.0 0.0, 0.0 0.0))";
 }
+
+QString ProcessorHandler::GetTileMainImageFilePath(const QString &tileMetadataPath) {
+    QFileInfo info(tileMetadataPath);
+    QString parentFolder = info.absoluteDir().absolutePath();
+    QString metaFile = info.fileName();
+    //QString extension = info.suffix();
+    // check if is S2
+    if(metaFile.indexOf("S2") == 0) {
+        QDirIterator it(parentFolder + "/" + metaFile + ".DBL.DIR/", QStringList() << "*_FRE_R1.DBL.TIF", QDir::Files);
+        if (it.hasNext()) {
+            return it.next();
+        }
+    } else if(metaFile.indexOf("L8") == 0) {
+        QDirIterator it(parentFolder + "/" + metaFile + ".DBL.DIR/", QStringList() << "*_FRE.DBL.TIF", QDir::Files);
+        if (it.hasNext()) {
+            return it.next();
+        }
+    } else if(metaFile.indexOf("SPOT") == 0) {
+        QDirIterator it(parentFolder + "/", QStringList() << "*_PENTE_*.TIF", QDir::Files);
+        if (it.hasNext()) {
+            return it.next();
+        }
+    }
+    return "";
+}
+
+
+QString ProcessorHandler::GetProductTypeFromTile(const QString &tileMetadataPath) {
+    QFileInfo info(tileMetadataPath);
+    QString metaFile = info.fileName();
+    if(metaFile.indexOf("S2") == 0) {
+        return "SENTINEL";
+    } else if(metaFile.indexOf("L8") == 0) {
+        return "LANDSAT_8";
+    } else if(metaFile.indexOf("SPOT4") == 0) {
+        return "SPOT4";
+    } else if(metaFile.indexOf("SPOT5") == 0) {
+        return "SPOT5";
+    }
+    return "";
+}
+
+

@@ -19,6 +19,8 @@ bool CommandInvoker::InvokeCommand(QString &strCmd, QStringList &listParams, boo
 
     bool bRet = true;
 
+    m_process.setWorkingDirectory("/tmp/");
+
     m_process.start(strCmd, listParams);
     if (m_process.waitForStarted(-1)) {
             while(m_process.waitForReadyRead(-1)) {

@@ -32,6 +32,8 @@ protected:
     QString GetProductFormatterProducName(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterQuicklook(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterFootprint(EventProcessingContext &ctx, const TaskFinishedEvent &event);
+    QString GetTileMainImageFilePath(const QString &tileMetadataPath);
+    QString GetProductTypeFromTile(const QString &tileMetadataPath);
 
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,

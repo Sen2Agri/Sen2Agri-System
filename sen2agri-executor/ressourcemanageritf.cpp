@@ -244,6 +244,7 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
 
         QTemporaryFile tempFile;
         if (tempFile.open()) {
+            //tempFile.setAutoRemove(false);
             // TODO: The simplest way would be to send an inline shell script but I don't know why it doesn't work
             //QString cmd = QString(" <<EOF\n#!/bin/sh\nsrun %1\nEOF").arg(paramsStr);
             QString cmd = QString("#!/bin/sh\nsrun %1").arg(paramsStr);
