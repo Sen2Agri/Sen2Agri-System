@@ -4,12 +4,12 @@
 //Submited add new job; insert job in database with id $schedule_id
 if (isset ( $_REQUEST ['schedule_saveJob'] )=='Save'){
 	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
-	
+
 	$job_name = $_REQUEST ['jobname'];
 	$processorId = $_REQUEST['processorId'];
 	$site_id = $_REQUEST['sitename'];
 	$schedule_type = $_REQUEST ['schedule_add'];
-	
+
 	if($schedule_type =='0'){
 		$repeatafter = "0";
 		$oneverydate = "0";
@@ -23,17 +23,24 @@ if (isset ( $_REQUEST ['schedule_saveJob'] )=='Save'){
 		$oneverydate = $_REQUEST ['oneverydate'];
 		$startdate = $_REQUEST ['startdate'];
 	}
-	
+
 	$pg_date = date('Y-m-d H:i:s', strtotime($startdate));
-	
-	$sql_insert = "INSERT INTO scheduled_task(
-             name, processor_id, site_id, processor_params, repeat_type, 
-            repeat_after_days, repeat_on_month_day, retry_seconds, priority, 
+
+    $result = pg_query_params($db,
+        'SELECT * FROM sp_insert_scheduled_task($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+        array($job_name, $processorId, $site_id, $schedule_type, $repeatafter, $oneverydate, 60, 1, $pg_date, NULL));
+    or die("Could not execute.");
+
+/*
+    $sql_insert = "INSERT INTO scheduled_task(
+             name, processor_id, site_id, processor_params, repeat_type,
+            repeat_after_days, repeat_on_month_day, retry_seconds, priority,
             first_run_time)
     		VALUES ('".$job_name."',".$processorId.",".$site_id.",null,".$schedule_type.",".$repeatafter.",".$oneverydate.",60,
             1,'".$pg_date."')";
 
-	$result = pg_query($db,$sql_insert) or die("Could not execute.");
+    $result = pg_query($db,$sql_insert) or die("Could not execute.");
+*/
 }
 
 //Submited edit job; update job with id $schedule_id in database
@@ -45,9 +52,9 @@ if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 	$startdate = $_REQUEST ['startdate'];
 	$repeatafter = $_REQUEST ['repeatafter'];
 	$oneverydate = $_REQUEST ['oneverydate'];
-	
+
 	$pg_date = date('Y-m-d H:i:s', strtotime($startdate));
-	
+
 	if($schedule_type =='0'){
 		$sql = "UPDATE scheduled_task ".
 				"SET repeat_type = ".$schedule_type.", first_run_time = '".$pg_date."' ".
@@ -59,7 +66,7 @@ if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 				"repeat_after_days = ".$repeatafter." ".
 				"WHERE id=$schedule_id";
 	}else{
-	
+
 		$sql = "UPDATE scheduled_task ".
 			"SET repeat_type = ".$schedule_type.",".
 			"first_run_time = '".$pg_date."',".
@@ -116,22 +123,22 @@ if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 								<div class="panel panel-default panel_scheduled"
 									id="pnl_l2a_scheduled">
 									<div class="panel-heading">Scheduled Jobs
-									
+
 									<form id="form_add_sched" method="post">
 									<input name="schedule_add" type="submit" class="right " value="AddJob">
 									<input type="hidden" name="processorId" value="1">
-									</form> 
-									
+									</form>
+
 									</div>
-									
+
 									<!-- l2a processor_id = 1 -->
-									<?php 
+									<?php
 									if(isset ( $_REQUEST ['schedule_add'] ) &&  isset ($_REQUEST['processorId'])){
 										if ($_REQUEST ['schedule_add']=='AddJob' && $_REQUEST['processorId']=='1'){
-										
+
 												add_new_scheduled_jobs_layout(1);
 									}}?>
-										
+
 									<?php update_scheduled_jobs_layout(1);?>
 								</div>
 							</div>
@@ -175,24 +182,24 @@ if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 								id="pnl_l3a_scheduled_container">
 								<div class="panel panel-default panel_scheduled"
 									id="pnl_l3a_scheduled">
-									
+
 									<div class="panel-heading">Scheduled Jobs
-									
+
 									<form id="form_add_sched" method="post" class="form">
 									<input name="schedule_add" type="submit" class="right " value="AddJob">
 									<input type="hidden" name="processorId" value="2">
-									</form> 
-									
+									</form>
+
 									</div>
-									
+
 									<!-- l3a processor_id = 2 -->
-									<?php 
+									<?php
 									if(isset ( $_REQUEST ['schedule_add'] ) &&  isset ($_REQUEST['processorId'])){
 										if ($_REQUEST ['schedule_add']=='AddJob' && $_REQUEST['processorId']=='2'){
-										
+
 												add_new_scheduled_jobs_layout(2);
 										}}?>
-										
+
 									<?php update_scheduled_jobs_layout(2);?>
 
 								</div>
@@ -240,25 +247,25 @@ if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 									id="pnl_l3b_scheduled">
 
 									<div class="panel-heading"><div>Scheduled Jobs</div>
-									
+
 									<form id="form_add_sched" method="post">
 									<input name="schedule_add" type="submit" class="right " value="AddJob">
 									<input type="hidden" name="processorId" value="3">
-									</form> 
-									
+									</form>
+
 									</div>
-									
+
 									<!-- l3b lai processor_id = 3 -->
-									<?php 
-									
+									<?php
+
 									if(isset ( $_REQUEST ['schedule_add'] ) &&  isset ($_REQUEST['processorId'])){
 										if ($_REQUEST ['schedule_add']=='AddJob' && $_REQUEST['processorId']=='3'){
-																			
+
 												add_new_scheduled_jobs_layout(3);
 									}}?>
-										
+
 									<?php update_scheduled_jobs_layout(3);?>
-									
+
 
 								</div>
 							</div>
@@ -306,24 +313,24 @@ if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 								id="pnl_l4a_scheduled_container">
 								<div class="panel panel-default panel_scheduled"
 									id="pnl_l4a_scheduled">
-									
+
 									<div class="panel-heading">Scheduled Jobs
-									
+
 									<form id="form_add_sched" method="post">
 									<input name="schedule_add" type="submit" class="right " value="AddJob">
 									<input type="hidden" name="processorId" value="4">
-									</form> 
-									
+									</form>
+
 									</div>
-									
+
 									<!-- l4a processor_id = 4 -->
-									<?php 
+									<?php
 									if(isset ( $_REQUEST ['schedule_add'] ) &&  isset ($_REQUEST['processorId'])){
 									if ($_REQUEST ['schedule_add']=='AddJob' && $_REQUEST['processorId']=='4'){
-										
+
 												add_new_scheduled_jobs_layout(4);
 									}}?>
-										
+
 									<?php update_scheduled_jobs_layout(4);?>
 
 								</div>
@@ -377,27 +384,27 @@ if (isset ( $_REQUEST ['schedule_submit'] )=='Save'){
 								id="pnl_l4b_scheduled_container">
 								<div class="panel panel-default panel_scheduled"
 									id="pnl_l4b_scheduled">
-																											
+
 									<div class="panel-heading">Scheduled Jobs
-									
+
 									<form id="form_add_sched" method="post">
 									<input name="schedule_add" type="submit" class="right " value="AddJob">
 									<input type="hidden" name="processorId" value="5">
-									</form> 
-									
+									</form>
+
 									</div>
-									
+
 									<!-- l4b processor_id = 5 -->
-									<?php 
-									
+									<?php
+
 									if(isset ( $_REQUEST ['schedule_add'] ) &&  isset ($_REQUEST['processorId'])){
 										if ($_REQUEST ['schedule_add']=='AddJob' && $_REQUEST['processorId']=='5'){
-										
+
 												add_new_scheduled_jobs_layout(5);
 										}}?>
-										
+
 									<?php update_scheduled_jobs_layout(5);?>
-									
+
 
 								</div>
 							</div>
