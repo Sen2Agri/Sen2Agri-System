@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION sp_insert_product(
     _product_type_id product.product_type_id%TYPE,
     _processor_id product.processor_id%TYPE,
-    _satelitte_id satellite.id%TYPE,
+    _satellite_id satellite.id%TYPE,
     _site_id site.id%TYPE,
     _job_id job.id%TYPE,
     _full_path product.full_path%TYPE,
@@ -16,7 +16,7 @@ BEGIN
     INSERT INTO product(
         product_type_id,
         processor_id,
-        satelitte_id,
+        satellite_id,
         job_id,
         site_id,
         full_path,
@@ -29,7 +29,7 @@ BEGIN
     VALUES (
         _product_type_id,
         _processor_id,
-        _satelitte_id,
+        _satellite_id,
         _job_id,
         _site_id,
         _full_path,

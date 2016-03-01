@@ -800,11 +800,11 @@ int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
     return provider.handleTransactionRetry(__func__, [&] {
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_insert_product(:productType, :processorId, "
-                           ":satelitteId, :siteId, :jobId, :fullPath, :createdTimestamp, :name, "
+                           ":satelliteId, :siteId, :jobId, :fullPath, :createdTimestamp, :name, "
                            ":quicklookImage, :footprint)"));
         query.bindValue(QStringLiteral(":productType"), static_cast<int>(product.productType));
         query.bindValue(QStringLiteral(":processorId"), product.processorId);
-        query.bindValue(QStringLiteral(":satelitteId"), QVariant());
+        query.bindValue(QStringLiteral(":satelliteId"), QVariant());
         query.bindValue(QStringLiteral(":siteId"), product.siteId);
         query.bindValue(QStringLiteral(":jobId"), product.jobId);
         query.bindValue(QStringLiteral(":fullPath"), product.fullPath);
