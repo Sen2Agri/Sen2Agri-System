@@ -48,7 +48,6 @@ CropTypeGlobalExecutionInfos CropTypeHandler::HandleNewTilesList(EventProcessing
     const auto &gdalwarpMem = resourceParameters["resources.gdalwarp.working-mem"];
     const auto &referencePolygons = parameters["reference_polygons"].toString();
 
-    //const auto &cropMask = parameters["crop_mask"].toString();
     auto mission = parameters["processor.l4b.mission"].toString();
     if(mission.length() == 0) mission = "SPOT";
 
@@ -274,8 +273,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
 
     // get the crop mask
-    auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4b.");
-    const auto &cropMask = configParameters["processor.l4b.crop_mask"];
+    const QString &cropMask = parameters["crop_mask"].toString();
     QString cropMaskAbsolutePath = ctx.GetProductAbsolutePath(cropMask);
     QMap<QString, QString> mapCropMasks;
     if (QFileInfo(cropMaskAbsolutePath).isDir()) {
@@ -454,41 +452,54 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
     QDirIterator it(cropMaskProductsFolder, QStringList() << "*", QDir::Dirs);
     while (it.hasNext()) {
         QString subDir = it.next();
+        // get the dir name
+        QString subDirName = QFileInfo(subDir).fileName();
+        if(subDirName == "." || subDirName == "..") {
+            continue;
+        }
         // check the dates of this folder
-        int startDatesIdx = subDir.indexOf("_V");
+        int startDatesIdx = subDirName.indexOf("_V");
         if(startDatesIdx != -1) {
-            QString dateStr = subDir.right(subDir.length() - startDatesIdx);
+            QString dateStr = subDirName.right(subDir.length() - startDatesIdx);
             QStringList datesList = dateStr.split( "_" );
             QString startOfSeasonStr = cfgValues[START_OF_SEASON_CFG_KEY].value;
             if(datesList.size() == 2 && datesList[0] == startOfSeasonStr && datesList[1] == endDate.toString("yyyymmdd")) {
-                cropMaskFolder = cropMaskProductsFolder + "/" + subDir;
+                cropMaskFolder = cropMaskProductsFolder + "/" + subDirName;
                 break;
             }
 
         }
     }
 
-    params.jsonParameters = "{ \"crop_mask_folder\": \"" + cropMaskFolder + "\"}";
+    params.jsonParameters = "{ \"crop_mask\": \"" + cropMaskFolder + "\"}";
 
     return params;
 }
 
 QMap<QString, QString> CropTypeHandler::GetCropMasks(const QString &cropMaskDir) {
     QMap<QString, QString> mapCropMasks;
-    QDirIterator it(cropMaskDir, QStringList() << "*", QDir::Dirs);
+    QString tilesFolder = cropMaskDir + "/TILES/";
+    QDirIterator it(tilesFolder, QStringList() << "*", QDir::Dirs);
     while (it.hasNext()) {
         QString subDir = it.next();
         // get the dir name
         QString dirName = QFileInfo(subDir).fileName();
+        if(dirName == "." || dirName == "..") {
+            continue;
+        }
         // remove the part after _N
         QString cropMaskName = dirName.left(dirName.lastIndexOf("_N"));
         // Extract the tile name from the crop mask name
 
         // Split the name by "_" and search the part having _Txxxxx (_T followed by 5 characters)
         QStringList pieces = cropMaskName.split("_");
-        for (const QString &piece : pieces) {
-            if ((piece.length() == 10) && (piece.at(0) == 'T')) {
-                mapCropMasks[piece.right(piece.length()-1)] = cropMaskName + "/" + cropMaskName + ".tif";
+        if(pieces.length() == 10) {
+            for (const QString &piece : pieces) {
+                if ((piece.length() == 6) && (piece.at(0) == 'T')) {
+                    mapCropMasks[QString("TILE_") + piece.right(piece.length()-1)] = tilesFolder +
+                            dirName + "/IMG_DATA/" + cropMaskName + ".TIF";
+                    break;  // exit for loop after we added one
+                }
             }
         }
     }
