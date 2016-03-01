@@ -310,7 +310,7 @@
 						</div>
 						<div id="l4a" class="panel-collapse collapse">
 							<div class="panel-body">
-								<form role="form" id="l4aform" method="post"
+								<form enctype="multipart/form-data" role="form" id="l4aform" method="post"
 									action="getProcessorNewConfig.php">
 									<div class="row">
 										<div class="col-md-8">
@@ -541,7 +541,7 @@
 						</div>
 						<div id="l4b" class="panel-collapse collapse">
 							<div class="panel-body">
-								<form role="form" id="l4bform" method="post"
+								<form enctype="multipart/form-data" role="form" id="l4bform" method="post"
 									action="getProcessorNewConfig.php">
 									<div class="row">
 										<div class="col-md-8">
@@ -563,12 +563,13 @@
 													id="landsatTiles" name="landsatTiles">
 												</select>
 											</div>
+											
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="refp">Reference polygons:</label>
-												<input type="file" class="form-control" id="refp"
-													name="refp"> <span class="help-block">The reference
-													polygons.</span>
+												<input type="file" class="form-control" id="refp" name="refp">
+												<span class="help-block">The reference polygons.</span>
 											</div>
+											
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="mission">Main mission:</label>
 												<select class="form-control" id="mission" name="mission">
@@ -588,18 +589,20 @@
 													class="help-block">The ratio between the validation and
 													training polygons.</span>
 											</div>
+											
+											
 											<div class="form-group form-group-sm">
-												<label class="control-label" for="inputFiles">Available
-													input files:</label> <select multiple class="form-control"
-													id="inputFiles" name="inputFiles[]">
-												</select> <span class="help-block">The list of products
-													descriptors (xml files).</span>
+												<label class="control-label" for="inputFiles">Available input files:</label>
+												<select multiple class="form-control" id="inputFiles" name="inputFiles[]"></select>
+												<span class="help-block">The list of products descriptors (xml files).</span>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="cropMasks">Crop masks:</label>
 												<select multiple class="form-control" id="cropMasks" name="cropMasks[]"></select>
 												<span class="help-block">The list of crop mask products.</span>
 											</div>
+											
+											
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="resolution">Resolution:</label>
 												<!-- <input type="number" min="0" max="20" step="10"
@@ -974,8 +977,7 @@
 													//refp : "required",
 													'inputFiles[]' : "required",
 													'cropMasks[]' : "required",
-												/*resolution : "required",
-												 */
+													//resolution : "required",
 												},
 												// the errorPlacement has to take the table layout into account
 												errorPlacement : function(
@@ -986,16 +988,16 @@
 												// specifying a submitHandler prevents the default submit, good for the demo
 												submitHandler :function(form) {
 													$.ajax({
-											        url: $(form).attr('action'),
-											        type: $(form).attr('method'),
-											        data: $(form).serialize(),
-											        success: function(response) {
-											           alert("Your form was submitted!");
-									                   //clear inputs after submit
-									                   $("#l4bform")[0].reset();
-									              	   $("#inputFiles").val('');
-													   $("#cropMasks").val('');
-											                 }     
+														url: $(form).attr('action'),
+														type: $(form).attr('method'),
+														data: $(form).serialize(),
+														success: function(response) {
+															alert("Your form was submitted!");
+															//clear inputs after submit
+															$("#l4bform")[0].reset();
+															$("#inputFiles").val('');
+															$("#cropMasks").val('');
+														 }
 											         });
 											 },
 												// set this class to error-labels to indicate valid fields

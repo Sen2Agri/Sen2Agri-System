@@ -1,9 +1,59 @@
 <?php
 require_once ('ConfigParams.php');
 
+function upload_reference_polygons($site_id) {
+	$dbconn = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+	
+	$rows = pg_query($dbconn, "SELECT key, value FROM sp_get_parameters('site.upload_path') WHERE site_id IS NULL")
+			or die(pg_last_error());
+	$result = pg_fetch_array($rows, 0)[1];
+	$upload_target_dir = str_replace("{user}", "", $result);
+	
+	$upload_target_dir = $upload_target_dir . $site_id . "/";
+	echo "</br>Upload reference polygons to: " . $upload_target_dir;
+	
+	if (!is_dir($upload_target_dir)) {
+		mkdir($upload_target_dir, 0755, true);
+	}
+	
+	if($_FILES["refp"]["name"]) {
+		$filename = $_FILES["refp"]["name"];
+		$source = $_FILES["refp"]["tmp_name"];
+		$type = $_FILES["refp"]["type"];
+		
+		$fname = explode(".", $filename);
+		$accepted_types = array('application/zip', 'application/x-zip-compressed', 'multipart/x-zip', 'application/x-compressed');
+		foreach($accepted_types as $mime_type) {
+			if($mime_type == $type) {
+				$okay = true;
+				break;
+			}
+		}
+		
+		$continue = strtolower($fname[1]) == 'zip' ? true : false;
+		if(!$continue) {
+			$message = "The file you are trying to upload is not a .zip file. Please try again.";
+		}
+		
+		$target_path = $upload_target_dir . $filename;  // change this to the correct site path
+		if(move_uploaded_file($source, $target_path)) {
+			$zip = new ZipArchive();
+			$x = $zip->open($target_path);
+			if ($x === true) {
+				$zip->extractTo($upload_target_dir); // change this to the correct site path
+				$zip->close();
+				unlink($target_path);
+			}
+			$message = "Your .zip file was uploaded and unpacked.";
+		} else {	
+			$message = "There was a problem with the upload. Please try again.";
+		}
+	}
+}
+
 function insertjob($name, $description, $processor_id, $site_id, $start_type_id, $parameters, $configuration) {
 	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
-	
+
 	$sql1 = "SELECT sp_submit_job($1,$2,$3,$4,$5,$6,$7)";
 	$res = pg_prepare ( $db, "my_query", $sql1 );
 	$res = pg_execute ( $db, "my_query", array (
@@ -16,25 +66,25 @@ function insertjob($name, $description, $processor_id, $site_id, $start_type_id,
 			$configuration 
 	) ) or die ("An error occurred.");
 	
-
+	
 	 // send notification through CURL
 	 try {
-	 //url of the service
-	 $url= ConfigParams::$SERVICES_NOTIFY_ORCHESTRATOR_URL;
-	
-	 //initialise connection
-	 $ch = curl_init();
-	 curl_setopt($ch, CURLOPT_URL, $url);
-	 curl_setopt($ch, CURLOPT_POST, 1);
-	 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-	
-	 $response = curl_exec($ch);
-	 curl_close($ch);
-
+		 //url of the service
+		 $url= ConfigParams::$SERVICES_NOTIFY_ORCHESTRATOR_URL;
+		
+		 //initialise connection
+		 $ch = curl_init();
+		 curl_setopt($ch, CURLOPT_URL, $url);
+		 curl_setopt($ch, CURLOPT_POST, 1);
+		 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		
+		 $response = curl_exec($ch);
+		 curl_close($ch);
+		 
 	 } catch (Exception $e) {
 	 }
 	 
-	 header("Location: config.php"); /* Redirect */
+	 header("Location: config.php");
 	 exit();
 }
 
@@ -333,15 +383,19 @@ elseif (isset ( $_POST ['l4a'] )) {
 	$name = "l4a_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for l4a";
 	
+	upload_reference_polygons($siteId);
 	insertjob ( $name, $description, 4, $siteId, 2, $json_param, $json_config );
 } /* -------------------------------------------------------l4b------------------------------------------------------ */
 elseif (isset ( $_POST ['l4b'] )) {
+
 	$siteId = $_POST ['siteId'];
 	
 	$input_products = $_POST ['inputFiles'];
+	$crop_mask = $_POST ['cropMasks'];
 	$resolution = $_POST ['resolution'];
 	
-	$refp = $_POST ['refp'];
+	//$refp = $_POST ['refp'];
+	$refp = $_FILES["refp"]["name"];
 	$mission = $_POST ['mission'];
 	$ratio = $_POST ['ratio'];
 	$trm = $_POST ['trm'];
@@ -402,11 +456,12 @@ elseif (isset ( $_POST ['l4b'] )) {
 			array (
 					"key" => "processor.l4b.rfmin",
 					"value" => $rfmin 
-			) 
+			)
 	) );
 	
 	$json_param = json_encode ( array (
 			"input_products" => $input_products,
+			"crop_mask" => $crop_mask,
 			"resolution" => $resolution 
 	) );
 	
@@ -418,6 +473,7 @@ elseif (isset ( $_POST ['l4b'] )) {
 	$name = "l4b_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for l4b";
 	
+	upload_reference_polygons($siteId);
 	insertjob ( $name, $description, 5, $siteId, 2, $json_param, $json_config );
 }
 
