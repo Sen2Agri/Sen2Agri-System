@@ -71,7 +71,6 @@ def checkIfSeason(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearArra
             yearArray[1] = currentYear + 1
         else:
             if currentMonth >= 1:
-                #startSeasonYear = currentYear - 1
                 yearArray[0] = currentYear - 1
     log(logDir, "StartSeasonYear:{} | EndSeasonYear:{}".format(yearArray[0], yearArray[1]))
     currentDate = datetime.date.today()

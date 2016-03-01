@@ -15,6 +15,7 @@ from os.path import isfile, isdir, join
 import glob
 import sys
 import time, datetime
+from time import gmtime, strftime
 import pipes
 import shutil
 import psycopg2
@@ -48,10 +49,10 @@ def run_command(cmd_array, use_shell=False):
 def log(location, info, log_filename = None):
     if log_filename == None:
         log_filename = "log.txt"
-    print("log_filename{}".format(log_filename))
     try:
         logfile = os.path.join(location, log_filename)
         if DEBUG:
+            print("logfile: {}".format(logfile))
             print("{}".format(info))
         log = open(logfile, 'a')
         log.write("{}:{}\n".format(str(datetime.datetime.now()),str(info)))
@@ -76,6 +77,27 @@ def create_recursive_dirs(dir_name):
         print("Can't create the directory due to access rights {}".format(dir_name))
         return False
     return True
+
+
+def get_product_info(product_name):
+    acquisition_date = None
+    sat_id = 0
+    print("product_name = {}".format(product_name))
+    if product_name.startswith("S2"):
+        m = re.match("\w+_V(\d{8}T\d{6})_\w+.SAFE", product_name)
+        if m != None:
+            sat_id = 1
+            acquisition_date = m.group(1)
+    elif product_name.startswith("LC8"):
+        m = re.match("LC8\d{6}(\d{7})LGN\d{2}", product_name)
+        if m != None:
+            sat_id = 2
+            acquisition_date = m.group(1)
+            acquisition_date = strftime("%Y%m%dT%H%M%S", gmtime())
+    print("get_product_info = {}".format(acquisition_date))
+    return sat_id and (sat_id, acquisition_date)
+
+
 class Config(object):
     def __init__(self):
         self.host = ""
@@ -259,7 +281,7 @@ class L1CInfo(object):
         self.database_disconnect()
         return True
 
-    def mark_product_as_present(self, l1c_id, processor_id, site_id, full_path, product_name, footprint):
+    def mark_product_as_present(self, l1c_id, processor_id, site_id, full_path, product_name, footprint, sat_id, acquisition_date):
         #input params:
         #l1c_id is the id for the found L1C product in the downloader_history table. It shall be marked as being processed
         #product type by default is 1
@@ -277,6 +299,7 @@ class L1CInfo(object):
             self.cursor.execute("""update downloader_history set processed=true where id=%(l1c_id)s :: smallint """, {"l1c_id" : l1c_id})
             self.cursor.execute("""select * from sp_insert_product(%(product_type_id)s :: smallint,
                                %(processor_id)s :: smallint, 
+                               %(satellite_id)s :: smallint, 
                                %(site_id)s :: smallint, 
                                %(job_id)s :: smallint, 
                                %(full_path)s :: character varying,
@@ -287,12 +310,13 @@ class L1CInfo(object):
                                 {
                                     "product_type_id" : 1,
                                     "processor_id" : processor_id,
+                                    "satellite_id" : sat_id,
                                     "site_id" : site_id,
                                     "job_id" : None,
                                     "full_path" : full_path,
-                                    "created_timestamp" : None,
+                                    "created_timestamp" : acquisition_date,
                                     "name" : product_name,
-                                    "quicklook_image" : None,
+                                    "quicklook_image" : "mosaic.jpg",
                                     "footprint" : footprint
                                 })
             self.conn.commit()
