@@ -255,19 +255,27 @@ div.panel_scheduled_container {
 div.panel_scheduled {
 	height: 100%;
 	width: 100%;
+	overflow: hidden;
+	margin-bottom: 0px;
+}
+
+div.panel_scheduled_job {
+	height: 100%;
+	width: 100%;
 	overflow: auto;
 	margin-bottom: 0px;
 }
 
 div.panel_job_container {
-	margin-top: 3px; 
-	/*height: 71%;*/
+	/*margin-top: 3px; 
+	height: 71%;*/
 	width: 98%;
 	margin-right: 2%;
 }
 
-.div-scheduled{
+.span-scheduled{
 	margin-left:5px;
+	/*font-weight:200;*/
    /* width:50px;*/
 }
 

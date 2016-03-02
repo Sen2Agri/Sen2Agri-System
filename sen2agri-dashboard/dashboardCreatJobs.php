@@ -19,12 +19,12 @@ function add_new_scheduled_jobs_layout($processorId){
 			"<div class=\"panel panel-default panel_job\" id=\"pnl_l2a_job\">".
 		//	"<div class=\"panel-heading\"  id=\"job_name\"></div>".
 			"<form role=\"form\" id=\"l2aform\" name=\"l2aform\" method=\"post\" action=\"dashboard.php\" style=\"padding:10px;\">".
-			"<span class=\"form-group form-group-sm div-scheduled\ style=\" max-width: 1000px;\">".
+			"<span class=\"form-group form-group-sm span-scheduled\ style=\" max-width: 1000px;\">".
 			"<label class=\"control-label control-max-width\" for=\"jobname\">Job Name: <input type=\"text\" name=\"jobname\"  class=\"schedule_format\">".
 			"</label>".
 			"</span>".
 			"<input type=\"hidden\" value=\"".$processorId."\" name=\"processorId\">".
-			" <span class=\"form-group form-group-sm div-scheduled\">".
+			" <span class=\"form-group form-group-sm span-scheduled\">".
 			"<label class=\"control-label control-max-width\" for=\"sitename\">Site: " .
 			"<span class=\"schedule_format\">".
 			"<select id=\"sitename\" name=\"sitename\">".
@@ -33,7 +33,7 @@ function add_new_scheduled_jobs_layout($processorId){
 			"</select>".
 			"</span></label>".
 			"</span>".	
-			" <span class=\"form-group form-group-sm div-scheduled\">".
+			" <span class=\"form-group form-group-sm span-scheduled\">".
 			"<label class=\"control-label control-max-width\" for=\"schedule\"> Schedule: " .
 			"<span class=\"schedule_format\">".
 			"<select id=\"schedule_add".$processorId."\" name=\"schedule_add\" onchange=\"selectedScheduleAdd(".$processorId.")\">".
@@ -44,19 +44,19 @@ function add_new_scheduled_jobs_layout($processorId){
 			"</select>".
 			"</span></label>".
 			"</span>".
-			"<span class=\"form-group form-group-sm div-scheduled\" id=\"div_startdate".$processorId."\" style=\"display:none\">".
+			"<span class=\"form-group form-group-sm span-scheduled\" id=\"div_startdate".$processorId."\" style=\"display:none\">".
 			"<label class=\"control-label\" for=\"startdate\" style=\"display:inline-block;width:150px;\">Date: ".
-			"<input type=\"text\" name=\"startdate\" class=\"startdate\"> ".
+			"<input type=\"text\" name=\"startdate\" class=\"startdate schedule_format\"> ".
 			"</label></span>".
-			"<span class=\"form-group form-group-sm div-scheduled\" id=\"div_repeatafter".$processorId."\" style=\"display:none\">".
+			"<span class=\"form-group form-group-sm span-scheduled\" id=\"div_repeatafter".$processorId."\" style=\"display:none\">".
 			"<label class=\"control-label\" for=\"repeatafter\" style=\"display:inline-block;width:150px;\">Repeat after: ".
-			"<input id=\"repeatafter\"  name=\"repeatafter\" value=\"\" />".
+			"<input class=\"schedule_format\" id=\"repeatafter\"  name=\"repeatafter\" value=\"\" />".
 			"</label> </span>".
-			"<span class=\"form-group form-group-sm div-scheduled\" id=\"div_oneverydate".$processorId."\" style=\"display:none\">".
+			"<span class=\"form-group form-group-sm span-scheduled\" id=\"div_oneverydate".$processorId."\" style=\"display:none\">".
 			"<label class=\"control-label\" for=\"oneverydate\" style=\"display:inline-block;width:150px;\">On every: ".
-			"<input id=\"oneverydate\" name=\"oneverydate\" value=\"\"/>".
+			"<input class=\"schedule_format\" id=\"oneverydate\" name=\"oneverydate\" value=\"\"/>".
 			"</label></span>".
-			"<span class=\"form-group form-group-sm div-scheduled schedule_format\">".
+			"<span class=\"form-group form-group-sm span-scheduled schedule_format\">".
 			"<input type=\"submit\" class=\"btn btn-primary\" name=\"schedule_saveJob\" value=\"Save\">".
 			"</span>".
 			"</form>".
@@ -106,36 +106,36 @@ function update_scheduled_jobs_layout($processor_id)
 		$div = "<div class=\"panel_job_container\" id=\"pnl_l2a_job_container\">".
 		"<div class=\"panel panel-default panel_job\" id=\"pnl_l2a_job\">".
 		"<form class=\"form-inline\" role=\"form\" id=\"l2aform\" name=\"l2aform\" method=\"post\" action=\"".$action."\" style=\"padding:10px;\">".
-		"<span class=\"form-group form-group-sm div-scheduled\" style=\" max-width: 1000px;\">".
+		"<span class=\"form-group form-group-sm span-scheduled\" style=\" max-width: 1000px;\">".
 		"<label class=\"control-label control-max-width\" for=\"jobname\">Job Name: <span class=\"schedule_format\">".$row[1]."</span>".
 		"</label>".
 		"<input type=\"hidden\" value=\"".$row[0]."\" name=\"scheduledID\">".
-		"<span class=\"form-group form-group-sm div-scheduled\">".
+		"<span class=\"form-group form-group-sm span-scheduled\">".
 		"<label class=\"control-label control-max-width\" for=\"siteName\">Site: <span class=\"schedule_format\">".$row[2]."</span></label>".
 		"</span>".
-		" <span class=\"form-group form-group-sm div-scheduled\">".
+		" <span class=\"form-group form-group-sm span-scheduled\">".
 		"<label class=\"control-label control-max-width\" for=\"schedule\"> Schedule:" .
 		"<span class=\"schedule_format\">".
-		"<select id=\"schedule\" name=\"schedule\" onchange=\"selectedSchedule(".$row[0].")\">".
+		"<select id=\"schedule".$row[0]."\" name=\"schedule\" onchange=\"selectedSchedule(".$row[0].")\">".
 		"<option value=\"0\" .(($row[3] == 0) ? \" selected\" : \"\").>Once</option>".
 		"<option value=\"1\" .(($row[3] == 1) ? \" selected\" : \"\").>Cycle</option>".
 		"<option value=\"2\" .(($row[3] == 2) ? \" selected\" : \"\").>Repeat</option>".
 		"</select>".
 		"</span></label> ".
 		"</span>".
-		"<span class=\"form-group form-group-sm div-scheduled\" id=\"div_startdate".$row[0]."\" style=\"".(($row[3] == 0 || $row[3] == 1 || $row[3] == 2) ?  "display:inline" : "display:none")."\">".
+		"<span class=\"form-group form-group-sm span-scheduled\" id=\"div_startdate".$row[0]."\" style=\"".(($row[3] == 0 || $row[3] == 1 || $row[3] == 2) ?  "display:inline-block" : "display:none")."\">".
 		"<label class=\"control-label \" for=\"startdate\" style=\"display:inline-block;width:150px;\">Date: ".
-		"<input type=\"text\" name=\"startdate\"  class=\"startdate\" value=\"".$row[4]."\" > ".
+		"<input class=\"startdate schedule_format\" type=\"text\" name=\"startdate\" value=\"".$row[4]."\" > ".
 		"</label></span>".
-		"<span class=\"form-group form-group-sm div-scheduled\" id=\"div_repeatafter".$row[0]."\" style=\"".(($row[3] == 1) ?  "display:inline" : "display:none")."\">".
+		"<span class=\"form-group form-group-sm span-scheduled\" id=\"div_repeatafter".$row[0]."\" style=\"".(($row[3] == 1) ?  "display:inline-block" : "display:none")."\">".
 		"<label class=\"control-label\" for=\"repeatafter\ style=\"display:inline-block;width:150px;\">Repeat after : ".
-		"<input id=\"repeatafter\"  name=\"repeatafter\" value=\"".$row[5]."\" />".
+		"<input class=\"schedule_format\" id=\"repeatafter\"  name=\"repeatafter\" value=\"".$row[5]."\" />".
 		"</label></span>".
-		"<span class=\"form-group form-group-sm div-scheduled\" id=\"div_oneverydate".$row[0]."\" style=\"".(($row[3] == 2) ?  "display:inline" : "display:none")."\">".
+		"<span class=\"form-group form-group-sm span-scheduled\" id=\"div_oneverydate".$row[0]."\" style=\"".(($row[3] == 2) ?  "display:inline-block" : "display:none")."\">".
 		"<label class=\"control-label\" for=\"oneverydate\ style=\"display:inline-block;width:150px;\">On every: ".
-		"<input id=\"oneverydate\" name=\"oneverydate\" value=\"$row[6]\"/>".
+		"<input class=\"schedule_format\" id=\"oneverydate\" name=\"oneverydate\" value=\"$row[6]\"/>".
 		"</label></span>".
-		"<span class=\"form-group form-group-sm div-scheduled schedule_format\">".
+		"<span class=\"form-group form-group-sm span-scheduled schedule_format\">".
 		"<input type=\"submit\" class=\"btn btn-primary\" name=\"schedule_submit\" value=\"Save\" style=\"float:right;\">".
 		"</span>".
 		"</form>".
