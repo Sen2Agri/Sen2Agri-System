@@ -850,43 +850,29 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
         params.jsonParameters = "{ \"reference_raster\": \"" + referenceRasterFile + "\"}";
     }
 
+    QDateTime seasonStartDate;
+    QDateTime seasonEndDate;
+    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
     // Get the start and end date for the production
-    ConfigurationParameterValueMap seasonCfgValues = ctx.GetConfigurationParameters(SEASON_CFG_KEY_PREFIX, -1, requestOverrideCfgValues);
-    QDateTime startSeasonDate = QDateTime::fromString(seasonCfgValues[START_OF_SEASON_CFG_KEY].value, "yyyymmdd");
-    QDateTime endSeasonDate = QDateTime::fromString(seasonCfgValues[END_OF_SEASON_CFG_KEY].value, "yyyymmdd");
     QDateTime endDate = QDateTime::fromTime_t(scheduledDate);
     QDateTime startDate;
 
-    qint64 daysFromStartOfSeason = startSeasonDate.daysTo(endDate);
-    // if we are 1 month after the end of season, we do no processing
-    if(endSeasonDate.daysTo(endDate) > 30) {
-        return params;
+    startDate = seasonStartDate;
+
+    QString movingWindowStr = cfgValues["processor.l4a.moving_window_value"].value;
+    int movingWindow = 0;
+    if(movingWindowStr.length() > 0) {
+        movingWindow = movingWindowStr.toInt();
+    } else {
+        movingWindow = 12;
+    }
+    // we have monthly production so we use the season date or the moving window of 12 months (or specified)
+    if(endDate.addMonths(-movingWindow) > seasonStartDate) {
+        startDate = endDate.addMonths(-movingWindow);
+    } else {
+        startDate = seasonStartDate;
     }
 
-    // if we have less than aprox 6 months from the start of the season, we do no processing
-    // as the production starts 6 months after the start of the season
-    if(daysFromStartOfSeason < (5 * 30) + 15 ) {
-        return params;
-    } else {
-        // we have the first production
-        if(daysFromStartOfSeason < (6 * 30) + 10 ) {
-            startDate = startSeasonDate;
-        } else {
-            QString movingWindowStr = cfgValues["processor.l4a.moving_window_value"].value;
-            int movingWindow = 0;
-            if(movingWindowStr.length() > 0) {
-                movingWindow = movingWindowStr.toInt();
-            } else {
-                movingWindow = 12;
-            }
-            // we have monthly production so we use the season date or the moving window of 12 months (or specified)
-            if(endDate.addMonths(-movingWindow) > startSeasonDate) {
-                startDate = endDate.addMonths(-movingWindow);
-            } else {
-                startDate = startSeasonDate;
-            }
-        }
-    }
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
     if(params.productList.size() > 0) {
         params.isValid = true;

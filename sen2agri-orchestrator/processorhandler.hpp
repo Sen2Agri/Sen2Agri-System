@@ -34,6 +34,8 @@ protected:
     QString GetProductFormatterFootprint(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetTileMainImageFilePath(const QString &tileMetadataPath);
     QString GetProductTypeFromTile(const QString &tileMetadataPath);
+    bool GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,  QDateTime &startTime, QDateTime &endTime,
+                                const ConfigurationParameterValueMap &requestOverrideCfgValues);
 
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,

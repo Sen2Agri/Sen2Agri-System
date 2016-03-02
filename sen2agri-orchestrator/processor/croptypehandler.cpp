@@ -437,11 +437,12 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
     params.isValid = false;
 
     // Get the start and end date for the production
-    ConfigurationParameterValueMap cfgValues = ctx.GetConfigurationParameters(START_OF_SEASON_CFG_KEY, -1, requestOverrideCfgValues);
-    QDateTime startSeasonDate = QDateTime::fromString(cfgValues[START_OF_SEASON_CFG_KEY].value, "yyyymmdd");
+    QDateTime seasonStartDate;
+    QDateTime seasonEndDate;
+    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
     QDateTime endDate = QDateTime::fromTime_t(scheduledDate);
 
-    params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startSeasonDate, endDate);
+    params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, seasonStartDate, endDate);
     if(params.productList.size() > 0) {
         params.isValid = true;
     }
@@ -462,7 +463,7 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
         if(startDatesIdx != -1) {
             QString dateStr = subDirName.right(subDir.length() - startDatesIdx);
             QStringList datesList = dateStr.split( "_" );
-            QString startOfSeasonStr = cfgValues[START_OF_SEASON_CFG_KEY].value;
+            QString startOfSeasonStr = seasonStartDate.toString("yyyymmdd");
             if(datesList.size() == 2 && datesList[0] == startOfSeasonStr && datesList[1] == endDate.toString("yyyymmdd")) {
                 cropMaskFolder = cropMaskProductsFolder + "/" + subDirName;
                 break;

@@ -187,7 +187,7 @@ QString ProcessorHandler::GetProductFormatterFootprint(EventProcessingContext &c
 
         }
     }
-    return "POLYGON((0.0 0.0, 0.0 0.0))";
+    return "POLYGON((0.0 0.0, 0.0 0.0, 0.0 0.0, 0.0 0.0, 0.0 0.0))";
 }
 
 QString ProcessorHandler::GetTileMainImageFilePath(const QString &tileMetadataPath) {
@@ -231,4 +231,63 @@ QString ProcessorHandler::GetProductTypeFromTile(const QString &tileMetadataPath
     return "";
 }
 
+bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,
+                                              QDateTime &startTime, QDateTime &endTime,
+                                              const ConfigurationParameterValueMap &requestOverrideCfgValues) {
+    QDate currentDate = QDate::currentDate();
+    int curYear = currentDate.year();
 
+    // first, get the values from general section
+    ConfigurationParameterValueMap seasonCfgValues = ctx.GetConfigurationParameters(SEASON_CFG_KEY_PREFIX, siteId, requestOverrideCfgValues);
+    QDate genStartSummerSeasonDate = QDate::fromString(seasonCfgValues[START_OF_SEASON_CFG_KEY].value, "yyyyMMdd");
+    QDate genEndSummerSeasonDate = QDate::fromString(seasonCfgValues[END_OF_SEASON_CFG_KEY].value, "yyyyMMdd");
+    if(genStartSummerSeasonDate.isValid() && genEndSummerSeasonDate.isValid()) {
+        startTime = QDateTime(genStartSummerSeasonDate);
+        endTime = QDateTime(genEndSummerSeasonDate);
+        return true;
+    }
+
+
+    seasonCfgValues = ctx.GetConfigurationParameters("downloader.", siteId, requestOverrideCfgValues);
+    QDate startSummerSeasonDate = QDate::fromString(seasonCfgValues["downloader.summer-season.start"].value, "MMdd").addYears(curYear-1900);
+    QDate endSummerSeasonDate = QDate::fromString(seasonCfgValues["downloader.summer-season.end"].value, "MMdd").addYears(curYear-1900);
+    QDate startWinterSeasonDate = QDate::fromString(seasonCfgValues["downloader.winter-season.start"].value, "MMdd").addYears(curYear-1900);
+    QDate endWinterSeasonDate = QDate::fromString(seasonCfgValues["downloader.winter-season.end"].value, "MMdd").addYears(curYear-1900);
+    if(startSummerSeasonDate.isValid() && endSummerSeasonDate.isValid()) {
+        if(currentDate >= startSummerSeasonDate && currentDate <= endSummerSeasonDate) {
+            startTime = QDateTime(startSummerSeasonDate);
+            endTime = QDateTime(endSummerSeasonDate);
+            return true;
+        }
+    }
+    if(startWinterSeasonDate.isValid() && endWinterSeasonDate.isValid()) {
+        if(currentDate >= startWinterSeasonDate && currentDate <= endWinterSeasonDate) {
+            startTime = QDateTime(startWinterSeasonDate);
+            endTime = QDateTime(endWinterSeasonDate);
+            return true;
+        }
+    }
+
+    // check the default values
+    seasonCfgValues = ctx.GetConfigurationParameters("downloader.", -1, requestOverrideCfgValues);
+    QDate defStartSummerSeasonDate = QDate::fromString(seasonCfgValues["downloader.summer-season.start"].value, "MMdd").addYears(curYear-1900);
+    QDate defEndSummerSeasonDate = QDate::fromString(seasonCfgValues["downloader.summer-season.end"].value, "MMdd").addYears(curYear-1900);
+    QDate defStartWinterSeasonDate = QDate::fromString(seasonCfgValues["downloader.winter-season.start"].value, "MMdd").addYears(curYear-1900);
+    QDate defEndWinterSeasonDate = QDate::fromString(seasonCfgValues["downloader.winter-season.end"].value, "MMdd").addYears(curYear-1900);
+
+    if(defStartSummerSeasonDate.isValid() && defEndSummerSeasonDate.isValid()) {
+        if(currentDate >= defStartSummerSeasonDate && currentDate <= defEndSummerSeasonDate) {
+            startTime = QDateTime(defStartSummerSeasonDate);
+            endTime = QDateTime(defEndSummerSeasonDate);
+            return true;
+        }
+    }
+    if(defStartWinterSeasonDate.isValid() && defEndWinterSeasonDate.isValid()) {
+        if(currentDate >= defStartWinterSeasonDate && currentDate <= defEndWinterSeasonDate) {
+            startTime = QDateTime(defStartWinterSeasonDate);
+            endTime = QDateTime(defEndWinterSeasonDate);
+            return true;
+        }
+    }
+    return false;
+}
