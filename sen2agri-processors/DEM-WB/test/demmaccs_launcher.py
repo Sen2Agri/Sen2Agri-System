@@ -156,7 +156,7 @@ for l1c in l1c_list:
                 log(output_path,"Could not get the acquisition date from the product name {}".format(output_path), general_log_filename)
     else:
         log(output_path, "demmaccs.py script didn't work!", general_log_filename)
-    l1c_db.set_processed_product(l1c[0], l2a_created, 1, l1c[1], output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date)
+    l1c_db.set_processed_product(l2a_created, l1c[0], 1, l1c[1], output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date)
 
 
 
