@@ -255,19 +255,27 @@ div.panel_scheduled_container {
 div.panel_scheduled {
 	height: 100%;
 	width: 100%;
+	overflow: hidden;
+	margin-bottom: 0px;
+}
+
+div.panel_scheduled_job {
+	height: 100%;
+	width: 100%;
 	overflow: auto;
 	margin-bottom: 0px;
 }
 
 div.panel_job_container {
-	margin-top: 3px; 
-	/*height: 71%;*/
+	/*margin-top: 3px; 
+	height: 71%;*/
 	width: 98%;
 	margin-right: 2%;
 }
 
-.div-scheduled{
+.span-scheduled{
 	margin-left:5px;
+	/*font-weight:200;*/
    /* width:50px;*/
 }
 
@@ -340,27 +348,10 @@ div.pop_up #close_button {
 	color: green;
 }
 
-/*
-.form-group-sm {
-	height: 22px;
-}
-
-#div_startdate {
-	display: none;
-}
-
-#div_repeatafter {
-	display: none;
-}
-
-#div_oneverydate {
-	display: none;
-}
-*/
 
 .control-max-width{
 	display:inline-block;
-	width:140px;
+	width:150px;
 }
 .form-group-sm .form-control {
 	height: 22px;
@@ -370,12 +361,7 @@ div.pop_up #close_button {
 	height: 22px;
 	line-height: 22px;
 }
-/*
-label.error {
-	color: #ff0000;
-	font-size: 12px;
-}
-*/
+
 /* LOGIN STYLES -------------------------------------------------- */
 #signin {
 	display: block;
@@ -445,7 +431,7 @@ label.error {
 .schedule_format{
 	font-weight:200;
 	padding-left: 4px;
-	padding-right: 10px;
+	/*padding-right: 10px;*/
 }
 
 input.right {
