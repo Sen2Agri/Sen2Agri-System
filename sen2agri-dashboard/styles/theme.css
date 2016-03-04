@@ -144,17 +144,29 @@ p#subtitle {
 }
 
 #menu ul li {
+    cursor: default;
     display: block;
     float: left;
     padding-right: 50px;
-}
-
-#menu ul li a {
     font: 22px/40px "Roboto Condensed", Arial, Helvetica, sans-serif;
     text-transform: lowercase;
+}
+
+#menu ul.activemenu li a {
     text-decoration: none;
     text-shadow: 0px -1px 0px #607725;
     color: #FFFFFF;
+	cursor: pointer;
+}
+
+#menu ul.activemenu li a:hover {
+	text-shadow: 0px 1px 0px #607725;
+	color: yellow;
+}
+
+#menu ul.activemenu li a:active {
+	color: yellow;
+	text-shadow: 0px -1px 0px #607725;
 }
 
 /* main */
@@ -180,7 +192,7 @@ p#subtitle {
 #content {
     float: left;
     width: 540px;
-    padding: 40px 0 0 0;
+    padding: 0;
 }
 
 #content .post {

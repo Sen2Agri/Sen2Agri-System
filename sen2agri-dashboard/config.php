@@ -1,4 +1,4 @@
-﻿<?php include 'master.php'; ?>
+﻿<?php include "master.php"; ?>
 <div id="main">
 	<div id="main2">
 		<div id="main3">
@@ -692,9 +692,6 @@
 <!-- main2 -->
 <!-- main3 -->
 
-<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js"></script>
-<script
-	src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
 <script src="libraries/jquery-validate/jquery.validate.min.js"></script>
 <script src="libraries/jquery-validate/additional-methods.min.js"></script>
 <script src="scripts/config.js"></script>
@@ -1019,4 +1016,4 @@
 											});
 						});
 	</script>
-<?php include 'ms_foot.php'; ?>
+<?php include "ms_foot.php"; ?>

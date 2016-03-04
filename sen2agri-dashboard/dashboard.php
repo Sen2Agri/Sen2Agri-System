@@ -1,4 +1,4 @@
-﻿<?php include 'master.php';?>
+﻿<?php include "master.php"; ?>
 <?php
 
 // Submited add new job; insert job in database with id $schedule_id
@@ -502,17 +502,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) == 'Save') {
 		</div>
 	</div>
 </div>
-<!-- main -->
-<!-- main2 -->
-<!-- main3 -->
 
-<script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js"></script>
-<!--<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>-->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
-<script src="libraries/flot-0.8.3/jquery.flot.min.js"></script>
-<script src="libraries/flot-0.8.3/jquery.flot.time.min.js"></script>
-<script src="libraries/flot-0.8.3/jquery.flot.stack.min.js"></script>
-<script src="libraries/nvd3-1.1.11/nv.d3.js"></script>
 <script src="scripts/config.js"></script>
 <script src="scripts/helpers.js"></script>
 <script src="scripts/processing_functions.js"></script>
@@ -583,4 +573,4 @@ if (isset ( $_REQUEST ['schedule_submit'] ) == 'Save') {
 	</script>
 <!--end datepicker -->
 
-<?php include 'ms_foot.php'; ?>
+<?php include "ms_foot.php"; ?>

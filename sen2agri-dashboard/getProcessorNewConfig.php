@@ -1,5 +1,6 @@
 <?php
-require_once ('ConfigParams.php');
+session_start();
+require_once ("ConfigParams.php");
 
 function insertjob($name, $description, $processor_id, $site_id, $start_type_id, $parameters, $configuration) {
 	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );

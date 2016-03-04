@@ -444,7 +444,32 @@ input.right {
 	padding-right: 4px;
 
 }
+
+.debug {
+	color: white;
+	font-size: 12px;
+	text-align: left;
+}
+
 /* END LOGIN STYLES ---------------------------------------------- */
+.list-group {
+    width: 800px;
+	font-size: 12px;
+}
+
 .list-group-item {
-    padding: 5px 15px;
+    padding: 3px 10px;
+}
+
+.tree {
+	width: 370px;
+	height:550px;
+	overflow: scroll;
+	border: 1px solid #94BA49;
+}
+
+.map {
+	width: 650px;
+	height:550px;
+	border: 1px solid #94BA49;
 }
