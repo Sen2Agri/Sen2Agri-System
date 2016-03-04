@@ -431,7 +431,7 @@ div.pop_up #close_button {
 .schedule_format{
 	font-weight:200;
 	padding-left: 4px;
-	padding-right: 10px;
+	/*padding-right: 10px;*/
 }
 
 input.right {
