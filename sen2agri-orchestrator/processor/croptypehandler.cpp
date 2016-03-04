@@ -385,7 +385,8 @@ void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 QDateTime::currentDateTimeUtc(),
                                 prodName,
                                 quicklook,
-                                footPrint});
+                                footPrint,
+                                TileList() });
 
             // Now remove the job folder containing temporary files
             // TODO: Reinsert this line - commented only for debug purposes

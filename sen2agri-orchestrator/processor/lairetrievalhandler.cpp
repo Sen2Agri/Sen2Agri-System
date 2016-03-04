@@ -492,7 +492,8 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 QDateTime::currentDateTimeUtc(),
                                 prodName,
                                 quicklook,
-                                footPrint});
+                                footPrint,
+                                TileList() });
 
             // Now remove the job folder containing temporary files
             //RemoveJobFolder(ctx, event.jobId);

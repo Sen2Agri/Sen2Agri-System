@@ -8,6 +8,7 @@ CREATE TABLE product
   site_id smallint NOT NULL,
   full_path varchar NOT NULL,
   created_timestamp timestamp with time zone NOT NULL DEFAULT now(),
+  tiles character varying[] NOT NULL,
   is_archived boolean DEFAULT FALSE,
   archived_timestamp timestamp with time zone,
   CONSTRAINT product_pkey PRIMARY KEY (id)

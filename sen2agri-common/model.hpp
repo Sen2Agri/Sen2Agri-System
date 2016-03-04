@@ -772,6 +772,8 @@ Q_DECLARE_METATYPE(StepConsoleOutputList)
 QDBusArgument &operator<<(QDBusArgument &argument, const StepConsoleOutput &stepOutput);
 const QDBusArgument &operator>>(const QDBusArgument &argument, StepConsoleOutput &stepOutput);
 
+typedef QList<QString> TileList;
+
 class NewProduct
 {
 public:
@@ -784,6 +786,7 @@ public:
     QString name;
     QString quicklookImage;
     QString footprint;
+    TileList tiles;
 
     NewProduct();
     NewProduct(ProductType productType,
@@ -794,7 +797,8 @@ public:
                QDateTime createdTimestamp,
                QString name,
                QString quicklookImage,
-               QString footprint);
+               QString footprint,
+               TileList tiles);
 
     static void registerMetaTypes();
 };

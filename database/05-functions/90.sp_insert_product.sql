@@ -8,7 +8,8 @@ CREATE OR REPLACE FUNCTION sp_insert_product(
     _created_timestamp product.created_timestamp%TYPE,
     _name product.name%TYPE,
     _quicklook_image product.quicklook_image%TYPE,
-    _footprint GEOGRAPHY
+    _footprint GEOGRAPHY,
+    _tiles JSON
 ) RETURNS product.id%TYPE
 AS $$
 DECLARE return_id product.id%TYPE;
@@ -24,7 +25,8 @@ BEGIN
         "name",
         quicklook_image,
         footprint,
-        geog
+        geog,
+        tiles
     )
     VALUES (
         _product_type_id,
@@ -39,7 +41,8 @@ BEGIN
         (SELECT '(' || string_agg(REPLACE(replace(ST_AsText(geom) :: text, 'POINT', ''), ' ', ','), ',') || ')'
          from ST_DumpPoints(ST_Envelope(_footprint :: geometry))
          WHERE path[2] IN (1, 3)) :: POLYGON,
-         _footprint
+         _footprint,
+        array(select tile :: character varying from json_array_elements_text(_tiles) tile)
     )
     RETURNING id INTO return_id;
 

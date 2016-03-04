@@ -1502,7 +1502,8 @@ NewProduct::NewProduct(ProductType productType,
                        QDateTime createdTimestamp,
                        QString name,
                        QString quicklookImage,
-                       QString footprint)
+                       QString footprint,
+                       TileList tiles)
     : productType(productType),
       processorId(processorId),
       siteId(siteId),
@@ -1511,7 +1512,8 @@ NewProduct::NewProduct(ProductType productType,
       createdTimestamp(std::move(createdTimestamp)),
       name(std::move(name)),
       quicklookImage(std::move(quicklookImage)),
-      footprint(std::move(footprint))
+      footprint(std::move(footprint)),
+      tiles(std::move(tiles))
 {
 }
 
