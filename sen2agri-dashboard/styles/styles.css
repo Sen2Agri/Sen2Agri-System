@@ -348,27 +348,10 @@ div.pop_up #close_button {
 	color: green;
 }
 
-/*
-.form-group-sm {
-	height: 22px;
-}
-
-#div_startdate {
-	display: none;
-}
-
-#div_repeatafter {
-	display: none;
-}
-
-#div_oneverydate {
-	display: none;
-}
-*/
 
 .control-max-width{
 	display:inline-block;
-	width:140px;
+	width:150px;
 }
 .form-group-sm .form-control {
 	height: 22px;
@@ -378,12 +361,7 @@ div.pop_up #close_button {
 	height: 22px;
 	line-height: 22px;
 }
-/*
-label.error {
-	color: #ff0000;
-	font-size: 12px;
-}
-*/
+
 /* LOGIN STYLES -------------------------------------------------- */
 #signin {
 	display: block;

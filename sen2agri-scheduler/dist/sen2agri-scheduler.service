@@ -1,0 +1,6 @@
+[Unit]
+Description=Scheduler for Sen2Agri
+
+[Service]
+ExecStart=/usr/bin/sen2agri-scheduler
+User=sen2agri-service

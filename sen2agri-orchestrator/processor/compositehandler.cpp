@@ -77,8 +77,6 @@ void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
         outAllTasksList.append(TaskToSubmit{ "composite-update-synthesis", {} });
         outAllTasksList.append(TaskToSubmit{ "composite-splitter", {} });
     }
-    // The product formatter task will be at the end and only once (not for each product)
-    //outAllTasksList.append(TaskToSubmit{ "product-formatter", {} });
 
     // now fill the tasks hierarchy infos
     int i;
@@ -114,8 +112,6 @@ void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
     }
     // product-formatter -> the last composite-splitter
     outProdFormatterParentsList.append(outAllTasksList[outAllTasksList.size() - 1]);
-//    outAllTasksList[outAllTasksList.size() - 1].parentTasks.append(
-//        outAllTasksList[outAllTasksList.size() - 2]);
 }
 
 CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
@@ -130,14 +126,12 @@ CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessi
     // Get L3A Synthesis date
     const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
     int resolution = parameters["resolution"].toInt();
-    if(resolution == 0)
-        resolution = 10;    // TODO: We should configure the default resolution in DB
-    const auto &resolutionStr = QString::number(resolution);
+    if(resolution == 0) resolution = 10;    // TODO: We should configure the default resolution in DB
 
     // Get the parameters from the configuration
     // Get the Half Synthesis interval value
     const auto &synthalf = configParameters["processor.l3a.half_synthesis"];
-    const auto &bandsMapping = configParameters["processor.l3a.bandsmapping"];
+    auto bandsMapping = configParameters["processor.l3a.bandsmapping"];
     const auto &scatCoeffs = configParameters["processor.l3a.preproc.scatcoeffs"];
 
     const auto &weightAOTMin = configParameters["processor.l3a.weight.aot.minweight"];
@@ -149,6 +143,10 @@ CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessi
     const auto &sigmaLargeCloud = configParameters["processor.l3a.weight.cloud.sigmalarge"];
 
     const auto &weightDateMin = configParameters["processor.l3a.weight.total.weightdatemin"];
+
+    bandsMapping = DeductBandsMappingFile(listProducts, bandsMapping, resolution);
+
+    const auto &resolutionStr = QString::number(resolution);
 
     CompositeGlobalExecutionInfos globalExecInfos;
     QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
@@ -162,9 +160,6 @@ CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessi
     QString prevL3AProdFlags;
     QString prevL3AProdDates;
     QString prevL3ARgbFile;
-
-    // the product formatter is the last in the task list
-    //TaskToSubmit &productFormatter = allTasksList[allTasksList.size() - 1];
 
     for (int i = 0; i < listProducts.size(); i++) {
         const auto &inputProduct = listProducts[i];
@@ -246,22 +241,14 @@ CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessi
         }
 
         QStringList compositeSplitterArgs = { "CompositeSplitter2",
-                                              "-in",
-                                              outL3AResultFile,
-                                              "-xml",
-                                              inputProduct,
-                                              "-bmap",
-                                              bandsMapping,
-                                              "-outweights",
-                                              outL3AResultWeightsFile,
-                                              "-outdates",
-                                              outL3AResultDatesFile,
-                                              "-outrefls",
-                                              outL3AResultReflsFile,
-                                              "-outflags",
-                                              outL3AResultFlagsFile,
-                                              "-outrgb",
-                                              outL3AResultRgbFile };
+                                              "-in", outL3AResultFile,
+                                              "-xml", inputProduct,
+                                              "-bmap", bandsMapping,
+                                              "-outweights", outL3AResultWeightsFile,
+                                              "-outdates", outL3AResultDatesFile,
+                                              "-outrefls", outL3AResultReflsFile,
+                                              "-outflags", outL3AResultFlagsFile,
+                                              "-outrgb", outL3AResultRgbFile };
 
         // save the created L3A product file for the next product creation
         prevL3AProdRefls = outL3AResultReflsFile;
@@ -448,8 +435,8 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             // Insert the product into the database
             ctx.InsertProduct({ ProductType::L3AProductTypeId,
                                 event.processorId,
-                                event.jobId,
                                 event.siteId,
+                                event.jobId,
                                 productFolder,
                                 QDateTime::currentDateTimeUtc(),
                                 prodName,
@@ -525,6 +512,58 @@ bool CompositeHandler::IsProductAcceptableForJob(int jobId, const ProductAvailab
     return false;
 }
 
+QStringList CompositeHandler::GetMissionsFromBandsMapping(const QString &bandsMappingFile) {
+    // Normally, this is a small file
+    QStringList listLines = ProcessorHandlerHelper::GetTextFileLines(bandsMappingFile);
+    if(listLines.size() > 0) {
+        // we get the first line only
+        QString firstLine = listLines[0];
+        return firstLine.split(",");
+    }
+    return QStringList();
+}
+
+QString CompositeHandler::DeductBandsMappingFile(const QStringList &listProducts,
+                                                 const QString &bandsMappingFile, int &resolution) {
+    QFileInfo fileInfo(bandsMappingFile);
+    QString curBandsMappingPath = fileInfo.dir().absolutePath();
+    QStringList listUniqueProductTypes;
+    for (int i = 0; i < listProducts.size(); i++) {
+        QString productType = GetProductTypeFromTile(listProducts[i]);
+        if(!listUniqueProductTypes.contains(productType)) {
+            listUniqueProductTypes.append(productType);
+        }
+    }
+    int cntUniqueProdTypes = listUniqueProductTypes.size();
+    if(cntUniqueProdTypes < 1 || cntUniqueProdTypes > 2 ) {
+        return bandsMappingFile;
+    }
+    if(cntUniqueProdTypes == 1) {
+        if(listUniqueProductTypes[0] == "SENTINEL") {
+            return (curBandsMappingPath + "/bands_mapping_s2.txt");
+        }
+        if(listUniqueProductTypes[0] == "LANDSAT_8") {
+            resolution = 30;
+            return (curBandsMappingPath + "/bands_mapping_L8.txt");
+        }
+        if(listUniqueProductTypes[0] == "SPOT4") {
+            resolution = 20;
+            return (curBandsMappingPath + "/bands_mapping_spot.txt");
+        }
+        if(listUniqueProductTypes[0] == "SPOT5") {
+            resolution = 10;
+            return (curBandsMappingPath + "/bands_mapping_spot5.txt");
+        }
+    } else {
+        if(listUniqueProductTypes.contains("SPOT4") && listUniqueProductTypes.contains("LANDSAT_8")) {
+            resolution = 10;
+            return (curBandsMappingPath + "/bands_mapping_Spot4_L8.txt");
+        }
+    }
+    return bandsMappingFile;
+}
+
+
 ProcessorJobDefinitionParams CompositeHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                           const ConfigurationParameterValueMap &requestOverrideCfgValues)
 {
@@ -557,3 +596,5 @@ ProcessorJobDefinitionParams CompositeHandler::GetProcessingDefinitionImpl(Sched
     //return QString("Cannot execute Composite processor. There should be at least 4 products but we have only %1 L2A products available!").arg(usedProductList.size());
     return params;
 }
+
+

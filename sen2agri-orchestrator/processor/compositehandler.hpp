@@ -49,6 +49,8 @@ private:
     ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
 
+    QStringList GetMissionsFromBandsMapping(const QString &bandsMappingFile);
+    QString DeductBandsMappingFile(const QStringList &listProducts, const QString &bandsMappingFile, int &resolution);
 };
 
 #endif // COMPOSITEHANDLER_HPP

@@ -423,8 +423,8 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             // Insert the product into the database
             ctx.InsertProduct({ ProductType::L3BLaiProductTypeId,
                                 event.processorId,
-                                event.jobId,
                                 event.siteId,
+                                event.jobId,
                                 productFolder,
                                 QDateTime::currentDateTimeUtc(),
                                 prodName,
@@ -765,10 +765,13 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
     QDateTime endDate = QDateTime::fromTime_t(scheduledDate);
     if(generateLai || generateReprocess) {
         startDate = endDate.addDays(-productionInterval);
-    } else if(generateFitted) {
-        ConfigurationParameterValueMap seasonCfgValues = ctx.GetConfigurationParameters(SEASON_CFG_KEY_PREFIX, -1, requestOverrideCfgValues);
+    }
+    if(generateFitted) {
+        QDateTime seasonStartDate;
+        QDateTime seasonEndDate;
+        GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
         // set the start date at the end of start season
-        startDate = QDateTime::fromString(seasonCfgValues[START_OF_SEASON_CFG_KEY].value, "yyyymmdd");
+        startDate = seasonStartDate;
     }
 
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
