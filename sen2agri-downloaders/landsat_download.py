@@ -14,9 +14,10 @@ import csv
 import signal
 import osgeo.ogr as ogr
 import osgeo.osr as osr
-from common_download import *
+from sen2agri_common_db import *
 
-global exitFlag
+general_log_path = "/tmp/"
+general_log_filename = "landsat_download.log"
 
 #############################################################################
 # CONSTANTS
@@ -53,17 +54,19 @@ def connect_earthexplorer_proxy(proxy_info,usgs):
 #############################"Connection to Earth explorer without proxy
 
 def connect_earthexplorer_no_proxy(usgs):
-    print("Establishing connection to Earthexplorer...")
-    opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
-    urllib2.install_opener(opener)
-    params = urllib.urlencode(dict(username=usgs['account'],password= usgs['passwd']))
-    f = opener.open("https://ers.cr.usgs.gov/login", params)
-    data = f.read()
-    f.close()
-    if data.find('You must sign in as a registered user to download data or place orders for USGS EROS products')>0 :
-        print "Authentification failed"
-        sys.exit(-1)
-    return
+     global general_log_path
+     global general_log_filename
+     log(general_log_path, "Establishing connection to Earthexplorer...", general_log_filename)
+     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
+     urllib2.install_opener(opener)
+     params = urllib.urlencode(dict(username=usgs['account'],password= usgs['passwd']))
+     f = opener.open("https://ers.cr.usgs.gov/login", params)
+     data = f.read()
+     f.close()
+     if data.find('You must sign in as a registered user to download data or place orders for USGS EROS products')>0 :
+          log(general_log_path, "Authentification failed !", general_log_filename)
+          sys.exit(-1)
+     return
 
 #############################
 
@@ -84,40 +87,39 @@ def downloadChunks(url,rep,nom_fic):
   print("rep: {}".format(rep))
   print("nom_fic: {}".format(nom_fic))
   print("INFO STOP")
-  log(rep, 'Trying to download {0}'.format(nom_fic))
+  log(rep, "Trying to download {0}".format(nom_fic), general_log_filename)
   try:
     req = urllib2.urlopen(url, timeout=600)
-    print("req.info().gettype()={}".format(req.info().gettype()))
     #taille du fichier
     if (req.info().gettype()=='text/html'):
-      log(rep, 'Error: the file has a html format for '.format(nom_fic))
+      log(rep, 'Error: the file has a html format for '.format(nom_fic), general_log_filename)
       lignes=req.read()
       if lignes.find('Download Not Found')>0 :
             raise TypeError
       else:
-          log(rep, lignes)
-          log(rep, 'Download not found for '.format(nom_fic))
+          log(rep, lignes, general_log_filename)
+          log(rep, 'Download not found for '.format(nom_fic), general_log_filename)
 	  return False
     total_size = int(req.info().getheader('Content-Length').strip())
 
     if (total_size<50000):
-       log(rep, "Error: The file is too small to be a Landsat Image: {0}".format(nom_fic))
-       log(rep, "The used url which generated this error was: {}".format(url))
+       log(rep, "Error: The file is too small to be a Landsat Image: {0}".format(nom_fic), general_log_filename)
+       log(rep, "The used url which generated this error was: {}".format(url), general_log_filename)
        return False
 
-    log(rep, "The filename {} has a total size of {}".format(nom_fic,total_size))
+    log(rep, "The filename {} has a total size of {}".format(nom_fic,total_size), general_log_filename)
 
     total_size_fmt = sizeof_fmt(total_size)
     fullFilename = rep+'/'+nom_fic
     if os.path.isfile(fullFilename) and os.stat(fullFilename).st_size == total_size:
-        log(rep, "downloadChunks:File {} already downloaded, returning true".format(fullFilename))
+        log(rep, "downloadChunks:File {} already downloaded, returning true".format(fullFilename), general_log_filename)
         return True
 
     downloaded = 0
     CHUNK = 1024 * 1024 *8
     with open(rep+'/'+nom_fic, 'wb') as fp:
         start = time.clock()
-        log(rep, 'Downloading {0} ({1})'.format(nom_fic, total_size_fmt))
+        log(rep, 'Downloading {0} ({1})'.format(nom_fic, total_size_fmt), general_log_filename)
 	while True and not exitFlag:
 	     chunk = req.read(CHUNK)
 	     downloaded += len(chunk)
@@ -132,22 +134,21 @@ def downloadChunks(url,rep,nom_fic):
 	     if not chunk: break
 	     fp.write(chunk)
     if exitFlag:
-        log(rep, "SIGINT signal caught")
+        log(rep, "SIGINT signal caught", general_log_filename)
         sys.exit(0)
   except urllib2.HTTPError, e:
        if e.code == 500:
-            log(rep, "File doesn\'t exist: {0}".format(nom_fic))
+            log(rep, "File doesn\'t exist: {0}".format(nom_fic), general_log_filename)
        else:
-            log(rep, "HTTP Error for file {0}. Error code: {1}. Url: {2}".format(nom_fic, e.code, url))
+            log(rep, "HTTP Error for file {0}. Error code: {1}. Url: {2}".format(nom_fic, e.code, url), general_log_filename)
        return False
   except urllib2.URLError, e:
-    log(rep, "URL Error for file {0} . Reason: {1}. Url: {2}".format(nom_fic, e.reason,url))
+    log(rep, "URL Error for file {0} . Reason: {1}. Url: {2}".format(nom_fic, e.reason,url), general_log_filename)
     return False
   size = os.stat(rep+'/'+nom_fic).st_size
-  log(rep, "File {0} downloaded with size {1} from a total size of {2}".format(nom_fic,str(size), str(total_size)))
-  print("total_size={}|filesize={}".format(total_size, size))
+  log(rep, "File {0} downloaded with size {1} from a total size of {2}".format(nom_fic,str(size), str(total_size)), general_log_filename)
   if int(total_size) != int(size):
-    log(rep, "File {0} has a different size {1} than the expected one {2}. Will not be marked as downloaded".format(nom_fic,str(size), str(total_size)))
+    log(rep, "File {0} has a different size {1} than the expected one {2}. Will not be marked as downloaded".format(nom_fic,str(size), str(total_size)), general_log_filename)
     return False
   #all went well...hopefully
   return True
@@ -191,8 +192,9 @@ def next_overpass(date1,path,sat):
 
 def unzipimage(tgzfile, outputdir):
     success=0
+    global general_log_filename
     if (os.path.exists(outputdir+'/'+tgzfile+'.tgz')):
-        log(outputdir,  "decompressing...")
+        log(outputdir,  "decompressing...", general_log_filename)
         try:
             if sys.platform.startswith('linux'):
                 subprocess.call('mkdir '+ outputdir+'/'+tgzfile, shell=True)   #Unix
@@ -201,9 +203,9 @@ def unzipimage(tgzfile, outputdir):
                 subprocess.call('tartool '+outputdir+'/'+tgzfile+'.tgz '+ outputdir+'/'+tgzfile, shell=True)  #W32
             success=1
             os.remove(outputdir+'/'+tgzfile+'.tgz')
-            log(outputdir,  "decompress succeded. removing the .tgz file {}".format(outputdir+'/'+tgzfile))
+            log(outputdir,  "decompress succeded. removing the .tgz file {}".format(outputdir+'/'+tgzfile), general_log_filename)
         except TypeError:
-            log(outputdir, "Failed to unzip {}".format(tgzfile))
+            log(outputdir, "Failed to unzip {}".format(tgzfile), general_log_filename)
             os.remove(outputdir)
     return success
 
@@ -227,17 +229,21 @@ def read_cloudcover_in_metadata(image_path):
 #############################"Check cloud cover limit
 
 def check_cloud_limit(imagepath,limit):
-    removed=0
-    cloudcover=read_cloudcover_in_metadata(imagepath)
-    if cloudcover>limit:
-        shutil.rmtree(imagepath)
-        print "Image was removed because the cloud cover value of " + str(cloudcover) + " exceeded the limit defined by the user!"
-        removed=1
-    return removed
+     global general_log_path
+     global general_log_filename
+     removed=0
+     cloudcover=read_cloudcover_in_metadata(imagepath)
+     if cloudcover>limit:
+          shutil.rmtree(imagepath)
+          log(general_log_path, "Image was removed because the cloud cover value of {} exceeded the limit defined by the user!".format(cloudcover), general_log_filename)
+          removed=1
+     return removed
 
 def signal_handler(signal, frame):
     global exitFlag
-    print("You pressed Ctrl+C!")
+    global general_log_path
+    global general_log_filename
+    log(general_log_path, "You pressed Ctrl+C!", general_log_filename)
     exitFlag = True
     sys.exit(0)
 
@@ -248,6 +254,8 @@ def signal_handler(signal, frame):
 ################Lecture des arguments################
 def main():
     global exitFlag
+    global general_log_path
+    global general_log_filename
     exitFlag = False
     signal.signal(signal.SIGINT, signal_handler)
     if len(sys.argv) == 1:
@@ -274,7 +282,6 @@ def main():
         parser.add_option("--station", dest="station", action="store", type="string", \
                 help="Station acronym (3 letters) of the receiving station where the file is downloaded",default=None)
 
-
     (options, args) = parser.parse_args()
     parser.check_required("-c")
 
@@ -282,7 +289,7 @@ def main():
     dirname = fullFilename[0:fullFilename.rfind('/') + 1]
     config = Config()
     if not config.loadConfig(options.config):
-        print("Could not load the config")
+        log(general_log_path, "Could not load the config file", general_log_filename)
         sys.exit(-1)
     db = LandsatAOIInfo(config.host, config.database, config.user, config.password)
     aoiDatabase = db.getLandsatAOI()
@@ -292,19 +299,19 @@ def main():
         print("------------------------")
 
     if len(aoiDatabase) <= 0:
-        print("Could not get DB info")
+        log(general_log_path, "Could not get DB info", general_log_filename)
         sys.exit(-1)
 
     # read password files
     try:
-        f=file(options.usgs)
+        f = file(options.usgs)
         (account,passwd)=f.readline().split(' ')
         if passwd.endswith('\n'):
             passwd=passwd[:-1]
         usgs={'account':account,'passwd':passwd}
         f.close()
     except :
-        print "error with usgs password file"
+        log(general_log_path, "Error with usgs password file", general_log_filename)
         sys.exit(-2)
 
     if options.proxy != None :
@@ -322,14 +329,15 @@ def main():
             proxy={'user':user,'pass':passwd,'host':host,'port':port}
             f.close()
         except :
-            print "error with proxy password file"
+            log(general_log_path, "Error with proxy password file", general_log_filename)
             sys.exit(-3)
 
 ##########Telechargement des produits par scene
-    for aoiFile in aoiDatabase:
+for aoiFile in aoiDatabase:
         if not createRecursiveDirs(aoiFile.writeDir):
-            print("Could not create the output directory")
-            sys.exit(-1)
+             print("Could not create the output directory")
+             sys.exit(-1)
+        general_log_path = aoiFile.writeDir
 
         startSeasonMonth = int(0)
         startSeasonDay = int(0)
@@ -339,30 +347,30 @@ def main():
         currentYearArray = []
 
         print("SITE NAME:{}".format(aoiFile.siteName))
-        if checkIfSeason(aoiFile.startSummerSeason, aoiFile.endSummerSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray, aoiFile.writeDir):
+        if check_if_season(aoiFile.startSummerSeason, aoiFile.endSummerSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray, aoiFile.writeDir, general_log_filename):
             startSeasonMonth = int(aoiFile.startSummerSeason[0:2])
             startSeasonDay = int(aoiFile.startSummerSeason[2:4])
             endSeasonMonth = int(aoiFile.endSummerSeason[0:2])
             endSeasonDay = int(aoiFile.endSummerSeason[2:4])
-        elif checkIfSeason(aoiFile.startWinterSeason, aoiFile.endWinterSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray, aoiFile.writeDir):
+        elif check_if_season(aoiFile.startWinterSeason, aoiFile.endWinterSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray, aoiFile.writeDir, general_log_filename):
             startSeasonMonth = int(aoiFile.startWinterSeason[0:2])
             startSeasonDay = int(aoiFile.startWinterSeason[2:4])
             endSeasonMonth = int(aoiFile.endWinterSeason[0:2])
             endSeasonDay = int(aoiFile.endWinterSeason[2:4])
         else:
-            log(aoiFile.writeDir, "OUT OF SEASON !!!!! No request will be made for {}".format(aoiFile.siteName))
+            log(aoiFile.writeDir, "Out of season ! No request will be made for {}".format(aoiFile.siteName), general_log_filename)
             continue
         if len(currentYearArray) == 0:
-            log(aoiFile.writeDir, "Something went wrong in checkIfSeason function")
+            log(aoiFile.writeDir, "Something went wrong in check_if_season function", general_log_filename)
             continue
 
         start_date=str(currentYearArray[0])+str(startSeasonMonth)+str(startSeasonDay)
         end_date=str(currentYearArray[1])+str(endSeasonMonth)+str(endSeasonDay)
 
         for tile in aoiFile.aoiTiles:
-            log(aoiFile.writeDir, "Starting the process for tile {}".format(tile))
+            log(aoiFile.writeDir, "Starting the process for tile {}".format(tile), general_log_filename)
             if len(tile) != 6:
-                log(aoiFile.writeDir, "The length for tile is not 6. There should be ppprrr, where ppp = path and rrr = row. The string is {}".format(tile))
+                log(aoiFile.writeDir, "The length for tile is not 6. There should be ppprrr, where ppp = path and rrr = row. The string is {}".format(tile), general_log_filename)
                 continue
 
             product="LC8"
@@ -375,7 +383,7 @@ def main():
 
             path=tile[0:3]
             row=tile[3:6]
-            log(aoiFile.writeDir, "path={}|row={}".format(path, row))
+            log(aoiFile.writeDir, "path={}|row={}".format(path, row), general_log_filename)
 
             year_start =int(currentYearArray[0])
             month_start=int(startSeasonMonth)
@@ -401,7 +409,7 @@ def main():
                 date_asc=curr_date.strftime("%Y%j")
                 notfound = False
 
-                log(aoiFile.writeDir, "Searching for images on (julian date): {}...".format(date_asc))
+                log(aoiFile.writeDir, "Searching for images on (julian date): {}...".format(date_asc), general_log_filename)
                 curr_date=curr_date+datetime.timedelta(16)
                 for station in stations:
                     for version in ['00','01','02']:
@@ -414,24 +422,24 @@ def main():
                                             url = "http://earthexplorer.usgs.gov/download/{}/{}/STANDARD/EE".format(remoteDir,nom_prod)
 
                                             if aoiFile.fileExists(nom_prod):
-                                                log(aoiFile.writeDir, "File {} found in history so it's already downloaded".format(nom_prod))
+                                                log(aoiFile.writeDir, "File {} found in history so it's already downloaded".format(nom_prod), general_log_filename))
                                                 if not os.path.exists(lsdestdir) and options.unzip!= None:
-                                                    log(aoiFile.writeDir, "Trying to decompress {}. If an error will be raised, means that the archived tgz file was phisically erased (manually or automatically) ".format(nom_prod))
+                                                    log(aoiFile.writeDir, "Trying to decompress {}. If an error will be raised, means that the archived tgz file was phisically erased (manually or automatically) ".format(nom_prod), general_log_filename)
                                                     unzipimage(nom_prod, aoiFile.writeDir)
                                                 continue
                                             try:
-                                                if downloadChunks(url,"%s"%aoiFile.writeDir,nom_prod+'.tgz'):
+                                                if downloadChunks(url, aoiFile.writeDir, "{}.tgz".format(nom_prod)):
                                                     downloaded_ids.append(nom_prod)
                                                     if options.unzip!= None:
                                                         unzipimage(nom_prod, aoiFile.writeDir)
                                                     #write the filename in history
                                                     try:
                                                         if not db.updateLandsatHistory(aoiFile.siteId, nom_prod,  "{}/{}".format(aoiFile.writeDir, nom_prod)):
-                                                            log(aoiFile.writeDir, "Could not insert into database site_id {} the product name {}".format(aoiFile.siteId, s2Obj.filename))
+                                                            log(aoiFile.writeDir, "Could not insert into database site_id {} the product name {}".format(aoiFile.siteId, s2Obj.filename), general_log_filename)
                                                     except:
-                                                        log(aoiFile.writeDir, "db.updateSentinelHistory throwed an exception")
+                                                        log(aoiFile.writeDir, "db.updateSentinelHistory throwed an exception", general_log_filename)
                                             except:
-                                                log(aoiFile.writeDir, "downloadChunks throwed an exception")
-            log(aoiFile.writeDir, downloaded_ids)
+                                                log(aoiFile.writeDir, "downloadChunks throwed an exception", general_log_filename)
+            log(aoiFile.writeDir, downloaded_ids, general_log_filename)
 if __name__ == "__main__":
     main()

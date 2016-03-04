@@ -108,52 +108,10 @@ if (isset ( $_REQUEST ['schedule_submit'] ) == 'Save') {
 									<table class="table full_width default_panel_style"></table>
 								</div>
 							</div>
-							<!-- Scheduled ---------------------------->
-							<div class="panel_scheduled_container"
-								id="pnl_l2a_scheduled_container">
-								<div class="panel panel-default panel_scheduled"
-									id="pnl_l2a_scheduled">
-
-
-									<div class="row panel-heading">
-										<div class="col-md-10">Scheduled Jobs</div>
-
-
-										<div class="col-md-1">
-											<form id="form_add_sched_l2a" method="post">
-												<input name="schedule_add" type="submit"
-													class="btn btn-primary " value="AddJob"> <input
-													type="hidden" name="processorId" value="1">
-											</form>
-
-
-										</div>
-									</div>
-
-
-
-
-
-									<div class="panel panel-default panel_scheduled_job"
-										id="pnl_l2a_scheduled">
-										<!-- l2a processor_id = 1 -->
-									<?php
-									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
-										if ($_REQUEST ['schedule_add'] == 'AddJob' && $_REQUEST ['processorId'] == '1') {
-											
-											add_new_scheduled_jobs_layout ( 1 );
-										}
-									}
-									?>
-										
-									<?php update_scheduled_jobs_layout(1);?>
-									</div>
-
-								</div>
-							</div>
-							<!-- Scheduled ---------------------------->
+			
 						</div>
 					</div>
+					
 					<!-- L3A Processor ----------------------------------------------------------------------------------------------------------------------- -->
 					<div id="tab_l3a">
 						<a href="#tab_l3a">L3A Processor</a>

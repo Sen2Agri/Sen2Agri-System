@@ -8,7 +8,7 @@ import sys
 import time, datetime
 import pipes
 import shutil
-from common import *
+from sen2agri_common_db import *
 
 general_log_path = "/tmp/"
 general_log_filename = "demmaccs.log"

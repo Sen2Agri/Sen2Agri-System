@@ -17,8 +17,7 @@ import sys
 import pipes
 import zipfile
 from multiprocessing import Pool
-from common import *
-
+from sen2agri_common_db import *
 
 def GetExtent(gt, cols, rows):
     ext = []
