@@ -8,6 +8,7 @@ if (isset($_SESSION['siteId'])) {
 				<li><a href="system.php">System Overview</a></li>
 				<li><a href="dashboard.php#tab_l2a">Dashboard</a></li>
 				<li><a href="config.php">Custom Jobs</a></li>
+				<li><a href="create_site.php">Site</a></li>
 				<li style="float: right;"><a href="logout.php">Logout</a></li>
             </ul>
         </div>
