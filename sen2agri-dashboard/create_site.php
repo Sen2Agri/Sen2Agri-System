@@ -15,8 +15,8 @@ if(isset($_REQUEST['add_site']) && $_REQUEST ['add_site'] == 'AddSite'){
 	$summer_end = "";
 	
 	//make site short name
-	$site_short_name =str_replace(" ","_",strtolower($site_name));
-	echo $site_short_name;
+	$site_short_name =str_replace(")","",str_replace(array(" ", "("),"_",strtolower($site_name)));
+	//echo $site_short_name;
 	
 	//keep only day and month, ex:3002
 	function dayMonth($param){
@@ -24,14 +24,14 @@ if(isset($_REQUEST['add_site']) && $_REQUEST ['add_site'] == 'AddSite'){
 		return $date;
 	}
 	//insert new site into database
-	function insertSiteSeason($site,$coord,$wint_start,$wint_end,$summ_star,$summ_end){
+	function insertSiteSeason($site,$short_name,$coord,$wint_start,$wint_end,$summ_star,$summ_end){
 		$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
-		$sql="SELECT sp_dashboard_add_site($1,$2,$3,$4,$5,$6)";
+		$sql="SELECT sp_dashboard_add_site($1,$2,$3,$4,$5,$6,$7)";
 		$res = pg_prepare ( $db, "my_query", $sql );
-		echo $coord;
 	
 		$res = pg_execute ( $db, "my_query", array (
 				$site,
+				$short_name,
 				$coord,
 				$wint_start,
 				$wint_end,
@@ -39,7 +39,7 @@ if(isset($_REQUEST['add_site']) && $_REQUEST ['add_site'] == 'AddSite'){
 				$summ_end
 		) ) or die ("An error occurred.");
 		
-		echo "it works";
+	//	echo "it works";
 	}
 
 	
@@ -48,14 +48,14 @@ if(isset($_REQUEST['add_site']) && $_REQUEST ['add_site'] == 'AddSite'){
 		if ($_REQUEST['season'] =="0"){
 		$winter_start = dayMonth($_REQUEST['startseason_winter']);
 		$winter_end = dayMonth($_REQUEST['endseason_winter']);		
-		insertSiteSeason($site_name,$coord_geog,$winter_start,$winter_end,$summer_start,$summer_end);
+		insertSiteSeason($site_name,$site_short_name,$coord_geog,$winter_start,$winter_end,$summer_start,$summer_end);
 		
 	} else
 		// summer season selected
 		if($_REQUEST['season'] =="1"){
 		$summer_start = $_REQUEST['startseason_summer'];
 		$summer_end = $_REQUEST['endseason_summer'];
-		insertSiteSeason($site_name,$coord_geog,$winter_start,$winter_end,$summer_start,$summer_end);
+		insertSiteSeason($site_name,$site_short_name,$coord_geog,$winter_start,$winter_end,$summer_start,$summer_end);
 		
 	}else 
 		//summer and winter season selected
@@ -65,7 +65,7 @@ if(isset($_REQUEST['add_site']) && $_REQUEST ['add_site'] == 'AddSite'){
 			$summer_start = $_REQUEST['startseason_summer'];
 			$summer_end = $_REQUEST['endseason_summer'];
 			
-			insertSiteSeason($site_name,$coord_geog,$winter_start,$winter_end,$summer_start,$summer_end);
+			insertSiteSeason($site_name,$site_short_name,$coord_geog,$winter_start,$winter_end,$summer_start,$summer_end);
 	}
 	
 
@@ -222,7 +222,7 @@ if(isset($_REQUEST['add_site']) && $_REQUEST ['add_site'] == 'AddSite'){
 															.parent());
 												},
 
-											/*	submitHandler :function(form) {
+												submitHandler :function(form) {
 													$.ajax({
 											        url: $(form).attr('action'),
 											        type: $(form).attr('method'),
@@ -233,7 +233,7 @@ if(isset($_REQUEST['add_site']) && $_REQUEST ['add_site'] == 'AddSite'){
 									                   $("#siteform")[0].reset();		
 											                 }     
 											         });
-											 },*/
+											 },
 												// set this class to error-labels to indicate valid fields
 												success : function(label) {
 													label.remove();
