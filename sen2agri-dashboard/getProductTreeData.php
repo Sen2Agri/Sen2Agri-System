@@ -1,6 +1,6 @@
 <?php
-
-require_once('ConfigParams.php');
+session_start();
+require_once ("ConfigParams.php");
 
 function findSite($siteName, $siteObjArr) {
 	foreach($siteObjArr as $siteObj) {
