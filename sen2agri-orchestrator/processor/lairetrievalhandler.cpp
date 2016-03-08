@@ -191,9 +191,36 @@ LAIGlobalExecutionInfos LaiRetrievalHandler::HandleNewTilesList(EventProcessingC
 
     // Get the resolution value
     const auto &resolution = QString::number(parameters["resolution"].toInt());
-    bool bGenModels = parameters.contains("genmodel");
-    bool bNDayReproc = parameters.contains("reproc");
-    bool bFittedReproc = parameters.contains("fitted");
+
+    bool bGenModels = false;
+    if(parameters.contains("genmodel")) {
+        bGenModels = (parameters["genmodel"].toInt() != 0);
+    } else {
+        bGenModels = ((configParameters["processor.l3b.generate_models"]).toInt() != 0);
+    }
+
+    /*bool bMonoDateLai = false;
+    if(parameters.contains("monolai")) {
+        bMonoDateLai = (parameters["monolai"].toInt() != 0);
+    } else {
+        bMonoDateLai = ((configParameters["processor.l3b.mono_date_lai"]).toInt() != 0);
+    }
+    */
+
+    bool bNDayReproc = false;
+    if(parameters.contains("reproc")) {
+        bNDayReproc = (parameters["reproc"].toInt() != 0);
+    } else {
+        bNDayReproc = ((configParameters["processor.l3b.reprocess"]).toInt() != 0);
+    }
+
+    bool bFittedReproc = false;
+    if(parameters.contains("fitted")) {
+        bFittedReproc = (parameters["fitted"].toInt() != 0);
+    } else {
+        bFittedReproc = ((configParameters["processor.l3b.fitted"]).toInt() != 0);
+    }
+
 
     // The returning value
     LAIGlobalExecutionInfos globalExecInfos;
