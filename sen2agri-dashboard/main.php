@@ -1,29 +1,21 @@
-﻿<?php include 'master.php'; ?>
+﻿<?php include "master.php"; ?>
     <div id="main">
         <div id="main2">
             <div id="main3">
 				<table cellpadding="0px" cellspacing="0px">
 					<tr>
-						<td colspan=3"><h3>Available products</h3></td>
+						<td colspan=3"><h3 style="margin-top: 0px;">Available products</h3></td>
 					</tr>
 					<tr>
-						<td><div id="tree" style="height:550px; width:350px; overflow: scroll; border: 1px solid; font-size: 13px"></div></td>
+						<td><div id="tree" class="tree"></div></td>
 						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
-						<td><div id="map" class="map" style="height:550px; width:665px; border: 1px solid;"></div></td>
+						<td><div id="map" class="map"></div></td>
 					</tr>
 				</table>
             </div>
         </div>
-    </div><!-- main --><!-- main2 --><!-- main3 -->
+    </div>
 	
-    <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-2.1.4.min.js"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
-    <script src="libraries/flot-0.8.3/jquery.flot.min.js"></script>
-    <script src="libraries/flot-0.8.3/jquery.flot.time.min.js"></script>
-    <script src="libraries/flot-0.8.3/jquery.flot.stack.min.js"></script>
-    <script src="libraries/nvd3-1.1.11/nv.d3.js"></script>
-    <script src="libraries/bootstrap-treeview/bootstrap-treeview.min.js"></script>
     <script src="libraries/openlayers/build/ol.js"></script>
     <script src="scripts/config.js"></script>
     <script src="scripts/helpers.js"></script>
@@ -234,8 +226,5 @@
 		};
 
 		initTree();
-
-	
 	</script>
-   
-<?php include 'ms_foot.php'; ?>
+<?php include "ms_foot.php" ?>

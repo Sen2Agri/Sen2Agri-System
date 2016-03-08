@@ -311,6 +311,7 @@ private:
     AddParameter(ParameterType_InputFilenameList, "il", "The xml files");
 
     AddParameter(ParameterType_OutputImage, "out", "The concatenated images");
+    MandatoryOff("out");
     AddParameter(ParameterType_OutputImage, "mask", "The concatenated masks");
     MandatoryOff("mask");
 
@@ -321,6 +322,7 @@ private:
     MandatoryOff("statusflags");
 
     AddParameter(ParameterType_OutputFilename, "outdate", "The file containing the dates for the images");
+    MandatoryOff("outdate");
     AddParameter(ParameterType_OutputVectorData, "shape", "The file containing the border shape");
     MandatoryOff("shape");
 
@@ -943,46 +945,55 @@ private:
 
   void BuildRasterAndMask() {
       // get the name of the file where the dates are written
-      std::string datesFileName = GetParameterString("outdate");
-
-      //open the file
+      std::string datesFileName;
       std::ofstream datesFile;
-      datesFile.open(datesFileName);
-      if (!datesFile.is_open()) {
-          itkExceptionMacro("Can't open dates file for writing!");
-      }
+      std::string lastMission;
+      auto hasDates = false;
 
-      // last processed mission descriptor
-      std::string lastMission = m_mission;
-      // write the main mission name
-      if(!m_ndh)
-        datesFile << m_mission << std::endl;
+      if (HasValue("outdate")) {
+          hasDates = true;
+          datesFileName = GetParameterString("outdate");
+
+          //open the file
+          datesFile.open(datesFileName);
+          if (!datesFile.is_open()) {
+              itkExceptionMacro("Can't open dates file for writing!");
+          }
+
+          // last processed mission descriptor
+          lastMission = m_mission;
+          // write the main mission name
+          if(!m_ndh)
+            datesFile << m_mission << std::endl;
+      }
 
       std::ostringstream missionDates;
       int numDates = 0;
 
       // interpret the descriptors and extract the required bands from the atached images
       for ( const ImageDescriptor& desc : m_DescriptorsList) {
-          // check if the mission of this descriptor is identical to the mission of the previous descriptor if merging is not requested
-          if (!m_merge && lastMission.find(desc.mission) == std::string::npos) {
-              // write previous mission's data to file
-              if(!m_ndh) {
-                datesFile << numDates << std::endl;
-                datesFile << missionDates.str();
+          if (hasDates) {
+              // check if the mission of this descriptor is identical to the mission of the previous descriptor if merging is not requested
+              if (!m_merge && lastMission.find(desc.mission) == std::string::npos) {
+                  // write previous mission's data to file
+                  if(!m_ndh) {
+                    datesFile << numDates << std::endl;
+                    datesFile << missionDates.str();
+                  }
+
+                  // new mission
+                  lastMission = desc.mission;
+                  if(!m_ndh)
+                    datesFile << lastMission << std::endl;
+                  numDates = 0;
+                  missionDates.str("");
+                  missionDates.clear();
               }
 
-              // new mission
-              lastMission = desc.mission;
-              if(!m_ndh)
-                datesFile << lastMission << std::endl;
-              numDates = 0;
-              missionDates.str("");
-              missionDates.clear();
+              // write the date to the buffer
+              missionDates << desc.aquisitionDate << std::endl;
+              numDates++;
           }
-
-          // write the date to the buffer
-          missionDates << desc.aquisitionDate << std::endl;
-          numDates++;
 
           // add the bans to the image list
           m_ImageList->PushBack(desc.imgG);
@@ -1039,16 +1050,20 @@ private:
           }
       }
 
-      // write the data for the last mission
-      if(!m_ndh)
-        datesFile << numDates << std::endl;
-      datesFile << missionDates.str() << std::endl;
+      if (hasDates) {
+          // write the data for the last mission
+          if(!m_ndh)
+            datesFile << numDates << std::endl;
+          datesFile << missionDates.str() << std::endl;
 
-      // close the dates file
-      datesFile.close();
+          // close the dates file
+          datesFile.close();
+      }
 
-      m_Concatener->SetInput( m_ImageList );
-      SetParameterOutputImage("out", m_Concatener->GetOutput());
+      if (HasValue("out")) {
+          m_Concatener->SetInput( m_ImageList );
+          SetParameterOutputImage("out", m_Concatener->GetOutput());
+      }
 
       if(HasValue("mask")) {
         m_Masks->SetInput(m_MasksList);

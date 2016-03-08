@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source ./set_build_folder.sh
+
 ./CropType.py \
     -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp \
     -input \
@@ -20,7 +22,6 @@
     /mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130606_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130606_N2A_EUkraineD0000B0000.xml \
     /mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130611_N2A_EUkraineD0000B0000.xml \
     /mnt/Imagery_S2A/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130616_N2A_EUkraineD0000B0000.xml \
-    -t0 20130206 -tend 20130616 -rate 5 \
     -rseed 0 -pixsize 20 \
-    -mask /mnt/output/L4A/SPOT4-T5/Ukraine/work/crop_mask.tif \
-    -outdir /mnt/output/L4B/SPOT4-T5/Ukraine/work
+    -outdir /mnt/data/ukraine/Ukraine-type \
+    -buildfolder $BUILD_FOLDER
