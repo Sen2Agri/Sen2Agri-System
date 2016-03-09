@@ -17,48 +17,45 @@ function insertjob($name, $description, $processor_id, $site_id, $start_type_id,
 			$configuration 
 	) ) or die ("An error occurred.");
 	
-
-	 // send notification through CURL
-	 try {
-	 //url of the service
-	 $url= ConfigParams::$SERVICES_NOTIFY_ORCHESTRATOR_URL;
+	// send notification through CURL
+	try {
+		//url of the service
+		$url= ConfigParams::$SERVICES_NOTIFY_ORCHESTRATOR_URL;
+		
+		//initialise connection
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_POST, 1);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		
+		$response = curl_exec($ch);
+		curl_close($ch);
+	} catch (Exception $e) {
+	}
 	
-	 //initialise connection
-	 $ch = curl_init();
-	 curl_setopt($ch, CURLOPT_URL, $url);
-	 curl_setopt($ch, CURLOPT_POST, 1);
-	 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-	
-	 $response = curl_exec($ch);
-	 curl_close($ch);
-
-	 } catch (Exception $e) {
-	 }
-	 
-	 header("Location: config.php"); /* Redirect */
-	 exit();
+	header("Location: config.php"); /* Redirect */
+	exit();
 }
 
 if (isset ( $_POST ['l3a'] )) {
 	$siteId = $_POST ['siteId'];
 	/*
-	 * $sentinel2Tiles = $_POST ['sentinel2Tiles'];
-	 * $landsatTiles = $_POST ['landsatTiles'];
-	 */
+	$sentinel2Tiles = $_POST ['sentinel2Tiles'];
+	$landsatTiles = $_POST ['landsatTiles'];
+	*/
 	
-	$inputFiles = $_POST ['inputFiles'];
 	$resolution = $_POST ['resolution'];
+	$input_products = $_POST ['inputFiles'];
 	$synthDate = $_POST ['synthDate'];
-	$halfSynthesis = $_POST ['halfSynthesis'];
-	
+
 	$maxaot = $_POST ['maxaot'];
 	$minweight = $_POST ['minweight'];
 	$maxweight = $_POST ['maxweight'];
-	
 	$sigmasmall = $_POST ['sigmasmall'];
 	$sigmalarge = $_POST ['sigmalarge'];
 	$coarseresolution = $_POST ['coarseresolution'];
 	$weightdatemin = $_POST ['weightdatemin'];
+	$halfSynthesis = $_POST ['halfSynthesis'];
 	
 	$json_config = json_encode ( array (
 			array (
@@ -88,22 +85,19 @@ if (isset ( $_POST ['l3a'] )) {
 			array (
 					"key" => "processor.l3a.weight.total.weightdatemin",
 					"value" => $weightdatemin 
-			) 
+			),
+			array (
+					"key" => "processor.l3a.half_synthesis",
+					"value" => $halfSynthesis
+			)
 	) );
 	
-	$json_param = json_encode ( array (
-			"resolution" => $resolution,
-			"input_products" => $inputFiles,
-			"synthesis-date" => $synthDate,
-			"half-synthesis" => $halfSynthesis 
-	) );
+	$params = array (
+		"resolution" => $resolution,
+		"input_products" => $input_products,
+		"synthesis_date" => $synthDate);
+	$json_param = json_encode( array_filter($params) );
 	
-	echo $json_param;
-	echo "<br>";
-	echo $json_config;
-	echo "<br>";
-	
-	// job name
 	$name = "l3a_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for l3a";
 	
@@ -112,21 +106,14 @@ if (isset ( $_POST ['l3a'] )) {
 elseif (isset ( $_POST ['l3b_lai'] )) {
 	$siteId = $_POST ['siteId'];
 	
-	$input_products = $_POST ['inputFiles'];
 	$resolution = $_POST ['resolution'];
+	$input_products = $_POST ['inputFiles'];
+
+	$bwr = $_POST ['bwr'];
+	$fwr = $_POST ['fwr'];
 	$genmodel = $_POST ['genmodel'];
 	$reproc = $_POST ['reproc'];
 	$fitted = $_POST ['fitted'];
-	
-	$bwr = $_POST ['bwr'];
-	$fwr = $_POST ['fwr'];
-	
-	/*
-	 * is not sure if those will be keept
-	 *
-	 * $modelsfolder = $_POST ['modelsfolder'];
-	 * $rsrcfgfile = $_POST ['rsrcfgfile'];
-	 */
 	
 	$json_config = json_encode ( array (
 			array (
@@ -136,22 +123,26 @@ elseif (isset ( $_POST ['l3b_lai'] )) {
 			array (
 					"key" => "processor.l3b.lai.localwnd.fwr",
 					"value" => $fwr 
-			) 
+			),
+			array (
+					"key" => "processor.l3b.generate_models",
+					"value" => $genmodel 
+			),
+			array (
+					"key" => "processor.l3b.reprocess",
+					"value" => $reproc 
+			),
+			array (
+					"key" => "processor.l3b.fitted",
+					"value" => $fitted 
+			)
 	) );
 	
-	$json_param = json_encode ( array (
-			"input_products" => $input_products,
-			"resolution" => $resolution,
-			"genmodel" => $genmodel,
-			"reproc" => $reproc,
-			"fitted" => $fitted 
-	) );
+	$params = array (
+		"resolution" => $resolution,
+		"input_products" => $input_products);
+	$json_param = json_encode( array_filter($params) );
 	
-	echo $json_config;
-	echo "<br>";
-	echo $json_param;
-	
-	// job name
 	$name = "l3b_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for l3b_lai";
 	
@@ -160,8 +151,8 @@ elseif (isset ( $_POST ['l3b_lai'] )) {
 elseif (isset ( $_POST ['l3b_pheno'] )) {
 	$siteId = $_POST ['siteId'];
 	
-	$input_products = $_POST ['inputFiles'];
 	$resolution = $_POST ['resolution'];
+	$input_products = $_POST ['inputFiles'];
 	
 	$json_config = json_encode ( array (
 			array (
@@ -170,16 +161,11 @@ elseif (isset ( $_POST ['l3b_pheno'] )) {
 			) 
 	) );
 	
-	$json_param = json_encode ( array (
-			"input_products" => $input_products,
-			"resolution" => $resolution 
-	) );
+	$params = array (
+		"resolution" => $resolution,
+		"input_products" => $input_products);
+	$json_param = json_encode( array_filter($params) );
 	
-	echo $json_config;
-	echo "<br>";
-	echo $json_param;
-	
-	// job name
 	$name = "l3b_pheno_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for l3b_lai";
 	
