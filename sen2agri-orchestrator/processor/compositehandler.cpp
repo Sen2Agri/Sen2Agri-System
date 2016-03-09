@@ -533,7 +533,11 @@ QStringList CompositeHandler::GetMissionsFromBandsMapping(const QString &bandsMa
 QString CompositeHandler::DeductBandsMappingFile(const QStringList &listProducts,
                                                  const QString &bandsMappingFile, int &resolution) {
     QFileInfo fileInfo(bandsMappingFile);
-    QString curBandsMappingPath = fileInfo.dir().absolutePath();
+
+    // by default, we consider this is a dir
+    QString curBandsMappingPath = bandsMappingFile;
+    if(!fileInfo.isDir())
+        curBandsMappingPath = fileInfo.dir().absolutePath();
     QStringList listUniqueProductTypes;
     for (int i = 0; i < listProducts.size(); i++) {
         QString productType = GetProductTypeFromTile(listProducts[i]);

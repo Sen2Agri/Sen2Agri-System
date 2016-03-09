@@ -510,7 +510,7 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
     auto minsize = configParameters["processor.l4a.segmentation-minsize"];
     if(minsize.length() == 0) minsize = "200";
 
-    auto nbtrsample = configParameters["processor.l4a.nb-training-samples"];
+    auto nbtrsample = configParameters["processor.l4a.training-samples-number"];
     if(nbtrsample.length() == 0) nbtrsample = "4000";
 
     auto lmbd = configParameters["processor.l4a.smoothing-lambda"];

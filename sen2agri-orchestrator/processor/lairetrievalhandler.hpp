@@ -46,7 +46,7 @@ private:
                                 const QStringList &listProducts);
 
     // Arguments getters
-    QStringList GetNdviRviExtractionArgs(const QString &inputProduct, const QString &ftsFile, const QString &resolution);
+    QStringList GetNdviRviExtractionArgs(const QString &inputProduct, const QString &ftsFile, const QString &ndviFile, const QString &resolution);
     QStringList GetBvImageInvArgs(const QString &ftsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateLaiFileName);
     QStringList GetBvErrImageInvArgs(const QString &ftsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateErrFileName);
     QStringList GetMonoDateMskFagsArgs(const QString &inputProduct, const QString &monoDateMskFlgsFileName);
