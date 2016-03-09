@@ -56,10 +56,10 @@ function compile_SEN2AGRI_processors()
    cd ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/sen2agri-processors-build
 
    ##configure
-   cmake ${SOURCES_DIR_PATH}/sen2agri-processors -DOTB_DIR=/usr/lib/cmake/OTB-5.0 -DCMAKE_INSTALL_PREFIX=${PROC_INSTALL_PATH} -DCMAKE_BUILD_TYPE=RelWithDebInfo
+   cmake ${SOURCES_DIR_PATH}/sen2agri-processors -DCMAKE_INSTALL_PREFIX=${PROC_INSTALL_PATH} -DCMAKE_BUILD_TYPE=RelWithDebInfo
    
    ##compile
-   make
+   make -j12
 
    ##install
    make install
@@ -161,6 +161,10 @@ function build_SEN2AGRI_downloaders_demmacs_RPM_Package()
 #-----------------------------------------------------------#
 function build_dir_tree()
 {
+   ##set PATH env variable to /usr/bin to avoid
+   # cmake finding /lib/cmake before /usr/lib/cmake
+   PATH="/usr/bin"
+
    ##go to default dir
    cd ${DEFAULT_DIR}
 
