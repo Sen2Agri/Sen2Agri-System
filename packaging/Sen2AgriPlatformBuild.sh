@@ -97,7 +97,7 @@ function compile_OTB_package()
 	 -DUSE_SYSTEM_ZLIB=ON
 
    ## compile OTB
-   make
+   make -j12
 }
 #-----------------------------------------------------------#
 function build_OTB_RPM_Package()
