@@ -1,0 +1,49 @@
+------------------------------------------------------
+I. Build SEN2AGRI Processors, Services, OTB and GDAL
+------------------------------------------------------
+There are 2 options to perform the build operation: from  a main script, with menu options allowing user to choose 
+the action needed, or by launching individual scripts for each build module
+
+a) From main script , with menu option:
+
+ The following steps should be performed in order to perform build:
+1.open a terminal and launch the main script embedding all the other building scripts 
+$ /path/to/sources/sen2agri/packaging/Sen2AgriBuildAll.sh
+
+NOTE1: If it is first time the build is performed on the working centos machine, option 1)Install BUILD PREREQUISITES
+shall be choosen. This part installs devel libs and packaging tools needed for compilation and packaging
+2.Chose option needed. RPM packages will be in folder Sen2AgriRPM on the current path
+
+NOTE2: Sen2agriProcesors cannot be built if OTB is not installed. Before building Sen2agriProcesors perform the following
+actions:
+ - Build OTB option 2)BUILD Sen2AgriPlatform : OTB and GDAL. RPM packages will be in folder Sen2AgriRPM on the current path
+ - Install OTB and GDAL manually
+
+   sudo yum -y install /path/to/RPMs/otb-5.0.centos7.x86_64.rpm
+   echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
+   sudo ldconfig
+
+   ##install GDAL library 
+   yum -y install /path/to/RPMs/gdal-local-2.0.1.centos7.x86_64.rpm
+   echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
+   sudo ldconfig
+
+b) From specific script:
+The following action should be performed in order to perform build:
+1.open a terminal and launch the particular script performing build operation:
+##install prerequisites for build
+$ /path/to/sources/sen2agri/packaging/Sen2AgriPrereqForBuild.sh
+##builds OTB and GDAL
+$ /path/to/sources/sen2agri/packaging/Sen2AgriPlatformBuild.sh
+##builds SEN2AGRI Processors
+$ /path/to/sources/sen2agri/packaging/Sen2AgriProcessorsBuild.sh
+##builds SEN2AGRI Services
+$ /path/to/sources/sen2agri/packaging/Sen2AgriAppBuild.sh
+##builds SEN2AGRI website
+$ /path/to/sources/sen2agri/packaging/Sen2AgriWebSiteBuild.sh
+
+NOTE: see NOTE1 and NOTE2 from point a)
+
+
+
+
