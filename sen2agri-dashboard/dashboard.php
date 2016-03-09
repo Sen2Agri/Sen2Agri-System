@@ -2,7 +2,7 @@
 <?php
 
 // Submited add new job; insert job in database with id $schedule_id
-if (isset ( $_REQUEST ['schedule_saveJob'] ) == 'Save') {
+if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] == 'Save') {
 	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
 	
 	$job_name = $_REQUEST ['jobname'];
@@ -26,18 +26,31 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) == 'Save') {
 	
 	$pg_date = date ( 'Y-m-d H:i:s', strtotime ( $startdate ) );
 	
-	$sql_insert = "INSERT INTO scheduled_task(
-             name, processor_id, site_id, processor_params, repeat_type, 
-            repeat_after_days, repeat_on_month_day, retry_seconds, priority, 
-            first_run_time)
-    		VALUES ('" . $job_name . "'," . $processorId . "," . $site_id . ",null," . $schedule_type . "," . $repeatafter . "," . $oneverydate . ",60,
-            1,'" . $pg_date . "')";
+	$retry_seconds = 60;
+	$priority = 1;
+	$processor_params = null;
 	
-	$result = pg_query ( $db, $sql_insert ) or die ( "Could not execute." );
+	//save new job in database
+	$sql_insert = "SELECT sp_insert_scheduled_task($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)";
+	$res = pg_prepare ( $db, "my_query", $sql_insert );
+	
+	$res = pg_execute ( $db, "my_query", array (
+			$job_name,
+			$processorId,
+			$site_id,
+			$schedule_type,
+			$repeatafter,
+			$oneverydate,
+			$pg_date,
+			$retry_seconds,
+			$priority,
+			$processor_params
+	) ) or die ("An error occurred.");
+
 }
 
 // Submited edit job; update job with id $schedule_id in database
-if (isset ( $_REQUEST ['schedule_submit'] ) == 'Save') {
+if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 'Save') {
 	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
 	
 	$schedule_id = $_REQUEST ['scheduledID'];
@@ -60,13 +73,18 @@ if (isset ( $_REQUEST ['schedule_submit'] ) == 'Save') {
 		$startdate = $_REQUEST ['startdate'];
 	}
 	
-
-	$sql = "UPDATE scheduled_task " .
-	"SET repeat_type = " . $schedule_type . ",
-			" . "first_run_time = '" . $pg_date . "',
-					" . "repeat_after_days = " . $repeatafter . "," . "repeat_on_month_day = " . $oneverydate . "" . "WHERE id=$schedule_id";
-	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
+	//update scheduled task
+	$sql_update = "SELECT * from sp_dashboard_update_scheduled_task($1,$2,$3,$4,$5)";
+	$res = pg_prepare ( $db, "my_query2", $sql_update );
 	
+	$res = pg_execute ( $db, "my_query2", array (
+			$schedule_id,
+			$schedule_type,
+			$repeatafter,
+			$oneverydate,
+			$pg_date
+	) ) or die ("An error occurred.");
+
 }
 ?>
 <?php include 'dashboardCreatJobs.php';?>
@@ -164,8 +182,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) == 'Save') {
 
 										</div>
 									</div>
-									<div class="panel panel-default panel_scheduled_job"
-										id="pnl_l2a_scheduled">
+									<div class="panel panel-default panel_scheduled_job">
 
 										<!-- l3a processor_id = 2 -->
 									<?php
@@ -187,7 +204,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) == 'Save') {
 					</div>
 					<!-- L3B Processor ----------------------------------------------------------------------------------------------------------------------- -->
 					<div id="tab_l3b">
-						<a href="#tab_l3b">L3B Processor</a>
+						<a href="#tab_l3b">L3B LAI Processor</a>
 						<div>
 							<div class="panel_resources_and_output_container"
 								id="pnl_l3b_resources_and_output_container">
@@ -238,8 +255,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) == 'Save') {
 										</div>
 									</div>
 
-									<div class="panel panel-default panel_scheduled_job"
-										id="pnl_l2a_scheduled">
+									<div class="panel panel-default panel_scheduled_job">
 										<!-- l3b lai processor_id = 3 -->
 									<?php
 									
@@ -263,7 +279,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) == 'Save') {
 
 					<!-- L3b pheno NDVI Processor ----------------------------------------------------------------------------------------------------------------------- -->
 					<div id="tab_l3b_nvdi">
-						<a href="#tab_l3b_nvdi">L3B NDVI Processor</a>
+						<a href="#tab_l3b_nvdi">L3B Pheno Processor</a>
 						<div>
 							<div class="panel_resources_and_output_container"
 								id="pnl_l3b_nvdi_resources_and_output_container">
@@ -314,8 +330,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) == 'Save') {
 										</div>
 									</div>
 
-									<div class="panel panel-default panel_scheduled_job"
-										id="pnl_l3b_nvdi_scheduled">
+									<div class="panel panel-default panel_scheduled_job">
 										<!-- l3b pheno NDVI processor_id = 7 -->
 									<?php
 									
@@ -394,8 +409,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) == 'Save') {
 										</div>
 									</div>
 
-									<div class="panel panel-default panel_scheduled_job"
-										id="pnl_l2a_scheduled">
+									<div class="panel panel-default panel_scheduled_job">
 										<!-- l4a processor_id = 4 -->
 									<?php
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
@@ -474,8 +488,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) == 'Save') {
 
 										</div>
 									</div>
-									<div class="panel panel-default panel_scheduled_job"
-										id="pnl_l2a_scheduled">
+									<div class="panel panel-default panel_scheduled_job">
 
 										<!-- l4b processor_id = 5 -->
 									<?php
@@ -506,7 +519,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) == 'Save') {
 <script src="scripts/config.js"></script>
 <script src="scripts/helpers.js"></script>
 <script src="scripts/processing_functions.js"></script>
-<script src="scripts/processing.js"></script>
+<script src="scripts/processing.js"></script> 
 
 
 <!-- includes for  datepicker-->
@@ -522,7 +535,8 @@ if (isset ( $_REQUEST ['schedule_submit'] ) == 'Save') {
 <script>
 		$(document).ready(function() {
 			$( ".startdate" ).datepicker({
-				 dateFormat: "yy-mm-dd" 
+				 dateFormat: "yy-mm-dd",
+				 minDate: 0
 					  });
 		});
 </script>

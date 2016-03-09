@@ -71,9 +71,7 @@ function update_scheduled_jobs_layout($processor_id) {
 	 * repeat=2
 	 */
 	
-	/*if ($processor_id == '1') {
-		$action = "dashboard.php#tab_l2a";
-	} else*/if ($processor_id == '2') {
+	if ($processor_id == '2') {
 		$action = "dashboard.php#tab_l3a";
 	} elseif ($processor_id == '3') {
 		$action = "dashboard.php#tab_l3b";
@@ -84,19 +82,10 @@ function update_scheduled_jobs_layout($processor_id) {
 	}elseif ($processor_id == '7'){
 		$action = "dashboard.php#tab_l3b_nvdi";
 	}
-	
-	$sql = " SELECT st.id,".
-			"st.name,".
-			"site.name,".
-			"st.repeat_type,".
-			"st.first_run_time,".
-			"st.repeat_after_days,".
-			"st.repeat_on_month_day ".
-			"FROM scheduled_task as st,site ".
-   			"WHERE st.processor_id=".$processor_id." AND st.site_id=site.id ".
-			"ORDER BY st.id";
-	
+
+	$sql = "SELECT * from sp_get_dashboard_processor_scheduled_task('$processor_id')";
 	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
+	
 	while ( $row = pg_fetch_row ( $result ) ) {
 		
 			if ($row[3] == 0) {
@@ -137,14 +126,14 @@ function update_scheduled_jobs_layout($processor_id) {
 		<div class="panel panel-default panel_job">
 		<form class="form-inline" role="form" name="jobform" method="post" action="$action" style="padding:10px;">
 		<span class="form-group form-group-sm span-scheduled" style=" max-width: 1000px;">
-		<label class="control-label control-max-width" for="jobname">Job Name: <span class="schedule_format">$row[1]</span>
+		<label class="control-label control-max-width">Job Name: <span class="schedule_format">$row[1]</span>
 		</label>
 		<input type="hidden" value="$row[0]" name="scheduledID">
 		<span class="form-group form-group-sm span-scheduled">
-		<label class="control-label control-max-width" for="siteName">Site: <span class="schedule_format">$row[2]</span></label>
+		<label class="control-label control-max-width" >Site: <span class="schedule_format">$row[2]</span></label>
 		</span>
 		<span class="form-group form-group-sm span-scheduled">
-		<label class="control-label control-max-width" for="schedule"> Schedule:
+		<label class="control-label control-max-width" > Schedule:
 		<span class="schedule_format">
 		<select id="schedule$row[0]" name="schedule" onchange="selectedSchedule($row[0])">
 		<option value="0" $selected_once >Once</option>
@@ -154,16 +143,16 @@ function update_scheduled_jobs_layout($processor_id) {
 		</span></label>
 		</span>
 		<span class="form-group form-group-sm span-scheduled" id="div_startdate$row[0]" style="$startdate">
-		<label class="control-label " for="startdate" style="display:inline-block;width:150px;">Date:
-		<input class="startdate schedule_format" type="text" name="startdate" value="$row[4]" >
+		<label class="control-label " style="display:inline-block;width:150px;">Date:
+		<input type="text" class="startdate schedule_format"  name="startdate" value="$row[4]" >
 		</label></span>
 		<span class="form-group form-group-sm span-scheduled" id="div_repeatafter$row[0]" style="$repeatafter">
-		<label class="control-label" for="repeatafter" style="display:inline-block;width:150px;">Repeat after :
-		<input class="schedule_format" id="repeatafter"  name="repeatafter" value="$row[5]" />
+		<label class="control-label" style="display:inline-block;width:150px;">Repeat after :
+		<input type="number" class="schedule_format" name="repeatafter" value="$row[5]" />
 		</label></span>
 		<span class="form-group form-group-sm span-scheduled" id="div_oneverydate$row[0]" style="$oneverydate">
-		<label class="control-label" for="oneverydate" style="display:inline-block;width:150px;">On every: 
-		<input type="number" class="schedule_format" id="oneverydate" name="oneverydate" min="1" max="30" step="1" value="$row[6]"/>
+		<label class="control-label" style="display:inline-block;width:150px;">On every: 
+		<input type="number" class="schedule_format"  name="oneverydate"value="$row[6]"/>
 		</label></span>
 		<span class="form-group form-group-sm span-scheduled schedule_format">
 		<input type="submit" class="btn btn-primary" name="schedule_submit" value="Save">
