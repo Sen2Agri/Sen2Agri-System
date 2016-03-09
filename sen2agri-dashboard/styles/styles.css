@@ -416,7 +416,7 @@ div.pop_up #close_button {
 .error {
 	color: red;
 	text-align: center;
-	padding-top: 20px;
+	padding-top: 5px;
 	
 }
 .message_footer {
@@ -472,4 +472,16 @@ input.right {
 	width: 650px;
 	height:550px;
 	border: 1px solid #94BA49;
+}
+
+.help-block {
+	font-size: 12px;
+	margin-bottom: 0px;
+}
+
+.required .control-label:after {
+  content:"*";
+  font-size: 18px;
+  font-wight: 700;
+  color:red;
 }
