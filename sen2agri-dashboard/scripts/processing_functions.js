@@ -817,25 +817,23 @@ function update_sites(json_data)
 		
 		siteEl.change(function (event) {
 			var siteEl = event.target;
-			var sentinel2TilesEl = $("#"+siteEl.form.id+" select#sentinel2Tiles");
-			var landsatTilesEl = $("#"+siteEl.form.id+" select#landsatTiles");
+			//var sentinel2TilesEl = $("#"+siteEl.form.id+" select#sentinel2Tiles");
+			//var landsatTilesEl = $("#"+siteEl.form.id+" select#landsatTiles");
 			var productsEl = $("#"+siteEl.form.id+" select#inputFiles");
 			var cropMasksEl = $("#"+siteEl.form.id+" select#cropMasks");
 			if(siteEl.selectedIndex > 0) {
-				get_sentinel2_tiles(siteEl.options[siteEl.selectedIndex].value, sentinel2TilesEl);
-				get_landsat_tiles(siteEl.options[siteEl.selectedIndex].value, landsatTilesEl);
+				//get_sentinel2_tiles(siteEl.options[siteEl.selectedIndex].value, sentinel2TilesEl);
+				//get_landsat_tiles(siteEl.options[siteEl.selectedIndex].value, landsatTilesEl);
 				get_products(siteEl.options[siteEl.selectedIndex].value, productsEl);
 				get_crop_masks(siteEl.options[siteEl.selectedIndex].value, cropMasksEl);
 			} else {
-				update_sentinel2_tiles(new Array(), sentinel2TilesEl);
-				update_landsat_tiles(new Array(), landsatTilesEl);
+				//update_sentinel2_tiles(new Array(), sentinel2TilesEl);
+				//update_landsat_tiles(new Array(), landsatTilesEl);
 				update_products(new Array(), productsEl);
 				update_crop_masks(new Array(), cropMasksEl);
 			}
 		});
 	});
-	
-	
 }
 
 function get_crop_masks(siteId, cropMasksEl)
@@ -868,11 +866,9 @@ function update_crop_masks(json_data, cropMasksEl)
 	$.each(json_data, function(index, productObj) {
 		cropMasksEl.append('<option value="'+productObj.product+'">'+productObj.product+'</option>');
 	});
-	
-	
 }
 
-
+/*
 function get_sentinel2_tiles(siteId, sentinel2TilesEl)
 {
 	$.ajax({
@@ -894,7 +890,6 @@ function get_sentinel2_tiles(siteId, sentinel2TilesEl)
 		}
 	});
 }
-
 function update_sentinel2_tiles(json_data, sentinel2TilesEl)
 {
 	//Remove the old options
@@ -905,8 +900,6 @@ function update_sentinel2_tiles(json_data, sentinel2TilesEl)
 	$.each(json_data, function(index, sentinel2TilesObj) {
 		sentinel2TilesEl.append('<option value="'+sentinel2TilesObj.code+'">'+sentinel2TilesObj.code+'</option>');
 	});
-	
-	
 }
 
 function get_landsat_tiles(siteId, landsatTilesEl)
@@ -930,7 +923,6 @@ function get_landsat_tiles(siteId, landsatTilesEl)
 		}
 	});
 }
-
 function update_landsat_tiles(json_data, landsatTilesEl)
 {
 	//Remove the old options
@@ -941,9 +933,8 @@ function update_landsat_tiles(json_data, landsatTilesEl)
 	$.each(json_data, function(index, landsatTilesObj) {
 		landsatTilesEl.append('<option value="'+landsatTilesObj.code+'">'+landsatTilesObj.code+'</option>');
 	});
-	
-	
 }
+*/
 
 function get_products(siteId, productsEl)
 {
@@ -976,8 +967,6 @@ function update_products(json_data, productsEl)
 	$.each(json_data, function(index, productObj) {
 		productsEl.append('<option value="'+productObj.product+'">'+productObj.product+'</option>');
 	});
-	
-	
 }
 
 function get_processor_id(proc_short_name, assign_to)
