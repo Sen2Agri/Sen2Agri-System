@@ -92,6 +92,12 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
     // NOTE: In this moment, the products in loop are not executed in parallel. To do this, the if(i > 0) below
     //      should be removed but in this case, the time-series-builders should wait for all the monodate images
     int i;
+    QList<int> bvImageInvIdxs;
+    QList<int> bvErrImageInvIdxs;
+    QList<int> laiMonoDateFlgsIdxs;
+    // we execute in parallel and launch at once all processing chains for each product
+    // for example, if we have genModels, we launch all bv-input-variable-generation for all products
+    // if we do not have genModels, we launch all NDVIRVIExtraction in the same time for all products
     for(i = 0; i<nbProducts; i++) {
         int loopFirstIdx = i*TasksNoPerProduct;
         // initialize the ndviRvi task index
@@ -108,35 +114,55 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
         }
         // the others comme naturally updated
         // bv-image-inversion -> ndvi-rvi-extraction
-        outAllTasksList[ndviRviExtrIdx+1].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
+        int nBVImageInversionIdx = ndviRviExtrIdx+1;
+        outAllTasksList[nBVImageInversionIdx].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
+        bvImageInvIdxs.append(nBVImageInversionIdx);
+
         // bv-err-image-inversion -> ndvi-rvi-extraction
-        outAllTasksList[ndviRviExtrIdx+2].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
+        int nBVErrImageInversionIdx = nBVImageInversionIdx+1;
+        outAllTasksList[nBVErrImageInversionIdx].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
+        bvErrImageInvIdxs.append(nBVErrImageInversionIdx);
+
         // lai-mono-date-mask-flags -> ndvi-rvi-extraction
-        outAllTasksList[ndviRviExtrIdx+3].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
+        int nLaiMonoDateFlgsIdx = nBVErrImageInversionIdx+1;
+        outAllTasksList[nLaiMonoDateFlgsIdx].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
+        laiMonoDateFlgsIdxs.append(nLaiMonoDateFlgsIdx);
+
         // add the parent tasks for the product formatter, if it is the case
-        if(!bNDayReproc && !bFittedReproc) {
-            for(int j = 0; j<3; j++) {
-                outProdFormatterParentsList.append(outAllTasksList[ndviRviExtrIdx+j+1]);
-            }
-        }
+//        if(!bNDayReproc && !bFittedReproc) {
+//            for(int j = 0; j<3; j++) {
+//                outProdFormatterParentsList.append(outAllTasksList[ndviRviExtrIdx+j+1]);
+//            }
+//        }
     }
     int nCurIdx = i*TasksNoPerProduct;
     if(bNDayReproc || bFittedReproc) {
         // time-series-builder -> last bv-image-inversion AND bv-err-image-inversion
         m_nTimeSeriesBuilderIdx = nCurIdx++;
-        int nPrevBvErrImgInvIdx = (i-1)*TasksNoPerProduct + (TasksNoPerProduct-1);
-        outAllTasksList[m_nTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
-        outAllTasksList[m_nTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
+        //int nPrevBvErrImgInvIdx = (i-1)*TasksNoPerProduct + (TasksNoPerProduct-1);
+        for(int idx: bvImageInvIdxs) {
+            outAllTasksList[m_nTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[idx]);
+        }
+        //outAllTasksList[m_nTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
+        //outAllTasksList[m_nTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
 
         //err-time-series-builder -> last bv-image-inversion AND bv-err-image-inversion
         m_nErrTimeSeriesBuilderIdx = nCurIdx++;
-        outAllTasksList[m_nErrTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
-        outAllTasksList[m_nErrTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
+        for(int idx: bvErrImageInvIdxs) {
+            outAllTasksList[m_nErrTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[idx]);
+        }
+
+        //outAllTasksList[m_nErrTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
+        //outAllTasksList[m_nErrTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
 
         //lai-msk-flags-time-series-builder -> last bv-image-inversion AND bv-err-image-inversion
         m_nLaiMskFlgsTimeSeriesBuilderIdx = nCurIdx++;
-        outAllTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
-        outAllTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
+        for(int idx: laiMonoDateFlgsIdxs) {
+            outAllTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[idx]);
+        }
+
+        //outAllTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
+        //outAllTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
 
         if(bNDayReproc) {
             //profile-reprocessing -> time-series-builder AND err-time-series-builder AND lai-msk-flags-time-series-builder
@@ -172,12 +198,21 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
 //            outAllTasksList[m_nProductFormatterIdx].parentTasks.append(outAllTasksList[m_nFittedProfileReprocessingSplitterIdx]);
         }
     } else {
-        //product-formatter -> last bv-image-inversion AND bv-err-image-inversion and lai-mono-date-mask-flags
+        //product-formatter -> ALL bv-image-inversion AND bv-err-image-inversion and lai-mono-date-mask-flags
         //m_nProductFormatterIdx = nCurIdx;
-        int nPrevBvErrImgInvIdx = (i-1)*TasksNoPerProduct + (TasksNoPerProduct-2);
-        outProdFormatterParentsList.append(outAllTasksList[nPrevBvErrImgInvIdx-2]);
-        outProdFormatterParentsList.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
-        outProdFormatterParentsList.append(outAllTasksList[nPrevBvErrImgInvIdx]);
+        for(int idx: bvImageInvIdxs) {
+            outProdFormatterParentsList.append(outAllTasksList[idx]);
+        }
+        for(int idx: bvErrImageInvIdxs) {
+            outProdFormatterParentsList.append(outAllTasksList[idx]);
+        }
+        for(int idx: laiMonoDateFlgsIdxs) {
+            outProdFormatterParentsList.append(outAllTasksList[idx]);
+        }
+//        int nPrevBvErrImgInvIdx = (i-1)*TasksNoPerProduct + (TasksNoPerProduct-2);
+//        outProdFormatterParentsList.append(outAllTasksList[nPrevBvErrImgInvIdx-2]);
+//        outProdFormatterParentsList.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
+//        outProdFormatterParentsList.append(outAllTasksList[nPrevBvErrImgInvIdx]);
         //outAllTasksList[m_nProductFormatterIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx-1]);
         //outAllTasksList[m_nProductFormatterIdx].parentTasks.append(outAllTasksList[nPrevBvErrImgInvIdx]);
     }
@@ -263,18 +298,19 @@ LAIGlobalExecutionInfos LaiRetrievalHandler::HandleNewTilesList(EventProcessingC
         TaskToSubmit &bvErrImageInversionTask = allTasksList[ndviRviExtrIdx+2];
         TaskToSubmit &genMonoDateMskFagsTask = allTasksList[ndviRviExtrIdx+3];
 
+        const auto & singleNdviFile = ndviRviExtractorTask.GetFilePath("single_ndvi.tif");
         const auto & ftsFile = ndviRviExtractorTask.GetFilePath("ndvi_rvi.tif");
         const auto & monoDateLaiFileName = bvImageInversionTask.GetFilePath("LAI_mono_date_img.tif");
         const auto & monoDateErrFileName = bvErrImageInversionTask.GetFilePath("LAI_mono_date_ERR_img.tif");
         const auto & monoDateMskFlgsFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img.tif");
 
         // save the mono date LAI file name list
-        ndviFileNames.append(ftsFile);
+        ndviFileNames.append(singleNdviFile);
         monoDateLaiFileNames.append(monoDateLaiFileName);
         monoDateErrLaiFileNames.append(monoDateErrFileName);
         monoDateMskFlagsLaiFileNames.append(monoDateMskFlgsFileName);
 
-        QStringList ndviRviExtractionArgs = GetNdviRviExtractionArgs(inputProduct, ftsFile, resolution);
+        QStringList ndviRviExtractionArgs = GetNdviRviExtractionArgs(inputProduct, ftsFile, singleNdviFile, resolution);
         QStringList bvImageInvArgs = GetBvImageInvArgs(ftsFile, inputProduct, modelsFolder, monoDateLaiFileName);
         QStringList bvErrImageInvArgs = GetBvErrImageInvArgs(ftsFile, inputProduct, modelsFolder, monoDateErrFileName);
         QStringList genMonoDateMskFagsArgs = GetMonoDateMskFagsArgs(inputProduct, monoDateMskFlgsFileName);
@@ -478,9 +514,11 @@ void LaiRetrievalHandler::GetModelFileList(QStringList &outListModels, const QSt
     }
 }
 
-QStringList LaiRetrievalHandler::GetNdviRviExtractionArgs(const QString &inputProduct, const QString &ftsFile, const QString &resolution) {
+QStringList LaiRetrievalHandler::GetNdviRviExtractionArgs(const QString &inputProduct, const QString &ftsFile, const QString &ndviFile,
+                                                          const QString &resolution) {
     return { "NdviRviExtraction2",
            "-xml", inputProduct,
+           "-ndvi", ndviFile,
            "-fts", ftsFile,
            "-outres", resolution
     };
@@ -627,6 +665,9 @@ QStringList LaiRetrievalHandler::GetProductFormatterArgs(TaskToSubmit &productFo
                             "-processor", "vegetation",
                             "-gipp", executionInfosPath,
                             "-outprops", outPropsPath};
+    productFormatterArgs += "-il";
+    productFormatterArgs += listProducts;
+
     productFormatterArgs += "-processor.vegetation.laindvi";
     for(const LAIProductFormatterParams &params: productParams) {
         productFormatterArgs += params.tileId;
@@ -772,7 +813,6 @@ const QString& LaiRetrievalHandler::GetDefaultCfgVal(std::map<QString, QString> 
     }
     return defVal;
 }
-
 
 ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                           const ConfigurationParameterValueMap &requestOverrideCfgValues)
