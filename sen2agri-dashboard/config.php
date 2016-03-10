@@ -230,7 +230,7 @@
 						</div>
 						<div id="l4a" class="panel-collapse collapse">
 							<div class="panel-body">
-								<form role="form" id="l4aform" method="post" action="getProcessorNewConfig.php">
+								<form enctype="multipart/form-data" role="form" id="l4aform" method="post" action="getProcessorNewConfig.php">
 									<div class="row">
 										<div class="col-md-8">
 											<div class="form-group form-group-sm required">
@@ -247,6 +247,22 @@
 												<select class="form-control" id="landsatTiles" name="landsatTiles"></select>
 											</div>
 											-->
+											<div class="form-group form-group-sm required">
+												<label class="control-label" for="inputFiles">Available input files:</label>
+												<select multiple class="form-control" id="inputFiles" name="inputFiles[]"></select>
+												<span class="help-block">The list of products descriptors (xml files).</span>
+											</div>
+											<div class="form-group form-group-sm">
+												<label class="control-label" for="resolution">Resolution:</label>
+												<select class="form-control" id="resolution" name="resolution">
+													<option value="">Select a resolution</option>
+													<option value="10" selected="selected">10</option>
+													<option value="20">20</option>
+													<option value="30">30</option>
+													<option value="60">60</option>
+												</select>
+												<span class="help-block">Resolution of the output image.</span>
+											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="mission">Mission:</label>
 												<select class="form-control" id="mission" name="mission">
@@ -262,30 +278,22 @@
 												<span class="help-block">The reference polygons.</span>
 											</div>
 											<div class="form-group form-group-sm">
+												<label class="control-label" for="refr">Reference raster:</label>
+												<input type="file" class="form-control" id="refr" name="refr">
+												<span class="help-block">The reference raster when in situ data is not available.</span>
+											</div>
+											
+											<div class="form-group form-group-sm">
 												<label class="control-label" for="ratio">Ratio:</label>
 												<input type="number" min="0" step="0.01" class="form-control" id="ratio" name="ratio" value="0.75">
 												<span class="help-block">The ratio between the validation and training polygons.</span>
 											</div>
 											<div class="form-group form-group-sm">
-												<label class="control-label" for="inputFiles">Available input files:</label>
-												<select multiple class="form-control" id="inputFiles" name="inputFiles[]"></select>
-												<span class="help-block">The list of products descriptors (xml files).</span>
-											</div>
-											<div class="form-group form-group-sm">
-												<label class="control-label" for="resolution">Resolution:</label>
-												<select class="form-control" id="resolution" name="resolution">
-													<option value="">Select a resolution</option>
-													<option value="10">10</option>
-													<option value="20">20</option>
-													<option value="30">30</option>
-													<option value="60">60</option>
+												<label for="trm">The temporal resampling mode:</label>
+												<select class="form-control" id="trm" name="trm">
+													<option value="resample" selected="selected">RESAMPLE</option>
+													<option value="gapfill">GAPFILL</option>
 												</select>
-												<span class="help-block">Resolution of the output image.</span>
-											</div>
-											<div class="form-group form-group-sm">
-												<label class="control-label">The temporal resampling mode:</label>
-												<input type="radio" class="radio-inline" id="trm1" value="1" name="trm"><label for="trm1" style="font-weight: 400;">&nbsp;resample</label>&nbsp;
-												<input type="radio" class="radio-inline" id="trm2" value="2" name="trm" checked="checked"><label for="trm2" style="font-weight: 400;">&nbsp;gapfill</label>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="radius">Radius:</label>
@@ -338,11 +346,6 @@
 												<span class="help-block">Minimum size of a region (in pixel unit) in segmentation.</span>
 											</div>
 											<div class="form-group form-group-sm">
-												<label class="control-label" for="refr">Reference raster:</label>
-												<input type="text" class="form-control" id="refr" name="refr">
-												<span class="help-block">The reference raster when insitu data is not available.</span>
-											</div>
-											<div class="form-group form-group-sm">
 												<label class="control-label" for="eroderad">Erosion radius:</label>
 												<input type="number" min="0" step="1" class="form-control" id="eroderad" name="eroderad" value="1">
 												<span class="help-block">The radius used for erosion.</span>
@@ -367,7 +370,7 @@
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="rfnbtrees">Training trees:</label>
-												<input type="number" min="0" step="1" class="form-control" id="rfnbtrees" name="rfnbtrees">
+												<input type="number" min="0" step="1" class="form-control" id="rfnbtrees" name="rfnbtrees" value="100">
 												<span class="help-block" value="100">The number of trees used for training.</span>
 											</div>
 											<div class="form-group form-group-sm">
@@ -385,11 +388,6 @@
 												<input type="number" min="0" step="1" class="form-control" id="minarea" name="minarea" value="20">
 												<span class="help-block">The minium number of pixel in an area where for an equal number of crop and nocrop samples the crop decision is taken.</span>
 											</div>
-											<div class="form-group form-group-sm">
-												<label class="control-label" for="pixsize">Pixel size:</label>
-												<input type="number" min="0" step="1" class="form-control" id="pixsize" name="pixsize" value="10">
-												<span class="help-block">The size, in meters, of a pixel.</span>
-											</div>
 											<input type="submit" name="l4a" class="btn btn-primary" value="Submit">
 										</div>
 									</div>
@@ -398,44 +396,58 @@
 						</div>
 					</div>
 					<!-- end L4A -->
-
+					
 					<!-- start L4B -->
 					<div class="panel panel-default">
 						<div class="panel-heading">
 							<h4 class="panel-title">
-								<a data-toggle="collapse" data-parent="#accordion" href="#l4b">L4B
-									processor</a>
+								<a data-toggle="collapse" data-parent="#accordion" href="#l4b">L4B processor</a>
 							</h4>
 						</div>
 						<div id="l4b" class="panel-collapse collapse">
 							<div class="panel-body">
-								<form role="form" id="l4bform" method="post"
-									action="getProcessorNewConfig.php">
+								<form enctype="multipart/form-data" role="form" id="l4bform" method="post" action="getProcessorNewConfig.php">
 									<div class="row">
 										<div class="col-md-8">
 											<div class="form-group form-group-sm">
-												<label class="control-label" for="siteId">Site:</label> <select
-													class="form-control" id="siteId" name="siteId">
-												</select>
+												<label class="control-label" for="siteId">Site:</label>
+												<select class="form-control" id="siteId" name="siteId"> </select>
 											</div>
-
+											<!--
 											<div class="form-group form-group-sm">
-												<label class="control-label" for="sentinel2Tiles">Sentinel2
-													tiles:</label> <select class="form-control"
-													id="sentinel2Tiles" name="sentinel2Tiles">
-												</select>
+												<label class="control-label" for="sentinel2Tiles">Sentinel2 tiles:</label>
+												<select class="form-control" id="sentinel2Tiles" name="sentinel2Tiles"> </select>
 											</div>
 											<div class="form-group form-group-sm">
-												<label class="control-label" for="landsatTiles">Landsat
-													tiles:</label> <select class="form-control"
-													id="landsatTiles" name="landsatTiles">
+												<label class="control-label" for="landsatTiles">Landsat tiles:</label>
+												<select class="form-control" id="landsatTiles" name="landsatTiles"> </select>
+											</div>
+											-->
+											<div class="form-group form-group-sm">
+												<label class="control-label" for="inputFiles">Available input files:</label>
+												<select multiple class="form-control" id="inputFiles" name="inputFiles[]"></select>
+												<span class="help-block">The list of products descriptors (xml files).</span>
+											</div>
+											<div class="form-group form-group-sm">
+												<label class="control-label" for="cropMask">Crop masks:</label>
+												<select class="form-control" id="cropMask" name="cropMask"></select>
+												<span class="help-block">The list of crop mask products.</span>
+											</div>
+											<div class="form-group form-group-sm">
+												<label class="control-label" for="resolution">Resolution:</label>
+												<select class="form-control" id="resolution" name="resolution">
+													<option value="">Select a resolution</option>
+													<option value="10" selected="selected">10</option>
+													<option value="20">20</option>
+													<option value="30">30</option>
+													<option value="60">60</option>
 												</select>
+												<span class="help-block">Resolution of the output image.</span>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="refp">Reference polygons:</label>
-												<input type="file" class="form-control" id="refp"
-													name="refp"> <span class="help-block">The reference
-													polygons.</span>
+												<input type="file" class="form-control" id="refp" name="refp">
+												<span class="help-block">The reference polygons.</span>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="mission">Main mission:</label>
@@ -444,103 +456,59 @@
 													<option value="LANDSAT">LANDSAT</option>
 													<option value="SENTINEL">SENTINEL</option>
 												</select>
-												<!--  <input type="text" class="form-control" id="mission"
-													name="mission" value="SPOT">-->
-												<span class="help-block">The main mission for the time
-													series.</span>
+												<span class="help-block">The main mission for the time series.</span>
 											</div>
 											<div class="form-group form-group-sm">
-												<label class="control-label" for="ratio">Ratio:</label> <input
-													type="number" min="0" step="0.01" class="form-control"
-													id="ratio" name="ratio" value="0.75"> <span
-													class="help-block">The ratio between the validation and
-													training polygons.</span>
+												<label class="control-label" for="ratio">Ratio:</label>
+												<input type="number" min="0" step="0.01" class="form-control" id="ratio" name="ratio" value="0.75">
+												<span class="help-block">The ratio between the validation and training polygons.</span>
 											</div>
 											<div class="form-group form-group-sm">
-												<label class="control-label" for="inputFiles">Available
-													input files:</label> <select multiple class="form-control"
-													id="inputFiles" name="inputFiles[]">
-												</select> <span class="help-block">The list of products
-													descriptors (xml files).</span>
+												<label for="trm">The temporal resampling mode:</label>
+												<select class="form-control" id="trm" name="trm">
+													<option value="resample" selected="selected">RESAMPLE</option>
+													<option value="gapfill">GAPFILL</option>
+												</select>
 											</div>
 											<div class="form-group form-group-sm">
-												<label class="control-label" for="cropMasks">Crop masks:</label>
-												<select multiple class="form-control" id="cropMasks" name="cropMasks[]"></select>
-												<span class="help-block">The list of crop mask products.</span>
-											</div>
-											<div class="form-group form-group-sm">
-												<label class="control-label" for="resolution">Resolution:</label>
-												<!-- <input type="number" min="0" max="20" step="10"
-													class="form-control" id="resolution" name="resolution"
-													value="10">--> 
-												<select class="form-control" id="resolution"
-													name="resolution">
-													<option value="">Select a resolution</option>
-													<option value="10">10</option>
-													<option value="20">20</option>
-													<option value="30">30</option>
-													<option value="60">60</option>
-												</select><span class="help-block">Resolution of the
-													output image.</span>
-											</div>
-											<div class="form-group form-group-sm">
-												<label class="control-label" for="trm">The temporal
-													resampling mode:</label> <input type="radio"
-													class="radio-inline" id="trm" name="trm"> resample <input
-													checked="checked" type="radio" class="radio-inline"
-													id="trm" name="trm"> gapfill
-											</div>
-											<div class="form-group form-group-sm">
-												<label class="control-label" for="radius">Radius:</label> <input
-													type="number" min="0" step="1" class="form-control"
-													id="radius" name="radius" value="5"> <span
-													class="help-block">The radius used for gap filling, in
-													days.</span>
+												<label class="control-label" for="radius">Radius:</label>
+												<input type="number" min="0" step="1" class="form-control" id="radius" name="radius" value="5">
+												<span class="help-block">The radius used for gap filling, in days.</span>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="rseed">Random seed:</label>
-												<input type="number" min="0" step="1" class="form-control"
-													id="rseed" name="rseed" value="0"> <span
-													class="help-block">The random seed used for training.</span>
+												<input type="number" min="0" step="1" class="form-control" id="rseed" name="rseed" value="0">
+												<span class="help-block">The random seed used for training.</span>
 											</div>
 											<div class="form-group form-group-sm">
-												<label for="classifier">Classifier:</label> <select
-													class="form-control" id="classifier" name="classifier">
-													<!-- <option value="">Select a classifier</option> -->
+												<label for="classifier">Classifier:</label>
+												<select class="form-control" id="classifier" name="classifier">
 													<option value="rf" selected="selected">RF</option>
 													<option value="svm">SVM</option>
-												</select> <span class="help-block">Random forest clasifier /
-													SVM classifier</span>
+												</select>
+												<span class="help-block">Random forest clasifier / SVM classifier</span>
 											</div>
-
 											<div class="form-group form-group-sm">
-												<label class="control-label" for="field">Field:</label> <input
-													type="text" class="form-control" id="field" name="field"
-													value="CODE"><span class="help-block"></span>
+												<label class="control-label" for="field">Field:</label>
+												<input type="text" class="form-control" id="field" name="field" value="CODE">
+												<span class="help-block"></span>
 											</div>
-
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="rfnbtrees">Training trees:</label>
-												<input type="number" min="0" step="1" class="form-control"
-													id="rfnbtrees" name="rfnbtrees" value="100"> <span
-													class="help-block">The number of trees used for training.</span>
+												<input type="number" min="0" step="1" class="form-control" id="rfnbtrees" name="rfnbtrees" value="100">
+												<span class="help-block">The number of trees used for training.</span>
 											</div>
 											<div class="form-group form-group-sm">
-												<label class="control-label" for="rfmax">Random Forest
-													classifier max depth:</label> <input type="number" min="0"
-													step="1" class="form-control" id="rfmax" name="rfmax"
-													value="25"> <span class="help-block">Maximum depth of the
-													trees used for Random Forest classifier.</span>
+												<label class="control-label" for="rfmax">Random Forest classifier max depth:</label>
+												<input type="number" min="0" step="1" class="form-control" id="rfmax" name="rfmax" value="25">
+												<span class="help-block">Maximum depth of the trees used for Random Forest classifier.</span>
 											</div>
 											<div class="form-group form-group-sm">
-												<label class="control-label" for="rfmin">Minimum number of
-													samples:</label> <input type="number" min="0" step="1"
-													class="form-control" id="rfmin" name="rfmin" value="25" />
-												<span class="help-block">Minimum number of samples in each
-													node used by the classifier.</span>
+												<label class="control-label" for="rfmin">Minimum number of samples:</label>
+												<input type="number" min="0" step="1" class="form-control" id="rfmin" name="rfmin" value="25" />
+												<span class="help-block">Minimum number of samples in each node used by the classifier.</span>
 											</div>
-											<input type="submit" name="l4b" class="btn btn-primary"
-												value="Submit">
+											<input type="submit" name="l4b" class="btn btn-primary" value="Submit">
 										</div>
 									</div>
 								</form>
@@ -548,9 +516,9 @@
 						</div>
 					</div>
 					<!-- end L4B -->
-
+					
 				</div>
-
+				
 			</div>
 			<div class="clearing">&nbsp;</div>
 		</div>
@@ -590,269 +558,206 @@
 		$("#"+form_name+" #inputFiles").find('option').remove().end();
 	};
 	
-	$(document).ready(function() {	//Load sites
-									get_all_sites();
-									get_processor_id('l2a', 'l2a_proc_id');
-									get_processor_id('l4a', 'l4a_proc_id');
-									
-									// initialize date picker
-									$("#synthDate").datepicker({
-										dateFormat: "yymmdd",
-										onSelect: function() { $(this).keyup(); } // force validation after selection
-									});
-									
-									// initialize dialog
-									$("#dialog-message").dialog({
-										autoOpen: false,
-										modal: true,
-										buttons: { Ok: function() { $(this).dialog("close"); } }
-									});
-									
+	$(document).ready(function() {
+					// load sites
+					get_all_sites();
+					get_processor_id('l2a', 'l2a_proc_id');
+					get_processor_id('l4a', 'l4a_proc_id');
+					
+					// initialize date picker
+					$("#synthDate").datepicker({
+						dateFormat: "yymmdd",
+						onSelect: function() { $(this).keyup(); } // force validation after selection
+					});
+					
+					// initialize dialog
+					$("#dialog-message").dialog({
+						autoOpen: false,
+						modal: true,
+						buttons: { Ok: function() { $(this).dialog("close"); } }
+					});
+
+<?php
+// Check if this is a redirect from a FORM being submitted
+if (isset($_SESSION['processor'])) {
+	if (($_SESSION['processor'] == 'l4a') || ($_SESSION['processor'] == 'l4b')) {
+?>
+					$('#<?php echo $_SESSION['processor'] ?>').collapse('show');
+					open_dialog("Your job has been successfully submitted!");
+					
+<?php
+	}
+	unset($_SESSION['processor']);
+}
+?>
 // validate l3aform form on keyup and submit
-									$("#l3aform").validate({
-										rules: {
-											siteId:			{ required: true },
-											'inputFiles[]': { required: true },
-											synthDate:		{ required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])" },
-											halfSynthesis:	{ required: true },
-										},
-										messages: {
-											synthDate: { pattern : "Enter a date in YYYYMMDD format" }
-										},
-										highlight: function(element, errorClass) {
-											$(element).parent().addClass("has-error");
-										},
-										unhighlight: function(element, errorClass) {
-											$(element).parent().removeClass("has-error");
-										},
-										errorPlacement: function(error, element) {
-											error.appendTo(element.parent());
-										},
-										submitHandler: function(form) {
-											$.ajax({
-												url: $(form).attr('action'),
-												type: $(form).attr('method'),
-												data: $(form).serialize(),
-												success: function(response) {
-													open_dialog("Your job has been successfully submitted!");
-													reset_form("l3aform");
-												}
-											 });
-										},
-										// set this class to error-labels to indicate valid fields
-										success: function(label) {
-											label.remove();
-										},
-									});
-									
+					$("#l3aform").validate({
+						rules: {
+							siteId:			{ required: true },
+							'inputFiles[]': { required: true },
+							synthDate:		{ required: true, pattern: "[0-9]{4}(0[1-9]|1[0-2])(0[1-9]|[1-2][0-9]|3[0-1])" },
+						},
+						messages: {
+							synthDate: { pattern : "Enter a date in YYYYMMDD format" }
+						},
+						highlight: function(element, errorClass) {
+							$(element).parent().addClass("has-error");
+						},
+						unhighlight: function(element, errorClass) {
+							$(element).parent().removeClass("has-error");
+						},
+						errorPlacement: function(error, element) {
+							error.appendTo(element.parent());
+						},
+						submitHandler: function(form) {
+							$.ajax({
+								url: $(form).attr('action'),
+								type: $(form).attr('method'),
+								data: $(form).serialize(),
+								success: function(response) {
+									open_dialog("Your job has been successfully submitted!");
+									reset_form("l3aform");
+								}
+							 });
+						},
+						// set this class to error-labels to indicate valid fields
+						success: function(label) {
+							label.remove();
+						},
+					});
+					
 // validate l3b LAI form form on keyup and submit
-									$("#l3b_laiform").validate({
-										rules : {
-											siteId:			{ required: true },
-											'inputFiles[]': { required: true },
-											genmodel:		{ pattern: "[0-1]{1}" },
-											reproc:			{ pattern: "[0-1]{1}" },
-											fitted:			{ pattern: "[0-1]{1}" },
-										},
-										messages: {
-											genmodel: { pattern : "Enter 0 or 1" },
-											reproc: { pattern : "Enter 0 or 1" },
-											fitted: { pattern : "Enter 0 or 1" },
-										},
-										highlight: function(element, errorClass) {
-											$(element).parent().addClass("has-error");
-										},
-										unhighlight: function(element, errorClass) {
-											$(element).parent().removeClass("has-error");
-										},
-										errorPlacement: function(error, element) {
-											error.appendTo(element.parent());
-										},
-										submitHandler: function(form) {
-											$.ajax({
-												url: $(form).attr('action'),
-												type: $(form).attr('method'),
-												data: $(form).serialize(),
-												success: function(response) {
-													open_dialog("Your job has been successfully submitted!");
-													reset_form("l3b_laiform");
-												}
-											});
-										},
-										// set this class to error-labels to indicate valid fields
-										success: function(label) {
-											label.remove();
-										},
-									});
-									
+					$("#l3b_laiform").validate({
+						rules : {
+							siteId:			{ required: true },
+							'inputFiles[]': { required: true },
+							genmodel:		{ pattern: "[0-1]{1}" },
+							reproc:			{ pattern: "[0-1]{1}" },
+							fitted:			{ pattern: "[0-1]{1}" },
+						},
+						messages: {
+							genmodel: { pattern : "The only accepted values are 0 and 1" },
+							reproc:   { pattern : "The only accepted values are 0 and 1" },
+							fitted:   { pattern : "The only accepted values are 0 and 1" },
+						},
+						highlight: function(element, errorClass) {
+							$(element).parent().addClass("has-error");
+						},
+						unhighlight: function(element, errorClass) {
+							$(element).parent().removeClass("has-error");
+						},
+						errorPlacement: function(error, element) {
+							error.appendTo(element.parent());
+						},
+						submitHandler: function(form) {
+							$.ajax({
+								url: $(form).attr('action'),
+								type: $(form).attr('method'),
+								data: $(form).serialize(),
+								success: function(response) {
+									open_dialog("Your job has been successfully submitted!");
+									reset_form("l3b_laiform");
+								}
+							});
+						},
+						// set this class to error-labels to indicate valid fields
+						success: function(label) {
+							label.remove();
+						},
+					});
+					
 // validate l3b NVDI(pheno) form form on keyup and submit
-									$("#l3b_nvdiform").validate({
-										rules: {
-											siteId: 		{ required: true },
-											'inputFiles[]': { required: true },
-										},
-										highlight: function(element, errorClass) {
-											$(element).parent().addClass("has-error");
-										},
-										unhighlight: function(element, errorClass) {
-											$(element).parent().removeClass("has-error");
-										},
-										errorPlacement: function(error, element) {
-											error.appendTo(element.parent());
-										},
-										submitHandler :function(form) {
-											$.ajax({
-												url: $(form).attr('action'),
-												type: $(form).attr('method'),
-												data: $(form).serialize(),
-												success: function(response) {
-													open_dialog("Your job has been successfully submitted!");
-													reset_form("l3b_nvdiform");
-												}
-											});
-										},
-										// set this class to error-labels to indicate valid fields
-										success: function(label) {
-											label.remove();
-										},
-									});
-
+					$("#l3b_nvdiform").validate({
+						rules: {
+							siteId: 		{ required: true },
+							'inputFiles[]': { required: true },
+						},
+						highlight: function(element, errorClass) {
+							$(element).parent().addClass("has-error");
+						},
+						unhighlight: function(element, errorClass) {
+							$(element).parent().removeClass("has-error");
+						},
+						errorPlacement: function(error, element) {
+							error.appendTo(element.parent());
+						},
+						submitHandler: function(form) {
+							$.ajax({
+								url: $(form).attr('action'),
+								type: $(form).attr('method'),
+								data: $(form).serialize(),
+								success: function(response) {
+									open_dialog("Your job has been successfully submitted!");
+									reset_form("l3b_nvdiform");
+								}
+							});
+						},
+						// set this class to error-labels to indicate valid fields
+						success: function(label) {
+							label.remove();
+						},
+					});
+					
 // validate l4aform form on keyup and submit
-									$("#l4aform")
-											.validate(
-													{
-														rules : {
-															siteId : "required",
-															//sentinel2Tiles : "required",
-															landsatTiles : "required",
-															'inputFiles[]' : "required",
-														/* not required
-														mission:"mission",
-														refp : "required",
-														ratio : "required",													
-														radius : "required",
-														nbtrsample : "required",
-														rseed : "required",
-														lmbd : "required",
-														weight : "required",
-														nbcomp : "required",
-														spatialr : "required",
-														ranger : "required",
-														minsize : "required",
-														refr : "required",
-														eroderad : "required",
-														alpha : "required",
-														classifier:"required",
-														field:"required",
-														rfnbtrees : "required",
-														rfmax : "required",
-														rfmin : "required",
-														minarea : "minarea"
-														pixsize : "required"*/
-														},
-														/*
-														messages : {
-															t0 : {
-																pattern : "Enter a date in YYYYMMDD format"
-															},
-															tend : {
-																pattern : "Enter a date in YYYYMMDD format"
-															}
-														},*/
-														// the errorPlacement has to take the table layout into account
-														errorPlacement : function(
-																error, element) {
-															error.appendTo(element
-																	.parent());
-														},
-														// specifying a submitHandler prevents the default submit, good for the demo
-														submitHandler :function(form) {
-															$.ajax({
-															url: $(form).attr('action'),
-															type: $(form).attr('method'),
-															data: $(form).serialize(),
-															success: function(response) {
-															   alert("Your form was submitted!");
-															   //clear inputs after submit
-															   $("#l4aform")[0].reset();
-															   $("#inputFiles").val('');				
-																	 }     
-															 });
-													 },
-														// set this class to error-labels to indicate valid fields
-														success : function(label) {
-															label.remove();
-														},
-														highlight : function(element,
-																errorClass) {
-															$(element)
-																	.parent()
-																	.addClass(
-																			"has-error");
-														},
-														unhighlight : function(element,
-																errorClass) {
-															$(element)
-																	.parent()
-																	.removeClass(
-																			"has-error");
-														}
-													});
-
-									// validate l4bform form on keyup and submit
-									$("#l4bform")
-											.validate(
-													{
-														rules : {
-															siteId : "required",
-															//sentinel2Tiles : "required",
-															landsatTiles : "required",
-															//refp : "required",
-															'inputFiles[]' : "required",
-															cropMasks : "required",
-														/*resolution : "required",
-														 */
-														},
-														// the errorPlacement has to take the table layout into account
-														errorPlacement : function(
-																error, element) {
-															error.appendTo(element
-																	.parent());
-														},
-														// specifying a submitHandler prevents the default submit, good for the demo
-														submitHandler :function(form) {
-															$.ajax({
-															url: $(form).attr('action'),
-															type: $(form).attr('method'),
-															data: $(form).serialize(),
-															success: function(response) {
-															   alert("Your form was submitted!");
-															   //clear inputs after submit
-															   $("#l4bform")[0].reset();
-															   $("#inputFiles").val('');
-															   $("#cropMasks").val('');
-																	 }     
-															 });
-													 },
-														// set this class to error-labels to indicate valid fields
-														success : function(label) {
-															label.remove();
-														},
-														highlight : function(element,
-																errorClass) {
-															$(element)
-																	.parent()
-																	.addClass(
-																			"has-error");
-														},
-														unhighlight : function(element,
-																errorClass) {
-															$(element)
-																	.parent()
-																	.removeClass(
-																			"has-error");
-														}
-													});
+					$("#l4aform").validate({
+						rules : {
+							siteId: 		{ required: true },
+							'inputFiles[]': { required: true },
+						},
+						highlight: function(element, errorClass) {
+							$(element).parent().addClass("has-error");
+						},
+						unhighlight: function(element, errorClass) {
+							$(element).parent().removeClass("has-error");
+						},
+						errorPlacement: function(error, element) {
+							error.appendTo(element.parent());
+						},
+						// specifying a submitHandler prevents the default submit, good for the demo
+						submitHandler :function(form) {
+							$.ajax({
+								url: $(form).attr('action'),
+								type: $(form).attr('method'),
+								data: new FormData(form),
+								success: function(response) { }
+							});
+						},
+						// set this class to error-labels to indicate valid fields
+						success : function(label) {
+							label.remove();
+						},
+					});
+					
+// validate l4bform form on keyup and submit
+					$("#l4bform") .validate( {
+						rules : {
+							siteId: 		{ required: true },
+							'inputFiles[]': { required: true },
+							cropMask:		{ required: true },
+						},
+						highlight: function(element, errorClass) {
+							$(element).parent().addClass("has-error");
+						},
+						unhighlight: function(element, errorClass) {
+							$(element).parent().removeClass("has-error");
+						},
+						errorPlacement: function(error, element) {
+							error.appendTo(element.parent());
+						},
+						// specifying a submitHandler prevents the default submit, good for the demo
+						submitHandler :function(form) {
+							$.ajax({
+								url: $(form).attr('action'),
+								type: $(form).attr('method'),
+								data: new FormData(form),
+								success: function(response) { }     
+							});
+						},
+						// set this class to error-labels to indicate valid fields
+						success : function(label) {
+							label.remove();
+						},
+					});
 	});
 </script>
 <?php include "ms_foot.php"; ?>
