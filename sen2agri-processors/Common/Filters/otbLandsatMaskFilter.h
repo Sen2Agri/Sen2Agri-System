@@ -1,0 +1,104 @@
+#ifndef __otbLandsatMaskFilter_h
+#define __otbLandsatMaskFilter_h
+
+#include "itkBinaryFunctorImageFilter.h"
+#include "otbVectorImage.h"
+
+#define NODATA          -10000
+
+
+namespace otb
+{
+
+
+template <typename PixelType>
+class LandsatMaskFunctor
+{
+public:
+    LandsatMaskFunctor() {}
+
+    PixelType operator()(const PixelType &maskQuality, const PixelType &maskClouds) const
+    {
+        PixelType result(1);
+
+        // Band 3 from the Quality mask contains the pixel validity
+        // Band 1 from the Quality mask contains the saturation
+        result[0] = (((maskQuality[2] & 0x01) | maskQuality[0] | maskClouds[0]) == 0) ? 0 : 1;
+
+        return result;
+    }
+
+    bool operator!=(const LandsatMaskFunctor a) const
+    {
+        return false ;
+    }
+
+    bool operator==(const LandsatMaskFunctor a) const
+    {
+        return true;
+    }
+};
+
+
+/** \class LandsatMaskFilter
+ * \brief This filter builds the mask for a Landsat product.
+ *
+ * \ingroup OTBImageManipulation
+ */
+template<class TImage>
+class ITK_EXPORT LandsatMaskFilter
+  : public itk::BinaryFunctorImageFilter<TImage, TImage, TImage, LandsatMaskFunctor<typename TImage::PixelType> >
+{
+public:
+  /** Standard class typedefs. */
+  typedef LandsatMaskFilter                       Self;
+  typedef itk::BinaryFunctorImageFilter<TImage, TImage, TImage, LandsatMaskFunctor<typename TImage::PixelType> > Superclass;
+  typedef itk::SmartPointer<Self>                             Pointer;
+  typedef itk::SmartPointer<const Self>                       ConstPointer;
+
+  /** Method for creation through the object factory. */
+  itkNewMacro(Self);
+
+  /** Run-time type information (and related methods). */
+  itkTypeMacro(VectorImageToImagePixelAccessor, BinaryFunctorImageFilter);
+
+  /** Template related typedefs */
+  typedef TImage ImageType;
+
+  typedef typename ImageType::Pointer  ImagePointerType;
+
+  typedef typename ImageType::PixelType        ImagePixelType;
+
+  typedef typename ImageType::InternalPixelType InternalPixelType;
+  typedef typename ImageType::RegionType        ImageRegionType;
+
+
+  /** ImageDimension constant */
+  itkStaticConstMacro(OutputImageDimension, unsigned int, TImage::ImageDimension);
+
+  /** Set the Landsat quality mask (it contains a band for validity and a band for saturation). */
+  void SetInputQualityMask(const TImage *qualityMask);
+
+  /** Set the Landsat Cloud mask. */
+  void SetInputCloudsMask(const TImage *cloudsMask);
+
+
+protected:
+  /** Constructor. */
+  LandsatMaskFilter();
+  /** Destructor. */
+  virtual ~LandsatMaskFilter();
+  virtual void GenerateOutputInformation();
+  /** PrintSelf method */
+  void PrintSelf(std::ostream& os, itk::Indent indent) const;
+
+private:
+  LandsatMaskFilter(const Self &); //purposely not implemented
+  void operator =(const Self&); //purposely not implemented
+
+};
+} // end namespace otb
+#ifndef OTB_MANUAL_INSTANTIATION
+#include "otbLandsatMaskFilter.txx"
+#endif
+#endif

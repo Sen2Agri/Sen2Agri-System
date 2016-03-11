@@ -125,12 +125,19 @@ CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessi
 
     // Get L3A Synthesis date
     const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
+    auto synthalf = parameters["half_synthesis"].toString();
+
     int resolution = parameters["resolution"].toInt();
     if(resolution == 0) resolution = 10;    // TODO: We should configure the default resolution in DB
 
     // Get the parameters from the configuration
-    // Get the Half Synthesis interval value
-    const auto &synthalf = configParameters["processor.l3a.half_synthesis"];
+    // Get the Half Synthesis interval value if it was not specified by the user
+    if(synthalf.length() == 0) {
+        synthalf = configParameters["processor.l3a.half_synthesis"];
+        if(synthalf.length() == 0) {
+            synthalf = "15";
+        }
+    }
     auto bandsMapping = configParameters["processor.l3a.bandsmapping"];
     const auto &scatCoeffs = configParameters["processor.l3a.preproc.scatcoeffs"];
 
@@ -526,7 +533,11 @@ QStringList CompositeHandler::GetMissionsFromBandsMapping(const QString &bandsMa
 QString CompositeHandler::DeductBandsMappingFile(const QStringList &listProducts,
                                                  const QString &bandsMappingFile, int &resolution) {
     QFileInfo fileInfo(bandsMappingFile);
-    QString curBandsMappingPath = fileInfo.dir().absolutePath();
+
+    // by default, we consider this is a dir
+    QString curBandsMappingPath = bandsMappingFile;
+    if(!fileInfo.isDir())
+        curBandsMappingPath = fileInfo.dir().absolutePath();
     QStringList listUniqueProductTypes;
     for (int i = 0; i < listProducts.size(); i++) {
         QString productType = GetProductTypeFromTile(listProducts[i]);

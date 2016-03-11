@@ -1,4 +1,6 @@
 add_subdirectory(XMLStatistics)
 add_subdirectory(TrainImagesClassifierNew)
+add_subdirectory(CropTypeTrainImagesClassifier)
+add_subdirectory(CropTypeStatistics)
 
 

@@ -262,6 +262,7 @@ if __name__ == '__main__':
             laiModel = LaiModel()
             laiModel.generateModel(xml,outDir,paramsLaiModelFilenameXML)
 
+    outSingleNdvi = "{}/#_Single_NDVI.tif".format(outDir)        
     outNdviRvi = "{}/#_NDVI_RVI.tif".format(outDir)
     outLaiImg = "{}/#_LAI_img.tif".format(outDir)
     outLaiMonoMskFlgsImg = "{}/#_LAI_mono_date_mask_flags_img.tif".format(outDir)
@@ -272,7 +273,8 @@ if __name__ == '__main__':
     start = time.time()
 
     allXmlParam=[]
-    allNdviFilesList=[]
+    allSingleNdviFilesList=[]
+    allNdviRviFilesList=[]
     allLaiParam=[]
     allErrParam=[]
     allMskFlagsParam=[]
@@ -285,7 +287,8 @@ if __name__ == '__main__':
         if lastPoint != -1 and lastSlash != -1 and lastSlash + 1 < lastPoint:
             counterString = xml[lastSlash + 1:lastPoint]
 
-        curOutNDVIImg = outNdviRvi.replace("#", counterString)
+        curOutSingleNDVIImg = outSingleNdvi.replace("#", counterString)
+        curOutNDVIRVIImg = outNdviRvi.replace("#", counterString)
         curOutLaiImg = outLaiImg.replace("#", counterString)
         curOutLaiErrImg = outLaiErrImg.replace("#", counterString)
         curOutLaiMonoMskFlgsImg = outLaiMonoMskFlgsImg.replace("#", counterString)
@@ -293,23 +296,25 @@ if __name__ == '__main__':
         if resolution == 0:
             runCmd(["otbcli", "NdviRviExtraction2", appLocation,
             "-xml", xml,
-            "-fts", curOutNDVIImg])
+            "-ndvi", curOutSingleNDVIImg,
+            "-fts", curOutNDVIRVIImg])
         else:
             runCmd(["otbcli", "NdviRviExtraction2", appLocation,
             "-xml", xml,
             "-outres", resolution,
-            "-fts", curOutNDVIImg])
+            "-ndvi", curOutSingleNDVIImg,
+            "-fts", curOutNDVIRVIImg])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
         runCmd(["otbcli", "BVImageInversion", appLocation,
-                "-in", curOutNDVIImg,
+                "-in", curOutNDVIRVIImg,
                 "-out", curOutLaiImg,
                 "-xml", xml,
                 "-modelsfolder", modelsFolder,
                 "-modelprefix", "Model_"])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
         runCmd(["otbcli", "BVImageInversion", appLocation,
-                "-in", curOutNDVIImg,
+                "-in", curOutNDVIRVIImg,
                 "-out", curOutLaiErrImg,
                 "-xml", xml,
                 "-modelsfolder", modelsFolder,
@@ -321,7 +326,8 @@ if __name__ == '__main__':
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
         allXmlParam.append(xml)
-        allNdviFilesList.append(curOutNDVIImg)
+        allSingleNdviFilesList.append(curOutSingleNDVIImg)
+        allNdviRviFilesList.append(curOutNDVIRVIImg)
         allLaiParam.append(curOutLaiImg)
         allErrParam.append(curOutLaiErrImg)
         allMskFlagsParam.append(curOutLaiMonoMskFlgsImg)
@@ -401,7 +407,7 @@ if __name__ == '__main__':
             "-level", "L3B",
             "-baseline", "01.00",
             "-processor", "vegetation",
-            "-processor.vegetation.laindvi", tileID] + allNdviFilesList + [
+            "-processor.vegetation.laindvi", tileID] + allSingleNdviFilesList + [
             "-processor.vegetation.laimonodate", tileID] + allLaiParam + [
             "-processor.vegetation.laimonodateerr", tileID] + allErrParam + [
             "-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + [
@@ -419,7 +425,7 @@ if __name__ == '__main__':
                 "-level", "L3B",
                 "-baseline", "01.00",
                 "-processor", "vegetation",
-                "-processor.vegetation.laindvi", tileID] + allNdviFilesList + [
+                "-processor.vegetation.laindvi", tileID] + allSingleNdviFilesList + [
                 "-processor.vegetation.laimonodate", tileID] + allLaiParam + [
                 "-processor.vegetation.laimonodateerr", tileID] + allErrParam + [
                 "-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + [
