@@ -274,12 +274,12 @@
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="refp">Reference polygons:</label>
-												<input type="file" class="form-control" id="refp" name="refp">
+												<input type="file" class="form-control" id="refp" name="refp" onchange="$(this).trigger('blur');">
 												<span class="help-block">The reference polygons.</span>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="refr">Reference raster:</label>
-												<input type="file" class="form-control" id="refr" name="refr">
+												<input type="file" class="form-control" id="refr" name="refr" onchange="$(this).trigger('blur');">
 												<span class="help-block">The reference raster when in situ data is not available.</span>
 											</div>
 											
@@ -446,7 +446,7 @@
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="refp">Reference polygons:</label>
-												<input type="file" class="form-control" id="refp" name="refp">
+												<input type="file" class="form-control" id="refp" name="refp" onchange="$(this).trigger('blur');">
 												<span class="help-block">The reference polygons.</span>
 											</div>
 											<div class="form-group form-group-sm">
@@ -529,7 +529,14 @@
 <!-- main3 -->
 
 <!-- Diablog message -->
-<div id="dialog-message" title="Form submit">
+<div id="dialog-message" title="Submit successful">
+	<p>
+		<span class="ui-icon ui-icon-circle-check" style="float:left; margin:0 7px 50px 0;"></span>
+		<span id="dialog-content"></span>
+	</p>
+</div>
+<!-- Diablog message -->
+<div id="dialog-error" title="Submit failed">
 	<p>
 		<span class="ui-icon ui-icon-circle-check" style="float:left; margin:0 7px 50px 0;"></span>
 		<span id="dialog-content"></span>
@@ -549,8 +556,12 @@
 	var l4a_proc_id;
 	
 	function open_dialog(message) {
-		$("#dialog-content").text(message); 
+		$("#dialog-message #dialog-content").text(message); 
 		$("#dialog-message").dialog("open");
+	};
+	function open_dialog_error(message) {
+		$("#dialog-error #dialog-content").text(message); 
+		$("#dialog-error").dialog("open");
 	};
 	
 	function reset_form(form_name) {
@@ -570,24 +581,34 @@
 						onSelect: function() { $(this).keyup(); } // force validation after selection
 					});
 					
-					// initialize dialog
+					// initialize dialogs
 					$("#dialog-message").dialog({
+						width: '400px',
 						autoOpen: false,
 						modal: true,
 						buttons: { Ok: function() { $(this).dialog("close"); } }
 					});
-
+					$("#dialog-error").dialog({
+						width: '400px',
+						autoOpen: false,
+						modal: true,
+						buttons: { Ok: function() { $(this).dialog("close"); } }
+					}).parent().children(".ui-dialog-titlebar").addClass('ui-state-error');
+					
 <?php
 // Check if this is a redirect from a FORM being submitted
 if (isset($_SESSION['processor'])) {
 	if (($_SESSION['processor'] == 'l4a') || ($_SESSION['processor'] == 'l4b')) {
 ?>
 					$('#<?php echo $_SESSION['processor'] ?>').collapse('show');
-					open_dialog("Your job has been successfully submitted!");
+					$("#l4b #siteId").trigger('focus');
+					<?php echo ($_SESSION['status'] === "OK" ? "open_dialog('" : "open_dialog_error('").$_SESSION['message']."')" ?>;
 					
 <?php
 	}
 	unset($_SESSION['processor']);
+	unset($_SESSION['status']);
+	unset($_SESSION['message']);
 }
 ?>
 // validate l3aform form on keyup and submit
@@ -636,9 +657,9 @@ if (isset($_SESSION['processor'])) {
 							fitted:			{ pattern: "[0-1]{1}" },
 						},
 						messages: {
-							genmodel: { pattern : "The only accepted values are 0 and 1" },
-							reproc:   { pattern : "The only accepted values are 0 and 1" },
-							fitted:   { pattern : "The only accepted values are 0 and 1" },
+							genmodel: { pattern : "Accepted values: 0 and 1" },
+							reproc:   { pattern : "Accepted values: 0 and 1" },
+							fitted:   { pattern : "Accepted values: 0 and 1" },
 						},
 						highlight: function(element, errorClass) {
 							$(element).parent().addClass("has-error");
@@ -734,6 +755,7 @@ if (isset($_SESSION['processor'])) {
 							siteId: 		{ required: true },
 							'inputFiles[]': { required: true },
 							cropMask:		{ required: true },
+							refp:			{ required: true },
 						},
 						highlight: function(element, errorClass) {
 							$(element).parent().addClass("has-error");

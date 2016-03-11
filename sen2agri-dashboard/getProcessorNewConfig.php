@@ -2,8 +2,21 @@
 session_start();
 require_once ("ConfigParams.php");
 
+function redirect_page($processor_id, $status, $message) {
+	switch ($processor_id) {
+		case 4: $_SESSION['processor'] = 'l4a'; $_SESSION['status'] = $status; $_SESSION['message'] = $message; break;
+		case 5: $_SESSION['processor'] = 'l4b'; $_SESSION['status'] = $status; $_SESSION['message'] = $message; break;
+		default: ;
+	}
+	
+	// redirect to custom jobs page
+	$referer = $_SERVER['HTTP_REFERER'];
+	header("Location: $referer");
+	exit();
+}
+
 function endsWith( $str, $sub ) {
-   return ( substr( $str, strlen( $str ) - strlen( $sub ) ) === $sub );
+	return ( substr( $str, strlen( $str ) - strlen( $sub ) ) === $sub );
 }
 
 function upload_reference_polygons($site_id) {
@@ -18,7 +31,8 @@ function upload_reference_polygons($site_id) {
 		mkdir($upload_target_dir, 0755, true);
 	}
 	
-	$shp_file = FALSE;
+	$zip_msg = '';
+	$shp_file = false;
 	if($_FILES["refp"]["name"]) {
 		$filename = $_FILES["refp"]["name"];
 		$source = $_FILES["refp"]["tmp_name"];
@@ -32,9 +46,8 @@ function upload_reference_polygons($site_id) {
 				break;
 			}
 		}
-		
 		if ($zip_file) {
-			$target_path = $upload_target_dir . $filename;  // change this to the correct site path
+			$target_path = $upload_target_dir . $filename;
 			if(move_uploaded_file($source, $target_path)) {
 				$zip = new ZipArchive();
 				$x = $zip->open($target_path);
@@ -43,19 +56,67 @@ function upload_reference_polygons($site_id) {
 						$filename = $zip->getNameIndex($i);
 						if (endsWith($filename, '.shp')) {
 							$shp_file = $upload_target_dir . $filename;
+							break;
 						}
 					}
-					$zip->extractTo($upload_target_dir); // change this to the correct site path
+					$zip->extractTo($upload_target_dir);
 					$zip->close();
 					unlink($target_path);
+					if ($shp_file) {
+						$zip_msg = "Your .zip file was uploaded and unpacked successfully";
+					} else {
+						$zip_msg = "Your .zip file does not contain any shape (.shp) file";
+					}
+				} else {
+					$zip_msg = "Your file is not a valid .zip archive";
 				}
-				$message = "Your .zip file was uploaded and unpacked.";
 			} else {
-				$message = "There was a problem with the upload. Please try again.";
+				$zip_msg = "Failed to upload the file you selected";
+			}
+		} else {
+			$zip_msg = "The file you selected is not a .zip file";
+		}
+	} else {
+		$zip_msg = 'Unable to access your selected file';
+	}
+	
+	// verify if shape file has valid geometry
+	$shp_msg = '';
+	$shape_ok = false;
+	if ($shp_file) {
+		exec('scripts/check_shp.py '.$shp_file, $output, $ret);
+		
+		if ($ret === FALSE) {
+			$shp_msg = 'Invalid command line';
+		} else {
+			switch ($ret) {
+				case 0:		$shape_ok = true; break;
+				case 1:		$shp_file = false; $shp_msg = 'Unable to open the shape file'; break;
+				case 2:		$shp_file = false; $shp_msg = 'Shape file has invalid geometry'; break;
+				case 127:	$shp_file = false; $shp_msg = 'Invalid geometry detection script'; break;
+				default:	$shp_file = false; $shp_msg = 'Unexpected error with the geometry detection script'; break;
 			}
 		}
+		if ($shape_ok) {
+			$last_line = $output[count($output) - 1];
+			$r = preg_match('/^Union: (.+)$/m', $last_line, $matches);
+			if (!$r) {
+				$shp_file = false;
+				$shp_msg = 'Unable to parse shape';
+			} else {
+				$shp_msg = $matches[1];
+			}
+		}
+	} else {
+		$shp_msg = 'Missing shape file due to a problem with your selected file';
 	}
-	return $shp_file;
+	
+	// Insert code to verify surface coverage using $shp_msg
+	//
+	//
+	//
+	
+	return array ( "polygons_file" => $shp_file, "result" => $shp_msg, "message" => $zip_msg );
 }
 
 function upload_reference_raster($site_id) {
@@ -91,6 +152,7 @@ function upload_reference_raster($site_id) {
 				$shp_file = $target_path;
 			} else {
 				$message = "There was a problem with the upload. Please try again.";
+				$shp_file = false;
 			}
 		}
 	}
@@ -127,19 +189,6 @@ function insertjob($name, $description, $processor_id, $site_id, $start_type_id,
 		curl_close($ch);
 	} catch (Exception $e) {
 	}
-	
-	// if job is for processor l4a or l4b set a session variable
-	// which will be used after redirection to custom jobs page
-	switch ($processor_id) {
-		case 4: $_SESSION['processor'] = 'l4a'; break;
-		case 5: $_SESSION['processor'] = 'l4b'; break;
-		default: ;
-	}
-	
-	// redirect to custom jobs page
-	$referer = $_SERVER['HTTP_REFERER'];
-	header("Location: $referer");
-	exit();
 }
 
 if (isset ( $_POST ['l3a'] )) {
@@ -417,8 +466,13 @@ elseif (isset ( $_POST ['l4a'] )) {
 	}
 	$json_config = json_encode( $fconfig );
 	
+	// upload polygons / raster
+	$upload = upload_reference_polygons($siteId);
+	$polygons_file = $upload['polygons_file'];
+	$result = $upload['result'];
+	$message = $upload['message'];
+	
 	// generate json_param (skip parameters with empty values)
-	$polygons_file = upload_reference_polygons($siteId);
 	$raster_file = false;
 	if (!$polygons_file) {
 		$raster_file = upload_reference_raster($siteId);
@@ -434,6 +488,13 @@ elseif (isset ( $_POST ['l4a'] )) {
 	$name = "l4a_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for l4a";
 	insertjob ( $name, $description, 4, $siteId, 2, $json_param, $json_config );
+	if ($polygons_file) {
+		redirect_page(4, "OK", "Your job has been successfully submitted (with the reference polygones)!");
+	} else if ($raster_file) {
+		redirect_page(4, "OK", "Your job has been successfully submitted (with the reference raster)!");
+	} else {
+		redirect_page(4, "OK", "WARNING: Both `Reference polygons` and `Reference raster` were invalid!");
+	}
 } /* -------------------------------------------------------l4b------------------------------------------------------ */
 elseif (isset ( $_POST ['l4b'] )) {
 	$siteId = $_POST ['siteId'];
@@ -505,19 +566,29 @@ elseif (isset ( $_POST ['l4b'] )) {
 	}
 	$json_config = json_encode( $fconfig );
 	
-	// generate json_param (skip parameters with empty values)
-	$polygons_file = upload_reference_polygons($siteId);
-	$params = array (	"resolution" => $resolution,
-						"input_products" => $input_products,
-						"crop_mask" => $crop_mask,
-						"reference_polygons" => $polygons_file
-					);
-	$json_param = json_encode( array_filter($params), JSON_UNESCAPED_SLASHES );
+	// upload polygons
+	$upload = upload_reference_polygons($siteId);
+	$polygons_file = $upload['polygons_file'];
+	$result = $upload['result'];
+	$message = $upload['message'];
 	
-	// set job name and description and save job
-	$name = "l4b_processor" . date ( "m.d.y" );
-	$description = "generated new configuration from site for l4b";
-	insertjob ( $name, $description, 5, $siteId, 2, $json_param, $json_config );
+	// generate json_param (skip parameters with empty values)
+	if ($polygons_file) {
+		$params = array (	"resolution" => $resolution,
+							"input_products" => $input_products,
+							"crop_mask" => $crop_mask,
+							"reference_polygons" => $polygons_file
+						);
+		$json_param = json_encode( array_filter($params), JSON_UNESCAPED_SLASHES );
+		
+		// set job name and description and save job
+		$name = "l4b_processor" . date ( "m.d.y" );
+		$description = "generated new configuration from site for l4b";
+		
+		insertjob ( $name, $description, 5, $siteId, 2, $json_param, $json_config );
+		redirect_page(5, "OK", "Your job has been successfully submitted!");
+	} else {
+		redirect_page(5, "NOK", $result." (".$message.")");
+	}
 }
-
 ?>
