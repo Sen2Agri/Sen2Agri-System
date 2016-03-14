@@ -87,7 +87,7 @@
 #include "otbMultiChannelExtractROI.h"
 #include "otbStreamingResampleImageFilter.h"
 
-#include "../Filters/otbConcatenateVectorImagesFilter.h"
+#include "otbConcatenateVectorImagesFilter.h"
 #include "../Filters/otbCropTypeFeatureExtractionFilter.h"
 #include "../Filters/otbTemporalResamplingFilter.h"
 #include "../Filters/otbTemporalMergingFilter.h"

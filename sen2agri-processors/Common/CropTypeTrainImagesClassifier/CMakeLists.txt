@@ -7,4 +7,8 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
+include_directories(../../Common/OTBExtensions)
+
+add_dependencies(otbapp_BandsExtractor OTBExtensions)
+
 install(TARGETS otbapp_CropTypeTrainImagesClassifier DESTINATION usr/lib/otb/applications/)

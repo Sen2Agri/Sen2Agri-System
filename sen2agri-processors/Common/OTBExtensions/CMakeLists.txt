@@ -1,0 +1,3 @@
+set(OTBExtensions_HEADERS otbConcatenateVectorImagesFilter.h otbConcatenateVectorImagesFilter.txx)
+
+add_custom_target(OTBExtensions SOURCES ${OTBExtensions_HEADERS})
