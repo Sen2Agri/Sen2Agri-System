@@ -1,0 +1,45 @@
+-10000 255 255 255 # No crop/No data
+0 255 255 255 # No crop/No data
+11 255 255 127 # Wheat
+12 255 133 10 # Maize
+13 170 110 135 # Rice
+14 170 85 0 # Sorghum
+15 170 85 127 # Barley
+16 255 174 80 # Rye
+17 170 170 0 # Oats
+18 170 255 255 # Millets
+29 0 255 0 # Other vegetables
+41 85 255 127 # Soybeans
+42 170 255 142 # Groundnuts
+51 0 255 255 # Potatoes
+71 0 93 0 # Broad beans - Alfalfa
+72 255 170 255 # Broad beans
+74 255 85 255 # Cow peas
+77 255 0 255 # Peas
+81 0 170 0 # Sugar beet
+82 179 116 255 # Sugarcane
+111 255 255 127 # Winter wheat
+112 255 255 127 # Spring wheat
+114 215 255 37 # Wheat - Oat
+131 170 120 135 # Irrigated rice
+132 170 135 135 # Not irrigated rice
+151 255 170 127 # Winter barley
+152 191 127 0 # Spring barley
+192 0 170 255 # Other cereals
+194 170 170 255 # Spelt
+217 170 85 0 # Chicory
+224 197 0 0 # Watermelons
+225 255 0 0 # Cantaloupes and oth melons
+432 170 0 0 # Linseed
+435 255 0 255 # Rapeseed
+437 142 255 255 # Sesame
+438 120 0 0 # Sunflower
+791 0 255 255 # Alfalfa
+792 100 149 74 # Other hay
+991 141 141 141 # Other annual crops
+992 85 170 127 # Dbl Barley Sorghum
+999 209 209 209 # Other crops
+4351 170 0 127 # Winter rapeseed
+4352 115 0 86 # Spring rapeseed
+9211 0 255 255 # Cotton
+9213 3 201 255 # Flax

@@ -820,23 +820,23 @@ function update_sites(json_data)
 			//var sentinel2TilesEl = $("#"+siteEl.form.id+" select#sentinel2Tiles");
 			//var landsatTilesEl = $("#"+siteEl.form.id+" select#landsatTiles");
 			var productsEl = $("#"+siteEl.form.id+" select#inputFiles");
-			var cropMasksEl = $("#"+siteEl.form.id+" select#cropMasks");
+			var cropMaskEl = $("#"+siteEl.form.id+" select#cropMask");
 			if(siteEl.selectedIndex > 0) {
 				//get_sentinel2_tiles(siteEl.options[siteEl.selectedIndex].value, sentinel2TilesEl);
 				//get_landsat_tiles(siteEl.options[siteEl.selectedIndex].value, landsatTilesEl);
 				get_products(siteEl.options[siteEl.selectedIndex].value, productsEl);
-				get_crop_masks(siteEl.options[siteEl.selectedIndex].value, cropMasksEl);
+				get_crop_mask(siteEl.options[siteEl.selectedIndex].value, cropMaskEl);
 			} else {
 				//update_sentinel2_tiles(new Array(), sentinel2TilesEl);
 				//update_landsat_tiles(new Array(), landsatTilesEl);
 				update_products(new Array(), productsEl);
-				update_crop_masks(new Array(), cropMasksEl);
+				update_crop_mask(new Array(), cropMaskEl);
 			}
 		});
 	});
 }
 
-function get_crop_masks(siteId, cropMasksEl)
+function get_crop_mask(siteId, cropMaskEl)
 {
 	$.ajax({
 		url: get_products_url,
@@ -850,21 +850,23 @@ function get_crop_masks(siteId, cropMasksEl)
 		},
 		success: function(json_data)
 		{
-			update_crop_masks(json_data, cropMasksEl);
+			update_crop_mask(json_data, cropMaskEl);
 		},
 		error: function (responseData, textStatus, errorThrown) {
 			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
-			update_crop_masks(new Array(), cropMasksEl);
+			update_crop_mask(new Array(), cropMaskEl);
 		}
 	});
 }
-function update_crop_masks(json_data, cropMasksEl)
+function update_crop_mask(json_data, cropMaskEl)
 {
 	//Remove the old options
-	cropMasksEl.empty();
+	cropMaskEl.empty();
+	
+	cropMaskEl.append('<option value="">Select a tile</option>');
 	
 	$.each(json_data, function(index, productObj) {
-		cropMasksEl.append('<option value="'+productObj.product+'">'+productObj.product+'</option>');
+		cropMaskEl.append('<option value="'+productObj.product+'">'+productObj.product+'</option>');
 	});
 }
 
