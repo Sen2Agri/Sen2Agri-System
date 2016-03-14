@@ -268,9 +268,15 @@ public:
   itkStaticConstMacro(OutputImageDimension, unsigned int, TImage::ImageDimension);
 
   /** Accessors for the sensors data */
-  itkSetMacro(InputData, SensorDataCollection);
-  itkGetConstMacro(InputData, SensorDataCollection);
+  void SetInputData(const SensorDataCollection _arg)
+  {
+      m_InputData = std::move(_arg);
+  }
 
+  const SensorDataCollection & GetInputData() const
+  {
+      return m_InputData;
+  }
 
   /** Set the input raster. */
   void SetInputRaster(const TImage *raster);
