@@ -15,8 +15,8 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#ifndef __otbLandsatMaskFilter_h
-#define __otbLandsatMaskFilter_h
+#ifndef __otbLandsatMaskFilter_txx
+#define __otbLandsatMaskFilter_txx
 
 #include "otbLandsatMaskFilter.h"
 
@@ -49,6 +49,8 @@ LandsatMaskFilter<TImage>
   Superclass::GenerateOutputInformation();
 
   typename Superclass::OutputImagePointer     outputPtr = this->GetOutput();
+
+  const int nbComponentsPerPixel = 1;
 
   // initialize the number of channels of the output image
   outputPtr->SetNumberOfComponentsPerPixel(nbComponentsPerPixel);

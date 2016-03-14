@@ -21,17 +21,19 @@ public:
     {
         PixelType result(1);
 
-        result[0] = (((maskValidity[0] & 0x01) | maskSaturation[0] | maskClouds[0]) == 0) ? 0 : 1;
+        result[0] = (((static_cast<unsigned short>(maskValidity[0]) & 0x01) |
+                       static_cast<unsigned short>(maskSaturation[0]) |
+                       static_cast<unsigned short>(maskClouds[0])) == 0) ? 0 : 1;
 
         return result;
     }
 
-    bool operator!=(const SpotMaskFunctor a) const
+    bool operator!=(const SpotMaskFunctor) const
     {
         return false ;
     }
 
-    bool operator==(const SpotMaskFunctor a) const
+    bool operator==(const SpotMaskFunctor) const
     {
         return true;
     }

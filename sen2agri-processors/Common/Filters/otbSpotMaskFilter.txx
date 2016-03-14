@@ -15,8 +15,8 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#ifndef __otbSpotMaskFilter_h
-#define __otbSpotMaskFilter_h
+#ifndef __otbSpotMaskFilter_txx
+#define __otbSpotMaskFilter_txx
 
 #include "otbSpotMaskFilter.h"
 
@@ -49,6 +49,8 @@ SpotMaskFilter<TImage>
   Superclass::GenerateOutputInformation();
 
   typename Superclass::OutputImagePointer     outputPtr = this->GetOutput();
+
+  const int nbComponentsPerPixel = 1;
 
   // initialize the number of channels of the output image
   outputPtr->SetNumberOfComponentsPerPixel(nbComponentsPerPixel);

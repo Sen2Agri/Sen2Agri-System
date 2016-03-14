@@ -23,17 +23,19 @@ public:
 
         // Band 3 from the Quality mask contains the pixel validity
         // Band 1 from the Quality mask contains the saturation
-        result[0] = (((maskQuality[2] & 0x01) | maskQuality[0] | maskClouds[0]) == 0) ? 0 : 1;
+        result[0] = (((static_cast<unsigned short>(maskQuality[2]) & 0x01) |
+                       static_cast<unsigned short>(maskQuality[0]) |
+                       static_cast<unsigned short>(maskClouds[0])) == 0) ? 0 : 1;
 
         return result;
     }
 
-    bool operator!=(const SentinelMaskFunctor a) const
+    bool operator!=(const SentinelMaskFunctor) const
     {
         return false ;
     }
 
-    bool operator==(const SentinelMaskFunctor a) const
+    bool operator==(const SentinelMaskFunctor) const
     {
         return true;
     }

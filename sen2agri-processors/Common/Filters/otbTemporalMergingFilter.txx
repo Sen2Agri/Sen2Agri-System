@@ -15,8 +15,8 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#ifndef __otbTemporalMergingFilter_h
-#define __otbTemporalMergingFilter_h
+#ifndef __otbTemporalMergingFilter_txx
+#define __otbTemporalMergingFilter_txx
 
 #include "otbTemporalMergingFilter.h"
 
@@ -57,7 +57,7 @@ TemporalMergingFilter<TImage>
     itkExceptionMacro(<< "No input data available for the TemporalMergingFunctor functor !");
     }
 
-  std::sort(imgInfos.begin(), imgInfos.end(), TemporalMergingFilter::SortImages);
+  std::sort(m_InputData.begin(), m_InputData.end(), TemporalMergingFilter::SortImages);
   this->m_OutDays.clear();
 
   // count the number of output images and create the out days file

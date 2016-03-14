@@ -15,8 +15,8 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#ifndef __otbSentinelMaskFilter_h
-#define __otbSentinelMaskFilter_h
+#ifndef __otbSentinelMaskFilter_txx
+#define __otbSentinelMaskFilter_txx
 
 #include "otbSentinelMaskFilter.h"
 
@@ -49,6 +49,8 @@ SentinelMaskFilter<TImage>
   Superclass::GenerateOutputInformation();
 
   typename Superclass::OutputImagePointer     outputPtr = this->GetOutput();
+
+  const int nbComponentsPerPixel = 1;
 
   // initialize the number of channels of the output image
   outputPtr->SetNumberOfComponentsPerPixel(nbComponentsPerPixel);
