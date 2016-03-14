@@ -3,8 +3,8 @@
 
 // Submited add new job; insert job in database with id $schedule_id
 if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] == 'Save') {
-	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
-	
+	$db = pg_connect ( 'host=' . ConfigParams::$SERVER_NAME . ' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+		
 	$job_name = $_REQUEST ['jobname'];
 	$processorId = $_REQUEST ['processorId'];
 	$site_id = $_REQUEST ['sitename'];
@@ -31,7 +31,7 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 	$processor_params = null;
 	
 	//save new job in database
-	$sql_insert = "SELECT sp_insert_scheduled_task($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)";
+	$sql_insert = "SELECT* sp_insert_scheduled_task($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)";
 	$res = pg_prepare ( $db, "my_query", $sql_insert );
 	
 	$res = pg_execute ( $db, "my_query", array (
@@ -51,8 +51,8 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 
 // Submited edit job; update job with id $schedule_id in database
 if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 'Save') {
-	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
-	
+	$db = pg_connect ( 'host=' . ConfigParams::$SERVER_NAME . ' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+		
 	$schedule_id = $_REQUEST ['scheduledID'];
 	$schedule_type = $_REQUEST ['schedule'];
 	$startdate = $_REQUEST ['startdate'];
@@ -530,6 +530,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 <script
 	src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
 <!-- end includes for  datepicker-->
+<script src="libraries/jquery-validate/jquery.validate.min.js"></script>
 
 <!--Jquery datepicker -->
 <script>

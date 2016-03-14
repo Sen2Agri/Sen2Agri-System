@@ -1,8 +1,8 @@
 <?php
 function add_new_scheduled_jobs_layout($processorId) {
-	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
-	$sql_select = "SELECT id,name FROM site	";
-	$result = pg_query ( $db, $sql_select ) or die ( "Could not execute." );
+	$db = pg_connect ( 'host=' . ConfigParams::$SERVER_NAME . ' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+	$sql = "SELECT * FROM sp_get_sites()";
+	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
 	
 	$option_site = "";
 	while ( $row = pg_fetch_row ( $result ) ) {
@@ -62,8 +62,8 @@ ADDJOB;
 }
 
 function update_scheduled_jobs_layout($processor_id) {
-	$db = pg_connect ( 'host=sen2agri-dev port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
-	
+	$db = pg_connect ( 'host=' . ConfigParams::$SERVER_NAME . ' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+		
 	/*
 	 * schedule type
 	 * once = 0,
@@ -86,6 +86,7 @@ function update_scheduled_jobs_layout($processor_id) {
 	$sql = "SELECT * from sp_get_dashboard_processor_scheduled_task('$processor_id')";
 	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
 	
+	$counter = "0";
 	while ( $row = pg_fetch_row ( $result ) ) {
 		
 			if ($row[3] == 0) {
@@ -124,7 +125,7 @@ function update_scheduled_jobs_layout($processor_id) {
 		$div2 = <<<JOB
 		<div class="panel_job_container">
 		<div class="panel panel-default panel_job">
-		<form class="form-inline" role="form" name="jobform" method="post" action="$action" style="padding:10px;">
+		<form class="form-inline sched_form" role="form" name="jobform" method="post" action="$action" style="padding:10px;" data-counter="$counter">
 		<span class="form-group form-group-sm span-scheduled" style=" max-width: 1000px;">
 		<label class="control-label control-max-width">Job Name: <span class="schedule_format">$row[1]</span>
 		</label>
@@ -152,7 +153,7 @@ function update_scheduled_jobs_layout($processor_id) {
 		</label></span>
 		<span class="form-group form-group-sm span-scheduled" id="div_oneverydate$row[0]" style="$oneverydate">
 		<label class="control-label" style="display:inline-block;width:150px;">On every: 
-		<input type="number" class="schedule_format"  name="oneverydate"value="$row[6]"/>
+		<input type="number" class="schedule_format" name="oneverydate" value="$row[6]"  data-toggle="tooltip" data-placement="bottom" title="choose numeric number"/>
 		</label></span>
 		<span class="form-group form-group-sm span-scheduled schedule_format">
 		<input type="submit" class="btn btn-primary" name="schedule_submit" value="Save">
@@ -164,6 +165,7 @@ JOB;
 // end of heredoc
 
 		echo $div2;
+		$counter++;
 	}
 }
 
