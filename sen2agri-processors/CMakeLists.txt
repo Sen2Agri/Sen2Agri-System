@@ -25,5 +25,6 @@ add_subdirectory(Common)
 add_subdirectory(ContinuousColorMapping)
 
 install(FILES ../scripts/sen2agri_common.py
+              ../scripts/split_shapefile.py
         DESTINATION usr/lib/python2.7/site-packages/)
 
