@@ -496,7 +496,6 @@ private:
       typedef itk::VariableLengthVector<ValueType> MeasurementType;
 
       unsigned int nbSamples = 0;
-      unsigned int nbBands = 0;
 
       // Build a Measurement Vector of mean
       MeasurementType mean;
@@ -605,9 +604,7 @@ private:
       //Apply the pooled variance formula
       variance /= (nbSamples - m_Statistics->Size());
 
-      MeasurementType stddev;
-      stddev.SetSize(nbBands);
-      stddev.Fill(0.);
+      MeasurementType stddev(variance.GetSize());
       for (unsigned int i = 0; i < variance.GetSize(); ++i)
         {
         stddev[i] = vcl_sqrt(variance[i]);
