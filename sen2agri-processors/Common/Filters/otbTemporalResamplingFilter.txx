@@ -56,13 +56,16 @@ TemporalResamplingFilter<TImage>
     }
 
   // The output contains 4 bands for each output image
-  unsigned int nbComponentsPerPixel = 0;
+  unsigned int nbInDates = 0;
+  unsigned int nbOutDates = 0;
   for (const SensorData &sd : this->m_InputData) {
-      nbComponentsPerPixel += sd.outDates.size();
+      nbInDates += sd.inDates.size();
+      nbOutDates += sd.outDates.size();
   }
 
   // initialize the number of channels of the output image
-  outputPtr->SetNumberOfComponentsPerPixel(nbComponentsPerPixel);
+  auto nbBands = (this->GetInput()->GetNumberOfComponentsPerPixel() / nbInDates) * nbOutDates;
+  outputPtr->SetNumberOfComponentsPerPixel(nbBands);
 }
 
 template <class TImage>
