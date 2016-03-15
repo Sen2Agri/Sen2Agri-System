@@ -20,7 +20,7 @@ function endsWith( $str, $sub ) {
 }
 
 function upload_reference_polygons($site_id) {
-	$dbconn = pg_connect ( 'host='.ConfigParams::$SERVER_NAME.' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+	$dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 	
 	$rows = pg_query($dbconn, "SELECT key, value FROM sp_get_parameters('site.upload_path') WHERE site_id IS NULL") or die(pg_last_error());
 	$result = pg_fetch_array($rows, 0)[1];
@@ -120,7 +120,7 @@ function upload_reference_polygons($site_id) {
 }
 
 function upload_reference_raster($site_id) {
-	$dbconn = pg_connect ( 'host='.ConfigParams::$SERVER_NAME.' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+	$dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 	
 	$rows = pg_query($dbconn, "SELECT key, value FROM sp_get_parameters('site.upload_path') WHERE site_id IS NULL") or die(pg_last_error());
 	$result = pg_fetch_array($rows, 0)[1];
@@ -160,7 +160,7 @@ function upload_reference_raster($site_id) {
 }
 
 function insertjob($name, $description, $processor_id, $site_id, $start_type_id, $parameters, $configuration) {
-	$db = pg_connect ( 'host='.ConfigParams::$SERVER_NAME.' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+	$db = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 	
 	$sql1 = "SELECT sp_submit_job($1,$2,$3,$4,$5,$6,$7)";
 	$res = pg_prepare ( $db, "my_query", $sql1 );

@@ -1,6 +1,6 @@
 <?php
 function add_new_scheduled_jobs_layout($processorId) {
-	$db = pg_connect ( 'host=' . ConfigParams::$SERVER_NAME . ' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 	$sql = "SELECT * FROM sp_get_sites()";
 	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
 	
@@ -62,7 +62,7 @@ ADDJOB;
 }
 
 function update_scheduled_jobs_layout($processor_id) {
-	$db = pg_connect ( 'host=' . ConfigParams::$SERVER_NAME . ' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 		
 	/*
 	 * schedule type

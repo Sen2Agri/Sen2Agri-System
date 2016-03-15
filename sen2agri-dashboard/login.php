@@ -1,9 +1,6 @@
 <?php
 session_start();
-
-if (isset($_SESSION['siteId'])) {
-	require_once('ConfigParams.php');
-}
+require_once('ConfigParams.php');
 
 include 'ms_doc.php';
 include 'ms_head.php';

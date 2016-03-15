@@ -20,7 +20,7 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save Site') {
 	$summer_start = "";
 	$summer_end = "";
 	function insertSiteSeason($site, $coord, $wint_start, $wint_end, $summ_star, $summ_end) {
-		$db = pg_connect ( 'host=' . ConfigParams::$SERVER_NAME . ' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 		$sql = "SELECT sp_dashboard_add_site($1,$2,$3,$4,$5,$6)";
 		$res = pg_prepare ( $db, "my_query", $sql );
 		
@@ -68,7 +68,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save') {
 	// 'POLYGON((35.940406 54.140187, 37.651121 54.140187, 37.651121 53.123645, 35.940406 53.123645, 35.940406 54.140187))'
 	$coord_geog = "POLYGON((35.940406 54.140187, 37.651121 54.140187, 37.651121 53.123645, 35.940406 53.123645, 35.940406 54.140187))";
 	function updateSiteSeason($id, $short_name, $coord, $wint_start, $wint_end, $summ_star, $summ_end) {
-		$db = pg_connect ( 'host=' . ConfigParams::$SERVER_NAME . ' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 		
 		$res = pg_query_params ( $db, "SELECT sp_dashboard_update_site($1,$2,$3,$4,$5,$6,$7)", array (
 				$id,
@@ -340,7 +340,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save') {
 									}
 									$sql_select = "";
 									$result = "";
-									$db = pg_connect ( 'host=' . ConfigParams::$SERVER_NAME . ' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+									$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 									
 									if ($nr_site == '0') {
 										$sql_select = "SELECT * FROM sp_get_dashboard_sites_seasons_2(null)";

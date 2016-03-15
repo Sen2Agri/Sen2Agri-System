@@ -15,20 +15,7 @@ if (isset($_SESSION['siteId'])) {
     <div id="footer" style="height: 20px;">
 		<div id="footer2" style="height: 20px; text-align: center; vertical-align: middle; padding: 0 0 0 0;">
 			<span>Copyright &copy; 2015 CS ROMANIA SA</span>
-<div class="debug">
-<?php
-/*
-echo "USER_ID: ".ConfigParams::$USER_ID."</br>";
-echo "SITE_ID: ".ConfigParams::$SITE_ID."</br>";
-echo "USER_NAME: ".ConfigParams::$USER_NAME."</br>";
-echo "</br>";
-echo "WEB_BASE_URL: ".ConfigParams::$WEB_BASE_URL."</br>";
-echo "SERVICES_BASE_URL: ".ConfigParams::$SERVICES_BASE_URL."</br>";
-echo "SITE_PRODUCT_RELATIVE_FOLDER: ".ConfigParams::$SITE_PRODUCT_RELATIVE_FOLDER."</br>";
-echo "SERVICES_DASHBOARD_PRODUCTS_URL: ".ConfigParams::$SERVICES_DASHBOARD_PRODUCTS_URL."</br>";
-*/
-?>
-</div>
+			<div class="debug"></div>
 		</div>
     </div>
 	<script type="text/javascript">

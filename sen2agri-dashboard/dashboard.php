@@ -3,7 +3,7 @@
 
 // Submited add new job; insert job in database with id $schedule_id
 if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] == 'Save') {
-	$db = pg_connect ( 'host=' . ConfigParams::$SERVER_NAME . ' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 		
 	$job_name = $_REQUEST ['jobname'];
 	$processorId = $_REQUEST ['processorId'];
@@ -51,7 +51,7 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 
 // Submited edit job; update job with id $schedule_id in database
 if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 'Save') {
-	$db = pg_connect ( 'host=' . ConfigParams::$SERVER_NAME . ' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 		
 	$schedule_id = $_REQUEST ['scheduledID'];
 	$schedule_type = $_REQUEST ['schedule'];

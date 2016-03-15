@@ -17,7 +17,7 @@
 									<!-- get sites -->
 							<?php
 							if (! (empty ( $_SESSION ['siteId'] ))) {
-								$db = pg_connect ( 'host=' . ConfigParams::$SERVER_NAME . ' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+								$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 								
 								$result = pg_query_params ( $db, "SELECT * FROM sp_get_sites($1)", array (
 										$_SESSION ['siteId'] 
@@ -30,7 +30,7 @@
 								}
 								echo $option_site;
 							} else {
-								$db = pg_connect ( 'host=' . ConfigParams::$SERVER_NAME . ' port=5432 dbname=sen2agri user=admin password=sen2agri' ) or die ( "Could not connect" );
+								$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 								$sql = "SELECT * FROM sp_get_sites()";
 								$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
 								

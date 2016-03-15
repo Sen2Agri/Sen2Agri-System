@@ -1,13 +1,10 @@
 ﻿<?php
 session_start();
+require_once('ConfigParams.php');
 
 function SignIn()
 {
-	$dbhost = 'sen2agri-dev';
-	$dbname = 'sen2agri';
-	$dbuser = 'admin';
-	$dbpass = 'sen2agri';
-	$dbconn = pg_connect("host=".$dbhost." port=5432 dbname=".$dbname." user=".$dbuser." password=".$dbpass) or die("Could not connect");
+	$dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 	
 	//starting the session for user
 	if(!empty($_POST['user'])) {
