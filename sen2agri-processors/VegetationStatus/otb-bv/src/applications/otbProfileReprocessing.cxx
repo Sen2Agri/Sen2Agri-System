@@ -105,7 +105,7 @@ public:
                                                        bwr, fwr);
     } else {
       std::tie(out_bv_vec, out_flag_vec) =
-        fit_csdm(date_vect, ts, ets, msks);
+        fit_csdm_2(date_vect, ts, ets, msks);
     }
     if(m_bGenAll) {
         TOutput result(2*nbBvElems);

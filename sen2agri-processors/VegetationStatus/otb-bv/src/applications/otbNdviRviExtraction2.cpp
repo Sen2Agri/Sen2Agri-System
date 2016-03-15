@@ -5,13 +5,17 @@
 #include "otbImageListToVectorImageFilter.h"
 #include "otbStreamingResampleImageFilter.h"
 #include "MetadataHelperFactory.h"
+#include "ImageResampler.h"
 
 //Transform
 #include "itkScalableAffineTransform.h"
 #include "GlobalDefs.h"
+#include "itkBinaryFunctorImageFilter.h"
 
 typedef float                                                             PixelType;
 typedef otb::VectorImage<PixelType, 2>                                    ImageType;
+typedef short                                                             ShortPixelType;
+typedef otb::Image<ShortPixelType, 2>                                     ShortImageType;
 typedef otb::VectorImage<PixelType, 2>                                    OutImageType;
 typedef otb::Image<PixelType, 2>                                          InternalImageType;
 typedef otb::ImageFileReader<ImageType>                                   ReaderType;
@@ -21,18 +25,8 @@ typedef otb::VectorImageToImageListFilter<ImageType, ImageListType>       Vector
 typedef otb::ImageListToVectorImageFilter<ImageListType, ImageType>       ImageListToVectorImageFilterType;
 
 typedef otb::StreamingResampleImageFilter<InternalImageType, InternalImageType, double>     ResampleFilterType;
-typedef otb::ObjectList<ResampleFilterType>                                                 ResampleFilterListType;
 
-typedef itk::NearestNeighborInterpolateImageFunction<InternalImageType, double>             NearestNeighborInterpolationType;
-typedef itk::LinearInterpolateImageFunction<InternalImageType, double>                      LinearInterpolationType;
-typedef otb::BCOInterpolateImageFunction<InternalImageType>                                 BCOInterpolationType;
-typedef itk::IdentityTransform<double, InternalImageType::ImageDimension>                   IdentityTransformType;
-
-typedef itk::ScalableAffineTransform<double, InternalImageType::ImageDimension>             ScalableTransformType;
-typedef ScalableTransformType::OutputVectorType     OutputVectorType;
-
-
-template< class TInput, class TOutput>
+template< class TInput, class TOutput, class TInput2=TInput>
 class NdviRviFunctor
 {
 public:
@@ -79,46 +73,20 @@ public:
 
       return ret;
   }
+
+  inline TOutput operator()( const TInput & A, const TInput2 & B ) const
+  {
+        TOutput ret = (*this)(A);
+        if(B[0] != IMG_FLG_LAND) {
+            ret[0] = 0;
+            ret[1] = 0;
+        }
+        return ret;
+  }
+
 private:
   int m_nRedBandIdx;
   int m_nNirBandIdx;
-};
-
-// Translates the INT reflectances in the input image into floats, taking into account
-// the quantification value
-template< class TInput, class TOutput>
-class ReflectanceTranslationFunctor
-{
-public:
-    ReflectanceTranslationFunctor() {}
-    ~ReflectanceTranslationFunctor() {}
-    void Initialize(float fQuantificationVal) {
-        m_fQuantifVal = fQuantificationVal;
-  }
-
-  bool operator!=( const ReflectanceTranslationFunctor &a) const
-  {
-      return (this->m_fQuantifVal != a.m_fQuantifVal);
-  }
-  bool operator==( const ReflectanceTranslationFunctor & other ) const
-  {
-    return !(*this != other);
-  }
-  inline TOutput operator()( const TInput & A ) const
-  {
-      TOutput ret(A.Size());
-      for(int i = 0; i<A.Size(); i++) {
-           if(fabs(A[i] - NO_DATA_VALUE) < 0.00001) {
-               ret[i] = NO_DATA_VALUE;
-           } else {
-                ret[i] = static_cast< float >(static_cast< float >(A[i]))/m_fQuantifVal;
-           }
-      }
-
-      return ret;
-  }
-private:
-  int m_fQuantifVal;
 };
 
 namespace otb
@@ -130,11 +98,22 @@ class NdviRviExtraction2 : public Application
     typedef itk::UnaryFunctorImageFilter<ImageType,ImageType,
                     NdviRviFunctor<
                         ImageType::PixelType,
-                        ImageType::PixelType> > FilterType;
+                        ImageType::PixelType> > UnmaskedNDVIRVIFilterType;
+
+    typedef itk::BinaryFunctorImageFilter<ImageType,ImageType,ImageType,
+                    NdviRviFunctor<
+                        ImageType::PixelType, ImageType::PixelType,
+                        ImageType::PixelType> > MaskedNDVIRVIFilterType;
+
+
     typedef itk::UnaryFunctorImageFilter<ImageType,ImageType,
-                    ReflectanceTranslationFunctor<
+                    ShortToFloatTranslationFunctor<
                         ImageType::PixelType,
                         ImageType::PixelType> > ReflTransFilterType;
+    typedef itk::UnaryFunctorImageFilter<InternalImageType,ShortImageType,
+                    FloatToShortTranslationFunctor<
+                        InternalImageType::PixelType,
+                        ShortImageType::PixelType> > FloatToShortTransFilterType;
 
 public:
   typedef NdviRviExtraction2 Self;
@@ -162,6 +141,9 @@ private:
         AddParameter(ParameterType_Int, "outres", "Output resolution. If not specified, is the same as the input resolution.");
         MandatoryOff("outres");
 
+        AddParameter(ParameterType_InputImage, "msks", "Masks flags used for masking final NDVI/RVI values");
+        MandatoryOff("msks");
+
         AddParameter(ParameterType_OutputImage, "ndvi", "NDVI image");
         MandatoryOff("ndvi");
         AddParameter(ParameterType_OutputImage, "rvi", "RVI image");
@@ -185,7 +167,6 @@ private:
   {
         bool bUseAllBands = true;
         m_imgReader = ReaderType::New();
-        m_ResamplersList = ResampleFilterListType::New();
 
         std::string inMetadataXml = GetParameterString("xml");
         if (inMetadataXml.empty())
@@ -201,7 +182,6 @@ private:
         if(HasValue("addallrefls")) {
             bUseAllBands = (GetParameterInt("addallrefls") != 0);
         }
-
         auto factory = MetadataHelperFactory::New();
         // we are interested only in the 10m resolution as here we have the RED and NIR
         auto pHelper = factory->GetMetadataHelper(inMetadataXml, 10);
@@ -223,14 +203,24 @@ private:
             }
         }
 
-        m_Functor = FilterType::New();
-        m_Functor->GetFunctor().Initialize(nRedBandIdx, nNirBandIdx);
-        m_Functor->SetInput(m_imgReader->GetOutput());
+        bool bHasMsks = HasValue("msks");
+        if(bHasMsks) {
+            m_msksImg = GetParameterFloatVectorImage("msks");
+            m_MaskedFunctor = MaskedNDVIRVIFilterType::New();
+            m_MaskedFunctor->GetFunctor().Initialize(nRedBandIdx, nNirBandIdx);
+            m_MaskedFunctor->SetInput1(m_imgReader->GetOutput());
+            m_MaskedFunctor->SetInput2(m_msksImg);
+            m_functorOutput = m_MaskedFunctor->GetOutput();
+        } else {
+            m_UnmaskedFunctor = UnmaskedNDVIRVIFilterType::New();
+            m_UnmaskedFunctor->GetFunctor().Initialize(nRedBandIdx, nNirBandIdx);
+            m_UnmaskedFunctor->SetInput(m_imgReader->GetOutput());
+            m_functorOutput = m_UnmaskedFunctor->GetOutput();
+        }
 
         allList = ImageListType::New();
 
         m_imgSplit = VectorImageToImageListType::New();
-        m_functorOutput = m_Functor->GetOutput();
         m_functorOutput->UpdateOutputInformation();
         m_imgSplit->SetInput(m_functorOutput);
         m_imgSplit->UpdateOutputInformation();
@@ -238,8 +228,13 @@ private:
 
         // export the NDVI in a distinct raster if we have this option set
         if(bOutNdvi) {
-            //SetParameterOutputImagePixelType("ndvi", ImagePixelType_int16);
-            SetParameterOutputImage("ndvi", getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(0)).GetPointer());
+            m_floatToShortFunctor = FloatToShortTransFilterType::New();
+            m_floatToShortFunctor->GetFunctor().Initialize(DEFAULT_QUANTIFICATION_VALUE, 0);
+            m_floatToShortFunctor->SetInput(getResampledImage(curRes, nOutRes,
+                                  m_imgSplit->GetOutput()->GetNthElement(0)).GetPointer());
+            m_floatToShortFunctor->GetOutput()->SetNumberOfComponentsPerPixel(1);
+            SetParameterOutputImage("ndvi", m_floatToShortFunctor->GetOutput());
+            SetParameterOutputImagePixelType("ndvi", ImagePixelType_int16);
         }
 
         // export the RVI in a distinct raster if we have this option set
@@ -283,55 +278,12 @@ private:
         }
   }
 
-  ResampleFilterType::Pointer getResampler(const InternalImageType::Pointer& image, const float& ratio) {
-       ResampleFilterType::Pointer resampler = ResampleFilterType::New();
-       resampler->SetInput(image);
-
-       LinearInterpolationType::Pointer interpolator = LinearInterpolationType::New();
-       resampler->SetInterpolator(interpolator);
-
-       IdentityTransformType::Pointer transform = IdentityTransformType::New();
-
-       resampler->SetOutputParametersFromImage( image );
-       // Scale Transform
-       OutputVectorType scale;
-       scale[0] = 1.0 / ratio;
-       scale[1] = 1.0 / ratio;
-
-       // Evaluate spacing
-       InternalImageType::SpacingType spacing = image->GetSpacing();
-       InternalImageType::SpacingType OutputSpacing;
-       OutputSpacing[0] = spacing[0] * scale[0];
-       OutputSpacing[1] = spacing[1] * scale[1];
-
-       resampler->SetOutputSpacing(OutputSpacing);
-
-       FloatVectorImageType::PointType origin = image->GetOrigin();
-       FloatVectorImageType::PointType outputOrigin;
-       outputOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale[0] - 1.0);
-       outputOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0);
-
-       resampler->SetOutputOrigin(outputOrigin);
-
-       resampler->SetTransform(transform);
-
-       // Evaluate size
-       ResampleFilterType::SizeType recomputedSize;
-       recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
-       recomputedSize[1] = image->GetLargestPossibleRegion().GetSize()[1] / scale[1];
-
-       resampler->SetOutputSize(recomputedSize);
-
-       m_ResamplersList->PushBack(resampler);
-       return resampler;
-  }
-
   InternalImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes,
                                                InternalImageType::Pointer inImg) {
       if(nCurRes == nDesiredRes)
           return inImg;
       float fMultiplicationFactor = ((float)nCurRes)/nDesiredRes;
-      ResampleFilterType::Pointer resampler = getResampler(inImg, fMultiplicationFactor);
+      ResampleFilterType::Pointer resampler = m_Resampler.getResampler(inImg, fMultiplicationFactor);
       return resampler->GetOutput();
   }
 
@@ -342,12 +294,16 @@ private:
     ImageListType::Pointer allList;
 
     OutImageType::Pointer m_functorOutput;
-    FilterType::Pointer m_Functor;
+    UnmaskedNDVIRVIFilterType::Pointer m_UnmaskedFunctor;
+    MaskedNDVIRVIFilterType::Pointer m_MaskedFunctor;
+
     ReflTransFilterType::Pointer m_ReflTransFunctor;
+    FloatToShortTransFilterType::Pointer  m_floatToShortFunctor;
 
     ReaderType::Pointer                       m_imgReader;
-    ResampleFilterListType::Pointer           m_ResamplersList;
+    ImageResampler<InternalImageType, InternalImageType> m_Resampler;
 
+    ImageType::Pointer m_msksImg;
 };
 }
 }

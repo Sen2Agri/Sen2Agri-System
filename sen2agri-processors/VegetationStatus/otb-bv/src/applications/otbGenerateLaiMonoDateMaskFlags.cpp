@@ -70,7 +70,7 @@ private:
         // Set the filename of the current output image
         paramOut->SetFileName(outImg);
         paramOut->SetValue(imgMsk);
-        paramOut->SetPixelType(ImagePixelType_int16);
+        paramOut->SetPixelType(ImagePixelType_uint8);
         // Add the current level to be written
         paramOut->InitializeWriters();
         std::ostringstream osswriter;
