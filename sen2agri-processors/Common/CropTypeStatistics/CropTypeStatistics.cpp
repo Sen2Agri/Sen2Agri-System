@@ -532,7 +532,7 @@ private:
           // Also build the image dates structures
           SensorDataCollection sdCollection;
 
-          int index = 1;
+          int index = 0;
           std::string lastMission = "";
           for (const ImageDescriptor& id : descriptorsList) {
               if (id.mission != lastMission) {
