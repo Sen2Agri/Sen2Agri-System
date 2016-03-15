@@ -1033,6 +1033,7 @@ private:
        scale[0] = invRatio;
        scale[1] = invRatio;
 
+       image->UpdateOutputInformation();
        auto imageSize = image->GetLargestPossibleRegion().GetSize();
 
        // Evaluate size
