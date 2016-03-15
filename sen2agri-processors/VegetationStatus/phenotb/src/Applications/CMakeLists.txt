@@ -39,7 +39,7 @@ otb_create_application(NAME           PhenologicalNDVIMetrics
 
 otb_create_application(NAME           PhenoMetricsSplitter
   SOURCES        otbPhenoMetricsSplitter.cpp
-  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno)
+  LINK_LIBRARIES ${OTB_LIBRARIES};OTBPheno;MetadataHelper)
 
 add_executable(test-sigmo test-sigmo.cxx)
 target_link_libraries(test-sigmo ${OTB_LIBRARIES} OTBPheno)

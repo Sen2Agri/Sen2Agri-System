@@ -265,8 +265,11 @@ if __name__ == '__main__':
     outSingleNdvi = "{}/#_Single_NDVI.tif".format(outDir)        
     outNdviRvi = "{}/#_NDVI_RVI.tif".format(outDir)
     outLaiImg = "{}/#_LAI_img.tif".format(outDir)
-    outLaiMonoMskFlgsImg = "{}/#_LAI_mono_date_mask_flags_img.tif".format(outDir)
     outLaiErrImg = "{}/#_LAI_err_img.tif".format(outDir)
+    outLaiMonoMskFlgsImg = "{}/#_LAI_mono_date_mask_flags_img.tif".format(outDir)
+    # LAI images encoded as short. These are used only by ProductFormatter
+    outLaiShortImg = "{}/#_LAI_img_16.tif".format(outDir)
+    outLaiErrShortImg = "{}/#_LAI_err_img_16.tif".format(outDir)
 
     cnt=int(0)
     print("Processing started: " + str(datetime.datetime.now()))
@@ -278,6 +281,8 @@ if __name__ == '__main__':
     allLaiParam=[]
     allErrParam=[]
     allMskFlagsParam=[]
+    allLaiShortParam=[]
+    allErrShortParam=[]
 
     for xml in args.input:
         counterString = str(cnt)
@@ -292,6 +297,9 @@ if __name__ == '__main__':
         curOutLaiImg = outLaiImg.replace("#", counterString)
         curOutLaiErrImg = outLaiErrImg.replace("#", counterString)
         curOutLaiMonoMskFlgsImg = outLaiMonoMskFlgsImg.replace("#", counterString)
+        # LAI images encoded as short. These are used only by ProductFormatter
+        curOutLaiShortImg = outLaiShortImg.replace("#", counterString)
+        curOutLaiErrShortImg = outLaiErrShortImg.replace("#", counterString)
 
         if resolution == 0:
             runCmd(["otbcli", "NdviRviExtraction2", appLocation,
@@ -325,12 +333,23 @@ if __name__ == '__main__':
                 "-out", curOutLaiMonoMskFlgsImg])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
+        runCmd(["otbcli", "QuantifyImage", appLocation,
+                "-in", curOutLaiImg,
+                "-out", curOutLaiShortImg])
+        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+        runCmd(["otbcli", "QuantifyImage", appLocation,
+                "-in", curOutLaiErrImg,
+                "-out", curOutLaiErrShortImg])
+        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+        
         allXmlParam.append(xml)
         allSingleNdviFilesList.append(curOutSingleNDVIImg)
         allNdviRviFilesList.append(curOutNDVIRVIImg)
         allLaiParam.append(curOutLaiImg)
         allErrParam.append(curOutLaiErrImg)
         allMskFlagsParam.append(curOutLaiMonoMskFlgsImg)
+        allLaiShortParam.append(curOutLaiShortImg)
+        allErrShortParam.append(curOutLaiErrShortImg)
 
         cnt += 1
 
@@ -408,8 +427,8 @@ if __name__ == '__main__':
             "-baseline", "01.00",
             "-processor", "vegetation",
             "-processor.vegetation.laindvi", tileID] + allSingleNdviFilesList + [
-            "-processor.vegetation.laimonodate", tileID] + allLaiParam + [
-            "-processor.vegetation.laimonodateerr", tileID] + allErrParam + [
+            "-processor.vegetation.laimonodate", tileID] + allLaiShortParam + [
+            "-processor.vegetation.laimonodateerr", tileID] + allErrShortParam + [
             "-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + [
             "-processor.vegetation.filelaireproc", tileID, reprocessedRastersListFile,
             "-processor.vegetation.filelaireprocflgs", tileID, reprocessedFlagsListFile,
@@ -426,8 +445,8 @@ if __name__ == '__main__':
                 "-baseline", "01.00",
                 "-processor", "vegetation",
                 "-processor.vegetation.laindvi", tileID] + allSingleNdviFilesList + [
-                "-processor.vegetation.laimonodate", tileID] + allLaiParam + [
-                "-processor.vegetation.laimonodateerr", tileID] + allErrParam + [
+                "-processor.vegetation.laimonodate", tileID] + allLaiShortParam + [
+                "-processor.vegetation.laimonodateerr", tileID] + allErrShortParam + [
                 "-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + [
                 "-processor.vegetation.filelaireproc", tileID, reprocessedRastersListFile,
                 "-processor.vegetation.filelaireprocflgs", tileID, reprocessedFlagsListFile,

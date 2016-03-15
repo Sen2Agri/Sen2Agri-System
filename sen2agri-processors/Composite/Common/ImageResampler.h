@@ -89,31 +89,31 @@ ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWid
     }
 
     ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const OutputVectorType& scale,
-                             int forcedWidth, int forcedHeight, Interpolator_Type interpolator=Interpolator_Linear) {
+                             int forcedWidth, int forcedHeight, Interpolator_Type interpolatorType=Interpolator_Linear) {
          ResamplerPtr resampler = ResampleFilterType::New();
          resampler->SetInput(image);
 
          // Set the interpolator
-         switch ( interpolator )
+         switch ( interpolatorType )
          {
              case Interpolator_Linear:
              {
-                 typename LinearInterpolationType::Pointer interpolator = LinearInterpolationType::New();
-                 resampler->SetInterpolator(interpolator);
+                 typename LinearInterpolationType::Pointer interpolatorPtr = LinearInterpolationType::New();
+                 resampler->SetInterpolator(interpolatorPtr);
              }
              break;
              case Interpolator_NNeighbor:
              {
-                 typename NearestNeighborInterpolationType::Pointer interpolator = NearestNeighborInterpolationType::New();
-                 resampler->SetInterpolator(interpolator);
+                 typename NearestNeighborInterpolationType::Pointer interpolatorPtr = NearestNeighborInterpolationType::New();
+                 resampler->SetInterpolator(interpolatorPtr);
              }
              break;
              case Interpolator_BCO:
              {
-                 typename BCOInterpolationType::Pointer interpolator = BCOInterpolationType::New();
-                 interpolator->SetRadius(m_BCORadius);
-                 interpolator->SetAlpha(m_fBCOAlpha);
-                 resampler->SetInterpolator(interpolator);
+                 typename BCOInterpolationType::Pointer interpolatorPtr = BCOInterpolationType::New();
+                 interpolatorPtr->SetRadius(m_BCORadius);
+                 interpolatorPtr->SetAlpha(m_fBCOAlpha);
+                 resampler->SetInterpolator(interpolatorPtr);
              }
              break;
          }
@@ -156,7 +156,7 @@ ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWid
 
          ResamplerInputImgPixelType defaultValue;
          itk::NumericTraits<ResamplerInputImgPixelType>::SetLength(defaultValue, image->GetNumberOfComponentsPerPixel());
-         if(interpolator != Interpolator_NNeighbor) {
+         if(interpolatorType != Interpolator_NNeighbor) {
              defaultValue = NO_DATA_VALUE;
          }
          resampler->SetEdgePaddingValue(defaultValue);

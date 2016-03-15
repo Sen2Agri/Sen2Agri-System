@@ -8,6 +8,7 @@ add_subdirectory(CompositeSplitter)
 add_subdirectory(CreateS2AnglesRaster)
 add_subdirectory(DirectionalCorrection)
 add_subdirectory(CompositePreprocessing)
+add_subdirectory(QuantifyImage)
 
 install(FILES TestScripts/composite_processing.py 
         DESTINATION usr/bin/

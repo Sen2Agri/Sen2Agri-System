@@ -45,6 +45,8 @@ bool IsValidLandValue(float fValue, float fMskValue)
     //return fabs(fValue - NO_DATA_VALUE) < NO_DATA_EPSILON;
 }
 
+
+// DEPRECATED - NOT USED ANYMORE
 std::pair<VectorType, VectorType> 
 fit_csdm(const VectorType &dts, const VectorType &ts, const VectorType &ets, const VectorType &msks)
 {
@@ -102,6 +104,65 @@ fit_csdm(const VectorType &dts, const VectorType &ts, const VectorType &ets, con
   }
 
   return std::make_pair(result,result_flag);
+}
+
+std::pair<VectorType, VectorType>
+fit_csdm_2(const VectorType &dts, const VectorType &ts, const VectorType &ets, const VectorType &msks)
+{
+    assert(ts.size()==ets.size() && ts.size()==dts.size() && ts.size()==msks.size());
+    unsigned int nbDates = ts.size();
+    auto result = VectorType(nbDates, 0);
+    auto result_flag = VectorType(nbDates,0);
+    // std::vector to vnl_vector
+    pheno::VectorType profile_vec(nbDates);
+    pheno::VectorType date_vec(nbDates);
+
+    for(size_t i=0; i<nbDates; i++)
+      {
+      profile_vec[i] = ts[i];
+      date_vec[i] = dts[i];
+      }
+
+    // A date is valid if it is not NaN and the mask value == IMG_FLG_LAND.
+    auto pred = [=](int e) { return !(std::isnan(profile_vec[e])) &&
+                             IsValidLandValue(profile_vec[e], msks[e]); };
+    auto f_profiles = pheno::filter_profile_fast(profile_vec, date_vec, pred);
+
+    decltype(profile_vec) profile=f_profiles.first;
+    decltype(profile_vec) t=f_profiles.second;
+    if(profile.size() < 4)
+    {
+      return std::make_pair(result,result_flag);
+    }
+
+    auto approx = pheno::normalized_sigmoid::TwoCycleApproximation(profile, t);
+    auto x_1 = std::get<0>(std::get<1>(approx));
+    auto mm1 = std::get<1>(std::get<1>(approx));
+    auto x_2 = std::get<0>(std::get<2>(approx));
+    auto mm2 = std::get<1>(std::get<2>(approx));
+
+    // The result uses either the original or the approximated value depending on the mask value
+    pheno::VectorType tmps1(nbDates);
+    pheno::VectorType tmps2(nbDates);
+
+    int validDatesCnt = 0;
+    for(size_t i=0; i<nbDates; i++) {
+        // Compute the approximation
+        pheno::normalized_sigmoid::F<pheno::VectorType>()(date_vec, x_1, tmps1);
+        pheno::normalized_sigmoid::F<pheno::VectorType>()(date_vec, x_2, tmps2);
+        auto tmpres = tmps1*(mm1.second-mm1.first)+mm1.first
+          + tmps2*(mm2.second-mm2.first)+mm2.first;
+        result[i] = tmpres[i];
+        if(IsValidLandValue(profile_vec[i], msks[i])) {
+            result_flag[i] = ++validDatesCnt;
+        } else {
+            // use the last know processed value, if it exists
+            result_flag[i] = 0;
+        }
+        //result_flag[i] = validDatesCnt;
+    }
+
+    return std::make_pair(result,result_flag);
 }
 
 

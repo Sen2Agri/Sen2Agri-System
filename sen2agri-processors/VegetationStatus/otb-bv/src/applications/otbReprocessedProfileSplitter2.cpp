@@ -6,6 +6,7 @@
 
 #include <vector>
 #include "MetadataHelperFactory.h"
+#include "GlobalDefs.h"
 
 namespace otb
 {
@@ -25,6 +26,9 @@ public:
 
     itkTypeMacro(ReprocessedProfileSplitter2, otb::Application)
 
+    typedef short                                                             ShortPixelType;
+    typedef otb::Image<ShortPixelType, 2>                                     ShortImageType;
+
     typedef FloatVectorImageType                    InputImageType;
     typedef otb::Image<float, 2>                    InternalImageType;
 
@@ -33,6 +37,11 @@ public:
                                               InternalImageType::InternalPixelType> FilterType;
 
     typedef otb::ImageFileReader<InputImageType> ReaderType;
+
+    typedef itk::UnaryFunctorImageFilter<InternalImageType,ShortImageType,
+                    FloatToShortTranslationFunctor<
+                        InternalImageType::PixelType,
+                        ShortImageType::PixelType> > FloatToShortTransFilterType;
 
 private:
     void DoInit()
@@ -106,6 +115,7 @@ private:
 
 
         int nTotalBandsHalf = nTotalBands/2;
+        bool bIsRaster;
         for(int i = 0; i < nTotalBands; i++) {
             std::ostringstream fileNameStream;
 
@@ -121,8 +131,8 @@ private:
 
             // writer label
             std::ostringstream osswriter;
-
-            if(i < nTotalBandsHalf) {
+            bIsRaster = (i < nTotalBandsHalf);
+            if(bIsRaster) {
                 fileNameStream << strOutPrefix << "_" << acquisitionDate << "_img.tif";
                 osswriter<< "writer (Image for date "<< i << " : " << acquisitionDate << ")";
             } else {
@@ -144,14 +154,24 @@ private:
 
             // Set the filename of the current output image
             paramOut->SetFileName(fileName);
-            paramOut->SetValue(m_Filter->GetOutput());
-            paramOut->SetPixelType(ImagePixelType_float);
+            FloatToShortTransFilterType::Pointer floatToShortFunctor = FloatToShortTransFilterType::New();
+            floatToShortFunctor->SetInput(m_Filter->GetOutput());
+            if(bIsRaster) {
+                floatToShortFunctor->GetFunctor().Initialize(DEFAULT_QUANTIFICATION_VALUE, 0);
+                paramOut->SetPixelType(ImagePixelType_int16);
+            } else {
+                // we need no quantification value, just convert to byte
+                floatToShortFunctor->GetFunctor().Initialize(1, 0);
+                paramOut->SetPixelType(ImagePixelType_uint8);
+            }
+            m_floatToShortFunctors.push_back(floatToShortFunctor);
+            paramOut->SetValue(floatToShortFunctor->GetOutput());
             // Add the current level to be written
             paramOut->InitializeWriters();
             AddProcess(paramOut->GetWriter(), osswriter.str());
             paramOut->Write();
 
-            if(i < nTotalBandsHalf) {
+            if(bIsRaster) {
                 rasterFilesListFile << simpleFileName << std::endl;
             } else {
                 flagsFilesListFile << simpleFileName << std::endl;
@@ -166,6 +186,7 @@ private:
 
     ReaderType::Pointer m_reader;
     FilterType::Pointer        m_Filter;
+    std::vector<FloatToShortTransFilterType::Pointer>  m_floatToShortFunctors;
 };
 
 }

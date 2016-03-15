@@ -52,7 +52,7 @@ public:
     VectorType vec(nbDates);
     for(size_t i=0; i<nbDates; i++)
     {
-      vec[i] = pix[i] / 10000;
+      vec[i] = pix[i];
     }
 
 
@@ -66,11 +66,10 @@ public:
 
     // If there are not enough valid dates, keep the original value
     PixelType result(RESULT_BANDS_NO);
-    result.Fill(NO_DATA);
-    if(profile.size() < 4)
-      {
+    result.Fill(0);
+    if(profile.size() < 4) {
       return result;
-      }
+    }
 
     auto approx = normalized_sigmoid::TwoCycleApproximation(profile, t);
     auto princ_cycle = std::get<1>(approx);
@@ -86,7 +85,7 @@ public:
     // add also the number of valid dates that were used in the processing
     // The metrics have to fulfill some constraints in order to be considered as valid:
     //    t0<x0<t1<t2<t3
-    if((t0 < x_hat[0]) && (x_hat[0] < t1) && (t1 < t2) && (t2 < t3) && ((t3 - t0) < 365)) {
+    if((0 <= t0) && (t0 < x_hat[0]) && (x_hat[0] < t1) && (t1 < t2) && (t2 < t3) && ((t3 - t0) < 365)) {
         result[0] = x_hat[0];
         result[1] = t0;
         result[2] = (t2-t1);
@@ -198,7 +197,9 @@ private:
     filter->GetFunctor().SetDates(dates);
     filter->SetNumberOfOutputBands(RESULT_BANDS_NO);
     filter->UpdateOutputInformation();
+    // the pheno ndvi metrics are already int values as they are only dates
     SetParameterOutputImage("out", filter->GetOutput());
+    SetParameterOutputImagePixelType("out", ImagePixelType_int16);
   }
 
   FilterType::Pointer filter;

@@ -4,6 +4,7 @@
 #include "otbVectorImage.h"
 #include "otbMultiChannelExtractROI.h"
 #include "otbMultiToMonoChannelExtractROI.h"
+#include "GlobalDefs.h"
 
 #include <vector>
 
@@ -25,8 +26,9 @@ public:
 
     itkTypeMacro(PhenoMetricsSplitter, otb::Application)
 
-    typedef FloatVectorImageType                    InputImageType;
-    typedef otb::Image<float, 2>                    InternalImageType;
+    typedef UInt16VectorImageType                   InputImageType;
+    typedef otb::Image<short, 2>                    InternalImageType;
+    typedef otb::Image<short, 2>                    OutFlagsImageType;
 
     /** Filters typedef */
     typedef otb::MultiChannelExtractROI<InputImageType::InternalPixelType,
@@ -37,6 +39,11 @@ public:
                                               InternalImageType::InternalPixelType> FilterType2;
 
     typedef otb::ImageFileReader<InputImageType> ReaderType;
+
+    typedef itk::UnaryFunctorImageFilter<InternalImageType,OutFlagsImageType,
+                    FloatToShortTranslationFunctor<
+                        InternalImageType::PixelType,
+                        OutFlagsImageType::PixelType> > FlagsFloatToShortTransFilterType;
 
 private:
     void DoInit()
@@ -89,12 +96,19 @@ private:
         m_FilterParams->UpdateOutputInformation();
         m_FilterFlags->UpdateOutputInformation();
 
+        m_flagsFloatToShortFunctor = FlagsFloatToShortTransFilterType::New();
+        m_flagsFloatToShortFunctor->SetInput(m_FilterFlags->GetOutput());
+        m_flagsFloatToShortFunctor->GetFunctor().Initialize(1, 0);
+
         // modify the name if we have compression
         SetParameterString("outparams", GetFileName("outparams"));
         SetParameterString("outflags", GetFileName("outflags"));
         // write the files
+        // the pheno ndvi metrics are already int values
         SetParameterOutputImage("outparams", m_FilterParams->GetOutput());
-        SetParameterOutputImage("outflags", m_FilterFlags->GetOutput());
+        SetParameterOutputImagePixelType("outparams", ImagePixelType_int16);
+        SetParameterOutputImage("outflags", m_flagsFloatToShortFunctor->GetOutput());
+        SetParameterOutputImagePixelType("outflags", ImagePixelType_uint8);
 
         return;
     }
@@ -113,6 +127,8 @@ private:
     ReaderType::Pointer m_reader;
     FilterType1::Pointer        m_FilterParams;
     FilterType2::Pointer        m_FilterFlags;
+
+    FlagsFloatToShortTransFilterType::Pointer m_flagsFloatToShortFunctor;
 };
 
 }
