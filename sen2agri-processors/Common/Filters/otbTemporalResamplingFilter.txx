@@ -30,7 +30,6 @@ TemporalResamplingFilter<TImage>
 ::TemporalResamplingFilter()
 {
   this->SetNumberOfRequiredInputs(2);
-  this->m_InputData.empty();
 }
 /**
  * Destructor.
