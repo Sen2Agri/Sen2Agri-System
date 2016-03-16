@@ -1,9 +1,11 @@
 <?php
 require_once("ConfigParams.php");
-if(isset($_REQUEST['siteID_selected'])){
-	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-	$result="";
-	if ($_REQUEST['siteID_selected'] == 0){
+
+
+	if(isset($_REQUEST['siteID_selected'])){
+		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+		$result="";
+		if ($_REQUEST['siteID_selected'] == 0){
 	$result = pg_query_params ( $db, "SELECT * FROM sp_get_dashboard_current_downloads(null)", array () ) or die ( "Could not execute." );
 	}else {
 		$result = pg_query_params ( $db, "SELECT * FROM sp_get_dashboard_current_downloads($1)", array ($_REQUEST['siteID_selected'])) or die ( "Could not execute." );
