@@ -99,11 +99,6 @@ if __name__ == '__main__':
     fwr=args.forwardwindow
 
     listFile = generateFileList(inDir, sat, inst, "")
-
-    vegetationStatusLocation = "{}/VegetationStatus".format(appLocation)
-    productFormatterLocation = "{}/MACCSMetadata/src".format(appLocation)
-    imgInvOtbLibsLocation = vegetationStatusLocation + '/otb-bv/src/applications'
-
     tileID="TILE_none"
 
     if os.path.exists(outDir):
@@ -204,7 +199,7 @@ if __name__ == '__main__':
 
         
         # Create the LAI and Error time series
-        #runCmd(["otbcli", "TimeSeriesBuilder", imgInvOtbLibsLocation, "-il"] + allLaiParam + ["-out", outLaiTimeSeries])
+        #runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allLaiParam + ["-out", outLaiTimeSeries])
         runCmd(["otbcli", "ConcatenateImages", "-il"] + allLaiParam + ["-out", outLaiTimeSeries])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
         runCmd(["otbcli", "ConcatenateImages", "-il"] + allErrParam + ["-out", outErrTimeSeries])
@@ -214,11 +209,11 @@ if __name__ == '__main__':
 
 
         # Compute the reprocessed time series (On-line Retrieval)
-        runCmd(["otbcli", "ProfileReprocessing", imgInvOtbLibsLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-msks", outMaksFlagsTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outReprocessedTimeSeries, "-genall", "0", "-algo", "local", "-algo.local.bwr", str(bwr), "-algo.local.fwr", str(fwr)])
+        runCmd(["otbcli", "ProfileReprocessing", appLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-msks", outMaksFlagsTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outReprocessedTimeSeries, "-genall", "0", "-algo", "local", "-algo.local.bwr", str(bwr), "-algo.local.fwr", str(fwr)])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
         #split the Reprocessed time series to a number of images
-        runCmd(["otbcli", "ReprocessedProfileSplitter2", imgInvOtbLibsLocation, "-in", outReprocessedTimeSeries, "-outrlist", reprocessedRastersListFile, "-outflist", reprocessedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
+        runCmd(["otbcli", "ReprocessedProfileSplitter2", appLocation, "-in", outReprocessedTimeSeries, "-outrlist", reprocessedRastersListFile, "-outflist", reprocessedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
         runCmd(["otbcli", "ProductFormatter", appLocation,
