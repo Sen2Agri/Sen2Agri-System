@@ -762,7 +762,7 @@ function message_alert(message){
 										endseason_winter:"required",
 										startseason_summer:"required",
 										endseason_summer:"required",
-									//	zip_file:"required"
+										zip_file:"required"
 									},
 											
 									highlight: function(element, errorClass) {
@@ -814,10 +814,7 @@ function message_alert(message){
 											url: $(form).attr('action'),
 											type: $(form).attr('method'),
 											data: new FormData(form),
-											success: function(response) {
-											//	$("#siteform_edit")[0].reset();
-											//	$("#div_editsite").hide();
-											}
+											success: function(response) {}
 										 });
 									},
 									// set this class to error-labels to indicate valid fields
@@ -834,6 +831,7 @@ function message_alert(message){
 function formAddSite(){
 	document.getElementById("div_editsite").style.display = "none";
 	document.getElementById("div_addsite").style.display = "block";
+	$("#siteform")[0].reset();
 }
 
 function editFormSite(id,name,short_name,winter1,winter2,summer1,summer2){
@@ -855,6 +853,7 @@ function abortEditAdd(abort){
 		document.getElementById("div_editsite").style.display = "none";
 		}else if(abort=='add')
 	document.getElementById("div_addsite").style.display = "none";
+	$("#siteform")[0].reset();
 }
 
 </script>
