@@ -116,9 +116,9 @@ private:
               auto pHelper = factory->GetMetadataHelper(inMetadataXml);
               // the bands are 1 based
               if(redIdx == -1)
-                redIdx = pHelper->GetRelNirBandIndex();
+                redIdx = pHelper->GetRelRedBandIndex() - 1;
               if(nirIdx == -1)
-                nirIdx = pHelper->GetRelRedBandIndex();
+                nirIdx = pHelper->GetRelNirBandIndex() - 1;
           }
       }
 
