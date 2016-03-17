@@ -1650,7 +1650,7 @@ private:
 
   std::string BuildFileName(const std::string &fileCateg, const std::string &tileId, const std::string &extension="", const std::string &strTimePeriod = "",
                             const std::string &site = "", const std::string &creationDate = "") {
-      std::string strFileName = "{project_id}_{product_level}_{file_category}_{originator_site}_{creation_date}_V{time_period}_T{tile_id}";
+      std::string strFileName = "{project_id}_{product_level}_{file_category}_S{originator_site}_{creation_date}_V{time_period}_T{tile_id}";
       strFileName = ReplaceString(strFileName, "{project_id}", PROJECT_ID);
       strFileName = ReplaceString(strFileName, "{product_level}", m_strProductLevel);
       if(fileCateg.length() > 0) {
@@ -1662,7 +1662,7 @@ private:
       if(site.length() > 0) {
           strFileName = ReplaceString(strFileName, "{originator_site}", site);
       } else {
-          strFileName = ReplaceString(strFileName, "_{originator_site}", "");
+          strFileName = ReplaceString(strFileName, "_S{originator_site}", "");
       }
 
       if(creationDate.length() > 0) {

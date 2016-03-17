@@ -32,11 +32,15 @@ parser.add_argument('--input', help='The list of products xml descriptors', requ
 parser.add_argument('--outdir', help="Output directory", required=True)
 parser.add_argument('--tileid', help="Tile id", required=False)
 parser.add_argument('--resolution', help="Resample to this resolution. Use the same resolution as input files if you don't want any resample", required=True)
+parser.add_argument('--siteid', help='The site ID', required=False)
 
 args = parser.parse_args()
 
 appLocation = args.applocation
 outDir = args.outdir
+siteId = "nn"
+if args.siteid:
+    siteId = args.siteid
 
 tileID="TILE_none"
 if args.tileid:
@@ -85,7 +89,15 @@ print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 runCmd(["otbcli", "PhenoMetricsSplitter", appLocation, "-in", outMetric, "-outparams", outMetricParams, "-outflags", outMetricFlags, "-compress", "1"])
 print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-runCmd(["otbcli", "ProductFormatter", appLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3B", "-baseline", "01.00", "-processor", "phenondvi", "-processor.phenondvi.metrics", tileID, outMetricParams, "-processor.phenondvi.flags", tileID, outMetricFlags, "-il"] + args.input)
+runCmd(["otbcli", "ProductFormatter", appLocation, 
+    "-destroot", outDir, 
+    "-fileclass", "SVT1", 
+    "-level", "L3E", 
+    "-baseline",  "01.00", 
+    "-siteid", siteId,  
+    "-processor", "phenondvi", 
+    "-processor.phenondvi.metrics", tileID, outMetricParams, 
+    "-processor.phenondvi.flags", tileID, outMetricFlags, "-il"] + args.input)
 
 print("Processing finished: " + str(datetime.datetime.now()))
 print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))

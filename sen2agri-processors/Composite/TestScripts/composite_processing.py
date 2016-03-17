@@ -34,21 +34,16 @@ def prettify(elem):
 
 parser = argparse.ArgumentParser(description='Composite Python processor')
 
-parser.add_argument(
-    '--applocation', help='The path where the sen2agri is built', default="")
+parser.add_argument('--applocation', help='The path where the sen2agri is built', default="")
 parser.add_argument('--syntdate', help='L3A synthesis date', required=True)
 parser.add_argument('--synthalf', help='Half synthesis', required=True)
-parser.add_argument(
-    '--input', help='The list of products xml descriptors', required=True, nargs='+')
-parser.add_argument(
-    '--res', help='The requested resolution in meters', required=True)
+parser.add_argument('--input', help='The list of products xml descriptors', required=True, nargs='+')
+parser.add_argument('--res', help='The requested resolution in meters', required=True)
 parser.add_argument('--outdir', help="Output directory", required=True)
-parser.add_argument(
-    '--bandsmap', help="Bands mapping file location", required=True)
-parser.add_argument('--scatteringcoef',
-                    help="Scattering coefficient file. This file is requested in S2 case ONLY", required=False)
-parser.add_argument('--tileid',
-                    help="Tile id", required=False)
+parser.add_argument('--bandsmap', help="Bands mapping file location", required=True)
+parser.add_argument('--scatteringcoef', help="Scattering coefficient file. This file is requested in S2 case ONLY", required=False)
+parser.add_argument('--tileid', help="Tile id", required=False)
+parser.add_argument('--siteid', help='The site ID', required=False)
 
 USE_COMPRESSION=True
 REMOVE_TEMP=False
@@ -61,6 +56,10 @@ resolution = args.res
 bandsMap = args.bandsmap
 appLocation = args.applocation
 outDir = args.outdir
+siteId = "nn"
+if args.siteid:
+    siteId = args.siteid
+
 
 #defintion for filenames
 outSpotMasks = outDir + '/spot_masks.tif'
@@ -263,7 +262,21 @@ if i == 0:
     exit(1)
 
 i -= 1
-runCmd(["otbcli", "ProductFormatter", appLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3A", "-timeperiod", syntDate, "-baseline", "01.00", "-processor", "composite", "-processor.composite.refls", tileID, out_r, "-processor.composite.weights", tileID, out_w, "-processor.composite.flags", tileID, out_f, "-processor.composite.dates", tileID, out_d, "-processor.composite.rgb", tileID, out_rgb, "-il", args.input[-1], "-gipp", paramsFilenameXML])
+runCmd(["otbcli", "ProductFormatter", appLocation, 
+    "-destroot", outDir, 
+    "-fileclass", "SVT1", 
+    "-level", "L3A", 
+    "-timeperiod", syntDate, 
+    "-baseline", "01.00", 
+    "-siteid",siteId, 
+    "-processor", "composite", 
+    "-processor.composite.refls", tileID, out_r, 
+    "-processor.composite.weights", tileID, out_w, 
+    "-processor.composite.flags", tileID, out_f, 
+    "-processor.composite.dates", tileID, out_d, 
+    "-processor.composite.rgb", tileID, out_rgb, 
+    "-il"] + args.input + [
+    "-gipp", paramsFilenameXML])
 
 if REMOVE_TEMP:
     counterString = str(i)

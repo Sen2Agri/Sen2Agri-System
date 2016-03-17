@@ -42,15 +42,11 @@ parser.add_argument('--applocation', help='The path where the sen2agri is built'
 #parser.add_argument('--synthalf', help='Half synthesis', required=True)
 #parser.add_argument('--input', help='The list of products xml descriptors', required=True, nargs='+')
 parser.add_argument('--res', help='The requested resolution in meters', required=True)
-#parser.add_argument('--t0', help='The start date for the temporal resampling interval (in format YYYYMMDD)',required=True, metavar='YYYYMMDD')
-#parser.add_argument('--tend', help='The end date for the temporal resampling interval (in format YYYYMMDD)',required=True, metavar='YYYYMMDD')
 parser.add_argument('--outdir', help="Output directory", required=True)
-parser.add_argument(
-    '--bandsmap', help="Bands mapping file location", required=True)
-parser.add_argument('--scatteringcoef',
-                    help="Scattering coefficient file. This file is requested in S2 case ONLY", required=False)
-parser.add_argument('--tileid',
-                    help="Tile id", required=False)
+parser.add_argument('--bandsmap', help="Bands mapping file location", required=True)
+parser.add_argument('--scatteringcoef', help="Scattering coefficient file. This file is requested in S2 case ONLY", required=False)
+parser.add_argument('--tileid', help="Tile id", required=False)
+parser.add_argument('--siteid', help='The site ID', required=False)                    
 
 USE_COMPRESSION=True
 REMOVE_TEMP=False
@@ -74,15 +70,11 @@ resolution = args.res
 bandsMap = args.bandsmap
 appLocation = args.applocation
 outDir = args.outdir
-
-compositeLocation = appLocation + '/Composite'
-print("Composite location:{}".format(compositeLocation))
-
-productFormatterLocation = appLocation + '/MACCSMetadata/src'
-print("Product formater location:{}".format(productFormatterLocation))
+siteId = "nn"
+if args.siteid:
+    siteId = args.siteid
 
 #defintion for filenames
-weightOtbLibsRoot = compositeLocation + '/WeightCalculation'
 outSpotMasks = outDir + '/spot_masks.tif'
 outImgBands = outDir + '/res' + resolution + '.tif'
 outImgBandsAll = outDir + '/res' + resolution + '_all.tif'
@@ -191,7 +183,7 @@ print("Processing started: " + str(datetime.datetime.now()))
 start = time.time()
 for xml in inputList:
     
-    runCmd(["otbcli", "MaskHandler", compositeLocation + '/MaskHandler', "-xml", xml, "-out", outSpotMasks, "-sentinelres", resolution])
+    runCmd(["otbcli", "MaskHandler", appLocation, "-xml", xml, "-out", outSpotMasks, "-sentinelres", resolution])
     
     counterString = str(i)
     mod=outL3AFile.replace("#", counterString)
@@ -206,20 +198,20 @@ for xml in inputList:
     out_w_Total=outTotalWeightFile.replace("#", counterString)
     
     if fullScatCoeffs:
-        cmd = ["otbcli", "CompositePreprocessing2", compositeLocation + '/CompositePreprocessing', "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-scatcoef", fullScatCoeffs, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
+        cmd = ["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-scatcoef", fullScatCoeffs, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
     else:
-        cmd = ["otbcli", "CompositePreprocessing2", compositeLocation + '/CompositePreprocessing', "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
+        cmd = ["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
     
     runCmd(cmd)
    
-    runCmd(["otbcli", "WeightAOT", weightOtbLibsRoot + '/WeightAOT', "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", out_w_Aot])
+    runCmd(["otbcli", "WeightAOT", appLocation, "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", out_w_Aot])
 
-    runCmd(["otbcli", "WeightOnClouds", weightOtbLibsRoot + '/WeightOnClouds', "-inxml", xml, "-incldmsk", outCld, "-coarseres", COARSE_RES, "-sigmasmallcld", SIGMA_SMALL_CLD, "-sigmalargecld", SIGMA_LARGE_CLD, "-out", out_w_Cloud])
+    runCmd(["otbcli", "WeightOnClouds", appLocation, "-inxml", xml, "-incldmsk", outCld, "-coarseres", COARSE_RES, "-sigmasmallcld", SIGMA_SMALL_CLD, "-sigmalargecld", SIGMA_LARGE_CLD, "-out", out_w_Cloud])
 
-    runCmd(["otbcli", "TotalWeight", weightOtbLibsRoot + '/TotalWeight', "-xml", xml, "-waotfile", out_w_Aot, "-wcldfile", out_w_Cloud, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", out_w_Total])
+    runCmd(["otbcli", "TotalWeight", appLocation, "-xml", xml, "-waotfile", out_w_Aot, "-wcldfile", out_w_Cloud, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", out_w_Total])
     #todo... search for previous L3A produc?
 
-    runCmd(["otbcli", "UpdateSynthesis", compositeLocation + '/UpdateSynthesis', "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", out_w_Total, "-out", mod] + prevL3A)
+    runCmd(["otbcli", "UpdateSynthesis", appLocation, "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", out_w_Total, "-out", mod] + prevL3A)
 
     tmpOut_w = out_w
     tmpOut_d = out_d
@@ -234,7 +226,7 @@ for xml in inputList:
         tmpOut_f += '?gdal:co:COMPRESS=DEFLATE' 
         tmpOut_rgb += '?gdal:co:COMPRESS=DEFLATE'
 
-    runCmd(["otbcli", "CompositeSplitter2", compositeLocation + '/CompositeSplitter', "-in", mod, "-xml", xml, "-bmap", bandsMap, "-outweights", tmpOut_w, "-outdates", tmpOut_d, "-outrefls", tmpOut_r, "-outflags", tmpOut_f, "-outrgb", tmpOut_rgb])
+    runCmd(["otbcli", "CompositeSplitter2", appLocation, "-in", mod, "-xml", xml, "-bmap", bandsMap, "-outweights", tmpOut_w, "-outdates", tmpOut_d, "-outrefls", tmpOut_r, "-outflags", tmpOut_f, "-outrgb", tmpOut_rgb])
 
     prevL3A = ["-prevl3aw", out_w, "-prevl3ad", out_d, "-prevl3ar", out_r, "-prevl3af", out_f]
 
@@ -287,7 +279,21 @@ if i == 0:
     exit(1)
 
 i -= 1
-runCmd(["otbcli", "ProductFormatter", productFormatterLocation, "-destroot", outDir, "-fileclass", "SVT1", "-level", "L3A", "-timeperiod", syntDate, "-baseline", "01.00", "-processor", "composite", "-processor.composite.refls", tileID, out_r, "-processor.composite.weights", tileID, out_w, "-processor.composite.flags", tileID, out_f, "-processor.composite.dates", tileID, out_d, "-processor.composite.rgb", tileID, out_rgb, "-il", inputList[-1], "-gipp", paramsFilenameXML])
+runCmd(["otbcli", "ProductFormatter", appLocation, 
+    "-destroot", outDir, 
+    "-fileclass", "OPER", 
+    "-level", "L3A", 
+    "-timeperiod", syntDate, 
+    "-baseline", "01.00", 
+    "-siteid", siteId,     
+    "-processor", "composite", 
+    "-processor.composite.refls", tileID, out_r, 
+    "-processor.composite.weights", tileID, out_w, 
+    "-processor.composite.flags", tileID, out_f, 
+    "-processor.composite.dates", tileID, out_d, 
+    "-processor.composite.rgb", tileID, out_rgb, 
+    "-il"] + inputList + [
+    "-gipp", paramsFilenameXML])
 
 if REMOVE_TEMP:
     counterString = str(i)

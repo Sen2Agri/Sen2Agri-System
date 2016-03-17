@@ -67,10 +67,13 @@ class LaiModel(object):
         outSimuReflsFile = outDir + '/out_simu_refls.txt'
         outTrainingFile = outDir + '/out_training.txt'
         outAnglesFile = outDir + '/out_angles.txt'
+        imgModelFileName = outDir + '/img_model.txt'
+        errEstModelFileName = outDir + '/err_est_model.txt'
+        newModelsNamesFile = outDir + '/new_models_names.txt'
 
         #generating Input BV Distribution file
         print("Generating Input BV Distribution file ...")
-        runCmd(["otbcli", "BVInputVariableGeneration", imgInvOtbLibsLocation,
+        runCmd(["otbcli", "BVInputVariableGeneration", appLocation,
                 "-samples", str(GENERATED_SAMPLES_NO),
                 "-out",  outGeneratedSampleFile])
 
@@ -81,7 +84,7 @@ class LaiModel(object):
                 print("Please provide the rsrcfg or rsrfile!")
                 exit(1)
             else:
-                runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation,
+                runCmd(["otbcli", "ProSailSimulator", appLocation,
                         "-xml", curXml,
                         "-bvfile", outGeneratedSampleFile,
                         "-rsrfile", rsrFile,
@@ -89,7 +92,7 @@ class LaiModel(object):
                         "-outangles", outAnglesFile,
                         "-noisevar", str(NOISE_VAR)])
         else:
-            runCmd(["otbcli", "ProSailSimulator", imgInvOtbLibsLocation,
+            runCmd(["otbcli", "ProSailSimulator", appLocation,
                     "-xml", curXml,
                     "-bvfile", outGeneratedSampleFile,
                     "-rsrcfg", rsrCfg,
@@ -99,7 +102,7 @@ class LaiModel(object):
 
         # Generating training file
         print("Generating training file ...")
-        runCmd(["otbcli", "TrainingDataGenerator", imgInvOtbLibsLocation,
+        runCmd(["otbcli", "TrainingDataGenerator", appLocation,
                 "-xml", curXml,
                 "-biovarsfile", outGeneratedSampleFile,
                 "-simureflsfile", outSimuReflsFile,
@@ -124,27 +127,21 @@ class LaiModel(object):
         print("SENSOR ANGLE reduced from {} to {}".format(sensorZenithAngle, sensorZenithReduced))
         print("AZIMUTH ANGLE reduced from {} to {}".format(relativeAzimuthAngle, relativeAzimuthReduced))
 
-        outModelFile = "{0}/Model_THETA_S_{1}_THETA_V_{2}_REL_PHI_{3}.txt".format(
-                       modelsFolder,
-                       solarZenithReduced,
-                       sensorZenithReduced,
-                       relativeAzimuthReduced)
-        outErrEstFile = "{0}/Err_Est_Model_THETA_S_{1}_THETA_V_{2}_REL_PHI_{3}.txt".format(
-                       modelsFolder,
-                       solarZenithReduced,
-                       sensorZenithReduced,
-                       relativeAzimuthReduced)
-        self.modelFile=outModelFile
-        self.modelErrFile=outErrEstFile
-
         # Generating model
         print("Generating model ...")
-        runCmd(["otbcli", "InverseModelLearning", imgInvOtbLibsLocation,
+        runCmd(["otbcli", "InverseModelLearning", appLocation,
                 "-training", outTrainingFile,
-                "-out", outModelFile,
-                "-errest", outErrEstFile,
+                "-out", imgModelFileName,
+                "-errest", errEstModelFileName,
                 "-regression", str(REGRESSION_TYPE),
-                "-bestof", str(BEST_OF)])
+                "-bestof", str(BEST_OF),
+                "-xml", curXml,
+                "-computedmodelnames", newModelsNamesFile,
+                "-newnamesoutfolder", modelsFolder])
+        with open(newModelsNamesFile) as f:
+            content = f.readlines()
+            self.modelFile = content[0]
+            self.modelErrFile = content[1]
 
         with open(paramsLaiModelFilenameXML, 'w') as paramsFileXML:
             root = ET.Element('metadata')
@@ -164,8 +161,8 @@ class LaiModel(object):
             iv = ET.SubElement(root, "Weight_ON")
             ET.SubElement(iv, "regression_type").text = REGRESSION_TYPE
             ET.SubElement(iv, "best_of").text = BEST_OF
-            ET.SubElement(iv, "generated_model_filename").text = outModelFile
-            ET.SubElement(iv, "generated_error_estimation_model_file_name").text = outErrEstFile
+            ET.SubElement(iv, "generated_model_filename").text = self.modelFile
+            ET.SubElement(iv, "generated_error_estimation_model_file_name").text = self.modelErrFile
 
             paramsFileXML.write(prettify(root))
 
@@ -187,8 +184,8 @@ class LaiModel(object):
             paramsFile.write("Inverse model generation (InverseModelLearning)\n")
             paramsFile.write("    Regression type               = {}\n".format(REGRESSION_TYPE))
             paramsFile.write("    Best of                       = {}\n".format(BEST_OF))
-            paramsFile.write("    Generated model file name     = {}\n".format(outModelFile))
-            paramsFile.write("    Generated error estimation model file name = {}\n".format(outErrEstFile))
+            paramsFile.write("    Generated model file name     = {}\n".format(self.modelFile))
+            paramsFile.write("    Generated error estimation model file name = {}\n".format(self.modelErrFile))
 
 
 if __name__ == '__main__':
@@ -204,6 +201,7 @@ if __name__ == '__main__':
     parser.add_argument('--tileid', help="Tile id", required=False)
     parser.add_argument('--modelsfolder', help='The folder where the models are located. If not specified, is considered the outdir', required=False)
     parser.add_argument('--generatemodel', help='Generate the model (YES/NO)', required=False)
+    parser.add_argument('--siteid', help='The site ID', required=False)
 
     args = parser.parse_args()
 
@@ -213,15 +211,14 @@ if __name__ == '__main__':
     rsrFile = args.rsrfile
     rsrCfg = args.rsrcfg
     generateModel = args.generatemodel
+    siteId = "nn"
+    if args.siteid:
+        siteId = args.siteid
 
     if (generateModel == "YES"):
         GENERATE_MODEL = True
     else:
         GENERATE_MODEL = False
-
-    vegetationStatusLocation = "{}/VegetationStatus".format(appLocation)
-    productFormatterLocation = "{}/MACCSMetadata/src".format(appLocation)
-    imgInvOtbLibsLocation = vegetationStatusLocation + '/otb-bv/src/applications'
 
     tileID="TILE_none"
     if args.tileid:
@@ -261,25 +258,25 @@ if __name__ == '__main__':
         print("The product will be created with the original resolution without resampling.")
         resolution=0
 
+    outSingleNdvi = "{}/#_Single_NDVI.tif".format(outDir)
     outNdviRvi = "{}/#_NDVI_RVI.tif".format(outDir)
     outLaiImg = "{}/#_LAI_img.tif".format(outDir)
-    outLaiMonoMskFlgsImg = "{}/#_LAI_mono_date_mask_flags_img.tif".format(outDir)
     outLaiErrImg = "{}/#_LAI_err_img.tif".format(outDir)
-
-    modelFile = "{}/model_file.txt".format(outDir)
-    errModelFile = "{}/err_model_file.txt".format(outDir)
+    outLaiMonoMskFlgsImg = "{}/#_LAI_mono_date_mask_flags_img.tif".format(outDir)
+    # LAI images encoded as short. These are used only by ProductFormatter
+    outLaiShortImg = "{}/#_LAI_img_16.tif".format(outDir)
+    outLaiErrShortImg = "{}/#_LAI_err_img_16.tif".format(outDir)
 
     cnt=int(0)
     print("Processing started: " + str(datetime.datetime.now()))
     start = time.time()
 
     allXmlParam=[]
-    allNdviFilesList=[]
     allLaiParam=[]
     allErrParam=[]
     allMskFlagsParam=[]
 
-    for xml in args.input:
+    for idx, xml in enumerate(args.input):
         counterString = str(cnt)
 
         # Compute the LAI model
@@ -291,73 +288,104 @@ if __name__ == '__main__':
         if lastPoint != -1 and lastSlash != -1 and lastSlash + 1 < lastPoint:
             counterString = xml[lastSlash + 1:lastPoint]
 
-        curOutNDVIImg = outNdviRvi.replace("#", counterString)
+        curOutSingleNDVIImg = outSingleNdvi.replace("#", counterString)
+        curOutNDVIRVIImg = outNdviRvi.replace("#", counterString)
         curOutLaiImg = outLaiImg.replace("#", counterString)
         curOutLaiErrImg = outLaiErrImg.replace("#", counterString)
         curOutLaiMonoMskFlgsImg = outLaiMonoMskFlgsImg.replace("#", counterString)
+        # LAI images encoded as short. These are used only by ProductFormatter
+        curOutLaiShortImg = outLaiShortImg.replace("#", counterString)
+        curOutLaiErrShortImg = outLaiErrShortImg.replace("#", counterString)
+
+        runCmd(["otbcli", "GenerateLaiMonoDateMaskFlags", appLocation,
+                "-inxml", xml,
+                "-out", curOutLaiMonoMskFlgsImg])
+        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
         #Compute NDVI and RVI
         if resolution == 0:
-            runCmd(["otbcli", "NdviRviExtraction2", imgInvOtbLibsLocation,
+            runCmd(["otbcli", "NdviRviExtraction2", appLocation,
             "-xml", xml,
-            "-fts", curOutNDVIImg])
+            "-ndvi", curOutSingleNDVIImg,
+            "-msks", curOutLaiMonoMskFlgsImg,
+            "-fts", curOutNDVIRVIImg])
         else:
-            runCmd(["otbcli", "NdviRviExtraction2", imgInvOtbLibsLocation,
+            runCmd(["otbcli", "NdviRviExtraction2", appLocation,
             "-xml", xml,
-            "-outres", resolution, "-fts", curOutNDVIImg])
+            "-outres", resolution,
+            "-ndvi", curOutSingleNDVIImg,
+            "-msks", curOutLaiMonoMskFlgsImg,
+            "-fts", curOutNDVIRVIImg])
 
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
         # Retrieve the LAI model
-
-        runCmd(["otbcli", "BVImageInversion", imgInvOtbLibsLocation,
-                "-in", curOutNDVIImg,
-                "-model", laiModel.modelFile,
-                "-out", curOutLaiImg])
+        runCmd(["otbcli", "BVImageInversion", appLocation,
+                "-in", curOutNDVIRVIImg,
+                "-out", curOutLaiImg,
+                "-xml", xml,
+                "-modelsfolder", modelsFolder,
+                "-modelprefix", "Model_"])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-        runCmd(["otbcli", "BVImageInversion", imgInvOtbLibsLocation,
-                "-in", curOutNDVIImg,
-                "-model", laiModel.modelErrFile,
-                "-out", curOutLaiErrImg])
-
+        runCmd(["otbcli", "BVImageInversion", appLocation,
+                "-in", curOutNDVIRVIImg,
+                "-out", curOutLaiErrImg,
+                "-xml", xml,
+                "-modelsfolder", modelsFolder,
+                "-modelprefix", "Err_Est_Model_"])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-        runCmd(["otbcli", "GenerateLaiMonoDateMaskFlags", imgInvOtbLibsLocation,
-                "-inxml", xml,
-                "-out", curOutLaiMonoMskFlgsImg])
-
+        runCmd(["otbcli", "QuantifyImage", appLocation,
+                "-in", curOutLaiImg,
+                "-out", curOutLaiShortImg])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-
+        runCmd(["otbcli", "QuantifyImage", appLocation,
+                "-in", curOutLaiErrImg,
+                "-out", curOutLaiErrShortImg])
+        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+        
         allXmlParam.append(xml)
-        allNdviFilesList.append(curOutNDVIImg)
         allLaiParam.append(curOutLaiImg)
         allErrParam.append(curOutLaiErrImg)
         allMskFlagsParam.append(curOutLaiMonoMskFlgsImg)
 
         cnt += 1
+        
+        # Generate the product for the monodate
+        runCmd(["otbcli", "ProductFormatter", appLocation,
+                "-destroot", outDir,
+                "-fileclass", "SVT1", "-level", "L3B", "-baseline", "01.00", "-siteid", siteId,
+                "-processor", "vegetation",
+                "-processor.vegetation.laindvi", tileID, curOutSingleNDVIImg,
+                "-processor.vegetation.laimonodate", tileID, curOutLaiShortImg,
+                "-processor.vegetation.laimonodateerr", tileID, curOutLaiErrShortImg,
+                "-processor.vegetation.laimdateflgs", tileID, allMskFlagsParam[idx],
+                "-il", xml, 
+                "-gipp", paramsLaiModelFilenameXML])
 
-    reprocessedFlagsFilesList = []
-    reprocessedRastersFilesList = []
-    fittedFlagsFilesList = []
-    fittedRastersFilesList = []
-
-    runCmd(["otbcli", "ProductFormatter", productFormatterLocation,
-           "-destroot", outDir,
-           "-fileclass", "OPER",
-           "-level", "L3B",
-           "-baseline", "01.00",
-           "-processor", "vegetation",
-           "-processor.vegetation.laindvi", tileID] + allNdviFilesList + [
-           "-processor.vegetation.laimonodate", tileID] + allLaiParam + [
-           "-processor.vegetation.laimonodateerr", tileID] + allErrParam + [
-           "-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + [
-           "-processor.vegetation.laireproc", tileID] + reprocessedRastersFilesList + [
-           "-processor.vegetation.laireprocflgs", tileID] + reprocessedFlagsFilesList + [
-           "-processor.vegetation.laifit", tileID] + fittedRastersFilesList + [
-           "-processor.vegetation.laifitflgs", tileID] + fittedFlagsFilesList + [
-           "-il"] + allXmlParam + [
-           "-gipp", paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML])
+#    fittedRastersListFile = "{}/FittedRastersFilesList.txt".format(outDir)
+#    fittedFlagsListFile = "{}/FittedFlagsFilesList.txt".format(outDir)
+#    reprocessedRastersListFile = "{}/ReprocessedRastersFilesist.txt".format(outDir)
+#    reprocessedFlagsListFile = "{}/ReprocessedFlagsFilesist.txt".format(outDir)
+#
+#    runCmd(["otbcli", "ProductFormatter", appLocation,
+#           "-destroot", outDir,
+#           "-fileclass", "OPER",
+#           "-level", "L3B",
+#           "-baseline", "01.00",
+#           "-siteid", "S01",           
+#           "-processor", "vegetation",
+#           "-processor.vegetation.laindvi", tileID] + allSingleNdviFilesList + [
+#           "-processor.vegetation.laimonodate", tileID] + allLaiShortParam + [
+#           "-processor.vegetation.laimonodateerr", tileID] + allErrShortParam + [
+#           "-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + [
+#           "-processor.vegetation.filelaireproc", tileID, reprocessedRastersListFile,
+#           "-processor.vegetation.filelaireprocflgs", tileID, reprocessedFlagsListFile,
+#           "-processor.vegetation.filelaifit", tileID, fittedRastersListFile,
+#           "-processor.vegetation.filelaifitflgs", tileID, fittedFlagsListFile] + [
+#           "-il"] + allXmlParam + [
+#           "-gipp",  paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML])
 
     print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
