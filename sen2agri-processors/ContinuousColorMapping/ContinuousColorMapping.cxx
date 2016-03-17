@@ -81,16 +81,17 @@ private:
     {
         Ramp ramp;
 
-        float min, max, rMin, gMin, bMin, rMax, gMax, bMax;
+        float min, max;
+        uint32_t rMin, gMin, bMin, rMax, gMax, bMax;
         while (mapFile >> min >> max >> rMin >> gMin >> bMin >> rMax >> gMax >> bMax)
         {
             itk::RGBPixel<uint8_t> minColor, maxColor;
-            minColor[0] = rMin;
-            minColor[1] = gMin;
-            minColor[2] = bMin;
-            maxColor[0] = rMax;
-            maxColor[1] = gMax;
-            maxColor[2] = bMax;
+            minColor[0] = static_cast<uint8_t>(rMin);
+            minColor[1] = static_cast<uint8_t>(gMin);
+            minColor[2] = static_cast<uint8_t>(bMin);
+            maxColor[0] = static_cast<uint8_t>(rMax);
+            maxColor[1] = static_cast<uint8_t>(gMax);
+            maxColor[2] = static_cast<uint8_t>(bMax);
 
             ramp.emplace_back(min, max, minColor, maxColor);
         }
