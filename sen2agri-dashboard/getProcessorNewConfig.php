@@ -93,6 +93,7 @@ function upload_reference_polygons($site_id) {
 				case 0:		$shape_ok = true; break;
 				case 1:		$shp_file = false; $shp_msg = 'Unable to open the shape file'; break;
 				case 2:		$shp_file = false; $shp_msg = 'Shape file has invalid geometry'; break;
+				case 3:		$shp_file = false; $shp_msg = 'Shape file has overlapping polygons'; break;
 				case 127:	$shp_file = false; $shp_msg = 'Invalid geometry detection script'; break;
 				default:	$shp_file = false; $shp_msg = 'Unexpected error with the geometry detection script'; break;
 			}

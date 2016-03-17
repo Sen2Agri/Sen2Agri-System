@@ -39,6 +39,7 @@
 #include "otbImageListToVectorImageFilter.h"
 
 #include "otbStreamingResampleImageFilter.h"
+#include "otbGridResampleImageFilter.h"
 #include "otbStreamingStatisticsVectorImageFilter.h"
 #include "otbLabelImageToVectorDataFilter.h"
 
@@ -89,7 +90,8 @@ typedef otb::ObjectList<ImageReaderType>                           ImageReaderLi
 typedef itk::MACCSMetadataReader                                   MACCSMetadataReaderType;
 typedef itk::SPOT4MetadataReader                                   SPOT4MetadataReaderType;
 
-typedef otb::StreamingResampleImageFilter<ImageType, ImageType, double>    ResampleFilterType;
+//typedef otb::StreamingResampleImageFilter<ImageType, ImageType, double>    ResampleFilterType;
+typedef otb::GridResampleImageFilter<ImageType, ImageType, double>    ResampleFilterType;
 typedef otb::ObjectList<ResampleFilterType>                           ResampleFilterListType;
 typedef otb::BCOInterpolateImageFunction<ImageType,
                                             double>          BicubicInterpolationType;
@@ -97,7 +99,7 @@ typedef itk::LinearInterpolateImageFunction<ImageType,
                                             double>          LinearInterpolationType;
 typedef itk::NearestNeighborInterpolateImageFunction<ImageType, double>             NearestNeighborInterpolationType;
 
-typedef itk::IdentityTransform<double, ImageType::ImageDimension>      IdentityTransformType;
+//typedef itk::IdentityTransform<double, ImageType::ImageDimension>      IdentityTransformType;
 typedef itk::ScalableAffineTransform<double, ImageType::ImageDimension> ScalableTransformType;
 typedef ScalableTransformType::OutputVectorType                         OutputVectorType;
 
@@ -1058,7 +1060,7 @@ private:
            resampler->SetInterpolator(interpolator);
        }
 
-       IdentityTransformType::Pointer transform = IdentityTransformType::New();
+//       IdentityTransformType::Pointer transform = IdentityTransformType::New();
 
        resampler->SetOutputParametersFromImage( image );
 
@@ -1076,8 +1078,9 @@ private:
 //       outputOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0);
 
        resampler->SetOutputOrigin(td.m_imageOrigin);
+       resampler->SetCheckOutputBounds(false);
 
-       resampler->SetTransform(transform);
+//       resampler->SetTransform(transform);
 
        resampler->SetOutputSize(recomputedSize);
 

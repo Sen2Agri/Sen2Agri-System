@@ -7,8 +7,8 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-include_directories(../../Common/OTBExtensions)
+include_directories(../OTBExtensions)
 
-add_dependencies(otbapp_BandsExtractor OTBExtensions)
+add_dependencies(otbapp_CropTypeStatistics OTBExtensions)
 
 install(TARGETS otbapp_CropTypeStatistics DESTINATION usr/lib/otb/applications/)
