@@ -59,6 +59,10 @@ private:
     {
         const auto &file = GetParameterString("map");
         std::ifstream mapFile(file);
+        if (!mapFile) {
+            itkExceptionMacro("Unable to open " << file);
+        }
+
         auto &&ramp = ReadColorMap(mapFile);
 
         const auto &in = GetParameterFloatImage("in");
