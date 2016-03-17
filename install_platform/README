@@ -10,7 +10,8 @@ A distribution folder will be created Sen2AgriDistribution, on the current path.
 II. Install SEN2AGRI Distribution
 ------------------------------------------------------
 The following action should be performed in order to install automatically a distribution previously created on step I:
-1.open a terminal and launch the script performing installation of the distribution:
+1.copy the distribution created on the build machine on a the machine where the distribution should be installed 
+2.open a terminal on the machine where the distribution should be installed and launch the script performing installation of the distribution
 $ sudo /path/to/distribution/Sen2AgriDistribution/install_script/sen2agriPlatformInstallAndConfig.sh
 
 

@@ -357,10 +357,14 @@ def perform_images_concatenation(context, listOfFiles, dataFolder):
    list_img_by_scale = list()
    for key, fileList in tmp_data_dictionary.iteritems():
       if key:
-         #split key upon "_" (the key is "bisofericalStatusIndicator"_"scaleProjection" -> key: SLAIR_20)
-         scale_projection = (key.split("_"))[1]
+         if ("_") in key:
+            #split key upon "_" (the key is "bisofericalStatusIndicator"_"scaleProjection" -> key: SLAIR_20)
+            scale_projection = (key.split("_"))[1]
+         else:
+            #no split needed (the key is "bisofericalStatusIndicator" -> key: SLAIR)
+            scale_projection = ""
 
-         #add entry to list as a tupple : ("20","SLAIR_20","fileList")
+         #add entry to list as a tupple : ("20","SLAIR_20","fileList") or ("","SLAIR","fileList")
          tuple_entry = str(scale_projection), str(key), ''.join(fileList)
          list_img_by_scale.append(tuple_entry)
 
@@ -399,12 +403,12 @@ def format_file_name_output(fileName):
    
    datePart = ""
    #concatenate list elements
-   for partName in resultList:
-      #on last elem , does not append _
-      if partName == resultList[-1]:
-         datePart = datePart + partName
-      else:
-         datePart = datePart + partName + "_"
+   if len(resultList) == 1:
+      #append the separator _ after getting the only elem in the list
+      datePart = datePart + resultList[-1]
+   else:
+      #concatenate elem list with the separator _
+      datePart = '_'.join(resultList)
 
    #build here full file name without extension
    file_tmp = file_name_parts[0] + context.field_separator + datePart
@@ -968,12 +972,24 @@ def create_mosaic_quicklook(context):
    #call otb application QuickLook  with a max no of bands defined by CONST_NB_BANDS_QUIKLOOL_LIMIT
    #red, green, blue and grey
    channelList = []
-   for bandId  in range(context.xml_info_from_mosaic_dict["nb_mosaic_bands"]):
-      channelName = "Channel" + str(bandId + 1)
-      #check the number of bands of the mosaic file: quicklook has a limit over 4 bands
-      if bandId < int(CONST_NB_BANDS_QUIKLOOL_LIMIT):
-         #add entry to the list
-         channelList.append(channelName)
+   nb_bands_in_mosaic = int(context.xml_info_from_mosaic_dict["nb_mosaic_bands"])
+   if nb_bands_in_mosaic == 1 :
+      ##there is one channel
+      channelName = "Channel1"
+      #add entry to the list
+      channelList.append(channelName)
+   elif nb_bands_in_mosaic == 2 :
+      ## use only the first channel since JPEG driver doesn't support 2 bands.  Must be 1 (grey), 3 (RGB) or 4 bands.
+      channelName = "Channel1"
+      #add entry to the list
+      channelList.append(channelName)
+   else:
+      for bandId  in range(context.xml_info_from_mosaic_dict["nb_mosaic_bands"]):
+         channelName = "Channel" + str(bandId + 1)
+         #check the number of bands of the mosaic file: quicklook has a limit over 4 bands
+         if bandId < int(CONST_NB_BANDS_QUIKLOOL_LIMIT):
+            #add entry to the list
+            channelList.append(channelName)
    #call otb application doing quicklook with the apropriate channel list
    quicklook_mosaic(context.post_process_out_filename, context.quicklook_out_filename, channelList)
 
