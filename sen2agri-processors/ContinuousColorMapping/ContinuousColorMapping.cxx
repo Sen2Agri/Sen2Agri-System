@@ -77,7 +77,7 @@ private:
         SetParameterOutputImage("out", m_Filter->GetOutput());
     }
 
-    Ramp ReadColorMap(std::istream &mapFile)
+    static Ramp ReadColorMap(std::istream &mapFile)
     {
         Ramp ramp;
 
