@@ -20,28 +20,27 @@
 #include "MACCSMetadataReader.hpp"
 #include "SPOT4MetadataReader.hpp"
 
-#define PROJECT_ID                      "S2AGRI"
-#define GIPP_VERSION                    "0001"
-#define IMAGE_FORMAT                    "GEOTIFF"
-#define TIF_EXTENSION                   ".TIF"
-#define JPEG_EXTENSION                  ".jpg"
+#define PROJECT_ID   "S2AGRI"
+#define GIPP_VERSION "0001"
+#define IMAGE_FORMAT "GEOTIFF"
+#define TILE_ID      "T15SWC"
+#define TIF_EXTENSION      ".TIF"
+#define JPEG_EXTENSION      ".jpg"
 
 #define REFLECTANCE_SUFFIX              "SRFL"
 #define WEIGHTS_SUFFIX                  "SWGT"
 #define COMPOSITE_DATES_SUFFIX          "MDAT"
 #define COMPOSITE_FLAGS_SUFFIX          "MFLG"
 #define LAI_NDVI_SUFFIX                 "SNDVI"
-#define LAI_MDATE_SUFFIX                "SLAIMONO"
-#define LAI_MDATE_ERR_SUFFIX            "MLAIERR"
+#define LAI_MDATE_SUFFIX                "SLAIMONODATE"
+#define LAI_MDATE_ERR_SUFFIX            "SLAIMONOERRDATE"
 #define LAI_REPR_SUFFIX                 "SLAIR"
 #define LAI_FIT_SUFFIX                  "SLAIF"
-#define PHENO_SUFFIX                    "SPHENO"
-#define PHENO_FLAGS_SUFFIX              "MPHENOFLG"
-#define LAI_MONO_DATE_FLAGS_SUFFIX      "MMONODFLG"
-#define LAI_REPROC_FLAGS_SUFFIX         "MLAIRFLG"
-#define LAI_FITTED_FLAGS_SUFFIX         "MLAIFFLG"
-#define CROP_MASK_IMG_SUFFIX            "CM"
-#define CROP_TYPE_IMG_SUFFIX            "CT"
+#define PHENO_SUFFIX                    "SNVDIMET"
+#define PHENO_FLAGS_SUFFIX              "MNVDIMETFLG"
+#define LAI_MONO_DATE_FLAGS_SUFFIX      "MMDATEFLG"
+#define LAI_REPROC_FLAGS_SUFFIX         "MREPROCFLG"
+#define LAI_FITTED_FLAGS_SUFFIX         "MFITTEDFLG"
 #define CROP_MASK_RAW_IMG_SUFFIX        "RAW"
 #define CROP_MASK_FLAGS_SUFFIX          "MCMFLG"
 #define CROP_TYPE_FLAGS_SUFFIX          "MCTFLG"
@@ -51,16 +50,20 @@
 
 
 #define MAIN_FOLDER_CATEG "PRD"
-//#define TILE_LEGACY_FOLDER_CATEG "DAT"
-//#define TRUE_COLOR_FOLDER_CATEG "TCI"
+#define TILE_LEGACY_FOLDER_CATEG "DAT"
+#define TRUE_COLOR_FOLDER_CATEG "TCI"
 #define QUICK_L0OK_IMG_CATEG "PVI"
 #define METADATA_CATEG "MTD"
-//#define MASK_CATEG "MSK"
+#define MASK_CATEG "MSK"
 #define PARAMETER_CATEG "IPP"
 #define QUALITY_CATEG "QLT"
 #define NO_DATA_VALUE "-10000"
 
 #define ORIGINATOR_SITE "CSRO"
+
+#define PRODUCT_DESCRIPTOR  "PR"
+#define TILE_DESCRIPTOR     "TL"
+#define LEGACY_DESCRIPTOR   "LY"
 
 #define TILES_FOLDER_NAME           "TILES"
 #define AUX_DATA_FOLDER_NAME        "AUX_DATA"
@@ -71,14 +74,11 @@
 #define LANDSAT    "LANDSAT"
 #define SENTINEL   "SENTINEL"
 
-#define L2A_PRODUCT             "L2A product"
-#define COMPOSITE_PRODUCT       "Composite"
-#define LAI_MONO_DATE_PRODUCT   "LAI mono-date"
-#define LAI_REPROC_PRODUCT      "LAI reprocessed"
-#define LAI_FITTED_PRODUCT      "LAI reprocessed at end of season (fitted)"
-#define PHENO_NDVI_PRODUCT      "Phenological NDVI Metrics"
-#define CROP_MASK               "Crop mask"
-#define CROP_TYPE               "Crop type"
+#define L2A_PRODUCT         "L2A product"
+#define COMPOSITE_PRODUCT   "Composite"
+#define VEGETATION_PRODUCT  "Vegetation status"
+#define CROP_MASK           "Crop mask"
+#define CROP_TYPE           "Crop type"
 
 typedef itk::MACCSMetadataReader MACCSMetadataReaderType;
 typedef itk::SPOT4MetadataReader SPOT4MetadataReaderType;
@@ -177,26 +177,26 @@ namespace otb
 {
 namespace Wrapper
 {
-class ProductFormatter : public Application
+class ProductFormatterV0 : public Application
 {
 
 public:
-  typedef ProductFormatter Self;
+  typedef ProductFormatterV0 Self;
   typedef Application Superclass;
   typedef itk::SmartPointer<Self> Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
 
   itkNewMacro(Self)
-  itkTypeMacro(ProductFormatter, otb::Application)
+  itkTypeMacro(ProductFormatterV0, otb::Application)
 
 private:
 
   void DoInit()
   {
-        SetName("ProductFormatter");
+        SetName("ProductFormatterV0");
         SetDescription("Creates folder ierarchy and metadata files");
 
-        SetDocName("ProductFormatter");
+        SetDocName("ProductFormatterV0");
         SetDocLongDescription("Creates folder ierarchy and metadata files");
         SetDocLimitations("None");
         SetDocAuthors("ATA");
@@ -210,7 +210,6 @@ private:
         AddParameter(ParameterType_String, "baseline", "Processing baseline");
         AddParameter(ParameterType_String, "outprops", "File containing processing properties like the product main folder");
         MandatoryOff("outprops");
-        AddParameter(ParameterType_String, "siteid", "The site ID");
 
         AddParameter(ParameterType_Choice, "processor", "Processor");
         SetParameterDescription("processor", "Specifies the product type");
@@ -335,6 +334,9 @@ private:
       // by default, we expect a "timeperiod" parameter
       m_bDynamicallyTimePeriod = false;
 
+      //get file class
+      m_strFileClass = this->GetParameterString("fileclass");
+
       //get product level
       m_strProductLevel = this->GetParameterString("level");
 
@@ -345,9 +347,6 @@ private:
 
       //get processing baseline
       m_strBaseline = this->GetParameterString("baseline");
-
-      //get the site ID
-      m_strSiteId = this->GetParameterString("siteid");
 
       //get destination root
       m_strDestRoot = this->GetParameterString("destroot");
@@ -363,19 +362,32 @@ private:
       m_strMaxAcquisitionDate = *std::max_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
       if(m_strTimePeriod.empty()) {
           m_bDynamicallyTimePeriod = true;
-          if(LevelHasAcquisitionTime()) {
-              if(descriptors.size() != 1)
-                    itkGenericExceptionMacro(<< "You should have only one file in the il parameter as this product has Aquisition time: " << m_strProductLevel);
-              // we have a single date and min acquisition date should be the same as max acquisition date
-              m_strTimePeriod = m_strMaxAcquisitionDate;
-          } else {
-              // we have an interval
-              m_strTimePeriod = m_strMinAcquisitionDate + "_" + m_strMaxAcquisitionDate;
-          }
+          m_strTimePeriod = m_strMinAcquisitionDate + "_" + m_strMaxAcquisitionDate;
       }
 
-      m_strProductDirectoryName = BuildProductDirectoryName();
-      std::string strMainFolderFullPath = m_strDestRoot + "/" + m_strProductDirectoryName;
+      std::string strCreationDate = currentDateTimeFormattted("%Y%m%dT%H%M%S");
+
+      std::string strMainProductFolderName = "{project_id}_{file_class}_{file_category}_{product_level}_{product_descriptor}_{originator_site}_{creation_date}_V{time_period}_T{tile_id}_{processing_baseline}";
+
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{project_id}", PROJECT_ID);
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{file_class}", m_strFileClass);
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{file_category}", MAIN_FOLDER_CATEG);
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{product_level}", m_strProductLevel);
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{originator_site}", ORIGINATOR_SITE);
+
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{creation_date}", strCreationDate);
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{time_period}", m_strTimePeriod);
+      std::string strTileName = strMainProductFolderName;
+
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_T{tile_id}", "");
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{processing_baseline}", "");
+
+      m_strProductFileName = ReplaceString(strMainProductFolderName, "{product_descriptor}", PRODUCT_DESCRIPTOR);
+
+      strMainProductFolderName = ReplaceString(strMainProductFolderName, "_{product_descriptor}", "");
+      m_strProductDirectoryName = strMainProductFolderName;
+
+      std::string strMainFolderFullPath = m_strDestRoot + "/" + strMainProductFolderName;
 
       //created all folders ierarchy
       bool bResult = createsAllFolders(strMainFolderFullPath);
@@ -394,8 +406,11 @@ private:
                 itkGenericExceptionMacro(<< "Could not open file " << outPropsFileName);
             }
       }
+      strTileName = ReplaceString(strTileName, MAIN_FOLDER_CATEG, TILE_LEGACY_FOLDER_CATEG);
+      strTileName = ReplaceString(strTileName, "{product_descriptor}", TILE_DESCRIPTOR);
+      strTileName = ReplaceString(strTileName, "{processing_baseline}", "N" + m_strBaseline);
 
-      //if is composite read reflectance rasters, weights rasters, flags masks, dates masks
+      //if is composite read reflectance rasters, weights ratsters, flags masks, dates masks
       if (m_strProductLevel.compare("L3A") == 0)
       {
           std::vector<std::string> rastersList;
@@ -434,48 +449,51 @@ private:
           }
      }
 
-      // read LAI Mono-date raster files list
-      if (m_strProductLevel.compare("L3B") == 0) {
+      //if is vegetation, read LAIREPR and LAIFIT raster files list
+      if (m_strProductLevel.compare("L3B") == 0)
+      {
+          // Get LAIREPR raster file list
           std::vector<std::string> rastersList;
 
           rastersList = this->GetParameterStringList("processor.vegetation.laindvi");
           UnpackRastersList(rastersList, LAI_NDVI_RASTER, false);
+
           rastersList = this->GetParameterStringList("processor.vegetation.laimonodate");
           UnpackRastersList(rastersList, LAI_MONO_DATE_RASTER, false);
+
           rastersList = this->GetParameterStringList("processor.vegetation.laimonodateerr");
-          UnpackRastersList(rastersList, LAI_MONO_DATE_ERR_RASTER, true);
+          UnpackRastersList(rastersList, LAI_MONO_DATE_ERR_RASTER, false);
+
           rastersList = this->GetParameterStringList("processor.vegetation.laimdateflgs");
           UnpackRastersList(rastersList, LAI_MONO_DATE_FLAGS, true);
-      }
-
-      // read LAIREPR raster files list
-      if (m_strProductLevel.compare("L3C") == 0) {
-          std::vector<std::string> rastersList;
 
           // LAI Reprocessed raster files list
-          rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaireproc"));
-          UnpackRastersList(rastersList, LAI_REPR_RASTER, false);
-          rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaireprocflgs"));
-          UnpackRastersList(rastersList, LAI_REPROC_FLAGS, true);
-     }
+          if(HasValue("processor.vegetation.filelaireproc")) {
+              rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaireproc"));
+              UnpackRastersList(rastersList, LAI_REPR_RASTER, false);
+          }
 
-      // read LAIFIT raster files list
-      if (m_strProductLevel.compare("L3D") == 0) {
-          std::vector<std::string> rastersList;
+          if(HasValue("processor.vegetation.filelaireprocflgs")) {
+              rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaireprocflgs"));
+              UnpackRastersList(rastersList, LAI_REPROC_FLAGS, true);
+          }
 
-          rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaifit"));
-          UnpackRastersList(rastersList, LAI_FIT_RASTER, false);
-          rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaifitflgs"));
-          UnpackRastersList(rastersList, LAI_FITTED_FLAGS, true);
-     }
+          if(HasValue("processor.vegetation.filelaifit")) {
+              //get LAIFIT raster files list
+              rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaifit"));
+              UnpackRastersList(rastersList, LAI_FIT_RASTER, false);
+          }
 
-      //read Phenological NDVI metrics raster files list
-      if (m_strProductLevel.compare("L3E") == 0) {
-          std::vector<std::string> rastersList;
+          if(HasValue("processor.vegetation.filelaifitflgs")) {
+              rastersList = this->GetFileListFromFile(this->GetParameterStringList("processor.vegetation.filelaifitflgs"));
+              UnpackRastersList(rastersList, LAI_FITTED_FLAGS, true);
+          }
+          //get PHENO raster files list
           rastersList = this->GetParameterStringList("processor.phenondvi.metrics");
           UnpackRastersList(rastersList, PHENO_RASTER, false);
           rastersList = this->GetParameterStringList("processor.phenondvi.flags");
           UnpackRastersList(rastersList, PHENO_FLAGS, true);
+
      }
 
       //if is CROP MASK, read raster file
@@ -513,6 +531,7 @@ private:
           // get the CropType flags
           filesList = this->GetParameterStringList("processor.croptype.flags");
           UnpackRastersList(filesList, CROP_TYPE_FLAGS, true);
+
       }
 
       for (const auto &tileInfoEl : m_tileIDList ) {
@@ -522,7 +541,7 @@ private:
       if(bResult)
       {
           for (tileInfo &tileEl : m_tileIDList) {
-              CreateAndFillTile(tileEl, strMainFolderFullPath);
+              CreateAndFillTile(tileEl, strMainFolderFullPath, strTileName);
           }
 
       }
@@ -530,31 +549,46 @@ private:
       if(bResult)
       {
           TransferPreviewFiles();
-          TransferAndRenameGIPPFiles();          
-          const std::string strProductFileName = BuildFileName(METADATA_CATEG, "", ".xml");
-          generateProductMetadataFile(strMainFolderFullPath + "/" + strProductFileName);
+          TransferAndRenameGIPPFiles();
+          generateProductMetadataFile(strMainFolderFullPath + "/" + ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, METADATA_CATEG) + ".xml");
           bool bAgSuccess = ExecuteAgregateTiles(strMainFolderFullPath, this->GetParameterInt("aggregatescale"));
           std::cout << "Aggregating tiles " << (bAgSuccess ? "SUCCESS!" : "FAILED!") << std::endl;
       }
   }
 
-  void CreateAndFillTile(tileInfo &tileInfoEl, const std::string &strMainFolderFullPath)
+  void CreateAndFillTile(tileInfo &tileInfoEl, const std::string &strMainFolderFullPath, const std::string &tileNameRoot)
   {
       bool bResult;
-      std::string strTileName = BuildTileName(tileInfoEl.strTileID);
-      tileInfoEl.strTilePath = strMainFolderFullPath + "/" + TILES_FOLDER_NAME + "/" +  strTileName;
+      std::string strTileName = tileNameRoot;
+      strTileName = ReplaceString(strTileName, "{tile_id}", tileInfoEl.strTileID);
+
+      strTileName = ReplaceString(strTileName, "{processing_baseline}", "N" + m_strBaseline);
+
+      //std::cout << "TileName =" << strTileName << std::endl;
+
+      tileInfoEl.strTilePath = strMainFolderFullPath + "/" + TILES_FOLDER_NAME + "/" +  ReplaceString(strTileName, MAIN_FOLDER_CATEG, TILE_LEGACY_FOLDER_CATEG);
+
+      //std::cout << "TileID =" << tileInfoEl.strTileID << "  strTilePath =" << tileInfoEl.strTilePath  << std::endl;
 
       bResult = createsAllTileSubfolders(tileInfoEl.strTilePath);
 
+
       if(bResult)
       {
-          tileInfoEl.strTileNameRoot = strTileName;
-          generateTileMetadataFile(tileInfoEl);
-          TransferRasterFiles(tileInfoEl);
 
-          //create product metadata file
+          strTileName = ReplaceString(strTileName, "_" + m_strBaseline, "");
+          tileInfoEl.strTileNameRoot = strTileName;
+
+          generateTileMetadataFile(tileInfoEl, strTileName);
+          TransferRasterFiles(tileInfoEl);
+      }
+
+      //create product metadata file
+      if(bResult)
+      {
+          //TransferAndRenameGIPPFiles();
           TransferAndRenameQualityFiles(tileInfoEl);
-          FillProductMetadataForATile(tileInfoEl);
+          FillProductMetadataForATile(tileInfoEl, strMainFolderFullPath + "/" + ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, METADATA_CATEG) + ".xml");
       }
  }
 
@@ -587,11 +621,7 @@ private:
               rasterInfoEl.strTileID = strTileID;
               // update the date
               if(bAllRastersHaveDate) {
-                  if(LevelHasAcquisitionTime()) {
-                      rasterInfoEl.rasterTimePeriod = m_acquisitionDatesList[curRaster];
-                  } else {
-                      rasterInfoEl.rasterTimePeriod = m_strMinAcquisitionDate + "_" + m_acquisitionDatesList[curRaster];
-                  }
+                  rasterInfoEl.rasterTimePeriod = m_strMinAcquisitionDate + "_" + m_acquisitionDatesList[curRaster];
               } else {
                   rasterInfoEl.rasterTimePeriod = m_strTimePeriod;
               }
@@ -735,13 +765,7 @@ private:
       if (m_strProductLevel.compare("L3A") == 0)
          return COMPOSITE_PRODUCT;
       if (m_strProductLevel.compare("L3B") == 0)
-         return LAI_MONO_DATE_PRODUCT;
-      if (m_strProductLevel.compare("L3C") == 0)
-         return LAI_REPROC_PRODUCT;
-      if (m_strProductLevel.compare("L3D") == 0)
-         return LAI_FITTED_PRODUCT;
-      if (m_strProductLevel.compare("L3E") == 0)
-         return PHENO_NDVI_PRODUCT;
+         return VEGETATION_PRODUCT;
       if (m_strProductLevel.compare("L4A") == 0)
          return CROP_MASK;
       if (m_strProductLevel.compare("L4B") == 0)
@@ -887,7 +911,7 @@ private:
           return false;
   }
 
-  void generateTileMetadataFile(tileInfo &tileInfoEl)
+  void generateTileMetadataFile(tileInfo &tileInfoEl, const std::string &strTileName)
   {
       TileSize tileSizeEl;
       TileGeoposition tileGeoposition;
@@ -898,7 +922,10 @@ private:
 
       auto writer = itk::TileMetadataWriter::New();
 
-      std::string strTile = BuildFileName(METADATA_CATEG, tileInfoEl.strTileID, "");
+      std::string strTile = strTileName;
+      strTile = ReplaceString(strTile, "_N" + m_strBaseline, "");
+      strTile = ReplaceString(strTile, TILE_LEGACY_FOLDER_CATEG, METADATA_CATEG);
+
       tileInfoEl.tileMetadata.TileID = strTile;
       tileInfoEl.tileMetadata.ProductLevel = "Level-"  + m_strProductLevel;
 
@@ -1214,7 +1241,7 @@ private:
       writer->WriteProductMetadata(m_productMetadata, strProductMetadataFilePath);
   }
 
-  void FillProductMetadataForATile(const tileInfo &tileInfoEl)
+  void FillProductMetadataForATile(const tileInfo &tileInfoEl, const std::string &strProductMetadataFilePath)
   {
 
       //fill tiles list
@@ -1274,80 +1301,80 @@ private:
 
   void ComputeNewNameOfRasterFiles(const tileInfo &tileInfoEl)
   {
-      std::string rasterCateg;
+      std::string strNewRasterFileName;
 
       for (auto &rasterFileEl : m_rasterInfoList) {
-          bool bAddResolutionToSuffix = false;
-          std::string suffix = TIF_EXTENSION;
+          strNewRasterFileName = tileInfoEl.strTileNameRoot;
+          strNewRasterFileName = ReplaceString(strNewRasterFileName, "_N" + m_strBaseline, "");
+          strNewRasterFileName = ReplaceString(strNewRasterFileName, "_V" + m_strTimePeriod, "_V" + rasterFileEl.rasterTimePeriod);
           switch(rasterFileEl.iRasterType)
               {
                 case COMPOSITE_REFLECTANCE_RASTER:
-                    rasterCateg = REFLECTANCE_SUFFIX;
-                    bAddResolutionToSuffix = true;
-                    break;
+                  strNewRasterFileName = strNewRasterFileName + "_" + REFLECTANCE_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
+                  break;
                 case COMPOSITE_WEIGHTS_RASTER:
-                    rasterCateg = WEIGHTS_SUFFIX;
-                    bAddResolutionToSuffix = true;
-                    break;
+                  strNewRasterFileName = strNewRasterFileName + "_" + WEIGHTS_SUFFIX + TIF_EXTENSION;
+                  break;
                 case LAI_NDVI_RASTER:
-                    rasterCateg = LAI_NDVI_SUFFIX;
+                  strNewRasterFileName = strNewRasterFileName + "_" + LAI_NDVI_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
                   break;
                 case LAI_MONO_DATE_RASTER:
-                    rasterCateg = LAI_MDATE_SUFFIX;
-                    break;
+                  strNewRasterFileName = strNewRasterFileName + "_" + LAI_MDATE_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
+                  break;
                 case LAI_MONO_DATE_ERR_RASTER:
-                    rasterCateg = LAI_MDATE_ERR_SUFFIX;
+                  strNewRasterFileName = strNewRasterFileName + "_" + LAI_MDATE_ERR_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
                   break;
                 case LAI_REPR_RASTER:
-                    rasterCateg = LAI_REPR_SUFFIX;
+                   strNewRasterFileName = strNewRasterFileName + "_" + LAI_REPR_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
                    break;
                 case LAI_FIT_RASTER:
-                    rasterCateg = LAI_FIT_SUFFIX;
+                   strNewRasterFileName = strNewRasterFileName + "_" + LAI_FIT_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
                    break;
                 case PHENO_RASTER:
-                     rasterCateg = PHENO_SUFFIX;
+                     strNewRasterFileName = strNewRasterFileName + "_" + PHENO_SUFFIX + "_" + std::to_string(rasterFileEl.nResolution) + TIF_EXTENSION;
                      break;
                 case CROP_TYPE_RASTER:
-                    rasterCateg = CROP_TYPE_IMG_SUFFIX;
-                    break;
                 case CROP_MASK_RASTER:
-                    rasterCateg = CROP_MASK_IMG_SUFFIX;
+                   strNewRasterFileName= strNewRasterFileName + TIF_EXTENSION;
                    break;
                 case RAW_CROP_MASK_RASTER:
-                    rasterCateg = CROP_MASK_RAW_IMG_SUFFIX;
+                    strNewRasterFileName = strNewRasterFileName + "_" + CROP_MASK_RAW_IMG_SUFFIX + TIF_EXTENSION;
                     break;
                 case COMPOSITE_DATES_MASK:
-                    rasterCateg = COMPOSITE_DATES_SUFFIX;
-                    bAddResolutionToSuffix = true;
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + COMPOSITE_DATES_SUFFIX + TIF_EXTENSION;
                     break;
                 case COMPOSITE_FLAGS_MASK:
-                    rasterCateg = COMPOSITE_FLAGS_SUFFIX;
-                    bAddResolutionToSuffix = true;
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + COMPOSITE_FLAGS_SUFFIX + TIF_EXTENSION;
                     break;
                 case LAI_MONO_DATE_FLAGS:
-                    rasterCateg = LAI_MONO_DATE_FLAGS_SUFFIX;
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + LAI_MONO_DATE_FLAGS_SUFFIX + TIF_EXTENSION;
                     break;
                 case LAI_REPROC_FLAGS:
-                    rasterCateg = LAI_REPROC_FLAGS_SUFFIX;
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + LAI_REPROC_FLAGS_SUFFIX + TIF_EXTENSION;
                     break;
                 case LAI_FITTED_FLAGS:
-                    rasterCateg = LAI_FITTED_FLAGS_SUFFIX;
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + LAI_FITTED_FLAGS_SUFFIX + TIF_EXTENSION;
                     break;
                 case PHENO_FLAGS:
-                    rasterCateg = PHENO_FLAGS_SUFFIX;
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + PHENO_FLAGS_SUFFIX + TIF_EXTENSION;
                     break;
                 case CROP_MASK_FLAGS:
-                    rasterCateg = CROP_MASK_FLAGS_SUFFIX;
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + CROP_MASK_FLAGS_SUFFIX + TIF_EXTENSION;
                     break;
                 case CROP_TYPE_FLAGS:
-                    rasterCateg = CROP_TYPE_FLAGS_SUFFIX;
+                    strNewRasterFileName = ReplaceString(strNewRasterFileName, TILE_LEGACY_FOLDER_CATEG, MASK_CATEG);
+                    strNewRasterFileName = strNewRasterFileName + "_" + CROP_TYPE_FLAGS_SUFFIX + TIF_EXTENSION;
                     break;
-              }
-              if(bAddResolutionToSuffix) {
-                  suffix = "_" + std::to_string(rasterFileEl.nResolution) + suffix;
-              }
 
-              rasterFileEl.strNewRasterFileName = BuildFileName(rasterCateg, tileInfoEl.strTileID, suffix, rasterFileEl.rasterTimePeriod);
+              }
+              rasterFileEl.strNewRasterFileName = strNewRasterFileName;
       }
   }
 
@@ -1377,16 +1404,17 @@ private:
 
 
       for (const auto &gippFileEl : m_GIPPList) {
-
+          strNewGIPPFileName = m_strProductFileName;
           strNewGIPPFileName = ReplaceString(strNewGIPPFileName, MAIN_FOLDER_CATEG, PARAMETER_CATEG);
           boost::filesystem::path p(gippFileEl);
           if(m_GIPPList.size() > 1)
           {
-              strNewGIPPFileName = BuildFileName(PARAMETER_CATEG, "", "_" + p.stem().string() + p.extension().string());
+
+              strNewGIPPFileName = strNewGIPPFileName + "_" + p.stem().string() + p.extension().string();
           }
           else
           {
-              strNewGIPPFileName = BuildFileName(PARAMETER_CATEG, "", p.extension().string());
+              strNewGIPPFileName = strNewGIPPFileName + p.extension().string();
           }
 
           //std::cout << "strNewGIPPFileName = " << strNewGIPPFileName << std::endl;
@@ -1413,12 +1441,17 @@ private:
             {
                 std::string strImgDataPath = tileInfoEl.strTilePath + "/" + QI_DATA_FOLDER_NAME;
                 boost::filesystem::path p(qualityFileEl.strFileName);
-                strNewQualityFileName = BuildFileName(QUALITY_CATEG, tileInfoEl.strTileID, p.extension().string());
+                strNewQualityFileName = tileInfoEl.strTileNameRoot;
+                strNewQualityFileName = ReplaceString(strNewQualityFileName, "_N" + m_strBaseline, "");
+                strNewQualityFileName = ReplaceString(strNewQualityFileName, TILE_LEGACY_FOLDER_CATEG, QUALITY_CATEG);
+                strNewQualityFileName = strNewQualityFileName + p.extension().string();
                 CopyFile(strImgDataPath + "/" + strNewQualityFileName, qualityFileEl.strFileName);
             }
           } else {
               boost::filesystem::path p(qualityFileEl.strFileName);
-              strNewQualityFileName = BuildFileName(QUALITY_CATEG, "", p.extension().string());
+              strNewQualityFileName = m_strProductFileName;
+              strNewQualityFileName = ReplaceString(strNewQualityFileName, MAIN_FOLDER_CATEG, QUALITY_CATEG);
+              strNewQualityFileName = strNewQualityFileName + p.extension().string();
 
                //quality files are copied to tileDirectory/QI_DATA
               CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName +
@@ -1454,7 +1487,8 @@ private:
                 //for the moment the preview file for product and tile are the same
 
                 //build product preview file name
-                 strProductPreviewFullPath = BuildFileName(QUICK_L0OK_IMG_CATEG, "", JPEG_EXTENSION);
+                 strProductPreviewFullPath = ReplaceString(m_strProductFileName, MAIN_FOLDER_CATEG, QUICK_L0OK_IMG_CATEG);
+                 strProductPreviewFullPath = strProductPreviewFullPath + JPEG_EXTENSION;
 
                  m_productMetadata.GeneralInfo.ProductInfo.PreviewImageURL = strProductPreviewFullPath;
 
@@ -1625,87 +1659,15 @@ private:
           }
           otbAppLogWARNING("Error running " << appExe << ". The resulting file(s) might not be created. The return was: " << status);
           return false;
-  }
 
-  std::string BuildProductDirectoryName() {
-      std::string strCreationDate = currentDateTimeFormattted("%Y%m%dT%H%M%S");
-
-//      std::string strMainProductFolderName = "{project_id}_{product_level}_{file_category}_{originator_site}_{creation_date}_V{time_period}";
-
-//      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{project_id}", PROJECT_ID);
-//      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{product_level}", m_strProductLevel);
-//      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{file_category}", MAIN_FOLDER_CATEG);
-//      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{originator_site}", m_strSiteId);
-
-//      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{creation_date}", strCreationDate);
-//      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{time_period}", m_strTimePeriod);
-//      return strMainProductFolderName;
-
-      return BuildFileName(MAIN_FOLDER_CATEG, "", "", m_strTimePeriod, m_strSiteId, strCreationDate);
-  }
-
-  std::string BuildTileName(const std::string &tileId) {
-      return BuildFileName("", tileId);
-  }
-
-  std::string BuildFileName(const std::string &fileCateg, const std::string &tileId, const std::string &extension="", const std::string &strTimePeriod = "",
-                            const std::string &site = "", const std::string &creationDate = "") {
-      std::string strFileName = "{project_id}_{product_level}_{file_category}_S{originator_site}_{creation_date}_V{time_period}_T{tile_id}";
-      strFileName = ReplaceString(strFileName, "{project_id}", PROJECT_ID);
-      strFileName = ReplaceString(strFileName, "{product_level}", m_strProductLevel);
-      if(fileCateg.length() > 0) {
-          strFileName = ReplaceString(strFileName, "{file_category}", fileCateg);
-      } else {
-          strFileName = ReplaceString(strFileName, "_{file_category}", "");
-      }
-
-      if(site.length() > 0) {
-          strFileName = ReplaceString(strFileName, "{originator_site}", site);
-      } else {
-          strFileName = ReplaceString(strFileName, "_S{originator_site}", "");
-      }
-
-      if(creationDate.length() > 0) {
-          strFileName = ReplaceString(strFileName, "{creation_date}", creationDate);
-      } else {
-          strFileName = ReplaceString(strFileName, "_{creation_date}", "");
-      }
-
-      std::string strTimeValue = m_strTimePeriod;
-      if(strTimePeriod.length() > 0) {
-          strTimeValue = strTimePeriod;
-      }
-      if(LevelHasAcquisitionTime()) {
-          strFileName = ReplaceString(strFileName, "_V{time_period}", "_A" + strTimeValue);
-      } else {
-          strFileName = ReplaceString(strFileName, "{time_period}", strTimeValue);
-      }
-
-      if(tileId.length() == 0 || tileId.find("_T") == 0) {
-          strFileName = ReplaceString(strFileName, "_T{tile_id}", tileId);
-      } else {
-          strFileName = ReplaceString(strFileName, "_T{tile_id}", "_T" + tileId);
-      }
-
-      if(extension.length() > 0)
-          strFileName.append(extension);
-
-      return strFileName;
-  }
-
-  bool LevelHasAcquisitionTime() {
-      if(m_strProductLevel == "L3B") {
-          return true;
-      }
-      return false;
   }
 
 private:
+  std::string m_strFileClass;
   std::string m_strProductLevel;
   std::string m_strTimePeriod;
   std::string m_strDestRoot;
   std::string m_strBaseline;
-  std::string m_strSiteId;
   std::vector<previewInfo> m_previewList;
   std::vector<std::string> m_GIPPList;
   std::vector<qualityInfo> m_qualityList;
@@ -1717,7 +1679,7 @@ private:
 
   //bool m_bIsHDR; /* true if is  loaded a .HDR fiel, false if is a .xml file */
   //std::string m_strTileNameRoot;
-  //std::string m_strProductFileName;
+  std::string m_strProductFileName;
   std::vector<geoProductInfo> m_geoProductInfo;
 
     std::vector<std::string> m_acquisitionDatesList;
@@ -1729,6 +1691,6 @@ private:
 }
 }
 
-OTB_APPLICATION_EXPORT(otb::Wrapper::ProductFormatter)
+OTB_APPLICATION_EXPORT(otb::Wrapper::ProductFormatterV0)
 
 

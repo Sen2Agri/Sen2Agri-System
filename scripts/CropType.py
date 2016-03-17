@@ -35,6 +35,7 @@ parser.add_argument('-rfmin', help='minimum number of samples in each node used 
 
 parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)", default=False, action='store_true')
 parser.add_argument('-fromstep', help="Run from the selected step (default 1)", type=int, default=1)
+parser.add_argument('-siteid', help='The site ID', required=False)
 
 args = parser.parse_args()
 
@@ -54,6 +55,9 @@ pixsize=args.pixsize
 rfnbtrees=str(args.rfnbtrees)
 rfmax=str(args.rfmax)
 rfmin=str(args.rfmin)
+siteId = "nn"
+if args.siteid:
+    siteId = str(args.siteid)
 
 buildFolder=args.buildfolder
 
@@ -172,7 +176,7 @@ try:
     executeStep("XML Conversion for Crop Type", "otbcli", "XMLStatistics", buildFolder, "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics, skip=fromstep>18)
 
 #Product creation (Step 19)
-    executeStep("ProductFormatter", "otbcli", "ProductFormatter", buildFolder, "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-baseline", "01.00", "-processor", "croptype", "-processor.croptype.file", "TILE_"+tilename, crop_type_map, "-processor.croptype.flags", "TILE_"+tilename, statusFlags, "-processor.croptype.quality",  "TILE_"+tilename, xml_validation_metrics, "-il", *indesc, skip=fromstep>19)
+    executeStep("ProductFormatter", "otbcli", "ProductFormatter", buildFolder, "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-baseline", "01.00", "-siteid", siteId, "-processor", "croptype", "-processor.croptype.file", "TILE_"+tilename, crop_type_map, "-processor.croptype.flags", "TILE_"+tilename, statusFlags, "-processor.croptype.quality",  "TILE_"+tilename, xml_validation_metrics, "-il", *indesc, skip=fromstep>19)
 
 except:
     print sys.exc_info()

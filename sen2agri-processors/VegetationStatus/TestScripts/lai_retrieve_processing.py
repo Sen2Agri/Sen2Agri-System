@@ -203,6 +203,7 @@ if __name__ == '__main__':
     parser.add_argument('--generatemodel', help='Generate the model (YES/NO)', required=False)
     parser.add_argument('--genreprocessedlai', help='Generate the reprocessed N-Days LAI (YES/NO)', required=False)
     parser.add_argument('--genfittedlai', help='Generate the Fitted LAI (YES/NO)', required=False)
+    parser.add_argument('--siteid', help='The site ID', required=False)
 
     args = parser.parse_args()
 
@@ -214,6 +215,9 @@ if __name__ == '__main__':
     generateModel = args.generatemodel
     genreprocessedlai = args.genreprocessedlai
     genfittedlai = args.genfittedlai
+    siteId = "nn"
+    if args.siteid:
+        siteId = args.siteid
 
     if (generateModel == "YES"):
         GENERATE_MODEL = True
@@ -250,6 +254,7 @@ if __name__ == '__main__':
         os.makedirs(outDir)
 
     paramsLaiModelFilenameXML = "{}/lai_model_params.xml".format(outDir)
+    paramsLaiRetrFilenameXML = "{}/lai_retrieval_params.xml".format(outDir)
 
     if resolution != 10 and resolution != 20:
         print("The resolution is : {}".format(resolution))
@@ -276,15 +281,11 @@ if __name__ == '__main__':
     start = time.time()
 
     allXmlParam=[]
-    allSingleNdviFilesList=[]
-    allNdviRviFilesList=[]
     allLaiParam=[]
     allErrParam=[]
     allMskFlagsParam=[]
-    allLaiShortParam=[]
-    allErrShortParam=[]
 
-    for xml in args.input:
+    for idx, xml in enumerate(args.input):
         counterString = str(cnt)
 
         lastPoint = xml.rfind('.')
@@ -301,19 +302,28 @@ if __name__ == '__main__':
         curOutLaiShortImg = outLaiShortImg.replace("#", counterString)
         curOutLaiErrShortImg = outLaiErrShortImg.replace("#", counterString)
 
+        runCmd(["otbcli", "GenerateLaiMonoDateMaskFlags", appLocation,
+                "-inxml", xml,
+                "-out", curOutLaiMonoMskFlgsImg])
+        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+        
+        #Compute NDVI and RVI
         if resolution == 0:
             runCmd(["otbcli", "NdviRviExtraction2", appLocation,
             "-xml", xml,
             "-ndvi", curOutSingleNDVIImg,
+            "-msks", curOutLaiMonoMskFlgsImg,
             "-fts", curOutNDVIRVIImg])
         else:
             runCmd(["otbcli", "NdviRviExtraction2", appLocation,
             "-xml", xml,
             "-outres", resolution,
             "-ndvi", curOutSingleNDVIImg,
+            "-msks", curOutLaiMonoMskFlgsImg,
             "-fts", curOutNDVIRVIImg])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
+        # Retrieve the LAI model
         runCmd(["otbcli", "BVImageInversion", appLocation,
                 "-in", curOutNDVIRVIImg,
                 "-out", curOutLaiImg,
@@ -328,10 +338,6 @@ if __name__ == '__main__':
                 "-modelsfolder", modelsFolder,
                 "-modelprefix", "Err_Est_Model_"])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-        runCmd(["otbcli", "GenerateLaiMonoDateMaskFlags", appLocation,
-                "-inxml", xml,
-                "-out", curOutLaiMonoMskFlgsImg])
-        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
         runCmd(["otbcli", "QuantifyImage", appLocation,
                 "-in", curOutLaiImg,
@@ -343,17 +349,24 @@ if __name__ == '__main__':
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
         
         allXmlParam.append(xml)
-        allSingleNdviFilesList.append(curOutSingleNDVIImg)
-        allNdviRviFilesList.append(curOutNDVIRVIImg)
         allLaiParam.append(curOutLaiImg)
         allErrParam.append(curOutLaiErrImg)
         allMskFlagsParam.append(curOutLaiMonoMskFlgsImg)
-        allLaiShortParam.append(curOutLaiShortImg)
-        allErrShortParam.append(curOutLaiErrShortImg)
 
         cnt += 1
 
-    paramsLaiRetrFilenameXML = "{}/lai_retrieval_params.xml".format(outDir)
+        # Generate the product for the monodate
+        runCmd(["otbcli", "ProductFormatter", appLocation,
+                "-destroot", outDir,
+                "-fileclass", "SVT1", "-level", "L3B", "-baseline", "01.00", "-siteid", siteId,
+                "-processor", "vegetation",
+                "-processor.vegetation.laindvi", tileID, curOutSingleNDVIImg,
+                "-processor.vegetation.laimonodate", tileID, curOutLaiShortImg,
+                "-processor.vegetation.laimonodateerr", tileID, curOutLaiErrShortImg,
+                "-processor.vegetation.laimdateflgs", tileID, allMskFlagsParam[idx],
+                "-il", xml, 
+                "-gipp", paramsLaiModelFilenameXML])
+        
     #ProfileReprocessing parameters
     ALGO_LOCAL_BWR="2"
     ALGO_LOCAL_FWR="0"
@@ -410,6 +423,15 @@ if __name__ == '__main__':
         #split the Reprocessed time series to a number of images
         runCmd(["otbcli", "ReprocessedProfileSplitter2", appLocation, "-in", outReprocessedTimeSeries, "-outrlist", reprocessedRastersListFile, "-outflist", reprocessedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+        # Generate the product for the Reprocessed LAI
+        runCmd(["otbcli", "ProductFormatter", appLocation,
+                "-destroot", outDir,
+                "-fileclass", "SVT1", "-level", "L3C", "-baseline", "01.00", "-siteid", siteId,
+                "-processor", "vegetation",
+                "-processor.vegetation.filelaireproc", tileID, reprocessedRastersListFile,
+                "-processor.vegetation.filelaireprocflgs", tileID, reprocessedFlagsListFile,
+                "-il"] + allXmlParam + [
+                "-gipp", paramsLaiRetrFilenameXML])
 
     if genfittedlai:
         # Compute the fitted time series (CSDM Fitting)
@@ -419,44 +441,15 @@ if __name__ == '__main__':
         #split the Fitted time series to a number of images
         runCmd(["otbcli", "ReprocessedProfileSplitter2", appLocation, "-in", outFittedTimeSeries, "-outrlist", fittedRastersListFile, "-outflist", fittedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-
-    cmd = ["otbcli", "ProductFormatter", appLocation,
-            "-destroot", outDir,
-            "-fileclass", "SVT1",
-            "-level", "L3B",
-            "-baseline", "01.00",
-            "-processor", "vegetation",
-            "-processor.vegetation.laindvi", tileID] + allSingleNdviFilesList + [
-            "-processor.vegetation.laimonodate", tileID] + allLaiShortParam + [
-            "-processor.vegetation.laimonodateerr", tileID] + allErrShortParam + [
-            "-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + [
-            "-processor.vegetation.filelaireproc", tileID, reprocessedRastersListFile,
-            "-processor.vegetation.filelaireprocflgs", tileID, reprocessedFlagsListFile,
-            "-processor.vegetation.filelaifit", tileID, fittedRastersListFile,
-            "-processor.vegetation.filelaifitflgs", tileID, fittedFlagsListFile] + [
-            "-il"] + allXmlParam + [
-            "-gipp", paramsLaiRetrFilenameXML]
-
-    if GENERATE_MODEL:
-        cmd = ["otbcli", "ProductFormatter", appLocation,
+        # Generate the product for the Fitted LAI
+        runCmd(["otbcli", "ProductFormatter", appLocation,
                 "-destroot", outDir,
-                "-fileclass", "SVT1",
-                "-level", "L3B",
-                "-baseline", "01.00",
+                "-fileclass", "SVT1", "-level", "L3D", "-baseline", "01.00", "-siteid", siteId,
                 "-processor", "vegetation",
-                "-processor.vegetation.laindvi", tileID] + allSingleNdviFilesList + [
-                "-processor.vegetation.laimonodate", tileID] + allLaiShortParam + [
-                "-processor.vegetation.laimonodateerr", tileID] + allErrShortParam + [
-                "-processor.vegetation.laimdateflgs", tileID] + allMskFlagsParam + [
-                "-processor.vegetation.filelaireproc", tileID, reprocessedRastersListFile,
-                "-processor.vegetation.filelaireprocflgs", tileID, reprocessedFlagsListFile,
                 "-processor.vegetation.filelaifit", tileID, fittedRastersListFile,
-                "-processor.vegetation.filelaifitflgs", tileID, fittedFlagsListFile] + [
-                "-il"] + allXmlParam + [
-                "-gipp",  paramsLaiModelFilenameXML, paramsLaiRetrFilenameXML]
-
-    runCmd(cmd)
-
+                "-processor.vegetation.filelaifitflgs", tileID, fittedFlagsListFile,
+                "-il"] + allXmlParam)
+        
     print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
     '''

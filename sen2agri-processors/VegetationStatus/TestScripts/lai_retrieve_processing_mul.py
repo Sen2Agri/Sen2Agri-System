@@ -79,6 +79,7 @@ if __name__ == '__main__':
     parser.add_argument('--forwardwindow', help='Size of the forward window for profile reprocessing', required=True)
     parser.add_argument('--sat', help='Satellite', required=True)
     parser.add_argument('--inst', help='Instrument', required=True)
+    parser.add_argument('--siteid', help='The site ID', required=False)
 
     args = parser.parse_args()
 
@@ -87,6 +88,9 @@ if __name__ == '__main__':
     inDir = args.inputdir
     sat= args.sat
     inst = args.inst
+    siteId = "nn"
+    if args.siteid:
+        siteId = args.siteid
         
     #ProfileReprocessing parameters
     #ALGO_LOCAL_BWR="2"
@@ -95,11 +99,6 @@ if __name__ == '__main__':
     fwr=args.forwardwindow
 
     listFile = generateFileList(inDir, sat, inst, "")
-
-    vegetationStatusLocation = "{}/VegetationStatus".format(appLocation)
-    productFormatterLocation = "{}/MACCSMetadata/src".format(appLocation)
-    imgInvOtbLibsLocation = vegetationStatusLocation + '/otb-bv/src/applications'
-
     tileID="TILE_none"
 
     if os.path.exists(outDir):
@@ -200,7 +199,7 @@ if __name__ == '__main__':
 
         
         # Create the LAI and Error time series
-        #runCmd(["otbcli", "TimeSeriesBuilder", imgInvOtbLibsLocation, "-il"] + allLaiParam + ["-out", outLaiTimeSeries])
+        #runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allLaiParam + ["-out", outLaiTimeSeries])
         runCmd(["otbcli", "ConcatenateImages", "-il"] + allLaiParam + ["-out", outLaiTimeSeries])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
         runCmd(["otbcli", "ConcatenateImages", "-il"] + allErrParam + ["-out", outErrTimeSeries])
@@ -210,31 +209,22 @@ if __name__ == '__main__':
 
 
         # Compute the reprocessed time series (On-line Retrieval)
-        runCmd(["otbcli", "ProfileReprocessing", imgInvOtbLibsLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-msks", outMaksFlagsTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outReprocessedTimeSeries, "-genall", "0", "-algo", "local", "-algo.local.bwr", str(bwr), "-algo.local.fwr", str(fwr)])
+        runCmd(["otbcli", "ProfileReprocessing", appLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-msks", outMaksFlagsTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outReprocessedTimeSeries, "-genall", "0", "-algo", "local", "-algo.local.bwr", str(bwr), "-algo.local.fwr", str(fwr)])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
         #split the Reprocessed time series to a number of images
-        runCmd(["otbcli", "ReprocessedProfileSplitter2", imgInvOtbLibsLocation, "-in", outReprocessedTimeSeries, "-outrlist", reprocessedRastersListFile, "-outflist", reprocessedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
+        runCmd(["otbcli", "ReprocessedProfileSplitter2", appLocation, "-in", outReprocessedTimeSeries, "-outrlist", reprocessedRastersListFile, "-outflist", reprocessedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
-        cmd = ["otbcli", "ProductFormatter", productFormatterLocation, 
-                "-destroot", outDir, 
-                "-fileclass", "OPER", 
-                "-level", "L3B", 
-                "-timeperiod", t0 + '_' + tend, 
-                "-baseline", "01.00", 
-                "-processor", "vegetation", 
-                "-processor.vegetation.laindvi", tileID, allNdviFilesList[-1],
-                "-processor.vegetation.laimonodate", tileID, allLaiParam[-1],
-                "-processor.vegetation.laimonodateerr", tileID, allErrParam[-1],
-                "-processor.vegetation.laimdateflgs", tileID, allMskFlagsParam [-1],
-                "-processor.vegetation.filelaireproc", tileID, reprocessedRastersListFile, 
-                "-processor.vegetation.filelaireprocflgs", tileID, reprocessedFlagsListFile, 
-                "-processor.vegetation.filelaifit", tileID, fittedRastersListFile, 
-                "-processor.vegetation.filelaifitflgs", tileID, fittedFlagsListFile, 
-                "-il", allXmlParam[-1],
-                "-gipp", paramsLaiRetrFilenameXML]
-
+        runCmd(["otbcli", "ProductFormatter", appLocation,
+                "-destroot", outDir,
+                "-fileclass", "OPER", "-level", "L3C", "-timeperiod", t0 + '_' + tend, "-baseline", "01.00", "-siteid", siteId,
+                "-processor", "vegetation",
+                "-processor.vegetation.filelaireproc", tileID, reprocessedRastersListFile,
+                "-processor.vegetation.filelaireprocflgs", tileID, reprocessedFlagsListFile,
+                "-il"] + allXmlParam[-1], 
+                "-gipp", paramsLaiRetrFilenameXML])
+        
         runCmd(cmd)
 
     print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))

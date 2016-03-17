@@ -40,6 +40,11 @@ otb_create_application(
   SOURCES        ProductFormatter.cpp
   LINK_LIBRARIES ${OTB_LIBRARIES} MACCSMetadata)
 
+otb_create_application(
+  NAME           ProductFormatterV0
+  SOURCES        ProductFormatterV0.cpp
+  LINK_LIBRARIES ${OTB_LIBRARIES} MACCSMetadata)
+
 #if(BUILD_TESTING)
 #  add_subdirectory(test)
 #endif()

@@ -176,10 +176,10 @@ def create_context(args):
 
     return Context(**d)
 #----------------------------------------------------------------
-def create_processing_list_upon_sufix_post_processing(postList):
+def create_processing_list_upon_sufix(initialList):
    images_by_patterns = defaultdict(list)
 
-   for fullFileName in postList:  
+   for fullFileName in initialList:  
       #extract the file name
       fileName = os.path.basename(fullFileName)
       
@@ -200,72 +200,22 @@ def create_processing_list_upon_sufix_post_processing(postList):
       
    return images_by_patterns
 #----------------------------------------------------------------
-
-def create_processing_list_upon_sufix(initialList):
-   images_by_patterns = defaultdict(list)
-
-   for fullFileName in initialList:  
-      #extract the file name
-      fileName = os.path.basename(fullFileName)
-      
-      #try split file name before DATE Time Period:_Vyyyymmdd_YYYYMMDD    
-      file_name_parts = fileName.split(context.field_separator)
-
-      #search if biosferical status/mask suffix (SRFL, MDAT,etc) exists in first part of
-      #filename (first part ex: S2AGRI_SLAIMONO_L3B and extract it)
-      #This suffix may start with M or S letters : _Mxxx or _Sxxx acording to PSD doc
-      pattern = re.compile("_([MS](?:[A-Z]+))\w+$")
-      result_pat_suff=pattern.search(file_name_parts[0])
-
-      #search if projection scale exists (yy) in last part of
-      #filename and extract it (last part ex: V20130206_20130206_Txxxxx_yy.TIF )
-      pattern = re.compile("_([0-9]+)\.\w+$")
-      result_pat_scale=pattern.search(file_name_parts[1])
-
-      if result_pat_suff and result_pat_scale:
-         result = result_pat_suff.group(1) + "_" +  result_pat_scale.group(1)
-         #add entry in dictionnary with key result.group(1)
-         images_by_patterns[result].append(fullFileName)
-
-      elif result_pat_suff and not result_pat_scale:
-         result = result_pat_suff.group(1)
-         #add entry in dictionnary with key result.group(1)
-         images_by_patterns[result].append(fullFileName)
-
-      elif not result_pat_suff and result_pat_scale:
-         #add entry in dictionnary with key result.group(1)
-         images_by_patterns[""].append(fullFileName)
-
-      else:
-         #add entry in dictionnary with key result.group(1)
-         images_by_patterns[""].append(fullFileName)
-      
-   return images_by_patterns
-#----------------------------------------------------------------
-def build_standardized_legacy_file_name_output(inputFileName):
-
-   #extract needed parts to build the output name for the file
-   pattern = re.compile("([A-Z_0-9]*_L[0-9][A-Z]*_[A-Z]*)\w+$")
-   #extract part S2AGRI_L3B_PRD for example
-   result_first=pattern.search(inputFileName)
-
-   pattern = re.compile("_([AV]+[0-9]{6,}\w+$)")
-   #extract part V20130206_20130616 or A20130206_20130616 for example
-   result_sec=pattern.search(inputFileName)
-   
-   #build name as doc states for legacy file  #insert LY tag after product name
-   # ex: S2AGRI_PRD_L3B_LY_V20130206_20130206
-   legacy_file = str(result_first.group(1)) + "_LY_" + str(result_sec.group(1))
-
-   return legacy_file
-
 def build_file_name_output(prodFolderName, patternName, extensionFileName, outFolderName):
 
-   #set the file name to process as product name ex: S2AGRI_L3C_PRD_S01_20160317T144433_V20130206_20130402/LEGACY_DATA
+   #set the legacy file name as product name
    file_name = prodFolderName.split('/')[-1]
 
+   #extract needed parts to build the output name for the file
+   pattern = re.compile("([A-Z_0-9]*_[A-Z]*_L[0-9][A-Z])\w+$")
+   #extract part S2AGRI_SVT1_PRD_L4A for example
+   result_first=pattern.search(file_name)
+
+   pattern = re.compile("([A-Z]*_[0-9]{6,}\w+$)")
+   #extract part CSRO_20151221T164437_V20130206_20130616 for example
+   result_sec=pattern.search(file_name)
+   
    #build name as doc states for legacy file  #insert LY tag after product name
-   legacy_file_tmp = build_standardized_legacy_file_name_output(file_name)
+   legacy_file_tmp = str(result_first.group(1)) + "_LY_" + str(result_sec.group(1))
 
    if patternName == "":
       legacy_file_name = legacy_file_tmp + extensionFileName
@@ -293,10 +243,10 @@ def build_file_name_output(prodFolderName, patternName, extensionFileName, outFo
       context.out_filename_aggreg_qi_data_dict[patternName] = full_path_file
 
    #For IMG_DATA  -naming rules for L4 product
-   #out name to be set:  S2AGRI_OPER_DAT_L4A_LY_C001_20140201T134012_V20140908_20141015.TIF
+   #out name to be set:  S2AGRI_OPER_DAT_L4A_LY_C001_20140201T134012_V20140908_20141015.jp2
 
    #For QI_DATA
-   #out name to be set S2AGRI_OPER_MSK_L4A_LY_C001_20140201T134012_V20140908_20141015_MNODATA.TIF
+   #out name to be set S2AGRI_OPER_MSK_L4A_LY_C001_20140201T134012_V20140908_20141015_MNODATA.gml
 #----------------------------------------------------------------
 def get_list_img_file_names(prodDir, srcDirProcess, imgDataFolder):
     """
@@ -401,7 +351,7 @@ def concatenate_mosaic_files(context, listOfImages):
 #----------------------------------------------------------------
 def perform_images_concatenation(context, listOfFiles, dataFolder):
    #build intermediary dictionnary
-   tmp_data_dictionary = create_processing_list_upon_sufix_post_processing(listOfFiles)
+   tmp_data_dictionary = create_processing_list_upon_sufix(listOfFiles)
 
    #create a list of tupples to store files upon scale resolution: 10,20,.. 
    list_img_by_scale = list()
@@ -441,9 +391,9 @@ def perform_images_concatenation(context, listOfFiles, dataFolder):
 #----------------------------------------------------------------
 def format_file_name_output(fileName):
 
-   #split file name before DATE Time Period:_Vyyyymmdd_YYYYMMDD or _Ayyyymmdd_YYYYMMDD
+   #split file name before DATE Time Period:_Vyyyymmdd_YYYYMMDD
    file_name_parts = fileName.split(context.field_separator)
-  
+
    #extract needed date parts to build the output name for the file
    #from 20150728_none_SRFL_10.TIF it extracts 20150728
    #from 20150728_20150602_SRFL_20.TIF it extracts [20150728, 20150602]
@@ -847,12 +797,8 @@ def create_xml_mosaic_metadata(context):
 
    #set output name for metadata file of the LEGACY_DATA folder : create the name
    #starting from metadata file of the product
-   #first drop extension
-   file_no_extension = os.path.basename(input_xml_file).split(".")[0]
-   #process file name
-   file_tmp = build_standardized_legacy_file_name_output(file_no_extension)
-   #re-appned extension
-   fileOut = file_tmp + ".xml"
+   file_tmp = os.path.basename(input_xml_file)
+   fileOut = file_tmp.replace("_PR_","_LY_")
 
    #compute full path name and save it
    context.out_metadata_file_name = os.path.join(context.prodFolderName, context.destRootFolder, fileOut)

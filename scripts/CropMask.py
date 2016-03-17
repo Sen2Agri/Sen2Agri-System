@@ -117,6 +117,7 @@ parser.add_argument('-targetfolder', help="The folder where the target product i
 
 parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)", default=False, action='store_true')
 parser.add_argument('-fromstep', help="Run from the selected step (default 1)", type=int, default=1)
+parser.add_argument('-siteid', help='The site ID', required=False)
 
 args = parser.parse_args()
 
@@ -144,7 +145,9 @@ minsize=str(args.minsize)
 pixsize=str(args.pixsize)
 minarea=str(args.minarea)
 window=str(args.window)
-
+siteId = "nn"
+if args.siteid:
+    siteId = str(args.siteid)
 
 buildFolder=args.buildfolder
 targetFolder=args.targetfolder if args.targetfolder != "" else args.outdir
@@ -307,7 +310,7 @@ try:
     executeStep("XML Conversion for Crop Mask", "otbcli", "XMLStatistics", buildFolder, "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics,  skip=fromstep>34)
 
 #Product creation (Step 35)
-    executeStep("ProductFormatter", "otbcli", "ProductFormatter", buildFolder, "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-baseline", "01.00", "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.rawfile", "TILE_"+tilename, raw_crop_mask, "-processor.cropmask.quality",  "TILE_"+tilename, xml_validation_metrics, "-processor.cropmask.flags", "TILE_"+tilename, statusFlags, "-il", *indesc, skip=fromstep>35)
+    executeStep("ProductFormatter", "otbcli", "ProductFormatter", buildFolder, "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-baseline", "01.00", "-siteid", siteId, "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.rawfile", "TILE_"+tilename, raw_crop_mask, "-processor.cropmask.quality",  "TILE_"+tilename, xml_validation_metrics, "-processor.cropmask.flags", "TILE_"+tilename, statusFlags, "-il", *indesc, skip=fromstep>35)
 
 except:
     print sys.exc_info()
