@@ -1,9 +1,131 @@
 <?php include 'master.php'; ?>
 <?php
 
+function endsWith($str, $sub) {
+	return (substr ( $str, strlen ( $str ) - strlen ( $sub ) ) === $sub);
+}
+function upload_reference_polygons() {
+	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+	
+	$rows = pg_query ( $db, "SELECT key, value FROM sp_get_parameters('site.upload_path') WHERE site_id IS NULL" ) or die ( pg_last_error () );
+	$result = pg_fetch_array ( $rows, 0 ) [1];
+	
+	$upload_target_dir = str_replace ( "{user}", "", $result );
+	$upload_target_dir = $upload_target_dir . $_SESSION ['userName'] . "/";
+	
+	if (! is_dir ( $upload_target_dir )) {
+		mkdir ( $upload_target_dir, 0755, true );
+	}
+	
+	$zip_msg = '';
+	$shp_file = false;
+	if ($_FILES ["zip_file"] ["name"]) {
+		$filename = $_FILES ["zip_file"] ["name"];
+		$source = $_FILES ["zip_file"] ["tmp_name"];
+		$type = $_FILES ["zip_file"] ["type"];
+		
+		$zip_file = false;
+		$accepted_types = array (
+				'application/zip',
+				'application/x-zip-compressed',
+				'multipart/x-zip',
+				'application/x-compressed' 
+		);
+		foreach ( $accepted_types as $mime_type ) {
+			if ($mime_type == $type) {
+				$zip_file = true;
+				break;
+			}
+		}
+		if ($zip_file) {
+			$target_path = $upload_target_dir . $filename;
+			if (move_uploaded_file ( $source, $target_path )) {
+				$zip = new ZipArchive ();
+				$x = $zip->open ( $target_path );
+				if ($x === true) {
+					for($i = 0; $i < $zip->numFiles; $i ++) {
+						$filename = $zip->getNameIndex ( $i );
+						if (endsWith ( $filename, '.shp' )) {
+							$shp_file = $upload_target_dir . $filename;
+							break;
+						}
+					}
+					$zip->extractTo ( $upload_target_dir );
+					$zip->close ();
+					unlink ( $target_path );
+					if ($shp_file) {
+						$zip_msg = "Your .zip file was uploaded and unpacked successfully.";
+					} else {
+						$zip_msg = "Your .zip file does not contain any shape (.shp) file.";
+					}
+				} else {
+					$zip_msg = "Your file is not a valid .zip archive.";
+				}
+			} else {
+				$zip_msg = "Failed to upload the file you selected.";
+			}
+		} else {
+			$zip_msg = "The file you selected is not a .zip file.";
+		}
+	} else {
+		$zip_msg = 'Unable to access your selected file.';
+	}
+	
+	// verify if shape file has valid geometry
+	$shp_msg = '';
+	$shape_ok = false;
+	if ($shp_file) {
+		exec ( 'scripts/check_shp.py ' . $shp_file, $output, $ret );
+		
+		if ($ret === FALSE) {
+			$shp_msg = 'Invalid command line.';
+		} else {
+			switch ($ret) {
+				case 0 :
+					$shape_ok = true;
+					break;
+				case 1 :
+					$shp_file = false;
+					$shp_msg = 'Unable to open the shape file.';
+					break;
+				case 2 :
+					$shp_file = false;
+					$shp_msg = 'Shape file has invalid geometry.';
+					break;
+				case 127 :
+					$shp_file = false;
+					$shp_msg = 'Invalid geometry detection script.';
+					break;
+				default :
+					$shp_file = false;
+					$shp_msg = 'Unexpected error with the geometry detection script.';
+					break;
+			}
+		}
+		if ($shape_ok) {
+			$last_line = $output [count ( $output ) - 1];
+			$r = preg_match ( '/^Union: (.+)$/m', $last_line, $matches );
+			if (! $r) {
+				$shp_file = false;
+				$shp_msg = 'Unable to parse shape';
+			} else {
+				$shp_msg = $matches [1];
+			}
+		}
+	} else {
+		$shp_msg = 'Missing shape file due to a problem with your selected file.';
+	}
+	
+	return array (
+			"polygons_file" => $shp_file,
+			"result" => $shp_msg,
+			"message" => $zip_msg 
+	);
+}// end funcion upload
+
 function dayMonth($param) {
-	// keep only day and month, ex:3002
-	$date = date ( 'dm', strtotime ( $param ) );
+	// keep only month and day(0230)
+	$date = date ( 'md', strtotime ( $param ) );
 	return $date;
 }
 
@@ -12,13 +134,17 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save Site') {
 	// first character to uppercase.
 	$site_name = ucfirst ( $_REQUEST ['sitename'] );
 	
-	// coord geog from the upload file
-	// 'POLYGON((35.940406 54.140187, 37.651121 54.140187, 37.651121 53.123645, 35.940406 53.123645, 35.940406 54.140187))'
-	$coord_geog = "POLYGON((35.940406 54.140187, 37.651121 54.140187, 37.651121 53.123645, 35.940406 53.123645, 35.940406 54.140187))";
+	// upload polygons
+	$upload = upload_reference_polygons ();
+	$polygons_file = $upload ['polygons_file'];
+	$coord_geog = $upload ['result'];
+	$message = $upload ['message'];
+	
 	$winter_start = "";
 	$winter_end = "";
 	$summer_start = "";
 	$summer_end = "";
+	
 	function insertSiteSeason($site, $coord, $wint_start, $wint_end, $summ_star, $summ_end) {
 		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 		$sql = "SELECT sp_dashboard_add_site($1,$2,$3,$4,$5,$6)";
@@ -34,28 +160,40 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save Site') {
 		) ) or die ( "An error occurred." );
 	}
 	
-	if (isset ( $_REQUEST ['seasonAdd'] ))
-		// winter season selected
-		if ($_REQUEST ['seasonAdd'] == "0") {
-			$winter_start = dayMonth ( $_REQUEST ['startseason_winter'] );
-			$winter_end = dayMonth ( $_REQUEST ['endseason_winter'] );
-			insertSiteSeason ( $site_name, $coord_geog, $winter_start, $winter_end, $summer_start, $summer_end );
-		} else 
-		// summer season selected
-		if ($_REQUEST ['seasonAdd'] == "1") {
-			$summer_start = dayMonth ( $_REQUEST ['startseason_summer'] );
-			$summer_end = dayMonth ( $_REQUEST ['endseason_summer'] );
-			insertSiteSeason ( $site_name, $coord_geog, $winter_start, $winter_end, $summer_start, $summer_end );
-		} else 
-		// summer and winter season selected
-		if ($_REQUEST ['seasonAdd'] == "2") {
-			$winter_start = dayMonth ( $_REQUEST ['startseason_winter'] );
-			$winter_end = dayMonth ( $_REQUEST ['endseason_winter'] );
-			$summer_start = dayMonth ( $_REQUEST ['startseason_summer'] );
-			$summer_end = dayMonth ( $_REQUEST ['endseason_summer'] );
-			
-			insertSiteSeason ( $site_name, $coord_geog, $winter_start, $winter_end, $summer_start, $summer_end );
+	if ($polygons_file) {
+		
+		if (isset ( $_REQUEST ['seasonAdd'] )) {
+			// winter season selected
+			if ($_REQUEST ['seasonAdd'] == "0") {
+				$winter_start = dayMonth ( $_REQUEST ['startseason_winter'] );
+				$winter_end = dayMonth ( $_REQUEST ['endseason_winter'] );
+				insertSiteSeason ( $site_name, $coord_geog, $winter_start, $winter_end, $summer_start, $summer_end );
+				
+				$_SESSION['status'] =  "OK"; $_SESSION['message'] = "Your site has been successfully added!";
+			} else 
+			// summer season selected
+			if ($_REQUEST ['seasonAdd'] == "1") {
+				$summer_start = dayMonth ( $_REQUEST ['startseason_summer'] );
+				$summer_end = dayMonth ( $_REQUEST ['endseason_summer'] );
+				insertSiteSeason ( $site_name, $coord_geog, $winter_start, $winter_end, $summer_start, $summer_end );
+				
+				$_SESSION['status'] =  "OK"; $_SESSION['message'] = "Your site has been successfully added!";
+			} else 
+			// summer and winter season selected
+			if ($_REQUEST ['seasonAdd'] == "2") {
+				$winter_start = dayMonth ( $_REQUEST ['startseason_winter'] );
+				$winter_end = dayMonth ( $_REQUEST ['endseason_winter'] );
+				$summer_start = dayMonth ( $_REQUEST ['startseason_summer'] );
+				$summer_end = dayMonth ( $_REQUEST ['endseason_summer'] );
+				
+				insertSiteSeason ( $site_name, $coord_geog, $winter_start, $winter_end, $summer_start, $summer_end );
+				$_SESSION['status'] =  "OK"; $_SESSION['message'] = "Your site has been successfully added!";
+			}
 		}
+	} else {
+		$_SESSION['status'] =  "NOK"; $_SESSION['message'] = $message;  $_SESSION['result'] = $coord_geog;
+
+	}
 }
 
 // processing edit
@@ -64,12 +202,14 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save') {
 	$site_id = $_REQUEST ['edit_siteid'];
 	$shortname = $_REQUEST ['shortname'];
 	
-	// coord geog from the upload file
-	// 'POLYGON((35.940406 54.140187, 37.651121 54.140187, 37.651121 53.123645, 35.940406 53.123645, 35.940406 54.140187))'
-	$coord_geog = "POLYGON((35.940406 54.140187, 37.651121 54.140187, 37.651121 53.123645, 35.940406 53.123645, 35.940406 54.140187))";
+	// upload polygons
+	$upload = upload_reference_polygons ();
+	$polygons_file = $upload ['polygons_file'];
+	$coord_geog = $upload ['result'];
+	$message = $upload ['message'];
+	
 	function updateSiteSeason($id, $short_name, $coord, $wint_start, $wint_end, $summ_star, $summ_end) {
 		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-		
 		$res = pg_query_params ( $db, "SELECT sp_dashboard_update_site($1,$2,$3,$4,$5,$6,$7)", array (
 				$id,
 				$short_name,
@@ -85,10 +225,15 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save') {
 	$winter_end = dayMonth ( $_REQUEST ['endseason_winterEdit'] );
 	$summer_start = dayMonth ( $_REQUEST ['startseason_summerEdit'] );
 	$summer_end = dayMonth ( $_REQUEST ['endseason_summerEdit'] );
-	
-	// echo $winter_start." ".$winter_end." ".$summer_start." ".$summer_end;
-	
-	updateSiteSeason ( $site_id, $shortname, $coord_geog, $winter_start, $winter_end, $summer_start, $summer_end );
+		
+	if ($polygons_file) {
+		
+		updateSiteSeason ( $site_id, $shortname, $coord_geog, $winter_start, $winter_end, $summer_start, $summer_end );
+		$_SESSION['status'] =  "OK"; $_SESSION['message'] = "Your site has been successfully modified!";
+	} else {
+		$_SESSION['status'] =  "NOK"; $_SESSION['message'] = $message; $_SESSION['result'] = $coord_geog;
+	}
+
 }
 
 ?>
@@ -100,6 +245,14 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save') {
 				<!-- - -->
 				<div class="panel-heading">
 					<div class="row">
+					<?php if (! (empty ( $_SESSION ['siteId'] ))) { // not admin
+						?>
+					<div class="col-md-10">Seasons site details</div>
+						<div class="col-md-1">
+						</div>
+					</div>
+				<?php 	}else {// if admin
+					?>
 						<div class="col-md-10">Create new site</div>
 						<div class="col-md-1">
 							<form id="form_add_site" method="post">
@@ -108,6 +261,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save') {
 							</form>
 						</div>
 					</div>
+					<?php } ?>
 				</div>
 				<!-- - -->
 
@@ -190,8 +344,20 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save') {
 												file:</label> <input type="file" class="form-control"
 												id="zip_file" name="zip_file">
 										</div>
+									</div>
+								</div>
+
+								<div class="row">
+									<div class="col-md-1"></div>
+									<div class="col-md-1">
 										<input class="btn btn-primary " name="add_site" type="submit"
 											value="Save Site">
+									</div>
+									<div class="col-md-1">
+										<input class="btn btn-primary " name="abort_add" type="button"
+											value="Abort" onclick="abortEditAdd('add')">
+
+
 									</div>
 								</div>
 							</form>
@@ -292,11 +458,20 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save') {
 										<div class="form-group form-group-sm">
 											<label class="control-label" for="zip_fileEdit">Upload site
 												shape file:</label> <input type="file" class="form-control"
-												id="zip_fileEdit" name="zip_fileEdit">
+												id="zip_fileEdit" name="zip_file">
 										</div>
+									</div>
+								</div>
 
+								<div class="row">
+									<div class="col-md-1"></div>
+									<div class="col-md-1">
 										<input class="btn btn-primary " name="edit_site" type="submit"
 											value="Save">
+									</div>
+									<div class="col-md-1">
+										<input class="btn btn-primary " name="abort_edit"
+											type="button" value="Abort" onclick="abortEditAdd('edit')">
 									</div>
 								</div>
 							</form>
@@ -333,11 +508,13 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save') {
 									$summerEnd = "";
 									$winterStart = "";
 									$winterEnd = "";
+									
 									function dayMonthYear($param) {
 										$year = date ( 'Y' );
 										$date = $year . "-" . $param [0] . "-" . $param [1];
 										return $date;
 									}
+									
 									$sql_select = "";
 									$result = "";
 									$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
@@ -369,15 +546,29 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save') {
 											}
 											
 											// date from MMDD into YYYY-MM-DD
-											$summerDate1 = dayMonthYear ( str_split ( $summerStart, 2 ) );
-											$summerDate2 = dayMonthYear ( str_split ( $summerEnd, 2 ) );
-											$winterDate1 = dayMonthYear ( str_split ( $winterStart, 2 ) );
-											$winterDate2 = dayMonthYear ( str_split ( $winterEnd, 2 ) );
+											$summerDate1 =  str_split ( $summerStart, 2 ) ;
+											$summerDate2 =  str_split ( $summerEnd, 2 ) ;
+											$winterDate1 =  str_split ( $winterStart, 2 ) ;
+											$winterDate2 =  str_split ( $winterEnd, 2 ) ;
 											
-											$summerSeason = $summerDate1 . ' ' . $summerDate2;
-											$winterSeason = $winterDate1 . ' ' . $winterDate2;
+											if($summerDate2[0]<$summerDate1[0]){
+												$summer2 =( date ( 'Y' )+1). "-" . $summerDate2 [0] . "-" . $summerDate2 [1];
+											}else{
+												$summer2 = dayMonthYear($summerDate2);
+											}
+											$summer1 = dayMonthYear($summerDate1);
 											
-											$tr_table = "<tr><td colspan=\"2\">" . $siteName . "</td>" . "<td colspan=\"2\">" . $shortName . "</td>" . "<td colspan=\"2\">" . $winterSeason . "</td>" . "<td colspan=\"2\">" . $summerSeason . "</td>" . "<td colspan=\"2\"><a onclick=\"editFormSite('" . $siteId . "','" . $siteName . "','" . $shortName . "','" . $winterDate1 . "','" . $winterDate2 . "','" . $summerDate1 . "','" . $summerDate2 . "')\">Edit</a>" . "</tr>";
+											if($winterDate2[0]<$winterDate1[0]){
+												$winter2 =( date ( 'Y' )+1). "-" . $winterDate2 [0] . "-" . $winterDate2 [1];
+											}else{
+												$winter2 = dayMonthYear($winterDate2);
+											}
+											$winter1 = dayMonthYear($winterDate1);
+											
+											$summerSeason = $summer1 . ' ' . $summer2;
+											$winterSeason = $winter1 . ' ' . $winter2;
+											
+											$tr_table = "<tr><td colspan=\"2\">" . $siteName . "</td>" . "<td colspan=\"2\">" . $shortName . "</td>" . "<td colspan=\"2\">" . $winterSeason . "</td>" . "<td colspan=\"2\">" . $summerSeason . "</td>" . "<td colspan=\"2\"><a onclick=\"editFormSite('" . $siteId . "','" . $siteName . "','" . $shortName . "','" . $winter1 . "','" . $winter2 . "','" . $summer1 . "','" . $summer2 . "')\">Edit</a>" . "</tr>";
 											
 											$summerSeason = "";
 											$winterSeason = "";
@@ -403,11 +594,10 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save') {
 								}
 								
 								if (empty ( $_SESSION ['siteId'] )) {
-									//logged as admin, bring all sites
+									// logged as admin, get all sites
 									list_sites_seasons ( 0 );
-								} else { // if not admin bring only his site
+								} else { // if not admin get only his site
 									list_sites_seasons ( 1 );
-									
 								}
 								?>
 								</tbody>
@@ -434,145 +624,208 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save') {
 	src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 <script
 	src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
-<!-- end includes for  datepicker-->
-
-<!--Jquery datepicker -->
-<script>
-		$(document).ready(function() {
-			//datepickers for form add site
-			$( ".startseason_winter" ).datepicker({
-				 dateFormat: "yy-mm-dd",
-				 minDate: 0,//past dates disable from current date
-				 onSelect: function(selected) {
-				    $(".endseason_winter").datepicker("option","minDate", selected)
-					 	        }
-					  });
-			$( ".endseason_winter" ).datepicker({
-				 dateFormat: "yy-mm-dd",
-				 minDate: 0
-					  });
-			  
-			$( ".startseason_summer" ).datepicker({
-				 dateFormat: "yy-mm-dd" ,
-				 minDate: 0,
-				 onSelect: function(selected) {
-				    $(".endseason_summer").datepicker("option","minDate", selected)
-					 	        }
-					  });
-			$( ".endseason_summer" ).datepicker({
-				 dateFormat: "yy-mm-dd",
-				 minDate: 0 
-					  });
-
-	//datepickers for forms edit site
-			$( "#startseason_winterEdit" ).datepicker({
-				 dateFormat: "yy-mm-dd",
-				 minDate: 0,//past dates disable from current date
-				 onSelect: function(selected) {
-				    $("#endseason_winterEdit").datepicker("option","minDate", selected)
-					 	        }
-					  });
-			$( "#endseason_winterEdit" ).datepicker({
-				 dateFormat: "yy-mm-dd",
-				 minDate: 0
-					  });
-			  
-			$( "#startseason_summerEdit" ).datepicker({
-				 dateFormat: "yy-mm-dd" ,
-				 minDate: 0,
-				 onSelect: function(selected) {
-				    $("#endseason_summerEdit").datepicker("option","minDate", selected)
-					 	        }
-					  });
-			$( "#endseason_summerEdit" ).datepicker({
-				 dateFormat: "yy-mm-dd",
-				 minDate: 0 
-					  });
-		});
-</script>
-<!--end Jquery datepicker -->
 
 <!-- validate form  -->
 <script src="libraries/jquery-validate/jquery.validate.min.js"></script>
 <script src="libraries/jquery-validate/additional-methods.min.js"></script>
 
 <script>
+/*
+function message_alert(message){
+	alert(message);
+}*/
 	$(document).ready( function() {
-							$("#siteform").validate(
-											{
-												rules : {
-													sitename:"required",						
-													startseason_winter : "required",
-													endseason_winter:"required",
-													startseason_summer:"required",
-													endseason_summer:"required",
-													zip_file:"required"
-												},
-												
-												// the errorPlacement has to take the table layout into account
-												errorPlacement : function(
-														error, element) {
-													error.appendTo(element
-															.parent());
-												},
+		//datepickers for form add site
+		 $(".startseason_winter").datepicker({
+			  dateFormat: "yy-mm-dd",
+		        minDate: 0,
+		        onSelect: function (date) {
+		            var date2 = $('.startseason_winter').datepicker('getDate');
+		                date2.setDate(date2.getDate() + 1);
+		            $('.endseason_winter').datepicker('setDate', date2);
+		            //sets minDate to dt1 date + 1
+		            $('.endseason_winter').datepicker('option', 'minDate', date2);
+		        }
+		    });
+		    $('.endseason_winter').datepicker({
+		    	 dateFormat: "yy-mm-dd",
+		    	 minDate: 0,
+		        onClose: function () {
+		            var dt1 = $('.startseason_winter').datepicker('getDate');
+		            var dt2 = $('.endseason_winter').datepicker('getDate');
+		            //check to prevent a user from entering a date below date of dt1
+		            if (dt2 <= dt1) {
+		                var minDate = $('.startseason_winter').datepicker('option', 'minDate');
+		                $('.endseason_winter').datepicker('setDate', minDate);
+		            }
+		        }
+		    });
 
-												// set this class to error-labels to indicate valid fields
-												success : function(label) {
-													label.remove();
-												},
-												highlight : function(element,
-														errorClass) {
-													$(element)
-															.parent()
-															.addClass(
-																	"has-error");
-												},
-												unhighlight : function(element,
-														errorClass) {
-													$(element)
-															.parent()
-															.removeClass(
-																	"has-error");
-												}
-											});
+		  $(".startseason_summer").datepicker({
+			  dateFormat: "yy-mm-dd",
+		        minDate: 0,
+		        onSelect: function (date) {
+		            var date2 = $('.startseason_summer').datepicker('getDate');
+		            date2.setDate(date2.getDate() + 1);
+		            $('.endseason_summer').datepicker('setDate', date2);
+		            //sets minDate to dt1 date + 1
+		            $('.endseason_summer').datepicker('option', 'minDate', date2);
+		        }
+		    });
+		    $('.endseason_summer').datepicker({
+		    	 dateFormat: "yy-mm-dd",
+		    	 minDate: 0,
+		        onClose: function () {
+		            var dt1 = $('.startseason_summer').datepicker('getDate');
+		            var dt2 = $('.endseason_summer').datepicker('getDate');
+		            //check to prevent a user from entering a date below date of dt1
+		            if (dt2 <= dt1) {
+		                var minDate = $('.startseason_summer').datepicker('option', 'minDate');
+		                $('.endseason_summer').datepicker('setDate', minDate);
+		            }
+		        }
+		    });
 
-							$("#siteform_edit").validate(
-									{
-										rules : {
-											shortname:"required",						
-											startseason_winterEdit : "required",
-											endseason_winterEdit:"required",
-											startseason_summerEdit:"required",
-											endseason_summerEdit:"required"
-											//zip_fileEdit:"required"
-										},
-										
-										// the errorPlacement has to take the table layout into account
-										errorPlacement : function(
-												error, element) {
-											error.appendTo(element
-													.parent());
-										},
+//datepickers for form edit site
+		$( "#startseason_winterEdit" ).datepicker({
+			  dateFormat: "yy-mm-dd",
+		        minDate: 0,
+		        onSelect: function (date) {
+		         var date2 = $('#startseason_winterEdit').datepicker('getDate');
+			         date2.setDate(date2.getDate() + 1);
+			      $('#endseason_winterEdit').datepicker('setDate', date2);
+			            //sets minDate to dt1 date + 1
+			            $('#endseason_winterEdit').datepicker('option', 'minDate', date2);
+			            
+		        }
+		    });
+		    $("#endseason_winterEdit").datepicker({
+		    	 dateFormat: "yy-mm-dd",
+		    	 minDate: 0,
+		        onClose: function () {
+		            var dt1 = $("#startseason_winterEdit").datepicker('getDate');
+		            var dt2 = $("#endseason_winterEdit").datepicker('getDate');
+		            //check to prevent a user from entering a date below date of dt1
+		            if (dt2 <= dt1) {
+		                var minDate = $("#startseason_winterEdit").datepicker('option', 'minDate');
+		                $("#endseason_winterEdit").datepicker('setDate', minDate);
+		            }
+		        }
+		    });
 
-										// set this class to error-labels to indicate valid fields
-										success : function(label) {
-											label.remove();
-										},
-										highlight : function(element,
-												errorClass) {
-											$(element)
-													.parent()
-													.addClass(
-															"has-error");
-										},
-										unhighlight : function(element,
-												errorClass) {
-											$(element)
-													.parent()
-													.removeClass(
-															"has-error");
-										}
-									});
+			  $("#startseason_summerEdit").datepicker({
+				  dateFormat: "yy-mm-dd",
+			        minDate: 0,
+			        onSelect: function (date) {
+			            var date2 = $("#startseason_summerEdit").datepicker('getDate');
+			            date2.setDate(date2.getDate() + 1);
+			            $("#endseason_summerEdit").datepicker('setDate', date2);
+			            //sets minDate to dt1 date + 1
+			            $("#endseason_summerEdit").datepicker('option', 'minDate', date2);
+			        }
+			    });
+			    $('#endseason_summerEdit').datepicker({
+			    	 dateFormat: "yy-mm-dd",
+			    	 minDate: 0,
+			        onClose: function () {
+			            var dt1 = $("#startseason_summerEdit").datepicker('getDate');
+			            var dt2 = $("#endseason_summerEdit").datepicker('getDate');
+			            //check to prevent a user from entering a date below date of dt1
+			            if (dt2 <= dt1) {
+			                var minDate = $("#startseason_summerEdit").datepicker('option', 'minDate');
+			                $("#endseason_summerEdit").datepicker('setDate', minDate);
+			            }
+			        }
+			    });
+
+		         <?php if (isset($_SESSION['status'])){
+		         			if ( $_SESSION['status'] =='OK') { 
+		         				echo "alert('".$_SESSION['message']."')";
+		         				unset($_SESSION['status']);
+		         				unset($_SESSION['message']);
+		         			}else if($_SESSION['status']=='NOK' && isset($_SESSION['result'])){
+		         				echo "alert('FAILED:".$_SESSION['message']." ".$_SESSION['result'] ."')";
+		         				unset($_SESSION['status']);
+		         				unset($_SESSION['message']);
+		         				unset($_SESSION['result']);
+		         	
+		       	 			 }
+		        	 }
+		         	?>
+
+			    //validate form add site
+			    $("#siteform").validate(
+						{
+							rules : {
+										sitename:"required",						
+										startseason_winter : "required",
+										endseason_winter:"required",
+										startseason_summer:"required",
+										endseason_summer:"required",
+									//	zip_file:"required"
+									},
+											
+									highlight: function(element, errorClass) {
+										$(element).parent().addClass("has-error");
+									},
+									unhighlight: function(element, errorClass) {
+										$(element).parent().removeClass("has-error");
+									},
+									errorPlacement: function(error, element) {
+										error.appendTo(element.parent());
+									},
+									submitHandler: function(form) {
+										$.ajax({
+											url: $(form).attr('action'),
+											type: $(form).attr('method'),
+											data: new FormData(form),
+											success: function(response) {
+											}
+										 });
+									},
+									// set this class to error-labels to indicate valid fields
+									success: function(label) {
+										label.remove();
+									},
+								});	
+
+			$("#siteform_edit").validate(
+								{
+									rules : {
+										shortname:"required",						
+										startseason_winterEdit : "required",
+										endseason_winterEdit:"required",
+										startseason_summerEdit:"required",
+										endseason_summerEdit:"required",
+										zip_file:"required"
+									},
+									
+									highlight: function(element, errorClass) {
+										$(element).parent().addClass("has-error");
+									},
+									unhighlight: function(element, errorClass) {
+										$(element).parent().removeClass("has-error");
+									},
+									errorPlacement: function(error, element) {
+										error.appendTo(element.parent());
+									},
+									submitHandler: function(form) {
+										$.ajax({
+											url: $(form).attr('action'),
+											type: $(form).attr('method'),
+											data: new FormData(form),
+											success: function(response) {
+											//	$("#siteform_edit")[0].reset();
+											//	$("#div_editsite").hide();
+											}
+										 });
+									},
+									// set this class to error-labels to indicate valid fields
+									success: function(label) {
+										label.remove();
+									},
+								});	
+			  
 	});
 </script>
 <!-- end validate -->
@@ -595,6 +848,13 @@ function editFormSite(id,name,short_name,winter1,winter2,summer1,summer2){
 	document.getElementById("endseason_summerEdit").value = summer2;
 	document.getElementById("startseason_winterEdit").value = winter1;
 	document.getElementById("endseason_winterEdit").value = winter2;
+}
+
+function abortEditAdd(abort){
+	if(abort=='edit'){
+		document.getElementById("div_editsite").style.display = "none";
+		}else if(abort=='add')
+	document.getElementById("div_addsite").style.display = "none";
 }
 
 </script>
