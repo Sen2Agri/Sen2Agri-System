@@ -140,7 +140,7 @@ ConcatenateVectorImagesFilter<TInputImage, TOutputImage>
       for (unsigned int b = 0; b < pixelSizes[i]; ++b)
         {
         // Fill the output pixel
-        outputPix[outputPos++] = static_cast<typename OutputImageType::InternalPixelType>(pix[i]);
+        outputPix[outputPos++] = static_cast<typename OutputImageType::InternalPixelType>(pix[b]);
         }
 
       // Increment the input iterator
