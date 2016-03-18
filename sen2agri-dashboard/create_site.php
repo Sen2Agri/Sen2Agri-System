@@ -148,6 +148,7 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save Site') {
 	function insertSiteSeason($site, $coord, $wint_start, $wint_end, $summ_star, $summ_end) {
 		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 		$sql = "SELECT sp_dashboard_add_site($1,$2,$3,$4,$5,$6)";
+		
 		$res = pg_prepare ( $db, "my_query", $sql );
 		
 		$res = pg_execute ( $db, "my_query", array (
@@ -757,14 +758,16 @@ function message_alert(message){
 			    $("#siteform").validate(
 						{
 							rules : {
-										sitename:"required",						
+										sitename:{ required: true, pattern: "[A-Z]{1}[a-zA-Z_ ]*" },						
 										startseason_winter : "required",
 										endseason_winter:"required",
 										startseason_summer:"required",
 										endseason_summer:"required",
 										zip_file:"required"
 									},
-											
+									messages: {
+										sitename: { pattern : "First letter must be uppercase.Letters,space and underscore are allowed" }
+									},
 									highlight: function(element, errorClass) {
 										$(element).parent().addClass("has-error");
 									},
@@ -780,6 +783,7 @@ function message_alert(message){
 											type: $(form).attr('method'),
 											data: new FormData(form),
 											success: function(response) {
+												$("#siteform")[0].reset();
 											}
 										 });
 									},
@@ -792,14 +796,16 @@ function message_alert(message){
 			$("#siteform_edit").validate(
 								{
 									rules : {
-										shortname:"required",						
+										shortname:{ required: true, pattern: "[a-z]{1}[a-z_ ]*" },					
 										startseason_winterEdit : "required",
 										endseason_winterEdit:"required",
 										startseason_summerEdit:"required",
 										endseason_summerEdit:"required",
 										zip_file:"required"
 									},
-									
+									messages: {
+										shortname: { pattern : "Only small letters,space and underscore are allowed" }
+									},
 									highlight: function(element, errorClass) {
 										$(element).parent().addClass("has-error");
 									},
