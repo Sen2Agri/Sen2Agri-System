@@ -106,7 +106,7 @@ def buildReprocessedTimeSeries(xmlList, siteId, simpleTileId, inLaiMonoDir, laiT
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
     runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allErrParam + ["-out", errTimeSeriesFile] + deqString)
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-    runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allMskFlagsParam + ["-out", mskTimeSeriesFile] + deqString)
+    runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allMskFlagsParam + ["-out", mskTimeSeriesFile])
     print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
 def generateReprocessedLAI(tileID, siteId, allXmlParam, laiTimeSeriesFile, errTimeSeriesFile,\
