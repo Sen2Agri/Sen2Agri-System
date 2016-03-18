@@ -38,7 +38,7 @@ def prettify(elem):
 def getMonoDateProductFiles(productMeta, siteId, tileId, inLaiMonoDir, useIntermediateFiles):
     fileName = os.path.basename(productMeta)
     #fileName = productMeta
-    if fileName.startswith('S2') or fileName.startswith('L8') :
+    if fileName.startswith('S2') :
         dateIdx = 8
     if fileName.startswith('L8') :
         dateIdx = 5
