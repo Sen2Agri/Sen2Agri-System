@@ -49,7 +49,7 @@ def getMonoDateProductFiles(productMeta, siteId, tileId, inLaiMonoDir, useInterm
     
     if useIntermediateFiles :
         laiImgPattern = inLaiMonoDir + '/*_' + productDate + "_*_LAI_img.tif"
-        print("Intermediate LAI file: {}".format(laiImgPattern))
+        #print("Intermediate LAI file: {}".format(laiImgPattern))
         laiImgsFiles = glob.glob(laiImgPattern)
         laiErrImgPattern = inLaiMonoDir + '/*_' + productDate + "_*_LAI_err_img.tif"
         laiErrImgsFiles = glob.glob(laiErrImgPattern)
@@ -96,10 +96,10 @@ def buildReprocessedTimeSeries(xmlList, siteId, simpleTileId, inLaiMonoDir, laiT
         allLaiParam.append(laiImg)
         allErrParam.append(errImg)
         allMskFlagsParam.append(flgsImg)
-    
-    deqString = ("-deqval", "1000")
+   
+    deqString = ["-deqval", "1000"]
     if useIntermediateFiles :
-        deqString = ""
+        deqString = []
     
     # Create the LAI and Error time series
     runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allLaiParam + ["-out", laiTimeSeriesFile] + deqString)
@@ -429,6 +429,7 @@ if __name__ == '__main__':
     genfittedlai = False
     if (args.genfittedlai == "YES"):
         genfittedlai = True
+    useintermlaifiles = False
     if (args.useintermlaifiles == "YES") :
         useintermlaifiles = True
     
