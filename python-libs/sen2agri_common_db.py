@@ -24,9 +24,11 @@ import optparse
 FAKE_COMMAND = 0
 DEBUG = True
 
-NUMBER_OF_CONFIG_PARAMS_FROM_DB = int(6)
+DOWNLOADER_NUMBER_OF_CONFIG_PARAMS_FROM_DB = int(7)
 SENTINEL2_SATELLITE_ID = int(1)
 LANDSAT8_SATELLITE_ID = int(2)
+
+MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED = int(2)
 
 DATABASE_DEMMACCS_GIPS_PATH = "demmaccs.gips-path"
 DATABASE_DEMMACCS_OUTPUT_PATH = "demmaccs.output-path"
@@ -34,9 +36,16 @@ DATABASE_DEMMACCS_SRTM_PATH = "demmaccs.srtm-path"
 DATABASE_DEMMACCS_SWBD_PATH = "demmaccs.swbd-path"
 DATABASE_DEMMACCS_MACCS_IP_ADDRESS = "demmaccs.maccs-ip-address"
 DATABASE_DEMMACCS_MACCS_LAUNCHER = "demmaccs.maccs-launcher"
-DATABASE_DEMMACCS_LAUNCHER = "demmaccs.launcher"
 DATABASE_DEMMACCS_WORKING_DIR = "demmaccs.working-dir"
-DATABASE_DEMMACCS_DEM_LAUNCHER = "demmaccs.dem-launcher"
+
+
+DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE = int(1)
+DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE = int(2)
+DATABASE_DOWNLOADER_STATUS_FAILED_VALUE = int(3)
+DATABASE_DOWNLOADER_STATUS_ABORTED_VALUE = int(4)
+DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE = int(5)
+
+g_exit_flag = False
 
 def run_command(cmd_array, use_shell=False):
     start = time.time()
@@ -50,13 +59,20 @@ def run_command(cmd_array, use_shell=False):
     return res
 
 
+def signal_handler(signal, frame):
+    global exitFlag
+    print("SIGINT caught")
+    exitFlag = True
+    sys.exit(0)
+
+
 def log(location, info, log_filename = None):
     if log_filename == None:
         log_filename = "log.txt"
     try:
         logfile = os.path.join(location, log_filename)
         if DEBUG:
-            print("logfile: {}".format(logfile))
+            #print("logfile: {}".format(logfile))
             print("{}".format(info))
         log = open(logfile, 'a')
         log.write("{}:{}\n".format(str(datetime.datetime.now()),str(info)))
@@ -102,10 +118,12 @@ def get_product_info(product_name):
     return sat_id and (sat_id, acquisition_date)
 
 
-def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearArray, logDir, logFileName):
+def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearArray):
+#, logDir, logFileName):
     currentYear = datetime.date.today().year
     currentMonth = datetime.date.today().month
-    log(logDir, "{} | {}".format(startSeason, endSeason), logFileName)
+    #log(logDir, "{} | {}".format(startSeason, endSeason), logFileName)
+    print("{} | {}".format(startSeason, endSeason))
     yearArray.append(currentYear)
     yearArray.append(currentYear)
     startSeasonMonth = int(startSeason[0:2])
@@ -114,7 +132,8 @@ def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearAr
     endSeasonDay = int(endSeason[2:4])
     if startSeasonMonth < 1 or startSeasonMonth > 12 or startSeasonDay < 1 or startSeasonDay > 31 or endSeasonMonth < 1 or endSeasonMonth > 12 or endSeasonDay < 1 or endSeasonDay > 31:
         return False
-    log(logDir, "CurrentYear:{} | CurrentMonth:{} | StartSeasonMonth:{} | StartSeasonDay:{} | EndSeasonMonth:{} | EndSeasonDay:{}".format(currentYear, currentMonth, startSeasonMonth, startSeasonDay, endSeasonMonth, endSeasonDay), logFileName)
+    #log(logDir, "CurrentYear:{} | CurrentMonth:{} | StartSeasonMonth:{} | StartSeasonDay:{} | EndSeasonMonth:{} | EndSeasonDay:{}".format(currentYear, currentMonth, startSeasonMonth, startSeasonDay, endSeasonMonth, endSeasonDay), logFileName)
+    print("CurrentYear:{} | CurrentMonth:{} | StartSeasonMonth:{} | StartSeasonDay:{} | EndSeasonMonth:{} | EndSeasonDay:{}".format(currentYear, currentMonth, startSeasonMonth, startSeasonDay, endSeasonMonth, endSeasonDay))
     #check if the season comprises 2 consecutive years (e.q. from october to march next year)
     if startSeasonMonth > endSeasonMonth:
         if currentMonth >= startSeasonMonth and currentMonth <= 12:
@@ -122,10 +141,11 @@ def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearAr
         else:
             if currentMonth >= 1:
                 yearArray[0] = currentYear - 1
-    log(logDir, "StartSeasonYear:{} | EndSeasonYear:{}".format(yearArray[0], yearArray[1]), logFileName)
+    #log(logDir, "StartSeasonYear:{} | EndSeasonYear:{}".format(yearArray[0], yearArray[1]), logFileName)
+    print("StartSeasonYear:{} | EndSeasonYear:{}".format(yearArray[0], yearArray[1]))
     currentDate = datetime.date.today()
     if currentDate < datetime.date(int(yearArray[0]), int(startSeasonMonth), int(startSeasonDay)) or currentDate > datetime.date(int(yearArray[1]), int(endSeasonMonth) + numberOfMonthsAfterEndSeason, int(endSeasonDay)):
-        log(logDir, "Current date is not inside or near the season", logFileName)
+        #log(logDir, "Current date is not inside or near the season", logFileName)
         return False
     return True
 
@@ -139,6 +159,10 @@ class OptionParser (optparse.OptionParser):
       if getattr(self.values, option.dest) is None:
           self.error("{} option not supplied".format(option))
 
+class Args(object):
+    def __init__(self):
+        self.general_log_path = "/tmp/"
+        self.general_log_filename = "downloader.log"
 
 ###########################################################################
 class Config(object):
@@ -181,19 +205,36 @@ class Config(object):
 
 
 ###########################################################################
-class AOIDatabase(object):
+class AOIContext(object):
     def __init__(self):
+        # the following info will be fed up from database
         self.siteId = int(0)
         self.siteName = ""
         self.polygon = ""
-        self.startSummerSeason = ""
-        self.endSummerSeason = ""
-        self.startWinterSeason = ""
-        self.endWinterSeason = ""
+
+        self.startSeasonMonth = int(0)
+        self.startSeasonDay = int(0)
+        self.endSeasonMonth = int(0)
+        self.endSeasonDay = int(0)
+        self.startSeasonYear = int(0)
+        self.endSeasonYear = int(0)
+
         self.maxCloudCoverage = int(100)
+        self.maxRetries = int(3)
         self.writeDir = ""
         self.aoiHistoryFiles = []
         self.aoiTiles = []
+        #the following info will be fed up from the downloader arguments
+        self.configObj = None
+        self.remoteSiteCredentials = ""
+        self.proxy = None
+        #sentinel satellite only 
+        self.sentinelLocation = ""
+        #ed of sentinel satellite only
+        #landsat only
+        self.landsatDirNumber = None
+        self.landsatStation = None
+        #end of landsat only
 
     def addHistoryFiles(self, historyFiles):
         self.aoiHistoryFiles = historyFiles
@@ -205,14 +246,39 @@ class AOIDatabase(object):
         self.aoiTiles.append(tile)
 
     def setConfigParams(self, configParams):
-        if len(configParams) != NUMBER_OF_CONFIG_PARAMS_FROM_DB:
-            return
-        self.startSummerSeason = configParams[0]
-        self.endSummerSeason = configParams[1]
-        self.startWinterSeason = configParams[2]
-        self.endWinterSeason = configParams[3]
+        if len(configParams) != DOWNLOADER_NUMBER_OF_CONFIG_PARAMS_FROM_DB:
+            return False
+        startSummerSeason = configParams[0]
+        endSummerSeason = configParams[1]
+        startWinterSeason = configParams[2]
+        endWinterSeason = configParams[3]
         self.maxCloudCoverage = int(configParams[4])
-        self.writeDir = configParams[5]
+        self.maxRetries = int(configParams[5])
+        self.writeDir = configParams[6]
+
+        currentMonth = datetime.date.today().month
+        # first position is the startSeasonYear, the second is the endPositionYear
+        currentYearArray = []
+        if check_if_season(startSummerSeason, endSummerSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray):
+            self.startSeasonMonth = int(startSummerSeason[0:2])
+            self.startSeasonDay = int(startSummerSeason[2:4])
+            self.endSeasonMonth = int(endSummerSeason[0:2])
+            self.endSeasonDay = int(endSummerSeason[2:4])
+        elif check_if_season(startWinterSeason, endWinterSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray):
+            self.startSeasonMonth = int(startWinterSeason[0:2])
+            self.startSeasonDay = int(startWinterSeason[2:4])
+            self.endSeasonMonth = int(endWinterSeason[0:2])
+            self.endSeasonDay = int(endWinterSeason[2:4])
+        else:
+            print("Out of season ! No request will be made for {}".format(self.siteName))
+            return False
+        if len(currentYearArray) == 0:
+            print("Something went wrong in check_if_season function")
+            return False
+        self.startSeasonYear = currentYearArray[0]
+        self.endSeasonYear = currentYearArray[1]
+
+        return True
 
     def fillHistory(self, dbInfo):
         self.aoiHistoryFiles = dbInfo
@@ -223,16 +289,50 @@ class AOIDatabase(object):
                 return True
         return False
 
+    def setConfigObj(self, configObj):
+        self.configObj = configObj
+
+    def setRemoteSiteCredentials(self, filename):
+        self.remoteSiteCredentials = filename
+
+    def setProxy(self, filename):
+        self.proxy = filename
+
+    def setSentinelLocation(self, location):
+        self.sentinelLocation = location
+        
+    def setLandsatDirNumber(self, dir_number):
+        self.landsatDirNumber = dir_number
+
+    def setLandsatStation(self, station):
+        self.landsatStation = station
+
     def printInfo(self):
         print("SiteID  : {}".format(self.siteId))
         print("SiteName: {}".format(self.siteName))
         print("Polygon : {}".format(self.polygon))
-        print("startSS : {}".format(self.startSummerSeason))
-        print("endSS   : {}".format(self.endSummerSeason))
-        print("startWS : {}".format(self.startWinterSeason))
-        print("endWS   : {}".format(self.endWinterSeason))
+        print("startS  : {}-{}-{}".format(self.startSeasonYear, self.startSeasonMonth, self.startSeasonDay))
+        print("endS    : {}-{}-{}".format(self.endSeasonYear, self.endSeasonMonth, self.endSeasonDay))
         print("CloudCov: {}".format(self.maxCloudCoverage))
-        print("writeDir: {}".format(self.writeDir))
+        print("general configuration: ")
+        if self.configObj != None:
+            print("configObj : {}|{}|{}|{}".format(self.configObj.host, self.configObj.database, self.configObj.user, self.configObj.password))
+        else:
+            print("configObj : None")
+        print("remSiteCred: {}".format(self.remoteSiteCredentials))
+        if self.proxy != None:
+            print("proxy      : {}".format(self.proxy))
+        else:
+            print("proxy      : None")
+        print("sentinelLocation: {}".format(self.sentinelLocation))
+        if self.landsatDirNumber != None:
+            print("landsatDirNumber: {}".format(self.landsatDirNumber))
+        else:
+            print("landsatDirNumber: None")
+        if self.landsatStation != None:
+            print("landsatStation: {}".format(self.landsatStation))
+        else:
+            print("landsatStation: None")
 
         if len(self.aoiTiles) <= 0:
             print("tiles: NONE")
@@ -254,7 +354,7 @@ class AOIInfo(object):
         self.databaseName = databaseName
         self.user = user
         self.password = password
-        self.isConnected = False;
+        self.isConnected = False
         self.logFile = logFile
 
     def databaseConnect(self):
@@ -293,36 +393,34 @@ class AOIInfo(object):
         except:
             self.databaseDisconnect()
             return []
-        # retArray will have: [siteId, siteName, polygon, startSummerSeason, endSummerSeason, startWinterSeason, endWinterSeason, maxCloudCoverage, writeDir]
+        # retArray will be a list of AOIContext
         retArray = []
         for row in rows:
             if len(row) == 5 and row[4] != None:
                 # retry in case of disconnection
                 if not self.databaseConnect():
                     return False
-                currentAOI = AOIDatabase()
+                currentAOI = AOIContext()
                 currentAOI.siteId = int(row[0])
                 currentAOI.siteName = row[2]
                 currentAOI.polygon = row[4]
-                currentAOI.printInfo()
+                #currentAOI.printInfo()
                 baseQuery = "select * from sp_get_parameters(\'downloader."
                 whereQuery = "where \"site_id\"="
-                suffixArray = ["summer-season.start\')", "summer-season.end\')", "winter-season.start\')", "winter-season.end\')", "max-cloud-coverage\')", "{}write-dir\')".format(writeDirSatelliteName)]
+                suffixArray = ["summer-season.start\')", "summer-season.end\')", "winter-season.start\')", "winter-season.end\')", "max-cloud-coverage\')", "{}max-retries')".format(writeDirSatelliteName), "{}write-dir\')".format(writeDirSatelliteName)]
                 dbHandler = True
                 configArray = []
                 for suffix in suffixArray:
                     baseQuerySite = "{}{}".format(baseQuery, suffix)
                     query = "{} {} {}".format(baseQuerySite, whereQuery, currentAOI.siteId)
-                    print("query with where={}".format(query))
+                    #print("query with where={}".format(query))
                     baseQuerySite += " where \"site_id\" is null"
                     try:
                         self.cursor.execute(query)
                         if self.cursor.rowcount <= 0:
-                            print("query={}".format(baseQuerySite))
                             self.cursor.execute(baseQuerySite)
-                            print("2.self.cursor.rowcount={}".format(self.cursor.rowcount))
                             if self.cursor.rowcount <= 0:
-                                print("could not get event the default value for downloader.{}".format(suffix))
+                                print("Could not get even the default value for downloader.{}".format(suffix))
                                 dbHandler = False
                                 break
                         if self.cursor.rowcount != 1:
@@ -330,7 +428,7 @@ class AOIInfo(object):
                             dbHandler = False
                             break
                         result = self.cursor.fetchall()
-                        print("result={}".format(result))
+                        #print("result={}".format(result))
                         configArray.append(result[0][2])
                     except Exception, e:
                         print("exception in query for downloader.{}:".format(suffix))
@@ -340,9 +438,23 @@ class AOIInfo(object):
                         break
                 print("-------------------------")
                 if dbHandler:
-                    currentAOI.setConfigParams(configArray)
+                    if not configArray[-1].endswith("/"):
+                        configArray[-1] += "/"
+                    configArray[-1] += currentAOI.siteName
+                    if not currentAOI.setConfigParams(configArray):
+                        print("OUT OF THE SEASON !!!!")
+                        continue
                     try:
-                        self.cursor.execute("select \"product_name\" from downloader_history where \"satellite_id\"={} and \"site_id\"={}".format(satelliteId, currentAOI.siteId))
+                        #self.cursor.execute("select \"product_name\" from downloader_history where \"satellite_id\"={} and \"site_id\"={}".format(satelliteId, currentAOI.siteId))
+                        self.cursor.execute("""select \"product_name\" from downloader_history where satellite_id = %(sat_id)s :: smallint and
+                                                                       site_id = %(site_id)s :: smallint and
+                                                                       status_id != %(status_downloading)s :: smallint and 
+                                                                       status_id != %(status_failed)s ::smallint """, {
+                                                                           "sat_id" : satelliteId,
+                                                                           "site_id" : currentAOI.siteId,
+                                                                           "status_downloading" : DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE,
+                                                                           "status_failed" : DATABASE_DOWNLOADER_STATUS_FAILED_VALUE
+                                                                       })
                         if self.cursor.rowcount > 0:
                             result = self.cursor.fetchall()
                             for res in result:
@@ -365,12 +477,109 @@ class AOIInfo(object):
         self.databaseDisconnect()
         return retArray
 
-    def updateHistory(self, siteId, satelliteId, productName, fullPath):
+    def upsertProductHistory(self, siteId, satelliteId, productName, status, productDate, fullPath, maxRetries):
+        if not self.databaseConnect():
+            print("upsertProductHistory could not connect to DB")
+            return False
+        try:
+            #see if the record does already exist in db
+            self.cursor.execute("""SELECT id, status_id, no_of_retries FROM downloader_history 
+                                WHERE site_id = %(site_id)s and
+                                satellite_id = %(satellite_id)s and
+                                product_name = %(product_name)s""", 
+                                {
+                                    "site_id" : siteId, 
+                                    "satellite_id" : satelliteId,
+                                    "product_name" : productName
+                                })
+            rows = self.cursor.fetchall()
+            if len(rows) > 1:
+                print("upsertProductHistory error: the select for product {} retuirned more than 1 entry. Illegal, should be only 1 entry in downloader_history table".format(productName))
+                self.databaseDisconnect()
+                return False
+            if len(rows) == 0:
+                #if it doesn't exist, simply insert it with the provided info
+                self.cursor.execute("""INSERT INTO downloader_history (site_id, satellite_id, product_name, full_path, status_id, no_of_retries, product_date) VALUES (
+                                    %(site_id)s :: smallint, 
+                                    %(satellite_id)s :: smallint,
+                                    %(product_name)s, 
+                                    %(full_path)s,
+                                    %(status_id)s :: smallint,
+                                    %(no_of_retries)s :: smallint,
+                                    %(product_date)s :: timestamp)""", 
+                                    {
+                                        "site_id" : siteId, 
+                                        "satellite_id" : satelliteId, 
+                                        "product_name" : productName, 
+                                        "full_path" : fullPath,
+                                        "status_id" : status,
+                                        "no_of_retries" : 1,
+                                        "product_date" : productDate
+                                    })
+            else:
+                #if the record for this product name does exist, act accordingly the provided status
+                if len(rows[0]) != 3:
+                    print("DB result has more than 3 fields !")
+                    self.databaseDisconnect()
+                    return False
+                db_l1c_id = rows[0][0]
+                db_status_id = rows[0][1]
+                db_no_of_retries = rows[0][2]
+                #for the following values, only the status will be updated
+                if status == DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE or \
+                status == DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE or \
+                status == DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE or \
+                status == DATABASE_DOWNLOADER_STATUS_ABORTED_VALUE:
+                    self.cursor.execute("""UPDATE downloader_history SET status_id = %(status_id)s :: smallint 
+                                        WHERE id = %(l1c_id)s :: smallint """, 
+                                        {
+                                            "status_id" : status,
+                                            "l1c_id" : db_l1c_id
+                                        })
+                #if the failed status is provided , update it in the table if the no_of_retries 
+                #does not exceed maxRetries, otherwise set the status as aborted and forget about it
+                elif status == DATABASE_DOWNLOADER_STATUS_FAILED_VALUE:
+                    if db_no_of_retries >= maxRetries:
+                        status = DATABASE_DOWNLOADER_STATUS_ABORTED_VALUE
+                    else:
+                        db_no_of_retries += 1
+                    self.cursor.execute("""UPDATE downloader_history SET status_id = %(status_id)s :: smallint , no_of_retries = %(no_of_retries)s :: smallint
+                                        WHERE id = %(l1c_id)s :: smallint """, 
+                                        {
+                                            "status_id" : status,
+                                            "no_of_retries" : db_no_of_retries,
+                                            "l1c_id" : db_l1c_id
+                                        })
+                else:
+                    self.databaseDisconnect()
+                    print("The provided status {} is not one of the known status from DB. Check downloader_status table !".format(status))
+                    return False
+            self.conn.commit()
+        except:
+            print("The query for product {} raised an exception !".format(productName))
+            self.databaseDisconnect()
+            return False
+        self.databaseDisconnect()
+        return True
+
+
+    def updateHistory(self, siteId, satelliteId, productName, productDate, fullPath):
         if not self.databaseConnect():
             return False
         try:
-            print("UPDATING: insert into downloader_history (\"site_id\", \"satellite_id\", \"product_name\", \"full_path\") VALUES ({}, {}, '{}', '{}')".format(siteId, satelliteId, productName, fullPath))
-            self.cursor.execute("insert into downloader_history (\"site_id\", \"satellite_id\", \"product_name\", \"full_path\") VALUES ({}, {}, '{}', '{}')".format(siteId, satelliteId, productName, fullPath))
+            print("UPDATING: insert into downloader_history (\"site_id\", \"satellite_id\", \"product_name\", \"product_date\", \"full_path\") VALUES ({}, {}, '{}', '{}', '{}')".format(siteId, satelliteId, productName, productDate, fullPath))
+            self.cursor.execute("""insert into downloader_history (site_id, satellite_id, product_name, product_date, full_path) VALUES (
+                                    %(site_id)s :: smallint, 
+                                    %(satellite_id)s :: smallint, 
+                                    %(product_name)s, 
+                                    %(product_date)s :: timestamp,
+                                    %(full_path)s)""", {
+                                        "site_id" : siteId, 
+                                        "satellite_id" : satelliteId, 
+                                        "product_name" : productName, 
+                                        "product_date": productDate,
+                                        "full_path" : fullPath
+                                    })
             self.conn.commit()
         except:
             print("DATABASE INSERT query FAILED!!!!!")
@@ -388,8 +597,11 @@ class SentinelAOIInfo(AOIInfo):
     def getSentinelAOI(self):
         return self.getAOI(SENTINEL2_SATELLITE_ID)
 
-    def updateSentinelHistory(self, siteId, productName, fullPath):
-        return self.updateHistory(siteId, SENTINEL2_SATELLITE_ID, productName, fullPath)
+    #def updateSentinelHistory(self, siteId, productName, productDate, fullPath):
+    #    return self.updateHistory(siteId, SENTINEL2_SATELLITE_ID, productName, productDate, fullPath)
+
+    def upsertSentinelProductHistory(self, siteId, productName, status, productDate, fullPath = "", maxRetries = 0):
+        return self.upsertProductHistory(siteId, SENTINEL2_SATELLITE_ID, productName, status, productDate, fullPath, maxRetries)
 
 
 ###########################################################################
@@ -400,22 +612,23 @@ class LandsatAOIInfo(AOIInfo):
     def getLandsatAOI(self):
         return self.getAOI(LANDSAT8_SATELLITE_ID)
 
-    def updateLandsatHistory(self, siteId, productName, fullPath):
-        return self.updateHistory(siteId, LANDSAT8_SATELLITE_ID, productName, fullPath)
+    #def updateLandsatHistory(self, siteId, productName, productDate, fullPath):
+    #    return self.updateHistory(siteId, LANDSAT8_SATELLITE_ID, productName, productDate, fullPat)h
+
+    def upsertLandsatProductHistory(self, siteId, productName, status, productDate, fullPath = "", maxRetries = 0):
+        return self.upsertProductHistory(siteId, LANDSAT8_SATELLITE_ID, productName, status, productDate, fullPath, maxRetries)
 
 
 ###########################################################################
 class DEMMACCSConfig(object):
-    def __init__(self, output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, launcher, working_dir, dem_launcher):
+    def __init__(self, output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, working_dir):
         self.output_path = output_path
         self.gips_path = gips_path
         self.srtm_path = srtm_path
         self.swbd_path = swbd_path
         self.maccs_ip_address = maccs_ip_address
         self.maccs_launcher = maccs_launcher
-        self.launcher = launcher
         self.working_dir = working_dir
-        self.dem_launcher = dem_launcher
 
 
 ###########################################################################
@@ -457,11 +670,9 @@ class L1CInfo(object):
             return None
         try:
             self.cursor.execute("select * from sp_get_parameters('demmaccs')")
-            print("2")
             rows = self.cursor.fetchall()
         except:
             self.database_disconnect()
-            print("3")
             return None
         output_path = ""
         gips_path = ""
@@ -469,14 +680,11 @@ class L1CInfo(object):
         swbd_path = ""
         maccs_ip_address = ""
         maccs_launcher = ""
-        launcher = ""
         working_dir = ""
-        dem_launcher = ""
 
         for row in rows:
             if len(row) != 3:
                 continue
-            print(row[0])
             if row[0] == DATABASE_DEMMACCS_OUTPUT_PATH:
                 output_path = row[2]
             if row[0] == DATABASE_DEMMACCS_GIPS_PATH:
@@ -489,18 +697,14 @@ class L1CInfo(object):
                 maccs_ip_address = row[2]
             elif row[0] == DATABASE_DEMMACCS_MACCS_LAUNCHER:
                 maccs_launcher = row[2]
-            elif row[0] == DATABASE_DEMMACCS_LAUNCHER:
-                launcher = row[2]
             elif row[0] == DATABASE_DEMMACCS_WORKING_DIR:
                 working_dir = row[2]
-            elif row[0] == DATABASE_DEMMACCS_DEM_LAUNCHER:
-                dem_launcher = row[2]
 
         self.database_disconnect()
-        if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_ip_address) == 0 or len(maccs_launcher) == 0 or len(launcher) == 0 or len(working_dir) == 0 or len(dem_launcher) == 0:
-            print("{} {} {} {} {} {} {} {} {}".format(len(output_path), len(gips_path), len(srtm_path), len(swbd_path), len(maccs_ip_address), len(maccs_launcher), len(launcher), len(working_dir), len(dem_launcher)))
+        if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_ip_address) == 0 or len(maccs_launcher) == 0 or len(working_dir) == 0:
+            print("{} {} {} {} {} {} {} {} {}".format(len(output_path), len(gips_path), len(srtm_path), len(swbd_path), len(maccs_ip_address), len(maccs_launcher), len(working_dir)))
             return None
-        return DEMMACCSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, launcher, working_dir, dem_launcher)
+        return DEMMACCSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, working_dir)
 
     def get_short_name(self, table, use_id):
         if not self.database_connect():
@@ -514,44 +718,70 @@ class L1CInfo(object):
             self.database_disconnect()
             return ""
         self.database_disconnect()
-        print("rows[0][0] = {}".format(rows[0][0]))
         return rows[0][0]
 
+    # will return a list with lists for each unique pair (satellite_id, site_id)
     def get_unprocessed_l1c(self):
         if not self.database_connect():
             return []
         try:
-            self.cursor.execute("select id, site_id, full_path from downloader_history where processed=false")
-            rows = self.cursor.fetchall()
+            self.cursor.execute("select id from satellite")
+            satellite_ids = self.cursor.fetchall()
+            if len(satellite_ids) != 1 and len(satellite_ids[0]) == 0:
+                print("No satellite ids found in satellite table")
+                return []
+            #print("----{}".format(satellite_ids))
+            self.cursor.execute("select id from site")
+            site_ids = self.cursor.fetchall()
+            if len(site_ids) != 1 and len(site_ids[0]) == 0:
+                print("No site ids found in satellite table")
+                return []
+            retArray = []
+            for satellite_id in satellite_ids:
+                for site_id in site_ids:          
+                    self.cursor.execute("""SELECT id, site_id, satellite_id, full_path, product_date FROM downloader_history WHERE 
+                                        satellite_id = %(satellite_id)s :: smallint and 
+                                        site_id = %(site_id)s  :: smallint and
+                                        status_id = %(status_id)s :: smallint ORDER BY product_date ASC""", 
+                                        {
+                                            "satellite_id" : satellite_id[0],
+                                            "status_id" : DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE,
+                                            "site_id" : site_id[0]
+                                        })
+                    rows = self.cursor.fetchall()
+                    if len(rows) > 0:
+                        retArray.append(rows)
         except:
+            print("!!!!!!!!!!!!!!!")
             self.database_disconnect()
             return []
-        retArray = []
-        for row in rows:
-            retArray.append(row)
         self.database_disconnect()
         return retArray
 
-    def mark_as_processed(self, l1c_list_ids):
+    def get_previous_l2a_tile_path(self, satellite_id, tile_id, l1c_date):
         if not self.database_connect():
-            return False
-        if len(l1c_list_ids) == 0:
-            return True
+            return ""
+        path = ""
         try:
-            condition = "id={}".format(l1c_list_ids[0])
-            for l1c_id in l1c_list_ids[1:]:
-                conditon += " or id={}".format(l1c_id)
-            print("condition={}".format(condition))
-            self.cursor.execute("update downloader_history set processed=true where {}".format(condition))
-            self.conn.commit()
+            self.cursor.execute("""SELECT path FROM sp_get_last_l2a_product(%(tile_id)s, 
+                                                                            %(satellite_id)s :: smallint, 
+                                                                            %(l1c_date)s :: timestamp)""",
+                                {
+                                    "tile_id" : tile_id,
+                                    "satellite_id" : satellite_id,
+                                    "l1c_date" : l1c_date.strftime("%Y%m%dT%H%M%S")
+                                })            
+            rows = self.cursor.fetchall()            
+            if len(rows) == 1:
+                path = rows[0][0]
         except:
-            print("Database update query FAILED!!!!!")
+            print("Database query failed in get_previous_l2a_tile_path!!!!!")
             self.database_disconnect()
-            return False
+            return path
         self.database_disconnect()
-        return True
+        return path
 
-    def set_processed_product(self, l2a_created, l1c_id, processor_id, site_id, full_path, product_name, footprint, sat_id, acquisition_date):
+    def set_processed_product(self, processor_id, site_id, l1c_id, l2a_processed_tiles, full_path, product_name, footprint, sat_id, acquisition_date):
         #input params:
         #l1c_id is the id for the found L1C product in the downloader_history table. It shall be marked as being processed
         #product type by default is 1
@@ -566,8 +796,12 @@ class L1CInfo(object):
         if not self.database_connect():
             return False
         try:
-            self.cursor.execute("""update downloader_history set processed=true where id=%(l1c_id)s :: smallint """, {"l1c_id" : l1c_id})
-            if l2a_created:
+            self.cursor.execute("""update downloader_history set status_id = %(status_id)s :: smallint where id=%(l1c_id)s :: smallint """, 
+                                {
+                                    "status_id" : DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE, 
+                                    "l1c_id" : l1c_id
+                                })
+            if len(l2a_processed_tiles) > 0:
                 self.cursor.execute("""select * from sp_insert_product(%(product_type_id)s :: smallint,
                                %(processor_id)s :: smallint, 
                                %(satellite_id)s :: smallint, 
@@ -577,7 +811,8 @@ class L1CInfo(object):
                                %(created_timestamp)s :: timestamp,
                                %(name)s :: character varying,
                                %(quicklook_image)s :: character varying,
-                               %(footprint)s)""",
+                               %(footprint)s,
+                               %(tiles)s :: json)""",
                                 {
                                     "product_type_id" : 1,
                                     "processor_id" : processor_id,
@@ -588,7 +823,8 @@ class L1CInfo(object):
                                     "created_timestamp" : acquisition_date,
                                     "name" : product_name,
                                     "quicklook_image" : "mosaic.jpg",
-                                    "footprint" : footprint
+                                    "footprint" : footprint, 
+                                    "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']' 
                                 })
             self.conn.commit()
         except Exception, e:

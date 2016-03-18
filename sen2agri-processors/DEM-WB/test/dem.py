@@ -176,9 +176,9 @@ def create_context(args):
     elif mode == 'S2':
         dir_base += "/GRANULE/"
         tile_dirs = ["{}{}".format(dir_base, f) for f in os.listdir(dir_base) if isdir(join(dir_base, f))]
-        for tile_dir in tile_dirs:            
+        for tile_dir in tile_dirs:
             tile_dir += "/IMG_DATA/"
-            image_band2 = glob.glob("{}*_B02.*".format(tile_dir))
+            image_band2 = glob.glob("{}*_B02.jp2".format(tile_dir))
             if len(image_band2) == 1:
                 if len(tiles_to_process) > 0:
                     mode_f, tile_id = get_tile_id(image_band2[0])
@@ -190,6 +190,7 @@ def create_context(args):
         return context_array
     for image_filename in images:
         mode, tile_id = get_tile_id(image_filename)
+
 
         dataset = gdal.Open(image_filename, gdal.gdalconst.GA_ReadOnly)
 

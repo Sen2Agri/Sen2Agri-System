@@ -76,12 +76,13 @@ def sizeof_fmt(num):
             return "%3.1f %s" % (num, x)
         num /= 1024.0
 #############################
-def downloadChunks(url,rep,nom_fic):
+def downloadChunks(url, rep, prod_name, prod_date, abs_prod_path, aoiContext, db):
 
   """ Downloads large files in pieces
    inspired by http://josh.gourneau.com
   """
-  global exitFlag
+  global g_exit_flag
+  nom_fic = prod_name + ".tgz"
   print("INFO START")
   print("url: {}".format(url))
   print("rep: {}".format(rep))
@@ -94,8 +95,8 @@ def downloadChunks(url,rep,nom_fic):
     if (req.info().gettype()=='text/html'):
       log(rep, 'Error: the file has a html format for '.format(nom_fic), general_log_filename)
       lignes=req.read()
-      if lignes.find('Download Not Found')>0 :
-            raise TypeError
+      if lignes.find('Download Not Found') > 0 :
+           return False
       else:
           log(rep, lignes, general_log_filename)
           log(rep, 'Download not found for '.format(nom_fic), general_log_filename)
@@ -115,12 +116,17 @@ def downloadChunks(url,rep,nom_fic):
         log(rep, "downloadChunks:File {} already downloaded, returning true".format(fullFilename), general_log_filename)
         return True
 
+    # insert the product name into the downloader_history                                              
+    if not db.upsertLandsatProductHistory(aoiContext.siteId, prod_name, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, prod_date, abs_prod_path, aoiContext.maxRetries):
+         log(rep, "Couldn't upsert into database with status DOWNLOADING for {}".format(prod_name), general_log_filename)
+         return False
+
     downloaded = 0
     CHUNK = 1024 * 1024 *8
     with open(rep+'/'+nom_fic, 'wb') as fp:
         start = time.clock()
         log(rep, 'Downloading {0} ({1})'.format(nom_fic, total_size_fmt), general_log_filename)
-	while True and not exitFlag:
+	while True and not g_exit_flag:
 	     chunk = req.read(CHUNK)
 	     downloaded += len(chunk)
 	     done = int(50 * downloaded / total_size)
@@ -133,12 +139,12 @@ def downloadChunks(url,rep,nom_fic):
 	     sys.stdout.flush()
 	     if not chunk: break
 	     fp.write(chunk)
-    if exitFlag:
-        log(rep, "SIGINT signal caught", general_log_filename)
-        sys.exit(0)
+             if g_exit_flag:
+                  log(rep, "SIGINT signal caught", general_log_filename)
+                  sys.exit(0)
   except urllib2.HTTPError, e:
        if e.code == 500:
-            log(rep, "File doesn\'t exist: {0}".format(nom_fic), general_log_filename)
+            log(rep, "File doesn't exist: {0}".format(nom_fic), general_log_filename)
        else:
             log(rep, "HTTP Error for file {0}. Error code: {1}. Url: {2}".format(nom_fic, e.code, url), general_log_filename)
        return False
@@ -149,7 +155,18 @@ def downloadChunks(url,rep,nom_fic):
   log(rep, "File {0} downloaded with size {1} from a total size of {2}".format(nom_fic,str(size), str(total_size)), general_log_filename)
   if int(total_size) != int(size):
     log(rep, "File {0} has a different size {1} than the expected one {2}. Will not be marked as downloaded".format(nom_fic,str(size), str(total_size)), general_log_filename)
+    if not db.upsertLandsatProductHistory(aoiContext.siteId, prod_name, DATABASE_DOWNLOADER_STATUS_FAILED_VALUE, prod_date, abs_prod_path, aoiContext.maxRetries):
+         log(rep, "Couldn't upsert into database with status DOWNLOADING for {}".format(prod_name), general_log_filename)
+         return False
     return False
+  if unzipimage(prod_name, aoiContext.writeDir):
+       #write the filename in history
+       if not db.upsertLandsatProductHistory(aoiContext.siteId, prod_name, DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE, prod_date, abs_prod_path, aoiContext.maxRetries):
+            log(aoiContext.writeDir, "Couldn't upsert into database with status FAILED for {}".format(prod_name), general_log_filename)
+  else:
+       if not db.upsertLandsatProductHistory(aoiContext.siteId, prod_name, DATABASE_DOWNLOADER_STATUS_FAILED_VALUE, prod_date, abs_prod_path, aoiContext.maxRetries):
+            log(rep, "Couldn't upsert into database with status DOWNLOADING for {}".format(prod_name), general_log_filename)
+            return False
   #all went well...hopefully
   return True
 
@@ -191,7 +208,7 @@ def next_overpass(date1,path,sat):
 #############################"Unzip tgz file
 
 def unzipimage(tgzfile, outputdir):
-    success=0
+    success = False
     global general_log_filename
     if (os.path.exists(outputdir+'/'+tgzfile+'.tgz')):
         log(outputdir,  "decompressing...", general_log_filename)
@@ -201,7 +218,7 @@ def unzipimage(tgzfile, outputdir):
                 subprocess.call('tar zxvf '+outputdir+'/'+tgzfile+'.tgz -C '+ outputdir+'/'+tgzfile, shell=True)   #Unix
             elif sys.platform.startswith('win'):
                 subprocess.call('tartool '+outputdir+'/'+tgzfile+'.tgz '+ outputdir+'/'+tgzfile, shell=True)  #W32
-            success=1
+            success = True
             os.remove(outputdir+'/'+tgzfile+'.tgz')
             log(outputdir,  "decompress succeded. removing the .tgz file {}".format(outputdir+'/'+tgzfile), general_log_filename)
         except TypeError:
@@ -239,84 +256,35 @@ def check_cloud_limit(imagepath,limit):
           removed=1
      return removed
 
-def signal_handler(signal, frame):
-    global exitFlag
-    global general_log_path
-    global general_log_filename
-    log(general_log_path, "You pressed Ctrl+C!", general_log_filename)
-    exitFlag = True
-    sys.exit(0)
 
 ######################################################################################
-###############                       main                    ########################
-######################################################################################
 
-################Lecture des arguments################
-def main():
-    global exitFlag
-    global general_log_path
-    global general_log_filename
-    exitFlag = False
-    signal.signal(signal.SIGINT, signal_handler)
-    if len(sys.argv) == 1:
-        prog = os.path.basename(sys.argv[0])
-        print '      '+sys.argv[0]+' [options]'
-        print "      Help : ", prog, " --help"
-        print "        or : ", prog, " -h"
-        print ("example (scene): {} -u usgs.txt ".format(sys.argv[0]))
-        print ("Inside the input directory all the files with .dwn extension will be checked")
-        sys.exit(-1)
-    else:
-        usage = "usage: %prog [options] "
-        parser = OptionParser(usage=usage)
-        parser.add_option("-u","--usgs_passwd", dest="usgs", action="store", type="string", \
-                help="USGS earthexplorer account and password file")
-        parser.add_option("-p","--proxy_passwd", dest="proxy", action="store", type="string", \
-                help="Proxy account and password file")
-        parser.add_option("-z","--unzip", dest="unzip", action="store", type="string", \
-                help="Unzip downloaded tgz file", default=None)
-        parser.add_option("-c","--config", dest="config", action="store",type="string",  \
-                          help="File with credentials for the local database",default="/etc/sen2agri/sen2agri.conf")
-        parser.add_option("--dir", dest="dir", action="store", type="string", \
-                help="Dir number where files  are stored at USGS",default=None)
-        parser.add_option("--station", dest="station", action="store", type="string", \
-                help="Station acronym (3 letters) of the receiving station where the file is downloaded",default=None)
+signal.signal(signal.SIGINT, signal_handler)
 
-    (options, args) = parser.parse_args()
-    parser.check_required("-c")
+def landsat_download(aoiContext):
+     global g_exit_flag
+     global general_log_filename
 
-    fullFilename = os.path.realpath(__file__)
-    dirname = fullFilename[0:fullFilename.rfind('/') + 1]
-    config = Config()
-    if not config.loadConfig(options.config):
-        log(general_log_path, "Could not load the config file", general_log_filename)
-        sys.exit(-1)
-    db = LandsatAOIInfo(config.host, config.database, config.user, config.password)
-    aoiDatabase = db.getLandsatAOI()
-    print("------------------------")
-    for aoi in aoiDatabase:
-        aoi.printInfo()
-        print("------------------------")
+     general_log_filename = "landsat_download.log"
+     general_log_path = aoiContext.writeDir
+     usgsFile = aoiContext.remoteSiteCredentials
 
-    if len(aoiDatabase) <= 0:
-        log(general_log_path, "Could not get DB info", general_log_filename)
-        sys.exit(-1)
-
-    # read password files
-    try:
-        f = file(options.usgs)
+     # read password file
+     try:
+        f = file(usgsFile)
         (account,passwd)=f.readline().split(' ')
         if passwd.endswith('\n'):
             passwd=passwd[:-1]
         usgs={'account':account,'passwd':passwd}
         f.close()
-    except :
+     except :
         log(general_log_path, "Error with usgs password file", general_log_filename)
         sys.exit(-2)
 
-    if options.proxy != None :
+
+     if aoiContext.proxy != None :
         try:
-            f=file(options.proxy)
+            f=file(aoiContext.proxy)
             (user,passwd)=f.readline().split(' ')
             if passwd.endswith('\n'):
                 passwd=passwd[:-1]
@@ -332,114 +300,74 @@ def main():
             log(general_log_path, "Error with proxy password file", general_log_filename)
             sys.exit(-3)
 
-##########Telechargement des produits par scene
-for aoiFile in aoiDatabase:
-        if not createRecursiveDirs(aoiFile.writeDir):
-             print("Could not create the output directory")
-             sys.exit(-1)
-        general_log_path = aoiFile.writeDir
+     db = LandsatAOIInfo(aoiContext.configObj.host, aoiContext.configObj.database, aoiContext.configObj.user, aoiContext.configObj.password)
 
-        startSeasonMonth = int(0)
-        startSeasonDay = int(0)
-        endSeasonMonth = int(0)
-        endSeasonDay = int(0)
-        # first position is the startSeasonYear, the second is the endPositionYear
-        currentYearArray = []
+     start_date = datetime.datetime(aoiContext.startSeasonYear, aoiContext.startSeasonMonth, aoiContext.startSeasonDay)
+     end_date   = datetime.datetime(aoiContext.endSeasonYear, aoiContext.endSeasonMonth, aoiContext.endSeasonDay)
 
-        print("SITE NAME:{}".format(aoiFile.siteName))
-        if check_if_season(aoiFile.startSummerSeason, aoiFile.endSummerSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray, aoiFile.writeDir, general_log_filename):
-            startSeasonMonth = int(aoiFile.startSummerSeason[0:2])
-            startSeasonDay = int(aoiFile.startSummerSeason[2:4])
-            endSeasonMonth = int(aoiFile.endSummerSeason[0:2])
-            endSeasonDay = int(aoiFile.endSummerSeason[2:4])
-        elif check_if_season(aoiFile.startWinterSeason, aoiFile.endWinterSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray, aoiFile.writeDir, general_log_filename):
-            startSeasonMonth = int(aoiFile.startWinterSeason[0:2])
-            startSeasonDay = int(aoiFile.startWinterSeason[2:4])
-            endSeasonMonth = int(aoiFile.endWinterSeason[0:2])
-            endSeasonDay = int(aoiFile.endWinterSeason[2:4])
-        else:
-            log(aoiFile.writeDir, "Out of season ! No request will be made for {}".format(aoiFile.siteName), general_log_filename)
-            continue
-        if len(currentYearArray) == 0:
-            log(aoiFile.writeDir, "Something went wrong in check_if_season function", general_log_filename)
-            continue
+     for tile in aoiContext.aoiTiles:
+         log(aoiContext.writeDir, "Starting the process for tile {}".format(tile), general_log_filename)
+         if len(tile) != 6:
+             log(aoiContext.writeDir, "The length for tile is not 6. There should be ppprrr, where ppp = path and rrr = row. The string is {}".format(tile), general_log_filename)
+             continue
 
-        start_date=str(currentYearArray[0])+str(startSeasonMonth)+str(startSeasonDay)
-        end_date=str(currentYearArray[1])+str(endSeasonMonth)+str(endSeasonDay)
+         product="LC8"
+         remoteDir='4923'
+         stations=['LGN']
+         if aoiContext.landsatStation !=None:
+             stations = [aoiContext.landsatStation]
+         if aoiContext.landsatDirNumber !=None:
+             remoteDir = aoiContext.landsatDirNumber
 
-        for tile in aoiFile.aoiTiles:
-            log(aoiFile.writeDir, "Starting the process for tile {}".format(tile), general_log_filename)
-            if len(tile) != 6:
-                log(aoiFile.writeDir, "The length for tile is not 6. There should be ppprrr, where ppp = path and rrr = row. The string is {}".format(tile), general_log_filename)
-                continue
+         path=tile[0:3]
+         row=tile[3:6]
+         log(aoiContext.writeDir, "path={}|row={}".format(path, row), general_log_filename)
 
-            product="LC8"
-            remoteDir='4923'
-            stations=['LGN']
-            if options.station !=None:
-                stations=[options.station]
-            if options.dir !=None:
-                remoteDir=options.dir
+         global downloaded_ids
+         downloaded_ids=[]
 
-            path=tile[0:3]
-            row=tile[3:6]
-            log(aoiFile.writeDir, "path={}|row={}".format(path, row), general_log_filename)
+         if aoiContext.proxy!=None:
+             connect_earthexplorer_proxy(proxy,usgs)
+         else:
+             connect_earthexplorer_no_proxy(usgs)
+             
+         #date_asc_array = []  
+         curr_date=next_overpass(start_date, int(path), product)
+         #while (curr_date < end_date):
+         #     date_asc_array.append(curr_date.strftime("%Y%j"))
+         #     curr_date = curr_date + datetime.timedelta(16)
+         #print("{}".format(date_asc_array))
+         #sys.exit(0)
 
-            year_start =int(currentYearArray[0])
-            month_start=int(startSeasonMonth)
-            day_start  =int(startSeasonDay)
-            date_start=datetime.datetime(year_start,month_start, day_start)
+         while (curr_date < end_date):
+             date_asc=curr_date.strftime("%Y%j")
 
-            year_end =int(currentYearArray[1])
-            month_end=int(endSeasonMonth)
-            day_end  =int(endSeasonDay)
-            date_end =datetime.datetime(year_end,month_end, day_end)
+             log(aoiContext.writeDir, "Searching for images on (julian date): {}...".format(date_asc), general_log_filename)
+             curr_date=curr_date+datetime.timedelta(16)
+             for station in stations:
+                 for version in ['00','01','02']:
+                                         if g_exit_flag:
+                                             log(aoiContext.writeDir, "SIGINT was caught")
+                                             sys.exit(0)
+                                         nom_prod = product + tile + date_asc + station + version
+                                         tgzfile = os.path.join(aoiContext.writeDir, nom_prod + '.tgz')
+                                         lsdestdir = os.path.join(aoiContext.writeDir, nom_prod)
+                                         url = "http://earthexplorer.usgs.gov/download/{}/{}/STANDARD/EE".format(remoteDir,nom_prod)
 
-            global downloaded_ids
-            downloaded_ids=[]
+                                         if aoiContext.fileExists(nom_prod):
+                                             #log(aoiContext.writeDir, "File {} found in history so it's already downloaded".format(nom_prod), general_log_filename))
+                                             #TODO: shall this be unzipped if it does not exist?
+                                             if not os.path.exists(lsdestdir):
+                                                 log(aoiContext.writeDir, "Trying to decompress {}. If an error will be raised, means that the archived tgz file was phisically erased (manually or automatically) ".format(nom_prod), general_log_filename)
+                                                 unzipimage(nom_prod, aoiContext.writeDir)
+                                             continue
+                                      
+                                         # get the date by transforming it from doy to date
+                                         year = date_asc[0:4]
+                                         days = date_asc[4:]
+                                         prod_date = (datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(days))).strftime("%Y%m%dT000101")
+                                         print("prod_date={}".format(prod_date))
+                                         if downloadChunks(url, aoiContext.writeDir, nom_prod, prod_date, lsdestdir, aoiContext, db):
+                                              downloaded_ids.append(nom_prod)                                              
 
-            if options.proxy!=None:
-                connect_earthexplorer_proxy(proxy,usgs)
-            else:
-                connect_earthexplorer_no_proxy(usgs)
-
-            curr_date=next_overpass(date_start,int(path),product)
-
-            while (curr_date < date_end):
-                date_asc=curr_date.strftime("%Y%j")
-                notfound = False
-
-                log(aoiFile.writeDir, "Searching for images on (julian date): {}...".format(date_asc), general_log_filename)
-                curr_date=curr_date+datetime.timedelta(16)
-                for station in stations:
-                    for version in ['00','01','02']:
-                                            if exitFlag:
-                                                log(aoiFile.writeDir, "SIGINT was caught")
-                                                sys.exit(0)
-                                            nom_prod=product + tile + date_asc + station + version
-                                            tgzfile=os.path.join(aoiFile.writeDir,nom_prod+'.tgz')
-                                            lsdestdir=os.path.join(aoiFile.writeDir,nom_prod)
-                                            url = "http://earthexplorer.usgs.gov/download/{}/{}/STANDARD/EE".format(remoteDir,nom_prod)
-
-                                            if aoiFile.fileExists(nom_prod):
-                                                log(aoiFile.writeDir, "File {} found in history so it's already downloaded".format(nom_prod), general_log_filename))
-                                                if not os.path.exists(lsdestdir) and options.unzip!= None:
-                                                    log(aoiFile.writeDir, "Trying to decompress {}. If an error will be raised, means that the archived tgz file was phisically erased (manually or automatically) ".format(nom_prod), general_log_filename)
-                                                    unzipimage(nom_prod, aoiFile.writeDir)
-                                                continue
-                                            try:
-                                                if downloadChunks(url, aoiFile.writeDir, "{}.tgz".format(nom_prod)):
-                                                    downloaded_ids.append(nom_prod)
-                                                    if options.unzip!= None:
-                                                        unzipimage(nom_prod, aoiFile.writeDir)
-                                                    #write the filename in history
-                                                    try:
-                                                        if not db.updateLandsatHistory(aoiFile.siteId, nom_prod,  "{}/{}".format(aoiFile.writeDir, nom_prod)):
-                                                            log(aoiFile.writeDir, "Could not insert into database site_id {} the product name {}".format(aoiFile.siteId, s2Obj.filename), general_log_filename)
-                                                    except:
-                                                        log(aoiFile.writeDir, "db.updateSentinelHistory throwed an exception", general_log_filename)
-                                            except:
-                                                log(aoiFile.writeDir, "downloadChunks throwed an exception", general_log_filename)
-            log(aoiFile.writeDir, downloaded_ids, general_log_filename)
-if __name__ == "__main__":
-    main()
+         log(aoiContext.writeDir, downloaded_ids, general_log_filename)
