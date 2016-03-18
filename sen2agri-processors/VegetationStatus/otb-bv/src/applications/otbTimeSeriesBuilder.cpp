@@ -39,6 +39,7 @@ public:
                     ShortToFloatTranslationFunctor<
                         ImageType::PixelType,
                         ImageType::PixelType> > DequantifyFilterType;
+    typedef otb::ObjectList<DequantifyFilterType>              DeqFunctorListType;
 
 
   itkNewMacro(Self)
@@ -75,6 +76,9 @@ private:
   {
         m_ImageReaderList = ImageReaderListType::New();
         m_ImageSplitList = SplitFilterListType::New();
+        m_deqFunctorList = DeqFunctorListType::New();
+        m_imagesList = ImagesListType::New();
+
         float deqValue = GetParameterFloat("deqval");
 
         std::vector<std::string> imgsList = this->GetParameterStringList("il");
@@ -88,17 +92,19 @@ private:
         for (const std::string& strImg : imgsList)
         {
             ImageReaderType::Pointer reader = getReader(strImg);
-            ImageType::Pointer img = reader->GetOutput();
+            reader->GetOutput()->UpdateOutputInformation();
+
+            DequantifyFilterType::Pointer deqFunctor = DequantifyFilterType::New();
+            m_deqFunctorList->PushBack(deqFunctor);
+            if(deqValue > 0) {
+                deqFunctor->GetFunctor().Initialize(deqValue, 0);
+                deqFunctor->SetInput(reader->GetOutput());
+                int nComponents = reader->GetOutput()->GetNumberOfComponentsPerPixel();
+                deqFunctor->GetOutput()->SetNumberOfComponentsPerPixel(nComponents);
+            }
+            ImageType::Pointer img = (deqValue > 0) ? deqFunctor->GetOutput() : reader->GetOutput();
             img->UpdateOutputInformation();
             m_imagesList->PushBack(img);
-            if(deqValue > 0) {
-                m_deqFunctor = DequantifyFilterType::New();
-                m_deqFunctor->GetFunctor().Initialize(deqValue, 0);
-                m_deqFunctor->SetInput(img);
-                m_deqFunctor->GetOutput()->SetNumberOfComponentsPerPixel(img->GetNumberOfComponentsPerPixel());
-                img = m_deqFunctor->GetOutput();
-                m_imagesList->PushBack(img);
-            }
 
             VectorImageToImageListType::Pointer splitter = getSplitter(img);
             int nBands = img->GetNumberOfComponentsPerPixel();
@@ -137,7 +143,7 @@ private:
     ImageReaderListType::Pointer                m_ImageReaderList;
     SplitFilterListType::Pointer                m_ImageSplitList;
     ImageListToVectorImageFilterType::Pointer   m_bandsConcat;
-    DequantifyFilterType::Pointer               m_deqFunctor;
+    DeqFunctorListType::Pointer                 m_deqFunctorList;
     ImagesListType::Pointer                     m_imagesList;
 };
 
