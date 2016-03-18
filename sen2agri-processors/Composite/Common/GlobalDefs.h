@@ -29,24 +29,31 @@ class ShortToFloatTranslationFunctor
 public:
     ShortToFloatTranslationFunctor() {}
     ~ShortToFloatTranslationFunctor() {}
-    void Initialize(float fQuantificationVal) {
+    void Initialize(float fQuantificationVal, float fNoDataVal = NO_DATA_VALUE) {
         m_fQuantifVal = fQuantificationVal;
+        m_fNoDataVal = fNoDataVal;
   }
 
   bool operator!=( const ShortToFloatTranslationFunctor &a) const
   {
-      return (this->m_fQuantifVal != a.m_fQuantifVal);
+      return (this->m_fQuantifVal != a.m_fQuantifVal) || (this->m_fNoDataVal != a.m_fNoDataVal);
   }
   bool operator==( const ShortToFloatTranslationFunctor & other ) const
   {
     return !(*this != other);
   }
-  inline TOutput operator()( const TInput & A ) const
+  inline TOutput operator()( const TInput & A )
+  {
+      return HandleMultiSizeInput(A,
+             std::integral_constant<bool, HasSizeMethod<TInput>::Has>());
+  }
+
+  inline TOutput HandleMultiSizeInput(const TInput & A, std::true_type)
   {
       TOutput ret(A.Size());
       for(int i = 0; i<A.Size(); i++) {
-           if(fabs(A[i] - NO_DATA_VALUE) < 0.00001) {
-               ret[i] = NO_DATA_VALUE;
+           if(fabs(A[i] - m_fNoDataVal) < NO_DATA_EPSILON) {
+               ret[i] = m_fNoDataVal;
            } else {
                 ret[i] = static_cast< float >(static_cast< float >(A[i]))/m_fQuantifVal;
            }
@@ -54,8 +61,22 @@ public:
 
       return ret;
   }
+
+  inline TOutput HandleMultiSizeInput(const TInput & A, std::false_type)
+  {
+        TOutput ret;
+        if(fabs(A - m_fNoDataVal) < NO_DATA_EPSILON) {
+            ret = m_fNoDataVal;
+        } else {
+            ret = static_cast< float >(static_cast< float >(A))/m_fQuantifVal;
+        }
+
+      return ret;
+  }
+
 private:
   int m_fQuantifVal;
+  int m_fNoDataVal;
 };
 
 // Translates the FLOAT reflectances in the input image into SHORT, taking into account

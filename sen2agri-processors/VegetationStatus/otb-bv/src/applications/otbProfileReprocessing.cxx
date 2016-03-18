@@ -23,6 +23,11 @@
 #include "otbProfileReprocessing.h"
 #include "MetadataHelperFactory.h"
 
+//VectorType date_vect1 = {37, 57, 77, 92, 102, 107, 112, 117, 122, 127, 132, 137, 147, 152, 157, 162, 167};
+//VectorType ts1 = {0, 0, 0, 0, 0.316361, 0.320108, 0.284682, 0.287518, 0.291294, 0.300072, 0, 0, 0, 1.21381, 1.18754, 0, 0};
+//VectorType ets1 = {};
+//VectorType msks1 = {2, 2, 2, 1, 4, 4, 4, 4, 4, 4, 1, 1, 1, 4, 4, 1, 1};
+
 namespace otb
 {
 int date_to_doy(std::string& date_str)
@@ -105,6 +110,7 @@ public:
                                                        bwr, fwr);
     } else {
       std::tie(out_bv_vec, out_flag_vec) =
+        //fit_csdm_2(date_vect1, ts1, ets1, msks1);
         fit_csdm_2(date_vect, ts, ets, msks);
     }
     if(m_bGenAll) {

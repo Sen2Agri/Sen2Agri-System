@@ -14,6 +14,7 @@ import time
 import xml.etree.ElementTree as ET
 import math
 from xml.dom import minidom
+import ntpath
 
 
 def runCmd(cmdArray):
@@ -34,6 +35,140 @@ def prettify(elem):
     return reparsed.toprettyxml(indent="  ")
 
 
+def getMonoDateProductFiles(productMeta, siteId, tileId, inLaiMonoDir, useIntermediateFiles):
+    fileName = os.path.basename(productMeta)
+    #fileName = productMeta
+    if fileName.startswith('S2') or fileName.startswith('L8') :
+        dateIdx = 8
+    if fileName.startswith('L8') :
+        dateIdx = 5
+    if fileName.startswith('SPOT') :
+        dateIdx = 3
+    words = fileName.split('_')
+    productDate =  words[dateIdx]
+    
+    if useIntermediateFiles :
+        laiImgPattern = inLaiMonoDir + '/*_' + productDate + "_*_LAI_img.tif"
+        print("Intermediate LAI file: {}".format(laiImgPattern))
+        laiImgsFiles = glob.glob(laiImgPattern)
+        laiErrImgPattern = inLaiMonoDir + '/*_' + productDate + "_*_LAI_err_img.tif"
+        laiErrImgsFiles = glob.glob(laiErrImgPattern)
+        msksPattern = inLaiMonoDir + '/*_' + productDate + "_*_LAI_mono_date_mask_flags_img.tif"
+        msksFiles = glob.glob(msksPattern)
+        
+        if (len(laiImgsFiles) == 0) or (len(laiErrImgsFiles) == 0) or (len(msksFiles) == 0) :
+            return ("", "", "")
+        laiMonoDateImg = laiImgsFiles[-1]
+        laiErrDateImg = laiErrImgsFiles[-1]
+        laiMsksDateImg = msksFiles[-1]
+    else :
+        monodateFolderPattern = inLaiMonoDir + '/S2AGRI_L3B_PRD_S' + siteId + "_*_A" + productDate
+        #print("monodateFolderPattern: {}".format(monodateFolderPattern))
+        
+        monodateFolders = glob.glob(monodateFolderPattern)
+        if (len(monodateFolders) == 0):
+            return ("", "", "")
+        
+        #for monodateFolder in monodateFolders:
+        #    print("Existing monodates folders: {}".format(monodateFolder))
+        monodateFolder = monodateFolders[-1]
+        laiMonoDateImg = monodateFolder + "/TILES/S2AGRI_L3B_A" + productDate + "_T" + tileId + \
+                        "/IMG_DATA/S2AGRI_L3B_SLAIMONO_A" +productDate+"_T" + tileId + ".TIF"
+        laiErrDateImg = monodateFolder + "/TILES/S2AGRI_L3B_A" + productDate + "_T" + tileId + \
+                        "/QI_DATA/S2AGRI_L3B_MLAIERR_A" +productDate+"_T" + tileId + ".TIF"
+        laiMsksDateImg = monodateFolder + "/TILES/S2AGRI_L3B_A" + productDate + "_T" + tileId + \
+                        "/QI_DATA/S2AGRI_L3B_MMONODFLG_A" +productDate+"_T" + tileId + ".TIF"
+        
+        #print("LAI : {}".format(laiMonoDateImg))
+        #print("ERR : {}".format(laiErrDateImg))
+        #print("MSK : {}".format(laiMsksDateImg))
+    if os.path.isfile(laiMonoDateImg) and os.path.isfile(laiErrDateImg) and os.path.isfile(laiMsksDateImg) :
+        return (laiMonoDateImg, laiErrDateImg, laiMsksDateImg)
+    return ("", "", "")
+
+def buildReprocessedTimeSeries(xmlList, siteId, simpleTileId, inLaiMonoDir, laiTimeSeriesFile, errTimeSeriesFile, mskTimeSeriesFile, useIntermediateFiles):
+    allLaiParam=[]
+    allErrParam=[]
+    allMskFlagsParam=[]
+
+    for idx, xml in enumerate(xmlList):
+        laiImg, errImg, flgsImg = getMonoDateProductFiles(xml, siteId, simpleTileId, inLaiMonoDir, useIntermediateFiles)
+        allLaiParam.append(laiImg)
+        allErrParam.append(errImg)
+        allMskFlagsParam.append(flgsImg)
+    
+    deqString = ("-deqval", "1000")
+    if useIntermediateFiles :
+        deqString = ""
+    
+    # Create the LAI and Error time series
+    runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allLaiParam + ["-out", laiTimeSeriesFile] + deqString)
+    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+    runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allErrParam + ["-out", errTimeSeriesFile] + deqString)
+    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+    runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allMskFlagsParam + ["-out", mskTimeSeriesFile] + deqString)
+    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+
+def generateReprocessedLAI(tileID, siteId, allXmlParam, laiTimeSeriesFile, errTimeSeriesFile,\
+                            mskTimeSeriesFile, outDir) :
+    #ProfileReprocessing parameters
+    ALGO_LOCAL_BWR="2"
+    ALGO_LOCAL_FWR="0"
+    paramsLaiRetrFilenameXML = "{}/lai_retrieval_params.xml".format(outDir)
+    reprocessedRastersListFile = "{}/ReprocessedRastersFilesist.txt".format(outDir)
+    reprocessedFlagsListFile = "{}/ReprocessedFlagsFilesist.txt".format(outDir)
+    outReprocessedTimeSeries = "{}/ReprocessedTimeSeries.tif".format(outDir)
+    
+    with open(paramsLaiRetrFilenameXML, 'w') as paramsFileXML:
+        root = ET.Element('metadata')
+        pr= ET.SubElement(root, "ProfileReprocessing_parameters")
+        ET.SubElement(pr, "bwr_for_algo_local_online_retrieval").text = ALGO_LOCAL_BWR
+        ET.SubElement(pr, "fwr_for_algo_local_online_retrieval").text = ALGO_LOCAL_FWR
+        usedXMLs = ET.SubElement(root, "XML_files")
+        i = 0
+        for xml in allXmlParam:
+            ET.SubElement(usedXMLs, "XML_" + str(i)).text = xml
+            i += 1
+        paramsFileXML.write(prettify(root))
+
+    # Compute the reprocessed time series (On-line Retrieval)
+    runCmd(["otbcli", "ProfileReprocessing", appLocation, "-lai", laiTimeSeriesFile, "-err", errTimeSeriesFile, "-msks", mskTimeSeriesFile, "-ilxml"] + allXmlParam + ["-opf", outReprocessedTimeSeries, "-genall", "1", "-algo", "local", "-algo.local.bwr", str(ALGO_LOCAL_BWR), "-algo.local.fwr", str(ALGO_LOCAL_FWR)])
+    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+
+    #split the Reprocessed time series to a number of images
+    runCmd(["otbcli", "ReprocessedProfileSplitter2", appLocation, "-in", outReprocessedTimeSeries, "-outrlist", reprocessedRastersListFile, "-outflist", reprocessedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
+    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+    # Generate the product for the Reprocessed LAI
+    runCmd(["otbcli", "ProductFormatter", appLocation,
+            "-destroot", outDir,
+            "-fileclass", "SVT1", "-level", "L3C", "-baseline", "01.00", "-siteid", siteId,
+            "-processor", "vegetation",
+            "-processor.vegetation.filelaireproc", tileID, reprocessedRastersListFile,
+            "-processor.vegetation.filelaireprocflgs", tileID, reprocessedFlagsListFile,
+            "-il"] + allXmlParam + [
+            "-gipp", paramsLaiRetrFilenameXML])
+                
+def generateFittedLAI(tileID, siteId, allXmlParam, laiTimeSeriesFile, errTimeSeriesFile, mskTimeSeriesFile, outDir) :
+    fittedRastersListFile = "{}/FittedRastersFilesList.txt".format(outDir)
+    fittedFlagsListFile = "{}/FittedFlagsFilesList.txt".format(outDir)
+    outFittedTimeSeries = "{}/FittedTimeSeries.tif".format(outDir)
+
+    # Compute the fitted time series (CSDM Fitting)
+    runCmd(["otbcli", "ProfileReprocessing", appLocation, "-lai", laiTimeSeriesFile, "-err", errTimeSeriesFile, "-msks", mskTimeSeriesFile, "-ilxml"] + allXmlParam + ["-opf", outFittedTimeSeries, "-genall", "1", "-algo", "fit"])
+    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+
+    #split the Fitted time series to a number of images
+    runCmd(["otbcli", "ReprocessedProfileSplitter2", appLocation, "-in", outFittedTimeSeries, "-outrlist", fittedRastersListFile, "-outflist", fittedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
+    print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
+    # Generate the product for the Fitted LAI
+    runCmd(["otbcli", "ProductFormatter", appLocation,
+            "-destroot", outDir,
+            "-fileclass", "SVT1", "-level", "L3D", "-baseline", "01.00", "-siteid", siteId,
+            "-processor", "vegetation",
+            "-processor.vegetation.filelaifit", tileID, fittedRastersListFile,
+            "-processor.vegetation.filelaifitflgs", tileID, fittedFlagsListFile,
+            "-il"] + allXmlParam)
+    
 class LaiModel(object):
     def __init__(self):
         """ Constructor """
@@ -166,128 +301,23 @@ class LaiModel(object):
 
             paramsFileXML.write(prettify(root))
 
-        paramsFilename= "{}/generate_lai_model_params.txt".format(outDir)
-        with open(paramsFilename, 'w') as paramsFile:
-            paramsFile.write("BVInputVariableGeneration\n")
-            paramsFile.write("    Number of generated samples    = {}\n".format(GENERATED_SAMPLES_NO))
-            paramsFile.write("ProSailSimulator\n")
-            paramsFile.write("    RSR file                      = {}\n".format(rsrFile))
-            paramsFile.write("    Solar zenith angle            = {}\n".format(solarZenithAngle))
-            paramsFile.write("    Sensor zenith angle           = {}\n".format(sensorZenithAngle))
-            paramsFile.write("    Relative azimuth angle        = {}\n".format(relativeAzimuthAngle))
-            paramsFile.write("    Noise var                     = {}\n".format(NOISE_VAR))
-            paramsFile.write("TrainingDataGenerator" + "\n")
-            paramsFile.write("    BV Index                      = {}\n".format(0))
-            paramsFile.write("    Add reflectances              = {}\n".format(ADD_REFLS))
-            #paramsFile.write("    RED Band Index                = {}\n".format(RED_INDEX))
-            #paramsFile.write("    NIR Band Index                = {}\n".format(NIR_INDEX))
-            paramsFile.write("Inverse model generation (InverseModelLearning)\n")
-            paramsFile.write("    Regression type               = {}\n".format(REGRESSION_TYPE))
-            paramsFile.write("    Best of                       = {}\n".format(BEST_OF))
-            paramsFile.write("    Generated model file name     = {}\n".format(self.modelFile))
-            paramsFile.write("    Generated error estimation model file name = {}\n".format(self.modelErrFile))
-
-
-if __name__ == '__main__':
-
-    parser = argparse.ArgumentParser(description='LAI retrieval processor')
-
-    parser.add_argument('--applocation', help='The path where the sen2agri is built', default="")
-    parser.add_argument('--input', help='The list of products xml descriptors', required=True, nargs='+')
-    parser.add_argument('--res', help='The requested resolution in meters', required=True)
-    parser.add_argument('--outdir', help="Output directory", required=True)
-    parser.add_argument('--rsrfile', help='The RSR file (/path/filename)', required=False)
-    parser.add_argument('--rsrcfg', help='The RSR configuration file each mission (default /usr/share/sen2agri/rsr_cfg.txt)', default='/usr/share/sen2agri/rsr_cfg.txt')
-    parser.add_argument('--tileid', help="Tile id", required=False)
-    parser.add_argument('--modelsfolder', help='The folder where the models are located. If not specified, is considered the outdir', required=False)
-    parser.add_argument('--generatemodel', help='Generate the model (YES/NO)', required=False)
-    parser.add_argument('--genreprocessedlai', help='Generate the reprocessed N-Days LAI (YES/NO)', required=False)
-    parser.add_argument('--genfittedlai', help='Generate the Fitted LAI (YES/NO)', required=False)
-    parser.add_argument('--siteid', help='The site ID', required=False)
-
-    args = parser.parse_args()
-
-    appLocation = args.applocation
-    resolution = args.res
-    outDir = args.outdir
-    rsrFile = args.rsrfile
-    rsrCfg = args.rsrcfg
-    generateModel = args.generatemodel
-    genreprocessedlai = args.genreprocessedlai
-    genfittedlai = args.genfittedlai
-    siteId = "nn"
-    if args.siteid:
-        siteId = args.siteid
-
-    if (generateModel == "YES"):
-        GENERATE_MODEL = True
-    else:
-        GENERATE_MODEL = False
-
-    tileID="TILE_none"
-    if args.tileid:
-        tileID = "TILE_{}".format(args.tileid)
-
-    # By default, if not specified, models folder is the given out dir.
-    modelsFolder = outDir
-    if args.modelsfolder:
-        if os.path.exists(args.modelsfolder):
-            if not os.path.isdir(args.modelsfolder):
-                print("Error: The specified models folder is not a folder but a file.")
-                exit(1)
-            else:
-                modelsFolder = args.modelsfolder
-        else:
-            if GENERATE_MODEL:
-                os.makedirs(args.modelsfolder)
-                modelsFolder = args.modelsfolder
-            else:
-                print("Error: The specified models folder does not exist.")
-                exit(1)
-
-    if os.path.exists(outDir):
-        if not os.path.isdir(outDir):
-            print("Can't create the output directory because there is a file with the same name")
-            print("Remove: " + outDir)
-            exit(1)
-    else:
-        os.makedirs(outDir)
-
-    paramsLaiModelFilenameXML = "{}/lai_model_params.xml".format(outDir)
-    paramsLaiRetrFilenameXML = "{}/lai_retrieval_params.xml".format(outDir)
-
-    if resolution != 10 and resolution != 20:
-        print("The resolution is : {}".format(resolution))
-        print("The resolution should be either 10 or 20.")
-        print("The product will be created with the original resolution without resampling.")
-        resolution=0
-
-    if GENERATE_MODEL:
-        for xml in args.input:
-            laiModel = LaiModel()
-            laiModel.generateModel(xml,outDir,paramsLaiModelFilenameXML)
-
-    outSingleNdvi = "{}/#_Single_NDVI.tif".format(outDir)        
-    outNdviRvi = "{}/#_NDVI_RVI.tif".format(outDir)
-    outLaiImg = "{}/#_LAI_img.tif".format(outDir)
-    outLaiErrImg = "{}/#_LAI_err_img.tif".format(outDir)
-    outLaiMonoMskFlgsImg = "{}/#_LAI_mono_date_mask_flags_img.tif".format(outDir)
-    # LAI images encoded as short. These are used only by ProductFormatter
-    outLaiShortImg = "{}/#_LAI_img_16.tif".format(outDir)
-    outLaiErrShortImg = "{}/#_LAI_err_img_16.tif".format(outDir)
-
-    cnt=int(0)
-    print("Processing started: " + str(datetime.datetime.now()))
-    start = time.time()
-
-    allXmlParam=[]
-    allLaiParam=[]
-    allErrParam=[]
-    allMskFlagsParam=[]
-
-    for idx, xml in enumerate(args.input):
-        counterString = str(cnt)
-
+class LaiMonoDate(object):
+    def __init__(self):
+        """ Constructor """
+        self.init = 1
+    
+    def generateLaiMonoDates(self, xml, index, resolution, paramsLaiModelFilenameXML, outDir):  
+        counterString = str(idx)
+        
+        outSingleNdvi = "{}/#_Single_NDVI.tif".format(outDir)        
+        outNdviRvi = "{}/#_NDVI_RVI.tif".format(outDir)
+        outLaiImg = "{}/#_LAI_img.tif".format(outDir)
+        outLaiErrImg = "{}/#_LAI_err_img.tif".format(outDir)
+        outLaiMonoMskFlgsImg = "{}/#_LAI_mono_date_mask_flags_img.tif".format(outDir)
+        # LAI images encoded as short. These are used only by ProductFormatter
+        outLaiShortImg = "{}/#_LAI_img_16.tif".format(outDir)
+        outLaiErrShortImg = "{}/#_LAI_err_img_16.tif".format(outDir)
+        
         lastPoint = xml.rfind('.')
         lastSlash = xml.rfind('/')
         if lastPoint != -1 and lastSlash != -1 and lastSlash + 1 < lastPoint:
@@ -347,13 +377,6 @@ if __name__ == '__main__':
                 "-in", curOutLaiErrImg,
                 "-out", curOutLaiErrShortImg])
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-        
-        allXmlParam.append(xml)
-        allLaiParam.append(curOutLaiImg)
-        allErrParam.append(curOutLaiErrImg)
-        allMskFlagsParam.append(curOutLaiMonoMskFlgsImg)
-
-        cnt += 1
 
         # Generate the product for the monodate
         runCmd(["otbcli", "ProductFormatter", appLocation,
@@ -363,92 +386,138 @@ if __name__ == '__main__':
                 "-processor.vegetation.laindvi", tileID, curOutSingleNDVIImg,
                 "-processor.vegetation.laimonodate", tileID, curOutLaiShortImg,
                 "-processor.vegetation.laimonodateerr", tileID, curOutLaiErrShortImg,
-                "-processor.vegetation.laimdateflgs", tileID, allMskFlagsParam[idx],
+                "-processor.vegetation.laimdateflgs", tileID, curOutLaiMonoMskFlgsImg,
                 "-il", xml, 
-                "-gipp", paramsLaiModelFilenameXML])
+                "-gipp", paramsLaiModelFilenameXML])        
         
-    #ProfileReprocessing parameters
-    ALGO_LOCAL_BWR="2"
-    ALGO_LOCAL_FWR="0"
+if __name__ == '__main__':
 
-    with open(paramsLaiRetrFilenameXML, 'w') as paramsFileXML:
-        root = ET.Element('metadata')
-        pr= ET.SubElement(root, "ProfileReprocessing_parameters")
-        ET.SubElement(pr, "bwr_for_algo_local_online_retrieval").text = ALGO_LOCAL_BWR
-        ET.SubElement(pr, "fwr_for_algo_local_online_retrieval").text = ALGO_LOCAL_FWR
-        usedXMLs = ET.SubElement(root, "XML_files")
-        i = 0
-        for xml in args.input:
-            ET.SubElement(usedXMLs, "XML_" + str(i)).text = xml
-            i += 1
-        paramsFileXML.write(prettify(root))
+    parser = argparse.ArgumentParser(description='LAI retrieval processor')
 
+    parser.add_argument('--applocation', help='The path where the sen2agri is built', default="")
+    parser.add_argument('--input', help='The list of products xml descriptors', required=True, nargs='+')
+    parser.add_argument('--res', help='The requested resolution in meters', required=True)
+    parser.add_argument('--outdir', help="Output directory", required=True)
+    parser.add_argument('--inlaimonodir', help="Directory where input mono-date LAI products are located (only for reprocessing)", required=False)
+    parser.add_argument('--rsrfile', help='The RSR file (/path/filename)', required=False)
+    parser.add_argument('--rsrcfg', help='The RSR configuration file each mission (default /usr/share/sen2agri/rsr_cfg.txt)', default='/usr/share/sen2agri/rsr_cfg.txt')
+    parser.add_argument('--tileid', help="Tile id", required=False)
+    parser.add_argument('--modelsfolder', help='The folder where the models are located. If not specified, is considered the outdir', required=False)
+    parser.add_argument('--generatemodel', help='Generate the model (YES/NO)', required=False)
+    parser.add_argument('--generatemonodate', help='Generate the mono-date LAI (YES/NO)', required=False)
+    parser.add_argument('--genreprocessedlai', help='Generate the reprocessed N-Days LAI (YES/NO)', required=False)
+    parser.add_argument('--genfittedlai', help='Generate the Fitted LAI (YES/NO)', required=False)
+    parser.add_argument('--siteid', help='The site ID', required=False)
+    parser.add_argument('--useintermlaifiles', help='Specify if intermediate files or the final product files should be used', required=False)
 
-    paramsFilename = "{}/lai_retrieval_params.txt".format(outDir)
-    with open(paramsFilename, 'w') as paramsFile:
-        paramsFile.write("ProfileReprocessing parameters\n")
-        paramsFile.write("    bwr for algo local (online retrieval) = {}\n".format(ALGO_LOCAL_BWR))
-        paramsFile.write("    fwr for algo local (online retrieval) = {}\n".format(ALGO_LOCAL_FWR))
-        paramsFile.write("Used XML files\n")
-        for xml in args.input:
-            paramsFile.write("  " + xml + "\n")
+    args = parser.parse_args()
+    
+    appLocation = args.applocation
+    resolution = args.res
+    outDir = args.outdir
+    inlaimonodir = outDir
+    if(args.inlaimonodir) :
+        inlaimonodir = args.inlaimonodir
+    rsrFile = args.rsrfile
+    rsrCfg = args.rsrcfg
+    generatemonodate = False
+    if (args.generatemonodate == "YES"):
+        generatemonodate = True
+    genreprocessedlai = False
+    if (args.genreprocessedlai == "YES"):
+        genreprocessedlai = True
+    genfittedlai = False
+    if (args.genfittedlai == "YES"):
+        genfittedlai = True
+    if (args.useintermlaifiles == "YES") :
+        useintermlaifiles = True
+    
+    siteId = "nn"
+    if args.siteid:
+        siteId = args.siteid
 
-    outLaiTimeSeries = "{}/LAI_time_series.tif".format(outDir)
-    outErrTimeSeries = "{}/Err_time_series.tif".format(outDir)
-    outMaksFlagsTimeSeries = "{}/Mask_Flags_time_series.tif".format(outDir)
+    if (args.generatemodel == "YES"):
+        GENERATE_MODEL = True
+    else:
+        GENERATE_MODEL = False
 
-    outReprocessedTimeSeries = "{}/ReprocessedTimeSeries.tif".format(outDir)
-    outFittedTimeSeries = "{}/FittedTimeSeries.tif".format(outDir)
+    simpleTileId = "none"
+    tileID="TILE_none"
+    if args.tileid:
+        simpleTileId = args.tileid
+    tileID = "TILE_{}".format(simpleTileId)
 
-    fittedRastersListFile = "{}/FittedRastersFilesList.txt".format(outDir)
-    fittedFlagsListFile = "{}/FittedFlagsFilesList.txt".format(outDir)
-    reprocessedRastersListFile = "{}/ReprocessedRastersFilesist.txt".format(outDir)
-    reprocessedFlagsListFile = "{}/ReprocessedFlagsFilesist.txt".format(outDir)
+    # #######################################
+    #for idx, xml in enumerate(args.input):
+    #    inlaimonodir="/mnt/output/L3B/SPOT4-T5/Ukraine/test_lai_2016-03-17/"
+    #    laiImg, errImg, flgsImg = getMonoDateProductFiles(xml, siteId, simpleTileId, inlaimonodir, True)
+    #    print("Selected IMG: {}".format(laiImg))
+    #    print("Selected ERR: {}".format(errImg))
+    #    print("Selected MSK: {}".format(flgsImg))
+    #    
+    #exit(1)
+    ## #######################################
+    
+    # By default, if not specified, models folder is the given out dir.
+    modelsFolder = outDir
+    if args.modelsfolder:
+        if os.path.exists(args.modelsfolder):
+            if not os.path.isdir(args.modelsfolder):
+                print("Error: The specified models folder is not a folder but a file.")
+                exit(1)
+            else:
+                modelsFolder = args.modelsfolder
+        else:
+            if GENERATE_MODEL:
+                os.makedirs(args.modelsfolder)
+                modelsFolder = args.modelsfolder
+            else:
+                print("Error: The specified models folder does not exist.")
+                exit(1)
+
+    if os.path.exists(outDir):
+        if not os.path.isdir(outDir):
+            print("Can't create the output directory because there is a file with the same name")
+            print("Remove: " + outDir)
+            exit(1)
+    else:
+        os.makedirs(outDir)
+
+    paramsLaiModelFilenameXML = "{}/lai_model_params.xml".format(outDir)
+
+    if resolution != 10 and resolution != 20:
+        print("The resolution is : {}".format(resolution))
+        print("The resolution should be either 10 or 20.")
+        print("The product will be created with the original resolution without resampling.")
+        resolution=0
+
+    print("Processing started: " + str(datetime.datetime.now()))
+    start = time.time()
+        
+    for idx, xml in enumerate(args.input):
+        if GENERATE_MODEL:
+            laiModel = LaiModel()
+            laiModel.generateModel(xml,outDir,paramsLaiModelFilenameXML)
+        
+        if  generatemonodate:
+            laiMonoDate = LaiMonoDate()
+            laiMonoDate.generateLaiMonoDates(xml, idx, resolution, paramsLaiModelFilenameXML, outDir)
+            
+    laiTimeSeriesFile = "{}/LAI_time_series.tif".format(outDir)
+    errTimeSeriesFile = "{}/Err_time_series.tif".format(outDir)
+    mskTimeSeriesFile = "{}/Mask_Flags_time_series.tif".format(outDir)
 
     if genreprocessedlai or genfittedlai:
-        # Create the LAI and Error time series
-        runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allLaiParam + ["-out", outLaiTimeSeries])
-        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-        runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allErrParam + ["-out", outErrTimeSeries])
-        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-        runCmd(["otbcli", "TimeSeriesBuilder", appLocation, "-il"] + allMskFlagsParam + ["-out", outMaksFlagsTimeSeries])
-        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-
+        allXmlParam = args.input
+        buildReprocessedTimeSeries(args.input, siteId, simpleTileId, outDir, \
+                        laiTimeSeriesFile, errTimeSeriesFile, mskTimeSeriesFile, useintermlaifiles)
 
     if genreprocessedlai:
-        # Compute the reprocessed time series (On-line Retrieval)
-        runCmd(["otbcli", "ProfileReprocessing", appLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-msks", outMaksFlagsTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outReprocessedTimeSeries, "-genall", "1", "-algo", "local", "-algo.local.bwr", str(ALGO_LOCAL_BWR), "-algo.local.fwr", str(ALGO_LOCAL_FWR)])
-        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-
-        #split the Reprocessed time series to a number of images
-        runCmd(["otbcli", "ReprocessedProfileSplitter2", appLocation, "-in", outReprocessedTimeSeries, "-outrlist", reprocessedRastersListFile, "-outflist", reprocessedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
-        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-        # Generate the product for the Reprocessed LAI
-        runCmd(["otbcli", "ProductFormatter", appLocation,
-                "-destroot", outDir,
-                "-fileclass", "SVT1", "-level", "L3C", "-baseline", "01.00", "-siteid", siteId,
-                "-processor", "vegetation",
-                "-processor.vegetation.filelaireproc", tileID, reprocessedRastersListFile,
-                "-processor.vegetation.filelaireprocflgs", tileID, reprocessedFlagsListFile,
-                "-il"] + allXmlParam + [
-                "-gipp", paramsLaiRetrFilenameXML])
+        generateReprocessedLAI(tileID, siteId, allXmlParam, laiTimeSeriesFile, errTimeSeriesFile, \
+                                mskTimeSeriesFile, outDir)
 
     if genfittedlai:
-        # Compute the fitted time series (CSDM Fitting)
-        runCmd(["otbcli", "ProfileReprocessing", appLocation, "-lai", outLaiTimeSeries, "-err", outErrTimeSeries, "-msks", outMaksFlagsTimeSeries, "-ilxml"] + allXmlParam + ["-opf", outFittedTimeSeries, "-genall", "1", "-algo", "fit"])
-        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-
-        #split the Fitted time series to a number of images
-        runCmd(["otbcli", "ReprocessedProfileSplitter2", appLocation, "-in", outFittedTimeSeries, "-outrlist", fittedRastersListFile, "-outflist", fittedFlagsListFile, "-compress", "1", "-ilxml"] + allXmlParam)
-        print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-        # Generate the product for the Fitted LAI
-        runCmd(["otbcli", "ProductFormatter", appLocation,
-                "-destroot", outDir,
-                "-fileclass", "SVT1", "-level", "L3D", "-baseline", "01.00", "-siteid", siteId,
-                "-processor", "vegetation",
-                "-processor.vegetation.filelaifit", tileID, fittedRastersListFile,
-                "-processor.vegetation.filelaifitflgs", tileID, fittedFlagsListFile,
-                "-il"] + allXmlParam)
+        generateFittedLAI(tileID, siteId, allXmlParam, laiTimeSeriesFile, errTimeSeriesFile, mskTimeSeriesFile, outDir)
         
     print("Total execution time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
 
