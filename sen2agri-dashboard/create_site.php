@@ -521,10 +521,10 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save') {
 									$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 									
 									if ($nr_site == '0') {
-										$sql_select = "SELECT * FROM sp_get_dashboard_sites_seasons_2(null)";
+										$sql_select = "SELECT * FROM sp_get_dashboard_sites_seasons(null)";
 										$result = pg_query_params ( $db, $sql_select, array () ) or die ( "Could not execute." );
 									} else {
-										$sql_select = "SELECT * FROM sp_get_dashboard_sites_seasons_2($1)";
+										$sql_select = "SELECT * FROM sp_get_dashboard_sites_seasons($1)";
 										$result = pg_query_params ( $db, $sql_select, array (
 												$_SESSION ['siteId'] 
 										) ) or die ( "Could not execute." );
