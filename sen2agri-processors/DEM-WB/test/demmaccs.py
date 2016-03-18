@@ -69,12 +69,20 @@ parser.add_argument('--skip-dem', required=False,
                         help="skip DEM if a directory with previous work of DEM is given", default=None)
 parser.add_argument('--delete-temp', required=False,
                         help="if set to True, it will delete all the temporary files and directories. Default: True", default="True")
+parser.add_argument('--prev-l2a-tiles', required=False,
+                        help="Previous processed tiles from L2A product", default=[], nargs="+")
+parser.add_argument('--prev-l2a-tiles-paths', required=False,
+                        help="Path of the previous processed tiles from L2A product", default=[], nargs="+")
 parser.add_argument('output', help="output location")
 
 args = parser.parse_args()
 
 if not create_recursive_dirs(args.output):
     log(general_log_path, "Could not use the output directory", general_log_filename)
+    sys.exit(-1)
+
+if len(args.prev_l2a_tiles) != len(args.prev_l2a_tiles_paths):
+    log(general_log_path, "The number of previous l2a tiles is not the same as for paths for these tiles. Check args: --prev-l2-tiles and --prev-l2a-tiles-paths, the length should be equal", general_log_filename)
     sys.exit(-1)
 
 general_log_path = args.output
@@ -119,7 +127,7 @@ if not create_sym_links(gips, working_dir):
 
 dem_hdrs = glob.glob("{}/*.HDR".format(dem_output_dir))
 log(general_log_path, "DEM output directory {} has DEM hdrs = {}".format(dem_output_dir, dem_hdrs), general_log_filename)
-number_of_processed_tiles = 0
+processed_tiles = []
 
 for dem_hdr in dem_hdrs:    
     basename, tile_id = get_dem_hdr_info(dem_hdr)
@@ -137,12 +145,26 @@ for dem_hdr in dem_hdrs:
     else:
         product_name = os.path.basename(args.input)
     sat_id, acquistion_date = get_product_info(product_name)
+    maccs_mode = "L2INIT"
+    try:
+        idx = args.prev_l2a_tiles.index(tile_id)
+        print("!!!!!!!!!!!!!!! IDX = {}".format(idx))
+        prev_l2a_tile_path = args.prev_l2a_tiles_paths[idx]
+        print("!!!!!!!!!!!!!!! prev_l2a_tile_path = {}".format(prev_l2a_tile_path))
+        maccs_mode = "L2NOMINAL"
+        #sys.exit(0)
+        if not create_sym_links(prev_l2a_tile_path, working_dir):
+            log(general_log_path, "Could not create sym links for NOMINAL MACCS mode for {}".format(prev_l2a_tile_path), general_log_filename)
+            sys.exit(-1)
+    except:
+        print("No previous processed l2a tile found for {} in product {}".format(tile_id, product_name))
+        pass        
     cmd_array = ["ssh", args.maccs_address, 
                     args.maccs_launcher, 
                     "--input", working_dir, 
                     "--TileId", tile_id, 
                     "--output", args.output,
-                    "--mode", "L2INIT", 
+                    "--mode", maccs_mode, 
                     "--loglevel", "DEBUG",
                     "--enableTest", "false",
                     "--CheckXMLFilesWithSchema", "false"]
@@ -164,11 +186,12 @@ for dem_hdr in dem_hdrs:
     if run_command(cmd_array) != 0:
         log(general_log_path, "MACCS didn't work for {} | TileID: {}!".format(args.input, tile_id), general_log_filename)
     else:
-        number_of_processed_tiles += 1
+        processed_tiles.append(tile_id)
+        log(general_log_path, "MACCS finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))), general_log_filename)
         if run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", args.output, "-w", working_dir]) != 0:
-            log(general_log_path, "Mosaic didn't work")
-    log(general_log_path, "MACCS finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))), general_log_filename)
+            log(general_log_path, "Mosaic didn't work")    
     remove_sym_links([dem_hdr, dem_dir[0]], working_dir)
+
 if args.delete_temp == "True":
     log(general_log_path, "Remove all the temporary files and directory", general_log_filename)
     try:
@@ -186,5 +209,11 @@ if args.delete_temp == "True":
 
 log(general_log_path, "Ended at {}:".format(time.time()), general_log_filename)
 log(general_log_path, "Total execution {}:".format(datetime.timedelta(seconds=(time.time() - general_start))), general_log_filename)
-if number_of_processed_tiles == 0:
+if len(processed_tiles) == 0:
     sys.exit(1)
+else:
+    with open((args.output[:len(args.output) - 1] if args.output.endswith("/") else args.output) + "/processed_tiles", 'w') as result_processed_tiles:
+        for tile in processed_tiles:
+            result_processed_tiles.write(" {}".format(tile))
+        result_processed_tiles.write("\n")            
+    sys.exit(0)

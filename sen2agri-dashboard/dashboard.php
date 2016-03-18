@@ -10,6 +10,7 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 	$site_id = $_REQUEST ['sitename'];
 	$schedule_type = $_REQUEST ['schedule_add'];
 	
+	$startdate="";
 	if ($schedule_type == '0') {
 		$repeatafter = "0";
 		$oneverydate = "0";
@@ -23,18 +24,16 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 		$oneverydate = $_REQUEST ['oneverydate'];
 		$startdate = $_REQUEST ['startdate'];
 	}
-	
+
 	$pg_date = date ( 'Y-m-d H:i:s', strtotime ( $startdate ) );
+
 	
 	$retry_seconds = 60;
 	$priority = 1;
 	$processor_params = null;
 	
 	//save new job in database
-	$sql_insert = "SELECT* sp_insert_scheduled_task($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)";
-	$res = pg_prepare ( $db, "my_query", $sql_insert );
-	
-	$res = pg_execute ( $db, "my_query", array (
+		$res = pg_query_params ( $db, "SELECT sp_insert_scheduled_task($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)", array (
 			$job_name,
 			$processorId,
 			$site_id,
@@ -45,7 +44,7 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 			$retry_seconds,
 			$priority,
 			$processor_params
-	) ) or die ("An error occurred.");
+	) )or die ( "An error occurred." );
 
 }
 
@@ -74,17 +73,13 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 	}
 	
 	//update scheduled task
-	$sql_update = "SELECT * from sp_dashboard_update_scheduled_task($1,$2,$3,$4,$5)";
-	$res = pg_prepare ( $db, "my_query2", $sql_update );
-	
-	$res = pg_execute ( $db, "my_query2", array (
+	$res = pg_query_params ( $db, "SELECT sp_dashboard_update_scheduled_task($1,$2,$3,$4,$5)", array (
 			$schedule_id,
 			$schedule_type,
 			$repeatafter,
 			$oneverydate,
 			$pg_date
-	) ) or die ("An error occurred.");
-
+	) )or die ( "An error occurred." );
 }
 ?>
 <?php include 'dashboardCreatJobs.php';?>
@@ -176,7 +171,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 
 											<form id="form_add_sched_l3a" method="post" class="form">
 												<input class="btn btn-primary " name="schedule_add"
-													type="submit" value="AddJob"> <input type="hidden"
+													type="submit" value="Add Job"> <input type="hidden"
 													name="processorId" value="2">
 											</form>
 
@@ -187,9 +182,10 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 										<!-- l3a processor_id = 2 -->
 									<?php
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
-										if ($_REQUEST ['schedule_add'] == 'AddJob' && $_REQUEST ['processorId'] == '2') {
+										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '2') {
 											
 											add_new_scheduled_jobs_layout ( 2 );
+											//echo $_SESSION['proc_id'];
 										}
 									}
 									?>
@@ -248,7 +244,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 
 											<form id="form_add_sched_l3b" method="post">
 												<input name="schedule_add" type="submit"
-													class="btn btn-primary " value="AddJob"> <input
+													class="btn btn-primary " value="Add Job"> <input
 													type="hidden" name="processorId" value="3">
 											</form>
 
@@ -260,7 +256,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 									<?php
 									
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
-										if ($_REQUEST ['schedule_add'] == 'AddJob' && $_REQUEST ['processorId'] == '3') {
+										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '3') {
 											
 											add_new_scheduled_jobs_layout ( 3 );
 										}
@@ -323,7 +319,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 
 											<form id="form_add_sched_l3b_nvdi" method="post">
 												<input name="schedule_add" type="submit"
-													class="btn btn-primary " value="AddJob"> <input
+													class="btn btn-primary " value="Add Job"> <input
 													type="hidden" name="processorId" value="7">
 											</form>
 
@@ -335,7 +331,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 									<?php
 									
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
-										if ($_REQUEST ['schedule_add'] == 'AddJob' && $_REQUEST ['processorId'] == '7') {
+										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '7') {
 											
 											add_new_scheduled_jobs_layout ( 7 );
 										}
@@ -402,7 +398,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 
 											<form id="form_add_sched" method="post">
 												<input name="schedule_add" type="submit"
-													class="btn btn-primary " value="AddJob"> <input
+													class="btn btn-primary " value="Add Job"> <input
 													type="hidden" name="processorId" value="4">
 											</form>
 
@@ -413,7 +409,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 										<!-- l4a processor_id = 4 -->
 									<?php
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
-										if ($_REQUEST ['schedule_add'] == 'AddJob' && $_REQUEST ['processorId'] == '4') {
+										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '4') {
 											
 											add_new_scheduled_jobs_layout ( 4 );
 										}
@@ -482,7 +478,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 
 											<form id="form_add_sched" method="post">
 												<input name="schedule_add" type="submit"
-													class="btn btn-primary " value="AddJob"> <input
+													class="btn btn-primary " value="Add Job"> <input
 													type="hidden" name="processorId" value="5">
 											</form>
 
@@ -494,7 +490,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 									<?php
 									
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
-										if ($_REQUEST ['schedule_add'] == 'AddJob' && $_REQUEST ['processorId'] == '5') {
+										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '5') {
 											
 											add_new_scheduled_jobs_layout ( 5 );
 										}
@@ -519,7 +515,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 <script src="scripts/config.js"></script>
 <script src="scripts/helpers.js"></script>
 <script src="scripts/processing_functions.js"></script>
-<script src="scripts/processing.js"></script> 
+<!-- <script src="scripts/processing.js"></script> -->
 
 
 <!-- includes for  datepicker-->
@@ -531,17 +527,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 	src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
 <!-- end includes for  datepicker-->
 <script src="libraries/jquery-validate/jquery.validate.min.js"></script>
-
-<!--Jquery datepicker -->
-<script>
-		$(document).ready(function() {
-			$( ".startdate" ).datepicker({
-				 dateFormat: "yy-mm-dd",
-				 minDate: 0
-					  });
-		});
-</script>
-<!--end Jquery datepicker -->
+<script src="libraries/jquery-validate/additional-methods.min.js"></script>
 
 <!-- Check what job type was selected -->
 <script>
@@ -555,6 +541,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 				document.getElementById("div_oneverydate"+param).style.display = "none";
 				document.getElementById("div_repeatafter"+param).style.display = "none";
 				document.getElementById("div_startdate"+param).style.display = "inline-block";
+				
 			} else if (selectedValue == "1") {
 				document.getElementById("div_oneverydate"+param).style.display = "none";
 				document.getElementById("div_startdate"+param).style.display = "inline-block";
@@ -563,29 +550,99 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 				document.getElementById("div_repeatafter"+param).style.display = "none";
 				document.getElementById("div_startdate"+param).style.display = "inline-block";
 				document.getElementById("div_oneverydate"+param).style.display = "inline-block";
+
 			}
 		}
-		function selectedScheduleAdd(param) {
+	function selectedScheduleAdd(param) {
 			var selectedValue = document.getElementById("schedule_add"+param).value;
 			if (selectedValue == "") {
 				document.getElementById("div_oneverydate"+param).style.display = "none";
 				document.getElementById("div_repeatafter"+param).style.display = "none";
 				document.getElementById("div_startdate"+param).style.display = "none";
+				document.getElementById("oneverydate").required = false;
+				document.getElementById("add_startdate").required = false;
+				document.getElementById("repeatafter").required = false;
 			} else if (selectedValue == "0") {
 				document.getElementById("div_oneverydate"+param).style.display = "none";
 				document.getElementById("div_repeatafter"+param).style.display = "none";
 				document.getElementById("div_startdate"+param).style.display = "inline-block";
+				document.getElementById("oneverydate").required = false;
+				document.getElementById("add_startdate").required = true;
+				document.getElementById("repeatafter").required = false;
 			} else if (selectedValue == "1") {
 				document.getElementById("div_oneverydate"+param).style.display = "none";
 				document.getElementById("div_startdate"+param).style.display = "inline-block";
 				document.getElementById("div_repeatafter"+param).style.display = "inline-block";
+				document.getElementById("oneverydate").required = false;
+				document.getElementById("add_startdate").required = true;
+				document.getElementById("repeatafter").required = true;
 			} else if (selectedValue == "2") {
 				document.getElementById("div_repeatafter"+param).style.display = "none";
 				document.getElementById("div_startdate"+param).style.display = "inline-block";
 				document.getElementById("div_oneverydate"+param).style.display = "inline-block";
+				document.getElementById("repeatafter").required = false;
+				document.getElementById("add_startdate").required = true;
+				document.getElementById("oneverydate").required = true;
 			}
 		}
 	</script>
+<!--Jquery datepicker -->
+<script>
+		$(document).ready(function() {
+			$( ".startdate" ).datepicker({
+				 dateFormat: "yy-mm-dd",
+				 minDate: 0
+					  });
+			$( "#add_startdate" ).datepicker({
+				 dateFormat: "yy-mm-dd",
+				 minDate: 0
+					  });
+			
+			<?php //if (isset ( $_REQUEST ['schedule_saveJob'] )){
+				if(isset( $_SESSION['proc_id'])){
+			?>
+					    
+				$("#jobform").validate({
+					rules : {
+						jobname: { required: true,pattern: "[a-z]{1}[a-zA-Z0-9_ ]*" },
+						sitename : { required: true },
+						schedule_add: { required: true },
+					},
+					messages: {
+						jobname: { pattern : "First letter.(letters,space and underscore allowed)" }
+					},
+					highlight: function(element, errorClass) {
+						$(element).parent().addClass("has-error");
+					},
+					unhighlight: function(element, errorClass) {
+						$(element).parent().removeClass("has-error");
+					},
+					errorPlacement: function(error, element) {
+						error.appendTo(element.parent());
+					},
+					submitHandler :function(form) {
+						$.ajax({
+							url: $(form).attr('action'),
+							type: $(form).attr('method'),
+							data: $(form).serialize(),
+							success: function(response) { 
+								alert("Job successfully saved.");
+								window.location.href = "dashboard.php";
+						
+								}     
+						});
+					},
+					success : function(label) {
+						label.remove();
+					}
+					});  
+				<?php	unset($_SESSION['proc_id']);}	 ?>
+				
+		});
+</script>
+<!--end Jquery datepicker -->
+
+
 <!--end datepicker -->
 
 <?php include "ms_foot.php"; ?>

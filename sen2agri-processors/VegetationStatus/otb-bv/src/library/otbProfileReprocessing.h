@@ -109,7 +109,7 @@ fit_csdm(const VectorType &dts, const VectorType &ts, const VectorType &ets, con
 std::pair<VectorType, VectorType>
 fit_csdm_2(const VectorType &dts, const VectorType &ts, const VectorType &ets, const VectorType &msks)
 {
-    assert(ts.size()==ets.size() && ts.size()==dts.size() && ts.size()==msks.size());
+    assert(/*ts.size()==ets.size() &&*/ ts.size()==dts.size() && ts.size()==msks.size());
     unsigned int nbDates = ts.size();
     auto result = VectorType(nbDates, 0);
     auto result_flag = VectorType(nbDates,0);
@@ -145,13 +145,14 @@ fit_csdm_2(const VectorType &dts, const VectorType &ts, const VectorType &ets, c
     pheno::VectorType tmps1(nbDates);
     pheno::VectorType tmps2(nbDates);
 
+    // Compute the approximation
+    pheno::normalized_sigmoid::F<pheno::VectorType>()(date_vec, x_1, tmps1);
+    pheno::normalized_sigmoid::F<pheno::VectorType>()(date_vec, x_2, tmps2);
+    auto tmpres = tmps1*(mm1.second-mm1.first)+mm1.first
+      + tmps2*(mm2.second-mm2.first)+mm2.first;
+
     int validDatesCnt = 0;
     for(size_t i=0; i<nbDates; i++) {
-        // Compute the approximation
-        pheno::normalized_sigmoid::F<pheno::VectorType>()(date_vec, x_1, tmps1);
-        pheno::normalized_sigmoid::F<pheno::VectorType>()(date_vec, x_2, tmps2);
-        auto tmpres = tmps1*(mm1.second-mm1.first)+mm1.first
-          + tmps2*(mm2.second-mm2.first)+mm2.first;
         result[i] = tmpres[i];
         if(IsValidLandValue(profile_vec[i], msks[i])) {
             result_flag[i] = ++validDatesCnt;
@@ -161,7 +162,31 @@ fit_csdm_2(const VectorType &dts, const VectorType &ts, const VectorType &ets, c
         }
         //result_flag[i] = validDatesCnt;
     }
-
+/*
+    VectorType profile1;
+    VectorType t1;
+    VectorType x_1_1;
+    VectorType x_2_1;
+    VectorType mm1_1;
+    VectorType mm2_1;
+    VectorType tmps1_1;
+    VectorType tmps2_1;
+    VectorType tmpres_1;
+    for(double y: profile)
+        profile1.push_back(y);
+    for(double y: t)
+        t1.push_back(y);
+    for(double y: x_1)
+        x_1_1.push_back(y);
+    for(double y: x_2)
+        x_2_1.push_back(y);
+    for(double y: tmps1)
+        tmps1_1.push_back(y);
+    for(double y: tmps2)
+        tmps2_1.push_back(y);
+    for(double y: tmpres)
+        tmpres_1.push_back(y);
+*/
     return std::make_pair(result,result_flag);
 }
 
