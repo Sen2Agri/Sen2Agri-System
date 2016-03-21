@@ -100,7 +100,7 @@ bool ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(const QString &p
     for (int i = 0; i < pieces.size(); i++) {
         const QString &piece = pieces[i];
         if(piece.indexOf("V") == 0) {
-            minDate = QDateTime::fromString(piece.right(piece.size()-1));
+            minDate = QDateTime::fromString(piece.right(piece.size()-1), "yyyyMMdd");
             if((i+1) < pieces.size())
                 maxDate = QDateTime::fromString(pieces[i+1], "yyyyMMdd");
             else
