@@ -3,18 +3,20 @@
 $BODY$
 BEGIN
    RETURN QUERY
-SELECT  case status_id
-	when '1' then 1
-	when '2' then 2
-	when '3' then 3
-	when '4' then 3
-	when '5' then 2
-	end as in_progress_downloads, count(status_id)
-FROM downloader_history
-WHERE status_id  in ('1','2','3','4','5') AND ( $1 IS NULL OR site_id = _siteid)
-group by in_progress_downloads;
+
+	SELECT  1, count(status_id)
+		FROM downloader_history
+		WHERE status_id  = 1 AND ( site_id = 1)
+   UNION
+	SELECT  2, count(status_id)
+		FROM downloader_history
+		WHERE status_id IN (2, 5) AND ( site_id = 1)
+   UNION
+	SELECT  3, count(status_id)
+		FROM downloader_history
+		WHERE status_id IN (3, 4) AND ( site_id = 1)
+   ORDER BY 1;
 
 END
 $BODY$
   LANGUAGE plpgsql
-
