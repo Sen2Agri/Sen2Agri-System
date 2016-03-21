@@ -395,6 +395,7 @@ function install_and_config_postgresql()
    populate_from_scripts "$(find ./ -name "database")/05-functions"
    populate_from_scripts "$(find ./ -name "database")/06-indexes"
    populate_from_scripts "$(find ./ -name "database")/07-data"
+   populate_from_scripts "$(find ./ -name "database")/08-keys"
    
    #-------------- pg_hba.conf -----------------------#
    ####  copy conf file to /var/lib/pgsql/9.4/data/pg_hba.conf
