@@ -156,6 +156,8 @@ class Sen2AgriCtl(object):
         parser_lai.add_argument(
             '--resolution', type=int, help="resolution in m")
         parser_lai.add_argument(
+            '--monolai', type=int, help="boolean specifying if LAI mono-date should be done")
+        parser_lai.add_argument(
             '--reproc', type=int, help="boolean specifying if reprocessing should be done")
         parser_lai.add_argument(
             '--fitted', type=int, help="boolean specifying if fitted should be done")
@@ -248,6 +250,8 @@ class Sen2AgriCtl(object):
             parameters['resolution'] = args.resolution
         if args.genmodel:
             parameters['genmodel'] = args.genmodel
+        if args.monolai:
+            parameters['monolai'] = args.monolai
         if args.reproc:
             parameters['reproc'] = args.reproc
         if args.fitted:
@@ -258,7 +262,7 @@ class Sen2AgriCtl(object):
         parameters = {'input_products': args.input}
         if args.resolution:
             parameters['resolution'] = args.resolution
-        self.submit_job('l3b_pheno', parameters, args)
+        self.submit_job('l3e_pheno', parameters, args)
 
     def submit_crop_mask(self, args):
         parameters = {'input_products': args.input,

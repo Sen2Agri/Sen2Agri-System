@@ -287,15 +287,19 @@ getExecutorStepList(EventProcessingContext &ctx, int processorId, int jobId, con
     stepsToSubmit.reserve(steps.size());
     auto modulePathsEnd = std::end(modulePaths);
     for (const auto &s : steps) {
+        QString processorPath;
         auto it = modulePaths.find(s.module);
         if (it == modulePathsEnd) {
-            throw std::runtime_error(QStringLiteral("Cannot find executable path for module %1")
-                                         .arg(s.module)
-                                         .toStdString());
+//            throw std::runtime_error(QStringLiteral("Cannot find executable path for module %1")
+//                                         .arg(s.module)
+//                                         .toStdString());
+            processorPath = "otbcli";
+        } else {
+            processorPath = it->second;
         }
 
         const auto &arguments = getStepArguments(s);
-        stepsToSubmit.append({ processorId, s.taskId, it->second, s.stepName, arguments });
+        stepsToSubmit.append({ processorId, s.taskId, processorPath, s.stepName, arguments });
     }
 
     return stepsToSubmit;

@@ -64,12 +64,21 @@ void ProcessorHandler::HandleProductAvailableImpl(EventProcessingContext &,
 QString ProcessorHandler::GetFinalProductFolder(EventProcessingContext &ctx, int jobId,
                                                 int siteId) {
     auto configParameters = ctx.GetJobConfigurationParameters(jobId, PRODUCTS_LOCATION_CFG_KEY);
-    QString siteName = ctx.GetSiteName(siteId);
+    QString siteName = ctx.GetSiteShortName(siteId);
 
     return GetFinalProductFolder(configParameters, siteName, processorDescr.shortName);
 }
 
-QString ProcessorHandler::GetFinalProductFolder(const std::map<QString, QString> &cfgKeys, const QString &siteName, const QString &processorName) {
+QString ProcessorHandler::GetFinalProductFolder(EventProcessingContext &ctx, int jobId, int siteId,
+                                                const QString &productName) {
+    auto configParameters = ctx.GetJobConfigurationParameters(jobId, PRODUCTS_LOCATION_CFG_KEY);
+    QString siteName = ctx.GetSiteShortName(siteId);
+
+    return GetFinalProductFolder(configParameters, siteName, productName);
+}
+
+QString ProcessorHandler::GetFinalProductFolder(const std::map<QString, QString> &cfgKeys, const QString &siteName,
+                                                const QString &processorName) {
     auto it = cfgKeys.find(PRODUCTS_LOCATION_CFG_KEY);
     if (it == std::end(cfgKeys)) {
         throw std::runtime_error(QStringLiteral("No final product folder configured for site %1 and processor %2")
@@ -86,29 +95,37 @@ QString ProcessorHandler::GetFinalProductFolder(const std::map<QString, QString>
 
 bool ProcessorHandler::RemoveJobFolder(EventProcessingContext &ctx, int jobId)
 {
-    QString jobOutputPath = ctx.GetOutputPath(jobId);
+    QString jobOutputPath = ctx.GetJobOutputPath(jobId);
     return removeDir(jobOutputPath);
 }
 
-QString ProcessorHandler::GetProductFormatterProducName(EventProcessingContext &ctx,
+QString ProcessorHandler::GetProductFormatterOutputProductPath(EventProcessingContext &ctx,
                                                         const TaskFinishedEvent &event) {
     QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) +
-            "/" + PRODUC_FORMATTER_OUT_PROPS_FILE;
+            "/" + PRODUCT_FORMATTER_OUT_PROPS_FILE;
     QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
-    QString prodName("");
     if(fileLines.size() > 0) {
-        QString name = ProcessorHandlerHelper::GetFileNameFromPath(fileLines[0]);
+        return fileLines[0].trimmed();
+    }
+    return "";
+}
+
+QString ProcessorHandler::GetProductFormatterProductName(EventProcessingContext &ctx,
+                                                        const TaskFinishedEvent &event) {
+    QString productPath = GetProductFormatterOutputProductPath(ctx, event);
+    if(productPath.length() > 0) {
+        QString name = ProcessorHandlerHelper::GetFileNameFromPath(productPath);
         if(name.trimmed() != "") {
-            prodName = name;
+            return name;
         }
     }
-    return prodName;
+    return "";
 }
 
 QString ProcessorHandler::GetProductFormatterQuicklook(EventProcessingContext &ctx,
                                                         const TaskFinishedEvent &event) {
     QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) +
-            "/" + PRODUC_FORMATTER_OUT_PROPS_FILE;
+            "/" + PRODUCT_FORMATTER_OUT_PROPS_FILE;
     QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
     QString quickLookName("");
     if(fileLines.size() > 0) {
@@ -134,7 +151,7 @@ QString ProcessorHandler::GetProductFormatterQuicklook(EventProcessingContext &c
 QString ProcessorHandler::GetProductFormatterFootprint(EventProcessingContext &ctx,
                                                         const TaskFinishedEvent &event) {
     QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) +
-            "/" + PRODUC_FORMATTER_OUT_PROPS_FILE;
+            "/" + PRODUCT_FORMATTER_OUT_PROPS_FILE;
     QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
     if(fileLines.size() > 0) {
         const QString &mainFolderName = fileLines[0];
@@ -188,47 +205,6 @@ QString ProcessorHandler::GetProductFormatterFootprint(EventProcessingContext &c
         }
     }
     return "POLYGON((0.0 0.0, 0.0 0.0, 0.0 0.0, 0.0 0.0, 0.0 0.0))";
-}
-
-QString ProcessorHandler::GetTileMainImageFilePath(const QString &tileMetadataPath) {
-    QFileInfo info(tileMetadataPath);
-    QString parentFolder = info.absoluteDir().absolutePath();
-    QString metaFile = info.fileName();
-    //QString extension = info.suffix();
-    // check if is S2
-    if(metaFile.indexOf("S2") == 0) {
-        QDirIterator it(parentFolder + "/" + metaFile + ".DBL.DIR/", QStringList() << "*_FRE_R1.DBL.TIF", QDir::Files);
-        if (it.hasNext()) {
-            return it.next();
-        }
-    } else if(metaFile.indexOf("L8") == 0) {
-        QDirIterator it(parentFolder + "/" + metaFile + ".DBL.DIR/", QStringList() << "*_FRE.DBL.TIF", QDir::Files);
-        if (it.hasNext()) {
-            return it.next();
-        }
-    } else if(metaFile.indexOf("SPOT") == 0) {
-        QDirIterator it(parentFolder + "/", QStringList() << "*_PENTE_*.TIF", QDir::Files);
-        if (it.hasNext()) {
-            return it.next();
-        }
-    }
-    return "";
-}
-
-
-QString ProcessorHandler::GetProductTypeFromTile(const QString &tileMetadataPath) {
-    QFileInfo info(tileMetadataPath);
-    QString metaFile = info.fileName();
-    if(metaFile.indexOf("S2") == 0) {
-        return "SENTINEL";
-    } else if(metaFile.indexOf("L8") == 0) {
-        return "LANDSAT_8";
-    } else if(metaFile.indexOf("SPOT4") == 0) {
-        return "SPOT4";
-    } else if(metaFile.indexOf("SPOT5") == 0) {
-        return "SPOT5";
-    }
-    return "";
 }
 
 bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,

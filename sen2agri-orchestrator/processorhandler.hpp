@@ -10,7 +10,7 @@
 #define START_OF_SEASON_CFG_KEY "general.start_of_season"
 #define END_OF_SEASON_CFG_KEY "general.end_of_season"
 
-#define PRODUC_FORMATTER_OUT_PROPS_FILE "product_properties.txt"
+#define PRODUCT_FORMATTER_OUT_PROPS_FILE "product_properties.txt"
 
 class ProcessorHandler
 {
@@ -27,13 +27,13 @@ public:
 
 protected:
     QString GetFinalProductFolder(EventProcessingContext &ctx, int jobId, int siteId);
+    QString GetFinalProductFolder(EventProcessingContext &ctx, int jobId, int siteId, const QString &productName);
     QString GetFinalProductFolder(const std::map<QString, QString> &cfgKeys, const QString &siteName, const QString &processorName);
     bool RemoveJobFolder(EventProcessingContext &ctx, int jobId);
-    QString GetProductFormatterProducName(EventProcessingContext &ctx, const TaskFinishedEvent &event);
+    QString GetProductFormatterOutputProductPath(EventProcessingContext &ctx, const TaskFinishedEvent &event);
+    QString GetProductFormatterProductName(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterQuicklook(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterFootprint(EventProcessingContext &ctx, const TaskFinishedEvent &event);
-    QString GetTileMainImageFilePath(const QString &tileMetadataPath);
-    QString GetProductTypeFromTile(const QString &tileMetadataPath);
     bool GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,  QDateTime &startTime, QDateTime &endTime,
                                 const ConfigurationParameterValueMap &requestOverrideCfgValues);
 

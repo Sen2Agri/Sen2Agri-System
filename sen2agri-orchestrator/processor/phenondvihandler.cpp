@@ -135,22 +135,17 @@ void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
 
-        QString prodName = GetProductFormatterProducName(ctx, event);
+        QString prodName = GetProductFormatterProductName(ctx, event);
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId) + "/" + prodName;
-        if(prodName != "") {
+        if(prodName != "" && ProcessorHandlerHelper::IsValidHighLevelProduct(productFolder)) {
             QString quicklook = GetProductFormatterQuicklook(ctx, event);
             QString footPrint = GetProductFormatterFootprint(ctx, event);
             // Insert the product into the database
-            ctx.InsertProduct({ ProductType::L3BPhenoProductTypeId,
-                                event.processorId,
-                                event.siteId,
-                                event.jobId,
-                                productFolder,
-                                QDateTime::currentDateTimeUtc(),
-                                prodName,
-                                quicklook,
-                                footPrint,
-                                TileList() });
+            QDateTime minDate, maxDate;
+            ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
+            ctx.InsertProduct({ ProductType::L3EProductTypeId, event.processorId, event.siteId,
+                                event.jobId, productFolder, QDateTime::currentDateTimeUtc(),
+                                prodName, quicklook, footPrint, TileList() });
 
             // Now remove the job folder containing temporary files
             // TODO: Reinsert this line - commented only for debug purposes
@@ -185,14 +180,15 @@ void PhenoNdviHandler::WriteExecutionInfosFile(const QString &executionInfosPath
 QStringList PhenoNdviHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                     const QStringList &listProducts, const QList<PhenoProductFormatterParams> &productParams) {
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
-    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUC_FORMATTER_OUT_PROPS_FILE);
+    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.txt");
     QStringList productFormatterArgs = { "ProductFormatter",
                                          "-destroot",
                                          targetFolder,
-                                         "-fileclass", "SVT1",
-                                         "-level", "L3B",
+                                         "-fileclass", "OPER",
+                                         "-level", "L3E",
                                          "-baseline", "01.00",
+                                         "-siteid", QString::number(event.siteId),
                                          "-processor", "phenondvi",
                                          "-gipp", executionInfosPath,
                                          "-outprops", outPropsPath};
