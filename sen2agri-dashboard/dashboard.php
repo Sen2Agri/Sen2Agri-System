@@ -515,7 +515,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 <script src="scripts/config.js"></script>
 <script src="scripts/helpers.js"></script>
 <script src="scripts/processing_functions.js"></script>
-<!-- <script src="scripts/processing.js"></script> -->
+<script src="scripts/processing.js"></script>
 
 
 <!-- includes for  datepicker-->
