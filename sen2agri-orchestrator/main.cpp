@@ -10,6 +10,8 @@
 #include "orchestrator.hpp"
 #include "orchestrator_adaptor.h"
 
+#define RESCAN_EVENTS_TIMEOUT   10000
+
 int main(int argc, char *argv[])
 {
     try {
@@ -20,6 +22,8 @@ int main(int argc, char *argv[])
         registerMetaTypes();
 
         Orchestrator orchestrator;
+        Timer timer(&orchestrator);
+        timer.start(RESCAN_EVENTS_TIMEOUT);
 
         new OrchestratorAdaptor(&orchestrator);
 

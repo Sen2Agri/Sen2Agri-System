@@ -2,18 +2,44 @@
 I. Create SEN2AGRI Distribution
 ------------------------------------------------------
 The following action should be performed in order to create a distribution:
-1.open a terminal and launch the script creating the distribution:
-$ /path/to/sources/sen2agri/install_platform/sen2agriCreateDistribution.sh /path/to/built/RPMs
-A distribution folder will be created Sen2AgriDistribution, on the current path.
+    1.open a terminal and launch the script creating the distribution:
+    $ /path/to/sources/sen2agri/install_platform/sen2agriCreateDistribution.sh /path/to/built/RPMs
+    A distribution folder will be created Sen2AgriDistribution, on the current path.
 
 ------------------------------------------------------
 II. Install SEN2AGRI Distribution
 ------------------------------------------------------
-The following action should be performed in order to install automatically a distribution previously created on step I:
-1.copy the distribution created on the build machine on a the machine where the distribution should be installed 
-2.open a terminal on the machine where the distribution should be installed and launch the script performing installation of the distribution
-$ sudo /path/to/distribution/Sen2AgriDistribution/install_script/sen2agriPlatformInstallAndConfig.sh
+A. The following action should be performed in order to install automatically a distribution previously created on step I:
+    1.copy the distribution created on the build machine on a the machine where the distribution should be installed 
+    2.open a terminal on the machine where the distribution should be installed and launch the script performing installation of the distribution
+    $ sudo /path/to/distribution/Sen2AgriDistribution/install_script/sen2agriPlatformInstallAndConfig.sh
 
-
+B. In order to install the RPMs on a new CentOS 7.0 machine, the following steps must be respected:
+    I.1 Copy the folder rpm_binaries on the desired machine
+    I.2 Check if yum is installed on this machine, if is not installed check the link: https://wiki.centos.org/TipsAndTricks/BrokenVserver
+    I.3 Install EPEL for packages dependencies installation
+        In a terminal type the following command:
+        $ sudo  yum install epel-release   
+    I.4 Install cifs-utils package
+        In a terminal type the following command:
+        $ sudo  yum install cifs-utils
+    I.5 Install Orfeo ToolBox 
+        In a terminal type the following commands:
+        $ sudo  yum install /path/to/RPMFilesFolder/otb-5.0.centos7.x86_64.rpm
+        $ echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
+        $ sudo  ldconfig
+    I.6 Install GDAL library 
+        In a terminal type the following commands:
+        $ sudo  yum install /path/to/RPMFilesFolder/gdal-local-2.0.1.centos7.x86_64.rpm
+        $ echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
+        $ sudo ldconfig 
+    I.7 Install Sen2Agri Processors  
+        In a terminal type the following commands:
+        $ sudo  yum install /path/to/RPMFilesFolder/sen2agri-processors-0.8.centos7.x86_64.rpm
+        $ echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
+        $ sudo ldconfig
+    I.8 Install Sen2Agri Services  
+        In a terminal type the following commands:
+        $ sudo  yum install /path/to/RPMFilesFolder/sen2agri-app.centos7.x86_64.rpm
 
 

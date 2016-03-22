@@ -298,7 +298,13 @@ void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath
         // Get L3A Synthesis date
         const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
         // Get the Half Synthesis interval value
-        const auto &synthalf = parameters["half_synthesis"].toString();
+        auto synthalf = parameters["half_synthesis"].toString();
+        if(synthalf.length() == 0) {
+            synthalf = configParameters["processor.l3a.half_synthesis"];
+            if(synthalf.length() == 0) {
+                synthalf = "15";
+            }
+        }
 
         // Get the parameters from the configuration
         const auto &bandsMapping = configParameters["processor.l3a.bandsmapping"];
@@ -450,7 +456,7 @@ QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productForma
                                     const QStringList &listProducts, const QList<CompositeProductFormatterParams> &productParams) {
 
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3a.lai.");
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3a.");
 
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
