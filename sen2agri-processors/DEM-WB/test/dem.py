@@ -159,6 +159,9 @@ def format_filename(mode, output_directory, tile_id, suffix):
 
 def create_context(args):
     dir_base = args.input
+    if not os.path.exists(dir_base) or not os.path.isdir(dir_base):
+        print("The path dows not exist ! {}".format(dir_base))
+        return []
     if dir_base.rfind('/') + 1 == len(dir_base):
         dir_base = dir_base[0:len(dir_base)-1]
     mode, date = get_dir_info(dir_base)
@@ -519,7 +522,7 @@ def parse_arguments():
                         help="working directory")
     parser.add_argument('-p', '--processes-number', required=False,
                         help="number of processed to run", default="3")
-    parser.add_argument('output', help="output location")
+    parser.add_argument('output', help="output location")    
 
     args = parser.parse_args()
 

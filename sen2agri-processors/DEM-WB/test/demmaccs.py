@@ -212,8 +212,7 @@ for dem_hdr in dem_hdrs:
     log(general_log_path, "sat_id = {} | acq_date = {}".format(sat_id, acquistion_date), general_log_filename)
     log(general_log_path, "Starting MACCS for {} | TileID: {}!".format(args.input, tile_id), general_log_filename)
 
-    #if run_command(cmd_array) != 0:
-    if tile_id == "35JMK":
+    if run_command(cmd_array) != 0:    
         log(general_log_path, "MACCS didn't work for {} | TileID: {}!".format(args.input, tile_id), general_log_filename)
     else:
         processed_tiles.append(tile_id)
