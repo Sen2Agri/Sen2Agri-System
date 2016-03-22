@@ -494,7 +494,7 @@ class AOIInfo(object):
                                 })
             rows = self.cursor.fetchall()
             if len(rows) > 1:
-                print("upsertProductHistory error: the select for product {} retuirned more than 1 entry. Illegal, should be only 1 entry in downloader_history table".format(productName))
+                print("upsertProductHistory error: the select for product {} returned more than 1 entry. Illegal, should be only 1 entry in downloader_history table".format(productName))
                 self.databaseDisconnect()
                 return False
             if len(rows) == 0:
@@ -801,7 +801,20 @@ class L1CInfo(object):
                                     "status_id" : DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE, 
                                     "l1c_id" : l1c_id
                                 })
+            self.conn.commit()
             if len(l2a_processed_tiles) > 0:
+                #check if this product was previously inserted: ????
+                '''self.cursor.execute("""SELECT id FROM product
+                                WHERE site_id = %(site_id)s and
+                                satellite_id = %(satellite_id)s and
+                                %(name)s :: character varying""", 
+                                    {
+                                        "site_id" : site_id, 
+                                        "satellite_id" : sat_id,
+                                        "name" : product_name
+                                    })
+                rows = self.cursor.fetchall()
+                '''
                 self.cursor.execute("""select * from sp_insert_product(%(product_type_id)s :: smallint,
                                %(processor_id)s :: smallint, 
                                %(satellite_id)s :: smallint, 
@@ -826,7 +839,7 @@ class L1CInfo(object):
                                     "footprint" : footprint, 
                                     "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']' 
                                 })
-            self.conn.commit()
+                self.conn.commit()
         except Exception, e:
             print("Database update query failed: {}".format(e))            
             self.database_disconnect()

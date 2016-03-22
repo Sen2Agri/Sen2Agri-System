@@ -12,11 +12,11 @@ $ /path/to/sources/sen2agri/packaging/Sen2AgriBuildAll.sh
 
 NOTE1: If it is first time the build is performed on the working centos machine, option 1)Install BUILD PREREQUISITES
 shall be choosen. This part installs devel libs and packaging tools needed for compilation and packaging
-2.Chose option needed. RPM packages will be in folder Sen2AgriRPM on the current path
+2.Chose option needed. RPM packages will be in folder Sen2AgriRPM on the current directory
 
 NOTE2: Sen2agriProcesors cannot be built if OTB is not installed. Before building Sen2agriProcesors perform the following
 actions:
- - Build OTB option 2)BUILD Sen2AgriPlatform : OTB and GDAL. RPM packages will be in folder Sen2AgriRPM on the current path
+ - Build OTB option 2)BUILD Sen2AgriPlatform : OTB and GDAL. RPM packages will be in folder Sen2AgriRPM on the current directory
  - Install OTB and GDAL manually
 
    sudo yum -y install /path/to/RPMs/otb-5.0.centos7.x86_64.rpm

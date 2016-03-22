@@ -35,6 +35,7 @@ public:
     StepConsoleOutputList GetTaskConsoleOutputs(int taskId);
 
     QString GetProcessorShortName(int processorId);
+    QString GetSiteShortName(int siteId);
     QString GetSiteName(int siteId);
 
     UnprocessedEventList GetNewEvents();
@@ -43,8 +44,9 @@ public:
 
     int InsertProduct(const NewProduct &product);
 
+    ProductList GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate);
     QStringList GetProductFiles(const QString &path, const QString &pattern) const;
-    QString GetOutputPath(int jobId);
+    QString GetJobOutputPath(int jobId);
     QString GetOutputPath(int jobId, int taskId, const QString &module);
 
     void SubmitTasks(int jobId, const QList<std::reference_wrapper<TaskToSubmit>> &tasks);

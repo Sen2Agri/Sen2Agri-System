@@ -27,7 +27,7 @@
 #define JPEG_EXTENSION                  ".jpg"
 
 #define REFLECTANCE_SUFFIX              "SRFL"
-#define WEIGHTS_SUFFIX                  "SWGT"
+#define WEIGHTS_SUFFIX                  "MWGT"
 #define COMPOSITE_DATES_SUFFIX          "MDAT"
 #define COMPOSITE_FLAGS_SUFFIX          "MFLG"
 #define LAI_NDVI_SUFFIX                 "SNDVI"
@@ -903,8 +903,16 @@ private:
       tileInfoEl.tileMetadata.ProductLevel = "Level-"  + m_strProductLevel;
 
       for (rasterInfo &rasterFileEl : m_rasterInfoList) {
-          if((rasterFileEl.strTileID == tileInfoEl.strTileID) && !rasterFileEl.bIsQiData)
-          {
+          if(rasterFileEl.bIsQiData) {
+              if(rasterFileEl.strRasterFileName.find(".tif") > 0 || rasterFileEl.strRasterFileName.find(".TIF") > 0) {
+                  auto imageReader = ImageFileReader<FloatVectorImageType>::New();
+                  imageReader->SetFileName(rasterFileEl.strRasterFileName);
+                  imageReader->UpdateOutputInformation();
+                  FloatVectorImageType::Pointer output = imageReader->GetOutput();
+
+                  rasterFileEl.nResolution = output->GetSpacing()[0];
+              }
+          } else if((rasterFileEl.strTileID == tileInfoEl.strTileID)) {
               //std::cout << "ImageFileReader =" << rasterFileEl.strRasterFileName << std::endl;
 
               auto imageReader = ImageFileReader<FloatVectorImageType>::New();
@@ -1344,7 +1352,7 @@ private:
                     break;
               }
               if(bAddResolutionToSuffix) {
-                  suffix = "_" + std::to_string(rasterFileEl.nResolution) + suffix;
+                  suffix = "_" + std::to_string(rasterFileEl.nResolution) + "M" + suffix;
               }
 
               rasterFileEl.strNewRasterFileName = BuildFileName(rasterCateg, tileInfoEl.strTileID, suffix, rasterFileEl.rasterTimePeriod);

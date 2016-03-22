@@ -93,12 +93,15 @@ else:
     p = Pool(len(sites_aoi_database))
     if options.remote_host == "s2":
         p.map(sentinel_download, sites_aoi_database)
-        #sentinel_download(sites_aoi_database[0])
+        #used only in debug mode
+        #for site in sites_aoi_database:
+            #sentinel_download(site)
     else:
         p.map(landsat_download, sites_aoi_database)
-        #landsat_download(sites_aoi_database[0])
-    
-
+        #used only in debug mode
+        #for site in sites_aoi_database:
+            #landsat_download(site)
+    print("downloader exited !")
 
 
 

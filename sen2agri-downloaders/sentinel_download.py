@@ -94,14 +94,15 @@ def product_download(s2Obj, aoiContext, db):
             log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADING for {}".format(s2Obj.filename), general_log_filename)
             return False        
         if run_command(commandArray) != 0:
-            #TODO: get the product name and check the no_of_retries. 
-            #TODO: if it's greater than aoiContext.maxRetries, update the product name status with ABORTED (4)
-            #TODO: else update the product name in the downloader_history with status FAILED (3) and increment the no_of_retries
+            #get the product name and check the no_of_retries. 
+            #if it's greater than aoiContext.maxRetries, update the product name status with ABORTED (4)
+            #else update the product name in the downloader_history with status FAILED (3) and increment the no_of_retries
+            #this logic is performed by db.upsertSentinelProductHistory
             log(aoiContext.writeDir, "the java donwloader command didn't work for {}".format(s2Obj.filename), general_log_filename)
             if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_FAILED_VALUE, s2Obj.product_date_as_string, abs_filename, aoiContext.maxRetries):
                 log(aoiContext.writeDir, "Couldn't upsert into database with status FAILED for {}".format(s2Obj.filename), general_log_filename)
             return False
-        #TODO: update the product name in the downloader_history with status DOWNLOADED (2)
+        #update the product name in the downloader_history with status DOWNLOADED (2)
         if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE, s2Obj.product_date_as_string, abs_filename, aoiContext.maxRetries):
             log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADED for {}".format(s2Obj.filename), general_log_filename)
         return False
@@ -180,9 +181,6 @@ signal.signal(signal.SIGINT, signal_handler)
 def sentinel_download(aoiContext):
     global g_exit_flag
     global general_log_filename
-    #if not createRecursiveDirs(aoiContext.writeDir):
-    #    log(general_log_path, "Could not create the output directory", general_log_filename)
-    #    sys.exit(-1)
 
     url_search="https://scihub.esa.int/apihub/search?q="
     general_log_filename = "sentinel_download.log"

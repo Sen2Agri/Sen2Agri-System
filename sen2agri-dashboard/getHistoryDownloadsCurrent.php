@@ -18,6 +18,7 @@ require_once("ConfigParams.php");
 				"<td colspan=\"2\">". $row[0]."</td>".
 				"<td colspan=\"2\">". $row[1]."</td>".
 				"<td colspan=\"2\">". $row[2]."</td>".
+				"<td colspan=\"2\">". $row[3]."</td>".
 				"</tr>";
 		$tr_current = $tr_current . $tr;
 	}
