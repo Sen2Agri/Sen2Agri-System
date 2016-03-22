@@ -146,11 +146,8 @@ else:
     log(general_log_path, "Unknown satellite id {} found for {}".format(sat_id, args.input), general_log_filename)
     sys.exit(-1)
 
-
 gips = glob.glob("{}/{}*.*".format(args.gip_dir, gip_sat))
-for gip in gips:
-    print("{}".format(gip))
-sys.exit(0)
+
 if not create_sym_links(gips, working_dir):
     log(general_log_path, "Symbolic links for GIP files could not be created in the output directory", general_log_filename)
     sys.exit(-1)
@@ -158,8 +155,6 @@ if not create_sym_links(gips, working_dir):
 dem_hdrs = glob.glob("{}/*.HDR".format(dem_output_dir))
 log(general_log_path, "DEM output directory {} has DEM hdrs = {}".format(dem_output_dir, dem_hdrs), general_log_filename)
 processed_tiles = []
-
-
 
 for dem_hdr in dem_hdrs:    
     basename, tile_id = get_dem_hdr_info(dem_hdr)
@@ -217,8 +212,8 @@ for dem_hdr in dem_hdrs:
     else:
         processed_tiles.append(tile_id)
         log(general_log_path, "MACCS finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))), general_log_filename)
-        #if run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", args.output, "-w", working_dir]) != 0:
-        #    log(general_log_path, "Mosaic didn't work")    
+        if run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", args.output, "-w", working_dir]) != 0:
+            log(general_log_path, "Mosaic didn't work")    
     remove_sym_links([dem_hdr, dem_dir[0]], working_dir)
     remove_sym_links(prev_l2a_tile_path, working_dir)
 
