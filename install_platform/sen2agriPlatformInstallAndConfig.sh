@@ -9,7 +9,7 @@
 ##     - INSTALL OTB, GDAL, SEN2AGRI PROCESSORS AND SEN2AGRI SERVICE
 ##     - INSTALL SLURM
 ##     - CONFIGURE SLURM
-##         - PARSE AND UPDATE SLURM.CONF FILE AND SLURMDB.CONF FILE 
+##         - PARSE AND UPDATE SLURM.CONF FILE AND SLURMDB.CONF FILE
 ##         - COPY SLURM.CONF AND SLURMDB.CONF INTO FOLDER /ETC/SLURM/
 ##         - INSTALL MUNGE SERVICE FOR SLURM AND START IT
 ##         - INSTALL MYSQL(MARIADB), CREATE SLURM DATABASE
@@ -102,7 +102,7 @@ function create_slurm_data_base()
    ##install mysql (mariadb)
    yum -y install mariadb-server mariadb
 
-   ##start mysql (mariadb)  
+   ##start mysql (mariadb)
    systemctl start mariadb
 
    ##enable mysql (mariadb) to start at boot
@@ -157,18 +157,18 @@ function config_and_start_slurm_service()
 
    ####################################
    ####  process SLURM .conf files
-   ####################################   
+   ####################################
    parse_and_update_slurm_conf_file
 
    ####################################
    ####  SLURM database create and config
-   #################################### 
+   ####################################
    create_slurm_data_base
 
    ####################################
    ####  SLURM Daemons start
    ####################################
-   ##start slurmdbd (slurmdbd)  
+   ##start slurmdbd (slurmdbd)
    systemctl start slurmdbd
 
    ##enable slurmdbd (slurmdbd)  to start at boot
@@ -193,7 +193,7 @@ function config_and_start_slurm_service()
    mkdir /var/log/slurm
    chown -R slurm:slurm /var/log/slurm
 
-   ##start slurm controller daemon slurmctld (slurmctld)  
+   ##start slurm controller daemon slurmctld (slurmctld)
    systemctl start slurmctld
 
    ##enable slurm controller daemon slurmctld to start at boot
@@ -202,7 +202,7 @@ function config_and_start_slurm_service()
    ##get status of slurm controller daemon  slurmctld service
    echo "SLURM CTL SERVICE: $(systemctl status slurmctld | grep "Active")"
 
-   ##start slurm node daemon slurmd (slurmd)  
+   ##start slurm node daemon slurmd (slurmd)
    systemctl start slurmd
 
    ##enable slurm node daemon slurmd to start at boot
@@ -211,7 +211,7 @@ function config_and_start_slurm_service()
    ##get status of slurm node daemon slurmd service
    echo "SLURM NODE SERVICE: $(systemctl status slurmd | grep "Active")"
 
-   ##start slurm service (slurm)  
+   ##start slurm service (slurm)
    systemctl start slurm
 
    ##enable slurm service to start at boot
@@ -246,7 +246,7 @@ function config_and_start_munge_service()
    dd if=/dev/urandom bs=1 count=1024 > /etc/munge/munge.key
    chown munge:munge /etc/munge/munge.key
    chmod 400 /etc/munge/munge.key
- 
+
    ##enable munge Daemon to start on boot time
    systemctl enable munge
 
@@ -335,7 +335,7 @@ function create_and_config_slurm_qos()
       ")
       echo "$SLURM_ADD_QOS_TO_ACC"
    done
-   
+
    #add implicit SLURM QOS "normal" to user
    SLURM_ADD_QOS_TO_ACC=$(expect -c "
       set timeout 5
@@ -345,17 +345,17 @@ function create_and_config_slurm_qos()
       expect eof
    ")
    echo "$SLURM_ADD_QOS_TO_ACC"
-      
+
    #show current configuration for SLURM
    echo "CLUSTER,USERS,QOS INFO:"
    sacctmgr show assoc format=cluster,user,qos
-   
+
    echo "QOS INFO:"
    sacctmgr list qos
-   
+
    echo "Partition INFO:"
    scontrol show partition
-   
+
    echo "Nodes INFO:"
    scontrol show node
 }
@@ -367,7 +367,7 @@ function install_and_config_postgresql()
    yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.2-x86_64/pgdg-centos94-9.4-2.noarch.rpm
    yum -y install postgresql94-server
 
-   #initialize the database in PGDATA 
+   #initialize the database in PGDATA
    /usr/pgsql-9.4/bin/postgresql94-setup initdb
 
    #install pgcrypto in PostgreSQL
@@ -396,12 +396,12 @@ function install_and_config_postgresql()
    populate_from_scripts "$(find ./ -name "database")/06-indexes"
    populate_from_scripts "$(find ./ -name "database")/07-data"
    populate_from_scripts "$(find ./ -name "database")/08-keys"
-   
+
    #-------------- pg_hba.conf -----------------------#
    ####  copy conf file to /var/lib/pgsql/9.4/data/pg_hba.conf
    cp -f $(find ./ -name "pg_hba.conf") /var/lib/pgsql/9.4/data/
-   
-   #restart service Postgresql 
+
+   #restart service Postgresql
    systemctl restart postgresql-9.4.service
 }
 #-----------------------------------------------------------#
@@ -419,7 +419,7 @@ function populate_from_scripts()
    #for each sql scripts found in this folder
    for scriptName in "$curPath"/*.sql
       do
-         ## perform execution of each sql script 
+         ## perform execution of each sql script
          echo "Executing SQL script: $scriptName"
          cat "$scriptName" | sudo su postgres -c 'psql '${SEN2AGRI_DATABASE_NAME}''
       done
@@ -429,7 +429,7 @@ function install_and_config_webserver()
 {
    #install additional packages
    yum -y install php-pgsql
-   
+
    #install apache
    yum -y install httpd
 
@@ -445,7 +445,7 @@ function install_and_config_webserver()
    #restart service apache
    systemctl restart httpd.service
 
-   ##install Sen2Agri Website  
+   ##install Sen2Agri Website
    yum -y install ../rpm_binaries/sen2agri-website-1.0.centos7.x86_64.rpm
 
    #get machine IP
@@ -457,15 +457,15 @@ function install_and_config_webserver()
 
    ##replace "sen2agri-dev" with machine ip "_inet_addr "  into file /var/www/html/scripts/config.js
    sed -i "s/sen2agri-dev/$_inet_addr/" /var/www/html/scripts/config.js
-  
+
 }
 #-----------------------------------------------------------#
 function install_downloaders_demmacs()
 {
-   ##install wget , python-lxml and bzip prerequisites for Downloaders 
+   ##install wget , python-lxml and bzip prerequisites for Downloaders
    yum -y install wget python-lxml.x86_64 bzip2
-   
-   ##install java prerequisites for Downloaders 
+
+   ##install java prerequisites for Downloaders
    yum -y install java-1.8.0-openjdk
 
    ##install Sen2Agri Downloaders  & Demmacs
@@ -473,7 +473,7 @@ function install_downloaders_demmacs()
 
    echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
    ldconfig
-   
+
    #reload daemon to update it with new services
    systemctl daemon-reload
 
@@ -490,27 +490,27 @@ function install_RPMs()
    ####  OTB, GDAL, SEN2AGRI-PROCESSORS, SEN2AGRI-SERVICES
    ##########################################################
    ##install EPEL for packages dependencies installation
-   yum -y install epel-release   
+   yum -y install epel-release
 
-   ##install cifs-utils gdal-python and python-psycopg2 package
-   yum -y install cifs-utils gdal-python python-psycopg2
+   ##install a couple of packages
+   yum -y install cifs-utils gdal-python python-psycopg2 gd redhat-lsb-core
 
-   ##install Orfeo ToolBox 
+   ##install Orfeo ToolBox
    yum -y install ../rpm_binaries/otb-5.0.centos7.x86_64.rpm
    echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
    ldconfig
 
-   ##install GDAL library 
+   ##install GDAL library
    yum -y install ../rpm_binaries/gdal-local-2.0.1.centos7.x86_64.rpm
    echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
    ldconfig
 
-   ##install Sen2Agri Processors  
+   ##install Sen2Agri Processors
    yum -y install ../rpm_binaries/sen2agri-processors-0.8.centos7.x86_64.rpm
    echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
    ldconfig
 
-   ##install Sen2Agri Services  
+   ##install Sen2Agri Services
    yum -y install ../rpm_binaries/sen2agri-app.centos7.x86_64.rpm
 
    ##########################################################
