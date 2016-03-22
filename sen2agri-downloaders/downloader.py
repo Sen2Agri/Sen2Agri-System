@@ -95,8 +95,9 @@ else:
         p.map(sentinel_download, sites_aoi_database)
         #sentinel_download(sites_aoi_database[0])
     else:
-        p.map(landsat_download, sites_aoi_database)
-        #landsat_download(sites_aoi_database[0])
+        #p.map(landsat_download, sites_aoi_database)
+        for site in sites_aoi_database:
+            landsat_download(site)
     
 
 

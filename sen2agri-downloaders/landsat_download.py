@@ -7,6 +7,7 @@
 """
 
 import glob,os,sys,math,urllib2,urllib,time,math,shutil
+import socket
 import subprocess
 
 import datetime
@@ -142,15 +143,22 @@ def downloadChunks(url, rep, prod_name, prod_date, abs_prod_path, aoiContext, db
              if g_exit_flag:
                   log(rep, "SIGINT signal caught", general_log_filename)
                   sys.exit(0)
+  except socket.timeout, e:
+       log(rep, "Timeout for file {0} ".format(nom_fic), general_log_filename)
+       return False
+  except socket.error, e:
+       log(rep, "socket.error for file {0}. Error: {1}".format(nom_fic, e), general_log_filename)
+       return False
   except urllib2.HTTPError, e:
        if e.code == 500:
             log(rep, "File doesn't exist: {0}".format(nom_fic), general_log_filename)
        else:
             log(rep, "HTTP Error for file {0}. Error code: {1}. Url: {2}".format(nom_fic, e.code, url), general_log_filename)
        return False
+  
   except urllib2.URLError, e:
-    log(rep, "URL Error for file {0} . Reason: {1}. Url: {2}".format(nom_fic, e.reason,url), general_log_filename)
-    return False
+       log(rep, "URL Error for file {0} . Reason: {1}. Url: {2}".format(nom_fic, e.reason,url), general_log_filename)
+       return False
   size = os.stat(rep+'/'+nom_fic).st_size
   log(rep, "File {0} downloaded with size {1} from a total size of {2}".format(nom_fic,str(size), str(total_size)), general_log_filename)
   if int(total_size) != int(size):

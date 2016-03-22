@@ -9,6 +9,7 @@ import sys
 import time, datetime
 import gdal
 from osgeo import ogr
+from multiprocessing import Pool
 from sen2agri_common_db import *
 general_log_path = "/tmp/"
 general_log_filename = "demmaccs_launcher.log"
@@ -78,11 +79,12 @@ def get_footprint(image_filename):
 
 
 class L1CContext(object):
-    def __init__(self, l1c_list, l1c_db, processor_short_name, base_output_path):
+    def __init__(self, l1c_list, l1c_db, processor_short_name, base_output_path, skip_dem = None):
         self.l1c_list = l1c_list
         self.l1c_db = l1c_db
         self.processor_short_name = processor_short_name
         self.base_output_path = base_output_path        
+        self.skip_dem = skip_dem
 
 
 def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_db):
@@ -157,11 +159,13 @@ def launch_demmaccs(l1c_context):
         acquisition_date = ""
         base_abs_path = os.path.dirname(os.path.abspath(__file__)) + "/"
         demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "-p", "5", "--gip-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-address", demmaccs_config.maccs_ip_address, "--maccs-launcher", demmaccs_config.maccs_launcher, "--dem-launcher",  base_abs_path + "dem.py", "--delete-temp", "False", l1c[3], output_path]
+        if l1c_context.skip_dem != None:
+            demmaccs_command += ["--skip-dem", l1c_context.skip_dem]
         if len(l2a_tiles) > 0:
             print("{}".format(l2a_tiles))
             demmaccs_command.append("--prev-l2a-tiles")
             demmaccs_command += l2a_tiles
-            demmaccs_command.append("--prev-l2a-tiles-paths")
+            demmaccs_command.append("--prev-l2a-products-paths")
             demmaccs_command += l2a_tiles_paths
        
         if run_command(demmaccs_command) == 0:
@@ -178,26 +182,35 @@ def launch_demmaccs(l1c_context):
                 log(output_path, "Could not create the footprint", general_log_filename)
             else:
                 sat_id, acquisition_date = get_product_info(os.path.basename(output_path[:len(output_path) - 1]))
-                if sat_id > 0 and acquisition_date != None:
-                    log(output_path, "Mark the state as present in the database for product {}".format(output_path), general_log_filename)
+                if sat_id > 0 and acquisition_date != None:                    
                     #looking in processed_tiles file to take all the processed tiles by MACCS. If none was processed, only the input from
                     #downloader_history table will be set. No l2a product will be added into product table
-                    processed_tiles_filename = (output_path[:len(output_path) - 1] if output_path.endswith("/") else output_path) + "/processed_tiles"
-                    if os.path.isfile(processed_tiles_filename):
-                        with open(processed_tiles_filename, 'r') as result_processed_tiles:
-                            l2a_processed_tiles = result_processed_tiles.readline().split()                    
-                            print(l2a_processed_tiles)
-                        #os.remove(processed_tiles_filename)
+                    if os.path.exists(output_path) and os.path.isdir(output_path):
+                        print("{}".format(output_path))
+                        dbl_dirs = glob.glob("{}*.DBL.DIR".format(output_path))
+                        print("{}".format(dbl_dirs))
+                        for tile_dbl_dir in dbl_dirs:
+                            tile = re.search(r"_L2VALD_(\d\d[a-zA-Z]{3})____[\w\.]+$", tile_dbl_dir)
+                            if tile is not None:
+                                l2a_processed_tiles.append(tile.group(1))
+                            print("Searched tiles: {}".format(l2a_processed_tiles))
                 else:
                     log(output_path,"Could not get the acquisition date from the product name {}".format(output_path), general_log_filename)
         else:
             log(output_path, "demmaccs.py script didn't work!", general_log_filename)
+        if len(l2a_processed_tiles) > 0:
+            log(output_path, "Mark the state as present in product table and state as processed in downloader_history for product {}".format(output_path), general_log_filename)
+        else:
+            log(output_path, "Only set the state as processed in downloader_history (no l2a tilesfound after maccs) for product {}".format(output_path), general_log_filename)
         l1c_db.set_processed_product(1, l1c[1], l1c[0], l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date)
 
 
 parser = argparse.ArgumentParser(
     description="Launcher for DEM MACCS script")
 parser.add_argument('-c', '--config', default="/etc/sen2agri/sen2agri.conf", help="configuration file")
+parser.add_argument('-p', '--processes_number', default=5, help="Number of processes to run DEMMACCS")
+parser.add_argument('--skip-dem', required=False,
+                        help="skip DEM if a directory with previous work of DEM is given", default=None)
 
 args = parser.parse_args()
 
@@ -229,17 +242,19 @@ base_output_path = demmaccs_config.output_path.replace("{processor}", processor_
 
 l1c_context_list = []
 for l1c_site in l1c_list:
-    l1c_context_list.append(L1CContext(l1c_site, l1c_db, processor_short_name, base_output_path))
-    print("-----------------------------------")
-    print("{}".format(l1c_site))
+    l1c_context_list.append(L1CContext(l1c_site, l1c_db, processor_short_name, base_output_path, args.skip_dem))
+    with open("/mnt/archive/maccs_prod/demmaccs_launcher.log", 'a') as demmaccs_launcher_log:
+        demmaccs_launcher_log.write("-----------------------------------\n")
+        demmaccs_launcher_log.write("{}".format(l1c_site))
+        demmaccs_launcher_log.write("\n")
 
-#p = Pool(5)
-#p.map(launch_demmacs, l1c_context_list)
+#p = Pool(args.processes_number)
+#p.map(launch_demmaccs, l1c_context_list)
 
-#for l1c_context in l1c_context_list:
-#    launch_demmaccs(l1c_context)
+for l1c_context in l1c_context_list:
+    launch_demmaccs(l1c_context)
 
-launch_demmaccs(l1c_context_list[0])
+#launch_demmaccs(l1c_context_list[0])
 
 
 
