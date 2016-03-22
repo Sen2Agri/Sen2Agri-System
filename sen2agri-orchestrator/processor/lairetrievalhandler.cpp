@@ -21,17 +21,20 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
                                                      int nbLaiMonoProducts, bool bGenModels, bool bMonoDateLai, bool bNDayReproc, bool bFittedReproc) {
     // just create the tasks but with no information so far
     // first we add the tasks to be performed for each product
-    int TasksNoPerProduct = LAI_TASKS_PER_PRODUCT;
+    int TasksNoPerProduct = 0;
     if(bGenModels)
         TasksNoPerProduct += MODEL_GEN_TASKS_PER_PRODUCT;
-    if(bMonoDateLai) {
-        for(int i = 0; i<nbLaiMonoProducts; i++) {
-            if(bGenModels) {
-                outAllTasksList.append(TaskToSubmit{ "lai-bv-input-variable-generation", {} });
-                outAllTasksList.append(TaskToSubmit{ "lai-prosail-simulator", {} });
-                outAllTasksList.append(TaskToSubmit{ "lai-training-data-generator", {} });
-                outAllTasksList.append(TaskToSubmit{ "lai-inverse-model-learning", {} });
-            }
+    if(bMonoDateLai)
+        TasksNoPerProduct += LAI_TASKS_PER_PRODUCT;
+
+    for(int i = 0; i<nbLaiMonoProducts; i++) {
+        if(bGenModels) {
+            outAllTasksList.append(TaskToSubmit{ "lai-bv-input-variable-generation", {} });
+            outAllTasksList.append(TaskToSubmit{ "lai-prosail-simulator", {} });
+            outAllTasksList.append(TaskToSubmit{ "lai-training-data-generator", {} });
+            outAllTasksList.append(TaskToSubmit{ "lai-inverse-model-learning", {} });
+        }
+        if(bMonoDateLai) {
             outAllTasksList.append(TaskToSubmit{"lai-mono-date-mask-flags", {}});
             outAllTasksList.append(TaskToSubmit{"lai-ndvi-rvi-extractor", {}});
             outAllTasksList.append(TaskToSubmit{"lai-bv-image-invertion", {}});
@@ -40,6 +43,7 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
             outAllTasksList.append(TaskToSubmit{"lai-quantify-err-image", {}});
         }
     }
+
     if(bNDayReproc || bFittedReproc) {
         outAllTasksList.append(TaskToSubmit{"lai-time-series-builder", {}});
         outAllTasksList.append(TaskToSubmit{"lai-err-time-series-builder", {}});
@@ -106,26 +110,24 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
     QList<int> quantifyImageInvIdxs;
     QList<int> quantifyErrImageInvIdxs;
 
-    int nCurIdx = 0;
-    if(bMonoDateLai) {
-        // we execute in parallel and launch at once all processing chains for each product
-        // for example, if we have genModels, we launch all bv-input-variable-generation for all products
-        // if we do not have genModels, we launch all NDVIRVIExtraction in the same time for all products
-        for(i = 0; i<nbLaiMonoProducts; i++) {
-            int loopFirstIdx = i*TasksNoPerProduct;
-            // initialize the ndviRvi task index
-            int genMasksIdx = loopFirstIdx;
-            // add the tasks for generating models
-            if(bGenModels) {
-                int prosailSimulatorIdx = loopFirstIdx+1;
-                outAllTasksList[prosailSimulatorIdx].parentTasks.append(outAllTasksList[loopFirstIdx]);
-                outAllTasksList[prosailSimulatorIdx+1].parentTasks.append(outAllTasksList[prosailSimulatorIdx]);
-                outAllTasksList[prosailSimulatorIdx+2].parentTasks.append(outAllTasksList[prosailSimulatorIdx+1]);
-                // now update the index for the ndviRvi task and set its parent to the inverse-model-learning task
-                genMasksIdx += MODEL_GEN_TASKS_PER_PRODUCT;
-                outAllTasksList[genMasksIdx].parentTasks.append(outAllTasksList[prosailSimulatorIdx+2]);
-            }
-
+    // we execute in parallel and launch at once all processing chains for each product
+    // for example, if we have genModels, we launch all bv-input-variable-generation for all products
+    // if we do not have genModels, we launch all NDVIRVIExtraction in the same time for all products
+    for(i = 0; i<nbLaiMonoProducts; i++) {
+        int loopFirstIdx = i*TasksNoPerProduct;
+        // initialize the ndviRvi task index
+        int genMasksIdx = loopFirstIdx;
+        // add the tasks for generating models
+        if(bGenModels) {
+            int prosailSimulatorIdx = loopFirstIdx+1;
+            outAllTasksList[prosailSimulatorIdx].parentTasks.append(outAllTasksList[loopFirstIdx]);
+            outAllTasksList[prosailSimulatorIdx+1].parentTasks.append(outAllTasksList[prosailSimulatorIdx]);
+            outAllTasksList[prosailSimulatorIdx+2].parentTasks.append(outAllTasksList[prosailSimulatorIdx+1]);
+            // now update the index for the ndviRvi task and set its parent to the inverse-model-learning task
+            genMasksIdx += MODEL_GEN_TASKS_PER_PRODUCT;
+            outAllTasksList[genMasksIdx].parentTasks.append(outAllTasksList[prosailSimulatorIdx+2]);
+        }
+        if(bMonoDateLai) {
             laiMonoDateFlgsIdxs.append(genMasksIdx);
 
             // ndvi-rvi-extraction -> lai-mono-date-mask-flags
@@ -159,8 +161,9 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
             monoParams.parentsTasksRef.append(outAllTasksList[nQuantifyErrImageInversionIdx]);
             outProdFormatterParams.listLaiMonoParams.append(monoParams);
         }
-        nCurIdx = i*TasksNoPerProduct;
     }
+    int nCurIdx = nbLaiMonoProducts*TasksNoPerProduct;
+
 
     if(bNDayReproc || bFittedReproc) {
         // time-series-builder -> ALL last bv-image-inversion/quantified-images
@@ -283,9 +286,9 @@ LAIGlobalExecutionInfos LaiRetrievalHandler::HandleNewTilesList(EventProcessingC
     NewStepList &steps = globalExecInfos.allStepsList;
 
     // first extract the model file names from the models folder
-    int TasksNoPerProduct = LAI_TASKS_PER_PRODUCT;
+    int TasksNoPerProduct = bMonoDateLai ? LAI_TASKS_PER_PRODUCT : 0;
     if(bGenModels) {
-        GetStepsToGenModel(configParameters, listProducts, allTasksList, steps);
+        GetStepsToGenModel(configParameters, bMonoDateLai, monoDateInputs, allTasksList, steps);
         TasksNoPerProduct += MODEL_GEN_TASKS_PER_PRODUCT;
     }
 
@@ -869,6 +872,7 @@ QStringList LaiRetrievalHandler::GetReprocProductFormatterArgs(TaskToSubmit &pro
 }
 
 void LaiRetrievalHandler::GetStepsToGenModel(std::map<QString, QString> &configParameters,
+                                             bool bHasMonoDateLai,
                                              const QStringList &listProducts,
                                              QList<TaskToSubmit> &allTasksList,
                                              NewStepList &steps)
@@ -876,7 +880,8 @@ void LaiRetrievalHandler::GetStepsToGenModel(std::map<QString, QString> &configP
     const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
     const auto &rsrCfgFile = configParameters["processor.l3b.lai.rsrcfgfile"];
     int i = 0;
-    int TasksNoPerProduct = LAI_TASKS_PER_PRODUCT + MODEL_GEN_TASKS_PER_PRODUCT;
+    int TasksNoPerProduct = MODEL_GEN_TASKS_PER_PRODUCT;
+    if (bHasMonoDateLai) TasksNoPerProduct += LAI_TASKS_PER_PRODUCT;
     for(const QString& curXml : listProducts) {
         int loopFirstIdx = i*TasksNoPerProduct;
         TaskToSubmit &bvInputVariableGenerationTask = allTasksList[loopFirstIdx];

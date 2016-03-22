@@ -96,7 +96,7 @@ private:
                                         const JobSubmittedEvent &event,
                                         const QStringList &listProducts, const QList<LAIProductFormatterParams> &productParams, bool isFitted);
 
-    void GetStepsToGenModel(std::map<QString, QString> &configParameters, const QStringList &listProducts,
+    void GetStepsToGenModel(std::map<QString, QString> &configParameters, bool bHasMonoDateLai, const QStringList &listProducts,
                             QList<TaskToSubmit> &allTasksList, NewStepList &steps);
     QStringList GetBVInputVariableGenerationArgs(std::map<QString, QString> &configParameters, const QString &strGenSampleFile);
     QStringList GetProSailSimulatorArgs(const QString &product, const QString &bvFileName, const QString &rsrCfgFileName,
