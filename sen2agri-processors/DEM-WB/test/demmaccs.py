@@ -82,6 +82,8 @@ parser.add_argument('--maccs-launcher', required=True, help="the shell from the 
 parser.add_argument('--dem-launcher', required=True, help="executable for DEM")
 parser.add_argument('--skip-dem', required=False,
                         help="skip DEM if a directory with previous work of DEM is given", default=None)
+parser.add_argument('--remote-maccs', required=False,
+                        help="MACCS has to be run from a remote host", default=None)
 parser.add_argument('--delete-temp', required=False,
                         help="if set to True, it will delete all the temporary files and directories. Default: True", default="True")
 parser.add_argument('--prev-l2a-tiles', required=False,
@@ -191,9 +193,10 @@ for dem_hdr in dem_hdrs:
         sys.exit(-1)
     except:
         print("No previous processed l2a tile found for {} in product {}".format(tile_id, product_name))
-    
-    cmd_array = ["ssh", args.maccs_address, 
-                    args.maccs_launcher, 
+    cmd_array = []
+    if args.remote_maccs is not None:
+        cmd_array = ["ssh", args.maccs_address]
+    cmd_array += [args.maccs_launcher, 
                     "--input", working_dir, 
                     "--TileId", tile_id, 
                     "--output", args.output,

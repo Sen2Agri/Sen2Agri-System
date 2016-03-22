@@ -384,8 +384,9 @@ function install_and_config_postgresql()
    echo "POSTGRESQL SERVICE: $(systemctl status postgresql-9.4 | grep "Active")"
 
    #------------DATABASE CREATION------------#
-   cat "$(find ./ -name "database")/00-database"/*.sql | sudo su postgres -c 'psql'
-   create_database_from_script "$(find ./ -name "database")/00-database"
+   # first, the database is created. the privileges will be set after all 
+   # the tables, data and other stuff is created (see down, privileges.sql
+   cat "$(find ./ -name "database")/00-database"/sen2agri.sql | sudo su postgres -c 'psql'
 
    #run scripts populating database
    populate_from_scripts "$(find ./ -name "database")/01-extensions"
@@ -396,6 +397,8 @@ function install_and_config_postgresql()
    populate_from_scripts "$(find ./ -name "database")/06-indexes"
    populate_from_scripts "$(find ./ -name "database")/07-data"
    populate_from_scripts "$(find ./ -name "database")/08-keys"
+   # granting privileges to sen2agri-service and admin users
+   cat "$(find ./ -name "database")/00-database"/privileges.sql | sudo su postgres -c 'psql '${SEN2AGRI_DATABASE_NAME}''
    
    #-------------- pg_hba.conf -----------------------#
    ####  copy conf file to /var/lib/pgsql/9.4/data/pg_hba.conf
