@@ -36,6 +36,7 @@ protected:
     QString GetProductFormatterFootprint(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     bool GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,  QDateTime &startTime, QDateTime &endTime,
                                 const ConfigurationParameterValueMap &requestOverrideCfgValues);
+    QStringList GetL2AInputProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event);
 
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,

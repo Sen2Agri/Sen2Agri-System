@@ -117,6 +117,23 @@ bool ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(const QString &p
     return false;
 }
 
+// Returns the images from a product for all tiles according to the given identifier
+QMap<QString, QString> ProcessorHandlerHelper::GetHigLevelProductFiles(const QString &productDir,
+                                                                       const QString &fileIdentif,
+                                                                       bool isQiData) {
+    QMap<QString, QString> retMap;
+    QMap<QString, QStringList> mapTiles = GroupHighLevelProductTiles(QStringList(productDir));
+    for(auto tile : mapTiles.keys())
+    {
+       QStringList listTemporalTiles = mapTiles.value(tile);
+       // we should normally have always 1 tile folder
+       if(listTemporalTiles.size() == 1) {
+           retMap[tile] = GetHigLevelProductTileFile(listTemporalTiles[0], fileIdentif, isQiData);
+       }
+    }
+    return retMap;
+}
+
 QString ProcessorHandlerHelper::GetHigLevelProductTileFile(const QString &tileDir, const QString &fileIdentif, bool isQiData) {
     // get the dir name
     QString tileDirName = QFileInfo(tileDir).fileName();
@@ -252,7 +269,7 @@ QString ProcessorHandlerHelper::GetL2AProductTypeFromTile(const QString &tileMet
     return "";
 }
 
-QString ProcessorHandlerHelper::GetL2AProductDateFromPath(const QString &path) {
+QDateTime ProcessorHandlerHelper::GetL2AProductDateFromPath(const QString &path) {
     QFileInfo info(path);
     QString name;
     if(info.isDir()) {
@@ -270,9 +287,46 @@ QString ProcessorHandlerHelper::GetL2AProductDateFromPath(const QString &path) {
     }
     QStringList nameWords = name.split("_");
     if(idx < nameWords.size())
-        return nameWords[idx];
-    return "";
+        return QDateTime::fromString(nameWords[idx], "yyyyMMdd");
+    return QDateTime();
 }
 
+bool ProcessorHandlerHelper::GetL2AIntevalFromProducts(const QStringList &productsList, QDateTime &minTime, QDateTime &maxTime) {
 
+    minTime = QDateTime();
+    maxTime = QDateTime();
+    for(const QString &prod: productsList) {
+        QDateTime curDate = GetL2AProductDateFromPath(prod);
+        if(curDate.isValid()) {
+            if(!minTime.isValid() || minTime > curDate)
+                minTime = curDate;
+            if(!maxTime.isValid() || maxTime < curDate)
+                maxTime = curDate.addSecs(SECONDS_IN_DAY-1);
+        }
+    }
+    if(minTime.isValid() && maxTime.isValid())
+        return true;
+    return false;
+}
 
+bool ProcessorHandlerHelper::GetCropReferenceFile(const QString &refDir, QString &shapeFile, QString &referenceRasterFile) {
+    bool bRet = false;
+    if(refDir.isEmpty()) {
+        return bRet;
+    }
+    QDirIterator it(refDir, QStringList() << "*.shp" << "*.SHP", QDir::Files);
+    // get the last shape file found
+    while (it.hasNext()) {
+        shapeFile = it.next();
+        bRet = true;
+    }
+    // even if the shape file was found, search also for the reference raster for no-insitu case
+    QDirIterator it2(refDir, QStringList() << "*.tif" << "*.TIF", QDir::Files);
+    // get the last reference raster file found
+    while (it2.hasNext()) {
+        referenceRasterFile = it2.next();
+        bRet = true;
+    }
+
+    return bRet;
+}

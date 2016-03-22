@@ -89,13 +89,7 @@ PhenoGlobalExecutionInfos PhenoNdviHandler::HandleNewTilesList(EventProcessingCo
 void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
-    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    const auto &inputProducts = parameters["input_products"].toArray();
-
-    QStringList listProducts;
-    for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
-    }
+    QStringList listProducts = GetL2AInputProducts(ctx, event);
     if(listProducts.size() == 0) {
         ctx.MarkJobFailed(event.jobId);
         return;
@@ -144,7 +138,7 @@ void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             QDateTime minDate, maxDate;
             ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
             ctx.InsertProduct({ ProductType::L3EProductTypeId, event.processorId, event.siteId,
-                                event.jobId, productFolder, QDateTime::currentDateTimeUtc(),
+                                event.jobId, productFolder, maxDate,
                                 prodName, quicklook, footPrint, TileList() });
 
             // Now remove the job folder containing temporary files

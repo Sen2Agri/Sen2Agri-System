@@ -449,11 +449,8 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                              const JobSubmittedEvent &event)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    const auto &inputProducts = parameters["input_products"].toArray();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.lai.");
 
-    QStringList listProducts;
-    QStringList listL3BProducts;
     bool bMonoDateLai = IsGenMonoDate(parameters, configParameters);
     bool bNDayReproc = IsNDayReproc(parameters, configParameters);
     bool bFittedReproc = IsFittedReproc(parameters, configParameters);
@@ -462,32 +459,30 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
             QStringLiteral("At least one processing needs to be defined (LAI mono-date,"
                            " LAI N-reprocessing or LAI Fitted)").toStdString());
     }
-    QString curDate;
-    // The list of input products that do not have a L3B LAI Monodate created
-    QStringList missingL3BInputs;
-    for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
+    QStringList listProducts = GetL2AInputProducts(ctx, event);
+    if(listProducts.size() == 0) {
+        ctx.MarkJobFailed(event.jobId);
+        return;
+    }
 
+    // The list of input products that do not have a L3B LAI Monodate created
+    QStringList listL3BProducts;
+    QStringList missingL3BInputs;
+    for (const auto &inputProduct : listProducts) {
         // if it is reprocessing but we do not have mono-date, we need also the L3B products
         // if we have reprocessing and we have mono-date, the generated monodates will be internally used
         if(!bMonoDateLai) {
-            curDate = ProcessorHandlerHelper::GetL2AProductDateFromPath(inputProduct.toString());
+            QDateTime dtStartDate = ProcessorHandlerHelper::GetL2AProductDateFromPath(inputProduct);
+            QDateTime dtEndDate = dtStartDate.addSecs(SECONDS_IN_DAY-1);
             // get all the products from that day
-            QDateTime dtStartDate = QDateTime::fromString(curDate, "yyyyMMdd");
-            QDateTime dtEndDate = dtStartDate.addSecs(23*3600+59);
             ProductList l3bProductList = ctx.GetProducts(event.siteId, (int)ProductType::L3BProductTypeId, dtStartDate, dtEndDate);
             if(l3bProductList.size() > 0) {
                 // get the last of the products
                 listL3BProducts.append(l3bProductList[l3bProductList.size()-1].fullPath);
             } else {
-                missingL3BInputs.append(ctx.findProductFiles(inputProduct.toString()));
+                missingL3BInputs.append(inputProduct);
             }
         }
-    }
-
-    if(listProducts.size() == 0) {
-        ctx.MarkJobFailed(event.jobId);
-        return;
     }
 
     QList<LAIProductFormatterParams> listParams;

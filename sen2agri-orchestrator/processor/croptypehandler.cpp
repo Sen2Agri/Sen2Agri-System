@@ -259,25 +259,31 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    const auto &inputProducts = parameters["input_products"].toArray();
-
-    QStringList listProducts;
-    for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
-    }
+    QStringList listProducts = GetL2AInputProducts(ctx, event);
     if(listProducts.size() == 0) {
+        // try to get the start and end date if they are given
         ctx.MarkJobFailed(event.jobId);
         return;
     }
 
     QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
-
     // get the crop mask
-    const QString &cropMask = parameters["crop_mask"].toString();
+    QString cropMask = parameters["crop_mask"].toString();
+    if(cropMask.isEmpty()) {
+        // determine the crop mask based on the input products
+        QDateTime dtStartDate, dtEndDate;
+        if(ProcessorHandlerHelper::GetL2AIntevalFromProducts(listProducts, dtStartDate, dtEndDate)) {
+            ProductList l4AProductList = ctx.GetProducts(event.siteId, (int)ProductType::L4AProductTypeId, dtStartDate, dtEndDate);
+            if(l4AProductList.size() > 0) {
+                // get the last L4A product
+                cropMask = l4AProductList[l4AProductList.size()-1].fullPath;
+            }
+        }
+    }
     QString cropMaskAbsolutePath = ctx.GetProductAbsolutePath(cropMask);
     QMap<QString, QString> mapCropMasks;
     if (QFileInfo(cropMaskAbsolutePath).isDir()) {
-        mapCropMasks = GetCropMasks(cropMaskAbsolutePath);
+        mapCropMasks = ProcessorHandlerHelper::GetHigLevelProductFiles(cropMaskAbsolutePath, "CM", false);
     } else {
         // we have only one file for all tiles - but in this case we should have only one tile
         if(mapTiles.size() != 1){
@@ -396,7 +402,7 @@ QStringList CropTypeHandler::GetProductFormatterArgs(TaskToSubmit &productFormat
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
     QStringList productFormatterArgs = { "ProductFormatter",
                                          "-destroot", targetFolder,
-                                         "-fileclass", "SVT1",
+                                         "-fileclass", "OPER",
                                          "-level", "L4B",
                                          "-baseline", "01.00",
                                          "-siteid", QString::number(event.siteId),
@@ -443,61 +449,28 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
     if(params.productList.size() > 0) {
         params.isValid = true;
     }
-    QString cropMaskProductsFolder = GetFinalProductFolder(ctx.GetConfigurationParameterValues(PRODUCTS_LOCATION_CFG_KEY),
-                                                           ctx.GetSiteName(siteId), processorDescr.shortName);
+
+    // Get the reference dir
+    ConfigurationParameterValueMap cfgValues = ctx.GetConfigurationParameters("processor.l4b.", siteId, requestOverrideCfgValues);
+    QString refDir = cfgValues["processor.l4b.reference_data_dir"].value;
+    QString shapeFile;
+    QString referenceRasterFile;
+    // if none of the reference files were found, cannot run the CropMask
+    if(!ProcessorHandlerHelper::GetCropReferenceFile(refDir, shapeFile, referenceRasterFile)) {
+        return params;
+    }
+    QString refStr;
+    if(!shapeFile.isEmpty()) {
+        refStr = "{ \"reference_polygons\": \"" + shapeFile + "\"}";
+    } else {
+        refStr = "{ \"reference_raster\": \"" + referenceRasterFile + "\"}";
+    }
 
     QString cropMaskFolder;
-    QDirIterator it(cropMaskProductsFolder, QStringList() << "*", QDir::Dirs);
-    while (it.hasNext()) {
-        QString subDir = it.next();
-        // get the dir name
-        QString subDirName = QFileInfo(subDir).fileName();
-        if(subDirName == "." || subDirName == "..") {
-            continue;
-        }
-        // check the dates of this folder
-        int startDatesIdx = subDirName.indexOf("_V");
-        if(startDatesIdx != -1) {
-            QString dateStr = subDirName.right(subDir.length() - startDatesIdx);
-            QStringList datesList = dateStr.split( "_" );
-            QString startOfSeasonStr = seasonStartDate.toString("yyyymmdd");
-            if(datesList.size() == 2 && datesList[0] == startOfSeasonStr && datesList[1] == endDate.toString("yyyymmdd")) {
-                cropMaskFolder = cropMaskProductsFolder + "/" + subDirName;
-                break;
-            }
-
-        }
-    }
-
-    params.jsonParameters = "{ \"crop_mask\": \"" + cropMaskFolder + "\"}";
+    ProductList l4AProductList = ctx.GetProducts(siteId, (int)ProductType::L4AProductTypeId, seasonStartDate, endDate);
+    if(l4AProductList.size() > 0)
+        cropMaskFolder = l4AProductList[0].fullPath;
+    params.jsonParameters = "{ \"crop_mask\": \"" + cropMaskFolder + "\", " + refStr + "}";
 
     return params;
-}
-
-QMap<QString, QString> CropTypeHandler::GetCropMasks(const QString &cropMaskDir) {
-    QMap<QString, QString> mapCropMasks;
-    QString tilesFolder = cropMaskDir + "/TILES/";
-    QDirIterator it(tilesFolder, QStringList() << "*", QDir::Dirs);
-    while (it.hasNext()) {
-        QString subDir = it.next();
-        // get the dir name
-        QString dirName = QFileInfo(subDir).fileName();
-        if(dirName == "." || dirName == "..") {
-            continue;
-        }
-        // remove the part after _N
-        QString cropMaskName = dirName.left(dirName.lastIndexOf("_N"));
-        // Extract the tile name from the crop mask name
-
-        // Split the name by "_" and search the part having _Txxxxx (_T followed by 5 characters)
-        QStringList pieces = cropMaskName.split("_");
-        for (const QString &piece : pieces) {
-            if ((piece.length() == 6) && (piece.at(0) == 'T')) {
-                mapCropMasks[QString("TILE_") + piece.right(piece.length()-1)] = tilesFolder +
-                        dirName + "/IMG_DATA/" + cropMaskName + ".TIF";
-                break;  // exit for loop after we added one
-            }
-        }
-    }
-    return mapCropMasks;
 }

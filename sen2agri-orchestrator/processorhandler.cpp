@@ -267,3 +267,26 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     }
     return false;
 }
+
+QStringList ProcessorHandler::GetL2AInputProducts(EventProcessingContext &ctx,
+                                const JobSubmittedEvent &event) {
+    QStringList listProducts;
+    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
+    const auto &inputProducts = parameters["input_products"].toArray();
+    if(inputProducts.size() == 0) {
+        const auto &startDate = QDateTime::fromString(parameters["date_start"].toString(), "yyyyMMdd");
+        const auto &endDateStart = QDateTime::fromString(parameters["date_end"].toString(), "yyyyMMdd");
+        // we consider the end of the end date day
+        const auto endDate = endDateStart.addSecs(SECONDS_IN_DAY-1);
+        ProductList productsList = ctx.GetProducts(event.siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
+        for(const auto &product: productsList) {
+            listProducts.append(ctx.findProductFiles(product.fullPath));
+        }
+    } else {
+        for (const auto &inputProduct : inputProducts) {
+            listProducts.append(ctx.findProductFiles(inputProduct.toString()));
+        }
+    }
+
+    return listProducts;
+}

@@ -389,13 +389,7 @@ void CompositeHandler::FilterInputProducts(QStringList &listFiles,
 void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
-    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    const auto &inputProducts = parameters["input_products"].toArray();
-
-    QStringList listProducts;
-    for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
-    }
+    QStringList listProducts = GetL2AInputProducts(ctx, event);
     if(listProducts.size() == 0) {
         ctx.MarkJobFailed(event.jobId);
         return;

@@ -1,6 +1,8 @@
 #ifndef PROCESSORHANDLERHELPER_H
 #define PROCESSORHANDLERHELPER_H
 
+// 23*3600+59*60+59
+#define SECONDS_IN_DAY 86400
 class ProcessorHandlerHelper
 {
 public:
@@ -15,11 +17,14 @@ public:
     static bool IsValidHighLevelProduct(const QString &path);
     static bool GetHigLevelProductAcqDatesFromName(const QString &productName, QDateTime &minDate, QDateTime &maxDate);
     static QString GetHigLevelProductTileFile(const QString &tileDir, const QString &fileIdentif, bool isQiData=false);
+    static QMap<QString, QString> GetHigLevelProductFiles(const QString &productDir, const QString &fileIdentif, bool isQiData=false);
     static QMap<QString, QStringList> GroupHighLevelProductTiles(const QStringList &listAllProductFolders);
 
     static QString GetL2ATileMainImageFilePath(const QString &tileMetadataPath);
     static QString GetL2AProductTypeFromTile(const QString &tileMetadataPath);
-    static QString GetL2AProductDateFromPath(const QString &path);
+    static QDateTime GetL2AProductDateFromPath(const QString &path);
+    static bool GetL2AIntevalFromProducts(const QStringList &productsList, QDateTime &minTime, QDateTime &maxTime);
+    static bool GetCropReferenceFile(const QString &refDir, QString &shapeFile, QString &referenceRasterFile);
 };
 
 #endif // PROCESSORHANDLERHELPER_H

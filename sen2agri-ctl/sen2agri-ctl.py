@@ -185,7 +185,7 @@ class Sen2AgriCtl(object):
         parser_crop_mask = parser_submit_job_subparsers.add_parser(
             'crop-mask', help="Submits a new crop mask job")
         parser_crop_mask.add_argument('-i', '--input',
-                                      nargs='+', required=True,
+                                      nargs='+', required=False,
                                       help='input products')
         parser_crop_mask.add_argument('-r', '--reference',
                                       required=True, metavar="SHAPEFILE",
@@ -194,38 +194,26 @@ class Sen2AgriCtl(object):
                                       required=False,
                                       help="reference raster for noinsitu")
         parser_crop_mask.add_argument(
-            '--date-start',
-            required=True, help="temporal resampling start date (YYYYMMDD)")
+            '--date-start', required=False, help="temporal resampling start date (YYYYMMDD)")
         parser_crop_mask.add_argument(
-            '--date-end',
-            required=True, help="temporal resampling end date (YYYYMMDD)")
-        parser_crop_mask.add_argument(
-            '--resolution', type=int, help="resolution in m")
-        parser_crop_mask.add_argument(
-            '-p', '--parameter', action='append', nargs=2,
+            '--date-end', required=False, help="temporal resampling end date (YYYYMMDD)")
+        parser_crop_mask.add_argument('--resolution', type=int, help="resolution in m")
+        parser_crop_mask.add_argument('-p', '--parameter', action='append', nargs=2,
             metavar=('KEY', 'VALUE'), help="override configuration parameter")
         parser_crop_mask.set_defaults(func=self.submit_crop_mask)
 
         parser_crop_type = parser_submit_job_subparsers.add_parser(
             'crop-type', help="Submits a new crop type job")
         parser_crop_type.add_argument('-i', '--input',
-                                      nargs='+', required=True,
+                                      nargs='+', required=False,
                                       help="input products")
-        parser_crop_type.add_argument(
-            '-r', '--reference',
+        parser_crop_type.add_argument('-r', '--reference',
             required=True, metavar="SHAPEFILE", help="reference polygons")
-        parser_crop_type.add_argument(
-            '--date-start',
-            required=True, help="temporal resampling start date (YYYYMMDD)")
-        parser_crop_type.add_argument(
-            '--date-end',
-            required=True, help="temporal resampling end date (YYYYMMDD)")
-        parser_crop_type.add_argument(
-            '--crop-mask', help="crop mask")
-        parser_crop_type.add_argument(
-            '--resolution', type=int, help="resolution in m")
-        parser_crop_type.add_argument(
-            '-p', '--parameter', action='append', nargs=2,
+        parser_crop_type.add_argument('--date-start', required=False, help="temporal resampling start date (YYYYMMDD)")
+        parser_crop_type.add_argument('--date-end', required=False, help="temporal resampling end date (YYYYMMDD)")
+        parser_crop_type.add_argument('--crop-mask', help="crop mask")
+        parser_crop_type.add_argument('--resolution', type=int, help="resolution in m")
+        parser_crop_type.add_argument('-p', '--parameter', action='append', nargs=2,
             metavar=('KEY', 'VALUE'), help="override configuration parameter")
         parser_crop_type.set_defaults(func=self.submit_crop_type)
 
@@ -265,25 +253,34 @@ class Sen2AgriCtl(object):
         self.submit_job('l3e_pheno', parameters, args)
 
     def submit_crop_mask(self, args):
-        parameters = {'input_products': args.input,
-                      'reference_polygons': args.reference,
-                      'date_start': args.date_start,
-                      'date_end': args.date_end}
+        parameters = {
+                      'reference_polygons': args.reference}
+        if args.input:
+            parameters['input_products'] = args.input    
         if args.reference_raster:
             parameters['reference_raster'] = args.reference_raster
         if args.resolution:
             parameters['resolution'] = args.resolution
+        if args.date_start:
+            parameters['date_start'] = args.date_start
+        if args.date_end:
+            parameters['date_end'] = args.date_end
+            
         self.submit_job('l4a', parameters, args)
 
     def submit_crop_type(self, args):
-        parameters = {'input_products': args.input,
-                      'reference_polygons': args.reference,
-                      'date_start': args.date_start,
-                      'date_end': args.date_end}
+        parameters = {
+                      'reference_polygons': args.reference}
+        if args.input:
+            parameters['input_products'] = args.input    
         if args.crop_mask:
             parameters['crop_mask'] = args.crop_mask
         if args.resolution:
             parameters['resolution'] = args.resolution
+        if args.date_start:
+            parameters['date_start'] = args.date_start
+        if args.date_end:
+            parameters['date_end'] = args.date_end
         self.submit_job('l4b', parameters, args)
 
     def create_job(self, processor_id, parameters, args):
