@@ -9,9 +9,10 @@ CREATE OR REPLACE FUNCTION sp_get_dashboard_products(
 $BODY$
 DECLARE return_string text;
 BEGIN
-	WITH data(product,product_type,processor,site,full_path,quicklook_image,footprint,created_timestamp,site_coord) AS (
+	WITH data(product,product_type,product_type_description,processor,site,full_path,quicklook_image,footprint,created_timestamp,site_coord) AS (
 		SELECT 	P.name, 
-			PT.name, 
+			PT.name,
+            PT.description,            
 			PR.name,
 			S.name,
 			P.full_path,
@@ -27,6 +28,7 @@ BEGIN
 			($1 IS NULL OR P.site_id = $1)
 			AND ($2 IS NULL OR P.processor_id = $2)
 			AND COALESCE(P.is_archived, FALSE) = FALSE
+        ORDER BY S.name, PT.description, P.name
 	)
 
 	SELECT array_to_json(array_agg(row_to_json(data)),true) INTO return_string FROM data;
