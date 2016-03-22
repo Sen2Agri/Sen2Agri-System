@@ -181,9 +181,6 @@ signal.signal(signal.SIGINT, signal_handler)
 def sentinel_download(aoiContext):
     global g_exit_flag
     global general_log_filename
-    #if not createRecursiveDirs(aoiContext.writeDir):
-    #    log(general_log_path, "Could not create the output directory", general_log_filename)
-    #    sys.exit(-1)
 
     url_search="https://scihub.esa.int/apihub/search?q="
     general_log_filename = "sentinel_download.log"

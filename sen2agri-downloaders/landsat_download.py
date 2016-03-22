@@ -272,6 +272,7 @@ signal.signal(signal.SIGINT, signal_handler)
 def landsat_download(aoiContext):
      global g_exit_flag
      global general_log_filename
+     global general_log_path
 
      general_log_filename = "landsat_download.log"
      general_log_path = aoiContext.writeDir
@@ -331,21 +332,14 @@ def landsat_download(aoiContext):
          row=tile[3:6]
          log(aoiContext.writeDir, "path={}|row={}".format(path, row), general_log_filename)
 
-         global downloaded_ids
-         downloaded_ids=[]
+         downloaded_ids = []
 
          if aoiContext.proxy!=None:
              connect_earthexplorer_proxy(proxy,usgs)
          else:
              connect_earthexplorer_no_proxy(usgs)
              
-         #date_asc_array = []  
          curr_date=next_overpass(start_date, int(path), product)
-         #while (curr_date < end_date):
-         #     date_asc_array.append(curr_date.strftime("%Y%j"))
-         #     curr_date = curr_date + datetime.timedelta(16)
-         #print("{}".format(date_asc_array))
-         #sys.exit(0)
 
          while (curr_date < end_date):
              date_asc=curr_date.strftime("%Y%j")
@@ -374,8 +368,9 @@ def landsat_download(aoiContext):
                                          year = date_asc[0:4]
                                          days = date_asc[4:]
                                          prod_date = (datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(days))).strftime("%Y%m%dT000101")
-                                         print("prod_date={}".format(prod_date))
                                          if downloadChunks(url, aoiContext.writeDir, nom_prod, prod_date, lsdestdir, aoiContext, db):
                                               downloaded_ids.append(nom_prod)                                              
-
-         log(aoiContext.writeDir, downloaded_ids, general_log_filename)
+         if len(downloaded_ids) > 0:
+              log(aoiContext.writeDir, "Downloaded ids: {}".format(downloaded_ids), general_log_filename)
+         else: 
+              log(aoiContext.writeDir, "No downloaded ids: ", general_log_filename)
