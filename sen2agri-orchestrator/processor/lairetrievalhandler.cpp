@@ -769,7 +769,7 @@ QStringList LaiRetrievalHandler::GetLaiMonoProductFormatterArgs(TaskToSubmit &pr
                                                                 const QString &product, const QStringList &tileIdsList, const QStringList &ndviList,
                                                                 const QStringList &laiList, const QStringList &laiErrList, const QStringList &laiFlgsList) {
 
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.lai.");
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
 
     //const auto &targetFolder = productFormatterTask.GetFilePath("");
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
@@ -819,7 +819,7 @@ QStringList LaiRetrievalHandler::GetLaiMonoProductFormatterArgs(TaskToSubmit &pr
 QStringList LaiRetrievalHandler::GetReprocProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                     const QStringList &listProducts, const QList<LAIProductFormatterParams> &productParams, bool isFitted) {
 
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.lai.");
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
 
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
