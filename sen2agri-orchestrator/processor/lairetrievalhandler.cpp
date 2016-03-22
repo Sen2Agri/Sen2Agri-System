@@ -578,7 +578,7 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     if (event.module == "lai-end-of-job") {
         ctx.MarkJobFinished(event.jobId);
     }
-    bool isMonoDatePf, isReprocPf, isFittedPf;
+    bool isMonoDatePf, isReprocPf = false, isFittedPf = false;
     if ((isMonoDatePf = (event.module == "lai-mono-date-product-formatter")) ||
          (isReprocPf = (event.module == "lai-reproc-product-formatter")) ||
          (isFittedPf = (event.module == "lai-fitted-product-formatter"))) {
