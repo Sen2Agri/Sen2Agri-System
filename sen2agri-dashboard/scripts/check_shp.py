@@ -48,10 +48,14 @@ def main():
             union.AddGeometry(geometry)
 
     for pair in itertools.combinations(features, 2):
-        g0, g1 = pair[0].GetGeometryRef(), pair[1].GetGeometryRef()
+        f0, f1 = pair[0], pair[1]
+        g0, g1 = f0.GetGeometryRef(), f1.GetGeometryRef()
+
         if g0.Overlaps(g1):
-            print("Overlapping features: {} and {}".format(g0, g1))
-            return 3
+            c0, c1 = f0.GetField("CODE"), f1.GetField("CODE")
+            if not c0 or not c1 or c0 != c1:
+                print("Overlapping features: {} and {}".format(g0, g1))
+                return 3
 
     print("Union: {}".format(union.ExportToWkt()))
     return 0
