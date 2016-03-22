@@ -217,7 +217,7 @@ LAIGlobalExecutionInfos LaiRetrievalHandler::HandleNewTilesList(EventProcessingC
                                                 const QStringList &listProducts, const QStringList &listL3BTiles, const QStringList &missingL3BInputs) {
 
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.lai.");
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
     QStringList monoDateMskFlagsLaiFileNames;
     //QStringList ndviFileNames;
     //QStringList monoDateLaiFileNames;
@@ -226,7 +226,12 @@ LAIGlobalExecutionInfos LaiRetrievalHandler::HandleNewTilesList(EventProcessingC
     QStringList quantifiedErrLaiFileNames;
 
     // Get the resolution value
-    const auto &resolution = QString::number(parameters["resolution"].toInt());
+    int resolution = 0;
+    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+            resolution == 0) {
+        resolution = 10;    // TODO: We should configure the default resolution in DB
+    }
+    const auto &resolutionStr = QString::number(resolution);
 
     bool bGenModels = IsGenModels(parameters, configParameters);
     bool bMonoDateLai = IsGenMonoDate(parameters, configParameters);
@@ -327,7 +332,7 @@ LAIGlobalExecutionInfos LaiRetrievalHandler::HandleNewTilesList(EventProcessingC
             quantifiedErrLaiFileNames.append(quantifiedErrFileName);
 
             QStringList genMonoDateMskFagsArgs = GetMonoDateMskFlagsArgs(inputProduct, monoDateMskFlgsFileName);
-            QStringList ndviRviExtractionArgs = GetNdviRviExtractionArgs(inputProduct, monoDateMskFlgsFileName, ftsFile, singleNdviFile, resolution);
+            QStringList ndviRviExtractionArgs = GetNdviRviExtractionArgs(inputProduct, monoDateMskFlgsFileName, ftsFile, singleNdviFile, resolutionStr);
             QStringList bvImageInvArgs = GetBvImageInvArgs(ftsFile, inputProduct, modelsFolder, monoDateLaiFileName);
             QStringList bvErrImageInvArgs = GetBvErrImageInvArgs(ftsFile, inputProduct, modelsFolder, monoDateErrFileName);
             QStringList quantifyImageArgs = GetQuantifyImageArgs(monoDateLaiFileName, quantifiedLaiFileName);
@@ -449,12 +454,13 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                              const JobSubmittedEvent &event)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.lai.");
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
 
     bool bMonoDateLai = IsGenMonoDate(parameters, configParameters);
     bool bNDayReproc = IsNDayReproc(parameters, configParameters);
     bool bFittedReproc = IsFittedReproc(parameters, configParameters);
     if(!bNDayReproc && !bFittedReproc && !bMonoDateLai) {
+        ctx.MarkJobFailed(event.jobId);
         throw std::runtime_error(
             QStringLiteral("At least one processing needs to be defined (LAI mono-date,"
                            " LAI N-reprocessing or LAI Fitted)").toStdString());
@@ -462,7 +468,9 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     QStringList listProducts = GetL2AInputProducts(ctx, event);
     if(listProducts.size() == 0) {
         ctx.MarkJobFailed(event.jobId);
-        return;
+        throw std::runtime_error(
+            QStringLiteral("No products provided at input or no products available in the specified interval").
+                    toStdString());
     }
 
     // The list of input products that do not have a L3B LAI Monodate created
