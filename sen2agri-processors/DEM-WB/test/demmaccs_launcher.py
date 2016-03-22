@@ -122,13 +122,9 @@ def launch_demmaccs(l1c_context):
     site_short_name = l1c_context.l1c_db.get_short_name("site", l1c_context.l1c_list[0][1])    
 
     for l1c in l1c_context.l1c_list:        
-        if l1c[3].endswith("/"):
-            l2a_basename = os.path.basename(l1c[3][:len(l1c[3]) - 1])
-        else:
-            l2a_basename = os.path.basename(l1c[3])
-
+        l2a_basename = os.path.basename(l1c[3][:len(l1c[3]) - 1]) if l1c[3].endswith("/") else os.path.basename(l1c[3])
         satellite_id = int(l1c[2])
-        if satellite_id != 1 and satellite_id != 2:
+        if satellite_id != SENTINEL2_SATELLITE_ID and satellite_id != LANDSAT8_SATELLITE_ID:
             log(general_log_path, "Unkown satellite id :{}".format(satellite_id), general_log_filename)
             sys.exit(-1)
         if l2a_basename.startswith("S2"):
@@ -136,7 +132,7 @@ def launch_demmaccs(l1c_context):
         elif l2a_basename.startswith("LC8"):
             l2a_basename += "_L2A"
         else:
-            log(general_log_path, "The L1C product name is bad:{}".format(l2a_basename), general_log_filename)
+            log(general_log_path, "The L1C product name is bad: {}".format(l2a_basename), general_log_filename)
             sys.exit(-1)
             
         l2a_tiles, l2a_tiles_paths = get_previous_l2a_tiles_paths(satellite_id, l1c[3], l1c[4], l1c_context.l1c_db)
@@ -162,14 +158,13 @@ def launch_demmaccs(l1c_context):
         if l1c_context.skip_dem != None:
             demmaccs_command += ["--skip-dem", l1c_context.skip_dem]
         if len(l2a_tiles) > 0:
-            print("{}".format(l2a_tiles))
             demmaccs_command.append("--prev-l2a-tiles")
             demmaccs_command += l2a_tiles
             demmaccs_command.append("--prev-l2a-products-paths")
             demmaccs_command += l2a_tiles_paths
        
-        if run_command(demmaccs_command) == 0:
-            tiles_dir_list = (glob.glob("{}/*.DBL.DIR".format(output_path)))
+        if run_command(demmaccs_command) == 0 and os.path.exists(output_path) and os.path.isdir(output_path):
+            tiles_dir_list = (glob.glob("{}*.DBL.DIR".format(output_path)))
             log(output_path, "Creating common footprint for tiles: DBL.DIR List: {}".format(tiles_dir_list), general_log_filename)
             wgs84_extent_list = []
             for tile_dir in tiles_dir_list:
@@ -184,16 +179,12 @@ def launch_demmaccs(l1c_context):
                 sat_id, acquisition_date = get_product_info(os.path.basename(output_path[:len(output_path) - 1]))
                 if sat_id > 0 and acquisition_date != None:                    
                     #looking in processed_tiles file to take all the processed tiles by MACCS. If none was processed, only the input from
-                    #downloader_history table will be set. No l2a product will be added into product table
-                    if os.path.exists(output_path) and os.path.isdir(output_path):
-                        print("{}".format(output_path))
-                        dbl_dirs = glob.glob("{}*.DBL.DIR".format(output_path))
-                        print("{}".format(dbl_dirs))
-                        for tile_dbl_dir in dbl_dirs:
-                            tile = re.search(r"_L2VALD_(\d\d[a-zA-Z]{3})____[\w\.]+$", tile_dbl_dir)
-                            if tile is not None:
-                                l2a_processed_tiles.append(tile.group(1))
-                            print("Searched tiles: {}".format(l2a_processed_tiles))
+                    #downloader_history table will be set. No l2a product will be added into product table                    
+                    for tile_dbl_dir in tiles_dir_list:
+                        tile = re.search(r"_L2VALD_(\d\d[a-zA-Z]{3})____[\w\.]+$", tile_dbl_dir)
+                        if tile is not None:
+                            l2a_processed_tiles.append(tile.group(1))
+                        print("Processed tiles: {}".format(l2a_processed_tiles))
                 else:
                     log(output_path,"Could not get the acquisition date from the product name {}".format(output_path), general_log_filename)
         else:
@@ -227,34 +218,28 @@ if demmaccs_config is None:
     log(general_log_path, "Could not load the config from database", general_log_filename)
     sys.exit(-1)
 #load the unprocessed l1c products from db
-#TODO: will have to get the product_date also
-#TODO: sort l1c_list by date (the oldest first)
+#the products will come sorted by date in ascending
 l1c_list = l1c_db.get_unprocessed_l1c()
 
-#do nothing
+#do nothing if there is no unprocessed l1c products
 if len(l1c_list) == 0:
     log(general_log_path, "No unprocessed L1C found in DB", general_log_filename)
     sys.exit(0)
 
-#by convention, the processor ID for dem-maccs will always be 1 within the DB
+#by convention, the processor ID for demmaccs will always be 1 within the DB
 processor_short_name = l1c_db.get_short_name("processor", 1)
 base_output_path = demmaccs_config.output_path.replace("{processor}", processor_short_name)
 
 l1c_context_list = []
 for l1c_site in l1c_list:
     l1c_context_list.append(L1CContext(l1c_site, l1c_db, processor_short_name, base_output_path, args.skip_dem))
-    with open("/mnt/archive/maccs_prod/demmaccs_launcher.log", 'a') as demmaccs_launcher_log:
-        demmaccs_launcher_log.write("-----------------------------------\n")
-        demmaccs_launcher_log.write("{}".format(l1c_site))
-        demmaccs_launcher_log.write("\n")
 
-#p = Pool(args.processes_number)
-#p.map(launch_demmaccs, l1c_context_list)
+p = Pool(args.processes_number)
+p.map(launch_demmaccs, l1c_context_list)
 
-for l1c_context in l1c_context_list:
-    launch_demmaccs(l1c_context)
-
-#launch_demmaccs(l1c_context_list[0])
+#used for debug mode only
+#for l1c_context in l1c_context_list:
+#    launch_demmaccs(l1c_context)
 
 
 
