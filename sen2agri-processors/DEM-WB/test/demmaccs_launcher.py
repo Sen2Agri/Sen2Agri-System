@@ -12,7 +12,7 @@ from osgeo import ogr
 from multiprocessing import Pool
 from sen2agri_common_db import *
 general_log_path = "/tmp/"
-general_log_filename = "demmaccs_launcher.log"
+general_log_filename = "demmaccs.log"
 
 def GetExtent(gt, cols, rows):
     ext = []
@@ -190,7 +190,7 @@ def launch_demmaccs(l1c_context):
         else:
             log(output_path, "demmaccs.py script didn't work!", general_log_filename)
         if len(l2a_processed_tiles) > 0:
-            log(output_path, "Mark the state as present in product table and state as processed in downloader_history for product {}".format(output_path), general_log_filename)
+            log(output_path, "Insert info in product table and set state as processed in downloader_history table for product {}".format(output_path), general_log_filename)
         else:
             log(output_path, "Only set the state as processed in downloader_history (no l2a tilesfound after maccs) for product {}".format(output_path), general_log_filename)
         l1c_db.set_processed_product(1, l1c[1], l1c[0], l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date)
