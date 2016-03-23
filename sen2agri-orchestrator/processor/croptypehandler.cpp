@@ -262,7 +262,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    QStringList listProducts = GetL2AInputProducts(ctx, event);
+    QStringList listProducts = GetL2AInputProductsTiles(ctx, event);
     if(listProducts.size() == 0) {
         // try to get the start and end date if they are given
         ctx.MarkJobFailed(event.jobId);

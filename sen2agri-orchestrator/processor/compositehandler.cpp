@@ -398,7 +398,7 @@ void CompositeHandler::FilterInputProducts(QStringList &listFiles,
 void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
-    QStringList listProducts = GetL2AInputProducts(ctx, event);
+    QStringList listProducts = GetL2AInputProductsTiles(ctx, event);
     if(listProducts.size() == 0) {
         ctx.MarkJobFailed(event.jobId);
         throw std::runtime_error(

@@ -275,7 +275,7 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     return false;
 }
 
-QStringList ProcessorHandler::GetL2AInputProducts(EventProcessingContext &ctx,
+QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &ctx,
                                 const JobSubmittedEvent &event) {
     QStringList listProducts;
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();

@@ -468,8 +468,8 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
             QStringLiteral("At least one processing needs to be defined (LAI mono-date,"
                            " LAI N-reprocessing or LAI Fitted)").toStdString());
     }
-    QStringList listProducts = GetL2AInputProducts(ctx, event);
-    if(listProducts.size() == 0) {
+    QStringList listProductsTiles = GetL2AInputProductsTiles(ctx, event);
+    if(listProductsTiles.size() == 0) {
         ctx.MarkJobFailed(event.jobId);
         throw std::runtime_error(
             QStringLiteral("No products provided at input or no products available in the specified interval").
@@ -478,8 +478,8 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 
     // The list of input products that do not have a L3B LAI Monodate created
     QStringList listL3BProducts;
-    QStringList missingL3BInputs;
-    for (const auto &inputProduct : listProducts) {
+    QStringList missingL3BInputsTiles;
+    for (const auto &inputProduct : listProductsTiles) {
         // if it is reprocessing but we do not have mono-date, we need also the L3B products
         // if we have reprocessing and we have mono-date, the generated monodates will be internally used
         if(!bMonoDateLai) {
@@ -491,28 +491,42 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                 // get the last of the products
                 listL3BProducts.append(l3bProductList[l3bProductList.size()-1].fullPath);
             } else {
-                missingL3BInputs.append(inputProduct);
+                missingL3BInputsTiles.append(inputProduct);
             }
         }
     }
 
     QList<LAIProductFormatterParams> listParams;
+    QMap<QString, LAIProductFormatterParams> mapParams;
     NewStepList allSteps;
     //container for all task
     QList<TaskToSubmit> allTasksList;
     QStringList tileIdsList;
     // Create a map containing for each tile Id the list of the
-    QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
+    QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProductsTiles);
+    QMap<QString, QStringList> mapMissingTiles = ProcessorHandlerHelper::GroupTiles(listProductsTiles);
     // In the case of Mono-lai we might have something in the listL3BProducts
     QMap<QString, QStringList> mapL3BTiles = ProcessorHandlerHelper::GroupHighLevelProductTiles(listL3BProducts);
+    // TODO: Here we should check that these maps have the exact same tiles and number of products for each tile
 
+    int nTotalProducts = 0;
     for(auto tile : mapTiles.keys())
     {
        QStringList listTemporalTiles = mapTiles.value(tile);
+       if(nTotalProducts == 0) {
+            nTotalProducts = listTemporalTiles.size();
+       } else if(nTotalProducts != listTemporalTiles.size()) {
+           ctx.MarkJobFailed(event.jobId);
+           throw std::runtime_error(
+               QStringLiteral("Products should have exactly the same tiles").
+                       toStdString());
+       }
+       QStringList listMissingL3BTiles = mapMissingTiles.value(tile);
        QStringList listL3bTiles = mapL3BTiles.value(tile);
-       LAIGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles, listL3bTiles, missingL3BInputs);
+       LAIGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles, listL3bTiles, listMissingL3BTiles);
        if(infos.allTasksList.size() > 0 && infos.allStepsList.size() > 0) {
            listParams.append(infos.prodFormatParams);
+           mapParams[tile] = infos.prodFormatParams;
            allTasksList.append(infos.allTasksList);
            allSteps.append(infos.allStepsList);
        }
@@ -520,17 +534,21 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
 
     // Create the product formatter tasks
-    if(bMonoDateLai || missingL3BInputs.size() != 0) {
-        QStringList &listMonoDateInputProducts = bMonoDateLai ? listProducts : missingL3BInputs;
+    if(bMonoDateLai || missingL3BInputsTiles.size() != 0) {
+        //QStringList &listMonoDateInputProducts = bMonoDateLai ? listProductsTiles : missingL3BInputsTiles;
         // create the product formatters for each LAI monodate product
-        for(int i = 0; i < listMonoDateInputProducts.size(); i++) {
+        // We assume that all products have exactly the same tiles
+        for(int i = 0; i < nTotalProducts; i++) {
             QStringList ndviList;
             QStringList laiList;
             QStringList laiErrList;
             QStringList laiFlgsList;
             TaskToSubmit laiMonoProductFormatterTask{"lai-mono-date-product-formatter", {}};
+            QString productTileXml;
             // get all the tiles for the current product
             for(LAIProductFormatterParams params: listParams) {
+                QStringList tileProducts = bMonoDateLai ? mapTiles[params.tileId] : mapMissingTiles[params.tileId];
+                productTileXml = tileProducts[0];
                 ndviList.append(params.listLaiMonoParams[i].ndvi);
                 laiList.append(params.listLaiMonoParams[i].laiMonoDate);
                 laiErrList.append(params.listLaiMonoParams[i].laiMonoDateErr);
@@ -538,7 +556,7 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                 laiMonoProductFormatterTask.parentTasks.append(params.listLaiMonoParams[i].parentsTasksRef);
             }
             ctx.SubmitTasks(event.jobId, {laiMonoProductFormatterTask});
-            QStringList productFormatterArgs = GetLaiMonoProductFormatterArgs(laiMonoProductFormatterTask, ctx, event, listMonoDateInputProducts[i],
+            QStringList productFormatterArgs = GetLaiMonoProductFormatterArgs(laiMonoProductFormatterTask, ctx, event, productTileXml,
                                                                              tileIdsList, ndviList, laiList, laiErrList, laiFlgsList);
             allSteps.append(laiMonoProductFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
             allTasksList.append(laiMonoProductFormatterTask);
@@ -552,7 +570,7 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
             laiReprocProductFormatterTask.parentTasks.append(params.laiReprocParams.parentsTasksRef);
         }
         ctx.SubmitTasks(event.jobId, {laiReprocProductFormatterTask});
-        QStringList productFormatterArgs = GetReprocProductFormatterArgs(laiReprocProductFormatterTask, ctx, event, listProducts,
+        QStringList productFormatterArgs = GetReprocProductFormatterArgs(laiReprocProductFormatterTask, ctx, event, listProductsTiles,
                                                                          listParams, false);
         // add these steps to the steps list to be submitted
         allSteps.append(laiReprocProductFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
@@ -564,7 +582,7 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
             laiFittedProductFormatterTask.parentTasks.append(params.laiFitParams.parentsTasksRef);
         }
         ctx.SubmitTasks(event.jobId, {laiFittedProductFormatterTask});
-        QStringList productFormatterArgs = GetReprocProductFormatterArgs(laiFittedProductFormatterTask, ctx, event, listProducts,
+        QStringList productFormatterArgs = GetReprocProductFormatterArgs(laiFittedProductFormatterTask, ctx, event, listProductsTiles,
                                                                          listParams, true);
         // add these steps to the steps list to be submitted
         allSteps.append(laiFittedProductFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
