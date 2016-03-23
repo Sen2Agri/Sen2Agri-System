@@ -12,7 +12,7 @@ from osgeo import ogr
 from multiprocessing import Pool
 from sen2agri_common_db import *
 general_log_path = "/tmp/"
-general_log_filename = "demmaccs_launcher.log"
+general_log_filename = "demmaccs.log"
 
 def GetExtent(gt, cols, rows):
     ext = []
@@ -154,7 +154,7 @@ def launch_demmaccs(l1c_context):
         sat_id = 0
         acquisition_date = ""
         base_abs_path = os.path.dirname(os.path.abspath(__file__)) + "/"
-        demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "-p", "5", "--gip-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-address", demmaccs_config.maccs_ip_address, "--maccs-launcher", demmaccs_config.maccs_launcher, "--dem-launcher",  base_abs_path + "dem.py", "--delete-temp", "False", l1c[3], output_path]
+        demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "-p", "5", "--gip-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-address", demmaccs_config.maccs_ip_address, "--maccs-launcher", demmaccs_config.maccs_launcher, "--dem-launcher",  base_abs_path + "dem.py", "--delete-temp", "True", l1c[3], output_path]
         if l1c_context.skip_dem != None:
             demmaccs_command += ["--skip-dem", l1c_context.skip_dem]
         if len(l2a_tiles) > 0:
@@ -190,7 +190,7 @@ def launch_demmaccs(l1c_context):
         else:
             log(output_path, "demmaccs.py script didn't work!", general_log_filename)
         if len(l2a_processed_tiles) > 0:
-            log(output_path, "Mark the state as present in product table and state as processed in downloader_history for product {}".format(output_path), general_log_filename)
+            log(output_path, "Insert info in product table and set state as processed in downloader_history table for product {}".format(output_path), general_log_filename)
         else:
             log(output_path, "Only set the state as processed in downloader_history (no l2a tilesfound after maccs) for product {}".format(output_path), general_log_filename)
         l1c_db.set_processed_product(1, l1c[1], l1c[0], l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date)

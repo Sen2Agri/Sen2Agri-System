@@ -1,5 +1,6 @@
-﻿CREATE OR REPLACE FUNCTION sp_get_dashboard_processor_statistics() 
-RETURNS json AS $$
+﻿CREATE OR REPLACE FUNCTION sp_get_dashboard_processor_statistics()
+  RETURNS json AS
+$BODY$
 DECLARE current_processor RECORD;
 DECLARE temp_json json;
 DECLARE temp_json2 json;
@@ -80,11 +81,11 @@ BEGIN
 		-- Last get the configuration parameters
 		WITH config_params AS (
 		SELECT json_build_array(
-		key || CASE coalesce(config.site_id,0) WHEN 0 THEN '' ELSE '(' || site.short_name || ')' END,
+		substring(key from length('processor.' || current_processor.name || '.')+1) || CASE coalesce(config.site_id,0) WHEN 0 THEN '' ELSE '(' || site.short_name || ')' END,
 		value) AS param
 		FROM config
 		LEFT OUTER JOIN site ON config.site_id = site.id
-		WHERE config.key ILIKE 'processor.' || current_processor.name)
+		WHERE config.key ILIKE 'processor.' || current_processor.name || '.%')
 		SELECT array_to_json(array_agg(config_params.param)) INTO temp_json3
 		FROM config_params;
 
@@ -97,4 +98,5 @@ BEGIN
 	RETURN return_string::json;
 
 END;
-$$ LANGUAGE plpgsql;
+$BODY$
+  LANGUAGE plpgsql VOLATILE

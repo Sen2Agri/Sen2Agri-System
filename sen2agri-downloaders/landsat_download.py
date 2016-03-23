@@ -88,10 +88,13 @@ def downloadChunks(url, rep, prod_name, prod_date, abs_prod_path, aoiContext, db
   print("url: {}".format(url))
   print("rep: {}".format(rep))
   print("nom_fic: {}".format(nom_fic))
+  print("prod_date: {}".format(prod_date))
+  print("abs_prod_path: {}".format(abs_prod_path))
   print("INFO STOP")
   log(rep, "Trying to download {0}".format(nom_fic), general_log_filename)
   try:
     req = urllib2.urlopen(url, timeout=600)
+    print("request performed for URL: {}".format(url))
     #taille du fichier
     if (req.info().gettype()=='text/html'):
       log(rep, 'Error: the file has a html format for '.format(nom_fic), general_log_filename)

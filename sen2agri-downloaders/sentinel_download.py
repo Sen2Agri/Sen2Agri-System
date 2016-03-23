@@ -195,7 +195,7 @@ def sentinel_download(aoiContext):
             passwd=passwd[:-1]
         f.close()
     except :
-        log(coiContext.writeDir, "error with password file ".format(str(apihubFile)), general_log_filename)
+        log(aoiContext.writeDir, "error with password file ".format(str(apihubFile)), general_log_filename)
         sys.exit(-2)
 
     db = SentinelAOIInfo(aoiContext.configObj.host, aoiContext.configObj.database, aoiContext.configObj.user, aoiContext.configObj.password)
@@ -292,8 +292,8 @@ def sentinel_download(aoiContext):
         print(s2Obj.filename)
         print("Date:{}".format(s2Obj.product_date))
         print(s2Obj.link)
-        print("cloud percentage = {}", format(s2Obj.cloud))
-        print("cloud percentage in aoiContext = {}".format(aoiContext.maxCloudCoverage))
+        print("cloud percentage in product  = {}".format(s2Obj.cloud))
+        print("max allowed cloud percentage = {}".format(aoiContext.maxCloudCoverage))
         print("date as string {}".format(s2Obj.product_date_as_string))
         print("product name {}".format(s2Obj.productname))
         print("===============================================")
@@ -301,4 +301,5 @@ def sentinel_download(aoiContext):
         if g_exit_flag:
             sys.exit(0)
         product_download(s2Obj, aoiContext, db)
+        print("Finished to download product: {}".format(s2Obj.productname))
         
