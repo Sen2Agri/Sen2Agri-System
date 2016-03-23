@@ -522,9 +522,11 @@ function install_RPMs()
 ../rpm_binaries/slurm/slurm-sql-15.08.7-1.el7.centos.x86_64.rpm \
 ../rpm_binaries/slurm/slurm-torque-15.08.7-1.el7.centos.x86_64.rpm
 
-    systemctl restart sen2agri-executor
-    systemctl restart sen2agri-orchestrator
-    systemctl restart sen2agri-scheduler
+    systemctl enable --now sen2agri-executor
+    systemctl enable --now sen2agri-orchestrator
+    systemctl enable --now sen2agri-scheduler
+    
+    setenforce 0
 }
 ###########################################################
 ##### MAIN                                              ###
