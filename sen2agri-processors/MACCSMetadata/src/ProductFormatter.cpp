@@ -364,8 +364,8 @@ private:
       if(m_strTimePeriod.empty()) {
           m_bDynamicallyTimePeriod = true;
           if(LevelHasAcquisitionTime()) {
-              if(descriptors.size() != 1)
-                    itkGenericExceptionMacro(<< "You should have only one file in the il parameter as this product has Aquisition time: " << m_strProductLevel);
+              if(m_strMinAcquisitionDate != m_strMaxAcquisitionDate)
+                    itkGenericExceptionMacro(<< "You should have the same date for all tiles in the il parameter as this product has Aquisition time: " << m_strProductLevel);
               // we have a single date and min acquisition date should be the same as max acquisition date
               m_strTimePeriod = m_strMaxAcquisitionDate;
           } else {
@@ -1507,17 +1507,21 @@ private:
     specialValue.SpecialValueIndex = metadata->ImageInformation.NoDataValue;
     m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
 
-    std::string acquisitionDate = metadata->InstanceId.AcquisitionDate;
-    m_acquisitionDatesList.push_back(acquisitionDate);
+    AddAcquisitionDate(metadata->InstanceId.AcquisitionDate);
   }
 
   void FillMetadataInfoForSPOT(std::unique_ptr<SPOT4Metadata> &metadata)
   {
       /* the source is a SPOT file */
       //nothing to load????
-      std::string acquisitionDate = metadata->Header.DatePdv.substr(0,4) +
-              metadata->Header.DatePdv.substr(5,2) + metadata->Header.DatePdv.substr(8,2);
-      m_acquisitionDatesList.push_back(acquisitionDate);
+      AddAcquisitionDate(metadata->Header.DatePdv.substr(0,4) +
+              metadata->Header.DatePdv.substr(5,2) + metadata->Header.DatePdv.substr(8,2));
+  }
+
+  void AddAcquisitionDate(const std::string &acquisitionDate) {
+      if(std::find(m_acquisitionDatesList.begin(), m_acquisitionDatesList.end(), acquisitionDate) == m_acquisitionDatesList.end()) {
+          m_acquisitionDatesList.push_back(acquisitionDate);
+      }
   }
 
   void LoadAllDescriptors(std::vector<std::string> descriptors)

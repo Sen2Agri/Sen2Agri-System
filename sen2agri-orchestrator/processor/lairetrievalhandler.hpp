@@ -90,7 +90,7 @@ private:
                                                    const QString &fittedFlagsFileListFileName, const QStringList &allXmlsFileName);
 
     QStringList GetLaiMonoProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                               const QString &product, const QStringList &tileIdsList, const QStringList &ndviList,
+                                               const QStringList &products, const QStringList &tileIdsList, const QStringList &ndviList,
                                                const QStringList &laiList, const QStringList &laiErrList, const QStringList &laiFlgsList);
     QStringList GetReprocProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx,
                                         const JobSubmittedEvent &event,
@@ -113,6 +113,10 @@ private:
     bool IsGenMonoDate(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     bool IsNDayReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     bool IsFittedReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
+
+    bool GetMonoDateFormatterParamInfosForProduct(const QString &product, const QMap<QString, QStringList> &mapTiles,
+            const QMap<QString, LAIProductFormatterParams> &mapTileToParams, const QMap<QString, QStringList> &inputProductToTilesMap,
+            QStringList &outProductTiles, QList<LAIMonoDateProductFormatterParams> &outProductParams, QStringList &outProductTileMetaFiles);
 private:
     int m_nTimeSeriesBuilderIdx;
     int m_nErrTimeSeriesBuilderIdx;

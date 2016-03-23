@@ -276,7 +276,8 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
 }
 
 QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &ctx,
-                                const JobSubmittedEvent &event) {
+                                const JobSubmittedEvent &event,
+                                QMap<QString, QStringList> &mapProductToTilesMetaFiles) {
     QStringList listProducts;
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     const auto &inputProducts = parameters["input_products"].toArray();
@@ -287,11 +288,16 @@ QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &c
         const auto endDate = endDateStart.addSecs(SECONDS_IN_DAY-1);
         ProductList productsList = ctx.GetProducts(event.siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
         for(const auto &product: productsList) {
-            listProducts.append(ctx.findProductFiles(product.fullPath));
+            QStringList tilesMetaFiles = ctx.findProductFiles(product.fullPath);
+            listProducts.append(tilesMetaFiles);
+            mapProductToTilesMetaFiles[product.fullPath] = tilesMetaFiles;
         }
     } else {
         for (const auto &inputProduct : inputProducts) {
-            listProducts.append(ctx.findProductFiles(inputProduct.toString()));
+            const QString & inPrd = inputProduct.toString();
+            QStringList tilesMetaFiles = ctx.findProductFiles(inPrd);
+            listProducts.append(tilesMetaFiles);
+            mapProductToTilesMetaFiles[inPrd] = tilesMetaFiles;
         }
     }
 
@@ -299,6 +305,25 @@ QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &c
     qSort(listProducts.begin(), listProducts.end(), compareProductDates);
 
     return listProducts;
+}
+
+QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &ctx,
+                                const JobSubmittedEvent &event) {
+    QMap<QString, QStringList> map;
+    Q_UNUSED(map);
+    return GetL2AInputProductsTiles(ctx, event, map);
+}
+
+QString ProcessorHandler::GetL2AProductForTileMetaFile(const QMap<QString, QStringList> &mapProductToTilesMetaFiles,
+                                     const QString &tileMetaFile) {
+    for(const auto &prd : mapProductToTilesMetaFiles.keys()) {
+        const QStringList &prdTilesList = mapProductToTilesMetaFiles[prd];
+        for(const QString &strTileMeta: prdTilesList) {
+            if(strTileMeta == tileMetaFile)
+                return prd;
+        }
+    }
+    return "";
 }
 
 bool ProcessorHandler::GetParameterValueAsInt(const QJsonObject &parameters, const QString &key,
