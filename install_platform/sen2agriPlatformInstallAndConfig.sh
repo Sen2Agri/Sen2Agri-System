@@ -525,6 +525,10 @@ function install_RPMs()
     systemctl enable --now sen2agri-executor
     systemctl enable --now sen2agri-orchestrator
     systemctl enable --now sen2agri-scheduler
+
+    systemctl restart --now sen2agri-executor
+    systemctl restart --now sen2agri-orchestrator
+    systemctl restart --now sen2agri-scheduler
     
     setenforce 0
 }
