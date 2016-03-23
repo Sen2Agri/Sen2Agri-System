@@ -384,7 +384,7 @@ function install_and_config_postgresql()
    echo "POSTGRESQL SERVICE: $(systemctl status postgresql-9.4 | grep "Active")"
 
    #------------DATABASE CREATION------------#
-   # first, the database is created. the privileges will be set after all 
+   # first, the database is created. the privileges will be set after all
    # the tables, data and other stuff is created (see down, privileges.sql
    cat "$(find ./ -name "database")/00-database"/sen2agri.sql | sudo su - postgres -c 'psql'
 
@@ -399,7 +399,7 @@ function install_and_config_postgresql()
    populate_from_scripts "$(find ./ -name "database")/08-keys"
    # granting privileges to sen2agri-service and admin users
    populate_from_scripts "$(find ./ -name "database")/09-privileges"
-   
+
    #-------------- pg_hba.conf -----------------------#
    ####  copy conf file to /var/lib/pgsql/9.4/data/pg_hba.conf
    cp -f $(find ./ -name "pg_hba.conf") /var/lib/pgsql/9.4/data/
@@ -449,9 +449,6 @@ function install_and_config_webserver()
    ##update file /var/www/html/ConfigParams.php
    ##replace "sen2agri-dev" with machine ip "_inet_addr "  into file /var/www/html/ConfigParams.php
    sed -i "s/sen2agri-dev/$_inet_addr/" /var/www/html/ConfigParams.php
-
-   ##replace "sen2agri-dev" with machine ip "_inet_addr "  into file /var/www/html/scripts/config.js
-   sed -i "s/sen2agri-dev/$_inet_addr/" /var/www/html/scripts/config.js
 
 }
 #-----------------------------------------------------------#
