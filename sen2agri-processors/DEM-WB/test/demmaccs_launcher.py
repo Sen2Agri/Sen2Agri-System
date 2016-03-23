@@ -154,7 +154,7 @@ def launch_demmaccs(l1c_context):
         sat_id = 0
         acquisition_date = ""
         base_abs_path = os.path.dirname(os.path.abspath(__file__)) + "/"
-        demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "-p", "5", "--gip-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-address", demmaccs_config.maccs_ip_address, "--maccs-launcher", demmaccs_config.maccs_launcher, "--dem-launcher",  base_abs_path + "dem.py", "--delete-temp", "False", l1c[3], output_path]
+        demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "-p", "5", "--gip-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-address", demmaccs_config.maccs_ip_address, "--maccs-launcher", demmaccs_config.maccs_launcher, "--dem-launcher",  base_abs_path + "dem.py", "--delete-temp", "True", l1c[3], output_path]
         if l1c_context.skip_dem != None:
             demmaccs_command += ["--skip-dem", l1c_context.skip_dem]
         if len(l2a_tiles) > 0:

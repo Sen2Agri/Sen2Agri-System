@@ -49,7 +49,7 @@ set password for slurm@localhost = password('sen2agri');"
 MYSQL_DB_ACCESS_GRANT="grant usage on *.* to slurm;grant all privileges on slurm_acct_db.* to slurm;flush privileges;"
 MYSQL_CMD=${MYSQL_DB_CREATION}${MYSQL_DB_ACCESS_GRANT}
 #----------------SEN2AGRI POSTGRESQL DATABASE NAME-----------------------------------------#
-: ${SEN2AGRI_DATABASE_NAME:="sen2agri_tmp"}
+: ${SEN2AGRI_DATABASE_NAME:="sen2agri"}
 #------------------------------------------------------------------------------------------#
 function parse_and_update_slurm_conf_file()
 {

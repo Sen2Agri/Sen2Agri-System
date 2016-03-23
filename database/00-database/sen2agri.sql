@@ -6,7 +6,7 @@ CREATE ROLE admin WITH LOGIN PASSWORD 'sen2agri'
 CREATE ROLE "sen2agri-service" WITH LOGIN PASSWORD 'sen2agri';
 
 -- DataBase Create: sen2agri
-CREATE DATABASE sen2agri_tmp
+CREATE DATABASE sen2agri
   WITH OWNER = postgres
        ENCODING = 'UTF8'
        TABLESPACE = pg_default
