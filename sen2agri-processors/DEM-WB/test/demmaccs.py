@@ -209,13 +209,13 @@ for dem_hdr in dem_hdrs:
         #UserConfiguration has to be added for SENTINEL in cmd_array
         cmd_array += ["--conf", "UserConfiguration"]
     log(general_log_path, "sat_id = {} | acq_date = {}".format(sat_id, acquistion_date), general_log_filename)
-    log(general_log_path, "Starting MACCS for {} | TileID: {}!".format(args.input, tile_id), general_log_filename)
+    log(general_log_path, "Starting MACCS in {} for {} | TileID: {}".format(maccs_mode, args.input, tile_id), general_log_filename)
 
     if run_command(cmd_array) != 0:    
-        log(general_log_path, "MACCS didn't work for {} | TileID: {}!".format(args.input, tile_id), general_log_filename)
+        log(general_log_path, "MACCS mode {} didn't work for {} | TileID: {}. Location {}".format(maccs_mode, args.input, tile_id, args.output), general_log_filename)
     else:
         processed_tiles.append(tile_id)
-        log(general_log_path, "MACCS finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))), general_log_filename)
+        log(general_log_path, "MACCS mode {} for {} tile {} finished in: {}. Location: {}".format(maccs_mode, args.input, tile_id, datetime.timedelta(seconds=(time.time() - start)), args.output), general_log_filename)
         if run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", args.output, "-w", working_dir]) != 0:
             log(general_log_path, "Mosaic didn't work")    
     remove_sym_links([dem_hdr, dem_dir[0]], working_dir)
