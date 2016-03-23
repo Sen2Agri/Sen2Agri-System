@@ -7,4 +7,4 @@ $BODY$INSERT INTO "user"(
     $1, $2, $4, $5,
     crypt($3, gen_salt('md5')));
 SELECT id FROM public.user WHERE login = $1;$BODY$
-  LANGUAGE sql VOLATILE
+  LANGUAGE sql VOLATILE;

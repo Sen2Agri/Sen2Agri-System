@@ -364,24 +364,24 @@ function install_and_config_postgresql()
 {
    #------------INSTALL AND START------------#
    #install PostgreSQL
-   yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.2-x86_64/pgdg-centos94-9.4-2.noarch.rpm
-   yum -y install postgresql94-server
+#   yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.2-x86_64/pgdg-centos94-9.4-2.noarch.rpm
+#   yum -y install postgresql94-server
 
    #initialize the database in PGDATA
-   /usr/pgsql-9.4/bin/postgresql94-setup initdb
+#   /usr/pgsql-9.4/bin/postgresql94-setup initdb
 
    #install pgcrypto in PostgreSQL
-   yum -y install postgresql94-contrib
+#   yum -y install postgresql94-contrib
 
    #install PostGIS
-   yum -y install postgis2_94
+#   yum -y install postgis2_94
 
    #start service Postgresql and enable to start at boot
-   systemctl enable postgresql-9.4.service
-   systemctl start postgresql-9.4.service
+#   systemctl enable postgresql-9.4.service
+#   systemctl start postgresql-9.4.service
 
    ##get status of postgresql-9.4 daemon
-   echo "POSTGRESQL SERVICE: $(systemctl status postgresql-9.4 | grep "Active")"
+#   echo "POSTGRESQL SERVICE: $(systemctl status postgresql-9.4 | grep "Active")"
 
    #------------DATABASE CREATION------------#
    # first, the database is created. the privileges will be set after all 
@@ -402,10 +402,10 @@ function install_and_config_postgresql()
    
    #-------------- pg_hba.conf -----------------------#
    ####  copy conf file to /var/lib/pgsql/9.4/data/pg_hba.conf
-   cp -f $(find ./ -name "pg_hba.conf") /var/lib/pgsql/9.4/data/
+#   cp -f $(find ./ -name "pg_hba.conf") /var/lib/pgsql/9.4/data/
 
    #restart service Postgresql
-   systemctl restart postgresql-9.4.service
+#   systemctl restart postgresql-9.4.service
 }
 #-----------------------------------------------------------#
 function populate_from_scripts()
@@ -534,16 +534,16 @@ function install_RPMs()
 ####  OTB, GDAL, SEN2AGRI, SLURM INSTALL  & CONFIG     ######
 #-----------------------------------------------------------#
 ## install binaries
-install_RPMs
+#install_RPMs
 
 ## create system account
-create_system_account
+#create_system_account
 
 ## config and start munge
-config_and_start_munge_service
+#config_and_start_munge_service
 
 ## config and start slurm
-config_and_start_slurm_service
+#config_and_start_slurm_service
 
 #-----------------------------------------------------------#
 ####  POSTGRESQL INSTALL & CONFIG AND DATABASE CREATION #####
@@ -553,9 +553,9 @@ install_and_config_postgresql
 #-----------------------------------------------------------#
 ####  WEBSERVER                 INSTALL   & CONFIG      #####
 #-----------------------------------------------------------#
-install_and_config_webserver
+#install_and_config_webserver
 
 #-----------------------------------------------------------#
 ####  DOWNLOADERS AND DEMMACS  INSTALL                  #####
 #-----------------------------------------------------------#
-install_downloaders_demmacs
+#install_downloaders_demmacs

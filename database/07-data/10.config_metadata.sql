@@ -1,39 +1,3 @@
---
--- PostgreSQL database dump
---
-
-SET statement_timeout = 0;
-SET lock_timeout = 0;
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SET check_function_bodies = false;
-SET client_min_messages = warning;
-
-SET search_path = public, pg_catalog;
-
-SET default_tablespace = '';
-
-SET default_with_oids = false;
-
---
--- Name: config_metadata; Type: TABLE; Schema: public; Owner: admin; Tablespace: 
---
-
--- CREATE TABLE config_metadata (
---     key character varying NOT NULL,
---     friendly_name character varying DEFAULT ''::character varying NOT NULL,
---     type t_data_type NOT NULL,
---     is_advanced boolean DEFAULT false NOT NULL,
---     config_category_id smallint NOT NULL
--- );
-
-
-ALTER TABLE config_metadata OWNER TO admin;
-
---
--- Data for Name: config_metadata; Type: TABLE DATA; Schema: public; Owner: admin
---
-
 INSERT INTO config_metadata VALUES ('executor.module.path.bands-extractor', 'BandsExtractor Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.sample-selection', 'Sample Selection Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('processor.l3a.weight.aot.minweight', 'Minimum weight depending on AOT', 'float', true, 3);
@@ -214,27 +178,3 @@ INSERT INTO config_metadata VALUES ('processor.l4b.training-samples-number', 'Th
 INSERT INTO config_metadata VALUES ('processor.l4b.temporal_resampling_mode', 'The temporal resampling mode choices=[resample, gapfill]', 'string', true, 6);
 INSERT INTO config_metadata VALUES ('downloader.s2.max-retries', 'Maximum retries for downloading a product', 'int', false, 15);
 INSERT INTO config_metadata VALUES ('downloader.l8.max-retries', 'Maximum retries for downloading a product', 'int', false, 15);
-
-
---
--- Name: config_metadata_pkey; Type: CONSTRAINT; Schema: public; Owner: admin; Tablespace: 
---
-
-ALTER TABLE ONLY config_metadata
-    ADD CONSTRAINT config_metadata_pkey PRIMARY KEY (key);
-
-
---
--- Name: config_metadata; Type: ACL; Schema: public; Owner: admin
---
-
-REVOKE ALL ON TABLE config_metadata FROM PUBLIC;
-REVOKE ALL ON TABLE config_metadata FROM admin;
-GRANT ALL ON TABLE config_metadata TO admin;
-GRANT ALL ON TABLE config_metadata TO "sen2agri-service";
-
-
---
--- PostgreSQL database dump complete
---
-
