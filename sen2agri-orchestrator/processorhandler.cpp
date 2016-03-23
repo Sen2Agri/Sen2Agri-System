@@ -31,6 +31,13 @@ bool removeDir(const QString & dirName)
     return result;
 }
 
+bool compareProductDates(const QString& path1,const QString& path2)
+{
+  QDateTime dtProd1=ProcessorHandlerHelper::GetL2AProductDateFromPath(path1);
+  QDateTime dtProd2=ProcessorHandlerHelper::GetL2AProductDateFromPath(path2);
+  return (dtProd1 < dtProd2);
+}
+
 ProcessorHandler::~ProcessorHandler() {}
 
 void ProcessorHandler::HandleProductAvailable(EventProcessingContext &ctx,
@@ -268,7 +275,7 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     return false;
 }
 
-QStringList ProcessorHandler::GetL2AInputProducts(EventProcessingContext &ctx,
+QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &ctx,
                                 const JobSubmittedEvent &event) {
     QStringList listProducts;
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
@@ -288,5 +295,25 @@ QStringList ProcessorHandler::GetL2AInputProducts(EventProcessingContext &ctx,
         }
     }
 
+    // sort the input products according to their dates
+    qSort(listProducts.begin(), listProducts.end(), compareProductDates);
+
     return listProducts;
+}
+
+bool ProcessorHandler::GetParameterValueAsInt(const QJsonObject &parameters, const QString &key,
+                                              int &outVal) {
+    bool bRet = false;
+    if(parameters.contains(key)) {
+        // first try to get it as string
+        const auto &value = parameters[key];
+        if(value.isDouble()) {
+            outVal = value.toInt();
+            bRet = true;
+        }
+        if(value.isString()) {
+            outVal = value.toString().toInt(&bRet);
+        }
+    }
+    return bRet;
 }

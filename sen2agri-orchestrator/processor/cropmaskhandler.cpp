@@ -91,6 +91,13 @@ CropMaskGlobalExecutionInfos CropMaskHandler::HandleNewTilesList(EventProcessing
         ctx.SubmitTasks(event.jobId, allTasksListRef);
         HandleInsituJob(ctx, event, listProducts, globalExecInfos);
     } else {
+        const auto &reference_raster = parameters["reference_raster"].toString();
+        if(reference_raster.size() == 0) {
+            ctx.MarkJobFailed(event.jobId);
+            throw std::runtime_error(
+                QStringLiteral("Neither of the parameters reference_polygons nor reference_raster were found!").
+                        toStdString());
+        }
         allTasksListRef = CreateNoInSituTasksForNewProducts(globalExecInfos.allTasksList,
                                                             globalExecInfos.prodFormatParams.parentsTasksRef);
         ctx.SubmitTasks(event.jobId, allTasksListRef);
@@ -102,10 +109,12 @@ CropMaskGlobalExecutionInfos CropMaskHandler::HandleNewTilesList(EventProcessing
 void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
-    QStringList listProducts = GetL2AInputProducts(ctx, event);
+    QStringList listProducts = GetL2AInputProductsTiles(ctx, event);
     if(listProducts.size() == 0) {
         ctx.MarkJobFailed(event.jobId);
-        return;
+        throw std::runtime_error(
+            QStringLiteral("No products provided at input or no products available in the specified interval").
+                    toStdString());
     }
 
     QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
@@ -231,7 +240,12 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
     auto mission = parameters["processor.l4a.mission"].toString();
     if(mission.length() == 0) mission = "SPOT";
 
-    const auto &resolution = parameters["resolution"].toInt();
+    int resolution = 0;
+    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+            resolution == 0) {
+        resolution = 10;    // TODO: We should configure the default resolution in DB
+    }
+
     auto randomSeed = parameters["processor.l4a.random_seed"].toString();
     if(randomSeed.isEmpty())  randomSeed = "0";
 
@@ -474,7 +488,11 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
     auto mission = parameters["processor.l4a.mission"].toString();
     if(mission.length() == 0) mission = "SPOT";
 
-    const auto &resolution = parameters["resolution"].toInt();
+    int resolution = 0;
+    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+            resolution == 0) {
+        resolution = 10;    // TODO: We should configure the default resolution in DB
+    }
     const auto &resolutionStr = QString::number(resolution);
     auto randomSeed = parameters["processor.l4a.random_seed"].toString();
     if(randomSeed.isEmpty())  randomSeed = "0";

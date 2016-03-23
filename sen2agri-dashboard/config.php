@@ -33,7 +33,7 @@
 											-->
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
-												<select multiple class="form-control" id="inputFiles" name="inputFiles[]"></select>
+												<select multiple class="form-control" id="inputFiles" name="inputFiles[]" size="7"></select>
 												<span class="help-block">The list of products descriptors (xml files).</span>
 											</div>
 											<div class="form-group form-group-sm">
@@ -122,7 +122,7 @@
 											-->
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
-												<select multiple class="form-control" id="inputFiles" name="inputFiles[]"> </select>
+												<select multiple class="form-control" id="inputFiles" name="inputFiles[]" size="7"> </select>
 												<span class="help-block">The list of products descriptors (xml files).</span>
 											</div>
 											<div class="form-group form-group-sm">
@@ -139,17 +139,22 @@
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="genmodel">Generate models:</label>
 												<input type="number" min="0" max="1" step="1" class="form-control" id="genmodel" name="genmodel" value="0">
-												<span class="help-block">Specifies if the models should be also generated or not [0/1]</span>
+												<span class="help-block">Specifies if the models should be generated or not [0/1]</span>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="reproc">Reprocessing the last N-Days:</label>
 												<input type="number" min="0" max="1" step="1" class="form-control" id="reproc" name="reproc" value="0">
-												<span class="help-block">Specifies if the reprocessing of last N-Days should be also performed or not [0/1]</span>
+												<span class="help-block">Specifies if the reprocessing of last N-Days should be performed or not [0/1]</span>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="fitted">Reprocessing at the end of the season:</label>
 												<input type="number" min="0" max="1" step="1" class="form-control" id="fitted" name="fitted" value="0">
-												<span class="help-block">Specifies if the reprocessing at the end of the season should be also performed or not [0/1]</span>
+												<span class="help-block">Specifies if the reprocessing at the end of the season should be performed or not [0/1]</span>
+											</div>
+											<div class="form-group form-group-sm">
+												<label class="control-label" for="monolai">Generate LAI mono-dates:</label>
+												<input type="number" min="0" max="1" step="1" class="form-control" id="monolai" name="monolai" value="1">
+												<span class="help-block">Specifies if the LAI mono-dates should be generated or not [0/1]</span>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="bwr">Backward window:</label>
@@ -198,7 +203,7 @@
 											-->
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
-												<select multiple class="form-control" id="inputFiles" name="inputFiles[]"></select>
+												<select multiple class="form-control" id="inputFiles" name="inputFiles[]" size="7"></select>
 												<span class="help-block">The list of products descriptors (xml files).</span>
 											</div>
 											<div class="form-group form-group-sm">
@@ -249,7 +254,7 @@
 											-->
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
-												<select multiple class="form-control" id="inputFiles" name="inputFiles[]"></select>
+												<select multiple class="form-control" id="inputFiles" name="inputFiles[]" size="7"></select>
 												<span class="help-block">The list of products descriptors (xml files).</span>
 											</div>
 											<div class="form-group form-group-sm">
@@ -425,7 +430,7 @@
 											-->
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="inputFiles">Available input files:</label>
-												<select multiple class="form-control" id="inputFiles" name="inputFiles[]"></select>
+												<select multiple class="form-control" id="inputFiles" name="inputFiles[]" size="7"></select>
 												<span class="help-block">The list of products descriptors (xml files).</span>
 											</div>
 											<div class="form-group form-group-sm">
@@ -655,11 +660,13 @@ if (isset($_SESSION['processor'])) {
 							genmodel:		{ pattern: "[0-1]{1}" },
 							reproc:			{ pattern: "[0-1]{1}" },
 							fitted:			{ pattern: "[0-1]{1}" },
+							monolai:		{ pattern: "[0-1]{1}" },
 						},
 						messages: {
 							genmodel: { pattern : "Accepted values: 0 and 1" },
 							reproc:   { pattern : "Accepted values: 0 and 1" },
 							fitted:   { pattern : "Accepted values: 0 and 1" },
+							monolai:  { pattern : "Accepted values: 0 and 1" },
 						},
 						highlight: function(element, errorClass) {
 							$(element).parent().addClass("has-error");

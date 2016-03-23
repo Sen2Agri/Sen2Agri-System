@@ -1563,9 +1563,14 @@ private:
 
   std::vector<std::string> GetFileListFromFile(const std::vector<std::string> &tileAndFileName) {
       std::vector<std::string> retList;
-      if(tileAndFileName.size() == 2) {
-          retList = GetFileListFromFile(tileAndFileName[1]);
-          retList.insert(retList.begin(), tileAndFileName[0]);
+      int cnt = tileAndFileName.size();
+      if((cnt > 0) && (cnt % 2) == 0) {
+          int nbTupples = tileAndFileName.size() / 2;
+          for(int i = 0; i < nbTupples; i++) {
+              retList.push_back(tileAndFileName[i*2]);
+              std::vector<std::string> filesList = GetFileListFromFile(tileAndFileName[i*2+1]);
+              retList.insert(std::end(retList), std::begin(filesList), std::end(filesList));
+          }
       } else {
           itkExceptionMacro("Invalid usage. You should provide a tile name and a file name containing file paths");
       }

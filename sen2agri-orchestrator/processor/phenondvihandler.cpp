@@ -25,7 +25,12 @@ PhenoGlobalExecutionInfos PhenoNdviHandler::HandleNewTilesList(EventProcessingCo
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     // Get the resolution value
-    const auto &resolution = QString::number(parameters["resolution"].toInt());
+    int resolution = 0;
+    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+            resolution == 0) {
+        resolution = 10;    // TODO: We should configure the default resolution in DB
+    }
+    const auto &resolutionStr = QString::number(resolution);
 
     PhenoGlobalExecutionInfos globalExecInfos;
     QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
@@ -52,7 +57,7 @@ PhenoGlobalExecutionInfos PhenoNdviHandler::HandleNewTilesList(EventProcessingCo
     const auto &metricsFlagsImg = metricsSplitterTask.GetFilePath("metric_flags_img.tif");
 
     QStringList bandsExtractorArgs = {
-        "BandsExtractor", "-pixsize",   resolution,  "-merge",    "true",     "-ndh", "true",
+        "BandsExtractor", "-pixsize",   resolutionStr,  "-merge",    "true",     "-ndh", "true",
         "-out",           rawReflBands, "-allmasks", allMasksImg, "-outdate", dates,  "-il"
     };
     bandsExtractorArgs += listProducts;
@@ -89,10 +94,12 @@ PhenoGlobalExecutionInfos PhenoNdviHandler::HandleNewTilesList(EventProcessingCo
 void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
-    QStringList listProducts = GetL2AInputProducts(ctx, event);
+    QStringList listProducts = GetL2AInputProductsTiles(ctx, event);
     if(listProducts.size() == 0) {
         ctx.MarkJobFailed(event.jobId);
-        return;
+        throw std::runtime_error(
+            QStringLiteral("No products provided at input or no products available in the specified interval").
+                    toStdString());
     }
 
     QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);

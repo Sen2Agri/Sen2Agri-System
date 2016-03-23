@@ -49,13 +49,14 @@ g_exit_flag = False
 
 def run_command(cmd_array, use_shell=False):
     start = time.time()
-    print(" ".join(map(pipes.quote, cmd_array)))
+    cmd_str = " ".join(map(pipes.quote, cmd_array))
+    print("Starting command: {}".format(cmd_str))
     res = 0
     if not FAKE_COMMAND:
         res = subprocess.call(cmd_array, shell=use_shell)
-    print("App finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-    if res != 0:
-        print("Application error")
+    ok = "OK"
+    nok = "NOK"
+    print("Command finished {} in {} : {}".format((ok if res == 0 else nok),datetime.timedelta(seconds=(time.time() - start)), cmd_str))
     return res
 
 

@@ -51,8 +51,11 @@ CropTypeGlobalExecutionInfos CropTypeHandler::HandleNewTilesList(EventProcessing
     auto mission = parameters["processor.l4b.mission"].toString();
     if(mission.length() == 0) mission = "SPOT";
 
-    int resolution = parameters["resolution"].toInt();
-    if(resolution == 0)         resolution = 10;    // TODO: We should configure the default resolution in DB
+    int resolution = 0;
+    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+            resolution == 0) {
+        resolution = 10;    // TODO: We should configure the default resolution in DB
+    }
     const auto &resolutionStr = QString::number(resolution);
 
     auto randomSeed = parameters["processor.l4b.random_seed"].toString();
@@ -259,11 +262,13 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    QStringList listProducts = GetL2AInputProducts(ctx, event);
+    QStringList listProducts = GetL2AInputProductsTiles(ctx, event);
     if(listProducts.size() == 0) {
         // try to get the start and end date if they are given
         ctx.MarkJobFailed(event.jobId);
-        return;
+        throw std::runtime_error(
+            QStringLiteral("No products provided at input or no products available in the specified interval").
+                    toStdString());
     }
 
     QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
@@ -288,7 +293,9 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
         // we have only one file for all tiles - but in this case we should have only one tile
         if(mapTiles.size() != 1){
             ctx.MarkJobFailed(event.jobId);
-            return;
+            throw std::runtime_error(
+                QStringLiteral("An input CropMask is needed for each tile").
+                        toStdString());
         }
         for(const auto &e : mapTiles.keys()) {
             mapCropMasks[e] = cropMaskAbsolutePath;

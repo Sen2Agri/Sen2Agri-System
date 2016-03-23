@@ -169,6 +169,7 @@ for dem_hdr in dem_hdrs:
         continue
     start = time.time()
     maccs_mode = "L2INIT"
+    prev_l2a_tile_path = []
     try:
         #.index will throw an exception if it will not find the tile_id inside prev_l2a_tiles
         #so the maccs mode will not be set to nominal

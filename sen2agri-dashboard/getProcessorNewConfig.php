@@ -275,6 +275,7 @@ elseif (isset ( $_POST ['l3b_lai'] )) {
 	$genmodel = $_POST ['genmodel'];
 	$reproc = $_POST ['reproc'];
 	$fitted = $_POST ['fitted'];
+	$monolai = $_POST ['monolai'];
 	
 	$config = array (
 			array (
@@ -296,6 +297,10 @@ elseif (isset ( $_POST ['l3b_lai'] )) {
 			array (
 					"key" => "processor.l3b.fitted",
 					"value" => $fitted
+			),
+			array (
+					"key" => "processor.l3b.mono_date_lai",
+					"value" => $monolai
 			)
 	);
 	
@@ -488,13 +493,12 @@ elseif (isset ( $_POST ['l4a'] )) {
 	// set job name and description and save job
 	$name = "l4a_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for l4a";
-	insertjob ( $name, $description, 4, $siteId, 2, $json_param, $json_config );
-	if ($polygons_file) {
-		redirect_page(4, "OK", "Your job has been successfully submitted (with the reference polygones)!");
-	} else if ($raster_file) {
-		redirect_page(4, "OK", "Your job has been successfully submitted (with the reference raster)!");
+	
+	if ($polygons_file || $raster_file) {
+		insertjob ( $name, $description, 4, $siteId, 2, $json_param, $json_config );
+		redirect_page(4, "OK", "Your job has been successfully submitted (with the reference " . ( $polygons_file ? "polygones" : "raster" ) . ")!");
 	} else {
-		redirect_page(4, "OK", "WARNING: Both `Reference polygons` and `Reference raster` were invalid!");
+		redirect_page(4, "NOK", "WARNING: Both `Reference polygons` and `Reference raster` were invalid!");
 	}
 } /* -------------------------------------------------------l4b------------------------------------------------------ */
 elseif (isset ( $_POST ['l4b'] )) {

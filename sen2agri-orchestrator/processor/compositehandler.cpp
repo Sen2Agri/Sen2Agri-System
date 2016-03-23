@@ -127,8 +127,11 @@ CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessi
     const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
     auto synthalf = parameters["half_synthesis"].toString();
 
-    int resolution = parameters["resolution"].toInt();
-    if(resolution == 0) resolution = 10;    // TODO: We should configure the default resolution in DB
+    int resolution = 0;
+    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+            resolution == 0) {
+        resolution = 10;    // TODO: We should configure the default resolution in DB
+    }
 
     // Get the parameters from the configuration
     // Get the Half Synthesis interval value if it was not specified by the user
@@ -395,10 +398,12 @@ void CompositeHandler::FilterInputProducts(QStringList &listFiles,
 void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
-    QStringList listProducts = GetL2AInputProducts(ctx, event);
+    QStringList listProducts = GetL2AInputProductsTiles(ctx, event);
     if(listProducts.size() == 0) {
         ctx.MarkJobFailed(event.jobId);
-        return;
+        throw std::runtime_error(
+            QStringLiteral("No products provided at input or no products available in the specified interval").
+                    toStdString());
     }
 
     QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);

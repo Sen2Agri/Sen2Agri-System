@@ -20,6 +20,16 @@ function findProcessor($processorName, $processorObjArr) {
 	return null;
 }
 
+function findProdType($prodTypeName, $prodTypeObjArr) {
+	foreach($prodTypeObjArr as $prodTypeObj) {
+		if ($prodTypeObj->text == $prodTypeName)
+			return $prodTypeObj;
+	}
+	
+	return null;
+}
+
+
 function normalizePath($path) {
     $path = str_replace('\\', '/', $path);
     $path = preg_replace('/\/+/', '/', $path);
@@ -68,7 +78,7 @@ try {
 			$products[] = $siteObj;			
 		}
 		
-		$processorObj = findProcessor($productRow->processor, $siteObj->nodes);
+/*		$processorObj = findProcessor($productRow->processor, $siteObj->nodes);
 		if ($processorObj == null) {
 			$processorObj = new stdClass();
 			$processorObj->text = $productRow->processor;
@@ -76,6 +86,15 @@ try {
 			$processorObj->nodes = array();
 			$siteObj->nodes[] = $processorObj;
 		}
+*/		
+		$prodTypeObj = findProdType($productRow->product_type_description, $siteObj->nodes);
+		if ($prodTypeObj == null) {
+			$prodTypeObj = new stdClass();
+			$prodTypeObj->text = $productRow->product_type_description;
+			$prodTypeObj->selectable = false;
+			$prodTypeObj->nodes = array();
+			$siteObj->nodes[] = $prodTypeObj;
+		}		
 		
 		if ($productRow->product != null) {
 			$productObj = new stdClass();
@@ -93,7 +112,9 @@ try {
 			$productObj->productImageWidth = $imageSize['width'];
 			$productObj->productImageHeight = $imageSize['height'];
 			
-			$processorObj->nodes[] = $productObj;
+			
+			//$processorObj->nodes[] = $productObj;
+			$prodTypeObj->nodes[] = $productObj;
 		}
 		
     }
