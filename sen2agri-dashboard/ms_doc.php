@@ -27,5 +27,6 @@
     <script src="libraries/flot-0.8.3/jquery.flot.stack.min.js"></script>
     <script src="libraries/nvd3-1.1.11/nv.d3.js"></script>
     <script src="libraries/bootstrap-treeview/bootstrap-treeview.min.js"></script>
+	<script type="text/javascript"> var host_name = "<?php echo ConfigParams::$HOST_NAME ?>"; var services_port = "<?php echo ConfigParams::$SERVICES_PORT ?>"; </script>
 </head>
 <body>
