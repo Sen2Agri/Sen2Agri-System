@@ -3,6 +3,20 @@
 
 #include "qdatetime.h"
 
+
+// List of supported sensors
+/* static */
+QStringList ProcessorHandlerHelper::m_supportedSensorPrefixes = {"S2", "L8", "SPOT"};
+
+// Map from the sensor name to index of the date in the file name of the L2A product assuming _ separation
+/* static */
+QMap<QString, QString> ProcessorHandlerHelper::m_mapSensorL2AMetaFilePattern =
+    {{"S2", "S2A|S2B_*_*_L2VALD_<TILEID>_*_*_*_<DATE>.HDR"},
+     {"L8", "L8_*_L8C_L2VALD_<TILEID>_<DATE>.HDR"},
+     {"SPOT4", "SPOT4_*_*_<DATE>_*_*.xml"},
+     {"SPOT5", "SPOT5_*_*_<DATE>_*_*.xml"}
+    };
+
 ProcessorHandlerHelper::ProcessorHandlerHelper() {}
 
 /* static */
@@ -227,7 +241,7 @@ QString ProcessorHandlerHelper::GetFileNameFromPath(const QString &filePath) {
     QFileInfo fileInfo(filePath);
     return fileInfo.fileName();
 }
-
+/*
 QString ProcessorHandlerHelper::GetL2ATileMainImageFilePath(const QString &tileMetadataPath) {
     QFileInfo info(tileMetadataPath);
     QString parentFolder = info.absoluteDir().absolutePath();
@@ -252,7 +266,7 @@ QString ProcessorHandlerHelper::GetL2ATileMainImageFilePath(const QString &tileM
     }
     return "";
 }
-
+*/
 
 QString ProcessorHandlerHelper::GetL2AProductTypeFromTile(const QString &tileMetadataPath) {
     QFileInfo info(tileMetadataPath);
@@ -289,6 +303,42 @@ QDateTime ProcessorHandlerHelper::GetL2AProductDateFromPath(const QString &path)
     if(idx < nameWords.size())
         return QDateTime::fromString(nameWords[idx], "yyyyMMdd");
     return QDateTime();
+}
+
+bool ProcessorHandlerHelper::IsValidL2AMetadataFileName(const QString &path) {
+    QFileInfo info(path);
+    if(!info.isFile()) {
+        return false;
+    }
+    QString fileName = info.fileName();
+    QStringList listComponents = fileName.split(".",QString::SkipEmptyParts);
+    QString ext;
+    if(listComponents.size() > 1) {
+        ext = listComponents[listComponents.size()-1];
+    }
+    listComponents = fileName.split("_");
+    if(fileName.indexOf("S2") == 0) {
+        if(ext.compare("hdr", Qt::CaseInsensitive) != 0)  {
+            return false;
+        }
+
+        if(listComponents.size() < 4 || listComponents[3] != "L2VALD") {
+            return false;
+        }
+    } else if(fileName.indexOf("L8") == 0) {
+        if(ext.compare("hdr", Qt::CaseInsensitive) != 0)  {
+            return false;
+        }
+
+        if((listComponents.size() < 4) || (listComponents[2] != "L8C") || (listComponents[3] != "L2VALD")) {
+            return false;
+        }
+    } else if(fileName.indexOf("SPOT") == 0) {
+        if(ext.compare("xml", Qt::CaseInsensitive) != 0)  {
+            return false;
+        }
+    }
+    return true;
 }
 
 bool ProcessorHandlerHelper::GetL2AIntevalFromProducts(const QStringList &productsList, QDateTime &minTime, QDateTime &maxTime) {

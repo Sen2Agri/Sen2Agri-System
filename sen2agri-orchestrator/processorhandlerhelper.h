@@ -20,11 +20,16 @@ public:
     static QMap<QString, QString> GetHigLevelProductFiles(const QString &productDir, const QString &fileIdentif, bool isQiData=false);
     static QMap<QString, QStringList> GroupHighLevelProductTiles(const QStringList &listAllProductFolders);
 
-    static QString GetL2ATileMainImageFilePath(const QString &tileMetadataPath);
+    //static QString GetL2ATileMainImageFilePath(const QString &tileMetadataPath);
     static QString GetL2AProductTypeFromTile(const QString &tileMetadataPath);
     static QDateTime GetL2AProductDateFromPath(const QString &path);
+    static bool IsValidL2AMetadataFileName(const QString &path);
     static bool GetL2AIntevalFromProducts(const QStringList &productsList, QDateTime &minTime, QDateTime &maxTime);
     static bool GetCropReferenceFile(const QString &refDir, QString &shapeFile, QString &referenceRasterFile);
+
+private:
+    static QStringList m_supportedSensorPrefixes;
+    static QMap<QString, QString> m_mapSensorL2AMetaFilePattern;
 };
 
 #endif // PROCESSORHANDLERHELPER_H

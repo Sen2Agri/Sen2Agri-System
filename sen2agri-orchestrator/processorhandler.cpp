@@ -278,9 +278,10 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
 QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &ctx,
                                 const JobSubmittedEvent &event,
                                 QMap<QString, QStringList> &mapProductToTilesMetaFiles) {
-    QStringList listProducts;
+    QStringList listTilesMetaFiles;
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     const auto &inputProducts = parameters["input_products"].toArray();
+    QStringList listProducts;
     if(inputProducts.size() == 0) {
         const auto &startDate = QDateTime::fromString(parameters["date_start"].toString(), "yyyyMMdd");
         const auto &endDateStart = QDateTime::fromString(parameters["date_end"].toString(), "yyyyMMdd");
@@ -288,23 +289,31 @@ QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &c
         const auto endDate = endDateStart.addSecs(SECONDS_IN_DAY-1);
         ProductList productsList = ctx.GetProducts(event.siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
         for(const auto &product: productsList) {
-            QStringList tilesMetaFiles = ctx.findProductFiles(product.fullPath);
-            listProducts.append(tilesMetaFiles);
-            mapProductToTilesMetaFiles[product.fullPath] = tilesMetaFiles;
+            listProducts.append(product.fullPath);
         }
     } else {
         for (const auto &inputProduct : inputProducts) {
-            const QString & inPrd = inputProduct.toString();
-            QStringList tilesMetaFiles = ctx.findProductFiles(inPrd);
-            listProducts.append(tilesMetaFiles);
-            mapProductToTilesMetaFiles[inPrd] = tilesMetaFiles;
+            listProducts.append(ctx.GetProductAbsolutePath(inputProduct.toString()));
+        }
+    }
+    for(const QString &inPrd: listProducts) {
+        QStringList tilesMetaFiles = ctx.findProductFiles(inPrd);
+        QStringList listValidTilesMetaFiles;
+        for(const QString &tileMetaFile: tilesMetaFiles) {
+            if(ProcessorHandlerHelper::IsValidL2AMetadataFileName(tileMetaFile)) {
+                listValidTilesMetaFiles.append(tileMetaFile);
+            }
+        }
+        if(listValidTilesMetaFiles.size() > 0) {
+            listTilesMetaFiles.append(listValidTilesMetaFiles);
+            mapProductToTilesMetaFiles[inPrd] = listValidTilesMetaFiles;
         }
     }
 
     // sort the input products according to their dates
-    qSort(listProducts.begin(), listProducts.end(), compareProductDates);
+    qSort(listTilesMetaFiles.begin(), listTilesMetaFiles.end(), compareProductDates);
 
-    return listProducts;
+    return listTilesMetaFiles;
 }
 
 QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &ctx,
