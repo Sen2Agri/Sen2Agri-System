@@ -193,7 +193,7 @@ for dem_hdr in dem_hdrs:
     except:
         print("No previous processed l2a tile found for {} in product {}".format(tile_id, product_name))
     cmd_array = []
-    if args.remote_maccs is not None:
+    if args.maccs_address is not None:
         cmd_array = ["ssh", args.maccs_address]
     cmd_array += [args.maccs_launcher, 
                     "--input", working_dir, 

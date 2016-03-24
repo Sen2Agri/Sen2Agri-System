@@ -443,10 +443,9 @@ class AOIInfo(object):
                         configArray[-1] += "/"
                     configArray[-1] += currentAOI.siteName
                     if not currentAOI.setConfigParams(configArray):
-                        print("OUT OF THE SEASON !!!!")
+                        print("OUT OF THE SEASON")
                         continue
                     try:
-                        #self.cursor.execute("select \"product_name\" from downloader_history where \"satellite_id\"={} and \"site_id\"={}".format(satelliteId, currentAOI.siteId))
                         self.cursor.execute("""select \"product_name\" from downloader_history where satellite_id = %(sat_id)s :: smallint and
                                                                        site_id = %(site_id)s :: smallint and
                                                                        status_id != %(status_downloading)s :: smallint and 
@@ -753,7 +752,6 @@ class L1CInfo(object):
                     if len(rows) > 0:
                         retArray.append(rows)
         except:
-            print("!!!!!!!!!!!!!!!")
             self.database_disconnect()
             return []
         self.database_disconnect()
@@ -776,7 +774,7 @@ class L1CInfo(object):
             if len(rows) == 1:
                 path = rows[0][0]
         except:
-            print("Database query failed in get_previous_l2a_tile_path!!!!!")
+            print("Database query failed in get_previous_l2a_tile_path !")
             self.database_disconnect()
             return path
         self.database_disconnect()
