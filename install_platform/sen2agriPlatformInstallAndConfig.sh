@@ -448,7 +448,9 @@ function install_and_config_webserver()
 
    ##update file /var/www/html/ConfigParams.php
    ##replace "sen2agri-dev" with machine ip "_inet_addr "  into file /var/www/html/ConfigParams.php
-   sed -i "s/sen2agri-dev/$_inet_addr/" /var/www/html/ConfigParams.php
+   local _host_name="hostname -s"
+   sed -i "s/sen2agri-dev/$_host_name/" /var/www/html/ConfigParams.php
+   #sed -i "s/sen2agri-dev/$_inet_addr/" /var/www/html/ConfigParams.php
 
 }
 #-----------------------------------------------------------#
@@ -521,16 +523,6 @@ function install_RPMs()
 ../rpm_binaries/slurm/slurm-slurmdb-direct-15.08.7-1.el7.centos.x86_64.rpm \
 ../rpm_binaries/slurm/slurm-sql-15.08.7-1.el7.centos.x86_64.rpm \
 ../rpm_binaries/slurm/slurm-torque-15.08.7-1.el7.centos.x86_64.rpm
-
-    systemctl enable --now sen2agri-executor
-    systemctl enable --now sen2agri-orchestrator
-    systemctl enable --now sen2agri-scheduler
-
-    systemctl restart --now sen2agri-executor
-    systemctl restart --now sen2agri-orchestrator
-    systemctl restart --now sen2agri-scheduler
-    
-    setenforce 0
 }
 ###########################################################
 ##### MAIN                                              ###
@@ -565,3 +557,13 @@ install_and_config_webserver
 ####  DOWNLOADERS AND DEMMACS  INSTALL                  #####
 #-----------------------------------------------------------#
 install_downloaders_demmacs
+
+#-----------------------------------------------------------#
+####  START ORCHESTRATOT SERVICES                       #####
+#-----------------------------------------------------------#
+systemctl restart sen2agri-executor
+systemctl restart sen2agri-orchestrator
+systemctl restart sen2agri-scheduler
+
+setenforce 0
+
