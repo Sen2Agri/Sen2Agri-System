@@ -667,7 +667,6 @@ class L1CInfo(object):
 
     def get_demmaccs_config(self):
         if not self.database_connect():
-            print("1")
             return None
         try:
             self.cursor.execute("select * from sp_get_parameters('demmaccs')")
@@ -695,16 +694,17 @@ class L1CInfo(object):
             elif row[0] == DATABASE_DEMMACCS_SWBD_PATH:
                 swbd_path = row[2]
             elif row[0] == DATABASE_DEMMACCS_MACCS_IP_ADDRESS:
-                maccs_ip_address = row[2]
+                #optional, may not exist in DB
+                maccs_ip_address = row[2] 
             elif row[0] == DATABASE_DEMMACCS_MACCS_LAUNCHER:
                 maccs_launcher = row[2]
             elif row[0] == DATABASE_DEMMACCS_WORKING_DIR:
                 working_dir = row[2]
 
         self.database_disconnect()
-        if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_ip_address) == 0 or len(maccs_launcher) == 0 or len(working_dir) == 0:
-            print("{} {} {} {} {} {} {} {} {}".format(len(output_path), len(gips_path), len(srtm_path), len(swbd_path), len(maccs_ip_address), len(maccs_launcher), len(working_dir)))
+        if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_launcher) == 0 or len(working_dir) == 0:     
             return None
+
         return DEMMACCSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, working_dir)
 
     def get_short_name(self, table, use_id):

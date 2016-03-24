@@ -77,13 +77,10 @@ parser.add_argument('--swbd', required=True, help="SWBD dataset path")
 parser.add_argument('-p', '--processes-number-dem', required=False,
                         help="number of processed to run", default="3")
 parser.add_argument('--gip-dir', required=True, help="directory where gip are to be found")
-parser.add_argument('--maccs-address', required=True, help="the ip address of the pc where MACCS is to be found")
-parser.add_argument('--maccs-launcher', required=True, help="the shell from the remote pc which launches the MACCS")
-parser.add_argument('--dem-launcher', required=True, help="executable for DEM")
+parser.add_argument('--maccs-address', required=False, help="MACCS has to be run from a remote host. This should be the ip address of the pc where MACCS is to be found")
+parser.add_argument('--maccs-launcher', required=True, help="MACCS binary path in localhost (or remote host if maccs-address is set)")
 parser.add_argument('--skip-dem', required=False,
                         help="skip DEM if a directory with previous work of DEM is given", default=None)
-parser.add_argument('--remote-maccs', required=False,
-                        help="MACCS has to be run from a remote host", default=None)
 parser.add_argument('--delete-temp', required=False,
                         help="if set to True, it will delete all the temporary files and directories. Default: True", default="True")
 parser.add_argument('--prev-l2a-tiles', required=False,
@@ -126,8 +123,9 @@ if not create_recursive_dirs(working_dir):
     sys.exit(-1)
 
 start = time.time()
+base_abs_path = os.path.dirname(os.path.abspath(__file__)) + "/"
 if args.skip_dem is None:
-    if run_command([args.dem_launcher, "--srtm", args.srtm, "--swbd", args.swbd, "-p", args.processes_number_dem, "-w", dem_working_dir, args.input, dem_output_dir]) != 0:
+    if run_command([base_abs_path + "dem.py", "--srtm", args.srtm, "--swbd", args.swbd, "-p", args.processes_number_dem, "-w", dem_working_dir, args.input, dem_output_dir]) != 0:
         log(general_log_path, "DEM failed", general_log_filename)
         sys.exit(-1)
 

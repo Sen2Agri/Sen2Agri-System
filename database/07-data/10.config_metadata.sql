@@ -133,7 +133,6 @@ INSERT INTO config_metadata VALUES ('demmaccs.srtm-path', 'path where the srtm f
 INSERT INTO config_metadata VALUES ('demmaccs.swbd-path', 'path where the swbd files are to be found', 'string', false, 16);
 INSERT INTO config_metadata VALUES ('demmaccs.maccs-ip-address', 'ip address of the maccs keeping unit', 'string', false, 16);
 INSERT INTO config_metadata VALUES ('demmaccs.maccs-launcher', 'launcher for maccs within the keeping unit', 'string', false, 16);
-INSERT INTO config_metadata VALUES ('demmaccs.launcher', 'launcher for demmaccs script', 'string', false, 16);
 INSERT INTO config_metadata VALUES ('demmaccs.working-dir', 'working directory for demmaccs', 'string', false, 16);
 INSERT INTO config_metadata VALUES ('processor.l4a.reference_data_dir', 'CropMask folder where insitu data are checked', 'file', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.mission', 'The main mission for the time series', 'string', true, 5);
@@ -149,7 +148,6 @@ INSERT INTO config_metadata VALUES ('processor.l4a.weight', 'The weight factor f
 INSERT INTO config_metadata VALUES ('processor.l4a.nbcomp', 'The number of components used by dimensionality reduction', 'int', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.segmentation-spatial-radius', 'The spatial radius of the neighborhood used for segmentation', 'int', true, 5);
 INSERT INTO config_metadata VALUES ('downloader.winter-season.start', 'Winter Season Start', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('demmaccs.dem-launcher', 'Launcher for DEM', 'string', false, 16);
 INSERT INTO config_metadata VALUES ('processor.l4a.range-radius', 'The range radius defining the radius (expressed in radiometry unit) in the multispectral space', 'float', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.segmentation-minsize', 'Minimum size of a region (in pixel unit) in segmentation.', 'int', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.erode-radius', 'The radius used for erosion', 'int', true, 5);

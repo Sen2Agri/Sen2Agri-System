@@ -154,7 +154,9 @@ def launch_demmaccs(l1c_context):
         sat_id = 0
         acquisition_date = ""
         base_abs_path = os.path.dirname(os.path.abspath(__file__)) + "/"
-        demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "-p", "5", "--gip-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-address", demmaccs_config.maccs_ip_address, "--maccs-launcher", demmaccs_config.maccs_launcher, "--dem-launcher",  base_abs_path + "dem.py", "--delete-temp", "True", l1c[3], output_path]
+        demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "-p", "5", "--gip-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-launcher", demmaccs_config.maccs_launcher, "--delete-temp", "True", l1c[3], output_path]
+        if len(demmaccs_config.maccs_ip_address) > 0:
+            demmaccs_command += ["--maccs-address", demmaccs_config.maccs_ip_address]
         if l1c_context.skip_dem != None:
             demmaccs_command += ["--skip-dem", l1c_context.skip_dem]
         if len(l2a_tiles) > 0:
@@ -178,8 +180,8 @@ def launch_demmaccs(l1c_context):
             else:
                 sat_id, acquisition_date = get_product_info(os.path.basename(output_path[:len(output_path) - 1]))
                 if sat_id > 0 and acquisition_date != None:                    
-                    #looking in processed_tiles file to take all the processed tiles by MACCS. If none was processed, only the input from
-                    #downloader_history table will be set. No l2a product will be added into product table                    
+                    #check for MACCS tiles output. If none was processed, only the record from
+                    #downloader_history table will be updated. No l2a product will be added into product table                    
                     for tile_dbl_dir in tiles_dir_list:
                         tile = re.search(r"_L2VALD_(\d\d[a-zA-Z]{3})____[\w\.]+$", tile_dbl_dir)
                         if tile is not None:
