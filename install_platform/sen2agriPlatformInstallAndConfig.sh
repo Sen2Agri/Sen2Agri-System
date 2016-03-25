@@ -559,11 +559,11 @@ install_and_config_webserver
 install_downloaders_demmacs
 
 #-----------------------------------------------------------#
-####  START ORCHESTRATOT SERVICES                       #####
+####  START ORCHESTRATOR SERVICES                       #####
 #-----------------------------------------------------------#
-systemctl restart sen2agri-executor
-systemctl restart sen2agri-orchestrator
-systemctl restart sen2agri-scheduler
+systemctl enable --now sen2agri-executor
+systemctl enable --now sen2agri-orchestrator
+systemctl enable --now sen2agri-scheduler
 
 setenforce 0
 
