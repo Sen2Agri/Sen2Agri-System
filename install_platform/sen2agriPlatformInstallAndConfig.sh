@@ -457,7 +457,7 @@ function install_and_config_webserver()
 function install_downloaders_demmacs()
 {
    ##install wget , python-lxml and bzip prerequisites for Downloaders
-   yum -y install wget python-lxml.x86_64 bzip2
+   yum -y install wget python-lxml bzip2
 
    ##install java prerequisites for Downloaders
    yum -y install java-1.8.0-openjdk
@@ -524,9 +524,141 @@ function install_RPMs()
 ../rpm_binaries/slurm/slurm-sql-15.08.7-1.el7.centos.x86_64.rpm \
 ../rpm_binaries/slurm/slurm-torque-15.08.7-1.el7.centos.x86_64.rpm
 }
+
+function check_paths()
+{
+    echo "Checking paths..."
+
+    if [ ! -d /mnt/archive ]; then
+        echo "Please create /mnt/archive with mode 777."
+        echo "Actually only the sen2agri-service and apache users require access to the directory, but the installer does not support that."
+        echo "Exiting now"
+        exit 1
+    fi
+
+    out=($(stat -c "%a %U" /mnt/archive))
+    if [ "${out[0]}" != "777" ] && [ "${out[1]}" != "sen2agri-service" ]; then
+        read -p "/mnt/archive should be writable by sen2agri-service. Continue? (y/n) "
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Exiting now"
+            exit 1
+        fi
+    fi
+
+    if [ ! -d /mnt/scratch ]; then
+        echo "Please create /mnt/scratch with mode 777."
+        echo "Actually only the sen2agri-service user requires access to the directory, but the installer does not support that."
+        echo "Exiting now"
+        exit 1
+    fi
+
+    out=($(stat -c "%a %U" /mnt/scratch))
+    if [ "${out[0]}" != "777" ] && [ "${out[1]}" != "sen2agri-service" ]; then
+        read -p "/mnt/scratch should be writable by sen2agri-service. Continue? (y/n) "
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Exiting now"
+            exit 1
+        fi
+    fi
+
+    if ! ls -A /mnt/archive/srtm > /dev/null; then
+        if [ -f ../srtm.zip ]; then
+            mkdir -p /mnt/archive/srtm && unzip ../srtm.zip -d /mnt/archive/srtm
+            if [ $? -ne 0 ]; then
+                echo "Unable to unpack the SRTM dataset into /mnt/archive/srtm"
+                echo "Exiting now"
+                exit 1
+            fi
+        else
+            echo "Please unpack the SRTM dataset into /mnt/archive/swbd"
+            echo "Exiting now"
+            exit 1
+        fi
+    fi
+
+    if ! ls -A /mnt/archive/swbd > /dev/null; then
+        if [ -f ../swbd.zip ]; then
+            mkdir -p /mnt/archive/swbd && unzip ../swbd.zip -d /mnt/archive/swbd
+            if [ $? -ne 0 ]; then
+                echo "Unable to unpack the SWBD dataset into /mnt/archive/swbd"
+                echo "Exiting now"
+                exit 1
+            fi
+        else
+            echo "Please unpack the SWBD dataset into /mnt/archive/swbd"
+            echo "Exiting now"
+            exit 1
+        fi
+    fi
+
+    if [ ! -d /mnt/upload ]; then
+        echo "Please create /mnt/upload making sure it's writable by the apache user and readable by sen2agri-service."
+        echo "Exiting now"
+        exit 1
+    fi
+
+    out=($(stat -c "%a %U" /mnt/upload))
+    if [ "${out[0]}" != "777" ] && [ "${out[1]}" != "apache" ]; then
+        read -p "/mnt/upload should be writable by sen2agri-service. Continue? (y/n) "
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            echo "Exiting now"
+            exit 1
+        fi
+    fi
+}
+
+function install_maccs()
+{
+    echo "Looking for MACCS..."
+    find /opt/maccs/core -name maccs > /dev/null 2>&1 || {
+        echo "MACCS found, continuing"
+        return 0
+    }
+
+    cots_installer=$(find ../maccs/cots -name install-maccs-cots.sh 2>/dev/null)
+    if [ $? -eq 0 ] && [ -e $cots_installer ]; then
+        echo "Installing MACCS COTS"
+        sh $cots_installer || {
+            echo "Failed, exiting now"
+            exit 1
+        }
+    else
+        echo "Unable to find MACCS COTS installer, please install it manually"
+        echo "Exiting now"
+        exit 1
+    fi
+
+    core_installer=$(find ../maccs/core -name "install-maccs-*.sh" 2>/dev/null)
+    if [ $? -eq 0 ] && [ -e $core_installer ]; then
+        echo "Installing MACCS"
+        sh $core_installer || {
+            echo "Failed, exiting now"
+            exit 1
+        }
+    else
+        echo "Unable to find MACCS installer, please install it manually"
+        echo "Exiting now"
+        exit 1
+    fi
+}
+
+function disable_selinux()
+{
+    echo "Disabling SELinux"
+    echo "The Sen2Agri system is not inherently incompatible with SELinux, but relabelling the file system paths is not implemented yet in the installer."
+    setenforce 0
+    sed -i -e 's/SELINUX=enforcing/SELINUX=permissive/' /etc/sysconfig/selinux
+}
+
 ###########################################################
 ##### MAIN                                              ###
 ###########################################################
+
+check_paths
+
+disable_selinux
+
+install_maccs
 
 #-----------------------------------------------------------#
 ####  OTB, GDAL, SEN2AGRI, SLURM INSTALL  & CONFIG     ######
@@ -559,11 +691,11 @@ install_and_config_webserver
 install_downloaders_demmacs
 
 #-----------------------------------------------------------#
-####  START ORCHESTRATOT SERVICES                       #####
+####  START ORCHESTRATOR SERVICES                       #####
 #-----------------------------------------------------------#
-systemctl restart sen2agri-executor
-systemctl restart sen2agri-orchestrator
-systemctl restart sen2agri-scheduler
+systemctl enable --now sen2agri-executor
+systemctl enable --now sen2agri-orchestrator
+systemctl enable --now sen2agri-scheduler
 
 setenforce 0
 
