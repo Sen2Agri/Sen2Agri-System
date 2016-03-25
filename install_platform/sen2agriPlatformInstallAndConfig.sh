@@ -605,6 +605,13 @@ function check_paths()
             exit 1
         fi
     fi
+
+    if [ -d ../gipp ]; then
+        echo "Copying MACCS GIPP files to /mnt/archive"
+        cp -rf ../gipp /mnt/archive
+    else
+        echo "Cannot find MACCS GIPP files in the distribution, please copy them to /mnt/archive/gipp"
+    fi
 }
 
 function install_maccs()
