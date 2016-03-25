@@ -644,10 +644,8 @@ function install_maccs()
 
 function disable_selinux()
 {
-    echo "Disabling SELINUX"
-    echo "The Sen2Agri system is not inherently incompatible with SELINUX, "
-         "but relabelling the file system paths is not implemented yet in "
-         "the installer."
+    echo "Disabling SELinux"
+    echo "The Sen2Agri system is not inherently incompatible with SELinux, but relabelling the file system paths is not implemented yet in the installer."
     setenforce 0
     sed -i 's/SELINUX=enforcing/SELINUX=permissive' /etc/sysconfig/selinux
 }
