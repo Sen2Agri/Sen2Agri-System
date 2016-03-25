@@ -90,14 +90,14 @@ class L1CContext(object):
 def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_db):
     #get all the tiles of the input. they will be used to find if there is a previous L2A product
     l1c_tiles = []
-    if satellite_id == 1:
+    if satellite_id == SENTINEL2_SATELLITE_ID:
         #sentinel, all the tiles are to be found as directories in product_name/GRANULE
         l1c_tiles_dir_list = (glob.glob("{}/GRANULE/*".format(l1c_product_path)))
         for tile_dir in l1c_tiles_dir_list:
             tile = re.search(r"_T(\d\d[a-zA-Z]{3})_", tile_dir)
             if tile is not None:
                 l1c_tiles.append(tile.group(1))
-    elif satellite_id == 2:
+    elif satellite_id == LANDSAT8_SATELLITE_ID:
         #for landsat, there is only 1 tile which can be taken from the l1c product name
         tile = re.search(r"LC8(\d{6})\d{7}LGN", l1c_product_path)
         if tile is not None:
@@ -154,7 +154,7 @@ def launch_demmaccs(l1c_context):
         sat_id = 0
         acquisition_date = ""
         base_abs_path = os.path.dirname(os.path.abspath(__file__)) + "/"
-        demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "-p", "5", "--gip-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-launcher", demmaccs_config.maccs_launcher, "--delete-temp", "True", l1c[3], output_path]
+        demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "--processes-number-dem", "5", "--processes-number-maccs", "2", "--gip-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-launcher", demmaccs_config.maccs_launcher, "--delete-temp", "False", l1c[3], output_path]
         if len(demmaccs_config.maccs_ip_address) > 0:
             demmaccs_command += ["--maccs-address", demmaccs_config.maccs_ip_address]
         if l1c_context.skip_dem != None:
@@ -165,7 +165,7 @@ def launch_demmaccs(l1c_context):
             demmaccs_command.append("--prev-l2a-products-paths")
             demmaccs_command += l2a_tiles_paths
        
-        if run_command(demmaccs_command) == 0 and os.path.exists(output_path) and os.path.isdir(output_path):
+        if run_command(demmaccs_command, output_path, general_log_filename) == 0 and os.path.exists(output_path) and os.path.isdir(output_path):
             tiles_dir_list = (glob.glob("{}*.DBL.DIR".format(output_path)))
             log(output_path, "Creating common footprint for tiles: DBL.DIR List: {}".format(tiles_dir_list), general_log_filename)
             wgs84_extent_list = []
@@ -183,10 +183,15 @@ def launch_demmaccs(l1c_context):
                     #check for MACCS tiles output. If none was processed, only the record from
                     #downloader_history table will be updated. No l2a product will be added into product table                    
                     for tile_dbl_dir in tiles_dir_list:
-                        tile = re.search(r"_L2VALD_(\d\d[a-zA-Z]{3})____[\w\.]+$", tile_dbl_dir)
-                        if tile is not None:
+                        tile = None
+                        print("tile_dbl_dir {}".format(tile_dbl_dir))
+                        if satellite_id == SENTINEL2_SATELLITE_ID:
+                            tile = re.search(r"_L2VALD_(\d\d[a-zA-Z]{3})____[\w\.]+$", tile_dbl_dir)
+                        else:
+                            tile = re.search(r"_L2VALD_([\d]{6})_[\w\.]+$", tile_dbl_dir)
+                        if tile is not None and not tile.group(1) in l2a_processed_tiles:
                             l2a_processed_tiles.append(tile.group(1))
-                        print("Processed tiles: {}".format(l2a_processed_tiles))
+                    log(output_path, "Processed tiles: {}  to path: {}".format(l2a_processed_tiles, output_path), general_log_filename)
                 else:
                     log(output_path,"Could not get the acquisition date from the product name {}".format(output_path), general_log_filename)
         else:
@@ -194,7 +199,7 @@ def launch_demmaccs(l1c_context):
         if len(l2a_processed_tiles) > 0:
             log(output_path, "Insert info in product table and set state as processed in downloader_history table for product {}".format(output_path), general_log_filename)
         else:
-            log(output_path, "Only set the state as processed in downloader_history (no l2a tilesfound after maccs) for product {}".format(output_path), general_log_filename)
+            log(output_path, "Only set the state as processed in downloader_history (no l2a tiles found after maccs) for product {}".format(output_path), general_log_filename)
         l1c_db.set_processed_product(1, l1c[1], l1c[0], l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date)
 
 

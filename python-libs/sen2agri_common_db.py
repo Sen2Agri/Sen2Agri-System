@@ -47,25 +47,6 @@ DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE = int(5)
 
 g_exit_flag = False
 
-def run_command(cmd_array, use_shell=False):
-    start = time.time()
-    cmd_str = " ".join(map(pipes.quote, cmd_array))
-    print("Starting command: {}".format(cmd_str))
-    res = 0
-    if not FAKE_COMMAND:
-        res = subprocess.call(cmd_array, shell=use_shell)
-    ok = "OK"
-    nok = "NOK"
-    print("Command finished {} in {} : {}".format((ok if res == 0 else nok),datetime.timedelta(seconds=(time.time() - start)), cmd_str))
-    return res
-
-
-def signal_handler(signal, frame):
-    global exitFlag
-    print("SIGINT caught")
-    exitFlag = True
-    sys.exit(0)
-
 
 def log(location, info, log_filename = None):
     if log_filename == None:
@@ -80,6 +61,29 @@ def log(location, info, log_filename = None):
         log.close()
     except:
         print("Could NOT write inside the log file {}".format(logfile))
+
+
+def run_command(cmd_array, log_path = "", log_filename = ""):
+    start = time.time()
+    cmd_str = " ".join(map(pipes.quote, cmd_array))
+    if len(log_path) > 0 and len(log_filename) > 0:
+        log(log_path, "Starting command: {}".format(cmd_str), log_filename)
+    res = 0
+    if not FAKE_COMMAND:
+        res = subprocess.call(cmd_array, shell=False)
+    if len(log_path) > 0 and len(log_filename) > 0:
+        ok = "OK"
+        nok = "NOK"
+        log(log_path, "Command finished {} in {} : {}".format((ok if res == 0 else nok),datetime.timedelta(seconds=(time.time() - start)), cmd_str), log_filename)
+    return res
+
+
+def signal_handler(signal, frame):
+    global exitFlag
+    print("SIGINT caught")
+    exitFlag = True
+    sys.exit(0)
+
         
 def create_recursive_dirs(dir_name):
     try:
@@ -751,6 +755,10 @@ class L1CInfo(object):
                     rows = self.cursor.fetchall()
                     if len(rows) > 0:
                         retArray.append(rows)
+            #self.cursor.execute("SELECT id, site_id, satellite_id, full_path, product_date FROM downloader_history WHERE id = 1854 or id = 1919")
+            #rows = self.cursor.fetchall()
+            #if len(rows) > 0:
+            #    retArray.append(rows)
         except:
             self.database_disconnect()
             return []

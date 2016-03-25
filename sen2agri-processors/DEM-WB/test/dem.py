@@ -534,11 +534,7 @@ if len(contexts) == 0:
     print("No context could be created")
     sys.exit(-1)
 
-if int(proc_number) == 1:
-    for context in contexts:
-        process_context(context)
-else:
-    p = Pool(int(proc_number))
-    p.map(process_context, contexts)
+p = Pool(int(proc_number))
+p.map(process_context, contexts)
 
 

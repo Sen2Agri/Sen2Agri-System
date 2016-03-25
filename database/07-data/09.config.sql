@@ -135,7 +135,7 @@ INSERT INTO config VALUES (194, 'demmaccs.maccs-launcher', NULL, '/opt/maccs/cor
 INSERT INTO config VALUES (131, 'processor.l3b.lai.modelsfolder', NULL, '/mnt/scratch/L3B_GeneratedModels/', '2016-02-16 11:54:47.123972+02');
 INSERT INTO config VALUES (288, 'downloader.l8.max-retries', NULL, '3', '2016-03-15 15:44:22.03691+02');
 INSERT INTO config VALUES (169, 'processor.l3b.lai.rsrcfgfile', NULL, '/usr/share/sen2agri/rsr_cfg.txt', '2016-02-16 11:54:47.223904+02');
-INSERT INTO config VALUES (183, 'demmaccs.output-path', NULL, '/mnt/archive/maccs_dev/{site}/{processor}/', '2016-02-24 18:09:17.379905+02');
+INSERT INTO config VALUES (183, 'demmaccs.output-path', NULL, '/mnt/archive/maccs/{site}/{processor}/', '2016-02-24 18:09:17.379905+02');
 INSERT INTO config VALUES (179, 'executor.module.path.compute-image-statistics', NULL, '/usr/bin/otbcli_ComputeImagesStatistics', '2016-02-23 12:29:52.586902+02');
 INSERT INTO config VALUES (279, 'downloader.winter-season.end', 1, '0412', '2016-03-14 11:53:54.080902+02');
 INSERT INTO config VALUES (154, 'downloader.summer-season.end', NULL, '0930', '2016-02-04 11:44:35.847675+02');
@@ -147,7 +147,7 @@ INSERT INTO config VALUES (171, 'executor.module.path.principal-component-analys
 INSERT INTO config VALUES (153, 'downloader.summer-season.start', NULL, '0501', '2016-02-04 11:44:18.411587+02');
 INSERT INTO config VALUES (191, 'demmaccs.srtm-path', NULL, '/mnt/archive/srtm', '2016-02-25 11:11:36.372405+02');
 INSERT INTO config VALUES (192, 'demmaccs.swbd-path', NULL, '/mnt/archive/swbd', '2016-02-25 11:12:04.008319+02');
-INSERT INTO config VALUES (196, 'demmaccs.working-dir', NULL, '/mnt/archive/demmaccs_dev_tmp/', '2016-02-25 17:31:06.01191+02');
+INSERT INTO config VALUES (196, 'demmaccs.working-dir', NULL, '/mnt/archive/demmaccs_tmp/', '2016-02-25 17:31:06.01191+02');
 INSERT INTO config VALUES (175, 'executor.module.path.majority-voting', NULL, '/usr/bin/otbcli', '2016-02-22 22:39:08.365578+02');
 INSERT INTO config VALUES (109, 'executor.module.path.xml-statistics', NULL, '/usr/bin/otbcli', '2016-02-22 22:39:08.407059+02');
 INSERT INTO config VALUES (165, 'executor.module.path.lai-bv-input-variable-generation', NULL, '/usr/bin/otbcli', '2016-02-15 18:45:57.225692+02');
@@ -167,7 +167,6 @@ INSERT INTO config VALUES (186, 'demmaccs.gips-path', NULL, '/mnt/archive/gips/'
 INSERT INTO config VALUES (187, 'executor.module.path.crop-mask-features-with-insitu', NULL, '/usr/local/bin/otbcli', '2016-02-24 19:07:08.416696+02');
 INSERT INTO config VALUES (189, 'processor.l3a.synth_date_sched_offset', NULL, '30', '2016-02-25 09:00:47.212845+02');
 INSERT INTO config VALUES (190, 'processor.l3a.half_synthesis', NULL, '15', '2016-02-25 09:00:57.21868+02');
-INSERT INTO config VALUES (193, 'demmaccs.maccs-ip-address', NULL, '192.168.60.79', '2016-02-25 16:28:46.65395+02');
 INSERT INTO config VALUES (92, 'processor.l4a.training-samples-number', NULL, '4000', '2016-03-10 11:40:44.732473+02');
 INSERT INTO config VALUES (280, 'downloader.winter-season.start', 3, '0101', '2016-03-14 13:33:58.406607+02');
 INSERT INTO config VALUES (281, 'downloader.winter-season.end', 3, '0401', '2016-03-14 13:33:58.406607+02');

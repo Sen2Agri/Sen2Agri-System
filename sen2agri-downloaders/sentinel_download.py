@@ -23,12 +23,12 @@ def unzipFile(outputDir, fileToUnzip):
     retValue = False
     log(general_log_path, "fileToUnzip={}".format(fileToUnzip), general_log_filename)
     if (os.path.isfile(fileToUnzip)):
-        if run_command(["zip", "--test", fileToUnzip]):
+        if run_command(["zip", "--test", fileToUnzip], general_log_path, general_log_filename):
             log(general_log_path, "zip failed for {}".format(fileToUnzip), general_log_filename)
         else:
             create_recursive_dirs(outputDir)
             log(general_log_path, "zip OK for {}. Start to unzip".format(fileToUnzip), general_log_filename)
-            if run_command(["unzip", "-d", outputDir,fileToUnzip]):
+            if run_command(["unzip", "-d", outputDir,fileToUnzip], general_log_path, general_log_filename):
                 log(general_log_path, "unziping failed for {}".format(fileToUnzip), general_log_filename)
             else:
                 log(general_log_path, "unziping ok for {}".format(fileToUnzip), general_log_filename)
@@ -93,7 +93,7 @@ def product_download(s2Obj, aoiContext, db):
         if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, s2Obj.product_date_as_string, abs_filename, aoiContext.maxRetries):
             log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADING for {}".format(s2Obj.filename), general_log_filename)
             return False        
-        if run_command(commandArray) != 0:
+        if run_command(commandArray, aoiContext.writeDir, general_log_filename) != 0:
             #get the product name and check the no_of_retries. 
             #if it's greater than aoiContext.maxRetries, update the product name status with ABORTED (4)
             #else update the product name in the downloader_history with status FAILED (3) and increment the no_of_retries
@@ -126,7 +126,7 @@ def downloadFromAmazon(s2Obj, aoiFile, db):
             commandArray.append(tile)
         commandArray.append("-p")
         commandArray.append(s2Obj.productname)
-        if run_command(commandArray) != 0:
+        if run_command(commandArray, aoiFile.writeDir, general_log_filename) != 0:
             log(aoiFile.writeDir, "the java donwloader command didn't work for {}".format(s2Obj.filename), general_log_filename)
             return
         if not db.updateSentinelHistory(aoiFile.siteId, s2Obj.filename, "{}/{}".format(aoiFile.writeDir, s2Obj.filename)):
@@ -223,7 +223,7 @@ def sentinel_download(aoiContext):
     commande_wget.append(url_search + query + "&rows=1000")
     log(aoiContext.writeDir, commande_wget, general_log_filename)
 
-    if run_command(commande_wget) != 0:
+    if run_command(commande_wget, aoiContext.writeDir, general_log_filename) != 0:
         log(aoiContext.writeDir, "Could not get the catalog output for {}".format(query_geom), general_log_filename)
         sys.exit(-1)
     if g_exit_flag:
@@ -250,7 +250,7 @@ def sentinel_download(aoiContext):
                 #commande_wget='%s %s %s "%s%s"'%(wg,auth,search_output,url_search,query)
                 commande_wget = wg + auth + search_output + [url_search+query]
                 log(aoiContext.writeDir, "Changing the pagination to {0} to get all of the existing files, command: {1}".format(totalRes, commande_wget), general_log_filename)
-                if run_command(commande_wget) != 0:
+                if run_command(commande_wget, aoiContext.writeDir, general_log_filename) != 0:
                     log(aoiContext.writeDir, "Could not get the catalog output (re-pagination) for {}".format(query_geom), general_log_filename)
                     sys.exit(-1)
                 xml=minidom.parse("query_results.xml")

@@ -131,7 +131,6 @@ INSERT INTO config_metadata VALUES ('processor.l3a.synth_date_sched_offset', 'Di
 INSERT INTO config_metadata VALUES ('processor.l3a.half_synthesis', 'Half synthesis interval in days', 'int', true, 3);
 INSERT INTO config_metadata VALUES ('demmaccs.srtm-path', 'path where the srtm files are to be found', 'string', false, 16);
 INSERT INTO config_metadata VALUES ('demmaccs.swbd-path', 'path where the swbd files are to be found', 'string', false, 16);
-INSERT INTO config_metadata VALUES ('demmaccs.maccs-ip-address', 'ip address of the maccs keeping unit', 'string', false, 16);
 INSERT INTO config_metadata VALUES ('demmaccs.maccs-launcher', 'launcher for maccs within the keeping unit', 'string', false, 16);
 INSERT INTO config_metadata VALUES ('demmaccs.working-dir', 'working directory for demmaccs', 'string', false, 16);
 INSERT INTO config_metadata VALUES ('processor.l4a.reference_data_dir', 'CropMask folder where insitu data are checked', 'file', true, 5);
