@@ -610,12 +610,12 @@ function check_paths()
 function install_maccs()
 {
     echo "Looking for MACCS..."
-    find /opt/maccs/core -name maccs > /dev/null || {
+    find /opt/maccs/core -name maccs > /dev/null 2>1 || {
         echo "MACCS found, continuing"
         return 0
     }
 
-    cots_installer=$(find ../maccs/cots -name install-maccs-cots.sh)
+    cots_installer=$(find ../maccs/cots -name install-maccs-cots.sh 2>/dev/null)
     if [ $? -eq 0 ] && [ -e $cots_installer ]; then
         echo "Installing MACCS COTS"
         sh $cots_installer || {
@@ -628,7 +628,7 @@ function install_maccs()
         exit 1
     fi
 
-    core_installer=$(find ../maccs/core -name "install-maccs-*.sh")
+    core_installer=$(find ../maccs/core -name "install-maccs-*.sh" 2>/dev/null)
     if [ $? -eq 0 ] && [ -e $core_installer ]; then
         echo "Installing MACCS"
         sh $core_installer || {
