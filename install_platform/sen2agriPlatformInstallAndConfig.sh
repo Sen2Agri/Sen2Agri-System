@@ -537,7 +537,7 @@ function check_paths()
     fi
 
     out=($(stat -c "%a %U" /mnt/archive))
-    if [ "$out{0}" != "777" ] && [ "$out{1}" != "sen2agri-service" ]; then
+    if [ "${out[0]}" != "777" ] && [ "${out[1]}" != "sen2agri-service" ]; then
         read -p "/mnt/archive should be writable by sen2agri-service. Continue? (y/n) "
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             echo "Exiting now"
@@ -553,7 +553,7 @@ function check_paths()
     fi
 
     out=($(stat -c "%a %U" /mnt/scratch))
-    if [ "$out{0}" != "777" ] && [ "$out{1}" != "sen2agri-service" ]; then
+    if [ "${out[0]}" != "777" ] && [ "${out[1]}" != "sen2agri-service" ]; then
         read -p "/mnt/scratch should be writable by sen2agri-service. Continue? (y/n) "
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             echo "Exiting now"
@@ -598,7 +598,7 @@ function check_paths()
     fi
 
     out=($(stat -c "%a %U" /mnt/upload))
-    if [ "$out{0}" != "777" ] && [ "$out{1}" != "apache" ]; then
+    if [ "${out[0]}" != "777" ] && [ "${out[1]}" != "apache" ]; then
         read -p "/mnt/upload should be writable by sen2agri-service. Continue? (y/n) "
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             echo "Exiting now"
