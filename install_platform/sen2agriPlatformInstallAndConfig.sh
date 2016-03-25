@@ -457,7 +457,7 @@ function install_and_config_webserver()
 function install_downloaders_demmacs()
 {
    ##install wget , python-lxml and bzip prerequisites for Downloaders
-   yum -y install wget python-lxml.x86_64 bzip2
+   yum -y install wget python-lxml bzip2
 
    ##install java prerequisites for Downloaders
    yum -y install java-1.8.0-openjdk
