@@ -29,7 +29,8 @@ private:
 
     void CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
                             QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList);
-    PhenoGlobalExecutionInfos HandleNewTilesList(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QStringList &listProducts);
+    void HandleNewTilesList(EventProcessingContext &ctx, const JobSubmittedEvent &event, PhenoGlobalExecutionInfos &globalExecInfos,
+                            const QStringList &listProducts);
     void WriteExecutionInfosFile(const QString &executionInfosPath,
                                  const QStringList &listProducts);
     QStringList GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,

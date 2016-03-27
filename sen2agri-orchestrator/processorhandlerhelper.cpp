@@ -30,18 +30,19 @@ QString ProcessorHandlerHelper::GetTileId(const QString &path, bool *ok)
     // Split the name by "_" and search the part having _Txxxxx (_T followed by 5 characters)
     QStringList pieces = fileNameWithoutExtension.split("_");
     for (const QString &piece : pieces) {
-        if ((piece.length() == 6) && (piece.at(0) == 'T')) {
+        if (((piece.length() == 6) || (piece.length() == 7)) && (piece.at(0) == 'T')) {
             if(ok) *ok = true;
             return QString("TILE_" + piece);
         }
     }
     if(QString::compare(extension, "hdr", Qt::CaseInsensitive) == 0) {
         // check if is S2
-        if(pieces[0].indexOf("S2") != -1 && pieces.size() == 9 && pieces[5] == "") {
+        if((pieces.size() == 9) && (pieces[0].indexOf("S2") != -1) && (pieces[5] == "")) {
             if(ok) *ok = true;
             return QString("TILE_" + pieces[4]);
-        } else if(pieces[0].indexOf("L8") != -1) {
-            // TODO
+        } else if((pieces.size() == 6) && (pieces[0].indexOf("L8") != -1) && (pieces[3] == "L2VALD")) {
+            if(ok) *ok = true;
+            return QString("TILE_" + pieces[4]);
         }
     }
 
@@ -193,7 +194,8 @@ QMap<QString, QStringList> ProcessorHandlerHelper::GroupHighLevelProductTiles(co
             }
             QStringList pieces = tileDirName.split("_");
             for (const QString &piece : pieces) {
-                if ((piece.length() == 6) && (piece.at(0) == 'T')) {
+                // we might have 6 (for S2 and others) or 7 (for LANDSAT)
+                if (((piece.length() == 6) || (piece.length() == 7)) && (piece.at(0) == 'T')) {
                     // We have the tile
                     QString tileId = "TILE_" + piece.right(piece.length()-1);
                     //QString tileDirPath = tilesDir+ "/" + tileDirName;

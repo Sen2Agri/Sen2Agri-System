@@ -274,6 +274,8 @@ private:
             }
         }
 
+        otbAppLogINFO("Using model file: "<< modelFileName <<std::endl);
+
         // read output info of the input image
         FloatVectorImageType::Pointer input_image = this->GetParameterImage("in");
         auto nb_bands = input_image->GetNumberOfComponentsPerPixel();

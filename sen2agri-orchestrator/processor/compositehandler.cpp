@@ -114,9 +114,10 @@ void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
     outProdFormatterParentsList.append(outAllTasksList[outAllTasksList.size() - 1]);
 }
 
-CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
-                                             const JobSubmittedEvent &event,
-                                             const QStringList &listProducts)
+void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
+                                          const JobSubmittedEvent &event,
+                                          const QStringList &listProducts,
+                                          CompositeGlobalExecutionInfos &globalExecInfos)
 {
     int jobId = event.jobId;
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
@@ -158,7 +159,6 @@ CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessi
 
     const auto &resolutionStr = QString::number(resolution);
 
-    CompositeGlobalExecutionInfos globalExecInfos;
     QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
     QList<std::reference_wrapper<const TaskToSubmit>> &prodFormParTsksList = globalExecInfos.prodFormatParams.parentsTasksRef;
     CreateTasksForNewProducts(allTasksList, prodFormParTsksList, listProducts.size());
@@ -287,8 +287,6 @@ CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessi
     // Get the tile ID from the product XML name. We extract it from the first product in the list as all
     // producs should be for the same tile
     productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
-
-    return globalExecInfos;
 }
 
 void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath,
@@ -412,14 +410,17 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     TaskToSubmit productFormatterTask{"product-formatter", {}};
     NewStepList allSteps;
     //container for all task
-    QList<TaskToSubmit> allTasksList;
+    //QList<TaskToSubmit> allTasksList;
+    QList<CompositeGlobalExecutionInfos> listCompositeInfos;
     for(auto tile : mapTiles.keys())
     {
        QStringList listTemporalTiles = mapTiles.value(tile);
-       CompositeGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles);
+       listCompositeInfos.append(CompositeGlobalExecutionInfos());
+       CompositeGlobalExecutionInfos &infos = listCompositeInfos[listCompositeInfos.size()-1];
+       HandleNewTilesList(ctx, event, listTemporalTiles, infos);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
-       allTasksList.append(infos.allTasksList);
+       //allTasksList.append(infos.allTasksList);
        allSteps.append(infos.allStepsList);
     }
 

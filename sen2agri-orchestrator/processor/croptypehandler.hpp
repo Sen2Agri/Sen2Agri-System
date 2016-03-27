@@ -30,8 +30,9 @@ private:
     QList<std::reference_wrapper<TaskToSubmit>> CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
                                                     QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList,
                                                     bool bCropMaskEmpty);
-    CropTypeGlobalExecutionInfos HandleNewTilesList(EventProcessingContext &ctx,
-                                                 const JobSubmittedEvent &event, const QStringList &listProducts, const QString &cropMask);
+    void HandleNewTilesList(EventProcessingContext &ctx,
+                            const JobSubmittedEvent &event, const QStringList &listProducts,
+                            const QString &cropMask, CropTypeGlobalExecutionInfos &globalExecInfos);
     QStringList GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                         const QStringList &listProducts, const QList<CropTypeProductFormatterParams> &productParams);
 

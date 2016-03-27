@@ -19,8 +19,8 @@ void PhenoNdviHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
     outProdFormatterParentsList.append(outAllTasksList[3]);
 }
 
-PhenoGlobalExecutionInfos PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
-                                          const JobSubmittedEvent &event,
+void PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
+                                          const JobSubmittedEvent &event, PhenoGlobalExecutionInfos &globalExecInfos,
                                           const QStringList &listProducts)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
@@ -32,7 +32,6 @@ PhenoGlobalExecutionInfos PhenoNdviHandler::HandleNewTilesList(EventProcessingCo
     }
     const auto &resolutionStr = QString::number(resolution);
 
-    PhenoGlobalExecutionInfos globalExecInfos;
     QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
     QList<std::reference_wrapper<const TaskToSubmit>> &prodFormParTsksList = globalExecInfos.prodFormatParams.parentsTasksRef;
     CreateTasksForNewProducts(allTasksList, prodFormParTsksList);
@@ -87,8 +86,6 @@ PhenoGlobalExecutionInfos PhenoNdviHandler::HandleNewTilesList(EventProcessingCo
     // Get the tile ID from the product XML name. We extract it from the first product in the list as all
     // producs should be for the same tile
     productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
-
-    return globalExecInfos;
 }
 
 void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
@@ -108,14 +105,17 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     TaskToSubmit productFormatterTask{"product-formatter", {}};
     NewStepList allSteps;
     //container for all task
-    QList<TaskToSubmit> allTasksList;
+    //QList<TaskToSubmit> allTasksList;
+    QList<PhenoGlobalExecutionInfos> listPhenoInfos;
     for(auto tile : mapTiles.keys())
     {
        QStringList listTemporalTiles = mapTiles.value(tile);
-       PhenoGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles);
+       listPhenoInfos.append(PhenoGlobalExecutionInfos());
+       PhenoGlobalExecutionInfos &infos = listPhenoInfos[listPhenoInfos.size()-1];
+       HandleNewTilesList(ctx, event, infos, listTemporalTiles);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
-       allTasksList.append(infos.allTasksList);
+       //allTasksList.append(infos.allTasksList);
        allSteps.append(infos.allStepsList);
     }
 

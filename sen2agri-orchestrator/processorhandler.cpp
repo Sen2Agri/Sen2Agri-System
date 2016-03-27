@@ -7,6 +7,7 @@
 
 #include "schedulingcontext.h"
 #include "processorhandlerhelper.h"
+#include "logger.hpp"
 
 bool removeDir(const QString & dirName)
 {
@@ -302,6 +303,7 @@ QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &c
         for(const QString &tileMetaFile: tilesMetaFiles) {
             if(ProcessorHandlerHelper::IsValidL2AMetadataFileName(tileMetaFile)) {
                 listValidTilesMetaFiles.append(tileMetaFile);
+                Logger::debug(QStringLiteral("Using L2A tile: %1").arg(tileMetaFile));
             }
         }
         if(listValidTilesMetaFiles.size() > 0) {
