@@ -700,7 +700,7 @@ install_downloaders_demmacs
 #-----------------------------------------------------------#
 ####  START ORCHESTRATOR SERVICES                       #####
 #-----------------------------------------------------------#
-systemctl enable --now sen2agri-executor
+systemctl enable sen2agri-executor
 systemctl enable --now sen2agri-orchestrator
 systemctl enable --now sen2agri-scheduler
 
