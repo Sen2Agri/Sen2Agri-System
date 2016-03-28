@@ -132,7 +132,7 @@ INSERT INTO config VALUES (289, 'downloader.winter-season.start', 40, '0318', '2
 INSERT INTO config VALUES (290, 'downloader.winter-season.end', 40, '0319', '2016-03-17 14:56:29.835334+02');
 INSERT INTO config VALUES (197, 'downloader.s2.write-dir', NULL, '/mnt/archive/dwn/s2/default', '2016-02-26 19:26:49.986675+02');
 INSERT INTO config VALUES (194, 'demmaccs.maccs-launcher', NULL, '/opt/maccs/core/4.7/bin/maccs', '2016-02-25 16:29:07.763339+02');
-INSERT INTO config VALUES (131, 'processor.l3b.lai.modelsfolder', NULL, '/mnt/scratch/L3B_GeneratedModels/', '2016-02-16 11:54:47.123972+02');
+INSERT INTO config VALUES (131, 'processor.l3b.lai.modelsfolder', NULL, '/mnt/archive/L3B_GeneratedModels/', '2016-02-16 11:54:47.123972+02');
 INSERT INTO config VALUES (288, 'downloader.l8.max-retries', NULL, '3', '2016-03-15 15:44:22.03691+02');
 INSERT INTO config VALUES (169, 'processor.l3b.lai.rsrcfgfile', NULL, '/usr/share/sen2agri/rsr_cfg.txt', '2016-02-16 11:54:47.223904+02');
 INSERT INTO config VALUES (183, 'demmaccs.output-path', NULL, '/mnt/archive/maccs/{site}/{processor}/', '2016-02-24 18:09:17.379905+02');
