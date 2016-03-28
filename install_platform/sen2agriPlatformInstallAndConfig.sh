@@ -448,7 +448,7 @@ function install_and_config_webserver()
 
    ##update file /var/www/html/ConfigParams.php
    ##replace "sen2agri-dev" with machine ip "_inet_addr "  into file /var/www/html/ConfigParams.php
-   local _host_name="hostname -s"
+   local _host_name="$(hostname -s)"
    sed -i "s/sen2agri-dev/$_host_name/" /var/www/html/ConfigParams.php
    #sed -i "s/sen2agri-dev/$_inet_addr/" /var/www/html/ConfigParams.php
 
