@@ -606,11 +606,13 @@ function check_paths()
         fi
     fi
 
-    if [ -d ../gipp ]; then
-        echo "Copying MACCS GIPP files to /mnt/archive"
-        cp -rf ../gipp /mnt/archive
-    else
-        echo "Cannot find MACCS GIPP files in the distribution, please copy them to /mnt/archive/gipp"
+    if ! ls -A /mnt/archive/gipp > /dev/null; then
+        if [ -d ../gipp ]; then
+            echo "Copying MACCS GIPP files to /mnt/archive"
+            cp -rf ../gipp /mnt/archive
+        else
+            echo "Cannot find MACCS GIPP files in the distribution, please copy them to /mnt/archive/gipp"
+        fi
     fi
 }
 
