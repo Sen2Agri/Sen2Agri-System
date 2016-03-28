@@ -576,16 +576,16 @@ function update_l3a_statistics(json_data)
 	fill_key_value_table("#pnl_l3b_configuration", json_data.l3b_lai_statistics.configuration);
 }
  
- function update_l3b_pheno_statistics(json_data)
+ function update_l3e_pheno_statistics(json_data)
  {
  	//Remove the old rows
- 	$("#pnl_l3b_nvdi_resources table:first tr.to_be_refreshed").remove();
- 	$("#pnl_l3b_nvdi_output table:first tr.to_be_refreshed").remove();
- 	$("#pnl_l3b_nvdi_configuration table:first tr.to_be_refreshed").remove();
+ 	$("#pnl_l3e_pheno_resources table:first tr.to_be_refreshed").remove();
+ 	$("#pnl_l3e_pheno_output table:first tr.to_be_refreshed").remove();
+ 	$("#pnl_l3e_pheno_configuration table:first tr.to_be_refreshed").remove();
 
- 	fill_key_value_table("#pnl_l3b_nvdi_resources", json_data.l3b_pheno_statistics.resources);
- 	fill_key_value_table("#pnl_l3b_nvdi_output", json_data.l3b_pheno_statistics.output);
- 	fill_key_value_table("#pnl_l3b_nvdi_configuration", json_data.l3b_pheno_statistics.configuration);
+ 	fill_key_value_table("#pnl_l3e_pheno_resources", json_data.l3e_pheno_statistics.resources);
+ 	fill_key_value_table("#pnl_l3e_pheno_output", json_data.l3e_pheno_statistics.output);
+ 	fill_key_value_table("#pnl_l3e_pheno_configuration", json_data.l3e_pheno_statistics.configuration);
  }
 
 
@@ -626,7 +626,7 @@ function get_processor_statistics()
 			update_l2a_statistics(json_data);
 			update_l3a_statistics(json_data);
 			update_l3b_statistics(json_data);
-			update_l3b_pheno_statistics(json_data);
+			update_l3e_pheno_statistics(json_data);
 			update_l4a_statistics(json_data);
 			update_l4b_statistics(json_data);
 			
