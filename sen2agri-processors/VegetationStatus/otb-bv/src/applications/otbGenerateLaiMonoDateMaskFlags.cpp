@@ -3,6 +3,8 @@
 
 #include <vector>
 #include "MetadataHelperFactory.h"
+#include "otbStreamingResampleImageFilter.h"
+#include "ImageResampler.h"
 
 namespace otb
 {
@@ -23,6 +25,8 @@ public:
     itkTypeMacro(GenerateLaiMonoDateMaskFlags, otb::Application)
 
     typedef otb::ImageFileWriter<MetadataHelper::SingleBandShortImageType> WriterType;
+    typedef otb::StreamingResampleImageFilter<MetadataHelper::SingleBandShortImageType,
+                    MetadataHelper::SingleBandShortImageType, double>     ResampleFilterType;
 
 private:
     void DoInit()
@@ -41,6 +45,11 @@ private:
         AddParameter(ParameterType_Int, "compress", "Specifies if output files should be compressed or not.");
         MandatoryOff("compress");
         SetDefaultParameterInt("compress", 0);
+
+        AddParameter(ParameterType_Int, "outres", "Output resolution. If not specified, is the same as the input resolution.");
+        MandatoryOff("outres");
+        AddParameter(ParameterType_String,  "outresampled",   "The out mask flags image corresponding to the LAI mono date resampled at the given resolution");
+        MandatoryOff("outresampled");
     }
 
     void DoUpdateParameters()
@@ -58,18 +67,40 @@ private:
         auto pHelper = factory->GetMetadataHelper(inXml);
         MetadataHelper::SingleBandShortImageType::Pointer imgMsk = pHelper->GetMasksImage(ALL, false);
 
-        WriterType::Pointer writer;
-        writer = WriterType::New();
+        WriteOutput(imgMsk, outImg, -1, bUseCompression);
+
+        if(HasValue("outres")) {
+            if(HasValue("outresampled")) {
+                std::string outImgRes = GetParameterAsString("outresampled");
+                int nOutRes = GetParameterInt("outres");
+                if(nOutRes != 10 && nOutRes != 20) {
+                    itkExceptionMacro("Invalid output resolution specified (only 10 and 20 accepted)" << nOutRes);
+                }
+                WriteOutput(imgMsk, outImgRes, nOutRes, bUseCompression);
+            } else {
+                itkExceptionMacro("If you provide the outres parameter you must also provide an outresampled file name!");
+            }
+        }
+    }
+
+    void WriteOutput(MetadataHelper::SingleBandShortImageType::Pointer imgMsk, const std::string &outImg, int nRes, bool bUseCompression) {
         std::string fileName(outImg);
         if(bUseCompression) {
-            fileName += std::string("?gdal:co:COMPRESS=DEFLATE");;
+            fileName += std::string("?gdal:co:COMPRESS=DEFLATE");
         }
 
         // Create an output parameter to write the current output image
         OutputImageParameter::Pointer paramOut = OutputImageParameter::New();
         // Set the filename of the current output image
         paramOut->SetFileName(outImg);
-        paramOut->SetValue(imgMsk);
+        if(nRes == -1) {
+            paramOut->SetValue(imgMsk);
+        } else {
+            // resample the image at the given resolution
+            imgMsk->UpdateOutputInformation();
+            int curRes = imgMsk->GetSpacing()[0];
+            paramOut->SetValue(getResampledImage(curRes, nRes, imgMsk));
+        }
         paramOut->SetPixelType(ImagePixelType_uint8);
         // Add the current level to be written
         paramOut->InitializeWriters();
@@ -78,6 +109,19 @@ private:
         AddProcess(paramOut->GetWriter(), osswriter.str());
         paramOut->Write();
     }
+
+    MetadataHelper::SingleBandShortImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes,
+                                                 MetadataHelper::SingleBandShortImageType::Pointer inImg) {
+        if(nCurRes == nDesiredRes)
+            return inImg;
+        float fMultiplicationFactor = ((float)nCurRes)/nDesiredRes;
+        ResampleFilterType::Pointer resampler = m_Resampler.getResampler(inImg, fMultiplicationFactor);
+        return resampler->GetOutput();
+    }
+
+private:
+    ImageResampler<MetadataHelper::SingleBandShortImageType, MetadataHelper::SingleBandShortImageType> m_Resampler;
+
 };
 
 }

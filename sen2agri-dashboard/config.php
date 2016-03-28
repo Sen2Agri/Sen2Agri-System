@@ -179,7 +179,7 @@
 					<div class="panel panel-default">
 						<div class="panel-heading">
 							<h4 class="panel-title">
-								<a data-toggle="collapse" data-parent="#accordion" href="#l3b_nvdi">L3B NDVI processor</a>
+								<a data-toggle="collapse" data-parent="#accordion" href="#l3b_nvdi">L3E PHENO processor</a>
 							</h4>
 						</div>
 						<div id="l3b_nvdi" class="panel-collapse collapse">

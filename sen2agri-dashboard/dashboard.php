@@ -274,32 +274,32 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 					</div>
 
 					<!-- L3b pheno NDVI Processor ----------------------------------------------------------------------------------------------------------------------- -->
-					<div id="tab_l3b_nvdi">
-						<a href="#tab_l3b_nvdi">L3B Pheno Processor</a>
+					<div id="tab_l3e_pheno">
+						<a href="#tab_l3e_pheno">L3E Pheno Processor</a>
 						<div>
 							<div class="panel_resources_and_output_container"
-								id="pnl_l3b_nvdi_resources_and_output_container">
+								id="pnl_l3e_pheno_resources_and_output_container">
 								<div class="panel_resources_container"
-									id="pnl_l3b_nvdi_resources_container">
+									id="pnl_l3e_pheno_resources_container">
 									<div class="panel panel-default panel_resources"
-										id="pnl_l3b_nvdi_resources">
+										id="pnl_l3e_pheno_resources">
 										<div class="panel-heading">Resource Utilization</div>
 										<table class="table full_width default_panel_style"></table>
 									</div>
 								</div>
 								<div class="panel_output_container"
-									id="pnl_l3b_nvdi_output_container">
+									id="pnl_l3e_pheno_output_container">
 									<div class="panel panel-default panel_output"
-										id="pnl_l3b_nvdi_output">
+										id="pnl_l3e_pheno_output">
 										<div class="panel-heading">Output</div>
 										<table class="table full_width default_panel_style"></table>
 									</div>
 								</div>
 							</div>
 							<div class="panel_configuration_container"
-								id="pnl_l3b_nvdi_configuration_container">
+								id="pnl_l3e_pheno_configuration_container">
 								<div class="panel panel-default panel_configuration"
-									id="pnl_l3b_nvdi_configuration">
+									id="pnl_l3e_pheno_configuration">
 									<div class="panel-heading">Default Configuration</div>
 									<table class="table full_width default_panel_style"></table>
 								</div>
@@ -307,9 +307,9 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 
 							<!-- Scheduled ---------------------------->
 							<div class="panel_scheduled_container"
-								id="pnl_l3b_nvdi_scheduled_container">
+								id="pnl_l3e_pheno_scheduled_container">
 								<div class="panel panel-default panel_scheduled"
-									id="pnl_l3b_nvdi_scheduled">
+									id="pnl_l3e_pheno_scheduled">
 
 									<div class="row panel-heading">
 										<div class="col-md-10">Scheduled Jobs</div>
@@ -317,7 +317,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 
 										<div class="col-md-1">
 
-											<form id="form_add_sched_l3b_nvdi" method="post">
+											<form id="form_add_sched_l3e_pheno" method="post">
 												<input name="schedule_add" type="submit"
 													class="btn btn-primary " value="Add Job"> <input
 													type="hidden" name="processorId" value="7">
@@ -327,7 +327,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 									</div>
 
 									<div class="panel panel-default panel_scheduled_job">
-										<!-- l3b pheno NDVI processor_id = 7 -->
+										<!-- l3e pheno NDVI processor_id = 7 -->
 									<?php
 									
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
@@ -515,7 +515,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 <script src="scripts/config.js"></script>
 <script src="scripts/helpers.js"></script>
 <script src="scripts/processing_functions.js"></script>
-<script src="scripts/processing.js"></script>
+ <script src="scripts/processing.js"></script>
 
 
 <!-- includes for  datepicker-->
@@ -636,7 +636,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 						label.remove();
 					}
 					});  
-				<?php	unset($_SESSION['proc_id']);}	 ?>
+				<?php	unset($_SESSION['proc_id']);}	?>
 				
 		});
 </script>

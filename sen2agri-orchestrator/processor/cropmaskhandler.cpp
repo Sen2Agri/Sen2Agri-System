@@ -77,12 +77,13 @@ QList<std::reference_wrapper<TaskToSubmit>> CropMaskHandler::CreateNoInSituTasks
     return allTasksListRef;
 }
 
-CropMaskGlobalExecutionInfos CropMaskHandler::HandleNewTilesList(EventProcessingContext &ctx,
-                                             const JobSubmittedEvent &event, const QStringList &listProducts)
+void CropMaskHandler::HandleNewTilesList(EventProcessingContext &ctx,
+                                         const JobSubmittedEvent &event,
+                                         const QStringList &listProducts,
+                                         CropMaskGlobalExecutionInfos &globalExecInfos)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
-    CropMaskGlobalExecutionInfos globalExecInfos;
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     const auto &referencePolygons = parameters["reference_polygons"].toString();
     if(referencePolygons.size() > 0) {
@@ -103,7 +104,6 @@ CropMaskGlobalExecutionInfos CropMaskHandler::HandleNewTilesList(EventProcessing
         ctx.SubmitTasks(event.jobId, allTasksListRef);
         HandleNoInsituJob(ctx, event, listProducts, globalExecInfos);
     }
-    return globalExecInfos;
 }
 
 void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
@@ -123,14 +123,17 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     TaskToSubmit productFormatterTask{"product-formatter", {}};
     NewStepList allSteps;
     //container for all task
-    QList<TaskToSubmit> allTasksList;
+    //QList<TaskToSubmit> allTasksList;
+    QList<CropMaskGlobalExecutionInfos> listCropMaskInfos;
     for(auto tile : mapTiles.keys())
     {
        QStringList listTemporalTiles = mapTiles.value(tile);
-       CropMaskGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles);
+       listCropMaskInfos.append(CropMaskGlobalExecutionInfos());
+       CropMaskGlobalExecutionInfos &infos = listCropMaskInfos[listCropMaskInfos.size()-1];
+       HandleNewTilesList(ctx, event, listTemporalTiles, infos);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
-       allTasksList.append(infos.allTasksList);
+       //allTasksList.append(infos.allTasksList);
        allSteps.append(infos.allStepsList);
     }
 

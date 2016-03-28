@@ -132,7 +132,7 @@ INSERT INTO config VALUES (289, 'downloader.winter-season.start', 40, '0318', '2
 INSERT INTO config VALUES (290, 'downloader.winter-season.end', 40, '0319', '2016-03-17 14:56:29.835334+02');
 INSERT INTO config VALUES (197, 'downloader.s2.write-dir', NULL, '/mnt/archive/dwn/s2/default', '2016-02-26 19:26:49.986675+02');
 INSERT INTO config VALUES (194, 'demmaccs.maccs-launcher', NULL, '/opt/maccs/core/4.7/bin/maccs', '2016-02-25 16:29:07.763339+02');
-INSERT INTO config VALUES (131, 'processor.l3b.lai.modelsfolder', NULL, '/mnt/scratch/L3B_GeneratedModels/', '2016-02-16 11:54:47.123972+02');
+INSERT INTO config VALUES (131, 'processor.l3b.lai.modelsfolder', NULL, '/mnt/archive/L3B_GeneratedModels/', '2016-02-16 11:54:47.123972+02');
 INSERT INTO config VALUES (288, 'downloader.l8.max-retries', NULL, '3', '2016-03-15 15:44:22.03691+02');
 INSERT INTO config VALUES (169, 'processor.l3b.lai.rsrcfgfile', NULL, '/usr/share/sen2agri/rsr_cfg.txt', '2016-02-16 11:54:47.223904+02');
 INSERT INTO config VALUES (183, 'demmaccs.output-path', NULL, '/mnt/archive/maccs/{site}/{processor}/', '2016-02-24 18:09:17.379905+02');
@@ -175,7 +175,7 @@ INSERT INTO config VALUES (283, 'downloader.summer-season.end', 3, '1001', '2016
 INSERT INTO config VALUES (257, 'downloader.summer-season.start', 1, '1103', '2016-03-10 18:24:27.376442+02');
 INSERT INTO config VALUES (256, 'downloader.summer-season.end', 1, '1203', '2016-03-10 18:24:25.991909+02');
 INSERT INTO config VALUES (258, 'processor.l4b.temporal_resampling_mode', NULL, 'gapfill', '2016-03-10 18:40:21.140908+02');
-INSERT INTO config VALUES (203, 'processor.l3b.generate_models', NULL, '0', '2016-02-29 12:03:08.445828+02');
+INSERT INTO config VALUES (203, 'processor.l3b.generate_models', NULL, '1', '2016-02-29 12:03:08.445828+02');
 INSERT INTO config VALUES (204, 'processor.l3b.mono_date_lai', NULL, '1', '2016-02-29 12:03:15.149961+02');
 INSERT INTO config VALUES (205, 'processor.l3b.reprocess', NULL, '0', '2016-02-29 12:03:21.142049+02');
 INSERT INTO config VALUES (206, 'processor.l3b.fitted', NULL, '0', '2016-02-29 12:03:27.438284+02');

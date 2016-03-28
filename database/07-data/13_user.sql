@@ -1,0 +1,1 @@
+select sp_adduser('sen2agri', 'sen2agri@', 'sen2agri', cast(1 as smallint));

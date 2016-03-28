@@ -10,11 +10,23 @@ function add_new_scheduled_jobs_layout($processorId) {
 				
 		$option_site = $option_site . $option;
 	}
+	
+	if ($processorId == '2') {
+		$action = "dashboard.php#tab_l3a";
+	} elseif ($processorId == '3') {
+		$action = "dashboard.php#tab_l3b";
+	} elseif ($processorId == '4') {
+		$action = "dashboard.php#tab_l4a";
+	} elseif ($processorId == '5') {
+		$action = "dashboard.php#tab_l4b";
+	}elseif ($processorId == '7'){
+		$action = "dashboard.php#tab_l3e_pheno";
+	}
 
 $div =<<<ADDJOB
 	<div class="panel_job_container">
 	<div class="panel panel-default panel_job">
-	<form role="form" name="jobform" id="jobform" method="post" action="dashboard.php" style="padding:10px;">
+	<form role="form" name="jobform" id="jobform" method="post" action="$action" style="padding:10px;">
 	<span class="form-group form-group-sm span-scheduled" style=" max-width: 1000px;">
 	<label class="control-label control-max-width" for="jobname">Job Name: <input type="text" name="jobname" id="jobname" class="schedule_format">
 	</label></span>
@@ -81,7 +93,7 @@ function update_scheduled_jobs_layout($processor_id) {
 	} elseif ($processor_id == '5') {
 		$action = "dashboard.php#tab_l4b";
 	}elseif ($processor_id == '7'){
-		$action = "dashboard.php#tab_l3b_nvdi";
+		$action = "dashboard.php#tab_l3e_pheno";
 	}
 
 	$sql = "SELECT * from sp_get_dashboard_processor_scheduled_task('$processor_id')";

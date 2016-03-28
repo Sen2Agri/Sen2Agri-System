@@ -61,8 +61,8 @@ private:
                                    LAIProductFormatterParams &outProdFormatterParams,
                                    int nbProducts, bool bGenModels, bool bMonoDateLai, bool bNDayReproc, bool bFittedReproc);
 
-    LAIGlobalExecutionInfos HandleNewTilesList(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                               const QStringList &listProducts, const QStringList &listL3BTiles, const QStringList &missingL3BInputs);
+    void HandleNewTilesList(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                               const QStringList &listProducts, const QStringList &listL3BTiles, const QStringList &missingL3BInputs, LAIGlobalExecutionInfos &outGlobalExecInfos);
 
     void GetModelFileList(QStringList &outListModels, const QString &strPattern, std::map<QString, QString> &configParameters);
     void WriteExecutionInfosFile(const QString &executionInfosPath,
@@ -74,7 +74,7 @@ private:
     QStringList GetBvImageInvArgs(const QString &ftsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateLaiFileName);
     QStringList GetBvErrImageInvArgs(const QString &ftsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateErrFileName);
     QStringList GetQuantifyImageArgs(const QString &inFileName, const QString &outFileName);
-    QStringList GetMonoDateMskFlagsArgs(const QString &inputProduct, const QString &monoDateMskFlgsFileName);
+    QStringList GetMonoDateMskFlagsArgs(const QString &inputProduct, const QString &monoDateMskFlgsFileName, const QString &monoDateMskFlgsResFileName, const QString &resStr);
     QStringList GetTimeSeriesBuilderArgs(const QStringList &monoDateLaiFileNames, const QString &allLaiTimeSeriesFileName);
     QStringList GetErrTimeSeriesBuilderArgs(const QStringList &monoDateErrLaiFileNames, const QString &allErrTimeSeriesFileName);
     QStringList GetMskFlagsTimeSeriesBuilderArgs(const QStringList &monoDateMskFlagsLaiFileNames, const QString &allMskFlagsTimeSeriesFileName);

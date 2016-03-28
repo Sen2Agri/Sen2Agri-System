@@ -38,8 +38,9 @@ QList<std::reference_wrapper<TaskToSubmit>> CropTypeHandler::CreateTasksForNewPr
     }
     return allTasksListRef;
 }
-CropTypeGlobalExecutionInfos CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
-                                             const JobSubmittedEvent &event, const QStringList &listProducts, const QString &cropMask)
+void CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
+                                             const JobSubmittedEvent &event, const QStringList &listProducts,
+                                             const QString &cropMask, CropTypeGlobalExecutionInfos &globalExecInfos)
 {
     auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4b.");
     auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.");
@@ -82,7 +83,6 @@ CropTypeGlobalExecutionInfos CropTypeHandler::HandleNewTilesList(EventProcessing
     const auto classifierSvmKernel = configParameters["processor.l4b.classifier.svm.kernel"];
     const auto classifierSvmOptimize = configParameters["processor.l4b.classifier.svm.optimize"];
 
-    CropTypeGlobalExecutionInfos globalExecInfos;
     QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
     QList<std::reference_wrapper<const TaskToSubmit>> &prodFormParTsksList = globalExecInfos.prodFormatParams.parentsTasksRef;
     CreateTasksForNewProducts(allTasksList, prodFormParTsksList, cropMask.isEmpty());
@@ -254,8 +254,6 @@ CropTypeGlobalExecutionInfos CropTypeHandler::HandleNewTilesList(EventProcessing
     // Get the tile ID from the product XML name. We extract it from the first product in the list as all
     // producs should be for the same tile
     productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
-
-    return globalExecInfos;
 }
 
 void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
@@ -308,11 +306,14 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     NewStepList allSteps;
     //container for all task
     QList<TaskToSubmit> allTasksList;
+    QList<CropTypeGlobalExecutionInfos> listCropTypeInfos;
     for(auto tile : mapTiles.keys())
     {
        QStringList listTemporalTiles = mapTiles.value(tile);
        QString cropMask = mapCropMasks.value(tile);
-       CropTypeGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles, cropMask);
+       listCropTypeInfos.append(CropTypeGlobalExecutionInfos());
+       CropTypeGlobalExecutionInfos &infos = listCropTypeInfos[listCropTypeInfos.size()-1];
+       HandleNewTilesList(ctx, event, listTemporalTiles, cropMask, infos);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
        allTasksList.append(infos.allTasksList);

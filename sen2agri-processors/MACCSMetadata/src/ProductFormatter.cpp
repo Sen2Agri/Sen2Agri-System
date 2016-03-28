@@ -548,15 +548,38 @@ private:
 
       if(bResult)
       {
-          tileInfoEl.strTileNameRoot = strTileName;
-          generateTileMetadataFile(tileInfoEl);
-          TransferRasterFiles(tileInfoEl);
+          if(TileHasRasters(tileInfoEl)) {
+              tileInfoEl.strTileNameRoot = strTileName;
+              generateTileMetadataFile(tileInfoEl);
+              TransferRasterFiles(tileInfoEl);
 
-          //create product metadata file
-          TransferAndRenameQualityFiles(tileInfoEl);
-          FillProductMetadataForATile(tileInfoEl);
+              //create product metadata file
+              TransferAndRenameQualityFiles(tileInfoEl);
+              FillProductMetadataForATile(tileInfoEl);
+          } else {
+              try
+              {
+                    boost::filesystem::remove_all(strMainFolderFullPath + "/" + TILES_FOLDER_NAME + "/" +  strTileName);
+              } catch(boost::filesystem::filesystem_error const & e) {
+                    otbAppLogWARNING("Error removing invalid tile folder "
+                                     <<  strMainFolderFullPath + "/" + TILES_FOLDER_NAME + "/" +  strTileName
+                                     << "Error was: " << e.what());
+              }
+          }
       }
  }
+
+  bool TileHasRasters(const tileInfo &tileInfoEl) {
+      for (const auto &rasterFileEl : m_rasterInfoList) {
+          if(tileInfoEl.strTileID == rasterFileEl.strTileID) {
+              struct stat buf;
+              if (stat(rasterFileEl.strRasterFileName.c_str(), &buf) != -1) {
+                      return true;
+              }
+          }
+      }
+      return false;
+  }
 
   void UnpackRastersList(std::vector<std::string> &rastersList, rasterTypes rasterType, bool bIsQiData)
   {
