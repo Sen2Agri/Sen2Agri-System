@@ -142,7 +142,7 @@ INSERT INTO config VALUES (154, 'downloader.summer-season.end', NULL, '0930', '2
 INSERT INTO config VALUES (170, 'executor.module.path.features-with-insitu', NULL, '/usr/bin/otbcli', '2016-02-22 20:52:43.310276+02');
 INSERT INTO config VALUES (149, 'downloader.max-cloud-coverage', NULL, '80', '2016-02-03 18:05:38.425734+02');
 INSERT INTO config VALUES (155, 'downloader.winter-season.start', NULL, '1101', '2016-02-04 11:44:40.262676+02');
-INSERT INTO config VALUES (156, 'downloader.winter-season.end', NULL, '1201', '2016-02-04 11:44:41.984022+02');
+INSERT INTO config VALUES (156, 'downloader.winter-season.end', NULL, '0415', '2016-02-04 11:44:41.984022+02');
 INSERT INTO config VALUES (171, 'executor.module.path.principal-component-analysis', NULL, '/usr/bin/otbcli', '2016-02-22 22:39:08.262715+02');
 INSERT INTO config VALUES (153, 'downloader.summer-season.start', NULL, '0501', '2016-02-04 11:44:18.411587+02');
 INSERT INTO config VALUES (191, 'demmaccs.srtm-path', NULL, '/mnt/archive/srtm', '2016-02-25 11:11:36.372405+02');
