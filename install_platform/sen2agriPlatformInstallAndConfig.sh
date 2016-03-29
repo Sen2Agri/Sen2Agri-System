@@ -564,7 +564,7 @@ function check_paths()
         fi
     fi
 
-    if ! ls -A /mnt/archive/srtm > /dev/null; then
+    if ! ls -A /mnt/archive/srtm > /dev/null 2>&1; then
         if [ -f ../srtm.zip ]; then
             mkdir -p /mnt/archive/srtm && unzip ../srtm.zip -d /mnt/archive/srtm
             if [ $? -ne 0 ]; then
@@ -579,7 +579,7 @@ function check_paths()
         fi
     fi
 
-    if ! ls -A /mnt/archive/swbd > /dev/null; then
+    if ! ls -A /mnt/archive/swbd > /dev/null 2>&1; then
         if [ -f ../swbd.zip ]; then
             mkdir -p /mnt/archive/swbd && unzip ../swbd.zip -d /mnt/archive/swbd
             if [ $? -ne 0 ]; then
@@ -609,7 +609,7 @@ function check_paths()
         fi
     fi
 
-    if ! ls -A /mnt/archive/gipp > /dev/null; then
+    if ! ls -A /mnt/archive/gipp > /dev/null 2>&1; then
         if [ -d ../gipp ]; then
             echo "Copying MACCS GIPP files to /mnt/archive"
             cp -rf ../gipp /mnt/archive
