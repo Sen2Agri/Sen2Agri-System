@@ -130,12 +130,12 @@ INSERT INTO config VALUES (255, 'processor.l4a.min-area', NULL, '20', '2016-03-0
 INSERT INTO config VALUES (278, 'downloader.winter-season.start', 1, '0411', '2016-03-14 11:53:54.080902+02');
 INSERT INTO config VALUES (289, 'downloader.winter-season.start', 40, '0318', '2016-03-17 14:56:29.835334+02');
 INSERT INTO config VALUES (290, 'downloader.winter-season.end', 40, '0319', '2016-03-17 14:56:29.835334+02');
-INSERT INTO config VALUES (197, 'downloader.s2.write-dir', NULL, '/mnt/archive/dwn_def/s2/default', '2016-02-26 19:26:49.986675+02');
+INSERT INTO config VALUES (197, 'downloader.s2.write-dir', NULL, '/mnt/archive/dwn/s2/default', '2016-02-26 19:26:49.986675+02');
 INSERT INTO config VALUES (194, 'demmaccs.maccs-launcher', NULL, '/opt/maccs/core/4.7/bin/maccs', '2016-02-25 16:29:07.763339+02');
 INSERT INTO config VALUES (131, 'processor.l3b.lai.modelsfolder', NULL, '/mnt/archive/L3B_GeneratedModels/', '2016-02-16 11:54:47.123972+02');
 INSERT INTO config VALUES (288, 'downloader.l8.max-retries', NULL, '3', '2016-03-15 15:44:22.03691+02');
 INSERT INTO config VALUES (169, 'processor.l3b.lai.rsrcfgfile', NULL, '/usr/share/sen2agri/rsr_cfg.txt', '2016-02-16 11:54:47.223904+02');
-INSERT INTO config VALUES (183, 'demmaccs.output-path', NULL, '/mnt/archive/maccs_def/{site}/{processor}/', '2016-02-24 18:09:17.379905+02');
+INSERT INTO config VALUES (183, 'demmaccs.output-path', NULL, '/mnt/archive/maccs/{site}/{processor}/', '2016-02-24 18:09:17.379905+02');
 INSERT INTO config VALUES (179, 'executor.module.path.compute-image-statistics', NULL, '/usr/bin/otbcli_ComputeImagesStatistics', '2016-02-23 12:29:52.586902+02');
 INSERT INTO config VALUES (279, 'downloader.winter-season.end', 1, '0412', '2016-03-14 11:53:54.080902+02');
 INSERT INTO config VALUES (154, 'downloader.summer-season.end', NULL, '0930', '2016-02-04 11:44:35.847675+02');
@@ -185,5 +185,5 @@ INSERT INTO config VALUES (209, 'general.start_of_season', NULL, '20130131', '20
 INSERT INTO config VALUES (210, 'general.end_of_season', NULL, '20131231', '2016-03-01 12:07:31.393578+02');
 INSERT INTO config VALUES (211, 'site.upload-path', NULL, '/mnt/upload/{user}', '2016-03-01 15:02:31.980394+02');
 INSERT INTO config VALUES (213, 'processor.l4a.reference_data_dir', NULL, '', '2016-03-03 14:46:26.267227+02');
-INSERT INTO config VALUES (198, 'downloader.l8.write-dir', NULL, '/mnt/archive/dwn_def/l8/default', '2016-02-26 19:30:06.821627+02');
+INSERT INTO config VALUES (198, 'downloader.l8.write-dir', NULL, '/mnt/archive/dwn/l8/default', '2016-02-26 19:30:06.821627+02');
 
