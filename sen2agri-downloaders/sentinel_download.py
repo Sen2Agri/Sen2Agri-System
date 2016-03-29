@@ -196,7 +196,7 @@ def sentinel_download(aoiContext):
         f.close()
     except :
         log(aoiContext.writeDir, "error with password file ".format(str(apihubFile)), general_log_filename)
-        sys.exit(-2)
+        return
 
     db = SentinelAOIInfo(aoiContext.configObj.host, aoiContext.configObj.database, aoiContext.configObj.user, aoiContext.configObj.password)
 
@@ -225,16 +225,16 @@ def sentinel_download(aoiContext):
 
     if run_command(commande_wget, aoiContext.writeDir, general_log_filename) != 0:
         log(aoiContext.writeDir, "Could not get the catalog output for {}".format(query_geom), general_log_filename)
-        sys.exit(-1)
+        return
     if g_exit_flag:
-        sys.exit(0)
+        return
 
     #=======================
     # parse catalog output
     #=======================
     if not os.path.isfile(queryResultsFilename):
         log(aoiContext.writeDir, "Could not find the catalog output {} for {}".format(queryResultsFilename, aoiContext.siteName), general_log_filename)
-        sys.exit(-1)
+        return
     xml=minidom.parse(queryResultsFilename)
 
     #check if all the results are returned
@@ -252,12 +252,12 @@ def sentinel_download(aoiContext):
                 log(aoiContext.writeDir, "Changing the pagination to {0} to get all of the existing files, command: {1}".format(totalRes, commande_wget), general_log_filename)
                 if run_command(commande_wget, aoiContext.writeDir, general_log_filename) != 0:
                     log(aoiContext.writeDir, "Could not get the catalog output (re-pagination) for {}".format(query_geom), general_log_filename)
-                    sys.exit(-1)
+                    return
                 xml=minidom.parse("query_results.xml")
             except ValueError:
                 log(aoiContext.writeDir, "Exception: it was expected for the word in position 5 (starting from 0) to be an int. It ain't. The checked string is: {}".format(subtitle), general_log_filename)
                 log(aoiContext.writeDir, "Could not get the catalog output (exception for re-pagination) for {}".format(query_geom), general_log_filename)
-                sys.exit(-1)
+                return
 
     products=xml.getElementsByTagName("entry")
     s2Objs = []
@@ -299,7 +299,7 @@ def sentinel_download(aoiContext):
         print("===============================================")
 
         if g_exit_flag:
-            sys.exit(0)
+            return
         product_download(s2Obj, aoiContext, db)
         print("Finished to download product: {}".format(s2Obj.productname))
         

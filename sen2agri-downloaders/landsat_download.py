@@ -47,9 +47,9 @@ def connect_earthexplorer_proxy(proxy_info,usgs):
 
      if data.find('You must sign in as a registered user to download data or place orders for USGS EROS products')>0 :
         print "Authentification failed"
-        sys.exit(-1)
+        return False
 
-     return
+     return True
 
 
 #############################"Connection to Earth explorer without proxy
@@ -66,8 +66,8 @@ def connect_earthexplorer_no_proxy(usgs):
      f.close()
      if data.find('You must sign in as a registered user to download data or place orders for USGS EROS products')>0 :
           log(general_log_path, "Authentification failed !", general_log_filename)
-          sys.exit(-1)
-     return
+          return False
+     return True
 
 #############################
 
@@ -145,7 +145,7 @@ def downloadChunks(url, rep, prod_name, prod_date, abs_prod_path, aoiContext, db
 	     fp.write(chunk)
              if g_exit_flag:
                   log(rep, "SIGINT signal caught", general_log_filename)
-                  sys.exit(0)
+                  return
   except socket.timeout, e:
        log(rep, "Timeout for file {0} ".format(nom_fic), general_log_filename)
        return False
@@ -291,7 +291,7 @@ def landsat_download(aoiContext):
         f.close()
      except :
         log(general_log_path, "Error with usgs password file", general_log_filename)
-        sys.exit(-2)
+        return
 
 
      if aoiContext.proxy != None :
@@ -310,7 +310,7 @@ def landsat_download(aoiContext):
             f.close()
         except :
             log(general_log_path, "Error with proxy password file", general_log_filename)
-            sys.exit(-3)
+            return
 
      db = LandsatAOIInfo(aoiContext.configObj.host, aoiContext.configObj.database, aoiContext.configObj.user, aoiContext.configObj.password)
 
@@ -336,12 +336,13 @@ def landsat_download(aoiContext):
          log(aoiContext.writeDir, "path={}|row={}".format(path, row), general_log_filename)
 
          downloaded_ids = []
-
+         connection = False
          if aoiContext.proxy!=None:
-             connect_earthexplorer_proxy(proxy,usgs)
+             connection = connect_earthexplorer_proxy(proxy,usgs)
          else:
-             connect_earthexplorer_no_proxy(usgs)
-             
+             connection = connect_earthexplorer_no_proxy(usgs)
+         if connection == False:
+              return
          curr_date=next_overpass(start_date, int(path), product)
 
          while (curr_date < end_date):
@@ -353,7 +354,7 @@ def landsat_download(aoiContext):
                  for version in ['00','01','02']:
                                          if g_exit_flag:
                                              log(aoiContext.writeDir, "SIGINT was caught")
-                                             sys.exit(0)
+                                             return
                                          nom_prod = product + tile + date_asc + station + version
                                          tgzfile = os.path.join(aoiContext.writeDir, nom_prod + '.tgz')
                                          lsdestdir = os.path.join(aoiContext.writeDir, nom_prod)

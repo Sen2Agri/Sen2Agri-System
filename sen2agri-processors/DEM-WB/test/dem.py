@@ -337,7 +337,7 @@ def process_DTM(context):
     if missing_tiles:
         print("The following SRTM tiles are missing: {}. Please provide them in the SRTM directory ({}).".format(
             [os.path.basename(tile) for tile in missing_tiles], context.srtm_directory))
-        sys.exit(1)
+        return False
 
     run_command(["gdalbuildvrt",
                  context.dem_vrt] + dtm_tiles)
@@ -442,7 +442,7 @@ def process_DTM(context):
                  "-interpolator", "linear",
                  "-lms", "40",
                  "-out", context.aspect_coarse])
-
+    return True
 
 def process_WB(context):
     run_command(["otbcli",
@@ -490,7 +490,8 @@ def process_context(context):
     with open(context.metadata_file, 'w') as f:
         lxml.etree.ElementTree(metadata).write(f, pretty_print=True)
 
-    process_DTM(context)
+    if process_DTM(context) == False:
+        return
     process_WB(context)
 
     files = [context.swbd_list, context.dem_vrt, context.dem_nodata, context.slope_degrees,
