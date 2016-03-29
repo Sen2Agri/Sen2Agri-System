@@ -11,6 +11,7 @@ add_subdirectory(CompositePreprocessing)
 add_subdirectory(QuantifyImage)
 
 install(PROGRAMS TestScripts/composite_processing.py 
+                 TestScripts/composite_processing_CS.py 
         DESTINATION bin/)
 #        DESTINATION bin/python)
 
