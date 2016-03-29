@@ -388,6 +388,9 @@ function install_and_config_postgresql()
    # the tables, data and other stuff is created (see down, privileges.sql
    cat "$(find ./ -name "database")/00-database"/sen2agri.sql | sudo su - postgres -c 'psql'
 
+   local _inet_addr="$(ip -4 a | grep "inet " | grep -v " lo" | tr -s ' ' | cut "-d " -s -f3 | cut -d/ -f1 | head -n1)"
+   sed -ire "/'executor.listen-ip'/ { /'/ s/'[0-9.]+'/'${_inet_addr}'/ }" "$(find ./ -name "database")/07-data/09.config.sql
+
    #run scripts populating database
    populate_from_scripts "$(find ./ -name "database")/01-extensions"
    populate_from_scripts "$(find ./ -name "database")/02-types"
