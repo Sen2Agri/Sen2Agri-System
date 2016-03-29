@@ -476,9 +476,9 @@ function install_downloaders_demmacs()
 
    #start imediately the services for downloaders and demmacs
    systemctl enable --now sen2agri-landsat-downloader.timer
-   systemctl start --now sen2agri-landsat-downloader.timer
+   systemctl start sen2agri-landsat-downloader.service
    systemctl enable --now sen2agri-sentinel-downloader.timer
-   systemctl start --now sen2agri-sentinel-downloader.timer
+   systemctl start sen2agri-sentinel-downloader.service
    #the demmaccs service may be started whenever it's time will come
    #starting it at the same time with downloaders, will do nothing 'cause it 
    #will not find any downloaded product
