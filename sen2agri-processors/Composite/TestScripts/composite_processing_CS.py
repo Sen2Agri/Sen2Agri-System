@@ -2,17 +2,72 @@
 from __future__ import print_function
 
 import os
+import copy
 import shutil
 import glob
 import argparse
 import csv
 from sys import argv
 import datetime
+from datetime import timedelta
 import subprocess
 import pipes
 import time
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
+import re
+
+def generateCompositeParam(inputDir, syntDate, syntHalf, satellite, instrument, orbitDay):
+    """Return the input SPOT4 aor SPOT5 products used to run the composite processors.
+    """
+    #syntHalf = int(args.synthalf)
+    timeDmin=timedelta(days=-syntHalf)
+    timeDmax=timedelta(days=syntHalf)
+
+    syntDate = datetime.datetime.strptime(syntDate,"%Y%m%d")
+    dtMin = syntDate + timeDmin
+    dtMax = syntDate + timeDmax
+    #print (syntDate,'[', dtMin, dtMax, ']')
+
+    pattern="SAT_INST_XS_" 
+    patternOrbitDaySPOT4="-DAYD"
+    
+    patternWithINSTR=pattern.replace("INST", instrument)
+    patternWithSAT=patternWithINSTR.replace("SAT", satellite)
+        
+    listFile = os.listdir(inputDir);
+    listFile.sort()
+  
+    listDate=[]
+    listFile2=[]
+  
+    for file in listFile:
+        #print(file)
+        if re.search(patternWithSAT,file):
+            #print (file)
+            if (orbitDay != ""):
+                patternOrbitDaySPOT4withDAY=patternOrbitDaySPOT4.replace("DAY", orbitDay)
+                if re.search(patternOrbitDaySPOT4withDAY,file):
+                    dt = datetime.datetime.strptime((re.search('2013[0-1][1-9][0-3][0-9]',file).group(0)),"%Y%m%d")
+                    #print(dt)
+                    if ( ( dt <= dtMax ) & (dt >= dtMin)):
+                        listDate.append(dt)
+                        listFile2.append(inputDir + file + '/' + file + '.xml ')
+            else:
+                if satellite == "SPOT4":
+                    dt = datetime.datetime.strptime((re.search('2013[0-1][1-9][0-3][0-9]',file).group(0)),"%Y%m%d")
+                    #print(dt)
+                elif satellite == "SPOT5":
+                    dt = datetime.datetime.strptime((re.search('2015[0-1][1-9][0-3][0-9]',file).group(0)),"%Y%m%d")
+                    #print(dt)             
+                if ( ( dt <= dtMax ) & (dt >= dtMin)):
+                    listDate.append(dt)
+                    listFile2.append(inputDir + file + '/' + file + '.xml ')
+    print(listDate)
+    print(listFile2)
+    
+    return listFile2, listDate[0], listDate[-1]
+
 
 def runCmd(cmdArray):
     start = time.time()
@@ -34,42 +89,51 @@ def prettify(elem):
 
 parser = argparse.ArgumentParser(description='Composite Python processor')
 
+parser.add_argument('--syntdate', help='L3A synthesis date', required=True)
+parser.add_argument('--synthalf', help='Half synthesis', required=True)
 
-parser.add_argument('--configfile', help='Configuration file', required=True)
+parser.add_argument('--input', help='The list of products xml descriptors', required=False, nargs='+')
+parser.add_argument('--inputdir', help='The path to the input SPOT4/5 dir', required=False)
+parser.add_argument('--satellite', help='The satellite (SPOT4 or SPOT5)', required=False)
+parser.add_argument('--instrument', help='The SPOT4/5 instrument', required=False)
+parser.add_argument('--orbitday', help="Day of the orbit (Maricopa SPOT 4 site)", required=False)
 
-parser.add_argument('--applocation', help='The path where the sen2agri is built', required=True)
-#parser.add_argument('--syntdate', help='L3A synthesis date', required=True)
-#parser.add_argument('--synthalf', help='Half synthesis', required=True)
-#parser.add_argument('--input', help='The list of products xml descriptors', required=True, nargs='+')
-parser.add_argument('--res', help='The requested resolution in meters', required=True)
-parser.add_argument('--outdir', help="Output directory", required=True)
+parser.add_argument('--res', help='The requested resolution in meters', required=False)
 parser.add_argument('--bandsmap', help="Bands mapping file location", required=True)
 parser.add_argument('--scatteringcoef', help="Scattering coefficient file. This file is requested in S2 case ONLY", required=False)
 parser.add_argument('--tileid', help="Tile id", required=False)
 parser.add_argument('--siteid', help='The site ID', required=False)                    
+
+parser.add_argument('--outdir', help="Output directory", required=True)
 
 USE_COMPRESSION=True
 REMOVE_TEMP=False
 
 args = parser.parse_args()
 
-#read config file
-confFile = open(args.configfile, 'r')
-syntDate = confFile.readline()
-syntHalf = confFile.readline()
-inputLine = confFile.readline()
-inputList=inputLine.split()
-t0 = confFile.readline()
-tend = confFile.readline()
+syntDate = args.syntdate
+syntHalf = args.synthalf
+print(syntDate)
+inputList=[]
 
-#t0 = args.t0
-#tend = args.tend
-#syntDate = args.syntdate
-#syntHalf = args.synthalf
+if args.inputdir:
+    inputDir = args.inputdir
+    satellite = args.satellite
+    instrument = args.instrument
+    orbitDay=""
+    if args.orbitday:
+        orbitDay = args.orbitday
+    inputList, t0, tend = generateCompositeParam(inputDir, copy.copy(syntDate), int(syntHalf), satellite, instrument, orbitDay)
+else:
+	inputList = args.input
+	t0=0
+	tend=1
+print(syntDate)
 resolution = args.res
 bandsMap = args.bandsmap
-appLocation = args.applocation
+
 outDir = args.outdir
+
 siteId = "nn"
 if args.siteid:
     siteId = args.siteid
@@ -141,8 +205,8 @@ with open(paramsFilenameXML, 'w') as paramsFileXML:
     ET.SubElement(wDATE, "l3a_product_date").text = syntDate
     ET.SubElement(wDATE, "half_synthesis").text = syntHalf
     dates = ET.SubElement(root, "Dates_information")
-    ET.SubElement(dates, "start_date").text = t0
-    ET.SubElement(dates, "end_date").text = tend
+    ET.SubElement(dates, "start_date").text = t0.strftime("%Y%m%d")
+    ET.SubElement(dates, "end_date").text = tend.strftime("%Y%m%d")
     ET.SubElement(dates, "synthesis_date").text = syntDate
     ET.SubElement(dates, "synthesis_half").text = syntHalf
     usedXMLs = ET.SubElement(root, "XML_files")
@@ -167,8 +231,8 @@ with open(paramsFilename, 'w') as paramsFile:
     paramsFile.write("    l3a product date  = " + syntDate + "\n")
     paramsFile.write("    half synthesis    = " + syntHalf + "\n")
     paramsFile.write("Dates information\n")
-    paramsFile.write("    start date        = " + t0 + "\n")
-    paramsFile.write("    end date          = " + tend + "\n")
+    paramsFile.write("    start date        = " + t0.strftime("%Y%m%d") + "\n")
+    paramsFile.write("    end date          = " + tend.strftime("%Y%m%d") + "\n")
     paramsFile.write("    synthesis date    = " + syntDate + "\n")
     paramsFile.write("    synthesis half    = " + syntHalf + "\n")
     paramsFile.write(" ")
@@ -183,7 +247,7 @@ print("Processing started: " + str(datetime.datetime.now()))
 start = time.time()
 for xml in inputList:
     
-    runCmd(["otbcli", "MaskHandler", appLocation, "-xml", xml, "-out", outSpotMasks, "-sentinelres", resolution])
+    runCmd(["otbcli", "MaskHandler", "-xml", xml, "-out", outSpotMasks, "-sentinelres", resolution])
     
     counterString = str(i)
     mod=outL3AFile.replace("#", counterString)
@@ -198,20 +262,20 @@ for xml in inputList:
     out_w_Total=outTotalWeightFile.replace("#", counterString)
     
     if fullScatCoeffs:
-        cmd = ["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-scatcoef", fullScatCoeffs, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
+        cmd = ["otbcli", "CompositePreprocessing2",  "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-scatcoef", fullScatCoeffs, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
     else:
-        cmd = ["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
+        cmd = ["otbcli", "CompositePreprocessing2",  "-xml", xml, "-bmap", bandsMap, "-res", resolution, "-msk", outSpotMasks, "-outres", outImgBands, "-outcmres", outCld, "-outwmres", outWat, "-outsmres", outSnow, "-outaotres", outAot]
     
     runCmd(cmd)
    
-    runCmd(["otbcli", "WeightAOT", appLocation, "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", out_w_Aot])
+    runCmd(["otbcli", "WeightAOT",  "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", out_w_Aot])
 
-    runCmd(["otbcli", "WeightOnClouds", appLocation, "-inxml", xml, "-incldmsk", outCld, "-coarseres", COARSE_RES, "-sigmasmallcld", SIGMA_SMALL_CLD, "-sigmalargecld", SIGMA_LARGE_CLD, "-out", out_w_Cloud])
+    runCmd(["otbcli", "WeightOnClouds",  "-inxml", xml, "-incldmsk", outCld, "-coarseres", COARSE_RES, "-sigmasmallcld", SIGMA_SMALL_CLD, "-sigmalargecld", SIGMA_LARGE_CLD, "-out", out_w_Cloud])
 
-    runCmd(["otbcli", "TotalWeight", appLocation, "-xml", xml, "-waotfile", out_w_Aot, "-wcldfile", out_w_Cloud, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", out_w_Total])
+    runCmd(["otbcli", "TotalWeight",  "-xml", xml, "-waotfile", out_w_Aot, "-wcldfile", out_w_Cloud, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", out_w_Total])
     #todo... search for previous L3A produc?
 
-    runCmd(["otbcli", "UpdateSynthesis", appLocation, "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", out_w_Total, "-out", mod] + prevL3A)
+    runCmd(["otbcli", "UpdateSynthesis",  "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", out_w_Total, "-out", mod] + prevL3A)
 
     tmpOut_w = out_w
     tmpOut_d = out_d
@@ -226,7 +290,7 @@ for xml in inputList:
         tmpOut_f += '?gdal:co:COMPRESS=DEFLATE' 
         tmpOut_rgb += '?gdal:co:COMPRESS=DEFLATE'
 
-    runCmd(["otbcli", "CompositeSplitter2", appLocation, "-in", mod, "-xml", xml, "-bmap", bandsMap, "-outweights", tmpOut_w, "-outdates", tmpOut_d, "-outrefls", tmpOut_r, "-outflags", tmpOut_f, "-outrgb", tmpOut_rgb])
+    runCmd(["otbcli", "CompositeSplitter2",  "-in", mod, "-xml", xml, "-bmap", bandsMap, "-outweights", tmpOut_w, "-outdates", tmpOut_d, "-outrefls", tmpOut_r, "-outflags", tmpOut_f, "-outrgb", tmpOut_rgb])
 
     prevL3A = ["-prevl3aw", out_w, "-prevl3ad", out_d, "-prevl3ar", out_r, "-prevl3af", out_f]
 
@@ -279,7 +343,7 @@ if i == 0:
     exit(1)
 
 i -= 1
-runCmd(["otbcli", "ProductFormatter", appLocation, 
+runCmd(["otbcli", "ProductFormatter",  
     "-destroot", outDir, 
     "-fileclass", "OPER", 
     "-level", "L3A", 
