@@ -480,7 +480,7 @@ function install_downloaders_demmacs()
    systemctl enable --now sen2agri-sentinel-downloader.timer
    systemctl start --now sen2agri-sentinel-downloader.timer
    #the demmaccs service may be started whenever it's time will come
-   #starting it at the same time with downloaders, will do nothing 'cause it 
+   #starting it at the same time with downloaders, will do nothing 'cause it
    #will not find any downloaded product
    systemctl enable --now sen2agri-demmaccs.timer
 
@@ -491,11 +491,9 @@ function install_RPMs()
    ##########################################################
    ####  OTB, GDAL, SEN2AGRI-PROCESSORS, SEN2AGRI-SERVICES
    ##########################################################
-   ##install EPEL for packages dependencies installation
-   yum -y install epel-release
 
    ##install a couple of packages
-   yum -y install cifs-utils gdal-python python-psycopg2 gd redhat-lsb-core
+   yum -y install cifs-utils gdal-python python-psycopg2 gd
 
    ##install Orfeo ToolBox
    yum -y install ../rpm_binaries/otb-5.0.centos7.x86_64.rpm
@@ -632,6 +630,8 @@ function install_maccs()
         return 0
     }
 
+    yum -y install redhat-lsb-core
+
     cots_installer=$(find ../maccs/cots -name install-maccs-cots.sh 2>/dev/null)
     if [ $? -eq 0 ] && [ -e $cots_installer ]; then
         echo "Installing MACCS COTS"
@@ -674,6 +674,9 @@ function disable_selinux()
 check_paths
 
 disable_selinux
+
+##install EPEL for packages dependencies installation
+yum -y install epel-release
 
 install_maccs
 
