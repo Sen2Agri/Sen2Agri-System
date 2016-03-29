@@ -170,7 +170,10 @@ def launch_demmaccs(l1c_context):
             log(output_path, "Creating common footprint for tiles: DBL.DIR List: {}".format(tiles_dir_list), general_log_filename)
             wgs84_extent_list = []
             for tile_dir in tiles_dir_list:
-                tile_img = (glob.glob("{}/*_FRE_R1.DBL.TIF".format(tile_dir)))
+                if satellite_id = SENTINEL2_SATELLITE_ID:
+                    tile_img = (glob.glob("{}/*_FRE_R1.DBL.TIF".format(tile_dir)))
+                else:
+                    tile_img = (glob.glob("{}/*_FRE.DBL.TIF".format(tile_dir)))
                 if len(tile_img) > 0:
                     wgs84_extent_list.append(get_footprint(tile_img[0]))
             wkt = get_envelope(wgs84_extent_list)
