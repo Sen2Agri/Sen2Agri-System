@@ -755,10 +755,6 @@ class L1CInfo(object):
                     rows = self.cursor.fetchall()
                     if len(rows) > 0:
                         retArray.append(rows)
-            #self.cursor.execute("SELECT id, site_id, satellite_id, full_path, product_date FROM downloader_history WHERE id = 1854 or id = 1919")
-            #rows = self.cursor.fetchall()
-            #if len(rows) > 0:
-            #    retArray.append(rows)
         except:
             self.database_disconnect()
             return []

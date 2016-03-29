@@ -388,6 +388,9 @@ function install_and_config_postgresql()
    # the tables, data and other stuff is created (see down, privileges.sql
    cat "$(find ./ -name "database")/00-database"/sen2agri.sql | sudo su - postgres -c 'psql'
 
+   local _inet_addr="$(ip -4 a | grep "inet " | grep -v " lo" | tr -s ' ' | cut "-d " -s -f3 | cut -d/ -f1 | head -n1)"
+   sed -i -re "/'executor.listen-ip'/ { /'/ s/'[0-9.]+'/'${_inet_addr}'/ }" $(find ./ -name "database")/07-data/09.config.sql
+
    #run scripts populating database
    populate_from_scripts "$(find ./ -name "database")/01-extensions"
    populate_from_scripts "$(find ./ -name "database")/02-types"
@@ -473,7 +476,12 @@ function install_downloaders_demmacs()
 
    #start imediately the services for downloaders and demmacs
    systemctl enable --now sen2agri-landsat-downloader.timer
+   systemctl start sen2agri-landsat-downloader.service
    systemctl enable --now sen2agri-sentinel-downloader.timer
+   systemctl start sen2agri-sentinel-downloader.service
+   #the demmaccs service may be started whenever it's time will come
+   #starting it at the same time with downloaders, will do nothing 'cause it
+   #will not find any downloaded product
    systemctl enable --now sen2agri-demmaccs.timer
 
 }
@@ -483,11 +491,9 @@ function install_RPMs()
    ##########################################################
    ####  OTB, GDAL, SEN2AGRI-PROCESSORS, SEN2AGRI-SERVICES
    ##########################################################
-   ##install EPEL for packages dependencies installation
-   yum -y install epel-release
 
    ##install a couple of packages
-   yum -y install cifs-utils gdal-python python-psycopg2 gd redhat-lsb-core
+   yum -y install cifs-utils gdal-python python-psycopg2 gd
 
    ##install Orfeo ToolBox
    yum -y install ../rpm_binaries/otb-5.0.centos7.x86_64.rpm
@@ -561,7 +567,7 @@ function check_paths()
         fi
     fi
 
-    if ! ls -A /mnt/archive/srtm > /dev/null; then
+    if ! ls -A /mnt/archive/srtm > /dev/null 2>&1; then
         if [ -f ../srtm.zip ]; then
             mkdir -p /mnt/archive/srtm && unzip ../srtm.zip -d /mnt/archive/srtm
             if [ $? -ne 0 ]; then
@@ -570,13 +576,13 @@ function check_paths()
                 exit 1
             fi
         else
-            echo "Please unpack the SRTM dataset into /mnt/archive/swbd"
+            echo "Please unpack the SRTM dataset into /mnt/archive/srtm"
             echo "Exiting now"
             exit 1
         fi
     fi
 
-    if ! ls -A /mnt/archive/swbd > /dev/null; then
+    if ! ls -A /mnt/archive/swbd > /dev/null 2>&1; then
         if [ -f ../swbd.zip ]; then
             mkdir -p /mnt/archive/swbd && unzip ../swbd.zip -d /mnt/archive/swbd
             if [ $? -ne 0 ]; then
@@ -606,21 +612,25 @@ function check_paths()
         fi
     fi
 
-    if [ -d ../gipp ]; then
-        echo "Copying MACCS GIPP files to /mnt/archive"
-        cp -rf ../gipp /mnt/archive
-    else
-        echo "Cannot find MACCS GIPP files in the distribution, please copy them to /mnt/archive/gipp"
+    if ! ls -A /mnt/archive/gipp > /dev/null 2>&1; then
+        if [ -d ../gipp ]; then
+            echo "Copying MACCS GIPP files to /mnt/archive"
+            cp -rf ../gipp /mnt/archive
+        else
+            echo "Cannot find MACCS GIPP files in the distribution, please copy them to /mnt/archive/gipp"
+        fi
     fi
 }
 
 function install_maccs()
 {
     echo "Looking for MACCS..."
-    find /opt/maccs/core -name maccs > /dev/null 2>&1 || {
+    find /opt/maccs/core -name maccs > /dev/null 2>&1 && {
         echo "MACCS found, continuing"
         return 0
     }
+
+    yum -y install redhat-lsb-core
 
     cots_installer=$(find ../maccs/cots -name install-maccs-cots.sh 2>/dev/null)
     if [ $? -eq 0 ] && [ -e $cots_installer ]; then
@@ -654,7 +664,7 @@ function disable_selinux()
     echo "Disabling SELinux"
     echo "The Sen2Agri system is not inherently incompatible with SELinux, but relabelling the file system paths is not implemented yet in the installer."
     setenforce 0
-    sed -i -e 's/SELINUX=enforcing/SELINUX=permissive/' /etc/sysconfig/selinux
+    sed -i -e 's/SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
 }
 
 ###########################################################
@@ -664,6 +674,9 @@ function disable_selinux()
 check_paths
 
 disable_selinux
+
+##install EPEL for packages dependencies installation
+yum -y install epel-release
 
 install_maccs
 
@@ -700,10 +713,6 @@ install_downloaders_demmacs
 #-----------------------------------------------------------#
 ####  START ORCHESTRATOR SERVICES                       #####
 #-----------------------------------------------------------#
-systemctl enable sen2agri-executor
 systemctl enable --now sen2agri-orchestrator
 systemctl enable --now sen2agri-scheduler
 systemctl enable --now sen2agri-http-listener
-
-setenforce 0
-

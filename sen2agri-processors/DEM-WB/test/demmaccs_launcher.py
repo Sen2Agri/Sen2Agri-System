@@ -121,7 +121,7 @@ def launch_demmaccs(l1c_context):
     #get site short name
     site_short_name = l1c_context.l1c_db.get_short_name("site", l1c_context.l1c_list[0][1])    
 
-    for l1c in l1c_context.l1c_list:        
+    for l1c in l1c_context.l1c_list:
         l2a_basename = os.path.basename(l1c[3][:len(l1c[3]) - 1]) if l1c[3].endswith("/") else os.path.basename(l1c[3])
         satellite_id = int(l1c[2])
         if satellite_id != SENTINEL2_SATELLITE_ID and satellite_id != LANDSAT8_SATELLITE_ID:

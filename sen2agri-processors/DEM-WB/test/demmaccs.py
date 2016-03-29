@@ -173,7 +173,7 @@ def maccs_launcher(demmaccs_context):
     log(demmaccs_context.output, "Starting MACCS in {} for {} | TileID: {}".format(maccs_mode, demmaccs_context.input, tile_id), tile_log_filename)
     log(demmaccs_context.output, "MACCS_COMMAND: {}".format(cmd_array), tile_log_filename)
     return_tile_id = ""
-    if run_command(cmd_array, demmaccs_context.output, tile_log_filename) != 0:    
+    if run_command(cmd_array, demmaccs_context.output, tile_log_filename) != 0:
         log(demmaccs_context.output, "MACCS mode {} didn't work for {} | TileID: {}. Location {}".format(maccs_mode, demmaccs_context.input, tile_id, demmaccs_context.output), tile_log_filename)        
     else:
         log(demmaccs_context.output, "MACCS mode {} for {} tile {} finished in: {}. Location: {}".format(maccs_mode, demmaccs_context.input, tile_id, datetime.timedelta(seconds=(time.time() - start)), demmaccs_context.output), tile_log_filename)
@@ -189,8 +189,17 @@ def maccs_launcher(demmaccs_context):
             maccs_working_dir_content = glob.glob("{}/*".format(maccs_working_dir))
             print("{}".format(maccs_working_dir_content))
             for maccs_out in maccs_working_dir_content:
+                new_file = "{}/{}".format(demmaccs_context.output, os.path.basename(maccs_out))
+                if os.path.isdir(new_file):
+                    log(demmaccs_context.output, "The directory {} already exists. Trying to delete it in order to move the new created directory by MACCS".format(new_file), tile_log_filename)
+                    shutil.rmtree(new_file)
+                elif os.path.isfile(new_file):
+                    log(demmaccs_context.output, "The file {} already exists. Trying to delete it in order to move the new created file by MACCS".format(new_file), tile_log_filename)
+                    os.remove(new_file)
+                else: #the dest does not exist, so will move it without problems
+                    pass
                 log(demmaccs_context.output, "Moving {} to {}".format(maccs_out, demmaccs_context.output + "/" + os.path.basename(maccs_out)), tile_log_filename)
-                shutil.move(maccs_out, "{}/{}".format(demmaccs_context.output, os.path.basename(maccs_out)))
+                shutil.move(maccs_out, new_file)
         log(demmaccs_context.output, "rmtree: {}".format(maccs_working_dir), tile_log_filename)
         shutil.rmtree(maccs_working_dir)
     except:
