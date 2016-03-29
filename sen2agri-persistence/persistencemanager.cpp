@@ -1183,7 +1183,7 @@ std::vector<ScheduledTask> PersistenceManagerDBProvider::GetScheduledTasks()
         }
 
         auto dataRecord = query.record();
-        auto taskIdCol = dataRecord.indexOf(QStringLiteral("task_id"));
+        auto taskIdCol = dataRecord.indexOf(QStringLiteral("id"));
         auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
         auto processorIdCol = dataRecord.indexOf(QStringLiteral("processor_id"));
         auto siteIdCol = dataRecord.indexOf(QStringLiteral("site_id"));
