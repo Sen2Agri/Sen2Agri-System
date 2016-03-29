@@ -573,7 +573,7 @@ function check_paths()
                 exit 1
             fi
         else
-            echo "Please unpack the SRTM dataset into /mnt/archive/swbd"
+            echo "Please unpack the SRTM dataset into /mnt/archive/srtm"
             echo "Exiting now"
             exit 1
         fi
