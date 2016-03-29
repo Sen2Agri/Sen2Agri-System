@@ -622,7 +622,7 @@ function check_paths()
 function install_maccs()
 {
     echo "Looking for MACCS..."
-    find /opt/maccs/core -name maccs > /dev/null 2>&1 || {
+    find /opt/maccs/core -name maccs > /dev/null 2>&1 && {
         echo "MACCS found, continuing"
         return 0
     }
