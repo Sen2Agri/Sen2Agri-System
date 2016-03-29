@@ -703,6 +703,7 @@ install_downloaders_demmacs
 systemctl enable sen2agri-executor
 systemctl enable --now sen2agri-orchestrator
 systemctl enable --now sen2agri-scheduler
+systemctl enable --now sen2agri-http-listener
 
 setenforce 0
 
