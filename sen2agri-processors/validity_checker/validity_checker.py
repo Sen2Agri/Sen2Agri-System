@@ -30,7 +30,7 @@ try:
             print(output)
             mean_values = mean.group(1).strip(" \n\r\t").split(",")
             deviation_values = deviation.group(1).strip(" \n\r\t").split(",")    
-            if len(mean_values) == int(args.number_of_bands):
+            if len(mean_values) >= int(args.number_of_bands):
                 for mean_value in mean_values:
                     if math.fabs(float(mean_value) - (NOT_A_VALUE)) <= 0.001:
                         # if a band average is almost NOT_A_VALUES, it means all the band is not a values resulting in error

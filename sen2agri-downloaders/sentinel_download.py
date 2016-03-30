@@ -160,7 +160,6 @@ def downloadFromScihub(s2Obj, aoiFile, db):
             log(aoiFile.writeDir, "Start download:", general_log_filename)
 
             if run_command(commande_wget) != 0:
-                #sys.exit(-1)
                 log(aoiFile.writeDir, "wget command didn't work for {}".format(s2Obj.filename), general_log_filename)
                 return
             #write the filename in history
