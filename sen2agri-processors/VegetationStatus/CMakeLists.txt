@@ -8,15 +8,10 @@ add_subdirectory(otb-bv/src)
 add_subdirectory(phenotb/src)
 add_subdirectory(temporalgapfilling/src)
 
-install(FILES TestScripts/lai_retrieve_processing.py
+install(PROGRAMS TestScripts/lai_retrieve_processing.py
               TestScripts/pheno_processing.py
-        DESTINATION usr/bin/
-	PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-        GROUP_READ GROUP_EXECUTE
-        WORLD_READ WORLD_EXECUTE)
-
-install(FILES lai.map
-        DESTINATION usr/share/sen2agri)
+        DESTINATION bin/)
+#        DESTINATION bin/python)
 
 install(FILES TestScripts/rsr_cfg.txt
               otb-bv/data/landsat8_4b.rsr
@@ -25,4 +20,5 @@ install(FILES TestScripts/rsr_cfg.txt
               otb-bv/data/Sentinel2.rsr
               otb-bv/data/spot4hrvir1.rsr
               otb-bv/data/spot5hrg1.rsr
-        DESTINATION usr/share/sen2agri/)
+              lai.map
+        DESTINATION share/sen2agri/)
