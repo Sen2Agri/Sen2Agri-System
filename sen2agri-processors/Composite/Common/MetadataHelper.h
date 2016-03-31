@@ -10,6 +10,7 @@
 #define LANDSAT_MISSION_STR    "LANDSAT"
 #define SENTINEL_MISSION_STR   "SENTINEL"
 #define SPOT4_MISSION_STR      "SPOT4"
+#define SPOT5_MISSION_STR      "SPOT5"
 
 typedef struct {
     double zenith;
@@ -50,6 +51,7 @@ public:
 
     // GENETAL FIELDS API
     virtual std::string GetMissionName() { return m_Mission; }
+    virtual std::string GetInstrumentName() { return m_Instrument; }
 
     // MAIN RASTER API
     virtual std::string GetImageFileName() { return m_ImageFileName; }
@@ -117,6 +119,7 @@ protected:
 
 protected:
     std::string m_Mission;
+    std::string m_Instrument;
 
     std::string m_AotFileName;
     std::string m_CloudFileName;

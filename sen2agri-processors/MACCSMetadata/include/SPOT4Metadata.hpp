@@ -8,6 +8,8 @@ struct SPOT4Header
     std::string Ident;
     std::string DatePdv;
     std::string DateProd;
+    std::string Mission;
+    std::string Instrument;
 };
 
 struct SPOT4Files
