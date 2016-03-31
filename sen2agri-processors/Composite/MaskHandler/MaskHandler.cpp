@@ -217,7 +217,8 @@ private:
         m_MaskExtractor = MaskExtractorFilterType::New();
         m_ReaderCloud = ReaderType::New();
         m_ReaderWaterSnow = ReaderType::New();
-        if(missionName.find(SPOT4_MISSION_STR) != std::string::npos) {
+        if(missionName.find(SPOT4_MISSION_STR) != std::string::npos ||
+                (missionName.find(SPOT5_MISSION_STR) != std::string::npos)) {
             m_MaskExtractor->SetBitsMask(0, 1, 2);
         } else if ((missionName.find(LANDSAT_MISSION_STR) != std::string::npos) ||
                    (missionName.find(SENTINEL_MISSION_STR) != std::string::npos)) {

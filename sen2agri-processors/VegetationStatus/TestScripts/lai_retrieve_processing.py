@@ -400,7 +400,7 @@ if __name__ == '__main__':
     parser.add_argument('--outdir', help="Output directory", required=True)
     parser.add_argument('--inlaimonodir', help="Directory where input mono-date LAI products are located (only for reprocessing)", required=False)
     parser.add_argument('--rsrfile', help='The RSR file (/path/filename)', required=False)
-    parser.add_argument('--rsrcfg', help='The RSR configuration file each mission (default /usr/share/sen2agri/rsr_cfg.txt)', default='/usr/share/sen2agri/rsr_cfg.txt')
+    parser.add_argument('--rsrcfg', help='The RSR configuration file each mission (default /usr/share/sen2agri/rsr_cfg.txt)')
     parser.add_argument('--tileid', help="Tile id", required=False)
     parser.add_argument('--modelsfolder', help='The folder where the models are located. If not specified, is considered the outdir', required=False)
     parser.add_argument('--generatemodel', help='Generate the model (YES/NO)', required=False)
@@ -420,6 +420,8 @@ if __name__ == '__main__':
         inlaimonodir = args.inlaimonodir
     rsrFile = args.rsrfile
     rsrCfg = args.rsrcfg
+    if not rsrFile and not rsrCfg :
+        rsrCfg = "/usr/share/sen2agri/rsr_cfg.txt"
     generatemonodate = False
     if (args.generatemonodate == "YES"):
         generatemonodate = True

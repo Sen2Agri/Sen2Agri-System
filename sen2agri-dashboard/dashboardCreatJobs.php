@@ -56,11 +56,11 @@ $div =<<<ADDJOB
 	</label></span>
 	<span class="form-group form-group-sm span-scheduled" id="div_repeatafter$processorId" style="display:none">
 	<label class="control-label" for="repeatafter" style="display:inline-block;width:150px;">Repeat after: 
-	<input type="number" class="schedule_format" id="repeatafter"  name="repeatafter" value="" />
+	<input type="number" class="schedule_format" id="repeatafter"  name="repeatafter" value="" min="1" step="1"/>
 	</label></span>
 	<span class="form-group form-group-sm span-scheduled" id="div_oneverydate$processorId" style="display:none">
 	<label class="control-label" for="oneverydate" style="display:inline-block;width:150px;">On every: 
-	<input type="number" class="schedule_format" id="oneverydate" name="oneverydate" min="1" max="30" step="1" value=""/>
+	<input type="number" class="schedule_format" id="oneverydate" name="oneverydate" min="1" max="31" step="1" value=""/>
 	</label></span>
 	<span class="form-group form-group-sm span-scheduled schedule_format">
 	<input type="submit" class="btn btn-primary" name="schedule_saveJob" value="Save">
@@ -158,18 +158,18 @@ function update_scheduled_jobs_layout($processor_id) {
 		</span>
 		<span class="form-group form-group-sm span-scheduled" id="div_startdate$row[0]" style="$startdate">
 		<label class="control-label " style="display:inline-block;width:150px;">Date:
-		<input type="text" class="startdate schedule_format" name="startdate" id="startdate$row[0]" value="$row[4]" >
+		<input type="text" class="startdate schedule_format" name="startdate" id="startdate$row[0]" value="$row[4]" onChange="activateButton($row[0])" >
 		</label></span>
 		<span class="form-group form-group-sm span-scheduled" id="div_repeatafter$row[0]" style="$repeatafter">
 		<label class="control-label" style="display:inline-block;width:150px;">Repeat after :
-		<input type="number" class="schedule_format" name="repeatafter" id="repeatafter$row[0]" value="$row[5]" />
+		<input type="number" class="schedule_format" name="repeatafter" id="repeatafter$row[0]" value="$row[5]" onChange="checkMin($row[0])" min="0"/>
 		</label></span>
 		<span class="form-group form-group-sm span-scheduled" id="div_oneverydate$row[0]" style="$oneverydate">
 		<label class="control-label" style="display:inline-block;width:150px;">On every: 
-		<input type="number" class="schedule_format" name="oneverydate" id="oneverydate$row[0]" value="$row[6]" data-toggle="tooltip" data-placement="bottom" title="choose numeric number"/>
+		<input type="number" class="schedule_format" name="oneverydate" id="oneverydate$row[0]" value="$row[6]" onChange="setMin($row[0])" min="0" max="31" step="1"/>
 		</label></span>
 		<span class="form-group form-group-sm span-scheduled schedule_format">
-		<input type="submit" class="btn btn-primary" name="schedule_submit" value="Save">
+		<input type="submit" class="btn btn-primary" name="schedule_submit" id="schedule_submit$row[0]" value="Save" disabled>
 		</span>
 		</form>
 		</div>
