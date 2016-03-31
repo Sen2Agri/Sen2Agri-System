@@ -51,6 +51,5 @@ otb_create_application(
 
 target_include_directories(MACCSMetadata PUBLIC ../include)
 
-install(TARGETS MACCSMetadata DESTINATION usr/lib/)
+install(TARGETS MACCSMetadata DESTINATION lib/)
 
-install(TARGETS otbapp_ProductFormatter DESTINATION usr/lib/otb/applications/)
