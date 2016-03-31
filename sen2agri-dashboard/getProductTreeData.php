@@ -101,7 +101,7 @@ try {
 			$productObj->productId = $productRow->product;
 			$productObj->text = $productRow->product;
 			$productObj->href = normalizePath($productRow->full_path);
-			$productObj->href = str_replace($PRODUCT_ROOT_FOLDER, $SITE_PRODUCT_RELATIVE_FOLDER, $productObj->href);
+			$productObj->href = "downloadProduct.php?path=".str_replace($PRODUCT_ROOT_FOLDER, $SITE_PRODUCT_RELATIVE_FOLDER, $productObj->href);
 			$productObj->productCoord = array_map('floatval', explode(",", str_replace(array("(", ")"), "", $productRow->footprint)));
 			$productObj->siteCoord = explode(",", str_replace(array("POLYGON((", ")"), "", $productRow->site_coord));
 			
