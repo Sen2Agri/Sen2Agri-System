@@ -56,7 +56,7 @@ $div =<<<ADDJOB
 	</label></span>
 	<span class="form-group form-group-sm span-scheduled" id="div_repeatafter$processorId" style="display:none">
 	<label class="control-label" for="repeatafter" style="display:inline-block;width:150px;">Repeat after: 
-	<input type="number" class="schedule_format" id="repeatafter"  name="repeatafter" value="" />
+	<input type="number" class="schedule_format" id="repeatafter"  name="repeatafter" value="" min="1" step="1"/>
 	</label></span>
 	<span class="form-group form-group-sm span-scheduled" id="div_oneverydate$processorId" style="display:none">
 	<label class="control-label" for="oneverydate" style="display:inline-block;width:150px;">On every: 
