@@ -52,7 +52,9 @@ bool Spot4MetadataHelper::DoLoadMetadata()
 
         m_ReflQuantifVal = 1000.0;
 
-        m_Mission = "SPOT4";
+        m_Mission = m_metadata->Header.Mission;
+        m_Instrument = m_metadata->Header.Instrument;
+
         // compute the Image file name
         m_ImageFileName = getImageFileName();
 

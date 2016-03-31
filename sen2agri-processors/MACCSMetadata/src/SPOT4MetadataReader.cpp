@@ -90,6 +90,8 @@ static SPOT4Header ReadHeader(const TiXmlElement *el)
     result.Ident = GetChildText(el, "IDENT");
     result.DatePdv = GetChildText(el, "DATE_PDV");
     result.DateProd = GetChildText(el, "DATE_PROD");
+    result.Mission = GetChildText(el, "PLATEFORM");
+    result.Instrument = GetChildText(el, "SENSOR");
 
     return result;
 }

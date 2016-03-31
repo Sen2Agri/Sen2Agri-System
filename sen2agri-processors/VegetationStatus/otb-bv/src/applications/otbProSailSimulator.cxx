@@ -181,6 +181,7 @@ private:
     }
 
     std::string productMissionName;
+    std::string productInstrumentName;
     if(HasValue("xml")) {
         std::string inMetadataXml = GetParameterString("xml");
         auto factory = MetadataHelperFactory::New();
@@ -211,14 +212,31 @@ private:
             std::string rsrCfgFile = GetParameterString("rsrcfg");
             std::ifstream  data(rsrCfgFile);
             if(data.is_open()) {
+                otbAppLogINFO("Using rsrcfg file: " << rsrCfgFile << "\n");
                 productMissionName = pHelper->GetMissionName();
+                productInstrumentName = pHelper->GetInstrumentName();
+                otbAppLogINFO("Product mission is " << productMissionName << "\n");
+                otbAppLogINFO("Product instrument is " << productInstrumentName << "\n");
                 std::string line;
                 while(std::getline(data,line)) {
+                    otbAppLogINFO("Checking rsrcfg line: " << line << "\n");
                     size_t lastindex = line.find_last_of("=");
                     if((lastindex != std::string::npos) && (lastindex != (line.length()-1))) {
-                        std::string missionName = line.substr(0, lastindex);
+                        std::string keyStr = line.substr(0, lastindex);
                         std::string cfgRsrFileName = line.substr(lastindex+1);
-                        if(productMissionName == missionName) {
+                        std::string missionName = keyStr;   // by default, mission name is the key
+                        std::string sensorInstrument;
+
+                        size_t diezIndex = keyStr.find_last_of("#");
+                        // Check if actually we have MISSION#INSTRUMENT
+                        if((diezIndex != std::string::npos) && (diezIndex != (keyStr.length()-1))) {
+                            missionName = keyStr.substr(0, diezIndex);
+                            sensorInstrument = keyStr.substr(diezIndex+1);
+                        }
+
+                        if((productMissionName == missionName) &&
+                                ((sensorInstrument == "") || (productInstrumentName == sensorInstrument))) {
+                            otbAppLogINFO("Found configured rsr file!"<< "\n");
                             rsrFileName = cfgRsrFileName;
                             break;
                         }
@@ -238,7 +256,7 @@ private:
     if(rsrFileName.length() == 0) {
         itkGenericExceptionMacro(<< "Please provide the rsrcfg or rsrfile. "
                                     "If you provided rsrcfg file, be sure that you provided the xml parameter "
-                                    "and have configured the mission " << productMissionName);
+                                    "and have configured the mission " << productMissionName << " and instrument " << productInstrumentName);
     }
 
     boost::filesystem::path rsrFilePath(rsrFileName);
