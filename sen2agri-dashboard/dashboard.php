@@ -515,7 +515,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 <script src="scripts/config.js"></script>
 <script src="scripts/helpers.js"></script>
 <script src="scripts/processing_functions.js"></script>
- <script src="scripts/processing.js"></script>
+<script src="scripts/processing.js"></script>
 
 
 <!-- includes for  datepicker-->
@@ -585,6 +585,31 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 				document.getElementById("oneverydate").required = true;
 			}
 		}
+
+	function activateButton(x){
+		document.getElementById("schedule_submit"+x).disabled = false;
+		}
+	
+	function checkMin(y){
+		var val = document.getElementById("repeatafter"+y).value;
+		if( val < 1){
+			alert("Invalid number");
+			document.getElementById("schedule_submit"+y).disabled = true;
+			}
+		else {
+			document.getElementById("schedule_submit"+y).disabled = false;
+		}
+		}
+	
+	function setMin(x){
+		var val = document.getElementById("oneverydate"+x).value;
+		if(val<1 ||val>31){
+			alert("Number should be between[1,31]");
+			 document.getElementById("schedule_submit"+x).disabled = true;
+		}else {
+			document.getElementById("schedule_submit"+x).disabled = false;
+		}
+	}
 	</script>
 <!--Jquery datepicker -->
 <script>
