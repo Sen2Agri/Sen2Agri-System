@@ -604,12 +604,12 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 					    
 				$("#jobform").validate({
 					rules : {
-						jobname: { required: true,pattern: "[a-z]{1}[a-zA-Z0-9_ ]*" },
+						jobname: { required: true,pattern: "[a-zA-Z]{1}[a-zA-Z0-9_]*" },
 						sitename : { required: true },
 						schedule_add: { required: true },
 					},
 					messages: {
-						jobname: { pattern : "First letter.(letters,space and underscore allowed)" }
+						jobname: { pattern : "First letter must be a letter.(letters,numbers and underscore allowed)" }
 					},
 					highlight: function(element, errorClass) {
 						$(element).parent().addClass("has-error");
