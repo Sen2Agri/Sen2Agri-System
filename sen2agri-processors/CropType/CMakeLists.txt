@@ -4,9 +4,11 @@ add_subdirectory(FeatureExtractionOld)
 add_subdirectory(FeatureExtraction)
 add_subdirectory(TemporalResampling)
 
-install(PROGRAMS ../../scripts/CropType.py
-        DESTINATION bin/)
-#        DESTINATION bin/python/)
+install(FILES ../../scripts/CropType.py
+        DESTINATION usr/bin/
+	    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                    GROUP_READ GROUP_EXECUTE
+                    WORLD_READ WORLD_EXECUTE)
 
 install(FILES crop-type.lut
-        DESTINATION share/sen2agri)
+        DESTINATION usr/share/sen2agri)

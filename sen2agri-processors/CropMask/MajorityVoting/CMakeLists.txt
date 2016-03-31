@@ -7,3 +7,4 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
+install(TARGETS otbapp_MajorityVoting DESTINATION usr/lib/otb/applications/)

@@ -6,3 +6,5 @@ otb_create_application(
 if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
+
+install(TARGETS otbapp_CompositeSplitter2 DESTINATION usr/lib/otb/applications/)

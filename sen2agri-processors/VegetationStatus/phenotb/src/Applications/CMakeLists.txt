@@ -53,3 +53,5 @@ target_link_libraries(pheno-metrics-simulator ${OTB_LIBRARIES} OTBPheno)
 add_executable(pheno-metrics-estimator pheno-metrics-estimator.cxx)
 target_link_libraries(pheno-metrics-estimator ${OTB_LIBRARIES} OTBPheno)
 
+install(TARGETS otbapp_PhenologicalNDVIMetrics DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_PhenoMetricsSplitter DESTINATION usr/lib/otb/applications/)
