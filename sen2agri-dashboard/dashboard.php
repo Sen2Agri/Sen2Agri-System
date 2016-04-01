@@ -30,8 +30,15 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 	
 	$retry_seconds = 60;
 	$priority = 1;
-	$processor_params = null;
-	
+	$processor_params=null;
+		
+	if($processorId == '3'){
+	$processor_params = json_encode ( array (
+			"general_params" => array (
+					"product_type" =>  $_REQUEST['product_add']))
+			);
+	}
+
 	//save new job in database
 		$res = pg_query_params ( $db, "SELECT sp_insert_scheduled_task($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)", array (
 			$job_name,
@@ -55,6 +62,16 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 	$schedule_id = $_REQUEST ['scheduledID'];
 	$schedule_type = $_REQUEST ['schedule'];
 	$startdate = $_REQUEST ['startdate'];
+	$processorId = $_REQUEST ['processor'];
+	
+	$processor_params = null;
+	if($processorId == '3'){
+		$processor_params = json_encode ( array (
+				"general_params" => array (
+						"product_type" => $_REQUEST['product']))
+				);
+	}
+
 
 	$pg_date = date ( 'Y-m-d H:i:s', strtotime ( $startdate ) );
 		
@@ -73,12 +90,13 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 	}
 	
 	//update scheduled task
-	$res = pg_query_params ( $db, "SELECT sp_dashboard_update_scheduled_task($1,$2,$3,$4,$5)", array (
+	$res = pg_query_params ( $db, "SELECT sp_dashboard_update_scheduled_task($1,$2,$3,$4,$5,$6)", array (
 			$schedule_id,
 			$schedule_type,
 			$repeatafter,
 			$oneverydate,
-			$pg_date
+			$pg_date,
+			$processor_params
 	) )or die ( "An error occurred." );
 }
 ?>
@@ -258,12 +276,12 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
 										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '3') {
 											
-											add_new_scheduled_jobs_layout ( 3 );
+											add_new_scheduled_jobs_layout_LAI ( 3 );
 										}
 									}
 									?>
 										
-									<?php update_scheduled_jobs_layout(3);?>
+									<?php update_scheduled_jobs_layout_LAI(3);?>
 									
 									</div>
 								</div>
@@ -622,16 +640,17 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 				 dateFormat: "yy-mm-dd",
 				 minDate: 0
 					  });
-			
+	
 			<?php //if (isset ( $_REQUEST ['schedule_saveJob'] )){
 				if(isset( $_SESSION['proc_id'])){
 			?>
-					    
+			 
 				$("#jobform").validate({
 					rules : {
 						jobname: { required: true,pattern: "[a-zA-Z]{1}[a-zA-Z0-9_]*" },
 						sitename : { required: true },
 						schedule_add: { required: true },
+						product_add: { required: true },
 					},
 					messages: {
 						jobname: { pattern : "First letter must be a letter.(letters,numbers and underscore allowed)" }
