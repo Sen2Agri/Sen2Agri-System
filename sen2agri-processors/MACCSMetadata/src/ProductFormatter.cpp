@@ -141,6 +141,8 @@ struct rasterInfo
     std::string strTileID;
     bool bIsQiData;
     std::string rasterTimePeriod;
+    int nRasterExpectedBandsNo;
+    std::string strNewRasterFullPath;
 };
 
 struct qualityInfo
@@ -378,22 +380,7 @@ private:
       std::string strMainFolderFullPath = m_strDestRoot + "/" + m_strProductDirectoryName;
 
       //created all folders ierarchy
-      bool bResult = createsAllFolders(strMainFolderFullPath);
-
-      if(HasValue("outprops")) {
-            std::string outPropsFileName = this->GetParameterString("outprops");
-            std::ofstream outPropsFile;
-            try
-            {
-                outPropsFile.open(outPropsFileName.c_str(), std::ofstream::out);
-                outPropsFile << strMainFolderFullPath << std::endl;
-                outPropsFile.close();
-            }
-            catch(...)
-            {
-                itkGenericExceptionMacro(<< "Could not open file " << outPropsFileName);
-            }
-      }
+      bool bDirStructBuiltOk = createsAllFolders(strMainFolderFullPath);
 
       //if is composite read reflectance rasters, weights rasters, flags masks, dates masks
       if (m_strProductLevel.compare("L3A") == 0)
@@ -519,7 +506,7 @@ private:
             std::cout << "TileID =" << tileInfoEl.strTileID << "  strTilePath =" << tileInfoEl.strTilePath  << std::endl;
       }
 
-      if(bResult)
+      if(bDirStructBuiltOk)
       {
           for (tileInfo &tileEl : m_tileIDList) {
               CreateAndFillTile(tileEl, strMainFolderFullPath);
@@ -527,7 +514,7 @@ private:
 
       }
 
-      if(bResult)
+      if(bDirStructBuiltOk)
       {
           TransferPreviewFiles();
           TransferAndRenameGIPPFiles();          
@@ -535,6 +522,25 @@ private:
           generateProductMetadataFile(strMainFolderFullPath + "/" + strProductFileName);
           bool bAgSuccess = ExecuteAgregateTiles(strMainFolderFullPath, this->GetParameterInt("aggregatescale"));
           std::cout << "Aggregating tiles " << (bAgSuccess ? "SUCCESS!" : "FAILED!") << std::endl;
+      }
+
+      // Perform the consistency check of the product. If the main folder is renamed, then
+      // the new path is returned
+      strMainFolderFullPath = CheckProductConsistency(strMainFolderFullPath);
+
+      if(HasValue("outprops")) {
+            std::string outPropsFileName = this->GetParameterString("outprops");
+            std::ofstream outPropsFile;
+            try
+            {
+                outPropsFile.open(outPropsFileName.c_str(), std::ofstream::out);
+                outPropsFile << strMainFolderFullPath << std::endl;
+                outPropsFile.close();
+            }
+            catch(...)
+            {
+                itkGenericExceptionMacro(<< "Could not open file " << outPropsFileName);
+            }
       }
   }
 
@@ -1307,18 +1313,21 @@ private:
   {
       std::string rasterCateg;
 
-      for (auto &rasterFileEl : m_rasterInfoList) {
+      for (rasterInfo &rasterFileEl : m_rasterInfoList) {
           bool bAddResolutionToSuffix = false;
+          int expectedBandsNo = 1;
           std::string suffix = TIF_EXTENSION;
           switch(rasterFileEl.iRasterType)
               {
                 case COMPOSITE_REFLECTANCE_RASTER:
                     rasterCateg = REFLECTANCE_SUFFIX;
                     bAddResolutionToSuffix = true;
+                    expectedBandsNo = 4;
                     break;
                 case COMPOSITE_WEIGHTS_RASTER:
                     rasterCateg = WEIGHTS_SUFFIX;
                     bAddResolutionToSuffix = true;
+                    expectedBandsNo = 4;
                     break;
                 case LAI_NDVI_RASTER:
                     rasterCateg = LAI_NDVI_SUFFIX;
@@ -1337,6 +1346,7 @@ private:
                    break;
                 case PHENO_RASTER:
                      rasterCateg = PHENO_SUFFIX;
+                     expectedBandsNo = 4;
                      break;
                 case CROP_TYPE_RASTER:
                     rasterCateg = CROP_TYPE_IMG_SUFFIX;
@@ -1379,6 +1389,7 @@ private:
               }
 
               rasterFileEl.strNewRasterFileName = BuildFileName(rasterCateg, tileInfoEl.strTileID, suffix, rasterFileEl.rasterTimePeriod);
+              rasterFileEl.nRasterExpectedBandsNo = expectedBandsNo;
       }
   }
 
@@ -1387,7 +1398,7 @@ private:
 
       std::string strImgDataPath;
 
-      for (const auto &rasterFileEl : m_rasterInfoList) {
+      for (auto &rasterFileEl : m_rasterInfoList) {
           if(tileInfoEl.strTileID == rasterFileEl.strTileID)
           {
               if(rasterFileEl.bIsQiData) {
@@ -1395,7 +1406,8 @@ private:
               } else {
                   strImgDataPath = tileInfoEl.strTilePath + "/" + IMG_DATA_FOLDER_NAME;
               }
-              CopyFile(strImgDataPath + "/" + rasterFileEl.strNewRasterFileName, rasterFileEl.strRasterFileName);
+              rasterFileEl.strNewRasterFullPath = strImgDataPath + "/" + rasterFileEl.strNewRasterFileName;
+              CopyFile(rasterFileEl.strNewRasterFullPath, rasterFileEl.strRasterFileName);
           }
         }
    }
@@ -1635,14 +1647,8 @@ private:
   }
 
   bool ExecuteExternalProgram(const char *appExe, std::vector<const char *> appArgs) {
-      int error, status;
+          int error, status;
           pid_t pid, waitres;
-//          /* Make sure we have no child processes. */
-//          while (waitpid(-1, NULL, 0) != -1)
-//              ;
-//          assert(errno == ECHILD);
-
-
           std::vector<const char *> args;
           args.emplace_back(appExe);
           for(unsigned int i = 0; i<appArgs.size(); i++) {
@@ -1669,18 +1675,6 @@ private:
 
   std::string BuildProductDirectoryName() {
       std::string strCreationDate = currentDateTimeFormattted("%Y%m%dT%H%M%S");
-
-//      std::string strMainProductFolderName = "{project_id}_{product_level}_{file_category}_{originator_site}_{creation_date}_V{time_period}";
-
-//      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{project_id}", PROJECT_ID);
-//      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{product_level}", m_strProductLevel);
-//      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{file_category}", MAIN_FOLDER_CATEG);
-//      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{originator_site}", m_strSiteId);
-
-//      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{creation_date}", strCreationDate);
-//      strMainProductFolderName = ReplaceString(strMainProductFolderName, "{time_period}", m_strTimePeriod);
-//      return strMainProductFolderName;
-
       return BuildFileName(MAIN_FOLDER_CATEG, "", "", m_strTimePeriod, m_strSiteId, strCreationDate);
   }
 
@@ -1739,6 +1733,49 @@ private:
       }
       return false;
   }
+
+  std::string CheckProductConsistency(const std::string &strProductMainFolder) {
+        std::string retPath = strProductMainFolder;
+
+        bool bValidProduct = true;
+        for (rasterInfo &rasterFileEl : m_rasterInfoList) {
+            // we check only the rasters and not the qi data
+            if(!rasterFileEl.bIsQiData) {
+                std::vector<const char *> args;
+                args.emplace_back(rasterFileEl.strNewRasterFullPath.c_str());
+                args.emplace_back("--number-of-bands");
+                std::string rasterBandsNo = std::to_string(rasterFileEl.nRasterExpectedBandsNo);
+                args.emplace_back(rasterBandsNo.c_str());
+                if(!ExecuteExternalProgram("validity_checker.py", args)) {
+                    bValidProduct = false;
+                    break;
+                }
+            }
+            if(!bValidProduct) {
+                // The product is not valid ... change its name
+                retPath = strProductMainFolder + "_NOTV";
+                otbAppLogWARNING("Invalid product found in folder " << strProductMainFolder
+                                 << ". Trying to rename it into " << retPath);
+                bool bErr = false;
+                try {
+                    boost::filesystem::rename(strProductMainFolder, retPath);
+                }
+                catch (...)
+                {
+                    bErr = true;
+
+                }
+                if(bErr || !boost::filesystem::exists(retPath)) {
+                    otbAppLogWARNING("Error renaming with _NOTV the folder " << strProductMainFolder);
+                    // in this case restore the folder name
+                    retPath = strProductMainFolder;
+                }
+            }
+        }
+
+        return retPath;
+  }
+
 
 private:
   std::string m_strProductLevel;

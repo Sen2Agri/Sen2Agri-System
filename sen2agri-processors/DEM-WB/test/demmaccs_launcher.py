@@ -164,13 +164,12 @@ def launch_demmaccs(l1c_context):
             demmaccs_command += l2a_tiles
             demmaccs_command.append("--prev-l2a-products-paths")
             demmaccs_command += l2a_tiles_paths
-       
         if run_command(demmaccs_command, output_path, general_log_filename) == 0 and os.path.exists(output_path) and os.path.isdir(output_path):
             tiles_dir_list = (glob.glob("{}*.DBL.DIR".format(output_path)))
             log(output_path, "Creating common footprint for tiles: DBL.DIR List: {}".format(tiles_dir_list), general_log_filename)
             wgs84_extent_list = []
             for tile_dir in tiles_dir_list:
-                if satellite_id = SENTINEL2_SATELLITE_ID:
+                if satellite_id == SENTINEL2_SATELLITE_ID:
                     tile_img = (glob.glob("{}/*_FRE_R1.DBL.TIF".format(tile_dir)))
                 else:
                     tile_img = (glob.glob("{}/*_FRE.DBL.TIF".format(tile_dir)))
