@@ -1,65 +1,30 @@
 <?php
-
-$date = new DateTime();
-;
-
-$the_folder = $_GET['path'];
-$zip_file_name = end( explode( "/", $the_folder ) )."_".$date->getTimestamp().".zip";
-
-$download_file = true;
-$delete_file_after_download= true; //does it work?!
-
-class FlxZipArchive extends ZipArchive {
-    /** Add a Dir with Files and Subdirs to the archive;;;;; @param string $location Real Location;;;;  @param string $name Name in Archive;;; @author Nicolas Heimann;;;; @access private  **/
-
-    public function addDir($location, $name) {
-        $this->addEmptyDir($name);
-
-        $this->addDirDo($location, $name);
-     } // EO addDir;
-
-    /**  Add Files & Dirs to archive;;;; @param string $location Real Location;  @param string $name Name in Archive;;;;;; @author Nicolas Heimann
-     * @access private   **/
-    private function addDirDo($location, $name) {
-        $name .= '/';
-        $location .= '/';
-
-        // Read all Files in Dir
-        $dir = opendir ($location);
-        while ($file = readdir($dir))
-        {
-            if ($file == '.' || $file == '..') continue;
-            // Rekursiv, If dir: FlxZipArchive::addDir(), else ::File();
-            $do = (filetype( $location . $file) == 'dir') ? 'addDir' : 'addFile';
-            $this->$do($location . $file, $name . $file);
-        }
-    } // EO addDirDo();
-}
-
-$za = new FlxZipArchive;
-$res = $za->open($zip_file_name, ZipArchive::CREATE);
-if($res === TRUE) 
-{
-    $za->addDir($the_folder, basename($the_folder));
-    $za->close();
-}
-else  { echo 'Could not create a zip archive';}
-
-if ($download_file)
-{
-    ob_get_clean();
-    header("Pragma: public");
-    header("Expires: 0");
-    header("Cache-Control: must-revalidate, post-check=0, pre-check=0");
-    header("Cache-Control: private", false);
-    header("Content-Type: application/zip");
-    header("Content-Disposition: attachment; filename=" . basename($zip_file_name) . ";" );
-    header("Content-Transfer-Encoding: binary");
-    header("Content-Length: " . filesize($zip_file_name));
-    readfile($zip_file_name);
-
-    //deletes file when its done...
-    if ($delete_file_after_download) 
-    { unlink($zip_file_name); }
-}
+	// use session_start to prevent multiple downloads at a time
+	session_start();
+	
+	$absolute_path = rtrim($_GET['path'], '/'); 									// get absolute path without trailing slash
+	$relative_path = substr($absolute_path, 0, strripos($absolute_path, '/'));		// get relative path to folder
+	$folder_name = end( explode( "/", $absolute_path ) );							// get folder name
+	$gzip_name = $folder_name.".tar.gz";
+	
+	header('Pragma: no-cache'); 
+	header('Content-Description: File Download');
+	header('Content-Type: application/x-gzip');
+	header("Expires: 0");
+	header('Content-Disposition: attachment; filename="'.$gzip_name.'"');
+	
+	// use popen to execute a unix command pipeline and grab the stdout as a php stream
+	// (you can use proc_open instead if you need to control the input of the pipeline too)
+	$fp = popen('cd '.$relative_path.' && tar cf - '.$folder_name.' | gzip -c', 'r');
+	
+	// pick a bufsize that makes you happy (64k may be a bit too big).
+	$bufsize = 65535;
+	$buff = '';
+	while(!feof($fp)) {
+		$buff = fread($fp, $bufsize);
+		echo $buff;
+		ob_flush();
+		flush();
+	}
+	pclose($fp);
 ?>
