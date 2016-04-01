@@ -283,6 +283,8 @@ QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &c
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     const auto &inputProducts = parameters["input_products"].toArray();
     QStringList listProducts;
+
+    // get the products from the input_products or based on date_start or date_end
     if(inputProducts.size() == 0) {
         const auto &startDate = QDateTime::fromString(parameters["date_start"].toString(), "yyyyMMdd");
         const auto &endDateStart = QDateTime::fromString(parameters["date_end"].toString(), "yyyyMMdd");
@@ -297,6 +299,8 @@ QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &c
             listProducts.append(ctx.GetProductAbsolutePath(inputProduct.toString()));
         }
     }
+
+    // for each product, get the valid tiles
     for(const QString &inPrd: listProducts) {
         QStringList tilesMetaFiles = ctx.findProductFiles(inPrd);
         QStringList listValidTilesMetaFiles;
