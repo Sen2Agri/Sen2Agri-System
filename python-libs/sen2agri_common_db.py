@@ -806,18 +806,7 @@ class L1CInfo(object):
                                 })
             self.conn.commit()
             if len(l2a_processed_tiles) > 0:
-                #check if this product was previously inserted: ????
-                '''self.cursor.execute("""SELECT id FROM product
-                                WHERE site_id = %(site_id)s and
-                                satellite_id = %(satellite_id)s and
-                                %(name)s :: character varying""", 
-                                    {
-                                        "site_id" : site_id, 
-                                        "satellite_id" : sat_id,
-                                        "name" : product_name
-                                    })
-                rows = self.cursor.fetchall()
-                '''
+                #normally , sp_insert_product should upsert the record
                 self.cursor.execute("""select * from sp_insert_product(%(product_type_id)s :: smallint,
                                %(processor_id)s :: smallint, 
                                %(satellite_id)s :: smallint, 
