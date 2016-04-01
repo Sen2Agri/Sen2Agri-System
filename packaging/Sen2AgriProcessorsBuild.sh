@@ -67,6 +67,9 @@ function build_SEN2AGRI_processors_RPM_Package()
    ## add script for mosaication into the processors package
    cp -f ${SOURCES_DIR_PATH}/sen2agri-processors/aggregate_tiles/*.py ${PROC_INSTALL_PATH}/usr/bin
 
+   ## add script for validity checking of the created products
+   cp -f ${SOURCES_DIR_PATH}/sen2agri-processors/validity_checker/*.py ${PROC_INSTALL_PATH}/usr/bin
+   
    ##create a temporary dir
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_processors
 
