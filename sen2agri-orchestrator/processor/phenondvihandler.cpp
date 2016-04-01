@@ -213,13 +213,15 @@ QStringList PhenoNdviHandler::GetProductFormatterArgs(TaskToSubmit &productForma
 ProcessorJobDefinitionParams PhenoNdviHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues)
 {
-    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString(START_OF_SEASON_CFG_KEY), -1, requestOverrideCfgValues);
-
     ProcessorJobDefinitionParams params;
     params.isValid = false;
 
-    QDateTime startDate = QDateTime::fromString(mapCfg[START_OF_SEASON_CFG_KEY].value, "yyyymmdd");
+    QDateTime seasonStartDate;
+    QDateTime seasonEndDate;
+    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
+    // Get the start and end date for the production
     QDateTime endDate = QDateTime::fromTime_t(scheduledDate);
+    QDateTime startDate = seasonStartDate;
 
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
     // for PhenoNDVI we need at least 4 products available in order to be able to create a L3B product
