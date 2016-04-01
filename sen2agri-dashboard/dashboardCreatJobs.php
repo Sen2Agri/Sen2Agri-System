@@ -43,7 +43,7 @@ function add_new_scheduled_jobs_layout_LAI($processorId) {
 	<span class="form-group form-group-sm span-scheduled">
 	<label class="control-label control-max-width-lai" for="product_add"> Product:
 	<span class="schedule_format">
-	<select id="product_add$processorId" name="product_add">
+	<select id="product_add$processorId" name="product_add" required="true">
 	<option value="" selected>Select a product</option>
 	<option value="L3B">L3B</option>
 	<option value="L3C">L3C</option>

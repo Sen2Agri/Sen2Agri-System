@@ -650,7 +650,6 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 						jobname: { required: true,pattern: "[a-zA-Z]{1}[a-zA-Z0-9_]*" },
 						sitename : { required: true },
 						schedule_add: { required: true },
-						product_add: { required: true },
 					},
 					messages: {
 						jobname: { pattern : "First letter must be a letter.(letters,numbers and underscore allowed)" }
