@@ -107,7 +107,6 @@ def create_recursive_dirs(dir_name):
 def get_product_info(product_name):
     acquisition_date = None
     sat_id = 0
-    print("product_name = {}".format(product_name))
     if product_name.startswith("S2"):
         m = re.match("\w+_V(\d{8}T\d{6})_\w+.SAFE", product_name)
         if m != None:
@@ -119,7 +118,6 @@ def get_product_info(product_name):
             sat_id = 2
             acquisition_date = m.group(1)
             acquisition_date = strftime("%Y%m%dT%H%M%S", gmtime())
-    print("get_product_info = {}".format(acquisition_date))
     return sat_id and (sat_id, acquisition_date)
 
 
@@ -128,7 +126,6 @@ def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearAr
     currentYear = datetime.date.today().year
     currentMonth = datetime.date.today().month
     #log(logDir, "{} | {}".format(startSeason, endSeason), logFileName)
-    print("{} | {}".format(startSeason, endSeason))
     yearArray.append(currentYear)
     yearArray.append(currentYear)
     startSeasonMonth = int(startSeason[0:2])
@@ -137,8 +134,6 @@ def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearAr
     endSeasonDay = int(endSeason[2:4])
     if startSeasonMonth < 1 or startSeasonMonth > 12 or startSeasonDay < 1 or startSeasonDay > 31 or endSeasonMonth < 1 or endSeasonMonth > 12 or endSeasonDay < 1 or endSeasonDay > 31:
         return False
-    #log(logDir, "CurrentYear:{} | CurrentMonth:{} | StartSeasonMonth:{} | StartSeasonDay:{} | EndSeasonMonth:{} | EndSeasonDay:{}".format(currentYear, currentMonth, startSeasonMonth, startSeasonDay, endSeasonMonth, endSeasonDay), logFileName)
-    print("CurrentYear:{} | CurrentMonth:{} | StartSeasonMonth:{} | StartSeasonDay:{} | EndSeasonMonth:{} | EndSeasonDay:{}".format(currentYear, currentMonth, startSeasonMonth, startSeasonDay, endSeasonMonth, endSeasonDay))
     #check if the season comprises 2 consecutive years (e.q. from october to march next year)
     if startSeasonMonth > endSeasonMonth:
         if currentMonth >= startSeasonMonth and currentMonth <= 12:
@@ -146,11 +141,8 @@ def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearAr
         else:
             if currentMonth >= 1:
                 yearArray[0] = currentYear - 1
-    #log(logDir, "StartSeasonYear:{} | EndSeasonYear:{}".format(yearArray[0], yearArray[1]), logFileName)
-    print("StartSeasonYear:{} | EndSeasonYear:{}".format(yearArray[0], yearArray[1]))
     currentDate = datetime.date.today()
     if currentDate < datetime.date(int(yearArray[0]), int(startSeasonMonth), int(startSeasonDay)) or currentDate > datetime.date(int(yearArray[1]), int(endSeasonMonth) + numberOfMonthsAfterEndSeason, int(endSeasonDay)):
-        #log(logDir, "Current date is not inside or near the season", logFileName)
         return False
     return True
 
@@ -649,7 +641,6 @@ class L1CInfo(object):
         if self.is_connected:
             return True
         connectString = "dbname='{}' user='{}' host='{}' password='{}'".format(self.database_name, self.user, self.server_ip, self.password)
-        print("connectString:={}".format(connectString))
         try:
             self.conn = psycopg2.connect(connectString)
             self.cursor = self.conn.cursor()
