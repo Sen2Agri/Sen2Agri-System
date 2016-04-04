@@ -353,6 +353,12 @@ div.pop_up #close_button {
 	display:inline-block;
 	width:150px;
 }
+
+.control-max-width-lai{
+	display:inline-block;
+	width:132px;
+}
+
 .form-group-sm .form-control {
 	height: 22px;
 }

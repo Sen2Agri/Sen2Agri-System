@@ -850,9 +850,7 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
     GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
     // Get the start and end date for the production
     QDateTime endDate = QDateTime::fromTime_t(scheduledDate);
-    QDateTime startDate;
-
-    startDate = seasonStartDate;
+    QDateTime startDate = seasonStartDate;
 
     QString movingWindowStr = cfgValues["processor.l4a.moving_window_value"].value;
     int movingWindow = 0;

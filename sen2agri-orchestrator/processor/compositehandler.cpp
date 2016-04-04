@@ -250,15 +250,15 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             updateSynthesisArgs.append(prevL3AProdFlags);
         }
 
+        bool isLastProduct = (i == (listProducts.size() - 1));
         QStringList compositeSplitterArgs = { "CompositeSplitter2",
-                                              "-in", outL3AResultFile,
-                                              "-xml", inputProduct,
-                                              "-bmap", bandsMapping,
-                                              "-outweights", outL3AResultWeightsFile,
-                                              "-outdates", outL3AResultDatesFile,
-                                              "-outrefls", outL3AResultReflsFile,
-                                              "-outflags", outL3AResultFlagsFile,
-                                              "-outrgb", outL3AResultRgbFile };
+                                              "-in", outL3AResultFile, "-xml", inputProduct, "-bmap", bandsMapping,
+                                              "-outweights", (isLastProduct ? ("\"" + outL3AResultWeightsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultWeightsFile),
+                                              "-outdates", (isLastProduct ? ("\"" + outL3AResultDatesFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultDatesFile),
+                                              "-outrefls", (isLastProduct ? ("\"" + outL3AResultReflsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultReflsFile),
+                                              "-outflags", (isLastProduct ? ("\"" + outL3AResultFlagsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultFlagsFile),
+                                              "-outrgb", (isLastProduct ? ("\"" + outL3AResultRgbFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultRgbFile)
+                                            };
 
         // save the created L3A product file for the next product creation
         prevL3AProdRefls = outL3AResultReflsFile;
@@ -541,9 +541,9 @@ QString CompositeHandler::DeductBandsMappingFile(const QStringList &listProducts
     QString curBandsMappingPath = bandsMappingFile;
     if(!fileInfo.isDir())
         curBandsMappingPath = fileInfo.dir().absolutePath();
-    QStringList listUniqueProductTypes;
+    QList<ProcessorHandlerHelper::L2ProductType> listUniqueProductTypes;
     for (int i = 0; i < listProducts.size(); i++) {
-        QString productType = ProcessorHandlerHelper::GetL2AProductTypeFromTile(listProducts[i]);
+        ProcessorHandlerHelper::L2ProductType productType = ProcessorHandlerHelper::GetL2AProductTypeFromTile(listProducts[i]);
         if(!listUniqueProductTypes.contains(productType)) {
             listUniqueProductTypes.append(productType);
         }
@@ -553,23 +553,24 @@ QString CompositeHandler::DeductBandsMappingFile(const QStringList &listProducts
         return bandsMappingFile;
     }
     if(cntUniqueProdTypes == 1) {
-        if(listUniqueProductTypes[0] == "SENTINEL") {
+        if(listUniqueProductTypes[0] == ProcessorHandlerHelper::S2) {
             return (curBandsMappingPath + "/bands_mapping_s2.txt");
         }
-        if(listUniqueProductTypes[0] == "LANDSAT_8") {
+        if(listUniqueProductTypes[0] == ProcessorHandlerHelper::L8) {
             resolution = 30;
             return (curBandsMappingPath + "/bands_mapping_L8.txt");
         }
-        if(listUniqueProductTypes[0] == "SPOT4") {
+        if(listUniqueProductTypes[0] == ProcessorHandlerHelper::SPOT4) {
             resolution = 20;
             return (curBandsMappingPath + "/bands_mapping_spot.txt");
         }
-        if(listUniqueProductTypes[0] == "SPOT5") {
+        if(listUniqueProductTypes[0] == ProcessorHandlerHelper::SPOT5) {
             resolution = 10;
             return (curBandsMappingPath + "/bands_mapping_spot5.txt");
         }
     } else {
-        if(listUniqueProductTypes.contains("SPOT4") && listUniqueProductTypes.contains("LANDSAT_8")) {
+        if(listUniqueProductTypes.contains(ProcessorHandlerHelper::SPOT4) &&
+                listUniqueProductTypes.contains(ProcessorHandlerHelper::L8)) {
             resolution = 10;
             return (curBandsMappingPath + "/bands_mapping_Spot4_L8.txt");
         }
