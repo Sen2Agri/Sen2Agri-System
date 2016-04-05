@@ -83,11 +83,11 @@ class L1CContext(object):
         self.l1c_list = l1c_list
         self.l1c_db = l1c_db
         self.processor_short_name = processor_short_name
-        self.base_output_path = base_output_path        
+        self.base_output_path = base_output_path
         self.skip_dem = skip_dem
 
 
-def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_db):
+def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_orbit_id, l1c_db):
     #get all the tiles of the input. they will be used to find if there is a previous L2A product
     l1c_tiles = []
     if satellite_id == SENTINEL2_SATELLITE_ID:
@@ -108,7 +108,7 @@ def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_d
     l2a_tiles = []
     l2a_tiles_paths = []
     for l1c_tile in l1c_tiles:
-        l2a_tile = l1c_db.get_previous_l2a_tile_path(satellite_id, l1c_tile, l1c_date)
+        l2a_tile = l1c_db.get_previous_l2a_tile_path(satellite_id, l1c_tile, l1c_date, l1c_orbit_id)
         if len(l2a_tile) > 0:
             l2a_tiles.append(l1c_tile)
             l2a_tiles_paths.append(l2a_tile)
@@ -122,6 +122,9 @@ def launch_demmaccs(l1c_context):
     site_short_name = l1c_context.l1c_db.get_short_name("site", l1c_context.l1c_list[0][1])    
 
     for l1c in l1c_context.l1c_list:
+        # l1c is a record from downloader_history table. the indexes are :
+        # 0  | 1       | 2            | 3         | 4            | 5
+        # id | site_id | satellite_id | full_path | product_date | orbit_id
         l2a_basename = os.path.basename(l1c[3][:len(l1c[3]) - 1]) if l1c[3].endswith("/") else os.path.basename(l1c[3])
         satellite_id = int(l1c[2])
         if satellite_id != SENTINEL2_SATELLITE_ID and satellite_id != LANDSAT8_SATELLITE_ID:
@@ -135,7 +138,7 @@ def launch_demmaccs(l1c_context):
             log(general_log_path, "The L1C product name is bad: {}".format(l2a_basename), general_log_filename)
             sys.exit(-1)
             
-        l2a_tiles, l2a_tiles_paths = get_previous_l2a_tiles_paths(satellite_id, l1c[3], l1c[4], l1c_context.l1c_db)
+        l2a_tiles, l2a_tiles_paths = get_previous_l2a_tiles_paths(satellite_id, l1c[3], l1c[4], l1c[5], l1c_context.l1c_db)
 
         if len(l2a_tiles) != len(l2a_tiles_paths):
             log(general_log_path, "The lengths of lists l1c tiles and previous l2a tiles are different for {}".format(l2a_basename), general_log_filename)
@@ -202,7 +205,7 @@ def launch_demmaccs(l1c_context):
             log(output_path, "Insert info in product table and set state as processed in downloader_history table for product {}".format(output_path), general_log_filename)
         else:
             log(output_path, "Only set the state as processed in downloader_history (no l2a tiles found after maccs) for product {}".format(output_path), general_log_filename)
-        l1c_db.set_processed_product(1, l1c[1], l1c[0], l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date)
+        l1c_db.set_processed_product(1, l1c[1], l1c[0], l2a_processed_tiles, output_path, os.path.basename(output_path[:len(output_path) - 1]), wkt, sat_id, acquisition_date, l1c[5])
 
 
 parser = argparse.ArgumentParser(

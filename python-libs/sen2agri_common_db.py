@@ -473,7 +473,7 @@ class AOIInfo(object):
         self.databaseDisconnect()
         return retArray
 
-    def upsertProductHistory(self, siteId, satelliteId, productName, status, productDate, fullPath, maxRetries):
+    def upsertProductHistory(self, siteId, satelliteId, productName, status, productDate, fullPath, orbit_id, maxRetries):
         if not self.databaseConnect():
             print("upsertProductHistory could not connect to DB")
             return False
@@ -495,14 +495,15 @@ class AOIInfo(object):
                 return False
             if len(rows) == 0:
                 #if it doesn't exist, simply insert it with the provided info
-                self.cursor.execute("""INSERT INTO downloader_history (site_id, satellite_id, product_name, full_path, status_id, no_of_retries, product_date) VALUES (
+                self.cursor.execute("""INSERT INTO downloader_history (site_id, satellite_id, product_name, full_path, status_id, no_of_retries, product_date, orbit_id) VALUES (
                                     %(site_id)s :: smallint, 
                                     %(satellite_id)s :: smallint,
                                     %(product_name)s, 
                                     %(full_path)s,
                                     %(status_id)s :: smallint,
                                     %(no_of_retries)s :: smallint,
-                                    %(product_date)s :: timestamp)""", 
+                                    %(product_date)s :: timestamp,
+                                    %(orbit_id)s :: integer)""", 
                                     {
                                         "site_id" : siteId, 
                                         "satellite_id" : satelliteId, 
@@ -510,7 +511,8 @@ class AOIInfo(object):
                                         "full_path" : fullPath,
                                         "status_id" : status,
                                         "no_of_retries" : 1,
-                                        "product_date" : productDate
+                                        "product_date" : productDate,
+                                        "orbit_id" : orbit_id
                                     })
             else:
                 #if the record for this product name does exist, act accordingly the provided status
@@ -596,8 +598,8 @@ class SentinelAOIInfo(AOIInfo):
     #def updateSentinelHistory(self, siteId, productName, productDate, fullPath):
     #    return self.updateHistory(siteId, SENTINEL2_SATELLITE_ID, productName, productDate, fullPath)
 
-    def upsertSentinelProductHistory(self, siteId, productName, status, productDate, fullPath = "", maxRetries = 0):
-        return self.upsertProductHistory(siteId, SENTINEL2_SATELLITE_ID, productName, status, productDate, fullPath, maxRetries)
+    def upsertSentinelProductHistory(self, siteId, productName, status, productDate, fullPath = "", orbit_id, maxRetries = 0):
+        return self.upsertProductHistory(siteId, SENTINEL2_SATELLITE_ID, productName, status, productDate, fullPath, orbit_id, maxRetries)
 
 
 ###########################################################################
@@ -612,7 +614,7 @@ class LandsatAOIInfo(AOIInfo):
     #    return self.updateHistory(siteId, LANDSAT8_SATELLITE_ID, productName, productDate, fullPat)h
 
     def upsertLandsatProductHistory(self, siteId, productName, status, productDate, fullPath = "", maxRetries = 0):
-        return self.upsertProductHistory(siteId, LANDSAT8_SATELLITE_ID, productName, status, productDate, fullPath, maxRetries)
+        return self.upsertProductHistory(siteId, LANDSAT8_SATELLITE_ID, productName, status, productDate, fullPath, -1, maxRetries)
 
 
 ###########################################################################
@@ -734,7 +736,7 @@ class L1CInfo(object):
             retArray = []
             for satellite_id in satellite_ids:
                 for site_id in site_ids:          
-                    self.cursor.execute("""SELECT id, site_id, satellite_id, full_path, product_date FROM downloader_history WHERE 
+                    self.cursor.execute("""SELECT id, site_id, satellite_id, full_path, product_date, orbit_id FROM downloader_history WHERE 
                                         satellite_id = %(satellite_id)s :: smallint and 
                                         site_id = %(site_id)s  :: smallint and
                                         status_id = %(status_id)s :: smallint ORDER BY product_date ASC""", 
@@ -752,18 +754,20 @@ class L1CInfo(object):
         self.database_disconnect()
         return retArray
 
-    def get_previous_l2a_tile_path(self, satellite_id, tile_id, l1c_date):
+    def get_previous_l2a_tile_path(self, satellite_id, tile_id, l1c_date, l1c_orbit_id):
         if not self.database_connect():
             return ""
         path = ""
         try:
             self.cursor.execute("""SELECT path FROM sp_get_last_l2a_product(%(tile_id)s, 
-                                                                            %(satellite_id)s :: smallint, 
+                                                                            %(satellite_id)s :: smallint,
+                                                                            %(l1c_orbit_id)s :: integer
                                                                             %(l1c_date)s :: timestamp)""",
                                 {
                                     "tile_id" : tile_id,
                                     "satellite_id" : satellite_id,
-                                    "l1c_date" : l1c_date.strftime("%Y%m%dT%H%M%S")
+                                    "l1c_orbit_id" : l1c_orbit_id,
+                                    "l1c_date" : l1c_date.strftime("%Y%m%dT%H%M%S")                                    
                                 })            
             rows = self.cursor.fetchall()            
             if len(rows) == 1:
@@ -775,7 +779,7 @@ class L1CInfo(object):
         self.database_disconnect()
         return path
 
-    def set_processed_product(self, processor_id, site_id, l1c_id, l2a_processed_tiles, full_path, product_name, footprint, sat_id, acquisition_date):
+    def set_processed_product(self, processor_id, site_id, l1c_id, l2a_processed_tiles, full_path, product_name, footprint, sat_id, acquisition_date, orbit_id):
         #input params:
         #l1c_id is the id for the found L1C product in the downloader_history table. It shall be marked as being processed
         #product type by default is 1
@@ -790,7 +794,7 @@ class L1CInfo(object):
         if not self.database_connect():
             return False
         try:
-            self.cursor.execute("""update downloader_history set status_id = %(status_id)s :: smallint where id=%(l1c_id)s :: smallint """, 
+            self.cursor.execute("""update downloader_history set status_id = %(status_id)s :: smallint where id=%(l1c_id)s :: smallint """,
                                 {
                                     "status_id" : DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE, 
                                     "l1c_id" : l1c_id
@@ -808,6 +812,7 @@ class L1CInfo(object):
                                %(name)s :: character varying,
                                %(quicklook_image)s :: character varying,
                                %(footprint)s,
+                               %(orbit_id)s :: integer
                                %(tiles)s :: json)""",
                                 {
                                     "product_type_id" : 1,
@@ -820,6 +825,7 @@ class L1CInfo(object):
                                     "name" : product_name,
                                     "quicklook_image" : "mosaic.jpg",
                                     "footprint" : footprint, 
+                                    "orbit_id" : orbit_id,
                                     "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']' 
                                 })
                 self.conn.commit()

@@ -9,5 +9,6 @@ CREATE TABLE downloader_history
   status_id smallint NOT NULL,
   no_of_retries smallint NOT NULL DEFAULT 0,
   product_date timestamp with time zone NOT NULL DEFAULT now(),
+  orbit_id INTEGER NOT NULL DEFAULT -1,
   CONSTRAINT downloader_history_pkey PRIMARY KEY (id)
 )

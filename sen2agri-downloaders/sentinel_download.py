@@ -38,7 +38,7 @@ def unzipFile(outputDir, fileToUnzip):
 
 ###########################################################################
 class Sentinel2Obj(object):
-    def __init__(self, filename, link, product_date_as_string, cloud):
+    def __init__(self, filename, link, product_date_as_string, cloud, orbit_id):
         self.filename = filename
         self.productname = filename
         self.link = link
@@ -47,8 +47,9 @@ class Sentinel2Obj(object):
             self.productname = filename[:safeStringPos]
         self.product_date_as_string = product_date_as_string
         self.product_date = datetime.datetime.strptime(self.product_date_as_string, "%Y%m%dT%H%M%S")
-#int(datatakeid.split("_")[1].split("T")[0])
         self.cloud = float(cloud)
+        self.orbit_id = int(orbit_id)
+
     def __cmp__ (self, other):
         if hasattr(other, 'product_date'):
             return self.product_date.__cmp__(other.product_date)
@@ -103,7 +104,7 @@ def product_download(s2Obj, aoiContext, db):
                 log(aoiContext.writeDir, "Couldn't upsert into database with status FAILED for {}".format(s2Obj.filename), general_log_filename)
             return False
         #update the product name in the downloader_history with status DOWNLOADED (2)
-        if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE, s2Obj.product_date_as_string, abs_filename, aoiContext.maxRetries):
+        if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE, s2Obj.product_date_as_string, abs_filename, s2Obj.orbit_id, aoiContext.maxRetries):
             log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADED for {}".format(s2Obj.filename), general_log_filename)
         return False
     else:
@@ -277,10 +278,11 @@ def sentinel_download(aoiContext):
                 cloud=float((node.toxml()).split('>')[1].split('<')[0])
         
         product_date = re.search(r"_V(\d{8}T\d{6})_", filename)
-        if len(filename) == 0 or cloud > 100 or product_date == None:
+        orbit_id = re.search(r"_R(\d{3})_", filename)
+        if len(filename) == 0 or cloud > 100 or product_date == None or orbit_id == None:
             continue
         
-        s2Objs.append(Sentinel2Obj(filename, link, product_date.group(1), cloud))
+        s2Objs.append(Sentinel2Obj(filename, link, product_date.group(1), cloud, orbit_id.group(1)))
 
     #sort the products using product date
     s2Objs.sort()
@@ -295,6 +297,7 @@ def sentinel_download(aoiContext):
         print("max allowed cloud percentage = {}".format(aoiContext.maxCloudCoverage))
         print("date as string {}".format(s2Obj.product_date_as_string))
         print("product name {}".format(s2Obj.productname))
+        print("orbit id {}".format(s2Obj.orbit_id))
         print("===============================================")
 
         if g_exit_flag:
