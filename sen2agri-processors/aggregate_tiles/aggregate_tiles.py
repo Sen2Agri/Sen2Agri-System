@@ -58,7 +58,7 @@ def process_mosaic_images(interpolName, listOfImages, imgAggregatedName):
     run_command(["otbcli",
                  "Mosaic",
                  "-il"] + listOfImages + [
-                 "-out", imgAggregatedName,
+                 "-out", imgAggregatedName +"?gdal:co:COMPRESS=DEFLATE",
                  "-comp.feather", "none",
                  "-interpolator", interpolName ])
 #----------------------------------------------------------------
