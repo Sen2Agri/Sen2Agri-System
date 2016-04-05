@@ -19,18 +19,25 @@ function endsWith( $str, $sub ) {
 	return ( substr( $str, strlen( $str ) - strlen( $sub ) ) === $sub );
 }
 
-function upload_reference_polygons($site_id) {
+function createCustomUploadFolder($site_id, $timestamp) {
+	// create custom upload path like: /mnt/upload/siteName/userName_timeStamp/
 	$dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-	
 	$rows = pg_query($dbconn, "SELECT key, value FROM sp_get_parameters('site.upload_path') WHERE site_id IS NULL") or die(pg_last_error());
 	$result = pg_fetch_array($rows, 0)[1];
 	$upload_target_dir = str_replace("{user}", "", $result);
-	$upload_target_dir = $upload_target_dir . $site_id . "/";
-	
+	$rows = pg_query($dbconn, "SELECT name FROM sp_get_sites() WHERE id = ".$site_id) or die(pg_last_error());
+	$result = pg_fetch_array($rows, 0)[0];
+	$upload_target_dir = $upload_target_dir . $result . "/" . ConfigParams::$USER_NAME . "_".$timestamp . "/";
+	$upload_target_dir = str_replace("(", "", $upload_target_dir);
+	$upload_target_dir = str_replace(")", "", $upload_target_dir);
+	$upload_target_dir = str_replace(" ", "_", $upload_target_dir);
 	if (!is_dir($upload_target_dir)) {
 		mkdir($upload_target_dir, 0755, true);
 	}
-	
+	return $upload_target_dir;
+}
+
+function upload_reference_polygons($site_id, $timestamp) {
 	$zip_msg = '';
 	$shp_file = false;
 	if($_FILES["refp"]["name"]) {
@@ -47,6 +54,8 @@ function upload_reference_polygons($site_id) {
 			}
 		}
 		if ($zip_file) {
+			$upload_target_dir = createCustomUploadFolder($site_id, $timestamp);
+			
 			$target_path = $upload_target_dir . $filename;
 			if(move_uploaded_file($source, $target_path)) {
 				$zip = new ZipArchive();
@@ -120,18 +129,7 @@ function upload_reference_polygons($site_id) {
 	return array ( "polygons_file" => $shp_file, "result" => $shp_msg, "message" => $zip_msg );
 }
 
-function upload_reference_raster($site_id) {
-	$dbconn = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-	
-	$rows = pg_query($dbconn, "SELECT key, value FROM sp_get_parameters('site.upload_path') WHERE site_id IS NULL") or die(pg_last_error());
-	$result = pg_fetch_array($rows, 0)[1];
-	$upload_target_dir = str_replace("{user}", "", $result);
-	$upload_target_dir = $upload_target_dir . $site_id . "/";
-	
-	if (!is_dir($upload_target_dir)) {
-		mkdir($upload_target_dir, 0755, true);
-	}
-	
+function upload_reference_raster($site_id, $timestamp) {
 	$shp_file = FALSE;
 	if($_FILES["refr"]["name"]) {
 		$filename = $_FILES["refr"]["name"];
@@ -148,6 +146,8 @@ function upload_reference_raster($site_id) {
 		}
 		
 		if ($img_file) {
+			$upload_target_dir = createCustomUploadFolder($site_id, $timestamp);
+			
 			$target_path = $upload_target_dir . $filename;  // change this to the correct site path
 			if(move_uploaded_file($source, $target_path)) {
 				$shp_file = $target_path;
@@ -473,7 +473,10 @@ elseif (isset ( $_POST ['l4a'] )) {
 	$json_config = json_encode( $fconfig );
 	
 	// upload polygons / raster
-	$upload = upload_reference_polygons($siteId);
+	$date = date_create();
+	$timestamp = date_timestamp_get($date);
+	
+	$upload = upload_reference_polygons($siteId, $timestamp);
 	$polygons_file = $upload['polygons_file'];
 	$result = $upload['result'];
 	$message = $upload['message'];
@@ -481,7 +484,7 @@ elseif (isset ( $_POST ['l4a'] )) {
 	// generate json_param (skip parameters with empty values)
 	$raster_file = false;
 	if (!$polygons_file) {
-		$raster_file = upload_reference_raster($siteId);
+		$raster_file = upload_reference_raster($siteId, $timestamp);
 	}
 	$params = array (	"resolution" => $resolution,
 						"input_products" => $input_products,
@@ -572,7 +575,10 @@ elseif (isset ( $_POST ['l4b'] )) {
 	$json_config = json_encode( $fconfig );
 	
 	// upload polygons
-	$upload = upload_reference_polygons($siteId);
+	$date = date_create();
+	$timestamp = date_timestamp_get($date);
+	
+	$upload = upload_reference_polygons($siteId, $timestamp);
 	$polygons_file = $upload['polygons_file'];
 	$result = $upload['result'];
 	$message = $upload['message'];
