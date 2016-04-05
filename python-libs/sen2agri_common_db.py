@@ -55,7 +55,7 @@ def log(location, info, log_filename = None):
         logfile = os.path.join(location, log_filename)
         if DEBUG:
             #print("logfile: {}".format(logfile))
-            print("{}".format(info))
+            print("{}:{}".format(str(datetime.datetime.now()), str(info)))
         log = open(logfile, 'a')
         log.write("{}:{}\n".format(str(datetime.datetime.now()),str(info)))
         log.close()

@@ -115,43 +115,47 @@ def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_o
     return (l2a_tiles, l2a_tiles_paths)
 
 def launch_demmaccs(l1c_context):
+    global general_log_path
+    global general_log_filename
     if len(l1c_context.l1c_list) == 0:
         return
     tiles_dir_list = []
     #get site short name
-    site_short_name = l1c_context.l1c_db.get_short_name("site", l1c_context.l1c_list[0][1])    
+    site_short_name = l1c_context.l1c_db.get_short_name("site", l1c_context.l1c_list[0][1])
+    #create the output_path. it will hold all the tiles found inside the l1c
+    #for sentinel, this output path will be something like /path/to/poduct/site_name/processor_name/....MSIL2A.../
+    #for landsat, this output path will be something like /path/to/poduct/site_name/processor_name/LC8...._L2A/
+    site_output_path = l1c_context.base_output_path.replace("{site}", site_short_name)
+    if not site_output_path.endswith("/"):
+        site_output_path += "/"
 
     for l1c in l1c_context.l1c_list:
         # l1c is a record from downloader_history table. the indexes are :
         # 0  | 1       | 2            | 3         | 4            | 5
         # id | site_id | satellite_id | full_path | product_date | orbit_id
         l2a_basename = os.path.basename(l1c[3][:len(l1c[3]) - 1]) if l1c[3].endswith("/") else os.path.basename(l1c[3])
+        output_path = site_output_path + l2a_basename + "/"
+        if not create_recursive_dirs(output_path):
+            log(general_log_path, "Could not create the output directory", general_log_filename)
+            continue
         satellite_id = int(l1c[2])
         if satellite_id != SENTINEL2_SATELLITE_ID and satellite_id != LANDSAT8_SATELLITE_ID:
-            log(general_log_path, "Unkown satellite id :{}".format(satellite_id), general_log_filename)
-            sys.exit(-1)
+            log(output_path, "Unkown satellite id :{}".format(satellite_id), general_log_filename)
+            continue
         if l2a_basename.startswith("S2"):
             l2a_basename = l2a_basename.replace("L1C", "L2A")
         elif l2a_basename.startswith("LC8"):
             l2a_basename += "_L2A"
         else:
-            log(general_log_path, "The L1C product name is bad: {}".format(l2a_basename), general_log_filename)
-            sys.exit(-1)
+            log(output_path, "The L1C product name is bad: {}".format(l2a_basename), general_log_filename)
+            continue
             
         l2a_tiles, l2a_tiles_paths = get_previous_l2a_tiles_paths(satellite_id, l1c[3], l1c[4], l1c[5], l1c_context.l1c_db)
 
         if len(l2a_tiles) != len(l2a_tiles_paths):
-            log(general_log_path, "The lengths of lists l1c tiles and previous l2a tiles are different for {}".format(l2a_basename), general_log_filename)
-            sys.exit(-1)
-        #create the output_path. it will hold all the tiles found inside the l1c
-        #for sentinel, this output path will be something like /path/to/poduct/site_name/processor_name/....MSIL2A.../
-        #for landsat, this output path will be something like /path/to/poduct/site_name/processor_name/LC8...._L2A/
-        output_path = base_output_path.replace("{site}", site_short_name)
-        if not output_path.endswith("/"):
-            output_path += "/"
-        output_path = output_path + l2a_basename + "/"
-        log(general_log_path, "Creating the output path {}".format(output_path), general_log_filename)
-        log(general_log_path, "Launching demmaccs.py", general_log_filename)
+            log(output_path, "The lengths of lists l1c tiles and previous l2a tiles are different for {}".format(l2a_basename), general_log_filename)
+            continue
+        
         l2a_processed_tiles = []
         wkt = []
         sat_id = 0
@@ -167,6 +171,7 @@ def launch_demmaccs(l1c_context):
             demmaccs_command += l2a_tiles
             demmaccs_command.append("--prev-l2a-products-paths")
             demmaccs_command += l2a_tiles_paths
+        log(output_path, "Starting demmaccs:", general_log_filename)
         if run_command(demmaccs_command, output_path, general_log_filename) == 0 and os.path.exists(output_path) and os.path.isdir(output_path):
             tiles_dir_list = (glob.glob("{}*.DBL.DIR".format(output_path)))
             log(output_path, "Creating common footprint for tiles: DBL.DIR List: {}".format(tiles_dir_list), general_log_filename)
