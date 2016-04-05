@@ -27,7 +27,7 @@
 #define JPEG_EXTENSION                  ".jpg"
 
 #define REFLECTANCE_SUFFIX              "SRFL"
-#define WEIGHTS_SUFFIX                  "SWGT"
+#define WEIGHTS_SUFFIX                  "MWGT"
 #define COMPOSITE_DATES_SUFFIX          "MDAT"
 #define COMPOSITE_FLAGS_SUFFIX          "MFLG"
 #define LAI_NDVI_SUFFIX                 "SNDVI"
@@ -364,8 +364,8 @@ private:
       if(m_strTimePeriod.empty()) {
           m_bDynamicallyTimePeriod = true;
           if(LevelHasAcquisitionTime()) {
-              if(descriptors.size() != 1)
-                    itkGenericExceptionMacro(<< "You should have only one file in the il parameter as this product has Aquisition time: " << m_strProductLevel);
+              if(m_strMinAcquisitionDate != m_strMaxAcquisitionDate)
+                    itkGenericExceptionMacro(<< "You should have the same date for all tiles in the il parameter as this product has Aquisition time: " << m_strProductLevel);
               // we have a single date and min acquisition date should be the same as max acquisition date
               m_strTimePeriod = m_strMaxAcquisitionDate;
           } else {
@@ -548,15 +548,38 @@ private:
 
       if(bResult)
       {
-          tileInfoEl.strTileNameRoot = strTileName;
-          generateTileMetadataFile(tileInfoEl);
-          TransferRasterFiles(tileInfoEl);
+          if(TileHasRasters(tileInfoEl)) {
+              tileInfoEl.strTileNameRoot = strTileName;
+              generateTileMetadataFile(tileInfoEl);
+              TransferRasterFiles(tileInfoEl);
 
-          //create product metadata file
-          TransferAndRenameQualityFiles(tileInfoEl);
-          FillProductMetadataForATile(tileInfoEl);
+              //create product metadata file
+              TransferAndRenameQualityFiles(tileInfoEl);
+              FillProductMetadataForATile(tileInfoEl);
+          } else {
+              try
+              {
+                    boost::filesystem::remove_all(strMainFolderFullPath + "/" + TILES_FOLDER_NAME + "/" +  strTileName);
+              } catch(boost::filesystem::filesystem_error const & e) {
+                    otbAppLogWARNING("Error removing invalid tile folder "
+                                     <<  strMainFolderFullPath + "/" + TILES_FOLDER_NAME + "/" +  strTileName
+                                     << "Error was: " << e.what());
+              }
+          }
       }
  }
+
+  bool TileHasRasters(const tileInfo &tileInfoEl) {
+      for (const auto &rasterFileEl : m_rasterInfoList) {
+          if(tileInfoEl.strTileID == rasterFileEl.strTileID) {
+              struct stat buf;
+              if (stat(rasterFileEl.strRasterFileName.c_str(), &buf) != -1) {
+                      return true;
+              }
+          }
+      }
+      return false;
+  }
 
   void UnpackRastersList(std::vector<std::string> &rastersList, rasterTypes rasterType, bool bIsQiData)
   {
@@ -903,8 +926,16 @@ private:
       tileInfoEl.tileMetadata.ProductLevel = "Level-"  + m_strProductLevel;
 
       for (rasterInfo &rasterFileEl : m_rasterInfoList) {
-          if((rasterFileEl.strTileID == tileInfoEl.strTileID) && !rasterFileEl.bIsQiData)
-          {
+          if(rasterFileEl.bIsQiData) {
+              if(rasterFileEl.strRasterFileName.find(".tif") > 0 || rasterFileEl.strRasterFileName.find(".TIF") > 0) {
+                  auto imageReader = ImageFileReader<FloatVectorImageType>::New();
+                  imageReader->SetFileName(rasterFileEl.strRasterFileName);
+                  imageReader->UpdateOutputInformation();
+                  FloatVectorImageType::Pointer output = imageReader->GetOutput();
+
+                  rasterFileEl.nResolution = output->GetSpacing()[0];
+              }
+          } else if((rasterFileEl.strTileID == tileInfoEl.strTileID)) {
               //std::cout << "ImageFileReader =" << rasterFileEl.strRasterFileName << std::endl;
 
               auto imageReader = ImageFileReader<FloatVectorImageType>::New();
@@ -1344,7 +1375,7 @@ private:
                     break;
               }
               if(bAddResolutionToSuffix) {
-                  suffix = "_" + std::to_string(rasterFileEl.nResolution) + suffix;
+                  suffix = "_" + std::to_string(rasterFileEl.nResolution) + "M" + suffix;
               }
 
               rasterFileEl.strNewRasterFileName = BuildFileName(rasterCateg, tileInfoEl.strTileID, suffix, rasterFileEl.rasterTimePeriod);
@@ -1499,17 +1530,21 @@ private:
     specialValue.SpecialValueIndex = metadata->ImageInformation.NoDataValue;
     m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
 
-    std::string acquisitionDate = metadata->InstanceId.AcquisitionDate;
-    m_acquisitionDatesList.push_back(acquisitionDate);
+    AddAcquisitionDate(metadata->InstanceId.AcquisitionDate);
   }
 
   void FillMetadataInfoForSPOT(std::unique_ptr<SPOT4Metadata> &metadata)
   {
       /* the source is a SPOT file */
       //nothing to load????
-      std::string acquisitionDate = metadata->Header.DatePdv.substr(0,4) +
-              metadata->Header.DatePdv.substr(5,2) + metadata->Header.DatePdv.substr(8,2);
-      m_acquisitionDatesList.push_back(acquisitionDate);
+      AddAcquisitionDate(metadata->Header.DatePdv.substr(0,4) +
+              metadata->Header.DatePdv.substr(5,2) + metadata->Header.DatePdv.substr(8,2));
+  }
+
+  void AddAcquisitionDate(const std::string &acquisitionDate) {
+      if(std::find(m_acquisitionDatesList.begin(), m_acquisitionDatesList.end(), acquisitionDate) == m_acquisitionDatesList.end()) {
+          m_acquisitionDatesList.push_back(acquisitionDate);
+      }
   }
 
   void LoadAllDescriptors(std::vector<std::string> descriptors)
@@ -1555,9 +1590,14 @@ private:
 
   std::vector<std::string> GetFileListFromFile(const std::vector<std::string> &tileAndFileName) {
       std::vector<std::string> retList;
-      if(tileAndFileName.size() == 2) {
-          retList = GetFileListFromFile(tileAndFileName[1]);
-          retList.insert(retList.begin(), tileAndFileName[0]);
+      int cnt = tileAndFileName.size();
+      if((cnt > 0) && (cnt % 2) == 0) {
+          int nbTupples = tileAndFileName.size() / 2;
+          for(int i = 0; i < nbTupples; i++) {
+              retList.push_back(tileAndFileName[i*2]);
+              std::vector<std::string> filesList = GetFileListFromFile(tileAndFileName[i*2+1]);
+              retList.insert(std::end(retList), std::begin(filesList), std::end(filesList));
+          }
       } else {
           itkExceptionMacro("Invalid usage. You should provide a tile name and a file name containing file paths");
       }

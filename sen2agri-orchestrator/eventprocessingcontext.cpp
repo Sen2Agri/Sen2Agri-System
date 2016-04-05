@@ -110,7 +110,7 @@ QStringList EventProcessingContext::GetProductFiles(const QString &path,
     return QDir(path).entryList(QStringList() << pattern, QDir::Files);
 }
 
-QString EventProcessingContext::GetOutputPath(int jobId)
+QString EventProcessingContext::GetJobOutputPath(int jobId)
 {
     QString jobIdPath = GetScratchPath(jobId);
     jobIdPath = jobIdPath.left(jobIdPath.indexOf("{job_id}") + sizeof("{job_id}"));
@@ -165,6 +165,12 @@ void EventProcessingContext::SubmitTasks(int jobId,
     }
 }
 
+ProductList EventProcessingContext::GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate)
+{
+    return persistenceManager.GetProducts(siteId, productTypeId, startDate, endDate);
+}
+
+
 QString EventProcessingContext::GetProductAbsolutePath(const QString &path) {
     QFileInfo fileInfo(path);
     QString absPath = path;
@@ -204,6 +210,11 @@ QStringList EventProcessingContext::findProductFiles(const QString &path)
 QString EventProcessingContext::GetProcessorShortName(int processorId)
 {
     return persistenceManager.GetProcessorShortName(processorId);
+}
+
+QString EventProcessingContext::GetSiteShortName(int siteId)
+{
+    return persistenceManager.GetSiteShortName(siteId);
 }
 
 QString EventProcessingContext::GetSiteName(int siteId)

@@ -14,12 +14,3 @@ CREATE DATABASE sen2agri
        LC_CTYPE = 'en_US.UTF-8'
        CONNECTION LIMIT = -1;
 
--- Privileges: sen2agri
-GRANT ALL PRIVILEGES ON DATABASE sen2agri TO admin;
-
--- Privileges: sen2agri
-GRANT ALL PRIVILEGES ON DATABASE sen2agri TO "sen2agri-service";
-
-GRANT SELECT, INSERT, UPDATE, DELETE
-ON ALL TABLES IN SCHEMA public 
-TO "sen2agri-service";

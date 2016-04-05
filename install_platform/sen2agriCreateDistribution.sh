@@ -35,7 +35,7 @@ function get_SEN2AGRI_sources_path()
    #get script path
    script_path=$(dirname $0)
 
-   ##go in the folder sen2agri/packaging and exit up one folder into the source root dir sen2agri  
+   ##go in the folder sen2agri/packaging and exit up one folder into the source root dir sen2agri
    cd $script_path
    cd ..
 
@@ -51,24 +51,27 @@ function prepare_distribution()
    ##get sources path
    get_SEN2AGRI_sources_path
 
+   mkdir -p ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/maccs/core
+   mkdir -p ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/maccs/cots
+
    #----------------------rpm_binaries dir--------------------------------------------------------------------#
-   
+
    ##create dir "rpm_binaries" inside distribution folder Sen2AgriDistribution
    mkdir -p ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/rpm_binaries
-   
+
    ##create subdir "slurm" inside distribution folder Sen2AgriDistribution/rpm_binaries
    mkdir -p ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/rpm_binaries/slurm
-   
+
    ##copy built RPMs for Sen2agri platform into  folder /rpm_binaries
    cp -f ${RPM_DIR_PATH}/*.rpm  ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/rpm_binaries
-   
+
    ##copy RPMs for SLURM  into  folder /rpm_binaries/slurm
    cp -f ${SOURCES_DIR_PATH}/install_platform/slurm_rpm_package/*.rpm  ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/rpm_binaries/slurm
-   
+
    #----------------------install_scripts dir--------------------------------------------------------------------#
    ##create dir "install_script" inside distribution folder Sen2AgriDistribution
    mkdir -p ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/install_script
-   
+
    ##create dir "config" inside distribution folder Sen2AgriDistribution/install_script
    mkdir -p ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/install_script/config
 
@@ -77,7 +80,7 @@ function prepare_distribution()
 
    #copy dir "database" found at sent2agri into subfolder created install_script/
    cp -rf ${SOURCES_DIR_PATH}/database ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/install_script/
-   
+
    #copy installation scripts *.sh found at sent2agri/install_platform/ into subfolder created install_script/
    cp -f ${SOURCES_DIR_PATH}/install_platform/*.sh ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/install_script/
 
@@ -92,7 +95,7 @@ function prepare_distribution()
 ###########################################################
 ##### MAIN                                              ###
 ###########################################################
-##check nb of arguments of the script, 
+##check nb of arguments of the script,
 # script argument should indicate the RPM-files folder
 if [[ $# -eq 0 ]] ; then
     echo 'Specify RPMs folder full path'

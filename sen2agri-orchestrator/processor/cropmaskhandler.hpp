@@ -37,8 +37,8 @@ private:
     QList<std::reference_wrapper<TaskToSubmit> > CreateNoInSituTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
                                         QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList);
 
-    CropMaskGlobalExecutionInfos HandleNewTilesList(EventProcessingContext &ctx,
-                           const JobSubmittedEvent &event, const QStringList &listProducts);
+    void HandleNewTilesList(EventProcessingContext &ctx,
+                           const JobSubmittedEvent &event, const QStringList &listProducts, CropMaskGlobalExecutionInfos &globalExecInfos);
     void HandleInsituJob(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QStringList &listProducts,
                          CropMaskGlobalExecutionInfos &globalExecInfos);
     void HandleNoInsituJob(EventProcessingContext &ctx, const JobSubmittedEvent &event,

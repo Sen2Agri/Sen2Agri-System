@@ -1,15 +1,20 @@
 CREATE TABLE product
 (
-  id serial,
+  id serial NOT NULL,
   product_type_id smallint NOT NULL,
   processor_id smallint NOT NULL,
-  satellite_id INT,
-  job_id int NOT NULL,
   site_id smallint NOT NULL,
-  full_path varchar NOT NULL,
+  full_path character varying NOT NULL,
   created_timestamp timestamp with time zone NOT NULL DEFAULT now(),
-  tiles character varying[] NOT NULL,
-  is_archived boolean DEFAULT FALSE,
+  is_archived boolean DEFAULT false,
   archived_timestamp timestamp with time zone,
+  name character varying(512),
+  quicklook_image character varying(512),
+  footprint polygon,
+  job_id integer,
+  geog geography,
+  satellite_id integer,
+  tiles character varying[] NOT NULL,
   CONSTRAINT product_pkey PRIMARY KEY (id)
 );
+

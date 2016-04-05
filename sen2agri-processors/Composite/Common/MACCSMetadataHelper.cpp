@@ -130,14 +130,15 @@ void MACCSMetadataHelper::UpdateValuesForLandsat()
     m_solarMeanAngles.zenith = m_metadata->ProductInformation.MeanSunAngle.ZenithValue;
 
     // update the solar mean angle
-    //MeanAngles_Type sensorAngle;
+    MeanAngles_Type sensorAngle = {0,0};
     // TODO: Here we should get this from the Mean_Viewing_Angle. Most probably if we get here it will crash
     // if the MACCS Metadata Reader will not be updated to read this element for LANDSAT8
-    //sensorAngle.azimuth = m_metadata->ProductInformation.MeanViewingIncidenceAngles.at(0).Angles.AzimuthValue;
-    //sensorAngle.zenith = m_metadata->ProductInformation.MeanViewingIncidenceAngles.at(0).Angles.ZenithValue;
-    //m_sensorBandsMeanAngles.push_back(sensorAngle);
+    if(m_metadata->ProductInformation.MeanViewingIncidenceAngles.size() > 0) {
+        sensorAngle.azimuth = m_metadata->ProductInformation.MeanViewingIncidenceAngles.at(0).Angles.AzimuthValue;
+        sensorAngle.zenith = m_metadata->ProductInformation.MeanViewingIncidenceAngles.at(0).Angles.ZenithValue;
+    }
+    m_sensorBandsMeanAngles.push_back(sensorAngle);
 
-    
     // TODO: Add here other initializations for LANDSAT if needed
 }
 

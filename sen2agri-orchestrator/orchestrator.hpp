@@ -34,3 +34,19 @@ private:
     QString GetProcessorShortName(int processorId);
     QString GetSiteName(int siteId);
 };
+
+class Timer : public QTimer {
+  Q_OBJECT
+public:
+  explicit Timer(Orchestrator *pOrchestrator, QObject *parent = 0) : QTimer(parent) {
+        m_pOrchestrator = pOrchestrator;
+        connect(this, SIGNAL(timeout()), this, SLOT(doRescanEvents()));
+  }
+private slots:
+    void doRescanEvents() {
+        m_pOrchestrator->NotifyEventsAvailable();
+    }
+
+private:
+    Orchestrator *m_pOrchestrator;
+};

@@ -19,15 +19,19 @@ void PhenoNdviHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
     outProdFormatterParentsList.append(outAllTasksList[3]);
 }
 
-PhenoGlobalExecutionInfos PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
-                                          const JobSubmittedEvent &event,
+void PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
+                                          const JobSubmittedEvent &event, PhenoGlobalExecutionInfos &globalExecInfos,
                                           const QStringList &listProducts)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     // Get the resolution value
-    const auto &resolution = QString::number(parameters["resolution"].toInt());
+    int resolution = 0;
+    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+            resolution == 0) {
+        resolution = 10;    // TODO: We should configure the default resolution in DB
+    }
+    const auto &resolutionStr = QString::number(resolution);
 
-    PhenoGlobalExecutionInfos globalExecInfos;
     QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
     QList<std::reference_wrapper<const TaskToSubmit>> &prodFormParTsksList = globalExecInfos.prodFormatParams.parentsTasksRef;
     CreateTasksForNewProducts(allTasksList, prodFormParTsksList);
@@ -52,7 +56,7 @@ PhenoGlobalExecutionInfos PhenoNdviHandler::HandleNewTilesList(EventProcessingCo
     const auto &metricsFlagsImg = metricsSplitterTask.GetFilePath("metric_flags_img.tif");
 
     QStringList bandsExtractorArgs = {
-        "BandsExtractor", "-pixsize",   resolution,  "-merge",    "true",     "-ndh", "true",
+        "BandsExtractor", "-pixsize",   resolutionStr,  "-merge",    "true",     "-ndh", "true",
         "-out",           rawReflBands, "-allmasks", allMasksImg, "-outdate", dates,  "-il"
     };
     bandsExtractorArgs += listProducts;
@@ -82,23 +86,17 @@ PhenoGlobalExecutionInfos PhenoNdviHandler::HandleNewTilesList(EventProcessingCo
     // Get the tile ID from the product XML name. We extract it from the first product in the list as all
     // producs should be for the same tile
     productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
-
-    return globalExecInfos;
 }
 
 void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
-    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    const auto &inputProducts = parameters["input_products"].toArray();
-
-    QStringList listProducts;
-    for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
-    }
+    QStringList listProducts = GetL2AInputProductsTiles(ctx, event);
     if(listProducts.size() == 0) {
         ctx.MarkJobFailed(event.jobId);
-        return;
+        throw std::runtime_error(
+            QStringLiteral("No products provided at input or no products available in the specified interval").
+                    toStdString());
     }
 
     QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
@@ -107,14 +105,17 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     TaskToSubmit productFormatterTask{"product-formatter", {}};
     NewStepList allSteps;
     //container for all task
-    QList<TaskToSubmit> allTasksList;
+    //QList<TaskToSubmit> allTasksList;
+    QList<PhenoGlobalExecutionInfos> listPhenoInfos;
     for(auto tile : mapTiles.keys())
     {
        QStringList listTemporalTiles = mapTiles.value(tile);
-       PhenoGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles);
+       listPhenoInfos.append(PhenoGlobalExecutionInfos());
+       PhenoGlobalExecutionInfos &infos = listPhenoInfos[listPhenoInfos.size()-1];
+       HandleNewTilesList(ctx, event, infos, listTemporalTiles);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
-       allTasksList.append(infos.allTasksList);
+       //allTasksList.append(infos.allTasksList);
        allSteps.append(infos.allStepsList);
     }
 
@@ -135,22 +136,17 @@ void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
 
-        QString prodName = GetProductFormatterProducName(ctx, event);
+        QString prodName = GetProductFormatterProductName(ctx, event);
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId) + "/" + prodName;
-        if(prodName != "") {
+        if(prodName != "" && ProcessorHandlerHelper::IsValidHighLevelProduct(productFolder)) {
             QString quicklook = GetProductFormatterQuicklook(ctx, event);
             QString footPrint = GetProductFormatterFootprint(ctx, event);
             // Insert the product into the database
-            ctx.InsertProduct({ ProductType::L3BPhenoProductTypeId,
-                                event.processorId,
-                                event.siteId,
-                                event.jobId,
-                                productFolder,
-                                QDateTime::currentDateTimeUtc(),
-                                prodName,
-                                quicklook,
-                                footPrint,
-                                TileList() });
+            QDateTime minDate, maxDate;
+            ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
+            ctx.InsertProduct({ ProductType::L3EProductTypeId, event.processorId, event.siteId,
+                                event.jobId, productFolder, maxDate,
+                                prodName, quicklook, footPrint, TileList() });
 
             // Now remove the job folder containing temporary files
             // TODO: Reinsert this line - commented only for debug purposes
@@ -185,14 +181,15 @@ void PhenoNdviHandler::WriteExecutionInfosFile(const QString &executionInfosPath
 QStringList PhenoNdviHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                     const QStringList &listProducts, const QList<PhenoProductFormatterParams> &productParams) {
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
-    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUC_FORMATTER_OUT_PROPS_FILE);
+    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.txt");
     QStringList productFormatterArgs = { "ProductFormatter",
                                          "-destroot",
                                          targetFolder,
-                                         "-fileclass", "SVT1",
-                                         "-level", "L3B",
+                                         "-fileclass", "OPER",
+                                         "-level", "L3E",
                                          "-baseline", "01.00",
+                                         "-siteid", QString::number(event.siteId),
                                          "-processor", "phenondvi",
                                          "-gipp", executionInfosPath,
                                          "-outprops", outPropsPath};

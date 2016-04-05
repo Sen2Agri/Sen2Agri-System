@@ -7,6 +7,7 @@
 """
 
 import glob,os,sys,math,urllib2,urllib,time,math,shutil
+import socket
 import subprocess
 
 import datetime
@@ -46,9 +47,9 @@ def connect_earthexplorer_proxy(proxy_info,usgs):
 
      if data.find('You must sign in as a registered user to download data or place orders for USGS EROS products')>0 :
         print "Authentification failed"
-        sys.exit(-1)
+        return False
 
-     return
+     return True
 
 
 #############################"Connection to Earth explorer without proxy
@@ -65,8 +66,8 @@ def connect_earthexplorer_no_proxy(usgs):
      f.close()
      if data.find('You must sign in as a registered user to download data or place orders for USGS EROS products')>0 :
           log(general_log_path, "Authentification failed !", general_log_filename)
-          sys.exit(-1)
-     return
+          return False
+     return True
 
 #############################
 
@@ -87,10 +88,13 @@ def downloadChunks(url, rep, prod_name, prod_date, abs_prod_path, aoiContext, db
   print("url: {}".format(url))
   print("rep: {}".format(rep))
   print("nom_fic: {}".format(nom_fic))
+  print("prod_date: {}".format(prod_date))
+  print("abs_prod_path: {}".format(abs_prod_path))
   print("INFO STOP")
   log(rep, "Trying to download {0}".format(nom_fic), general_log_filename)
   try:
     req = urllib2.urlopen(url, timeout=600)
+    print("request performed for URL: {}".format(url))
     #taille du fichier
     if (req.info().gettype()=='text/html'):
       log(rep, 'Error: the file has a html format for '.format(nom_fic), general_log_filename)
@@ -141,16 +145,23 @@ def downloadChunks(url, rep, prod_name, prod_date, abs_prod_path, aoiContext, db
 	     fp.write(chunk)
              if g_exit_flag:
                   log(rep, "SIGINT signal caught", general_log_filename)
-                  sys.exit(0)
+                  return
+  except socket.timeout, e:
+       log(rep, "Timeout for file {0} ".format(nom_fic), general_log_filename)
+       return False
+  except socket.error, e:
+       log(rep, "socket.error for file {0}. Error: {1}".format(nom_fic, e), general_log_filename)
+       return False
   except urllib2.HTTPError, e:
        if e.code == 500:
             log(rep, "File doesn't exist: {0}".format(nom_fic), general_log_filename)
        else:
             log(rep, "HTTP Error for file {0}. Error code: {1}. Url: {2}".format(nom_fic, e.code, url), general_log_filename)
        return False
+  
   except urllib2.URLError, e:
-    log(rep, "URL Error for file {0} . Reason: {1}. Url: {2}".format(nom_fic, e.reason,url), general_log_filename)
-    return False
+       log(rep, "URL Error for file {0} . Reason: {1}. Url: {2}".format(nom_fic, e.reason,url), general_log_filename)
+       return False
   size = os.stat(rep+'/'+nom_fic).st_size
   log(rep, "File {0} downloaded with size {1} from a total size of {2}".format(nom_fic,str(size), str(total_size)), general_log_filename)
   if int(total_size) != int(size):
@@ -264,6 +275,7 @@ signal.signal(signal.SIGINT, signal_handler)
 def landsat_download(aoiContext):
      global g_exit_flag
      global general_log_filename
+     global general_log_path
 
      general_log_filename = "landsat_download.log"
      general_log_path = aoiContext.writeDir
@@ -279,7 +291,7 @@ def landsat_download(aoiContext):
         f.close()
      except :
         log(general_log_path, "Error with usgs password file", general_log_filename)
-        sys.exit(-2)
+        return
 
 
      if aoiContext.proxy != None :
@@ -298,7 +310,7 @@ def landsat_download(aoiContext):
             f.close()
         except :
             log(general_log_path, "Error with proxy password file", general_log_filename)
-            sys.exit(-3)
+            return
 
      db = LandsatAOIInfo(aoiContext.configObj.host, aoiContext.configObj.database, aoiContext.configObj.user, aoiContext.configObj.password)
 
@@ -323,21 +335,15 @@ def landsat_download(aoiContext):
          row=tile[3:6]
          log(aoiContext.writeDir, "path={}|row={}".format(path, row), general_log_filename)
 
-         global downloaded_ids
-         downloaded_ids=[]
-
+         downloaded_ids = []
+         connection = False
          if aoiContext.proxy!=None:
-             connect_earthexplorer_proxy(proxy,usgs)
+             connection = connect_earthexplorer_proxy(proxy,usgs)
          else:
-             connect_earthexplorer_no_proxy(usgs)
-             
-         #date_asc_array = []  
+             connection = connect_earthexplorer_no_proxy(usgs)
+         if connection == False:
+              return
          curr_date=next_overpass(start_date, int(path), product)
-         #while (curr_date < end_date):
-         #     date_asc_array.append(curr_date.strftime("%Y%j"))
-         #     curr_date = curr_date + datetime.timedelta(16)
-         #print("{}".format(date_asc_array))
-         #sys.exit(0)
 
          while (curr_date < end_date):
              date_asc=curr_date.strftime("%Y%j")
@@ -348,7 +354,7 @@ def landsat_download(aoiContext):
                  for version in ['00','01','02']:
                                          if g_exit_flag:
                                              log(aoiContext.writeDir, "SIGINT was caught")
-                                             sys.exit(0)
+                                             return
                                          nom_prod = product + tile + date_asc + station + version
                                          tgzfile = os.path.join(aoiContext.writeDir, nom_prod + '.tgz')
                                          lsdestdir = os.path.join(aoiContext.writeDir, nom_prod)
@@ -366,8 +372,9 @@ def landsat_download(aoiContext):
                                          year = date_asc[0:4]
                                          days = date_asc[4:]
                                          prod_date = (datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(days))).strftime("%Y%m%dT000101")
-                                         print("prod_date={}".format(prod_date))
                                          if downloadChunks(url, aoiContext.writeDir, nom_prod, prod_date, lsdestdir, aoiContext, db):
                                               downloaded_ids.append(nom_prod)                                              
-
-         log(aoiContext.writeDir, downloaded_ids, general_log_filename)
+         if len(downloaded_ids) > 0:
+              log(aoiContext.writeDir, "Downloaded ids: {}".format(downloaded_ids), general_log_filename)
+         else: 
+              log(aoiContext.writeDir, "No downloaded ids: ", general_log_filename)

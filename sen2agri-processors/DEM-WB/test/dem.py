@@ -159,6 +159,9 @@ def format_filename(mode, output_directory, tile_id, suffix):
 
 def create_context(args):
     dir_base = args.input
+    if not os.path.exists(dir_base) or not os.path.isdir(dir_base):
+        print("The path dows not exist ! {}".format(dir_base))
+        return []
     if dir_base.rfind('/') + 1 == len(dir_base):
         dir_base = dir_base[0:len(dir_base)-1]
     mode, date = get_dir_info(dir_base)
@@ -334,7 +337,7 @@ def process_DTM(context):
     if missing_tiles:
         print("The following SRTM tiles are missing: {}. Please provide them in the SRTM directory ({}).".format(
             [os.path.basename(tile) for tile in missing_tiles], context.srtm_directory))
-        sys.exit(1)
+        return False
 
     run_command(["gdalbuildvrt",
                  context.dem_vrt] + dtm_tiles)
@@ -439,7 +442,7 @@ def process_DTM(context):
                  "-interpolator", "linear",
                  "-lms", "40",
                  "-out", context.aspect_coarse])
-
+    return True
 
 def process_WB(context):
     run_command(["otbcli",
@@ -487,7 +490,8 @@ def process_context(context):
     with open(context.metadata_file, 'w') as f:
         lxml.etree.ElementTree(metadata).write(f, pretty_print=True)
 
-    process_DTM(context)
+    if process_DTM(context) == False:
+        return
     process_WB(context)
 
     files = [context.swbd_list, context.dem_vrt, context.dem_nodata, context.slope_degrees,
@@ -519,7 +523,7 @@ def parse_arguments():
                         help="working directory")
     parser.add_argument('-p', '--processes-number', required=False,
                         help="number of processed to run", default="3")
-    parser.add_argument('output', help="output location")
+    parser.add_argument('output', help="output location")    
 
     args = parser.parse_args()
 
@@ -531,11 +535,7 @@ if len(contexts) == 0:
     print("No context could be created")
     sys.exit(-1)
 
-if int(proc_number) == 1:
-    for context in contexts:
-        process_context(context)
-else:
-    p = Pool(int(proc_number))
-    p.map(process_context, contexts)
+p = Pool(int(proc_number))
+p.map(process_context, contexts)
 
 

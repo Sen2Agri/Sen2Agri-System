@@ -11,7 +11,12 @@ VALUES
 INSERT INTO processor
 (name, short_name)
 VALUES 
-('L3B Vegetation Status','l3b');
+('L3B Vegetation Status','l3b_lai');
+
+INSERT INTO processor
+(name, short_name)
+VALUES 
+('L3E Pheno NDVI metrics','l3e_pheno');
 
 INSERT INTO processor
 (name, short_name)
@@ -22,4 +27,3 @@ INSERT INTO processor
 (name, short_name)
 VALUES 
 ('L4B Crop Type','l4b');
-

@@ -28,22 +28,13 @@ function statistics_admin(){
 	$result_downloads ="";
 	$result_downloads = pg_query_params ( $db, "SELECT * FROM sp_get_dashboard_downloader_history(null)", array () ) or die ( "Could not execute." );
 	
-	$td1="<td colspan=\"2\">0</td>";
-	$td2="<td colspan=\"2\">0</td>";
-	$td3="<td colspan=\"2\">0</td>";
+	$table="";
 	while ( $row = pg_fetch_row ( $result_downloads ) ) {
 
-		if($row[0] == 1){
-			$td1 = "<td colspan=\"2\">" . $row [1] . "</td>";
-
-		} else if($row[0] == 2){
-			$td2 = "<td colspan=\"2\">" . $row [1] . "</td>";
-
-		}else if($row[0] == 3){
-			$td3 = 	"<td colspan=\"2\">" . $row [1] . "</td>";
-		}
+		$td = "<td colspan=\"2\">" . $row [1] . "</td>";
+		$table= $table.$td;
 	}
-	echo  $td1.$td2.$td3;
+	echo $table;
 }
 
 function current_downloads_admin(){
@@ -57,6 +48,7 @@ function current_downloads_admin(){
 					"<td colspan=\"2\">". $row[0]."</td>".
 					"<td colspan=\"2\">". $row[1]."</td>".
 					"<td colspan=\"2\">". $row[2]."</td>".
+					"<td colspan=\"2\">". $row[3]."</td>".
 					"</tr>";
 			$tr_current = $tr_current . $tr;
 		}
@@ -121,6 +113,7 @@ function current_downloads_admin(){
 								<table class="table full_width" style="text-align: left">
 									<thead>
 										<tr>
+											<th colspan="2">Site</th>
 											<th colspan="2">Product</th>
 											<th colspan="2">Product Type</th>
 											<th colspan="2">Status modified</th>

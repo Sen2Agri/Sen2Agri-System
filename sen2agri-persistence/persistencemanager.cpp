@@ -20,6 +20,7 @@ static QString getScheduledTasksStatusesJson(const std::vector<ScheduledTaskStat
 static QString getScheduledTaskJson(const ScheduledTask &task);
 
 static QString getExecutionStatusListJson(const ExecutionStatusList &statusList);
+static QString getTilesJson(const TileList &tilesList);
 
 static void bindStepExecutionStatistics(QSqlQuery &query, const ExecutionStatistics &statistics);
 
@@ -801,7 +802,7 @@ int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_insert_product(:productType, :processorId, "
                            ":satelliteId, :siteId, :jobId, :fullPath, :createdTimestamp, :name, "
-                           ":quicklookImage, :footprint)"));
+                           ":quicklookImage, :footprint, :tiles)"));
         query.bindValue(QStringLiteral(":productType"), static_cast<int>(product.productType));
         query.bindValue(QStringLiteral(":processorId"), product.processorId);
         query.bindValue(QStringLiteral(":satelliteId"), QVariant());
@@ -812,6 +813,7 @@ int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
         query.bindValue(QStringLiteral(":name"), product.name);
         query.bindValue(QStringLiteral(":quicklookImage"), product.quicklookImage);
         query.bindValue(QStringLiteral(":footprint"), product.footprint);
+        query.bindValue(QStringLiteral(":tiles"), getTilesJson(product.tiles));
 
         query.setForwardOnly(true);
         if (!query.exec()) {
@@ -1181,7 +1183,7 @@ std::vector<ScheduledTask> PersistenceManagerDBProvider::GetScheduledTasks()
         }
 
         auto dataRecord = query.record();
-        auto taskIdCol = dataRecord.indexOf(QStringLiteral("task_id"));
+        auto taskIdCol = dataRecord.indexOf(QStringLiteral("id"));
         auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
         auto processorIdCol = dataRecord.indexOf(QStringLiteral("processor_id"));
         auto siteIdCol = dataRecord.indexOf(QStringLiteral("site_id"));
@@ -1379,6 +1381,16 @@ static QString getExecutionStatusListJson(const ExecutionStatusList &statusList)
     QJsonArray array;
     for (const auto &s : statusList) {
         array.append(static_cast<int>(s));
+    }
+
+    return jsonToString(array);
+}
+
+static QString getTilesJson(const TileList &tilesList)
+{
+    QJsonArray array;
+    for (const auto &t : tilesList) {
+        array.append(t);
     }
 
     return jsonToString(array);

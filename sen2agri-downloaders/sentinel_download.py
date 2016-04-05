@@ -23,12 +23,12 @@ def unzipFile(outputDir, fileToUnzip):
     retValue = False
     log(general_log_path, "fileToUnzip={}".format(fileToUnzip), general_log_filename)
     if (os.path.isfile(fileToUnzip)):
-        if run_command(["zip", "--test", fileToUnzip]):
+        if run_command(["zip", "--test", fileToUnzip], general_log_path, general_log_filename):
             log(general_log_path, "zip failed for {}".format(fileToUnzip), general_log_filename)
         else:
             create_recursive_dirs(outputDir)
             log(general_log_path, "zip OK for {}. Start to unzip".format(fileToUnzip), general_log_filename)
-            if run_command(["unzip", "-d", outputDir,fileToUnzip]):
+            if run_command(["unzip", "-d", outputDir,fileToUnzip], general_log_path, general_log_filename):
                 log(general_log_path, "unziping failed for {}".format(fileToUnzip), general_log_filename)
             else:
                 log(general_log_path, "unziping ok for {}".format(fileToUnzip), general_log_filename)
@@ -93,15 +93,16 @@ def product_download(s2Obj, aoiContext, db):
         if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, s2Obj.product_date_as_string, abs_filename, aoiContext.maxRetries):
             log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADING for {}".format(s2Obj.filename), general_log_filename)
             return False        
-        if run_command(commandArray) != 0:
-            #TODO: get the product name and check the no_of_retries. 
-            #TODO: if it's greater than aoiContext.maxRetries, update the product name status with ABORTED (4)
-            #TODO: else update the product name in the downloader_history with status FAILED (3) and increment the no_of_retries
+        if run_command(commandArray, aoiContext.writeDir, general_log_filename) != 0:
+            #get the product name and check the no_of_retries. 
+            #if it's greater than aoiContext.maxRetries, update the product name status with ABORTED (4)
+            #else update the product name in the downloader_history with status FAILED (3) and increment the no_of_retries
+            #this logic is performed by db.upsertSentinelProductHistory
             log(aoiContext.writeDir, "the java donwloader command didn't work for {}".format(s2Obj.filename), general_log_filename)
             if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_FAILED_VALUE, s2Obj.product_date_as_string, abs_filename, aoiContext.maxRetries):
                 log(aoiContext.writeDir, "Couldn't upsert into database with status FAILED for {}".format(s2Obj.filename), general_log_filename)
             return False
-        #TODO: update the product name in the downloader_history with status DOWNLOADED (2)
+        #update the product name in the downloader_history with status DOWNLOADED (2)
         if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE, s2Obj.product_date_as_string, abs_filename, aoiContext.maxRetries):
             log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADED for {}".format(s2Obj.filename), general_log_filename)
         return False
@@ -125,7 +126,7 @@ def downloadFromAmazon(s2Obj, aoiFile, db):
             commandArray.append(tile)
         commandArray.append("-p")
         commandArray.append(s2Obj.productname)
-        if run_command(commandArray) != 0:
+        if run_command(commandArray, aoiFile.writeDir, general_log_filename) != 0:
             log(aoiFile.writeDir, "the java donwloader command didn't work for {}".format(s2Obj.filename), general_log_filename)
             return
         if not db.updateSentinelHistory(aoiFile.siteId, s2Obj.filename, "{}/{}".format(aoiFile.writeDir, s2Obj.filename)):
@@ -159,7 +160,6 @@ def downloadFromScihub(s2Obj, aoiFile, db):
             log(aoiFile.writeDir, "Start download:", general_log_filename)
 
             if run_command(commande_wget) != 0:
-                #sys.exit(-1)
                 log(aoiFile.writeDir, "wget command didn't work for {}".format(s2Obj.filename), general_log_filename)
                 return
             #write the filename in history
@@ -180,9 +180,6 @@ signal.signal(signal.SIGINT, signal_handler)
 def sentinel_download(aoiContext):
     global g_exit_flag
     global general_log_filename
-    #if not createRecursiveDirs(aoiContext.writeDir):
-    #    log(general_log_path, "Could not create the output directory", general_log_filename)
-    #    sys.exit(-1)
 
     url_search="https://scihub.esa.int/apihub/search?q="
     general_log_filename = "sentinel_download.log"
@@ -197,8 +194,8 @@ def sentinel_download(aoiContext):
             passwd=passwd[:-1]
         f.close()
     except :
-        log(coiContext.writeDir, "error with password file ".format(str(apihubFile)), general_log_filename)
-        sys.exit(-2)
+        log(aoiContext.writeDir, "error with password file ".format(str(apihubFile)), general_log_filename)
+        return
 
     db = SentinelAOIInfo(aoiContext.configObj.host, aoiContext.configObj.database, aoiContext.configObj.user, aoiContext.configObj.password)
 
@@ -225,18 +222,18 @@ def sentinel_download(aoiContext):
     commande_wget.append(url_search + query + "&rows=1000")
     log(aoiContext.writeDir, commande_wget, general_log_filename)
 
-    if run_command(commande_wget) != 0:
+    if run_command(commande_wget, aoiContext.writeDir, general_log_filename) != 0:
         log(aoiContext.writeDir, "Could not get the catalog output for {}".format(query_geom), general_log_filename)
-        sys.exit(-1)
+        return
     if g_exit_flag:
-        sys.exit(0)
+        return
 
     #=======================
     # parse catalog output
     #=======================
     if not os.path.isfile(queryResultsFilename):
         log(aoiContext.writeDir, "Could not find the catalog output {} for {}".format(queryResultsFilename, aoiContext.siteName), general_log_filename)
-        sys.exit(-1)
+        return
     xml=minidom.parse(queryResultsFilename)
 
     #check if all the results are returned
@@ -252,14 +249,14 @@ def sentinel_download(aoiContext):
                 #commande_wget='%s %s %s "%s%s"'%(wg,auth,search_output,url_search,query)
                 commande_wget = wg + auth + search_output + [url_search+query]
                 log(aoiContext.writeDir, "Changing the pagination to {0} to get all of the existing files, command: {1}".format(totalRes, commande_wget), general_log_filename)
-                if run_command(commande_wget) != 0:
+                if run_command(commande_wget, aoiContext.writeDir, general_log_filename) != 0:
                     log(aoiContext.writeDir, "Could not get the catalog output (re-pagination) for {}".format(query_geom), general_log_filename)
-                    sys.exit(-1)
+                    return
                 xml=minidom.parse("query_results.xml")
             except ValueError:
                 log(aoiContext.writeDir, "Exception: it was expected for the word in position 5 (starting from 0) to be an int. It ain't. The checked string is: {}".format(subtitle), general_log_filename)
                 log(aoiContext.writeDir, "Could not get the catalog output (exception for re-pagination) for {}".format(query_geom), general_log_filename)
-                sys.exit(-1)
+                return
 
     products=xml.getElementsByTagName("entry")
     s2Objs = []
@@ -294,13 +291,14 @@ def sentinel_download(aoiContext):
         print(s2Obj.filename)
         print("Date:{}".format(s2Obj.product_date))
         print(s2Obj.link)
-        print("cloud percentage = {}", format(s2Obj.cloud))
-        print("cloud percentage in aoiContext = {}".format(aoiContext.maxCloudCoverage))
+        print("cloud percentage in product  = {}".format(s2Obj.cloud))
+        print("max allowed cloud percentage = {}".format(aoiContext.maxCloudCoverage))
         print("date as string {}".format(s2Obj.product_date_as_string))
         print("product name {}".format(s2Obj.productname))
         print("===============================================")
 
         if g_exit_flag:
-            sys.exit(0)
+            return
         product_download(s2Obj, aoiContext, db)
+        print("Finished to download product: {}".format(s2Obj.productname))
         

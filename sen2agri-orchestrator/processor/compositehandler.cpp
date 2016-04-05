@@ -114,9 +114,10 @@ void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
     outProdFormatterParentsList.append(outAllTasksList[outAllTasksList.size() - 1]);
 }
 
-CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
-                                             const JobSubmittedEvent &event,
-                                             const QStringList &listProducts)
+void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
+                                          const JobSubmittedEvent &event,
+                                          const QStringList &listProducts,
+                                          CompositeGlobalExecutionInfos &globalExecInfos)
 {
     int jobId = event.jobId;
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
@@ -127,8 +128,11 @@ CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessi
     const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
     auto synthalf = parameters["half_synthesis"].toString();
 
-    int resolution = parameters["resolution"].toInt();
-    if(resolution == 0) resolution = 10;    // TODO: We should configure the default resolution in DB
+    int resolution = 0;
+    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+            resolution == 0) {
+        resolution = 10;    // TODO: We should configure the default resolution in DB
+    }
 
     // Get the parameters from the configuration
     // Get the Half Synthesis interval value if it was not specified by the user
@@ -155,7 +159,6 @@ CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessi
 
     const auto &resolutionStr = QString::number(resolution);
 
-    CompositeGlobalExecutionInfos globalExecInfos;
     QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
     QList<std::reference_wrapper<const TaskToSubmit>> &prodFormParTsksList = globalExecInfos.prodFormatParams.parentsTasksRef;
     CreateTasksForNewProducts(allTasksList, prodFormParTsksList, listProducts.size());
@@ -284,8 +287,6 @@ CompositeGlobalExecutionInfos CompositeHandler::HandleNewTilesList(EventProcessi
     // Get the tile ID from the product XML name. We extract it from the first product in the list as all
     // producs should be for the same tile
     productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
-
-    return globalExecInfos;
 }
 
 void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath,
@@ -298,7 +299,13 @@ void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath
         // Get L3A Synthesis date
         const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
         // Get the Half Synthesis interval value
-        const auto &synthalf = parameters["half_synthesis"].toString();
+        auto synthalf = parameters["half_synthesis"].toString();
+        if(synthalf.length() == 0) {
+            synthalf = configParameters["processor.l3a.half_synthesis"];
+            if(synthalf.length() == 0) {
+                synthalf = "15";
+            }
+        }
 
         // Get the parameters from the configuration
         const auto &bandsMapping = configParameters["processor.l3a.bandsmapping"];
@@ -389,16 +396,12 @@ void CompositeHandler::FilterInputProducts(QStringList &listFiles,
 void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
-    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    const auto &inputProducts = parameters["input_products"].toArray();
-
-    QStringList listProducts;
-    for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
-    }
+    QStringList listProducts = GetL2AInputProductsTiles(ctx, event);
     if(listProducts.size() == 0) {
         ctx.MarkJobFailed(event.jobId);
-        return;
+        throw std::runtime_error(
+            QStringLiteral("No products provided at input or no products available in the specified interval").
+                    toStdString());
     }
 
     QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
@@ -407,14 +410,17 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     TaskToSubmit productFormatterTask{"product-formatter", {}};
     NewStepList allSteps;
     //container for all task
-    QList<TaskToSubmit> allTasksList;
+    //QList<TaskToSubmit> allTasksList;
+    QList<CompositeGlobalExecutionInfos> listCompositeInfos;
     for(auto tile : mapTiles.keys())
     {
        QStringList listTemporalTiles = mapTiles.value(tile);
-       CompositeGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles);
+       listCompositeInfos.append(CompositeGlobalExecutionInfos());
+       CompositeGlobalExecutionInfos &infos = listCompositeInfos[listCompositeInfos.size()-1];
+       HandleNewTilesList(ctx, event, listTemporalTiles, infos);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
-       allTasksList.append(infos.allTasksList);
+       //allTasksList.append(infos.allTasksList);
        allSteps.append(infos.allStepsList);
     }
 
@@ -434,22 +440,17 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
 
-        QString prodName = GetProductFormatterProducName(ctx, event);
+        QString prodName = GetProductFormatterProductName(ctx, event);
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId) + "/" + prodName;
-        if(prodName != "") {
+        if(prodName != "" && ProcessorHandlerHelper::IsValidHighLevelProduct(productFolder)) {
             QString quicklook = GetProductFormatterQuicklook(ctx, event);
             QString footPrint = GetProductFormatterFootprint(ctx, event);
             // Insert the product into the database
-            ctx.InsertProduct({ ProductType::L3AProductTypeId,
-                                event.processorId,
-                                event.siteId,
-                                event.jobId,
-                                productFolder,
-                                QDateTime::currentDateTimeUtc(),
-                                prodName,
-                                quicklook,
-                                footPrint,
-                                TileList() });
+            QDateTime minDate, maxDate;
+            ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
+            ctx.InsertProduct({ ProductType::L3AProductTypeId, event.processorId, event.siteId,
+                                event.jobId, productFolder, maxDate, prodName, quicklook,
+                                footPrint, TileList() });
             // Now remove the job folder containing temporary files
             // TODO: Reinsert this line - commented only for debug purposes
             //RemoveJobFolder(ctx, event.jobId);
@@ -461,11 +462,11 @@ QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productForma
                                     const QStringList &listProducts, const QList<CompositeProductFormatterParams> &productParams) {
 
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3a.lai.");
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3a.");
 
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
-    const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.txt");
-    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUC_FORMATTER_OUT_PROPS_FILE);
+    const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
+    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
 
     WriteExecutionInfosFile(executionInfosPath, parameters, configParameters, listProducts);
@@ -476,6 +477,7 @@ QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productForma
                                          "-level", "L3A",
                                          "-timeperiod", l3aSynthesisDate,
                                          "-baseline", "01.00",
+                                         "-siteid", QString::number(event.siteId),
                                          "-processor", "composite",
                                          "-gipp", executionInfosPath,
                                          "-outprops", outPropsPath};
@@ -541,7 +543,7 @@ QString CompositeHandler::DeductBandsMappingFile(const QStringList &listProducts
         curBandsMappingPath = fileInfo.dir().absolutePath();
     QStringList listUniqueProductTypes;
     for (int i = 0; i < listProducts.size(); i++) {
-        QString productType = GetProductTypeFromTile(listProducts[i]);
+        QString productType = ProcessorHandlerHelper::GetL2AProductTypeFromTile(listProducts[i]);
         if(!listUniqueProductTypes.contains(productType)) {
             listUniqueProductTypes.append(productType);
         }

@@ -32,9 +32,9 @@ private:
     void HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 const TaskFinishedEvent &event) override;
 
-    CompositeGlobalExecutionInfos HandleNewTilesList(EventProcessingContext &ctx,
+    void HandleNewTilesList(EventProcessingContext &ctx,
                                const JobSubmittedEvent &event,
-                               const QStringList &listProducts);
+                               const QStringList &listProducts, CompositeGlobalExecutionInfos &globalExecInfos);
     bool IsProductAcceptableForJob(int jobId, const ProductAvailableEvent &event);
     void FilterInputProducts(QStringList &listFiles, int productDate, int halfSynthesis);
 

@@ -214,10 +214,13 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, KeyedMessage &mes
 enum class ProductType {
     L2AProductTypeId = 1,
     L3AProductTypeId = 2,
-    L3BLaiProductTypeId = 3,
-    L3BPhenoProductTypeId = 4,
+    L3BProductTypeId = 3,
+    L3EProductTypeId = 4,
     L4AProductTypeId = 5,
-    L4BProductTypeId = 6
+    L4BProductTypeId = 6,
+    L1CProductTypeId = 7,
+    L3CProductTypeId = 8,
+    L3DProductTypeId = 9
 };
 
 QDBusArgument &operator<<(QDBusArgument &argument, const ProductType &productType);

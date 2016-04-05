@@ -12,10 +12,8 @@
 ################################################################################################
 ###########################CONFIG PART###########################################################
 ### DEPENDENCIES FOR GENERATED RPM PACKAGES
-: ${PLATFORM_INSTALL_DEP:="-d "boost" -d "curl" -d "expat" -d "fftw" -d "gdal" -d "geos" -d "libgeotiff" -d "libjpeg-turbo" -d "libsvm" -d "muParser" \
--d "opencv" -d "openjpeg2" -d "openjpeg2-tools" -d "pcre" -d "libpng" -d "proj" -d "python" -d "qt" -d "sqlite" -d "swig" -d "libtiff" -d "tinyxml" \
--d "qt5-qtbase" -d "qt5-qtbase-postgresql" -d "qt-x11" -d "gsl""}
-: ${PLATFORM_INSTALL_OTHER_DEP:="-d "cifs-utils" -d "otb""}
+: ${PLATFORM_INSTALL_DEP:="-d "qt5-qtbase" -d "qt5-qtbase-gui" -d "qt5-qtbase-postgresql" -d "qt-x11""}
+: ${PLATFORM_INSTALL_OTHER_DEP:="-d "cifs-utils""}
 
 ### CONFIG PATHS FOR SCRIPT
 : ${DEFAULT_DIR:=$(pwd)}
@@ -36,7 +34,7 @@ function get_SEN2AGRI_sources()
    #get script path
    script_path=$(dirname $0)
 
-   ##go in the folder sen2agri/packaging and exit up one folder into the source root dir sen2agri  
+   ##go in the folder sen2agri/packaging and exit up one folder into the source root dir sen2agri
    cd $script_path
    cd ..
 
@@ -66,7 +64,7 @@ function build_SEN2AGRI_app_RPM_Package()
    ##build RPM package
    fpm -s dir -t rpm -n sen2agri-app -C ${APP_INSTALL_PATH}/ ${PLATFORM_INSTALL_DEP} ${PLATFORM_INSTALL_OTHER_DEP} \
    --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_app -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/sen2agri-app.centos7.ARCH.rpm usr etc
-  
+
    #remove temporary dir
    rm -rf ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_app
 }
@@ -84,7 +82,7 @@ function build_dir_tree()
 
    ##go into platform dir
    cd ${PLATFORM_NAME_DIR}
- 
+
    ##create install dir
    if [ ! -d ${INSTALL_DIR} ]; then
       mkdir -p ${INSTALL_DIR}
@@ -94,18 +92,18 @@ function build_dir_tree()
    if [ ! -d ${RPM_DIR} ]; then
       mkdir -p ${RPM_DIR}
    fi
-   
+
    ##create build dir
    if [ ! -d ${BUILD_DIR} ]; then
       mkdir -p ${BUILD_DIR}
    fi
-   
+
    ##exit from platform dir
    cd ..
 }
 
 ###########################################################
-#####  SEN2AGRI APP install and RPM generation       ###### 
+#####  SEN2AGRI APP install and RPM generation       ######
 ###########################################################
 ##create folder tree: build, install and rpm
 build_dir_tree
@@ -113,7 +111,7 @@ build_dir_tree
 ##get sources path
 get_SEN2AGRI_sources
 #################################################################
-#####  SEN2AGRIAPP SERVICES build, install and RPM generation  ## 
+#####  SEN2AGRIAPP SERVICES build, install and RPM generation  ##
 #################################################################
 ## SEN2AGRI app sources compile and install
 compile_SEN2AGRI_app

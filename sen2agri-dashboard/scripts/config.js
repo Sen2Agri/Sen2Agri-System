@@ -1,6 +1,3 @@
-var host_name = "sen2agri-dev";
-var services_port = "8080";
-
 var get_current_job_data_url = "http://"+host_name+":"+services_port+"/dashboard/GetDashboardCurrentJobData";
 var get_current_job_data_interval = 60000;
 

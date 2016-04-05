@@ -47,24 +47,6 @@ DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE = int(5)
 
 g_exit_flag = False
 
-def run_command(cmd_array, use_shell=False):
-    start = time.time()
-    print(" ".join(map(pipes.quote, cmd_array)))
-    res = 0
-    if not FAKE_COMMAND:
-        res = subprocess.call(cmd_array, shell=use_shell)
-    print("App finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))))
-    if res != 0:
-        print("Application error")
-    return res
-
-
-def signal_handler(signal, frame):
-    global exitFlag
-    print("SIGINT caught")
-    exitFlag = True
-    sys.exit(0)
-
 
 def log(location, info, log_filename = None):
     if log_filename == None:
@@ -79,6 +61,29 @@ def log(location, info, log_filename = None):
         log.close()
     except:
         print("Could NOT write inside the log file {}".format(logfile))
+
+
+def run_command(cmd_array, log_path = "", log_filename = ""):
+    start = time.time()
+    cmd_str = " ".join(map(pipes.quote, cmd_array))
+    if len(log_path) > 0 and len(log_filename) > 0:
+        log(log_path, "Starting command: {}".format(cmd_str), log_filename)
+    res = 0
+    if not FAKE_COMMAND:
+        res = subprocess.call(cmd_array, shell=False)
+    if len(log_path) > 0 and len(log_filename) > 0:
+        ok = "OK"
+        nok = "NOK"
+        log(log_path, "Command finished {} in {} : {}".format((ok if res == 0 else nok),datetime.timedelta(seconds=(time.time() - start)), cmd_str), log_filename)
+    return res
+
+
+def signal_handler(signal, frame):
+    global exitFlag
+    print("SIGINT caught")
+    exitFlag = True
+    sys.exit(0)
+
         
 def create_recursive_dirs(dir_name):
     try:
@@ -442,10 +447,9 @@ class AOIInfo(object):
                         configArray[-1] += "/"
                     configArray[-1] += currentAOI.siteName
                     if not currentAOI.setConfigParams(configArray):
-                        print("OUT OF THE SEASON !!!!")
+                        print("OUT OF THE SEASON")
                         continue
                     try:
-                        #self.cursor.execute("select \"product_name\" from downloader_history where \"satellite_id\"={} and \"site_id\"={}".format(satelliteId, currentAOI.siteId))
                         self.cursor.execute("""select \"product_name\" from downloader_history where satellite_id = %(sat_id)s :: smallint and
                                                                        site_id = %(site_id)s :: smallint and
                                                                        status_id != %(status_downloading)s :: smallint and 
@@ -494,7 +498,7 @@ class AOIInfo(object):
                                 })
             rows = self.cursor.fetchall()
             if len(rows) > 1:
-                print("upsertProductHistory error: the select for product {} retuirned more than 1 entry. Illegal, should be only 1 entry in downloader_history table".format(productName))
+                print("upsertProductHistory error: the select for product {} returned more than 1 entry. Illegal, should be only 1 entry in downloader_history table".format(productName))
                 self.databaseDisconnect()
                 return False
             if len(rows) == 0:
@@ -666,7 +670,6 @@ class L1CInfo(object):
 
     def get_demmaccs_config(self):
         if not self.database_connect():
-            print("1")
             return None
         try:
             self.cursor.execute("select * from sp_get_parameters('demmaccs')")
@@ -694,16 +697,17 @@ class L1CInfo(object):
             elif row[0] == DATABASE_DEMMACCS_SWBD_PATH:
                 swbd_path = row[2]
             elif row[0] == DATABASE_DEMMACCS_MACCS_IP_ADDRESS:
-                maccs_ip_address = row[2]
+                #optional, may not exist in DB
+                maccs_ip_address = row[2] 
             elif row[0] == DATABASE_DEMMACCS_MACCS_LAUNCHER:
                 maccs_launcher = row[2]
             elif row[0] == DATABASE_DEMMACCS_WORKING_DIR:
                 working_dir = row[2]
 
         self.database_disconnect()
-        if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_ip_address) == 0 or len(maccs_launcher) == 0 or len(working_dir) == 0:
-            print("{} {} {} {} {} {} {} {} {}".format(len(output_path), len(gips_path), len(srtm_path), len(swbd_path), len(maccs_ip_address), len(maccs_launcher), len(working_dir)))
+        if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_launcher) == 0 or len(working_dir) == 0:     
             return None
+
         return DEMMACCSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, working_dir)
 
     def get_short_name(self, table, use_id):
@@ -752,7 +756,6 @@ class L1CInfo(object):
                     if len(rows) > 0:
                         retArray.append(rows)
         except:
-            print("!!!!!!!!!!!!!!!")
             self.database_disconnect()
             return []
         self.database_disconnect()
@@ -775,7 +778,7 @@ class L1CInfo(object):
             if len(rows) == 1:
                 path = rows[0][0]
         except:
-            print("Database query failed in get_previous_l2a_tile_path!!!!!")
+            print("Database query failed in get_previous_l2a_tile_path !")
             self.database_disconnect()
             return path
         self.database_disconnect()
@@ -801,7 +804,20 @@ class L1CInfo(object):
                                     "status_id" : DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE, 
                                     "l1c_id" : l1c_id
                                 })
+            self.conn.commit()
             if len(l2a_processed_tiles) > 0:
+                #check if this product was previously inserted: ????
+                '''self.cursor.execute("""SELECT id FROM product
+                                WHERE site_id = %(site_id)s and
+                                satellite_id = %(satellite_id)s and
+                                %(name)s :: character varying""", 
+                                    {
+                                        "site_id" : site_id, 
+                                        "satellite_id" : sat_id,
+                                        "name" : product_name
+                                    })
+                rows = self.cursor.fetchall()
+                '''
                 self.cursor.execute("""select * from sp_insert_product(%(product_type_id)s :: smallint,
                                %(processor_id)s :: smallint, 
                                %(satellite_id)s :: smallint, 
@@ -826,7 +842,7 @@ class L1CInfo(object):
                                     "footprint" : footprint, 
                                     "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']' 
                                 })
-            self.conn.commit()
+                self.conn.commit()
         except Exception, e:
             print("Database update query failed: {}".format(e))            
             self.database_disconnect()

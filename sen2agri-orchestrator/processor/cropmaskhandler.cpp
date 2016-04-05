@@ -77,12 +77,13 @@ QList<std::reference_wrapper<TaskToSubmit>> CropMaskHandler::CreateNoInSituTasks
     return allTasksListRef;
 }
 
-CropMaskGlobalExecutionInfos CropMaskHandler::HandleNewTilesList(EventProcessingContext &ctx,
-                                             const JobSubmittedEvent &event, const QStringList &listProducts)
+void CropMaskHandler::HandleNewTilesList(EventProcessingContext &ctx,
+                                         const JobSubmittedEvent &event,
+                                         const QStringList &listProducts,
+                                         CropMaskGlobalExecutionInfos &globalExecInfos)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
-    CropMaskGlobalExecutionInfos globalExecInfos;
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     const auto &referencePolygons = parameters["reference_polygons"].toString();
     if(referencePolygons.size() > 0) {
@@ -91,27 +92,29 @@ CropMaskGlobalExecutionInfos CropMaskHandler::HandleNewTilesList(EventProcessing
         ctx.SubmitTasks(event.jobId, allTasksListRef);
         HandleInsituJob(ctx, event, listProducts, globalExecInfos);
     } else {
+        const auto &reference_raster = parameters["reference_raster"].toString();
+        if(reference_raster.size() == 0) {
+            ctx.MarkJobFailed(event.jobId);
+            throw std::runtime_error(
+                QStringLiteral("Neither of the parameters reference_polygons nor reference_raster were found!").
+                        toStdString());
+        }
         allTasksListRef = CreateNoInSituTasksForNewProducts(globalExecInfos.allTasksList,
                                                             globalExecInfos.prodFormatParams.parentsTasksRef);
         ctx.SubmitTasks(event.jobId, allTasksListRef);
         HandleNoInsituJob(ctx, event, listProducts, globalExecInfos);
     }
-    return globalExecInfos;
 }
 
 void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                               const JobSubmittedEvent &event)
 {
-    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    const auto &inputProducts = parameters["input_products"].toArray();
-
-    QStringList listProducts;
-    for (const auto &inputProduct : inputProducts) {
-        listProducts.append(ctx.findProductFiles(inputProduct.toString()));
-    }
+    QStringList listProducts = GetL2AInputProductsTiles(ctx, event);
     if(listProducts.size() == 0) {
         ctx.MarkJobFailed(event.jobId);
-        return;
+        throw std::runtime_error(
+            QStringLiteral("No products provided at input or no products available in the specified interval").
+                    toStdString());
     }
 
     QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
@@ -120,14 +123,17 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     TaskToSubmit productFormatterTask{"product-formatter", {}};
     NewStepList allSteps;
     //container for all task
-    QList<TaskToSubmit> allTasksList;
+    //QList<TaskToSubmit> allTasksList;
+    QList<CropMaskGlobalExecutionInfos> listCropMaskInfos;
     for(auto tile : mapTiles.keys())
     {
        QStringList listTemporalTiles = mapTiles.value(tile);
-       CropMaskGlobalExecutionInfos infos = HandleNewTilesList(ctx, event, listTemporalTiles);
+       listCropMaskInfos.append(CropMaskGlobalExecutionInfos());
+       CropMaskGlobalExecutionInfos &infos = listCropMaskInfos[listCropMaskInfos.size()-1];
+       HandleNewTilesList(ctx, event, listTemporalTiles, infos);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
-       allTasksList.append(infos.allTasksList);
+       //allTasksList.append(infos.allTasksList);
        allSteps.append(infos.allStepsList);
     }
 
@@ -201,22 +207,17 @@ void CropMaskHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     else if (event.module == "product-formatter") {
         ctx.MarkJobFinished(event.jobId);
 
-        QString prodName = GetProductFormatterProducName(ctx, event);
+        QString prodName = GetProductFormatterProductName(ctx, event);
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId) + "/" + prodName;
-        if(prodName != "") {
+        if(prodName != "" && ProcessorHandlerHelper::IsValidHighLevelProduct(productFolder)) {
             QString quicklook = GetProductFormatterQuicklook(ctx, event);
             QString footPrint = GetProductFormatterFootprint(ctx, event);
             // Insert the product into the database
-            ctx.InsertProduct({ ProductType::L4AProductTypeId,
-                                event.processorId,
-                                event.siteId,
-                                event.jobId,
-                                productFolder,
-                                QDateTime::currentDateTimeUtc(),
-                                prodName,
-                                quicklook,
-                                footPrint,
-                                TileList() });
+            QDateTime minDate, maxDate;
+            ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
+            ctx.InsertProduct({ ProductType::L4AProductTypeId, event.processorId,
+                                event.siteId, event.jobId, productFolder, maxDate,
+                                prodName, quicklook, footPrint, TileList() });
             // Now remove the job folder containing temporary files
             // TODO: Reinsert this line - commented only for debug purposes
             //RemoveJobFolder(ctx, event.jobId);
@@ -242,7 +243,12 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
     auto mission = parameters["processor.l4a.mission"].toString();
     if(mission.length() == 0) mission = "SPOT";
 
-    const auto &resolution = parameters["resolution"].toInt();
+    int resolution = 0;
+    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+            resolution == 0) {
+        resolution = 10;    // TODO: We should configure the default resolution in DB
+    }
+
     auto randomSeed = parameters["processor.l4a.random_seed"].toString();
     if(randomSeed.isEmpty())  randomSeed = "0";
 
@@ -461,8 +467,8 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
     CropMaskProductFormatterParams &productFormatterParams = globalExecInfos.prodFormatParams;
     productFormatterParams.crop_mask = crop_mask;
     productFormatterParams.raw_crop_mask = raw_crop_mask;
-    productFormatterParams.raw_crop_mask = xml_validation_metrics;
-    productFormatterParams.raw_crop_mask = statusFlags;
+    productFormatterParams.xml_validation_metrics = xml_validation_metrics;
+    productFormatterParams.statusFlags = statusFlags;
     // Get the tile ID from the product XML name. We extract it from the first product in the list as all
     // producs should be for the same tile
     productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
@@ -485,7 +491,11 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
     auto mission = parameters["processor.l4a.mission"].toString();
     if(mission.length() == 0) mission = "SPOT";
 
-    const auto &resolution = parameters["resolution"].toInt();
+    int resolution = 0;
+    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+            resolution == 0) {
+        resolution = 10;    // TODO: We should configure the default resolution in DB
+    }
     const auto &resolutionStr = QString::number(resolution);
     auto randomSeed = parameters["processor.l4a.random_seed"].toString();
     if(randomSeed.isEmpty())  randomSeed = "0";
@@ -772,13 +782,14 @@ QStringList CropMaskHandler::GetGdalWarpArgs(const QString &inImg, const QString
 QStringList CropMaskHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                     const QStringList &listProducts, const QList<CropMaskProductFormatterParams> &productParams) {
 
-    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUC_FORMATTER_OUT_PROPS_FILE);
+    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
     QStringList productFormatterArgs = { "ProductFormatter",
                                          "-destroot", targetFolder,
                                          "-fileclass", "SVT1",
                                          "-level", "L4A",
                                          "-baseline", "01.00",
+                                         "-siteid", QString::number(event.siteId),
                                          "-processor", "cropmask",
                                          "-outprops", outPropsPath};
     productFormatterArgs += "-il";
@@ -822,27 +833,10 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
     ConfigurationParameterValueMap cfgValues = ctx.GetConfigurationParameters("processor.l4a.", siteId, requestOverrideCfgValues);
     // Get the reference dir
     QString refDir = cfgValues["processor.l4a.reference_data_dir"].value;
-    // if folder not defined, cannot run the CropMask
-    if(refDir.isEmpty()) {
-        return params;
-    }
-    QDirIterator it(refDir, QStringList() << "*.shp", QDir::Files);
-    // get the last shape file found
     QString shapeFile;
     QString referenceRasterFile;
-    while (it.hasNext()) {
-        shapeFile = it.next();
-    }
-    // if no shape file was found, search for the reference raster for no-insitu case
-    if(shapeFile.isEmpty()) {
-        QDirIterator it2(refDir, QStringList() << "*.tif", QDir::Files);
-        // get the last reference raster file found
-        while (it2.hasNext()) {
-            referenceRasterFile = it2.next();
-        }
-    }
-    // no insitu shape or reference raster found
-    if(shapeFile.isEmpty() && referenceRasterFile.isEmpty()) {
+    // if none of the reference files were found, cannot run the CropMask
+    if(!ProcessorHandlerHelper::GetCropReferenceFile(refDir, shapeFile, referenceRasterFile)) {
         return params;
     }
     if(!shapeFile.isEmpty()) {

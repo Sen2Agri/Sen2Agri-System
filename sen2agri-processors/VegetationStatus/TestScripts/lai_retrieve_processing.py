@@ -420,6 +420,8 @@ if __name__ == '__main__':
         inlaimonodir = args.inlaimonodir
     rsrFile = args.rsrfile
     rsrCfg = args.rsrcfg
+    if not rsrFile and not rsrCfg :
+        rsrCfg = "/usr/share/sen2agri/rsr_cfg.txt"
     generatemonodate = False
     if (args.generatemonodate == "YES"):
         generatemonodate = True
