@@ -789,6 +789,7 @@ public:
     QString name;
     QString quicklookImage;
     QString footprint;
+    std::experimental::optional<int> orbitId;
     TileList tiles;
 
     NewProduct();
@@ -801,6 +802,7 @@ public:
                QString name,
                QString quicklookImage,
                QString footprint,
+               std::experimental::optional<int> orbitId,
                TileList tiles);
 
     static void registerMetaTypes();

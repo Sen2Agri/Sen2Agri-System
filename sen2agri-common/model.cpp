@@ -1503,6 +1503,7 @@ NewProduct::NewProduct(ProductType productType,
                        QString name,
                        QString quicklookImage,
                        QString footprint,
+                       std::experimental::optional<int> orbitId,
                        TileList tiles)
     : productType(productType),
       processorId(processorId),
@@ -1513,6 +1514,7 @@ NewProduct::NewProduct(ProductType productType,
       name(std::move(name)),
       quicklookImage(std::move(quicklookImage)),
       footprint(std::move(footprint)),
+      orbitId(orbitId),
       tiles(std::move(tiles))
 {
 }

@@ -14,7 +14,7 @@ CREATE TABLE product
   job_id integer,
   geog geography,
   satellite_id integer,
+  orbit_id INTEGER,
   tiles character varying[] NOT NULL,
   CONSTRAINT product_pkey PRIMARY KEY (id)
 );
-

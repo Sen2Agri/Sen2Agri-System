@@ -813,6 +813,11 @@ int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
         query.bindValue(QStringLiteral(":name"), product.name);
         query.bindValue(QStringLiteral(":quicklookImage"), product.quicklookImage);
         query.bindValue(QStringLiteral(":footprint"), product.footprint);
+        if (product.orbitId) {
+            query.bindValue(QStringLiteral(":orbitId"), *product.orbitId);
+        } else {
+            query.bindValue(QStringLiteral(":orbitId"), QVariant());
+        }
         query.bindValue(QStringLiteral(":tiles"), getTilesJson(product.tiles));
 
         query.setForwardOnly(true);
