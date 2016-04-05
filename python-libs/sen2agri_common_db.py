@@ -598,7 +598,7 @@ class SentinelAOIInfo(AOIInfo):
     #def updateSentinelHistory(self, siteId, productName, productDate, fullPath):
     #    return self.updateHistory(siteId, SENTINEL2_SATELLITE_ID, productName, productDate, fullPath)
 
-    def upsertSentinelProductHistory(self, siteId, productName, status, productDate, fullPath = "", orbit_id, maxRetries = 0):
+    def upsertSentinelProductHistory(self, siteId, productName, status, productDate, fullPath, orbit_id, maxRetries = 0):
         return self.upsertProductHistory(siteId, SENTINEL2_SATELLITE_ID, productName, status, productDate, fullPath, orbit_id, maxRetries)
 
 
@@ -613,7 +613,7 @@ class LandsatAOIInfo(AOIInfo):
     #def updateLandsatHistory(self, siteId, productName, productDate, fullPath):
     #    return self.updateHistory(siteId, LANDSAT8_SATELLITE_ID, productName, productDate, fullPat)h
 
-    def upsertLandsatProductHistory(self, siteId, productName, status, productDate, fullPath = "", maxRetries = 0):
+    def upsertLandsatProductHistory(self, siteId, productName, status, productDate, fullPath, maxRetries = 0):
         return self.upsertProductHistory(siteId, LANDSAT8_SATELLITE_ID, productName, status, productDate, fullPath, -1, maxRetries)
 
 

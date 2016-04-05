@@ -91,7 +91,7 @@ def product_download(s2Obj, aoiContext, db):
             return False
         #TODO: insert the product name into the downloader_history
         abs_filename = "{}/{}".format(aoiContext.writeDir, s2Obj.filename)
-        if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, s2Obj.product_date_as_string, abs_filename, aoiContext.maxRetries):
+        if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, s2Obj.product_date_as_string, abs_filename, s2Obj.orbit_id, aoiContext.maxRetries):
             log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADING for {}".format(s2Obj.filename), general_log_filename)
             return False        
         if run_command(commandArray, aoiContext.writeDir, general_log_filename) != 0:
@@ -100,7 +100,7 @@ def product_download(s2Obj, aoiContext, db):
             #else update the product name in the downloader_history with status FAILED (3) and increment the no_of_retries
             #this logic is performed by db.upsertSentinelProductHistory
             log(aoiContext.writeDir, "the java donwloader command didn't work for {}".format(s2Obj.filename), general_log_filename)
-            if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_FAILED_VALUE, s2Obj.product_date_as_string, abs_filename, aoiContext.maxRetries):
+            if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_FAILED_VALUE, s2Obj.product_date_as_string, abs_filename, s2Obj.orbit_id, aoiContext.maxRetries):
                 log(aoiContext.writeDir, "Couldn't upsert into database with status FAILED for {}".format(s2Obj.filename), general_log_filename)
             return False
         #update the product name in the downloader_history with status DOWNLOADED (2)
