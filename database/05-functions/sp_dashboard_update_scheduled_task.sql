@@ -17,6 +17,14 @@ SET	processor_params = _processor_params,
 	first_run_time = _first_run_time
 WHERE id = _schedule_id;
 
+UPDATE scheduled_task_status
+SET next_schedule =_first_run_time,
+	last_scheduled_run = '0',
+	last_run_timestamp = '0',
+	last_retry_timestamp = '0',
+	estimated_next_run_time = '0'
+WHERE task_id = _schedule_id;
+
 END;
 $BODY$
   LANGUAGE plpgsql
