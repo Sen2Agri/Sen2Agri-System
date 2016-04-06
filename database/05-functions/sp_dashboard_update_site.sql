@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_dashboard_update_site(
+CREATE OR REPLACE FUNCTION sp_dashboard_update_site(
     _id smallint,
     _short_name character varying,
     _geog character varying,
@@ -12,7 +12,7 @@ BEGIN
 
 UPDATE site
 SET short_name = _short_name,
-    geog = ST_GeographyFromText(_geog)
+    geog = ST_Force2D(ST_GeometryFromText(_geog)) :: geography
 WHERE id = _id;
 
 UPDATE config
