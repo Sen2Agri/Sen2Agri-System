@@ -1,0 +1,45 @@
+Format: http://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Sen2agri-processors
+Upstream-Contact: Sen2Agri Team <TBD@TBD.org>
+Source: path-to-online-source-archive.tar.gz or the way to retrieve the source
+
+Files: *
+Copyright: 2014-2016, XXX YYY (ZZZ) <xxx.yyy@zzz.org>
+License: GPL-3+
+Comment: Project funded by ESA during the ESA DUE Sentinel-2 For Agriculture Project. 
+ (Add here the e-mail to benjamin and pierre ?)
+
+Files: VegetationStatus/otb-bv/*
+Copyright: 2014-15, Jordi Inglada (CNES) <jordi.inglada@cesbio.org>
+License: GPL-3+
+Comment: indicate here some additional information (TODO add the link to the git)..
+
+Files: VegetationStatus/phenotb/*
+Copyright: 2014-15, Jordi Inglada (CNES) <jordi.inglada@cesbio.org>
+License: GPL-3+
+Comment: indicate here some additional information (TODO add the link to the git)..
+
+Files: VegetationStatus/temporalgapfilling/*
+Copyright: 2014-15, Jordi Inglada (CNES) <jordi.inglada@cesbio.org>
+License: GPL-3+
+Comment: indicate here some additional information (TODO add the link to the git)..
+
+Files: DEM-WB/*
+Copyright: 2014-15, Alexia Mondot (CS SI) <alexia.mondot@c-s.fr>
+License: TBD
+Comment: indicate here some additional information (TODO add the link to the git).
+
+
+License: GPL 3+
+ This program is free software: you can redistribute it and/or modify
+ it under the terms of the GNU General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program.  If not, see <http://www.gnu.org/licenses/>.
