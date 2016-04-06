@@ -254,7 +254,6 @@ dem_output_dir = "{}_DEM_OUT".format(working_dir)
 log(general_log_path,"working_dir = {}".format(working_dir), log_filename)
 log(general_log_path,"dem_working_dir = {}".format(dem_working_dir), log_filename)
 log(general_log_path,"dem_output_dir = {}".format(dem_output_dir), log_filename)
-log(general_log_path, "Started: {}".format(time.time()), log_filename)
 
 general_start = time.time()
 
@@ -269,6 +268,7 @@ if not create_recursive_dirs(working_dir):
 start = time.time()
 base_abs_path = os.path.dirname(os.path.abspath(__file__)) + "/"
 if args.skip_dem is None:
+    print("Creating DEMs for {}".format(args.input))
     if run_command([base_abs_path + "dem.py", "--srtm", args.srtm, "--swbd", args.swbd, "-p", args.processes_number_dem, "-w", dem_working_dir, args.input, dem_output_dir], general_log_path, log_filename) != 0:
         log(general_log_path, "DEM failed", log_filename)
         sys.exit(-1)
@@ -283,7 +283,8 @@ if len(dem_hdrs) == 0:
 
 
 demmaccs_contexts = []
-for dem_hdr in dem_hdrs:
+print("Creating demmaccs contexts with: input: {} | output {}".format(args.input, args.output))
+for dem_hdr in dem_hdrs:    
     print("DEM_HDR: {}".format(dem_hdr))
     demmaccs_contexts.append(DEMMACCSContext(working_dir, dem_hdr, args.gip_dir, args.prev_l2a_tiles, args.prev_l2a_products_paths, args.maccs_address, args.maccs_launcher, args.input, args.output))
 
@@ -322,7 +323,6 @@ if args.delete_temp == "True":
     except:
         log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), log_filename)
 
-log(general_log_path, "Ended: {}".format(time.time()), log_filename)
 log(general_log_path, "Total execution {}:".format(datetime.timedelta(seconds=(time.time() - general_start))), log_filename)
 
 sys.exit(sys_exit)
