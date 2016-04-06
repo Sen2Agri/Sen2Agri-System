@@ -147,6 +147,7 @@ def launch_demmaccs(l1c_context):
             continue
 
         output_path = site_output_path + l2a_basename + "/"
+        # normally, the output_path should be created by the demmaccs.py script itself, but for log reason it will be created here
         if not create_recursive_dirs(output_path):
             log(general_log_path, "Could not create the output directory", general_log_filename)
             continue
@@ -172,7 +173,7 @@ def launch_demmaccs(l1c_context):
             demmaccs_command += l2a_tiles
             demmaccs_command.append("--prev-l2a-products-paths")
             demmaccs_command += l2a_tiles_paths
-        log(output_path, "Starting demmaccs:", general_log_filename)
+        log(output_path, "Starting demmaccs", general_log_filename)
         if run_command(demmaccs_command, output_path, general_log_filename) == 0 and os.path.exists(output_path) and os.path.isdir(output_path):
             tiles_dir_list = (glob.glob("{}*.DBL.DIR".format(output_path)))
             log(output_path, "Creating common footprint for tiles: DBL.DIR List: {}".format(tiles_dir_list), general_log_filename)
@@ -180,8 +181,9 @@ def launch_demmaccs(l1c_context):
             for tile_dir in tiles_dir_list:
                 if satellite_id == SENTINEL2_SATELLITE_ID:
                     tile_img = (glob.glob("{}/*_FRE_R1.DBL.TIF".format(tile_dir)))
-                else:
-                    tile_img = (glob.glob("{}/*_FRE.DBL.TIF".format(tile_dir)))
+                else: #satellite_id is LANDSAT8_SATELLITE_ID:
+                    tile_img = (glob.glob("{}/*_FRE.DBL.TIF".format(tile_dir)))                
+                
                 if len(tile_img) > 0:
                     wgs84_extent_list.append(get_footprint(tile_img[0]))
             wkt = get_envelope(wgs84_extent_list)
