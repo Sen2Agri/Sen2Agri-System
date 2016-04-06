@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION sp_get_products_for_tile(_tile_id CHARACTER VARYING, _satellite_id satellite.id%TYPE)
+CREATE OR REPLACE FUNCTION sp_get_products_for_tile(_tile_id CHARACTER VARYING, _product_type_id SMALLINT, _satellite_id satellite.id%TYPE, _out_satellite_id satellite.id%TYPE)
 RETURNS TABLE (
     full_path product.full_path%TYPE,
     product_date product.created_timestamp%TYPE
@@ -17,7 +17,8 @@ BEGIN
         SELECT product.full_path,
                product.created_timestamp
         FROM product
-        WHERE product.satellite_id = _satellite_id AND
+        WHERE product.satellite_id = _out_satellite_id AND
+              product.product_type_id = _product_type_id AND  
               ST_Intersects(product.geog, _geog);
 END;
 $$

@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION sp_get_product_by_name(
     IN _name character varying)
-  RETURNS TABLE(produc_id smallint, product_type_id smallint, processor_id smallint, site_id smallint, full_path character varying, created_timestamp timestamp with time zone) AS
+  RETURNS TABLE(product_id smallint, product_type_id smallint, processor_id smallint, site_id smallint, full_path character varying, created_timestamp timestamp with time zone) AS
 $BODY$
 BEGIN
 
