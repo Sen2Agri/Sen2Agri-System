@@ -14,6 +14,7 @@ INSERT INTO config VALUES (47, 'executor.wrapper-path', NULL, '/usr/bin/sen2agri
 INSERT INTO config VALUES (84, 'resources.gdalwarp.working-mem', NULL, '2048', '2015-09-08 11:03:21.87284+03');
 INSERT INTO config VALUES (36, 'executor.listen-port', NULL, '7777', '2015-07-07 12:17:06.182674+03');
 INSERT INTO config VALUES (35, 'executor.listen-ip', NULL, '192.168.60.52', '2015-06-03 17:03:39.541136+03');
+INSERT INTO config VALUES (291, 'executor.shapes_dir', NULL, '/mnt/archive/TilesShapesDirectory', '2015-06-03 17:03:39.541136+03');
 INSERT INTO config VALUES (247, 'processor.l4a.smoothing-lambda', NULL, '2', '2016-03-09 16:41:38.409554+02');
 INSERT INTO config VALUES (17, 'archiver.max_age.l3a', NULL, '1', '2015-06-02 11:39:40.357184+03');
 INSERT INTO config VALUES (18, 'archiver.max_age.l3b', NULL, '1', '2015-06-02 11:39:45.99546+03');
@@ -180,6 +181,7 @@ INSERT INTO config VALUES (204, 'processor.l3b.mono_date_lai', NULL, '1', '2016-
 INSERT INTO config VALUES (205, 'processor.l3b.reprocess', NULL, '0', '2016-02-29 12:03:21.142049+02');
 INSERT INTO config VALUES (206, 'processor.l3b.fitted', NULL, '0', '2016-02-29 12:03:27.438284+02');
 INSERT INTO config VALUES (207, 'processor.l3b.production_interval', NULL, '10', '2016-02-29 12:03:31.197823+02');
+INSERT INTO config VALUES (292, 'processor.l3c.production_interval', NULL, '30', '2016-02-29 12:03:31.197823+02');
 INSERT INTO config VALUES (208, 'processor.l4b.crop-mask', NULL, '', '2016-03-01 08:57:09.170001+02');
 INSERT INTO config VALUES (209, 'general.start_of_season', NULL, '20130131', '2016-03-01 12:07:26.368173+02');
 INSERT INTO config VALUES (210, 'general.end_of_season', NULL, '20131231', '2016-03-01 12:07:31.393578+02');

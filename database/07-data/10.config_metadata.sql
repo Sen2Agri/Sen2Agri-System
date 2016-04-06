@@ -58,6 +58,7 @@ INSERT INTO config_metadata VALUES ('executor.wrapper-path', 'Processor Wrapper 
 INSERT INTO config_metadata VALUES ('monitor-agent.scan-interval', 'Measurement Interval (s)', 'int', true, 13);
 INSERT INTO config_metadata VALUES ('executor.listen-ip', 'Executor IP Address', 'string', true, 8);
 INSERT INTO config_metadata VALUES ('executor.listen-port', 'Executor Port', 'int', true, 8);
+INSERT INTO config_metadata VALUES ('executor.shapes_dir', 'Tiles shapes directory', 'directory', true, 8);
 INSERT INTO config_metadata VALUES ('archiver.max_age.l2a', 'L2A Product Max Age (days)', 'int', false, 7);
 INSERT INTO config_metadata VALUES ('archiver.max_age.l3a', 'L3A Product Max Age (days)', 'int', false, 7);
 INSERT INTO config_metadata VALUES ('archiver.max_age.l3b', 'L3B Product Max Age (days)', 'int', false, 7);
@@ -99,7 +100,8 @@ INSERT INTO config_metadata VALUES ('processor.l3b.generate_models', 'Specifies 
 INSERT INTO config_metadata VALUES ('processor.l3b.mono_date_lai', 'Specifies if monodate processing should be performed for LAI', 'int', true, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.reprocess', 'Specifies if N-Day reprocessing should be performed for LAI', 'int', true, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.fitted', 'Specifies if fitting reprocessing (end of season) should be performed for LAI', 'int', true, 4);
-INSERT INTO config_metadata VALUES ('processor.l3b.production_interval', 'The backward processing interval from the scheduled date', 'int', true, 4);
+INSERT INTO config_metadata VALUES ('processor.l3b.production_interval', 'The backward processing interval from the scheduled date for L3B products', 'int', true, 4);
+INSERT INTO config_metadata VALUES ('processor.l3c.production_interval', 'The backward processing interval from the scheduled date for L3C products', 'int', true, 4);
 INSERT INTO config_metadata VALUES ('downloader.summer-season.start', 'Summer Season Start', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('downloader.summer-season.end', 'Summer Season End', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('processor.l4b.crop-mask', 'Crop mask file path or product folder to be used', 'file', true, 6);
