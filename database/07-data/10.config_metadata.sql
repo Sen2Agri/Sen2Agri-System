@@ -105,8 +105,6 @@ INSERT INTO config_metadata VALUES ('processor.l3c.production_interval', 'The ba
 INSERT INTO config_metadata VALUES ('downloader.summer-season.start', 'Summer Season Start', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('downloader.summer-season.end', 'Summer Season End', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('processor.l4b.crop-mask', 'Crop mask file path or product folder to be used', 'file', true, 6);
-INSERT INTO config_metadata VALUES ('general.start_of_season', 'Start of season', 'string', true, 1);
-INSERT INTO config_metadata VALUES ('general.end_of_season', 'End of season', 'string', true, 1);
 INSERT INTO config_metadata VALUES ('site.upload-path', 'Upload path', 'string', true, 17);
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-bv-input-variable-generation', 'BV input variables generator', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-prosail-simulator', 'Prosail simulator', 'file', true, 8);
