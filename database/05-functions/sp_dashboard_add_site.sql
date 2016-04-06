@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_dashboard_add_site(
+CREATE OR REPLACE FUNCTION sp_dashboard_add_site(
     _name character varying,
     _geog character varying,
     _winter_season_start character varying,
@@ -18,7 +18,7 @@ BEGIN
     _short_name := regexp_replace(_short_name, '_$', '');
 
 	INSERT INTO site(name,short_name, geog)
-	VALUES (_name,_short_name,ST_GeographyFromText(_geog)) 
+	VALUES (_name,_short_name,ST_Force2D(ST_GeometryFromText(_geog)) :: geography)
 	RETURNING id INTO return_id;
 
 	IF(_winter_season_start <>''AND _winter_season_start IS NOT NULL) THEN
