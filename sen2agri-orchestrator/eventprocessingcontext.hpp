@@ -45,6 +45,7 @@ public:
     int InsertProduct(const NewProduct &product);
 
     ProductList GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate);
+    ProductList GetProductsForTile(const QString &tileId, ProductType productType, int tileSatelliteId, int targetSatelliteId);
     QStringList GetProductFiles(const QString &path, const QString &pattern) const;
     QString GetJobOutputPath(int jobId);
     QString GetOutputPath(int jobId, int taskId, const QString &module);

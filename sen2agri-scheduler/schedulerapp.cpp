@@ -111,11 +111,29 @@ void SchedulerApp::timerEvent(QTimerEvent *event)
 QString SchedulerApp::GetTaskParametersJson(const ScheduledTask &task) {
     QJsonObject jsonObj;
     QJsonObject genParamsObj;
+    QJsonObject cfgParamsObj;
     genParamsObj["task_name"] = task.taskName;
     genParamsObj["task_description"] = "";
     genParamsObj["task_type"] = "scheduled";
+
+    const auto &doc = QJsonDocument::fromJson(task.processorParameters.toUtf8());
+    if (doc.isObject()) {
+        const auto &inObj = doc.object();
+        const auto &taskGeneralParamNode = inObj[QStringLiteral("general_params")];
+        if (taskGeneralParamNode.isObject()) {
+            QJsonObject taskGenParamsObj = taskGeneralParamNode.toObject();
+            for(QJsonObject::const_iterator iter = taskGenParamsObj.begin(); iter != taskGenParamsObj.end (); ++iter) {
+                genParamsObj[iter.key()] = iter.value().toString();
+            }
+        }
+        const auto cfgParamsNode = inObj[QStringLiteral("config_params")];
+        if (cfgParamsNode.isObject()) {
+            cfgParamsObj = cfgParamsNode.toObject();
+        }
+    }
+
     jsonObj["general_params"] = genParamsObj;
-    jsonObj["processor_params"] = task.processorParameters;
+    jsonObj["config_params"] = cfgParamsObj;
 
     return jsonToString(jsonObj);
 }

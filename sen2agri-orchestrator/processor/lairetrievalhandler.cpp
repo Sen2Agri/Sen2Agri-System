@@ -218,8 +218,13 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
 }
 
 void LaiRetrievalHandler::HandleNewTilesList(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                                const QStringList &listProducts, const QStringList &listL3BTiles, const QStringList &missingL3BInputs,
-                                                                LAIGlobalExecutionInfos &outGlobalExecInfos) {
+                                             const TileTemporalFilesInfo &tileTemporalFilesInfo,
+                                             const QStringList &listL3BTiles,
+                                             const TileTemporalFilesInfo &missingL3BTileTemporalFilesInfo,
+                                             LAIGlobalExecutionInfos &outGlobalExecInfos) {
+
+    const QStringList &listProducts = tileTemporalFilesInfo.temporalTileFiles;
+    const QStringList &missingL3BInputs = missingL3BTileTemporalFilesInfo.temporalTileFiles;
 
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
@@ -269,9 +274,6 @@ void LaiRetrievalHandler::HandleNewTilesList(EventProcessingContext &ctx, const 
 
     QList<TaskToSubmit> &allTasksList = outGlobalExecInfos.allTasksList;
     LAIProductFormatterParams &productFormatterParams = outGlobalExecInfos.prodFormatParams;
-    // Get the tile ID from the product XML name. We extract it from the first product in the list as all
-    // producs should be for the same tile
-    productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
 
     // create the tasks
     CreateTasksForNewProducts(allTasksList, outGlobalExecInfos.prodFormatParams, monoDateInputs.size(), bGenModels, bMonoDateLai, bNDayReproc, bFittedReproc);
@@ -513,37 +515,38 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     QList<TaskToSubmit> allTasksList;
     //container for all global execution infos
     QList<LAIGlobalExecutionInfos> allLaiGlobalExecInfos;
-    QStringList tileIdsList;
     // Create a map containing for each tile Id the list of the
-    QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listTilesMetaFiles);
-    QMap<QString, QStringList> mapMissingL3BTiles = ProcessorHandlerHelper::GroupTiles(missingL3BInputsTiles);
+    QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.jobId, listTilesMetaFiles,
+                                                               ProductType::L2AProductTypeId);
+    QMap<QString, TileTemporalFilesInfo> mapMissingL3BTiles = GroupTiles(ctx, event.jobId, missingL3BInputsTiles,
+                                                                         ProductType::L2AProductTypeId);
     // In the case of Mono-lai we might have something in the listL3BProducts
     QMap<QString, QStringList> mapL3BTiles = ProcessorHandlerHelper::GroupHighLevelProductTiles(listL3BProducts);
 
-    for(auto tile : mapTiles.keys())
+    for(auto tileId : mapTiles.keys())
     {
-       QStringList listTemporalTiles = mapTiles.value(tile);
-       QStringList listL3bMissingInputsTiles = mapMissingL3BTiles.value(tile);
-       QStringList listL3bTiles = mapL3BTiles.value(tile);
+       const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
+       const TileTemporalFilesInfo &listL3bMissingInputsTiles = mapMissingL3BTiles.value(tileId);
+       QStringList listL3bTiles = mapL3BTiles.value(tileId);
 
-       Logger::debug(QStringLiteral("Handling tile %1 from a number of %2 tiles").arg(tile).arg(mapTiles.size()));
+       Logger::debug(QStringLiteral("Handling tile %1 from a number of %2 tiles").arg(tileId).arg(mapTiles.size()));
 
        allLaiGlobalExecInfos.append(LAIGlobalExecutionInfos());
        LAIGlobalExecutionInfos &infosRef = allLaiGlobalExecInfos[allLaiGlobalExecInfos.size()-1];
+       infosRef.prodFormatParams.tileId = "TILE_" + tileId;
        HandleNewTilesList(ctx, event, listTemporalTiles, listL3bTiles, listL3bMissingInputsTiles, infosRef);
        if(infosRef.allTasksList.size() > 0 && infosRef.allStepsList.size() > 0) {
            listParams.append(infosRef.prodFormatParams);
-           mapTileToParams[tile] = infosRef.prodFormatParams;
+           mapTileToParams[tileId] = infosRef.prodFormatParams;
            allTasksList.append(infosRef.allTasksList);
            allSteps.append(infosRef.allStepsList);
        }
-       tileIdsList.append(tile);
     }
 
     // Create the product formatter tasks
     if(bMonoDateLai || missingL3BInputsTiles.size() != 0) {
         QStringList listMonoDateInputProducts = bMonoDateLai ? inputProductToTilesMap.keys() : missingL3BInputs;
-        QMap<QString, QStringList> mapMonoDateInputProducts = bMonoDateLai ? mapTiles : mapMissingL3BTiles;
+        QMap<QString, TileTemporalFilesInfo> mapMonoDateInputProducts = bMonoDateLai ? mapTiles : mapMissingL3BTiles;
         // create the product formatters for each LAI monodate product
         for(int i = 0; i < listMonoDateInputProducts.size(); i++) {
             QStringList outProdTiles, outProdTilesMetaFiles;
@@ -1055,28 +1058,58 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
     ProcessorJobDefinitionParams params;
     params.isValid = false;
 
-    //int generateModels = mapCfg["processor.l3b.generate_models"].value.toInt();
-    int generateLai = mapCfg["processor.l3b.mono_date_lai"].value.toInt();
-    int generateReprocess = mapCfg["processor.l3b.reprocess"].value.toInt();
-    int generateFitted = mapCfg["processor.l3b.fitted"].value.toInt();
-    int productionInterval = mapCfg["processor.l3b.production_interval"].value.toInt();
+    int generateLai = false;
+    int generateReprocess = false;
+    int generateFitted = false;
 
-    QDateTime startDate;
+    if(requestOverrideCfgValues.contains("product_type")) {
+        const ConfigurationParameterValue &productType = requestOverrideCfgValues["product_type"];
+        if(productType.value == "L3B") {
+            generateLai = true;
+            params.jsonParameters = "{ \"monolai\": 1}";
+        } else if(productType.value == "L3C") {
+            generateReprocess = true;
+            params.jsonParameters = "{ \"reproc\": 1}";
+        } else if(productType.value == "L3D") {
+            generateFitted = true;
+            params.jsonParameters = "{ \"fitted\": 1}";
+        }
+    }
+    // we need to have at least one flag set
+    if(!generateLai && !generateReprocess && !generateFitted) {
+        return params;
+    }
+
+    QDateTime seasonStartDate;
+    QDateTime seasonEndDate;
+    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
+
+    // by default the start date is the season start date
+    QDateTime startDate = seasonStartDate;
     QDateTime endDate = QDateTime::fromTime_t(scheduledDate);
+
     if(generateLai || generateReprocess) {
+        int productionInterval = mapCfg[generateLai ? "processor.l3b.production_interval":
+                                                      "processor.l3c.production_interval"].value.toInt();
         startDate = endDate.addDays(-productionInterval);
+        if(startDate < seasonStartDate) {
+            startDate = seasonStartDate;
+        }
     }
-    if(generateFitted) {
-        QDateTime seasonStartDate;
-        QDateTime seasonEndDate;
-        GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
-        // set the start date at the end of start season
-        startDate = seasonStartDate;
-    }
+
+    // ///////////////////////////////////////////////////////////////////
+    // TODO: REMOVE THIS AFTER TESTING
+//    if (1) {
+//        startDate = QDateTime::fromString("20160101", "yyyyMMdd");
+//        endDate = QDateTime::fromString("20160111", "yyyyMMdd");
+//    }
+    // ///////////////////////////////////////////////////////////////////
 
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
     if (params.productList.size() > 0) {
-        if(generateFitted) {
+        if(generateLai) {
+            params.isValid = true;
+        } else if(generateFitted) {
             if(params.productList.size() > 4) {
                 params.isValid = true;
             }
@@ -1090,7 +1123,7 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
 
 bool LaiRetrievalHandler::GetMonoDateFormatterParamInfosForProduct(
         const QString &product,
-        const QMap<QString, QStringList> &mapTiles,
+        const QMap<QString, TileTemporalFilesInfo> &mapTiles,
         const QMap<QString, LAIProductFormatterParams> &mapTileToParams,
         const QMap<QString, QStringList> &inputProductToTilesMap,
         QStringList &outProductTiles,
@@ -1098,7 +1131,7 @@ bool LaiRetrievalHandler::GetMonoDateFormatterParamInfosForProduct(
         QStringList &outProductTileMetaFiles) {
 
     for(auto tile : mapTiles.keys()) {
-        QStringList listTemporalTiles = mapTiles.value(tile);
+        QStringList listTemporalTiles = mapTiles.value(tile).temporalTileFiles;
         LAIProductFormatterParams params = mapTileToParams[tile];
 
         // normally we have the same number

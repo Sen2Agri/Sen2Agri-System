@@ -116,25 +116,30 @@ private:
             tree->Add(polygonNode, folder);
 
             PolygonType::Pointer polygon;
+            std::string rasterFileName = file;
             if (auto metadata = itk::MACCSMetadataReader::New()->ReadMetadata(file)) {
-                polygon = FootprintFromMACCSMetadata(*metadata);
-
-                vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
+                //polygon = FootprintFromMACCSMetadata(*metadata);
+                //vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
+                std::string rootFolder = extractFolder(file);
+                rasterFileName = getMACCSRasterFileName(rootFolder, metadata->ProductOrganization.ImageFiles, "_FRE");
+                if (rasterFileName.size() == 0) {
+                    rasterFileName = getMACCSRasterFileName(rootFolder, metadata->ProductOrganization.ImageFiles, "_FRE_R1");
+                }
             } else if (auto metadata = itk::SPOT4MetadataReader::New()->ReadMetadata(file)) {
-                polygon = FootprintFromSPOT4Metadata(*metadata);
-
-                vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
-            } else {
-                auto reader = otb::ImageFileReader<FloatVectorImageType>::New();
-                reader->SetFileName(file);
-                reader->UpdateOutputInformation();
-
-                auto output = reader->GetOutput();
-
-                polygon = FootprintFromGeoCoding(output);
-
-                vectorData->SetProjectionRef(output->GetProjectionRef());
+                //polygon = FootprintFromSPOT4Metadata(*metadata);
+                //vectorData->SetProjectionRef(otb::GeoInformationConversion::ToWKT(4326));
+                std::string rootFolder = extractFolder(file);
+                rasterFileName = rootFolder + metadata->Files.OrthoSurfCorrPente;
             }
+            auto reader = otb::ImageFileReader<FloatVectorImageType>::New();
+            reader->SetFileName(rasterFileName);
+            reader->UpdateOutputInformation();
+
+            auto output = reader->GetOutput();
+
+            polygon = FootprintFromGeoCoding(output);
+
+            vectorData->SetProjectionRef(output->GetProjectionRef());
 
             polygonNode->SetPolygonExteriorRing(polygon);
 
@@ -291,6 +296,34 @@ private:
         index[0] = v[0];
         index[1] = v[1];
         return index;
+    }
+
+    // Extract the folder from a given path.
+    std::string extractFolder(const std::string& filename) {
+        size_t pos = filename.find_last_of("/\\");
+        if (pos == std::string::npos) {
+            return "";
+        }
+
+        return filename.substr(0, pos) + "/";
+    }
+
+    // Get the path to the Spot4 raster
+    std::string getSPOT4RasterFileName(const SPOT4Metadata & desc, const std::string& folder) {
+        return folder + desc.Files.OrthoSurfCorrPente;
+    }
+
+    // Return the path to a file for which the name end in the ending
+    std::string getMACCSRasterFileName(const std::string& rootFolder, const std::vector<MACCSFileInformation>& imageFiles, const std::string& ending) {
+
+        for (const MACCSFileInformation& fileInfo : imageFiles) {
+            if (fileInfo.LogicalName.length() >= ending.length() &&
+                    0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
+                return rootFolder + fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF";
+            }
+
+        }
+        return "";
     }
 
     ImageFileReaderType::Pointer m_ImageFileReader;

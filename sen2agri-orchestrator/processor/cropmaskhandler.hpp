@@ -38,7 +38,7 @@ private:
                                         QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList);
 
     void HandleNewTilesList(EventProcessingContext &ctx,
-                           const JobSubmittedEvent &event, const QStringList &listProducts, CropMaskGlobalExecutionInfos &globalExecInfos);
+                           const JobSubmittedEvent &event, const TileTemporalFilesInfo &tileTemporalFilesInfo, CropMaskGlobalExecutionInfos &globalExecInfos);
     void HandleInsituJob(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QStringList &listProducts,
                          CropMaskGlobalExecutionInfos &globalExecInfos);
     void HandleNoInsituJob(EventProcessingContext &ctx, const JobSubmittedEvent &event,

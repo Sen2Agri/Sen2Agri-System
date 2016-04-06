@@ -30,7 +30,7 @@ private:
     void CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
                             QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList);
     void HandleNewTilesList(EventProcessingContext &ctx, const JobSubmittedEvent &event, PhenoGlobalExecutionInfos &globalExecInfos,
-                            const QStringList &listProducts);
+                            const TileTemporalFilesInfo &tileTemporalFilesInfo);
     void WriteExecutionInfosFile(const QString &executionInfosPath,
                                  const QStringList &listProducts);
     QStringList GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,

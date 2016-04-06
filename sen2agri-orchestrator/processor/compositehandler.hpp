@@ -34,11 +34,11 @@ private:
 
     void HandleNewTilesList(EventProcessingContext &ctx,
                                const JobSubmittedEvent &event,
-                               const QStringList &listProducts, CompositeGlobalExecutionInfos &globalExecInfos);
+                               const TileTemporalFilesInfo &tileTemporalFilesInfo, CompositeGlobalExecutionInfos &globalExecInfos);
     bool IsProductAcceptableForJob(int jobId, const ProductAvailableEvent &event);
     void FilterInputProducts(QStringList &listFiles, int productDate, int halfSynthesis);
 
-    void CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList, QList<std::reference_wrapper<const TaskToSubmit> > &outProdFormatterParentsList, int nbProducts);
+    void CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList, QList<std::reference_wrapper<const TaskToSubmit> > &outProdFormatterParentsList, const TileTemporalFilesInfo &tileTemporalFilesInfo);
     void WriteExecutionInfosFile(const QString &executionInfosPath,
                                  const QJsonObject &parameters,
                                  std::map<QString, QString> &configParameters,

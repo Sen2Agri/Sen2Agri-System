@@ -21,8 +21,10 @@ void PhenoNdviHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
 
 void PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
                                           const JobSubmittedEvent &event, PhenoGlobalExecutionInfos &globalExecInfos,
-                                          const QStringList &listProducts)
+                                          const TileTemporalFilesInfo &tileTemporalFilesInfo)
 {
+    const QStringList &listProducts = tileTemporalFilesInfo.temporalTileFiles;
+
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     // Get the resolution value
     int resolution = 0;
@@ -83,9 +85,6 @@ void PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
     PhenoProductFormatterParams &productFormatterParams = globalExecInfos.prodFormatParams;
     productFormatterParams.metricsParamsImg = metricsParamsImg;
     productFormatterParams.metricsFlagsImg = metricsFlagsImg;
-    // Get the tile ID from the product XML name. We extract it from the first product in the list as all
-    // producs should be for the same tile
-    productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
 }
 
 void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
@@ -99,7 +98,7 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                     toStdString());
     }
 
-    QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
+    QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.jobId, listProducts, ProductType::L2AProductTypeId);
     QList<PhenoProductFormatterParams> listParams;
 
     TaskToSubmit productFormatterTask{"product-formatter", {}};
@@ -107,11 +106,12 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     //container for all task
     //QList<TaskToSubmit> allTasksList;
     QList<PhenoGlobalExecutionInfos> listPhenoInfos;
-    for(auto tile : mapTiles.keys())
+    for(auto tileId : mapTiles.keys())
     {
-       QStringList listTemporalTiles = mapTiles.value(tile);
+       const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
        listPhenoInfos.append(PhenoGlobalExecutionInfos());
        PhenoGlobalExecutionInfos &infos = listPhenoInfos[listPhenoInfos.size()-1];
+       infos.prodFormatParams.tileId = "TILE_" + tileId;
        HandleNewTilesList(ctx, event, infos, listTemporalTiles);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;

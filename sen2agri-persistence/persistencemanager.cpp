@@ -911,16 +911,19 @@ Product PersistenceManagerDBProvider::GetProduct(const QString &productName)
         });
 }
 
-ProductList PersistenceManagerDBProvider::GetProductsForTile(const QString &tileId, int satelliteId)
+ProductList PersistenceManagerDBProvider::GetProductsForTile(const QString &tileId, ProductType productType,
+                                                             int satelliteId, int targetSatelliteId)
 {
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(
         __func__, [&] {
             auto query = db.prepareQuery(QStringLiteral("select * from sp_get_products_for_tile("
-                                                        ":tileId, :satelliteId)"));
+                                                        ":tileId, :productType, :satelliteId, :targeSatelliteId)"));
             query.bindValue(QStringLiteral(":tileId"), tileId);
+            query.bindValue(QStringLiteral(":productType"), static_cast<int>(productType));
             query.bindValue(QStringLiteral(":satelliteId"), satelliteId);
+            query.bindValue(QStringLiteral(":targeSatelliteId"), targetSatelliteId);
             query.setForwardOnly(true);
             if (!query.exec()) {
                 throw_query_error(db, query);

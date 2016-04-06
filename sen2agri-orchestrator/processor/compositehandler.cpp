@@ -65,14 +65,35 @@ void CompositeHandler::HandleProductAvailableImpl(EventProcessingContext &ctx,
 
 void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
                                                 QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList,
-                                                 int nbProducts)
+                                                const TileTemporalFilesInfo &tileTemporalFilesInfo)
 {
+    bool bFootprintTaskPresent = false;
+    // if we have multiple satellites and we don't have yet the shape file for this tile, then we must
+    // create the footprint for the primary satellite ID
+    if(tileTemporalFilesInfo.uniqueSatteliteIds.size() > 1 && tileTemporalFilesInfo.shapePath == "") {
+        // add the task for creating the footprint
+        outAllTasksList.append(TaskToSubmit{ "composite-create-footprint", {} });
+        bFootprintTaskPresent = true;
+    }
+
+    int nbProducts = tileTemporalFilesInfo.temporalTileFiles.size();
     // just create the tasks but with no information so far
     for (int i = 0; i < nbProducts; i++) {
         outAllTasksList.append(TaskToSubmit{ "composite-mask-handler", {} });
         outAllTasksList.append(TaskToSubmit{ "composite-preprocessing", {} });
-        outAllTasksList.append(TaskToSubmit{ "composite-weigh-aot", {} });
-        outAllTasksList.append(TaskToSubmit{ "composite-weigh-on-clouds", {} });
+
+        // if it is a secondary satellite, then we must cut the masks and the image with
+        // gdalwarp according to the primary satellite shape
+        if(tileTemporalFilesInfo.satelliteIds[i] != tileTemporalFilesInfo.primarySatelliteId) {
+            outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
+            outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
+            outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
+            outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
+            outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
+        }
+
+        outAllTasksList.append(TaskToSubmit{ "composite-weight-aot", {} });
+        outAllTasksList.append(TaskToSubmit{ "composite-weight-on-clouds", {} });
         outAllTasksList.append(TaskToSubmit{ "composite-total-weight", {} });
         outAllTasksList.append(TaskToSubmit{ "composite-update-synthesis", {} });
         outAllTasksList.append(TaskToSubmit{ "composite-splitter", {} });
@@ -80,35 +101,78 @@ void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
 
     // now fill the tasks hierarchy infos
     int i;
+    int nCurTaskIdx = 0;
+
     for (i = 0; i < nbProducts; i++) {
         if (i > 0) {
             // update the mask handler with the reference of the previous composite splitter
-            int nMaskHandlerIdx = i * TasksNoPerProduct;
-            int nPrevCompositeSplitterIdx = (i - 1) * TasksNoPerProduct + (TasksNoPerProduct - 1);
-            outAllTasksList[nMaskHandlerIdx].parentTasks.append(
-                outAllTasksList[nPrevCompositeSplitterIdx]);
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+            nCurTaskIdx++;
+        } else {
+            nCurTaskIdx++;
+            // if it is the case, add the CreateFootprint as parent to first maskhandler
+            if(bFootprintTaskPresent) {
+                outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+                nCurTaskIdx++;
+            }
         }
         // the others comme naturally updated
         // composite-preprocessing -> mask-handler
-        outAllTasksList[i * TasksNoPerProduct + 1].parentTasks.append(
-            outAllTasksList[i * TasksNoPerProduct]);
-        // weigh-aot -> composite-preprocessing
-        outAllTasksList[i * TasksNoPerProduct + 2].parentTasks.append(
-            outAllTasksList[i * TasksNoPerProduct + 1]);
-        // weigh-on-clouds -> composite-preprocessing
-        outAllTasksList[i * TasksNoPerProduct + 3].parentTasks.append(
-            outAllTasksList[i * TasksNoPerProduct + 1]);
-        // total-weight -> weigh-aot and weigh-on-clouds
-        outAllTasksList[i * TasksNoPerProduct + 4].parentTasks.append(
-            outAllTasksList[i * TasksNoPerProduct + 2]);
-        outAllTasksList[i * TasksNoPerProduct + 4].parentTasks.append(
-            outAllTasksList[i * TasksNoPerProduct + 3]);
-        // update-synthesis -> total-weight
-        outAllTasksList[i * TasksNoPerProduct + 5].parentTasks.append(
-            outAllTasksList[i * TasksNoPerProduct + 4]);
+        outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+        nCurTaskIdx++;
+
+        // check if we need to cut (according to primary shape) the product components if we have secondary satellite product
+        if(tileTemporalFilesInfo.satelliteIds[i] != tileTemporalFilesInfo.primarySatelliteId) {
+            // launch in parallel all the cutting gdalwarp tasks
+            int prevTaskId = nCurTaskIdx-1;
+            int imgCutIdx = nCurTaskIdx++;
+            outAllTasksList[imgCutIdx].parentTasks.append(outAllTasksList[prevTaskId]);
+            int aotCutIdx = nCurTaskIdx++;
+            outAllTasksList[aotCutIdx].parentTasks.append(outAllTasksList[prevTaskId]);
+            int cldCutIdx = nCurTaskIdx++;
+            outAllTasksList[cldCutIdx].parentTasks.append(outAllTasksList[prevTaskId]);
+            int watCutIdx = nCurTaskIdx++;
+            outAllTasksList[watCutIdx].parentTasks.append(outAllTasksList[prevTaskId]);
+            int snowCutIdx = nCurTaskIdx++;
+            outAllTasksList[snowCutIdx].parentTasks.append(outAllTasksList[prevTaskId]);
+
+            // weigh-aot -> composite-cut-aot
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[aotCutIdx]);
+            nCurTaskIdx++;
+            // weigh-on-clouds -> composite-cut-clouds
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[cldCutIdx]);
+            nCurTaskIdx++;
+
+            // total-weight -> weigh-aot and weigh-on-clouds
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-2]);
+            nCurTaskIdx++;
+
+            // update-synthesis -> total-weight & composite-cut-img & composite-cut-snow & composite-cut-wat
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[imgCutIdx]);
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[watCutIdx]);
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[snowCutIdx]);
+            nCurTaskIdx++;
+        } else {
+            // this is the case when we need to do no cutting (we are either primary satellite or we have only one satellite)
+            // weigh-aot -> composite-preprocessing
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+            nCurTaskIdx++;
+            // weigh-on-clouds -> composite-preprocessing
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-2]);
+            nCurTaskIdx++;
+            // total-weight -> weigh-aot and weigh-on-clouds
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-2]);
+            nCurTaskIdx++;
+            // update-synthesis -> total-weight
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+            nCurTaskIdx++;
+        }
         // composite-splitter -> update-synthesis
-        outAllTasksList[i * TasksNoPerProduct + 6].parentTasks.append(
-            outAllTasksList[i * TasksNoPerProduct + 5]);
+        outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+        nCurTaskIdx++;
     }
     // product-formatter -> the last composite-splitter
     outProdFormatterParentsList.append(outAllTasksList[outAllTasksList.size() - 1]);
@@ -116,9 +180,10 @@ void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
 
 void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
                                           const JobSubmittedEvent &event,
-                                          const QStringList &listProducts,
+                                          const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                           CompositeGlobalExecutionInfos &globalExecInfos)
 {
+    const QStringList &listProducts = tileTemporalFilesInfo.temporalTileFiles;
     int jobId = event.jobId;
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters =
@@ -161,79 +226,149 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
 
     QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
     QList<std::reference_wrapper<const TaskToSubmit>> &prodFormParTsksList = globalExecInfos.prodFormatParams.parentsTasksRef;
-    CreateTasksForNewProducts(allTasksList, prodFormParTsksList, listProducts.size());
+    CreateTasksForNewProducts(allTasksList, prodFormParTsksList, tileTemporalFilesInfo);
 
     NewStepList &steps = globalExecInfos.allStepsList;
+    int nCurTaskIdx = 0;
+
+    QString shapePath = tileTemporalFilesInfo.shapePath;
+    // if we have multiple satellites and we don't have yet the shape file for this tile, then we must
+    // create the footprint for the primary satellite ID
+    if(tileTemporalFilesInfo.uniqueSatteliteIds.size() > 1 && tileTemporalFilesInfo.shapePath == "") {
+        // CreateFootprint should execute on the first primary product metadatafrom the tile
+        QString primaryTileMetadata;
+        for(int i = 0; i<tileTemporalFilesInfo.temporalTileFiles.size(); i++) {
+            if(tileTemporalFilesInfo.satelliteIds[i] == tileTemporalFilesInfo.primarySatelliteId) {
+                primaryTileMetadata = tileTemporalFilesInfo.temporalTileFiles[i];
+                break;
+            }
+        }
+        TaskToSubmit &createFootprintTaskHandler = allTasksList[nCurTaskIdx++];
+        ctx.SubmitTasks(jobId, {createFootprintTaskHandler});
+        std::map<QString, QString> executorConfigParameters =
+            ctx.GetJobConfigurationParameters(jobId, "executor.shapes_dir");
+        QString shapeFilesFolder = executorConfigParameters["executor.shapes_dir"];
+        shapePath = ProcessorHandlerHelper::BuildShapeName(shapeFilesFolder, tileTemporalFilesInfo.tileId,
+                                                           event.jobId, createFootprintTaskHandler.taskId);
+        QStringList createFootprintArgs = { "CreateFootprint", "-in", primaryTileMetadata,
+                                            "-mode", "metadata", "-out", shapePath};
+        steps.append(createFootprintTaskHandler.CreateStep("CreateFootprint", createFootprintArgs));
+    }
 
     QString prevL3AProdRefls;
     QString prevL3AProdWeights;
     QString prevL3AProdFlags;
     QString prevL3AProdDates;
     QString prevL3ARgbFile;
-
     for (int i = 0; i < listProducts.size(); i++) {
         const auto &inputProduct = listProducts[i];
-
-        TaskToSubmit &maskHandler = allTasksList[i * TasksNoPerProduct];
-        TaskToSubmit &compositePreprocessing = allTasksList[i * TasksNoPerProduct + 1];
-        TaskToSubmit &weightAot = allTasksList[i * TasksNoPerProduct + 2];
-        TaskToSubmit &weightOnClouds = allTasksList[i * TasksNoPerProduct + 3];
-        TaskToSubmit &totalWeight = allTasksList[i * TasksNoPerProduct + 4];
-        TaskToSubmit &updateSynthesis = allTasksList[i * TasksNoPerProduct + 5];
-        TaskToSubmit &compositeSplitter = allTasksList[i * TasksNoPerProduct + 6];
-
-        ctx.SubmitTasks(jobId, { maskHandler, compositePreprocessing, weightAot, weightOnClouds,
-                                 totalWeight, updateSynthesis, compositeSplitter });
-
+        // Mask Handler Step
+        TaskToSubmit &maskHandler = allTasksList[nCurTaskIdx++];
+        ctx.SubmitTasks(jobId, {maskHandler});
         const auto &masksFile = maskHandler.GetFilePath("all_masks_file.tif");
-        const auto &outResImgBands = compositePreprocessing.GetFilePath("img_res_bands.tif");
-        const auto &cldResImg = compositePreprocessing.GetFilePath("cld_res.tif");
-        const auto &waterResImg = compositePreprocessing.GetFilePath("water_res.tif");
-        const auto &snowResImg = compositePreprocessing.GetFilePath("snow_res.tif");
-        const auto &aotResImg = compositePreprocessing.GetFilePath("aot_res.tif");
-
-        const auto &outWeightAotFile = weightAot.GetFilePath("weight_aot.tif");
-
-        const auto &outWeightCldFile = weightOnClouds.GetFilePath("weight_cloud.tif");
-
-        const auto &outTotalWeighFile = totalWeight.GetFilePath("weight_total.tif");
-
-        const auto &outL3AResultFile = updateSynthesis.GetFilePath("L3AResult.tif");
-
-        const auto &outL3AResultReflsFile = compositeSplitter.GetFilePath("L3AResult_refls.tif");
-        const auto &outL3AResultWeightsFile =
-            compositeSplitter.GetFilePath("L3AResult_weights.tif");
-        const auto &outL3AResultFlagsFile = compositeSplitter.GetFilePath("L3AResult_flags.tif");
-        const auto &outL3AResultDatesFile = compositeSplitter.GetFilePath("L3AResult_dates.tif");
-        const auto &outL3AResultRgbFile = compositeSplitter.GetFilePath("L3AResult_rgb.tif");
-
         QStringList maskHandlerArgs = { "MaskHandler", "-xml",         inputProduct, "-out",
                                         masksFile,     "-sentinelres", resolutionStr };
+        steps.append(maskHandler.CreateStep("MaskHandler", maskHandlerArgs));
+
+        TaskToSubmit &compositePreprocessing = allTasksList[nCurTaskIdx++];
+        ctx.SubmitTasks(jobId, {compositePreprocessing});
+        // Composite preprocessing Step
+        auto outResImgBands = compositePreprocessing.GetFilePath("img_res_bands.tif");
+        auto cldResImg = compositePreprocessing.GetFilePath("cld_res.tif");
+        auto waterResImg = compositePreprocessing.GetFilePath("water_res.tif");
+        auto snowResImg = compositePreprocessing.GetFilePath("snow_res.tif");
+        auto aotResImg = compositePreprocessing.GetFilePath("aot_res.tif");
         QStringList compositePreprocessingArgs = { "CompositePreprocessing2", "-xml", inputProduct,
                                                    "-bmap", bandsMapping, "-res", resolutionStr,
                                                    "-msk", masksFile, "-outres", outResImgBands,
                                                    "-outcmres", cldResImg, "-outwmres", waterResImg,
-                                                   "-outsmres", snowResImg, "-outaotres",
-                                                   aotResImg };
+                                                   "-outsmres", snowResImg, "-outaotres", aotResImg };
         if(scatCoeffs.length() > 0) {
             compositePreprocessingArgs.append("-scatcoef");
             compositePreprocessingArgs.append(scatCoeffs);
         }
+        steps.append(compositePreprocessing.CreateStep("CompositePreprocessing", compositePreprocessingArgs));
+
+        if(tileTemporalFilesInfo.satelliteIds[i] != tileTemporalFilesInfo.primarySatelliteId) {
+            TaskToSubmit &cutImgTask = allTasksList[nCurTaskIdx++];
+            ctx.SubmitTasks(jobId, {cutImgTask});
+
+            const auto &cutImgFile = cutImgTask.GetFilePath("img_res_bands_clipped.tif");
+            QStringList gdalWarpArgs = { "-dstnodata", "-10000", "-overwrite",
+                           "-cutline", shapePath, "-crop_to_cutline", outResImgBands, cutImgFile};
+            steps.append(cutImgTask.CreateStep("gdalwarp-img", gdalWarpArgs));
+            outResImgBands = cutImgFile;
+
+            TaskToSubmit &cutAotTask = allTasksList[nCurTaskIdx++];
+            ctx.SubmitTasks(jobId, {cutAotTask});
+            const auto &cutAotFile = cutAotTask.GetFilePath("aot_res_clipped.tif");
+            QStringList gdalWarpAotArgs = { "-dstnodata", "-10000", "-overwrite",
+                            "-cutline", shapePath, "-crop_to_cutline", aotResImg, cutAotFile};
+            steps.append(cutAotTask.CreateStep("gdalwarp-aot", gdalWarpAotArgs));
+            aotResImg = cutAotFile;
+
+            TaskToSubmit &cutCldTask = allTasksList[nCurTaskIdx++];
+            ctx.SubmitTasks(jobId, {cutCldTask});
+            const auto &cutCldFile = cutCldTask.GetFilePath("cld_res_clipped.tif");
+            QStringList gdalWarpCldArgs = { "-dstnodata", "0", "-overwrite",
+                            "-cutline", shapePath, "-crop_to_cutline", cldResImg, cutCldFile};
+            steps.append(cutCldTask.CreateStep("gdalwarp-cld", gdalWarpCldArgs));
+            cldResImg = cutCldFile;
+
+            TaskToSubmit &cutWatTask = allTasksList[nCurTaskIdx++];
+            ctx.SubmitTasks(jobId, {cutWatTask});
+            const auto &cutWatFile = cutWatTask.GetFilePath("water_res_clipped.tif");
+            QStringList gdalWarpWatArgs = { "-dstnodata", "0", "-overwrite",
+                            "-cutline", shapePath, "-crop_to_cutline", waterResImg, cutWatFile};
+            steps.append(cutWatTask.CreateStep("gdalwarp-wat", gdalWarpWatArgs));
+            waterResImg = cutWatFile;
+
+            TaskToSubmit &cutSnowTask = allTasksList[nCurTaskIdx++];
+            ctx.SubmitTasks(jobId, {cutSnowTask});
+            const auto &cutSnowFile = cutSnowTask.GetFilePath("snow_res_clipped.tif");
+            QStringList gdalWarpSnowArgs = { "-dstnodata", "0", "-overwrite",
+                            "-cutline", shapePath, "-crop_to_cutline", snowResImg, cutSnowFile};
+            steps.append(cutSnowTask.CreateStep("gdalwarp-snow", gdalWarpSnowArgs));
+            snowResImg = cutSnowFile;
+        }
+        TaskToSubmit &weightAot = allTasksList[nCurTaskIdx++];
+        ctx.SubmitTasks(jobId, {weightAot});
+        TaskToSubmit &weightOnClouds = allTasksList[nCurTaskIdx++];
+        ctx.SubmitTasks(jobId, {weightOnClouds});
+        TaskToSubmit &totalWeight = allTasksList[nCurTaskIdx++];
+        ctx.SubmitTasks(jobId, {totalWeight});
+        TaskToSubmit &updateSynthesis = allTasksList[nCurTaskIdx++];
+        ctx.SubmitTasks(jobId, {updateSynthesis});
+        TaskToSubmit &compositeSplitter = allTasksList[nCurTaskIdx++];
+        ctx.SubmitTasks(jobId, {compositeSplitter});
+
+        // Weight AOT Step
+        const auto &outWeightAotFile = weightAot.GetFilePath("weight_aot.tif");
         QStringList weightAotArgs = { "WeightAOT",     "-xml",     inputProduct, "-in",
                                       aotResImg,       "-waotmin", weightAOTMin, "-waotmax",
                                       weightAOTMax,    "-aotmax",  AOTMax,       "-out",
                                       outWeightAotFile };
+        steps.append(weightAot.CreateStep("WeightAOT", weightAotArgs));
+
+        // Weight on clouds Step
+        const auto &outWeightCldFile = weightOnClouds.GetFilePath("weight_cloud.tif");
         QStringList weightOnCloudArgs = { "WeightOnClouds", "-inxml",         inputProduct,
                                           "-incldmsk",      cldResImg,        "-coarseres",
                                           coarseRes,        "-sigmasmallcld", sigmaSmallCloud,
-                                          "-sigmalargecld", sigmaLargeCloud,  "-out",
-                                          outWeightCldFile };
+                                          "-sigmalargecld", sigmaLargeCloud,  "-out", outWeightCldFile };
+        steps.append(weightOnClouds.CreateStep("WeightOnClouds", weightOnCloudArgs));
 
+        // Total weight Step
+        const auto &outTotalWeighFile = totalWeight.GetFilePath("weight_total.tif");
         QStringList totalWeightArgs = { "TotalWeight",    "-xml",           inputProduct,
                                         "-waotfile",      outWeightAotFile, "-wcldfile",
                                         outWeightCldFile, "-l3adate",       l3aSynthesisDate,
                                         "-halfsynthesis", synthalf,         "-wdatemin",
                                         weightDateMin,    "-out",           outTotalWeighFile };
+        steps.append(totalWeight.CreateStep("TotalWeight", totalWeightArgs));
+
+        // Update Synthesis Step
+        const auto &outL3AResultFile = updateSynthesis.GetFilePath("L3AResult.tif");
         QStringList updateSynthesisArgs = { "UpdateSynthesis", "-in",   outResImgBands,    "-bmap",
                                             bandsMapping,      "-xml",  inputProduct,      "-csm",
                                             cldResImg,         "-wm",   waterResImg,       "-sm",
@@ -249,7 +384,14 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             updateSynthesisArgs.append("-prevl3af");
             updateSynthesisArgs.append(prevL3AProdFlags);
         }
+        steps.append(updateSynthesis.CreateStep("UpdateSynthesis", updateSynthesisArgs));
 
+        // Composite Splitter Step
+        const auto &outL3AResultReflsFile = compositeSplitter.GetFilePath("L3AResult_refls.tif");
+        const auto &outL3AResultWeightsFile = compositeSplitter.GetFilePath("L3AResult_weights.tif");
+        const auto &outL3AResultFlagsFile = compositeSplitter.GetFilePath("L3AResult_flags.tif");
+        const auto &outL3AResultDatesFile = compositeSplitter.GetFilePath("L3AResult_dates.tif");
+        const auto &outL3AResultRgbFile = compositeSplitter.GetFilePath("L3AResult_rgb.tif");
         bool isLastProduct = (i == (listProducts.size() - 1));
         QStringList compositeSplitterArgs = { "CompositeSplitter2",
                                               "-in", outL3AResultFile, "-xml", inputProduct, "-bmap", bandsMapping,
@@ -259,6 +401,7 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
                                               "-outflags", (isLastProduct ? ("\"" + outL3AResultFlagsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultFlagsFile),
                                               "-outrgb", (isLastProduct ? ("\"" + outL3AResultRgbFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultRgbFile)
                                             };
+        steps.append(compositeSplitter.CreateStep("CompositeSplitter", compositeSplitterArgs));
 
         // save the created L3A product file for the next product creation
         prevL3AProdRefls = outL3AResultReflsFile;
@@ -266,16 +409,6 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
         prevL3AProdFlags = outL3AResultFlagsFile;
         prevL3AProdDates = outL3AResultDatesFile;
         prevL3ARgbFile = outL3AResultRgbFile;
-
-        // add these steps to the steps list to be submitted
-        steps.append(maskHandler.CreateStep("MaskHandler", maskHandlerArgs));
-        steps.append(compositePreprocessing.CreateStep("CompositePreprocessing",
-                                                       compositePreprocessingArgs));
-        steps.append(weightAot.CreateStep("WeightAOT", weightAotArgs));
-        steps.append(weightOnClouds.CreateStep("WeightOnClouds", weightOnCloudArgs));
-        steps.append(totalWeight.CreateStep("TotalWeight", totalWeightArgs));
-        steps.append(updateSynthesis.CreateStep("UpdateSynthesis", updateSynthesisArgs));
-        steps.append(compositeSplitter.CreateStep("CompositeSplitter", compositeSplitterArgs));
     }
 
     CompositeProductFormatterParams &productFormatterParams = globalExecInfos.prodFormatParams;
@@ -284,9 +417,6 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     productFormatterParams.prevL3AProdFlags = prevL3AProdFlags;
     productFormatterParams.prevL3AProdDates = prevL3AProdDates;
     productFormatterParams.prevL3ARgbFile = prevL3ARgbFile;
-    // Get the tile ID from the product XML name. We extract it from the first product in the list as all
-    // producs should be for the same tile
-    productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
 }
 
 void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath,
@@ -404,23 +534,22 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                     toStdString());
     }
 
-    QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
+    QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.jobId, listProducts,
+                                                               ProductType::L2AProductTypeId);
     QList<CompositeProductFormatterParams> listParams;
 
     TaskToSubmit productFormatterTask{"product-formatter", {}};
     NewStepList allSteps;
-    //container for all task
-    //QList<TaskToSubmit> allTasksList;
     QList<CompositeGlobalExecutionInfos> listCompositeInfos;
-    for(auto tile : mapTiles.keys())
+    for(auto tileId : mapTiles.keys())
     {
-       QStringList listTemporalTiles = mapTiles.value(tile);
+       const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
        listCompositeInfos.append(CompositeGlobalExecutionInfos());
        CompositeGlobalExecutionInfos &infos = listCompositeInfos[listCompositeInfos.size()-1];
+       infos.prodFormatParams.tileId = "TILE_" + tileId;
        HandleNewTilesList(ctx, event, listTemporalTiles, infos);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
-       //allTasksList.append(infos.allTasksList);
        allSteps.append(infos.allStepsList);
     }
 
@@ -553,26 +682,33 @@ QString CompositeHandler::DeductBandsMappingFile(const QStringList &listProducts
         return bandsMappingFile;
     }
     if(cntUniqueProdTypes == 1) {
-        if(listUniqueProductTypes[0] == ProcessorHandlerHelper::S2) {
+        if(listUniqueProductTypes[0] == ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2) {
             return (curBandsMappingPath + "/bands_mapping_s2.txt");
         }
-        if(listUniqueProductTypes[0] == ProcessorHandlerHelper::L8) {
+        if(listUniqueProductTypes[0] == ProcessorHandlerHelper::L2_PRODUCT_TYPE_L8) {
             resolution = 30;
             return (curBandsMappingPath + "/bands_mapping_L8.txt");
         }
-        if(listUniqueProductTypes[0] == ProcessorHandlerHelper::SPOT4) {
+        if(listUniqueProductTypes[0] == ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT4) {
             resolution = 20;
-            return (curBandsMappingPath + "/bands_mapping_spot.txt");
+            return (curBandsMappingPath + "/bands_mapping_spot4.txt");
         }
-        if(listUniqueProductTypes[0] == ProcessorHandlerHelper::SPOT5) {
+        if(listUniqueProductTypes[0] == ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT5) {
             resolution = 10;
             return (curBandsMappingPath + "/bands_mapping_spot5.txt");
         }
     } else {
-        if(listUniqueProductTypes.contains(ProcessorHandlerHelper::SPOT4) &&
-                listUniqueProductTypes.contains(ProcessorHandlerHelper::L8)) {
-            resolution = 10;
-            return (curBandsMappingPath + "/bands_mapping_Spot4_L8.txt");
+        if(listUniqueProductTypes.contains(ProcessorHandlerHelper::L2_PRODUCT_TYPE_L8)) {
+            if(listUniqueProductTypes.contains(ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2)) {
+                resolution = 10;
+                return (curBandsMappingPath + "/bands_mapping_s2_L8.txt");
+            } else if(listUniqueProductTypes.contains(ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT4)) {
+                resolution = 10;
+                return (curBandsMappingPath + "/bands_mapping_Spot4_L8.txt");
+            } else if(listUniqueProductTypes.contains(ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT5)) {
+                resolution = 10;
+                return (curBandsMappingPath + "/bands_mapping_Spot5_L8.txt");
+            }
         }
     }
     return bandsMappingFile;

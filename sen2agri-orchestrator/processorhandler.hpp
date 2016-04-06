@@ -3,14 +3,12 @@
 #include "model.hpp"
 #include "eventprocessingcontext.hpp"
 #include "schedulingcontext.h"
+#include "processorhandlerhelper.h"
 
 #define PRODUCTS_LOCATION_CFG_KEY "archiver.archive_path"
-
-#define SEASON_CFG_KEY_PREFIX "general."
-#define START_OF_SEASON_CFG_KEY "general.start_of_season"
-#define END_OF_SEASON_CFG_KEY "general.end_of_season"
-
 #define PRODUCT_FORMATTER_OUT_PROPS_FILE "product_properties.txt"
+
+typedef ProcessorHandlerHelper::TileTemporalFilesInfo TileTemporalFilesInfo;
 
 class ProcessorHandler
 {
@@ -41,6 +39,8 @@ protected:
     QStringList GetL2AInputProductsTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event);
     QString GetL2AProductForTileMetaFile(const QMap<QString, QStringList> &mapProductToTilesMetaFiles, const QString &tileMetaFile);
     bool GetParameterValueAsInt(const QJsonObject &parameters, const QString &key, int &outVal);
+
+    QMap<QString, TileTemporalFilesInfo> GroupTiles(EventProcessingContext &ctx, int jobId, const QStringList &listAllProductsTiles, ProductType productType);
 
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,

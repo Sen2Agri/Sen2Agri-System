@@ -67,7 +67,7 @@ public:
     int InsertProduct(const NewProduct &product);
     ProductList GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate);
     Product GetProduct(const QString &productName);
-    ProductList GetProductsForTile(const QString &tileId, int satelliteId);
+    ProductList GetProductsForTile(const QString &tileId, ProductType productType, int satelliteId, int targetSatelliteId);
 
     QString GetDashboardCurrentJobData(int page);
     QString GetDashboardServerResourceData();

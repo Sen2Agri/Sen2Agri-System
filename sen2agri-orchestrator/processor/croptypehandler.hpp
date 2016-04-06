@@ -31,7 +31,7 @@ private:
                                                     QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList,
                                                     bool bCropMaskEmpty);
     void HandleNewTilesList(EventProcessingContext &ctx,
-                            const JobSubmittedEvent &event, const QStringList &listProducts,
+                            const JobSubmittedEvent &event, const TileTemporalFilesInfo &tileTemporalFilesInfo,
                             const QString &cropMask, CropTypeGlobalExecutionInfos &globalExecInfos);
     QStringList GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                         const QStringList &listProducts, const QList<CropTypeProductFormatterParams> &productParams);

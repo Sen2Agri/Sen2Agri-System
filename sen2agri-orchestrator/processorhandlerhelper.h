@@ -1,14 +1,28 @@
 #ifndef PROCESSORHANDLERHELPER_H
 #define PROCESSORHANDLERHELPER_H
 
+#include "model.hpp"
+
 // 23*3600+59*60+59
 #define SECONDS_IN_DAY 86400
 class ProcessorHandlerHelper
 {
 public:
-    typedef enum {UNKNOWN = 0, S2 = 1, L8 = 2, SPOT4 =3, SPOT5 = 4} L2ProductType;
+    typedef enum {L2_PRODUCT_TYPE_UNKNOWN = 0,
+                  L2_PRODUCT_TYPE_S2 = 1,
+                  L2_PRODUCT_TYPE_L8 = 2,
+                  L2_PRODUCT_TYPE_SPOT4 =3,
+                  L2_PRODUCT_TYPE_SPOT5 = 4} L2ProductType;
+
+    typedef enum {SATELLITE_ID_TYPE_UNKNOWN = 0,
+                  SATELLITE_ID_TYPE_S2 = 1,
+                  SATELLITE_ID_TYPE_L8 = 2,
+                  SATELLITE_ID_TYPE_SPOT4 =3,
+                  SATELLITE_ID_TYPE_SPOT5 = 4} SatelliteIdType;
+
     typedef struct {
         L2ProductType productType;
+        SatelliteIdType satelliteIdType;
         // position of the date in the name when split by _
         int dateIdxInName;
         // The expected extension of the tile metadata file
@@ -17,12 +31,24 @@ public:
         QString tileNamePattern;
     } L2MetaTileNameInfos;
 
+    typedef struct {
+        QString tileId;
+        QStringList temporalTileFiles;
+        // the sattelite id for each temporal file
+        QList<SatelliteIdType> satelliteIds;
+        //the unique sattelites ids from the above list
+        QList<SatelliteIdType> uniqueSatteliteIds;
+        SatelliteIdType primarySatelliteId;
+        QString shapePath;
+    } TileTemporalFilesInfo;
+
+
     ProcessorHandlerHelper();
 
-    static QString GetTileId(const QString &path, bool *ok = 0);
-    static QString GetTileId(const QStringList &xmlFileNames, bool *ok = 0);
-    static QStringList GetProductTileIds(const QStringList &listFiles);
-    static QMap<QString, QStringList> GroupTiles(const QStringList &listAllProductsTiles);
+    static ProductType GetProductTypeFromFileName(const QString &path);
+    static QString GetTileId(const QString &path, SatelliteIdType &satelliteId);
+    //static QStringList GetProductTileIds(const QStringList &listFiles);
+    static QMap<QString, TileTemporalFilesInfo> GroupTiles(const QStringList &listAllProductsTiles, QList<SatelliteIdType> &outAllSatIds, SatelliteIdType &outPrimarySatelliteId);
     static QStringList GetTextFileLines(const QString &filePath);
     static QString GetFileNameFromPath(const QString &filePath);
     static bool IsValidHighLevelProduct(const QString &path);
@@ -38,9 +64,15 @@ public:
     static bool IsValidL2AMetadataFileName(const QString &path);
     static bool GetL2AIntevalFromProducts(const QStringList &productsList, QDateTime &minTime, QDateTime &maxTime);
     static bool GetCropReferenceFile(const QString &refDir, QString &shapeFile, QString &referenceRasterFile);
+    static void AddSatteliteIntersectingProducts(QMap<QString, TileTemporalFilesInfo> &mapSatellitesTilesInfos,
+                                                 QStringList &listSecondarySatLoadedProds, SatelliteIdType secondarySatId,
+                                                 TileTemporalFilesInfo &primarySatInfos);
+    static QString BuildShapeName(const QString &shapeFilesDir, const QString &tileId, int jobId, int taskId);
+    static QString GetShapeForTile(const QString &shapeFilesDir, const QString &tileId);
 
 private:
     static QMap<QString, L2MetaTileNameInfos> m_mapSensorL2ATileMetaFileInfos;
+    static QMap<QString, ProductType> m_mapHighLevelProductTypeInfos;
 };
 
 #endif // PROCESSORHANDLERHELPER_H

@@ -212,6 +212,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const KeyedMessage &message);
 const QDBusArgument &operator>>(const QDBusArgument &argument, KeyedMessage &message);
 
 enum class ProductType {
+    InvalidProductTypeId = 0,
     L2AProductTypeId = 1,
     L3AProductTypeId = 2,
     L3BProductTypeId = 3,

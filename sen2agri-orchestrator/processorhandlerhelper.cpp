@@ -3,78 +3,143 @@
 
 #include "qdatetime.h"
 
-
 #define INVALID_FILE_SEQUENCE   "!&"
 // Map from the sensor name to :
 //      - product type
 //      - pattern containing index of the date in the file name of the L2A product assuming _ separation
 /* static */
 QMap<QString, ProcessorHandlerHelper::L2MetaTileNameInfos> ProcessorHandlerHelper::m_mapSensorL2ATileMetaFileInfos =
-    {{"S2", {ProcessorHandlerHelper::S2, 8, "hdr", "S2A|S2B_*_*_L2VALD_<TILEID>_*_*_*_<DATE>.HDR"}},
-     {"L8", {ProcessorHandlerHelper::L8, 5, "hdr", "L8_*_L8C_L2VALD_<TILEID>_<DATE>.HDR"}},
-     {"SPOT4", {ProcessorHandlerHelper::SPOT4, 3, "xml", "SPOT4_*_*_<DATE>_*_*.xml"}},
-     {"SPOT5", {ProcessorHandlerHelper::SPOT5, 3, "xml", "SPOT5_*_*_<DATE>_*_*.xml"}},
-     {INVALID_FILE_SEQUENCE, {ProcessorHandlerHelper::UNKNOWN, -1, INVALID_FILE_SEQUENCE, ""}}    // this prefix is impossible to occur in the file name
+    {{"S2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 8, "hdr", "S2A|S2B_*_*_L2VALD_<TILEID>_*_*_*_<DATE>.HDR"}},
+     {"L8", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_L8, ProcessorHandlerHelper::SATELLITE_ID_TYPE_L8, 5, "hdr", "L8_*_L8C_L2VALD_<TILEID>_<DATE>.HDR"}},
+     {"SPOT4", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT4, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT4, 3, "xml", "SPOT4_*_*_<DATE>_*_*.xml"}},
+     {"SPOT5", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT5, ProcessorHandlerHelper::SATELLITE_ID_TYPE_SPOT5, 3, "xml", "SPOT5_*_*_<DATE>_*_*.xml"}},
+     // this prefix is impossible to occur in the file name
+     {INVALID_FILE_SEQUENCE, {ProcessorHandlerHelper::L2_PRODUCT_TYPE_UNKNOWN, ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN, -1, INVALID_FILE_SEQUENCE, ""}}
+};
+
+QMap<QString, ProductType> ProcessorHandlerHelper::m_mapHighLevelProductTypeInfos = {
+    {"L3A", ProductType::L3AProductTypeId},
+    {"L3B", ProductType::L3BProductTypeId},
+    {"L3C", ProductType::L3CProductTypeId},
+    {"L3D", ProductType::L3DProductTypeId},
+    {"L3E", ProductType::L3EProductTypeId},
+    {"L4A", ProductType::L4AProductTypeId},
+    {"L4B", ProductType::L4BProductTypeId},
 };
 
 ProcessorHandlerHelper::ProcessorHandlerHelper() {}
 
+ProductType ProcessorHandlerHelper::GetProductTypeFromFileName(const QString &path) {
+    QFileInfo info(path);
+    QString name;
+    if(info.isDir()) {
+        name = info.dir().dirName();
+    } else {
+        name = info.baseName();
+    }
+    QStringList nameWords = name.split("_");
+    if(nameWords.size() > 2) {
+        // we have an higher level product
+        if(nameWords[0].indexOf("S2AGRI") != -1) {
+            QMap<QString, ProductType>::iterator i;
+            i = m_mapHighLevelProductTypeInfos.find(nameWords[1]);
+            if(i != m_mapHighLevelProductTypeInfos.end()) {
+                return i.value();
+            }
+        } else {
+            const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(name);
+            if(infos.productType != L2_PRODUCT_TYPE_UNKNOWN) {
+                return ProductType::L2AProductTypeId;
+            }
+        }
+    }
+    return ProductType::InvalidProductTypeId;
+}
+
 /* static */
-QString ProcessorHandlerHelper::GetTileId(const QString &path, bool *ok)
+QString ProcessorHandlerHelper::GetTileId(const QString &path, SatelliteIdType &satelliteId)
 {
-    if(ok) *ok = false;
     // First remove the extension
     QFileInfo info(path);
     QString fileNameWithoutExtension = info.completeBaseName();
-    QString extension = info.suffix();
+    satelliteId = SATELLITE_ID_TYPE_UNKNOWN;
+    //QString extension = info.suffix();
     // Split the name by "_" and search the part having _Txxxxx (_T followed by 5 characters)
     QStringList pieces = fileNameWithoutExtension.split("_");
-    for (const QString &piece : pieces) {
-        if (((piece.length() == 6) || (piece.length() == 7)) && (piece.at(0) == 'T')) {
-            if(ok) *ok = true;
-            return QString("TILE_" + piece);
-        }
-    }
-    if(QString::compare(extension, "hdr", Qt::CaseInsensitive) == 0) {
-        // check if is S2
-        if((pieces.size() == 9) && (pieces[0].indexOf("S2") != -1) && (pieces[5] == "")) {
-            if(ok) *ok = true;
-            return QString("TILE_" + pieces[4]);
-        } else if((pieces.size() == 6) && (pieces[0].indexOf("L8") != -1) && (pieces[3] == "L2VALD")) {
-            if(ok) *ok = true;
-            return QString("TILE_" + pieces[4]);
-        }
-    }
 
-    return QString("TILE_00000");
-}
-
-/* static */
-QString ProcessorHandlerHelper::GetTileId(const QStringList &xmlFileNames, bool *ok)
-{
-    bool bOk = false;
-    if(ok) *ok = bOk;
-    // we might have combined tiles (from S2 and L8 for example but L8 does not have a tile ID)
-    for (const QString &xmlFileName : xmlFileNames) {
-        QString tileId = GetTileId(xmlFileName, &bOk);
-        if(bOk) {
-            if(ok) *ok = bOk;
-            return tileId;
-        }
-    }
-    return QString("TILE_00000");
-}
-
-QMap<QString, QStringList> ProcessorHandlerHelper::GroupTiles(const QStringList &listAllProductsTiles) {
-    QMap<QString, QStringList> mapTiles;
-    for(const QString &tileFile: listAllProductsTiles) {
-        QString tileId = GetTileId(tileFile);
-        if(mapTiles.contains(tileId)) {
-            mapTiles[tileId].append(tileFile);
+    ProductType productType = GetProductTypeFromFileName(path);
+    if(productType != ProductType::InvalidProductTypeId) {
+        if(productType == ProductType::L2AProductTypeId) {
+            const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(fileNameWithoutExtension);
+            satelliteId = infos.satelliteIdType;
+            if(infos.productType == L2_PRODUCT_TYPE_S2) {
+                if((pieces.size() == 9) && (pieces[5] == "")) {
+                    return QString(pieces[4]);
+                }
+            } else if(infos.productType == L2_PRODUCT_TYPE_L8) {
+                if((pieces.size() == 6) && (pieces[3] == "L2VALD")) {
+                    return QString(pieces[4]);
+                }
+            }
         } else {
-            mapTiles[tileId] = QStringList{tileFile};
+            for (const QString &piece : pieces) {
+                int pieceLen = piece.length();
+                if (((pieceLen == 6) || (pieceLen == 7)) && (piece.at(0) == 'T')) {
+                    // return the tile without the 'T'
+                    return QString(piece.right(pieceLen-1));
+                }
+            }
         }
     }
+
+    return QString("00000");
+}
+
+QMap<QString, ProcessorHandlerHelper::TileTemporalFilesInfo> ProcessorHandlerHelper::GroupTiles(const QStringList &listAllProductsTiles,
+                                                                                                QList<ProcessorHandlerHelper::SatelliteIdType> &outAllSatIds,
+                                                                                                ProcessorHandlerHelper::SatelliteIdType &outPrimarySatelliteId) {
+    QMap<QString, TileTemporalFilesInfo> mapTiles;
+    for(const QString &tileFile: listAllProductsTiles) {
+        // get from the tile ID also the info about tile to determine satellite ID
+        SatelliteIdType satId;
+        QString tileId = GetTileId(tileFile, satId);
+        if(!outAllSatIds.contains(satId))
+            outAllSatIds.append(satId);
+        if(mapTiles.contains(tileId)) {
+            TileTemporalFilesInfo &infos = mapTiles[tileId];
+            infos.temporalTileFiles.append(tileFile);
+            infos.satelliteIds.append(satId);
+            if(!infos.uniqueSatteliteIds.contains(satId))
+                infos.uniqueSatteliteIds.append(satId);
+        } else {
+            TileTemporalFilesInfo infos;
+            infos.tileId = tileId;
+            infos.temporalTileFiles.append(tileFile);
+            infos.satelliteIds.append(satId);
+            infos.uniqueSatteliteIds.append(satId);
+            mapTiles[tileId] = infos;
+        }
+    }
+
+    // Get the primary satellite id
+    outPrimarySatelliteId = SATELLITE_ID_TYPE_S2;
+    if(outAllSatIds.contains(SATELLITE_ID_TYPE_S2)) {
+        outPrimarySatelliteId = SATELLITE_ID_TYPE_S2;
+    } else if (outAllSatIds.contains(SATELLITE_ID_TYPE_SPOT4)) {
+        outPrimarySatelliteId = SATELLITE_ID_TYPE_SPOT4;
+    } else if (outAllSatIds.contains(SATELLITE_ID_TYPE_SPOT5)) {
+        outPrimarySatelliteId = SATELLITE_ID_TYPE_SPOT5;
+    }
+
+    // now update also the primary satelite id
+    QMap<QString, TileTemporalFilesInfo>::iterator i;
+    for (i = mapTiles.begin(); i != mapTiles.end(); ++i) {
+        // this time, get a copy from the map and not the reference to info as we do not want to alter the input map
+        TileTemporalFilesInfo &info = i.value();
+        // fill the primary satellite ID here
+        info.primarySatelliteId = outPrimarySatelliteId;
+    }
+
     return mapTiles;
 }
 
@@ -193,12 +258,13 @@ QMap<QString, QStringList> ProcessorHandlerHelper::GroupHighLevelProductTiles(co
                 continue;
             }
             QStringList pieces = tileDirName.split("_");
+            int pieceLen;
             for (const QString &piece : pieces) {
                 // we might have 6 (for S2 and others) or 7 (for LANDSAT)
-                if (((piece.length() == 6) || (piece.length() == 7)) && (piece.at(0) == 'T')) {
+                pieceLen = piece.length();
+                if (((pieceLen == 6) || (pieceLen == 7)) && (piece.at(0) == 'T')) {
                     // We have the tile
-                    QString tileId = "TILE_" + piece.right(piece.length()-1);
-                    //QString tileDirPath = tilesDir+ "/" + tileDirName;
+                    QString tileId = piece.right(pieceLen-1);
                     if(mapTiles.contains(tileId)) {
                         mapTiles[tileId].append(subDir);
                     } else {
@@ -212,7 +278,7 @@ QMap<QString, QStringList> ProcessorHandlerHelper::GroupHighLevelProductTiles(co
 }
 
 /* static */
-QStringList ProcessorHandlerHelper::GetProductTileIds(const QStringList &listFiles) {
+/*QStringList ProcessorHandlerHelper::GetProductTileIds(const QStringList &listFiles) {
     bool bOk;
     QStringList result;
     for (const QString &fileName : listFiles) {
@@ -223,6 +289,7 @@ QStringList ProcessorHandlerHelper::GetProductTileIds(const QStringList &listFil
     }
     return result;
 }
+*/
 
 QStringList ProcessorHandlerHelper::GetTextFileLines(const QString &filePath) {
     QFile inputFile(filePath);
@@ -319,25 +386,25 @@ bool ProcessorHandlerHelper::IsValidL2AMetadataFileName(const QString &path) {
 
     const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(fileName);
 
-    if((infos.productType != UNKNOWN) && ext.compare(infos.extension, Qt::CaseInsensitive) != 0)  {
+    if((infos.productType != L2_PRODUCT_TYPE_UNKNOWN) && ext.compare(infos.extension, Qt::CaseInsensitive) != 0)  {
         return false;
     }
     switch (infos.productType) {
-        case S2:
+        case L2_PRODUCT_TYPE_S2:
             if(listComponents.size() < 4 || listComponents[3] != "L2VALD" || listComponents[2] == "QCK") {
                 return false;
             }
             break;
-        case L8:
+        case L2_PRODUCT_TYPE_L8:
             if((listComponents.size() < 4) || (listComponents[2] != "L8C") || (listComponents[3] != "L2VALD")) {
                 return false;
             }
             break;
-        case SPOT4:
-        case SPOT5:
+        case L2_PRODUCT_TYPE_SPOT4:
+        case L2_PRODUCT_TYPE_SPOT5:
             // TODO: see if something else should be added here
             break;
-        case UNKNOWN:
+        case L2_PRODUCT_TYPE_UNKNOWN:
             return false;
     }
 
@@ -382,4 +449,60 @@ bool ProcessorHandlerHelper::GetCropReferenceFile(const QString &refDir, QString
     }
 
     return bRet;
+}
+
+void ProcessorHandlerHelper::AddSatteliteIntersectingProducts(QMap<QString, TileTemporalFilesInfo> &mapSatellitesTilesInfos,
+                                                     QStringList &listSecondarySatLoadedProds, SatelliteIdType secondarySatId,
+                                                     TileTemporalFilesInfo &primarySatInfos) {
+
+    // mapSatellitesTilesInfos contains the sattelites infos but each tile has only  products from its satellite
+
+    QMap<QString, TileTemporalFilesInfo>::iterator i;
+    // iterate all tiles in the map
+    for (i = mapSatellitesTilesInfos.begin(); i != mapSatellitesTilesInfos.end(); ++i) {
+        TileTemporalFilesInfo &info = i.value();
+
+        // if we have a secondary product type
+        if(info.satelliteIds.contains(secondarySatId)) {
+            // check if the tile meta appears in the list of loaded products
+            for(QString &temporalTileFile: info.temporalTileFiles) {
+                if(listSecondarySatLoadedProds.contains(temporalTileFile) &&
+                        !primarySatInfos.temporalTileFiles.contains(temporalTileFile)) {
+                    // add it to the target sattelite information list
+                    primarySatInfos.temporalTileFiles.append(temporalTileFile);
+                    primarySatInfos.satelliteIds.append(secondarySatId);
+                    if(!primarySatInfos.uniqueSatteliteIds.contains(secondarySatId)) {
+                        primarySatInfos.uniqueSatteliteIds.append(secondarySatId);
+                    }
+                }
+            }
+        }
+    }
+}
+
+QString ProcessorHandlerHelper::BuildShapeName(const QString &shapeFilesDir, const QString &tileId, int jobId, int taskId)
+{
+    QDir dir(shapeFilesDir);
+    if (!dir.exists()){
+        if (!QDir::root().mkpath(shapeFilesDir)) {
+            throw std::runtime_error(
+                QStringLiteral("Unable to create output path for tiles shape files: %1").arg(shapeFilesDir).toStdString());
+        }
+    }
+    return QStringLiteral("%1/%2_%3_%4.shp").arg(shapeFilesDir).arg(tileId).arg(jobId).arg(taskId);
+}
+
+QString ProcessorHandlerHelper::GetShapeForTile(const QString &shapeFilesDir, const QString &tileId)
+{
+    QDirIterator it(shapeFilesDir, QStringList() << "*.shp", QDir::Files);
+    while(it.hasNext()) {
+        QString shapeFileFullName = it.next();
+        QFileInfo shapefileFileInfo(shapeFileFullName);
+        // it should be actually equals with 0
+        if(shapefileFileInfo.fileName().indexOf(tileId + "_") >= 0) {
+            return shapeFileFullName;
+        }
+    }
+
+    return "";
 }

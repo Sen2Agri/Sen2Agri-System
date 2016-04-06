@@ -62,7 +62,8 @@ private:
                                    int nbProducts, bool bGenModels, bool bMonoDateLai, bool bNDayReproc, bool bFittedReproc);
 
     void HandleNewTilesList(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                               const QStringList &listProducts, const QStringList &listL3BTiles, const QStringList &missingL3BInputs, LAIGlobalExecutionInfos &outGlobalExecInfos);
+                            const TileTemporalFilesInfo &tileTemporalFilesInfo, const QStringList &listL3BTiles,
+                            const TileTemporalFilesInfo &missingL3BTileTemporalFilesInfo, LAIGlobalExecutionInfos &outGlobalExecInfos);
 
     void GetModelFileList(QStringList &outListModels, const QString &strPattern, std::map<QString, QString> &configParameters);
     void WriteExecutionInfosFile(const QString &executionInfosPath,
@@ -114,7 +115,7 @@ private:
     bool IsNDayReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     bool IsFittedReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
 
-    bool GetMonoDateFormatterParamInfosForProduct(const QString &product, const QMap<QString, QStringList> &mapTiles,
+    bool GetMonoDateFormatterParamInfosForProduct(const QString &product, const QMap<QString, TileTemporalFilesInfo> &mapTiles,
             const QMap<QString, LAIProductFormatterParams> &mapTileToParams, const QMap<QString, QStringList> &inputProductToTilesMap,
             QStringList &outProductTiles, QList<LAIMonoDateProductFormatterParams> &outProductParams, QStringList &outProductTileMetaFiles);
 private:

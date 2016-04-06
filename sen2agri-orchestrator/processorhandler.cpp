@@ -6,7 +6,6 @@
 #include <QFileInfoList>
 
 #include "schedulingcontext.h"
-#include "processorhandlerhelper.h"
 #include "logger.hpp"
 
 bool removeDir(const QString & dirName)
@@ -138,7 +137,7 @@ QString ProcessorHandler::GetProductFormatterQuicklook(EventProcessingContext &c
     QString quickLookName("");
     if(fileLines.size() > 0) {
         const QString &mainFolderName = fileLines[0];
-        QString legacyFolder = mainFolderName + "/LEGACY_DATA/";
+        QString legacyFolder = mainFolderName;      // + "/LEGACY_DATA/";
 
         QDirIterator it(legacyFolder, QStringList() << "*.jpg", QDir::Files);
         // get the last shape file found
@@ -172,7 +171,7 @@ QString ProcessorHandler::GetProductFormatterFootprint(EventProcessingContext &c
             footprintFullName = it.next();
             // check only the name if it contains MTD
             QFileInfo footprintFileInfo(footprintFullName);
-            if(footprintFileInfo.fileName().indexOf("_MTD_")) {
+            if(footprintFileInfo.fileName().indexOf("_MTD_") > 0) {
                 // parse the XML file
                 QFile inputFile(footprintFullName);
                 if (inputFile.open(QIODevice::ReadOnly))
@@ -221,18 +220,7 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     QDate currentDate = QDate::currentDate();
     int curYear = currentDate.year();
 
-    // first, get the values from general section
-    ConfigurationParameterValueMap seasonCfgValues = ctx.GetConfigurationParameters(SEASON_CFG_KEY_PREFIX, siteId, requestOverrideCfgValues);
-    QDate genStartSummerSeasonDate = QDate::fromString(seasonCfgValues[START_OF_SEASON_CFG_KEY].value, "yyyyMMdd");
-    QDate genEndSummerSeasonDate = QDate::fromString(seasonCfgValues[END_OF_SEASON_CFG_KEY].value, "yyyyMMdd");
-    if(genStartSummerSeasonDate.isValid() && genEndSummerSeasonDate.isValid()) {
-        startTime = QDateTime(genStartSummerSeasonDate);
-        endTime = QDateTime(genEndSummerSeasonDate);
-        return true;
-    }
-
-
-    seasonCfgValues = ctx.GetConfigurationParameters("downloader.", siteId, requestOverrideCfgValues);
+    ConfigurationParameterValueMap seasonCfgValues = ctx.GetConfigurationParameters("downloader.", siteId, requestOverrideCfgValues);
     QDate startSummerSeasonDate = QDate::fromString(seasonCfgValues["downloader.summer-season.start"].value, "MMdd").addYears(curYear-1900);
     QDate endSummerSeasonDate = QDate::fromString(seasonCfgValues["downloader.summer-season.end"].value, "MMdd").addYears(curYear-1900);
     QDate startWinterSeasonDate = QDate::fromString(seasonCfgValues["downloader.winter-season.start"].value, "MMdd").addYears(curYear-1900);
@@ -357,3 +345,59 @@ bool ProcessorHandler::GetParameterValueAsInt(const QJsonObject &parameters, con
     }
     return bRet;
 }
+
+QMap<QString, TileTemporalFilesInfo> ProcessorHandler::GroupTiles(
+        EventProcessingContext &ctx, int jobId,
+        const QStringList &listAllProductsTiles, ProductType productType)
+{
+    // perform a first iteration to see the satellites IDs in all tiles
+    QList<ProcessorHandlerHelper::SatelliteIdType> satIds;
+    // Get the primary satellite id
+    ProcessorHandlerHelper::SatelliteIdType primarySatId;
+    QMap<QString, TileTemporalFilesInfo>  mapTiles = ProcessorHandlerHelper::GroupTiles(listAllProductsTiles, satIds, primarySatId);
+    if(productType != ProductType::L2AProductTypeId) return mapTiles;
+
+    // if we have only one sattelite id for all tiles, then perform no filtering
+    if(satIds.size() == 1) return mapTiles;
+
+    std::map<QString, QString> configParameters =
+        ctx.GetJobConfigurationParameters(jobId, "executor.shapes_dir");
+    QString shapeFilesFolder = configParameters["executor.shapes_dir"];
+
+    // second iteration: add for each primary satelitte tile the intersecting secondary products
+    QMap<QString, TileTemporalFilesInfo>  retMapTiles;
+    QMap<QString, TileTemporalFilesInfo>::iterator i;
+    for (i = mapTiles.begin(); i != mapTiles.end(); ++i) {
+        // this time, get a copy from the map and not the reference to info as we do not want to alter the input map
+        TileTemporalFilesInfo info = i.value();
+        bool isPrimarySatIdInfo = ((info.uniqueSatteliteIds.size() == 1) &&
+                                   (primarySatId == info.uniqueSatteliteIds[0]));
+        for(ProcessorHandlerHelper::SatelliteIdType satId: satIds) {
+            // if is a secondary satellite id, then get the tiles from the database
+            if(isPrimarySatIdInfo && (info.primarySatelliteId != satId)) {
+                ProductList satSecProds = ctx.GetProductsForTile(info.tileId, productType, primarySatId, satId);
+                // get the metadata tiles for all found products intersecting the current tile
+                QStringList listProductsTiles;
+                for(const Product &prod: satSecProds) {
+                    listProductsTiles.append(ctx.findProductFiles(prod.fullPath));
+                }
+
+                // add the intersecting products for this satellite id to the current info
+                ProcessorHandlerHelper::AddSatteliteIntersectingProducts(mapTiles, listProductsTiles, satId, info);
+            }
+        }
+        // at this stage we know that the infos have only one unique satellite id
+        if(isPrimarySatIdInfo) {
+            // now search to see if we can find a shapefile already created for the current tile
+            info.shapePath = ProcessorHandlerHelper::GetShapeForTile(shapeFilesFolder, info.tileId);
+
+            // TODO: Here we must sort the products by date as maybe we added secondary products at the end
+
+            // add the tile info
+            retMapTiles[info.tileId] = info;
+        }
+    }
+
+    return retMapTiles;
+}
+

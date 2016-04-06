@@ -75,6 +75,18 @@ JobDefinition Orchestrator::GetJobDefinition(const ProcessingRequest &request)
     const auto &doc = QJsonDocument::fromJson(request.parametersJson.toUtf8());
     if (doc.isObject()) {
         const auto &inObj = doc.object();
+        const auto &generalParamNode = inObj[QStringLiteral("general_params")];
+        if (generalParamNode.isObject()) {
+            const auto &generalParamObj = generalParamNode.toObject();
+            for(QJsonObject::const_iterator iter = generalParamObj.begin(); iter != generalParamObj.end (); ++iter)
+            {
+                requestOverrideCfgValues[iter.key()] = {iter.key(), -1, iter.value().toString()};
+            }
+
+            // pass the general params to the submitted job later
+            retObj[QStringLiteral("general_params")] = generalParamObj;
+        }
+
         const auto &configParamNode = inObj[QStringLiteral("config_params")];
         if (configParamNode.isObject()) {
             const auto &configParamObj = configParamNode.toObject();
@@ -86,13 +98,6 @@ JobDefinition Orchestrator::GetJobDefinition(const ProcessingRequest &request)
             // pass the config params to the submitted job later
             retObj[QStringLiteral("config_params")] = configParamObj;
         }
-
-        const auto &generalParamNode = inObj[QStringLiteral("general_params")];
-        if (generalParamNode.isObject()) {
-            // pass the general params to the submitted job later
-            retObj[QStringLiteral("general_params")] = generalParamNode.toObject();
-        }
-
     }
 
     SchedulingContext ctx(persistenceManager);

@@ -79,9 +79,11 @@ QList<std::reference_wrapper<TaskToSubmit>> CropMaskHandler::CreateNoInSituTasks
 
 void CropMaskHandler::HandleNewTilesList(EventProcessingContext &ctx,
                                          const JobSubmittedEvent &event,
-                                         const QStringList &listProducts,
+                                         const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                          CropMaskGlobalExecutionInfos &globalExecInfos)
 {
+    const QStringList &listProducts = tileTemporalFilesInfo.temporalTileFiles;
+
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
@@ -117,7 +119,8 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                     toStdString());
     }
 
-    QMap<QString, QStringList> mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts);
+    QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.jobId, listProducts,
+                                                               ProductType::L2AProductTypeId);
     QList<CropMaskProductFormatterParams> listParams;
 
     TaskToSubmit productFormatterTask{"product-formatter", {}};
@@ -125,11 +128,12 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     //container for all task
     //QList<TaskToSubmit> allTasksList;
     QList<CropMaskGlobalExecutionInfos> listCropMaskInfos;
-    for(auto tile : mapTiles.keys())
+    for(auto tileId : mapTiles.keys())
     {
-       QStringList listTemporalTiles = mapTiles.value(tile);
+       const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
        listCropMaskInfos.append(CropMaskGlobalExecutionInfos());
        CropMaskGlobalExecutionInfos &infos = listCropMaskInfos[listCropMaskInfos.size()-1];
+       infos.prodFormatParams.tileId = "TILE_" + tileId;
        HandleNewTilesList(ctx, event, listTemporalTiles, infos);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
@@ -469,9 +473,6 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
     productFormatterParams.raw_crop_mask = raw_crop_mask;
     productFormatterParams.xml_validation_metrics = xml_validation_metrics;
     productFormatterParams.statusFlags = statusFlags;
-    // Get the tile ID from the product XML name. We extract it from the first product in the list as all
-    // producs should be for the same tile
-    productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
 }
 
 void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
@@ -732,9 +733,6 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
     productFormatterParams.raw_crop_mask = raw_crop_mask;
     productFormatterParams.raw_crop_mask = xml_validation_metrics;
     productFormatterParams.raw_crop_mask = statusFlags;
-    // Get the tile ID from the product XML name. We extract it from the first product in the list as all
-    // producs should be for the same tile
-    productFormatterParams.tileId = ProcessorHandlerHelper::GetTileId(listProducts);
 }
 
 QStringList CropMaskHandler::GetBandsExtractorArgs(const QString &mission, const QString &outImg, const QString &mask, const QString &statusFlags,
@@ -829,7 +827,6 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
     ProcessorJobDefinitionParams params;
     params.isValid = false;
 
-    // TODO: get from the database the moving window for 1 month periodicity
     ConfigurationParameterValueMap cfgValues = ctx.GetConfigurationParameters("processor.l4a.", siteId, requestOverrideCfgValues);
     // Get the reference dir
     QString refDir = cfgValues["processor.l4a.reference_data_dir"].value;
@@ -852,6 +849,7 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
     QDateTime endDate = QDateTime::fromTime_t(scheduledDate);
     QDateTime startDate = seasonStartDate;
 
+    // get from the database the moving window for 1 year periodicity
     QString movingWindowStr = cfgValues["processor.l4a.moving_window_value"].value;
     int movingWindow = 0;
     if(movingWindowStr.length() > 0) {

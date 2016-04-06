@@ -51,7 +51,7 @@
 
 
 #define MAIN_FOLDER_CATEG "PRD"
-//#define TILE_LEGACY_FOLDER_CATEG "DAT"
+#define LEGACY_FOLDER_CATEG "LY"
 //#define TRUE_COLOR_FOLDER_CATEG "TCI"
 #define QUICK_L0OK_IMG_CATEG "PVI"
 #define METADATA_CATEG "MTD"
@@ -522,6 +522,7 @@ private:
           generateProductMetadataFile(strMainFolderFullPath + "/" + strProductFileName);
           bool bAgSuccess = ExecuteAgregateTiles(strMainFolderFullPath, this->GetParameterInt("aggregatescale"));
           std::cout << "Aggregating tiles " << (bAgSuccess ? "SUCCESS!" : "FAILED!") << std::endl;
+          TransferMainProductPreviewFile();
       }
 
       // Perform the consistency check of the product. If the main folder is renamed, then
@@ -1099,6 +1100,9 @@ private:
 
       m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.PreviewImage = !m_previewList.empty();
 
+      //build product preview file name
+      m_productMetadata.GeneralInfo.ProductInfo.PreviewImageURL = BuildFileName(QUICK_L0OK_IMG_CATEG, "", JPEG_EXTENSION);
+
       geoProductInfo geoPosEl;
 
       if(!m_geoProductInfo.empty())
@@ -1471,7 +1475,7 @@ private:
   }
   void TransferPreviewFiles()
   {
-      std::string strProductPreviewFullPath;
+
       std::string strTilePreviewFullPath;
       int iChannelNo = 1;
       std::vector<std::string> strChannelsList;
@@ -1494,29 +1498,36 @@ private:
 
               if(tileID.strTileID == previewFileEl.strTileID)
               {
-                //for the moment the preview file for product and tile are the same
+//                //for the moment the preview file for product and tile are the same
 
-                //build product preview file name
-                 strProductPreviewFullPath = BuildFileName(QUICK_L0OK_IMG_CATEG, "", JPEG_EXTENSION);
+//                //build product preview file name
+//                 strProductPreviewFullPath = BuildFileName(QUICK_L0OK_IMG_CATEG, "", JPEG_EXTENSION);
 
-                 m_productMetadata.GeneralInfo.ProductInfo.PreviewImageURL = strProductPreviewFullPath;
+//                 m_productMetadata.GeneralInfo.ProductInfo.PreviewImageURL = strProductPreviewFullPath;
 
-                 strProductPreviewFullPath = m_strDestRoot + "/" + m_strProductDirectoryName + "/" + strProductPreviewFullPath;
+//                 strProductPreviewFullPath = m_strDestRoot + "/" + m_strProductDirectoryName + "/" + strProductPreviewFullPath;
 
                  //std::cout << "ProductPreviewFullPath = " << strProductPreviewFullPath << std::endl;
 
-                 //transform .tif file in .jpg file directly in product directory
-                 if(generateQuicklook(previewFileEl.strPreviewFileName, strChannelsList, strProductPreviewFullPath)) {
-
-                     //build producty preview file name for tile
-                     strTilePreviewFullPath = tileID.strTileNameWithoutExt + JPEG_EXTENSION;
-                     strTilePreviewFullPath = ReplaceString(strTilePreviewFullPath, METADATA_CATEG, QUICK_L0OK_IMG_CATEG);
-
-                     CopyFile(strTilePreviewFullPath, strProductPreviewFullPath);
+                 //build producty preview file name for tile
+                 strTilePreviewFullPath = tileID.strTileNameWithoutExt + JPEG_EXTENSION;
+                 strTilePreviewFullPath = ReplaceString(strTilePreviewFullPath, METADATA_CATEG, QUICK_L0OK_IMG_CATEG);
+                 //transform .tif file in .jpg file directly in tile directory
+                 if(!generateQuicklook(previewFileEl.strPreviewFileName, strChannelsList, strTilePreviewFullPath)) {
+                     otbAppLogWARNING("Error creating quickloof file " << strTilePreviewFullPath);
                  }
+
+
+//                 //transform .tif file in .jpg file directly in product directory
+//                 if(generateQuicklook(previewFileEl.strPreviewFileName, strChannelsList, strTilePreviewFullPath)) {
+//                     //build producty preview file name for tile
+//                     strTilePreviewFullPath = tileID.strTileNameWithoutExt + JPEG_EXTENSION;
+//                     strTilePreviewFullPath = ReplaceString(strTilePreviewFullPath, METADATA_CATEG, QUICK_L0OK_IMG_CATEG);
+//                     CopyFile(strTilePreviewFullPath, strProductPreviewFullPath);
+//                 }
                  //remove  file with extension jpg.aux.xml generated after preview obtained
 
-                 std::string strFileToBeRemoved = strProductPreviewFullPath + ".aux.xml";
+                 std::string strFileToBeRemoved = strTilePreviewFullPath + ".aux.xml";
                  //std::cout << "Remove file: " <<  strFileToBeRemoved<< std::endl;
                  remove(strFileToBeRemoved.c_str());
             }
@@ -1524,12 +1535,36 @@ private:
       }
   }
 
+  void TransferMainProductPreviewFile() {
+        std::string strProductPreviewFullPath = m_strDestRoot + "/" + m_strProductDirectoryName +
+                "/" + m_productMetadata.GeneralInfo.ProductInfo.PreviewImageURL;
+        const std::string strMosaicPreviewFileName = BuildFileName(QUICK_L0OK_IMG_CATEG + std::string("_") +
+                                                                   LEGACY_FOLDER_CATEG, "", ".jpg");
+        std::string mosaicPreviewFullPath = m_strDestRoot + "/" + m_strProductDirectoryName +
+                "/" + LEGACY_DATA_FOLDER_NAME + "/" + strMosaicPreviewFileName;
+        CopyFile(strProductPreviewFullPath, mosaicPreviewFullPath);
+
+        try
+        {
+              boost::filesystem::remove(mosaicPreviewFullPath);
+        } catch(boost::filesystem::filesystem_error const & e) {
+              otbAppLogWARNING("Error removing file " << mosaicPreviewFullPath
+                               << "Error was: " << e.what());
+        }
+
+  }
+
    void CopyFile(const std::string &strDest, const std::string &strSrc)
    {
-       std::ifstream  src(strSrc, std::ios::binary);
-       std::ofstream  dst(strDest, std::ios::binary);
+       struct stat buf;
+       if (stat(strSrc.c_str(), &buf) != -1) {
+           std::ifstream  src(strSrc, std::ios::binary);
+           std::ofstream  dst(strDest, std::ios::binary);
 
-       dst << src.rdbuf();
+           dst << src.rdbuf();
+       } else {
+           otbAppLogWARNING("Error copying file " << strSrc << " to file " << strDest);
+       }
    }
 
 

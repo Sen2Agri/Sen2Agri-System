@@ -170,6 +170,11 @@ ProductList EventProcessingContext::GetProducts(int siteId, int productTypeId, c
     return persistenceManager.GetProducts(siteId, productTypeId, startDate, endDate);
 }
 
+ProductList EventProcessingContext::GetProductsForTile(const QString &tileId, ProductType productType,
+                                                       int tileSatelliteId, int targetSatelliteId)
+{
+    return persistenceManager.GetProductsForTile(tileId, productType, tileSatelliteId, targetSatelliteId);
+}
 
 QString EventProcessingContext::GetProductAbsolutePath(const QString &path) {
     QFileInfo fileInfo(path);
