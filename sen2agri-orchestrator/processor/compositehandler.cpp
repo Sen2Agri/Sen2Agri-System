@@ -546,7 +546,7 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
        const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
        listCompositeInfos.append(CompositeGlobalExecutionInfos());
        CompositeGlobalExecutionInfos &infos = listCompositeInfos[listCompositeInfos.size()-1];
-       infos.prodFormatParams.tileId = "TILE_" + tileId;
+       infos.prodFormatParams.tileId = GetProductFormatterTile(tileId);
        HandleNewTilesList(ctx, event, listTemporalTiles, infos);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
@@ -620,22 +620,22 @@ QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productForma
     }
     productFormatterArgs += "-processor.composite.weights";
     for(const CompositeProductFormatterParams &params: productParams) {
-        productFormatterArgs += params.tileId;
+        productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.prevL3AProdWeights;
     }
     productFormatterArgs += "-processor.composite.flags";
     for(const CompositeProductFormatterParams &params: productParams) {
-        productFormatterArgs += params.tileId;
+        productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.prevL3AProdFlags;
     }
     productFormatterArgs += "-processor.composite.dates";
     for(const CompositeProductFormatterParams &params: productParams) {
-        productFormatterArgs += params.tileId;
+        productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.prevL3AProdDates;
     }
     productFormatterArgs += "-processor.composite.rgb";
     for(const CompositeProductFormatterParams &params: productParams) {
-        productFormatterArgs += params.tileId;
+        productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.prevL3ARgbFile;
     }
 

@@ -41,6 +41,7 @@ protected:
     bool GetParameterValueAsInt(const QJsonObject &parameters, const QString &key, int &outVal);
 
     QMap<QString, TileTemporalFilesInfo> GroupTiles(EventProcessingContext &ctx, int jobId, const QStringList &listAllProductsTiles, ProductType productType);
+    QString GetProductFormatterTile(const QString &tile);
 
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,

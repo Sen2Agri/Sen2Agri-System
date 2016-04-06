@@ -111,7 +111,7 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
        const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
        listPhenoInfos.append(PhenoGlobalExecutionInfos());
        PhenoGlobalExecutionInfos &infos = listPhenoInfos[listPhenoInfos.size()-1];
-       infos.prodFormatParams.tileId = "TILE_" + tileId;
+       infos.prodFormatParams.tileId = GetProductFormatterTile(tileId);
        HandleNewTilesList(ctx, event, infos, listTemporalTiles);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
@@ -198,13 +198,13 @@ QStringList PhenoNdviHandler::GetProductFormatterArgs(TaskToSubmit &productForma
 
     productFormatterArgs += "-processor.phenondvi.metrics";
     for(const PhenoProductFormatterParams &params: productParams) {
-        productFormatterArgs += params.tileId;
+        productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.metricsParamsImg;
     }
 
     productFormatterArgs += "-processor.phenondvi.flags";
     for(const PhenoProductFormatterParams &params: productParams) {
-        productFormatterArgs += params.tileId;
+        productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.metricsFlagsImg;
     }
     return productFormatterArgs;
@@ -224,7 +224,7 @@ ProcessorJobDefinitionParams PhenoNdviHandler::GetProcessingDefinitionImpl(Sched
     QDateTime startDate = seasonStartDate;
 
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
-    // for PhenoNDVI we need at least 4 products available in order to be able to create a L3B product
+    // for PhenoNDVI we need at least 4 products available in order to be able to create a L3E product
     if(params.productList.size() >= 4) {
         params.isValid = true;
     }
