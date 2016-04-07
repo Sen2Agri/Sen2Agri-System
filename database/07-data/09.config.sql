@@ -180,7 +180,7 @@ INSERT INTO config VALUES (204, 'processor.l3b.mono_date_lai', NULL, '1', '2016-
 INSERT INTO config VALUES (205, 'processor.l3b.reprocess', NULL, '0', '2016-02-29 12:03:21.142049+02');
 INSERT INTO config VALUES (206, 'processor.l3b.fitted', NULL, '0', '2016-02-29 12:03:27.438284+02');
 INSERT INTO config VALUES (207, 'processor.l3b.production_interval', NULL, '10', '2016-02-29 12:03:31.197823+02');
-INSERT INTO config VALUES (210, 'processor.l3c.production_interval', NULL, '30', '2016-02-29 12:03:31.197823+02');
+INSERT INTO config VALUES (210, 'processor.l3b.reproc_production_interval', NULL, '30', '2016-02-29 12:03:31.197823+02');
 INSERT INTO config VALUES (208, 'processor.l4b.crop-mask', NULL, '', '2016-03-01 08:57:09.170001+02');
 INSERT INTO config VALUES (209, 'executor.shapes_dir', NULL, '/mnt/archive/TilesShapesDirectory', '2015-06-03 17:03:39.541136+03');
 INSERT INTO config VALUES (211, 'site.upload-path', NULL, '/mnt/upload/{user}', '2016-03-01 15:02:31.980394+02');
