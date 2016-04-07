@@ -55,10 +55,6 @@ void CropTypeTrainImagesClassifier::DoInit()
 //  SetParameterDescription("io.il", "A list of input images.");
   AddParameter(ParameterType_InputVectorDataList, "io.vd", "Input Vector Data List");
   SetParameterDescription("io.vd", "A list of vector data to select the training samples.");
-  AddParameter(ParameterType_InputFilename, "io.imstat", "Input XML image statistics file");
-  MandatoryOff("io.imstat");
-  SetParameterDescription("io.imstat",
-                          "Input XML file containing the mean and the standard deviation of the input images.");
   AddParameter(ParameterType_OutputFilename, "io.confmatout", "Output confusion matrix");
   SetParameterDescription("io.confmatout", "Output file containing the confusion matrix (.csv format).");
   MandatoryOff("io.confmatout");
@@ -163,7 +159,6 @@ void CropTypeTrainImagesClassifier::DoInit()
   // Doc example parameter settings
 //  SetDocExampleParameterValue("io.il", "QB_1_ortho.tif");
   SetDocExampleParameterValue("io.vd", "VectorData_QB1.shp");
-  SetDocExampleParameterValue("io.imstat", "EstimateImageStatisticsQB1.xml");
   SetDocExampleParameterValue("sample.mv", "100");
   SetDocExampleParameterValue("sample.mt", "100");
   SetDocExampleParameterValue("sample.vtr", "0.5");
