@@ -401,3 +401,8 @@ QMap<QString, TileTemporalFilesInfo> ProcessorHandler::GroupTiles(
     return retMapTiles;
 }
 
+QString ProcessorHandler::GetProductFormatterTile(const QString &tile) {
+    if(tile.indexOf("TILE_") == 0)
+        return tile;
+    return ("TILE_" + tile);
+}

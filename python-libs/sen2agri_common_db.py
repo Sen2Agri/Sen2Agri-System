@@ -761,7 +761,7 @@ class L1CInfo(object):
         try:
             self.cursor.execute("""SELECT path FROM sp_get_last_l2a_product(%(tile_id)s, 
                                                                             %(satellite_id)s :: smallint,
-                                                                            %(l1c_orbit_id)s :: integer
+                                                                            %(l1c_orbit_id)s :: integer,
                                                                             %(l1c_date)s :: timestamp)""",
                                 {
                                     "tile_id" : tile_id,
@@ -812,7 +812,7 @@ class L1CInfo(object):
                                %(name)s :: character varying,
                                %(quicklook_image)s :: character varying,
                                %(footprint)s,
-                               %(orbit_id)s :: integer
+                               %(orbit_id)s :: integer,
                                %(tiles)s :: json)""",
                                 {
                                     "product_type_id" : 1,
