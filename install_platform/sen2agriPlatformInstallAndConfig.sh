@@ -629,6 +629,7 @@ function install_maccs()
         echo "MACCS found, continuing"
         return 0
     }
+    echo "MACCS not found under /opt/maccs, trying to install it"
 
     yum -y install redhat-lsb-core
 
