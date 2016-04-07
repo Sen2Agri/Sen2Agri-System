@@ -62,12 +62,6 @@
 
 #include "../Filters/CropTypePreprocessing.h"
 
-#define TYPE_MACCS  0
-#define TYPE_SPOT4  1
-
-#define EPSILON     1e-6
-
-
 namespace otb
 {
 
