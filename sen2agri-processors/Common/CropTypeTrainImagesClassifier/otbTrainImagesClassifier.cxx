@@ -22,7 +22,7 @@ namespace otb
 namespace Wrapper
 {
 
-void TrainImagesClassifier::DoInit()
+void CropTypeTrainImagesClassifier::DoInit()
 {
   SetName("CropTypeTrainImagesClassifier");
   SetDescription(
@@ -51,8 +51,8 @@ void TrainImagesClassifier::DoInit()
   //Group IO
   AddParameter(ParameterType_Group, "io", "Input and output data");
   SetParameterDescription("io", "This group of parameters allows to set input and output data.");
-  AddParameter(ParameterType_InputImageList, "io.il", "Input Image List");
-  SetParameterDescription("io.il", "A list of input images.");
+//  AddParameter(ParameterType_InputImageList, "io.il", "Input Image List");
+//  SetParameterDescription("io.il", "A list of input images.");
   AddParameter(ParameterType_InputVectorDataList, "io.vd", "Input Vector Data List");
   SetParameterDescription("io.vd", "A list of vector data to select the training samples.");
   AddParameter(ParameterType_InputFilename, "io.imstat", "Input XML image statistics file");
@@ -75,6 +75,9 @@ void TrainImagesClassifier::DoInit()
   SetParameterDescription("nodatalabel", "The label of the ignored pixels from the raster");
   MandatoryOff("nodatalabel");
   SetDefaultParameterInt("nodatalabel", 0);
+
+  AddParameter(ParameterType_OutputFilename, "outstat", "Statistics file");
+  SetParameterDescription("outstat", "Statistics file");
 
   AddParameter(ParameterType_InputFilenameList, "il", "Input descriptors");
   SetParameterDescription( "il", "The list of descriptors. They must be sorted by tiles." );
@@ -141,7 +144,7 @@ void TrainImagesClassifier::DoInit()
   SetParameterDescription("classifier", "Choice of the classifier to use for the training.");
 
   //Group LibSVM
-#ifdef OTB_USE_LIBSVM 
+#ifdef OTB_USE_LIBSVM
   InitLibSVMParams();
 #endif
 
@@ -158,7 +161,7 @@ void TrainImagesClassifier::DoInit()
 
   AddRANDParameter();
   // Doc example parameter settings
-  SetDocExampleParameterValue("io.il", "QB_1_ortho.tif");
+//  SetDocExampleParameterValue("io.il", "QB_1_ortho.tif");
   SetDocExampleParameterValue("io.vd", "VectorData_QB1.shp");
   SetDocExampleParameterValue("io.imstat", "EstimateImageStatisticsQB1.xml");
   SetDocExampleParameterValue("sample.mv", "100");
@@ -174,135 +177,15 @@ void TrainImagesClassifier::DoInit()
   SetDocExampleParameterValue("io.confmatout", "svmConfusionMatrixQB1.csv");
 }
 
-void TrainImagesClassifier::DoUpdateParameters()
+void CropTypeTrainImagesClassifier::DoUpdateParameters()
 {
   // Nothing to do here : all parameters are independent
 }
 
 
-void TrainImagesClassifier::LogConfusionMatrix(ConfusionMatrixCalculatorType* confMatCalc)
-{
-  ConfusionMatrixCalculatorType::ConfusionMatrixType matrix = confMatCalc->GetConfusionMatrix();
-
-  // Compute minimal width
-  size_t minwidth = 0;
-
-  for (unsigned int i = 0; i < matrix.Rows(); i++)
-    {
-    for (unsigned int j = 0; j < matrix.Cols(); j++)
-      {
-      std::ostringstream os;
-      os << matrix(i, j);
-      size_t size = os.str().size();
-
-      if (size > minwidth)
-        {
-        minwidth = size;
-        }
-      }
-    }
-
-  MapOfIndicesType mapOfIndices = confMatCalc->GetMapOfIndices();
-
-  MapOfIndicesType::const_iterator it = mapOfIndices.begin();
-  MapOfIndicesType::const_iterator end = mapOfIndices.end();
-
-  for (; it != end; ++it)
-    {
-    std::ostringstream os;
-    os << "[" << it->second << "]";
-
-    size_t size = os.str().size();
-    if (size > minwidth)
-      {
-      minwidth = size;
-      }
-    }
-
-  // Generate matrix string, with 'minwidth' as size specifier
-  std::ostringstream os;
-
-  // Header line
-  for (size_t i = 0; i < minwidth; ++i)
-    os << " ";
-  os << " ";
-
-  it = mapOfIndices.begin();
-  end = mapOfIndices.end();
-  for (; it != end; ++it)
-    {
-    os << "[" << it->second << "]" << " ";
-    }
-
-  os << std::endl;
-
-  // Each line of confusion matrix
-  for (unsigned int i = 0; i < matrix.Rows(); i++)
-    {
-    ConfusionMatrixCalculatorType::ClassLabelType label = mapOfIndices[i];
-    os << "[" << std::setw(minwidth - 2) << label << "]" << " ";
-    for (unsigned int j = 0; j < matrix.Cols(); j++)
-      {
-      os << std::setw(minwidth) << matrix(i, j) << " ";
-      }
-    os << std::endl;
-    }
-
-  otbAppLogINFO("Confusion matrix (rows = reference labels, columns = produced labels):\n" << os.str());
-}
-
-void TrainImagesClassifier::Classify(ListSampleType::Pointer validationListSample, LabelListSampleType::Pointer predictedList)
-{
-  //Classification
-  ModelPointerType model = MachineLearningModelFactoryType::CreateMachineLearningModel(GetParameterString("io.out"),
-                                                                                       MachineLearningModelFactoryType::ReadMode);
-
-  if (model.IsNull())
-    {
-    otbAppLogFATAL(<< "Error when loading model " << GetParameterString("io.out"));
-    }
-
-  model->Load(GetParameterString("io.out"));
-  model->SetInputListSample(validationListSample);
-  model->SetTargetListSample(predictedList);
-  model->PredictAll();
-}
-
-void TrainImagesClassifier::DoExecute()
+void CropTypeTrainImagesClassifier::DoExecute()
 {
   GetLogger()->Debug("Entering DoExecute\n");
-  //Create training and validation for list samples and label list samples
-  ConcatenateLabelListSampleFilterType::Pointer concatenateTrainingLabels =
-    ConcatenateLabelListSampleFilterType::New();
-  ConcatenateListSampleFilterType::Pointer concatenateTrainingSamples = ConcatenateListSampleFilterType::New();
-  ConcatenateLabelListSampleFilterType::Pointer concatenateValidationLabels =
-    ConcatenateLabelListSampleFilterType::New();
-  ConcatenateListSampleFilterType::Pointer concatenateValidationSamples = ConcatenateListSampleFilterType::New();
-
-  m_ResamplersList = ResampleFilterListType::New();
-  m_ImageReaderList = ImageReaderListType::New();
-
-
-  m_SpotMaskFilters = SpotMaskFilterListType::New();
-  m_LandsatMaskFilters = LandsatMaskFilterListType::New();
-  m_SentinelMaskFilters = SentinelMaskFilterListType::New();
-
-  m_ChannelExtractors = MultiChannelExtractROIListType::New();
-
-  m_ImageMergers = ConcatenateVectorImagesFilterListType::New();
-  m_TempResamplers = TemporalResamplingFilterListType::New();
-  m_FeatureExtrators = CropTypeFeatureExtractionFilterListType::New();
-  m_InputImages = ImageListType::New();
-
-
-  // get the required pixel size
-  m_pixSize = this->GetParameterFloat("pixsize");
-
-  // get the main mission
-  m_mission = SPOT;
-  if (HasValue("mission")) {
-      m_mission = this->GetParameterString("mission");
-  }
 
   bool resample = GetParameterString("mode") == "resample";
   std::map<std::string, int> sp;
@@ -330,7 +213,7 @@ void TrainImagesClassifier::DoExecute()
   }
 
   // Get the list of input files
-  std::vector<std::string> descriptors = this->GetParameterStringList("il");
+  const std::vector<std::string> &descriptors = this->GetParameterStringList("il");
   if( descriptors.size()== 0 )
     {
     itkExceptionMacro("No input file set...");
@@ -347,7 +230,7 @@ void TrainImagesClassifier::DoExecute()
           const auto ppts = prodPerTileStrings[i];
           auto ppt = std::stoi(ppts);
           if (ppt <= 0) {
-              itkExceptionMacro("Invalid number of produts " << ppts)
+              itkExceptionMacro("Invalid number of products " << ppts)
           }
           prodPerTile.push_back(ppt);
           numDesc += ppt;
@@ -358,15 +241,21 @@ void TrainImagesClassifier::DoExecute()
       numDesc = descriptors.size();
   }
 
+  // get the required pixel size
+  auto pixSize = this->GetParameterFloat("pixsize");
+  // get the main mission
+  std::string mission = SPOT;
+  if (HasValue("mission")) {
+      mission = this->GetParameterString("mission");
+  }
+
   if( descriptors.size() != numDesc )
     {
     itkExceptionMacro("The number of descriptors (" << descriptors.size() << ") is not consistent with the sum of products per tile (" << numDesc << ")")
     }
 
-  typedef std::vector<ImageDescriptor>      ImageDescriptorList;
-  std::vector<ImageDescriptorList>         fullDescriptorsList;
-  std::map<std::string, std::vector<int> > sensorInDays;
-  std::map<std::string, std::vector<int> > sensorOutDays;
+
+  auto preprocessors = CropTypePreprocessingList::New();
 
   // Loop through the sets of products
   int startIndex = 0;
@@ -375,540 +264,593 @@ void TrainImagesClassifier::DoExecute()
       int sz = prodPerTile[i];
       endIndex = startIndex + sz;
       TileData td;
-      ImageDescriptorList descriptorsList;
 
+
+      auto preprocessor = CropTypePreprocessing::New();
+      preprocessors->PushBack(preprocessor);
+      preprocessor->SetPixelSize(pixSize);
+      preprocessor->SetMission(mission);
 
       // compute the desired size of the processed rasters
-      updateRequiredImageSize(descriptors, startIndex, endIndex, td);
-
-      // loop through the descriptors
-      MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
-      SPOT4MetadataReaderType::Pointer spot4MetadataReader = SPOT4MetadataReaderType::New();
-      for (const std::string& desc : descriptors) {
-          ImageDescriptor id;
-          if (auto meta = maccsMetadataReader->ReadMetadata(desc)) {
-              // add the information to the list
-              if (meta->Header.FixedHeader.Mission.find(LANDSAT) != std::string::npos) {
-                  // Interpret landsat product
-                  ProcessLandsat8Metadata(*meta, desc, id, td);
-              } else if (meta->Header.FixedHeader.Mission.find(SENTINEL) != std::string::npos) {
-                  // Interpret sentinel product
-                  ProcessSentinel2Metadata(*meta, desc, id, td);
-              } else {
-                  itkExceptionMacro("Unknown mission: " + meta->Header.FixedHeader.Mission);
-              }
-
-              descriptorsList.push_back(id);
-          }else if (auto meta = spot4MetadataReader->ReadMetadata(desc)) {
-              // add the information to the list
-              ProcessSpot4Metadata(*meta, desc, id, td);
-
-              descriptorsList.push_back(id);
-          } else {
-              itkExceptionMacro("Unable to read metadata from " << desc);
-          }
-      }
-
-      // sort the descriptors after the aquisition date
-      std::sort(descriptorsList.begin(), descriptorsList.end(), TrainImagesClassifier::SortUnmergedMetadata);
-
-      for (const ImageDescriptor& id : descriptorsList) {
-          int inDay = getDaysFromEpoch(id.aquisitionDate);
-          std::map<std::string, std::vector<int> >::iterator it = sensorInDays.find(id.mission);
-
-          if (it == sensorInDays.end()) {
-              std::vector<int> days;
-              days.push_back(inDay);
-              sensorInDays[id.mission] = days;
-          } else {
-              if (std::find(it->second.begin(), it->second.end(), inDay) == it->second.end()) {
-                it->second.push_back(inDay);
-                std::sort(it->second.begin(), it->second.end());
-              }
-          }
-
-      }
-
-
-      fullDescriptorsList.push_back(descriptorsList);
+      preprocessor->updateRequiredImageSize(descriptors, startIndex, endIndex, td);
+      preprocessor->Build(descriptors.begin() + startIndex, descriptors.begin() + endIndex, td);
   }
 
+  const auto &sensorOutDays = getOutputDays(preprocessors, resample, sp);
 
-  // loop through the sensors to determinte the output dates
-  for (const auto& sensor : sensorInDays) {
-      std::vector<int> outDates;
-      if (resample) {
-          auto it = sp.find(sensor.first);
-          if (it == sp.end()) {
-              itkExceptionMacro("Sampling rate required for sensor " << sensor.first);
-          }
-          auto rate = it->second;
+  // Samples
+  typedef double ValueType;
+  typedef itk::VariableLengthVector<ValueType> MeasurementType;
 
-          for (int date = sensor.second.front(); date <= sensor.second.back(); date += rate) {
-              outDates.emplace_back(date);
-          }
-      } else {
-          outDates.insert(outDates.end(), sensor.second.begin(), sensor.second.end());
-      }
-      sensorOutDays[sensor.first] = outDates;
+  // Build a Measurement Vector of mean
+  MeasurementType mean;
+
+  // Build a MeasurementVector of variance
+  MeasurementType variance;
+
+  auto app = otb::Wrapper::ApplicationRegistry::CreateApplication("ComputeImagesStatistics");
+  if (!app) {
+      itkExceptionMacro("Unable to load the ComputeImagesStatistics application");
+  }
+  if (HasValue("nodatalabel")) {
+      app->EnableParameter("bv");
+      app->SetParameterFloat("bv", GetParameterInt("nodatalabel"));
   }
 
+  app->EnableParameter("out");
+  app->SetParameterString("out", GetParameterString("outstat"));
 
-  for (size_t i = 0; i < prodPerTile.size(); i ++) {
-      ImageDescriptorList& descriptorsList = fullDescriptorsList[i];
-      // Merge the rasters and the masks
-      ConcatenateVectorImagesFilterType::Pointer bandsConcat = ConcatenateVectorImagesFilterType::New();
-      ConcatenateVectorImagesFilterType::Pointer maskConcat = ConcatenateVectorImagesFilterType::New();
-      // Also build the image dates structures
-      SensorDataCollection sdCollection;
+  app->EnableParameter("il");
+  auto imageList = dynamic_cast<InputImageListParameter *>(app->GetParameterByKey("il"));
 
-      int index = 1;
-      std::string lastMission = "";
-      for (const ImageDescriptor& id : descriptorsList) {
-          if (id.mission != lastMission) {
-              SensorData sd;
-              sd.sensorName = id.mission;
-              sd.outDates = sensorOutDays[id.mission];
-              sdCollection.push_back(sd);
-              lastMission = id.mission;
-          }
+  std::vector<FloatVectorImageType::Pointer> images;
+  images.reserve(preprocessors->Size());
 
-          SensorData& sd = sdCollection[sdCollection.size() - 1];
-          int inDay = getDaysFromEpoch(id.aquisitionDate);
+  for (size_t i = 0; i < prodPerTile.size(); i++) {
+      auto preprocessor = preprocessors->GetNthElement(i);
+      preprocessor->SetSensorOutDays(sensorOutDays);
+      auto output = preprocessor->GetOutput();
 
-          sd.inDates.push_back(inDay);
+      images.emplace_back(output);
+      imageList->AddImage(output);
+  }
+  app->UpdateParameters();
 
-          bandsConcat->SetInput(index, id.bands);
-          maskConcat->SetInput(index, id.mask);
-          index++;
-      }
-      m_ImageMergers->PushBack(bandsConcat);
-      m_ImageMergers->PushBack(maskConcat);
+  otbAppLogINFO("Computing statistics");
+  app->ExecuteAndWriteOutput();
+  otbAppLogINFO("Statistics written");
 
-      // Set the temporal resampling / gap filling filter
-      TemporalResamplingFilterType::Pointer tempResampler = TemporalResamplingFilterType::New();
-      tempResampler->SetInputRaster(bandsConcat->GetOutput());
-      tempResampler->SetInputMask(maskConcat->GetOutput());
-      // The output days will be updated later
-      tempResampler->SetInputData(sdCollection);
-      m_TempResamplers->PushBack(tempResampler);
-
-      // Set the feature extractors
-      CropTypeFeatureExtractionFilterType::Pointer featExtractor = CropTypeFeatureExtractionFilterType::New();
-      featExtractor->SetInput(tempResampler->GetOutput());
-      m_FeatureExtrators->PushBack(featExtractor);
-
-      m_InputImages->PushBack(featExtractor->GetOutput());
-
-
-      startIndex = endIndex;
+  app = otb::Wrapper::ApplicationRegistry::CreateApplication("TrainImagesClassifierNew");
+  if (!app) {
+        itkExceptionMacro("Unable to load the TrainImagesClassifierNew application");
   }
 
+  // TODO these are extracted with !OTB_USE_LIBSVM && OTB_USE_OPENCV
+  std::string booleanParams[] = {
+      "classifier.dt.r",
+      "classifier.dt.t",
+      "classifier.libsvm.opt",
+      "classifier.svm.opt",
+      "sample.edg"
+  };
+  std::string floatParams[] = {
+      "classifier.ann.a",
+      "classifier.ann.b",
+      "classifier.ann.bpdw",
+      "classifier.ann.bpms",
+      "classifier.ann.eps",
+      "classifier.ann.rdw",
+      "classifier.ann.rdwm",
+      "classifier.boost.r",
+      "classifier.dt.ra",
+      "classifier.gbt.p",
+      "classifier.gbt.s",
+      "classifier.libsvm.c",
+      "classifier.rf.acc",
+      "classifier.rf.ra",
+      "classifier.svm.c",
+      "classifier.svm.coef0",
+      "classifier.svm.degree",
+      "classifier.svm.gamma",
+      "classifier.svm.nu",
+      "elev.default",
+      "sample.vtr"
+  };
+  std::string intParams[] = {
+      "classifier.ann.iter",
+      "classifier.boost.m",
+      "classifier.boost.w",
+      "classifier.dt.cat",
+      "classifier.dt.f",
+      "classifier.dt.max",
+      "classifier.dt.min",
+      "classifier.gbt.max",
+      "classifier.gbt.w",
+      "classifier.knn.k",
+      "classifier.rf.cat",
+      "classifier.rf.max",
+      "classifier.rf.min",
+      "classifier.rf.nbtrees",
+      "classifier.rf.var",
+      "nodatalabel",
+      "rand",
+      "sample.bm",
+      "sample.mt",
+      "sample.mv"
+  };
+  std::string stringParams[] = {
+      "classifier.ann.f",
+      "classifier.ann.sizes",
+      "classifier.ann.term",
+      "classifier.ann.t",
+      "classifier.boost.t",
+      "classifier.libsvm.k",
+      "classifier",
+      "classifier.svm.k",
+      "classifier.svm.m",
+      "elev.dem",
+      "elev.geoid",
+      "io.confmatout",
+      "io.out",
+      "io.rs",
+      "sample.vfn"
+  };
 
-  MeasurementType meanMeasurementVector;
-  MeasurementType stddevMeasurementVector;
-
-  //--------------------------
-  // Load measurements from images
-  unsigned int nbBands = 0;
-  //Iterate over all input images
-
-  FloatVectorImageListType* imageList = m_InputImages;
-  if (this->HasValue("io.vd")) {
-      VectorDataListType* vectorDataList = GetParameterVectorDataList("io.vd");
-
-      vdreproj = VectorDataReprojectionType::New();
-
-      //Iterate over all input images
-      for (unsigned int imgIndex = 0; imgIndex < imageList->Size(); ++imgIndex)
-        {
-        FloatVectorImageType::Pointer image = imageList->GetNthElement(imgIndex);
-        image->UpdateOutputInformation();
-
-        if (imgIndex == 0)
-          {
-          nbBands = image->GetNumberOfComponentsPerPixel();
-          }
-
-        // read the Vectordata
-        VectorDataType::Pointer vectorData = vectorDataList->GetNthElement(imgIndex);
-        vectorData->Update();
-
-        vdreproj->SetInputImage(image);
-        vdreproj->SetInput(vectorData);
-        vdreproj->SetUseOutputSpacingAndOriginFromImage(false);
-
-        // Setup the DEM Handler
-        otb::Wrapper::ElevationParametersHandler::SetupDEMHandlerFromElevationParameters(this, "elev");
-
-        vdreproj->Update();
-
-        //Sample list generator
-        ListSampleGeneratorType::Pointer sampleGenerator = ListSampleGeneratorType::New();
-
-        sampleGenerator->SetInput(image);
-        sampleGenerator->SetInputVectorData(vdreproj->GetOutput());
-
-        sampleGenerator->SetClassKey(GetParameterString("sample.vfn"));
-        sampleGenerator->SetMaxTrainingSize(GetParameterInt("sample.mt"));
-        sampleGenerator->SetMaxValidationSize(GetParameterInt("sample.mv"));
-        sampleGenerator->SetValidationTrainingProportion(GetParameterFloat("sample.vtr"));
-        sampleGenerator->SetBoundByMin(GetParameterInt("sample.bm")!=0);
-
-        // take pixel located on polygon edge into consideration
-        if (IsParameterEnabled("sample.edg"))
-          {
-          sampleGenerator->SetPolygonEdgeInclusion(true);
-          }
-
-        sampleGenerator->Update();
-
-        //Concatenate training and validation samples from the image
-        concatenateTrainingLabels->AddInput(sampleGenerator->GetTrainingListLabel());
-        concatenateTrainingSamples->AddInput(sampleGenerator->GetTrainingListSample());
-        concatenateValidationLabels->AddInput(sampleGenerator->GetValidationListLabel());
-        concatenateValidationSamples->AddInput(sampleGenerator->GetValidationListSample());
-        }
-  } else if (this->HasValue("io.rs")) {
-      Int32ImageType::Pointer raster = GetParameterInt32Image("io.rs");
-      //Iterate over all input images
-      for (unsigned int imgIndex = 0; imgIndex < imageList->Size(); ++imgIndex)
-        {
-        FloatVectorImageType::Pointer image = imageList->GetNthElement(imgIndex);
-        image->UpdateOutputInformation();
-
-        if (imgIndex == 0)
-          {
-          nbBands = image->GetNumberOfComponentsPerPixel();
-          }
-
-        //Sample list generator
-        ListSampleGeneratorRasterType::Pointer sampleGenerator = ListSampleGeneratorRasterType::New();
-
-        sampleGenerator->SetInput(image);
-        sampleGenerator->SetInputRaster(raster);
-
-        sampleGenerator->SetNoDataLabel(GetParameterInt("nodatalabel"));
-        sampleGenerator->SetMaxTrainingSize(GetParameterInt("sample.mt"));
-        sampleGenerator->SetMaxValidationSize(GetParameterInt("sample.mv"));
-        sampleGenerator->SetValidationTrainingProportion(GetParameterFloat("sample.vtr"));
-        sampleGenerator->SetBoundByMin(GetParameterInt("sample.bm")!=0);
-        sampleGenerator->Update();
-
-        //Concatenate training and validation samples from the image
-        concatenateTrainingLabels->AddInput(sampleGenerator->GetTrainingListLabel());
-        concatenateTrainingSamples->AddInput(sampleGenerator->GetTrainingListSample());
-        concatenateValidationLabels->AddInput(sampleGenerator->GetValidationListLabel());
-        concatenateValidationSamples->AddInput(sampleGenerator->GetValidationListSample());
+  for (const auto &key : booleanParams) {
+      if (HasValue(key)) {
+          app->EnableParameter(key);
+          app->SetParameterEmpty(key, GetParameterEmpty(key));
       }
-  } else {
-      otbAppLogFATAL("No samples provided! ");
   }
 
-  // Update
-  concatenateTrainingSamples->Update();
-  concatenateTrainingLabels->Update();
-  concatenateValidationSamples->Update();
-  concatenateValidationLabels->Update();
-
-  if (concatenateTrainingSamples->GetOutput()->Size() == 0)
-    {
-    otbAppLogFATAL("No training samples, cannot perform SVM training.");
-    }
-
-  if (concatenateValidationSamples->GetOutput()->Size() == 0)
-    {
-    otbAppLogWARNING("No validation samples.");
-    }
-
-  if (IsParameterEnabled("io.imstat"))
-    {
-    StatisticsReader::Pointer statisticsReader = StatisticsReader::New();
-    statisticsReader->SetFileName(GetParameterString("io.imstat"));
-    meanMeasurementVector = statisticsReader->GetStatisticVectorByName("mean");
-    stddevMeasurementVector = statisticsReader->GetStatisticVectorByName("stddev");
-    }
-  else
-    {
-    meanMeasurementVector.SetSize(nbBands);
-    meanMeasurementVector.Fill(0.);
-    stddevMeasurementVector.SetSize(nbBands);
-    stddevMeasurementVector.Fill(1.);
-    }
-
-  // Shift scale the samples
-  ShiftScaleFilterType::Pointer trainingShiftScaleFilter = ShiftScaleFilterType::New();
-  trainingShiftScaleFilter->SetInput(concatenateTrainingSamples->GetOutput());
-  trainingShiftScaleFilter->SetShifts(meanMeasurementVector);
-  trainingShiftScaleFilter->SetScales(stddevMeasurementVector);
-  trainingShiftScaleFilter->Update();
-
-  ListSampleType::Pointer validationListSample=ListSampleType::New();
-
-  //Test if the validation test is empty
-  if ( concatenateValidationSamples->GetOutput()->Size() != 0 )
-    {
-    ShiftScaleFilterType::Pointer validationShiftScaleFilter = ShiftScaleFilterType::New();
-    validationShiftScaleFilter->SetInput(concatenateValidationSamples->GetOutput());
-    validationShiftScaleFilter->SetShifts(meanMeasurementVector);
-    validationShiftScaleFilter->SetScales(stddevMeasurementVector);
-    validationShiftScaleFilter->Update();
-    validationListSample = validationShiftScaleFilter->GetOutput();
-    }
-
-  ListSampleType::Pointer listSample;
-  LabelListSampleType::Pointer labelListSample;
-  //--------------------------
-  // Balancing training sample (if needed)
-  // if (IsParameterEnabled("sample.b"))
-  //   {
-  //   // Balance the list sample.
-  //   otbAppLogINFO("Number of training samples before balancing: " << concatenateTrainingSamples->GetOutput()->Size())
-  //   BalancingListSampleFilterType::Pointer balancingFilter = BalancingListSampleFilterType::New();
-  //   balancingFilter->SetInput(trainingShiftScaleFilter->GetOutput());
-  //   balancingFilter->SetInputLabel(concatenateTrainingLabels->GetOutput());
-  //   balancingFilter->SetBalancingFactor(GetParameterInt("sample.b"));
-  //   balancingFilter->Update();
-  //   listSample = balancingFilter->GetOutput();
-  //   labelListSample = balancingFilter->GetOutputLabelSampleList();
-  //   otbAppLogINFO("Number of samples after balancing: " << balancingFilter->GetOutput()->Size());
-
-  //   }
-  // else
-  //   {
-  listSample = trainingShiftScaleFilter->GetOutput();
-  labelListSample = concatenateTrainingLabels->GetOutput();
-  otbAppLogINFO("Number of training samples: " << concatenateTrainingSamples->GetOutput()->Size());
-  //  }
-  //--------------------------
-  // Split the data set into training/validation set
-  ListSampleType::Pointer trainingListSample = listSample;
-  LabelListSampleType::Pointer trainingLabeledListSample = labelListSample;
-
-  LabelListSampleType::Pointer validationLabeledListSample = concatenateValidationLabels->GetOutput();
-  otbAppLogINFO("Size of training set: " << trainingListSample->Size());
-  otbAppLogINFO("Size of validation set: " << validationListSample->Size());
-  otbAppLogINFO("Size of labeled training set: " << trainingLabeledListSample->Size());
-  otbAppLogINFO("Size of labeled validation set: " << validationLabeledListSample->Size());
-
-  //--------------------------
-  // Estimate model
-  //--------------------------
-  LabelListSampleType::Pointer predictedList = LabelListSampleType::New();
-  const std::string classifierType = GetParameterString("classifier");
-
-  if (classifierType == "libsvm")
-    {
-	#ifdef OTB_USE_LIBSVM
-    TrainLibSVM(trainingListSample, trainingLabeledListSample);
-    #else
-    otbAppLogFATAL("Module LIBSVM is not installed. You should consider turning OTB_USE_LIBSVM on during cmake configuration.");
-    #endif
-    }
-  else if (classifierType == "svm")
-    {
-	#ifdef OTB_USE_OPENCV
-    TrainSVM(trainingListSample, trainingLabeledListSample);
-    #else
-    otbAppLogFATAL("Module OPENCV is not installed. You should consider turning OTB_USE_OPENCV on during cmake configuration.");
-    #endif
-    }
-  else if (classifierType == "boost")
-    {
-	#ifdef OTB_USE_OPENCV
-    TrainBoost(trainingListSample, trainingLabeledListSample);
-    #else
-    otbAppLogFATAL("Module OPENCV is not installed. You should consider turning OTB_USE_OPENCV on during cmake configuration.");
-    #endif
-    }
-  else if (classifierType == "dt")
-    {
-	#ifdef OTB_USE_OPENCV
-    TrainDecisionTree(trainingListSample, trainingLabeledListSample);
-    #else
-    otbAppLogFATAL("Module OPENCV is not installed. You should consider turning OTB_USE_OPENCV on during cmake configuration.");
-    #endif
-    }
-  else if (classifierType == "gbt")
-    {
-	#ifdef OTB_USE_OPENCV
-    TrainGradientBoostedTree(trainingListSample, trainingLabeledListSample);
-    #else
-    otbAppLogFATAL("Module OPENCV is not installed. You should consider turning OTB_USE_OPENCV on during cmake configuration.");
-    #endif
-    }
-  else if (classifierType == "ann")
-    {
-	#ifdef OTB_USE_OPENCV
-    TrainNeuralNetwork(trainingListSample, trainingLabeledListSample);
-    #else
-    otbAppLogFATAL("Module OPENCV is not installed. You should consider turning OTB_USE_OPENCV on during cmake configuration.");
-    #endif
-    }
-  else if (classifierType == "bayes")
-    {
-	#ifdef OTB_USE_OPENCV
-    TrainNormalBayes(trainingListSample, trainingLabeledListSample);
-    #else
-    otbAppLogFATAL("Module OPENCV is not installed. You should consider turning OTB_USE_OPENCV on during cmake configuration.");
-    #endif
-    }
-  else if (classifierType == "rf")
-    {
-	#ifdef OTB_USE_OPENCV
-    TrainRandomForests(trainingListSample, trainingLabeledListSample);
-    #else
-    otbAppLogFATAL("Module OPENCV is not installed. You should consider turning OTB_USE_OPENCV on during cmake configuration.");
-    #endif
-    }
-  else if (classifierType == "knn")
-    {
-	#ifdef OTB_USE_OPENCV
-    TrainKNN(trainingListSample, trainingLabeledListSample);
-    #else
-    otbAppLogFATAL("Module OPENCV is not installed. You should consider turning OTB_USE_OPENCV on during cmake configuration.");
-    #endif
-    }
-
-
-  //--------------------------
-  // Performances estimation
-  //--------------------------
-  ListSampleType::Pointer performanceListSample=ListSampleType::New();
-  LabelListSampleType::Pointer performanceLabeledListSample=LabelListSampleType::New();
-
-  //Test the input validation set size
-  if(validationLabeledListSample->Size() != 0)
-    {
-    performanceListSample = validationListSample;
-    performanceLabeledListSample = validationLabeledListSample;
-    }
-  else
-    {
-    otbAppLogWARNING("The validation set is empty. The performance estimation is done using the input training set in this case.");
-    performanceListSample = trainingListSample;
-    performanceLabeledListSample = trainingLabeledListSample;
-    }
-
-    Classify(performanceListSample, predictedList);
-
-    ConfusionMatrixCalculatorType::Pointer confMatCalc = ConfusionMatrixCalculatorType::New();
-
-    std::cout << "predicted list size == " << predictedList->Size() << std::endl;
-    std::cout << "validationLabeledListSample size == " << performanceLabeledListSample->Size() << std::endl;
-    confMatCalc->SetReferenceLabels(performanceLabeledListSample);
-    confMatCalc->SetProducedLabels(predictedList);
-
-    confMatCalc->Compute();
-
-    otbAppLogINFO("training performances");
-    LogConfusionMatrix(confMatCalc);
-
-    for (unsigned int itClasses = 0; itClasses < confMatCalc->GetNumberOfClasses(); itClasses++)
-      {
-      ConfusionMatrixCalculatorType::ClassLabelType classLabel = confMatCalc->GetMapOfIndices()[itClasses];
-
-      otbAppLogINFO("Precision of class [" << classLabel << "] vs all: " << confMatCalc->GetPrecisions()[itClasses]);
-      otbAppLogINFO("Recall of class    [" << classLabel << "] vs all: " << confMatCalc->GetRecalls()[itClasses]);
-      otbAppLogINFO(
-        "F-score of class   [" << classLabel << "] vs all: " << confMatCalc->GetFScores()[itClasses] << "\n");
+  for (const auto &key : floatParams) {
+      if (HasValue(key)) {
+          app->EnableParameter(key);
+          app->SetParameterFloat(key, GetParameterFloat(key));
       }
-    otbAppLogINFO("Global performance, Kappa index: " << confMatCalc->GetKappaIndex());
+  }
 
+  for (const auto &key : intParams) {
+      if (HasValue(key)) {
+          app->EnableParameter(key);
+          app->SetParameterInt(key, GetParameterInt(key));
+      }
+  }
 
-    if (this->HasValue("io.confmatout"))
-      {
-      // Writing the confusion matrix in the output .CSV file
+  for (const auto &key : stringParams) {
+      if (HasValue(key)) {
+          app->EnableParameter(key);
+          app->SetParameterString(key, GetParameterString(key));
+      }
+  }
 
-      MapOfIndicesType::iterator itMapOfIndicesValid, itMapOfIndicesPred;
-      ClassLabelType labelValid = 0;
+  if (HasValue("io.vd")) {
+      app->EnableParameter("io.vd");
+      app->SetParameterStringList("io.vd", GetParameterStringList("io.vd"));
+  }
 
-      ConfusionMatrixType confusionMatrix = confMatCalc->GetConfusionMatrix();
-      MapOfIndicesType mapOfIndicesValid = confMatCalc->GetMapOfIndices();
+  app->EnableParameter("io.imstat");
+  app->SetParameterString("io.imstat", GetParameterString("outstat"));
 
-      unsigned int nbClassesPred = mapOfIndicesValid.size();
+  app->EnableParameter("io.il");
+  imageList = dynamic_cast<InputImageListParameter *>(app->GetParameterByKey("io.il"));
 
-      /////////////////////////////////////////////
-      // Filling the 2 headers for the output file
-      const std::string commentValidStr = "#Reference labels (rows):";
-      const std::string commentPredStr = "#Produced labels (columns):";
-      const char separatorChar = ',';
-      std::ostringstream ossHeaderValidLabels, ossHeaderPredLabels;
+  for (const auto &img : images) {
+      imageList->AddImage(img);
+  }
+  app->UpdateParameters();
 
-      // Filling ossHeaderValidLabels and ossHeaderPredLabels for the output file
-      ossHeaderValidLabels << commentValidStr;
-      ossHeaderPredLabels << commentPredStr;
-
-      itMapOfIndicesValid = mapOfIndicesValid.begin();
-
-      while (itMapOfIndicesValid != mapOfIndicesValid.end())
-        {
-        // labels labelValid of mapOfIndicesValid are already sorted in otbConfusionMatrixCalculator
-        labelValid = itMapOfIndicesValid->second;
-
-        otbAppLogINFO("mapOfIndicesValid[" << itMapOfIndicesValid->first << "] = " << labelValid);
-
-        ossHeaderValidLabels << labelValid;
-        ossHeaderPredLabels << labelValid;
-
-        ++itMapOfIndicesValid;
-
-        if (itMapOfIndicesValid != mapOfIndicesValid.end())
-          {
-          ossHeaderValidLabels << separatorChar;
-          ossHeaderPredLabels << separatorChar;
-          }
-        else
-          {
-          ossHeaderValidLabels << std::endl;
-          ossHeaderPredLabels << std::endl;
-          }
-        }
-
-      std::ofstream outFile;
-      outFile.open(this->GetParameterString("io.confmatout").c_str());
-      outFile << std::fixed;
-      outFile.precision(10);
-
-      /////////////////////////////////////
-      // Writing the 2 headers
-      outFile << ossHeaderValidLabels.str();
-      outFile << ossHeaderPredLabels.str();
-      /////////////////////////////////////
-
-      unsigned int indexLabelValid = 0, indexLabelPred = 0;
-
-      for (itMapOfIndicesValid = mapOfIndicesValid.begin(); itMapOfIndicesValid != mapOfIndicesValid.end(); ++itMapOfIndicesValid)
-        {
-        indexLabelPred = 0;
-
-        for (itMapOfIndicesPred = mapOfIndicesValid.begin(); itMapOfIndicesPred != mapOfIndicesValid.end(); ++itMapOfIndicesPred)
-          {
-          // Writing the confusion matrix (sorted in otbConfusionMatrixCalculator) in the output file
-          outFile << confusionMatrix(indexLabelValid, indexLabelPred);
-          if (indexLabelPred < (nbClassesPred - 1))
-            {
-            outFile << separatorChar;
-            }
-          else
-            {
-            outFile << std::endl;
-            }
-          ++indexLabelPred;
-          }
-
-        ++indexLabelValid;
-        }
-
-      outFile.close();
-      } // END if (this->HasValue("io.confmatout"))
-
-  // TODO: implement hyperplane distance classifier and performance validation (cf. object detection) ?
-
+  otbAppLogINFO("Training the classifier");
+  app->ExecuteAndWriteOutput();
+  otbAppLogINFO("Training completed");
 }
 
+#ifdef OTB_USE_LIBSVM
+  void CropTypeTrainImagesClassifier::InitLibSVMParams()
+  {
+    AddChoice("classifier.libsvm", "LibSVM classifier");
+    SetParameterDescription("classifier.libsvm", "This group of parameters allows to set SVM classifier parameters.");
+    AddParameter(ParameterType_Choice, "classifier.libsvm.k", "SVM Kernel Type");
+    AddChoice("classifier.libsvm.k.linear", "Linear");
+    AddChoice("classifier.libsvm.k.rbf", "Gaussian radial basis function");
+    AddChoice("classifier.libsvm.k.poly", "Polynomial");
+    AddChoice("classifier.libsvm.k.sigmoid", "Sigmoid");
+    SetParameterString("classifier.libsvm.k", "linear");
+    SetParameterDescription("classifier.libsvm.k", "SVM Kernel Type.");
+    AddParameter(ParameterType_Float, "classifier.libsvm.c", "Cost parameter C");
+    SetParameterFloat("classifier.libsvm.c", 1.0);
+    SetParameterDescription(
+        "classifier.libsvm.c",
+        "SVM models have a cost parameter C (1 by default) to control the trade-off between training errors and forcing rigid margins.");
+    AddParameter(ParameterType_Empty, "classifier.libsvm.opt", "Parameters optimization");
+    MandatoryOff("classifier.libsvm.opt");
+    SetParameterDescription("classifier.libsvm.opt", "SVM parameters optimization flag.");
+  }
+#endif
+
+#ifdef OTB_USE_OPENCV
+  void CropTypeTrainImagesClassifier::InitBoostParams()
+  {
+    AddChoice("classifier.boost", "Boost classifier");
+    SetParameterDescription("classifier.boost", "This group of parameters allows to set Boost classifier parameters. "
+        "See complete documentation here \\url{http://docs.opencv.org/modules/ml/doc/boosting.html}.");
+    //BoostType
+    AddParameter(ParameterType_Choice, "classifier.boost.t", "Boost Type");
+    AddChoice("classifier.boost.t.discrete", "Discrete AdaBoost");
+    AddChoice("classifier.boost.t.real", "Real AdaBoost (technique using confidence-rated predictions "
+                                                "and working well with categorical data)");
+    AddChoice("classifier.boost.t.logit", "LogitBoost (technique producing good regression fits)");
+    AddChoice("classifier.boost.t.gentle", "Gentle AdaBoost (technique setting less weight on outlier data points "
+                                               "and, for that reason, being often good with regression data)");
+    SetParameterString("classifier.boost.t", "real");
+    SetParameterDescription("classifier.boost.t", "Type of Boosting algorithm.");
+    //Do not expose SplitCriteria
+    //WeakCount
+    AddParameter(ParameterType_Int, "classifier.boost.w", "Weak count");
+    SetParameterInt("classifier.boost.w", 100);
+    SetParameterDescription("classifier.boost.w","The number of weak classifiers.");
+    //WeightTrimRate
+    AddParameter(ParameterType_Float, "classifier.boost.r", "Weight Trim Rate");
+    SetParameterFloat("classifier.boost.r", 0.95);
+    SetParameterDescription("classifier.boost.r","A threshold between 0 and 1 used to save computational time. "
+                            "Samples with summary weight <= (1 - weight_trim_rate) do not participate in the next iteration of training. "
+                            "Set this parameter to 0 to turn off this functionality.");
+    //MaxDepth : Not sure that this parameter has to be exposed.
+    AddParameter(ParameterType_Int, "classifier.boost.m", "Maximum depth of the tree");
+    SetParameterInt("classifier.boost.m", 1);
+    SetParameterDescription("classifier.boost.m","Maximum depth of the tree.");
+  }
+
+  void CropTypeTrainImagesClassifier::InitSVMParams()
+  {
+    AddChoice("classifier.svm", "SVM classifier (OpenCV)");
+    SetParameterDescription("classifier.svm", "This group of parameters allows to set SVM classifier parameters. "
+        "See complete documentation here \\url{http://docs.opencv.org/modules/ml/doc/support_vector_machines.html}.");
+    AddParameter(ParameterType_Choice, "classifier.svm.m", "SVM Model Type");
+    AddChoice("classifier.svm.m.csvc", "C support vector classification");
+    AddChoice("classifier.svm.m.nusvc", "Nu support vector classification");
+    AddChoice("classifier.svm.m.oneclass", "Distribution estimation (One Class SVM)");
+    //AddChoice("classifier.svm.m.epssvr", "Epsilon Support Vector Regression");
+    //AddChoice("classifier.svm.m.nusvr", "Nu Support Vector Regression");
+    SetParameterString("classifier.svm.m", "csvc");
+    SetParameterDescription("classifier.svm.m", "Type of SVM formulation.");
+    AddParameter(ParameterType_Choice, "classifier.svm.k", "SVM Kernel Type");
+    AddChoice("classifier.svm.k.linear", "Linear");
+    AddChoice("classifier.svm.k.rbf", "Gaussian radial basis function");
+    AddChoice("classifier.svm.k.poly", "Polynomial");
+    AddChoice("classifier.svm.k.sigmoid", "Sigmoid");
+    SetParameterString("classifier.svm.k", "linear");
+    SetParameterDescription("classifier.svm.k", "SVM Kernel Type.");
+    AddParameter(ParameterType_Float, "classifier.svm.c", "Cost parameter C");
+    SetParameterFloat("classifier.svm.c", 1.0);
+    SetParameterDescription(
+        "classifier.svm.c",
+        "SVM models have a cost parameter C (1 by default) to control the trade-off between training errors and forcing rigid margins.");
+    AddParameter(ParameterType_Float, "classifier.svm.nu",
+                 "Parameter nu of a SVM optimization problem (NU_SVC / ONE_CLASS)");
+    SetParameterFloat("classifier.svm.nu", 0.0);
+    SetParameterDescription("classifier.svm.nu", "Parameter nu of a SVM optimization problem.");
+    //AddParameter(ParameterType_Float, "classifier.svm.p", "Parameter epsilon of a SVM optimization problem (EPS_SVR)");
+    //SetParameterFloat("classifier.svm.p", 0.0);
+    //SetParameterDescription("classifier.svm.p", "Parameter epsilon of a SVM optimization problem (EPS_SVR).");
+    AddParameter(ParameterType_Float, "classifier.svm.coef0", "Parameter coef0 of a kernel function (POLY / SIGMOID)");
+    SetParameterFloat("classifier.svm.coef0", 0.0);
+    SetParameterDescription("classifier.svm.coef0", "Parameter coef0 of a kernel function (POLY / SIGMOID).");
+    AddParameter(ParameterType_Float, "classifier.svm.gamma",
+                 "Parameter gamma of a kernel function (POLY / RBF / SIGMOID)");
+    SetParameterFloat("classifier.svm.gamma", 1.0);
+    SetParameterDescription("classifier.svm.gamma", "Parameter gamma of a kernel function (POLY / RBF / SIGMOID).");
+    AddParameter(ParameterType_Float, "classifier.svm.degree", "Parameter degree of a kernel function (POLY)");
+    SetParameterFloat("classifier.svm.degree", 1.0);
+    SetParameterDescription("classifier.svm.degree", "Parameter degree of a kernel function (POLY).");
+    AddParameter(ParameterType_Empty, "classifier.svm.opt", "Parameters optimization");
+    MandatoryOff("classifier.svm.opt");
+    SetParameterDescription("classifier.svm.opt", "SVM parameters optimization flag.\n-If set to True, then the optimal SVM parameters will be estimated. "
+                            "Parameters are considered optimal by OpenCV when the cross-validation estimate of the test set error is minimal. "
+                            "Finally, the SVM training process is computed 10 times with these optimal parameters over subsets corresponding to 1/10th of "
+                            "the training samples using the k-fold cross-validation (with k = 10).\n-If set to False, the SVM classification process will be "
+                            "computed once with the currently set input SVM parameters over the training samples.\n-Thus, even with identical input SVM "
+                            "parameters and a similar random seed, the output SVM models will be different according to the method used (optimized or not) "
+                            "because the samples are not identically processed within OpenCV.");
+  }
+
+  void CropTypeTrainImagesClassifier::InitDecisionTreeParams()
+  {
+    AddChoice("classifier.dt", "Decision Tree classifier");
+    SetParameterDescription("classifier.dt",
+                            "This group of parameters allows to set Decision Tree classifier parameters. "
+                            "See complete documentation here \\url{http://docs.opencv.org/modules/ml/doc/decision_trees.html}.");
+    //MaxDepth
+    AddParameter(ParameterType_Int, "classifier.dt.max", "Maximum depth of the tree");
+    SetParameterInt("classifier.dt.max", 65535);
+    SetParameterDescription(
+        "classifier.dt.max", "The training algorithm attempts to split each node while its depth is smaller than the maximum "
+        "possible depth of the tree. The actual depth may be smaller if the other termination criteria are met, and/or "
+        "if the tree is pruned.");
+
+    //MinSampleCount
+    AddParameter(ParameterType_Int, "classifier.dt.min", "Minimum number of samples in each node");
+    SetParameterInt("classifier.dt.min", 10);
+    SetParameterDescription("classifier.dt.min", "If the number of samples in a node is smaller than this parameter, "
+                            "then this node will not be split.");
+
+    //RegressionAccuracy
+    AddParameter(ParameterType_Float, "classifier.dt.ra", "Termination criteria for regression tree");
+    SetParameterFloat("classifier.dt.ra", 0.01);
+    SetParameterDescription("classifier.dt.min", "If all absolute differences between an estimated value in a node "
+                            "and the values of the train samples in this node are smaller than this regression accuracy parameter, "
+                            "then the node will not be split.");
+
+    //UseSurrogates : don't need to be exposed !
+    //AddParameter(ParameterType_Empty, "classifier.dt.sur", "Surrogate splits will be built");
+    //SetParameterDescription("classifier.dt.sur","These splits allow to work with missing data and compute variable importance correctly.");
+
+    //MaxCategories
+    AddParameter(ParameterType_Int, "classifier.dt.cat",
+                 "Cluster possible values of a categorical variable into K <= cat clusters to find a suboptimal split");
+    SetParameterInt("classifier.dt.cat", 10);
+    SetParameterDescription(
+        "classifier.dt.cat",
+        "Cluster possible values of a categorical variable into K <= cat clusters to find a suboptimal split.");
+
+    //CVFolds
+    AddParameter(ParameterType_Int, "classifier.dt.f", "K-fold cross-validations");
+    SetParameterInt("classifier.dt.f", 10);
+    SetParameterDescription(
+        "classifier.dt.f", "If cv_folds > 1, then it prunes a tree with K-fold cross-validation where K is equal to cv_folds.");
+
+    //Use1seRule
+    AddParameter(ParameterType_Empty, "classifier.dt.r", "Set Use1seRule flag to false");
+    SetParameterDescription(
+        "classifier.dt.r",
+        "If true, then a pruning will be harsher. This will make a tree more compact and more resistant to the training data noise but a bit less accurate.");
+
+    //TruncatePrunedTree
+    AddParameter(ParameterType_Empty, "classifier.dt.t", "Set TruncatePrunedTree flag to false");
+    SetParameterDescription("classifier.dt.t", "If true, then pruned branches are physically removed from the tree.");
+
+    //Priors are not exposed.
+
+  }
+
+  void CropTypeTrainImagesClassifier::InitGradientBoostedTreeParams()
+  {
+    AddChoice("classifier.gbt", "Gradient Boosted Tree classifier");
+    SetParameterDescription(
+        "classifier.gbt",
+        "This group of parameters allows to set Gradient Boosted Tree classifier parameters. "
+        "See complete documentation here \\url{http://docs.opencv.org/modules/ml/doc/gradient_boosted_trees.html}.");
+    //LossFunctionType : not exposed, as only one type is used for Classification,
+    // the other three are used for regression.
+
+    //WeakCount
+    AddParameter(ParameterType_Int, "classifier.gbt.w", "Number of boosting algorithm iterations");
+    SetParameterInt("classifier.gbt.w", 200);
+    SetParameterDescription(
+        "classifier.gbt.w",
+        "Number \"w\" of boosting algorithm iterations, with w*K being the total number of trees in "
+        "the GBT model, where K is the output number of classes.");
+
+    //Shrinkage
+    AddParameter(ParameterType_Float, "classifier.gbt.s", "Regularization parameter");
+    SetParameterFloat("classifier.gbt.s", 0.01);
+    SetParameterDescription("classifier.gbt.s", "Regularization parameter.");
+
+    //SubSamplePortion
+    AddParameter(ParameterType_Float, "classifier.gbt.p",
+                 "Portion of the whole training set used for each algorithm iteration");
+    SetParameterFloat("classifier.gbt.p", 0.8);
+    SetParameterDescription(
+        "classifier.gbt.p",
+        "Portion of the whole training set used for each algorithm iteration. The subset is generated randomly.");
+
+    //MaxDepth
+    AddParameter(ParameterType_Int, "classifier.gbt.max", "Maximum depth of the tree");
+    SetParameterInt("classifier.gbt.max", 3);
+    SetParameterDescription(
+          "classifier.gbt.max", "The training algorithm attempts to split each node while its depth is smaller than the maximum "
+          "possible depth of the tree. The actual depth may be smaller if the other termination criteria are met, and/or "
+          "if the tree is pruned.");
+
+    //UseSurrogates : don't need to be exposed !
+    //AddParameter(ParameterType_Empty, "classifier.gbt.sur", "Surrogate splits will be built");
+    //SetParameterDescription("classifier.gbt.sur","These splits allow to work with missing data and compute variable importance correctly.");
+
+  }
+
+  void CropTypeTrainImagesClassifier::InitNeuralNetworkParams()
+  {
+    AddChoice("classifier.ann", "Artificial Neural Network classifier");
+    SetParameterDescription("classifier.ann",
+                            "This group of parameters allows to set Artificial Neural Network classifier parameters. "
+                            "See complete documentation here \\url{http://docs.opencv.org/modules/ml/doc/neural_networks.html}.");
+
+    //TrainMethod
+    AddParameter(ParameterType_Choice, "classifier.ann.t", "Train Method Type");
+    AddChoice("classifier.ann.t.reg", "RPROP algorithm");
+    AddChoice("classifier.ann.t.back", "Back-propagation algorithm");
+    SetParameterString("classifier.ann.t", "reg");
+    SetParameterDescription("classifier.ann.t", "Type of training method for the multilayer perceptron (MLP) neural network.");
+
+    //LayerSizes
+    //There is no ParameterType_IntList, so i use a ParameterType_StringList and convert it.
+    /*std::vector<std::string> layerSizes;
+     layerSizes.push_back("100");
+     layerSizes.push_back("100"); */
+    AddParameter(ParameterType_StringList, "classifier.ann.sizes", "Number of neurons in each intermediate layer");
+    //SetParameterStringList("classifier.ann.sizes", layerSizes);
+    SetParameterDescription("classifier.ann.sizes",
+                            "The number of neurons in each intermediate layer (excluding input and output layers).");
+
+    //ActivateFunction
+    AddParameter(ParameterType_Choice, "classifier.ann.f", "Neuron activation function type");
+    AddChoice("classifier.ann.f.ident", "Identity function");
+    AddChoice("classifier.ann.f.sig", "Symmetrical Sigmoid function");
+    AddChoice("classifier.ann.f.gau", "Gaussian function (Not completely supported)");
+    SetParameterString("classifier.ann.f", "sig");
+    SetParameterDescription("classifier.ann.f", "Neuron activation function.");
+
+    //Alpha
+    AddParameter(ParameterType_Float, "classifier.ann.a", "Alpha parameter of the activation function");
+    SetParameterFloat("classifier.ann.a", 1.);
+    SetParameterDescription("classifier.ann.a",
+                            "Alpha parameter of the activation function (used only with sigmoid and gaussian functions).");
+
+    //Beta
+    AddParameter(ParameterType_Float, "classifier.ann.b", "Beta parameter of the activation function");
+    SetParameterFloat("classifier.ann.b", 1.);
+    SetParameterDescription("classifier.ann.b",
+                            "Beta parameter of the activation function (used only with sigmoid and gaussian functions).");
+
+    //BackPropDWScale
+    AddParameter(ParameterType_Float, "classifier.ann.bpdw",
+                 "Strength of the weight gradient term in the BACKPROP method");
+    SetParameterFloat("classifier.ann.bpdw", 0.1);
+    SetParameterDescription(
+        "classifier.ann.bpdw",
+        "Strength of the weight gradient term in the BACKPROP method. The recommended value is about 0.1.");
+
+    //BackPropMomentScale
+    AddParameter(ParameterType_Float, "classifier.ann.bpms",
+                 "Strength of the momentum term (the difference between weights on the 2 previous iterations)");
+    SetParameterFloat("classifier.ann.bpms", 0.1);
+    SetParameterDescription(
+        "classifier.ann.bpms",
+        "Strength of the momentum term (the difference between weights on the 2 previous iterations). "
+        "This parameter provides some inertia to smooth the random fluctuations of the weights. "
+        "It can vary from 0 (the feature is disabled) to 1 and beyond. The value 0.1 or so is good enough.");
+
+    //RegPropDW0
+    AddParameter(ParameterType_Float, "classifier.ann.rdw",
+                 "Initial value Delta_0 of update-values Delta_{ij} in RPROP method");
+    SetParameterFloat("classifier.ann.rdw", 0.1);
+    SetParameterDescription("classifier.ann.rdw", "Initial value Delta_0 of update-values Delta_{ij} in RPROP method (default = 0.1).");
+
+    //RegPropDWMin
+    AddParameter(ParameterType_Float, "classifier.ann.rdwm", "Update-values lower limit Delta_{min} in RPROP method");
+    SetParameterFloat("classifier.ann.rdwm", 1e-7);
+    SetParameterDescription(
+        "classifier.ann.rdwm",
+        "Update-values lower limit Delta_{min} in RPROP method. It must be positive (default = 1e-7).");
+
+    //TermCriteriaType
+    AddParameter(ParameterType_Choice, "classifier.ann.term", "Termination criteria");
+    AddChoice("classifier.ann.term.iter", "Maximum number of iterations");
+    AddChoice("classifier.ann.term.eps", "Epsilon");
+    AddChoice("classifier.ann.term.all", "Max. iterations + Epsilon");
+    SetParameterString("classifier.ann.term", "all");
+    SetParameterDescription("classifier.ann.term", "Termination criteria.");
+
+    //Epsilon
+    AddParameter(ParameterType_Float, "classifier.ann.eps", "Epsilon value used in the Termination criteria");
+    SetParameterFloat("classifier.ann.eps", 0.01);
+    SetParameterDescription("classifier.ann.eps", "Epsilon value used in the Termination criteria.");
+
+    //MaxIter
+    AddParameter(ParameterType_Int, "classifier.ann.iter",
+                 "Maximum number of iterations used in the Termination criteria");
+    SetParameterInt("classifier.ann.iter", 1000);
+    SetParameterDescription("classifier.ann.iter", "Maximum number of iterations used in the Termination criteria.");
+
+  }
+
+  void CropTypeTrainImagesClassifier::InitNormalBayesParams()
+  {
+    AddChoice("classifier.bayes", "Normal Bayes classifier");
+    SetParameterDescription("classifier.bayes", "Use a Normal Bayes Classifier. "
+        "See complete documentation here \\url{http://docs.opencv.org/modules/ml/doc/normal_bayes_classifier.html}.");
+
+  }
+
+  void CropTypeTrainImagesClassifier::InitRandomForestsParams()
+  {
+    AddChoice("classifier.rf", "Random forests classifier");
+    SetParameterDescription("classifier.rf",
+                            "This group of parameters allows to set Random Forests classifier parameters. "
+                            "See complete documentation here \\url{http://docs.opencv.org/modules/ml/doc/random_trees.html}.");
+    //MaxDepth
+    AddParameter(ParameterType_Int, "classifier.rf.max", "Maximum depth of the tree");
+    SetParameterInt("classifier.rf.max", 5);
+    SetParameterDescription(
+        "classifier.rf.max",
+        "The depth of the tree. A low value will likely underfit and conversely a high value will likely overfit. "
+        "The optimal value can be obtained using cross validation or other suitable methods.");
+
+    //MinSampleCount
+    AddParameter(ParameterType_Int, "classifier.rf.min", "Minimum number of samples in each node");
+    SetParameterInt("classifier.rf.min", 10);
+    SetParameterDescription(
+        "classifier.rf.min", "If the number of samples in a node is smaller than this parameter, "
+        "then the node will not be split. A reasonable value is a small percentage of the total data e.g. 1 percent.");
+
+    //RegressionAccuracy
+    AddParameter(ParameterType_Float, "classifier.rf.ra", "Termination Criteria for regression tree");
+    SetParameterFloat("classifier.rf.ra", 0.);
+    SetParameterDescription("classifier.rf.ra", "If all absolute differences between an estimated value in a node "
+                            "and the values of the train samples in this node are smaller than this regression accuracy parameter, "
+                            "then the node will not be split.");
+
+    //UseSurrogates : don't need to be exposed !
+    //AddParameter(ParameterType_Empty, "classifier.rf.sur", "Surrogate splits will be built");
+    //SetParameterDescription("classifier.rf.sur","These splits allow to work with missing data and compute variable importance correctly.");
+
+    //MaxNumberOfCategories
+    AddParameter(ParameterType_Int, "classifier.rf.cat",
+                 "Cluster possible values of a categorical variable into K <= cat clusters to find a suboptimal split");
+    SetParameterInt("classifier.rf.cat", 10);
+    SetParameterDescription(
+        "classifier.rf.cat",
+        "Cluster possible values of a categorical variable into K <= cat clusters to find a suboptimal split.");
+
+    //Priors are not exposed.
+
+    //CalculateVariableImportance not exposed
+
+    //MaxNumberOfVariables
+    AddParameter(ParameterType_Int, "classifier.rf.var",
+                 "Size of the randomly selected subset of features at each tree node");
+    SetParameterInt("classifier.rf.var", 0);
+    SetParameterDescription(
+        "classifier.rf.var",
+        "The size of the subset of features, randomly selected at each tree node, that are used to find the best split(s). "
+        "If you set it to 0, then the size will be set to the square root of the total number of features.");
+
+    //MaxNumberOfTrees
+    AddParameter(ParameterType_Int, "classifier.rf.nbtrees",
+                 "Maximum number of trees in the forest");
+    SetParameterInt("classifier.rf.nbtrees", 100);
+    SetParameterDescription(
+        "classifier.rf.nbtrees",
+        "The maximum number of trees in the forest. Typically, the more trees you have, the better the accuracy. "
+        "However, the improvement in accuracy generally diminishes and reaches an asymptote for a certain number of trees. "
+        "Also to keep in mind, increasing the number of trees increases the prediction time linearly.");
+
+    //ForestAccuracy
+    AddParameter(ParameterType_Float, "classifier.rf.acc",
+                 "Sufficient accuracy (OOB error)");
+    SetParameterFloat("classifier.rf.acc", 0.01);
+    SetParameterDescription("classifier.rf.acc","Sufficient accuracy (OOB error).");
+
+
+    //TerminationCriteria not exposed
+  }
+
+  void CropTypeTrainImagesClassifier::InitKNNParams()
+  {
+    AddChoice("classifier.knn", "KNN classifier");
+    SetParameterDescription("classifier.knn", "This group of parameters allows to set KNN classifier parameters. "
+        "See complete documentation here \\url{http://docs.opencv.org/modules/ml/doc/k_nearest_neighbors.html}.");
+
+    //K parameter
+    AddParameter(ParameterType_Int, "classifier.knn.k", "Number of Neighbors");
+    SetParameterInt("classifier.knn.k", 32);
+    SetParameterDescription("classifier.knn.k","The number of neighbors to use.");
+
+  }
+
+#endif
 
 }
 }
 
-OTB_APPLICATION_EXPORT(otb::Wrapper::TrainImagesClassifier)
+OTB_APPLICATION_EXPORT(otb::Wrapper::CropTypeTrainImagesClassifier)
