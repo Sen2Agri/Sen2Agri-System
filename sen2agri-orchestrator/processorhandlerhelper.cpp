@@ -27,6 +27,13 @@ QMap<QString, ProductType> ProcessorHandlerHelper::m_mapHighLevelProductTypeInfo
     {"L4B", ProductType::L4BProductTypeId},
 };
 
+bool compareTileInfoFilesDates(const ProcessorHandlerHelper::InfoTileFile& info1,const ProcessorHandlerHelper::InfoTileFile& info2)
+{
+  QDateTime dtProd1=ProcessorHandlerHelper::GetL2AProductDateFromPath(info1.file);
+  QDateTime dtProd2=ProcessorHandlerHelper::GetL2AProductDateFromPath(info2.file);
+  return (dtProd1 < dtProd2);
+}
+
 ProcessorHandlerHelper::ProcessorHandlerHelper() {}
 
 ProductType ProcessorHandlerHelper::GetProductTypeFromFileName(const QString &path) {
@@ -107,15 +114,13 @@ QMap<QString, ProcessorHandlerHelper::TileTemporalFilesInfo> ProcessorHandlerHel
             outAllSatIds.append(satId);
         if(mapTiles.contains(tileId)) {
             TileTemporalFilesInfo &infos = mapTiles[tileId];
-            infos.temporalTileFiles.append(tileFile);
-            infos.satelliteIds.append(satId);
+            infos.temporalTilesFileInfos.append({tileFile, satId});
             if(!infos.uniqueSatteliteIds.contains(satId))
                 infos.uniqueSatteliteIds.append(satId);
         } else {
             TileTemporalFilesInfo infos;
             infos.tileId = tileId;
-            infos.temporalTileFiles.append(tileFile);
-            infos.satelliteIds.append(satId);
+            infos.temporalTilesFileInfos.append({tileFile, satId});
             infos.uniqueSatteliteIds.append(satId);
             mapTiles[tileId] = infos;
         }
@@ -463,14 +468,13 @@ void ProcessorHandlerHelper::AddSatteliteIntersectingProducts(QMap<QString, Tile
         TileTemporalFilesInfo &info = i.value();
 
         // if we have a secondary product type
-        if(info.satelliteIds.contains(secondarySatId)) {
+        if(info.uniqueSatteliteIds.contains(secondarySatId)) {
             // check if the tile meta appears in the list of loaded products
-            for(QString &temporalTileFile: info.temporalTileFiles) {
-                if(listSecondarySatLoadedProds.contains(temporalTileFile) &&
-                        !primarySatInfos.temporalTileFiles.contains(temporalTileFile)) {
+            for(const InfoTileFile &temporalTileFileInfo: info.temporalTilesFileInfos) {
+                if(listSecondarySatLoadedProds.contains(temporalTileFileInfo.file) &&
+                        !TemporalTileInfosHasFile(primarySatInfos, temporalTileFileInfo.file)) {
                     // add it to the target sattelite information list
-                    primarySatInfos.temporalTileFiles.append(temporalTileFile);
-                    primarySatInfos.satelliteIds.append(secondarySatId);
+                    primarySatInfos.temporalTilesFileInfos.append({temporalTileFileInfo.file, temporalTileFileInfo.satId});
                     if(!primarySatInfos.uniqueSatteliteIds.contains(secondarySatId)) {
                         primarySatInfos.uniqueSatteliteIds.append(secondarySatId);
                     }
@@ -505,4 +509,27 @@ QString ProcessorHandlerHelper::GetShapeForTile(const QString &shapeFilesDir, co
     }
 
     return "";
+}
+
+QStringList ProcessorHandlerHelper::GetTemporalTileFiles(const TileTemporalFilesInfo &temporalTileInfo)
+{
+    QStringList retList;
+    for(const InfoTileFile &fileInfo: temporalTileInfo.temporalTilesFileInfos) {
+        retList.append(fileInfo.file);
+    }
+    return retList;
+}
+
+bool ProcessorHandlerHelper::TemporalTileInfosHasFile(const TileTemporalFilesInfo &temporalTileInfo, const QString &filePath)
+{
+    for(const InfoTileFile &fileInfo: temporalTileInfo.temporalTilesFileInfos) {
+        if(fileInfo.file == filePath)
+            return true;
+    }
+    return false;
+}
+
+void ProcessorHandlerHelper::SortTemporalTileInfoFiles(TileTemporalFilesInfo &temporalTileInfo)
+{
+    qSort(temporalTileInfo.temporalTilesFileInfos.begin(), temporalTileInfo.temporalTilesFileInfos.end(), compareTileInfoFilesDates);
 }

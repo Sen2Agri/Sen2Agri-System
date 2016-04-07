@@ -17,13 +17,26 @@ ConfigurationParameterValueMap SchedulingContext::GetConfigurationParameters(con
 {
     QMap<QString, ConfigurationParameterValue> retMap;
     const ConfigurationParameterValueList & cfgList = persistenceManager.GetConfigurationParameters(prefix);
+    ConfigurationParameterValueList defaultValues;
     for(const ConfigurationParameterValue &value : cfgList) {
-        if((siteId <= 0) || (value.siteId <= 0) || (value.siteId == siteId)) {
+        // a siteId with value less than or equals with 0 means the default values
+        // if we have (the received siteId AND the value siteId less than or equal with 0) OR
+        //    we have (the received and value site id equal)
+        if(((siteId <= 0) && (value.siteId <= 0)) || (value.siteId == siteId)) {
             if(overrideValues.contains(value.key)) {
                 retMap[value.key] = overrideValues[value.key];
             } else {
                 retMap[value.key] = value;
             }
+        }
+        if(value.siteId <= 0) {
+            defaultValues.append(value);
+        }
+    }
+    // now check if we have the keys for the default values. If not, add them
+    for(const ConfigurationParameterValue &defValue: defaultValues) {
+        if(!retMap.contains(defValue.key)) {
+            retMap[defValue.key] = defValue;
         }
     }
     return retMap;

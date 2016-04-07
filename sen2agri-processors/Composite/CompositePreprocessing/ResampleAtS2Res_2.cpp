@@ -23,7 +23,8 @@ void ResampleAtS2Res2::Init(const std::string &xml, const std::string &strMaskFi
 void ResampleAtS2Res2::DoExecute()
 {
     auto factory = MetadataHelperFactory::New();
-    m_pMetadataHelper = factory->GetMetadataHelper(m_strXml);
+    m_pMetadataHelper = ((m_nRes <= 0) ? factory->GetMetadataHelper(m_strXml):
+                                        factory->GetMetadataHelper(m_strXml, m_nRes));
 
     std::string imageFile = m_pMetadataHelper->GetImageFileName();
     m_inputImgReader = getReader(imageFile);

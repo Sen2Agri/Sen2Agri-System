@@ -42,7 +42,7 @@ void CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
                                              const JobSubmittedEvent &event, const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                              const QString &cropMask, CropTypeGlobalExecutionInfos &globalExecInfos)
 {
-    const QStringList &listProducts = tileTemporalFilesInfo.temporalTileFiles;
+    QStringList listProducts = ProcessorHandlerHelper::GetTemporalTileFiles(tileTemporalFilesInfo);
 
     auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4b.");
     auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.");

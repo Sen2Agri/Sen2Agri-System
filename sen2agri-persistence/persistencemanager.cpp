@@ -802,7 +802,7 @@ int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
         auto query = db.prepareQuery(
             QStringLiteral("select * from sp_insert_product(:productType, :processorId, "
                            ":satelliteId, :siteId, :jobId, :fullPath, :createdTimestamp, :name, "
-                           ":quicklookImage, :footprint, :tiles)"));
+                           ":quicklookImage, :footprint, :orbitId, :tiles)"));
         query.bindValue(QStringLiteral(":productType"), static_cast<int>(product.productType));
         query.bindValue(QStringLiteral(":processorId"), product.processorId);
         query.bindValue(QStringLiteral(":satelliteId"), QVariant());

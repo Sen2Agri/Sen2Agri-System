@@ -82,7 +82,7 @@ void CropMaskHandler::HandleNewTilesList(EventProcessingContext &ctx,
                                          const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                          CropMaskGlobalExecutionInfos &globalExecInfos)
 {
-    const QStringList &listProducts = tileTemporalFilesInfo.temporalTileFiles;
+    QStringList listProducts = ProcessorHandlerHelper::GetTemporalTileFiles(tileTemporalFilesInfo);
 
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 

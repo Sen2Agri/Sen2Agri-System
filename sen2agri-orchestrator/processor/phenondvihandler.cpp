@@ -23,7 +23,7 @@ void PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
                                           const JobSubmittedEvent &event, PhenoGlobalExecutionInfos &globalExecInfos,
                                           const TileTemporalFilesInfo &tileTemporalFilesInfo)
 {
-    const QStringList &listProducts = tileTemporalFilesInfo.temporalTileFiles;
+    QStringList listProducts = ProcessorHandlerHelper::GetTemporalTileFiles(tileTemporalFilesInfo);
 
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     // Get the resolution value

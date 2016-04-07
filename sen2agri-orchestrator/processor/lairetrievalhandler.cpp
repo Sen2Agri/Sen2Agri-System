@@ -223,8 +223,8 @@ void LaiRetrievalHandler::HandleNewTilesList(EventProcessingContext &ctx, const 
                                              const TileTemporalFilesInfo &missingL3BTileTemporalFilesInfo,
                                              LAIGlobalExecutionInfos &outGlobalExecInfos) {
 
-    const QStringList &listProducts = tileTemporalFilesInfo.temporalTileFiles;
-    const QStringList &missingL3BInputs = missingL3BTileTemporalFilesInfo.temporalTileFiles;
+    QStringList listProducts = ProcessorHandlerHelper::GetTemporalTileFiles(tileTemporalFilesInfo);
+    QStringList missingL3BInputs = ProcessorHandlerHelper::GetTemporalTileFiles(missingL3BTileTemporalFilesInfo);
 
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
@@ -1098,6 +1098,9 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
     QDateTime seasonStartDate;
     QDateTime seasonEndDate;
     GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
+    if(!seasonStartDate.isValid()) {
+        return params;
+    }
 
     // by default the start date is the season start date
     QDateTime startDate = seasonStartDate;
@@ -1105,32 +1108,25 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
 
     if(generateLai || generateReprocess) {
         int productionInterval = mapCfg[generateLai ? "processor.l3b.production_interval":
-                                                      "processor.l3c.production_interval"].value.toInt();
+                                                      "processor.l3b.reproc_production_interval"].value.toInt();
         startDate = endDate.addDays(-productionInterval);
         if(startDate < seasonStartDate) {
             startDate = seasonStartDate;
         }
     }
 
-    // ///////////////////////////////////////////////////////////////////
-    // TODO: REMOVE THIS AFTER TESTING
-//    if (1) {
-//        startDate = QDateTime::fromString("20160101", "yyyyMMdd");
-//        endDate = QDateTime::fromString("20160111", "yyyyMMdd");
-//    }
-    // ///////////////////////////////////////////////////////////////////
-
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
     if (params.productList.size() > 0) {
-        if(generateLai) {
-            params.isValid = true;
-        } else if(generateFitted) {
-            if(params.productList.size() > 4) {
-                params.isValid = true;
-            }
-        } else if (generateReprocess > 2) {
-            params.isValid = true;
-        }
+        params.isValid = true;
+//        if(generateLai) {
+//            params.isValid = true;
+//        } else if(generateFitted) {
+//            if(params.productList.size() > 4) {
+//                params.isValid = true;
+//            }
+//        } else if (generateReprocess > 2) {
+//            params.isValid = true;
+//        }
     }
 
     return params;
@@ -1146,7 +1142,7 @@ bool LaiRetrievalHandler::GetMonoDateFormatterParamInfosForProduct(
         QStringList &outProductTileMetaFiles) {
 
     for(auto tile : mapTiles.keys()) {
-        QStringList listTemporalTiles = mapTiles.value(tile).temporalTileFiles;
+        QStringList listTemporalTiles = ProcessorHandlerHelper::GetTemporalTileFiles(mapTiles.value(tile));
         LAIProductFormatterParams params = mapTileToParams[tile];
 
         // normally we have the same number

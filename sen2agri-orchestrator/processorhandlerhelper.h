@@ -32,10 +32,13 @@ public:
     } L2MetaTileNameInfos;
 
     typedef struct {
+        QString file;
+        SatelliteIdType satId;
+    } InfoTileFile;
+
+    typedef struct {
         QString tileId;
-        QStringList temporalTileFiles;
-        // the sattelite id for each temporal file
-        QList<SatelliteIdType> satelliteIds;
+        QList<InfoTileFile> temporalTilesFileInfos;
         //the unique sattelites ids from the above list
         QList<SatelliteIdType> uniqueSatteliteIds;
         SatelliteIdType primarySatelliteId;
@@ -69,6 +72,9 @@ public:
                                                  TileTemporalFilesInfo &primarySatInfos);
     static QString BuildShapeName(const QString &shapeFilesDir, const QString &tileId, int jobId, int taskId);
     static QString GetShapeForTile(const QString &shapeFilesDir, const QString &tileId);
+    static QStringList GetTemporalTileFiles(const TileTemporalFilesInfo &temporalTileInfo);
+    static bool TemporalTileInfosHasFile(const TileTemporalFilesInfo &temporalTileInfo, const QString &filePath);
+    static void SortTemporalTileInfoFiles(TileTemporalFilesInfo &temporalTileInfo);
 
 private:
     static QMap<QString, L2MetaTileNameInfos> m_mapSensorL2ATileMetaFileInfos;

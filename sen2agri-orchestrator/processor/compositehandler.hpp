@@ -34,7 +34,7 @@ private:
 
     void HandleNewTilesList(EventProcessingContext &ctx,
                                const JobSubmittedEvent &event,
-                               const TileTemporalFilesInfo &tileTemporalFilesInfo, CompositeGlobalExecutionInfos &globalExecInfos);
+                               const TileTemporalFilesInfo &tileTemporalFilesInfo, CompositeGlobalExecutionInfos &globalExecInfos, int resolution);
     bool IsProductAcceptableForJob(int jobId, const ProductAvailableEvent &event);
     void FilterInputProducts(QStringList &listFiles, int productDate, int halfSynthesis);
 

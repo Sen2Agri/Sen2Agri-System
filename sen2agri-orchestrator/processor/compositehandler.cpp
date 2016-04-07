@@ -76,7 +76,7 @@ void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
         bFootprintTaskPresent = true;
     }
 
-    int nbProducts = tileTemporalFilesInfo.temporalTileFiles.size();
+    int nbProducts = tileTemporalFilesInfo.temporalTilesFileInfos.size();
     // just create the tasks but with no information so far
     for (int i = 0; i < nbProducts; i++) {
         outAllTasksList.append(TaskToSubmit{ "composite-mask-handler", {} });
@@ -84,7 +84,7 @@ void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
 
         // if it is a secondary satellite, then we must cut the masks and the image with
         // gdalwarp according to the primary satellite shape
-        if(tileTemporalFilesInfo.satelliteIds[i] != tileTemporalFilesInfo.primarySatelliteId) {
+        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
             outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
             outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
             outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
@@ -122,7 +122,7 @@ void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
         nCurTaskIdx++;
 
         // check if we need to cut (according to primary shape) the product components if we have secondary satellite product
-        if(tileTemporalFilesInfo.satelliteIds[i] != tileTemporalFilesInfo.primarySatelliteId) {
+        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
             // launch in parallel all the cutting gdalwarp tasks
             int prevTaskId = nCurTaskIdx-1;
             int imgCutIdx = nCurTaskIdx++;
@@ -181,9 +181,10 @@ void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
 void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
                                           const JobSubmittedEvent &event,
                                           const TileTemporalFilesInfo &tileTemporalFilesInfo,
-                                          CompositeGlobalExecutionInfos &globalExecInfos)
+                                          CompositeGlobalExecutionInfos &globalExecInfos,
+                                          int resolution)
 {
-    const QStringList &listProducts = tileTemporalFilesInfo.temporalTileFiles;
+    QStringList listProducts = ProcessorHandlerHelper::GetTemporalTileFiles(tileTemporalFilesInfo);
     int jobId = event.jobId;
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters =
@@ -192,12 +193,6 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     // Get L3A Synthesis date
     const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
     auto synthalf = parameters["half_synthesis"].toString();
-
-    int resolution = 0;
-    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
-            resolution == 0) {
-        resolution = 10;    // TODO: We should configure the default resolution in DB
-    }
 
     // Get the parameters from the configuration
     // Get the Half Synthesis interval value if it was not specified by the user
@@ -208,8 +203,8 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
         }
     }
     auto bandsMapping = configParameters["processor.l3a.bandsmapping"];
-    const auto &scatCoeffs = configParameters["processor.l3a.preproc.scatcoeffs"];
-
+    const auto &scatCoeffs = configParameters[resolution == 10 ? "processor.l3a.preproc.scatcoeffs_10m" :
+                                                                  "processor.l3a.preproc.scatcoeffs_20m"];
     const auto &weightAOTMin = configParameters["processor.l3a.weight.aot.minweight"];
     const auto &weightAOTMax = configParameters["processor.l3a.weight.aot.maxweight"];
     const auto &AOTMax = configParameters["processor.l3a.weight.aot.maxaot"];
@@ -237,9 +232,9 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     if(tileTemporalFilesInfo.uniqueSatteliteIds.size() > 1 && tileTemporalFilesInfo.shapePath == "") {
         // CreateFootprint should execute on the first primary product metadatafrom the tile
         QString primaryTileMetadata;
-        for(int i = 0; i<tileTemporalFilesInfo.temporalTileFiles.size(); i++) {
-            if(tileTemporalFilesInfo.satelliteIds[i] == tileTemporalFilesInfo.primarySatelliteId) {
-                primaryTileMetadata = tileTemporalFilesInfo.temporalTileFiles[i];
+        for(int i = 0; i<tileTemporalFilesInfo.temporalTilesFileInfos.size(); i++) {
+            if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId == tileTemporalFilesInfo.primarySatelliteId) {
+                primaryTileMetadata = tileTemporalFilesInfo.temporalTilesFileInfos[i].file;
                 break;
             }
         }
@@ -289,7 +284,7 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
         }
         steps.append(compositePreprocessing.CreateStep("CompositePreprocessing", compositePreprocessingArgs));
 
-        if(tileTemporalFilesInfo.satelliteIds[i] != tileTemporalFilesInfo.primarySatelliteId) {
+        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
             TaskToSubmit &cutImgTask = allTasksList[nCurTaskIdx++];
             ctx.SubmitTasks(jobId, {cutImgTask});
 
@@ -439,7 +434,7 @@ void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath
 
         // Get the parameters from the configuration
         const auto &bandsMapping = configParameters["processor.l3a.bandsmapping"];
-        const auto &scatCoeffs = configParameters["processor.l3a.preproc.scatcoeffs"];
+        const auto &scatCoeffs = configParameters["processor.l3a.preproc.scatcoeffs_10m"];
 
         const auto &weightAOTMin = configParameters["processor.l3a.weight.aot.minweight"];
         const auto &weightAOTMax = configParameters["processor.l3a.weight.aot.maxweight"];
@@ -533,6 +528,17 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
             QStringLiteral("No products provided at input or no products available in the specified interval").
                     toStdString());
     }
+    const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
+    int resolution = 0;
+    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+            resolution == 0) {
+        resolution = 10;
+    }
+    bool bGenerate20MS2Res = false;
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3a.");
+    // Get L3A Synthesis date
+    const QString &generate20MS2ResStr = configParameters["processor.l3a.generate_20m_s2_resolution"];
+    bGenerate20MS2Res = (generate20MS2ResStr.toInt() != 0);
 
     QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.jobId, listProducts,
                                                                ProductType::L2AProductTypeId);
@@ -543,14 +549,27 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     QList<CompositeGlobalExecutionInfos> listCompositeInfos;
     for(auto tileId : mapTiles.keys())
     {
-       const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
-       listCompositeInfos.append(CompositeGlobalExecutionInfos());
-       CompositeGlobalExecutionInfos &infos = listCompositeInfos[listCompositeInfos.size()-1];
-       infos.prodFormatParams.tileId = GetProductFormatterTile(tileId);
-       HandleNewTilesList(ctx, event, listTemporalTiles, infos);
-       listParams.append(infos.prodFormatParams);
-       productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
-       allSteps.append(infos.allStepsList);
+        const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
+        int curRes = resolution;
+        bool bHasS2 = listTemporalTiles.uniqueSatteliteIds.contains(ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2);
+        // if we have S2 maybe we want to create products only for 20m resolution
+
+        for(int i = 0; i<2; i++)  {
+            if(i == 0) {
+                if(bHasS2 && resolution != 20) { curRes = 10;}  // if S2 and resolution not 20m, force it to 10m
+            } else {
+                // if we are at the second iteration, check if we have S2, if we should generate for 20m and if we had previously 10m
+                if(bGenerate20MS2Res && bHasS2 && resolution != 20) { curRes = 20;}
+                else { break;}  // exit the loop and do not execute anymore the second step
+            }
+            listCompositeInfos.append(CompositeGlobalExecutionInfos());
+            CompositeGlobalExecutionInfos &infos = listCompositeInfos[listCompositeInfos.size()-1];
+            infos.prodFormatParams.tileId = GetProductFormatterTile(tileId);
+            HandleNewTilesList(ctx, event, listTemporalTiles, infos, curRes);
+            listParams.append(infos.prodFormatParams);
+            productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
+            allSteps.append(infos.allStepsList);
+        }
     }
 
     ctx.SubmitTasks(event.jobId, {productFormatterTask});
@@ -615,7 +634,7 @@ QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productForma
 
     productFormatterArgs += "-processor.composite.refls";
     for(const CompositeProductFormatterParams &params: productParams) {
-        productFormatterArgs += params.tileId;
+        productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.prevL3AProdRefls;
     }
     productFormatterArgs += "-processor.composite.weights";

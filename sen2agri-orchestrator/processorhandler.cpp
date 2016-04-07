@@ -226,6 +226,10 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     QDate startWinterSeasonDate = QDate::fromString(seasonCfgValues["downloader.winter-season.start"].value, "MMdd").addYears(curYear-1900);
     QDate endWinterSeasonDate = QDate::fromString(seasonCfgValues["downloader.winter-season.end"].value, "MMdd").addYears(curYear-1900);
     if(startSummerSeasonDate.isValid() && endSummerSeasonDate.isValid()) {
+        // normally this should not happen for summer season but can happen for winter season
+        if(endSummerSeasonDate < startSummerSeasonDate) {
+            endSummerSeasonDate.addYears(-1);
+        }
         if(currentDate >= startSummerSeasonDate && currentDate <= endSummerSeasonDate) {
             startTime = QDateTime(startSummerSeasonDate);
             endTime = QDateTime(endSummerSeasonDate);
@@ -233,6 +237,11 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
         }
     }
     if(startWinterSeasonDate.isValid() && endWinterSeasonDate.isValid()) {
+        // this can happen for winter season
+        if(endWinterSeasonDate < startWinterSeasonDate) {
+            endWinterSeasonDate.addYears(-1);
+        }
+
         if(currentDate >= startWinterSeasonDate && currentDate <= endWinterSeasonDate) {
             startTime = QDateTime(startWinterSeasonDate);
             endTime = QDateTime(endWinterSeasonDate);
@@ -248,6 +257,11 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     QDate defEndWinterSeasonDate = QDate::fromString(seasonCfgValues["downloader.winter-season.end"].value, "MMdd").addYears(curYear-1900);
 
     if(defStartSummerSeasonDate.isValid() && defEndSummerSeasonDate.isValid()) {
+        // normally this should not happen for summer season but can happen for winter season
+        if(defEndSummerSeasonDate < defStartSummerSeasonDate) {
+            defEndSummerSeasonDate.addYears(-1);
+        }
+
         if(currentDate >= defStartSummerSeasonDate && currentDate <= defEndSummerSeasonDate) {
             startTime = QDateTime(defStartSummerSeasonDate);
             endTime = QDateTime(defEndSummerSeasonDate);
@@ -255,6 +269,11 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
         }
     }
     if(defStartWinterSeasonDate.isValid() && defEndWinterSeasonDate.isValid()) {
+        // this can happen for winter season
+        if(defEndWinterSeasonDate < defStartWinterSeasonDate) {
+            defEndWinterSeasonDate.addYears(-1);
+        }
+
         if(currentDate >= defStartWinterSeasonDate && currentDate <= defEndWinterSeasonDate) {
             startTime = QDateTime(defStartWinterSeasonDate);
             endTime = QDateTime(defEndWinterSeasonDate);
@@ -391,7 +410,8 @@ QMap<QString, TileTemporalFilesInfo> ProcessorHandler::GroupTiles(
             // now search to see if we can find a shapefile already created for the current tile
             info.shapePath = ProcessorHandlerHelper::GetShapeForTile(shapeFilesFolder, info.tileId);
 
-            // TODO: Here we must sort the products by date as maybe we added secondary products at the end
+            // Sort the products by date as maybe we added secondary products at the end
+            ProcessorHandlerHelper::SortTemporalTileInfoFiles(info);
 
             // add the tile info
             retMapTiles[info.tileId] = info;
