@@ -33,7 +33,7 @@ INSERT INTO config VALUES (34, 'executor.processor.l4b.name', NULL, 'L4B', '2015
 INSERT INTO config VALUES (52, 'executor.module.path.compute-images-statistics', NULL, '/usr/bin/otbcli_ComputeImagesStatistics', '2015-08-12 17:09:17.216345+03');
 INSERT INTO config VALUES (53, 'executor.module.path.train-images-classifier', NULL, '/usr/bin/otbcli_TrainImagesClassifier', '2015-08-12 17:09:18.767175+03');
 INSERT INTO config VALUES (44, 'general.scratch-path', NULL, '/mnt/archive/orchestrator_temp/{job_id}/{task_id}-{module}', '2015-07-10 17:54:17.288095+03');
-INSERT INTO config VALUES (121, 'processor.l3a.preproc.scatcoeffs', NULL, '/usr/share/sen2agri/scattering_coeffs_10m.txt', '2016-02-29 14:08:07.963143+02');
+INSERT INTO config VALUES (121, 'processor.l3a.preproc.scatcoeffs_10m', NULL, '/usr/share/sen2agri/scattering_coeffs_10m.txt', '2016-02-29 14:08:07.963143+02');
 INSERT INTO config VALUES (56, 'crop-type.classifier', NULL, 'rf', '2015-08-17 16:13:31.839288+03');
 INSERT INTO config VALUES (57, 'crop-type.classifier.rf.nbtrees', NULL, '100', '2015-08-17 16:18:01.088803+03');
 INSERT INTO config VALUES (58, 'crop-type.classifier.rf.min', NULL, '5', '2015-08-17 16:18:03.362784+03');
@@ -187,5 +187,5 @@ INSERT INTO config VALUES (211, 'site.upload-path', NULL, '/mnt/upload/{user}', 
 INSERT INTO config VALUES (213, 'processor.l4a.reference_data_dir', NULL, '', '2016-03-03 14:46:26.267227+02');
 INSERT INTO config VALUES (198, 'downloader.l8.write-dir', NULL, '/mnt/archive/dwn_def/l8/default', '2016-02-26 19:30:06.821627+02');
 INSERT INTO config VALUES (291, 'processor.l3a.generate_20m_s2_resolution', NULL, '0', '2016-02-26 19:30:06.821627+02');
-
+INSERT INTO config VALUES (292, 'processor.l3a.preproc.scatcoeffs_20m', NULL, '/usr/share/sen2agri/scattering_coeffs_20m.txt', '2016-02-29 14:08:07.963143+02');
 
