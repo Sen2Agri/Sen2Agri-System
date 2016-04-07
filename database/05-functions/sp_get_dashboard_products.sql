@@ -9,8 +9,10 @@ CREATE OR REPLACE FUNCTION sp_get_dashboard_products(
 $BODY$
 DECLARE return_string text;
 BEGIN
-	WITH data(product,product_type,product_type_description,processor,site,full_path,quicklook_image,footprint,created_timestamp,site_coord) AS (
-		SELECT 	P.name, 
+	WITH data(id, product,product_type,product_type_description,processor,site,full_path,quicklook_image,footprint,created_timestamp,site_coord) AS (
+		SELECT
+		    P.id,
+		    P.name, 
 			PT.name,
             PT.description,            
 			PR.name,
