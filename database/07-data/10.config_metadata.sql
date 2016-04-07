@@ -129,6 +129,7 @@ INSERT INTO config_metadata VALUES ('demmaccs.gips-path', 'path where the gips f
 INSERT INTO config_metadata VALUES ('executor.module.path.crop-mask-features-with-insitu', 'CropMask features with insitu path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('processor.l3a.synth_date_sched_offset', 'Difference in days between the scheduled and the synthesis date', 'int', true, 3);
 INSERT INTO config_metadata VALUES ('processor.l3a.half_synthesis', 'Half synthesis interval in days', 'int', true, 3);
+INSERT INTO config_metadata VALUES ('processor.l3a.generate_20m_s2_resolution', 'Specifies if composite for S2 20M resolution should be generated', 'int', true, 3);
 INSERT INTO config_metadata VALUES ('demmaccs.srtm-path', 'path where the srtm files are to be found', 'string', false, 16);
 INSERT INTO config_metadata VALUES ('demmaccs.swbd-path', 'path where the swbd files are to be found', 'string', false, 16);
 INSERT INTO config_metadata VALUES ('demmaccs.maccs-launcher', 'launcher for maccs within the keeping unit', 'string', false, 16);

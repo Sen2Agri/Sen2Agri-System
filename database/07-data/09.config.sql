@@ -186,4 +186,6 @@ INSERT INTO config VALUES (209, 'executor.shapes_dir', NULL, '/mnt/archive/Tiles
 INSERT INTO config VALUES (211, 'site.upload-path', NULL, '/mnt/upload/{user}', '2016-03-01 15:02:31.980394+02');
 INSERT INTO config VALUES (213, 'processor.l4a.reference_data_dir', NULL, '', '2016-03-03 14:46:26.267227+02');
 INSERT INTO config VALUES (198, 'downloader.l8.write-dir', NULL, '/mnt/archive/dwn_def/l8/default', '2016-02-26 19:30:06.821627+02');
+INSERT INTO config VALUES (291, 'processor.l3a.generate_20m_s2_resolution', NULL, '0', '2016-02-26 19:30:06.821627+02');
+
 
