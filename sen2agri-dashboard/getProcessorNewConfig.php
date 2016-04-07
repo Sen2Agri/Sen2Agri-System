@@ -499,7 +499,7 @@ elseif (isset ( $_POST ['l4a'] )) {
 	
 	if ($polygons_file || $raster_file) {
 		insertjob ( $name, $description, 4, $siteId, 2, $json_param, $json_config );
-		redirect_page(4, "OK", "Your job has been successfully submitted (with the reference " . ( $polygons_file ? "polygones" : "raster" ) . ")!");
+		redirect_page(4, "OK", "Your job has been successfully submitted (with the reference " . ( $polygons_file ? "polygons" : "raster" ) . ")!");
 	} else {
 		redirect_page(4, "NOK", "WARNING: Both `Reference polygons` and `Reference raster` were invalid!");
 	}

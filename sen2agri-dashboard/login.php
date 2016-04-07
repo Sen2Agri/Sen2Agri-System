@@ -13,8 +13,8 @@ include 'ms_menu.php';
 				<div id="signin">
 					<fieldset>
 						<form method="POST" action="verifyLogin.php">
-							<label>Username:</label><input type="text" name="user" size="40">
-							<label>Password:</label><input type="password" name="pass" size="40">
+							<label>Username:</label><input type="text" name="user">
+							<label>Password:</label><input type="password" name="pass">
 							</br>
 							<input id="button" type="submit" name="submit" value="login">
 						</form>

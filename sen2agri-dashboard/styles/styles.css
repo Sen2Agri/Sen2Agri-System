@@ -387,11 +387,11 @@ div.pop_up #close_button {
 }
 #signin input[type="text"], #signin input[type="password"] {
 	display: block;
-	padding: 12px;
 	width: 100%;
+	padding: 10px;
 	margin-top: 8px;
 	margin-bottom: 16px;
-	height: auto !important;
+	height: 36px;
 	border: 1px solid #D8DDE6;
 	border-radius: 4px;
 	background-color: #ffffff;
