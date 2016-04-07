@@ -133,7 +133,7 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
        const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
        listCropMaskInfos.append(CropMaskGlobalExecutionInfos());
        CropMaskGlobalExecutionInfos &infos = listCropMaskInfos[listCropMaskInfos.size()-1];
-       infos.prodFormatParams.tileId = "TILE_" + tileId;
+       infos.prodFormatParams.tileId = GetProductFormatterTile(tileId);
        HandleNewTilesList(ctx, event, listTemporalTiles, infos);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
@@ -795,25 +795,25 @@ QStringList CropMaskHandler::GetProductFormatterArgs(TaskToSubmit &productFormat
 
     productFormatterArgs += "-processor.cropmask.file";
     for(const CropMaskProductFormatterParams &params: productParams) {
-        productFormatterArgs += params.tileId;
+        productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.crop_mask;
     }
 
     productFormatterArgs += "-processor.cropmask.rawfile";
     for(const CropMaskProductFormatterParams &params: productParams) {
-        productFormatterArgs += params.tileId;
+        productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.raw_crop_mask;
     }
 
     productFormatterArgs += "-processor.cropmask.quality";
     for(const CropMaskProductFormatterParams &params: productParams) {
-        productFormatterArgs += params.tileId;
+        productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.xml_validation_metrics;
     }
 
     productFormatterArgs += "-processor.cropmask.flags";
     for(const CropMaskProductFormatterParams &params: productParams) {
-        productFormatterArgs += params.tileId;
+        productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.statusFlags;
     }
 

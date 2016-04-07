@@ -533,7 +533,7 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 
        allLaiGlobalExecInfos.append(LAIGlobalExecutionInfos());
        LAIGlobalExecutionInfos &infosRef = allLaiGlobalExecInfos[allLaiGlobalExecInfos.size()-1];
-       infosRef.prodFormatParams.tileId = "TILE_" + tileId;
+       infosRef.prodFormatParams.tileId = GetProductFormatterTile(tileId);
        HandleNewTilesList(ctx, event, listTemporalTiles, listL3bTiles, listL3bMissingInputsTiles, infosRef);
        if(infosRef.allTasksList.size() > 0 && infosRef.allStepsList.size() > 0) {
            listParams.append(infosRef.prodFormatParams);
@@ -838,24 +838,24 @@ QStringList LaiRetrievalHandler::GetLaiMonoProductFormatterArgs(TaskToSubmit &pr
 
     productFormatterArgs += "-processor.vegetation.laindvi";
     for(int i = 0; i<tileIdsList.size(); i++) {
-        productFormatterArgs += tileIdsList[i];
+        productFormatterArgs += GetProductFormatterTile(tileIdsList[i]);
         productFormatterArgs += ndviList[i];
     }
 
     productFormatterArgs += "-processor.vegetation.laimonodate";
     for(int i = 0; i<tileIdsList.size(); i++) {
-        productFormatterArgs += tileIdsList[i];
+        productFormatterArgs += GetProductFormatterTile(tileIdsList[i]);
         productFormatterArgs += laiList[i];
     }
 
     productFormatterArgs += "-processor.vegetation.laimonodateerr";
     for(int i = 0; i<tileIdsList.size(); i++) {
-        productFormatterArgs += tileIdsList[i];
+        productFormatterArgs += GetProductFormatterTile(tileIdsList[i]);
         productFormatterArgs += laiErrList[i];
     }
     productFormatterArgs += "-processor.vegetation.laimdateflgs";
     for(int i = 0; i<tileIdsList.size(); i++) {
-        productFormatterArgs += tileIdsList[i];
+        productFormatterArgs += GetProductFormatterTile(tileIdsList[i]);
         productFormatterArgs += laiFlgsList[i];
     }
 
@@ -1023,7 +1023,12 @@ bool LaiRetrievalHandler::IsGenModels(const QJsonObject &parameters, std::map<QS
 bool LaiRetrievalHandler::IsGenMonoDate(const QJsonObject &parameters, std::map<QString, QString> &configParameters) {
     bool bMonoDateLai = true;
     if(parameters.contains("monolai")) {
-        bMonoDateLai = (parameters["monolai"].toInt() != 0);
+        const auto &value = parameters["monolai"];
+        if(value.isDouble())
+            bMonoDateLai = (value.toInt() != 0);
+        else if(value.isString()) {
+            bMonoDateLai = (value.toString() == "1");
+        }
     } else {
         bMonoDateLai = ((configParameters["processor.l3b.mono_date_lai"]).toInt() != 0);
     }
@@ -1033,7 +1038,12 @@ bool LaiRetrievalHandler::IsGenMonoDate(const QJsonObject &parameters, std::map<
 bool LaiRetrievalHandler::IsNDayReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters) {
     bool bNDayReproc = false;
     if(parameters.contains("reproc")) {
-        bNDayReproc = (parameters["reproc"].toInt() != 0);
+        const auto &value = parameters["reproc"];
+        if(value.isDouble())
+            bNDayReproc = (value.toInt() != 0);
+        else if(value.isString()) {
+            bNDayReproc = (value.toString() == "1");
+        }
     } else {
         bNDayReproc = ((configParameters["processor.l3b.reprocess"]).toInt() != 0);
     }
@@ -1043,7 +1053,12 @@ bool LaiRetrievalHandler::IsNDayReproc(const QJsonObject &parameters, std::map<Q
 bool LaiRetrievalHandler::IsFittedReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters) {
     bool bFittedReproc = false;
     if(parameters.contains("fitted")) {
-        bFittedReproc = (parameters["fitted"].toInt() != 0);
+        const auto &value = parameters["fitted"];
+        if(value.isDouble())
+            bFittedReproc = (value.toInt() != 0);
+        else if(value.isString()) {
+            bFittedReproc = (value.toString() == "1");
+        }
     } else {
         bFittedReproc = ((configParameters["processor.l3b.fitted"]).toInt() != 0);
     }
@@ -1066,13 +1081,13 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
         const ConfigurationParameterValue &productType = requestOverrideCfgValues["product_type"];
         if(productType.value == "L3B") {
             generateLai = true;
-            params.jsonParameters = "{ \"monolai\": 1}";
+            params.jsonParameters = "{ \"monolai\": \"1\"}";
         } else if(productType.value == "L3C") {
             generateReprocess = true;
-            params.jsonParameters = "{ \"reproc\": 1}";
+            params.jsonParameters = "{ \"reproc\": \"1\"}";
         } else if(productType.value == "L3D") {
             generateFitted = true;
-            params.jsonParameters = "{ \"fitted\": 1}";
+            params.jsonParameters = "{ \"fitted\": \"1\"}";
         }
     }
     // we need to have at least one flag set

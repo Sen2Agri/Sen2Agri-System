@@ -312,7 +312,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
        QString cropMask = mapCropMasks.value(tileId);
        listCropTypeInfos.append(CropTypeGlobalExecutionInfos());
        CropTypeGlobalExecutionInfos &infos = listCropTypeInfos[listCropTypeInfos.size()-1];
-       infos.prodFormatParams.tileId = "TILE_" + tileId;
+       infos.prodFormatParams.tileId = GetProductFormatterTile(tileId);
        HandleNewTilesList(ctx, event, listTemporalTiles, cropMask, infos);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
@@ -421,19 +421,19 @@ QStringList CropTypeHandler::GetProductFormatterArgs(TaskToSubmit &productFormat
 
     productFormatterArgs += "-processor.croptype.file";
     for(const CropTypeProductFormatterParams &params: productParams) {
-        productFormatterArgs += params.tileId;
+        productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.cropTypeMap;
     }
 
     productFormatterArgs += "-processor.croptype.quality";
     for(const CropTypeProductFormatterParams &params: productParams) {
-        productFormatterArgs += params.tileId;
+        productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.xmlValidationMetrics;
     }
 
     productFormatterArgs += "-processor.croptype.flags";
     for(const CropTypeProductFormatterParams &params: productParams) {
-        productFormatterArgs += params.tileId;
+        productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.statusFlags;
     }
 
@@ -476,8 +476,14 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
 
     QString cropMaskFolder;
     ProductList l4AProductList = ctx.GetProducts(siteId, (int)ProductType::L4AProductTypeId, seasonStartDate, endDate);
-    if(l4AProductList.size() > 0)
-        cropMaskFolder = l4AProductList[0].fullPath;
+    // get the last created Crop Mask
+    QDateTime maxDate;
+    for(int i = 0; i<l4AProductList.size(); i++) {
+        if(!maxDate.isValid() || (maxDate < l4AProductList[i].created)) {
+            cropMaskFolder = l4AProductList[i].fullPath;
+            maxDate = l4AProductList[i].created;
+        }
+    }
     params.jsonParameters = "{ \"crop_mask\": \"" + cropMaskFolder + "\", " + refStr + "}";
 
     return params;

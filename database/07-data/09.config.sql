@@ -33,7 +33,7 @@ INSERT INTO config VALUES (34, 'executor.processor.l4b.name', NULL, 'L4B', '2015
 INSERT INTO config VALUES (52, 'executor.module.path.compute-images-statistics', NULL, '/usr/bin/otbcli_ComputeImagesStatistics', '2015-08-12 17:09:17.216345+03');
 INSERT INTO config VALUES (53, 'executor.module.path.train-images-classifier', NULL, '/usr/bin/otbcli_TrainImagesClassifier', '2015-08-12 17:09:18.767175+03');
 INSERT INTO config VALUES (44, 'general.scratch-path', NULL, '/mnt/archive/orchestrator_temp/{job_id}/{task_id}-{module}', '2015-07-10 17:54:17.288095+03');
-INSERT INTO config VALUES (121, 'processor.l3a.preproc.scatcoeffs', NULL, '/usr/share/sen2agri/scattering_coeffs_10m.txt', '2016-02-29 14:08:07.963143+02');
+INSERT INTO config VALUES (121, 'processor.l3a.preproc.scatcoeffs_10m', NULL, '/usr/share/sen2agri/scattering_coeffs_10m.txt', '2016-02-29 14:08:07.963143+02');
 INSERT INTO config VALUES (56, 'crop-type.classifier', NULL, 'rf', '2015-08-17 16:13:31.839288+03');
 INSERT INTO config VALUES (57, 'crop-type.classifier.rf.nbtrees', NULL, '100', '2015-08-17 16:18:01.088803+03');
 INSERT INTO config VALUES (58, 'crop-type.classifier.rf.min', NULL, '5', '2015-08-17 16:18:03.362784+03');
@@ -167,14 +167,15 @@ INSERT INTO config VALUES (190, 'processor.l3a.half_synthesis', NULL, '15', '201
 INSERT INTO config VALUES (92, 'processor.l4a.training-samples-number', NULL, '4000', '2016-03-10 11:40:44.732473+02');
 INSERT INTO config VALUES (258, 'processor.l4b.temporal_resampling_mode', NULL, 'gapfill', '2016-03-10 18:40:21.140908+02');
 INSERT INTO config VALUES (203, 'processor.l3b.generate_models', NULL, '1', '2016-02-29 12:03:08.445828+02');
-INSERT INTO config VALUES (204, 'processor.l3b.mono_date_lai', NULL, '1', '2016-02-29 12:03:15.149961+02');
+INSERT INTO config VALUES (204, 'processor.l3b.mono_date_lai', NULL, '0', '2016-02-29 12:03:15.149961+02');
 INSERT INTO config VALUES (205, 'processor.l3b.reprocess', NULL, '0', '2016-02-29 12:03:21.142049+02');
 INSERT INTO config VALUES (206, 'processor.l3b.fitted', NULL, '0', '2016-02-29 12:03:27.438284+02');
 INSERT INTO config VALUES (207, 'processor.l3b.production_interval', NULL, '10', '2016-02-29 12:03:31.197823+02');
-INSERT INTO config VALUES (210, 'processor.l3c.production_interval', NULL, '30', '2016-02-29 12:03:31.197823+02');
+INSERT INTO config VALUES (210, 'processor.l3b.reproc_production_interval', NULL, '30', '2016-02-29 12:03:31.197823+02');
 INSERT INTO config VALUES (208, 'processor.l4b.crop-mask', NULL, '', '2016-03-01 08:57:09.170001+02');
 INSERT INTO config VALUES (209, 'executor.shapes_dir', NULL, '/mnt/archive/TilesShapesDirectory', '2015-06-03 17:03:39.541136+03');
 INSERT INTO config VALUES (211, 'site.upload-path', NULL, '/mnt/upload/{user}', '2016-03-01 15:02:31.980394+02');
 INSERT INTO config VALUES (213, 'processor.l4a.reference_data_dir', NULL, '', '2016-03-03 14:46:26.267227+02');
-
+INSERT INTO config VALUES (291, 'processor.l3a.generate_20m_s2_resolution', NULL, '0', '2016-02-26 19:30:06.821627+02');
+INSERT INTO config VALUES (292, 'processor.l3a.preproc.scatcoeffs_20m', NULL, '/usr/share/sen2agri/scattering_coeffs_20m.txt', '2016-02-29 14:08:07.963143+02');
 
