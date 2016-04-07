@@ -33,6 +33,7 @@ def executeStep(name, *args, **kwargs):
         print "Executing " + name + " at " + str(startTime)
 
         # Build the command line and print it to the output
+        args = map(str, args)
         cmdLine = " ".join(map(pipes.quote, args))
         if len(outf):
                 cmdLine = cmdLine + " > " + pipes.quote(outf)
