@@ -32,8 +32,8 @@ class MACCSMetadataHelper : public MetadataHelper
             switch (B.size())
             {
             case 1:
-                if(((m_MaskFlags & MSK_VALID) != 0) && (B[0] != 0)) return IMG_FLG_NO_DATA;
-                if(((m_MaskFlags & MSK_CLOUD) != 0) && (B[0] != 0)) return IMG_FLG_SNOW;
+                if(((m_MaskFlags & MSK_VALID) != 0) && ((B[0] & 0x01) != 0)) return IMG_FLG_NO_DATA;
+                if(((m_MaskFlags & MSK_CLOUD) != 0) && (B[0] != 0)) return IMG_FLG_CLOUD;
                 if(((m_MaskFlags & MSK_SAT) != 0) && (B[0] != 0)) return IMG_FLG_SATURATION;
                 if(((m_MaskFlags & MSK_WATER) != 0) && ((B[0] & 0x01) != 0)) return IMG_FLG_WATER;
                 if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[0] & 0x06) != 0)) return IMG_FLG_SNOW;
@@ -45,7 +45,7 @@ class MACCSMetadataHelper : public MetadataHelper
                         if(B[1] != 0) return IMG_FLG_SATURATION;
                     } else {
                         if((m_MaskFlags & MSK_VALID) != 0) {
-                            if(B[1] != 0) return IMG_FLG_NO_DATA;
+                            if((B[1] & 0x01) != 0) return IMG_FLG_NO_DATA;
                         } else {
                             // we have water or snow
                             if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
@@ -57,7 +57,7 @@ class MACCSMetadataHelper : public MetadataHelper
                     if((m_MaskFlags & MSK_SAT) != 0) {
                         if(B[0] != 0) return IMG_FLG_SATURATION;
                         if((m_MaskFlags & MSK_VALID) != 0) {
-                            if(B[1] != 0) return IMG_FLG_NO_DATA;
+                            if((B[1] & 0x01) != 0) return IMG_FLG_NO_DATA;
                         } else {
                             // we have water or snow
                             if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
@@ -65,7 +65,7 @@ class MACCSMetadataHelper : public MetadataHelper
                         }
                     } else {
                         // In this case we have certainly MSK_VALID on first position
-                        if(B[0] != 0) return IMG_FLG_NO_DATA;
+                        if((B[0] & 0x01) != 0) return IMG_FLG_NO_DATA;
                         // we have water or snow
                         if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
                         if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[1] & 0x06) != 0)) return IMG_FLG_SNOW;
@@ -80,13 +80,13 @@ class MACCSMetadataHelper : public MetadataHelper
                         if(B[1] != 0) return IMG_FLG_SATURATION;
 
                         // the third one is one of these
-                        if(((m_MaskFlags & MSK_VALID) != 0) && (B[2] != 0)) return IMG_FLG_NO_DATA;
+                        if(((m_MaskFlags & MSK_VALID) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_NO_DATA;
                         if(((m_MaskFlags & MSK_WATER) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_WATER;
                         if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x06) != 0)) return IMG_FLG_SNOW;
 
                     } else {
                         if((m_MaskFlags & MSK_VALID) != 0) {
-                            if(B[1] != 0) return IMG_FLG_NO_DATA;
+                            if((B[1] & 0x01) != 0) return IMG_FLG_NO_DATA;
                             if(((m_MaskFlags & MSK_WATER) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_WATER;
                             if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x06) != 0)) return IMG_FLG_SNOW;
                         } else {
@@ -99,7 +99,7 @@ class MACCSMetadataHelper : public MetadataHelper
                     if((m_MaskFlags & MSK_SAT) != 0) {
                         if(B[0] != 0) return IMG_FLG_SATURATION;
                         if((m_MaskFlags & MSK_VALID) != 0) {
-                            if(B[1] != 0) return IMG_FLG_NO_DATA;
+                            if((B[1] & 0x01) != 0) return IMG_FLG_NO_DATA;
                             if(((m_MaskFlags & MSK_WATER) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_WATER;
                             if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x06) != 0)) return IMG_FLG_SNOW;
                         } else {
@@ -109,23 +109,23 @@ class MACCSMetadataHelper : public MetadataHelper
                         }
                     } else {
                         // if we do not have cloud and saturation, we have all others
-                        if(((m_MaskFlags & MSK_VALID) != 0) && (B[0] != 0)) return IMG_FLG_NO_DATA;
+                        if(((m_MaskFlags & MSK_VALID) != 0) && ((B[0] & 0x01) != 0)) return IMG_FLG_NO_DATA;
                         if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
                         if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x06) != 0)) return IMG_FLG_SNOW;
 
                     }
                     // if we do not have cloud, we have all others
                     if(((m_MaskFlags & MSK_SAT) != 0) && (B[0] != 0)) return IMG_FLG_SATURATION;
-                    if(((m_MaskFlags & MSK_VALID) != 0) && (B[1] != 0)) return IMG_FLG_NO_DATA;
+                    if(((m_MaskFlags & MSK_VALID) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_NO_DATA;
                     if(((m_MaskFlags & MSK_WATER) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_WATER;
                     if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x06) != 0)) return IMG_FLG_SNOW;
                 }
                 break;
             case 4:
                 // in this case we have certainly all images
-                if(((m_MaskFlags & MSK_VALID) != 0) && (B[0] != 0)) return IMG_FLG_NO_DATA;
-                if(((m_MaskFlags & MSK_CLOUD) != 0) && (B[1] != 0)) return IMG_FLG_SNOW;
-                if(((m_MaskFlags & MSK_SAT) != 0) && (B[2] != 0)) return IMG_FLG_SATURATION;
+                if(((m_MaskFlags & MSK_CLOUD) != 0) && (B[0] != 0)) return IMG_FLG_CLOUD;
+                if(((m_MaskFlags & MSK_SAT) != 0) && (B[1] != 0)) return IMG_FLG_SATURATION;
+                if(((m_MaskFlags & MSK_VALID) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_NO_DATA;
                 if(((m_MaskFlags & MSK_WATER) != 0) && ((B[3] & 0x01) != 0)) return IMG_FLG_WATER;
                 if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[3] & 0x06) != 0)) return IMG_FLG_SNOW;
                 break;

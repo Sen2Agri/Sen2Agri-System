@@ -1783,7 +1783,6 @@ private:
                 args.emplace_back(rasterBandsNo.c_str());
                 if(!ExecuteExternalProgram("validity_checker.py", args)) {
                     bValidProduct = false;
-                    break;
                 }
             }
             if(!bValidProduct) {
@@ -1805,6 +1804,7 @@ private:
                     // in this case restore the folder name
                     retPath = strProductMainFolder;
                 }
+                break;
             }
         }
 
