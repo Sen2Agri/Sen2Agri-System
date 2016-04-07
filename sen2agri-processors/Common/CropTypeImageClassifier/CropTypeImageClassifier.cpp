@@ -251,11 +251,6 @@ private:
               }
               sp[sensor] = rate;
           }
-
-          std::cout << "Sampling rates by sensor:\n";
-          for (const auto &sensor : sp) {
-              std::cout << sensor.first << ": " << sensor.second << '\n';
-          }
       }
 
       // Get the list of input files
