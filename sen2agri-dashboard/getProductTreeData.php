@@ -29,7 +29,6 @@ function findProdType($prodTypeName, $prodTypeObjArr) {
 	return null;
 }
 
-
 function normalizePath($path) {
     $path = str_replace('\\', '/', $path);
     $path = preg_replace('/\/+/', '/', $path);
@@ -48,7 +47,6 @@ function getProductImageSize($file) {
 $products = array();
 
 try {
-	
 	$URL = ConfigParams::$SERVICES_DASHBOARD_PRODUCTS_URL;
 	$PRODUCT_ROOT_FOLDER = ConfigParams::$PRODUCT_ROOT_FOLDER;
 	$SITE_PRODUCT_RELATIVE_FOLDER = ConfigParams::$SITE_PRODUCT_RELATIVE_FOLDER;
@@ -58,14 +56,14 @@ try {
 	
 	$ch = curl_init();
 	$timeout = 5;
-
+	
 	curl_setopt($ch, CURLOPT_URL, $URL);
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
-
+	
 	$responseJson = curl_exec($ch);
 	curl_close($ch);
-
+	
 	$productRows = json_decode($responseJson);
 	
     foreach($productRows as $productRow) {
@@ -78,15 +76,6 @@ try {
 			$products[] = $siteObj;			
 		}
 		
-/*		$processorObj = findProcessor($productRow->processor, $siteObj->nodes);
-		if ($processorObj == null) {
-			$processorObj = new stdClass();
-			$processorObj->text = $productRow->processor;
-			$processorObj->selectable = false;
-			$processorObj->nodes = array();
-			$siteObj->nodes[] = $processorObj;
-		}
-*/		
 		$prodTypeObj = findProdType($productRow->product_type_description, $siteObj->nodes);
 		if ($prodTypeObj == null) {
 			$prodTypeObj = new stdClass();
@@ -104,15 +93,11 @@ try {
 			$productObj->productCoord = array_map('floatval', explode(",", str_replace(array("(", ")"), "", $productRow->footprint)));
 			$productObj->siteCoord = explode(",", str_replace(array("POLYGON((", ")"), "", $productRow->site_coord));
 			
-			$productObj->productImageUrl = normalizePath(dirname($productRow->full_path)."/".$productRow->quicklook_image);
-			$productObj->productImageUrl = str_replace($PRODUCT_ROOT_FOLDER, $SITE_PRODUCT_RELATIVE_FOLDER, $productObj->productImageUrl);
-			
-			$imageSize = getProductImageSize(normalizePath(dirname($productRow->full_path)."/".$productRow->quicklook_image));
+			$productObj->productImageUrl = "getProductImage.php?id=".$productRow->id;
+			$imageSize = getProductImageSize(rtrim(normalizePath($productRow->full_path), '/').'/'.$productRow->quicklook_image);
 			$productObj->productImageWidth = $imageSize['width'];
 			$productObj->productImageHeight = $imageSize['height'];
 			
-			
-			//$processorObj->nodes[] = $productObj;
 			$prodTypeObj->nodes[] = $productObj;
 		}
 		
@@ -121,7 +106,6 @@ try {
 } catch (Exception $e) {
     $products = null;
 }
-//echo "<pre>".json_encode($products, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT)."</pre>";
 echo json_encode($products, JSON_UNESCAPED_SLASHES);
 
 ?>
