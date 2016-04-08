@@ -108,12 +108,14 @@ private:
       std::string outFileName = GetParameterString("outtrainfile");
       bool bUseAllReflectanceBands = (GetParameterInt("useallrefls") != 0);
 
+      int nBandsNo = -1;
       if(redIdx == -1 || nirIdx == -1) {
           if(HasValue("xml")) {
               std::string inMetadataXml = GetParameterString("xml");
               auto factory = MetadataHelperFactory::New();
               // we are interested only in the 10m resolution as here we have the RED and NIR
               auto pHelper = factory->GetMetadataHelper(inMetadataXml);
+              nBandsNo = pHelper->GetBandsNoForCurrentResolution();
               // the bands are 1 based
               if(redIdx == -1)
                 redIdx = pHelper->GetRelRedBandIndex() - 1;
@@ -185,7 +187,10 @@ private:
               vectRefls.pop_back();
 
               if(bUseAllReflectanceBands) {
-                  for(unsigned int i = 0; i<vectRefls.size(); i++) {
+                  // we use the bands number extracted from metadata or all the bands loaded from simulation file
+                  if(nBandsNo <= 0)
+                      nBandsNo = vectRefls.size();
+                  for(int i = 0; i<nBandsNo; i++) {
                       outline += " ";
                       outline += vectRefls[i];
                   }
