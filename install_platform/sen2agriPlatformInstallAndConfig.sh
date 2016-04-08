@@ -390,6 +390,7 @@ function install_and_config_postgresql()
 
    local _inet_addr="$(ip -4 a | grep "inet " | grep -v " lo" | tr -s ' ' | cut "-d " -s -f3 | cut -d/ -f1 | head -n1)"
    sed -i -re "/'executor.listen-ip'/ { /'/ s/'[0-9.]+'/'${_inet_addr}'/ }" $(find ./ -name "database")/07-data/09.config.sql
+   sed -i -re "s|'demmaccs.maccs-launcher',([^,]+),\s+'[^']+'|'demmaccs.maccs-launcher',\1, '${maccs_location}'|" $(find ./ -name "database")/07-data/09.config.sql
 
    #run scripts populating database
    populate_from_scripts "$(find ./ -name "database")/01-extensions"
@@ -622,42 +623,102 @@ function check_paths()
     fi
 }
 
+function find_maccs()
+{
+    IFS=$'\n'
+    out=($(find /opt/maccs/core -name maccs -type f -executable 2>&-))
+    ret=$?
+    unset IFS
+    if [ $ret -eq 0 ]; then
+        if [ ${#out[@]} -eq 1 ]; then
+            maccs_location=${out[0]}
+            echo "MACCS found at ${maccs_location}"
+            return 0
+        else
+            echo "Multiple MACCS executables found under /opt/maccs/core:"
+            printf '%s\n' "${out[@]}"
+            return 2
+        fi
+    else
+        echo "Unable to find MACCS under /opt/maccs/core"
+        return 1
+    fi
+}
+
 function install_maccs()
 {
     echo "Looking for MACCS..."
-    find /opt/maccs/core -name maccs > /dev/null 2>&1 && {
-        echo "MACCS found, continuing"
+    maccs_location=$(type -P maccs)
+    if [ $? -eq 0 ]; then
+        echo "MACCS found in PATH at $maccs_location"
+        status=0
+    else
+        status=1
+    fi
+
+    if [ $status -eq 0 ]; then
         return 0
-    }
-    echo "MACCS not found under /opt/maccs, trying to install it"
+    fi
 
-    yum -y install redhat-lsb-core
+    find_maccs
+    if [ $? -eq 0 ]; then
+        return 0
+    fi
 
-    cots_installer=$(find ../maccs/cots -name install-maccs-cots.sh 2>/dev/null)
-    if [ $? -eq 0 ] && [ -e $cots_installer ]; then
+    echo "MACCS not found, trying to install it"
+
+    found_kit=1
+    cots_installer=$(find ../maccs/cots -name install-maccs-cots.sh -executable 2>&-)
+    if [ $? -ne 0 ]; then
+        echo "Unable to find MACCS COTS installer"
+        found_kit=0
+    fi
+    if [ $found_kit -eq 1 ]; then
+        core_installer=$(find ../maccs/core -name "install-maccs-*.sh" -executable 2>&-)
+        if [ $? -ne 0 ]; then
+            echo "Unable to find MACCS installer"
+            found_kit=0
+        fi
+    fi
+
+    if [ $found_kit -eq 1 ]; then
+        yum -y install redhat-lsb-core
+
         echo "Installing MACCS COTS"
         sh $cots_installer || {
             echo "Failed, exiting now"
             exit 1
         }
-    else
-        echo "Unable to find MACCS COTS installer, please install it manually"
-        echo "Exiting now"
-        exit 1
-    fi
-
-    core_installer=$(find ../maccs/core -name "install-maccs-*.sh" 2>/dev/null)
-    if [ $? -eq 0 ] && [ -e $core_installer ]; then
         echo "Installing MACCS"
         sh $core_installer || {
             echo "Failed, exiting now"
             exit 1
         }
-    else
-        echo "Unable to find MACCS installer, please install it manually"
-        echo "Exiting now"
-        exit 1
+
+        find_maccs
+        if [ $? -eq 0 ]; then
+            return 0
+        fi
+
+        echo "Cannot find installed MACCS. Did you install it under a different path?"
     fi
+
+    echo "If a MACCS installation is available, please enter the path to the 'maccs' binary"
+    while :; do
+        read -ep "Path to maccs binary: "
+        if [ $? -ne 0 ]; then
+            echo "Cancelled, exiting"
+            exit 1
+        fi
+
+        if [[ -x "$REPLY" ]]; then
+            maccs_location=$REPLY
+            echo "MACCS path seems fine, continuing"
+            return 0
+        fi
+
+        echo "$REPLY does not seem to point to an executable, please try again or exit with CTRL-C"
+    done
 }
 
 function disable_selinux()
