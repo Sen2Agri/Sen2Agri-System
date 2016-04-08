@@ -50,6 +50,9 @@ float MACCSMetadataHelper::GetAotQuantificationValue()
     if(!m_specificAotMetadata) {
         ReadSpecificMACCSAotHdrFile();
     }
+    if(m_fAotQuantificationValue < 1) {
+        m_fAotQuantificationValue = (1/m_fAotQuantificationValue);
+    }
     return m_fAotQuantificationValue;
 }
 
@@ -87,6 +90,9 @@ bool MACCSMetadataHelper::DoLoadMetadata()
 
         m_Mission = m_metadata->Header.FixedHeader.Mission;
         m_ReflQuantifVal = std::stod(m_metadata->ProductInformation.ReflectanceQuantificationValue);
+        if(m_ReflQuantifVal < 1) {
+            m_ReflQuantifVal = (1 / m_ReflQuantifVal);
+        }
 
         // compute the Image file name
         m_ImageFileName = getImageFileName();
