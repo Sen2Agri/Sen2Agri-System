@@ -56,11 +56,13 @@ def log(location, info, log_filename = None):
         if DEBUG:
             #print("logfile: {}".format(logfile))
             print("{}:{}".format(str(datetime.datetime.now()), str(info)))
+            sys.stdout.flush()
         log = open(logfile, 'a')
         log.write("{}:{}\n".format(str(datetime.datetime.now()),str(info)))
         log.close()
     except:
         print("Could NOT write inside the log file {}".format(logfile))
+        sys.stdout.flush()
 
 
 def run_command(cmd_array, log_path = "", log_filename = ""):
@@ -96,6 +98,7 @@ def create_recursive_dirs(dir_name):
         if not os.path.isdir(dir_name):
             print("Can't create the directory because there is a file with the same name: {}".format(dir_name))
             print("Remove: {}".format(dir_name))
+            sys.stdout.flush()
             return False
     else:
         #for sure, the problem is with access rights
@@ -268,9 +271,11 @@ class AOIContext(object):
             self.endSeasonDay = int(endWinterSeason[2:4])
         else:
             print("Out of season ! No request will be made for {}".format(self.siteName))
+            sys.stdout.flush()
             return False
         if len(currentYearArray) == 0:
             print("Something went wrong in check_if_season function")
+            sys.stdout.flush()
             return False
         self.startSeasonYear = currentYearArray[0]
         self.endSeasonYear = currentYearArray[1]
@@ -342,6 +347,7 @@ class AOIContext(object):
         else:
             print("historyFiles:")
             print(" ".join(self.aoiHistoryFiles))
+        sys.stdout.flush()
 
 
 ###########################################################################
@@ -359,7 +365,6 @@ class AOIInfo(object):
             return True
         try:
             connectString = "dbname='{}' user='{}' host='{}' password='{}'".format(self.databaseName, self.user, self.serverIP, self.password)
-            print("connectString:={}".format(connectString))
             self.conn = psycopg2.connect(connectString)
             self.cursor = self.conn.cursor()
             self.isConnected = True
