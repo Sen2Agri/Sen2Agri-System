@@ -14,6 +14,7 @@ from sen2agri_common_db import *
 #############################################################################
 # CONSTANTS
 MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED = int(2)
+download = True
 general_log_path = "/tmp/"
 general_log_filename = "sentinel_download.log"
 
@@ -73,7 +74,7 @@ def product_download(s2Obj, aoiContext, db):
     log(aoiContext.writeDir, "Downloading from {} ".format(aoiContext.sentinelLocation), general_log_filename)
 
     if float(s2Obj.cloud) < float(aoiContext.maxCloudCoverage) and len(aoiContext.aoiTiles) > 0:
-        commandArray = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/S2ProductDownload-0.2.jar", "--out", aoiContext.writeDir, "--tiles"]
+        commandArray = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/S2ProductDownload-0.2.jar", "--out", aoiContext.writeDir, "--tiles", "-ma"]
         for tile in aoiContext.aoiTiles:
             commandArray.append(tile)
         commandArray += ["-p", s2Obj.productname]
@@ -181,8 +182,9 @@ signal.signal(signal.SIGINT, signal_handler)
 def sentinel_download(aoiContext):
     global g_exit_flag
     global general_log_filename
+    global download
 
-    url_search="https://scihub.esa.int/apihub/search?q="
+    url_search="https://scihub.copernicus.eu/apihub/search?q="
     general_log_filename = "sentinel_download.log"
     general_log_path = aoiContext.writeDir    
     apihubFile = aoiContext.remoteSiteCredentials
@@ -216,7 +218,7 @@ def sentinel_download(aoiContext):
     start_date=str(aoiContext.startSeasonYear)+"-"+str(aoiContext.startSeasonMonth)+"-"+str(aoiContext.startSeasonDay)+"T00:00:00.000Z"
     end_date=str(aoiContext.endSeasonYear)+"-"+str(aoiContext.endSeasonMonth)+"-"+str(aoiContext.endSeasonDay)+"T23:59:50.000Z"
 
-    query_date = " ingestiondate:[{} TO {}]".format(start_date, end_date)
+    query_date = " beginPosition:[{} TO {}]".format(start_date, end_date)
     query = "{}{}".format(query, query_date)
 
     commande_wget = wg + auth + search_output
@@ -286,7 +288,7 @@ def sentinel_download(aoiContext):
 
     #sort the products using product date
     s2Objs.sort()
-
+    log(aoiContext.writeDir, "Total products: {}".format(len(s2Objs)), general_log_filename)
     #handle each object
     for s2Obj in s2Objs:
         print("===============================================")
@@ -302,6 +304,7 @@ def sentinel_download(aoiContext):
 
         if g_exit_flag:
             return
-        product_download(s2Obj, aoiContext, db)
-        print("Finished to download product: {}".format(s2Obj.productname))
+        if download:
+            product_download(s2Obj, aoiContext, db)
+            print("Finished to download product: {}".format(s2Obj.productname))
         

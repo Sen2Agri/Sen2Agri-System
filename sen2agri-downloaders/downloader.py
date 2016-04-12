@@ -47,6 +47,13 @@ else:
     parser.add_option("--station", dest="station", action="store", type="string", \
                     help="Station acronym (3 letters) of the receiving station from where the file is downloaded",default=None)
 
+    #manually launch for a site and a period
+    parser.add_option("--site-to-dwn", dest="site_to_dwn", action="store", type="string", \
+                    help="ID site from db",default=None)
+    parser.add_option("--start-date", dest="start_date", action="store", type="string", \
+                    help="Start date of the wanted time interval",default=None)
+    parser.add_option("--end-date", dest="end_date", action="store", type="string", \
+                    help="Start date of the wanted time interval",default=None)
     (options, args) = parser.parse_args()
 
 
@@ -56,18 +63,29 @@ else:
     if not config.loadConfig(options.config):
         log(general_log_path, "Could not load the config file", general_log_filename)
         sys.exit(-1)
+    manual_site_to_dwn = -1
+    manual_start_date = ""
+    manual_end_date = ""
+    if options.site_to_dwn is not None:
+        manual_site_to_dwn = int(options.site_to_dwn)
+    if options.start_date is not None:
+        parser.check_required("--end-date")
+        manual_start_date = options.start_date
+    if options.end_date is not None:
+        parser.check_required("--start-date")
+        manual_end_date = options.end_date
 
     database = None
     sites_aoi_database = []
     if options.remote_host == "s2":
         parser.check_required("-l")
         database = SentinelAOIInfo(config.host, config.database, config.user, config.password)
-        sites_aoi_database = database.getSentinelAOI()        
+        sites_aoi_database = database.getSentinelAOI(manual_site_to_dwn, manual_start_date, manual_end_date)
         for aoi in sites_aoi_database:
             aoi.setSentinelLocation(options.location)
     elif options.remote_host == "l8":
         database = LandsatAOIInfo(config.host, config.database, config.user, config.password)
-        sites_aoi_database = database.getLandsatAOI()
+        sites_aoi_database = database.getLandsatAOI(manual_site_to_dwn, manual_start_date, manual_end_date)
         for aoi in sites_aoi_database:
             aoi.setLandsatDirNumber(options.dir)
             aoi.setLandsatStation(options.station)
@@ -78,6 +96,9 @@ else:
     if len(sites_aoi_database) <= 0:
         log(general_log_path, "Could not get DB info", general_log_filename)
         sys.exit(-1)
+    for aoiContext in sites_aoi_database:
+        print(aoiContext.printInfo())
+ 
 
     print("LEN = {} ------------------------".format(len(sites_aoi_database)))
     for aoiContext in sites_aoi_database:

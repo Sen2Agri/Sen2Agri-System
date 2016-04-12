@@ -64,5 +64,5 @@ for root, dirnames, filenames in os.walk(args.path):
             print("Error mv for {}".format(filename))
             continue
         if(args.extension == 'py'):
-            run_command(["chmod", "u+x", filename], "/tmp/", "merge.log")
+            run_command(["chmod", "a+x", filename], "/tmp/", "merge.log")
 
