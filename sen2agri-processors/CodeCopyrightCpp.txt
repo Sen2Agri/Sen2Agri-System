@@ -1,8 +1,8 @@
 /*=========================================================================
   *
-  * Program:      Sen2agri-prcessors
+  * Program:      Sen2agri-Processors
   * Language:     C++
-  * Copyright:    Year(s), Author (Company), e-mail
+  * Copyright:    2015-2016, CS Romania, office@c-s.ro
   * See COPYRIGHT file for details.
   *
   * Unless required by applicable law or agreed to in writing, software
