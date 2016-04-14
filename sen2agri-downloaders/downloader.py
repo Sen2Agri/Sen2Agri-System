@@ -96,10 +96,7 @@ else:
     if len(sites_aoi_database) <= 0:
         log(general_log_path, "Could not get DB info", general_log_filename)
         sys.exit(-1)
-    for aoiContext in sites_aoi_database:
-        print(aoiContext.printInfo())
- 
-
+    
     print("LEN = {} ------------------------".format(len(sites_aoi_database)))
     for aoiContext in sites_aoi_database:
         if not create_recursive_dirs(aoiContext.writeDir):

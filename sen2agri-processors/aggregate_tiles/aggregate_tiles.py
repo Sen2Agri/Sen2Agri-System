@@ -15,10 +15,7 @@ _____________________________________________________________________________
    limitations under the License.
 _____________________________________________________________________________
 
-"""
 
-#
-"""
 This script allows to create an aggreagte file product from the tiles inside IMG_DATA and QI_DATA folders.
 The output generated is in LEGACY_DATA folder of the product
 Following steps are performed in order to obtain the mosaic from all tiles of the product:

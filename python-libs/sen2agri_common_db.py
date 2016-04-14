@@ -157,7 +157,10 @@ def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearAr
     if endSeasonMonthToCheck > 12:
         endSeasonMonthToCheck -= 12
         endSeasonYearToCheck += 1
-    if currentDate < datetime.date(int(yearArray[0]), int(startSeasonMonth), int(startSeasonDay)) or currentDate > datetime.date(endSeasonYearToCheck, endSeasonMonthToCheck, int(endSeasonDay - 3)):
+    endSeasonDayToCheck = int(endSeasonDay)
+    if endSeasonDayToCheck > 30:
+        endSeasonDayToCheck = 28
+    if currentDate < datetime.date(int(yearArray[0]), int(startSeasonMonth), int(startSeasonDay)) or currentDate > datetime.date(endSeasonYearToCheck, endSeasonMonthToCheck, endSeasonDayToCheck):
         return False
     return True
 
@@ -426,7 +429,6 @@ class AOIInfo(object):
                 currentAOI.siteId = int(row[0])
                 currentAOI.siteName = row[2]
                 currentAOI.polygon = row[4]
-                #currentAOI.printInfo()
                 baseQuery = "select * from sp_get_parameters(\'downloader."
                 whereQuery = "where \"site_id\"="
                 suffixArray = ["summer-season.start\')", "summer-season.end\')", "winter-season.start\')", "winter-season.end\')", "max-cloud-coverage\')", "{}max-retries')".format(writeDirSatelliteName), "{}write-dir\')".format(writeDirSatelliteName)]
@@ -458,7 +460,6 @@ class AOIInfo(object):
                         self.databaseDisconnect()
                         dbHandler = False
                         break
-                print("-------------------------")
                 if dbHandler:
                     if not configArray[-1].endswith("/"):
                         configArray[-1] += "/"
@@ -479,11 +480,9 @@ class AOIInfo(object):
                     try:
                         self.cursor.execute("""select \"product_name\" from downloader_history where satellite_id = %(sat_id)s :: smallint and
                                                                        site_id = %(site_id)s :: smallint and
-                                                                       status_id != %(status_downloading)s :: smallint and 
                                                                        status_id != %(status_failed)s ::smallint """, {
                                                                            "sat_id" : satelliteId,
                                                                            "site_id" : currentAOI.siteId,
-                                                                           "status_downloading" : DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE,
                                                                            "status_failed" : DATABASE_DOWNLOADER_STATUS_FAILED_VALUE
                                                                        })
                         if self.cursor.rowcount > 0:

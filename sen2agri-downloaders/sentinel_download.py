@@ -307,4 +307,5 @@ def sentinel_download(aoiContext):
         if download:
             product_download(s2Obj, aoiContext, db)
             print("Finished to download product: {}".format(s2Obj.productname))
+    log(aoiContext.writeDir, "Total products: {}".format(len(s2Objs)), general_log_filename)
         
