@@ -668,13 +668,13 @@ function install_maccs()
     echo "MACCS not found, trying to install it"
 
     found_kit=1
-    cots_installer=$(find ../maccs/cots -name install-maccs-cots.sh -executable 2>&-)
+    cots_installer=$(find ../maccs/cots -name install-maccs-cots.sh 2>&-)
     if [ $? -ne 0 ]; then
         echo "Unable to find MACCS COTS installer"
         found_kit=0
     fi
     if [ $found_kit -eq 1 ]; then
-        core_installer=$(find ../maccs/core -name "install-maccs-*.sh" -executable 2>&-)
+        core_installer=$(find ../maccs/core -name "install-maccs-*.sh" 2>&-)
         if [ $? -ne 0 ]; then
             echo "Unable to find MACCS installer"
             found_kit=0
