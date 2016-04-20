@@ -1,0 +1,1 @@
+ALTER TABLE site_tiles ADD CONSTRAINT fk_site_tiles_site FOREIGN KEY(site_id) REFERENCES site(id);
