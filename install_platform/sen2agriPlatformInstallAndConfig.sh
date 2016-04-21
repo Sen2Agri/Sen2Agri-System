@@ -629,7 +629,7 @@ function find_maccs()
     out=($(find /opt/maccs/core -name maccs -type f -executable 2>&-))
     ret=$?
     unset IFS
-    if [ $ret -eq 0 ]; then
+    if [ $ret -eq 0 ] && [ -n "$out" ]; then
         if [ ${#out[@]} -eq 1 ]; then
             maccs_location=${out[0]}
             echo "MACCS found at ${maccs_location}"
@@ -668,14 +668,14 @@ function install_maccs()
     echo "MACCS not found, trying to install it"
 
     found_kit=1
-    cots_installer=$(find ../maccs/cots -name install-maccs-cots.sh -executable 2>&-)
-    if [ $? -ne 0 ]; then
+    cots_installer=$(find ../maccs/cots -name install-maccs-cots.sh 2>&-)
+    if [ $? -ne 0 ] || [ -z "$cots_installer" ]; then
         echo "Unable to find MACCS COTS installer"
         found_kit=0
     fi
     if [ $found_kit -eq 1 ]; then
-        core_installer=$(find ../maccs/core -name "install-maccs-*.sh" -executable 2>&-)
-        if [ $? -ne 0 ]; then
+        core_installer=$(find ../maccs/core -name "install-maccs-*.sh" 2>&-)
+        if [ $? -ne 0 ] || [ -z "$core_installer" ]; then
             echo "Unable to find MACCS installer"
             found_kit=0
         fi

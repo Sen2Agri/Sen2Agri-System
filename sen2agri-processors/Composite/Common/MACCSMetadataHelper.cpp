@@ -135,7 +135,7 @@ bool MACCSMetadataHelper::DoLoadMetadata()
 void MACCSMetadataHelper::UpdateValuesForLandsat()
 {
     m_missionType = LANDSAT;
-    m_nTotalBandsNo = 6;
+    m_nTotalBandsNo = m_metadata->ImageInformation.Bands.size();
     m_nBandsNoForCurRes = m_nTotalBandsNo;
     // we have the same values for relative and absolute bands indexes as we have only one raster
     m_nAbsRedBandIndex = m_nRelRedBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B4");

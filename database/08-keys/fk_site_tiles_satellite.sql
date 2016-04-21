@@ -1,0 +1,1 @@
+ALTER TABLE site_tiles ADD CONSTRAINT fk_site_tiles_satellite FOREIGN KEY(satellite_id) REFERENCES satellite(id);
