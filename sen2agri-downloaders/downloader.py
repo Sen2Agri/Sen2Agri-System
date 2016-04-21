@@ -107,7 +107,6 @@ else:
         aoiContext.setProxy(options.proxy)    
         aoiContext.printInfo()
         print("------------------------")    
-    
     p = Pool(len(sites_aoi_database))
     if options.remote_host == "s2":        
         p.map(sentinel_download, sites_aoi_database)

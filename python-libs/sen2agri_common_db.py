@@ -225,7 +225,7 @@ class AOIContext(object):
         # the following info will be fed up from database
         self.siteId = int(0)
         self.siteName = ""
-        self.polygon = ""
+        self.polygon = []
 
         self.startSeasonMonth = int(0)
         self.startSeasonDay = int(0)
@@ -411,7 +411,8 @@ class AOIInfo(object):
         if not self.databaseConnect():
             return False
         try:
-            self.cursor.execute("select *,st_astext(geog) from site")
+            #self.cursor.execute("select *,st_astext(geog) from site")
+            self.cursor.execute("select * from sp_downloader_get_sites()")
             rows = self.cursor.fetchall()
         except:
             self.databaseDisconnect()
@@ -419,7 +420,7 @@ class AOIInfo(object):
         # retArray will be a list of AOIContext
         retArray = []
         for row in rows:
-            if len(row) == 5 and row[4] != None:
+            if len(row) == 4 and row[3] != None:
                 # retry in case of disconnection
                 if not self.databaseConnect():
                     return False
@@ -428,7 +429,7 @@ class AOIInfo(object):
                 currentAOI = AOIContext()
                 currentAOI.siteId = int(row[0])
                 currentAOI.siteName = row[2]
-                currentAOI.polygon = row[4]
+                currentAOI.polygon = row[3]
                 baseQuery = "select * from sp_get_parameters(\'downloader."
                 whereQuery = "where \"site_id\"="
                 suffixArray = ["summer-season.start\')", "summer-season.end\')", "winter-season.start\')", "winter-season.end\')", "max-cloud-coverage\')", "{}max-retries')".format(writeDirSatelliteName), "{}write-dir\')".format(writeDirSatelliteName)]

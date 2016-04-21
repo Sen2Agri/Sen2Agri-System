@@ -74,10 +74,10 @@ def product_download(s2Obj, aoiContext, db):
     log(aoiContext.writeDir, "Downloading from {} ".format(aoiContext.sentinelLocation), general_log_filename)
 
     if float(s2Obj.cloud) < float(aoiContext.maxCloudCoverage) and len(aoiContext.aoiTiles) > 0:
-        commandArray = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/S2ProductDownload-0.2.jar", "--out", aoiContext.writeDir, "--tiles", "-ma"]
+        commandArray = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/S2ProductDownload-0.2.jar", "--out", aoiContext.writeDir, "--tiles"]
         for tile in aoiContext.aoiTiles:
             commandArray.append(tile)
-        commandArray += ["-p", s2Obj.productname]
+        commandArray += ["-ma", "-p", s2Obj.productname]
         if aoiContext.sentinelLocation == "scihub":
             commandArray.append("-u")
             uid = re.search(r"\('([\w-]+)'\)", s2Obj.link)
@@ -115,68 +115,6 @@ def product_download(s2Obj, aoiContext, db):
 
 ###########################################################################
 
-def downloadFromAmazon(s2Obj, aoiFile, db):
-    global general_log_filename
-    if aoiFile.fileExists(s2Obj.filename):
-        log(aoiFile.writeDir, "FILE ALREADY DOWNLOADED, SKIP IT! {}".format(s2Obj.filename), general_log_filename)
-        return
-    log(aoiFile.writeDir, "Downloading from amazon ", general_log_filename)
-
-    if float(s2Obj.cloud) < float(aoiFile.maxCloudCoverage) and len(aoiFile.aoiTiles) > 0:
-        commandArray = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/AWSS2ProductDownload-0.1.jar", "--out", aoiFile.writeDir, "--tiles"]
-        for tile in aoiFile.aoiTiles:
-            commandArray.append(tile)
-        commandArray.append("-p")
-        commandArray.append(s2Obj.productname)
-        if run_command(commandArray, aoiFile.writeDir, general_log_filename) != 0:
-            log(aoiFile.writeDir, "the java donwloader command didn't work for {}".format(s2Obj.filename), general_log_filename)
-            return
-        if not db.updateSentinelHistory(aoiFile.siteId, s2Obj.filename, "{}/{}".format(aoiFile.writeDir, s2Obj.filename)):
-            log(aoiFile.writeDir, "Could not insert into database site_id {} the product name {}".format(aoiFile.siteId, s2Obj.filename), general_log_filename)
-    else:
-        log(aoiFile.writeDir, "Too many clouds to download this product or no tiles to download".format(s2Obj.filename), general_log_filename)
-
-def downloadFromScihub(s2Obj, aoiFile, db):
-    global general_log_filename
-    unzipped_file_exists= os.path.exists(("%s/%s")%(aoiFile.writeDir, s2Obj.filename))
-    fullFilename = aoiFile.writeDir+"/"+s2Obj.filename+".zip"
-    if aoiFile.fileExists(s2Obj.filename):
-        log(aoiFile.writeDir, "FILE ALREADY DOWNLOADED, SKIP IT! {}".format(s2Obj.filename), general_log_filename)
-        if unzipped_file_exists == False and os.path.isfile(fullFilename) and options.no_download==False:
-            outputDir = aoiFile.writeDir+"/"+s2Obj.filename
-            unzipFile(outputDir, fullFilename)
-        return
-    if not create_recursive_dirs(aoiFile.writeDir):
-        log(aoiFile.writeDir, "Could not create the output directory for {}".format(aoiFile.writeDir), general_log_filename)
-        return
-
-    #================================== download product
-
-    if float(s2Obj.cloud) < float(aoiFile.maxCloudCoverage) :
-        #commande_wget='%s %s --continue --tries=0 --output-document=%s/%s "%s"'%(wg, auth, aoiFile.writeDir, s2Obj.filename + ".zip", s2Obj.link)
-        commande_wget=wg + auth + ["--continue", "--tries", "0", "--output-document", aoiFile.writeDir+s2Obj.filename+".zip", s2Obj.link]
-        #do not download the product if it was already downloaded and unzipped, or if no_download option was selected.
-
-        log(aoiFile.writeDir, "Command wget:{}".format(commande_wget), general_log_filename)
-        if unzipped_file_exists==False and options.no_download==False:
-            log(aoiFile.writeDir, "Start download:", general_log_filename)
-
-            if run_command(commande_wget) != 0:
-                log(aoiFile.writeDir, "wget command didn't work for {}".format(s2Obj.filename), general_log_filename)
-                return
-            #write the filename in history
-            if not db.updateSentinelHistory(aoiFile.siteId, s2Obj.filename,  "{}/{}".format(aoiFile.writeDir, s2Obj.filename)):
-                log(aoiFile.writeDir, "Could not insert into database site_id {} the product name {}".format(aoiFile.siteId, s2Obj.filename), general_log_filename)
-            else:
-                unzipFile(aoiFile.writeDir, fullFilename)
-        else:
-            log(aoiFile.writeDir, "No wget command because either it's already downloaded and unzipped, either the no_download option was used", general_log_filename)
-    else:
-        log(aoiFile.writeDir, "Too many clouds to download this product".format(s2Obj.filename), general_log_filename)
-
-
-###########################################################################
-
 signal.signal(signal.SIGINT, signal_handler)
 
 def sentinel_download(aoiContext):
@@ -200,96 +138,98 @@ def sentinel_download(aoiContext):
         log(aoiContext.writeDir, "error with password file ".format(str(apihubFile)), general_log_filename)
         return
 
-    db = SentinelAOIInfo(aoiContext.configObj.host, aoiContext.configObj.database, aoiContext.configObj.user, aoiContext.configObj.password)
-
-    #==================================================
-    #      prepare wget command line to search catalog
-    #==================================================
-
-    wg = ["wget", "--no-check-certificate"]
-    auth = ["--user",account, "--password", passwd]
-
-    query_geom = 'footprint:"Intersects({})"'.format(aoiContext.polygon)
-    queryResultsFilename = aoiContext.writeDir+"/"+str(aoiContext.siteName)+"_query_results.xml"
-    print("queryResultsFilename = {}".format(queryResultsFilename))
-    search_output = ["--output-document", queryResultsFilename]
-    query = "{} filename:S2A*".format(query_geom)
-
-    start_date=str(aoiContext.startSeasonYear)+"-"+str(aoiContext.startSeasonMonth)+"-"+str(aoiContext.startSeasonDay)+"T00:00:00.000Z"
-    end_date=str(aoiContext.endSeasonYear)+"-"+str(aoiContext.endSeasonMonth)+"-"+str(aoiContext.endSeasonDay)+"T23:59:50.000Z"
-
-    query_date = " beginPosition:[{} TO {}]".format(start_date, end_date)
-    query = "{}{}".format(query, query_date)
-
-    commande_wget = wg + auth + search_output
-    commande_wget.append(url_search + query + "&rows=1000")
-    log(aoiContext.writeDir, commande_wget, general_log_filename)
-
-    if run_command(commande_wget, aoiContext.writeDir, general_log_filename) != 0:
-        log(aoiContext.writeDir, "Could not get the catalog output for {}".format(query_geom), general_log_filename)
-        return
-    if g_exit_flag:
-        return
-
-    #=======================
-    # parse catalog output
-    #=======================
-    if not os.path.isfile(queryResultsFilename):
-        log(aoiContext.writeDir, "Could not find the catalog output {} for {}".format(queryResultsFilename, aoiContext.siteName), general_log_filename)
-        return
-    xml=minidom.parse(queryResultsFilename)
-
-    #check if all the results are returned
-    subtitle=xml.getElementsByTagName("subtitle")[0].firstChild.data
-    log(aoiContext.writeDir, "Subtitle = {}".format(subtitle), general_log_filename)
-    if len(subtitle) > 0:
-        words=subtitle.split(" ")
-        log(aoiContext.writeDir, "WORDS[2]: {}".format(words[2]), general_log_filename)
-        if len(words) > 2 and words[2] != "results." and len(words) > 5:
-            try:
-                totalRes=int(words[5]) + 1
-                query = query + "&rows=" + str(totalRes)
-                #commande_wget='%s %s %s "%s%s"'%(wg,auth,search_output,url_search,query)
-                commande_wget = wg + auth + search_output + [url_search+query]
-                log(aoiContext.writeDir, "Changing the pagination to {0} to get all of the existing files, command: {1}".format(totalRes, commande_wget), general_log_filename)
-                if run_command(commande_wget, aoiContext.writeDir, general_log_filename) != 0:
-                    log(aoiContext.writeDir, "Could not get the catalog output (re-pagination) for {}".format(query_geom), general_log_filename)
-                    return
-                xml=minidom.parse("query_results.xml")
-            except ValueError:
-                log(aoiContext.writeDir, "Exception: it was expected for the word in position 5 (starting from 0) to be an int. It ain't. The checked string is: {}".format(subtitle), general_log_filename)
-                log(aoiContext.writeDir, "Could not get the catalog output (exception for re-pagination) for {}".format(query_geom), general_log_filename)
-                return
-
-    products=xml.getElementsByTagName("entry")
     s2Objs = []
-    for prod in products:
-        ident = prod.getElementsByTagName("id")[0].firstChild.data
-        link = prod.getElementsByTagName("link")[0].attributes.items()[0][1]
-        filename = ""
-        cloud = float(200)
-        product_date = None
-        for node in prod.getElementsByTagName("str"):
-            (name,value)=node.attributes.items()[0]
-            if value=="filename":
-                filename= str(node.toxml()).split('>')[1].split('<')[0]   #ugly, but minidom is not straightforward
+    index = int(0)
+    for polygon in aoiContext.polygon:
+        #==================================================
+        #      prepare wget command line to search catalog
+        #==================================================
+        wg = ["wget", "--no-check-certificate"]
+        auth = ["--user",account, "--password", passwd]
 
-        for node in prod.getElementsByTagName("double"):
-            (name,value)=node.attributes.items()[0]
-            if value=="cloudcoverpercentage":
-                cloud=float((node.toxml()).split('>')[1].split('<')[0])
-        
-        product_date = re.search(r"_V(\d{8}T\d{6})_", filename)
-        orbit_id = re.search(r"_R(\d{3})_", filename)
-        if len(filename) == 0 or cloud > 100 or product_date == None or orbit_id == None:
-            continue
-        
-        s2Objs.append(Sentinel2Obj(filename, link, product_date.group(1), cloud, orbit_id.group(1)))
+        query_geom = 'footprint:"Intersects({})"'.format(polygon)
+        queryResultsFilename = aoiContext.writeDir + "/" + str(aoiContext.siteName) + "_query_results_{}.xml".format(index)
+        index += 1
+        print("queryResultsFilename = {}".format(queryResultsFilename))
+        search_output = ["--output-document", queryResultsFilename]
+        query = "{} filename:S2A*".format(query_geom)
 
+        start_date=str(aoiContext.startSeasonYear)+"-"+str(aoiContext.startSeasonMonth)+"-"+str(aoiContext.startSeasonDay)+"T00:00:00.000Z"
+        end_date=str(aoiContext.endSeasonYear)+"-"+str(aoiContext.endSeasonMonth)+"-"+str(aoiContext.endSeasonDay)+"T23:59:50.000Z"
+
+        query_date = " beginPosition:[{} TO {}]".format(start_date, end_date)
+        query = "{}{}".format(query, query_date)
+
+        commande_wget = wg + auth + search_output
+        commande_wget.append(url_search + query + "&rows=1000")
+        log(aoiContext.writeDir, commande_wget, general_log_filename)
+
+        if run_command(commande_wget, aoiContext.writeDir, general_log_filename) != 0:
+            log(aoiContext.writeDir, "Could not get the catalog output for {}".format(query_geom), general_log_filename)
+            return
+        if g_exit_flag:
+            return
+
+        #=======================
+        # parse catalog output
+        #=======================
+        if not os.path.isfile(queryResultsFilename):
+            log(aoiContext.writeDir, "Could not find the catalog output {} for {}".format(queryResultsFilename, aoiContext.siteName), general_log_filename)
+            return
+        xml=minidom.parse(queryResultsFilename)
+
+        #check if all the results are returned
+        subtitle=xml.getElementsByTagName("subtitle")[0].firstChild.data
+        log(aoiContext.writeDir, "Subtitle = {}".format(subtitle), general_log_filename)
+        if len(subtitle) > 0:
+            words=subtitle.split(" ")
+            log(aoiContext.writeDir, "WORDS[2]: {}".format(words[2]), general_log_filename)
+            if len(words) > 2 and words[2] != "results." and len(words) > 5:
+                try:
+                    totalRes=int(words[5]) + 1
+                    query = query + "&rows=" + str(totalRes)
+                    #commande_wget='%s %s %s "%s%s"'%(wg,auth,search_output,url_search,query)
+                    commande_wget = wg + auth + search_output + [url_search+query]
+                    log(aoiContext.writeDir, "Changing the pagination to {0} to get all of the existing files, command: {1}".format(totalRes, commande_wget), general_log_filename)
+                    if run_command(commande_wget, aoiContext.writeDir, general_log_filename) != 0:
+                        log(aoiContext.writeDir, "Could not get the catalog output (re-pagination) for {}".format(query_geom), general_log_filename)
+                        return
+                    xml=minidom.parse("query_results.xml")
+                except ValueError:
+                    log(aoiContext.writeDir, "Exception: it was expected for the word in position 5 (starting from 0) to be an int. It ain't. The checked string is: {}".format(subtitle), general_log_filename)
+                    log(aoiContext.writeDir, "Could not get the catalog output (exception for re-pagination) for {}".format(query_geom), general_log_filename)
+                    return
+
+        products = xml.getElementsByTagName("entry")
+
+        for prod in products:
+            ident = prod.getElementsByTagName("id")[0].firstChild.data
+            link = prod.getElementsByTagName("link")[0].attributes.items()[0][1]
+            filename = ""
+            cloud = float(200)
+            product_date = None
+            for node in prod.getElementsByTagName("str"):
+                (name,value)=node.attributes.items()[0]
+                if value=="filename":
+                    filename= str(node.toxml()).split('>')[1].split('<')[0]   #ugly, but minidom is not straightforward
+
+            for node in prod.getElementsByTagName("double"):
+                (name,value)=node.attributes.items()[0]
+                if value=="cloudcoverpercentage":
+                    cloud=float((node.toxml()).split('>')[1].split('<')[0])
+
+            product_date = re.search(r"_V(\d{8}T\d{6})_", filename)
+            orbit_id = re.search(r"_R(\d{3})_", filename)
+            if len(filename) == 0 or cloud > 100 or product_date == None or orbit_id == None:
+                continue
+
+            s2Objs.append(Sentinel2Obj(filename, link, product_date.group(1), cloud, orbit_id.group(1)))
+    
     #sort the products using product date
     s2Objs.sort()
     log(aoiContext.writeDir, "Total products: {}".format(len(s2Objs)), general_log_filename)
     #handle each object
+    db = SentinelAOIInfo(aoiContext.configObj.host, aoiContext.configObj.database, aoiContext.configObj.user, aoiContext.configObj.password)
     for s2Obj in s2Objs:
         print("===============================================")
         print(s2Obj.filename)
