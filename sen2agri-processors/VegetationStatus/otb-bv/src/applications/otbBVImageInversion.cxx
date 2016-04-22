@@ -161,7 +161,7 @@ public:
 
   bool IsNoDataValue(float fValue)
   {
-      return (fValue < NO_DATA_EPSILON);
+      return (fValue < 0);
       //return fabs(fValue - NO_DATA_VALUE) < NO_DATA_EPSILON;
   }
 
