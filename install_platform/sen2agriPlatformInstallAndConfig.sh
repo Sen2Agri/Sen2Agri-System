@@ -735,6 +735,11 @@ function disable_selinux()
 ##### MAIN                                              ###
 ###########################################################
 
+if [ $EUID -ne 0 ]; then
+    echo "This setup script must be run as root. Exiting now."
+    exit 1
+fi
+
 check_paths
 
 disable_selinux
