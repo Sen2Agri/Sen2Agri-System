@@ -28,24 +28,22 @@ function install_RPMs()
    ####  OTB, GDAL, SEN2AGRI-PROCESSORS, SEN2AGRI-SERVICES
    ##########################################################
    ##install EPEL for packages dependencies installation
-   yum -y install epel-release   
+   yum -y install epel-release
 
    ##install cifs-utils package
-   yum -y install cifs-utils 
+   yum -y install cifs-utils
 
-   ##install Orfeo ToolBox 
+   ##install Orfeo ToolBox
    yum -y install ../rpm_binaries/otb-5.0.centos7.x86_64.rpm
-   echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
-   ldconfig
 
-   ##install GDAL library 
+   ##install GDAL library
    yum -y install ../rpm_binaries/gdal-local-2.0.1.centos7.x86_64.rpm
-   echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
-   ldconfig
 
-   ##install Sen2Agri Processors  
+   ##install Sen2Agri Processors
    yum -y install ../rpm_binaries/sen2agri-processors-0.8.centos7.x86_64.rpm
-   echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
+
+   echo /usr/local/lib > /etc/ld.so.conf.d/local.conf
+   ln -s /usr/lib64/libproj.so.0 /usr/lib64/libproj.so
    ldconfig
 }
 ###########################################################
