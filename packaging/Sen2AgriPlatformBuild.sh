@@ -20,7 +20,7 @@
 
 ### DEPENDENCIES FOR GENERATED RPM PACKAGES
 : ${PLATFORM_INSTALL_DEP:="-d "boost" -d "curl" -d "expat" -d "fftw" -d "gdal" -d "geos" -d "libgeotiff" -d "libjpeg-turbo" -d "libsvm" -d "muParser" \
--d "opencv" -d "openjpeg2" -d "openjpeg2-tools" -d "pcre" -d "libpng" -d "proj" -d "python" -d "qt" -d "sqlite" -d "swig" -d "libtiff" -d "tinyxml" \
+-d "opencv" -d "openjpeg2" -d "openjpeg2-tools" -d "pcre" -d "libpng" -d "proj" -d "proj-epsg" -d "python" -d "qt" -d "sqlite" -d "swig" -d "libtiff" -d "tinyxml" \
 -d "qt5-qtbase" -d "qt5-qtbase-postgresql" -d "qt-x11" -d "gsl""}
 : ${PLATFORM_INSTALL_CIFS_DEP:="-d "cifs-utils""}
 
@@ -49,16 +49,16 @@ function compile_OTB_package()
 
    ##copy MOSAIC into OTB/Modules/Remote
    mv ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-MOSAIC ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}/Modules/Remote
-    
+
    ## go into OTB build dir
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}-BUILD
    cd ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}-BUILD
-        
+
    ##REPLACE LIB LINKS before launching config
    sudo ln -s /usr/bin/opj2_decompress /usr/bin/opj_decompress
    sudo ln -s /usr/bin/opj2_compress /usr/bin/opj_compress
    sudo ln -s /usr/bin/opj2_dump /usr/bin/opj_dump
-        
+
    ##configure OTB
    cmake ../OTB-${OTB_VERSION}/SuperBuild \
 	 -DCMAKE_INSTALL_PREFIX=${OTB_INSTALL_PATH}/usr \
@@ -109,11 +109,11 @@ function build_OTB_RPM_Package()
 
    ## create a temp working dir
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_otb
-   
+
    ## build the packages specifying installing dependencies
    fpm -s dir -t rpm -n otb -v ${OTB_VERSION} -C ${OTB_INSTALL_PATH}/ ${PLATFORM_INSTALL_DEP} ${PLATFORM_INSTALL_CIFS_DEP} \
    --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_otb -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/otb-VERSION.centos7.ARCH.rpm usr
-  
+
    #remove temporary dir
    rm -rf ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_otb
 }
@@ -123,9 +123,9 @@ function compile_GDAL_package()
    ## Compiling GDAL 2.0
 
    #Some processors use the GDAL tools, which are significantly faster in version 2.0. We'll install that in `/usr/local`.
-  
+
    cd ${DEFAULT_DIR}/${WORKING_DIR_BUILD} && { curl -O ${GDAL_URL}/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz ; cd -; }
-   
+
    ## Decompress the archieve
    tar -zxvf ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/gdal-${GDAL_VERSION}.tar.gz -C ${DEFAULT_DIR}/${WORKING_DIR_BUILD}
    cd ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/gdal-${GDAL_VERSION}
@@ -145,18 +145,18 @@ function build_GDAL_RPM_Package()
    ##    ## build the packages specifying installing dependencies
    fpm -s dir -t rpm -n gdal-local -v ${GDAL_VERSION} ${PLATFORM_INSTALL_DEP} ${PLATFORM_INSTALL_CIFS_DEP} -C ${GDAL_INSTALL_PATH} \
    -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/gdal-local-VERSION.centos7.ARCH.rpm --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_gdal usr
-   
+
    #remove temporary dir
    rm -rf ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_gdal
-   
+
 }
 #-----------------------------------------------------------#
 function build_dir_tree()
 {
    ##set PATH env variable to /usr/bin to avoid
    # cmake finding /lib/cmake before /usr/lib/cmake
-   PATH="/usr/bin:/usr/local/bin"  
- 
+   PATH="/usr/bin:/usr/local/bin"
+
    ##go to default dir
    cd ${DEFAULT_DIR}
 
@@ -167,7 +167,7 @@ function build_dir_tree()
 
    ##go into platform dir
    cd ${PLATFORM_NAME_DIR}
- 
+
    ##create install dir
    if [ ! -d ${INSTALL_DIR} ]; then
       mkdir -p ${INSTALL_DIR}
@@ -177,12 +177,12 @@ function build_dir_tree()
    if [ ! -d ${RPM_DIR} ]; then
       mkdir -p ${RPM_DIR}
    fi
-   
+
    ##create build dir
    if [ ! -d ${BUILD_DIR} ]; then
       mkdir -p ${BUILD_DIR}
    fi
-   
+
    ##exit from platform dir
    cd ..
 }
@@ -195,7 +195,7 @@ function build_dir_tree()
 build_dir_tree
 
 ###########################################################
-#####  OTB build, install and RPM generation         ###### 
+#####  OTB build, install and RPM generation         ######
 ###########################################################
 ##retrieve OTB sources compile and install
 compile_OTB_package
@@ -203,7 +203,7 @@ compile_OTB_package
 ##create RPM package
 build_OTB_RPM_Package
 ###########################################################
-#####  GDAL build, install and RPM generation         ##### 
+#####  GDAL build, install and RPM generation         #####
 ###########################################################
 ##retrieve GDAL sources compile and install
 compile_GDAL_package
