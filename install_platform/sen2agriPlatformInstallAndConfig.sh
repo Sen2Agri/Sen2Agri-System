@@ -647,6 +647,8 @@ function find_maccs()
 
 function install_maccs()
 {
+    yum -y install libxslt gd
+
     echo "Looking for MACCS..."
     maccs_location=$(type -P maccs)
     if [ $? -eq 0 ]; then
