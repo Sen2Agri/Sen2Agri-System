@@ -181,7 +181,7 @@ shutil.copyfile(bandsMap, os.path.join(outDir, os.path.basename(bandsMap)))
 if args.scatteringcoef:
     shutil.copyfile(args.scatteringcoef, os.path.join(outDir, os.path.basename(args.scatteringcoef)))
     scatteringCoefFilename = args.scatteringcoef[args.scatteringcoef.rfind('/'):]
-    fullScatCoeffs = ["scatcoef", outDir + scatteringCoefFilename]
+    fullScatCoeffs = ["-scatcoef", outDir + scatteringCoefFilename]
     print(fullScatCoeffs)
 
 if args.tileid:
