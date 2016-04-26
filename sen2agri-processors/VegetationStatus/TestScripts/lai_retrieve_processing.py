@@ -373,6 +373,7 @@ class LaiMonoDate(object):
         # Retrieve the LAI model
         runCmd(["otbcli", "BVImageInversion", appLocation,
                 "-in", curOutNDVIRVIImg,
+                "-msks", curOutLaiMonoMskFlgsImg,
                 "-out", curOutLaiImg,
                 "-xml", xml,
                 "-modelsfolder", modelsFolder,
@@ -380,6 +381,7 @@ class LaiMonoDate(object):
         print("Exec time: {}".format(datetime.timedelta(seconds=(time.time() - start))))
         runCmd(["otbcli", "BVImageInversion", appLocation,
                 "-in", curOutNDVIRVIImg,
+                "-msks", curOutLaiMonoMskFlgsImg,
                 "-out", curOutLaiErrImg,
                 "-xml", xml,
                 "-modelsfolder", modelsFolder,
