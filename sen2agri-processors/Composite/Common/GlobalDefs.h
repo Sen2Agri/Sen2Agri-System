@@ -102,14 +102,15 @@ class FloatToShortTranslationFunctor
 public:
     FloatToShortTranslationFunctor() {}
     ~FloatToShortTranslationFunctor() {}
-    void Initialize(float fQuantificationVal, float fNoDataVal = 0) {
+    void Initialize(float fQuantificationVal, float fNoDataVal = 0, bool bSetNegValsToZero = false) {
         m_fQuantifVal = fQuantificationVal;
         m_fNoDataVal = fNoDataVal;
+        m_bSetNegValsToZero = bSetNegValsToZero;
   }
 
   bool operator!=( const FloatToShortTranslationFunctor &a) const
   {
-      return ((this->m_fQuantifVal != a.m_fQuantifVal) || (this->m_fNoDataVal != a.m_fNoDataVal));
+      return ((this->m_fQuantifVal != a.m_fQuantifVal) || (this->m_fNoDataVal != a.m_fNoDataVal) || (this->m_bSetNegValsToZero != a.bSetNegValsToZero));
   }
   bool operator==( const FloatToShortTranslationFunctor & other ) const
   {
@@ -128,7 +129,11 @@ public:
            if(fabs(A[i] - m_fNoDataVal) < NO_DATA_EPSILON) {
                ret[i] = m_fNoDataVal;
            } else {
-                ret[i] = static_cast< unsigned short >(A[i] * m_fQuantifVal);
+                if(m_bSetNegValsToZero && (A[i] < 0)) {
+                    ret[i] = 0;
+                } else {
+                    ret[i] = static_cast< unsigned short >(A[i] * m_fQuantifVal);
+                }
            }
       }
 
@@ -140,7 +145,11 @@ public:
       if(fabs(A - m_fNoDataVal) < NO_DATA_EPSILON) {
         ret = m_fNoDataVal;
       } else {
-        ret = static_cast< unsigned short >(A * m_fQuantifVal);
+          if(m_bSetNegValsToZero && (A < 0)) {
+              ret = 0;
+          } else {
+              ret = static_cast< unsigned short >(A * m_fQuantifVal);
+          }
       }
 
       return ret;
@@ -148,6 +157,7 @@ public:
 private:
   int m_fQuantifVal;
   int m_fNoDataVal;
+  bool m_bSetNegValsToZero;
 };
 
 

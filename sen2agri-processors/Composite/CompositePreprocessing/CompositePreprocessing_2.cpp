@@ -116,7 +116,7 @@ private:
         m_resampleAtS2Res.DoExecute();
 
         // if we have detailded angles, then we apply the directional correction
-        if(pHelper->HasDetailedAngles()) {
+        if(pHelper->HasDetailedAngles() && HasValue("scatcoef")) {
             std::string scatCoeffsFile = GetParameterAsString("scatcoef");
             m_computeNdvi.DoInit(inXml, res);
             m_creatAngles.DoInit(res, inXml);

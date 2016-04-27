@@ -479,6 +479,7 @@ std::vector<MACCSBand> MACCSMetadataHelper::GetAllMACCSBandsInfos() {
 void MACCSMetadataHelper::InitializeS2Angles() {
     m_bHasGlobalMeanAngles = true;
     m_bHasBandMeanAngles = true;
+    m_bHasDetailedAngles = true;
     m_detailedAnglesGridSize = 23;
 
     // update the solar mean angle

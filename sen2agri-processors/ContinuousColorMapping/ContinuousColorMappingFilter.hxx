@@ -20,7 +20,7 @@
 #include "ContinuousColorMappingFunctor.hxx"
 
 
-typedef itk::UnaryFunctorImageFilter<otb::Wrapper::FloatImageType,
+typedef itk::UnaryFunctorImageFilter<otb::Wrapper::FloatVectorImageType,
                                      otb::Wrapper::UInt8RGBImageType,
                                      ContinuousColorMappingFunctor>
         ContinuousColorMappingFilter;

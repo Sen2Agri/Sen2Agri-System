@@ -79,6 +79,7 @@ void DirectionalCorrection::DoExecute()
 }
 
 int DirectionalCorrection::extractBandsFromImage(InputImageType1::Pointer & imageType) {
+    imageType->UpdateOutputInformation();
     int nbBands = imageType->GetNumberOfComponentsPerPixel();
     for(int j=0; j < nbBands; j++)
     {

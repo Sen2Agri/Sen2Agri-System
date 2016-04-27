@@ -58,7 +58,7 @@ typedef std::vector<RampEntry> Ramp;
 class ContinuousColorMappingFunctor
 {
 public:
-    typedef otb::Wrapper::FloatImageType InputImageType;
+    typedef otb::Wrapper::FloatVectorImageType InputImageType;
     typedef InputImageType::PixelType InputPixelType;
 
     typedef itk::RGBPixel<uint8_t> OutputPixelType;
@@ -73,6 +73,11 @@ public:
         m_Ramp = std::move(ramp);
     }
 
+    void SetBandIndex(int bandIdx)
+    {
+        m_BandIdx = bandIdx;
+    }
+
     const Ramp & GetNoDataValue() const
     {
         return m_Ramp;
@@ -85,9 +90,9 @@ public:
 
         for (const auto &entry : m_Ramp)
         {
-            if (in >= entry.min && in < entry.max)
+            if (in[m_BandIdx] >= entry.min && in[m_BandIdx] < entry.max)
             {
-                float t = (in - entry.min) / (entry.max - entry.min);
+                float t = (in[m_BandIdx] - entry.min) / (entry.max - entry.min);
                 result = Round<uint8_t>(Lerp(t, entry.minColor, entry.maxColor));
                 break;
             }
@@ -98,4 +103,5 @@ public:
 
 private:
     Ramp m_Ramp;
+    int m_BandIdx;
 };

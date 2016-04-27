@@ -46,6 +46,7 @@
 #include "../../../../Composite/Common/GlobalDefs.h"
 #include "MetadataHelperFactory.h"
 #include "dirent.h"
+#include "itkBinaryFunctorImageFilter.h"
 
 typedef double PrecisionType;
 typedef itk::FixedArray<PrecisionType, 1> OutputSampleType;
@@ -64,6 +65,48 @@ typedef otb::MultiLinearRegressionModel<PrecisionType> MLRType;
 
 namespace otb
 {
+
+/** Binary functor image filter which produces a vector image with a
+* number of bands different from the input images */
+template <class TInputImage1, class TInputImage2, class TOutputImage,
+          class TFunctor>
+class ITK_EXPORT BinaryFunctorImageFilterWithNBands :
+    public itk::BinaryFunctorImageFilter< TInputImage1, TInputImage2, TOutputImage, TFunctor >
+{
+public:
+  typedef BinaryFunctorImageFilterWithNBands Self;
+  typedef itk::BinaryFunctorImageFilter< TInputImage1, TInputImage2, TOutputImage,
+                                        TFunctor > Superclass;
+  typedef itk::SmartPointer<Self>       Pointer;
+  typedef itk::SmartPointer<const Self> ConstPointer;
+
+  /** Method for creation through the object factory. */
+  itkNewMacro(Self);
+
+  /** Macro defining the type*/
+  itkTypeMacro(BinaryFunctorImageFilterWithNBands, SuperClass);
+
+  /** Accessors for the number of bands*/
+  itkSetMacro(NumberOfOutputBands, unsigned int);
+  itkGetConstMacro(NumberOfOutputBands, unsigned int);
+
+protected:
+  BinaryFunctorImageFilterWithNBands() {}
+  virtual ~BinaryFunctorImageFilterWithNBands() {}
+
+  void GenerateOutputInformation()
+  {
+    Superclass::GenerateOutputInformation();
+    this->GetOutput()->SetNumberOfComponentsPerPixel( m_NumberOfOutputBands );
+  }
+private:
+  BinaryFunctorImageFilterWithNBands(const Self &); //purposely not implemented
+  void operator =(const Self&); //purposely not implemented
+
+  unsigned int m_NumberOfOutputBands;
+
+
+};
 
 /** Unary functor image filter which produces a vector image with a
 * number of bands different from the input images */
@@ -148,6 +191,18 @@ public:
     return pix;
   }
 
+  inline
+  OutputPixelType operator ()(const InputPixelType& in_pix, const InputPixelType& maskPix)
+  {
+      if(maskPix[0] != IMG_FLG_LAND) {
+          OutputPixelType pix{};
+          pix.SetSize(1);
+          pix[0] = 0;
+          return pix;
+      }
+      return (*this)(in_pix);
+  }
+
   bool operator !=(const BVEstimationFunctor& other) const
   {
     return (this->m_Model!=other.m_Model ||
@@ -194,7 +249,11 @@ public:
   using FilterType = UnaryFunctorImageFilterWithNBands<FloatVectorImageType,
                                                        FloatVectorImageType,
                                                        FunctorType>;
-  
+  using MaskedFilterType = BinaryFunctorImageFilterWithNBands<FloatVectorImageType,
+                                                       FloatVectorImageType,
+                                                       FloatVectorImageType,
+                                                       FunctorType>;
+
 private:
   void DoInit()
   {
@@ -203,6 +262,9 @@ private:
 
     AddParameter(ParameterType_InputImage, "in", "Input Image");
     SetParameterDescription("in","Input image.");
+
+    AddParameter(ParameterType_InputImage, "msks", "Masks flags used for masking final LAI values");
+    MandatoryOff("msks");
 
     AddParameter(ParameterType_InputFilename, "model", "File containing the regression model.");
     SetParameterDescription( "model", "File containing the regression model.");
@@ -347,13 +409,25 @@ private:
           }
         regressor->Load(modelFileName);
 
-        //instantiate a functor with the regressor and pass it to the
-        //unary functor image filter pass also the normalization values
-        bv_filter = FilterType::New();
-        bv_filter->SetFunctor(FunctorType(regressor,var_minmax));
-        bv_filter->SetInput(input_image);
-        bv_filter->SetNumberOfOutputBands(1);
-        SetParameterOutputImage("out", bv_filter->GetOutput());
+        bool bHasMsks = HasValue("msks");
+        if(bHasMsks) {
+            m_msksImg = GetParameterFloatVectorImage("msks");
+            bv_MaskedFilter = MaskedFilterType::New();
+            bv_MaskedFilter->SetFunctor(FunctorType(regressor,var_minmax));
+            bv_MaskedFilter->SetInput1(input_image);
+            bv_MaskedFilter->SetInput2(m_msksImg);
+            bv_MaskedFilter->SetNumberOfOutputBands(1);
+            SetParameterOutputImage("out", bv_MaskedFilter->GetOutput());
+        } else {
+
+            //instantiate a functor with the regressor and pass it to the
+            //unary functor image filter pass also the normalization values
+            bv_filter = FilterType::New();
+            bv_filter->SetFunctor(FunctorType(regressor,var_minmax));
+            bv_filter->SetInput(input_image);
+            bv_filter->SetNumberOfOutputBands(1);
+            SetParameterOutputImage("out", bv_filter->GetOutput());
+        }
   }
 
   void readFileLines(const std::string &fileName, std::vector<std::string> &outLines) {
@@ -484,6 +558,8 @@ private:
 
 
   FilterType::Pointer bv_filter;
+  MaskedFilterType::Pointer bv_MaskedFilter;
+  FloatVectorImageType::Pointer m_msksImg;
 };
 
 }

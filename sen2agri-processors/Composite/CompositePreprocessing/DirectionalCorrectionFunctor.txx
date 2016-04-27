@@ -75,13 +75,17 @@ TOutput DirectionalCorrectionFunctor<TInput,TOutput>::operator()( const TInput &
             } else {
                 double thetaV = A[m_nSensoAnglesBandStartIdx + 2*i];
                 double phiV = A[m_nSensoAnglesBandStartIdx + 2*i + 1];
-                DirectionalModel dirModel0(thetaS, 0, 0, 0);
-                DirectionalModel dirModel(thetaS, phiS, thetaV, phiV);
+                if(isnan(thetaV) || isnan(phiV)) {
+                    var[i] = fReflVal;
+                } else {
+                    DirectionalModel dirModel0(thetaS, 0, 0, 0);
+                    DirectionalModel dirModel(thetaS, phiS, thetaV, phiV);
 
-                ScaterringFunctionCoefficients &coeffs = m_ScatteringCoeffs[i];
-                double kV = coeffs.V0 + coeffs.V1 * A[m_nNdviBandIdx];
-                double kR = coeffs.R0 + coeffs.R1 * A[m_nNdviBandIdx];
-                var[i] = fReflVal * dirModel0.dir_mod(kV, kR)/dirModel.dir_mod(kV, kR);
+                    ScaterringFunctionCoefficients &coeffs = m_ScatteringCoeffs[i];
+                    double kV = coeffs.V0 + coeffs.V1 * A[m_nNdviBandIdx];
+                    double kR = coeffs.R0 + coeffs.R1 * A[m_nNdviBandIdx];
+                    var[i] = fReflVal * dirModel0.dir_mod(kV, kR)/dirModel.dir_mod(kV, kR);
+                }
             }
         }
     }

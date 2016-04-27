@@ -61,6 +61,10 @@ private:
         AddParameter(ParameterType_OutputImage, "out", "The output image");
         AddParameter(ParameterType_InputFilename, "map", "The color mapping");
 
+        AddParameter(ParameterType_Int, "bandidx", "Specifies the band index to be used from the input image (default 0)");
+        SetDefaultParameterInt("bandidx", 0);
+        MandatoryOff("bandidx");
+
         SetDocExampleParameterValue("in", "in.tif");
         SetDocExampleParameterValue("out", "out.tif");
         SetDocExampleParameterValue("map", "ramp.map");
@@ -80,11 +84,18 @@ private:
 
         auto &&ramp = ReadColorMap(mapFile);
 
-        const auto &in = GetParameterFloatImage("in");
+        const auto &in = GetParameterFloatVectorImage("in");
+        int bandIdx = GetParameterInt("bandidx");
+        in->UpdateOutputInformation();
+        int nbBands = in->GetNumberOfComponentsPerPixel();
+        if(bandIdx < 0 || bandIdx >= nbBands) {
+            bandIdx = 0;
+        }
         m_Filter = ContinuousColorMappingFilter::New();
         m_Filter->SetInput(in);
 
         m_Filter->GetFunctor().SetRamp(std::move(ramp));
+        m_Filter->GetFunctor().SetBandIndex(bandIdx);
 
         m_Filter->UpdateOutputInformation();
 

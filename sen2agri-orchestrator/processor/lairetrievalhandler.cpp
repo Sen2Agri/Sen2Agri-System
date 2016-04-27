@@ -339,8 +339,8 @@ void LaiRetrievalHandler::HandleNewTilesList(EventProcessingContext &ctx, const 
 
             QStringList genMonoDateMskFagsArgs = GetMonoDateMskFlagsArgs(inputProduct, monoDateMskFlgsFileName, monoDateMskFlgsResFileName, resolutionStr);
             QStringList ndviRviExtractionArgs = GetNdviRviExtractionArgs(inputProduct, monoDateMskFlgsFileName, ftsFile, singleNdviFile, resolutionStr);
-            QStringList bvImageInvArgs = GetBvImageInvArgs(ftsFile, inputProduct, modelsFolder, monoDateLaiFileName);
-            QStringList bvErrImageInvArgs = GetBvErrImageInvArgs(ftsFile, inputProduct, modelsFolder, monoDateErrFileName);
+            QStringList bvImageInvArgs = GetBvImageInvArgs(ftsFile, monoDateMskFlgsFileName, inputProduct, modelsFolder, monoDateLaiFileName);
+            QStringList bvErrImageInvArgs = GetBvErrImageInvArgs(ftsFile, monoDateMskFlgsFileName, inputProduct, modelsFolder, monoDateErrFileName);
             QStringList quantifyImageArgs = GetQuantifyImageArgs(monoDateLaiFileName, quantifiedLaiFileName);
             QStringList quantifyErrImageArgs = GetQuantifyImageArgs(monoDateErrFileName, quantifiedErrFileName);
 
@@ -670,8 +670,8 @@ void LaiRetrievalHandler::GetModelFileList(QStringList &outListModels, const QSt
     }
 }
 
-QStringList LaiRetrievalHandler::GetNdviRviExtractionArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile, const QString &ndviFile,
-                                                          const QString &resolution) {
+QStringList LaiRetrievalHandler::GetNdviRviExtractionArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile,
+                                                          const QString &ndviFile, const QString &resolution) {
     return { "NdviRviExtraction2",
            "-xml", inputProduct,
            "-msks", msksFlagsFile,
@@ -681,9 +681,11 @@ QStringList LaiRetrievalHandler::GetNdviRviExtractionArgs(const QString &inputPr
     };
 }
 
-QStringList LaiRetrievalHandler::GetBvImageInvArgs(const QString &ftsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateLaiFileName) {
+QStringList LaiRetrievalHandler::GetBvImageInvArgs(const QString &ftsFile, const QString &msksFlagsFile, const QString &xmlFile,
+                                                   const QString &modelsFolder, const QString &monoDateLaiFileName) {
     return { "BVImageInversion",
         "-in", ftsFile,
+        "-msks", msksFlagsFile,
         "-out", monoDateLaiFileName,
         "-xml", xmlFile,
         "-modelsfolder", modelsFolder,
@@ -691,9 +693,11 @@ QStringList LaiRetrievalHandler::GetBvImageInvArgs(const QString &ftsFile, const
     };
 }
 
-QStringList LaiRetrievalHandler::GetBvErrImageInvArgs(const QString &ftsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateErrFileName)  {
+QStringList LaiRetrievalHandler::GetBvErrImageInvArgs(const QString &ftsFile, const QString &msksFlagsFile, const QString &xmlFile,
+                                                      const QString &modelsFolder, const QString &monoDateErrFileName)  {
     return { "BVImageInversion",
         "-in", ftsFile,
+        "-msks", msksFlagsFile,
         "-out", monoDateErrFileName,
         "-xml", xmlFile,
         "-modelsfolder", modelsFolder,
