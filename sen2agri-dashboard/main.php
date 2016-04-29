@@ -31,11 +31,11 @@
 				color: 'rgba(0, 0, 255, 0.01)'
 			})
 		});
-	
+		
 		var raster = new ol.layer.Tile({
 		  source: new ol.source.MapQuest({layer: 'sat'})
 		});
-
+		
 		/*var vector = new ol.layer.Vector({
 		  source: new ol.source.Vector({
 		    url: 'productsMapData.json',
@@ -53,7 +53,7 @@
 		    center: [0, 0],
 		    zoom: 2
 		});
-
+		
 		var map = new ol.Map({
 		  layers: [raster, vector], // [raster, vector]
 		  target: 'map',
@@ -61,7 +61,7 @@
 		});
 		
 		//map.addLayer(vector);
-
+		
 		// Create an image layer
 		var imageLayer;
 		
@@ -86,32 +86,31 @@
 			
 			map.addLayer(imageLayer);
 		};
-
-
+		
 		// select interaction working on "singleclick"
 		var selectSingleClick = new ol.interaction.Select({
 			style: styleSelected
 		});
-
+		
 		// select interaction working on "click"
 		var selectClick = new ol.interaction.Select({
 		  condition: ol.events.condition.click
 		});
-
+		
 		// select interaction working on "pointermove"
 		var selectPointerMove = new ol.interaction.Select({
 		  condition: ol.events.condition.pointerMove
 		});
-
+		
 		var selectAltClick = new ol.interaction.Select({
 		  condition: function(mapBrowserEvent) {
 		    return ol.events.condition.click(mapBrowserEvent) &&
 		        ol.events.condition.altKeyOnly(mapBrowserEvent);
 		  }
 		});
-
+		
 		var selectMethod = selectSingleClick;  // ref to currently selected interaction
-
+		
 		var initInteraction = function() {
 		  if (selectMethod !== null) {
 		    map.removeInteraction(selectMethod);
@@ -126,8 +125,7 @@
 		    });
 		  }
 		};
-
-
+		
 		var panToLocation = function(extent) {
 		  var pan = ol.animation.pan({
 		    duration: 1000,
@@ -140,13 +138,9 @@
 		  var zoom = view.getZoom()-3;
 		  view.setZoom(zoom);
 		};
-
+		
 		initInteraction();
-
-
-
-
-
+		
 		var treeData;
 		var initTree = function() {
 			$.ajax({
@@ -167,7 +161,7 @@
 				}
 			});
 		};
-
+		
 		var renderTree = function() {
 			$('#tree').treeview({
 				data: treeData,
@@ -182,8 +176,6 @@
 			});
 			
 			$('#tree').on('nodeSelected', function(event, data) {
-				
-				
 				var extent;
 							
 				var selectedFeatures = vector.getSource();//selectMethod.getFeatures();
@@ -207,24 +199,25 @@
 				panToLocation(extent);
 				
 				//Create polygone for the site
+				var format = new ol.format.WKT();
+				var feature2 = format.readFeature(data.siteCoord);
+				feature2.getGeometry().transform('EPSG:4326', 'EPSG:3857');
+				
+				/*
 				var olCoordArr = new Array();
-				//console.log(data);
-			    for(var i=0; i<data.siteCoord.length;i++){
+			    for(var i=0; i<data.siteCoord.length;i++) {
 					pointCoords = data.siteCoord[i].split(" ");
 					olCoordArr.push([Number(pointCoords[0]), Number(pointCoords[1])]);
 				}
-			   // console.log(olCoordArr);
 				polygon = new ol.geom.Polygon([olCoordArr]);
-			
 				polygon.transform('EPSG:4326', 'EPSG:3857');
-				// Create feature with polygon.
 				var feature2 = new ol.Feature(polygon);
-
-				selectedFeatures.addFeature(feature2);
+				*/
 				
+				selectedFeatures.addFeature(feature2);
 			});
 		};
-
+		
 		initTree();
 	</script>
 <?php include "ms_foot.php" ?>

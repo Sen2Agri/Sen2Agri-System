@@ -91,7 +91,7 @@ try {
 			$productObj->text = $productRow->product;
 			$productObj->href = "downloadProduct.php?id=".$productRow->id;
 			$productObj->productCoord = array_map('floatval', explode(",", str_replace(array("(", ")"), "", $productRow->footprint)));
-			$productObj->siteCoord = explode(",", str_replace(array("POLYGON((", ")"), "", $productRow->site_coord));
+			$productObj->siteCoord = $productRow->site_coord;
 			
 			$productObj->productImageUrl = "getProductImage.php?id=".$productRow->id;
 			$imageSize = getProductImageSize(rtrim(normalizePath($productRow->full_path), '/').'/'.$productRow->quicklook_image);
