@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 /*=========================================================================
 
  Program:   ORFEO Toolbox
@@ -423,7 +423,7 @@ private:
 
         if (!findURL)
           {
-          itkExceptionMacro(<< "Tile " <<  *it + SHPExtensionSimulation  <<" not found in " << GetParameterString("mode.list.indir") << " !");
+          itkWarningMacro("Tile " <<  *it + SHPExtensionSimulation  <<" not found in " << GetParameterString("mode.list.indir") << " !");
           }
         otbAppLogINFO( << listStream.str());
         }
