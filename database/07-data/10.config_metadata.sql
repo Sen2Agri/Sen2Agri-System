@@ -80,6 +80,7 @@ INSERT INTO config_metadata VALUES ('processor.l3b.lai.localwnd.bwr', 'Backward 
 INSERT INTO config_metadata VALUES ('processor.l3a.bandsmapping', 'Bands mapping file for S2', 'file', true, 3);
 INSERT INTO config_metadata VALUES ('processor.l3a.preproc.scatcoeffs_10m', 'Scattering coefficients file for S2 10 m', 'file', true, 3);
 INSERT INTO config_metadata VALUES ('processor.l3a.preproc.scatcoeffs_20m', 'Scattering coefficients file for S2 20 m', 'file', true, 3);
+INSERT INTO config_metadata VALUES ('processor.l3a.lut_path', 'L3A LUT file path', 'file', true, 3);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.localwnd.fwr', 'Forward radius of the window for the local algorithm', 'int', true, 4);
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-ndvi-rvi-extractor', 'LAI NDVI and RVI features extractor', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-models-extractor', 'Determines the model to be used for the current execution', 'file', true, 8);

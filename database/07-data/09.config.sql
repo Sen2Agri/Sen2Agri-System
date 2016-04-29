@@ -179,4 +179,5 @@ INSERT INTO config VALUES (213, 'processor.l4a.reference_data_dir', NULL, '', '2
 INSERT INTO config VALUES (291, 'processor.l3a.generate_20m_s2_resolution', NULL, '0', '2016-02-26 19:30:06.821627+02');
 INSERT INTO config VALUES (292, 'processor.l3a.preproc.scatcoeffs_20m', NULL, '/usr/share/sen2agri/scattering_coeffs_20m.txt', '2016-02-29 14:08:07.963143+02');
 INSERT INTO config VALUES (293, 'processor.l3b.lai.lut_path', NULL, '/usr/share/sen2agri/lai.map', '2016-02-29 14:08:07.963143+02');
+INSERT INTO config VALUES (294, 'processor.l3a.lut_path', NULL, '/usr/share/sen2agri/composite.map', '2016-02-29 14:08:07.963143+02');
 
