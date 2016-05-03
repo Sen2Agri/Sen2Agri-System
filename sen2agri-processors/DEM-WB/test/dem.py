@@ -177,7 +177,7 @@ def format_filename(mode, output_directory, tile_id, suffix):
 def create_context(args):
     dir_base = args.input
     if not os.path.exists(dir_base) or not os.path.isdir(dir_base):
-        print("The path dows not exist ! {}".format(dir_base))
+        print("The path does not exist ! {}".format(dir_base))
         return []
     if dir_base.rfind('/') + 1 == len(dir_base):
         dir_base = dir_base[0:len(dir_base)-1]

@@ -1,4 +1,4 @@
-#! /usr/bin/env python
+ #! /usr/bin/env python
 # -*- coding: iso-8859-1 -*-
 
 import glob,os,sys
@@ -39,7 +39,7 @@ def unzipFile(outputDir, fileToUnzip):
 
 ###########################################################################
 class Sentinel2Obj(object):
-    def __init__(self, filename, link, product_date_as_string, cloud, orbit_id):
+    def __init__(self, filename, link, product_date_as_string, cloud, orbit_id, user, passwd, proxy):
         self.filename = filename
         self.productname = filename
         self.link = link
@@ -50,6 +50,9 @@ class Sentinel2Obj(object):
         self.product_date = datetime.datetime.strptime(self.product_date_as_string, "%Y%m%dT%H%M%S")
         self.cloud = float(cloud)
         self.orbit_id = int(orbit_id)
+        self.user = user
+        self.password = passwd
+        self.proxy = proxy
 
     def __cmp__ (self, other):
         if hasattr(other, 'product_date'):
@@ -74,19 +77,24 @@ def product_download(s2Obj, aoiContext, db):
     log(aoiContext.writeDir, "Downloading from {} ".format(aoiContext.sentinelLocation), general_log_filename)
 
     if float(s2Obj.cloud) < float(aoiContext.maxCloudCoverage) and len(aoiContext.aoiTiles) > 0:
-        commandArray = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/S2ProductDownload-0.2.jar", "--out", aoiContext.writeDir, "--tiles"]
+        cmd_dwn = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/S2ProductDownloader-1.0.jar", "--user", s2Obj.user, "--password", s2Obj.password]
+        if len(s2Obj.proxy) >= 2:
+            cmd_dwn += ["--proxy.type", "http", "--proxy.host", s2Obj.proxy['host'], "--proxy.port", s2Obj.proxy['port']]
+            if len(s2Obj.proxy) == 4:
+                cmd_dwn += ["--proxy.user", s2Obj.proxy['user'], "--proxy.password", s2Obj.proxy['pass']]
+        cmd_dwn += ["--out", aoiContext.writeDir, "--tiles"]
         for tile in aoiContext.aoiTiles:
-            commandArray.append(tile)
-        commandArray += ["-ma", "-p", s2Obj.productname]
+            cmd_dwn.append(tile)
+        cmd_dwn += ["-ma", "-p", s2Obj.productname]
         if aoiContext.sentinelLocation == "scihub":
-            commandArray.append("-u")
+            cmd_dwn.append("-u")
             uid = re.search(r"\('([\w-]+)'\)", s2Obj.link)
             if uid is None:
                 print ("The provided link did not match in order to take the uid. Link: {}".format(s2Obj.link))
                 return False
-            commandArray.append(uid.group(1))
+            cmd_dwn.append(uid.group(1))
         elif aoiContext.sentinelLocation == "amazon":
-            commandArray += ["-s", "AWS"]
+            cmd_dwn += ["-s", "AWS"]
         else:
             log(aoiContext.writeDir, "product_download: The location is not an expected one (scihub or amazon) for product {}".format(s2Obj.filename), general_log_filename)
             return False
@@ -95,7 +103,7 @@ def product_download(s2Obj, aoiContext, db):
         if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, s2Obj.product_date_as_string, abs_filename, s2Obj.orbit_id, aoiContext.maxRetries):
             log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADING for {}".format(s2Obj.filename), general_log_filename)
             return False        
-        if run_command(commandArray, aoiContext.writeDir, general_log_filename) != 0:
+        if run_command(cmd_dwn, aoiContext.writeDir, general_log_filename) != 0:
             #get the product name and check the no_of_retries. 
             #if it's greater than aoiContext.maxRetries, update the product name status with ABORTED (4)
             #else update the product name in the downloader_history with status FAILED (3) and increment the no_of_retries
@@ -126,17 +134,32 @@ def sentinel_download(aoiContext):
     general_log_filename = "sentinel_download.log"
     general_log_path = aoiContext.writeDir    
     apihubFile = aoiContext.remoteSiteCredentials
-
+    proxy = {}
     # read password file
     try:
         f = file(apihubFile)
         (account,passwd) = f.readline().split(' ')
         if passwd.endswith('\n'):
             passwd=passwd[:-1]
+        proxy_line = f.readline().strip('\n\t\r ')
+        print(proxy_line)
+        if(len(proxy_line) > 0):
+             proxy_info = proxy_line.split(' ')
+             print(proxy_info)
+             if len(proxy_info) == 2:
+                  proxy={'host':proxy_info[0], 'port':proxy_info[1]}
+             elif len(proxy_info) == 4:
+                  proxy={'host':proxy_info[0],'port':proxy_info[1],'user':proxy_info[2],'pass':proxy_info[3]}
+             else:
+                  log(general_log_path, "Proxy information erroneous in {} file, second line. It should have the following format: host port [user pass] ".format(aoiContext.remoteSiteCredentials), general_log_filename)        
+                  f.close()
+                  return
         f.close()
     except :
         log(aoiContext.writeDir, "error with password file ".format(str(apihubFile)), general_log_filename)
         return
+    print(len(proxy))
+    print(proxy)
 
     s2Objs = []
     index = int(0)
@@ -159,12 +182,16 @@ def sentinel_download(aoiContext):
 
         query_date = " beginPosition:[{} TO {}]".format(start_date, end_date)
         query = "{}{}".format(query, query_date)
+        
+        wget_command = wg + auth + search_output
+        if len(proxy) >= 2:
+            wget_command += ["-e", "use_proxy=yes", "-e", "http_proxy=%(host)s:%(port)s" % proxy, "-e", "https_proxy=%(host)s:%(port)s" % proxy]
+            if len(proxy) == 4:
+                wget_command += ["--proxy-user=%(user)s" % proxy, "--proxy-password=%(pass)s" % proxy]
+        wget_command.append(url_search + query + "&rows=1000")
+        log(aoiContext.writeDir, wget_command, general_log_filename)
 
-        commande_wget = wg + auth + search_output
-        commande_wget.append(url_search + query + "&rows=1000")
-        log(aoiContext.writeDir, commande_wget, general_log_filename)
-
-        if run_command(commande_wget, aoiContext.writeDir, general_log_filename) != 0:
+        if run_command(wget_command, aoiContext.writeDir, general_log_filename) != 0:
             log(aoiContext.writeDir, "Could not get the catalog output for {}".format(query_geom), general_log_filename)
             return
         if g_exit_flag:
@@ -188,10 +215,10 @@ def sentinel_download(aoiContext):
                 try:
                     totalRes=int(words[5]) + 1
                     query = query + "&rows=" + str(totalRes)
-                    #commande_wget='%s %s %s "%s%s"'%(wg,auth,search_output,url_search,query)
-                    commande_wget = wg + auth + search_output + [url_search+query]
-                    log(aoiContext.writeDir, "Changing the pagination to {0} to get all of the existing files, command: {1}".format(totalRes, commande_wget), general_log_filename)
-                    if run_command(commande_wget, aoiContext.writeDir, general_log_filename) != 0:
+                    #wget_command='%s %s %s "%s%s"'%(wg,auth,search_output,url_search,query)
+                    wget_command = wg + auth + search_output + [url_search+query]
+                    log(aoiContext.writeDir, "Changing the pagination to {0} to get all of the existing files, command: {1}".format(totalRes, wget_command), general_log_filename)
+                    if run_command(wget_command, aoiContext.writeDir, general_log_filename) != 0:
                         log(aoiContext.writeDir, "Could not get the catalog output (re-pagination) for {}".format(query_geom), general_log_filename)
                         return
                     xml=minidom.parse("query_results.xml")
@@ -223,7 +250,7 @@ def sentinel_download(aoiContext):
             if len(filename) == 0 or cloud > 100 or product_date == None or orbit_id == None:
                 continue
 
-            s2Objs.append(Sentinel2Obj(filename, link, product_date.group(1), cloud, orbit_id.group(1)))
+            s2Objs.append(Sentinel2Obj(filename, link, product_date.group(1), cloud, orbit_id.group(1), account, passwd, proxy))
     
     #sort the products using product date
     s2Objs.sort()

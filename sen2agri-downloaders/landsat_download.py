@@ -30,8 +30,21 @@ DEBUG = True
 def connect_earthexplorer_proxy(proxy_info,usgs):
      print "Establishing connection to Earthexplorer with proxy..."
      # contruction d'un "opener" qui utilise une connexion proxy avec autorisation
-     proxy_support = urllib2.ProxyHandler({"http" : "http://%(user)s:%(pass)s@%(host)s:%(port)s" % proxy_info,
-     "https" : "http://%(user)s:%(pass)s@%(host)s:%(port)s" % proxy_info})
+     proxy_support = None
+     print("http://%(host)s:%(port)s" % proxy_info)
+     if len(proxy_info) == 2: 
+          proxy_support = urllib2.ProxyHandler({"http" : "http://%(host)s:%(port)s" % proxy_info,
+                                                "https" : "http://%(host)s:%(port)s" % proxy_info})
+     elif len(proxy_info) == 4:
+          proxy_support = urllib2.ProxyHandler({"http" : "http://%(user)s:%(pass)s@%(host)s:%(port)s" % proxy_info,
+                                                "https" : "http://%(user)s:%(pass)s@%(host)s:%(port)s" % proxy_info})
+     else:
+          print("Proxy information erroneous, check credential file.")
+          return False
+     print("{}".format(proxy_support))
+     if proxy_support == None:
+          print("Could not create proxy object.")
+          return False
      opener = urllib2.build_opener(proxy_support, urllib2.HTTPCookieProcessor)
 
      # installation
@@ -48,7 +61,7 @@ def connect_earthexplorer_proxy(proxy_info,usgs):
      if data.find('You must sign in as a registered user to download data or place orders for USGS EROS products')>0 :
         print "Authentification failed"
         return False
-
+     print("Connected through proxy")
      return True
 
 
@@ -77,7 +90,7 @@ def sizeof_fmt(num):
             return "%3.1f %s" % (num, x)
         num /= 1024.0
 #############################
-def downloadChunks(url, rep, prod_name, prod_date, abs_prod_path, aoiContext, db):
+def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
 
   """ Downloads large files in pieces
    inspired by http://josh.gourneau.com
@@ -86,50 +99,50 @@ def downloadChunks(url, rep, prod_name, prod_date, abs_prod_path, aoiContext, db
   nom_fic = prod_name + ".tgz"
   print("INFO START")
   print("url: {}".format(url))
-  print("rep: {}".format(rep))
+  print("aoiContext.writeDir: {}".format(aoiContext.writeDir))
   print("nom_fic: {}".format(nom_fic))
   print("prod_date: {}".format(prod_date))
   print("abs_prod_path: {}".format(abs_prod_path))
   print("INFO STOP")
-  log(rep, "Trying to download {0}".format(nom_fic), general_log_filename)
+  log(aoiContext.writeDir, "Trying to download {0}".format(nom_fic), general_log_filename)
   try:
-    req = urllib2.urlopen(url, timeout=600)
+    req = urllib2.urlopen(url, timeout=60)
     print("request performed for URL: {}".format(url))
     #taille du fichier
     if (req.info().gettype()=='text/html'):
-      log(rep, 'Error: the file has a html format for '.format(nom_fic), general_log_filename)
+      log(aoiContext.writeDir, 'Error: the file has a html format for '.format(nom_fic), general_log_filename)
       lignes=req.read()
       if lignes.find('Download Not Found') > 0 :
            return False
       else:
-          log(rep, lignes, general_log_filename)
-          log(rep, 'Download not found for '.format(nom_fic), general_log_filename)
+          log(aoiContext.writeDir, lignes, general_log_filename)
+          log(aoiContext.writeDir, 'Download not found for '.format(nom_fic), general_log_filename)
 	  return False
     total_size = int(req.info().getheader('Content-Length').strip())
 
     if (total_size<50000):
-       log(rep, "Error: The file is too small to be a Landsat Image: {0}".format(nom_fic), general_log_filename)
-       log(rep, "The used url which generated this error was: {}".format(url), general_log_filename)
+       log(aoiContext.writeDir, "Error: The file is too small to be a Landsat Image: {0}".format(nom_fic), general_log_filename)
+       log(aoiContext.writeDir, "The used url which generated this error was: {}".format(url), general_log_filename)
        return False
 
-    log(rep, "The filename {} has a total size of {}".format(nom_fic,total_size), general_log_filename)
+    log(aoiContext.writeDir, "The filename {} has a total size of {}".format(nom_fic,total_size), general_log_filename)
 
     total_size_fmt = sizeof_fmt(total_size)
-    fullFilename = rep+'/'+nom_fic
+    fullFilename = aoiContext.writeDir+'/'+nom_fic
     if os.path.isfile(fullFilename) and os.stat(fullFilename).st_size == total_size:
-        log(rep, "downloadChunks:File {} already downloaded, returning true".format(fullFilename), general_log_filename)
+        log(aoiContext.writeDir, "downloadChunks:File {} already downloaded, returning true".format(fullFilename), general_log_filename)
         return True
 
     # insert the product name into the downloader_history                                              
     if not db.upsertLandsatProductHistory(aoiContext.siteId, prod_name, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, prod_date, abs_prod_path, aoiContext.maxRetries):
-         log(rep, "Couldn't upsert into database with status DOWNLOADING for {}".format(prod_name), general_log_filename)
+         log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADING for {}".format(prod_name), general_log_filename)
          return False
 
     downloaded = 0
     CHUNK = 1024 * 1024 *8
-    with open(rep+'/'+nom_fic, 'wb') as fp:
+    with open(aoiContext.writeDir+'/'+nom_fic, 'wb') as fp:
         start = time.clock()
-        log(rep, 'Downloading {0} ({1})'.format(nom_fic, total_size_fmt), general_log_filename)
+        log(aoiContext.writeDir, 'Downloading {0} ({1})'.format(nom_fic, total_size_fmt), general_log_filename)
 	while True and not g_exit_flag:
 	     chunk = req.read(CHUNK)
 	     downloaded += len(chunk)
@@ -144,30 +157,30 @@ def downloadChunks(url, rep, prod_name, prod_date, abs_prod_path, aoiContext, db
 	     if not chunk: break
 	     fp.write(chunk)
              if g_exit_flag:
-                  log(rep, "SIGINT signal caught", general_log_filename)
+                  log(aoiContext.writeDir, "SIGINT signal caught", general_log_filename)
                   return
   except socket.timeout, e:
-       log(rep, "Timeout for file {0} ".format(nom_fic), general_log_filename)
+       log(aoiContext.writeDir, "Timeout for file {0} ".format(nom_fic), general_log_filename)
        return False
   except socket.error, e:
-       log(rep, "socket.error for file {0}. Error: {1}".format(nom_fic, e), general_log_filename)
+       log(aoiContext.writeDir, "socket.error for file {0}. Error: {1}".format(nom_fic, e), general_log_filename)
        return False
   except urllib2.HTTPError, e:
        if e.code == 500:
-            log(rep, "File doesn't exist: {0}".format(nom_fic), general_log_filename)
+            log(aoiContext.writeDir, "File doesn't exist: {0}".format(nom_fic), general_log_filename)
        else:
-            log(rep, "HTTP Error for file {0}. Error code: {1}. Url: {2}".format(nom_fic, e.code, url), general_log_filename)
+            log(aoiContext.writeDir, "HTTP Error for file {0}. Error code: {1}. Url: {2}".format(nom_fic, e.code, url), general_log_filename)
        return False
   
   except urllib2.URLError, e:
-       log(rep, "URL Error for file {0} . Reason: {1}. Url: {2}".format(nom_fic, e.reason,url), general_log_filename)
+       log(aoiContext.writeDir, "URL Error for file {0} . Reason: {1}. Url: {2}".format(nom_fic, e.reason,url), general_log_filename)
        return False
-  size = os.stat(rep+'/'+nom_fic).st_size
-  log(rep, "File {0} downloaded with size {1} from a total size of {2}".format(nom_fic,str(size), str(total_size)), general_log_filename)
+  size = os.stat(aoiContext.writeDir+'/'+nom_fic).st_size
+  log(aoiContext.writeDir, "File {0} downloaded with size {1} from a total size of {2}".format(nom_fic,str(size), str(total_size)), general_log_filename)
   if int(total_size) != int(size):
-    log(rep, "File {0} has a different size {1} than the expected one {2}. Will not be marked as downloaded".format(nom_fic,str(size), str(total_size)), general_log_filename)
+    log(aoiContext.writeDir, "File {0} has a different size {1} than the expected one {2}. Will not be marked as downloaded".format(nom_fic,str(size), str(total_size)), general_log_filename)
     if not db.upsertLandsatProductHistory(aoiContext.siteId, prod_name, DATABASE_DOWNLOADER_STATUS_FAILED_VALUE, prod_date, abs_prod_path, aoiContext.maxRetries):
-         log(rep, "Couldn't upsert into database with status DOWNLOADING for {}".format(prod_name), general_log_filename)
+         log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADING for {}".format(prod_name), general_log_filename)
          return False
     return False
   if unzipimage(prod_name, aoiContext.writeDir):
@@ -176,7 +189,7 @@ def downloadChunks(url, rep, prod_name, prod_date, abs_prod_path, aoiContext, db
             log(aoiContext.writeDir, "Couldn't upsert into database with status FAILED for {}".format(prod_name), general_log_filename)
   else:
        if not db.upsertLandsatProductHistory(aoiContext.siteId, prod_name, DATABASE_DOWNLOADER_STATUS_FAILED_VALUE, prod_date, abs_prod_path, aoiContext.maxRetries):
-            log(rep, "Couldn't upsert into database with status DOWNLOADING for {}".format(prod_name), general_log_filename)
+            log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADING for {}".format(prod_name), general_log_filename)
             return False
   #all went well...hopefully
   return True
@@ -280,7 +293,7 @@ def landsat_download(aoiContext):
      general_log_filename = "landsat_download.log"
      general_log_path = aoiContext.writeDir
      usgsFile = aoiContext.remoteSiteCredentials
-
+     proxy = {}
      # read password file
      try:
         f = file(usgsFile)
@@ -288,29 +301,25 @@ def landsat_download(aoiContext):
         if passwd.endswith('\n'):
             passwd=passwd[:-1]
         usgs={'account':account,'passwd':passwd}
+        proxy_line = f.readline().strip('\n\t\r ')
+        print(proxy_line)
+        if(len(proxy_line) > 0):
+             proxy_info = proxy_line.split(' ')
+             print(proxy_info)
+             if len(proxy_info) == 2:
+                  proxy={'host':proxy_info[0], 'port':proxy_info[1]}
+             elif len(proxy_info) == 4:
+                  proxy={'host':proxy_info[0],'port':proxy_info[1],'user':proxy_info[2],'pass':proxy_info[3]}
+             else:
+                  log(general_log_path, "Proxy information erroneous in {} file, second line. It should have the following format: host port [user pass] ".format(aoiContext.remoteSiteCredentials), general_log_filename)
+                  f.close()
+                  return
         f.close()
      except :
         log(general_log_path, "Error with usgs password file", general_log_filename)
         return
-
-
-     if aoiContext.proxy != None :
-        try:
-            f=file(aoiContext.proxy)
-            (user,passwd)=f.readline().split(' ')
-            if passwd.endswith('\n'):
-                passwd=passwd[:-1]
-            host=f.readline()
-            if host.endswith('\n'):
-                host=host[:-1]
-            port=f.readline()
-            if port.endswith('\n'):
-                port=port[:-1]
-            proxy={'user':user,'pass':passwd,'host':host,'port':port}
-            f.close()
-        except :
-            log(general_log_path, "Error with proxy password file", general_log_filename)
-            return
+     print(len(proxy))
+     print(proxy)
 
      db = LandsatAOIInfo(aoiContext.configObj.host, aoiContext.configObj.database, aoiContext.configObj.user, aoiContext.configObj.password)
 
@@ -337,10 +346,11 @@ def landsat_download(aoiContext):
 
          downloaded_ids = []
          connection = False
-         if aoiContext.proxy!=None:
+         if len(proxy) >= 2:
              connection = connect_earthexplorer_proxy(proxy,usgs)
          else:
              connection = connect_earthexplorer_no_proxy(usgs)
+
          if connection == False:
               return
          curr_date=next_overpass(start_date, int(path), product)
@@ -361,7 +371,7 @@ def landsat_download(aoiContext):
                                          url = "http://earthexplorer.usgs.gov/download/{}/{}/STANDARD/EE".format(remoteDir,nom_prod)
 
                                          if aoiContext.fileExists(nom_prod):
-                                             #log(aoiContext.writeDir, "File {} found in history so it's already downloaded".format(nom_prod), general_log_filename))
+                                             log(aoiContext.writeDir, "File {} found in history so it's already downloaded".format(nom_prod), general_log_filename)
                                              #TODO: shall this be unzipped if it does not exist?
                                              if not os.path.exists(lsdestdir):
                                                  log(aoiContext.writeDir, "Trying to decompress {}. If an error will be raised, means that the archived tgz file was phisically erased (manually or automatically) ".format(nom_prod), general_log_filename)
@@ -372,7 +382,7 @@ def landsat_download(aoiContext):
                                          year = date_asc[0:4]
                                          days = date_asc[4:]
                                          prod_date = (datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(days))).strftime("%Y%m%dT000101")
-                                         if downloadChunks(url, aoiContext.writeDir, nom_prod, prod_date, lsdestdir, aoiContext, db):
+                                         if downloadChunks(url, nom_prod, prod_date, lsdestdir, aoiContext, db):
                                               downloaded_ids.append(nom_prod)                                              
          if len(downloaded_ids) > 0:
               log(aoiContext.writeDir, "Downloaded ids: {}".format(downloaded_ids), general_log_filename)
