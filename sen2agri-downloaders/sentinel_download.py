@@ -115,7 +115,7 @@ def product_download(s2Obj, aoiContext, db):
         #update the product name in the downloader_history with status DOWNLOADED (2)
         if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE, s2Obj.product_date_as_string, abs_filename, s2Obj.orbit_id, aoiContext.maxRetries):
             log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADED for {}".format(s2Obj.filename), general_log_filename)
-        return False
+            return False
     else:
         log(aoiContext.writeDir, "Too many clouds to download this product or no tiles to download".format(s2Obj.filename), general_log_filename)
     return True
