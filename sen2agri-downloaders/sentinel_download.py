@@ -85,16 +85,16 @@ def product_download(s2Obj, aoiContext, db):
         cmd_dwn += ["--out", aoiContext.writeDir, "--tiles"]
         for tile in aoiContext.aoiTiles:
             cmd_dwn.append(tile)
-        cmd_dwn += ["-ma", "-p", s2Obj.productname]
+        cmd_dwn += ["--ma", "NAN", "--products", s2Obj.productname]
         if aoiContext.sentinelLocation == "scihub":
-            cmd_dwn.append("-u")
+            cmd_dwn.append("--uuid")
             uid = re.search(r"\('([\w-]+)'\)", s2Obj.link)
             if uid is None:
                 print ("The provided link did not match in order to take the uid. Link: {}".format(s2Obj.link))
                 return False
             cmd_dwn.append(uid.group(1))
         elif aoiContext.sentinelLocation == "amazon":
-            cmd_dwn += ["-s", "AWS"]
+            cmd_dwn += ["--store", "AWS"]
         else:
             log(aoiContext.writeDir, "product_download: The location is not an expected one (scihub or amazon) for product {}".format(s2Obj.filename), general_log_filename)
             return False

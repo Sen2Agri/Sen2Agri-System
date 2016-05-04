@@ -106,7 +106,7 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
   print("INFO STOP")
   log(aoiContext.writeDir, "Trying to download {0}".format(nom_fic), general_log_filename)
   try:
-    req = urllib2.urlopen(url, timeout=60)
+    req = urllib2.urlopen(url, timeout=100)
     print("request performed for URL: {}".format(url))
     #taille du fichier
     if (req.info().gettype()=='text/html'):
