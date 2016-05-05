@@ -21,8 +21,6 @@ UpdateSynthesisFunctor<TInput,TOutput>::UpdateSynthesisFunctor()
     m_nPrevL3APixelFlagBandIndex = -1;
     m_nRedBandIndex = -1;
     m_nBlueBandIndex = -1;
-
-    m_fReflNoDataValue = -10.0;
 }
 
 template< class TInput, class TOutput>
@@ -46,7 +44,7 @@ UpdateSynthesisFunctor<TInput,TOutput>& UpdateSynthesisFunctor<TInput,TOutput>::
     m_nRedBandIndex = copy.m_nRedBandIndex;
     m_nBlueBandIndex = copy.m_nBlueBandIndex;
 
-    m_fReflNoDataValue = copy.m_fReflNoDataValue;
+    //m_fReflNoDataValue = copy.m_fReflNoDataValue;
 
     return *this;
 }
@@ -58,7 +56,6 @@ void UpdateSynthesisFunctor<TInput,TOutput>::Initialize(const std::vector<int> p
     m_nCurrentDate = nDate;
     m_fReflQuantifValue = fReflQuantifVal;
     m_bPrevL3ABandsAvailable = bPrevL3ABandsAvailable;
-    m_fReflNoDataValue = NO_DATA_VALUE/m_fReflQuantifValue;
     m_arrL2ABandPresence = presenceVect;
 
     m_nNbOfL3AReflectanceBands = presenceVect.size();
@@ -148,11 +145,13 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
     {
         // Normalize the values
         if(outInfos.m_CurrentWeightedReflectances[i] < 0) {
-            outInfos.m_CurrentWeightedReflectances[i] = m_fReflNoDataValue;
+            //outInfos.m_CurrentWeightedReflectances[i] = NO_DATA_VALUE;
+            var[cnt++] = NO_DATA_VALUE;
+        } else {
+            // we save back the pixel value but as digital value and not as reflectance
+            var[cnt++] = short(outInfos.m_CurrentWeightedReflectances[i] * DEFAULT_COMPOSITION_QUANTIF_VALUE);
+            //var[cnt++] = outInfos.m_CurrentWeightedReflectances[i];
         }
-        // we save back the pixel value but as digital value and not as reflectance
-        var[cnt++] = short(outInfos.m_CurrentWeightedReflectances[i] * m_fReflQuantifValue);
-        //var[cnt++] = outInfos.m_CurrentWeightedReflectances[i];
     }
     // Pixel status
     var[cnt++] = outInfos.m_nCurrentPixelFlag;
@@ -215,8 +214,8 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleLandPixel(const TInput & A, O
             float fCurrentWeight = GetCurrentL2AWeightValue(A);
             float fPrevWeightedDate = GetPrevL3AWeightedAvDateValue(A);
 
-            bool bIsPrevReflNoData = IsNoDataValue(fPrevReflect, m_fReflNoDataValue);
-            bool bIsCurReflNoData = IsNoDataValue(fCurReflectance, m_fReflNoDataValue);
+            bool bIsPrevReflNoData = IsNoDataValue(fPrevReflect, NO_DATA_VALUE);
+            bool bIsCurReflNoData = IsNoDataValue(fCurReflectance, NO_DATA_VALUE);
             if(!bIsCurReflNoData) {
                 bAllReflsAreNoData = false;
             }
@@ -287,7 +286,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
                 float fCurRefl = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
                 // check if the current reflectance is valid (maybe we have missing areas)
                 // in this case, we will keep the existing reflectance
-                if(IsNoDataValue(fCurRefl, m_fReflNoDataValue)) {
+                if(IsNoDataValue(fCurRefl, NO_DATA_VALUE)) {
                     outInfos.m_CurrentWeightedReflectances[i] = GetPrevL3AReflectanceValue(A, i);
                 } else {
                     outInfos.m_CurrentWeightedReflectances[i] = fCurRefl;
@@ -333,7 +332,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
             if(nCurrentBandIndex != -1)
             {
                 float fCurReflectance = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
-                bool bIsCurReflNoData = IsNoDataValue(fCurReflectance, m_fReflNoDataValue);
+                bool bIsCurReflNoData = IsNoDataValue(fCurReflectance, NO_DATA_VALUE);
                 if(!bIsCurReflNoData) {
                     bAllReflsAreNoData = false;
                 }
@@ -348,7 +347,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                     outInfos.m_nCurrentPixelFlag = IMG_FLG_CLOUD;
                 }
             } else {
-                outInfos.m_CurrentWeightedReflectances[i] = m_fReflNoDataValue;
+                outInfos.m_CurrentWeightedReflectances[i] = NO_DATA_VALUE;
                 float fPrevWeight = GetPrevL3AWeightValue(A, i);
                 if(IsNoDataValue(fPrevWeight, WEIGHT_NO_DATA)) {
                     outInfos.m_CurrentPixelWeights[i] = WEIGHT_NO_DATA; // TODO: This is not conform to ATBD but seems more natural
@@ -493,15 +492,20 @@ template< class TInput, class TOutput>
 float UpdateSynthesisFunctor<TInput,TOutput>::GetPrevL3AReflectanceValue(const TInput & A, int offset)
 {
     if(!m_bPrevL3ABandsAvailable || m_nPrevL3AReflectanceBandStartIndex == -1)
-        return m_fReflNoDataValue;
+        return NO_DATA_VALUE;
 
     // the L3A bands presence follow the L2A bands presence.
     // If we have missing L3A bands in input, then we need to recompute the relative offset
     int relIdx = m_arrL2ABandPresence[offset];
     if(relIdx != -1) {
-        return static_cast<float>(A[m_nPrevL3AReflectanceBandStartIndex + relIdx])/m_fReflQuantifValue;
+        // Here we convert to quantified value only if different of NO_DATA
+        float fPixelVal = static_cast<float>(A[m_nPrevL3AReflectanceBandStartIndex + relIdx]);
+        if(fPixelVal < 0) {
+            return NO_DATA_VALUE;
+        }
+        return fPixelVal/DEFAULT_COMPOSITION_QUANTIF_VALUE;
     }
-    return m_fReflNoDataValue;
+    return NO_DATA_VALUE;
 }
 
 template< class TInput, class TOutput>

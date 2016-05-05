@@ -612,6 +612,8 @@ QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productForma
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3a.");
 
+    const auto &lutFile = configParameters["processor.l3a.lut_path"];
+
     const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
@@ -631,6 +633,11 @@ QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productForma
                                          "-outprops", outPropsPath};
     productFormatterArgs += "-il";
     productFormatterArgs += listProducts[listProducts.size() - 1];
+
+    if(lutFile.size() > 0) {
+        productFormatterArgs += "-lut";
+        productFormatterArgs += lutFile;
+    }
 
     productFormatterArgs += "-processor.composite.refls";
     for(const CompositeProductFormatterParams &params: productParams) {

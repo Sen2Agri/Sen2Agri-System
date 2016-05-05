@@ -19,7 +19,9 @@
 #include <vector>
 #include "GlobalDefs.h"
 
-#define WEIGHT_QUANTIF_VALUE    10000
+#define WEIGHT_QUANTIF_VALUE    1000
+
+#define DEFAULT_COMPOSITION_QUANTIF_VALUE   DEFAULT_QUANTIFICATION_VALUE
 
 #define DATE_NO_DATA            NO_DATA_VALUE
 #define WEIGHT_NO_DATA          (NO_DATA_VALUE/WEIGHT_QUANTIF_VALUE)      //  NO_DATA / WEIGHT_QUANTIF_VALUE
@@ -96,7 +98,7 @@ private:
     int m_nBlueBandIndex;
 
     // precomputed value for the reflectance no data (in order to avoid its calculation each pixel)
-    float m_fReflNoDataValue;
+    //float m_fReflNoDataValue;
 
     std::vector<int> m_arrL2ABandPresence;
 

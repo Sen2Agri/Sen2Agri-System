@@ -61,9 +61,12 @@ private:
         AddParameter(ParameterType_OutputImage, "out", "The output image");
         AddParameter(ParameterType_InputFilename, "map", "The color mapping");
 
-        AddParameter(ParameterType_Int, "bandidx", "Specifies the band index to be used from the input image (default 0)");
-        SetDefaultParameterInt("bandidx", 0);
+        AddParameter(ParameterType_StringList, "bandidx", "Specifies the band index(es) to be used from the input image");
         MandatoryOff("bandidx");
+
+        AddParameter(ParameterType_Int, "rgbimg", "Specifies if the input image has at least 3 bands that will be translated to RGB");
+        SetDefaultParameterInt("rgbimg", 0);
+        MandatoryOff("rgbimg");
 
         SetDocExampleParameterValue("in", "in.tif");
         SetDocExampleParameterValue("out", "out.tif");
@@ -82,20 +85,43 @@ private:
             itkExceptionMacro("Unable to open " << file);
         }
 
-        auto &&ramp = ReadColorMap(mapFile);
-
+        bool bIsRGBImage = (GetParameterInt("rgbimg") != 0);
         const auto &in = GetParameterFloatVectorImage("in");
-        int bandIdx = GetParameterInt("bandidx");
         in->UpdateOutputInformation();
         int nbBands = in->GetNumberOfComponentsPerPixel();
-        if(bandIdx < 0 || bandIdx >= nbBands) {
-            bandIdx = 0;
+
+        std::vector<int> bandIdx;
+        if(HasValue("bandidx")) {
+            std::vector<std::string> bandIdxStr = GetParameterStringList("bandidx");
+            if(bIsRGBImage && bandIdxStr.size() != 3) {
+                itkExceptionMacro("Invalid number of bandidx " << bandIdxStr.size() << " when rgbimg is set!");
+            }
+            if(bandIdxStr.size() > 0 && bandIdxStr.size() <= 3) {
+                for(unsigned int i = 0; i<bandIdxStr.size(); i++) {
+                    bandIdx.emplace_back(std::stoi(bandIdxStr[i]));
+                    if(bandIdx[i] < 0 || bandIdx[i] >= nbBands) {
+                        itkExceptionMacro("Band idx at position " << i << " is invalid. Number of bands is " << nbBands);
+                    }
+                }
+            }
+        } else {
+            if(bIsRGBImage) {
+                bandIdx.emplace_back(2);
+                bandIdx.emplace_back(1);
+                bandIdx.emplace_back(0);
+            } else {
+                bandIdx.emplace_back(0);
+            }
         }
+
+        auto &&ramp = bIsRGBImage ? ReadRGBColorMap(mapFile) : ReadColorMap(mapFile);
+
         m_Filter = ContinuousColorMappingFilter::New();
         m_Filter->SetInput(in);
 
         m_Filter->GetFunctor().SetRamp(std::move(ramp));
         m_Filter->GetFunctor().SetBandIndex(bandIdx);
+        m_Filter->GetFunctor().SetIsRGBImg(bIsRGBImage);
 
         m_Filter->UpdateOutputInformation();
 
@@ -124,6 +150,28 @@ private:
 
         return ramp;
     }
+
+    Ramp ReadRGBColorMap(std::istream &mapFile)
+    {
+        Ramp ramp;
+
+        float min, max;
+        uint32_t rMin, rMax;
+        while (mapFile >> min >> max >> rMin >> rMax)
+        {
+            itk::RGBPixel<uint8_t> minColor, maxColor;
+            minColor[0] = static_cast<uint8_t>(rMin);
+            maxColor[0] = static_cast<uint8_t>(rMax);
+
+            ramp.emplace_back(min, max, minColor, maxColor);
+        }
+        if(ramp.size() < 3) {
+            itkExceptionMacro("Invalid number of rows in map file. It should be at least 3 but we found only " << ramp.size());
+        }
+
+        return ramp;
+    }
+
 
     ContinuousColorMappingFilter::Pointer m_Filter;
 };

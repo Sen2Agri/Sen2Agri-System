@@ -20,6 +20,7 @@
 #include "itkBinaryFunctorImageFilter.h"
 #include "otbImageFileReader.h"
 #include "otbImageFileWriter.h"
+#include "GlobalDefs.h"
 
 namespace Functor
 {
@@ -50,7 +51,7 @@ public:
     const float dA = static_cast< float >( A );
     const float dB = static_cast< float >( B );
     if(dA < 0 || dB < 0) {
-        return -10000;
+        return WEIGHT_NO_DATA_VALUE;
     }
     const float totalWeight = fabs(dA * dB * m_fixedWeight);
 

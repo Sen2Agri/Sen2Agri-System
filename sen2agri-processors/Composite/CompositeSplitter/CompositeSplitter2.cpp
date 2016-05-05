@@ -87,6 +87,10 @@ private:
         SetDefaultParameterInt("res", -1);
         MandatoryOff("res");
 
+        AddParameter(ParameterType_Int, "isfinal", "Specifies if it is the final splitter from the composition.");
+        SetDefaultParameterInt("isfinal", 0);
+        MandatoryOff("isfinal");
+
         AddParameter(ParameterType_OutputImage, "outrgb", "Output rgb filename");
         MandatoryOff("outrgb");
     }

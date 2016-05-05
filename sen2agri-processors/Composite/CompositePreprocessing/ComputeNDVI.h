@@ -26,21 +26,21 @@
 #include "ImageResampler.h"
 
 template< class TInput, class TOutput>
-class NdviRviFunctor
+class NdviFunctor
 {
 public:
-    NdviRviFunctor() {}
-    ~NdviRviFunctor() {}
+    NdviFunctor() {}
+    ~NdviFunctor() {}
     void Initialize(int nRedBandIdx, int nNirBandIdx) {
         m_nRedBandIdx = nRedBandIdx;
         m_nNirBandIdx = nNirBandIdx;
   }
 
-  bool operator!=( const NdviRviFunctor & ) const
+  bool operator!=( const NdviFunctor & ) const
   {
     return false;
   }
-  bool operator==( const NdviRviFunctor & other ) const
+  bool operator==( const NdviFunctor & other ) const
   {
     return !(*this != other);
   }
@@ -50,7 +50,7 @@ public:
       double redVal = A[m_nRedBandIdx];
       double nirVal = A[m_nNirBandIdx];
       if((fabs(redVal - NO_DATA_VALUE) < 0.000001) || (fabs(nirVal - NO_DATA_VALUE) < 0.000001)) {
-          ret = NO_DATA_VALUE;
+          ret = 0;
       } else {
         if(fabs(redVal + nirVal) < 0.000001) {
             ret = 0;
@@ -74,7 +74,7 @@ public:
     typedef otb::Wrapper::Int16VectorImageType                                      ImageType;
     typedef otb::ImageFileReader<ImageType>                                         ImageReaderType;
     typedef itk::UnaryFunctorImageFilter<ImageType,OutputImageType,
-                    NdviRviFunctor<
+                    NdviFunctor<
                         ImageType::PixelType,
                         OutputImageType::PixelType> > FilterType;
     typedef otb::ImageFileWriter<OutputImageType>      WriterType;

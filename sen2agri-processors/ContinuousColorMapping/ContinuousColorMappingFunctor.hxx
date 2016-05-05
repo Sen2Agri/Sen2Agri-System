@@ -31,6 +31,16 @@ itk::RGBPixel<float> Lerp(float t, const itk::RGBPixel<T> &p1, const itk::RGBPix
 }
 
 template<typename T>
+itk::RGBPixel<float> LerpRGB(float t, const itk::RGBPixel<T> &p1, const itk::RGBPixel<T> &p2)
+{
+    itk::RGBPixel<T> result;
+    result[0] = p1[0] * (1.0f - t) + p2[0] * t;
+    result[1] = p1[1] * (1.0f - t) + p2[1] * t;
+    result[2] = p1[2] * (1.0f - t) + p2[2] * t;
+    return result;
+}
+
+template<typename T>
 itk::RGBPixel<T> Round(const itk::RGBPixel<float> &p)
 {
     itk::RGBPixel<T> result;
@@ -73,9 +83,14 @@ public:
         m_Ramp = std::move(ramp);
     }
 
-    void SetBandIndex(int bandIdx)
+    void SetBandIndex(std::vector<int> bandIdx)
     {
         m_BandIdx = bandIdx;
+    }
+
+    void SetIsRGBImg(bool bIsRGBImg)
+    {
+        m_bIsRGBImg = bIsRGBImg;
     }
 
     const Ramp & GetNoDataValue() const
@@ -88,20 +103,37 @@ public:
         OutputPixelType result;
         result.Fill(0);
 
-        for (const auto &entry : m_Ramp)
-        {
-            if (in[m_BandIdx] >= entry.min && in[m_BandIdx] < entry.max)
+        if(m_bIsRGBImg) {
+            itk::RGBPixel<uint8_t> curResult;
+            for(int i = 0; i<3; i++) {
+                const auto &entry = m_Ramp[i];
+                float inVal = in[m_BandIdx[i]];
+                float t = (inVal - entry.min) / (entry.max - entry.min);
+                curResult[i] = entry.minColor[0] * (1.0f - t) + entry.maxColor[0] * t;
+                /*
+                float fOutVal2 = (((inVal - entry.min) * (entry.maxColor[0] - entry.minColor[0])) / (entry.max - entry.min)) + entry.minColor[0];
+                curResult[i] = fOutVal1;
+                if(inVal != -10000)
+                    curResult[i] = fOutVal1;
+                */
+            }
+            result = Round<uint8_t>(curResult);
+        } else {
+            for (const auto &entry : m_Ramp)
             {
-                float t = (in[m_BandIdx] - entry.min) / (entry.max - entry.min);
-                result = Round<uint8_t>(Lerp(t, entry.minColor, entry.maxColor));
-                break;
+                if (in[m_BandIdx[0]] >= entry.min && in[m_BandIdx[0]] < entry.max)
+                {
+                    float t = (in[m_BandIdx[0]] - entry.min) / (entry.max - entry.min);
+                    result = Round<uint8_t>(Lerp(t, entry.minColor, entry.maxColor));
+                    break;
+                }
             }
         }
-
         return result;
     }
 
 private:
     Ramp m_Ramp;
-    int m_BandIdx;
+    std::vector<int> m_BandIdx;
+    bool m_bIsRGBImg;
 };

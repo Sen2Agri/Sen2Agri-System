@@ -104,6 +104,7 @@ parser.add_argument('--bandsmap', help="Bands mapping file location", required=T
 parser.add_argument('--scatteringcoef', help="Scattering coefficient file. This file is requested in S2 case ONLY", required=False)
 parser.add_argument('--tileid', help="Tile id", required=False)
 parser.add_argument('--siteid', help='The site ID', required=False)
+parser.add_argument('--lut', help="Lookup table", required=False)
 
 USE_COMPRESSION=True
 REMOVE_TEMP=False
@@ -166,6 +167,7 @@ outRGB = outDir + '/L3AResult#_rgb.tif'
 shapeFile = outDir + '/ClippingShape.shp'
 
 fullScatCoeffs=[]
+fullLut=[]
 tileID="TILE_none"
 
 if os.path.exists(outDir):
@@ -184,6 +186,10 @@ if args.scatteringcoef:
     fullScatCoeffs = ["-scatcoef", outDir + scatteringCoefFilename]
     print(fullScatCoeffs)
 
+if args.lut:
+    fullLut = ["-lut", args.lut]
+    print(fullScatCoeffs)
+    
 if args.tileid:
     tileID = "TILE_{}".format(args.tileid)
 
@@ -378,7 +384,8 @@ runCmd(["otbcli", "ProductFormatter", appLocation,
     "-processor.composite.dates", tileID, out_d, 
     "-processor.composite.rgb", tileID, out_rgb, 
     "-il"] + args.input + [
-    "-gipp", paramsFilenameXML])
+    "-gipp", paramsFilenameXML] + 
+    fullLut)
 
 if REMOVE_TEMP:
     counterString = str(i)

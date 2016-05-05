@@ -84,7 +84,11 @@ TOutput DirectionalCorrectionFunctor<TInput,TOutput>::operator()( const TInput &
                     ScaterringFunctionCoefficients &coeffs = m_ScatteringCoeffs[i];
                     double kV = coeffs.V0 + coeffs.V1 * A[m_nNdviBandIdx];
                     double kR = coeffs.R0 + coeffs.R1 * A[m_nNdviBandIdx];
-                    var[i] = fReflVal * dirModel0.dir_mod(kV, kR)/dirModel.dir_mod(kV, kR);
+                    float fNewReflVal = fReflVal * dirModel0.dir_mod(kV, kR)/dirModel.dir_mod(kV, kR);
+                    if(fNewReflVal < 0) {
+                        fNewReflVal = fReflVal;
+                    }
+                    var[i] = fNewReflVal;
                 }
             }
         }

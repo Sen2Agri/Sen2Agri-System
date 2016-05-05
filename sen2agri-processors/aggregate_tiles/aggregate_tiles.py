@@ -55,6 +55,7 @@ from xml.dom.minidom import parse, parseString
 import datetime
 
 LAI_MAP_PATH = "/usr/share/sen2agri/lai.map"
+COMPOSITE_MAP_PATH = "/usr/share/sen2agri/composite.map"
 
 #---------------------------------------------------------------
 #max number of Channels in Channel List for otb Quicklook application
@@ -71,12 +72,13 @@ def quicklook_mosaic(inpFileName, outFileName, channelList):
                  "-out", outFileName])
                  
 #----------------------------------------------------------------
-def create_l3b_rgb_image(post_process_out_filename, newRgbTif):
+def create_rgb_image(post_process_out_filename, newRgbTif, lutMap, isRGB):
     run_command(["otbcli",
                  "ContinuousColorMapping",
                  "-in",post_process_out_filename,
                  "-out", newRgbTif,
-                 "-map", LAI_MAP_PATH])
+                 "-map", lutMap,
+                 "-rgbimg", ("1" if isRGB else "0")])
                  
 #----------------------------------------------------------------
 def process_mosaic_images(interpolName, listOfImages, imgAggregatedName):
@@ -1072,9 +1074,16 @@ def create_mosaic_quicklook(context):
 
    product_proc_level = get_product_processing_level(context)
    print("--------->product_proc_level: {}".format(product_proc_level))
-   if product_proc_level == "L3B" :
+   if (product_proc_level == "L3A") or (product_proc_level == "L3B") or (product_proc_level == "L3C") or (product_proc_level == "L3D") :
+      if (product_proc_level == "L3A") :
+         lut_map = COMPOSITE_MAP_PATH
+         is_rgb_img = True
+      else :
+         lut_map = LAI_MAP_PATH
+         is_rgb_img = False
+
       newRgbTif = context.post_process_out_filename + "_RGB.tif"
-      create_l3b_rgb_image(context.post_process_out_filename, newRgbTif)
+      create_rgb_image(context.post_process_out_filename, newRgbTif, lut_map, is_rgb_img)
       quicklook_mosaic(newRgbTif, context.quicklook_out_filename, ["Channel1", "Channel2", "Channel3"])
       os.remove(newRgbTif)
    else:

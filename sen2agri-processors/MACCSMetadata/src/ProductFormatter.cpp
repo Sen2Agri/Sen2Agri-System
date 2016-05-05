@@ -329,6 +329,9 @@ private:
         AddParameter(ParameterType_InputFilenameList, "gipp", "The GIPP files");
         MandatoryOff("gipp");
 
+        AddParameter(ParameterType_String, "lut", "The LUT file");
+        MandatoryOff("lut");
+
         AddParameter(ParameterType_Int, "aggregatescale", "The aggregate rescale resolution");
         MandatoryOff("aggregatescale");
         SetDefaultParameterInt("aggregatescale", 60);
@@ -358,6 +361,11 @@ private:
       //get time period (first product date and last product date)
       if(HasValue("timeperiod")) {
         m_strTimePeriod = this->GetParameterString("timeperiod");
+      }
+
+      //get time period (first product date and last product date)
+      if(HasValue("lut")) {
+        m_strLutFile = this->GetParameterString("lut");
       }
 
       //get processing baseline
@@ -867,45 +875,44 @@ private:
       return extent;
   }
 
+  bool generateRgbFromLut(const std::string &rasterFullFilePath, const std::string &ourRasterFullFilePath, const std::string &lutMap, bool bIsRgbImg)
+  {
+      std::vector<const char *> args;
+      args.emplace_back("ContinuousColorMapping");
+      args.emplace_back("-in");
+      args.emplace_back(rasterFullFilePath.c_str());
+      args.emplace_back("-out");
+      args.emplace_back(ourRasterFullFilePath.c_str());
+      args.emplace_back("-map");
+      args.emplace_back(lutMap.c_str());
+      args.emplace_back("-rgbimg");
+      args.emplace_back(std::to_string(bIsRgbImg).c_str());
+
+      return ExecuteExternalProgram("otbcli", args);
+  }
+
   bool generateQuicklook(const std::string &rasterFullFilePath, const std::vector<std::string> &channels,const std::string &jpegFullFilePath)
   {
-      int error, status;
-          pid_t pid, waitres;
-//          /* Make sure we have no child processes. */
-//          while (waitpid(-1, NULL, 0) != -1)
-//              ;
-//          assert(errno == ECHILD);
+      std::vector<const char *> args;
+      args.emplace_back("-in");
+      args.emplace_back(rasterFullFilePath.c_str());
+      args.emplace_back("-out");
+      args.emplace_back(jpegFullFilePath.c_str());
+      //args.emplace_back("uint8");
+      args.emplace_back("-sr");
+      args.emplace_back("10");
+      args.emplace_back("-cl");
+      for (const auto &channel : channels) {
+          args.emplace_back(channel.c_str());
+      }
+      bool bRet = ExecuteExternalProgram("otbcli_Quicklook", args);
 
-          std::vector<const char *> args;
-          args.emplace_back("otbcli_Quicklook");
-          args.emplace_back("-in");
-          args.emplace_back(rasterFullFilePath.c_str());
-          args.emplace_back("-out");
-          args.emplace_back(jpegFullFilePath.c_str());
-          args.emplace_back("uint8");
-          args.emplace_back("-sr");
-          args.emplace_back("10");
-          args.emplace_back("-cl");
-          for (const auto &channel : channels) {
-              args.emplace_back(channel.c_str());
-          }
-          args.emplace_back(nullptr);
+      //remove  file with extension jpg.aux.xml generated after preview obtained
+      std::string strFileToBeRemoved = jpegFullFilePath + ".aux.xml";
+      //std::cout << "Remove file: " <<  strFileToBeRemoved<< std::endl;
+      remove(strFileToBeRemoved.c_str());
 
-          posix_spawnattr_t attr;
-          posix_spawnattr_init(&attr);
-          posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
-          error = posix_spawnp(&pid, args[0], NULL, &attr, (char *const *)args.data(), NULL);
-          if(error != 0) {
-              otbAppLogWARNING("Error creating process for otbcli_Quicklook. The preview file will not be created. Error was: " << error);
-              return false;
-          }
-          posix_spawnattr_destroy(&attr);
-          waitres = waitpid(pid, &status, 0);
-          if(waitres == pid && (WIFEXITED(status) && WEXITSTATUS(status) == 0)) {
-              return true;
-          }
-          otbAppLogWARNING("Error running otbcli_Quicklook. The preview file might not be created. The return of otbcli_Quicklook was: " << status);
-          return false;
+      return bRet;
   }
 
   void generateTileMetadataFile(tileInfo &tileInfoEl)
@@ -1470,11 +1477,26 @@ private:
       std::string strTilePreviewFullPath;
       int iChannelNo = 1;
       std::vector<std::string> strChannelsList;
+      // check if we should use the LUT table for LAI
+      bool bUseLut = false;
+      bool bIsRgbImg = false;
 
       if ((m_strProductLevel.compare("L2A") == 0) ||
-          (m_strProductLevel.compare("L3A") == 0) )
+          (m_strProductLevel.compare("L3A") == 0))
       {
           iChannelNo = 3;
+          if(m_strLutFile != "") {
+            bUseLut = true;
+            bIsRgbImg = true;
+          }
+      }
+      if(((m_strProductLevel.compare("L3B") == 0) ||
+          (m_strProductLevel.compare("L3C") == 0) ||
+          (m_strProductLevel.compare("L3D") == 0)) &&
+          (m_strLutFile != ""))
+      {
+            iChannelNo = 3;
+            bUseLut = true;
       }
 
       //std::cout << "ChannelNo = " << iChannelNo << std::endl;
@@ -1489,38 +1511,31 @@ private:
 
               if(tileID.strTileID == previewFileEl.strTileID)
               {
-//                //for the moment the preview file for product and tile are the same
-
-//                //build product preview file name
-//                 strProductPreviewFullPath = BuildFileName(QUICK_L0OK_IMG_CATEG, "", JPEG_EXTENSION);
-
-//                 m_productMetadata.GeneralInfo.ProductInfo.PreviewImageURL = strProductPreviewFullPath;
-
-//                 strProductPreviewFullPath = m_strDestRoot + "/" + m_strProductDirectoryName + "/" + strProductPreviewFullPath;
-
-                 //std::cout << "ProductPreviewFullPath = " << strProductPreviewFullPath << std::endl;
-
                  //build producty preview file name for tile
                  strTilePreviewFullPath = tileID.strTileNameWithoutExt + JPEG_EXTENSION;
                  strTilePreviewFullPath = ReplaceString(strTilePreviewFullPath, METADATA_CATEG, QUICK_L0OK_IMG_CATEG);
-                 //transform .tif file in .jpg file directly in tile directory
-                 if(!generateQuicklook(previewFileEl.strPreviewFileName, strChannelsList, strTilePreviewFullPath)) {
-                     otbAppLogWARNING("Error creating quickloof file " << strTilePreviewFullPath);
+
+                 bool bQuicklookGenerated = false;
+                 if(bUseLut) {
+                     std::string outL3BRgbPreviewFile = previewFileEl.strPreviewFileName + "_RGB.tif";
+                     if(!generateRgbFromLut(previewFileEl.strPreviewFileName, outL3BRgbPreviewFile, m_strLutFile, bIsRgbImg)) {
+                         otbAppLogWARNING("Error creating RGB file from LUT " << strTilePreviewFullPath);
+                     } else {
+                         //transform .tif file in .jpg file directly in tile directory
+                         if(!generateQuicklook(outL3BRgbPreviewFile, strChannelsList, strTilePreviewFullPath)) {
+                             otbAppLogWARNING("Error creating quicklook file " << strTilePreviewFullPath);
+                         } else {
+                             bQuicklookGenerated = true;
+                         }
+                     }
+                     remove(outL3BRgbPreviewFile.c_str());
                  }
-
-
-//                 //transform .tif file in .jpg file directly in product directory
-//                 if(generateQuicklook(previewFileEl.strPreviewFileName, strChannelsList, strTilePreviewFullPath)) {
-//                     //build producty preview file name for tile
-//                     strTilePreviewFullPath = tileID.strTileNameWithoutExt + JPEG_EXTENSION;
-//                     strTilePreviewFullPath = ReplaceString(strTilePreviewFullPath, METADATA_CATEG, QUICK_L0OK_IMG_CATEG);
-//                     CopyFile(strTilePreviewFullPath, strProductPreviewFullPath);
-//                 }
-                 //remove  file with extension jpg.aux.xml generated after preview obtained
-
-                 std::string strFileToBeRemoved = strTilePreviewFullPath + ".aux.xml";
-                 //std::cout << "Remove file: " <<  strFileToBeRemoved<< std::endl;
-                 remove(strFileToBeRemoved.c_str());
+                 if(!bQuicklookGenerated) {
+                     //transform .tif file in .jpg file directly in tile directory
+                     if(!generateQuicklook(previewFileEl.strPreviewFileName, strChannelsList, strTilePreviewFullPath)) {
+                         otbAppLogWARNING("Error creating quickloof file " << strTilePreviewFullPath);
+                     }
+                 }
             }
         }
       }
@@ -1676,10 +1691,16 @@ private:
           int error, status;
           pid_t pid, waitres;
           std::vector<const char *> args;
+          std::string cmdInfo;
           args.emplace_back(appExe);
+          cmdInfo = appExe;
           for(unsigned int i = 0; i<appArgs.size(); i++) {
                 args.emplace_back(appArgs[i]);
+                cmdInfo += " ";
+                cmdInfo += appArgs[i];
           }
+          otbAppLogINFO("Executing external command: " << cmdInfo);
+
           args.emplace_back(nullptr);
 
           posix_spawnattr_t attr;
@@ -1806,6 +1827,7 @@ private:
 private:
   std::string m_strProductLevel;
   std::string m_strTimePeriod;
+  std::string m_strLutFile;
   std::string m_strDestRoot;
   std::string m_strBaseline;
   std::string m_strSiteId;

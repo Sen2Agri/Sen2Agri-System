@@ -874,6 +874,8 @@ QStringList LaiRetrievalHandler::GetReprocProductFormatterArgs(TaskToSubmit &pro
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
+    const auto &lutFile = configParameters["processor.l3b.lai.lut_path"];
+
     WriteExecutionInfosFile(executionInfosPath, configParameters, listProducts, !isFitted);
     QString l3ProductType = isFitted ? "L3D" : "L3C";
     QString productShortName = isFitted ? "l3d_fitted": "l3c_reproc";
@@ -890,6 +892,11 @@ QStringList LaiRetrievalHandler::GetReprocProductFormatterArgs(TaskToSubmit &pro
                             "-outprops", outPropsPath};
     productFormatterArgs += "-il";
     productFormatterArgs += listProducts;
+
+    if(lutFile.size() > 0) {
+        productFormatterArgs += "-lut";
+        productFormatterArgs += lutFile;
+    }
 
     if(isFitted) {
         productFormatterArgs += "-processor.vegetation.filelaifit";
