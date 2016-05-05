@@ -145,14 +145,14 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
         log(aoiContext.writeDir, 'Downloading {0} ({1})'.format(nom_fic, total_size_fmt), general_log_filename)
 	while True and not g_exit_flag:
 	     chunk = req.read(CHUNK)
-	     downloaded += len(chunk)
+             downloaded += len(chunk)
 	     done = int(50 * downloaded / total_size)
 	     sys.stdout.write('\r[{1}{2}]{0:3.0f}% {3}ps'
-                             .format(math.floor((float(downloaded)
-                                                 / total_size) * 100),
-                                     '=' * done,
-                                     ' ' * (50 - done),
-                                     sizeof_fmt((downloaded // (time.clock() - start)) / 8)))
+                              .format(math.floor((float(downloaded)
+                                                  / total_size) * 100),
+                                      '=' * done,
+                                      ' ' * (50 - done),
+                                      sizeof_fmt((downloaded // (time.clock() - start)) / 8)))
 	     sys.stdout.flush()
 	     if not chunk: break
 	     fp.write(chunk)
@@ -302,10 +302,9 @@ def landsat_download(aoiContext):
             passwd=passwd[:-1]
         usgs={'account':account,'passwd':passwd}
         proxy_line = f.readline().strip('\n\t\r ')
-        print(proxy_line)
         if(len(proxy_line) > 0):
+             log(general_log_path, "Found proxy info: {}".format(proxy_line), general_log_filename)
              proxy_info = proxy_line.split(' ')
-             print(proxy_info)
              if len(proxy_info) == 2:
                   proxy={'host':proxy_info[0], 'port':proxy_info[1]}
              elif len(proxy_info) == 4:
@@ -314,12 +313,11 @@ def landsat_download(aoiContext):
                   log(general_log_path, "Proxy information erroneous in {} file, second line. It should have the following format: host port [user pass] ".format(aoiContext.remoteSiteCredentials), general_log_filename)
                   f.close()
                   return
+             log(general_log_path, "Proxy info: {}".format(proxy), general_log_filename)        
         f.close()
      except :
         log(general_log_path, "Error with usgs password file", general_log_filename)
         return
-     print(len(proxy))
-     print(proxy)
 
      db = LandsatAOIInfo(aoiContext.configObj.host, aoiContext.configObj.database, aoiContext.configObj.user, aoiContext.configObj.password)
 

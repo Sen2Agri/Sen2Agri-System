@@ -142,24 +142,22 @@ def sentinel_download(aoiContext):
         if passwd.endswith('\n'):
             passwd=passwd[:-1]
         proxy_line = f.readline().strip('\n\t\r ')
-        print(proxy_line)
-        if(len(proxy_line) > 0):
-             proxy_info = proxy_line.split(' ')
-             print(proxy_info)
-             if len(proxy_info) == 2:
-                  proxy={'host':proxy_info[0], 'port':proxy_info[1]}
-             elif len(proxy_info) == 4:
-                  proxy={'host':proxy_info[0],'port':proxy_info[1],'user':proxy_info[2],'pass':proxy_info[3]}
-             else:
-                  log(general_log_path, "Proxy information erroneous in {} file, second line. It should have the following format: host port [user pass] ".format(aoiContext.remoteSiteCredentials), general_log_filename)        
-                  f.close()
-                  return
+        if(len(proxy_line) > 0):            
+            log(general_log_path, "Found proxy info: {}".format(proxy_line), general_log_filename)        
+            proxy_info = proxy_line.split(' ')            
+            if len(proxy_info) == 2:
+                proxy={'host':proxy_info[0], 'port':proxy_info[1]}
+            elif len(proxy_info) == 4:
+                proxy={'host':proxy_info[0],'port':proxy_info[1],'user':proxy_info[2],'pass':proxy_info[3]}
+            else:
+                log(general_log_path, "Proxy information erroneous in {} file, second line. It should have the following format: host port [user pass] ".format(aoiContext.remoteSiteCredentials), general_log_filename)        
+                f.close()
+                return
+            log(general_log_path, "Proxy info: {}".format(proxy), general_log_filename)        
         f.close()
     except :
         log(aoiContext.writeDir, "error with password file ".format(str(apihubFile)), general_log_filename)
         return
-    print(len(proxy))
-    print(proxy)
 
     s2Objs = []
     index = int(0)
