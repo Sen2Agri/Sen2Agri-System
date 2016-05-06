@@ -51,8 +51,8 @@ void CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     const auto &gdalwarpMem = resourceParameters["resources.gdalwarp.working-mem"];
     const auto &referencePolygons = parameters["reference_polygons"].toString();
 
-    auto mission = parameters["processor.l4b.mission"].toString();
-    if(mission.length() == 0) mission = "SPOT";
+    auto mission = configParameters["processor.l4b.mission"];
+    if(mission.length() == 0) mission = "SENTINEL";
 
     int resolution = 0;
     if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
@@ -61,10 +61,10 @@ void CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     }
     const auto &resolutionStr = QString::number(resolution);
 
-    auto randomSeed = parameters["processor.l4b.random_seed"].toString();
+    auto randomSeed = configParameters["processor.l4b.random_seed"];
     if(randomSeed.isEmpty())  randomSeed = "0";
 
-    auto temporalResamplingMode = parameters["processor.l4b.temporal_resampling_mode"].toString();
+    auto temporalResamplingMode = configParameters["processor.l4b.temporal_resampling_mode"];
     if(temporalResamplingMode != "resample") temporalResamplingMode = "gapfill";
 
     auto sampleRatio = configParameters["processor.l4b.sample-ratio"];
@@ -82,8 +82,8 @@ void CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     auto classifierRfMaxDepth = configParameters["processor.l4b.classifier.rf.max"];
     if(classifierRfMaxDepth.length() == 0) classifierRfMaxDepth = "25";
 
-    const auto classifierSvmKernel = configParameters["processor.l4b.classifier.svm.kernel"];
-    const auto classifierSvmOptimize = configParameters["processor.l4b.classifier.svm.optimize"];
+    const auto classifierSvmKernel = configParameters["processor.l4b.classifier.svm.k"];
+    const auto classifierSvmOptimize = configParameters["processor.l4b.classifier.svm.opt"];
 
     QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
     QList<std::reference_wrapper<const TaskToSubmit>> &prodFormParTsksList = globalExecInfos.prodFormatParams.parentsTasksRef;

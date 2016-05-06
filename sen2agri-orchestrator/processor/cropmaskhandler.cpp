@@ -244,8 +244,8 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
 
     const auto &referencePolygons = parameters["reference_polygons"].toString();
 
-    auto mission = parameters["processor.l4a.mission"].toString();
-    if(mission.length() == 0) mission = "SPOT";
+    auto mission = configParameters["processor.l4a.mission"];
+    if(mission.length() == 0) mission = "SENTINEL";
 
     int resolution = 0;
     if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
@@ -253,13 +253,13 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
         resolution = 10;    // TODO: We should configure the default resolution in DB
     }
 
-    auto randomSeed = parameters["processor.l4a.random_seed"].toString();
+    auto randomSeed = configParameters["processor.l4a.random_seed"];
     if(randomSeed.isEmpty())  randomSeed = "0";
 
     auto sampleRatio = configParameters["processor.l4a.sample-ratio"];
     if(sampleRatio.length() == 0) sampleRatio = "0.75";
 
-    auto temporalResamplingMode = parameters["processor.l4a.temporal_resampling_mode"].toString();
+    auto temporalResamplingMode = configParameters["processor.l4a.temporal_resampling_mode"];
     if(temporalResamplingMode != "resample") temporalResamplingMode = "gapfill";
 
     auto window = configParameters["processor.l4a.window"];
@@ -489,7 +489,7 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
 
     const auto &reference = parameters["reference_raster"].toString();
 
-    auto mission = parameters["processor.l4a.mission"].toString();
+    auto mission = configParameters["processor.l4a.mission"];
     if(mission.length() == 0) mission = "SPOT";
 
     int resolution = 0;
@@ -498,13 +498,13 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
         resolution = 10;    // TODO: We should configure the default resolution in DB
     }
     const auto &resolutionStr = QString::number(resolution);
-    auto randomSeed = parameters["processor.l4a.random_seed"].toString();
+    auto randomSeed = configParameters["processor.l4a.random_seed"];
     if(randomSeed.isEmpty())  randomSeed = "0";
 
     auto sampleRatio = configParameters["processor.l4a.sample-ratio"];
     if(sampleRatio.length() == 0) sampleRatio = "0.75";
 
-    auto temporalResamplingMode = parameters["processor.l4a.temporal_resampling_mode"].toString();
+    auto temporalResamplingMode = configParameters["processor.l4a.temporal_resampling_mode"];
     if(temporalResamplingMode != "resample") temporalResamplingMode = "gapfill";
 
     auto window = configParameters["processor.l4a.window"];
