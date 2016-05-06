@@ -177,5 +177,7 @@ INSERT INTO config_metadata VALUES ('processor.l4b.sample-ratio', 'The ratio bet
 INSERT INTO config_metadata VALUES ('processor.l4b.sampling-rate', '', 'int', true, 6);
 INSERT INTO config_metadata VALUES ('processor.l4b.training-samples-number', 'The number of samples included in the training set', 'int', true, 6);
 INSERT INTO config_metadata VALUES ('processor.l4b.temporal_resampling_mode', 'The temporal resampling mode choices=[resample, gapfill]', 'string', true, 6);
+INSERT INTO config_metadata VALUES ('processor.l4b.mission', 'The main mission for the time series', 'string', true, 6);
+INSERT INTO config_metadata VALUES ('processor.l4b.random_seed', 'The random seed used for training', 'float', true, 6);
 INSERT INTO config_metadata VALUES ('downloader.s2.max-retries', 'Maximum retries for downloading a product', 'int', false, 15);
 INSERT INTO config_metadata VALUES ('downloader.l8.max-retries', 'Maximum retries for downloading a product', 'int', false, 15);
