@@ -158,6 +158,7 @@ bool ProcessorHandlerHelper::IsValidHighLevelProduct(const QString &path) {
     if (!itTiles.hasNext()) {
         return false;
     }
+    bool bAtLeastOneValidTile = false;
     while(itTiles.hasNext()) {
         QString tileDir = itTiles.next();
         // get the dir name
@@ -165,19 +166,23 @@ bool ProcessorHandlerHelper::IsValidHighLevelProduct(const QString &path) {
         if(tileDirName == "." || tileDirName == "..") {
             continue;
         }
+        bool bValidTile = true;
         // we should have some TIF files in this folder
         QDirIterator itImgData(tileDir + "/IMG_DATA/", QStringList() << "*.TIF", QDir::Files);
         if (!itImgData.hasNext()) {
-            return false;
+            bValidTile = false;
         }
         // check if we have some files here (we cannot assume they are TIF or other format)
         QDirIterator itQiData(tileDir + "/QI_DATA/", QStringList() << "*.*", QDir::Files);
         if (!itQiData.hasNext()) {
-            return false;
+            bValidTile = false;
+        }
+        if(bValidTile) {
+            bAtLeastOneValidTile = true;
+            break;
         }
     }
-    // apparently, everything OK
-    return true;
+    return bAtLeastOneValidTile;
 }
 
 bool ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(const QString &productName, QDateTime &minDate, QDateTime &maxDate) {

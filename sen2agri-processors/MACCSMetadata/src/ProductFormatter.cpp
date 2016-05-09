@@ -643,7 +643,7 @@ private:
                   if(LevelHasAcquisitionTime()) {
                       rasterInfoEl.rasterTimePeriod = m_acquisitionDatesList[curRaster];
                   } else {
-                      rasterInfoEl.rasterTimePeriod = m_strMinAcquisitionDate + "_" + m_acquisitionDatesList[curRaster];
+                      rasterInfoEl.rasterTimePeriod = m_strTimePeriod; //m_strMinAcquisitionDate + "_" + m_acquisitionDatesList[curRaster];
                   }
               } else {
                   rasterInfoEl.rasterTimePeriod = m_strTimePeriod;
@@ -931,6 +931,11 @@ private:
       tileInfoEl.tileMetadata.ProductLevel = "Level-"  + m_strProductLevel;
 
       for (rasterInfo &rasterFileEl : m_rasterInfoList) {
+          // we should not throw an exception here, as we might have just some rasters that do not exist
+          if(!boost::filesystem::exists(rasterFileEl.strRasterFileName)) {
+              continue;
+          }
+
           if(rasterFileEl.bIsQiData) {
               if(rasterFileEl.strRasterFileName.find(".tif") > 0 || rasterFileEl.strRasterFileName.find(".TIF") > 0) {
                   auto imageReader = ImageFileReader<FloatVectorImageType>::New();
