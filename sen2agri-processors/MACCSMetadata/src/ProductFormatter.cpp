@@ -886,7 +886,8 @@ private:
       args.emplace_back("-map");
       args.emplace_back(lutMap.c_str());
       args.emplace_back("-rgbimg");
-      args.emplace_back(std::to_string(bIsRgbImg).c_str());
+      std::string strIsRgbImg = std::to_string(bIsRgbImg);
+      args.emplace_back(strIsRgbImg.c_str());
 
       return ExecuteExternalProgram("otbcli", args);
   }
