@@ -189,20 +189,20 @@ def maccs_launcher(demmaccs_context):
     log(demmaccs_context.output, "sat_id = {} | acq_date = {}".format(sat_id, acquistion_date), tile_log_filename)
     log(demmaccs_context.output, "Starting MACCS in {} for {} | TileID: {}".format(maccs_mode, demmaccs_context.input, tile_id), tile_log_filename)
     log(demmaccs_context.output, "MACCS_COMMAND: {}".format(cmd_array), tile_log_filename)
-    return_tile_id = ""
     if run_command(cmd_array, demmaccs_context.output, tile_log_filename) != 0:
         log(demmaccs_context.output, "MACCS mode {} didn't work for {} | TileID: {}. Location {}".format(maccs_mode, demmaccs_context.input, tile_id, demmaccs_context.output), tile_log_filename)        
     else:
         log(demmaccs_context.output, "MACCS mode {} for {} tile {} finished in: {}. Location: {}".format(maccs_mode, demmaccs_context.input, tile_id, datetime.timedelta(seconds=(time.time() - start)), demmaccs_context.output), tile_log_filename)
-        return_tile_id = "{}".format(tile_id)
     # move the maccs output to the output directory. 
     # only the valid files should be moved
     maccs_dbl_dir = glob.glob("{}/*_L2VALD_*.DBL.DIR".format(maccs_working_dir))
     maccs_hdr_file = glob.glob("{}/*_L2VALD_*.HDR".format(maccs_working_dir))
+    return_tile_id = ""
     try:
         log(demmaccs_context.output, "Searching for valid products in: {}".format(maccs_working_dir), tile_log_filename)
         print("{} | {}".format(maccs_dbl_dir, maccs_hdr_file))
         if len(maccs_dbl_dir) >= 1 and len(maccs_hdr_file) >= 1:
+            return_tile_id = "{}".format(tile_id)
             maccs_working_dir_content = glob.glob("{}/*".format(maccs_working_dir))
             print("{}".format(maccs_working_dir_content))
             for maccs_out in maccs_working_dir_content:
