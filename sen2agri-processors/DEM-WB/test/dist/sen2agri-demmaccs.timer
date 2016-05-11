@@ -3,7 +3,7 @@ Description=Sentinel-2 DEM/MACCS runner
 
 [Timer]
 Unit=sen2agri-demmaccs.service
-OnCalendar=hourly
+OnCalendar=minutely
 Persistent=true
 
 [Install]

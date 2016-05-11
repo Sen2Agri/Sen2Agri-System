@@ -3,7 +3,7 @@ Description=Sentinel-2 downloader timer
 
 [Timer]
 Unit=sen2agri-sentinel-downloader.service
-OnCalendar=hourly
+OnCalendar=minutely
 Persistent=true
 
 [Install]
