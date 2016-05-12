@@ -263,6 +263,7 @@ class AOIContext(object):
     def setConfigParams(self, configParams, forced_season = False):
         if len(configParams) != DOWNLOADER_NUMBER_OF_CONFIG_PARAMS_FROM_DB:
             return False
+        
         startSummerSeason = configParams[0]
         endSummerSeason = configParams[1]
         startWinterSeason = configParams[2]
@@ -270,7 +271,7 @@ class AOIContext(object):
         self.maxCloudCoverage = int(configParams[4])
         self.maxRetries = int(configParams[5])
         self.writeDir = configParams[6]
-
+        print("Seasons: summer:{}-{} / winter:{}-{}".format(startSummerSeason, endSummerSeason, startWinterSeason, endWinterSeason))
         # first position is the startSeasonYear, the second is the endPositionYear
         currentYearArray = []
         if forced_season:
@@ -280,12 +281,12 @@ class AOIContext(object):
             self.endSeasonMonth = int(endSummerSeason[0:2])
             self.endSeasonDay = int(endSummerSeason[2:4])
         else:
-            if check_if_season(startSummerSeason, endSummerSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray):
+            if startSummerSeason != "null" and endSummerSeason != "null" and check_if_season(startSummerSeason, endSummerSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray):
                 self.startSeasonMonth = int(startSummerSeason[0:2])
                 self.startSeasonDay = int(startSummerSeason[2:4])
                 self.endSeasonMonth = int(endSummerSeason[0:2])
                 self.endSeasonDay = int(endSummerSeason[2:4])
-            elif check_if_season(startWinterSeason, endWinterSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray):
+            elif startWinterSeason != "null" and endWinterSeason != "null" and check_if_season(startWinterSeason, endWinterSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray):
                 self.startSeasonMonth = int(startWinterSeason[0:2])
                 self.startSeasonDay = int(startWinterSeason[2:4])
                 self.endSeasonMonth = int(endWinterSeason[0:2])
@@ -430,10 +431,12 @@ class AOIInfo(object):
                 currentAOI.siteId = int(row[0])
                 currentAOI.siteName = row[2]
                 currentAOI.polygon = row[3]
+                
                 baseQuery = "select * from sp_get_parameters(\'downloader."
                 whereQuery = "where \"site_id\"="
                 suffixArray = ["summer-season.start\')", "summer-season.end\')", "winter-season.start\')", "winter-season.end\')", "max-cloud-coverage\')", "{}max-retries')".format(writeDirSatelliteName), "{}write-dir\')".format(writeDirSatelliteName)]
                 dbHandler = True
+                idx = 0
                 configArray = []
                 for suffix in suffixArray:
                     baseQuerySite = "{}{}".format(baseQuery, suffix)
@@ -441,20 +444,28 @@ class AOIInfo(object):
                     #print("query with where={}".format(query))
                     baseQuerySite += " where \"site_id\" is null"
                     try:
-                        self.cursor.execute(query)
+                        self.cursor.execute(query)                        
                         if self.cursor.rowcount <= 0:
-                            self.cursor.execute(baseQuerySite)
-                            if self.cursor.rowcount <= 0:
-                                print("Could not get even the default value for downloader.{}".format(suffix))
-                                dbHandler = False
-                                break
-                        if self.cursor.rowcount != 1:
-                            print("More than 1 result from the db for downloader.{}".format(suffix))
-                            dbHandler = False
-                            break
-                        result = self.cursor.fetchall()
-                        #print("result={}".format(result))
-                        configArray.append(result[0][2])
+                            if idx <= 3:
+                                configArray.append("null")
+                            else:
+                                self.cursor.execute(baseQuerySite)
+                                if self.cursor.rowcount <= 0:
+                                    print("Could not get even the default value for downloader.{}".format(suffix))
+                                    dbHandler = False
+                                    break
+                                if self.cursor.rowcount != 1:
+                                    print("More than 1 result from the db for downloader.{}".format(suffix))
+                                    dbHandler = False
+                                    break
+                                result = self.cursor.fetchall()
+                                #print("result={}".format(result))
+                                configArray.append(result[0][2])
+                        else:
+                            result = self.cursor.fetchall()
+                            #print("result={}".format(result))
+                            configArray.append(result[0][2])
+                        idx += 1
                     except Exception, e:
                         print("exception in query for downloader.{}:".format(suffix))
                         print("{}".format(e))
@@ -469,9 +480,9 @@ class AOIInfo(object):
                     if len(start_date) > 0 and len(end_date) > 0:
                         configArray[0] = start_date
                         configArray[1] = end_date
-                        configArray[2] = start_date
-                        configArray[3] = end_date
-                        print("Forcing manually downloading for time interval: {} - {}".format(start_date, end_date))
+                        configArray[2] = "null"
+                        configArray[3] = "null"
+                        print("Forcing manuall download for time interval: {} - {}".format(start_date, end_date))
                         sys.stdout.flush()
                         forced_season = True
                     if not currentAOI.setConfigParams(configArray, forced_season):
