@@ -592,7 +592,7 @@ protected:
         // Get the clouds mask
         std::string maskFileNua = rootFolder + meta.Files.MaskNua;
         ImageReaderType::Pointer maskReaderNua = getReader(maskFileNua);
-  \
+
         // Build the SpotMaskFilter
         SpotMaskFilterType::Pointer spotMaskFilter = SpotMaskFilterType::New();
         spotMaskFilter->SetInputValidityMask(maskReaderDiv->GetOutput());
