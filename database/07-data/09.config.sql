@@ -182,3 +182,8 @@ INSERT INTO config VALUES (293, 'processor.l3b.lai.lut_path', NULL, '/usr/share/
 INSERT INTO config VALUES (294, 'processor.l3a.lut_path', NULL, '/usr/share/sen2agri/composite.map', '2016-02-29 14:08:07.963143+02');
 INSERT INTO config VALUES (295, 'processor.l4b.mission', NULL, 'SENTINEL', '2016-03-09 16:28:59.820251+02');
 INSERT INTO config VALUES (296, 'processor.l4b.random_seed', NULL, '0', '2016-03-09 16:41:20.194169+02');
+INSERT INTO config VALUES (297, 'executor.processor.l3a.keep_job_folders', NULL, '1', '2016-03-09 16:41:20.194169+02');
+INSERT INTO config VALUES (298, 'executor.processor.l3b.keep_job_folders', NULL, '1', '2016-03-09 16:41:20.194169+02');
+INSERT INTO config VALUES (299, 'executor.processor.l3e.keep_job_folders', NULL, '1', '2016-03-09 16:41:20.194169+02');
+INSERT INTO config VALUES (300, 'executor.processor.l4a.keep_job_folders', NULL, '1', '2016-03-09 16:41:20.194169+02');
+INSERT INTO config VALUES (301, 'executor.processor.l4b.keep_job_folders', NULL, '1', '2016-03-09 16:41:20.194169+02');
