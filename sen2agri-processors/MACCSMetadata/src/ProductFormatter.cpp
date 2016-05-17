@@ -158,6 +158,7 @@ struct rasterInfo
     std::string rasterTimePeriod;
     int nRasterExpectedBandsNo;
     std::string strNewRasterFullPath;
+    bool bNeedsPreview;
 };
 
 struct qualityInfo
@@ -616,6 +617,7 @@ private:
       std::string strTileID;
       rasterInfo rasterInfoEl;
       rasterInfoEl.bIsQiData = bIsQiData;
+      rasterInfoEl.bNeedsPreview = false;
 
       // get the number of tiles elements in the rasters list (including duplicates)
       //std::string strTileID = UnpackTiles(rastersList, allTilesCnt);
@@ -638,6 +640,7 @@ private:
               rasterInfoEl.iRasterType = rasterType;
               rasterInfoEl.strRasterFileName = rasterFileEl;
               rasterInfoEl.strTileID = strTileID;
+              rasterInfoEl.bNeedsPreview = IsRasterNeedsPreview(rasterType);
               // update the date
               if(bAllRastersHaveDate) {
                   if(LevelHasAcquisitionTime()) {
@@ -923,7 +926,7 @@ private:
       int iResolution;
       bool bResolutionExistingAlready = false;
       bool bGeoPositionExistingAlready = false;
-      bool bPreview = !m_previewList.empty();
+      //bool bPreview = !m_previewList.empty();
 
       auto writer = itk::TileMetadataWriter::New();
 
@@ -956,13 +959,23 @@ private:
 
               iResolution = output->GetSpacing()[0];
 
-              if((!bPreview) && IsPreviewNeeded(rasterFileEl, iResolution))
+              if(/*(!bPreview) && */IsPreviewNeeded(rasterFileEl, iResolution))
               {
-                previewInfo previewInfoEl;
-                previewInfoEl.strPreviewFileName = rasterFileEl.strRasterFileName;
-                previewInfoEl.strTileID = tileInfoEl.strTileID;
-                m_previewList.emplace_back(previewInfoEl);
-                bPreview = true;
+                  bool bFound = false;
+                  for(size_t i = 0; i < m_previewList.size(); i++) {
+                      if(m_previewList[i].strPreviewFileName == rasterFileEl.strRasterFileName &&
+                              m_previewList[i].strTileID == tileInfoEl.strTileID) {
+                          bFound = true;
+                          break;
+                      }
+                  }
+                  if(!bFound) {
+                      previewInfo previewInfoEl;
+                      previewInfoEl.strPreviewFileName = rasterFileEl.strRasterFileName;
+                      previewInfoEl.strTileID = tileInfoEl.strTileID;
+                      m_previewList.emplace_back(previewInfoEl);
+                      //bPreview = true;
+                  }
               }
 
               if(rasterFileEl.iRasterType != COMPOSITE_REFLECTANCE_RASTER)
@@ -1317,6 +1330,31 @@ private:
       return bResult;
   }
 
+  bool IsRasterNeedsPreview(rasterTypes rasterType) {
+      switch(rasterType) {
+          case COMPOSITE_REFLECTANCE_RASTER:
+              // this does not needs a preview because it is actually the RGB image that is previewed
+              return false;
+          case LAI_MONO_DATE_RASTER:
+              return true;
+          case LAI_MONO_DATE_ERR_RASTER:
+              return true;
+          case LAI_REPR_RASTER:
+              return true;
+          case LAI_FIT_RASTER:
+              return true;
+          case PHENO_RASTER:
+               return true;
+          case CROP_TYPE_RASTER:
+              return true;
+          case CROP_MASK_RASTER:
+             return true;
+          default:
+             return false;
+      }
+      return false;
+  }
+
   void ComputeNewNameOfRasterFiles(const tileInfo &tileInfoEl)
   {
       std::string rasterCateg;
@@ -1640,7 +1678,7 @@ private:
   }
 
   bool IsPreviewNeeded(const rasterInfo &rasterFileEl, int nRes) {
-        if(rasterFileEl.bIsQiData ||
+        if(!rasterFileEl.bNeedsPreview || rasterFileEl.bIsQiData ||
            ((rasterFileEl.iRasterType == COMPOSITE_REFLECTANCE_RASTER) && (nRes != 10))) {
             return false;
         }

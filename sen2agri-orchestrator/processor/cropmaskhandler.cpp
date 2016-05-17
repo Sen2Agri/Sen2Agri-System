@@ -4,6 +4,7 @@
 
 #include "cropmaskhandler.hpp"
 #include "processorhandlerhelper.h"
+#include "logger.hpp"
 
 QList<std::reference_wrapper<TaskToSubmit>> CropMaskHandler::CreateInSituTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
                                                 QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList)
@@ -223,8 +224,9 @@ void CropMaskHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 event.siteId, event.jobId, productFolder, maxDate,
                                 prodName, quicklook, footPrint, std::experimental::nullopt, TileList() });
             // Now remove the job folder containing temporary files
-            // TODO: Reinsert this line - commented only for debug purposes
-            //RemoveJobFolder(ctx, event.jobId);
+            RemoveJobFolder(ctx, event.jobId, "l4a");
+        } else {
+            Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
         }
     }
 }

@@ -6,6 +6,7 @@
 #include "compositehandler.hpp"
 #include "processorhandlerhelper.h"
 #include "json_conversions.hpp"
+#include "logger.hpp"
 
 #define TasksNoPerProduct 7
 
@@ -600,8 +601,9 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 event.jobId, productFolder, maxDate, prodName, quicklook,
                                 footPrint, std::experimental::nullopt, TileList() });
             // Now remove the job folder containing temporary files
-            // TODO: Reinsert this line - commented only for debug purposes
-            //RemoveJobFolder(ctx, event.jobId);
+            RemoveJobFolder(ctx, event.jobId, "l3a");
+        } else {
+            Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
         }
     }
 }

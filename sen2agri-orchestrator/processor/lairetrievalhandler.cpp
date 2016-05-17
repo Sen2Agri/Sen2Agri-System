@@ -649,7 +649,7 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             Logger::debug(QStringLiteral("InsertProduct for %1 returned %2").arg(prodName).arg(ret));
 
             // Now remove the job folder containing temporary files
-            //RemoveJobFolder(ctx, event.jobId);
+            RemoveJobFolder(ctx, event.jobId, "l3b");
         } else {
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
         }
@@ -826,6 +826,8 @@ QStringList LaiRetrievalHandler::GetLaiMonoProductFormatterArgs(TaskToSubmit &pr
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
+    const auto &lutFile = configParameters["processor.l3b.lai.lut_path"];
+
     WriteExecutionInfosFile(executionInfosPath, configParameters, products, false);
 
     QStringList productFormatterArgs = { "ProductFormatter",
@@ -839,6 +841,11 @@ QStringList LaiRetrievalHandler::GetLaiMonoProductFormatterArgs(TaskToSubmit &pr
                             "-outprops", outPropsPath};
     productFormatterArgs += "-il";
     productFormatterArgs.append(products);
+
+    if(lutFile.size() > 0) {
+        productFormatterArgs += "-lut";
+        productFormatterArgs += lutFile;
+    }
 
     productFormatterArgs += "-processor.vegetation.laindvi";
     for(int i = 0; i<tileIdsList.size(); i++) {

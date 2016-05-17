@@ -100,10 +100,18 @@ QString ProcessorHandler::GetFinalProductFolder(const std::map<QString, QString>
     return folderName;
 }
 
-bool ProcessorHandler::RemoveJobFolder(EventProcessingContext &ctx, int jobId)
+bool ProcessorHandler::RemoveJobFolder(EventProcessingContext &ctx, int jobId, const QString &procName)
 {
-    QString jobOutputPath = ctx.GetJobOutputPath(jobId);
-    return removeDir(jobOutputPath);
+    QString strKey = "executor.processor." + procName + ".keep_job_folders";
+    auto configParameters = ctx.GetJobConfigurationParameters(jobId, strKey);
+    auto keepStr = configParameters[strKey];
+    bool bRemove = true;
+    if(keepStr == "1") bRemove = false;
+    if(bRemove) {
+        QString jobOutputPath = ctx.GetJobOutputPath(jobId);
+        return removeDir(jobOutputPath);
+    }
+    return true;
 }
 
 QString ProcessorHandler::GetProductFormatterOutputProductPath(EventProcessingContext &ctx,
