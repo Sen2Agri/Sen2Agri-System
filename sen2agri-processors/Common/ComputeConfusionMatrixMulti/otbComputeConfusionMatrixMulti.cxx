@@ -45,6 +45,8 @@ public:
 
   itkTypeMacro(ComputeConfusionMatrixMulti, otb::Application);
 
+  typedef otb::ImageFileReader<Int32ImageType>          ImageReaderType;
+
   typedef itk::ImageRegionConstIterator<Int32ImageType> ImageIteratorType;
 
   typedef otb::OGRDataSourceToLabelImageFilter<Int32ImageType> RasterizeFilterType;
@@ -89,8 +91,8 @@ private:
 
   AddDocTag(Tags::Learning);
 
-  AddParameter(ParameterType_InputImage, "in", "Input Image");
-  SetParameterDescription( "in", "The input classification image." );
+  AddParameter(ParameterType_InputImageList, "il", "Input Images");
+  SetParameterDescription( "il", "The input classification images." );
 
   AddParameter(ParameterType_OutputFilename, "out", "Matrix output");
   SetParameterDescription("out", "Filename to store the output matrix (csv format)");
@@ -124,7 +126,7 @@ private:
   AddRAMParameter();
 
   // Doc example parameter settings
-  SetDocExampleParameterValue("in", "clLabeledImageQB1.tif");
+  SetDocExampleParameterValue("il", "clLabeledImageQB1.tif");
   SetDocExampleParameterValue("out", "ConfusionMatrix.csv");
   SetDocExampleParameterValue("ref", "vector");
   SetDocExampleParameterValue("ref.vector.in","VectorData_QB1_bis.shp");
@@ -211,7 +213,7 @@ private:
 
   void DoExecute()
   {
-    Int32ImageType* input = this->GetParameterInt32Image("in");
+    const std::vector<std::string> &images = this->GetParameterStringList("il");
 
     std::string field;
     int nodata = this->GetParameterInt("nodatalabel");
@@ -219,9 +221,15 @@ private:
 
     Int32ImageType::Pointer reference;
     otb::ogr::DataSource::Pointer ogrRef;
-    RasterizeFilterType::Pointer rasterizeReference = RasterizeFilterType::New();
 
-    if (GetParameterString("ref") == "raster")
+    // Extraction of the Class Labels from the Reference image/rasterized vector data + filling of m_Matrix
+    MapOfClassesType  mapOfClassesRef, mapOfClassesProd;
+    MapOfClassesType::iterator  itMapOfClassesRef, itMapOfClassesProd;
+    ClassLabelType labelRef = 0, labelProd = 0;
+    int itLabelRef = 0, itLabelProd = 0;
+
+    bool rasterMode = GetParameterString("ref") == "raster";
+    if (rasterMode)
       {
       reference = this->GetParameterInt32Image("ref.raster.in");
       }
@@ -229,14 +237,6 @@ private:
       {
       ogrRef = otb::ogr::DataSource::New(GetParameterString("ref.vector.in"), otb::ogr::DataSource::Modes::Read);
       field = this->GetParameterString("ref.vector.field");
-
-      rasterizeReference->AddOGRDataSource(ogrRef);
-      rasterizeReference->SetOutputParametersFromImage(input);
-      rasterizeReference->SetBackgroundValue(nodata);
-      rasterizeReference->SetBurnAttribute(field.c_str());
-
-      reference = rasterizeReference->GetOutput();
-      reference->UpdateOutputInformation();
       }
 
     // Prepare local streaming
@@ -248,60 +248,78 @@ private:
     float bias = 2.0; // empiric value;
     streamingManager->SetBias(bias);
     
-    streamingManager->PrepareStreaming(input, input->GetLargestPossibleRegion());
-
-    unsigned long numberOfStreamDivisions = streamingManager->GetNumberOfSplits();
-
-    otbAppLogINFO("Number of stream divisions : "<<numberOfStreamDivisions);
-
-
-    // Extraction of the Class Labels from the Reference image/rasterized vector data + filling of m_Matrix
-    MapOfClassesType  mapOfClassesRef, mapOfClassesProd;
-    MapOfClassesType::iterator  itMapOfClassesRef, itMapOfClassesProd;
-    ClassLabelType labelRef = 0, labelProd = 0;
-    int itLabelRef = 0, itLabelProd = 0;
-
-    for (unsigned int index = 0; index < numberOfStreamDivisions; index++)
+    ImageReaderType::Pointer reader = ImageReaderType::New();
+    std::vector<std::string>::const_iterator itImages;
+    std::vector<std::string>::const_iterator itImagesEnd = images.end();
+    for (itImages = images.begin(); itImages != itImagesEnd; ++itImages)
       {
-      RegionType streamRegion = streamingManager->GetSplit(index);
+      otbAppLogINFO("Processing image : "<<*itImages);
 
-      input->SetRequestedRegion(streamRegion);
-      input->PropagateRequestedRegion();
-      input->UpdateOutputData();
+      reader->SetFileName(*itImages);
+      reader->UpdateOutputInformation();
+      Int32ImageType* input = reader->GetOutput();
+      input->UpdateOutputInformation();
 
-      reference->SetRequestedRegion(streamRegion);
-      reference->PropagateRequestedRegion();
-      reference->UpdateOutputData();
+      streamingManager->PrepareStreaming(input, input->GetLargestPossibleRegion());
 
-      ImageIteratorType itInput(input, streamRegion);
-      itInput.GoToBegin();
-
-      ImageIteratorType itRef(reference, streamRegion);
-      itRef.GoToBegin();
-
-      while (!itRef.IsAtEnd())
+      RasterizeFilterType::Pointer rasterizeReference;
+      if (!rasterMode)
         {
-        labelRef = static_cast<ClassLabelType> (itRef.Get());
-        labelProd = static_cast<ClassLabelType> (itInput.Get());
+        rasterizeReference = RasterizeFilterType::New();
+        rasterizeReference->AddOGRDataSource(ogrRef);
+        rasterizeReference->SetBackgroundValue(nodata);
+        rasterizeReference->SetBurnAttribute(field.c_str());
+        rasterizeReference->SetOutputParametersFromImage(input);
 
-        // Extraction of the reference/produced class labels
-        if ((labelRef != nodata) && (labelProd != nodata))
-          {
-          // If the current labels have not been added to their respective mapOfClasses yet
-          if (mapOfClassesRef.insert(MapOfClassesType::value_type(labelRef, itLabelRef)).second)
-            ++itLabelRef;
-          if (mapOfClassesProd.insert(MapOfClassesType::value_type(labelProd, itLabelProd)).second)
-            ++itLabelProd;
-
-          // Filling of m_Matrix
-          m_Matrix[labelRef][labelProd]++;
-
-          } // END if ((labelRef != nodata) && (labelProd != nodata))
-        ++itRef;
-        ++itInput;
+        reference = rasterizeReference->GetOutput();
+        reference->UpdateOutputInformation();
         }
-      } // END of for (unsigned int index = 0; index < numberOfStreamDivisions; index++)
 
+      unsigned long numberOfStreamDivisions = streamingManager->GetNumberOfSplits();
+
+      otbAppLogINFO("Number of stream divisions : "<<numberOfStreamDivisions);
+
+      for (unsigned int index = 0; index < numberOfStreamDivisions; index++)
+        {
+        RegionType streamRegion = streamingManager->GetSplit(index);
+
+        input->SetRequestedRegion(streamRegion);
+        input->PropagateRequestedRegion();
+        input->UpdateOutputData();
+
+        reference->SetRequestedRegion(streamRegion);
+        reference->PropagateRequestedRegion();
+        reference->UpdateOutputData();
+
+        ImageIteratorType itInput(input, streamRegion);
+        itInput.GoToBegin();
+
+        ImageIteratorType itRef(reference, streamRegion);
+        itRef.GoToBegin();
+
+        while (!itRef.IsAtEnd())
+          {
+          labelRef = static_cast<ClassLabelType> (itRef.Get());
+          labelProd = static_cast<ClassLabelType> (itInput.Get());
+
+          // Extraction of the reference/produced class labels
+          if ((labelRef != nodata) && (labelProd != nodata))
+            {
+            // If the current labels have not been added to their respective mapOfClasses yet
+            if (mapOfClassesRef.insert(MapOfClassesType::value_type(labelRef, itLabelRef)).second)
+              ++itLabelRef;
+            if (mapOfClassesProd.insert(MapOfClassesType::value_type(labelProd, itLabelProd)).second)
+              ++itLabelProd;
+
+            // Filling of m_Matrix
+            m_Matrix[labelRef][labelProd]++;
+
+            } // END if ((labelRef != nodata) && (labelProd != nodata))
+          ++itRef;
+          ++itInput;
+          }
+        } // END of for (unsigned int index = 0; index < numberOfStreamDivisions; index++)
+      }
 
     /////////////////////////////////////////////
     // Filling the 2 headers for the output file
