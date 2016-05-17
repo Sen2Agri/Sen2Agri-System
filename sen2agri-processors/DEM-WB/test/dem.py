@@ -7,7 +7,7 @@ _____________________________________________________________________________
    Language:     Python
    Copyright:    2015-2016, CS Romania, office@c-s.ro
    See COPYRIGHT file for details.
-   
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -153,7 +153,7 @@ def get_landsat_dir_info(name):
 
 def get_sentinel2_dir_info(name):
     m = re.match("S2A\w+_(\d{8}T\d{6})\w+.SAFE", name)
-    
+
     return m and ('S2', m.group(1))
 
 
@@ -185,7 +185,7 @@ def create_context(args):
     context_array = []
     #if mode == None:
         #print("Error in reading directory, is not in S2 neither L8 format")
-        #return context_array    
+        #return context_array
 
     images = []
     tiles_to_process = []
@@ -202,7 +202,7 @@ def create_context(args):
             if len(image_band2) == 1:
                 if len(tiles_to_process) > 0:
                     mode_f, tile_id = get_tile_id(image_band2[0])
-                    if tile_id in tiles_to_process:                      
+                    if tile_id in tiles_to_process:
                         images.append(image_band2[0])
                 else:
                     images.append(image_band2[0])
@@ -320,7 +320,7 @@ def create_metadata(context):
     mission = "LANDSAT_8"
     if context.mode == 'S2':
         mission = "SENTINEL-2_"
-    
+
     return E.Earth_Explorer_Header(
             E.Fixed_Header(
                 E.Mission(mission),
@@ -472,9 +472,10 @@ def process_WB(context):
     with open(context.swbd_list) as f:
         swbd_tiles = f.read().splitlines()
 
+    empty_shp = os.path.join(context.swbd_directory, "empty.shp")
     run_command(["otbcli_ConcatenateVectorData",
                  "-out", context.wb,
-                 "-vd"] + swbd_tiles)
+                 "-vd", empty_shp] + swbd_tiles)
 
     run_command(["ogr2ogr",
                  "-s_srs", "EPSG:4326",
@@ -529,7 +530,7 @@ def process_context(context):
     except:
         print("Couldn't remove the temp dir {}".format(context.temp_directory))
 
-def parse_arguments():    
+def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Creates DEM and WB data for MACCS")
     parser.add_argument('input', help="input L1C directory")
@@ -540,7 +541,7 @@ def parse_arguments():
                         help="working directory")
     parser.add_argument('-p', '--processes-number', required=False,
                         help="number of processed to run", default="3")
-    parser.add_argument('output', help="output location")    
+    parser.add_argument('output', help="output location")
 
     args = parser.parse_args()
 
