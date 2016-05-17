@@ -288,26 +288,13 @@ private:
         if ((labelRef != nodata) && (labelProd != nodata))
           {
           // If the current labels have not been added to their respective mapOfClasses yet
-          if (mapOfClassesRef.count(labelRef) == 0)
-            {
-            mapOfClassesRef[labelRef] = itLabelRef;
+          if (mapOfClassesRef.insert(MapOfClassesType::value_type(labelRef, itLabelRef)).second)
             ++itLabelRef;
-            }
-          if (mapOfClassesProd.count(labelProd) == 0)
-            {
-            mapOfClassesProd[labelProd] = itLabelProd;
+          if (mapOfClassesProd.insert(MapOfClassesType::value_type(labelProd, itLabelProd)).second)
             ++itLabelProd;
-            }
 
           // Filling of m_Matrix
-          if (m_Matrix[labelRef][labelProd] == 0)
-            {
-            m_Matrix[labelRef][labelProd] = 1;
-            }
-          else
-            {
-            m_Matrix[labelRef][labelProd]++;
-            }
+          m_Matrix[labelRef][labelProd]++;
 
           } // END if ((labelRef != nodata) && (labelProd != nodata))
         ++itRef;
@@ -402,13 +389,16 @@ private:
     // Initialization of m_MatrixLOG
     m_MatrixLOG.SetSize(nbClassesRef, nbClassesRef);
     m_MatrixLOG.Fill(0);
-    for (itMapOfClassesRef = mapOfClassesRef.begin(); itMapOfClassesRef != mapOfClassesRef.end(); ++itMapOfClassesRef)
+    MapOfClassesType::iterator  itMapOfClassesRefEnd, itMapOfClassesProdEnd;
+    itMapOfClassesRefEnd = mapOfClassesRef.end();
+    itMapOfClassesProdEnd = mapOfClassesProd.end();
+    for (itMapOfClassesRef = mapOfClassesRef.begin(); itMapOfClassesRef != itMapOfClassesRefEnd; ++itMapOfClassesRef)
       {
       // labels labelRef of mapOfClassesRef are already sorted
       labelRef = itMapOfClassesRef->first;
 
       indexLabelProd = 0;
-      for (itMapOfClassesProd = mapOfClassesProd.begin(); itMapOfClassesProd != mapOfClassesProd.end(); ++itMapOfClassesProd)
+      for (itMapOfClassesProd = mapOfClassesProd.begin(); itMapOfClassesProd != itMapOfClassesProdEnd; ++itMapOfClassesProd)
         {
         // labels labelProd of mapOfClassesProd are already sorted
         labelProd = itMapOfClassesProd->first;
