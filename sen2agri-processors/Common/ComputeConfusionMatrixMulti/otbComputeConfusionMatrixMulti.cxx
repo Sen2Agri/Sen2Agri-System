@@ -73,7 +73,7 @@ public:
 private:
   void DoInit()
   {
-  SetName("ComputeConfusionMatrix");
+  SetName("ComputeConfusionMatrixMulti");
   SetDescription("Computes the confusion matrix of a classification");
 
   // Documentation
