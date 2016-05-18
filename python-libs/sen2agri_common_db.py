@@ -279,7 +279,7 @@ class AOIContext(object):
         self.maxCloudCoverage = int(configParams[4])
         self.maxRetries = int(configParams[5])
         self.writeDir = configParams[6]
-        print("Seasons: summer:{}-{} / winter:{}-{}".format(startSummerSeason, endSummerSeason, startWinterSeason, endWinterSeason))
+        #print("Seasons: summer:{}-{} / winter:{}-{}".format(startSummerSeason, endSummerSeason, startWinterSeason, endWinterSeason))
         # first position is the startSeasonYear, the second is the endPositionYear
         currentYearArray = []
         if forced_season:
@@ -490,8 +490,10 @@ class AOIInfo(object):
                         configArray[1] = end_date
                         configArray[2] = "null"
                         configArray[3] = "null"
-                        print("Forcing manuall download for time interval: {} - {}".format(start_date, end_date))
-                        sys.stdout.flush()
+                        if site_id > 0:
+                            # the offline_l1_handler app is calling this function with site_id set to -1, so don't print this message for it
+                            print("Forcing manuall download for time interval: {} - {}".format(start_date, end_date))
+                            sys.stdout.flush()
                         forced_season = True
                     if not currentAOI.setConfigParams(configArray, forced_season):
                         print("OUT OF THE SEASON")
