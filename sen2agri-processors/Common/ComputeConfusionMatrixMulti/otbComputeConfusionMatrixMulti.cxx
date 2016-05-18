@@ -265,6 +265,7 @@ private:
       RasterizeFilterType::Pointer rasterizeReference;
       if (!rasterMode)
         {
+        // Reusing the filter doesn't seem to work as it won't update the projection
         rasterizeReference = RasterizeFilterType::New();
         rasterizeReference->AddOGRDataSource(ogrRef);
         rasterizeReference->SetBackgroundValue(nodata);
