@@ -11,7 +11,6 @@ from lxml.builder import E
 import math
 import os
 from os.path import isfile, isdir, join
-import glob
 import sys
 import time, datetime
 from time import gmtime, strftime
@@ -27,7 +26,7 @@ DEBUG = True
 DOWNLOADER_NUMBER_OF_CONFIG_PARAMS_FROM_DB = int(7)
 SENTINEL2_SATELLITE_ID = int(1)
 LANDSAT8_SATELLITE_ID = int(2)
-
+UNKNOWN_SATELLITE_ID = int(-1)
 #should not exceed 11 !!!!
 MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED = int(2)
 
@@ -49,35 +48,31 @@ DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE = int(5)
 g_exit_flag = False
 
 
-def log(location, info, log_filename = None):
-    if log_filename == None:
-        log_filename = "log.txt"
-    try:
-        logfile = os.path.join(location, log_filename)
-        if DEBUG:
-            #print("logfile: {}".format(logfile))
-            print("{}:{}".format(str(datetime.datetime.now()), str(info)))
-            sys.stdout.flush()
-        log = open(logfile, 'a')
-        log.write("{}:{}\n".format(str(datetime.datetime.now()),str(info)))
-        log.close()
-    except:
-        print("Could NOT write inside the log file {}".format(logfile))
+def log(location, info, log_filename = ""):
+    if DEBUG:        
+        print("{}:{}".format(str(datetime.datetime.now()), str(info)))
         sys.stdout.flush()
+    if len(location) > 0 and len(log_filename) > 0:
+        try:
+            logfile = os.path.join(location, log_filename)
+            log = open(logfile, 'a')
+            log.write("{}:{}\n".format(str(datetime.datetime.now()),str(info)))
+            log.close()
+        except:
+            print("Could NOT write inside the log file {}".format(logfile))
+            sys.stdout.flush()
 
 
 def run_command(cmd_array, log_path = "", log_filename = ""):
     start = time.time()
     cmd_str = " ".join(map(pipes.quote, cmd_array))
-    if len(log_path) > 0 and len(log_filename) > 0:
-        log(log_path, "Starting command: {}".format(cmd_str), log_filename)
+    log(log_path, "Starting command: {}".format(cmd_str), log_filename)
     res = 0
     if not FAKE_COMMAND:
         res = subprocess.call(cmd_array, shell=False)
-    if len(log_path) > 0 and len(log_filename) > 0:
-        ok = "OK"
-        nok = "NOK"
-        log(log_path, "Command finished {} in {} : {}".format((ok if res == 0 else nok),datetime.timedelta(seconds=(time.time() - start)), cmd_str), log_filename)
+    ok = "OK"
+    nok = "NOK"
+    log(log_path, "Command finished {} in {} : {}".format((ok if res == 0 else nok),datetime.timedelta(seconds=(time.time() - start)), cmd_str), log_filename)
     return res
 
 
@@ -108,20 +103,33 @@ def create_recursive_dirs(dir_name):
     return True
 
 
+def copy_directory(src, dest):
+    try:
+        print("Fake copy {} to {}".format(src, dest))
+        #shutil.copytree(src, dest)
+    # Directories are the same
+    except shutil.Error as e:
+        print("Directory not copied. Error: {}".format(e))
+        return False
+    # Any error saying that the directory doesn't exist
+    except OSError as e:
+        print("Directory not copied. Error: {}".format(e))
+        return False
+    return True
+
 def get_product_info(product_name):
     acquisition_date = None
-    sat_id = 0
+    sat_id = UNKNOWN_SATELLITE_ID
     if product_name.startswith("S2"):
         m = re.match("\w+_V(\d{8}T\d{6})_\w+.SAFE", product_name)
         if m != None:
-            sat_id = 1
+            sat_id = SENTINEL2_SATELLITE_ID
             acquisition_date = m.group(1)
     elif product_name.startswith("LC8"):
         m = re.match("LC8\d{6}(\d{7})LGN\d{2}", product_name)
         if m != None:
-            sat_id = 2
-            acquisition_date = m.group(1)
-            acquisition_date = strftime("%Y%m%dT%H%M%S", gmtime())
+            sat_id = LANDSAT8_SATELLITE_ID
+            acquisition_date = datetime.datetime.strptime("{} {}".format(m.group(1)[0:4],m.group(1)[4:]), '%Y %j').strftime("%Y%m%dT%H%M%S")
     return sat_id and (sat_id, acquisition_date)
 
 
@@ -599,8 +607,8 @@ class AOIInfo(object):
                     print("The provided status {} is not one of the known status from DB. Check downloader_status table !".format(status))
                     return False
             self.conn.commit()
-        except:
-            print("The query for product {} raised an exception !".format(productName))
+        except Exception, e:
+            print("The query for product {} raised an exception {} !".format(productName, e))
             self.databaseDisconnect()
             return False
         self.databaseDisconnect()
