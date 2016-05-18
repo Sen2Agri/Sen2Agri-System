@@ -21,6 +21,7 @@
 #include "otbVectorImage.h"
 
 #include "ContinuousColorMappingFilter.hxx"
+#include "otbStreamingStatisticsVectorImageFilter.h"
 
 namespace otb
 {
@@ -32,6 +33,9 @@ namespace Wrapper
 class ContinuousColorMapping : public Application
 {
 public:
+
+    typedef otb::StreamingStatisticsVectorImageFilter<FloatVectorImageType> StreamingStatisticsVectorImageFilterType;
+
     typedef ContinuousColorMapping Self;
     typedef Application Superclass;
     typedef itk::SmartPointer<Self> Pointer;
@@ -106,15 +110,15 @@ private:
             }
         } else {
             if(bIsRGBImage) {
-                bandIdx.emplace_back(2);
-                bandIdx.emplace_back(1);
                 bandIdx.emplace_back(0);
+                bandIdx.emplace_back(1);
+                bandIdx.emplace_back(2);
             } else {
                 bandIdx.emplace_back(0);
             }
         }
 
-        auto &&ramp = bIsRGBImage ? ReadRGBColorMap(mapFile) : ReadColorMap(mapFile);
+        auto &&ramp = bIsRGBImage ? ReadRGBColorMap(in, mapFile) : ReadColorMap(mapFile);
 
         m_Filter = ContinuousColorMappingFilter::New();
         m_Filter->SetInput(in);
@@ -151,19 +155,31 @@ private:
         return ramp;
     }
 
-    Ramp ReadRGBColorMap(std::istream &mapFile)
+    Ramp ReadRGBColorMap(FloatVectorImageType::Pointer in, std::istream &mapFile)
     {
         Ramp ramp;
 
+        StreamingStatisticsVectorImageFilterType::Pointer stats = StreamingStatisticsVectorImageFilterType::New();
+        stats->SetInput(in);
+        stats->Update();
+        // we are interested only in the maximum as the minimum will be considered always 0
+        auto pixelMaxVals = stats->GetMaximum();
+
         float min, max;
+        size_t i = 0;
         uint32_t rMin, rMax;
         while (mapFile >> min >> max >> rMin >> rMax)
         {
             itk::RGBPixel<uint8_t> minColor, maxColor;
             minColor[0] = static_cast<uint8_t>(rMin);
             maxColor[0] = static_cast<uint8_t>(rMax);
-
+            // get the minimum between the maximum value specified in map file and
+            // the maximum value found in image
+            if(i < pixelMaxVals.Size()) {
+                max = std::min(max, (float)pixelMaxVals[i]);
+            }
             ramp.emplace_back(min, max, minColor, maxColor);
+            i++;
         }
         if(ramp.size() < 3) {
             itkExceptionMacro("Invalid number of rows in map file. It should be at least 3 but we found only " << ramp.size());

@@ -6,6 +6,7 @@
 #include "phenondvihandler.hpp"
 #include "processorhandlerhelper.h"
 #include "json_conversions.hpp"
+#include "logger.hpp"
 
 void PhenoNdviHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
                                                 QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList)
@@ -149,8 +150,9 @@ void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 prodName, quicklook, footPrint, std::experimental::nullopt, TileList() });
 
             // Now remove the job folder containing temporary files
-            // TODO: Reinsert this line - commented only for debug purposes
-            //RemoveJobFolder(ctx, event.jobId);
+            RemoveJobFolder(ctx, event.jobId, "l3e");
+        } else {
+            Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
         }
     }
 }

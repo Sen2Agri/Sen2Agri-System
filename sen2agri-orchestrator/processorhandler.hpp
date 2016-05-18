@@ -27,7 +27,7 @@ protected:
     QString GetFinalProductFolder(EventProcessingContext &ctx, int jobId, int siteId);
     QString GetFinalProductFolder(EventProcessingContext &ctx, int jobId, int siteId, const QString &productName);
     QString GetFinalProductFolder(const std::map<QString, QString> &cfgKeys, const QString &siteName, const QString &processorName);
-    bool RemoveJobFolder(EventProcessingContext &ctx, int jobId);
+    bool RemoveJobFolder(EventProcessingContext &ctx, int jobId, const QString &procName);
     QString GetProductFormatterOutputProductPath(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterProductName(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterQuicklook(EventProcessingContext &ctx, const TaskFinishedEvent &event);
