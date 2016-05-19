@@ -45,7 +45,9 @@ function compile_OTB_package()
    git clone --depth=1 ${OTB_URL} ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}
 
    ##download MOSAIC
-   git clone --depth=1 ${OTB_MOSAIC_URL} ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-MOSAIC
+   git clone ${OTB_MOSAIC_URL} ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-MOSAIC
+   cd ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-MOSAIC
+   git checkout c741a7bf7dbe790727b6698635f50ebe4108a454
 
    ##copy MOSAIC into OTB/Modules/Remote
    mv ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-MOSAIC ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}/Modules/Remote
