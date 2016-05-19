@@ -12,7 +12,7 @@ BEGIN
 
 UPDATE site
 SET short_name = _short_name,
-    geog = ST_Force2D(ST_GeometryFromText(_geog)) :: geography
+    geog = ST_Multi(ST_Force2D(ST_GeometryFromText(_geog))) :: geography
 WHERE id = _id;
 
 UPDATE config

@@ -18,7 +18,7 @@ BEGIN
     _short_name := regexp_replace(_short_name, '_$', '');
 
 	INSERT INTO site(name,short_name, geog)
-	VALUES (_name,_short_name,ST_Force2D(ST_GeometryFromText(_geog)) :: geography)
+	VALUES (_name,_short_name, ST_Multi(ST_Force2D(ST_GeometryFromText(_geog))) :: geography)
 	RETURNING id INTO return_id;
 
 	IF(_winter_season_start <>''AND _winter_season_start IS NOT NULL) THEN
