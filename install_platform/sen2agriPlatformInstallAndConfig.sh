@@ -703,9 +703,9 @@ function install_maccs()
         echo "Cannot find installed MACCS. Did you install it under a different path?"
     fi
 
-    echo "If a MACCS installation is available, please enter the path to the 'maccs' binary"
+    echo "If MACCS is already installed, please enter the path to the 'maccs' executable (e.g. /opt/maccs/core/4.7/bin/maccs)"
     while :; do
-        read -ep "Path to maccs binary: "
+        read -ep "Path to maccs executable: "
         if [ $? -ne 0 ]; then
             echo "Cancelled, exiting"
             exit 1
