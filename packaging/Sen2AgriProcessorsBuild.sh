@@ -69,7 +69,7 @@ function build_SEN2AGRI_processors_RPM_Package()
 
    ## add script for validity checking of the created products
    cp -f ${SOURCES_DIR_PATH}/sen2agri-processors/validity_checker/*.py ${PROC_INSTALL_PATH}/usr/bin
-   
+
    ##create a temporary dir
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_processors
 
@@ -87,25 +87,16 @@ function build_SEN2AGRI_downloaders_demmacs_RPM_Package()
    #DOWNLOADERS
    ###########################################
 
-   ##create folder tree into install folder : usr/
-   mkdir -p ${DOWNL_DEM_INSTALL_PATH}
-   mkdir -p ${DOWNL_DEM_INSTALL_PATH}/usr
-
    ##downloaders/demmaccs scripts will be installed in folder : usr/share/sen2agri/sen2agri-downloaders or usr/share/sen2agri/sen2agri-demmaccs
-   mkdir -p ${DOWNL_DEM_INSTALL_PATH}/usr/share
-   mkdir -p ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri
    mkdir -p ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-downloaders
    mkdir -p ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-demmaccs
 
    ##downloaders/demmaccs services will be installed in folder : usr/lib/systemd/system
-   mkdir -p ${DOWNL_DEM_INSTALL_PATH}/usr/lib
-   mkdir -p ${DOWNL_DEM_INSTALL_PATH}/usr/lib/systemd
    mkdir -p ${DOWNL_DEM_INSTALL_PATH}/usr/lib/systemd/system
 
    ##downloaders/demmaccs common *.py scripts will reside to  /usr/lib/python2.7/site-packages/
 
    ##create folder tree into install folder : usr/
-   mkdir -p ${DOWNL_DEM_INSTALL_PATH}/usr/lib/python2.7
    mkdir -p ${DOWNL_DEM_INSTALL_PATH}/usr/lib/python2.7/site-packages
 
    ###########################################
