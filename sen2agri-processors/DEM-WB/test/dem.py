@@ -195,6 +195,9 @@ def create_context(args):
         images.append("{}/{}_B1.TIF".format(dir_base, os.path.basename(dir_base)))
     elif mode == 'S2':
         dir_base += "/GRANULE/"
+        if not os.path.exists(dir_base) or not os.path.isdir(dir_base):
+            print("The path for Sentinel 2 (with GRANULE) does not exist ! {}".format(dir_base))
+            return []
         tile_dirs = ["{}{}".format(dir_base, f) for f in os.listdir(dir_base) if isdir(join(dir_base, f))]
         for tile_dir in tile_dirs:
             tile_dir += "/IMG_DATA/"
