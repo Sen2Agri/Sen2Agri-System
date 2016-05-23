@@ -172,7 +172,8 @@ private:
             FloatToShortTransFilterType::Pointer floatToShortFunctor = FloatToShortTransFilterType::New();
             floatToShortFunctor->SetInput(m_Filter->GetOutput());
             if(bIsRaster) {
-                floatToShortFunctor->GetFunctor().Initialize(DEFAULT_QUANTIFICATION_VALUE, 0);
+                // we have here the already quantified values that need no other quantification
+                floatToShortFunctor->GetFunctor().Initialize(1, 0);
                 paramOut->SetPixelType(ImagePixelType_int16);
             } else {
                 // we need no quantification value, just convert to byte

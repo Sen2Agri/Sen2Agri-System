@@ -57,7 +57,7 @@ private:
     void HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 const TaskFinishedEvent &event) override;
 
-    void CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
+    void CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList, const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                    LAIProductFormatterParams &outProdFormatterParams,
                                    int nbProducts, bool bGenModels, bool bMonoDateLai, bool bNDayReproc, bool bFittedReproc);
 
@@ -71,6 +71,7 @@ private:
                                 const QStringList &listProducts, bool bIsReproc);
 
     // Arguments getters
+    QStringList GetCutImgArgs(const QString &shapePath, const QString &inFile, const QString &outFile);
     QStringList GetNdviRviExtractionArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile, const QString &ndviFile, const QString &resolution);
     QStringList GetBvImageInvArgs(const QString &ftsFile, const QString &msksFlagsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateLaiFileName);
     QStringList GetBvErrImageInvArgs(const QString &ftsFile, const QString &msksFlagsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateErrFileName);
@@ -97,8 +98,14 @@ private:
                                         const JobSubmittedEvent &event,
                                         const QStringList &listProducts, const QList<LAIProductFormatterParams> &productParams, bool isFitted);
 
-    void GetStepsToGenModel(std::map<QString, QString> &configParameters, bool bHasMonoDateLai, const QStringList &listProducts,
-                            QList<TaskToSubmit> &allTasksList, NewStepList &steps);
+    NewStepList GetStepsForMonodateLai(EventProcessingContext &ctx, const JobSubmittedEvent &event, const TileTemporalFilesInfo &tileTemporalFilesInfo,
+                                       const QStringList &monoDateInputs, QList<TaskToSubmit> &allTasksList, LAIProductFormatterParams &productFormatterParams,
+                                       QStringList &monoDateMskFlagsLaiFileNames, QStringList &quantifiedLaiFileNames, QStringList &quantifiedErrLaiFileNames);
+    NewStepList GetStepsToGenModel(std::map<QString, QString> &configParameters, const TileTemporalFilesInfo &tileTemporalFilesInfo, bool bHasMonoDateLai,
+                                   const QStringList &listProducts, QList<TaskToSubmit> &allTasksList);
+    NewStepList GetStepsForMultiDateReprocessing(std::map<QString, QString> &configParameters, const TileTemporalFilesInfo &tileTemporalFilesInfo, const QStringList &listProducts,
+                                                 QList<TaskToSubmit> &allTasksList, bool bNDayReproc, bool bFittedReproc, LAIProductFormatterParams &productFormatterParams,
+                                                 QStringList &monoDateMskFlagsLaiFileNames, QStringList &quantifiedLaiFileNames, QStringList &quantifiedErrLaiFileNames);
     QStringList GetBVInputVariableGenerationArgs(std::map<QString, QString> &configParameters, const QString &strGenSampleFile);
     QStringList GetProSailSimulatorArgs(const QString &product, const QString &bvFileName, const QString &rsrCfgFileName,
                                        const QString &outSimuReflsFile, const QString &outAngles, std::map<QString, QString> &configParameters);
@@ -119,6 +126,7 @@ private:
             const QMap<QString, LAIProductFormatterParams> &mapTileToParams, const QMap<QString, QStringList> &inputProductToTilesMap,
             QStringList &outProductTiles, QList<LAIMonoDateProductFormatterParams> &outProductParams, QStringList &outProductTileMetaFiles);
 private:
+    int m_nFirstReprocessingIdx;
     int m_nTimeSeriesBuilderIdx;
     int m_nErrTimeSeriesBuilderIdx;
     int m_nLaiMskFlgsTimeSeriesBuilderIdx;

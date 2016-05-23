@@ -134,6 +134,8 @@ QMap<QString, ProcessorHandlerHelper::TileTemporalFilesInfo> ProcessorHandlerHel
         outPrimarySatelliteId = SATELLITE_ID_TYPE_SPOT4;
     } else if (outAllSatIds.contains(SATELLITE_ID_TYPE_SPOT5)) {
         outPrimarySatelliteId = SATELLITE_ID_TYPE_SPOT5;
+    } else if(outAllSatIds.size() == 1) {
+        outPrimarySatelliteId = outAllSatIds[0];
     }
 
     // now update also the primary satelite id

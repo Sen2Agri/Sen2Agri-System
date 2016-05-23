@@ -218,11 +218,11 @@ private:
     SetParameterDescription("algo.local", "This group of parameters allows to set local window parameters. ");
 
     AddParameter(ParameterType_Int, "algo.local.bwr", "Local window backward radius");
-    SetParameterInt("algo.local.bwr", 1);
+    SetParameterInt("algo.local.bwr", 2);
     SetParameterDescription("algo.local.bwr", "Backward radius of the local window. ");
 
     AddParameter(ParameterType_Int, "algo.local.fwr", "Local window forward radius");
-    SetParameterInt("algo.local.fwr", 1);
+    SetParameterInt("algo.local.fwr", 0);
     SetParameterDescription("algo.local.fwr", "Forward radius of the local window. ");
     MandatoryOff("algo");
 
