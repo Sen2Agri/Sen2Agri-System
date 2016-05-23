@@ -165,6 +165,7 @@ struct qualityInfo
 {
     std::string strFileName;
     std::string strTileID;
+    std::string strRegion;
 };
 
 struct previewInfo
@@ -502,7 +503,7 @@ private:
 
           //get quality file list
           filesList = this->GetParameterStringList("processor.cropmask.quality");
-          UnpackNonRastersList(filesList);
+          UnpackQualityFlagsList(filesList);
 
           // get the CropMask flags
           filesList = this->GetParameterStringList("processor.cropmask.flags");
@@ -519,7 +520,7 @@ private:
 
           //get quality file list
           filesList = this->GetParameterStringList("processor.croptype.quality");
-          UnpackNonRastersList(filesList);
+          UnpackQualityFlagsList(filesList);
 
           // get the CropType flags
           filesList = this->GetParameterStringList("processor.croptype.flags");
@@ -666,9 +667,10 @@ private:
       return nTotalFoundTiles;
   }
 
-  void UnpackNonRastersList(std::vector<std::string> &filesList) {
+  void UnpackQualityFlagsList(std::vector<std::string> &filesList) {
       qualityInfo qualityInfoEl;
       std::string strTileID;
+      std::string strRegion;
       for (const auto &fileEl : filesList) {
           if(fileEl.compare(0, 5, "TILE_") == 0)
           {
@@ -680,9 +682,12 @@ private:
                 tileInfoEl.strTileID = strTileID;
                 m_tileIDList.emplace_back(tileInfoEl);
               }
+          } else if (fileEl.compare(0, 7, "REGION_") == 0) {
+              strRegion = fileEl.substr(7, fileEl.length() - 7);
           } else  {
               qualityInfoEl.strFileName = fileEl;
               qualityInfoEl.strTileID = strTileID;
+              qualityInfoEl.strRegion = strRegion;
               m_qualityList.emplace_back(qualityInfoEl);
           }
       }
@@ -1507,7 +1512,7 @@ private:
             }
           } else {
               boost::filesystem::path p(qualityFileEl.strFileName);
-              strNewQualityFileName = BuildFileName(QUALITY_CATEG, "", p.extension().string());
+              strNewQualityFileName = BuildFileName(QUALITY_CATEG, "", p.extension().string(), "", "", "", qualityFileEl.strRegion);
 
                //quality files are copied to tileDirectory/QI_DATA
               CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName +
@@ -1774,8 +1779,8 @@ private:
   }
 
   std::string BuildFileName(const std::string &fileCateg, const std::string &tileId, const std::string &extension="", const std::string &strTimePeriod = "",
-                            const std::string &site = "", const std::string &creationDate = "") {
-      std::string strFileName = "{project_id}_{product_level}_{file_category}_S{originator_site}_{creation_date}_V{time_period}_T{tile_id}";
+                            const std::string &site = "", const std::string &creationDate = "", const std::string &region = "") {
+      std::string strFileName = "{project_id}_{product_level}_{file_category}_S{originator_site}_{creation_date}_V{time_period}_T{tile_id}_R{region}";
       strFileName = ReplaceString(strFileName, "{project_id}", PROJECT_ID);
       strFileName = ReplaceString(strFileName, "{product_level}", m_strProductLevel);
       if(fileCateg.length() > 0) {
@@ -1810,6 +1815,12 @@ private:
           strFileName = ReplaceString(strFileName, "_T{tile_id}", tileId);
       } else {
           strFileName = ReplaceString(strFileName, "_T{tile_id}", "_T" + tileId);
+      }
+
+      if (!region.empty()) {
+          strFileName = ReplaceString(strFileName, "{region}", region);
+      } else {
+          strFileName = ReplaceString(strFileName, "_R{region}", "");
       }
 
       if(extension.length() > 0)
