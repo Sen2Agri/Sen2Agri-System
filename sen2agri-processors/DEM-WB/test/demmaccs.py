@@ -185,7 +185,7 @@ def maccs_launcher(demmaccs_context):
                     "--CheckXMLFilesWithSchema", "false"]
     if sat_id == SENTINEL2_SATELLITE_ID:
         #UserConfiguration has to be added for SENTINEL in cmd_array
-        cmd_array += ["--conf", "UserConfiguration"]
+        cmd_array += ["--conf", "/usr/share/sen2agri/sen2agri-demmaccs/UserConfiguration"]
     log(demmaccs_context.output, "sat_id = {} | acq_date = {}".format(sat_id, acquistion_date), tile_log_filename)
     log(demmaccs_context.output, "Starting MACCS in {} for {} | TileID: {}".format(maccs_mode, demmaccs_context.input, tile_id), tile_log_filename)
     log(demmaccs_context.output, "MACCS_COMMAND: {}".format(cmd_array), tile_log_filename)
