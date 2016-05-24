@@ -2,12 +2,10 @@
 session_start();
 require_once ("ConfigParams.php");
 
-function redirect_page($processor_id, $status, $message) {
-	switch ($processor_id) {
-		case 4: $_SESSION['processor'] = 'l4a'; $_SESSION['status'] = $status; $_SESSION['message'] = $message; break;
-		case 5: $_SESSION['processor'] = 'l4b'; $_SESSION['status'] = $status; $_SESSION['message'] = $message; break;
-		default: ;
-	}
+function redirect_page($processor_short_name, $status, $message) {
+	$_SESSION['processor'] = $processor_short_name;
+	$_SESSION['status'] = $status;
+	$_SESSION['message'] = $message;
 	
 	// redirect to custom jobs page
 	$referer = $_SERVER['HTTP_REFERER'];
@@ -160,39 +158,48 @@ function upload_reference_raster($site_id, $timestamp) {
 	return $shp_file;
 }
 
-function insertjob($name, $description, $processor_id, $site_id, $start_type_id, $parameters, $configuration) {
+function insertjob($name, $description, $processor_short_name, $site_id, $start_type_id, $parameters, $configuration) {
 	$db = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 	
-	$sql1 = "SELECT sp_submit_job($1,$2,$3,$4,$5,$6,$7)";
-	$res = pg_prepare ( $db, "my_query", $sql1 );
-	$res = pg_execute ( $db, "my_query", array (
-			$name,
-			$description,
-			$processor_id,
-			$site_id,
-			$start_type_id,
-			$parameters,
-			$configuration 
-	) ) or die ("An error occurred.");
-	
-	// send notification through CURL
-	try {
-		//url of the service
-		$url= ConfigParams::$SERVICES_NOTIFY_ORCHESTRATOR_URL;
+	$rows = pg_query($db, "SELECT id FROM processor WHERE short_name='".processor_short_name."'") or die(pg_last_error());
+	if (pg_numrows($rows) > 0) {
+		$processor_id = pg_fetch_array($rows, 0)[0];
 		
-		//initialise connection
-		$ch = curl_init();
-		curl_setopt($ch, CURLOPT_URL, $url);
-		curl_setopt($ch, CURLOPT_POST, 1);
-		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+		$sql1 = "SELECT sp_submit_job($1,$2,$3,$4,$5,$6,$7)";
+		$res = pg_prepare ( $db, "my_query", $sql1 );
+		$res = pg_execute ( $db, "my_query", array (
+				$name,
+				$description,
+				$processor_id,
+				$site_id,
+				$start_type_id,
+				$parameters,
+				$configuration 
+		) ) or die ("An error occurred.");
 		
-		$response = curl_exec($ch);
-		curl_close($ch);
-	} catch (Exception $e) {
+		// send notification through CURL
+		try {
+			//url of the service
+			$url= ConfigParams::$SERVICES_NOTIFY_ORCHESTRATOR_URL;
+			
+			//initialise connection
+			$ch = curl_init();
+			curl_setopt($ch, CURLOPT_URL, $url);
+			curl_setopt($ch, CURLOPT_POST, 1);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+			
+			$response = curl_exec($ch);
+			curl_close($ch);
+		} catch (Exception $e) {
+		}
+	} else {
+		echo "Invalid processor (". $processor_short_name ."): processor short name not found in the database.";
 	}
 }
 
 if (isset ( $_POST ['l3a'] )) {
+	$processor_short_name = "l3a";
+	
 	$siteId = $_POST ['siteId'];
 	
 	$resolution = $_POST ['resolution'];
@@ -261,10 +268,12 @@ if (isset ( $_POST ['l3a'] )) {
 	
 	// set job name and description and save job
 	$name = "l3a_processor" . date ( "m.d.y" );
-	$description = "generated new configuration from site for l3a";
-	insertjob ( $name, $description, 2, $siteId, 2, $json_param, $json_config );
+	$description = "generated new configuration from site for ".$processor_short_name;
+	insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
 } /* -------------------------------------------------------l3b_lai------------------------------------------------------ */
 elseif (isset ( $_POST ['l3b_lai'] )) {
+	$processor_short_name = "l3b_lai";
+
 	$siteId = $_POST ['siteId'];
 	
 	$resolution = $_POST ['resolution'];
@@ -321,10 +330,12 @@ elseif (isset ( $_POST ['l3b_lai'] )) {
 	
 	// set job name and description and save job
 	$name = "l3b_processor" . date ( "m.d.y" );
-	$description = "generated new configuration from site for l3b_lai";
-	insertjob ( $name, $description, 3, $siteId, 2, $json_param, $json_config );
+	$description = "generated new configuration from site for ".$processor_short_name;
+	insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
 } /* -------------------------------------------------------l3b_pheno------------------------------------------------------ */
 elseif (isset ( $_POST ['l3b_pheno'] )) {
+	$processor_short_name = "l3b_pheno";
+	
 	$siteId = $_POST ['siteId'];
 	
 	$resolution = $_POST ['resolution'];
@@ -345,10 +356,12 @@ elseif (isset ( $_POST ['l3b_pheno'] )) {
 	
 	// set job name and description and save job
 	$name = "l3b_pheno_processor" . date ( "m.d.y" );
-	$description = "generated new configuration from site for l3b_lai";
-	insertjob ( $name, $description, 7, $siteId, 2, $json_param, $json_config );
+	$description = "generated new configuration from site for ".$processor_short_name;
+	insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
 } /* -------------------------------------------------------l4a------------------------------------------------------ */
 elseif (isset ( $_POST ['l4a'] )) {
+	$processor_short_name = "l4a";
+
 	$siteId = $_POST ['siteId'];
 	
 	$resolution = $_POST ['resolution'];
@@ -495,16 +508,18 @@ elseif (isset ( $_POST ['l4a'] )) {
 	
 	// set job name and description and save job
 	$name = "l4a_processor" . date ( "m.d.y" );
-	$description = "generated new configuration from site for l4a";
+	$description = "generated new configuration from site for ".$processor_short_name;
 	
 	if ($polygons_file || $raster_file) {
-		insertjob ( $name, $description, 4, $siteId, 2, $json_param, $json_config );
-		redirect_page(4, "OK", "Your job has been successfully submitted (with the reference " . ( $polygons_file ? "polygons" : "raster" ) . ")!");
+		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
+		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted (with the reference " . ( $polygons_file ? "polygons" : "raster" ) . ")!");
 	} else {
-		redirect_page(4, "NOK", "WARNING: Both `Reference polygons` and `Reference raster` were invalid!");
+		redirect_page($processor_short_name, "NOK", "WARNING: Both `Reference polygons` and `Reference raster` were invalid!");
 	}
 } /* -------------------------------------------------------l4b------------------------------------------------------ */
 elseif (isset ( $_POST ['l4b'] )) {
+	$processor_short_name = "l4b";
+
 	$siteId = $_POST ['siteId'];
 	
 	$input_products = $_POST ['inputFiles'];
@@ -594,12 +609,12 @@ elseif (isset ( $_POST ['l4b'] )) {
 		
 		// set job name and description and save job
 		$name = "l4b_processor" . date ( "m.d.y" );
-		$description = "generated new configuration from site for l4b";
+		$description = "generated new configuration from site for ".$processor_short_name;
 		
-		insertjob ( $name, $description, 5, $siteId, 2, $json_param, $json_config );
-		redirect_page(5, "OK", "Your job has been successfully submitted!");
+		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
+		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
 	} else {
-		redirect_page(5, "NOK", $result." (".$message.")");
+		redirect_page($processor_short_name, "NOK", $result." (".$message.")");
 	}
 }
 ?>
