@@ -93,7 +93,7 @@ void CropMaskHandler::HandleNewTilesList(EventProcessingContext &ctx,
         allTasksListRef = CreateInSituTasksForNewProducts(globalExecInfos.allTasksList,
                                                           globalExecInfos.prodFormatParams.parentsTasksRef);
         ctx.SubmitTasks(event.jobId, allTasksListRef);
-        HandleInsituJob(ctx, event, listProducts, globalExecInfos);
+        HandleInsituJob(ctx, event, tileTemporalFilesInfo, listProducts, globalExecInfos);
     } else {
         const auto &reference_raster = parameters["reference_raster"].toString();
         if(reference_raster.size() == 0) {
@@ -105,7 +105,7 @@ void CropMaskHandler::HandleNewTilesList(EventProcessingContext &ctx,
         allTasksListRef = CreateNoInSituTasksForNewProducts(globalExecInfos.allTasksList,
                                                             globalExecInfos.prodFormatParams.parentsTasksRef);
         ctx.SubmitTasks(event.jobId, allTasksListRef);
-        HandleNoInsituJob(ctx, event, listProducts, globalExecInfos);
+        HandleNoInsituJob(ctx, event, tileTemporalFilesInfo, listProducts, globalExecInfos);
     }
 }
 
@@ -233,6 +233,7 @@ void CropMaskHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 
 void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
                                       const JobSubmittedEvent &event,
+                                      const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                       const QStringList &listProducts,
                                       CropMaskGlobalExecutionInfos &globalExecInfos)
 
@@ -246,8 +247,9 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
 
     const auto &referencePolygons = parameters["reference_polygons"].toString();
 
-    auto mission = configParameters["processor.l4a.mission"];
-    if(mission.length() == 0) mission = "SENTINEL";
+//    auto mission = configParameters["processor.l4a.mission"];
+//    if(mission.length() == 0) mission = "SENTINEL";
+    auto mission = ProcessorHandlerHelper::GetMissionNamePrefixFromSatelliteId(tileTemporalFilesInfo.primarySatelliteId);
 
     int resolution = 0;
     if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
@@ -479,6 +481,7 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
 
 void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
                                         const JobSubmittedEvent &event,
+                                        const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                         const QStringList &listProducts,
                                         CropMaskGlobalExecutionInfos &globalExecInfos)
 {
@@ -491,8 +494,9 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
 
     const auto &reference = parameters["reference_raster"].toString();
 
-    auto mission = configParameters["processor.l4a.mission"];
-    if(mission.length() == 0) mission = "SPOT";
+    //auto mission = configParameters["processor.l4a.mission"];
+    //if(mission.length() == 0) mission = "SPOT";
+    auto mission = ProcessorHandlerHelper::GetMissionNamePrefixFromSatelliteId(tileTemporalFilesInfo.primarySatelliteId);
 
     int resolution = 0;
     if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
@@ -733,8 +737,8 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
     CropMaskProductFormatterParams &productFormatterParams = globalExecInfos.prodFormatParams;
     productFormatterParams.crop_mask = crop_mask;
     productFormatterParams.raw_crop_mask = raw_crop_mask;
-    productFormatterParams.raw_crop_mask = xml_validation_metrics;
-    productFormatterParams.raw_crop_mask = statusFlags;
+    productFormatterParams.xml_validation_metrics = xml_validation_metrics;
+    productFormatterParams.statusFlags = statusFlags;
 }
 
 QStringList CropMaskHandler::GetBandsExtractorArgs(const QString &mission, const QString &outImg, const QString &mask, const QString &statusFlags,

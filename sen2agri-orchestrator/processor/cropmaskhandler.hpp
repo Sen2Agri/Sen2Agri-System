@@ -39,9 +39,9 @@ private:
 
     void HandleNewTilesList(EventProcessingContext &ctx,
                            const JobSubmittedEvent &event, const TileTemporalFilesInfo &tileTemporalFilesInfo, CropMaskGlobalExecutionInfos &globalExecInfos);
-    void HandleInsituJob(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QStringList &listProducts,
+    void HandleInsituJob(EventProcessingContext &ctx, const JobSubmittedEvent &event, const TileTemporalFilesInfo &tileTemporalFilesInfo, const QStringList &listProducts,
                          CropMaskGlobalExecutionInfos &globalExecInfos);
-    void HandleNoInsituJob(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+    void HandleNoInsituJob(EventProcessingContext &ctx, const JobSubmittedEvent &event, const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                                    const QStringList &listProducts, CropMaskGlobalExecutionInfos &globalExecInfos);
 
     QStringList GetBandsExtractorArgs(const QString &mission, const QString &outImg, const QString &mask, const QString &statusFlags,

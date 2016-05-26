@@ -52,8 +52,9 @@ void CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     const auto &gdalwarpMem = resourceParameters["resources.gdalwarp.working-mem"];
     const auto &referencePolygons = parameters["reference_polygons"].toString();
 
-    auto mission = configParameters["processor.l4b.mission"];
-    if(mission.length() == 0) mission = "SENTINEL";
+    //auto mission = configParameters["processor.l4b.mission"];
+    //if(mission.length() == 0) mission = "SENTINEL";
+    auto mission = ProcessorHandlerHelper::GetMissionNamePrefixFromSatelliteId(tileTemporalFilesInfo.primarySatelliteId);
 
     int resolution = 0;
     if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||

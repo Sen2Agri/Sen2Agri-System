@@ -52,6 +52,8 @@ public:
     static QString GetTileId(const QString &path, SatelliteIdType &satelliteId);
     //static QStringList GetProductTileIds(const QStringList &listFiles);
     static QMap<QString, TileTemporalFilesInfo> GroupTiles(const QStringList &listAllProductsTiles, QList<SatelliteIdType> &outAllSatIds, SatelliteIdType &outPrimarySatelliteId);
+    static SatelliteIdType GetPrimarySatelliteId(const QList<ProcessorHandlerHelper::SatelliteIdType> &satIds);
+    static QString GetMissionNamePrefixFromSatelliteId(SatelliteIdType satId);
     static QStringList GetTextFileLines(const QString &filePath);
     static QString GetFileNameFromPath(const QString &filePath);
     static bool IsValidHighLevelProduct(const QString &path);

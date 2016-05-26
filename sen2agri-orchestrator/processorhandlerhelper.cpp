@@ -7,6 +7,8 @@
 // Map from the sensor name to :
 //      - product type
 //      - pattern containing index of the date in the file name of the L2A product assuming _ separation
+// NOTE: The key of the map is the string as it appears in the file name of the product (S2, L8, SPOT4 etc.) and
+//       not the name of the satellite as it appears inside the file metadata of product (that can be SENTINEL-2A, LANDSAT_8 etc.)
 /* static */
 QMap<QString, ProcessorHandlerHelper::L2MetaTileNameInfos> ProcessorHandlerHelper::m_mapSensorL2ATileMetaFileInfos =
     {{"S2", {ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2, 8, "hdr", "S2A|S2B_*_*_L2VALD_<TILEID>_*_*_*_<DATE>.HDR"}},
@@ -127,16 +129,7 @@ QMap<QString, ProcessorHandlerHelper::TileTemporalFilesInfo> ProcessorHandlerHel
     }
 
     // Get the primary satellite id
-    outPrimarySatelliteId = SATELLITE_ID_TYPE_S2;
-    if(outAllSatIds.contains(SATELLITE_ID_TYPE_S2)) {
-        outPrimarySatelliteId = SATELLITE_ID_TYPE_S2;
-    } else if (outAllSatIds.contains(SATELLITE_ID_TYPE_SPOT4)) {
-        outPrimarySatelliteId = SATELLITE_ID_TYPE_SPOT4;
-    } else if (outAllSatIds.contains(SATELLITE_ID_TYPE_SPOT5)) {
-        outPrimarySatelliteId = SATELLITE_ID_TYPE_SPOT5;
-    } else if(outAllSatIds.size() == 1) {
-        outPrimarySatelliteId = outAllSatIds[0];
-    }
+    outPrimarySatelliteId = ProcessorHandlerHelper::GetPrimarySatelliteId(outAllSatIds);
 
     // now update also the primary satelite id
     QMap<QString, TileTemporalFilesInfo>::iterator i;
@@ -148,6 +141,40 @@ QMap<QString, ProcessorHandlerHelper::TileTemporalFilesInfo> ProcessorHandlerHel
     }
 
     return mapTiles;
+}
+
+ProcessorHandlerHelper::SatelliteIdType ProcessorHandlerHelper::GetPrimarySatelliteId(
+        const QList<ProcessorHandlerHelper::SatelliteIdType> &satIds) {
+    // Get the primary satellite id
+    SatelliteIdType retSatId = SATELLITE_ID_TYPE_S2;
+    if(satIds.contains(SATELLITE_ID_TYPE_S2)) {
+        retSatId = SATELLITE_ID_TYPE_S2;
+    } else if (satIds.contains(SATELLITE_ID_TYPE_SPOT4)) {
+        retSatId = SATELLITE_ID_TYPE_SPOT4;
+    } else if (satIds.contains(SATELLITE_ID_TYPE_SPOT5)) {
+        retSatId = SATELLITE_ID_TYPE_SPOT5;
+    } else if(satIds.size() == 1) {
+        retSatId = satIds[0];
+    }
+
+    return retSatId;
+}
+
+// NOTE: returning string is the name of the satellite as it appears inside the file metadata of product
+//       (that can be SENTINEL-2A, LANDSAT_8 etc.) and NOT the small identifier that appears in the file name
+//       of the product (like S2, L8 etc.)
+QString ProcessorHandlerHelper::GetMissionNamePrefixFromSatelliteId(ProcessorHandlerHelper::SatelliteIdType satId) {
+    switch (satId) {
+        case SATELLITE_ID_TYPE_S2:
+            return "SENTINEL";
+        case SATELLITE_ID_TYPE_SPOT4:
+        case SATELLITE_ID_TYPE_SPOT5:
+            return "SPOT";
+        case SATELLITE_ID_TYPE_L8:
+            return "LANDSAT";
+        default:
+            return "SENTINEL";
+    }
 }
 
 bool ProcessorHandlerHelper::IsValidHighLevelProduct(const QString &path) {
