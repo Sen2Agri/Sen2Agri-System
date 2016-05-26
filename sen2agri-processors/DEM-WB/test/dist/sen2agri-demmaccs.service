@@ -1,8 +1,9 @@
 [Unit]
 Description=Runs MACCS on L1C products
+After=postgresql-9.4.service
+Requires=postgresql-9.4.service
 
 [Service]
 Type=simple
-#ExecStart=/usr/bin/demmaccs_launcher.py
 ExecStart=/usr/share/sen2agri/sen2agri-demmaccs/demmaccs_launcher.py
 User=sen2agri-service
