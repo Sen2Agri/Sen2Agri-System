@@ -6,7 +6,7 @@ function redirect_page($processor_short_name, $status, $message) {
 	$_SESSION['processor'] = $processor_short_name;
 	$_SESSION['status'] = $status;
 	$_SESSION['message'] = $message;
-	
+
 	// redirect to custom jobs page
 	$referer = $_SERVER['HTTP_REFERER'];
 	header("Location: $referer");
@@ -42,7 +42,7 @@ function upload_reference_polygons($site_id, $timestamp) {
 		$filename = $_FILES["refp"]["name"];
 		$source = $_FILES["refp"]["tmp_name"];
 		$type = $_FILES["refp"]["type"];
-		
+
 		$zip_file = false;
 		$accepted_types = array('application/zip', 'application/x-zip-compressed', 'multipart/x-zip', 'application/x-compressed');
 		foreach($accepted_types as $mime_type) {
@@ -53,7 +53,7 @@ function upload_reference_polygons($site_id, $timestamp) {
 		}
 		if ($zip_file) {
 			$upload_target_dir = createCustomUploadFolder($site_id, $timestamp);
-			
+
 			$target_path = $upload_target_dir . $filename;
 			if(move_uploaded_file($source, $target_path)) {
 				$zip = new ZipArchive();
@@ -86,13 +86,13 @@ function upload_reference_polygons($site_id, $timestamp) {
 	} else {
 		$zip_msg = 'Unable to access your selected file';
 	}
-	
+
 	// verify if shape file has valid geometry
 	$shp_msg = '';
 	$shape_ok = false;
 	if ($shp_file) {
 		exec('scripts/check_shp.py '.$shp_file, $output, $ret);
-		
+
 		if ($ret === FALSE) {
 			$shp_msg = 'Invalid command line';
 		} else {
@@ -118,12 +118,12 @@ function upload_reference_polygons($site_id, $timestamp) {
 	} else {
 		$shp_msg = 'Missing shape file due to a problem with your selected file';
 	}
-	
+
 	// Insert code to verify surface coverage using $shp_msg
 	//
 	//
 	//
-	
+
 	return array ( "polygons_file" => $shp_file, "result" => $shp_msg, "message" => $zip_msg );
 }
 
@@ -133,7 +133,7 @@ function upload_reference_raster($site_id, $timestamp) {
 		$filename = $_FILES["refr"]["name"];
 		$source = $_FILES["refr"]["tmp_name"];
 		$type = $_FILES["refr"]["type"];
-		
+
 		$img_file = false;
 		$accepted_types = array('image/tiff', 'image/png', 'image/jp2');
 		foreach($accepted_types as $mime_type) {
@@ -142,10 +142,10 @@ function upload_reference_raster($site_id, $timestamp) {
 				break;
 			}
 		}
-		
+
 		if ($img_file) {
 			$upload_target_dir = createCustomUploadFolder($site_id, $timestamp);
-			
+
 			$target_path = $upload_target_dir . $filename;  // change this to the correct site path
 			if(move_uploaded_file($source, $target_path)) {
 				$shp_file = $target_path;
@@ -160,11 +160,11 @@ function upload_reference_raster($site_id, $timestamp) {
 
 function insertjob($name, $description, $processor_short_name, $site_id, $start_type_id, $parameters, $configuration) {
 	$db = pg_connect( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-	
-	$rows = pg_query($db, "SELECT id FROM processor WHERE short_name='".processor_short_name."'") or die(pg_last_error());
+
+	$rows = pg_query($db, "SELECT id FROM processor WHERE short_name='$processor_short_name'") or die(pg_last_error());
 	if (pg_numrows($rows) > 0) {
 		$processor_id = pg_fetch_array($rows, 0)[0];
-		
+
 		$sql1 = "SELECT sp_submit_job($1,$2,$3,$4,$5,$6,$7)";
 		$res = pg_prepare ( $db, "my_query", $sql1 );
 		$res = pg_execute ( $db, "my_query", array (
@@ -174,20 +174,20 @@ function insertjob($name, $description, $processor_short_name, $site_id, $start_
 				$site_id,
 				$start_type_id,
 				$parameters,
-				$configuration 
+				$configuration
 		) ) or die ("An error occurred.");
-		
+
 		// send notification through CURL
 		try {
 			//url of the service
 			$url= ConfigParams::$SERVICES_NOTIFY_ORCHESTRATOR_URL;
-			
+
 			//initialise connection
 			$ch = curl_init();
 			curl_setopt($ch, CURLOPT_URL, $url);
 			curl_setopt($ch, CURLOPT_POST, 1);
 			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-			
+
 			$response = curl_exec($ch);
 			curl_close($ch);
 		} catch (Exception $e) {
@@ -199,13 +199,13 @@ function insertjob($name, $description, $processor_short_name, $site_id, $start_
 
 if (isset ( $_POST ['l3a'] )) {
 	$processor_short_name = "l3a";
-	
+
 	$siteId = $_POST ['siteId'];
-	
+
 	$resolution = $_POST ['resolution'];
 	$input_products = $_POST ['inputFiles'];
 	$synthDate = $_POST ['synthDate'];
-	
+
 	$maxaot = $_POST ['maxaot'];
 	$minweight = $_POST ['minweight'];
 	$maxweight = $_POST ['maxweight'];
@@ -214,7 +214,7 @@ if (isset ( $_POST ['l3a'] )) {
 	$coarseresolution = $_POST ['coarseresolution'];
 	$weightdatemin = $_POST ['weightdatemin'];
 	$halfSynthesis = $_POST ['halfSynthesis'];
-	
+
 	$config = array (
 			array (
 					"key" => "processor.l3a.weight.aot.maxaot",
@@ -249,7 +249,7 @@ if (isset ( $_POST ['l3a'] )) {
 					"value" => $halfSynthesis
 			)
 	);
-	
+
 	// generate json_config (skip configuration parameters with empty values)
 	$fconfig = array();
 	foreach($config as $cfg) {
@@ -258,14 +258,14 @@ if (isset ( $_POST ['l3a'] )) {
 		}
 	}
 	$json_config = json_encode( $fconfig );
-	
+
 	// generate json_param (skip parameters with empty values)
 	$params = array (	"resolution" => $resolution,
 						"input_products" => $input_products,
 						"synthesis_date" => $synthDate
 					);
 	$json_param = json_encode( array_filter($params) );
-	
+
 	// set job name and description and save job
 	$name = "l3a_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for ".$processor_short_name;
@@ -275,17 +275,17 @@ elseif (isset ( $_POST ['l3b_lai'] )) {
 	$processor_short_name = "l3b_lai";
 
 	$siteId = $_POST ['siteId'];
-	
+
 	$resolution = $_POST ['resolution'];
 	$input_products = $_POST ['inputFiles'];
-	
+
 	$bwr = $_POST ['bwr'];
 	$fwr = $_POST ['fwr'];
 	$genmodel = $_POST ['genmodel'];
 	$reproc = $_POST ['reproc'];
 	$fitted = $_POST ['fitted'];
 	$monolai = $_POST ['monolai'];
-	
+
 	$config = array (
 			array (
 					"key" => "processor.l3b.lai.localwnd.bwr",
@@ -312,7 +312,7 @@ elseif (isset ( $_POST ['l3b_lai'] )) {
 					"value" => $monolai
 			)
 	);
-	
+
 	// generate json_config (skip configuration parameters with empty values)
 	$fconfig = array();
 	foreach($config as $cfg) {
@@ -321,13 +321,13 @@ elseif (isset ( $_POST ['l3b_lai'] )) {
 		}
 	}
 	$json_config = json_encode( $fconfig );
-	
+
 	// generate json_param (skip parameters with empty values)
 	$params = array (	"resolution" => $resolution,
 						"input_products" => $input_products
 					);
 	$json_param = json_encode( array_filter($params) );
-	
+
 	// set job name and description and save job
 	$name = "l3b_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for ".$processor_short_name;
@@ -335,25 +335,25 @@ elseif (isset ( $_POST ['l3b_lai'] )) {
 } /* -------------------------------------------------------l3b_pheno------------------------------------------------------ */
 elseif (isset ( $_POST ['l3b_pheno'] )) {
 	$processor_short_name = "l3b_pheno";
-	
+
 	$siteId = $_POST ['siteId'];
-	
+
 	$resolution = $_POST ['resolution'];
 	$input_products = $_POST ['inputFiles'];
-	
+
 	$json_config = json_encode ( array (
 			array (
 					"key" => "",
 					"value" => ""
-			) 
+			)
 	) );
-	
+
 	// generate json_param (skip parameters with empty values)
 	$params = array (	"resolution" => $resolution,
 						"input_products" => $input_products
 					);
 	$json_param = json_encode( array_filter($params) );
-	
+
 	// set job name and description and save job
 	$name = "l3b_pheno_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for ".$processor_short_name;
@@ -363,10 +363,10 @@ elseif (isset ( $_POST ['l4a'] )) {
 	$processor_short_name = "l4a";
 
 	$siteId = $_POST ['siteId'];
-	
+
 	$resolution = $_POST ['resolution'];
 	$input_products = $_POST ['inputFiles'];
-	
+
 	$mission = $_POST ['mission'];
 	$ratio = $_POST ['ratio'];
 	$trm = $_POST ['trm'];
@@ -388,7 +388,7 @@ elseif (isset ( $_POST ['l4a'] )) {
 	$rfmax = $_POST ['rfmax'];
 	$rfmin = $_POST ['rfmin'];
 	$minarea = $_POST ['minarea'];
-	
+
 	$config = array (
 			array (
 					"key" => "processor.l4a.mission",
@@ -475,7 +475,7 @@ elseif (isset ( $_POST ['l4a'] )) {
 					"value" => $minarea
 			)
 	);
-	
+
 	// generate json_config (skip configuration parameters with empty values)
 	$fconfig = array();
 	foreach($config as $cfg) {
@@ -484,16 +484,16 @@ elseif (isset ( $_POST ['l4a'] )) {
 		}
 	}
 	$json_config = json_encode( $fconfig );
-	
+
 	// upload polygons / raster
 	$date = date_create();
 	$timestamp = date_timestamp_get($date);
-	
+
 	$upload = upload_reference_polygons($siteId, $timestamp);
 	$polygons_file = $upload['polygons_file'];
 	$result = $upload['result'];
 	$message = $upload['message'];
-	
+
 	// generate json_param (skip parameters with empty values)
 	$raster_file = false;
 	if (!$polygons_file) {
@@ -505,11 +505,11 @@ elseif (isset ( $_POST ['l4a'] )) {
 						"reference_raster" => $raster_file
 					);
 	$json_param = json_encode( array_filter($params), JSON_UNESCAPED_SLASHES );
-	
+
 	// set job name and description and save job
 	$name = "l4a_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for ".$processor_short_name;
-	
+
 	if ($polygons_file || $raster_file) {
 		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
 		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted (with the reference " . ( $polygons_file ? "polygons" : "raster" ) . ")!");
@@ -521,11 +521,11 @@ elseif (isset ( $_POST ['l4b'] )) {
 	$processor_short_name = "l4b";
 
 	$siteId = $_POST ['siteId'];
-	
+
 	$input_products = $_POST ['inputFiles'];
 	$crop_mask = $_POST ['cropMask'];
 	$resolution = $_POST ['resolution'];
-	
+
 	$mission = $_POST ['mission'];
 	$ratio = $_POST ['ratio'];
 	$trm = $_POST ['trm'];
@@ -536,7 +536,7 @@ elseif (isset ( $_POST ['l4b'] )) {
 	$rfnbtrees = $_POST ['rfnbtrees'];
 	$rfmax = $_POST ['rfmax'];
 	$rfmin = $_POST ['rfmin'];
-	
+
 	$config = array (
 			array (
 					"key" => "processor.l4b.mission",
@@ -577,9 +577,9 @@ elseif (isset ( $_POST ['l4b'] )) {
 			array (
 					"key" => "processor.l4b.classifier.rf.min",
 					"value" => $rfmin
-			) 
+			)
 	);
-	
+
 	// generate json_config (skip configuration parameters with empty values)
 	$fconfig = array();
 	foreach($config as $cfg) {
@@ -588,16 +588,16 @@ elseif (isset ( $_POST ['l4b'] )) {
 		}
 	}
 	$json_config = json_encode( $fconfig );
-	
+
 	// upload polygons
 	$date = date_create();
 	$timestamp = date_timestamp_get($date);
-	
+
 	$upload = upload_reference_polygons($siteId, $timestamp);
 	$polygons_file = $upload['polygons_file'];
 	$result = $upload['result'];
 	$message = $upload['message'];
-	
+
 	// generate json_param (skip parameters with empty values)
 	if ($polygons_file) {
 		$params = array (	"resolution" => $resolution,
@@ -606,11 +606,11 @@ elseif (isset ( $_POST ['l4b'] )) {
 							"reference_polygons" => $polygons_file
 						);
 		$json_param = json_encode( array_filter($params), JSON_UNESCAPED_SLASHES );
-		
+
 		// set job name and description and save job
 		$name = "l4b_processor" . date ( "m.d.y" );
 		$description = "generated new configuration from site for ".$processor_short_name;
-		
+
 		insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
 		redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
 	} else {
