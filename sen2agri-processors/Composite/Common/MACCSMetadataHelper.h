@@ -44,6 +44,7 @@ class MACCSMetadataHelper : public MetadataHelper
 
         // The expected order in the array would be : Cloud, Saturation, Valid, (Water or Snow)
         TOutput operator()( const std::vector< TInput > & B) {
+            // The order is MSK_CLOUD, MSK_SAT, MSK_VALID, (MSK_SNOW/MSK_WATTER)
             switch (B.size())
             {
             case 1:
@@ -51,43 +52,52 @@ class MACCSMetadataHelper : public MetadataHelper
                 if(((m_MaskFlags & MSK_CLOUD) != 0) && (B[0] != 0)) return IMG_FLG_CLOUD;
                 if(((m_MaskFlags & MSK_SAT) != 0) && (B[0] != 0)) return IMG_FLG_SATURATION;
                 if(((m_MaskFlags & MSK_WATER) != 0) && ((B[0] & 0x01) != 0)) return IMG_FLG_WATER;
-                if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[0] & 0x06) != 0)) return IMG_FLG_SNOW;
+                if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[0] & 0x20) != 0)) return IMG_FLG_SNOW;
                 break;
             case 2:
                 if((m_MaskFlags & MSK_CLOUD) != 0) {
-                    if(B[0] != 0) return IMG_FLG_CLOUD;
                     if((m_MaskFlags & MSK_SAT) != 0) {
+                        if(B[0] != 0) return IMG_FLG_CLOUD;
                         if(B[1] != 0) return IMG_FLG_SATURATION;
                     } else {
                         if((m_MaskFlags & MSK_VALID) != 0) {
+                            // Normally, we should start with the check of the validity as if the validity is no data, then
+                            // there is no use to check the others. Also, we could get false cloud even if validity is not good
                             if((B[1] & 0x01) != 0) return IMG_FLG_NO_DATA;
+                            if(B[0] != 0) return IMG_FLG_CLOUD;
                         } else {
+                            if(B[0] != 0) return IMG_FLG_CLOUD;
                             // we have water or snow
                             if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
-                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[1] & 0x06) != 0)) return IMG_FLG_SNOW;
+                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[1] & 0x20) != 0)) return IMG_FLG_SNOW;
                         }
                     }
                 } else {
                     // we have no cloud mask but we might have one of the others
                     if((m_MaskFlags & MSK_SAT) != 0) {
-                        if(B[0] != 0) return IMG_FLG_SATURATION;
                         if((m_MaskFlags & MSK_VALID) != 0) {
+                            // Normally, we should start with the check of the validity as if the validity is no data, then
+                            // there is no use to check the others. Also, we could get false saturation even if validity is not good
                             if((B[1] & 0x01) != 0) return IMG_FLG_NO_DATA;
+                            if(B[0] != 0) return IMG_FLG_SATURATION;
                         } else {
+                            if(B[0] != 0) return IMG_FLG_SATURATION;
                             // we have water or snow
                             if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
-                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[1] & 0x06) != 0)) return IMG_FLG_SNOW;
+                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[1] & 0x20) != 0)) return IMG_FLG_SNOW;
                         }
                     } else {
                         // In this case we have certainly MSK_VALID on first position
                         if((B[0] & 0x01) != 0) return IMG_FLG_NO_DATA;
                         // we have water or snow
                         if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
-                        if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[1] & 0x06) != 0)) return IMG_FLG_SNOW;
+                        if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[1] & 0x20) != 0)) return IMG_FLG_SNOW;
                     }
                 }
                 break;
             case 3:
+                // TODO: Normally, we should start with the check of the validity as if the validity is no data, then
+                // there is no use to check the others. Also, we could get false cloud even if validity is not good
                 if((m_MaskFlags & MSK_CLOUD) != 0) {
                     if(B[0] != 0) return IMG_FLG_CLOUD;
 
@@ -97,17 +107,17 @@ class MACCSMetadataHelper : public MetadataHelper
                         // the third one is one of these
                         if(((m_MaskFlags & MSK_VALID) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_NO_DATA;
                         if(((m_MaskFlags & MSK_WATER) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_WATER;
-                        if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x06) != 0)) return IMG_FLG_SNOW;
+                        if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x20) != 0)) return IMG_FLG_SNOW;
 
                     } else {
                         if((m_MaskFlags & MSK_VALID) != 0) {
                             if((B[1] & 0x01) != 0) return IMG_FLG_NO_DATA;
                             if(((m_MaskFlags & MSK_WATER) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_WATER;
-                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x06) != 0)) return IMG_FLG_SNOW;
+                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x20) != 0)) return IMG_FLG_SNOW;
                         } else {
                             // we have both water AND snow
                             if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
-                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x06) != 0)) return IMG_FLG_SNOW;
+                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x20) != 0)) return IMG_FLG_SNOW;
                         }
                     }
                 } else {
@@ -116,33 +126,33 @@ class MACCSMetadataHelper : public MetadataHelper
                         if((m_MaskFlags & MSK_VALID) != 0) {
                             if((B[1] & 0x01) != 0) return IMG_FLG_NO_DATA;
                             if(((m_MaskFlags & MSK_WATER) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_WATER;
-                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x06) != 0)) return IMG_FLG_SNOW;
+                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x20) != 0)) return IMG_FLG_SNOW;
                         } else {
                             // we have both water AND snow
                             if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
-                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x06) != 0)) return IMG_FLG_SNOW;
+                            if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x20) != 0)) return IMG_FLG_SNOW;
                         }
                     } else {
                         // if we do not have cloud and saturation, we have all others
                         if(((m_MaskFlags & MSK_VALID) != 0) && ((B[0] & 0x01) != 0)) return IMG_FLG_NO_DATA;
                         if(((m_MaskFlags & MSK_WATER) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_WATER;
-                        if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x06) != 0)) return IMG_FLG_SNOW;
+                        if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x20) != 0)) return IMG_FLG_SNOW;
 
                     }
                     // if we do not have cloud, we have all others
-                    if(((m_MaskFlags & MSK_SAT) != 0) && (B[0] != 0)) return IMG_FLG_SATURATION;
                     if(((m_MaskFlags & MSK_VALID) != 0) && ((B[1] & 0x01) != 0)) return IMG_FLG_NO_DATA;
+                    if(((m_MaskFlags & MSK_SAT) != 0) && (B[0] != 0)) return IMG_FLG_SATURATION;
                     if(((m_MaskFlags & MSK_WATER) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_WATER;
-                    if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x06) != 0)) return IMG_FLG_SNOW;
+                    if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[2] & 0x20) != 0)) return IMG_FLG_SNOW;
                 }
                 break;
             case 4:
                 // in this case we have certainly all images
+                if(((m_MaskFlags & MSK_VALID) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_NO_DATA;
                 if(((m_MaskFlags & MSK_CLOUD) != 0) && (B[0] != 0)) return IMG_FLG_CLOUD;
                 if(((m_MaskFlags & MSK_SAT) != 0) && (B[1] != 0)) return IMG_FLG_SATURATION;
-                if(((m_MaskFlags & MSK_VALID) != 0) && ((B[2] & 0x01) != 0)) return IMG_FLG_NO_DATA;
                 if(((m_MaskFlags & MSK_WATER) != 0) && ((B[3] & 0x01) != 0)) return IMG_FLG_WATER;
-                if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[3] & 0x06) != 0)) return IMG_FLG_SNOW;
+                if(((m_MaskFlags & MSK_SNOW) != 0) && ((B[3] & 0x20) != 0)) return IMG_FLG_SNOW;
                 break;
             }
             return m_bBinarizeResult ? 0 : IMG_FLG_LAND;
