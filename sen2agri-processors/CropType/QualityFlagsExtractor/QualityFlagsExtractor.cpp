@@ -305,6 +305,7 @@ private:
       m_MskStatusFlagsExtractorFunctor->SetInput(m_AllMasks->GetOutput());
       m_MskStatusFlagsExtractorFunctor->UpdateOutputInformation();
       m_MskStatusFlagsExtractorFunctor->GetOutput()->SetNumberOfComponentsPerPixel(4);
+      SetParameterOutputImagePixelType("out", ImagePixelType_uint16);
       SetParameterOutputImage("out", m_MskStatusFlagsExtractorFunctor->GetOutput());
   }
 

@@ -44,7 +44,8 @@ private:
     void HandleNoInsituJob(EventProcessingContext &ctx, const JobSubmittedEvent &event, const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                                    const QStringList &listProducts, CropMaskGlobalExecutionInfos &globalExecInfos);
 
-    QStringList GetBandsExtractorArgs(const QString &mission, const QString &outImg, const QString &mask, const QString &statusFlags,
+    QStringList GetQualityFlagsExtractorArgs(const QString &mission, const QString &statusFlags, const QStringList &inputProducts, int resolution);
+    QStringList GetBandsExtractorArgs(const QString &mission, const QString &outImg, const QString &mask,
                                         const QString &outDates, const QString &shape, const QStringList &inputProducts, int resolution);
     QStringList GetCompressionArgs(const QString &inImg, const QString &outImg);
     QStringList GetConfusionMatrixArgs(const QString &inRaster, const QString &outCsv, const QString &refIn, const QString &refType="raster",

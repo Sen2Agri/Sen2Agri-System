@@ -10,28 +10,29 @@ QList<std::reference_wrapper<TaskToSubmit>> CropTypeHandler::CreateTasksForNewPr
                                                 QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList,
                                                 bool bCropMaskEmpty)
 {
+    outAllTasksList.append(TaskToSubmit{ "quality-flags-extractor", {}} );
     outAllTasksList.append(TaskToSubmit{ "bands-extractor", {}} );
-    outAllTasksList.append(TaskToSubmit{ "ogr2ogr", {outAllTasksList[0]}} );
     outAllTasksList.append(TaskToSubmit{ "ogr2ogr", {outAllTasksList[1]}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[2]}} );
-    outAllTasksList.append(TaskToSubmit{ "sample-selection", {outAllTasksList[3]}} );
-    outAllTasksList.append(TaskToSubmit{ "temporal-resampling", {outAllTasksList[4]}} );
-    outAllTasksList.append(TaskToSubmit{ "feature-extraction", {outAllTasksList[5]}} );
-    outAllTasksList.append(TaskToSubmit{ "compute-images-statistics", {outAllTasksList[6]}} );
-    outAllTasksList.append(TaskToSubmit{ "train-images-classifier", {outAllTasksList[4],
-                                                                     outAllTasksList[7]}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[8]}} );
+    outAllTasksList.append(TaskToSubmit{ "ogr2ogr", {outAllTasksList[2]}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[3]}} );
+    outAllTasksList.append(TaskToSubmit{ "sample-selection", {outAllTasksList[4]}} );
+    outAllTasksList.append(TaskToSubmit{ "temporal-resampling", {outAllTasksList[5]}} );
+    outAllTasksList.append(TaskToSubmit{ "feature-extraction", {outAllTasksList[6]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-images-statistics", {outAllTasksList[7]}} );
+    outAllTasksList.append(TaskToSubmit{ "train-images-classifier", {outAllTasksList[5],
+                                                                     outAllTasksList[8]}} );
     outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[9]}} );
-    outAllTasksList.append(TaskToSubmit{ "image-classifier", {bCropMaskEmpty ? outAllTasksList[8] :
-                                         outAllTasksList[10]}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[11]}} );
-    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[12]}} );
-    outAllTasksList.append(TaskToSubmit{ "color-mapping", {outAllTasksList[13]}} );
-    outAllTasksList.append(TaskToSubmit{ "compression", {outAllTasksList[14]}} );
-    outAllTasksList.append(TaskToSubmit{ "xml-statistics", {outAllTasksList[15]}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[10]}} );
+    outAllTasksList.append(TaskToSubmit{ "image-classifier", {bCropMaskEmpty ? outAllTasksList[9] :
+                                         outAllTasksList[11]}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[12]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[13]}} );
+    outAllTasksList.append(TaskToSubmit{ "color-mapping", {outAllTasksList[14]}} );
+    outAllTasksList.append(TaskToSubmit{ "compression", {outAllTasksList[15]}} );
+    outAllTasksList.append(TaskToSubmit{ "xml-statistics", {outAllTasksList[16]}} );
 
     // product formatter needs completion of xml-statistics
-    outProdFormatterParentsList.append(outAllTasksList[16]);
+    outProdFormatterParentsList.append(outAllTasksList[17]);
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     for(TaskToSubmit &task: outAllTasksList) {
@@ -91,34 +92,36 @@ void CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     QList<std::reference_wrapper<const TaskToSubmit>> &prodFormParTsksList = globalExecInfos.prodFormatParams.parentsTasksRef;
     CreateTasksForNewProducts(allTasksList, prodFormParTsksList, cropMask.isEmpty());
 
-    TaskToSubmit &bandsExtractor = allTasksList[0];
-    TaskToSubmit &reprojectPolys = allTasksList[1];
-    TaskToSubmit &clipPolys = allTasksList[2];
-    TaskToSubmit &clipRaster = allTasksList[3];
-    TaskToSubmit &sampleSelection = allTasksList[4];
-    TaskToSubmit &temporalResampling = allTasksList[5];
-    TaskToSubmit &featureExtraction = allTasksList[6];
-    TaskToSubmit &computeImagesStatistics = allTasksList[7];
-    TaskToSubmit &trainImagesClassifier = allTasksList[8];
-    TaskToSubmit &reprojectCropMask = allTasksList[9];
-    TaskToSubmit &cropCropMask = allTasksList[10];
-    TaskToSubmit &imageClassifier = allTasksList[11];
-    TaskToSubmit &clipCropType = allTasksList[12];
-    TaskToSubmit &computeConfusionMatrix = allTasksList[13];
-    TaskToSubmit &colorMapping = allTasksList[14];
-    TaskToSubmit &compression = allTasksList[15];
-    TaskToSubmit &xmlMetrics = allTasksList[16];
+    int curTaskIdx = 0;
+    TaskToSubmit &qualityFlagsExtractorTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &bandsExtractor = allTasksList[curTaskIdx++];
+    TaskToSubmit &reprojectPolys = allTasksList[curTaskIdx++];
+    TaskToSubmit &clipPolys = allTasksList[curTaskIdx++];
+    TaskToSubmit &clipRaster = allTasksList[curTaskIdx++];
+    TaskToSubmit &sampleSelection = allTasksList[curTaskIdx++];
+    TaskToSubmit &temporalResampling = allTasksList[curTaskIdx++];
+    TaskToSubmit &featureExtraction = allTasksList[curTaskIdx++];
+    TaskToSubmit &computeImagesStatistics = allTasksList[curTaskIdx++];
+    TaskToSubmit &trainImagesClassifier = allTasksList[curTaskIdx++];
+    TaskToSubmit &reprojectCropMask = allTasksList[curTaskIdx++];
+    TaskToSubmit &cropCropMask = allTasksList[curTaskIdx++];
+    TaskToSubmit &imageClassifier = allTasksList[curTaskIdx++];
+    TaskToSubmit &clipCropType = allTasksList[curTaskIdx++];
+    TaskToSubmit &computeConfusionMatrix = allTasksList[curTaskIdx++];
+    TaskToSubmit &colorMapping = allTasksList[curTaskIdx++];
+    TaskToSubmit &compression = allTasksList[curTaskIdx++];
+    TaskToSubmit &xmlMetrics = allTasksList[curTaskIdx++];
     //TaskToSubmit productFormatter{ "product-formatter", { xmlMetrics} };
 
     if (!cropMask.isEmpty()) {
         ctx.SubmitTasks(event.jobId,
-                        { bandsExtractor, reprojectPolys, clipPolys, clipRaster, sampleSelection, temporalResampling,
+                        { qualityFlagsExtractorTask, bandsExtractor, reprojectPolys, clipPolys, clipRaster, sampleSelection, temporalResampling,
                           featureExtraction, computeImagesStatistics, trainImagesClassifier,
                           reprojectCropMask, cropCropMask, imageClassifier, clipCropType, computeConfusionMatrix, colorMapping,
                           compression, xmlMetrics });
     } else {
         ctx.SubmitTasks(event.jobId,
-                        { bandsExtractor, reprojectPolys, clipPolys, clipRaster, sampleSelection, temporalResampling,
+                        { qualityFlagsExtractorTask, bandsExtractor, reprojectPolys, clipPolys, clipRaster, sampleSelection, temporalResampling,
                           featureExtraction, computeImagesStatistics, trainImagesClassifier,
                           imageClassifier, clipCropType, computeConfusionMatrix, colorMapping,
                           compression, xmlMetrics });
@@ -131,7 +134,7 @@ void CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     const auto &rawmask = bandsExtractor.GetFilePath("rawmask.tif");
     const auto &dates = bandsExtractor.GetFilePath("dates.txt");
     const auto &shape = bandsExtractor.GetFilePath("shape.shp");
-    const auto &statusFlags = bandsExtractor.GetFilePath("statusFlags.tif");
+    const auto &statusFlags = qualityFlagsExtractorTask.GetFilePath("statusFlags.tif");
     const auto &shapeEsriPrj = bandsExtractor.GetFilePath("shape_esri.prj");
 
     const auto &refPolysReprojected = reprojectPolys.GetFilePath("reference_polygons_reproject.shp");
@@ -155,16 +158,19 @@ void CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     const auto &cropTypeMap = compression.GetFilePath("crop_type_map.tif");
     const auto &xmlValidationMetrics = xmlMetrics.GetFilePath("validation-metrics.xml");
 
+    QStringList qualityFlagsExtractorArgs = { "QualityFlagsExtractor",
+                                              "-out", "\"" + statusFlags+"?gdal:co:COMPRESS=DEFLATE\"",
+                                              "-mission", mission};
     QStringList bandsExtractorArgs = { "BandsExtractor", "-out", rawtocr,  "-mask", rawmask,
-                                       "-statusflags", statusFlags, "-outdate", dates,  "-shape", shape };
-    if(mission.length() > 0) {
-        bandsExtractorArgs.append("-mission");
-        bandsExtractorArgs.append(mission);
-    }
+                                       "-outdate", dates,  "-shape", shape, "-mission", mission };
     if (resolution) {
+        qualityFlagsExtractorArgs.append("-pixsize");
+        qualityFlagsExtractorArgs.append(resolutionStr);
         bandsExtractorArgs.append("-pixsize");
         bandsExtractorArgs.append(resolutionStr);
     }
+    qualityFlagsExtractorArgs.append("-il");
+    qualityFlagsExtractorArgs += listProducts;
     bandsExtractorArgs.append("-il");
     bandsExtractorArgs += listProducts;
 
@@ -196,6 +202,7 @@ void CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     }
 
     globalExecInfos.allStepsList = {
+        qualityFlagsExtractorTask.CreateStep("QualityFlagsExtractor", qualityFlagsExtractorArgs),
         bandsExtractor.CreateStep("BandsExtractor", bandsExtractorArgs),
         reprojectPolys.CreateStep(
             "ReprojectPolys", { "-t_srs", shapeEsriPrj, "-overwrite", refPolysReprojected, referencePolygons }),

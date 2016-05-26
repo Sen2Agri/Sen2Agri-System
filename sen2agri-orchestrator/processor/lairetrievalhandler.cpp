@@ -979,7 +979,7 @@ QStringList LaiRetrievalHandler::GetBvErrImageInvArgs(const QString &ftsFile, co
 QStringList LaiRetrievalHandler::GetQuantifyImageArgs(const QString &inFileName, const QString &outFileName)  {
     return { "QuantifyImage",
         "-in", inFileName,
-        "-out", outFileName
+        "-out", "\"" + outFileName+"?gdal:co:COMPRESS=DEFLATE\""
     };
 }
 

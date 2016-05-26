@@ -9,30 +9,31 @@
 QList<std::reference_wrapper<TaskToSubmit>> CropMaskHandler::CreateInSituTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
                                                 QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList)
 {
+    outAllTasksList.append(TaskToSubmit{ "quality-flags-extractor", {}} );
     outAllTasksList.append(TaskToSubmit{ "bands-extractor", {}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[0]}} );
-    outAllTasksList.append(TaskToSubmit{ "temporal-resampling", {outAllTasksList[1]}} );
-    outAllTasksList.append(TaskToSubmit{ "feature-extraction", {outAllTasksList[2]}} );
-    outAllTasksList.append(TaskToSubmit{ "features-with-insitu", {outAllTasksList[3]}} );
-    outAllTasksList.append(TaskToSubmit{ "compute-images-statistics", {outAllTasksList[4]}} );
-    outAllTasksList.append(TaskToSubmit{ "ogr2ogr", {outAllTasksList[5]}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[1]}} );
+    outAllTasksList.append(TaskToSubmit{ "temporal-resampling", {outAllTasksList[2]}} );
+    outAllTasksList.append(TaskToSubmit{ "feature-extraction", {outAllTasksList[3]}} );
+    outAllTasksList.append(TaskToSubmit{ "features-with-insitu", {outAllTasksList[4]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-images-statistics", {outAllTasksList[5]}} );
     outAllTasksList.append(TaskToSubmit{ "ogr2ogr", {outAllTasksList[6]}} );
-    outAllTasksList.append(TaskToSubmit{ "sample-selection", {outAllTasksList[7]}} );
-    outAllTasksList.append(TaskToSubmit{ "train-images-classifier", {outAllTasksList[8]}} );
-    outAllTasksList.append(TaskToSubmit{ "image-classifier", {outAllTasksList[9]}} );
-    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[10]}} );
-    outAllTasksList.append(TaskToSubmit{ "principal-component-analysis", {outAllTasksList[11]}} );
-    outAllTasksList.append(TaskToSubmit{ "mean-shift-smoothing", {outAllTasksList[12]}} );
-    outAllTasksList.append(TaskToSubmit{ "lsms-segmentation", {outAllTasksList[13]}} );
-    outAllTasksList.append(TaskToSubmit{ "lsms-small-regions-merging", {outAllTasksList[14]}} );
-    outAllTasksList.append(TaskToSubmit{ "majority-voting", {outAllTasksList[15]}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[16]}} );
-    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[17]}} );
-    outAllTasksList.append(TaskToSubmit{ "image-compression", {outAllTasksList[18]}} );
-    outAllTasksList.append(TaskToSubmit{ "xml-statistics", {outAllTasksList[19]}} );
+    outAllTasksList.append(TaskToSubmit{ "ogr2ogr", {outAllTasksList[7]}} );
+    outAllTasksList.append(TaskToSubmit{ "sample-selection", {outAllTasksList[8]}} );
+    outAllTasksList.append(TaskToSubmit{ "train-images-classifier", {outAllTasksList[9]}} );
+    outAllTasksList.append(TaskToSubmit{ "image-classifier", {outAllTasksList[10]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[11]}} );
+    outAllTasksList.append(TaskToSubmit{ "principal-component-analysis", {outAllTasksList[12]}} );
+    outAllTasksList.append(TaskToSubmit{ "mean-shift-smoothing", {outAllTasksList[13]}} );
+    outAllTasksList.append(TaskToSubmit{ "lsms-segmentation", {outAllTasksList[14]}} );
+    outAllTasksList.append(TaskToSubmit{ "lsms-small-regions-merging", {outAllTasksList[15]}} );
+    outAllTasksList.append(TaskToSubmit{ "majority-voting", {outAllTasksList[16]}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[17]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[18]}} );
+    outAllTasksList.append(TaskToSubmit{ "image-compression", {outAllTasksList[19]}} );
+    outAllTasksList.append(TaskToSubmit{ "xml-statistics", {outAllTasksList[20]}} );
 
     // product formatter needs completion of xml-statistics
-    outProdFormatterParentsList.append(outAllTasksList[20]);
+    outProdFormatterParentsList.append(outAllTasksList[21]);
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     for(TaskToSubmit &task: outAllTasksList) {
@@ -44,32 +45,33 @@ QList<std::reference_wrapper<TaskToSubmit>> CropMaskHandler::CreateInSituTasksFo
 QList<std::reference_wrapper<TaskToSubmit>> CropMaskHandler::CreateNoInSituTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
                                                 QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList)
 {
+    outAllTasksList.append(TaskToSubmit{ "quality-flags-extractor", {}} );
     outAllTasksList.append(TaskToSubmit{ "bands-extractor", {}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[0]}} );
-    outAllTasksList.append(TaskToSubmit{ "temporal-resampling", {outAllTasksList[1]}} );
-    outAllTasksList.append(TaskToSubmit{ "feature-extraction", {outAllTasksList[2]}} );
-    outAllTasksList.append(TaskToSubmit{ "data-smoothing", {outAllTasksList[3]}} );
-    outAllTasksList.append(TaskToSubmit{ "features-without-insitu", {outAllTasksList[4]}} );
-    outAllTasksList.append(TaskToSubmit{ "compute-image-statistics", {outAllTasksList[5]}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[6]}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[1]}} );
+    outAllTasksList.append(TaskToSubmit{ "temporal-resampling", {outAllTasksList[2]}} );
+    outAllTasksList.append(TaskToSubmit{ "feature-extraction", {outAllTasksList[3]}} );
+    outAllTasksList.append(TaskToSubmit{ "data-smoothing", {outAllTasksList[4]}} );
+    outAllTasksList.append(TaskToSubmit{ "features-without-insitu", {outAllTasksList[5]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-image-statistics", {outAllTasksList[6]}} );
     outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[7]}} );
-    outAllTasksList.append(TaskToSubmit{ "erosion", {outAllTasksList[8]}} );
-    outAllTasksList.append(TaskToSubmit{ "trimming", {outAllTasksList[9]}} );
-    outAllTasksList.append(TaskToSubmit{ "train-images-classifier-new", {outAllTasksList[10]}} );
-    outAllTasksList.append(TaskToSubmit{ "image-classifier", {outAllTasksList[11]}} );
-    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[12]}} );
-    outAllTasksList.append(TaskToSubmit{ "principal-component-analysis", {outAllTasksList[13]}} );
-    outAllTasksList.append(TaskToSubmit{ "mean-shift-smoothing", {outAllTasksList[14]}} );
-    outAllTasksList.append(TaskToSubmit{ "lsms-segmentation", {outAllTasksList[15]}} );
-    outAllTasksList.append(TaskToSubmit{ "lsms-small-regions-merging", {outAllTasksList[16]}} );
-    outAllTasksList.append(TaskToSubmit{ "majority-voting", {outAllTasksList[17]}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[18]}} );
-    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[19]}} );
-    outAllTasksList.append(TaskToSubmit{ "image-compression", {outAllTasksList[20]}} );
-    outAllTasksList.append(TaskToSubmit{ "xml-statistics", {outAllTasksList[21]}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[8]}} );
+    outAllTasksList.append(TaskToSubmit{ "erosion", {outAllTasksList[9]}} );
+    outAllTasksList.append(TaskToSubmit{ "trimming", {outAllTasksList[10]}} );
+    outAllTasksList.append(TaskToSubmit{ "train-images-classifier-new", {outAllTasksList[11]}} );
+    outAllTasksList.append(TaskToSubmit{ "image-classifier", {outAllTasksList[12]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[13]}} );
+    outAllTasksList.append(TaskToSubmit{ "principal-component-analysis", {outAllTasksList[14]}} );
+    outAllTasksList.append(TaskToSubmit{ "mean-shift-smoothing", {outAllTasksList[15]}} );
+    outAllTasksList.append(TaskToSubmit{ "lsms-segmentation", {outAllTasksList[16]}} );
+    outAllTasksList.append(TaskToSubmit{ "lsms-small-regions-merging", {outAllTasksList[17]}} );
+    outAllTasksList.append(TaskToSubmit{ "majority-voting", {outAllTasksList[18]}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[19]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[20]}} );
+    outAllTasksList.append(TaskToSubmit{ "image-compression", {outAllTasksList[21]}} );
+    outAllTasksList.append(TaskToSubmit{ "xml-statistics", {outAllTasksList[22]}} );
 
     // product formatter needs completion of xml-statistics
-    outProdFormatterParentsList.append(outAllTasksList[22]);
+    outProdFormatterParentsList.append(outAllTasksList[23]);
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     for(TaskToSubmit &task: outAllTasksList) {
@@ -301,28 +303,30 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
 
     QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
 
-    TaskToSubmit &bandsExtractorTask = allTasksList[0];
-    TaskToSubmit &gdalWarpTask = allTasksList[1];
-    TaskToSubmit &temporalResamplingTask = allTasksList[2];
-    TaskToSubmit &featureExtractionTask = allTasksList[3];
-    TaskToSubmit &featureWithInSituTask = allTasksList[4];
-    TaskToSubmit &computeImagesStatisticsTask = allTasksList[5];
-    TaskToSubmit &ogr2ogrTask = allTasksList[6];
-    TaskToSubmit &ogr2ogrTask2 = allTasksList[7];
-    TaskToSubmit &sampleSelectionTask = allTasksList[8];
-    TaskToSubmit &trainImagesClassifierTask = allTasksList[9];
-    TaskToSubmit &imageClassifierTask = allTasksList[10];
-    TaskToSubmit &computeConfusionMatrixTask = allTasksList[11];
+    int curTaskIdx = 0;
+    TaskToSubmit &qualityFlagsExtractorTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &bandsExtractorTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &gdalWarpTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &temporalResamplingTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &featureExtractionTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &featureWithInSituTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &computeImagesStatisticsTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &ogr2ogrTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &ogr2ogrTask2 = allTasksList[curTaskIdx++];
+    TaskToSubmit &sampleSelectionTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &trainImagesClassifierTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &imageClassifierTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &computeConfusionMatrixTask = allTasksList[curTaskIdx++];
 
-    TaskToSubmit &principalComponentAnalysisTask = allTasksList[12];
-    TaskToSubmit &meanShiftSmoothingTask = allTasksList[13];
-    TaskToSubmit &lsmsSegmentationTask = allTasksList[14];
-    TaskToSubmit &lsmsSmallRegionsMergingTask = allTasksList[15];
-    TaskToSubmit &majorityVotingTask = allTasksList[16];
-    TaskToSubmit &gdalWarpTask2 = allTasksList[17];
-    TaskToSubmit &computeConfusionMatrixTask2 = allTasksList[18];
-    TaskToSubmit &convertTask = allTasksList[19];
-    TaskToSubmit &xmlStatisticsTask = allTasksList[20];
+    TaskToSubmit &principalComponentAnalysisTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &meanShiftSmoothingTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &lsmsSegmentationTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &lsmsSmallRegionsMergingTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &majorityVotingTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &gdalWarpTask2 = allTasksList[curTaskIdx++];
+    TaskToSubmit &computeConfusionMatrixTask2 = allTasksList[curTaskIdx++];
+    TaskToSubmit &convertTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &xmlStatisticsTask = allTasksList[curTaskIdx++];
     //TaskToSubmit productFormatterTask{ "product-formatter", { xmlStatisticsTask } };
 
     const auto &rawtocr = bandsExtractorTask.GetFilePath("rawtocr.tif");
@@ -330,7 +334,7 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
     const auto &dates = bandsExtractorTask.GetFilePath("dates.txt");
     const auto &shape = bandsExtractorTask.GetFilePath("shape.shp");
     const auto &shapeEsriPrj = bandsExtractorTask.GetFilePath("shape_esri.prj");
-    const auto &statusFlags = bandsExtractorTask.GetFilePath("statusFlags.tif");
+    const auto &statusFlags = qualityFlagsExtractorTask.GetFilePath("statusFlags.tif");
 
     const auto &tocr = gdalWarpTask.GetFilePath("tocr.tif");
     const auto &mask = gdalWarpTask.GetFilePath("mask.tif");
@@ -411,7 +415,8 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
                                         "-model", model,    "-out",    raw_crop_mask_uncompressed };
 
     globalExecInfos.allStepsList = {
-        bandsExtractorTask.CreateStep("BandsExtractor", GetBandsExtractorArgs(mission, rawtocr, rawmask, statusFlags, dates, shape,
+        qualityFlagsExtractorTask.CreateStep("QualityFlagsExtractor", GetQualityFlagsExtractorArgs(mission, statusFlags, listProducts, resolution)),
+        bandsExtractorTask.CreateStep("BandsExtractor", GetBandsExtractorArgs(mission, rawtocr, rawmask, dates, shape,
                                         listProducts, resolution)),
         gdalWarpTask.CreateStep("ClipRasterImage",
                               { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
@@ -559,36 +564,38 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
     const auto &classifierSvmOptimize = configParameters["processor.l4a.classifier.svm.opt"];
 
     QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
-    TaskToSubmit &bandsExtractorTask = allTasksList[0];
-    TaskToSubmit &gdalWarpTask = allTasksList[1];
-    TaskToSubmit &temporalResamplingTask = allTasksList[2];
-    TaskToSubmit &featureExtractionTask = allTasksList[3];
-    TaskToSubmit &dataSmoothingTask = allTasksList[4];
-    TaskToSubmit &featuresWithoutInsituTask = allTasksList[5];
-    TaskToSubmit &computeImageStatisticsTask = allTasksList[6];
-    TaskToSubmit &gdalWarpTask2 = allTasksList[7];
-    TaskToSubmit &gdalWarpTask2_1 = allTasksList[8];
-    TaskToSubmit &erosionTask = allTasksList[9];
-    TaskToSubmit &trimmingTask = allTasksList[10];
-    TaskToSubmit &trainImagesClassifierNewTask = allTasksList[11];
-    TaskToSubmit &imageClassifierTask = allTasksList[12];
-    TaskToSubmit &computeConfusionMatrixTask = allTasksList[13];
-    TaskToSubmit &principalComponentAnalysisTask = allTasksList[14];
-    TaskToSubmit &meanShiftSmoothingTask = allTasksList[15];
-    TaskToSubmit &lsmsSegmentationTask = allTasksList[16];
-    TaskToSubmit &lsmsSmallRegionsMergingTask = allTasksList[17];
-    TaskToSubmit &majorityVotingTask = allTasksList[18];
-    TaskToSubmit &gdalWarpTask3 = allTasksList[19];
-    TaskToSubmit &computeConfusionMatrixTask2 = allTasksList[20];
-    TaskToSubmit &convertTask = allTasksList[21];
-    TaskToSubmit &xmlStatisticsTask = allTasksList[22];
+    int curTaskIdx = 0;
+    TaskToSubmit &qualityFlagsExtractorTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &bandsExtractorTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &gdalWarpTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &temporalResamplingTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &featureExtractionTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &dataSmoothingTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &featuresWithoutInsituTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &computeImageStatisticsTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &gdalWarpTask2 = allTasksList[curTaskIdx++];
+    TaskToSubmit &gdalWarpTask2_1 = allTasksList[curTaskIdx++];
+    TaskToSubmit &erosionTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &trimmingTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &trainImagesClassifierNewTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &imageClassifierTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &computeConfusionMatrixTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &principalComponentAnalysisTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &meanShiftSmoothingTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &lsmsSegmentationTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &lsmsSmallRegionsMergingTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &majorityVotingTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &gdalWarpTask3 = allTasksList[curTaskIdx++];
+    TaskToSubmit &computeConfusionMatrixTask2 = allTasksList[curTaskIdx++];
+    TaskToSubmit &convertTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &xmlStatisticsTask = allTasksList[curTaskIdx++];
 
     const auto &rawtocr = bandsExtractorTask.GetFilePath("rawtocr.tif");
     const auto &rawmask = bandsExtractorTask.GetFilePath("rawmask.tif");
     const auto &dates = bandsExtractorTask.GetFilePath("dates.txt");
     const auto &shape = bandsExtractorTask.GetFilePath("shape.shp");
     const auto &shapeEsriPrj = bandsExtractorTask.GetFilePath("shape_esri.prj");
-    const auto &statusFlags = bandsExtractorTask.GetFilePath("statusFlags.tif");
+    const auto &statusFlags = qualityFlagsExtractorTask.GetFilePath("statusFlags.tif");
 
     const auto &tocr = gdalWarpTask.GetFilePath("tocr.tif");
     const auto &mask = gdalWarpTask.GetFilePath("mask.tif");
@@ -668,7 +675,8 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
                                         "-model", model,    "-out",    raw_crop_mask_uncompressed };
 
     globalExecInfos.allStepsList = {
-        bandsExtractorTask.CreateStep("BandsExtractor", GetBandsExtractorArgs(mission, rawtocr, rawmask, statusFlags, dates, shape, listProducts, resolution)),
+        qualityFlagsExtractorTask.CreateStep("QualityFlagsExtractor", GetQualityFlagsExtractorArgs(mission, statusFlags, listProducts, resolution)),
+        bandsExtractorTask.CreateStep("BandsExtractor", GetBandsExtractorArgs(mission, rawtocr, rawmask, dates, shape, listProducts, resolution)),
         gdalWarpTask.CreateStep("ClipRasterImage",
                               { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
                                 "-crop_to_cutline", "-multi", "-wm", gdalwarpMem, rawtocr, tocr }),
@@ -741,10 +749,26 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
     productFormatterParams.statusFlags = statusFlags;
 }
 
-QStringList CropMaskHandler::GetBandsExtractorArgs(const QString &mission, const QString &outImg, const QString &mask, const QString &statusFlags,
-                                                    const QString &outDates, const QString &shape, const QStringList &inputProducts, int resolution) {
+QStringList CropMaskHandler::GetQualityFlagsExtractorArgs(const QString &mission, const QString &statusFlags,
+                                                    const QStringList &inputProducts, int resolution) {
+    QStringList qualityFlagsExtractorArgs = { "QualityFlagsExtractor", "-mission", mission,
+                    "-out", "\"" + statusFlags+"?gdal:co:COMPRESS=DEFLATE\"",
+                                       "-il" };
+
+    for (const auto &inputFile : inputProducts) {
+        qualityFlagsExtractorArgs.append(inputFile);
+    }
+    if (resolution) {
+        qualityFlagsExtractorArgs.append("-pixsize");
+        qualityFlagsExtractorArgs.append(QString::number(resolution));
+    }
+    return qualityFlagsExtractorArgs;
+}
+
+QStringList CropMaskHandler::GetBandsExtractorArgs(const QString &mission, const QString &outImg, const QString &mask,const QString &outDates,
+                                                    const QString &shape, const QStringList &inputProducts, int resolution) {
     QStringList bandsExtractorArgs = { "BandsExtractor", "-mission", mission, "-out", outImg,
-                                       "-mask", mask, "-statusflags", statusFlags, "-outdate", outDates,
+                                       "-mask", mask, "-outdate", outDates,
                                        "-shape", shape, "-merge", "false", "-il" };
 
     for (const auto &inputFile : inputProducts) {
