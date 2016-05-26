@@ -41,48 +41,35 @@ function upload_reference_polygons($site_id, $timestamp) {
 	if($_FILES["refp"]["name"]) {
 		$filename = $_FILES["refp"]["name"];
 		$source = $_FILES["refp"]["tmp_name"];
-		$type = $_FILES["refp"]["type"];
 
-		$zip_file = false;
-		$accepted_types = array('application/zip', 'application/x-zip-compressed', 'multipart/x-zip', 'application/x-compressed');
-		foreach($accepted_types as $mime_type) {
-			if($mime_type == $type) {
-				$zip_file = true;
-				break;
-			}
-		}
-		if ($zip_file) {
-			$upload_target_dir = createCustomUploadFolder($site_id, $timestamp);
+        $upload_target_dir = createCustomUploadFolder($site_id, $timestamp);
 
-			$target_path = $upload_target_dir . $filename;
-			if(move_uploaded_file($source, $target_path)) {
-				$zip = new ZipArchive();
-				$x = $zip->open($target_path);
-				if ($x === true) {
-					for ($i = 0; $i < $zip->numFiles; $i++) {
-						$filename = $zip->getNameIndex($i);
-						if (endsWith($filename, '.shp')) {
-							$shp_file = $upload_target_dir . $filename;
-							break;
-						}
-					}
-					$zip->extractTo($upload_target_dir);
-					$zip->close();
-					unlink($target_path);
-					if ($shp_file) {
-						$zip_msg = "Your .zip file was uploaded and unpacked successfully";
-					} else {
-						$zip_msg = "Your .zip file does not contain any shape (.shp) file";
-					}
-				} else {
-					$zip_msg = "Your file is not a valid .zip archive";
-				}
-			} else {
-				$zip_msg = "Failed to upload the file you selected";
-			}
-		} else {
-			$zip_msg = "The file you selected is not a .zip file";
-		}
+        $target_path = $upload_target_dir . $filename;
+        if(move_uploaded_file($source, $target_path)) {
+            $zip = new ZipArchive();
+            $x = $zip->open($target_path);
+            if ($x === true) {
+                for ($i = 0; $i < $zip->numFiles; $i++) {
+                    $filename = $zip->getNameIndex($i);
+                    if (endsWith($filename, '.shp')) {
+                        $shp_file = $upload_target_dir . $filename;
+                        break;
+                    }
+                }
+                $zip->extractTo($upload_target_dir);
+                $zip->close();
+                unlink($target_path);
+                if ($shp_file) {
+                    $zip_msg = "Your .zip file was uploaded and unpacked successfully";
+                } else {
+                    $zip_msg = "Your .zip file does not contain any shape (.shp) file";
+                }
+            } else {
+                $zip_msg = "Your file is not a valid .zip archive";
+            }
+        } else {
+            $zip_msg = "Failed to upload the file you selected";
+        }
 	} else {
 		$zip_msg = 'Unable to access your selected file';
 	}
@@ -132,28 +119,16 @@ function upload_reference_raster($site_id, $timestamp) {
 	if($_FILES["refr"]["name"]) {
 		$filename = $_FILES["refr"]["name"];
 		$source = $_FILES["refr"]["tmp_name"];
-		$type = $_FILES["refr"]["type"];
 
-		$img_file = false;
-		$accepted_types = array('image/tiff', 'image/png', 'image/jp2');
-		foreach($accepted_types as $mime_type) {
-			if($mime_type == $type) {
-				$img_file = true;
-				break;
-			}
-		}
+        $upload_target_dir = createCustomUploadFolder($site_id, $timestamp);
 
-		if ($img_file) {
-			$upload_target_dir = createCustomUploadFolder($site_id, $timestamp);
-
-			$target_path = $upload_target_dir . $filename;  // change this to the correct site path
-			if(move_uploaded_file($source, $target_path)) {
-				$shp_file = $target_path;
-			} else {
-				$message = "There was a problem with the upload. Please try again.";
-				$shp_file = false;
-			}
-		}
+        $target_path = $upload_target_dir . $filename;  // change this to the correct site path
+        if(move_uploaded_file($source, $target_path)) {
+            $shp_file = $target_path;
+        } else {
+            $message = "There was a problem with the upload. Please try again.";
+            $shp_file = false;
+        }
 	}
 	return $shp_file;
 }
