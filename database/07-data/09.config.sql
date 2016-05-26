@@ -135,7 +135,7 @@ INSERT INTO config VALUES (154, 'downloader.summer-season.end', NULL, '0930', '2
 INSERT INTO config VALUES (155, 'downloader.winter-season.start', NULL, '1101', '2016-02-04 11:44:40.262676+02');
 INSERT INTO config VALUES (156, 'downloader.winter-season.end', NULL, '0415', '2016-02-04 11:44:41.984022+02');
 INSERT INTO config VALUES (149, 'downloader.max-cloud-coverage', NULL, '80', '2016-02-03 18:05:38.425734+02');
-INSERT INTO config VALUES (194, 'demmaccs.maccs-launcher', NULL, '/opt/maccs/core/4.8/bin/maccs', '2016-02-25 16:29:07.763339+02');
+INSERT INTO config VALUES (194, 'demmaccs.maccs-launcher', NULL, '/opt/maccs/core/5.0/bin/maccs', '2016-02-25 16:29:07.763339+02');
 INSERT INTO config VALUES (191, 'demmaccs.srtm-path', NULL, '/mnt/archive/srtm', '2016-02-25 11:11:36.372405+02');
 INSERT INTO config VALUES (192, 'demmaccs.swbd-path', NULL, '/mnt/archive/swbd', '2016-02-25 11:12:04.008319+02');
 INSERT INTO config VALUES (196, 'demmaccs.working-dir', NULL, '/mnt/archive/demmaccs_tmp/', '2016-02-25 17:31:06.01191+02');

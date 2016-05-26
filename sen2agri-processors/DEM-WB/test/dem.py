@@ -179,6 +179,7 @@ def create_context(args):
     if not os.path.exists(dir_base) or not os.path.isdir(dir_base):
         print("The path does not exist ! {}".format(dir_base))
         return []
+    log_path = dir_base
     if dir_base.rfind('/') + 1 == len(dir_base):
         dir_base = dir_base[0:len(dir_base)-1]
     mode, date = get_dir_info(dir_base)
@@ -196,7 +197,7 @@ def create_context(args):
     elif mode == 'S2':
         dir_base += "/GRANULE/"
         if not os.path.exists(dir_base) or not os.path.isdir(dir_base):
-            print("The path for Sentinel 2 (with GRANULE) does not exist ! {}".format(dir_base))
+            log(log_path, "The path for Sentinel 2 (with GRANULE) does not exist ! {}".format(dir_base), "dem.log")
             return []
         tile_dirs = ["{}{}".format(dir_base, f) for f in os.listdir(dir_base) if isdir(join(dir_base, f))]
         for tile_dir in tile_dirs:
