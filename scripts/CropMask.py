@@ -97,7 +97,7 @@ parser.add_argument('-weight', help='The weight factor for data smoothing (defau
 parser.add_argument('-nbcomp', help='The number of components used by dimensionality reduction (default 6)', required=False, metavar='nbcomp', default=6)
 parser.add_argument('-spatialr', help='The spatial radius of the neighborhood used for segmentation (default 10)', required=False, metavar='spatialr', default=10)
 parser.add_argument('-ranger', help='The range radius defining the radius (expressed in radiometry unit) in the multispectral space (default 0.65)', required=False, metavar='ranger', default=0.65)
-parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) in segmentation.  (default 200)', required=False, metavar='minsize', default=200)
+parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) for segmentation.(default 10)', required=False, metavar='minsize', default=10)
 
 parser.add_argument('-refr', help='The reference raster when insitu data is not available', required=False, metavar='reference', default='')
 parser.add_argument('-eroderad', help='The radius used for erosion (default 1)', required=False, metavar='erode_radius', default='1')

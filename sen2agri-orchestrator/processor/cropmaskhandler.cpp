@@ -281,7 +281,7 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
     if(ranger.length() == 0) ranger = "0.65";
 
     auto minsize = configParameters["processor.l4a.segmentation-minsize"];
-    if(minsize.length() == 0) minsize = "200";
+    if(minsize.length() == 0) minsize = "10";
 
     auto minarea = configParameters["processor.l4a.min-area"];
     if(minarea.length() == 0) minarea = "20";
@@ -531,7 +531,7 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
     if(ranger.length() == 0) ranger = "0.65";
 
     auto minsize = configParameters["processor.l4a.segmentation-minsize"];
-    if(minsize.length() == 0) minsize = "200";
+    if(minsize.length() == 0) minsize = "10";
 
     auto nbtrsample = configParameters["processor.l4a.training-samples-number"];
     if(nbtrsample.length() == 0) nbtrsample = "4000";
