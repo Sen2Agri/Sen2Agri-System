@@ -228,7 +228,7 @@ globalStart = datetime.datetime.now()
 
 try:
 # Bands Extractor (Step 1)
-    executeStep("BandsExtractor", "otbcli", "BandsExtractor", buildFolder,"-mission",mission,"-out",rawtocr,"-mask",rawmask, "-statusflags", statusFlags, "-outdate", dates, "-shape", shape, "-pixsize", pixsize,"-merge", "false", "-il", *indesc, skip=fromstep>1)
+    executeStep("BandsExtractor", "otbcli", "BandsExtractor", buildFolder,"-mission",mission,"-out",rawtocr,"-mask",rawmask, "-outdate", dates, "-shape", shape, "-pixsize", pixsize,"-merge", "false", "-il", *indesc, skip=fromstep>1)
 
 # gdalwarp (Step 2 and 3)
     executeStep("gdalwarp for reflectances", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawtocr, tocr, skip=fromstep>2, rmfiles=[] if keepfiles else [rawtocr])
@@ -309,8 +309,11 @@ try:
 #XML conversion (Step 34)
     executeStep("XML Conversion for Crop Mask", "otbcli", "XMLStatistics", buildFolder, "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics,  skip=fromstep>34)
 
-#Product creation (Step 35)
-    executeStep("ProductFormatter", "otbcli", "ProductFormatter", buildFolder, "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-baseline", "01.00", "-siteid", siteId, "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.rawfile", "TILE_"+tilename, raw_crop_mask, "-processor.cropmask.quality",  "TILE_"+tilename, xml_validation_metrics, "-processor.cropmask.flags", "TILE_"+tilename, statusFlags, "-il", *indesc, skip=fromstep>35)
+# Quality Flags Extractor (Step 35)
+    executeStep("QualityFlagsExtractor", "otbcli", "QualityFlagsExtractor", buildFolder,"-mission",mission,"-out",statusFlags+"?gdal:co:COMPRESS=DEFLATE","-pixsize", pixsize,"-il", *indesc, skip=fromstep>35)
+
+#Product creation (Step 36)
+    executeStep("ProductFormatter", "otbcli", "ProductFormatter", buildFolder, "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-baseline", "01.00", "-siteid", siteId, "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.rawfile", "TILE_"+tilename, raw_crop_mask, "-processor.cropmask.quality",  "TILE_"+tilename, xml_validation_metrics, "-processor.cropmask.flags", "TILE_"+tilename, statusFlags, "-il", *indesc, skip=fromstep>36)
 
 except:
     print sys.exc_info()
