@@ -1,4 +1,21 @@
-#! /usr/bin/env python
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+_____________________________________________________________________________
+
+   Program:      Sen2Agri-Processors
+   Language:     Python
+   Copyright:    2015-2016, CS Romania, office@c-s.ro
+   See COPYRIGHT file for details.
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+_____________________________________________________________________________
+
+"""
 
 import glob,os,sys,math,urllib2,urllib,time,math,shutil
 import subprocess
@@ -108,23 +125,29 @@ for l1 in l1_list:
             except:
                 log(write_dir, "Couldn't remove the old dir {}".format(new_dir), log_filename)
         
-        log(write_dir, "Set downloading status for {}".format(new_dir), general_log_filename)
-        if sat_id == SENTINEL2_SATELLITE_ID:
-            if not sentinel_db_info.upsertSentinelProductHistory(sentinel_aoi_context.siteId, l1_basename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, acquistion_date, new_dir, orbit_id, sentinel_aoi_context.maxRetries):
-                log(write_dir, "Couldn't upsert into database with status DOWNLOADED for {}. Continue...".format(new_dir), general_log_filename)
-                continue    
-        elif sat_id == LANDSAT8_SATELLITE_ID:
-            if not landsat_db_info.upsertLandsatProductHistory(landsat_aoi_context.siteId, l1_basename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, acquisition_date, new_dir, landsat_aoi_context.maxRetries):
-                log(write_dir, "Couldn't upsert into database with status DOWNLOADED for {}".format(new_dir), general_log_filename)
-                continue
-        else:
-            #impossible to happen, but for the sake of flow
-            log(write_dir, "Unknown satellite id {} found for {}. Continue...".format(sat_id, l1), general_log_filename)
-            continue    
+        #log(write_dir, "Set downloading status for {}".format(new_dir), general_log_filename)
+        #if sat_id == SENTINEL2_SATELLITE_ID:
+        #    if not sentinel_db_info.upsertSentinelProductHistory(sentinel_aoi_context.siteId, l1_basename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, acquistion_date, new_dir, orbit_id, sentinel_aoi_context.maxRetries):
+        #        log(write_dir, "Couldn't upsert into database with status DOWNLOADED for {}. Continue...".format(new_dir), general_log_filename)
+        #        continue    
+        #elif sat_id == LANDSAT8_SATELLITE_ID:
+        #    if not landsat_db_info.upsertLandsatProductHistory(landsat_aoi_context.siteId, l1_basename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, acquisition_date, new_dir, landsat_aoi_context.maxRetries):
+        #        log(write_dir, "Couldn't upsert into database with status DOWNLOADED for {}".format(new_dir), general_log_filename)
+        #        continue
+        #else:
+        #    #impossible to happen, but for the sake of flow
+        #    log(write_dir, "Unknown satellite id {} found for {}. Continue...".format(sat_id, l1), general_log_filename)
+        #    continue    
+
         # phisically copy the l1 product
         log(write_dir, "Copying {} to {}".format(l1, new_dir), general_log_filename)
         if copy_directory(l1, new_dir):
             if sat_id == SENTINEL2_SATELLITE_ID:
+                #applay angles correction if necessary
+                cmd_angles_correction = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/S2ProductDownloader-1.0.jar", "--input", write_dir, "--ma", "NAN", "--products", l1_basename]
+                if run_command(cmd_dwn, write_dir, general_log_filename) != 0:
+                    log(write_dir, "Couldn't apply the angles correction for {}".format(new_dir), general_log_filename)
+                    continue
                 if not sentinel_db_info.upsertSentinelProductHistory(sentinel_aoi_context.siteId, l1_basename, DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE, acquistion_date, new_dir, orbit_id, sentinel_aoi_context.maxRetries):
                     log(write_dir, "Couldn't upsert into database with status DOWNLOADED for {}".format(new_dir), general_log_filename)
                     continue
