@@ -36,28 +36,6 @@ import zipfile
 from multiprocessing import Pool
 from sen2agri_common_db import *
 
-def GetExtent(gt, cols, rows):
-    ext = []
-    xarr = [0, cols]
-    yarr = [0, rows]
-
-    for px in xarr:
-        for py in yarr:
-            x = gt[0] + px * gt[1] + py * gt[2]
-            y = gt[3] + px * gt[4] + py * gt[5]
-            ext.append([x, y])
-        yarr.reverse()
-    return ext
-
-
-def ReprojectCoords(coords, src_srs, tgt_srs):
-    trans_coords = []
-    transform = osr.CoordinateTransformation(src_srs, tgt_srs)
-    for x, y in coords:
-        x, y, z = transform.TransformPoint(x, y)
-        trans_coords.append([x, y])
-    return trans_coords
-
 
 def resample_dataset(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y):
     print("{}|{}|{}|{}".format(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y))

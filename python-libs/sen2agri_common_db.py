@@ -18,6 +18,7 @@ _____________________________________________________________________________
 """
 
 from __future__ import print_function
+from __future__ import with_statement
 import argparse
 import re
 import glob
@@ -32,6 +33,7 @@ from os.path import isfile, isdir, join
 import sys
 import time, datetime
 from time import gmtime, strftime
+from subprocess import check_output
 import pipes
 import shutil
 import psycopg2
@@ -44,6 +46,7 @@ DEBUG = True
 DOWNLOADER_NUMBER_OF_CONFIG_PARAMS_FROM_DB = int(7)
 SENTINEL2_SATELLITE_ID = int(1)
 LANDSAT8_SATELLITE_ID = int(2)
+FILES_IN_LANDSAT_L1_PRODUCT = int(13)
 UNKNOWN_SATELLITE_ID = int(-1)
 #should not exceed 11 !!!!
 MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED = int(2)
@@ -99,6 +102,51 @@ def signal_handler(signal, frame):
     print("SIGINT caught")
     exitFlag = True
     sys.exit(0)
+
+
+def GetExtent(gt, cols, rows):
+    ext = []
+    xarr = [0, cols]
+    yarr = [0, rows]
+
+    for px in xarr:
+        for py in yarr:
+            x = gt[0] + px * gt[1] + py * gt[2]
+            y = gt[3] + px * gt[4] + py * gt[5]
+            ext.append([x, y])
+        yarr.reverse()
+    return ext
+
+
+def ReprojectCoords(coords, src_srs, tgt_srs):
+    trans_coords = []
+    transform = osr.CoordinateTransformation(src_srs, tgt_srs)
+    for x, y in coords:
+        x, y, z = transform.TransformPoint(x, y)
+        trans_coords.append([x, y])
+    return trans_coords
+
+def get_footprint(image_filename):
+    dataset = gdal.Open(image_filename, gdal.gdalconst.GA_ReadOnly)
+
+    size_x = dataset.RasterXSize
+    size_y = dataset.RasterYSize
+
+    geo_transform = dataset.GetGeoTransform()
+
+    spacing_x = geo_transform[1]
+    spacing_y = geo_transform[5]
+
+    extent = GetExtent(geo_transform, size_x, size_y)
+
+    source_srs = osr.SpatialReference()
+    source_srs.ImportFromWkt(dataset.GetProjection())
+    epsg_code = source_srs.GetAttrValue("AUTHORITY", 1)
+    target_srs = osr.SpatialReference()
+    target_srs.ImportFromEPSG(4326)
+
+    wgs84_extent = ReprojectCoords(extent, source_srs, target_srs)
+    return (wgs84_extent, extent)
 
         
 def create_recursive_dirs(dir_name):
@@ -191,6 +239,100 @@ def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearAr
     return True
 
 
+def landsat_crop_to_cutline(landsat_product_path, working_dir):
+    product_name = os.path.basename(landsat_product_path[:len(landsat_product_path) - 1]) if landsat_product_path.endswith("/") else os.path.basename(landsat_product_path)
+    tile = re.match("LC8(\w{6})\w+", product_name)
+    if tile is None:
+        return "", "Couldn't get the tile id for the LANDSAT product {} found here {}. Imposible to process the alignment, exit".format(product_name, landsat_product_path)
+
+    tile_id = tile.group(1)
+    alignment_directory = "{}/{}_alignment".format(working_dir, tile_id)
+    aligned_landsat_directory_path = "{}/{}".format(alignment_directory, product_name)
+    if not create_recursive_dirs(alignment_directory):
+        return "", "Could not create the alignment directory {} for LANDSAT product {}".format(alignment_directory, landsat_product_path)
+    if not create_recursive_dirs(aligned_landsat_directory_path):
+        return "", "Could not create the aligned landsat {} directory for LANDSAT product {}".format(aligned_landsat_directory_path, landsat_product_path)
+
+    landsat_files = glob.glob("{}/*".format(landsat_product_path))
+    if(len(landsat_files) < FILES_IN_LANDSAT_L1_PRODUCT):
+        return "", "Found {} files in LANDSAT product {}. Should have been {}".format(len(landsat_files), landsat_product_path, FILES_IN_LANDSAT_L1_PRODUCT)
+
+    first_tile_file_path = ""
+    tmp_shape_file = ""
+    for landsat_file in landsat_files:
+        landsat_file_basename = os.path.basename(landsat_file[:len(landsat_file) - 1]) if landsat_file.endswith("/") else os.path.basename(landsat_file)
+        band = re.match("LC8\w{13}LGN\w{2}_B1.TIF", landsat_file_basename)
+        if band is not None:
+            first_tile_file_path = landsat_file
+            out = check_output(["gdalsrsinfo", "-o", "wkt", landsat_file])
+            print("out = {}".format(out))
+            tmp_shape_file = "{}/tmp.shp".format(alignment_directory)
+            print("tmp = {}".format(tmp_shape_file))
+            #TODO: handle errors !!!!
+            run_command(["ogr2ogr", "-t_srs", out, "-where", "PR={}".format(tile_id), "-overwrite", tmp_shape_file, "/usr/share/sen2agri/wrs2_descending/wrs2_descending.shp"])    
+    processed_files_counter = 0
+    for landsat_file in landsat_files:
+        landsat_file_basename = os.path.basename(landsat_file[:len(landsat_file) - 1]) if landsat_file.endswith("/") else os.path.basename(landsat_file)
+        print("landsat_file_basename = {}".format(landsat_file_basename))
+        band = re.match("LC8\w{13}LGN\w{2}_B\w+.TIF", landsat_file_basename)
+        if band is not None:            
+            output_file = "{}/{}".format(aligned_landsat_directory_path, landsat_file_basename)
+            run_command(["gdalwarp", "-overwrite", "-crop_to_cutline", "-cutline", tmp_shape_file, landsat_file, output_file])
+            processed_files_counter += 1
+        else:
+            metadata = re.match("LC8\w{13}LGN\w{2}_MTL.txt", landsat_file_basename)
+            if metadata is not None:
+                output_metadata_file = "{}/{}".format(aligned_landsat_directory_path, landsat_file_basename)
+                print(output_metadata_file)
+                shape_env_points_wgs84, shape_env_points = get_footprint(first_tile_file_path)
+                try:
+                    with open(landsat_file, 'r') as genuine_metadata, open(output_metadata_file, 'w') as modified_metadata:
+                        for line in genuine_metadata:
+                            # UTM coordinates
+                            if "CORNER_UL_PROJECTION_X_PRODUCT" in line:
+                                line = "    CORNER_UL_PROJECTION_X_PRODUCT = " + str(shape_env_points[0][0]) + "\n"
+                            if "CORNER_UL_PROJECTION_Y_PRODUCT" in line:
+                                line = "    CORNER_UL_PROJECTION_Y_PRODUCT = " + str(shape_env_points[0][1]) + "\n"
+                            if "CORNER_UR_PROJECTION_X_PRODUCT" in line:
+                                line = "    CORNER_UR_PROJECTION_X_PRODUCT = " + str(shape_env_points[3][0]) + "\n"
+                            if "CORNER_UR_PROJECTION_Y_PRODUCT" in line:
+                                line = "    CORNER_UR_PROJECTION_Y_PRODUCT = " + str(shape_env_points[3][1]) + "\n"
+                            if "CORNER_LL_PROJECTION_X_PRODUCT" in line:
+                                line = "    CORNER_LL_PROJECTION_X_PRODUCT = " + str(shape_env_points[1][0]) + "\n"
+                            if "CORNER_LL_PROJECTION_Y_PRODUCT" in line:
+                                line = "    CORNER_LL_PROJECTION_Y_PRODUCT = " + str(shape_env_points[1][1]) + "\n"
+                            if "CORNER_LR_PROJECTION_X_PRODUCT" in line:
+                                line = "    CORNER_LR_PROJECTION_X_PRODUCT = " + str(shape_env_points[2][0]) + "\n"
+                            if "CORNER_LR_PROJECTION_Y_PRODUCT" in line:
+                                line = "    CORNER_LR_PROJECTION_Y_PRODUCT = " + str(shape_env_points[2][1]) + "\n"
+                            # latlong coordinates
+                            
+                            if "CORNER_UL_LAT_PRODUCT" in line:
+                                line = "    CORNER_UL_LAT_PRODUCT = " + str(shape_env_points_wgs84[0][0]) + "\n"
+                            if "CORNER_UL_LON_PRODUCT" in line:
+                                line = "    CORNER_UL_LON_PRODUCT = " + str(shape_env_points_wgs84[0][1]) + "\n"
+                            if "CORNER_UR_LAT_PRODUCT" in line:
+                                line = "    CORNER_UR_LAT_PRODUCT = " + str(shape_env_points_wgs84[3][0]) + "\n"
+                            if "CORNER_UR_LON_PRODUCT" in line:
+                                line = "    CORNER_UR_LON_PRODUCT = " + str(shape_env_points_wgs84[3][1]) + "\n"
+                            if "CORNER_LL_LAT_PRODUCT" in line:
+                                line = "    CORNER_LL_LAT_PRODUCT = " + str(shape_env_points_wgs84[1][0]) + "\n"
+                            if "CORNER_LL_LON_PRODUCT" in line:
+                                line = "    CORNER_LL_LON_PRODUCT = " + str(shape_env_points_wgs84[1][1]) + "\n"
+                            if "CORNER_LR_LAT_PRODUCT" in line:
+                                line = "    CORNER_LR_LAT_PRODUCT = " + str(shape_env_points_wgs84[2][0]) + "\n"
+                            if "CORNER_LR_LON_PRODUCT" in line:
+                                line = "    CORNER_LR_LON_PRODUCT = " + str(shape_env_points_wgs84[2][1]) + "\n"
+                            
+                            modified_metadata.write(line)
+                except EnvironmentError:
+                    return "", "Could not open the landsat metadata file for alignment or could not create the output file: Input = {} | Output = {}".format(landsat_file, output_metadata_file)
+                processed_files_counter += 1
+    print(processed_files_counter)
+    if(processed_files_counter != FILES_IN_LANDSAT_L1_PRODUCT):
+        return "", "The number of processed files in LANDSAT alignment is {} which is different than how many the should have been: {}".format(processed_files_counter, FILES_IN_LANDSAT_L1_PRODUCT)
+    #all went ok, return the path for the aligned product
+    return aligned_landsat_directory_path, ""
 ###########################################################################
 class OptionParser (optparse.OptionParser):
 
@@ -589,7 +731,7 @@ class AOIInfo(object):
                                         "orbit_id" : orbit_id
                                     })
             else:
-                #if the record for this product name does exist, act accordingly the provided status
+                #if the record for this product name does exist, act accordingyl the provided status
                 if len(rows[0]) != 3:
                     print("DB result has more than 3 fields !")
                     self.databaseDisconnect()
