@@ -11,7 +11,7 @@
 // The number of tasks that are executed for each product before executing time series tasks
 #define LAI_TASKS_PER_PRODUCT       6
 #define MODEL_GEN_TASKS_PER_PRODUCT 4
-#define CUT_TASKS_NO                3
+#define CUT_TASKS_NO                5
 
 #define DEFAULT_GENERATED_SAMPLES_NO    "40000"
 #define DEFAULT_NOISE_VAR               "0.01"
@@ -48,7 +48,9 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
             outAllTasksList.append(TaskToSubmit{"lai-ndvi-rvi-extractor", {}});
             if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
                 outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
+                outAllTasksList.append(TaskToSubmit{"compression", {}});
                 outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
+                outAllTasksList.append(TaskToSubmit{"compression", {}});
                 outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
             }
             outAllTasksList.append(TaskToSubmit{"lai-bv-image-invertion", {}});
@@ -173,11 +175,16 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
                 int cutFlagsTaksIdx = nCurTaskIdx++;
                 // add the task for cutting the flags
                 outAllTasksList[cutFlagsTaksIdx].parentTasks.append(outAllTasksList[cutFlagsTaksIdx-1]);
-                genFlagsIdx = cutFlagsTaksIdx;  // the flags index becomes this one
+                int compressCutFlagsTaksIdx = nCurTaskIdx++;
+                // add the task for cutting the flags
+                outAllTasksList[compressCutFlagsTaksIdx].parentTasks.append(outAllTasksList[cutFlagsTaksIdx]);
+                genFlagsIdx = compressCutFlagsTaksIdx;  // the flags index becomes this one
 
                 // add the task for cutting the single ndvi
                 int cutSingleNdviTaksIdx = nCurTaskIdx++;
                 outAllTasksList[cutSingleNdviTaksIdx].parentTasks.append(outAllTasksList[cutSingleNdviTaksIdx-1]);
+                int compressedCutSingleNdviTaksIdx = nCurTaskIdx++;
+                outAllTasksList[compressedCutSingleNdviTaksIdx].parentTasks.append(outAllTasksList[cutSingleNdviTaksIdx]);
 
                 // add the task for cutting the ndvi-rvi raster
                 int cutNdviRviTaksIdx = nCurTaskIdx++;
@@ -402,7 +409,9 @@ NewStepList LaiRetrievalHandler::GetStepsForMonodateLai(EventProcessingContext &
     int curTaskIdx = bFootprintTaskCreated ? 1 : 0;
     for (i = 0; i<monoDateInputs.size(); i++) {
         int flagsCutIdx = -1;
+        int compressedFlagsCutIdx = -1;
         int singleNdviCutIdx = -1;
+        int compressedNdviCutIdx = -1;
         int ndviRviCutIdx = -1;
 
         const auto &inputProduct = monoDateInputs[i];
@@ -416,7 +425,9 @@ NewStepList LaiRetrievalHandler::GetStepsForMonodateLai(EventProcessingContext &
         if(bIsSecondarySat) {
             // if we have a secondary satellite, save the cut task indexes
             flagsCutIdx = curTaskIdx++;
+            compressedFlagsCutIdx = curTaskIdx++;
             singleNdviCutIdx = curTaskIdx++;
+            compressedNdviCutIdx = curTaskIdx++;
             ndviRviCutIdx = curTaskIdx++;
         }
         TaskToSubmit &bvImageInversionTask = allTasksList[curTaskIdx++];
@@ -433,8 +444,12 @@ NewStepList LaiRetrievalHandler::GetStepsForMonodateLai(EventProcessingContext &
         const auto & quantifiedLaiFileName = quantifyImageTask.GetFilePath("LAI_mono_date_img_16.tif");
         const auto & quantifiedErrFileName = quantifyErrImageTask.GetFilePath("LAI_mono_date_ERR_img_16.tif");
 
-        QStringList genMonoDateMskFagsArgs = GetMonoDateMskFlagsArgs(inputProduct, monoDateMskFlgsFileName, monoDateMskFlgsResFileName, resolutionStr);
-        QStringList ndviRviExtractionArgs = GetNdviRviExtractionArgs(inputProduct, monoDateMskFlgsFileName, ftsFile, singleNdviFile, resolutionStr);
+        QStringList genMonoDateMskFagsArgs = GetMonoDateMskFlagsArgs(inputProduct, monoDateMskFlgsFileName,
+                                                                     "\"" + monoDateMskFlgsResFileName+"?gdal:co:COMPRESS=DEFLATE\"",
+                                                                     resolutionStr);
+        QStringList ndviRviExtractionArgs = GetNdviRviExtractionArgs(inputProduct, monoDateMskFlgsFileName,
+                                                                     ftsFile, "\"" + singleNdviFile+"?gdal:co:COMPRESS=DEFLATE\"",
+                                                                     resolutionStr);
 
         // add these steps to the steps list to be submitted
         steps.append(genMonoDateMskFagsTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
@@ -443,24 +458,32 @@ NewStepList LaiRetrievalHandler::GetStepsForMonodateLai(EventProcessingContext &
         // if we are a secondary satellite, then cut the Flags, Ndvi and NdviRvi images
         if(bIsSecondarySat) {
             TaskToSubmit &flagsCutTask = allTasksList[flagsCutIdx];
+            TaskToSubmit &compressedFlagsCutTask = allTasksList[compressedFlagsCutIdx];
             TaskToSubmit &singleNdviCutTask = allTasksList[singleNdviCutIdx];
+            TaskToSubmit &compressedSingleNdviCutTask = allTasksList[compressedNdviCutIdx];
             TaskToSubmit &ndviRviCutTask = allTasksList[ndviRviCutIdx];
 
             // Here cut the monodate and the ndvi flags
-            const auto & cutMonoDateMskFlgsResFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img_cut.tif");
-            const auto & cutSingleNdviFile = ndviRviExtractorTask.GetFilePath("single_ndvi_cut.tif");
-            const auto & cutFtsFile = ndviRviExtractorTask.GetFilePath("ndvi_rvi_cut.tif");
+            const auto & cutMonoDateMskFlgsResFileName = flagsCutTask.GetFilePath("LAI_mono_date_msk_flgs_img_cut.tif");
+            const auto & comprCutMonoDateMskFlgsResFileName = compressedFlagsCutTask.GetFilePath("LAI_mono_date_msk_flgs_img_cut_compr.tif");
+            const auto & cutSingleNdviFile = singleNdviCutTask.GetFilePath("single_ndvi_cut.tif");
+            const auto & comprCutSingleNdviFile = compressedSingleNdviCutTask.GetFilePath("single_ndvi_cut_compr.tif");
+            const auto & cutFtsFile = ndviRviCutTask.GetFilePath("ndvi_rvi_cut.tif");
 
             QStringList cutFlgsArgs = GetCutImgArgs(shapePath, monoDateMskFlgsResFileName, cutMonoDateMskFlgsResFileName);
+            QStringList comprCutFlgsArgs = GetCompressImgArgs(cutMonoDateMskFlgsResFileName, comprCutMonoDateMskFlgsResFileName);
             QStringList cutSingleNdviArgs = GetCutImgArgs(shapePath, singleNdviFile, cutSingleNdviFile);
+            QStringList comprCutSingleNdviArgs = GetCompressImgArgs(cutSingleNdviFile, comprCutSingleNdviFile);
             QStringList cutNdviRviArgs = GetCutImgArgs(shapePath, ftsFile, cutFtsFile);
             steps.append(flagsCutTask.CreateStep("lai-gdal-flags", cutFlgsArgs));
+            steps.append(compressedFlagsCutTask.CreateStep("lai-gdal-flags-compression", comprCutFlgsArgs));
             steps.append(singleNdviCutTask.CreateStep("lai-gdal-ndvi", cutSingleNdviArgs));
+            steps.append(compressedSingleNdviCutTask.CreateStep("lai-gdal-ndvi-compression", comprCutSingleNdviArgs));
             steps.append(ndviRviCutTask.CreateStep("lai-gdal-ndvi-rvi", cutNdviRviArgs));
 
             // overwrite the value for the single ndvi file with the cut one
-            monoDateMskFlgsResFileName = cutMonoDateMskFlgsResFileName;
-            singleNdviFile = cutSingleNdviFile;
+            monoDateMskFlgsResFileName = comprCutMonoDateMskFlgsResFileName;
+            singleNdviFile = comprCutSingleNdviFile;
             ftsFile = cutFtsFile;
         }
         QStringList bvImageInvArgs = GetBvImageInvArgs(ftsFile, monoDateMskFlgsResFileName, inputProduct, modelsFolder, monoDateLaiFileName);
@@ -938,6 +961,12 @@ QStringList LaiRetrievalHandler::GetCutImgArgs(const QString &shapePath, const Q
              "-crop_to_cutline",
              inFile,
              outFile
+           };
+}
+
+QStringList LaiRetrievalHandler::GetCompressImgArgs(const QString &inFile, const QString &outFile) {
+    return { "-in", inFile,
+             "-out", "\"" + outFile+"?gdal:co:COMPRESS=DEFLATE\""
            };
 }
 

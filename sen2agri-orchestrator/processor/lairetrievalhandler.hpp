@@ -72,6 +72,7 @@ private:
 
     // Arguments getters
     QStringList GetCutImgArgs(const QString &shapePath, const QString &inFile, const QString &outFile);
+    QStringList GetCompressImgArgs(const QString &inFile, const QString &outFile);
     QStringList GetNdviRviExtractionArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile, const QString &ndviFile, const QString &resolution);
     QStringList GetBvImageInvArgs(const QString &ftsFile, const QString &msksFlagsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateLaiFileName);
     QStringList GetBvErrImageInvArgs(const QString &ftsFile, const QString &msksFlagsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateErrFileName);
