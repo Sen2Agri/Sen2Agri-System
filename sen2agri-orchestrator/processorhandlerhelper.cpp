@@ -3,6 +3,7 @@
 
 #include "qdatetime.h"
 
+#define EMPTY_TILE_ID           "00000"
 #define INVALID_FILE_SEQUENCE   "!&"
 // Map from the sensor name to :
 //      - product type
@@ -38,10 +39,10 @@ bool compareTileInfoFilesDates(const ProcessorHandlerHelper::InfoTileFile& info1
 
 ProcessorHandlerHelper::ProcessorHandlerHelper() {}
 
-ProductType ProcessorHandlerHelper::GetProductTypeFromFileName(const QString &path) {
+ProductType ProcessorHandlerHelper::GetProductTypeFromFileName(const QString &path, bool useParentDirIfDir) {
     QFileInfo info(path);
     QString name;
-    if(info.isDir()) {
+    if(info.isDir() && useParentDirIfDir) {
         name = info.dir().dirName();
     } else {
         name = info.baseName();
@@ -76,7 +77,7 @@ QString ProcessorHandlerHelper::GetTileId(const QString &path, SatelliteIdType &
     // Split the name by "_" and search the part having _Txxxxx (_T followed by 5 characters)
     QStringList pieces = fileNameWithoutExtension.split("_");
 
-    ProductType productType = GetProductTypeFromFileName(path);
+    ProductType productType = GetProductTypeFromFileName(path, false);
     if(productType != ProductType::InvalidProductTypeId) {
         if(productType == ProductType::L2AProductTypeId) {
             const L2MetaTileNameInfos &infos = GetL2AProductTileNameInfos(fileNameWithoutExtension);
@@ -101,7 +102,7 @@ QString ProcessorHandlerHelper::GetTileId(const QString &path, SatelliteIdType &
         }
     }
 
-    return QString("00000");
+    return QString(EMPTY_TILE_ID);
 }
 
 QMap<QString, ProcessorHandlerHelper::TileTemporalFilesInfo> ProcessorHandlerHelper::GroupTiles(const QStringList &listAllProductsTiles,
@@ -282,6 +283,27 @@ QString ProcessorHandlerHelper::GetHigLevelProductTileFile(const QString &tileDi
         return tileDir + "/QI_DATA/" + fileName + ".TIF";
     }
     return tileDir + "/IMG_DATA/" + fileName + ".TIF";
+}
+
+QMap<QString, QString> ProcessorHandlerHelper::GetHighLevelProductTilesDirs(const QString &productDir) {
+    QMap<QString, QString> mapTiles;
+
+    QString tilesDir = productDir + "/TILES/";
+    QDirIterator it(tilesDir, QStringList() << "*", QDir::Dirs);
+    SatelliteIdType satId;
+    while (it.hasNext()) {
+        QString subDir = it.next();
+       // get the dir name
+        QString tileDirName = QFileInfo(subDir).fileName();
+        if(tileDirName == "." || tileDirName == "..") {
+            continue;
+        }
+        QString tileId = GetTileId(subDir, satId);
+        if(tileId != EMPTY_TILE_ID) {
+            mapTiles[tileId] = subDir;
+        }
+    }
+    return mapTiles;
 }
 
 QMap<QString, QStringList> ProcessorHandlerHelper::GroupHighLevelProductTiles(const QStringList &listAllProductFolders) {
