@@ -218,7 +218,7 @@ with open(paramsFilenameXML, 'w') as paramsFileXML:
         i += 1
     paramsFileXML.write(prettify(root))
 
-paramsFilename= outDir + '/params.txt'
+paramsFilename = outDir + '/params.txt'
 with open(paramsFilename, 'w') as paramsFile:
     paramsFile.write("Weight AOT\n")
     paramsFile.write("    weight aot min    = " + WEIGHT_AOT_MIN + "\n")

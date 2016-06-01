@@ -49,6 +49,11 @@ typedef struct {
     LAIProductFormatterParams prodFormatParams;
 } LAIGlobalExecutionInfos;
 
+typedef struct {
+    QString L2A;
+    QString L3B;
+} L2AToL3B;
+
 class LaiRetrievalHandler : public ProcessorHandler
 {
 private:
@@ -59,19 +64,23 @@ private:
 
     void CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList, const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                    LAIProductFormatterParams &outProdFormatterParams,
-                                   int nbProducts, bool bGenModels, bool bMonoDateLai, bool bNDayReproc, bool bFittedReproc);
+                                   const QStringList &listProducts, bool bGenModels, bool bMonoDateLai, bool bNDayReproc, bool bFittedReproc);
 
     void HandleNewTilesList(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                            const TileTemporalFilesInfo &tileTemporalFilesInfo, const QStringList &listL3BTiles,
+                            const TileTemporalFilesInfo &tileTemporalFilesInfo, const QList<L2AToL3B> &listL2AToL3BProducts,
                             const TileTemporalFilesInfo &missingL3BTileTemporalFilesInfo, LAIGlobalExecutionInfos &outGlobalExecInfos);
 
     void GetModelFileList(QStringList &outListModels, const QString &strPattern, std::map<QString, QString> &configParameters);
+    void ExtractExistingL3BProductsFiles(const QStringList &listProducts, const TileTemporalFilesInfo &tileTemporalFilesInfo,
+                                         const QList<L2AToL3B> &listL2AToL3BProducts, QStringList &monoDateMskFlagsLaiFileNames,
+                                         QStringList &quantifiedLaiFileNames,QStringList &quantifiedErrLaiFileNames);
     void WriteExecutionInfosFile(const QString &executionInfosPath,
                                 std::map<QString, QString> &configParameters,
                                 const QStringList &listProducts, bool bIsReproc);
 
     // Arguments getters
     QStringList GetCutImgArgs(const QString &shapePath, const QString &inFile, const QString &outFile);
+    QStringList GetCompressImgArgs(const QString &inFile, const QString &outFile);
     QStringList GetNdviRviExtractionArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile, const QString &ndviFile, const QString &resolution);
     QStringList GetBvImageInvArgs(const QString &ftsFile, const QString &msksFlagsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateLaiFileName);
     QStringList GetBvErrImageInvArgs(const QString &ftsFile, const QString &msksFlagsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateErrFileName);

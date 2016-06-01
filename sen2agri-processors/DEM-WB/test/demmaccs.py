@@ -274,16 +274,37 @@ log(general_log_path,"dem_output_dir = {}".format(dem_output_dir), log_filename)
 
 general_start = time.time()
 
-if not create_recursive_dirs(dem_output_dir):
-    log(general_log_path, "Could not create the output directory for DEM", log_filename)
-    sys.exit(-1)
-
 if not create_recursive_dirs(working_dir):
     log(general_log_path, "Could not create the temporary directory", log_filename)
     sys.exit(-1)
 
 start = time.time()
 base_abs_path = os.path.dirname(os.path.abspath(__file__)) + "/"
+product_name = os.path.basename(args.input[:len(args.input) - 1]) if args.input.endswith("/") else os.path.basename(args.input)
+sat_id, acquistion_date = get_product_info(product_name)
+
+# crop the LANDSAT products for the alignment
+if sat_id == LANDSAT8_SATELLITE_ID:
+    print("{},sat_id = {}, acquistion_date = {}".format(product_name, sat_id, acquistion_date))
+    aligned_landsat_product_path, log_message = landsat_crop_to_cutline(args.input, working_dir)
+    if len(aligned_landsat_product_path) <= 0:
+        log(general_log_path, log_message, log_filename)
+        try:
+            shutil.rmtree(working_dir)
+        except:
+            log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), log_filename)
+        sys.exit(-1)
+    print("The LANDSAT8 product was aligned here: {}".format(aligned_landsat_product_path))
+    args.input = aligned_landsat_product_path
+
+if not create_recursive_dirs(dem_output_dir):
+    log(general_log_path, "Could not create the output directory for DEM", log_filename)
+    try:
+        shutil.rmtree(working_dir)        
+    except:
+        log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), log_filename)
+    sys.exit(-1)
+
 if args.skip_dem is None:
     print("Creating DEMs for {}".format(args.input))
     if run_command([base_abs_path + "dem.py", "--srtm", args.srtm, "--swbd", args.swbd, "-p", args.processes_number_dem, "-w", dem_working_dir, args.input, dem_output_dir], general_log_path, log_filename) != 0:

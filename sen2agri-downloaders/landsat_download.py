@@ -393,7 +393,7 @@ def landsat_download(aoiContext):
                                          # get the date by transforming it from doy to date
                                          year = date_asc[0:4]
                                          days = date_asc[4:]
-                                         prod_date = (datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(days))).strftime("%Y%m%dT000101")
+                                         prod_date = (datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(days))).strftime("%Y%m%dT000000")
                                          if downloadChunks(url, nom_prod, prod_date, lsdestdir, aoiContext, db):
                                               downloaded_ids.append(nom_prod)                                              
          if len(downloaded_ids) > 0:

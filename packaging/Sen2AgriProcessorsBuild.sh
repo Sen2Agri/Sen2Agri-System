@@ -129,6 +129,8 @@ function build_SEN2AGRI_downloaders_demmacs_RPM_Package()
 
    cp -rf ${SOURCES_DIR_PATH}/sen2agri-processors/DEM-WB/UserConfiguration ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-demmaccs
 
+   cp -rf ${SOURCES_DIR_PATH}/sen2agri-processors/DEM-WB/wrs2_descending ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri
+
    ###put demmaccs services files into the install folder :/usr/lib/systemd/system
    cp -f ${SOURCES_DIR_PATH}/sen2agri-processors/DEM-WB/test/dist/* ${DOWNL_DEM_INSTALL_PATH}/usr/lib/systemd/system
 

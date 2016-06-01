@@ -31,28 +31,6 @@ from sen2agri_common_db import *
 general_log_path = "/tmp/"
 general_log_filename = "demmaccs.log"
 
-def GetExtent(gt, cols, rows):
-    ext = []
-    xarr = [0, cols]
-    yarr = [0, rows]
-
-    for px in xarr:
-        for py in yarr:
-            x = gt[0] + px * gt[1] + py * gt[2]
-            y = gt[3] + px * gt[4] + py * gt[5]
-            ext.append([x, y])
-        yarr.reverse()
-    return ext
-
-
-def ReprojectCoords(coords, src_srs, tgt_srs):
-    trans_coords = []
-    transform = osr.CoordinateTransformation(src_srs, tgt_srs)
-    for x, y in coords:
-        x, y, z = transform.TransformPoint(x, y)
-        trans_coords.append([x, y])
-    return trans_coords
-
 
 def get_envelope(footprints):
     geomCol = ogr.Geometry(ogr.wkbGeometryCollection)
@@ -70,29 +48,6 @@ def get_envelope(footprints):
 
     hull = geomCol.ConvexHull()
     return hull.ExportToWkt()
-
-
-def get_footprint(image_filename):
-    dataset = gdal.Open(image_filename, gdal.gdalconst.GA_ReadOnly)
-
-    size_x = dataset.RasterXSize
-    size_y = dataset.RasterYSize
-
-    geo_transform = dataset.GetGeoTransform()
-
-    spacing_x = geo_transform[1]
-    spacing_y = geo_transform[5]
-
-    extent = GetExtent(geo_transform, size_x, size_y)
-
-    source_srs = osr.SpatialReference()
-    source_srs.ImportFromWkt(dataset.GetProjection())
-    epsg_code = source_srs.GetAttrValue("AUTHORITY", 1)
-    target_srs = osr.SpatialReference()
-    target_srs.ImportFromEPSG(4326)
-
-    wgs84_extent = ReprojectCoords(extent, source_srs, target_srs)
-    return wgs84_extent
 
 
 class L1CContext(object):
@@ -202,7 +157,7 @@ def launch_demmaccs(l1c_context):
                     tile_img = (glob.glob("{}/*_FRE.DBL.TIF".format(tile_dir)))                
                 
                 if len(tile_img) > 0:
-                    wgs84_extent_list.append(get_footprint(tile_img[0]))
+                    wgs84_extent_list.append(get_footprint(tile_img[0])[0])
             wkt = get_envelope(wgs84_extent_list)
 
             if len(wkt) == 0:
