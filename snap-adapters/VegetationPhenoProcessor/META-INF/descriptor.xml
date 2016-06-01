@@ -12,41 +12,23 @@
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>$PROCESSORS_PATH/VegetationStatus/TestScripts/pheno_processing.py</mainToolFileLocation>
-  <workingDir>$WORKING_DIR_PATH/Vegetation</workingDir>
+  <mainToolFileLocation>pheno_processing.py</mainToolFileLocation>
+  <workingDir>$HOME</workingDir>
   <templateFileLocation>VegetationPhenoProcessor-template.vm</templateFileLocation>
   <progressPattern>(?:.+): (\d{1,3})% (?:.+)</progressPattern>
   <errorPattern>ERROR: (.+)</errorPattern>
   <variables>
-    <osvariable>
-      <key>PYTHON_BIN</key>
+    <variable>
+      <key>HOME</key>
       <value></value>
-      <windows>python.exe</windows>
-      <linux></linux>
-      <macosx>/bin/python2.7</macosx>
-      <isTransient>false</isTransient>
-    </osvariable>
-    <variable>
-      <key>WORKING_DIR_PATH</key>
-      <value>/home/ramonag/sen2agri/workingDir/</value>
-    </variable>
-    <variable>
-      <key>PROCESSORS_PATH</key>
-      <value></value>
-    </variable>
-    <variable>
-      <key>SCRIPT_PATH</key>
-      <value>/home/ramonag/sen2agri/sources/sen2agri/</value>
-    </variable>
-    <variable>
-      <key>SENTINEL_BUILD_PATH</key>
-      <value>/home/ramonag/sen2agri/sources/sen2agri-build/</value>
+      <isShared>false</isShared>
     </variable>
   </variables>
   <parameters>
     <parameter>
       <name>targetProductFile</name>
       <dataType>java.io.File</dataType>
+      <description>Output file</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
@@ -57,28 +39,6 @@
       <name>inputFiles</name>
       <dataType>[Ljava.io.File;</dataType>
       <description>the list of files representing the metadata files of the products</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>startDate</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>20130206</defaultValue>
-      <description>The start date for the temporal resampling interval (in format YYYYMMDD)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>endDate</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>20130616</defaultValue>
-      <description>The enddate for the temporal resampling interval (in format YYYYMMDD)</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
@@ -107,7 +67,7 @@
       <toolParameterDescriptors/>
     </parameter>
   </parameters>
-  <source>package</source>
+  <source>user</source>
   <isSystem>false</isSystem>
   <isHandlingOutputName>true</isHandlingOutputName>
   <sourceProductDescriptors/>
