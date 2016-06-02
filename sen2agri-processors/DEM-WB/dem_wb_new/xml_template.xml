@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="DISPLAY/display.xsl"?>
+<Earth_Explorer_Header schema_version="1.00" xmlns="http://eop-cfi.esa.int/CFI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="REFDE2_Header_Type" xsi:schemaLocation="http://eop-cfi.esa.int/CFI D:\Utilisateurs\petruccib\Documents\PROJETS\MACCS\10-Développement_CS\04-Schemas\MACCS_v-4-0-1\Landsat8\AUX_REFDE2_ReferenceDemDataLevel2.xsd">
+</Earth_Explorer_Header>
+

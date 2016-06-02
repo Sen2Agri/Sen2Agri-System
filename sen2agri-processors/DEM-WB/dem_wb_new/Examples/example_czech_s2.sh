@@ -1,0 +1,4 @@
+#! /bin/sh
+
+python s2agri_dem_product.py -i '/media/otbnas/abricier/S2Agri/CzechAgri-S2/S2A_OPER_PRD_MSIL1C_PDMC_20160330T143522_R122_V20160327T100012_20160327T100012.SAFE/GRANULE/S2A_OPER_MSI_L1C_TL_SGS__20160327T140224_A003980_T33UWR_N02.01/S2A_OPER_MTD_L1C_TL_SGS__20160327T140224_A003980_T33UWR.xml' -w /media/otbnas/amondot/DEM/WD_S2_06_04_16_2/ -o /media/otbnas/amondot/DEM/OUT_S2_06_04_16_2/ -d /media/otbnas/msavinaud/S2Agri/DEM/ -s s2
+python s2agri_dem_product.py -i '/media/otbnas/abricier/S2Agri/CzechAgri-S2/S2A_OPER_PRD_MSIL1C_PDMC_20160330T143522_R122_V20160327T100012_20160327T100012.SAFE/GRANULE/S2A_OPER_MSI_L1C_TL_SGS__20160327T140224_A003980_T33UVR_N02.01/S2A_OPER_MTD_L1C_TL_SGS__20160327T140224_A003980_T33UVR.xml' -w /media/otbnas/amondot/DEM/WD_S2_04_04_16_2/ -o /media/otbnas/amondot/DEM/OUT_S2_04_04_16_2/ -d /media/otbnas/msavinaud/S2Agri/DEM/ -s s2
