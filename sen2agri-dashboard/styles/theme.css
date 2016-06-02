@@ -329,6 +329,8 @@ p.readmore a {
     width: 1250px;
     padding: 50px 0 100px 0;
     background: #0B171E url('../images/bg.gif') repeat-y top;
+	font-size: 11px;
+	color:#2B373E;
 }
 
 #footer2 p {

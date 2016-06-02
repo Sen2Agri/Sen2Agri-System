@@ -459,12 +459,7 @@ input.right {
 
 /* END LOGIN STYLES ---------------------------------------------- */
 .list-group {
-    width: 800px;
 	font-size: 12px;
-}
-
-.list-group-item {
-    padding: 3px 10px;
 }
 
 .tree {
@@ -472,6 +467,7 @@ input.right {
 	height:550px;
 	overflow: scroll;
 	border: 1px solid #94BA49;
+	background-color: white;
 }
 
 .map {
@@ -488,6 +484,6 @@ input.right {
 .required .control-label:after {
   content:"*";
   font-size: 18px;
-  font-wight: 700;
+  font-weight: 700;
   color:red;
 }
