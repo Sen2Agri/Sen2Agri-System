@@ -17,7 +17,7 @@
     <link rel="stylesheet" href="styles/styles.css" />
     <link rel="stylesheet" href="styles/theme.css" />
     <link rel="stylesheet" href="libraries/openlayers/build/ol.css" />
-    <link rel="stylesheet" href="libraries/bootstrap-treeview/bootstrap-treeview.min.css" />
+    <link rel="stylesheet" href="libraries/bootstrap-treeview/bootstrap-treeview.css" />
 	
     <script src="libraries/aspnetcdn/ajax/jQuery/jquery-2.1.4.min.js"></script>
     <script src="libraries/bootstrapcdn/bootstrap/3.3.5/js/bootstrap.min.js"></script>
@@ -26,7 +26,7 @@
     <script src="libraries/flot-0.8.3/jquery.flot.time.min.js"></script>
     <script src="libraries/flot-0.8.3/jquery.flot.stack.min.js"></script>
     <script src="libraries/nvd3-1.1.11/nv.d3.js"></script>
-    <script src="libraries/bootstrap-treeview/bootstrap-treeview.min.js"></script>
+    <script src="libraries/bootstrap-treeview/bootstrap-treeview.js"></script>
 	<script type="text/javascript"> var host_name = "<?php echo ConfigParams::$HOST_NAME ?>"; var services_port = "<?php echo ConfigParams::$SERVICES_PORT ?>"; </script>
 </head>
 <body>

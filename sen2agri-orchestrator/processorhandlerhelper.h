@@ -48,7 +48,7 @@ public:
 
     ProcessorHandlerHelper();
 
-    static ProductType GetProductTypeFromFileName(const QString &path);
+    static ProductType GetProductTypeFromFileName(const QString &path, bool useParentDirIfDir = true);
     static QString GetTileId(const QString &path, SatelliteIdType &satelliteId);
     //static QStringList GetProductTileIds(const QStringList &listFiles);
     static QMap<QString, TileTemporalFilesInfo> GroupTiles(const QStringList &listAllProductsTiles, QList<SatelliteIdType> &outAllSatIds, SatelliteIdType &outPrimarySatelliteId);
@@ -60,6 +60,7 @@ public:
     static bool GetHigLevelProductAcqDatesFromName(const QString &productName, QDateTime &minDate, QDateTime &maxDate);
     static QString GetHigLevelProductTileFile(const QString &tileDir, const QString &fileIdentif, bool isQiData=false);
     static QMap<QString, QString> GetHigLevelProductFiles(const QString &productDir, const QString &fileIdentif, bool isQiData=false);
+    static QMap<QString, QString> GetHighLevelProductTilesDirs(const QString &productDir);
     static QMap<QString, QStringList> GroupHighLevelProductTiles(const QStringList &listAllProductFolders);
 
     //static QString GetL2ATileMainImageFilePath(const QString &tileMetadataPath);
