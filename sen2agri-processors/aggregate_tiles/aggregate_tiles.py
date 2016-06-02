@@ -424,7 +424,7 @@ def concatenate_mosaic_files(context, listOfImages):
    run_command(["otbcli",
                 "ConcatenateImages",
                 "-il"] + listOfImages + [
-                "-out", context.post_process_out_filename])
+                "-out", context.post_process_out_filename +"?gdal:co:COMPRESS=DEFLATE"])
 #----------------------------------------------------------------
 def perform_images_concatenation(context, listOfFiles, dataFolder):
    #build intermediary dictionnary
