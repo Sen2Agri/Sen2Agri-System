@@ -17,13 +17,13 @@
  * limitations under the License.
  * ========================================================= */
 .treeview .list-group {
-	/*width: 700px;*/
+	font-size: 14px;
 }
 
 .treeview .list-group-item {
 	cursor: pointer;
 	position: inherit;
-    padding: 3px 10px;
+    padding: 1px 10px 3px 10px;
 	border: 1px solid white;
 	z-index: 9999;
 }
@@ -44,51 +44,72 @@
 }
 
 .treeview a {
-	display: none;
+	color: inherit;
 	text-decoration: none;
-	font-size: 14px;
-	color: #8BB245;
-	position: absolute;
-	z-index: 1000;
-	padding: 6px;
-	background-color: white;
-	border: 1px solid #8BB245;
-	border-radius: 8px;
-}
-
-.treeview .node-selected a {
-	color: #8BB245;
 }
 
 .treeview a:hover {
-	color: #0070FF;
-
+	text-decoration: underline;
 }
 
-.treeview .branch {
+.treeview .download {
+	display: none;
+	position: absolute;
 	font-size: 14px;
+	color: #8BB245;
+	background-color: white;
+	border: 1px solid #8BB245;
+	border-radius: 12px;
+	padding: 4px;
+	z-index: 1000;
+}
+
+.treeview .download:hover {
+	color: #5D7531;
+	text-decoration: none;
+	border: 1px solid #5D7531;
 }
 
 .treeview .leaf {
     display: inline-block;
     font-size: 11px;
-    width: 270px;
+	width: 10px;
 }
 
 .treeview .floatingleaf {
     display: none;
-	pointer-events: none;
-    font-size: 11px;
 	position: absolute;
+    font-size: 11px;
 	background-color: #E7F3D0;
-	z-index: 999;
-	padding: 6px;
 	border: 1px solid #8BB245;
-	border-radius: 8px;
+	border-radius: 4px;
+	padding: 5px 5px 4px 5px;
+	pointer-events: none;
+	z-index: 999;
+}
+
+.treeview .floatingleaf.visible {
+	display: inline-block;
+}
+
+.treeview .floatingleaf.hidden {
+	display: none;
 }
 
 .treeview .node-selected .floatingleaf {
 	color: #FFFFFF;
 	background-color: #8BB245;
 	border: 1px solid #FFFFFF;
+}
+
+.treeview .floatingleaf.underline {
+	text-decoration: underline;
+}
+
+.treeview .download.visible {
+	display: inline-block;
+}
+
+.treeview .download.hidden {
+	display: none;
 }

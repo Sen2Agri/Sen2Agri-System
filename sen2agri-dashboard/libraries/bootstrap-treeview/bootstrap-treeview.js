@@ -51,6 +51,8 @@
 		searchResultBackColor: undefined, //'#FFFFFF',
 
 		enableLinks: false,
+		enableTooltips: true,
+		enableDownloadButtons: true,
 		highlightSelected: true,
 		highlightSearchResults: true,
 		showBorder: true,
@@ -316,7 +318,7 @@
 
 	Tree.prototype.clickHandler = function (event) {
 
-		if (!this.options.enableLinks) event.preventDefault();
+		if (!this.options.enableLinks && !this.options.enableDownloadButtons) event.preventDefault();
 
 		var target = $(event.target);
 		var node = this.findNode(target);
@@ -581,47 +583,59 @@
 					);
 			}
 
-			// Add text
-			if (_this.options.enableLinks) {
-				// Add hyperlink
-				if(node.href) {
-					var xx = $(_this.template.leaf);
-					var yy = $(_this.template.floatingleaf);
-					treeItem.append($(_this.template.link).attr('href', node.href));
-					treeItem.append(xx.append(node.text));
-					treeItem.append(yy.append(node.text));
-					treeItem.hover(
-						function() {
-							var xx = $(this).children(".leaf");
-							var yy = $(this).children(".floatingleaf");
-							var offset = xx.offset();
-							yy.css("left", offset.left - 7);
-							yy.css("top", offset.top - 7);
-							yy.css("display", "inline-block");
-							
-							var zz = $(this).children(".glyphicon-download-alt");
-							var offl = $(this).parent().parent().offset().left; // + $(this).parent().parent().width();
-							zz.css("left", offl + 20);
-							zz.css("top", offset.top - 7);
-							zz.css("display", "inline-block");
-						},
-						function() {
-							var yy = $(this).children(".floatingleaf");
-							var zz = $(this).children(".glyphicon-download-alt");
-							yy.css("display", "none");
-							zz.css("display", "none");
-						}
-					);
+			// Add branches and leafs
+			if (_this.options.enableLinks && node.href) {
+				treeItem.append($(_this.template.link).attr('href', node.href).append(node.text));
+			} else {
+				if (node.href) {
+					treeItem.append($(_this.template.leaf).append(node.text));
 				} else {
 					treeItem.append($(_this.template.branch).append(node.text));
 				}
 			}
-			else {
-				// otherwise just text
-				treeItem
-					.append(node.text);
+			
+			// Add tooltips only for leaf items
+			if (_this.options.enableTooltips && node.href) {
+				var tooltip = _this.options.enableLinks ? $(_this.template.floatingleaf).addClass("underline") : $(_this.template.floatingleaf);
+				treeItem.append(tooltip.append(node.text));
+				treeItem.hover(
+					function() {
+						var leaf = $(this).children(".leaf");
+						var tooltip = $(this).children(".floatingleaf");
+						tooltip.css("left", leaf.offset().left - 6);
+						tooltip.css("top", leaf.offset().top - 6);
+						tooltip.removeClass("hidden");
+						tooltip.addClass("visible");
+					},
+					function() {
+						var tooltip = $(this).children(".floatingleaf");
+						tooltip.removeClass("visible");
+						tooltip.addClass("hidden");
+					}
+				);
 			}
-
+			
+			// Add download button only for leaf items
+			if (_this.options.enableDownloadButtons && node.href) {
+				treeItem.append($(_this.template.download).attr('href', node.href));
+				treeItem.hover(
+					function() {
+						var leaf = $(this).children(".leaf");
+						var download = $(this).children(".download");
+						var div_ancestor = $(this).parent().parent();
+						download.css("left", div_ancestor.offset().left + 20);
+						download.css("top", leaf.offset().top - 6);
+						download.removeClass("hidden");
+						download.addClass("visible");
+					},
+					function() {
+						var download = $(this).children(".download");
+						download.removeClass("visible");
+						download.addClass("hidden");
+					}
+				);
+			}
+			
 			// Add tags as badges
 			if (_this.options.showTags && node.tags) {
 				$.each(node.tags, function addTag(id, tag) {
@@ -717,10 +731,11 @@
 		item: '<li class="list-group-item"></li>',
 		indent: '<span class="indent"></span>',
 		icon: '<span class="icon"></span>',
-		link: '<a href="#" class="glyphicon glyphicon-download-alt"></a>',
+		link: '<a href="#" class="leaf"></a>',
 		branch: '<span class="branch"></span>',
 		leaf: '<div class="leaf"></div>',
 		floatingleaf: '<div class="floatingleaf"></div>',
+		download: '<a href="#" class="download glyphicon glyphicon-download-alt"></a>',
 		badge: '<span class="badge"></span>'
 	};
 
