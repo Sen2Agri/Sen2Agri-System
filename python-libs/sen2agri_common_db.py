@@ -72,12 +72,12 @@ g_exit_flag = False
 def log(location, info, log_filename = ""):
     try:
         if DEBUG:        
-            print("{}:{}:{}".format(str(datetime.datetime.now()), os.getpid(), str(info)))
+            print("{}:[{}]:{}".format(str(datetime.datetime.now()), os.getpid(), str(info)))
             sys.stdout.flush()
         if len(location) > 0 and len(log_filename) > 0:
             logfile = os.path.join(location, log_filename)
             log = open(logfile, 'a')
-            log.write("{}:{}:{}\n".format(str(datetime.datetime.now()), os.getpid(), str(info)))
+            log.write("{}:[{}]:{}\n".format(str(datetime.datetime.now()), os.getpid(), str(info)))
             log.close()
     except:
         print("Could NOT write inside the log file {}".format(logfile))     

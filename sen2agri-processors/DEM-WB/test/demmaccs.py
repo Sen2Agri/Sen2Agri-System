@@ -326,10 +326,14 @@ for dem_hdr in dem_hdrs:
     print("DEM_HDR: {}".format(dem_hdr))
     demmaccs_contexts.append(DEMMACCSContext(working_dir, dem_hdr, args.gip_dir, args.prev_l2a_tiles, args.prev_l2a_products_paths, args.maccs_address, args.maccs_launcher, args.input, args.output))
 
+#RELEASE mode, it launches in parallel
 pool = Pool(int(args.processes_number_maccs))
 pool_outputs = pool.map(maccs_launcher, demmaccs_contexts)
 pool.close()
 pool.join()
+
+#DEBUG mode only, it launches sequentially 
+#pool_outputs = map(maccs_launcher, demmaccs_contexts)
 
 processed_tiles = []
 for out in pool_outputs:
