@@ -52,7 +52,7 @@ logging.basicConfig()
 # create logger
 logger = logging.getLogger( 'GenerateDEMWBProduct' )
 logger.setLevel(config.level_working_modules)
-fh = logging.FileHandler(config.fichier_log)
+fh = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 fh.setLevel(logging.DEBUG)
