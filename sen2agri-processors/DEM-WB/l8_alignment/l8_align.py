@@ -54,7 +54,7 @@ logging.basicConfig()
 # create logger
 logger = logging.getLogger('l8_align')
 logger.setLevel(config.level_debug_modules)
-fh = logging.FileHandler(config.fichier_log)
+fh = logging.StreamHandler()
 formatter = logging.Formatter('%(asctime)s %(name)s %(levelname)s - %(message)s')
 fh.setFormatter(formatter)
 fh.setLevel(logging.DEBUG)

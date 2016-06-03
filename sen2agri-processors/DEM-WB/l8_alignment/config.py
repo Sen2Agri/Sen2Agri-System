@@ -26,7 +26,6 @@ _____________________________________________________________________________
 import logging
 level_working_modules = logging.DEBUG
 level_debug_modules = logging.DEBUG
-fichier_log = "/tmp/s2agri_log.txt"
 
 L1_resolution = 30  # m
 L2_resolution = 30  # m
