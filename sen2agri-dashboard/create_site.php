@@ -242,7 +242,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save') {
 	<div id="main2">
 		<div id="main3">
 			<!-- Start code for adding site---------- -->
-			<div class="panel panel-default">
+			<div class="panel panel-default create-site">
 				<!-- - -->
 				<div class="panel-heading">
 					<div class="row">

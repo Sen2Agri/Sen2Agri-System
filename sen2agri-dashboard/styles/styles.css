@@ -483,3 +483,25 @@ input.right {
   font-weight: 700;
   color:red;
 }
+
+/* SITES related styles --------------------------------------------- */
+div.create-site table.table {
+	margin: 0px;
+}
+
+div.create-site table.table td {
+	font-size: 12px;
+	line-height: 0.9;
+}
+
+div.create-site table.table td a {
+	cursor: pointer;
+	text-decoration: none;
+}
+
+div.create-site table.table td a:hover {
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+/* --------------------------------------------- */
