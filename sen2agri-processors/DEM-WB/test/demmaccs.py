@@ -285,18 +285,27 @@ sat_id, acquistion_date = get_product_info(product_name)
 
 # crop the LANDSAT products for the alignment
 if sat_id == LANDSAT8_SATELLITE_ID:
-    print("{},sat_id = {}, acquistion_date = {}".format(product_name, sat_id, acquistion_date))
-    aligned_landsat_product_path, log_message = landsat_crop_to_cutline(args.input, working_dir)
-    if len(aligned_landsat_product_path) <= 0:
-        log(general_log_path, log_message, log_filename)
+    base_abs_path = os.path.dirname(os.path.abspath(__file__)) + "/../l8_alignment/"
+    if run_command([base_abs_path + "l8_align.py", "-i", args.input, "-o", working_dir, "-v", base_abs_path + "wrs2_descending/wrs2_descending.shp", "-w", working_dir + "/l8_align_tmp", "-t", product_name]) != 0:
+        log(general_log_path, "The LANDSAT8 product could not be aligned {}".format(args.input), log_filename)
         try:
             shutil.rmtree(working_dir)
         except:
             log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), log_filename)
         sys.exit(-1)
-    print("The LANDSAT8 product was aligned here: {}".format(aligned_landsat_product_path))
-    args.input = aligned_landsat_product_path
+    #aligned_landsat_product_path, log_message = landsat_crop_to_cutline(args.input, working_dir)
+    #if len(aligned_landsat_product_path) <= 0:
+    #    log(general_log_path, log_message, log_filename)
+    #    try:
+    #        shutil.rmtree(working_dir)
+    #    except:
+    #        log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), log_filename)
+    #    sys.exit(-1)
+    #the l8.align.py outputs in the working_dir directory where creates a directory which has the product name
+    args.input = working_dir + "/" + product_name
+    log(general_log_path, "The LANDSAT8 product was aligned here: {}".format(args.input), log_filename)
 
+sys.exit(0)
 if not create_recursive_dirs(dem_output_dir):
     log(general_log_path, "Could not create the output directory for DEM", log_filename)
     try:
