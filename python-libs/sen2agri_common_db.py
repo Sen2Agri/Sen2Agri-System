@@ -40,7 +40,7 @@ import psycopg2
 import psycopg2.errorcodes
 import optparse
 
-FAKE_COMMAND = 1
+FAKE_COMMAND = 0
 DEBUG = True
 
 DOWNLOADER_NUMBER_OF_CONFIG_PARAMS_FROM_DB = int(7)
