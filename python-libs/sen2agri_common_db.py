@@ -40,7 +40,7 @@ import psycopg2
 import psycopg2.errorcodes
 import optparse
 
-FAKE_COMMAND = 0
+FAKE_COMMAND = 1
 DEBUG = True
 
 DOWNLOADER_NUMBER_OF_CONFIG_PARAMS_FROM_DB = int(7)
@@ -164,6 +164,14 @@ def create_recursive_dirs(dir_name):
     else:
         #for sure, the problem is with access rights
         print("Can't create the directory due to access rights {}".format(dir_name))
+        return False
+    return True
+
+
+def remove_dir(directory):
+    try:
+        shutil.rmtree(directory)        
+    except:
         return False
     return True
 

@@ -285,12 +285,10 @@ sat_id, acquistion_date = get_product_info(product_name)
 
 # crop the LANDSAT products for the alignment
 if sat_id == LANDSAT8_SATELLITE_ID:
-    base_abs_path = os.path.dirname(os.path.abspath(__file__)) + "/../l8_alignment/"
-    if run_command([base_abs_path + "l8_align.py", "-i", args.input, "-o", working_dir, "-v", base_abs_path + "wrs2_descending/wrs2_descending.shp", "-w", working_dir + "/l8_align_tmp", "-t", product_name]) != 0:
+    base_l8align_abs_path = os.path.dirname(os.path.abspath(__file__)) + "/../l8_alignment/"
+    if run_command([base_l8align_abs_path + "l8_align.py", "-i", args.input, "-o", working_dir, "-v", base_l8align_abs_path + "wrs2_descending/wrs2_descending.shp", "-w", working_dir + "/l8_align_tmp", "-t", product_name]) != 0:
         log(general_log_path, "The LANDSAT8 product could not be aligned {}".format(args.input), log_filename)
-        try:
-            shutil.rmtree(working_dir)
-        except:
+        if not remove_dir(working_dir):
             log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), log_filename)
         sys.exit(-1)
     #aligned_landsat_product_path, log_message = landsat_crop_to_cutline(args.input, working_dir)
@@ -305,12 +303,9 @@ if sat_id == LANDSAT8_SATELLITE_ID:
     args.input = working_dir + "/" + product_name
     log(general_log_path, "The LANDSAT8 product was aligned here: {}".format(args.input), log_filename)
 
-sys.exit(0)
 if not create_recursive_dirs(dem_output_dir):
     log(general_log_path, "Could not create the output directory for DEM", log_filename)
-    try:
-        shutil.rmtree(working_dir)        
-    except:
+    if not remove_dir(working_dir):
         log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), log_filename)
     sys.exit(-1)
 
@@ -318,6 +313,8 @@ if args.skip_dem is None:
     print("Creating DEMs for {}".format(args.input))
     if run_command([base_abs_path + "dem.py", "--srtm", args.srtm, "--swbd", args.swbd, "-p", args.processes_number_dem, "-w", dem_working_dir, args.input, dem_output_dir], general_log_path, log_filename) != 0:
         log(general_log_path, "DEM failed", log_filename)
+        if not remove_dir(working_dir):
+            log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), log_filename)
         sys.exit(-1)
 
 log(general_log_path, "DEM finished in: {}".format(datetime.timedelta(seconds=(time.time() - start))), log_filename)
@@ -326,6 +323,12 @@ dem_hdrs = glob.glob("{}/*.HDR".format(dem_output_dir))
 log(general_log_path, "DEM output directory {} has DEM hdrs = {}".format(dem_output_dir, dem_hdrs), log_filename)
 if len(dem_hdrs) == 0:
     log(general_log_path, "There are no hdr DEM files in {}".format(dem_output_dir), log_filename)
+    if not remove_dir(dem_working_dir):
+        log(general_log_path, "Couldn't remove the temp dir {}".format(dem_working_dir), log_filename)
+    if not remove_dir(dem_output_dir):
+        log(general_log_path, "Couldn't remove the temp dir {}".format(dem_output_dir), log_filename)
+    if not remove_dir(working_dir):
+        log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), log_filename)
     sys.exit(-1)
 
 
@@ -361,17 +364,11 @@ else:
 
 if args.delete_temp == "True":
     log(general_log_path, "Remove all the temporary files and directory", log_filename)
-    try:
-        shutil.rmtree(dem_working_dir)
-    except:
+    if not remove_dir(dem_working_dir):
         log(general_log_path, "Couldn't remove the temp dir {}".format(dem_working_dir), log_filename)
-    try:
-        shutil.rmtree(dem_output_dir)
-    except:
+    if not remove_dir(dem_output_dir):
         log(general_log_path, "Couldn't remove the temp dir {}".format(dem_output_dir), log_filename)
-    try:
-        shutil.rmtree(working_dir)
-    except:
+    if not remove_dir(working_dir):
         log(general_log_path, "Couldn't remove the temp dir {}".format(working_dir), log_filename)
 
 log(general_log_path, "Total execution {}:".format(datetime.timedelta(seconds=(time.time() - general_start))), log_filename)
