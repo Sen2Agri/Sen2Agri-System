@@ -41,10 +41,11 @@ import config
 from osgeo import gdal
 
 gdal.UseExceptions()
-from DEM_common import display_parameters, usage
+from DEM_common import display_parameters, usage, searchOneFile
 from GDAL_Tools.DEM_gdalTools import (crop_with_mask, crop_with_extent, get_image_info_with_gdal,
                                       get_feature_enveloppe, convert_extent, get_extent_from_l8_extent)
 from GDAL_Tools.gdalinfoO import gdalinfoO
+from DEM_Generator.DEMGeneratorCommon import  bandmath
 
 # import logging for debug messages
 import logging
@@ -262,7 +263,10 @@ def l8_align(input_dir, l8_vector, output_directory_path_row_data, working_dir, 
     if not os.path.isdir(output_product_dir_data):
         os.makedirs(output_product_dir_data)
 
-        image = glob.glob(os.path.join(input_dir, "*.TIF"))[0]
+        image = searchOneFile(input_dir, "*_B1.TIF")
+        if not image:
+            print "B1 is missing"
+            sys.exit(2)
         logger.debug(image)
 
         # txt file
@@ -286,14 +290,28 @@ def l8_align(input_dir, l8_vector, output_directory_path_row_data, working_dir, 
         shape_env, shape_env_points = get_feature_enveloppe(shape_temp, working_dir, int(epsg_code))
         update_txt(txt_file, shape_env_points, output_product_dir_data, epsg_code)
 
+        bqa_temp = ""
+        bqd_out = ""
         for tif_file in glob.glob(os.path.join(input_dir, "*.TIF")):
             data_out = os.path.join(output_product_dir_data, os.path.basename(tif_file))
             resolution = gdalinfoO(tif_file).getPixelSize()[0]
             scale_factor = float(config.L2_coarse_resolution)
             extent, shape_env_points = get_feature_enveloppe(shape_temp, working_dir, int(epsg_code), scale_factor)
-            crop_with_extent(tif_file, shape_env_points, data_out)
+
+            if "BQA" in tif_file:
+                bqa_temp = os.path.join(working_dir, os.path.basename(tif_file))
+                bqd_out = data_out
+                crop_with_extent(tif_file, shape_env_points, bqa_temp)
+            else:
+                crop_with_extent(tif_file, shape_env_points, data_out)
 
             # crop_with_mask(tif_file, extent, data_out)
+        if os.path.isfile(bqa_temp):
+            image_support = searchOneFile(output_product_dir_data, "*_B1.TIF")
+            if not image_support:
+                print "B1 is missing in output directory"
+                sys.exit(2)
+            bandmath([image_support, bqa_temp], "(im1b1==0&&im2b1==0?0:im2b1)", bqd_out)
     else:
         logging.info("{} already processed.".format(output_product_dir_data))
 
