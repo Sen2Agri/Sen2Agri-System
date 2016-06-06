@@ -182,7 +182,7 @@ def maccs_launcher(demmaccs_context):
             #search for the gipp common tile file
             log(demmaccs_context.output, "Symbolic link {} for tile id {} GIPP files could not be found. Searching for the common one ".format(gipp_tile_type, tile_id), tile_log_filename)
             ret, log_gipp = copy_common_gipp_file(demmaccs_context.gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, common_tile_id)
-            if len(log_gipp > 0):
+            if len(log_gipp) > 0:
                 log(demmaccs_context.output, log_gipp, tile_log_filename)
             if not ret:
                 return ""
