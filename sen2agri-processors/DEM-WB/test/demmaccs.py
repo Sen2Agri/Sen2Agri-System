@@ -169,7 +169,7 @@ def maccs_launcher(demmaccs_context):
         log(demmaccs_context.output, "Symbolic links for GIPP files could not be created in the output directory", tile_log_filename)
         return ""
         
-    tile_gipp_types = ["L2SITE", "CKEXTL", "CKQLTL"]
+    gipp_tile_types = ["L2SITE", "CKEXTL", "CKQLTL"]
     
     for gipp_tile_type in gipp_tile_types:
         #search for the specific gipp tile file. if it will not be found, the common one (if exists) will be used
@@ -180,7 +180,7 @@ def maccs_launcher(demmaccs_context):
                 return ""
         else:
             #search for the gipp common tile file
-            log(demmaccs_context.output, "Symbolic link {} for tile id {} GIPP files could not be found. Searching for the common one ".format(gipp_tile_type, tile_id), tile_log_filename)
+            log(demmaccs_context.output, "Symbolic link {} for tile id {} GIPP file could not be found. Searching for the common one ".format(gipp_tile_type, tile_id), tile_log_filename)
             ret, log_gipp = copy_common_gipp_file(demmaccs_context.gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, common_tile_id)
             if len(log_gipp) > 0:
                 log(demmaccs_context.output, log_gipp, tile_log_filename)
