@@ -73,12 +73,32 @@ def get_prev_l2a_tile_path(tile_id, prev_l2a_product_path):
     return tile_files
 
 
+def copy_common_gipp_file(gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, common_tile_id):
+    #take the common one
+    tmp_tile_gipp = glob.glob("{}/{}/{}*{}_S_{}{}*.EEF".format(gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, common_tile_id))
+    #if found, copy it (not sym link it)
+    if len(tmp_tile_gipp) == 1:
+        common_gipp_file = tmp_tile_gipp[0];
+        basename_tile_gipp_file = os.path.basename(common_gipp_file[:len(common_gipp_file) - 1]) if common_gipp_file.endswith("/") else os.path.basename(common_gipp_file)
+        basename_tile_gipp_file = basename_tile_gipp_file.replace(common_tile_id, tile_id)
+        try:
+            tile_gipp_file = "{}/{}".format(working_dir, basename_tile_gipp_file)
+            with open(common_gipp_file, 'r') as handler_common_gipp_file, open(tile_gipp_file, 'w') as handler_tile_gipp_file:
+                for line in handler_common_gipp_file:
+                    if "<File_Name>" in line or "<Applicability_NickName>" in line or "<Applicable_SiteDefinition_Id" in line:
+                        line = line.replace(common_tile_id, tile_id)
+                    handler_tile_gipp_file.write(line)
+        except EnvironmentError:
+            return False, "Could not transform / copy the common GIPP tile file {} to {} ".format(common_gipp_file, tile_gipp_file)
+    return True, "Copied {} to {}".format(common_gipp_file, tile_gipp_file)
+
+
 class DEMMACCSContext(object):
-    def __init__(self, base_working_dir, dem_hdr_file, gip_dir, prev_l2a_tiles, prev_l2a_products_paths, maccs_address, maccs_launcher, l1c_input, l2a_output):
+    def __init__(self, base_working_dir, dem_hdr_file, gipp_base_dir, prev_l2a_tiles, prev_l2a_products_paths, maccs_address, maccs_launcher, l1c_input, l2a_output):
         self.base_working_dir = base_working_dir
         self.dem_hdr_file = dem_hdr_file
         self.dem_output_dir = dem_output_dir
-        self.gip_dir = gip_dir
+        self.gipp_base_dir = gipp_base_dir
         self.prev_l2a_tiles = prev_l2a_tiles
         self.prev_l2a_products_paths = prev_l2a_products_paths
         self.maccs_address = maccs_address
@@ -93,7 +113,7 @@ def maccs_launcher(demmaccs_context):
         return ""
     product_name = os.path.basename(demmaccs_context.input[:len(demmaccs_context.input) - 1]) if demmaccs_context.input.endswith("/") else os.path.basename(demmaccs_context.input)
     sat_id, acquistion_date = get_product_info(product_name)
-    gip_sat = ""
+    gipp_sat_prefix = ""
     basename = os.path.basename(demmaccs_context.dem_hdr_file)    
     dem_dir_list = glob.glob("{0}/{1}.DBL.DIR".format(dem_output_dir, basename[0:len(basename) - 4]))
 
@@ -102,16 +122,25 @@ def maccs_launcher(demmaccs_context):
         return ""
     dem_dir = dem_dir_list[0]
     tile_id = ""
+    gipp_sat_dir = ""
+    gipp_tile_prefix = ""
     if sat_id == SENTINEL2_SATELLITE_ID:
-        gip_sat = "S2"
+        gipp_sat_prefix = "S2"        
+        common_tile_id = "CMN00"
+        #no prefix for sentinel
+        gipp_tile_prefix = ""
+        gipp_sat_dir = "SENTINEL2"
         tile = re.match("S2\w+_REFDE2_(\w{5})\w+", basename[0:len(basename) - 4])
         if tile is not None:
             tile_id = tile.group(1)
     elif sat_id == LANDSAT8_SATELLITE_ID:
-        gip_sat = "L8"
+        gipp_sat_prefix = "L8"
+        common_tile_id = "CMN000"
+        gipp_tile_prefix = "EU"
+        gipp_sat_dir = "LANDSAT8"
         tile = re.match("L8\w+_REFDE2_(\w{6})\w+", basename[0:len(basename) - 4])
         if tile is not None:
-            tile_id = tile.group(1)
+            tile_id = tile.group(1)            
     else:
         log(demmaccs_context.output, "Unknown satellite id {} found for {}".format(sat_id, demmaccs_context.input), "demmaccs.log")
         return ""
@@ -135,11 +164,28 @@ def maccs_launcher(demmaccs_context):
         log(demmaccs_context.output, "Could not create sym links for {}".format(demmaccs_context.input), tile_log_filename)
         return ""
 
-    gips = glob.glob("{}/{}*.*".format(demmaccs_context.gip_dir, gip_sat))
-
-    if not create_sym_links(gips, working_dir, demmaccs_context.output, tile_log_filename):
-        log(demmaccs_context.output, "Symbolic links for GIP files could not be created in the output directory", tile_log_filename)
+    common_gipps = glob.glob("{}/{}/{}*_L_*.*".format(demmaccs_context.gipp_base_dir, gipp_sat_dir, gipp_sat_prefix))
+    if not create_sym_links(common_gipps, working_dir, demmaccs_context.output, tile_log_filename):
+        log(demmaccs_context.output, "Symbolic links for GIPP files could not be created in the output directory", tile_log_filename)
         return ""
+        
+    tile_gipp_types = ["L2SITE", "CKEXTL", "CKQLTL"]
+    
+    for gipp_tile_type in gipp_tile_types:
+        #search for the specific gipp tile file. if it will not be found, the common one (if exists) will be used
+        tmp_tile_gipp = glob.glob("{}/{}/{}*{}_S_{}{}*.EEF".format(demmaccs_context.gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, tile_id))
+        if len(tmp_tile_gipp) == 1:
+            if not create_sym_links(tmp_tile_gipp, working_dir, demmaccs_context.output, tile_log_filename):
+                log(demmaccs_context.output, "Symbolic links for tile id {} GIPP files could not be created in the output directory".format(tile_id), tile_log_filename)
+                return ""
+        else:
+            #search for the gipp common tile file
+            log(demmaccs_context.output, "Symbolic link {} for tile id {} GIPP files could not be found. Searching for the common one ".format(gipp_tile_type, tile_id), tile_log_filename)
+            ret, log_gipp = copy_common_gipp_file(demmaccs_context.gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, common_tile_id)
+            if len(log_gipp > 0):
+                log(demmaccs_context.output, log_gipp, tile_log_filename)
+            if not ret:
+                return ""
 
     if not create_sym_links([demmaccs_context.dem_hdr_file, dem_dir], working_dir, demmaccs_context.output, tile_log_filename):
         log(demmaccs_context.output, "Could not create sym links for {0} and {1}".format(dem_hdr_file, dem_dir), tile_log_filename)
@@ -236,7 +282,7 @@ parser.add_argument('--processes-number-dem', required=False,
                         help="number of processes to run DEM in parallel", default="3")
 parser.add_argument('--processes-number-maccs', required=False,
                         help="number of processes to run MACCS in parallel", default="2")
-parser.add_argument('--gip-dir', required=True, help="directory where gip are to be found")
+parser.add_argument('--gipp-dir', required=True, help="directory where gip are to be found")
 parser.add_argument('--maccs-address', required=False, help="MACCS has to be run from a remote host. This should be the ip address of the pc where MACCS is to be found")
 parser.add_argument('--maccs-launcher', required=True, help="MACCS binary path in localhost (or remote host if maccs-address is set)")
 parser.add_argument('--skip-dem', required=False,
@@ -336,7 +382,7 @@ demmaccs_contexts = []
 print("Creating demmaccs contexts with: input: {} | output {}".format(args.input, args.output))
 for dem_hdr in dem_hdrs:    
     print("DEM_HDR: {}".format(dem_hdr))
-    demmaccs_contexts.append(DEMMACCSContext(working_dir, dem_hdr, args.gip_dir, args.prev_l2a_tiles, args.prev_l2a_products_paths, args.maccs_address, args.maccs_launcher, args.input, args.output))
+    demmaccs_contexts.append(DEMMACCSContext(working_dir, dem_hdr, args.gipp_dir, args.prev_l2a_tiles, args.prev_l2a_products_paths, args.maccs_address, args.maccs_launcher, args.input, args.output))
 
 #RELEASE mode, it launches in parallel
 pool = Pool(int(args.processes_number_maccs))
