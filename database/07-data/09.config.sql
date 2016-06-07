@@ -38,7 +38,7 @@ INSERT INTO config VALUES (56, 'crop-type.classifier', NULL, 'rf', '2015-08-17 1
 INSERT INTO config VALUES (57, 'crop-type.classifier.rf.nbtrees', NULL, '100', '2015-08-17 16:18:01.088803+03');
 INSERT INTO config VALUES (58, 'crop-type.classifier.rf.min', NULL, '5', '2015-08-17 16:18:03.362784+03');
 INSERT INTO config VALUES (93, 'processor.l4a.classifier', NULL, 'rf', '2016-03-10 18:27:19.634909+02');
-INSERT INTO config VALUES (86, 'processor.l4a.classifier.field', NULL, 'CODE', '2016-03-10 11:32:30.859069+02');
+INSERT INTO config VALUES (86, 'processor.l4a.classifier.field', NULL, 'CROP', '2016-03-10 11:32:30.859069+02');
 INSERT INTO config VALUES (59, 'crop-type.classifier.rf.max', NULL, '25', '2015-08-17 16:18:16.212714+03');
 INSERT INTO config VALUES (39, 'http-listener.root-path', NULL, '/srv/sen2agri-dashboard', '2015-07-03 13:58:57.734852+03');
 INSERT INTO config VALUES (40, 'http-listener.listen-port', NULL, '8080', '2015-07-03 13:59:21.338392+03');
