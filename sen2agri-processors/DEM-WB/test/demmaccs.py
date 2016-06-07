@@ -73,7 +73,7 @@ def get_prev_l2a_tile_path(tile_id, prev_l2a_product_path):
     return tile_files
 
 
-def copy_common_gipp_file(gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, common_tile_id):
+def copy_common_gipp_file(working_dir, gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, tile_id, common_tile_id):
     #take the common one
     tmp_tile_gipp = glob.glob("{}/{}/{}*{}_S_{}{}*.EEF".format(gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, common_tile_id))
     #if found, copy it (not sym link it)
@@ -181,7 +181,7 @@ def maccs_launcher(demmaccs_context):
         else:
             #search for the gipp common tile file
             log(demmaccs_context.output, "Symbolic link {} for tile id {} GIPP file could not be found. Searching for the common one ".format(gipp_tile_type, tile_id), tile_log_filename)
-            ret, log_gipp = copy_common_gipp_file(demmaccs_context.gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, common_tile_id)
+            ret, log_gipp = copy_common_gipp_file(working_dir, demmaccs_context.gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, tile_id, common_tile_id)
             if len(log_gipp) > 0:
                 log(demmaccs_context.output, log_gipp, tile_log_filename)
             if not ret:
@@ -210,14 +210,16 @@ def maccs_launcher(demmaccs_context):
         else:
             # something went wrong. shall this be an exit point?
             # shall the mode remain to L2INIT? This behavior may as well hide a bug in a previous demmaccs run (it's possible)...
-            log(demmaccs_context.output, "Could not create sym links for NOMINAL MACCS mode for {}".format(prev_l2a_tile_path), tile_log_filename)
-            #or generate sys.exit(-1) and catch it on except
+            log(demmaccs_context.output, "Could not create sym links for NOMINAL MACCS mode for {}. Exit".format(prev_l2a_tile_path), tile_log_filename)
+            return ""
     except SystemExit:
-        print("exit")
+        log(demmaccs_context.output, "SystemExit caught when trying to create sym links for NOMINAL MACCS mode, product {}. Exit!".format(demmaccs_context.input), tile_log_filename)
         return ""
     except:
         print("No previous processed l2a tile found for {} in product {}. Running MACCS in L2INIT mode".format(tile_id, product_name))
-    maccs_tmp_directory = working_dir
+    #MACCS bug. In case of setting the file status from VALD to NOTV, MACCS will try to create a diretory LTC in the current running directory
+    #which is /. Of course, it will fail
+    os.chdir(maccs_working_dir)
     cmd_array = []
     if demmaccs_context.maccs_address is not None:
         cmd_array = ["ssh", demmaccs_context.maccs_address]
