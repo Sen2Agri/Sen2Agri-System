@@ -13,6 +13,8 @@ BEGIN
 	JOIN scheduled_task ON site.id = scheduled_task.site_id
 
 	JOIN processor ON scheduled_task.processor_id=processor.id
+	
+	WHERE site.enabled
 
 	ORDER BY site.name;
 

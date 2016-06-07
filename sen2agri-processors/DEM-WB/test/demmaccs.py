@@ -247,12 +247,11 @@ def maccs_launcher(demmaccs_context):
     maccs_hdr_file = glob.glob("{}/*_L2VALD_*.HDR".format(maccs_working_dir))
     return_tile_id = ""
     try:
-        log(demmaccs_context.output, "Searching for valid products in: {}".format(maccs_working_dir), tile_log_filename)
-        print("{} | {}".format(maccs_dbl_dir, maccs_hdr_file))
+        maccs_working_dir_content = glob.glob("{}/*".format(maccs_working_dir))
+        log(demmaccs_context.output, "Searching for valid products in MACCS working dir: {}. Following is the content of this dir: {}".format(maccs_working_dir, maccs_working_dir_content), tile_log_filename)
         if len(maccs_dbl_dir) >= 1 and len(maccs_hdr_file) >= 1:
             return_tile_id = "{}".format(tile_id)
-            maccs_working_dir_content = glob.glob("{}/*".format(maccs_working_dir))
-            print("{}".format(maccs_working_dir_content))
+            log(demmaccs_context.output, "Found valid tile id {} in {}. Move the files to destination".format(tile_id, maccs_working_dir), tile_log_filename)
             for maccs_out in maccs_working_dir_content:
                 new_file = "{}/{}".format(demmaccs_context.output, os.path.basename(maccs_out))
                 if os.path.isdir(new_file):
@@ -265,7 +264,9 @@ def maccs_launcher(demmaccs_context):
                     pass
                 log(demmaccs_context.output, "Moving {} to {}".format(maccs_out, demmaccs_context.output + "/" + os.path.basename(maccs_out)), tile_log_filename)
                 shutil.move(maccs_out, new_file)
-        log(demmaccs_context.output, "rmtree: {}".format(maccs_working_dir), tile_log_filename)
+        else:
+            log(demmaccs_context.output, "No valid products (VALD status) found in: {}.".format(maccs_working_dir), tile_log_filename)
+        log(demmaccs_context.output, "Deleting MACCS working directory: rmtree: {}".format(maccs_working_dir), tile_log_filename)
         shutil.rmtree(maccs_working_dir)
     except:
         return_tile_id = ""        
