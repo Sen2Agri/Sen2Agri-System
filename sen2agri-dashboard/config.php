@@ -370,7 +370,7 @@
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="field">Field:</label>
-												<input type="text" class="form-control" id="field" name="field" value="CODE">
+												<input type="text" class="form-control" id="field" name="field" value="CROP">
 												<span class="help-block"></span>
 											</div>
 											<div class="form-group form-group-sm">
