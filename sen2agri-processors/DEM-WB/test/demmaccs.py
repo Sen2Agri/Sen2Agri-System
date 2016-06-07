@@ -251,7 +251,7 @@ def maccs_launcher(demmaccs_context):
         log(demmaccs_context.output, "Searching for valid products in MACCS working dir: {}. Following is the content of this dir: {}".format(maccs_working_dir, maccs_working_dir_content), tile_log_filename)
         if len(maccs_dbl_dir) >= 1 and len(maccs_hdr_file) >= 1:
             return_tile_id = "{}".format(tile_id)
-            log(demmaccs_context.output, "Found valid tile id {} in {}. Move the files to destination".format(tile_id, maccs_working_dir), tile_log_filename)
+            log(demmaccs_context.output, "Found valid tile id {} in {}. Move all files to destination".format(tile_id, maccs_working_dir), tile_log_filename)
             for maccs_out in maccs_working_dir_content:
                 new_file = "{}/{}".format(demmaccs_context.output, os.path.basename(maccs_out))
                 if os.path.isdir(new_file):
