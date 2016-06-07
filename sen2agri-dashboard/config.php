@@ -271,9 +271,9 @@
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="mission">Mission:</label>
 												<select class="form-control" id="mission" name="mission">
-													<option value="SPOT" selected="selected">SPOT</option>
+													<option value="SENTINEL" selected="selected">SENTINEL</option>
+                                                    <option value="SPOT">SPOT</option>
 													<option value="LANDSAT">LANDSAT</option>
-													<option value="SENTINEL">SENTINEL</option>
 												</select>
 												<span class="help-block">The main mission for the time series.</span>
 											</div>
@@ -457,9 +457,9 @@
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="mission">Main mission:</label>
 												<select class="form-control" id="mission" name="mission">
-													<option value="SPOT" selected="selected">SPOT</option>
-													<option value="LANDSAT">LANDSAT</option>
-													<option value="SENTINEL">SENTINEL</option>
+													<option value="SENTINEL" selected="selected">SENTINEL</option>
+                                                    <option value="LANDSAT">LANDSAT</option>
+													<option value="SPOT">SPOT</option>                                                    
 												</select>
 												<span class="help-block">The main mission for the time series.</span>
 											</div>
