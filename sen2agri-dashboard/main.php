@@ -4,9 +4,6 @@
             <div id="main3">
 				<table cellpadding="0px" cellspacing="0px">
 					<tr>
-						<td colspan="3"><h3 style="margin-top: 0px;">Available products</h3></td>
-					</tr>
-					<tr>
 						<td><div id="tree" class="tree"></div></td>
 						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
 						<td><div id="map" class="map"></div></td>

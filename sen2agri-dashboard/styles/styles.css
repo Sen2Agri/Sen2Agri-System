@@ -411,14 +411,6 @@ div.pop_up #close_button {
 	border-radius: 4px;
 }
 .vspace { height: 50px; }
-.inactivemenu li {
-	font: 22px/40px "Roboto Condensed", Arial, Helvetica, sans-serif;
-	text-transform: lowercase;
-	text-decoration: none;
-	color: #CACACA;
-	cursor: default;
-	text-shadow: 0px 1px 0px #607725;
-}
 .error {
 	color: red;
 	text-align: center;
