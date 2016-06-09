@@ -1,11 +1,11 @@
-﻿CREATE OR REPLACE FUNCTION sp_get_dashboard_sites_seasons(IN _site_id smallint DEFAULT NULL::smallint)
-  RETURNS TABLE(id smallint, name character varying, short_name character varying, key character varying, value character varying) AS
+CREATE OR REPLACE FUNCTION sp_get_dashboard_sites_seasons(IN _site_id smallint DEFAULT NULL::smallint)
+  RETURNS TABLE(id smallint, name character varying, short_name character varying, key character varying, value character varying, enabled boolean) AS
 $BODY$
 BEGIN
    RETURN QUERY
    
-    select site_id,results.name,results.short_name,results.key, results.value from (
-    select type, site_id, site.name,site.short_name, cfg.key,cfg.value, row_number() over(partition by site_id, cfg.key order by type) as row
+    select site_id,results.name,results.short_name,results.key, results.value, results.enabled from (
+    select type, site_id, site.name,site.short_name, cfg.key,cfg.value, site.enabled, row_number() over(partition by site_id, cfg.key order by type) as row
     from site
     inner JOIN lateral (
         SELECT 1 as type, config.site_id, config.key, config.value
@@ -21,4 +21,8 @@ where row = 1;
  
 END
 $BODY$
-  LANGUAGE plpgsql
+  LANGUAGE plpgsql VOLATILE
+  COST 100
+  ROWS 1000;
+ALTER FUNCTION sp_get_dashboard_sites_seasons(smallint)
+  OWNER TO admin;
