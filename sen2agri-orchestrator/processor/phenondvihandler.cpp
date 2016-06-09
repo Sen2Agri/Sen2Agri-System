@@ -230,6 +230,12 @@ ProcessorJobDefinitionParams PhenoNdviHandler::GetProcessingDefinitionImpl(Sched
     if(params.productList.size() >= 4) {
         params.isValid = true;
     }
-    //return QString("Cannot execute PhenoNDVI processor. There should be at least 4 products but we have only %1 L2A products available!").arg(usedProductList.size());
+
+    Logger::debug(QStringLiteral("Scheduler extracted for L3E a number of %1 products for for site ID %2 for start date %3 and end date %4!")
+                  .arg(params.productList.size())
+                  .arg(siteId)
+                  .arg(startDate.toString())
+                  .arg(endDate.toString()));
+
     return params;
 }

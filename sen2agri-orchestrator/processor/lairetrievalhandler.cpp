@@ -1486,6 +1486,8 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
     QDateTime seasonEndDate;
     GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
     if(!seasonStartDate.isValid()) {
+        Logger::error(QStringLiteral("Season start date for site ID %1 is invalide in the database!")
+                      .arg(siteId));
         return params;
     }
 
@@ -1497,9 +1499,12 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
         int productionInterval = mapCfg[generateLai ? "processor.l3b.production_interval":
                                                       "processor.l3b.reproc_production_interval"].value.toInt();
         startDate = endDate.addDays(-productionInterval);
-        if(startDate < seasonStartDate) {
-            startDate = seasonStartDate;
-        }
+        // Removed this condition as if the scheduled was added with that date
+        // maybe is desired to process also the products before the start of the season
+        // TODO: Add condition to stop at 2 months after the end of the season
+//        if(startDate < seasonStartDate) {
+//            startDate = seasonStartDate;
+//        }
     }
 
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
@@ -1515,6 +1520,11 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
 //            params.isValid = true;
 //        }
     }
+    Logger::debug(QStringLiteral("Scheduler extracted for L3B/L3C/L3D a number of %1 products for for site ID %2 for start date %3 and end date %4!")
+                  .arg(params.productList.size())
+                  .arg(siteId)
+                  .arg(startDate.toString())
+                  .arg(endDate.toString()));
 
     return params;
 }
