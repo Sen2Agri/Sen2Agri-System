@@ -468,6 +468,12 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
         params.isValid = true;
     }
 
+    Logger::debug(QStringLiteral("Scheduler extracted for L4B a number of %1 products for for site ID %2 for start date %3 and end date %4!")
+                  .arg(params.productList.size())
+                  .arg(siteId)
+                  .arg(seasonStartDate.toString())
+                  .arg(endDate.toString()));
+
     // Get the reference dir
     ConfigurationParameterValueMap cfgValues = ctx.GetConfigurationParameters("processor.l4b.", siteId, requestOverrideCfgValues);
     QString refDir = cfgValues["processor.l4b.reference_data_dir"].value;

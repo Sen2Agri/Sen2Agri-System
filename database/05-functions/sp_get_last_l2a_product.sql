@@ -1,4 +1,5 @@
 CREATE OR REPLACE FUNCTION sp_get_last_l2a_product(
+    _site_id site.id%TYPE,
     _tile_id CHARACTER VARYING,
     _satellite_id satellite.id%TYPE,
     _orbit_id product.orbit_id%TYPE,
@@ -13,7 +14,8 @@ BEGIN
         SELECT product.full_path path,
                product.created_timestamp "date"
         FROM product
-        WHERE product.satellite_id = _satellite_id
+        WHERE product.site_id = _site_id
+          AND product.satellite_id = _satellite_id
           AND product.created_timestamp < _l1c_date
           AND product.tiles @> ARRAY[_tile_id]
           AND (_satellite_id <> 1 -- sentinel2
