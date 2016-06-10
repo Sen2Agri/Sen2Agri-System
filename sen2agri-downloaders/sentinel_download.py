@@ -140,7 +140,7 @@ def product_download(s2Obj, aoiContext, db):
 
 ###########################################################################
 
-signal.signal(signal.SIGINT, signal_handler)
+#signal.signal(signal.SIGINT, signal_handler)
 
 def sentinel_download(aoiContext):
     global g_exit_flag
