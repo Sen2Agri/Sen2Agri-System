@@ -97,14 +97,30 @@ MeanAngles_Type MetadataHelper::GetSensorMeanAngles() {
     MeanAngles_Type angles;
 
     if(HasBandMeanAngles()) {
-        int nBandsCnt = m_sensorBandsMeanAngles.size();
-        for(size_t i = 0; i < m_sensorBandsMeanAngles.size(); i++) {
+        size_t nBandsCnt = m_sensorBandsMeanAngles.size();
+        int nValidAzimuths = 0;
+        int nValidZeniths = 0;
+        for(size_t i = 0; i < nBandsCnt; i++) {
             MeanAngles_Type bandAngles = m_sensorBandsMeanAngles[i];
-            angles.azimuth += bandAngles.azimuth;
-            angles.zenith += bandAngles.zenith;
+            if(!std::isnan(bandAngles.azimuth)) {
+                angles.azimuth += bandAngles.azimuth;
+                nValidAzimuths++;
+            }
+            if(!std::isnan(bandAngles.zenith)) {
+                angles.zenith += bandAngles.zenith;
+                nValidZeniths++;
+            }
         }
-        angles.azimuth = angles.azimuth / nBandsCnt;
-        angles.zenith = angles.zenith / nBandsCnt;
+        if(nValidAzimuths > 0) {
+            angles.azimuth = angles.azimuth / nValidAzimuths;
+        } else {
+            angles.azimuth = 0;
+        }
+        if(nValidZeniths > 0) {
+            angles.zenith = angles.zenith / nValidZeniths;
+        } else {
+            angles.zenith = 0;
+        }
     } else {
         angles = GetSensorMeanAngles(0);
     }
