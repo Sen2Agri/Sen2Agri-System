@@ -728,7 +728,8 @@ QString CompositeHandler::DeductBandsMappingFile(const QStringList &listProducts
     } else {
         if(listUniqueProductTypes.contains(ProcessorHandlerHelper::L2_PRODUCT_TYPE_L8)) {
             if(listUniqueProductTypes.contains(ProcessorHandlerHelper::L2_PRODUCT_TYPE_S2)) {
-                resolution = 10;
+                if((resolution != 10) && (resolution != 20))
+                    resolution = 10;
                 return (curBandsMappingPath + "/bands_mapping_s2_L8.txt");
             } else if(listUniqueProductTypes.contains(ProcessorHandlerHelper::L2_PRODUCT_TYPE_SPOT4)) {
                 resolution = 10;
