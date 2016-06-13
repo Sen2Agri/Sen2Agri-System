@@ -19,15 +19,12 @@ _____________________________________________________________________________
 
 import glob,os,sys,math,urllib2,urllib,time,math,shutil
 import subprocess
-
 import datetime
 import csv
 import signal
 import osgeo.ogr as ogr
 import osgeo.osr as osr
 from sen2agri_common_db import *
-from sentinel_download import *
-from landsat_download import *
 from multiprocessing import Pool
 
 signal.signal(signal.SIGINT, signal_handler)
@@ -95,7 +92,7 @@ for l1 in l1_list:
         else:
             l1_basename = os.path.basename(l1)
         print("===== Start processing for {}".format(l1))
-        sat_id, acquistion_date = get_product_info(str(l1_basename))
+        sat_id, acquisition_date = get_product_info(str(l1_basename))
         orbit_id = -1
         if sat_id == SENTINEL2_SATELLITE_ID:
             write_dir = sentinel_aoi_context.writeDir
@@ -111,6 +108,9 @@ for l1 in l1_list:
             log(general_log_path, "Unknown satellite id {} found for {}. Continue...".format(sat_id, l1), general_log_filename)
             continue
         new_dir = "{}/{}".format(write_dir, l1_basename)
+        if not create_recursive_dirs(new_dir):
+            log(new_dir, "Could not create the destination directory {}".format(new_dir), general_log_filename)
+            continue
         #check if there is already a product with the same name
         if os.path.isdir(new_dir):
             #check if overwrite flag is applied. otherwise, no action will be taken
@@ -121,13 +121,13 @@ for l1 in l1_list:
             #delete the old directory
             try:
                 log(write_dir, "Deleting old product {} ".format(l1), general_log_filename)
-                #shutil.rmtree(new_dir)
+                shutil.rmtree(new_dir)
             except:
-                log(write_dir, "Couldn't remove the old dir {}".format(new_dir), log_filename)
+                log(write_dir, "Couldn't remove the old dir {}".format(new_dir), general_log_filename)
         
         #log(write_dir, "Set downloading status for {}".format(new_dir), general_log_filename)
         #if sat_id == SENTINEL2_SATELLITE_ID:
-        #    if not sentinel_db_info.upsertSentinelProductHistory(sentinel_aoi_context.siteId, l1_basename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, acquistion_date, new_dir, orbit_id, sentinel_aoi_context.maxRetries):
+        #    if not sentinel_db_info.upsertSentinelProductHistory(sentinel_aoi_context.siteId, l1_basename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, acquisition_date, new_dir, orbit_id, sentinel_aoi_context.maxRetries):
         #        log(write_dir, "Couldn't upsert into database with status DOWNLOADED for {}. Continue...".format(new_dir), general_log_filename)
         #        continue    
         #elif sat_id == LANDSAT8_SATELLITE_ID:
@@ -145,10 +145,11 @@ for l1 in l1_list:
             if sat_id == SENTINEL2_SATELLITE_ID:
                 #applay angles correction if necessary
                 cmd_angles_correction = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/S2ProductDownloader-1.0.jar", "--input", write_dir, "--ma", "NAN", "--products", l1_basename]
-                if run_command(cmd_dwn, write_dir, general_log_filename) != 0:
+                if run_command(cmd_angles_correction, write_dir, general_log_filename) != 0:
                     log(write_dir, "Couldn't apply the angles correction for {}".format(new_dir), general_log_filename)
                     continue
-                if not sentinel_db_info.upsertSentinelProductHistory(sentinel_aoi_context.siteId, l1_basename, DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE, acquistion_date, new_dir, orbit_id, sentinel_aoi_context.maxRetries):
+                print("orbit_id = {}".format(orbit_id))
+                if not sentinel_db_info.upsertSentinelProductHistory(sentinel_aoi_context.siteId, l1_basename, DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE, acquisition_date, new_dir, int(orbit_id), sentinel_aoi_context.maxRetries):
                     log(write_dir, "Couldn't upsert into database with status DOWNLOADED for {}".format(new_dir), general_log_filename)
                     continue
             elif sat_id == LANDSAT8_SATELLITE_ID: 

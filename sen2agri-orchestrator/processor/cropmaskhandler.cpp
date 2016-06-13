@@ -898,6 +898,13 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
     if(params.productList.size() > 0) {
         params.isValid = true;
     }
+
+    Logger::debug(QStringLiteral("Scheduler extracted for L4A a number of %1 products for for site ID %2 for start date %3 and end date %4!")
+                  .arg(params.productList.size())
+                  .arg(siteId)
+                  .arg(startDate.toString())
+                  .arg(endDate.toString()));
+
     return params;
 }
 

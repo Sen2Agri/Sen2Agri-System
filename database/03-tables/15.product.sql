@@ -6,6 +6,7 @@ CREATE TABLE product
   site_id smallint NOT NULL,
   full_path character varying NOT NULL,
   created_timestamp timestamp with time zone NOT NULL DEFAULT now(),
+  inserted_timestamp timestamp with time zone NOT NULL DEFAULT now(),
   is_archived boolean DEFAULT false,
   archived_timestamp timestamp with time zone,
   name character varying(512),

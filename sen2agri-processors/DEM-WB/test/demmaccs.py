@@ -216,9 +216,10 @@ def maccs_launcher(demmaccs_context):
         log(demmaccs_context.output, "SystemExit caught when trying to create sym links for NOMINAL MACCS mode, product {}. Exit!".format(demmaccs_context.input), tile_log_filename)
         return ""
     except:
-        print("No previous processed l2a tile found for {} in product {}. Running MACCS in L2INIT mode".format(tile_id, product_name))
+        log(demmaccs_context.output, "No previous processed l2a tile found for {} in product {}. Running MACCS in L2INIT mode".format(tile_id, product_name), tile_log_filename)
+        pass
     #MACCS bug. In case of setting the file status from VALD to NOTV, MACCS will try to create a diretory LTC in the current running directory
-    #which is /. Of course, it will fail
+    #which is / Of course, it will fail. That's why we have to move the current running directory to the MACCS temporary directory
     os.chdir(maccs_working_dir)
     cmd_array = []
     if demmaccs_context.maccs_address is not None:
@@ -232,7 +233,7 @@ def maccs_launcher(demmaccs_context):
                     "--enableTest", "false",
                     "--CheckXMLFilesWithSchema", "false"]
     if sat_id == SENTINEL2_SATELLITE_ID:
-        #UserConfiguration has to be added for SENTINEL in cmd_array
+        #UserConfiguration has to be added for SENTINEL in cmd_array (don't know why, but I saw this way it is working)
         cmd_array += ["--conf", "/usr/share/sen2agri/sen2agri-demmaccs/UserConfiguration"]
     log(demmaccs_context.output, "sat_id = {} | acq_date = {}".format(sat_id, acquistion_date), tile_log_filename)
     log(demmaccs_context.output, "Starting MACCS in {} for {} | TileID: {}".format(maccs_mode, demmaccs_context.input, tile_id), tile_log_filename)
@@ -270,7 +271,7 @@ def maccs_launcher(demmaccs_context):
         shutil.rmtree(maccs_working_dir)
     except:
         return_tile_id = ""        
-        print("Exception caught when moving maccs files for tile {} to the output directory :( ".format(tile_id))
+        log(demmaccs_context.output, "Exception caught when moving maccs files for tile {} to the output directory :( ".format(tile_id), tile_log_filename)
     return return_tile_id
 
 
@@ -312,7 +313,7 @@ general_log_path = args.output
 
 working_dir = "{}/{}".format(args.working_dir[:len(args.working_dir) - 1] if args.working_dir.endswith("/") else args.working_dir, os.getpid())
 if args.skip_dem is not None:
-    working_dir = "{}".format(args.skip_dem)
+    working_dir = "{}".format(args.skip_dem[:len(args.skip_dem) - 1]) if args.skip_dem.endswith("/") else "{}".format(args.skip_dem)
 dem_working_dir = "{}_DEM_TMP".format(working_dir)
 dem_output_dir = "{}_DEM_OUT".format(working_dir)
 

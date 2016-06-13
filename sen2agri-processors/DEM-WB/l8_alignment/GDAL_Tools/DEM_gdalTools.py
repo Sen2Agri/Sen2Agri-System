@@ -70,7 +70,7 @@ def get_extent_from_l8_extent(l8_vector, path, row, working_dir, epsg_code):
     :return:
     """
 
-    ds = ogr.Open(l8_vector, 1)
+    ds = ogr.Open(l8_vector)
     if ds is None:
         print "ogr_get_area: " + l8_vector + " Open failed.\n"
         return None
@@ -240,7 +240,7 @@ def get_feature_enveloppe(l8_vector, working_dir, epsg_code, scale_factor=None):
     :param epsg_code:
     :return:
     """
-    ds = ogr.Open(l8_vector, 1)
+    ds = ogr.Open(l8_vector)
     if ds is None:
         print "ogr_get_area: " + l8_vector + " Open failed.\n"
         return None

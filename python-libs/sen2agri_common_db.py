@@ -98,7 +98,7 @@ def run_command(cmd_array, log_path = "", log_filename = ""):
 
 def signal_handler(signal, frame):
     global exitFlag
-    print("SIGINT caught")
+    print("SIGINT caught!")
     exitFlag = True
     sys.exit(0)
 
@@ -178,8 +178,8 @@ def remove_dir(directory):
 
 def copy_directory(src, dest):
     try:
-        print("Fake copy {} to {}".format(src, dest))
-        #shutil.copytree(src, dest)
+        #print("Fake copy {} to {}".format(src, dest))
+        shutil.copytree(src, dest)
     # Directories are the same
     except shutil.Error as e:
         print("Directory not copied. Error: {}".format(e))
@@ -987,16 +987,18 @@ class L1CInfo(object):
         self.database_disconnect()
         return retArray
 
-    def get_previous_l2a_tile_path(self, satellite_id, tile_id, l1c_date, l1c_orbit_id):
+    def get_previous_l2a_tile_path(self, satellite_id, tile_id, l1c_date, l1c_orbit_id, site_id):
         if not self.database_connect():
             return ""
         path = ""
         try:
-            self.cursor.execute("""SELECT path FROM sp_get_last_l2a_product(%(tile_id)s, 
+            self.cursor.execute("""SELECT path FROM sp_get_last_l2a_product(%(site_id)s :: smallint,
+                                                                            %(tile_id)s, 
                                                                             %(satellite_id)s :: smallint,
                                                                             %(l1c_orbit_id)s :: integer,
                                                                             %(l1c_date)s :: timestamp)""",
                                 {
+                                    "site_id" : site_id,
                                     "tile_id" : tile_id,
                                     "satellite_id" : satellite_id,
                                     "l1c_orbit_id" : l1c_orbit_id,

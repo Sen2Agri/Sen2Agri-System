@@ -52,7 +52,16 @@ void TaskPlanner::computeNextRunTime(std::vector<ScheduledTask>& tasks)
             QDate dn1;
             dn1.setDate(task.taskStatus.nextScheduledRunTime.date().year(),
                         task.taskStatus.nextScheduledRunTime.date().month(),
-                        task.repeatOnMonthDay);
+                        1);
+            // protection to obtaining invalid date when we have the day
+            // greater than the days in month
+            int monthDayToUse = dn1.daysInMonth();
+            if(task.repeatOnMonthDay <= monthDayToUse) {
+                monthDayToUse = task.repeatOnMonthDay;
+            }
+            dn1.setDate(task.taskStatus.nextScheduledRunTime.date().year(),
+                        task.taskStatus.nextScheduledRunTime.date().month(),
+                        monthDayToUse);
             task.taskStatus.nextScheduledRunTime.setDate(dn1);
             // reset the estimated time
             task.taskStatus.estimatedRunTime.setTime_t(0);
