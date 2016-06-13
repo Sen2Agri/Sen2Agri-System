@@ -477,23 +477,104 @@ input.right {
 }
 
 /* SITES related styles --------------------------------------------- */
+div.create-site .panel-heading {
+	margin-top: -10px;
+}
 div.create-site table.table {
 	margin: 0px;
+}
+div.create-site table.table th {
+	background-color: #E9E9E9;
+	border: 0px solid transparent;
+	text-align: left;
+	font-weight: 400;
+}
+div.create-site table.table th:last-child {
+	text-align: center;
+}
+
+div.create-site table.table tr.editing {
+	background-color: #8BB245;
+	color: white;
+}
+
+div.create-site table.table tr:hover {
+	background-color: #E7F3D0;
 }
 
 div.create-site table.table td {
 	font-size: 12px;
 	line-height: 0.9;
+	text-align: left;
+	padding: 3px 8px;
 }
 
-div.create-site table.table td a {
+div.create-site table.table td:last-child {
+	text-align: center;
+}
+
+div.create-site table.table tr td a {
 	cursor: pointer;
-	text-decoration: none;
-}
-
-div.create-site table.table td a:hover {
+	color: #009C00;
+	font-size: 1.1em;
+	font-weight: 700;
 	cursor: pointer;
 	text-decoration: underline;
+}
+
+div.create-site table.table tr td a:hover {
+	color: #5CB85C;
+}
+
+div.create-site table.table tr.editing td a {
+	color: white;
+}
+
+div.add-edit-site form {
+	width: 500px;
+	font: 14px Arial, Helvetica, sans-serif;
+	margin: 15px;
+}
+div.add-edit-site .col-md-1 {
+	width: 90%;
+}
+div.add-edit-site .col-md-2 {
+	width: 42%;
+}
+div.add-edit-site .form-group {
+	margin-bottom: 15px;
+}
+div.add-edit-site .submit-buttons {
+	text-align: right;
+}
+div.add-edit-site .submit-buttons input.add-edit-btn {
+	padding: 10px 20px;
+	margin-left: 15px;
+	border-radius: 10px;
+}
+
+input.add-edit-btn {
+	border: 0px solid transparent;
+	outline: 0px solid transparent;
+	padding: 10px;
+	background-color: #7EAF50;
+	color: white;
+	text-align: left;
+	font-size: 1.1em;
+	font-weight: 400;
+}
+input.add-edit-btn:hover {
+	background-color: #99BF52;
+	color: yellow;
+}
+input.add-edit-btn:active {
+	background-color: #7EAF50;
+	color:yellow;
+}
+
+div.create-site .bootstrap-switch.bootstrap-switch-mini span {
+	padding: 0px;
+	font-size: 10px;
 }
 
 /* --------------------------------------------- */
