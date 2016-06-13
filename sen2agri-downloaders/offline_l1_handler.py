@@ -123,7 +123,7 @@ for l1 in l1_list:
                 log(write_dir, "Deleting old product {} ".format(l1), general_log_filename)
                 shutil.rmtree(new_dir)
             except:
-                log(write_dir, "Couldn't remove the old dir {}".format(new_dir), log_filename)
+                log(write_dir, "Couldn't remove the old dir {}".format(new_dir), general_log_filename)
         
         #log(write_dir, "Set downloading status for {}".format(new_dir), general_log_filename)
         #if sat_id == SENTINEL2_SATELLITE_ID:

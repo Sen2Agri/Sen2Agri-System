@@ -992,7 +992,7 @@ class L1CInfo(object):
             return ""
         path = ""
         try:
-            self.cursor.execute("""SELECT path FROM sp_get_last_l2a_product(%(site_id)s,
+            self.cursor.execute("""SELECT path FROM sp_get_last_l2a_product(%(site_id)s :: smallint,
                                                                             %(tile_id)s, 
                                                                             %(satellite_id)s :: smallint,
                                                                             %(l1c_orbit_id)s :: integer,
