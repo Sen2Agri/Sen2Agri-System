@@ -17,6 +17,7 @@
 #include <libgen.h>
 
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem.hpp>
 
 #include "otbMacro.h"
 
@@ -712,14 +713,15 @@ std::vector<MACCSAnnexInformation> ReadAnnexes(const TiXmlElement *el)
 
 static std::string dirname(const std::string &path)
 {
-    std::vector<char> buf(std::begin(path), std::end(path));
-    return ::dirname(buf.data());
+    boost::filesystem::path p(path);
+    p.remove_filename();
+    return p.native();
 }
 
 static std::string basename(const std::string &path)
 {
-    std::vector<char> buf(std::begin(path), std::end(path));
-    return ::basename(buf.data());
+    boost::filesystem::path p(path);
+    return p.filename().native();
 }
 
 static void FixProductOrganization(MACCSProductOrganization &po)
