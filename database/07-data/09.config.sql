@@ -23,7 +23,7 @@ INSERT INTO config VALUES (248, 'processor.l4a.weight', NULL, '1', '2016-03-09 1
 INSERT INTO config VALUES (249, 'processor.l4a.nbcomp', NULL, '6', '2016-03-09 16:41:59.169527+02');
 INSERT INTO config VALUES (250, 'processor.l4a.segmentation-spatial-radius', NULL, '10', '2016-03-09 16:42:09.033172+02');
 INSERT INTO config VALUES (251, 'processor.l4a.range-radius', NULL, '0.65', '2016-03-09 16:42:16.59406+02');
-INSERT INTO config VALUES (252, 'processor.l4a.segmentation-minsize', NULL, '200', '2016-03-09 16:42:25.393274+02');
+INSERT INTO config VALUES (252, 'processor.l4a.segmentation-minsize', NULL, '10', '2016-03-09 16:42:25.393274+02');
 INSERT INTO config VALUES (253, 'processor.l4a.erode-radius', NULL, '1', '2016-03-09 16:42:46.48022+02');
 INSERT INTO config VALUES (26, 'executor.processor.l2a.name', NULL, 'L2A', '2015-06-03 17:02:50.028002+03');
 INSERT INTO config VALUES (28, 'executor.processor.l3a.name', NULL, 'L3A', '2015-06-03 17:02:50.028002+03');
