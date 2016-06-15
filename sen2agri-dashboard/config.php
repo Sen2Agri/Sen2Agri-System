@@ -347,7 +347,7 @@
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="minsize">Minimum size of a region:</label>
-												<input type="number" min="0" step="1" class="form-control" id="minsize" name="minsize" value="200">
+												<input type="number" min="0" step="1" class="form-control" id="minsize" name="minsize" value="10">
 												<span class="help-block">Minimum size of a region (in pixel unit) in segmentation.</span>
 											</div>
 											<div class="form-group form-group-sm">
