@@ -211,8 +211,7 @@ private:
     {
         MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
         std::string xmlDesc = GetParameterAsString("xml");
-        std::vector<char> buf(xmlDesc.begin(), xmlDesc.end());
-        m_DirName = std::string(dirname(buf.data()));
+        m_DirName = dirname(xmlDesc);
         m_DirName += '/';
         auto meta = maccsMetadataReader->ReadMetadata(xmlDesc);
         // check if it is a sentinel 2 product, otherwise -> exception

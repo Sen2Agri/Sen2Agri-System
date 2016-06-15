@@ -35,8 +35,6 @@ bool MetadataHelper::LoadMetadataFile(const std::string& file, int nResolution)
     Reset();
     m_inputMetadataFileName = file;
     m_nResolution = nResolution;
-    //std::vector<char> buf(m_inputMetadataFileName.begin(), m_inputMetadataFileName.end());
-    //m_DirName = std::string(dirname(buf.data()));
     m_DirName = extractFolder(m_inputMetadataFileName);
 
     return DoLoadMetadata();

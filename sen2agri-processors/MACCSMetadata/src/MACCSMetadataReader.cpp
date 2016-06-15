@@ -711,14 +711,14 @@ std::vector<MACCSAnnexInformation> ReadAnnexes(const TiXmlElement *el)
     return result;
 }
 
-static std::string dirname(const std::string &path)
+std::string dirname(const std::string &path)
 {
     boost::filesystem::path p(path);
     p.remove_filename();
     return p.native();
 }
 
-static std::string basename(const std::string &path)
+std::string basename(const std::string &path)
 {
     boost::filesystem::path p(path);
     return p.filename().native();

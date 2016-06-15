@@ -171,8 +171,7 @@ private:
     void DoExecute()
     {
         const std::string &tmp = GetParameterAsString("xml");
-        std::vector<char> buf(tmp.begin(), tmp.end());
-        m_DirName = std::string(dirname(buf.data()));
+        m_DirName = dirname(tmp);
 
         bool allInOne = (GetParameterInt("allinone") != 0);
 

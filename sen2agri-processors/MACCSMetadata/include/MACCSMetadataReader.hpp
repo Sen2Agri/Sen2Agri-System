@@ -26,3 +26,6 @@ public:
     std::unique_ptr<MACCSFileMetadata> ReadMetadata(const std::string &path);
 };
 }
+
+std::string dirname(const std::string &path);
+std::string basename(const std::string &path);
