@@ -46,7 +46,12 @@ INSERT INTO config_metadata VALUES ('crop-mask.classifier.field', 'Field Name', 
 INSERT INTO config_metadata VALUES ('resources.gdalwarp.working-mem', 'gdalwarp working memory (MB)', 'int', true, 14);
 INSERT INTO config_metadata VALUES ('executor.module.path.color-mapping', 'Color Mapping Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.compression', 'Compression Path', 'file', true, 8);
-INSERT INTO config_metadata VALUES ('general.scratch-path', 'Path for temporary files', 'string', true, 1);
+INSERT INTO config_metadata VALUES ('general.scratch-path', 'Default path for temporary files', 'string', true, 1);
+INSERT INTO config_metadata VALUES ('general.scratch-path.l3a', 'Path for L3A temporary files', 'string', true, 1);
+INSERT INTO config_metadata VALUES ('general.scratch-path.l3b_lai', 'Path for L3B/L3C/L3D temporary files', 'string', true, 1);
+INSERT INTO config_metadata VALUES ('general.scratch-path.l3e_pheno', 'Path for L3E temporary files', 'string', true, 1);
+INSERT INTO config_metadata VALUES ('general.scratch-path.l4a', 'Path for L4A temporary files', 'string', true, 1);
+INSERT INTO config_metadata VALUES ('general.scratch-path.l4b', 'Path for L4B temporary files', 'string', true, 1);
 INSERT INTO config_metadata VALUES ('monitor-agent.disk-path', 'Disk Path To Monitor For Space', 'directory', true, 13);
 INSERT INTO config_metadata VALUES ('executor.processor.l2a.path', 'L2A Processor Path', 'file', false, 8);
 INSERT INTO config_metadata VALUES ('executor.processor.l3a.path', 'L3A Processor Path', 'file', false, 8);

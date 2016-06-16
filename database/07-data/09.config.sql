@@ -187,3 +187,8 @@ INSERT INTO config VALUES (298, 'executor.processor.l3b.keep_job_folders', NULL,
 INSERT INTO config VALUES (299, 'executor.processor.l3e.keep_job_folders', NULL, '1', '2016-03-09 16:41:20.194169+02');
 INSERT INTO config VALUES (300, 'executor.processor.l4a.keep_job_folders', NULL, '1', '2016-03-09 16:41:20.194169+02');
 INSERT INTO config VALUES (301, 'executor.processor.l4b.keep_job_folders', NULL, '1', '2016-03-09 16:41:20.194169+02');
+INSERT INTO config VALUES (302, 'general.scratch-path.l3a', NULL, '/mnt/archive/orchestrator_temp/l3a/{job_id}/{task_id}-{module}', '2015-07-10 17:54:17.288095+03');
+INSERT INTO config VALUES (303, 'general.scratch-path.l3b_lai', NULL, '/mnt/archive/orchestrator_temp/l3b/{job_id}/{task_id}-{module}', '2015-07-10 17:54:17.288095+03');
+INSERT INTO config VALUES (304, 'general.scratch-path.l3e_pheno', NULL, '/mnt/archive/orchestrator_temp/l3e/{job_id}/{task_id}-{module}', '2015-07-10 17:54:17.288095+03');
+INSERT INTO config VALUES (305, 'general.scratch-path.l4a', NULL, '/mnt/archive/orchestrator_temp/l4a/{job_id}/{task_id}-{module}', '2015-07-10 17:54:17.288095+03');
+INSERT INTO config VALUES (306, 'general.scratch-path.l4b', NULL, '/mnt/archive/orchestrator_temp/l4b/{job_id}/{task_id}-{module}', '2015-07-10 17:54:17.288095+03');
