@@ -483,36 +483,35 @@ div.create-site .panel-heading {
 div.create-site table.table {
 	margin: 0px;
 }
+div.create-site table.table tr:first-child th {
+	font-weight: 700;
+}
+div.create-site table.table tr:first-child th:last-child {
+	text-align: center;
+}
 div.create-site table.table th {
 	background-color: #E9E9E9;
 	border: 0px solid transparent;
 	text-align: left;
 	font-weight: 400;
+	padding: 2px 8px;
 }
-div.create-site table.table th:last-child {
-	text-align: center;
-}
-
 div.create-site table.table tr.editing {
 	background-color: #8BB245;
 	color: white;
 }
-
 div.create-site table.table tr:hover {
 	background-color: #E7F3D0;
 }
-
 div.create-site table.table td {
 	font-size: 12px;
 	line-height: 0.9;
 	text-align: left;
 	padding: 3px 8px;
 }
-
 div.create-site table.table td:last-child {
 	text-align: center;
 }
-
 div.create-site table.table tr td a {
 	cursor: pointer;
 	color: #009C00;
@@ -521,11 +520,9 @@ div.create-site table.table tr td a {
 	cursor: pointer;
 	text-decoration: underline;
 }
-
 div.create-site table.table tr td a:hover {
 	color: #5CB85C;
 }
-
 div.create-site table.table tr.editing td a {
 	color: white;
 }
