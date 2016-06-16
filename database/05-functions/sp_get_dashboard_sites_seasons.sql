@@ -1,28 +1,23 @@
 CREATE OR REPLACE FUNCTION sp_get_dashboard_sites_seasons(IN _site_id smallint DEFAULT NULL::smallint)
-  RETURNS TABLE(id smallint, name character varying, short_name character varying, key character varying, value character varying, enabled boolean) AS
+  RETURNS TABLE(id smallint, name character varying, short_name character varying, summer_season_start text, summer_season_end text, winter_season_start text, winter_season_end text, enabled boolean) AS
 $BODY$
 BEGIN
-   RETURN QUERY
-   
-    select site_id,results.name,results.short_name,results.key, results.value, results.enabled from (
-    select type, site_id, site.name,site.short_name, cfg.key,cfg.value, site.enabled, row_number() over(partition by site_id, cfg.key order by type) as row
-    from site
-    inner JOIN lateral (
-        SELECT 1 as type, config.site_id, config.key, config.value
-        from config
-        where config.site_id = site.id  and config.key like 'downloader.%season%'
-        union all
-        select 2 as type, site.id as site_id, config.key, config.value
-        from config
-        where config.site_id is null and config.key like 'downloader.%season%'
-    ) cfg on site.id = cfg.site_id AND ($1 IS NULL OR site.id =$1)
-) results
-where row = 1;
- 
+    return query
+        select site.id,
+               site.name,
+               site.short_name,
+               max(case config.key when 'downloader.summer-season.start' then config.value end) as summer_season_start,
+               max(case config.key when 'downloader.summer-season.end' then config.value end) as summer_season_end,
+               max(case config.key when 'downloader.winter-season.start' then config.value end) as winter_season_start,
+               max(case config.key when 'downloader.winter-season.end' then config.value end) as winter_season_start,
+               site.enabled
+        from site
+        left outer join config on config.site_id = site.id
+        where _site_id is null or site.id = _site_id
+        group by site.id
+        order by site.id;
 END
 $BODY$
-  LANGUAGE plpgsql VOLATILE
-  COST 100
-  ROWS 1000;
+  LANGUAGE plpgsql STABLE;
 ALTER FUNCTION sp_get_dashboard_sites_seasons(smallint)
   OWNER TO admin;
