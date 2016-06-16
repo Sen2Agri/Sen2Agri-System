@@ -864,7 +864,6 @@ private:
 
   // Get all validity masks and build a validity shape which will be comon for all rasters
   void BuildBorderShape() {
-      float sum = 0.0;
       std::string expression = "(0";
       int counter = 0;
 
@@ -875,17 +874,12 @@ private:
                   break;
               }
           }
-          // compute mean value
-          StreamingStatisticsImageFilterType::Pointer statsEstimator = StreamingStatisticsImageFilterType::New();
-          statsEstimator->SetInput(desc.maskValid);
-          statsEstimator->Update();
 
-          sum += statsEstimator->GetMean();
           m_borderMask->SetNthInput(counter, desc.maskValid);
           expression += "+b" + std::to_string(++counter);
       }
 
-      expression += ") >= " + std::to_string(sum) + " ? 1 : 0";
+      expression += ") > 0 ? 1 : 0";
 
       m_borderMask->SetExpression(expression);
 
