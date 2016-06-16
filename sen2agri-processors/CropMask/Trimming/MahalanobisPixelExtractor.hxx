@@ -192,6 +192,8 @@ PersistentMahalanobisPixelExtractorFilter<TInputImage>
     typename SampleType::Pointer sample = SampleType::New();
     sample->SetMeasurementVectorSize( dimension );
 
+    // initialise the random number generator
+    std::srand(m_Seed);
     for (auto& points : m_Points) {
         itk::SizeValueType removed_cnt = 1;
         itkDebugMacro(<< "Number of points at the begining: " << points.second.size());
@@ -248,8 +250,6 @@ PersistentMahalanobisPixelExtractorFilter<TInputImage>
             typename IndexVectorType::iterator st = points.second.begin();
             int pixSel = 0;
             int size = points.second.size();
-            // initialise the random number generator
-            std::srand(m_Seed);
             while (pixSel < m_NbSamples) {
                 typename IndexVectorType::iterator r = st;
                 float rnd = (float)std::rand() / (float)RAND_MAX;
