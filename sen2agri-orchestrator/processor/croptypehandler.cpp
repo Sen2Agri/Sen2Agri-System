@@ -114,13 +114,13 @@ void CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     //TaskToSubmit productFormatter{ "product-formatter", { xmlMetrics} };
 
     if (!cropMask.isEmpty()) {
-        ctx.SubmitTasks(event.jobId,
+        SubmitTasks(ctx, event.jobId,
                         { qualityFlagsExtractorTask, bandsExtractor, reprojectPolys, clipPolys, clipRaster, sampleSelection, temporalResampling,
                           featureExtraction, computeImagesStatistics, trainImagesClassifier,
                           reprojectCropMask, cropCropMask, imageClassifier, clipCropType, computeConfusionMatrix, colorMapping,
                           compression, xmlMetrics });
     } else {
-        ctx.SubmitTasks(event.jobId,
+        SubmitTasks(ctx, event.jobId,
                         { qualityFlagsExtractorTask, bandsExtractor, reprojectPolys, clipPolys, clipRaster, sampleSelection, temporalResampling,
                           featureExtraction, computeImagesStatistics, trainImagesClassifier,
                           imageClassifier, clipCropType, computeConfusionMatrix, colorMapping,
@@ -329,7 +329,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
        allSteps.append(infos.allStepsList);
     }
 
-    ctx.SubmitTasks(event.jobId, {productFormatterTask});
+    SubmitTasks(ctx, event.jobId, {productFormatterTask});
 
     // finally format the product
     QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event, listProducts, listParams);
@@ -349,9 +349,9 @@ void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
         //        with open(shape_proj, 'r') as file:
         //                shape_wkt = "ESRI::" + file.read()
         const auto &shapePrjPath =
-            ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "shape.prj";
+            ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) + "shape.prj";
         const auto &shapePrjEsriPath =
-            ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "shape_esri.prj";
+            ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) + "shape_esri.prj";
 
         QFile outFile(shapePrjEsriPath);
         if (!outFile.open(QIODevice::WriteOnly)) {
@@ -378,7 +378,7 @@ void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
         const auto &outputs = ctx.GetTaskConsoleOutputs(event.taskId);
 
         const auto &qualityMetrics =
-            ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "quality_metrics.txt";
+            ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) + "quality_metrics.txt";
 
         QFile file(qualityMetrics);
         if (!file.open(QIODevice::WriteOnly)) {

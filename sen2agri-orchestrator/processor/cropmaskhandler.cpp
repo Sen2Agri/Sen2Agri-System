@@ -94,7 +94,7 @@ void CropMaskHandler::HandleNewTilesList(EventProcessingContext &ctx,
     if(referencePolygons.size() > 0) {
         allTasksListRef = CreateInSituTasksForNewProducts(globalExecInfos.allTasksList,
                                                           globalExecInfos.prodFormatParams.parentsTasksRef);
-        ctx.SubmitTasks(event.jobId, allTasksListRef);
+        SubmitTasks(ctx, event.jobId, allTasksListRef);
         HandleInsituJob(ctx, event, tileTemporalFilesInfo, listProducts, globalExecInfos);
     } else {
         const auto &reference_raster = parameters["reference_raster"].toString();
@@ -106,7 +106,7 @@ void CropMaskHandler::HandleNewTilesList(EventProcessingContext &ctx,
         }
         allTasksListRef = CreateNoInSituTasksForNewProducts(globalExecInfos.allTasksList,
                                                             globalExecInfos.prodFormatParams.parentsTasksRef);
-        ctx.SubmitTasks(event.jobId, allTasksListRef);
+        SubmitTasks(ctx, event.jobId, allTasksListRef);
         HandleNoInsituJob(ctx, event, tileTemporalFilesInfo, listProducts, globalExecInfos);
     }
 }
@@ -144,7 +144,7 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
        allSteps.append(infos.allStepsList);
     }
 
-    ctx.SubmitTasks(event.jobId, {productFormatterTask});
+    SubmitTasks(ctx, event.jobId, {productFormatterTask});
 
     // finally format the product
     QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event, listProducts, listParams);
@@ -163,9 +163,9 @@ void CropMaskHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
         //        with open(shape_proj, 'r') as file:
         //                shape_wkt = "ESRI::" + file.read()
         const auto &shapePrjPath =
-            ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "shape.prj";
+            ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) + "shape.prj";
         const auto &shapePrjEsriPath =
-            ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "shape_esri.prj";
+            ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) + "shape_esri.prj";
 
         QFile outFile(shapePrjEsriPath);
         if (!outFile.open(QIODevice::WriteOnly)) {
@@ -198,7 +198,7 @@ void CropMaskHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             const auto &mAcc = reAcc.match(output.stdOutText);
 
             const auto &statisticsPath =
-                ctx.GetOutputPath(event.jobId, event.taskId, event.module) + "crop-mask-quality-metrics.txt";
+                ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) + "crop-mask-quality-metrics.txt";
             QFile file(statisticsPath);
             if (!file.open(QIODevice::WriteOnly)) {
                 throw std::runtime_error(QStringLiteral("Unable to open %1: %2")

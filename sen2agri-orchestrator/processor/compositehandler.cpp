@@ -240,7 +240,7 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             }
         }
         TaskToSubmit &createFootprintTaskHandler = allTasksList[nCurTaskIdx++];
-        ctx.SubmitTasks(jobId, {createFootprintTaskHandler});
+        SubmitTasks(ctx, jobId, {createFootprintTaskHandler});
         std::map<QString, QString> executorConfigParameters =
             ctx.GetJobConfigurationParameters(jobId, "executor.shapes_dir");
         QString shapeFilesFolder = executorConfigParameters["executor.shapes_dir"];
@@ -260,14 +260,14 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
         const auto &inputProduct = listProducts[i];
         // Mask Handler Step
         TaskToSubmit &maskHandler = allTasksList[nCurTaskIdx++];
-        ctx.SubmitTasks(jobId, {maskHandler});
+        SubmitTasks(ctx, jobId, {maskHandler});
         const auto &masksFile = maskHandler.GetFilePath("all_masks_file.tif");
         QStringList maskHandlerArgs = { "MaskHandler", "-xml",         inputProduct, "-out",
                                         masksFile,     "-sentinelres", resolutionStr };
         steps.append(maskHandler.CreateStep("MaskHandler", maskHandlerArgs));
 
         TaskToSubmit &compositePreprocessing = allTasksList[nCurTaskIdx++];
-        ctx.SubmitTasks(jobId, {compositePreprocessing});
+        SubmitTasks(ctx, jobId, {compositePreprocessing});
         // Composite preprocessing Step
         auto outResImgBands = compositePreprocessing.GetFilePath("img_res_bands.tif");
         auto cldResImg = compositePreprocessing.GetFilePath("cld_res.tif");
@@ -287,7 +287,7 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
 
         if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
             TaskToSubmit &cutImgTask = allTasksList[nCurTaskIdx++];
-            ctx.SubmitTasks(jobId, {cutImgTask});
+            SubmitTasks(ctx, jobId, {cutImgTask});
 
             const auto &cutImgFile = cutImgTask.GetFilePath("img_res_bands_clipped.tif");
             QStringList gdalWarpArgs = { "-dstnodata", "-10000", "-overwrite",
@@ -296,7 +296,7 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             outResImgBands = cutImgFile;
 
             TaskToSubmit &cutAotTask = allTasksList[nCurTaskIdx++];
-            ctx.SubmitTasks(jobId, {cutAotTask});
+            SubmitTasks(ctx, jobId, {cutAotTask});
             const auto &cutAotFile = cutAotTask.GetFilePath("aot_res_clipped.tif");
             QStringList gdalWarpAotArgs = { "-dstnodata", "-10000", "-overwrite",
                             "-cutline", shapePath, "-crop_to_cutline", aotResImg, cutAotFile};
@@ -304,7 +304,7 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             aotResImg = cutAotFile;
 
             TaskToSubmit &cutCldTask = allTasksList[nCurTaskIdx++];
-            ctx.SubmitTasks(jobId, {cutCldTask});
+            SubmitTasks(ctx, jobId, {cutCldTask});
             const auto &cutCldFile = cutCldTask.GetFilePath("cld_res_clipped.tif");
             QStringList gdalWarpCldArgs = { "-dstnodata", "0", "-overwrite",
                             "-cutline", shapePath, "-crop_to_cutline", cldResImg, cutCldFile};
@@ -312,7 +312,7 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             cldResImg = cutCldFile;
 
             TaskToSubmit &cutWatTask = allTasksList[nCurTaskIdx++];
-            ctx.SubmitTasks(jobId, {cutWatTask});
+            SubmitTasks(ctx, jobId, {cutWatTask});
             const auto &cutWatFile = cutWatTask.GetFilePath("water_res_clipped.tif");
             QStringList gdalWarpWatArgs = { "-dstnodata", "0", "-overwrite",
                             "-cutline", shapePath, "-crop_to_cutline", waterResImg, cutWatFile};
@@ -320,7 +320,7 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             waterResImg = cutWatFile;
 
             TaskToSubmit &cutSnowTask = allTasksList[nCurTaskIdx++];
-            ctx.SubmitTasks(jobId, {cutSnowTask});
+            SubmitTasks(ctx, jobId, {cutSnowTask});
             const auto &cutSnowFile = cutSnowTask.GetFilePath("snow_res_clipped.tif");
             QStringList gdalWarpSnowArgs = { "-dstnodata", "0", "-overwrite",
                             "-cutline", shapePath, "-crop_to_cutline", snowResImg, cutSnowFile};
@@ -328,15 +328,15 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             snowResImg = cutSnowFile;
         }
         TaskToSubmit &weightAot = allTasksList[nCurTaskIdx++];
-        ctx.SubmitTasks(jobId, {weightAot});
+        SubmitTasks(ctx, jobId, {weightAot});
         TaskToSubmit &weightOnClouds = allTasksList[nCurTaskIdx++];
-        ctx.SubmitTasks(jobId, {weightOnClouds});
+        SubmitTasks(ctx, jobId, {weightOnClouds});
         TaskToSubmit &totalWeight = allTasksList[nCurTaskIdx++];
-        ctx.SubmitTasks(jobId, {totalWeight});
+        SubmitTasks(ctx, jobId, {totalWeight});
         TaskToSubmit &updateSynthesis = allTasksList[nCurTaskIdx++];
-        ctx.SubmitTasks(jobId, {updateSynthesis});
+        SubmitTasks(ctx, jobId, {updateSynthesis});
         TaskToSubmit &compositeSplitter = allTasksList[nCurTaskIdx++];
-        ctx.SubmitTasks(jobId, {compositeSplitter});
+        SubmitTasks(ctx, jobId, {compositeSplitter});
 
         // Weight AOT Step
         const auto &outWeightAotFile = weightAot.GetFilePath("weight_aot.tif");
@@ -573,7 +573,7 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
         }
     }
 
-    ctx.SubmitTasks(event.jobId, {productFormatterTask});
+    SubmitTasks(ctx, event.jobId, {productFormatterTask});
 
     // finally format the product
     QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event, listProducts, listParams);

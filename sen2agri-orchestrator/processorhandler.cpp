@@ -108,7 +108,7 @@ bool ProcessorHandler::RemoveJobFolder(EventProcessingContext &ctx, int jobId, c
     bool bRemove = true;
     if(keepStr == "1") bRemove = false;
     if(bRemove) {
-        QString jobOutputPath = ctx.GetJobOutputPath(jobId);
+        QString jobOutputPath = ctx.GetJobOutputPath(jobId, procName);
         return removeDir(jobOutputPath);
     }
     return true;
@@ -116,7 +116,7 @@ bool ProcessorHandler::RemoveJobFolder(EventProcessingContext &ctx, int jobId, c
 
 QString ProcessorHandler::GetProductFormatterOutputProductPath(EventProcessingContext &ctx,
                                                         const TaskFinishedEvent &event) {
-    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) +
+    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) +
             "/" + PRODUCT_FORMATTER_OUT_PROPS_FILE;
     QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
     if(fileLines.size() > 0) {
@@ -139,7 +139,7 @@ QString ProcessorHandler::GetProductFormatterProductName(EventProcessingContext 
 
 QString ProcessorHandler::GetProductFormatterQuicklook(EventProcessingContext &ctx,
                                                         const TaskFinishedEvent &event) {
-    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) +
+    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) +
             "/" + PRODUCT_FORMATTER_OUT_PROPS_FILE;
     QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
     QString quickLookName("");
@@ -165,7 +165,7 @@ QString ProcessorHandler::GetProductFormatterQuicklook(EventProcessingContext &c
 
 QString ProcessorHandler::GetProductFormatterFootprint(EventProcessingContext &ctx,
                                                         const TaskFinishedEvent &event) {
-    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) +
+    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) +
             "/" + PRODUCT_FORMATTER_OUT_PROPS_FILE;
     QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
     if(fileLines.size() > 0) {
@@ -433,4 +433,10 @@ QString ProcessorHandler::GetProductFormatterTile(const QString &tile) {
     if(tile.indexOf("TILE_") == 0)
         return tile;
     return ("TILE_" + tile);
+}
+
+void ProcessorHandler::SubmitTasks(EventProcessingContext &ctx,
+                                   int jobId,
+                                   const QList<std::reference_wrapper<TaskToSubmit>> &tasks) {
+    ctx.SubmitTasks(jobId, tasks, processorDescr.shortName);
 }

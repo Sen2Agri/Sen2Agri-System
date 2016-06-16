@@ -717,7 +717,7 @@ void LaiRetrievalHandler::HandleNewTilesList(EventProcessingContext &ctx, const 
         allTasksListRef.append(task);
     }
     // submit all tasks
-    ctx.SubmitTasks(event.jobId, allTasksListRef);
+    SubmitTasks(ctx, event.jobId, allTasksListRef);
 
     NewStepList &steps = outGlobalExecInfos.allStepsList;
 
@@ -856,6 +856,17 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
             QStringLiteral("At least one processing needs to be defined (LAI mono-date,"
                            " LAI N-reprocessing or LAI Fitted)").toStdString());
     }
+    
+    bool bGenModels = IsGenModels(parameters, configParameters);
+    if(bGenModels) {
+        const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
+        if(!QDir::root().mkpath(modelsFolder)) {
+            ctx.MarkJobFailed(event.jobId);
+            throw std::runtime_error(
+                        QStringLiteral("Unable to create path %1 for creating models!").arg(modelsFolder).toStdString());
+        }
+    }
+
     QMap<QString, QStringList> inputProductToTilesMap;
     QStringList listTilesMetaFiles = GetL2AInputProductsTiles(ctx, event, inputProductToTilesMap);
     if(listTilesMetaFiles.size() == 0) {
@@ -961,7 +972,7 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                 laiFlgsList.append(outProdParams[i].laiMonoDateFlgs);
                 laiMonoProductFormatterTask.parentTasks.append(outProdParams[i].parentsTasksRef);
             }
-            ctx.SubmitTasks(event.jobId, {laiMonoProductFormatterTask});
+            SubmitTasks(ctx, event.jobId, {laiMonoProductFormatterTask});
             QStringList productFormatterArgs = GetLaiMonoProductFormatterArgs(
                         laiMonoProductFormatterTask, ctx, event, outProdTilesMetaFiles,
                         outProdTiles, ndviList, laiList, laiErrList, laiFlgsList);
@@ -983,7 +994,7 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
         for(LAIProductFormatterParams params: listParams) {
             laiReprocProductFormatterTask.parentTasks.append(params.laiReprocParams.parentsTasksRef);
         }
-        ctx.SubmitTasks(event.jobId, {laiReprocProductFormatterTask});
+        SubmitTasks(ctx, event.jobId, {laiReprocProductFormatterTask});
         QStringList productFormatterArgs = GetReprocProductFormatterArgs(laiReprocProductFormatterTask, ctx, event, listTilesMetaFiles,
                                                                          listParams, false);
         // add these steps to the steps list to be submitted
@@ -995,7 +1006,7 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
         for(LAIProductFormatterParams params: listParams) {
             laiFittedProductFormatterTask.parentTasks.append(params.laiFitParams.parentsTasksRef);
         }
-        ctx.SubmitTasks(event.jobId, {laiFittedProductFormatterTask});
+        SubmitTasks(ctx, event.jobId, {laiFittedProductFormatterTask});
         QStringList productFormatterArgs = GetReprocProductFormatterArgs(laiFittedProductFormatterTask, ctx, event, listTilesMetaFiles,
                                                                          listParams, true);
         // add these steps to the steps list to be submitted
@@ -1008,7 +1019,7 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
     TaskToSubmit endOfJobDummyTask{"lai-end-of-job", {}};
     endOfJobDummyTask.parentTasks.append(allTasksListRef);
-    ctx.SubmitTasks(event.jobId, {endOfJobDummyTask});
+    SubmitTasks(ctx, event.jobId, {endOfJobDummyTask});
     allSteps.append(endOfJobDummyTask.CreateStep("EndOfLAIDummy", QStringList()));
 
     ctx.SubmitSteps(allSteps);

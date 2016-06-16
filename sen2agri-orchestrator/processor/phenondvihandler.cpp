@@ -43,7 +43,7 @@ void PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
     for(TaskToSubmit &task: allTasksList) {
         allTasksListRef.append(task);
     }
-    ctx.SubmitTasks(event.jobId, allTasksListRef);
+    SubmitTasks(ctx, event.jobId, allTasksListRef);
 
     TaskToSubmit &bandsExtractorTask = allTasksList[0];
     TaskToSubmit &featureExtractionTask = allTasksList[1];
@@ -120,7 +120,7 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
        allSteps.append(infos.allStepsList);
     }
 
-    ctx.SubmitTasks(event.jobId, {productFormatterTask});
+    SubmitTasks(ctx, event.jobId, {productFormatterTask});
 
     // finally format the product
     QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event, listProducts, listParams);

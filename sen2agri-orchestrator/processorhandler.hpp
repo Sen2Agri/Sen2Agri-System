@@ -43,6 +43,8 @@ protected:
     QMap<QString, TileTemporalFilesInfo> GroupTiles(EventProcessingContext &ctx, int jobId, const QStringList &listAllProductsTiles, ProductType productType);
     QString GetProductFormatterTile(const QString &tile);
 
+    void SubmitTasks(EventProcessingContext &ctx, int jobId, const QList<std::reference_wrapper<TaskToSubmit> > &tasks);
+
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,
                                             const ProductAvailableEvent &event);
