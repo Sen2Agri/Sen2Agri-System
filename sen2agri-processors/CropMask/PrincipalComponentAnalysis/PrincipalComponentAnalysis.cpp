@@ -101,10 +101,7 @@ public:
 
   //  Software Guide : BeginCodeSnippet
   itkNewMacro(Self)
-;
-
   itkTypeMacro(PrincipalComponentAnalysis, otb::Application)
-;
   //  Software Guide : EndCodeSnippet
 
 
@@ -167,6 +164,8 @@ private:
     AddParameter(ParameterType_Int, "nc", "The number of required components.");
 
     AddParameter(ParameterType_OutputImage, "out", "Vector image containing the principal component images");
+
+    AddRAMParameter();
 
     SetDefaultParameterInt("nc", 6);
     SetMinimumParameterIntValue("nc",1);
