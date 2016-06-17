@@ -243,7 +243,7 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
     auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4a.");
     auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.");
 
-    const auto &gdalwarpMem = resourceParameters["resources.gdalwarp.working-mem"];
+    const auto &appsMem = resourceParameters["resources.working-mem"];
 
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
@@ -420,10 +420,10 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
                                         listProducts, resolution)),
         gdalWarpTask.CreateStep("ClipRasterImage",
                               { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
-                                "-crop_to_cutline", "-multi", "-wm", gdalwarpMem, rawtocr, tocr }),
+                                "-crop_to_cutline", "-multi", "-wm", appsMem, rawtocr, tocr }),
         gdalWarpTask.CreateStep("ClipRasterMask",
                               { "-dstnodata", "-10000", "-overwrite", "-cutline", shape,
-                                "-crop_to_cutline", "-multi", "-wm", gdalwarpMem, rawmask, mask }),
+                                "-crop_to_cutline", "-multi", "-wm", appsMem, rawmask, mask }),
         temporalResamplingTask.CreateStep("TemporalResampling",
                                       { "TemporalResampling", "-tocr", tocr, "-mask", mask, "-ind",
                                         dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16",
@@ -454,7 +454,7 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
         computeConfusionMatrixTask.CreateStep("ComputeConfusionMatrix",GetConfusionMatrixArgs(raw_crop_mask_uncompressed, confusionMatrixValidation, validationPolys, "vector", fieldName)),
 
         // The following steps are common for insitu and without insitu data
-        principalComponentAnalysisTask.CreateStep("PrincipalComponentAnalysis", { "PrincipalComponentAnalysis", "-ndvi", ndvi, "-nc", nbcomp, "-out", pca }),
+        principalComponentAnalysisTask.CreateStep("PrincipalComponentAnalysis", { "PrincipalComponentAnalysis", "-ndvi", ndvi, "-nc", nbcomp, "-out", pca, "-ram", appsMem}),
         meanShiftSmoothingTask.CreateStep("MeanShiftSmoothing", { "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger,
                                                               "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing }),
         lsmsSegmentationTask.CreateStep("LSMSSegmentation", { "-in", mean_shift_smoothing,"-inpos",
@@ -493,7 +493,7 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
     auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4a.");
     auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.");
 
-    const auto &gdalwarpMem = resourceParameters["resources.gdalwarp.working-mem"];
+    const auto &appsMem = resourceParameters["resources.working-mem"];
 
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
@@ -679,10 +679,10 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
         bandsExtractorTask.CreateStep("BandsExtractor", GetBandsExtractorArgs(mission, rawtocr, rawmask, dates, shape, listProducts, resolution)),
         gdalWarpTask.CreateStep("ClipRasterImage",
                               { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
-                                "-crop_to_cutline", "-multi", "-wm", gdalwarpMem, rawtocr, tocr }),
+                                "-crop_to_cutline", "-multi", "-wm", appsMem, rawtocr, tocr }),
         gdalWarpTask.CreateStep("ClipRasterMask",
                               { "-dstnodata", "-10000", "-overwrite", "-cutline", shape,
-                                "-crop_to_cutline", "-multi", "-wm", gdalwarpMem, rawmask, mask }),
+                                "-crop_to_cutline", "-multi", "-wm", appsMem, rawmask, mask }),
 
         // The following steps are specific to the noinsitu data
         temporalResamplingTask.CreateStep("TemporalResampling",
@@ -721,7 +721,7 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
         computeConfusionMatrixTask.CreateStep("ComputeConfusionMatrix", GetConfusionMatrixArgs(raw_crop_mask_uncompressed, raw_crop_mask_confusion_matrix_validation, trimmed_reference_raster)),
 
         // The following steps are common for insitu and without insitu data
-        principalComponentAnalysisTask.CreateStep("PrincipalComponentAnalysis", { "PrincipalComponentAnalysis", "-ndvi", ndvi, "-nc", nbcomp, "-out", pca }),
+        principalComponentAnalysisTask.CreateStep("PrincipalComponentAnalysis", { "PrincipalComponentAnalysis", "-ndvi", ndvi, "-nc", nbcomp, "-out", pca, "-ram", appsMem }),
         meanShiftSmoothingTask.CreateStep("MeanShiftSmoothing", { "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger,
                                                               "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing }),
         lsmsSegmentationTask.CreateStep("LSMSSegmentation", { "-in", mean_shift_smoothing,"-inpos",

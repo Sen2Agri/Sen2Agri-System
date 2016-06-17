@@ -50,7 +50,7 @@ void CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.");
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
-    const auto &gdalwarpMem = resourceParameters["resources.gdalwarp.working-mem"];
+    const auto &gdalwarpMem = resourceParameters["resources.working-mem"];
     const auto &referencePolygons = parameters["reference_polygons"].toString();
 
     //auto mission = configParameters["processor.l4b.mission"];
