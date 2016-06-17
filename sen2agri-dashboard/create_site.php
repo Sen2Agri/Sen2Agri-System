@@ -142,34 +142,24 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
 	$coord_geog = $upload ['result'];
 	$message = $upload ['message'];
 	if ($polygons_file) {
-		if (isset ( $_REQUEST ['seasonAdd'] )) {
-			// winter season selected
-			if ($_REQUEST ['seasonAdd'] == "0") {
-				$winter_start = dayMonth ( $_REQUEST ['startseason_winter'] );
-				$winter_end = dayMonth ( $_REQUEST ['endseason_winter'] );
-				insertSiteSeason ( $site_name, $coord_geog, $winter_start, $winter_end, $summer_start, $summer_end, $site_enabled );
-				
-				$_SESSION['status'] =  "OK"; $_SESSION['message'] = "Your site has been successfully added!";
-			} else 
-			// summer season selected
-			if ($_REQUEST ['seasonAdd'] == "1") {
-				$summer_start = dayMonth ( $_REQUEST ['startseason_summer'] );
-				$summer_end = dayMonth ( $_REQUEST ['endseason_summer'] );
-				insertSiteSeason ( $site_name, $coord_geog, $winter_start, $winter_end, $summer_start, $summer_end, $site_enabled );
-				
-				$_SESSION['status'] =  "OK"; $_SESSION['message'] = "Your site has been successfully added!";
-			} else 
-			// summer and winter season selected
-			if ($_REQUEST ['seasonAdd'] == "2") {
-				$winter_start = dayMonth ( $_REQUEST ['startseason_winter'] );
-				$winter_end = dayMonth ( $_REQUEST ['endseason_winter'] );
-				$summer_start = dayMonth ( $_REQUEST ['startseason_summer'] );
-				$summer_end = dayMonth ( $_REQUEST ['endseason_summer'] );
-				
-				insertSiteSeason ( $site_name, $coord_geog, $winter_start, $winter_end, $summer_start, $summer_end, $site_enabled );
-				$_SESSION['status'] =  "OK"; $_SESSION['message'] = "Your site has been successfully added!";
-			}
+		switch ($_REQUEST ['seasonAdd']) {
+			case "0": // Winter season selected
+				$winter_start = dayMonth ( date("Y") . "-" . $_REQUEST['startseason_winter'] );
+				$winter_end   = dayMonth ( date("Y") . "-" . $_REQUEST['endseason_winter'] );
+				break;
+			case "1": // Summer season selected
+				$summer_start = dayMonth ( date("Y") . "-" . $_REQUEST['startseason_summer'] );
+				$summer_end   = dayMonth ( date("Y") . "-" . $_REQUEST['endseason_summer'] );
+				break;
+			case "2": // Winter and Summer season selected
+				$winter_start = dayMonth ( date("Y") . "-" . $_REQUEST['startseason_winter'] );
+				$winter_end   = dayMonth ( date("Y") . "-" . $_REQUEST['endseason_winter'] );
+				$summer_start = dayMonth ( date("Y") . "-" . $_REQUEST['startseason_summer'] );
+				$summer_end   = dayMonth ( date("Y") . "-" . $_REQUEST['endseason_summer'] );
+				break;
 		}
+		insertSiteSeason ( $site_name, $coord_geog, $winter_start, $winter_end, $summer_start, $summer_end, $site_enabled );
+		$_SESSION['status'] =  "OK"; $_SESSION['message'] = "Your site has been successfully added!";
 	} else {
 		$_SESSION['status'] =  "NOK"; $_SESSION['message'] = $message;  $_SESSION['result'] = $coord_geog;
 	}
@@ -183,10 +173,10 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 	$site_id      = $_REQUEST ['edit_siteid'];
 	$shortname    = $_REQUEST ['shortname'];
 	$site_enabled = empty($_REQUEST ['edit_enabled']) ? "0" : "1";
-	$winter_start = dayMonth ( $_REQUEST ['startseason_winterEdit'] );
-	$winter_end   = dayMonth ( $_REQUEST ['endseason_winterEdit'] );
-	$summer_start = dayMonth ( $_REQUEST ['startseason_summerEdit'] );
-	$summer_end   = dayMonth ( $_REQUEST ['endseason_summerEdit'] );
+	$winter_start = "";
+	$winter_end = "";
+	$summer_start = "";
+	$summer_end = "";
 	
 	function polygonFileSelected($name) {
 		foreach($_FILES as $key => $val){
@@ -234,6 +224,22 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 		$message = "Your site has been successfully modified!";
 	}
 	if ($status == "OK") {
+		switch ($_REQUEST ['seasonEdit']) {
+			case "0": // Winter season selected
+				$winter_start = dayMonth ( date("Y") . "-" . $_REQUEST ['startseason_winterEdit'] );
+				$winter_end   = dayMonth ( date("Y") . "-" . $_REQUEST ['endseason_winterEdit'] );
+				break;
+			case "1": // Summer season selected
+				$summer_start = dayMonth ( date("Y") . "-" . $_REQUEST ['startseason_summerEdit'] );
+				$summer_end   = dayMonth ( date("Y") . "-" . $_REQUEST ['endseason_summerEdit'] );
+				break;
+			case "2": // Winter and Summer season selected
+				$winter_start = dayMonth ( date("Y") . "-" . $_REQUEST ['startseason_winterEdit'] );
+				$winter_end   = dayMonth ( date("Y") . "-" . $_REQUEST ['endseason_winterEdit'] );
+				$summer_start = dayMonth ( date("Y") . "-" . $_REQUEST ['startseason_summerEdit'] );
+				$summer_end   = dayMonth ( date("Y") . "-" . $_REQUEST ['endseason_summerEdit'] );
+				break;
+		}
 		updateSiteSeason($site_id, $shortname, $shape_file, $winter_start, $winter_end, $summer_start, $summer_end, $site_enabled);
 	}
 	$_SESSION['status'] =  $status; $_SESSION['message'] = $message;
@@ -269,13 +275,11 @@ if (!(empty($_SESSION ['siteId']))) {
 								<div class="col-md-1">
 									<div class="form-group  form-group-sm">
 										<label class="control-label" for="sitename">Site name:</label>
-										<input type="text" class="form-control" id="sitename"
-											name="sitename">
+										<input type="text" class="form-control" id="sitename" name="sitename">
 									</div>
 									<div class="form-group form-group-sm">
 										<label class="control-label" for="seasonAdd"> Season:</label>
-										<select id="seasonAdd" class="form-control" name="seasonAdd"
-											onchange="displaySeason('seasonAdd')">
+										<select id="seasonAdd" class="form-control" name="seasonAdd" onchange="displaySeason('seasonAdd')">
 											<option value="0" selected>Winter</option>
 											<option value="1">Summer</option>
 											<option value="2">Winter and Summer</option>
@@ -287,16 +291,14 @@ if (!(empty($_SESSION ['siteId']))) {
 								<div class="col-md-2">
 
 									<div id="div_startseason1" class="form-group form-group-sm">
-										<label class="control-label" for="startseason_winter">From:</label>
-										<input type="text" class="form-control startseason_winter"
-											name="startseason_winter">
+										<label class="control-label" for="startseason_winter">Winter from:</label>
+										<input type="text" class="form-control" id="startseason_winter" name="startseason_winter">
 									</div>
 								</div>
 								<div class="col-md-2">
 									<div id="div_endseason1" class="form-group form-group-sm">
-										<label class="control-label" for="endseason_winter">to:</label>
-										<input type="text" class="form-control endseason_winter"
-											name="endseason_winter">
+										<label class="control-label" for="endseason_winter">Winter to:</label>
+										<input type="text" class="form-control" id="endseason_winter" name="endseason_winter">
 									</div>
 
 								</div>
@@ -304,14 +306,14 @@ if (!(empty($_SESSION ['siteId']))) {
 							<div class="row">
 								<div class="col-md-2">
 									<div id="div_startseason2" class="form-group form-group-sm" style="display: none">
-										<label class="control-label" for="startseason_summer">From:</label>
-										<input type="text" class="form-control startseason_summer" name="startseason_summer">
+										<label class="control-label" for="startseason_summer">Summer from:</label>
+										<input type="text" class="form-control" id="startseason_summer" name="startseason_summer">
 									</div>
 								</div>
 								<div class="col-md-2">
 									<div id="div_endseason2" class="form-group form-group-sm" style="display: none">
-										<label class="control-label" for="endseason_summer">to:</label>
-										<input type="text" class="form-control endseason_summer" name="endseason_summer">
+										<label class="control-label" for="endseason_summer">Summer to:</label>
+										<input type="text" class="form-control" id="endseason_summer" name="endseason_summer">
 									</div>
 								</div>
 							</div>
@@ -327,7 +329,7 @@ if (!(empty($_SESSION ['siteId']))) {
 								<div class="col-md-1">
 									<div class="form-group form-group-sm">
 										<label class="control-label" for="add_enabled">Enable site:</label>
-										<input type="checkbox" name="add_enabled" checked id="add_enabled">
+										<input type="checkbox" id="add_enabled" name="add_enabled" checked>
 									</div>
 								</div>
 							</div>
@@ -346,10 +348,8 @@ if (!(empty($_SESSION ['siteId']))) {
 								<div class="col-md-1">
 									<div class="form-group  form-group-sm">
 										<label class="control-label" for="edit_sitename">Site name:</label>
-										<input type="text" class="form-control" id="edit_sitename"
-											name="edit_sitename" value="" readonly> <input type="hidden"
-											class="form-control" id="edit_siteid" name="edit_siteid"
-											value="">
+										<input type="text" class="form-control" id="edit_sitename" name="edit_sitename" value="" readonly>
+										<input type="hidden" class="form-control" id="edit_siteid" name="edit_siteid" value="">
 									</div>
 								</div>
 							</div>
@@ -357,8 +357,7 @@ if (!(empty($_SESSION ['siteId']))) {
 								<div class="col-md-1">
 									<div class="form-group  form-group-sm">
 										<label class="control-label" for="shortname">Short name:</label>
-										<input type="text" class="form-control" id="shortname"
-											name="shortname" value="">
+										<input type="text" class="form-control" id="shortname" name="shortname" value="">
 									</div>
 								</div>
 							</div>
@@ -366,8 +365,7 @@ if (!(empty($_SESSION ['siteId']))) {
 								<div class="col-md-1">
 									<div class="form-group form-group-sm">
 										<label class="control-label" for="seasonEdit"> Season:</label>
-										<select id="seasonEdit" class="form-control"
-											name="seasonEdit" onchange="displaySeason('seasonEdit')">
+										<select id="seasonEdit" class="form-control" name="seasonEdit" onchange="displaySeason('seasonEdit')">
 											<option value="0">Winter</option>
 											<option value="1">Summer</option>
 											<option value="2" selected>Winter and Summer</option>
@@ -379,18 +377,14 @@ if (!(empty($_SESSION ['siteId']))) {
 								<div class="col-md-2">
 									<div id="div_startseason1Edit"
 										class="form-group form-group-sm">
-										<label class="control-label" for="startseason_winterEdit">From:</label>
-										<input type="text" class="form-control"
-											id="startseason_winterEdit" name="startseason_winterEdit"
-											value="">
+										<label class="control-label" for="startseason_winterEdit">Winter from:</label>
+										<input type="text" class="form-control" id="startseason_winterEdit" name="startseason_winterEdit" value="">
 									</div>
 								</div>
 								<div class="col-md-2">
 									<div id="div_endseason1Edit" class="form-group form-group-sm">
-										<label class="control-label" for="endseason_winterEdit">To:</label>
-										<input type="text" class="form-control"
-											id="endseason_winterEdit" name="endseason_winterEdit"
-											value="">
+										<label class="control-label" for="endseason_winterEdit">Winter to:</label>
+										<input type="text" class="form-control" id="endseason_winterEdit" name="endseason_winterEdit" value="">
 									</div>
 								</div>
 							</div>
@@ -398,16 +392,14 @@ if (!(empty($_SESSION ['siteId']))) {
 								<div class="col-md-2">
 									<div id="div_startseason2Edit"
 										class="form-group form-group-sm">
-										<label class="control-label" for="startseason_summerEdit">From:</label>
-										<input type="text" class="form-control"
-											id="startseason_summerEdit" name="startseason_summerEdit">
+										<label class="control-label" for="startseason_summerEdit">Summer from:</label>
+										<input type="text" class="form-control" id="startseason_summerEdit" name="startseason_summerEdit">
 									</div>
 								</div>
 								<div class="col-md-2">
 									<div id="div_endseason2Edit" class="form-group form-group-sm">
-										<label class="control-label" for="endseason_summerEdit">To:</label>
-										<input type="text" class="form-control"
-											id="endseason_summerEdit" name="endseason_summerEdit">
+										<label class="control-label" for="endseason_summerEdit">Summer to:</label>
+										<input type="text" class="form-control" id="endseason_summerEdit" name="endseason_summerEdit">
 									</div>
 								</div>
 							</div>
@@ -439,12 +431,16 @@ if (!(empty($_SESSION ['siteId']))) {
 					<table class="table table-striped">
 						<thead>
 							<tr>
-								<th>Site name</th>
-								<th>Short name</th>
+								<th rowspan='2'>Site name</th>
+								<th rowspan='2'>Short name</th>
 								<th>Winter season</th>
 								<th>Summer season</th>
-								<th>Edit</th>
-								<th>Enabled</th>
+								<th rowspan='2'>Edit</th>
+								<th rowspan='2'>Enabled</th>
+							</tr>
+							<tr>
+								<th>[mm-dd]&nbsp;&nbsp;[mm-dd]</th>
+								<th>[mm-dd]&nbsp;&nbsp;[mm-dd]</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -479,82 +475,56 @@ if (!(empty($_SESSION ['siteId']))) {
 								$result = pg_query_params ( $db, $sql_select, array () ) or die ( "Could not execute." );
 							} else {
 								$sql_select = "SELECT * FROM sp_get_dashboard_sites_seasons($1)";
-								$result = pg_query_params ( $db, $sql_select, array (
-										$_SESSION ['siteId'] 
-								) ) or die ( "Could not execute." );
+								$result = pg_query_params ( $db, $sql_select, array ($_SESSION ['siteId']) ) or die ( "Could not execute." );
 							}
 							
 							while ( $row = pg_fetch_row ( $result ) ) {
+								$siteId       = $row[0];
+								$siteName     = $row[1];
+								$shortName    = $row[2];
+								$summerStart  = $row[3];
+								$summerEnd    = $row[4];
+								$winterStart  = $row[5];
+								$winterEnd    = $row[6];
+								$site_enabled = ($row[7] == "t") ? true : false;
 								
-								if ($count % 4 == 0) {
-									$siteId = $row [0];
-									$siteName = $row [1];
-									$shortName = $row [2];
-									$site_enabled = ($row [5] == "t") ? true : false;
-									
-									if ($row [3] == 'downloader.summer-season.start') {
-										$summerStart = $row [4];
-									} elseif ($row [3] == 'downloader.summer-season.end') {
-										$summerEnd = $row [4];
-									} elseif ($row [3] == 'downloader.winter-season.start') {
-										$winterStart = $row [4];
-									} elseif ($row [3] == 'downloader.winter-season.end') {
-										$winterEnd = $row [4];
-									}
-									
-									// date from MMDD into YYYY-MM-DD
-									$summerDate1 =  str_split ( $summerStart, 2 ) ;
-									$summerDate2 =  str_split ( $summerEnd, 2 ) ;
-									$winterDate1 =  str_split ( $winterStart, 2 ) ;
-									$winterDate2 =  str_split ( $winterEnd, 2 ) ;
-									
-									if($summerDate2[0]<$summerDate1[0]){
-										$summer2 =( date ( 'Y' )+1). "-" . $summerDate2 [0] . "-" . $summerDate2 [1];
-									}else{
-										$summer2 = dayMonthYear($summerDate2);
-									}
-									$summer1 = dayMonthYear($summerDate1);
-									
-									if($winterDate2[0]<$winterDate1[0]){
-										$winter2 =( date ( 'Y' )+1). "-" . $winterDate2 [0] . "-" . $winterDate2 [1];
-									}else{
-										$winter2 = dayMonthYear($winterDate2);
-									}
-									$winter1 = dayMonthYear($winterDate1);
-									
-									$summerSeason = $summer1 . ' ' . $summer2;
-									$winterSeason = $winter1 . ' ' . $winter2;
-									
-									$tr_table =
-											"<tr>"
-												. "<td>" . $siteName . "</td>"
-												. "<td>" . $shortName . "</td>"
-												. "<td>" . $winterSeason . "</td>"
-												. "<td>" . $summerSeason . "</td>"
-												. "<td class=\"link\"><a onclick=\"formEditSite('" . $siteId . "','" . $siteName . "','" . $shortName . "','" . $winter1 . "','" . $winter2 . "','" . $summer1 . "','" . $summer2 . "'," . ($site_enabled ? "true" : "false" ) . ")\">Edit</a>" . "</td>"
-												. "<td><input type=\"checkbox\" name=\"enabled-checkbox\" " . ($site_enabled ? "checked" : "" ) . "></td>"
-											. "</tr>";
-									
-									$summerSeason = "";
-									$winterSeason = "";
-									$siteName = "";
-									$shortName = "";
+								$summer1 = "";
+								$summer2 = "";
+								if (strlen($summerStart . $summerEnd) == 8) {
+									$summerDate1 = str_split( $summerStart, 2 ) ;
+									$summerDate2 = str_split( $summerEnd,   2 ) ;
+									$summer1 = $summerDate1[0] . "-" . $summerDate1[1];
+									$summer2 = $summerDate2[0] . "-" . $summerDate1[1];
+									$summerSeason = $summer1 . "&nbsp;&nbsp;&nbsp;&nbsp;" . $summer2;
 								} else {
-									if ($row [3] == 'downloader.summer-season.start') {
-										$summerStart = $row [4];
-									} elseif ($row [3] == 'downloader.summer-season.end') {
-										$summerEnd = $row [4];
-									} elseif ($row [3] == 'downloader.winter-season.start') {
-										$winterStart = $row [4];
-									} elseif ($row [3] == 'downloader.winter-season.end') {
-										$winterEnd = $row [4];
-									}
+									$summerSeason = "-";
 								}
 								
+								$winter1 = "";
+								$winter2 = "";
+								if (strlen($winterStart . $winterEnd) == 8) {
+									$winterDate1 =  str_split( $winterStart, 2 ) ;
+									$winterDate2 =  str_split( $winterEnd,   2 ) ;
+									$winter1 = $winterDate1[0] . "-" . $winterDate1[1];
+									$winter2 = $winterDate2[0] . "-" . $winterDate2[1];
+									$winterSeason = $winter1 . "&nbsp;&nbsp;&nbsp;&nbsp;" . $winter2;
+								} else {
+									$winterSeason = "-";
+								}
+								
+								$tr_table =
+										"<tr>"
+											. "<td>" . $siteName . "</td>"
+											. "<td>" . $shortName . "</td>"
+											. "<td>" . $winterSeason . "</td>"
+											. "<td>" . $summerSeason . "</td>"
+											. "<td class=\"link\"><a onclick=\"formEditSite('" . $siteId . "','" . $siteName . "','" . $shortName . "','" . $winter1 . "','" . $winter2 . "','" . $summer1 . "','" . $summer2 . "'," . ($site_enabled ? "true" : "false" ) . ")\">Edit</a>" . "</td>"
+											. "<td><input type=\"checkbox\" name=\"enabled-checkbox\" " . ($site_enabled ? "checked" : "" ) . "></td>"
+										. "</tr>";
+								
 								$sites = $sites . $tr_table;
-								$tr_table = "";
 								$count ++;
-							} // end while
+							}
 							echo $sites;
 						}
 						
@@ -638,102 +608,60 @@ $(document).ready( function() {
 	});
 	
 	// datepickers for add site form
-	$(".startseason_winter").datepicker({
-		dateFormat: "yy-mm-dd",
-		minDate: 0,
-		onSelect: function (date) {
-			var date2 = $('.startseason_winter').datepicker('getDate');
-			date2.setDate(date2.getDate() + 1);
-			$('.endseason_winter').datepicker('setDate', date2);
-			//sets minDate to dt1 date + 1
-			$('.endseason_winter').datepicker('option', 'minDate', date2);
+	$("#startseason_winter").datepicker({
+		dateFormat: "mm-dd"
+	});
+	$('#endseason_winter').datepicker({
+		dateFormat: "mm-dd"
+	});
+	$("#startseason_summer").datepicker({
+		dateFormat: "mm-dd"
+	});
+	$('#endseason_summer').datepicker({
+		dateFormat: "mm-dd"
+	});
+	// onChange event for start datepickers for add site form
+	$("#startseason_winter").on('change dp.change', function() {
+		var date1 = $('#startseason_winter').datepicker('getDate');
+		date1.setDate(date1.getDate() + 1);
+		if ($('#endseason_winter').datepicker('getDate') === null) {
+			$('#endseason_winter').datepicker('setDate', date1);
 		}
 	});
-	$('.endseason_winter').datepicker({
-		dateFormat: "yy-mm-dd",
-		minDate: 0,
-		onClose: function () {
-			var dt1 = $('.startseason_winter').datepicker('getDate');
-			var dt2 = $('.endseason_winter').datepicker('getDate');
-			//check to prevent a user from entering a date below dt1
-			if (dt2 <= dt1) {
-				var minDate = $('.startseason_winter').datepicker('option', 'minDate');
-				$('.endseason_winter').datepicker('setDate', minDate);
-			}
+	$("#startseason_summer").on('change dp.change', function() {
+		var date1 = $('#startseason_summer').datepicker('getDate');
+		date1.setDate(date1.getDate() + 1);
+		if ($('#endseason_summer').datepicker('getDate') === null) {
+			$('#endseason_summer').datepicker('setDate', date1);
 		}
-	});
-	$(".startseason_summer").datepicker({
-		dateFormat: "yy-mm-dd",
-		minDate: 0,
-		onSelect: function (date) {
-			var date2 = $('.startseason_summer').datepicker('getDate');
-			date2.setDate(date2.getDate() + 1);
-			$('.endseason_summer').datepicker('setDate', date2);
-			//sets minDate to dt1 date + 1
-			$('.endseason_summer').datepicker('option', 'minDate', date2);
-		}
-	});
-	$('.endseason_summer').datepicker({
-	dateFormat: "yy-mm-dd",
-	minDate: 0,
-	onClose: function () {
-		var dt1 = $('.startseason_summer').datepicker('getDate');
-		var dt2 = $('.endseason_summer').datepicker('getDate');
-		//check to prevent a user from entering a date below dt1
-		if (dt2 <= dt1) {
-			var minDate = $('.startseason_summer').datepicker('option', 'minDate');
-			$('.endseason_summer').datepicker('setDate', minDate);
-		}
-	}
 	});
 	
 	// datepickers for edit site form
 	$( "#startseason_winterEdit" ).datepicker({
-		dateFormat: "yy-mm-dd",
-		minDate: 0,
-		onSelect: function (date) {
-			var date2 = $('#startseason_winterEdit').datepicker('getDate');
-			date2.setDate(date2.getDate() + 1);
-			$('#endseason_winterEdit').datepicker('setDate', date2);
-			//sets minDate to dt1 date + 1
-			$('#endseason_winterEdit').datepicker('option', 'minDate', date2);
-		}
+		dateFormat: "mm-dd"
 	});
-	$("#endseason_winterEdit").datepicker({
-		dateFormat: "yy-mm-dd",
-		minDate: 0,
-		onClose: function () {
-			var dt1 = $("#startseason_winterEdit").datepicker('getDate');
-			var dt2 = $("#endseason_winterEdit").datepicker('getDate');
-			//check to prevent a user from entering a date below dt1
-			if (dt2 <= dt1) {
-				var minDate = $("#startseason_winterEdit").datepicker('option', 'minDate');
-				$("#endseason_winterEdit").datepicker('setDate', minDate);
-			}
-		}
+	$( "#endseason_winterEdit" ).datepicker({
+		dateFormat: "mm-dd"
 	});
 	$("#startseason_summerEdit").datepicker({
-		dateFormat: "yy-mm-dd",
-		minDate: 0,
-		onSelect: function (date) {
-			var date2 = $("#startseason_summerEdit").datepicker('getDate');
-			date2.setDate(date2.getDate() + 1);
-			$("#endseason_summerEdit").datepicker('setDate', date2);
-			//sets minDate to dt1 date + 1
-			$("#endseason_summerEdit").datepicker('option', 'minDate', date2);
-		}
+		dateFormat: "mm-dd"
 	});
 	$('#endseason_summerEdit').datepicker({
-		dateFormat: "yy-mm-dd",
-		minDate: 0,
-		onClose: function () {
-			var dt1 = $("#startseason_summerEdit").datepicker('getDate');
-			var dt2 = $("#endseason_summerEdit").datepicker('getDate');
-			//check to prevent a user from entering a date below dt1
-			if (dt2 <= dt1) {
-				var minDate = $("#startseason_summerEdit").datepicker('option', 'minDate');
-				$("#endseason_summerEdit").datepicker('setDate', minDate);
-			}
+		dateFormat: "mm-dd"
+	});
+	// onChange event for start datepickers for edit site form
+	$("#startseason_winterEdit").on('change dp.change', function() {
+		var date1 = $('#startseason_winterEdit').datepicker('getDate');
+		date1.setDate(date1.getDate() + 1);
+		if ($('#endseason_winterEdit').datepicker('getDate') === null) {
+			$('#endseason_winterEdit').datepicker('setDate', date1);
+		}
+	});
+	$("#startseason_summerEdit").on('change dp.change', function() {
+		var date1 = $('#startseason_summerEdit').datepicker('getDate');
+		date1.setDate(date1.getDate() + 1);
+		if ($('#endseason_summerEdit').datepicker('getDate') === null) {
+			$('#endseason_summerEdit').datepicker('setDate', date1);
 		}
 	});
 	
@@ -783,7 +711,6 @@ $(document).ready( function() {
 			endseason_winterEdit: "required",
 			startseason_summerEdit: "required",
 			endseason_summerEdit: "required"
-			//zip_fileEdit: "required"
 		},
 		messages: {
 			shortname: { pattern : "Only small letters,space and underscore are allowed" }
@@ -844,11 +771,25 @@ function formEditSite(id, name, short_name, winter1, winter2, summer1, summer2, 
 	$("#edit_sitename").val(name);
 	$("#edit_siteid").val(id);
 	$("#shortname").val(short_name);
+	$("#edit_enabled").bootstrapSwitch('state', site_enabled);
+	
+	// select season
+	if (summer1.length + summer2.length + winter1.length + winter2.length == 20) {
+		// Winter and Summer
+		$("#seasonEdit").val(2);
+	} else if (summer1.length + summer2.length == 10) {
+		// Summer
+		$("#seasonEdit").val(1);
+	} else {
+		// Winter
+		$("#seasonEdit").val(0);
+	}
+	displaySeason("seasonEdit");
+	
 	$("#startseason_summerEdit").val(summer1);
 	$("#endseason_summerEdit").val(summer2);
 	$("#startseason_winterEdit").val(winter1);
 	$("#endseason_winterEdit").val(winter2);
-	$("#edit_enabled").bootstrapSwitch('state', site_enabled);
 	
 	// open edit site dialog and close all others
 	$("#div_addsite").dialog("close");
