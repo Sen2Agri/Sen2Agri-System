@@ -11,7 +11,7 @@ INSERT INTO config VALUES (246, 'processor.l4a.window', NULL, '6', '2016-03-09 1
 INSERT INTO config VALUES (81, 'crop-mask.classifier.field', NULL, 'CROP', '2015-09-08 11:02:23.736295+03');
 INSERT INTO config VALUES (15, 'archiver.max_age.l2a', NULL, '5', '2015-07-20 16:31:33.655476+03');
 INSERT INTO config VALUES (47, 'executor.wrapper-path', NULL, '/usr/bin/sen2agri-processor-wrapper', '2015-07-23 16:54:54.092462+03');
-INSERT INTO config VALUES (84, 'resources.gdalwarp.working-mem', NULL, '2048', '2015-09-08 11:03:21.87284+03');
+INSERT INTO config VALUES (84, 'resources.working-mem', NULL, '2048', '2015-09-08 11:03:21.87284+03');
 INSERT INTO config VALUES (36, 'executor.listen-port', NULL, '7777', '2015-07-07 12:17:06.182674+03');
 INSERT INTO config VALUES (35, 'executor.listen-ip', NULL, '192.168.60.52', '2015-06-03 17:03:39.541136+03');
 INSERT INTO config VALUES (247, 'processor.l4a.smoothing-lambda', NULL, '2', '2016-03-09 16:41:38.409554+02');

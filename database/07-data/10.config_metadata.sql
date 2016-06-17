@@ -43,7 +43,7 @@ INSERT INTO config_metadata VALUES ('executor.module.path.gdalwarp', 'gdalwarp P
 INSERT INTO config_metadata VALUES ('processor.l3a.weight.cloud.coarseresolution', 'Coarse resolution for quicker convolution', 'int', true, 3);
 INSERT INTO config_metadata VALUES ('executor.module.path.dummy-module', 'Dummy module path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('crop-mask.classifier.field', 'Field Name', 'string', true, 5);
-INSERT INTO config_metadata VALUES ('resources.gdalwarp.working-mem', 'gdalwarp working memory (MB)', 'int', true, 14);
+INSERT INTO config_metadata VALUES ('resources.working-mem', 'OTB applications working memory (MB)', 'int', true, 14);
 INSERT INTO config_metadata VALUES ('executor.module.path.color-mapping', 'Color Mapping Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.compression', 'Compression Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('general.scratch-path', 'Default path for temporary files', 'string', true, 1);
