@@ -339,7 +339,7 @@ def landsat_download(aoiContext):
      end_date   = datetime.datetime(aoiContext.endSeasonYear, aoiContext.endSeasonMonth, aoiContext.endSeasonDay)
 
      for tile in aoiContext.aoiTiles:
-         log(aoiContext.writeDir, "Starting the process for tile {}".format(tile), general_log_filename)
+         log(aoiContext.writeDir, "Starting the process for tile {} for time interval [{} - {}]".format(tile, start_date, end_date), general_log_filename)
          if len(tile) != 6:
              log(aoiContext.writeDir, "The length for tile is not 6. There should be ppprrr, where ppp = path and rrr = row. The string is {}".format(tile), general_log_filename)
              continue
