@@ -13,7 +13,7 @@ function createCustomUploadFolder($siteId, $timestamp) {
 	$upload_target_dir = str_replace("{user}", "", $result);
 	$result = $siteId;
 	if (is_numeric($siteId)) {
-		$rows = pg_query($dbconn, "SELECT name FROM sp_get_sites() WHERE id = ".$siteId) or die(pg_last_error());	
+		$rows = pg_query($dbconn, "SELECT name FROM sp_get_sites() WHERE id = ".$siteId) or die(pg_last_error());
 		$result = pg_fetch_array($rows, 0)[0];
 	}
 	$upload_target_dir = $upload_target_dir . $result . "/" . ConfigParams::$USER_NAME . "_".$timestamp . "/";
@@ -32,9 +32,9 @@ function uploadReferencePolygons($zipFile, $siteId, $timestamp) {
 	if ($_FILES[$zipFile]["name"]) {
 		$filename = $_FILES[$zipFile]["name"];
 		$source = $_FILES[$zipFile]["tmp_name"];
-		
+
         $upload_target_dir = createCustomUploadFolder($siteId, $timestamp);
-		
+
         $target_path = $upload_target_dir . $filename;
         if(move_uploaded_file($source, $target_path)) {
             $zip = new ZipArchive();
@@ -63,14 +63,14 @@ function uploadReferencePolygons($zipFile, $siteId, $timestamp) {
         }
 	} else {
 		$zip_msg = 'Unable to access your selected file';
-	}		
-	
+	}
+
 	// verify if shape file has valid geometry
 	$shp_msg = '';
 	$shape_ok = false;
 	if ($shp_file) {
-		exec('scripts/check_shp.py '.$shp_file, $output, $ret);
-		
+		exec('scripts/check_shp.py -b '.$shp_file, $output, $ret);
+
 		if ($ret === FALSE) {
 			$shp_msg = 'Invalid command line';
 		} else {
@@ -96,7 +96,7 @@ function uploadReferencePolygons($zipFile, $siteId, $timestamp) {
 	} else {
 		$shp_msg = 'Missing shape file due to a problem with your selected file';
 	}
-	
+
 	return array ( "polygons_file" => $shp_file, "result" => $shp_msg, "message" => $zip_msg );
 }
 
@@ -115,13 +115,13 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
 	$winter_end = "";
 	$summer_start = "";
 	$summer_end = "";
-	
+
 	function insertSiteSeason($site, $coord, $wint_start, $wint_end, $summ_star, $summ_end, $enbl) {
 		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 		$sql = "SELECT sp_dashboard_add_site($1,$2,$3,$4,$5,$6,$7)";
-		
+
 		$res = pg_prepare ( $db, "my_query", $sql );
-		
+
 		$res = pg_execute ( $db, "my_query", array (
 				$site,
 				$coord,
@@ -132,10 +132,10 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
 				$enbl
 		) ) or die ( "An error occurred." );
 	}
-	
+
 	$date = date_create();
 	$time_stamp = date_timestamp_get($date);
-	
+
 	// upload polygons
 	$upload = uploadReferencePolygons("zip_fileAdd", $site_name, $time_stamp);
 	$polygons_file = $upload ['polygons_file'];
@@ -163,7 +163,7 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
 	} else {
 		$_SESSION['status'] =  "NOK"; $_SESSION['message'] = $message;  $_SESSION['result'] = $coord_geog;
 	}
-	
+
 	// Prevent adding site when refreshing page
 	die(Header("Location: {$_SERVER['PHP_SELF']}"));
 }
@@ -177,7 +177,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 	$winter_end = "";
 	$summer_start = "";
 	$summer_end = "";
-	
+
 	function polygonFileSelected($name) {
 		foreach($_FILES as $key => $val){
 			if (($key == $name) && (strlen($_FILES[$key]['name'])) > 0) {
@@ -186,7 +186,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 		}
 		return false;
 	}
-	
+
 	function updateSiteSeason($id, $short_name, $coord, $wint_start, $wint_end, $summ_star, $summ_end, $enbl) {
 		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 		$res = pg_query_params ( $db, "SELECT sp_dashboard_update_site($1,$2,$3,$4,$5,$6,$7,$8)", array (
@@ -200,10 +200,10 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 				$enbl
 		) ) or die ( "An error occurred." );
 	}
-	
+
 	$date = date_create();
 	$time_stamp = date_timestamp_get($date);
-	
+
 	// upload polygons if zip file selected
 	$shape_file = null;
 	$status     = "OK";
@@ -243,7 +243,7 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 		updateSiteSeason($site_id, $shortname, $shape_file, $winter_start, $winter_end, $summer_start, $summer_end, $site_enabled);
 	}
 	$_SESSION['status'] =  $status; $_SESSION['message'] = $message;
-	
+
 	// Prevent updating site when refreshing page
 	die(Header("Location: {$_SERVER['PHP_SELF']}"));
 }
@@ -448,28 +448,28 @@ if (!(empty($_SESSION ['siteId']))) {
 						function list_sites_seasons($nr_site) {
 							$sites = "";
 							$count = '1';
-							
+
 							$summerSeason = "";
 							$winterSeason = "";
 							$siteName = "";
 							$shortName = "";
 							$tr_table = "";
-							
+
 							$summerStart = "";
 							$summerEnd = "";
 							$winterStart = "";
 							$winterEnd = "";
-							
+
 							function dayMonthYear($param) {
 								$year = date ( 'Y' );
 								$date = $year . "-" . $param [0] . "-" . $param [1];
 								return $date;
 							}
-							
+
 							$sql_select = "";
 							$result = "";
 							$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-							
+
 							if ($nr_site == '0') {
 								$sql_select = "SELECT * FROM sp_get_dashboard_sites_seasons(null)";
 								$result = pg_query_params ( $db, $sql_select, array () ) or die ( "Could not execute." );
@@ -477,7 +477,7 @@ if (!(empty($_SESSION ['siteId']))) {
 								$sql_select = "SELECT * FROM sp_get_dashboard_sites_seasons($1)";
 								$result = pg_query_params ( $db, $sql_select, array ($_SESSION ['siteId']) ) or die ( "Could not execute." );
 							}
-							
+
 							while ( $row = pg_fetch_row ( $result ) ) {
 								$siteId       = $row[0];
 								$siteName     = $row[1];
@@ -487,7 +487,7 @@ if (!(empty($_SESSION ['siteId']))) {
 								$winterStart  = $row[5];
 								$winterEnd    = $row[6];
 								$site_enabled = ($row[7] == "t") ? true : false;
-								
+
 								$summer1 = "";
 								$summer2 = "";
 								if (strlen($summerStart . $summerEnd) == 8) {
@@ -499,7 +499,7 @@ if (!(empty($_SESSION ['siteId']))) {
 								} else {
 									$summerSeason = "-";
 								}
-								
+
 								$winter1 = "";
 								$winter2 = "";
 								if (strlen($winterStart . $winterEnd) == 8) {
@@ -511,7 +511,7 @@ if (!(empty($_SESSION ['siteId']))) {
 								} else {
 									$winterSeason = "-";
 								}
-								
+
 								$tr_table =
 										"<tr>"
 											. "<td>" . $siteName . "</td>"
@@ -521,13 +521,13 @@ if (!(empty($_SESSION ['siteId']))) {
 											. "<td class=\"link\"><a onclick=\"formEditSite('" . $siteId . "','" . $siteName . "','" . $shortName . "','" . $winter1 . "','" . $winter2 . "','" . $summer1 . "','" . $summer2 . "'," . ($site_enabled ? "true" : "false" ) . ")\">Edit</a>" . "</td>"
 											. "<td><input type=\"checkbox\" name=\"enabled-checkbox\" " . ($site_enabled ? "checked" : "" ) . "></td>"
 										. "</tr>";
-								
+
 								$sites = $sites . $tr_table;
 								$count ++;
 							}
 							echo $sites;
 						}
-						
+
 						if (empty ( $_SESSION ['siteId'] )) {
 							// logged as admin, get all sites
 							list_sites_seasons ( 0 );
@@ -568,7 +568,7 @@ $(document).ready( function() {
 		resizable: false,
 		beforeClose: function( event, ui ) { resetEditAdd("add"); }
 	});
-	
+
 	// create dialog for edit site form
 	$("#div_editsite").dialog({
 		title: "Edit Site",
@@ -578,12 +578,12 @@ $(document).ready( function() {
 		resizable: false,
 		beforeClose: function( event, ui ) { resetEditAdd("edit"); }
 	});
-	
+
 	// change row style when site editing
 	$( ".create-site a" ).click(function() {
 		$(this).parent().parent().addClass("editing")
 	});
-	
+
 	// create switches for all enabled fields in the sites list
 	$("[name='enabled-checkbox']").bootstrapSwitch({
 		size: "mini",
@@ -592,21 +592,21 @@ $(document).ready( function() {
 		disabled: true,
 		handleWidth: 25
 	});
-	
+
 	// create switch for enabled checkbox in the add site form
 	$("[name='add_enabled']").bootstrapSwitch({
 		size: "small",
 		onColor: "success",
 		offColor: "default"
 	});
-	
+
 	// create switch for enabled checkbox in the edit site form
 	$("[name='edit_enabled']").bootstrapSwitch({
 		size: "small",
 		onColor: "success",
 		offColor: "default"
 	});
-	
+
 	// datepickers for add site form
 	$("#startseason_winter").datepicker({
 		dateFormat: "mm-dd"
@@ -635,7 +635,7 @@ $(document).ready( function() {
 			$('#endseason_summer').datepicker('setDate', date1);
 		}
 	});
-	
+
 	// datepickers for edit site form
 	$( "#startseason_winterEdit" ).datepicker({
 		dateFormat: "mm-dd"
@@ -664,11 +664,11 @@ $(document).ready( function() {
 			$('#endseason_summerEdit').datepicker('setDate', date1);
 		}
 	});
-	
+
 	// validate add site form
 	$("#siteform").validate({
 		rules: {
-			sitename:{ required: true, pattern: "[A-Z]{1}[a-zA-Z_ ]*" },						
+			sitename:{ required: true, pattern: "[A-Z]{1}[a-zA-Z_ ]*" },
 			startseason_winter : "required",
 			endseason_winter: "required",
 			startseason_summer: "required",
@@ -701,8 +701,8 @@ $(document).ready( function() {
 		success: function(label) {
 			label.remove();
 		},
-	});	
-	
+	});
+
 	// validate edit site form
 	$("#siteform_edit").validate({
 		rules: {
@@ -737,11 +737,11 @@ $(document).ready( function() {
 			label.remove();
 		},
 	});
-	
+
 	// display OK/NOK message after the form has been posted
 	<?php
 	if ( isset($_SESSION['status']) ){
-		if ( $_SESSION['status'] =='OK' ) { 
+		if ( $_SESSION['status'] =='OK' ) {
 			echo "alert('".$_SESSION['message']."')";
 			unset($_SESSION['status']);
 			unset($_SESSION['message']);
@@ -759,7 +759,7 @@ $(document).ready( function() {
 function formAddSite(){
 	// reset all form fields
 	resetEditAdd("add");
-	
+
 	// open add site dialog and close all others
 	$("#div_editsite").dialog("close");
 	$("#div_addsite").dialog("open");
@@ -772,7 +772,7 @@ function formEditSite(id, name, short_name, winter1, winter2, summer1, summer2, 
 	$("#edit_siteid").val(id);
 	$("#shortname").val(short_name);
 	$("#edit_enabled").bootstrapSwitch('state', site_enabled);
-	
+
 	// select season
 	if (summer1.length + summer2.length + winter1.length + winter2.length == 20) {
 		// Winter and Summer
@@ -785,12 +785,12 @@ function formEditSite(id, name, short_name, winter1, winter2, summer1, summer2, 
 		$("#seasonEdit").val(0);
 	}
 	displaySeason("seasonEdit");
-	
+
 	$("#startseason_summerEdit").val(summer1);
 	$("#endseason_summerEdit").val(summer2);
 	$("#startseason_winterEdit").val(winter1);
 	$("#endseason_winterEdit").val(winter2);
-	
+
 	// open edit site dialog and close all others
 	$("#div_addsite").dialog("close");
 	$("#div_editsite").dialog("open");

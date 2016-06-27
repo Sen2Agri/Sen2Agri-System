@@ -93,14 +93,15 @@ function upload_reference_polygons($site_id, $timestamp) {
 			}
 		}
 		if ($shape_ok) {
-			$last_line = $output[count($output) - 1];
-			$r = preg_match('/^Union: (.+)$/m', $last_line, $matches);
-			if (!$r) {
-				$shp_file = false;
-				$shp_msg = 'Unable to parse shape';
-			} else {
-				$shp_msg = $matches[1];
-			}
+            $last_line = $output[count($output) - 1];
+            $shp_msg = '';
+			/* $r = preg_match('/^Union: (.+)$/m', $last_line, $matches); */
+			/* if (!$r) { */
+			/* 	$shp_file = false; */
+			/* 	$shp_msg = 'Unable to parse shape'; */
+			/* } else { */
+			/* 	$shp_msg = $matches[1]; */
+			/* } */
 		}
 	} else {
 		$shp_msg = 'Missing shape file due to a problem with your selected file';

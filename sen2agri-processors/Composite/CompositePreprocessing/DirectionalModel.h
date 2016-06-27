@@ -37,6 +37,29 @@ private:
     double m_theta_s;
     double m_theta_v;
     double m_phi;
+
+    // These variables are for optimizing the calculations to avoid repetitive operations.
+    double m_sin_phi;
+    double m_cos_phi;
+
+    double m_sin_theta_s;
+    double m_cos_theta_s;
+    double m_tan_theta_s;
+
+    double m_sin_theta_v;
+    double m_cos_theta_v;
+    double m_tan_theta_v;
+
+    double m_delta_Val;
+    double m_masse_Val;
+    double m_cos_xsi_Val;
+    double m_sin_xsi_Val;
+    double m_xsi_Val;
+    double m_cos_t_Val;
+    double m_sin_t_Val;
+    double m_t_Val;
+    double m_FV_Val;
+    double m_FR_Val;
 };
 
 #endif // DIRECTIONAL_MODEL

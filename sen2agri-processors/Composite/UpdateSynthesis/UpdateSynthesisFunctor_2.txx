@@ -526,5 +526,5 @@ int UpdateSynthesisFunctor<TInput,TOutput>::GetBlueBandIndex()
 template< class TInput, class TOutput>
 bool UpdateSynthesisFunctor<TInput,TOutput>::IsNoDataValue(float fValue, float fNoDataValue)
 {
-    return fabs(fValue - fNoDataValue) < NO_DATA_EPSILON;
+    return ((fValue + NO_DATA_EPSILON) < 0) || (fabs(fValue - fNoDataValue) < NO_DATA_EPSILON);
 }
