@@ -338,12 +338,13 @@ def process_DTM(context):
             [os.path.basename(tile) for tile in missing_tiles], context.srtm_directory))
         return False
 
-    run_command(["gdalbuildvrt",
+    run_command(["gdalbuildvrt", "-q",
                  context.dem_vrt] + dtm_tiles)
     run_command(["otbcli_BandMath",
                  "-il", context.dem_vrt,
                  "-out", context.dem_nodata,
-                 "-exp", "im1b1 == -32768 ? 0 : im1b1"])
+                 "-exp", "im1b1 == -32768 ? 0 : im1b1",
+                 "-progress", "false"])
     run_command(["otbcli_OrthoRectification",
                  "-io.in", context.dem_nodata,
                  "-io.out", context.dem_r1,
@@ -355,7 +356,8 @@ def process_DTM(context):
                  "-outputs.spacingy", str(context.spacing_y),
                  "-outputs.ulx", str(context.extent[0][0]),
                  "-outputs.uly", str(context.extent[0][1]),
-                 "-opt.gridspacing", str(grid_spacing)])
+                 "-opt.gridspacing", str(grid_spacing),
+                 "-progress", "false"])
 
     if context.dem_r2:
         # run_command(["gdal_translate",
@@ -390,23 +392,23 @@ def process_DTM(context):
     #              "-transform.type.id.scalex", str(scale),
     #              "-transform.type.id.scaley", str(scale)])
 
-    run_command(["gdaldem", "slope",
+    run_command(["gdaldem", "slope", "-q",
                  # "-s", "111120",
                  "-compute_edges",
                  context.dem_r1,
                  context.slope_degrees])
-    run_command(["gdaldem", "aspect",
+    run_command(["gdaldem", "aspect", "-q",
                  # "-s", "111120",
                  "-compute_edges",
                  context.dem_r1,
                  context.aspect_degrees])
 
-    run_command(["gdal_translate",
+    run_command(["gdal_translate", "-q",
                  "-ot", "Int16",
                  "-scale", "0", "90", "0", "157",
                  context.slope_degrees,
                  context.slope_r1])
-    run_command(["gdal_translate",
+    run_command(["gdal_translate", "-q",
                  "-ot", "Int16",
                  "-scale", "0", "368", "0", "628",
                  context.aspect_degrees,
@@ -418,7 +420,8 @@ def process_DTM(context):
                      "-inm", context.slope_r1,
                      "-interpolator", "linear",
                      "-lms", "40",
-                     "-out", context.slope_r2])
+                     "-out", context.slope_r2,
+                     "-progress", "false"])
 
     if context.aspect_r2:
         run_command(["otbcli_Superimpose",
@@ -426,21 +429,24 @@ def process_DTM(context):
                      "-inm", context.aspect_r1,
                      "-interpolator", "linear",
                      "-lms", "40",
-                     "-out", context.aspect_r2])
+                     "-out", context.aspect_r2,
+                     "-progress", "false"])
 
     run_command(["otbcli_Superimpose",
                  "-inr", context.dem_coarse,
                  "-inm", context.slope_r1,
                  "-interpolator", "linear",
                  "-lms", "40",
-                 "-out", context.slope_coarse])
+                 "-out", context.slope_coarse,
+                 "-progress", "false"])
 
     run_command(["otbcli_Superimpose",
                  "-inr", context.dem_coarse,
                  "-inm", context.aspect_r1,
                  "-interpolator", "linear",
                  "-lms", "40",
-                 "-out", context.aspect_coarse])
+                 "-out", context.aspect_coarse,
+                 "-progress", "false"])
     return True
 
 def process_WB(context):
@@ -449,13 +455,15 @@ def process_WB(context):
                  "-il", context.dem_r1,
                  "-mode", "list",
                  "-mode.list.indir", context.swbd_directory,
-                 "-mode.list.outlist", context.swbd_list])
+                 "-mode.list.outlist", context.swbd_list,
+                 "-progress", "false"])
 
     with open(context.swbd_list) as f:
         swbd_tiles = f.read().splitlines()
 
     empty_shp = os.path.join(context.swbd_directory, "empty.shp")
     run_command(["otbcli_ConcatenateVectorData",
+                 "-progress", "false",
                  "-out", context.wb,
                  "-vd", empty_shp] + swbd_tiles)
 
@@ -469,7 +477,8 @@ def process_WB(context):
                  "-in", context.wb_reprojected,
                  "-out", context.water_mask, "uint8",
                  "-im", context.dem_coarse,
-                 "-mode.binary.foreground", "1"])
+                 "-mode.binary.foreground", "1",
+                 "-progress", "false"])
 
 
 def change_extension(file, new_extension):
