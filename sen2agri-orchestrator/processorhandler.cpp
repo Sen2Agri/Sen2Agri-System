@@ -49,7 +49,12 @@ void ProcessorHandler::HandleProductAvailable(EventProcessingContext &ctx,
 void ProcessorHandler::HandleJobSubmitted(EventProcessingContext &ctx,
                                           const JobSubmittedEvent &event)
 {
-    HandleJobSubmittedImpl(ctx, event);
+    try {
+        HandleJobSubmittedImpl(ctx, event);
+    } catch (const std::exception &e) {
+        ctx.MarkJobFailed(event.jobId);
+        throw std::runtime_error(e.what());
+    }
 }
 
 void ProcessorHandler::HandleTaskFinished(EventProcessingContext &ctx,
