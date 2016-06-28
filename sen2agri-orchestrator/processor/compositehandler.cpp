@@ -10,60 +10,6 @@
 
 #define TasksNoPerProduct 7
 
-void CompositeHandler::HandleProductAvailableImpl(EventProcessingContext &ctx,
-                                                  const ProductAvailableEvent &event)
-{
-    Q_UNUSED(ctx);
-    // in this moment, we do not handle the products as they appear but maybe later it can be useful
-    // for some other processors. The code below can be used as an example.
-    return;
-    // TODO: Here we must get all job IDs for the current processor id
-    std::vector<int> jobIds;
-
-    // for each job ID, check if the job accepts the current product
-    for (unsigned int i = 0; i < jobIds.size(); i++) {
-        // Check if the product can be processed by the current job
-        if (IsProductAcceptableForJob(jobIds[i], event)) {
-            // create a list with products that will have in this case only one element
-            QStringList listProducts;
-            // Get the product path from the productId
-            QString strProductPath; // TODO = ctx.GetProductPathFromId(event.productId);
-            listProducts.append(strProductPath);
-            // process the received L2A product in the current job
-            //HandleNewProductInJob(ctx, jobIds[i], "", listProducts);
-        } else {
-            // if the product is not acceptable for the current job, it might be outside the
-            // synthesis interval
-
-            // TODO: If the product date is after the L3A date + HalfSynthesis interval, then we can
-            // mark the job finished
-            //      ==> Is this enough as condition to finish the composition?
-            //      ==> If we can take into account also the current time + offset (days), how much
-            //      should be that offset?
-        }
-    }
-    // TODO: we must get the last created L3A product that fits the half synthesis (is inside the
-    // synthesi interval) and job's L3A product date
-    //      ==> The intermediate L3A products should be saved in DB or they should be kept in the
-    //      job's temporary repository?
-    //      ==> If not kept in the DB, then we should get the last created L3A product
-    //      ==> Anyway, the L3A product should be specific to a job as an L3A intermediate file
-    //      could be created with other parameters
-
-    // TODO: After inserting a new product, we should delete the old L3A products
-    // TODO: Maybe some internal status params should be added in DB!!!
-    //      Additionally, keep the original event parameters that generated job creation!!!
-
-    // PROBLEM: How to handle the case when a processing is in progress for one job and we receive a
-    // new accepted
-    // product with a date later than the current processing one? In this case, the processing
-    // should be delayed until
-    // the finishing of the current one.
-    //      ==> Does the context handles the submitted steps sequentially???
-    //      ==> What happens if we receive products with an older date than the current processed
-    //      ones???
-}
-
 void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
                                                 QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList,
                                                 const TileTemporalFilesInfo &tileTemporalFilesInfo)
@@ -747,10 +693,20 @@ QString CompositeHandler::DeductBandsMappingFile(const QStringList &listProducts
 ProcessorJobDefinitionParams CompositeHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                           const ConfigurationParameterValueMap &requestOverrideCfgValues)
 {
-    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.l3a."), siteId, requestOverrideCfgValues);
-
     ProcessorJobDefinitionParams params;
     params.isValid = false;
+
+    QDateTime seasonStartDate;
+    QDateTime seasonEndDate;
+    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
+    QDateTime limitDate = seasonEndDate.addMonths(2);
+    // extract the scheduled date
+    QDateTime qScheduledDate = QDateTime::fromTime_t(scheduledDate);
+    if(qScheduledDate > limitDate) {
+        return params;
+    }
+
+    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.l3a."), siteId, requestOverrideCfgValues);
 
     int halfSynthesis = mapCfg["processor.l3a.half_synthesis"].value.toInt();
     if(halfSynthesis == 0)
@@ -759,8 +715,6 @@ ProcessorJobDefinitionParams CompositeHandler::GetProcessingDefinitionImpl(Sched
     if(synthDateOffset == 0)
         synthDateOffset = 30;
 
-    // extract the scheduled date
-    QDateTime qScheduledDate = QDateTime::fromTime_t(scheduledDate);
     // compute the half synthesis date
     QDateTime halfSynthesisDate = qScheduledDate.addDays(-synthDateOffset);
     // compute the start and date time
@@ -768,11 +722,12 @@ ProcessorJobDefinitionParams CompositeHandler::GetProcessingDefinitionImpl(Sched
     QDateTime endDate = halfSynthesisDate.addDays(halfSynthesis);
 
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
-    // we need at least 1 product available in order to be able to create a L3A product
-    if(params.productList.size() > 0) {
+    // Normally, we need at least 1 product available in order to be able to create a L3A product
+    // but if we do not return here, the schedule block waiting for products (that might never happen)
+    //if(params.productList.size() > 0) {
         params.isValid = true;
         params.jsonParameters = "{ \"synthesis_date\": \"" + halfSynthesisDate.toString("yyyyMMdd") + "\"}";
-    }
+    //}
 
     Logger::debug(QStringLiteral("Scheduler extracted for L3A a number of %1 products for for site ID %2 for start date %3 and end date %4!")
                   .arg(params.productList.size())

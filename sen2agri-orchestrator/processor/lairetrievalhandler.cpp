@@ -1466,11 +1466,25 @@ bool LaiRetrievalHandler::IsFittedReproc(const QJsonObject &parameters, std::map
 ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                           const ConfigurationParameterValueMap &requestOverrideCfgValues)
 {
-    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.l3b."), siteId, requestOverrideCfgValues);
-
     ProcessorJobDefinitionParams params;
     params.isValid = false;
 
+    QDateTime seasonStartDate;
+    QDateTime seasonEndDate;
+    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
+    QDateTime limitDate = seasonEndDate.addMonths(2);
+    // extract the scheduled date
+    QDateTime qScheduledDate = QDateTime::fromTime_t(scheduledDate);
+    if(qScheduledDate > limitDate) {
+        return params;
+    }
+    if(!seasonStartDate.isValid()) {
+        Logger::error(QStringLiteral("Season start date for site ID %1 is invalide in the database!")
+                      .arg(siteId));
+        return params;
+    }
+
+    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.l3b."), siteId, requestOverrideCfgValues);
     int generateLai = false;
     int generateReprocess = false;
     int generateFitted = false;
@@ -1493,18 +1507,9 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
         return params;
     }
 
-    QDateTime seasonStartDate;
-    QDateTime seasonEndDate;
-    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
-    if(!seasonStartDate.isValid()) {
-        Logger::error(QStringLiteral("Season start date for site ID %1 is invalide in the database!")
-                      .arg(siteId));
-        return params;
-    }
-
     // by default the start date is the season start date
     QDateTime startDate = seasonStartDate;
-    QDateTime endDate = QDateTime::fromTime_t(scheduledDate);
+    QDateTime endDate = qScheduledDate;
 
     if(generateLai || generateReprocess) {
         int productionInterval = mapCfg[generateLai ? "processor.l3b.production_interval":
@@ -1519,7 +1524,9 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
     }
 
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
-    if (params.productList.size() > 0) {
+    // Normally, we need at least 1 product available in order to be able to create a L3B/L3C/L3D product
+    // but if we do not return here, the schedule block waiting for products (that might never happen)
+    //if (params.productList.size() > 0) {
         params.isValid = true;
 //        if(generateLai) {
 //            params.isValid = true;
@@ -1530,7 +1537,7 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
 //        } else if (generateReprocess > 2) {
 //            params.isValid = true;
 //        }
-    }
+    //}
     Logger::debug(QStringLiteral("Scheduler extracted for L3B/L3C/L3D a number of %1 products for for site ID %2 for start date %3 and end date %4!")
                   .arg(params.productList.size())
                   .arg(siteId)

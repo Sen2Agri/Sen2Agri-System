@@ -857,6 +857,16 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
     ProcessorJobDefinitionParams params;
     params.isValid = false;
 
+    QDateTime seasonStartDate;
+    QDateTime seasonEndDate;
+    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
+    QDateTime limitDate = seasonEndDate.addMonths(2);
+    // extract the scheduled date
+    QDateTime qScheduledDate = QDateTime::fromTime_t(scheduledDate);
+    if(qScheduledDate > limitDate) {
+        return params;
+    }
+
     ConfigurationParameterValueMap cfgValues = ctx.GetConfigurationParameters("processor.l4a.", siteId, requestOverrideCfgValues);
     // Get the reference dir
     QString refDir = cfgValues["processor.l4a.reference_data_dir"].value;
@@ -872,11 +882,8 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
         params.jsonParameters = "{ \"reference_raster\": \"" + referenceRasterFile + "\"}";
     }
 
-    QDateTime seasonStartDate;
-    QDateTime seasonEndDate;
-    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
     // Get the start and end date for the production
-    QDateTime endDate = QDateTime::fromTime_t(scheduledDate);
+    QDateTime endDate = qScheduledDate;
     QDateTime startDate = seasonStartDate;
 
     // get from the database the moving window for 1 year periodicity
@@ -895,9 +902,11 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
     }
 
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
-    if(params.productList.size() > 0) {
+    // Normally, we need at least 1 product available in order to be able to create a L4A product
+    // but if we do not return here, the schedule block waiting for products (that might never happen)
+    //if(params.productList.size() > 0) {
         params.isValid = true;
-    }
+    //}
 
     Logger::debug(QStringLiteral("Scheduler extracted for L4A a number of %1 products for for site ID %2 for start date %3 and end date %4!")
                   .arg(params.productList.size())

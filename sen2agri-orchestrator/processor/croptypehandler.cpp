@@ -277,6 +277,14 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                     toStdString());
     }
 
+    const auto &referencePolygons = parameters["reference_polygons"].toString();
+    if(referencePolygons.isEmpty()) {
+        ctx.MarkJobFailed(event.jobId);
+        throw std::runtime_error(
+            QStringLiteral("No reference polygons provided!").
+                    toStdString());
+    }
+
     QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.jobId, listProducts, ProductType::L2AProductTypeId);
     // get the crop mask
     QString cropMask = parameters["crop_mask"].toString();
@@ -457,12 +465,17 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
     ProcessorJobDefinitionParams params;
     params.isValid = false;
 
-    // Get the start and end date for the production
     QDateTime seasonStartDate;
     QDateTime seasonEndDate;
     GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
-    QDateTime endDate = QDateTime::fromTime_t(scheduledDate);
+    QDateTime limitDate = seasonEndDate.addMonths(2);
+    // extract the scheduled date
+    QDateTime qScheduledDate = QDateTime::fromTime_t(scheduledDate);
+    if(qScheduledDate > limitDate) {
+        return params;
+    }
 
+    QDateTime endDate = qScheduledDate;
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, seasonStartDate, endDate);
     if(params.productList.size() > 0) {
         params.isValid = true;
@@ -483,11 +496,9 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
     if(!ProcessorHandlerHelper::GetCropReferenceFile(refDir, shapeFile, referenceRasterFile)) {
         return params;
     }
-    QString refStr;
+    QString refStr = "{ \"reference_polygons\": \"\"}";
     if(!shapeFile.isEmpty()) {
         refStr = "{ \"reference_polygons\": \"" + shapeFile + "\"}";
-    } else {
-        refStr = "{ \"reference_raster\": \"" + referenceRasterFile + "\"}";
     }
 
     QString cropMaskFolder;
