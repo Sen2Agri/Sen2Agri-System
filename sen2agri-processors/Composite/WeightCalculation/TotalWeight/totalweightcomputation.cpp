@@ -19,6 +19,7 @@ TotalWeightComputation::TotalWeightComputation()
 {
     m_fWeightOnSensor = -1;
     m_fWeightOnDateMin = 0.5;
+    m_res = -1;
 }
 
 
@@ -63,14 +64,14 @@ void TotalWeightComputation::SetAotWeightFile(std::string &aotWeightFileName)
 {
     ReaderType::Pointer reader = ReaderType::New();
     reader->SetFileName(aotWeightFileName);
-    m_inputReader1 = reader;
+    m_inputReaderAot = reader;
 }
 
 void TotalWeightComputation::SetCloudsWeightFile(std::string &cloudsWeightFileName)
 {
     ReaderType::Pointer reader = ReaderType::New();
     reader->SetFileName(cloudsWeightFileName);
-    m_inputReader2 = reader;
+    m_inputReaderCld = reader;
 }
 
 void TotalWeightComputation::SetTotalWeightOutputFileName(std::string &outFileName)
@@ -123,8 +124,23 @@ void TotalWeightComputation::ComputeTotalWeight()
 
     m_filter = FilterType::New();
     m_filter->GetFunctor().SetFixedWeight(m_fWeightOnSensor, m_fWeightOnDate);
-    m_filter->SetInput1(m_inputReader1->GetOutput());
-    m_filter->SetInput2(m_inputReader2->GetOutput());
+    ImageType::Pointer imgAot = m_inputReaderAot->GetOutput();
+    ImageType::Pointer imgCld = m_inputReaderCld->GetOutput();
+    imgAot->UpdateOutputInformation();
+    imgCld->UpdateOutputInformation();
+    ImageType::SpacingType spacingAot = imgAot->GetSpacing();
+    ImageType::SpacingType spacingCld = imgCld->GetSpacing();
+    // normally, the AOT weight should have the same spacing as the clouds weight
+    if(spacingAot[0] != spacingCld[0]) {
+        float fMultiplicationFactor = ((float)spacingAot[0])/spacingCld[0];
+        ImageType::PointType origin = imgCld->GetOrigin();
+        //force the origin and the resolution to the one from cloud image
+        imgAot = m_AotResampler.getResampler(imgAot, fMultiplicationFactor, origin)->GetOutput();
+    }
+
+    m_filter->SetInput1(imgAot);
+    m_filter->SetInput2(imgCld);
+
     //m_filter->SetDirectionTolerance(5);
     //m_filter->SetCoordinateTolerance(5);
     //CheckTolerance();
@@ -137,14 +153,14 @@ void TotalWeightComputation::CheckTolerance()
     double m_DirectionTolerance = 0.001;
     double m_CoordinateTolerance = 0.001;
 
-    m_inputReader1->UpdateOutputInformation();
-    m_inputReader2->UpdateOutputInformation();
+    m_inputReaderAot->UpdateOutputInformation();
+    m_inputReaderCld->UpdateOutputInformation();
 
     ImageType *inputPtr1=
-      dynamic_cast< ImageType * >( m_inputReader1->GetOutput() );
+      dynamic_cast< ImageType * >( m_inputReaderAot->GetOutput() );
 
     ImageType *inputPtrN =
-      dynamic_cast< ImageType * >( m_inputReader2->GetOutput() );
+      dynamic_cast< ImageType * >( m_inputReaderCld->GetOutput() );
 
     // tolerance for origin and spacing depends on the size of pixel
     // tolerance for directions a fraction of the unit cube.

@@ -21,6 +21,7 @@
 #include "otbImageFileReader.h"
 #include "otbImageFileWriter.h"
 #include "GlobalDefs.h"
+#include "ImageResampler.h"
 
 namespace Functor
 {
@@ -99,6 +100,7 @@ protected:
 protected:
     float m_fWeightOnSensor;
     float m_fWeightOnDate;
+    int m_res;
 
 private:
     void BuildOutputImageSource();
@@ -109,10 +111,11 @@ private:
     float m_fWeightOnDateMin;
     std::string m_strOutFileName;
 
-    ImageSource::Pointer m_inputReader1;
-    ImageSource::Pointer m_inputReader2;
+    ImageSource::Pointer m_inputReaderAot;
+    ImageSource::Pointer m_inputReaderCld;
 
     FilterType::Pointer m_filter;
+    ImageResampler<ImageType, ImageType> m_AotResampler;
     void CheckTolerance();
 };
 
