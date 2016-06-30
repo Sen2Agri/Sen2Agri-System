@@ -45,7 +45,7 @@
 													<option value="30">30</option>
 													<option value="60">60</option>
 												</select>
-												<span class="help-block">Resolution of the output image.</span>
+												<span class="help-block">Resolution of the output image (in metters).</span>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="maxaot">Maximum value of the linear range for weights w.r.t. AOT:</label>
@@ -83,7 +83,7 @@
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="halfSynthesis">Half synthesis:</label>
 												<input type="number" min="0" step="1" class="form-control" id="halfSynthesis" name="halfSynthesis" value="15">
-												<span class="help-block">The half synthesis interval [days].</span>
+												<span class="help-block">The half synthesis interval [days]. A value of 25 days is recommended in the case of very cloudy regions.</span>
 											</div>
 											<input name="l3a" type="submit" class="btn btn-primary" value="Submit">
 										</div>
@@ -134,7 +134,7 @@
 													<option value="30">30</option>
 													<option value="60">60</option>
 												</select>
-												<span class="help-block">Resolution of the output image.</span>
+												<span class="help-block">Resolution of the output image (in metters).</span>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="genmodel">Generate models:</label>
@@ -142,12 +142,12 @@
 												<span class="help-block">Specifies if the models should be generated or not [0/1]</span>
 											</div>
 											<div class="form-group form-group-sm">
-												<label class="control-label" for="reproc">Reprocessing the last N-Days:</label>
+												<label class="control-label" for="reproc">Reprocessing with the last N-Days:</label>
 												<input type="number" min="0" max="1" step="1" class="form-control" id="reproc" name="reproc" value="0">
-												<span class="help-block">Specifies if the reprocessing of last N-Days should be performed or not [0/1]</span>
+												<span class="help-block">Specifies if the reprocessing with the last N-Days should be performed or not [0/1]</span>
 											</div>
 											<div class="form-group form-group-sm">
-												<label class="control-label" for="fitted">Reprocessing at the end of the season:</label>
+												<label class="control-label" for="fitted">Time series fitting at the end of the season:</label>
 												<input type="number" min="0" max="1" step="1" class="form-control" id="fitted" name="fitted" value="0">
 												<span class="help-block">Specifies if the reprocessing at the end of the season should be performed or not [0/1]</span>
 											</div>
@@ -161,7 +161,7 @@
 												<input type="number" class="form-control" id="bwr" name="bwr" value="2">
 												<span class="help-block">Backward window for LAI N-Day reprocessing</span>
 											</div>
-											<div class="form-group form-group-sm">
+											<div class="form-group form-group-sm" style="display: none;">
 												<label class="control-label" for="fwr">Forward window:</label>
 												<input type="number" class="form-control" id="bwr" name="fwr" value="0">
 												<span class="help-block">Forward window for LAI N-Day Reprocessing</span>
@@ -215,9 +215,9 @@
 													<option value="30">30</option>
 													<option value="60">60</option>
 												</select>
-												<span class="help-block">Resolution of the output image.</span>
+												<span class="help-block">Resolution of the output image (in metters).</span>
 											</div>
-											<input type="submit" name="l3b_pheno" class="btn btn-primary" value="Submit">
+											<input type="submit" name="l3e_pheno" class="btn btn-primary" value="Submit">
 										</div>
 									</div>
 								</form>
@@ -266,7 +266,7 @@
 													<option value="30">30</option>
 													<option value="60">60</option>
 												</select>
-												<span class="help-block">Resolution of the output image.</span>
+												<span class="help-block">Resolution of the output image (in metters).</span>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="mission">Mission:</label>
@@ -280,7 +280,7 @@
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="refp">Reference polygons:</label>
 												<input type="file" class="form-control" id="refp" name="refp" onchange="$(this).trigger('blur');">
-												<span class="help-block">The reference polygons.</span>
+												<span class="help-block">The reference polygons. A .zip file containing the shapefile is expected. See Software User Manual for the format of the shapefile. Take care of the header of the columns.</span>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="refr">Reference raster:</label>
@@ -368,7 +368,7 @@
 												</select>
 												<span class="help-block">Random forest clasifier / SVM classifier</span>
 											</div>
-											<div class="form-group form-group-sm">
+											<div class="form-group form-group-sm" style="display: none;">
 												<label class="control-label" for="field">Field:</label>
 												<input type="text" class="form-control" id="field" name="field" value="CROP">
 												<span class="help-block"></span>
@@ -447,12 +447,12 @@
 													<option value="30">30</option>
 													<option value="60">60</option>
 												</select>
-												<span class="help-block">Resolution of the output image.</span>
+												<span class="help-block">Resolution of the output image (in metters).</span>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="refp">Reference polygons:</label>
 												<input type="file" class="form-control" id="refp" name="refp" onchange="$(this).trigger('blur');">
-												<span class="help-block">The reference polygons.</span>
+												<span class="help-block">The reference polygons. A .zip file containing the shapefile is expected. See Software User Manual for the format of the shapefile. Take care of the header of the columns</span>
 											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="mission">Main mission:</label>

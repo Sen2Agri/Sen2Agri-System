@@ -308,9 +308,9 @@ elseif (isset ( $_POST ['l3b_lai'] )) {
 	$name = "l3b_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for ".$processor_short_name;
 	insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
-} /* -------------------------------------------------------l3b_pheno------------------------------------------------------ */
-elseif (isset ( $_POST ['l3b_pheno'] )) {
-	$processor_short_name = "l3b_pheno";
+} /* -------------------------------------------------------l3e_pheno------------------------------------------------------ */
+elseif (isset ( $_POST ['l3e_pheno'] )) {
+	$processor_short_name = "l3e_pheno";
 
 	$siteId = $_POST ['siteId'];
 
@@ -331,7 +331,7 @@ elseif (isset ( $_POST ['l3b_pheno'] )) {
 	$json_param = json_encode( array_filter($params) );
 
 	// set job name and description and save job
-	$name = "l3b_pheno_processor" . date ( "m.d.y" );
+	$name = "l3e_pheno_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for ".$processor_short_name;
 	insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
 } /* -------------------------------------------------------l4a------------------------------------------------------ */
