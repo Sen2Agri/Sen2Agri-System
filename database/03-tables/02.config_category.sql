@@ -1,6 +1,6 @@
 ﻿CREATE TABLE config_category
 (
-  id smallserial,
+  id smallint not null,
   name character varying NOT NULL,
   display_order int NOT NULL default 0,
   allow_per_site_customization boolean default true,
