@@ -1,6 +1,6 @@
 ﻿CREATE TABLE processor
 (
-  id smallserial,
+  id smallint not null,
   name character varying NOT NULL DEFAULT '',
   description character varying,
   short_name character varying,
