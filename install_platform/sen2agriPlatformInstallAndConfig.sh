@@ -783,3 +783,7 @@ install_downloaders_demmacs
 systemctl enable --now sen2agri-orchestrator
 systemctl enable --now sen2agri-scheduler
 systemctl enable --now sen2agri-http-listener
+
+echo "Please edit the following files to set up your USGS and SciHub credentials:"
+echo "/usr/share/sen2agri/sen2agri-downloaders/usgs.txt"
+echo "/usr/share/sen2agri/sen2agri-downloaders/apihub.txt"
