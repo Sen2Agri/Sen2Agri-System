@@ -30,6 +30,10 @@ def main():
     if id_field_idx == -1:
         id_field_idx = None
 
+    code_field_idx = layer.FindFieldIndex("CODE", False)
+    if code_field_idx == -1:
+        code_field_idx = None
+
     spatialRef = osr.SpatialReference()
     spatialRef.ImportFromEPSG(4326)
     transform = osr.CoordinateTransformation(layer.GetSpatialRef(), spatialRef)
@@ -60,21 +64,26 @@ def main():
             else:
                 union.AddGeometry(geometry_clone)
 
-    for f0 in features:
-        g0 = f0.GetGeometryRef()
-        layer.SetSpatialFilter(g0)
-        for f1 in layer:
-            g1 = f1.GetGeometryRef()
-            if g0.Overlaps(g1):
-                c0, c1 = f0.GetField("CODE"), f1.GetField("CODE")
-                if not c0 or not c1 or c0 != c1:
-                    if id_field_idx is not None:
-                        i0 = f0.GetField(id_field_idx)
-                        i1 = f1.GetField(id_field_idx)
-                        print("Overlapping features (ID={} and ID={}): {} and {}".format(i0, i1, g0, g1))
+    if not args.bounds:
+        for f0 in features:
+            g0 = f0.GetGeometryRef()
+            layer.SetSpatialFilter(g0)
+            for f1 in layer:
+                g1 = f1.GetGeometryRef()
+                if g0.Overlaps(g1):
+                    if code_field_idx is not None:
+                        c0, c1 = f0.GetField(code_field_idx), f1.GetField(code_field_idx)
                     else:
-                        print("Overlapping features: {} and {}".format(g0, g1))
-                    return 3
+                        c0, c1 = None, None
+
+                    if c0 != c1:
+                        if id_field_idx is not None:
+                            i0 = f0.GetField(id_field_idx)
+                            i1 = f1.GetField(id_field_idx)
+                            print("Overlapping features (ID={} and ID={}): {} and {}".format(i0, i1, g0, g1))
+                        else:
+                            print("Overlapping features: {} and {}".format(g0, g1))
+                        return 3
 
     if args.bounds:
         print("Union: {}".format(union.ExportToWkt()))
