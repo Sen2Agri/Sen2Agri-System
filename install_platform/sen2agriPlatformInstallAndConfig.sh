@@ -550,22 +550,6 @@ function check_paths()
         fi
     fi
 
-    if [ ! -d /mnt/scratch ]; then
-        echo "Please create /mnt/scratch with mode 777."
-        echo "Actually only the sen2agri-service user requires access to the directory, but the installer does not support that."
-        echo "Exiting now"
-        exit 1
-    fi
-
-    out=($(stat -c "%a %U" /mnt/scratch))
-    if [ "${out[0]}" != "777" ] && [ "${out[1]}" != "sen2agri-service" ]; then
-        read -p "/mnt/scratch should be writable by sen2agri-service. Continue? (y/n) "
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            echo "Exiting now"
-            exit 1
-        fi
-    fi
-
     if ! ls -A /mnt/archive/srtm > /dev/null 2>&1; then
         if [ -f ../srtm.zip ]; then
             mkdir -p /mnt/archive/srtm && unzip ../srtm.zip -d /mnt/archive/srtm
