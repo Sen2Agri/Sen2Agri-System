@@ -58,6 +58,7 @@ def wkt2epsg(wkt, epsg='/usr/share/proj/epsg', forceProj4=False):
             return None
 
 def fix_file(input, args):
+    print("Processing {}".format(input))
     ds = gdal.Open(input, GA_Update)
     if ds is None:
         raise Exception("Could not open dataset", input)
@@ -111,11 +112,12 @@ def fix_file(input, args):
 def main():
     parser = argparse.ArgumentParser(description="Fixes rasters with negative coordinates in WGS 84 / UTM zones")
     parser.add_argument('-v', '--verbose', action='store_true', help="verbose output")
-    parser.add_argument('input', help='the input raster')
+    parser.add_argument('input', help='the input rasters', nargs='+')
 
     args = parser.parse_args()
 
-    fix_file(args.input, args)
+    for input in args.input:
+        fix_file(input, args)
     return 0
 
 if __name__ == '__main__':
