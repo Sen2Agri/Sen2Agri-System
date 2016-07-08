@@ -713,6 +713,15 @@ function disable_selinux()
     sed -i -e 's/SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
 }
 
+# This is needed for SLURM because it uses dynamically-allocated ports
+# The other services could do with a couple of rules
+function disable_firewall()
+{
+    echo "Disabling the firewall"
+    firewall-cmd --set-default-zone=trusted
+    firewall-cmd --reload
+}
+
 ###########################################################
 ##### MAIN                                              ###
 ###########################################################
@@ -725,6 +734,7 @@ fi
 check_paths
 
 disable_selinux
+disable_firewall
 
 ##install EPEL for packages dependencies installation
 yum -y install epel-release
