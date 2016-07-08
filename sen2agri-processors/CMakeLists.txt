@@ -31,3 +31,5 @@ install(FILES ../scripts/sen2agri_common.py
               ../scripts/split_shapefile.py
         DESTINATION usr/lib/python2.7/site-packages/)
 
+install(FILES dist/sen2agri-disable-thp.conf
+        DESTINATION usr/lib/tmpfiles.d)
