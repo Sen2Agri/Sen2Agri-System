@@ -1313,7 +1313,7 @@ private:
       {
           //fail to create tile folder
           bResult = false;
-          itkExceptionMacro("Fail to create tile directory!");
+          itkExceptionMacro("Fail to create tile directory " + strTileFullPath);
       }
 
       /* create IMG_DATA subfolder */
@@ -1321,7 +1321,7 @@ private:
       {
            //fail to create IMG_DATA subfolder
           bResult = false;
-          itkExceptionMacro("Fail to create IMG_DATA subfolder in tile directory!");
+          itkExceptionMacro("Fail to create IMG_DATA subfolder in tile directory " + strTileFullPath);
       }
 
       /* create QI_DATA subfolder */
@@ -1329,7 +1329,7 @@ private:
       {
            //fail to create QI_DATA subfolder
           bResult = false;
-          itkExceptionMacro("Fail to create QI_DATA subfolder in tile directory!");
+          itkExceptionMacro("Fail to create QI_DATA subfolder in tile directory " + strTileFullPath);
       }
 
       return bResult;
