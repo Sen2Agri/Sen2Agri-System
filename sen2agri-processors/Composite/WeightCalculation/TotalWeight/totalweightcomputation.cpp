@@ -130,12 +130,15 @@ void TotalWeightComputation::ComputeTotalWeight()
     imgCld->UpdateOutputInformation();
     ImageType::SpacingType spacingAot = imgAot->GetSpacing();
     ImageType::SpacingType spacingCld = imgCld->GetSpacing();
+
+    ImageType::PointType originAot = imgAot->GetOrigin();
+    ImageType::PointType originCld = imgCld->GetOrigin();
     // normally, the AOT weight should have the same spacing as the clouds weight
-    if(spacingAot[0] != spacingCld[0]) {
+    if((spacingAot[0] != spacingCld[0]) || (spacingAot[1] != spacingCld[1]) ||
+       (originAot[0] != originCld[0]) || (originAot[1] != originCld[1])) {
         float fMultiplicationFactor = ((float)spacingAot[0])/spacingCld[0];
-        ImageType::PointType origin = imgCld->GetOrigin();
         //force the origin and the resolution to the one from cloud image
-        imgAot = m_AotResampler.getResampler(imgAot, fMultiplicationFactor, origin)->GetOutput();
+        imgAot = m_AotResampler.getResampler(imgAot, fMultiplicationFactor, originCld)->GetOutput();
     }
 
     m_filter->SetInput1(imgAot);
