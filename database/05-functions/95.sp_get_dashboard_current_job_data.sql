@@ -52,6 +52,7 @@ BEGIN
 		INNER JOIN site ON job.site_id = site.id
 		INNER JOIN activity_status ON job.status_id = activity_status.id
 	WHERE job.status_id NOT IN (6,7,8) -- Finished, Cancelled, Error
+	  AND EXISTS(SELECT * FROM task WHERE task.job_id = job.id) -- this is to prevent an empty dashboard display when there are inconsistencies in the job state
 		ORDER BY job.id DESC
 		OFFSET oset LIMIT lmt;
 
