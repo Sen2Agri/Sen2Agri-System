@@ -38,11 +38,12 @@ function update_current_jobs(json_data)
 		if(!job.current_tasks)
 		{
 			// Break if there aren't any tasks; should not happen in 'real life'
+			// Break if there aren't any tasks; should not happen in 'real life'
 			return;
 		}
 
 		var new_row = "<tr class=\"to_be_refreshed\">" +
-		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.id + "</td>" +
+		"<td id='ID' rowspan=\"" + job.current_tasks.length + "\">" + job.id + "</td>" +
 		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.processor + "</td>" +
 		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.site + "</td>" +
 		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.triggered_by + "</td>" +
@@ -374,23 +375,22 @@ function move_to_first_jobs_page()
 	get_current_job_data();
 }
 
-function move_to_last_jobs_page()
-{
-	jsonJobsPage = jsonJobsPage;
-	get_current_job_data();
-}
-
 function move_to_previous_jobs_page()
 {
-	jsonJobsPage --;
-    jsonJobsPage = jsonJobsPage < 1 ? 1 : jsonJobsPage;
-	get_current_job_data();
+	if (jsonJobsPage > 1) {
+		jsonJobsPage --;
+		get_current_job_data();
+	} else {
+		jsonJobsPage = 1;
+	}
 }
 
 function move_to_next_jobs_page()
 {
-	jsonJobsPage ++;
-	get_current_job_data();
+	if (!$("#page_move_next").hasClass("disabled")) {
+		jsonJobsPage ++;
+		get_current_job_data();
+	}
 }
 
 function get_current_job_data()
@@ -404,6 +404,16 @@ function get_current_job_data()
 		success: function(json_data)
 		{
 			update_current_jobs(json_data);
+			
+			// display page number
+			$("#page_current").html(jsonJobsPage);
+			// toggle move_next button availability
+			if ($("#pnl_current_jobs #ID").length < 5) {
+				$("#page_move_next").addClass("disabled");
+			} else {
+				$("#page_move_next").removeClass("disabled");
+			}
+			
 			// Schedule the next request
 			setTimeout(get_current_job_data, get_current_job_data_interval);
 		},

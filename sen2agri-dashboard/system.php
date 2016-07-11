@@ -9,15 +9,15 @@
                             <div class="panel-heading">Server Resources</div>
                         </div>
                     </div>
-
-
+					
                     <div class="panel panel-default" id="pnl_current_jobs">
                         <div class="panel-heading">Current Jobs</div>
 						<div style="float: right; padding: 10px;">
-							<button type="button" class="btn btn-default" onclick="move_to_first_jobs_page();">&lt;&lt;</button>
-							<button type="button" class="btn btn-default" onclick="move_to_previous_jobs_page();">Previous Page</button>
-							<button type="button" class="btn btn-default" onclick="move_to_next_jobs_page()">Next Page</button>
-							<button type="button" class="btn btn-default disabled" onclick="move_to_last_jobs_page();">&gt;&gt;</button>
+							<button id="page_move_first" type="button" class="btn btn-default" onclick="move_to_first_jobs_page();">&lt;&lt;</button>
+							<button id="page_move_prev"  type="button" class="btn btn-default" onclick="move_to_previous_jobs_page();">Previous Page</button>
+							<button id="page_current"    type="button" class="btn btn-default" style="font-weight: 700;">1</button>
+							<button id="page_move_next"  type="button" class="btn btn-default" onclick="move_to_next_jobs_page()">Next Page</button>
+							<button id="page_move_last"  type="button" class="btn btn-default disabled">&gt;&gt;</button>
 						</div>
                         <table class="table full_width">
                             <tr>
