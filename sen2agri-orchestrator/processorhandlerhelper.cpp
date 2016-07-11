@@ -371,11 +371,11 @@ QString ProcessorHandlerHelper::GetFileNameFromPath(const QString &filePath) {
     QFileInfo fileInfo(filePath);
     return fileInfo.fileName();
 }
-/*
+
 QString ProcessorHandlerHelper::GetL2ATileMainImageFilePath(const QString &tileMetadataPath) {
     QFileInfo info(tileMetadataPath);
     QString parentFolder = info.absoluteDir().absolutePath();
-    QString metaFile = info.fileName();
+    QString metaFile = info.fileName().split(".",QString::SkipEmptyParts).at(0);
     //QString extension = info.suffix();
     // check if is S2
     if(metaFile.indexOf("S2") == 0) {
@@ -396,7 +396,7 @@ QString ProcessorHandlerHelper::GetL2ATileMainImageFilePath(const QString &tileM
     }
     return "";
 }
-*/
+
 
 const ProcessorHandlerHelper::L2MetaTileNameInfos &ProcessorHandlerHelper::GetL2AProductTileNameInfos(const QString &metaFileName) {
     QMap<QString, L2MetaTileNameInfos>::iterator i;
@@ -552,6 +552,19 @@ QString ProcessorHandlerHelper::BuildShapeName(const QString &shapeFilesDir, con
     return QStringLiteral("%1/%2_%3_%4.shp").arg(shapeFilesDir).arg(tileId).arg(jobId).arg(taskId);
 }
 
+QString ProcessorHandlerHelper::BuildProjectionFileName(const QString &projFilesDir, const QString &tileId, int jobId, int taskId)
+{
+    QDir dir(projFilesDir);
+    if (!dir.exists()){
+        if (!QDir::root().mkpath(projFilesDir)) {
+            throw std::runtime_error(
+                QStringLiteral("Unable to create output path for tiles shape files: %1").arg(projFilesDir).toStdString());
+        }
+    }
+    return QStringLiteral("%1/%2_%3_%4.proj").arg(projFilesDir).arg(tileId).arg(jobId).arg(taskId);
+}
+
+
 QString ProcessorHandlerHelper::GetShapeForTile(const QString &shapeFilesDir, const QString &tileId)
 {
     QDirIterator it(shapeFilesDir, QStringList() << "*.shp", QDir::Files);
@@ -566,6 +579,22 @@ QString ProcessorHandlerHelper::GetShapeForTile(const QString &shapeFilesDir, co
 
     return "";
 }
+
+QString ProcessorHandlerHelper::GetProjectionForTile(const QString &projFilesDir, const QString &tileId)
+{
+    QDirIterator it(projFilesDir, QStringList() << "*.proj", QDir::Files);
+    while(it.hasNext()) {
+        QString projFileFullName = it.next();
+        QFileInfo projfileFileInfo(projFileFullName);
+        // it should be actually equals with 0
+        if(projfileFileInfo.fileName().indexOf(tileId + "_") >= 0) {
+            return projFileFullName;
+        }
+    }
+
+    return "";
+}
+
 
 QStringList ProcessorHandlerHelper::GetTemporalTileFiles(const TileTemporalFilesInfo &temporalTileInfo)
 {
