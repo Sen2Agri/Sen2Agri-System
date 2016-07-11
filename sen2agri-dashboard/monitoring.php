@@ -144,7 +144,7 @@ function get_history_jobs_admin(){
 								<button id="page_move_prev"  type="button" class="btn btn-default" onclick="move_to_previous_jobs_page();">Previous Page</button>
 								<button id="page_current"    type="button" class="btn btn-default" style="font-weight: 700;">1</button>
 								<button id="page_move_next"  type="button" class="btn btn-default" onclick="move_to_next_jobs_page()">Next Page</button>
-								<button id="page_move_last"  type="button" class="btn btn-default disabled" onclick="move_to_last_jobs_page();">&gt;&gt;</button>
+								<button id="page_move_last"  type="button" class="btn btn-default disabled">&gt;&gt;</button>
 							</div>
 							<div class="panel-body">
 								<table class="table full_width" style="text-align: left" id="history_jobs">
@@ -241,7 +241,6 @@ function move_to_previous_jobs_page()
 	if (jsonJobsPage > 1) {
 		id = $('select[name=site_select] option:selected').val();
 		jsonJobsPage --;
-		jsonJobsPage = jsonJobsPage < 1 ? 1 : jsonJobsPage;
 		siteJobs(id, jsonJobsPage);
 	} else {
 		jsonJobsPage = 1;
