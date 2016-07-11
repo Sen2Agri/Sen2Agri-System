@@ -84,6 +84,34 @@ div.panel table.table td {
 	font-size: 10px;
 }
 
+div.panel table#history_jobs td,
+div#pnl_current_jobs table td
+{
+	padding: 4px;
+	font-size: 12px;
+}
+
+div#pnl_current_jobs table td {
+	border-right: 1px dashed #eaeaea;
+}
+
+div#pnl_current_jobs table td:nth-child(8),
+div#pnl_current_jobs table td:nth-child(1):nth-last-child(2)
+{
+	padding: 1px;
+	font-size: 11px;
+	text-align: left;
+	border-right: none;
+}
+
+div#pnl_current_jobs table td:nth-child(9),
+div#pnl_current_jobs table td:nth-child(2):nth-last-child(1)
+{
+	padding: 1px;
+	font-size: 11px;
+	border-right: none;
+}
+
 div.panel table.default_panel_style th, div.panel table.default_panel_style td
 	{
 	/*padding: 13px 5px;*/
@@ -182,10 +210,6 @@ div.full_width {
 	overflow: auto;
 	bottom: 2%;
 	font-size: 0.75em;
-}
-
-#pnl_current_jobs table:first-of-type tr td {
-	padding: 1px 2px;
 }
 
 #pnl_current_jobs table:first-of-type tr td:last-of-type {
