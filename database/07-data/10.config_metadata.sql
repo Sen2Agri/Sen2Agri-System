@@ -191,3 +191,8 @@ INSERT INTO config_metadata VALUES ('executor.processor.l3b.keep_job_folders', '
 INSERT INTO config_metadata VALUES ('executor.processor.l3e.keep_job_folders', 'Keep L3E temporary product files for the orchestrator jobs', 'int', true, 8);
 INSERT INTO config_metadata VALUES ('executor.processor.l4a.keep_job_folders', 'Keep L4A temporary product files for the orchestrator jobs', 'int', true, 8);
 INSERT INTO config_metadata VALUES ('executor.processor.l4b.keep_job_folders', 'Keep L4B temporary product files for the orchestrator jobs', 'int', true, 8);
+INSERT INTO config_metadata VALUES ('processor.l3a.sched_wait_proc_inputs', 'L3A Composite scheduled jobs wait for products to become available', 'int', true, 3);
+INSERT INTO config_metadata VALUES ('processor.l3b.sched_wait_proc_inputs', 'L3B/L3C/L3D LAI scheduled jobs wait for products to become available', 'int', true, 4);
+INSERT INTO config_metadata VALUES ('processor.l3e.sched_wait_proc_inputs', 'L3E PhenoNDVI scheduled jobs wait for products to become available', 'int', true, 7);
+INSERT INTO config_metadata VALUES ('processor.l4a.sched_wait_proc_inputs', 'L4A Crop Mask scheduled jobs wait for products to become available', 'int', true, 5);
+INSERT INTO config_metadata VALUES ('processor.l4b.sched_wait_proc_inputs', 'L4B Crop Type scheduled jobs wait for products to become available', 'int', true, 6);
