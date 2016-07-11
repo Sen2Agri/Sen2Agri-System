@@ -58,9 +58,9 @@ def noInSituDataAvailable() :
         with open(shape_proj, 'r') as file:
             shape_wkt = "ESRI::" + file.read()
 
-	executeStep("gdalwarp for reprojecting Reference map", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-t_srs", shape_wkt, reference, reprojected_reference, skip=fromstep>19)
-
-	executeStep("gdalwarp for cutting Reference map", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_reference, crop_reference, skip=fromstep>20)
+	executeStep("gdalwarp for cropping Reference map", "/usr/local/bin/gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shape, "-crop_to_cutline", reference, cropped_reference, skip=fromstep>19)
+	executeStep("gdalwarp for reprojecting Reference map", "/usr/local/bin/gdalwarp", "-dstnodata", "0", "-overwrite", "-t_srs", shape_wkt, cropped_reference, reprojected_reference, skip=fromstep>19, rmfiles=[] if keepfiles else [cropped_reference])
+	executeStep("gdalwarp for resampling Reference map", "/usr/local/bin/gdalwarp", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_reference, crop_reference, skip=fromstep>20, rmfiles=[] if keepfiles else [reprojected_reference])
 
 	# Erosion (Step 21)
 	executeStep("Erosion", "otbcli", "Erosion", buildFolder,"-in", crop_reference, "-out", eroded_reference, "-radius", erode_radius, skip=fromstep>21, rmfiles=[] if keepfiles else [crop_reference])
@@ -189,6 +189,7 @@ spectral_features=os.path.join(args.outdir, "spectral_features.tif")
 triming_features=os.path.join(args.outdir, "triming_features.tif")
 
 eroded_reference=os.path.join(args.outdir, "eroded_reference.tif")
+cropped_reference=os.path.join(args.outdir, "crop_reference.tif")
 reprojected_reference = os.path.join(args.outdir, "reprojected_reference.tif")
 crop_reference=os.path.join(args.outdir, "crop_reference.tif")
 trimmed_reference_raster=os.path.join(args.outdir, "trimmed_reference_raster.tif")
