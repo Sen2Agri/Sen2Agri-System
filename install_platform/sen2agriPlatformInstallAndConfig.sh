@@ -603,6 +603,13 @@ function check_paths()
             echo "Cannot find MACCS GIPP files in the distribution, please copy them to /mnt/archive/gipp"
         fi
     fi
+
+    echo "Creating /mnt/archive/reference_data"
+    mkdir -p /mnt/archive/reference_data
+    echo "Copying reference data"
+    if [ -d ../reference_data/ ]; then
+        cp -rf ../reference_data/* /mnt/archive/reference_data
+    fi
 }
 
 function find_maccs()
