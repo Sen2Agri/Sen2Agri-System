@@ -55,23 +55,24 @@ QList<std::reference_wrapper<TaskToSubmit>> CropMaskHandler::CreateNoInSituTasks
     outAllTasksList.append(TaskToSubmit{ "compute-image-statistics", {outAllTasksList[6]}} );
     outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[7]}} );
     outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[8]}} );
-    outAllTasksList.append(TaskToSubmit{ "erosion", {outAllTasksList[9]}} );
-    outAllTasksList.append(TaskToSubmit{ "trimming", {outAllTasksList[10]}} );
-    outAllTasksList.append(TaskToSubmit{ "train-images-classifier-new", {outAllTasksList[11]}} );
-    outAllTasksList.append(TaskToSubmit{ "image-classifier", {outAllTasksList[12]}} );
-    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[13]}} );
-    outAllTasksList.append(TaskToSubmit{ "principal-component-analysis", {outAllTasksList[14]}} );
-    outAllTasksList.append(TaskToSubmit{ "mean-shift-smoothing", {outAllTasksList[15]}} );
-    outAllTasksList.append(TaskToSubmit{ "lsms-segmentation", {outAllTasksList[16]}} );
-    outAllTasksList.append(TaskToSubmit{ "lsms-small-regions-merging", {outAllTasksList[17]}} );
-    outAllTasksList.append(TaskToSubmit{ "majority-voting", {outAllTasksList[18]}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[19]}} );
-    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[20]}} );
-    outAllTasksList.append(TaskToSubmit{ "image-compression", {outAllTasksList[21]}} );
-    outAllTasksList.append(TaskToSubmit{ "xml-statistics", {outAllTasksList[22]}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[9]}} );
+    outAllTasksList.append(TaskToSubmit{ "erosion", {outAllTasksList[10]}} );
+    outAllTasksList.append(TaskToSubmit{ "trimming", {outAllTasksList[11]}} );
+    outAllTasksList.append(TaskToSubmit{ "train-images-classifier-new", {outAllTasksList[12]}} );
+    outAllTasksList.append(TaskToSubmit{ "image-classifier", {outAllTasksList[13]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[14]}} );
+    outAllTasksList.append(TaskToSubmit{ "principal-component-analysis", {outAllTasksList[15]}} );
+    outAllTasksList.append(TaskToSubmit{ "mean-shift-smoothing", {outAllTasksList[16]}} );
+    outAllTasksList.append(TaskToSubmit{ "lsms-segmentation", {outAllTasksList[17]}} );
+    outAllTasksList.append(TaskToSubmit{ "lsms-small-regions-merging", {outAllTasksList[18]}} );
+    outAllTasksList.append(TaskToSubmit{ "majority-voting", {outAllTasksList[19]}} );
+    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[20]}} );
+    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[21]}} );
+    outAllTasksList.append(TaskToSubmit{ "image-compression", {outAllTasksList[22]}} );
+    outAllTasksList.append(TaskToSubmit{ "xml-statistics", {outAllTasksList[23]}} );
 
     // product formatter needs completion of xml-statistics
-    outProdFormatterParentsList.append(outAllTasksList[23]);
+    outProdFormatterParentsList.append(outAllTasksList[24]);
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     for(TaskToSubmit &task: outAllTasksList) {
@@ -575,6 +576,7 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
     TaskToSubmit &computeImageStatisticsTask = allTasksList[curTaskIdx++];
     TaskToSubmit &gdalWarpTask2 = allTasksList[curTaskIdx++];
     TaskToSubmit &gdalWarpTask2_1 = allTasksList[curTaskIdx++];
+    TaskToSubmit &gdalWarpTask2_2 = allTasksList[curTaskIdx++];
     TaskToSubmit &erosionTask = allTasksList[curTaskIdx++];
     TaskToSubmit &trimmingTask = allTasksList[curTaskIdx++];
     TaskToSubmit &trainImagesClassifierNewTask = allTasksList[curTaskIdx++];
@@ -620,8 +622,9 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
 
     const auto &raw_crop_mask_uncompressed = imageClassifierTask.GetFilePath("raw_crop_mask_uncompressed.tif");
 
-    const auto &reprojected_reference = gdalWarpTask2.GetFilePath("reprojected_reference.tif");
-    const auto &crop_reference = gdalWarpTask2_1.GetFilePath("crop_reference.tif");
+    const auto &cropped_reference = gdalWarpTask2.GetFilePath("cropped_reference.tif");
+    const auto &reprojected_reference = gdalWarpTask2_1.GetFilePath("reprojected_reference.tif");
+    const auto &crop_reference = gdalWarpTask2_2.GetFilePath("crop_reference.tif");
 
     const auto &eroded_reference = erosionTask.GetFilePath("eroded_reference.tif");
 
@@ -705,11 +708,13 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
         computeImageStatisticsTask.CreateStep("ComputeImagesStatistics", {"-il", spectral_features,"-out",statistics_noinsitu}),
 
 
-        // The following 2 steps cannot be inserted in one task because they need to be executed one after each other, not parallel
+        // The following steps cannot be inserted in one task because they need to be executed one after each other, not parallel
         gdalWarpTask2.CreateStep(
-            "ReprojectRefMap", { "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-t_srs", shapeEsriPrj, reference, reprojected_reference }),
-
-        gdalWarpTask2_1.CreateStep("ClipRefMap", GetGdalWarpArgs(reprojected_reference, crop_reference, "0", "2048", shape, resolutionStr)),
+            "RefMap", { "-dstnodata", "0", "-overwrite", "-crop_to_cutline", "-cutline", shape, reference, cropped_reference }),
+        gdalWarpTask2_1.CreateStep(
+            "ReprojectRefMap", { "-dstnodata", "0", "-overwrite", "-t_srs", shapeEsriPrj, cropped_reference, reprojected_reference }),
+        gdalWarpTask2_2.CreateStep(
+            "ResampleRefMap", { "-dstnodata", "0", "-overwrite", "-crop_to_cutline", "-cutline", shape, "-tr", resolutionStr, resolutionStr, reprojected_reference, crop_reference }),
 
         erosionTask.CreateStep("Erosion", { "Erosion", "-in", crop_reference,  "-out", eroded_reference, "-radius", erode_radius }),
         trimmingTask.CreateStep("Trimming", { "Trimming", "-feat", spectral_features,
