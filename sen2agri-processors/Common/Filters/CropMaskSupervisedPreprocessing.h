@@ -108,3 +108,38 @@ protected:
 };
 
 typedef otb::ObjectList<CropTypePreprocessing>              CropTypePreprocessingList;
+
+std::map<std::string, std::vector<int>> getOutputDays(CropTypePreprocessingList::Pointer preprocessors, bool resample, const std::map<std::string, int> &sp)
+{
+    std::map<std::string, std::set<int> >    sensorInDays;
+    std::map<std::string, std::vector<int> > sensorOutDays;
+
+    for (unsigned int i = 0; i < preprocessors->Size(); i++) {
+        for (const auto &id : preprocessors->GetNthElement(i)->GetDescriptorList()) {
+            auto inDay = getDaysFromEpoch(id.aquisitionDate);
+            sensorInDays[id.mission].emplace(inDay);
+        }
+    }
+
+    // loop through the sensors to determinte the output dates
+    for (const auto& sensor : sensorInDays) {
+        std::vector<int> outDates;
+        if (resample) {
+            auto it = sp.find(sensor.first);
+            if (it == sp.end()) {
+                itkGenericExceptionMacro("Sampling rate required for sensor " << sensor.first);
+            }
+            auto rate = it->second;
+
+            auto last = *sensor.second.rbegin();
+            for (int date = *sensor.second.begin(); date <= last; date += rate) {
+                outDates.emplace_back(date);
+            }
+        } else {
+            outDates.insert(outDates.end(), sensor.second.begin(), sensor.second.end());
+        }
+        sensorOutDays[sensor.first] = outDates;
+    }
+
+    return sensorOutDays;
+}

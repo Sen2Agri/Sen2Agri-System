@@ -14,6 +14,7 @@ otb_create_application(
                  ../Filters/otbSentinelMaskFilter.h
                  ../Filters/otbSentinelMaskFilter.txx
                  ../Filters/CropTypePreprocessing.h
+                 ../Filters/TimeSeriesReader.h
   LINK_LIBRARIES ${OTB_LIBRARIES} MACCSMetadata)
 
 if(BUILD_TESTING)
