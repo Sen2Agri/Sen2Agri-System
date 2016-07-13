@@ -873,8 +873,15 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
     }
 
     ConfigurationParameterValueMap cfgValues = ctx.GetConfigurationParameters("processor.l4a.", siteId, requestOverrideCfgValues);
+    QString siteName = ctx.GetSiteShortName(siteId);
     // Get the reference dir
     QString refDir = cfgValues["processor.l4a.reference_data_dir"].value;
+    refDir = refDir.replace("{site}", siteName);
+
+    // we might have an offset in days from starting the downloading products to start the L4A production
+    int startSeasonOffset = cfgValues["processor.l4a.start_season_offset"].value.toInt();
+    seasonStartDate = seasonStartDate.addDays(startSeasonOffset);
+
     QString shapeFile;
     QString referenceRasterFile;
     // if none of the reference files were found, cannot run the CropMask
@@ -909,15 +916,21 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
     // Normally, we need at least 1 product available in order to be able to create a L4A product
     // but if we do not return here, the schedule block waiting for products (that might never happen)
-    //if(params.productList.size() > 0) {
+    bool waitForAvailProcInputs = (cfgValues["processor.l4a.sched_wait_proc_inputs"].value.toInt() != 0);
+    if((waitForAvailProcInputs == false) || (params.productList.size() > 0)) {
         params.isValid = true;
-    //}
-
-    Logger::debug(QStringLiteral("Scheduler extracted for L4A a number of %1 products for for site ID %2 for start date %3 and end date %4!")
-                  .arg(params.productList.size())
-                  .arg(siteId)
-                  .arg(startDate.toString())
-                  .arg(endDate.toString()));
+        Logger::debug(QStringLiteral("Executing scheduled job. Scheduler extracted for L4A a number "
+                                     "of %1 products for site ID %2 with start date %3 and end date %4!")
+                      .arg(params.productList.size())
+                      .arg(siteId)
+                      .arg(startDate.toString())
+                      .arg(endDate.toString()));
+    } else {
+        Logger::debug(QStringLiteral("Scheduled job for L4A and site ID %1 with start date %2 and end date %3 will not be executed (no products)!")
+                      .arg(siteId)
+                      .arg(startDate.toString())
+                      .arg(endDate.toString()));
+    }
 
     return params;
 }

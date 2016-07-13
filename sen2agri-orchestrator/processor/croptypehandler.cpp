@@ -475,21 +475,17 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
         return params;
     }
 
-    QDateTime endDate = qScheduledDate;
-    params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, seasonStartDate, endDate);
-    if(params.productList.size() > 0) {
-        params.isValid = true;
-    }
-
-    Logger::debug(QStringLiteral("Scheduler extracted for L4B a number of %1 products for for site ID %2 for start date %3 and end date %4!")
-                  .arg(params.productList.size())
-                  .arg(siteId)
-                  .arg(seasonStartDate.toString())
-                  .arg(endDate.toString()));
-
+    ConfigurationParameterValueMap l4aCfgValues = ctx.GetConfigurationParameters("processor.l4a.reference_data_dir", siteId, requestOverrideCfgValues);
+    QString siteName = ctx.GetSiteShortName(siteId);
     // Get the reference dir
+    QString refDir = l4aCfgValues["processor.l4a.reference_data_dir"].value;
+    refDir = refDir.replace("{site}", siteName);
+
     ConfigurationParameterValueMap cfgValues = ctx.GetConfigurationParameters("processor.l4b.", siteId, requestOverrideCfgValues);
-    QString refDir = cfgValues["processor.l4b.reference_data_dir"].value;
+    // we might have an offset in days from starting the downloading products to start the L4B production
+    int startSeasonOffset = cfgValues["processor.l4b.start_season_offset"].value.toInt();
+    seasonStartDate = seasonStartDate.addDays(startSeasonOffset);
+
     QString shapeFile;
     QString referenceRasterFile;
     // if none of the reference files were found, cannot run the CropMask
@@ -502,7 +498,9 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
     }
 
     QString cropMaskFolder;
-    ProductList l4AProductList = ctx.GetProducts(siteId, (int)ProductType::L4AProductTypeId, seasonStartDate, endDate);
+    QDateTime startDate = seasonStartDate;
+    QDateTime endDate = qScheduledDate;
+    ProductList l4AProductList = ctx.GetProducts(siteId, (int)ProductType::L4AProductTypeId, startDate, endDate);
     // get the last created Crop Mask
     QDateTime maxDate;
     for(int i = 0; i<l4AProductList.size(); i++) {
@@ -512,6 +510,29 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
         }
     }
     params.jsonParameters = "{ \"crop_mask\": \"" + cropMaskFolder + "\", " + refStr + "}";
+    params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
+    // Normally, we need at least 1 product available, the crop mask and the shapefile in order to be able to create a L4B product
+    // but if we do not return here, the schedule block waiting for products (that might never happen)
+    bool waitForAvailProcInputs = (cfgValues["processor.l4b.sched_wait_proc_inputs"].value.toInt() != 0);
+    if((waitForAvailProcInputs == false) ||
+            ((params.productList.size() > 0) && !cropMaskFolder.isEmpty() && !shapeFile.isEmpty())) {
+        params.isValid = true;
+        Logger::debug(QStringLiteral("Executing scheduled job. Scheduler extracted for L4B a number "
+                                     "of %1 products for site ID %2 with start date %3 and end date %4!")
+                      .arg(params.productList.size())
+                      .arg(siteId)
+                      .arg(startDate.toString())
+                      .arg(endDate.toString()));
+    } else {
+        Logger::debug(QStringLiteral("Scheduled job for L4B and site ID %1 with start date %2 and end date %3 will not be executed "
+                                     "(productsNo = %4, cropMask = %5, shapeFile = %6)!")
+                      .arg(siteId)
+                      .arg(startDate.toString())
+                      .arg(endDate.toString())
+                      .arg(params.productList.size())
+                      .arg(cropMaskFolder)
+                      .arg(shapeFile));
+    }
 
     return params;
 }
