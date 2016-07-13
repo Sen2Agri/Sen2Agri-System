@@ -61,6 +61,7 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('crop-mask.classif
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('crop-mask.classifier.svm.opt', NULL, '1', '2015-09-04 16:48:22.243448+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.gdalwarp', NULL, '/usr/local/bin/gdalwarp', '2015-09-07 16:49:53.576478+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.classifier.svm.k', NULL, 'rbf', '2016-03-10 11:50:39.844696+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.reference-map', NULL, '/mnt/archive/reference_data/ESACCI-LC-L4-LCCS-Map-300m-P5Y-2010-v1.6.1.tif', '2016-07-13 14:41:00');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('crop-mask.sampling-rate', NULL, '5', '2015-09-04 16:48:06.370707+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('crop-mask.sample-ratio', NULL, '0.75', '2015-09-04 16:48:11.485694+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('crop-mask.training-samples-number', NULL, '1000', '2015-09-04 16:48:13.125541+03');
