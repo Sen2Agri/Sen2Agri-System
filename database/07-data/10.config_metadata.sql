@@ -170,6 +170,7 @@ INSERT INTO config_metadata VALUES ('processor.l4a.training-samples-number', 'Th
 INSERT INTO config_metadata VALUES ('processor.l4a.sampling-rate', '', 'int', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.classifier.svm.k', '', 'string', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.classifier.svm.opt', '', 'string', true, 5);
+INSERT INTO config_metadata VALUES ('processor.l4a.reference-map', 'Reference map for crop mask with no in-situ data', 'string', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4b.classifier', 'Random forest clasifier / SVM classifier choices=[rf, svm]', 'string', true, 6);
 INSERT INTO config_metadata VALUES ('processor.l4a.classifier', 'Random forest clasifier / SVM classifier choices=[rf, svm]', 'string', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4b.classifier.field', 'Training samples feature name', 'string', true, 6);
