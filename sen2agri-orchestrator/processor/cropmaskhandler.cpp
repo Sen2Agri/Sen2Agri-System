@@ -875,6 +875,7 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
     ConfigurationParameterValueMap cfgValues = ctx.GetConfigurationParameters("processor.l4a.", siteId, requestOverrideCfgValues);
     QString siteName = ctx.GetSiteShortName(siteId);
     // Get the reference dir
+    QString refMap = cfgValues["processor.l4a.reference-map"].value;
     QString refDir = cfgValues["processor.l4a.reference_data_dir"].value;
     refDir = refDir.replace("{site}", siteName);
 
@@ -885,13 +886,17 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
     QString shapeFile;
     QString referenceRasterFile;
     // if none of the reference files were found, cannot run the CropMask
-    if(!ProcessorHandlerHelper::GetCropReferenceFile(refDir, shapeFile, referenceRasterFile)) {
-        return params;
-    }
-    if(!shapeFile.isEmpty()) {
-        params.jsonParameters = "{ \"reference_polygons\": \"" + shapeFile + "\"}";
+    if (!refMap.isEmpty() && QFile::exists(refMap)) {
+        params.jsonParameters = "{ \"reference_raster\": \"" + refMap + "\"}";
     } else {
-        params.jsonParameters = "{ \"reference_raster\": \"" + referenceRasterFile + "\"}";
+        if(!ProcessorHandlerHelper::GetCropReferenceFile(refDir, shapeFile, referenceRasterFile)) {
+            return params;
+        }
+        if(!shapeFile.isEmpty()) {
+            params.jsonParameters = "{ \"reference_polygons\": \"" + shapeFile + "\"}";
+        } else {
+            params.jsonParameters = "{ \"reference_raster\": \"" + referenceRasterFile + "\"}";
+        }
     }
 
     // Get the start and end date for the production
