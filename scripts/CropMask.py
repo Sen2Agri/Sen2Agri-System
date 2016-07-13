@@ -206,7 +206,8 @@ segmented_merged=os.path.join(args.outdir, "segmented_merged.tif")
 
 confmatout=os.path.join(args.outdir, "confusion-matrix.csv")
 model=os.path.join(args.outdir, "crop-mask-model.txt")
-raw_crop_mask_uncompressed=os.path.join(args.outdir, "raw_crop_mask_uncompressed.tif")
+raw_crop_mask_uncompressed=os.path.join(args.outdir, "raw_crop_mask_uncomp.tif")
+raw_crop_mask_cut_uncompressed=os.path.join(args.outdir, "raw_crop_mask_cut_uncomp.tif")
 raw_crop_mask=os.path.join(args.outdir, "raw_crop_mask.tif")
 raw_crop_mask_confusion_matrix_validation=os.path.join(args.outdir, "raw-crop-mask-confusion-matrix-validation.csv")
 raw_crop_mask_quality_metrics=os.path.join(args.outdir, "raw-crop-mask-quality-metrics.txt")
@@ -295,7 +296,8 @@ try:
     executeStep("MajorityVoting", "otbcli", "MajorityVoting",buildFolder ,"-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", minarea, "-inclass", raw_crop_mask_uncompressed, "-inseg", segmented_merged, "-rout", crop_mask_uncut, skip=fromstep>30, rmfiles=[] if keepfiles else [segmented_merged])
 
 # gdalwarp (Step 31)
-    executeStep("gdalwarp for crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_mask_uncut, crop_mask_uncompressed, skip=fromstep>31)
+    executeStep("gdalwarp for raw crop mask", "gdalwarp", "-dstnodata", "\"-10000\"", "-ot", "Int16", "-overwrite", "-cutline", shape, "-crop_to_cutline", raw_crop_mask_uncompressed, raw_crop_mask_cut_uncompressed, skip=fromstep>31)
+    executeStep("gdalwarp for segmented crop mask", "gdalwarp", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_mask_uncut, crop_mask_uncompressed, skip=fromstep>31)
 
 #Validation (Step 32)
     if reference_polygons != "" :
@@ -305,7 +307,7 @@ try:
 
 #Compression (Step 33)
     executeStep("Compression", "otbcli_Convert", "-in", crop_mask_uncompressed, "-out", crop_mask+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>33, rmfiles=[] if keepfiles else [crop_mask_uncompressed])
-    executeStep("Compression", "otbcli_Convert", "-in", raw_crop_mask_uncompressed, "-out", raw_crop_mask+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>33, rmfiles=[] if keepfiles else [raw_crop_mask_uncompressed])
+    executeStep("Compression", "otbcli_Convert", "-in", raw_crop_mask_cut_uncompressed, "-out", raw_crop_mask+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>33, rmfiles=[] if keepfiles else [raw_crop_mask_cut_uncompressed])
 
 #XML conversion (Step 34)
     executeStep("XML Conversion for Crop Mask", "otbcli", "XMLStatistics", buildFolder, "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics,  skip=fromstep>34)
