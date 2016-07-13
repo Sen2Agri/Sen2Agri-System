@@ -377,7 +377,8 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
 
     const auto &crop_mask_uncut = majorityVotingTask.GetFilePath("crop_mask_uncut.tif");
 
-    const auto &crop_mask_uncompressed = gdalWarpTask2.GetFilePath("crop_mask_uncompressed.tif");
+    const auto &crop_mask_uncompressed = gdalWarpTask2.GetFilePath("crop_mask_uncomp.tif");
+    const auto &crop_mask_cut_uncompressed = gdalWarpTask2.GetFilePath("raw_crop_mask_cut_uncomp.tif");
 
     const auto &confusion_matrix_validation = computeConfusionMatrixTask2.GetFilePath("crop-mask-confusion-matrix-validation.csv");
     const auto &quality_metrics = computeConfusionMatrixTask2.GetFilePath("crop-mask-quality-metrics.txt");
@@ -467,13 +468,15 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
         majorityVotingTask.CreateStep("MajorityVoting", { "MajorityVoting", "-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", minarea,
                                                     "-inclass", raw_crop_mask_uncompressed, "-inseg", segmented_merged, "-rout", crop_mask_uncut }),
 
-        gdalWarpTask2.CreateStep("gdalwarp", { "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
+        gdalWarpTask2.CreateStep("gdalwarp_raw", { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
+                                              "-crop_to_cutline", raw_crop_mask_uncompressed, crop_mask_cut_uncompressed }),
+        gdalWarpTask2.CreateStep("gdalwarp_segmented", { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
                                               "-crop_to_cutline", crop_mask_uncut, crop_mask_uncompressed }),
 
         // This is specific only for Insitu data
         computeConfusionMatrixTask2.CreateStep("ComputeConfusionMatrix",GetConfusionMatrixArgs(crop_mask_uncompressed, confusion_matrix_validation, validationPolys, "vector", fieldName)),
         convertTask.CreateStep("CompressionCropMask", GetCompressionArgs(crop_mask_uncompressed, crop_mask)),
-        convertTask.CreateStep("CompressionRawCrop", GetCompressionArgs(raw_crop_mask_uncompressed, raw_crop_mask)),
+        convertTask.CreateStep("CompressionRawCrop", GetCompressionArgs(crop_mask_cut_uncompressed, raw_crop_mask)),
 
         xmlStatisticsTask.CreateStep("XMLStatistics", { "XMLStatistics", "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics }),
     };
@@ -640,7 +643,8 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
 
     const auto &crop_mask_uncut = majorityVotingTask.GetFilePath("crop_mask_uncut.tif");
 
-    const auto &crop_mask_uncompressed = gdalWarpTask3.GetFilePath("crop_mask_uncompressed.tif");
+    const auto &crop_mask_uncompressed = gdalWarpTask3.GetFilePath("crop_mask_uncomp.tif");
+    const auto &crop_mask_cut_uncompressed = gdalWarpTask3.GetFilePath("raw_crop_mask_cut_uncomp.tif");
 
     const auto &raw_crop_mask_confusion_matrix_validation = computeConfusionMatrixTask.GetFilePath("raw-crop-mask-confusion-matrix-validation.csv");
     const auto &confusion_matrix_validation = computeConfusionMatrixTask2.GetFilePath("crop-mask-confusion-matrix-validation.csv");
@@ -738,11 +742,15 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
         majorityVotingTask.CreateStep("MajorityVoting", { "MajorityVoting", "-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", minarea,
                                                     "-inclass", raw_crop_mask_uncompressed, "-inseg", segmented_merged, "-rout", crop_mask_uncut }),
 
-        gdalWarpTask3.CreateStep("gdalwarp", GetGdalWarpArgs(crop_mask_uncut, crop_mask_uncompressed, "\"-10000\"", "2048", shape)),
+        gdalWarpTask3.CreateStep("gdalwarp_raw", { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
+                                              "-crop_to_cutline", raw_crop_mask_uncompressed, crop_mask_cut_uncompressed }),
+        gdalWarpTask3.CreateStep("gdalwarp_segmented", { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
+                                              "-crop_to_cutline", crop_mask_uncut, crop_mask_uncompressed }),
+
         // This is specific only for NoInsitu data
         computeConfusionMatrixTask2.CreateStep("ComputeConfusionMatrix", GetConfusionMatrixArgs(crop_mask_uncompressed, confusion_matrix_validation, trimmed_reference_raster)),
         convertTask.CreateStep("CompressionCropMask", GetCompressionArgs(crop_mask_uncompressed, crop_mask)),
-        convertTask.CreateStep("CompressionRawCrop", GetCompressionArgs(raw_crop_mask_uncompressed, raw_crop_mask)),
+        convertTask.CreateStep("CompressionRawCrop", GetCompressionArgs(crop_mask_cut_uncompressed, raw_crop_mask)),
 
         xmlStatisticsTask.CreateStep("XMLStatistics", { "XMLStatistics", "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics }),
     };
