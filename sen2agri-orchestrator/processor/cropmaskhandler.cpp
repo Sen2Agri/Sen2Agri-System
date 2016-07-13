@@ -886,17 +886,15 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
     QString shapeFile;
     QString referenceRasterFile;
     // if none of the reference files were found, cannot run the CropMask
-    if (!refMap.isEmpty() && QFile::exists(refMap)) {
+    if(!ProcessorHandlerHelper::GetCropReferenceFile(refDir, shapeFile, referenceRasterFile) && !QFile::exists(refMap)) {
+        return params;
+    }
+    if (!shapeFile.isEmpty()) {
+        params.jsonParameters = "{ \"reference_polygons\": \"" + shapeFile + "\"}";
+    } else if (!refMap.isEmpty()) {
         params.jsonParameters = "{ \"reference_raster\": \"" + refMap + "\"}";
     } else {
-        if(!ProcessorHandlerHelper::GetCropReferenceFile(refDir, shapeFile, referenceRasterFile)) {
-            return params;
-        }
-        if(!shapeFile.isEmpty()) {
-            params.jsonParameters = "{ \"reference_polygons\": \"" + shapeFile + "\"}";
-        } else {
-            params.jsonParameters = "{ \"reference_raster\": \"" + referenceRasterFile + "\"}";
-        }
+        params.jsonParameters = "{ \"reference_raster\": \"" + referenceRasterFile + "\"}";
     }
 
     // Get the start and end date for the production
