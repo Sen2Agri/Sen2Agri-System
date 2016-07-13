@@ -236,40 +236,40 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             SubmitTasks(ctx, jobId, {cutImgTask});
 
             const auto &cutImgFile = cutImgTask.GetFilePath("img_res_bands_clipped.tif");
-            QStringList gdalWarpArgs = { "-dstnodata", "-10000", "-overwrite",
-                           "-cutline", shapePath, "-crop_to_cutline", outResImgBands, cutImgFile};
+            QStringList gdalWarpArgs = GetGdalWarpArgs(outResImgBands, cutImgFile, "-10000", "2048", shapePath, resolutionStr);
+            //{ "-dstnodata", "-10000", "-overwrite", "-cutline", shapePath, "-crop_to_cutline", outResImgBands, cutImgFile};
             steps.append(cutImgTask.CreateStep("gdalwarp-img", gdalWarpArgs));
             outResImgBands = cutImgFile;
 
             TaskToSubmit &cutAotTask = allTasksList[nCurTaskIdx++];
             SubmitTasks(ctx, jobId, {cutAotTask});
             const auto &cutAotFile = cutAotTask.GetFilePath("aot_res_clipped.tif");
-            QStringList gdalWarpAotArgs = { "-dstnodata", "-10000", "-overwrite",
-                            "-cutline", shapePath, "-crop_to_cutline", aotResImg, cutAotFile};
+            QStringList gdalWarpAotArgs = GetGdalWarpArgs(aotResImg, cutAotFile, "-10000", "2048", shapePath, resolutionStr);
+            //{ "-dstnodata", "-10000", "-overwrite", "-cutline", shapePath, "-crop_to_cutline", aotResImg, cutAotFile};
             steps.append(cutAotTask.CreateStep("gdalwarp-aot", gdalWarpAotArgs));
             aotResImg = cutAotFile;
 
             TaskToSubmit &cutCldTask = allTasksList[nCurTaskIdx++];
             SubmitTasks(ctx, jobId, {cutCldTask});
             const auto &cutCldFile = cutCldTask.GetFilePath("cld_res_clipped.tif");
-            QStringList gdalWarpCldArgs = { "-dstnodata", "0", "-overwrite",
-                            "-cutline", shapePath, "-crop_to_cutline", cldResImg, cutCldFile};
+            QStringList gdalWarpCldArgs = GetGdalWarpArgs(cldResImg, cutCldFile, "-10000", "2048", shapePath, resolutionStr);
+            //{ "-dstnodata", "0", "-overwrite", "-cutline", shapePath, "-crop_to_cutline", cldResImg, cutCldFile};
             steps.append(cutCldTask.CreateStep("gdalwarp-cld", gdalWarpCldArgs));
             cldResImg = cutCldFile;
 
             TaskToSubmit &cutWatTask = allTasksList[nCurTaskIdx++];
             SubmitTasks(ctx, jobId, {cutWatTask});
             const auto &cutWatFile = cutWatTask.GetFilePath("water_res_clipped.tif");
-            QStringList gdalWarpWatArgs = { "-dstnodata", "0", "-overwrite",
-                            "-cutline", shapePath, "-crop_to_cutline", waterResImg, cutWatFile};
+            QStringList gdalWarpWatArgs = GetGdalWarpArgs(waterResImg, cutWatFile, "-10000", "2048", shapePath, resolutionStr);
+            //{ "-dstnodata", "0", "-overwrite", "-cutline", shapePath, "-crop_to_cutline", waterResImg, cutWatFile};
             steps.append(cutWatTask.CreateStep("gdalwarp-wat", gdalWarpWatArgs));
             waterResImg = cutWatFile;
 
             TaskToSubmit &cutSnowTask = allTasksList[nCurTaskIdx++];
             SubmitTasks(ctx, jobId, {cutSnowTask});
             const auto &cutSnowFile = cutSnowTask.GetFilePath("snow_res_clipped.tif");
-            QStringList gdalWarpSnowArgs = { "-dstnodata", "0", "-overwrite",
-                            "-cutline", shapePath, "-crop_to_cutline", snowResImg, cutSnowFile};
+            QStringList gdalWarpSnowArgs = GetGdalWarpArgs(snowResImg, cutSnowFile, "-10000", "2048", shapePath, resolutionStr);
+            //{ "-dstnodata", "0", "-overwrite", "-cutline", shapePath, "-crop_to_cutline", snowResImg, cutSnowFile};
             steps.append(cutSnowTask.CreateStep("gdalwarp-snow", gdalWarpSnowArgs));
             snowResImg = cutSnowFile;
         }
@@ -360,6 +360,20 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     productFormatterParams.prevL3AProdDates = prevL3AProdDates;
     productFormatterParams.prevL3ARgbFile = prevL3ARgbFile;
 }
+
+QStringList CompositeHandler::GetGdalWarpArgs(const QString &inImg, const QString &outImg, const QString &dtsNoData,
+                                             const QString &gdalwarpMem, const QString &shape, const QString &resolutionStr) {
+    QStringList retList = { "-dstnodata", dtsNoData, "-overwrite", "-cutline", shape,
+             "-multi", "-wm", gdalwarpMem, "-crop_to_cutline", inImg, outImg };
+    if(!resolutionStr.isEmpty()) {
+        retList.append("-tr");
+        retList.append(resolutionStr);
+        retList.append(resolutionStr);
+    }
+
+    return retList;
+}
+
 
 void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath,
                                                const QJsonObject &parameters,
@@ -708,6 +722,10 @@ ProcessorJobDefinitionParams CompositeHandler::GetProcessingDefinitionImpl(Sched
 
     ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.l3a."), siteId, requestOverrideCfgValues);
 
+    // we might have an offset in days from starting the downloading products to start the L3A production
+    int startSeasonOffset = mapCfg["processor.l3a.start_season_offset"].value.toInt();
+    seasonStartDate = seasonStartDate.addDays(startSeasonOffset);
+
     int halfSynthesis = mapCfg["processor.l3a.half_synthesis"].value.toInt();
     if(halfSynthesis == 0)
         halfSynthesis = 15;
@@ -719,23 +737,31 @@ ProcessorJobDefinitionParams CompositeHandler::GetProcessingDefinitionImpl(Sched
     QDateTime halfSynthesisDate = qScheduledDate.addDays(-synthDateOffset);
     // compute the start and date time
     QDateTime startDate = halfSynthesisDate.addDays(-halfSynthesis);
+    if(startDate < seasonStartDate) {
+        startDate = seasonStartDate;
+    }
     QDateTime endDate = halfSynthesisDate.addDays(halfSynthesis);
 
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
     // Normally, we need at least 1 product available in order to be able to create a L3A product
     // but if we do not return here, the schedule block waiting for products (that might never happen)
-    //if(params.productList.size() > 0) {
+    bool waitForAvailProcInputs = (mapCfg["processor.l3a.sched_wait_proc_inputs"].value.toInt() != 0);
+    if((waitForAvailProcInputs == false) || (params.productList.size() > 0)) {
         params.isValid = true;
         params.jsonParameters = "{ \"synthesis_date\": \"" + halfSynthesisDate.toString("yyyyMMdd") + "\"}";
-    //}
+        Logger::debug(QStringLiteral("Executing scheduled job. Scheduler extracted for L3A a number "
+                                     "of %1 products for site ID %2 with start date %3 and end date %4!")
+                      .arg(params.productList.size())
+                      .arg(siteId)
+                      .arg(startDate.toString())
+                      .arg(endDate.toString()));
+    } else {
+        Logger::debug(QStringLiteral("Scheduled job for L3A and site ID %1 with start date %2 and end date %3 will not be executed (no products)!")
+                      .arg(siteId)
+                      .arg(startDate.toString())
+                      .arg(endDate.toString()));
+    }
 
-    Logger::debug(QStringLiteral("Scheduler extracted for L3A a number of %1 products for for site ID %2 for start date %3 and end date %4!")
-                  .arg(params.productList.size())
-                  .arg(siteId)
-                  .arg(startDate.toString())
-                  .arg(endDate.toString()));
-
-    //return QString("Cannot execute Composite processor. There should be at least 4 products but we have only %1 L2A products available!").arg(usedProductList.size());
     return params;
 }
 

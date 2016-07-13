@@ -1479,12 +1479,17 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
         return params;
     }
     if(!seasonStartDate.isValid()) {
-        Logger::error(QStringLiteral("Season start date for site ID %1 is invalide in the database!")
+        Logger::error(QStringLiteral("Season start date for site ID %1 is invalid in the database!")
                       .arg(siteId));
         return params;
     }
 
     ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.l3b."), siteId, requestOverrideCfgValues);
+
+    // we might have an offset in days from starting the downloading products to start the L3B/L3C/L3D production
+    int startSeasonOffset = mapCfg["processor.l3b.start_season_offset"].value.toInt();
+    seasonStartDate = seasonStartDate.addDays(startSeasonOffset);
+
     int generateLai = false;
     int generateReprocess = false;
     int generateFitted = false;
@@ -1515,18 +1520,17 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
         int productionInterval = mapCfg[generateLai ? "processor.l3b.production_interval":
                                                       "processor.l3b.reproc_production_interval"].value.toInt();
         startDate = endDate.addDays(-productionInterval);
-        // Removed this condition as if the scheduled was added with that date
-        // maybe is desired to process also the products before the start of the season
-        // TODO: Add condition to stop at 2 months after the end of the season
-//        if(startDate < seasonStartDate) {
-//            startDate = seasonStartDate;
-//        }
+        // Use only the products after the configured start season date
+        if(startDate < seasonStartDate) {
+            startDate = seasonStartDate;
+        }
     }
 
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
     // Normally, we need at least 1 product available in order to be able to create a L3B/L3C/L3D product
     // but if we do not return here, the schedule block waiting for products (that might never happen)
-    //if (params.productList.size() > 0) {
+    bool waitForAvailProcInputs = (mapCfg["processor.l3b.sched_wait_proc_inputs"].value.toInt() != 0);
+    if((waitForAvailProcInputs == false) || (params.productList.size() > 0)) {
         params.isValid = true;
 //        if(generateLai) {
 //            params.isValid = true;
@@ -1537,12 +1541,19 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
 //        } else if (generateReprocess > 2) {
 //            params.isValid = true;
 //        }
-    //}
-    Logger::debug(QStringLiteral("Scheduler extracted for L3B/L3C/L3D a number of %1 products for for site ID %2 for start date %3 and end date %4!")
-                  .arg(params.productList.size())
-                  .arg(siteId)
-                  .arg(startDate.toString())
-                  .arg(endDate.toString()));
+        Logger::debug(QStringLiteral("Executing scheduled job. Scheduler extracted for L3B/L3C/L3D a number "
+                                     "of %1 products for site ID %2 with start date %3 and end date %4!")
+                      .arg(params.productList.size())
+                      .arg(siteId)
+                      .arg(startDate.toString())
+                      .arg(endDate.toString()));
+    } else {
+        Logger::debug(QStringLiteral("Scheduled job for L3B/L3C/L3D and site ID %1 with start date %2 and end date %3 "
+                                     "will not be executed (no products)!")
+                      .arg(siteId)
+                      .arg(startDate.toString())
+                      .arg(endDate.toString()));
+    }
 
     return params;
 }
