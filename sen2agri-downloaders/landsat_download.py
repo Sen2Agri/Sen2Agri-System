@@ -118,6 +118,7 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
   print("prod_date: {}".format(prod_date))
   print("abs_prod_path: {}".format(abs_prod_path))
   print("INFO STOP")
+
   log(aoiContext.writeDir, "Trying to download {0}".format(nom_fic), general_log_filename)
   try:
     req = urllib2.urlopen(url, timeout=100)
@@ -198,6 +199,11 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
          return False
     return False
   if unzipimage(prod_name, aoiContext.writeDir):
+       #apply north-south correction for all bands
+       landsat_tif_files = glob.glob("{}/*_B*.TIF".format(abs_prod_path))
+       base_path = os.path.dirname(os.path.abspath(__file__)) + "/../"
+       if run_command([base_path + "fix_utm_proj.py"] + landsat_tif_files):
+            log(aoiContext.writeDir, "Error: fix_utm_proj.py did not work for {}. This product will still be used as is (with north-south coordonates switched)".format(prod_name), general_log_filename)
        #write the filename in history
        if not db.upsertLandsatProductHistory(aoiContext.siteId, prod_name, DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE, prod_date, abs_prod_path, aoiContext.maxRetries):
             log(aoiContext.writeDir, "Couldn't upsert into database with status FAILED for {}".format(prod_name), general_log_filename)
@@ -258,7 +264,7 @@ def unzipimage(tgzfile, outputdir):
                 subprocess.call('tartool '+outputdir+'/'+tgzfile+'.tgz '+ outputdir+'/'+tgzfile, shell=True)  #W32
             success = True
             os.remove(outputdir+'/'+tgzfile+'.tgz')
-            log(outputdir,  "decompress succeded. removing the .tgz file {}".format(outputdir+'/'+tgzfile), general_log_filename)
+            log(outputdir,  "decompress succeded. removing the .tgz file {}.tgz".format(outputdir+'/'+tgzfile), general_log_filename)
         except TypeError:
             log(outputdir, "Failed to unzip {}".format(tgzfile), general_log_filename)
             os.remove(outputdir)
@@ -297,7 +303,7 @@ def check_cloud_limit(imagepath,limit):
 
 ######################################################################################
 
-signal.signal(signal.SIGINT, signal_handler)
+#signal.signal(signal.SIGINT, signal_handler)
 
 def landsat_download(aoiContext):
      global g_exit_flag
@@ -399,4 +405,4 @@ def landsat_download(aoiContext):
          if len(downloaded_ids) > 0:
               log(aoiContext.writeDir, "Downloaded ids: {}".format(downloaded_ids), general_log_filename)
          else: 
-              log(aoiContext.writeDir, "No downloaded ids: ", general_log_filename)
+              log(aoiContext.writeDir, "No downloaded ids ", general_log_filename)

@@ -124,18 +124,48 @@ else:
         aoiContext.setProxy(options.proxy)    
         aoiContext.printInfo()
         print("------------------------")    
+
     p = Pool(len(sites_aoi_database))
     if options.remote_host == "s2":        
         p.map(sentinel_download, sites_aoi_database)
         #used only in debug mode
         #for site in sites_aoi_database:
-            #sentinel_download(site)
+        #    sentinel_download(site)
     else:
         p.map(landsat_download, sites_aoi_database)
         #used only in debug mode
         #for site in sites_aoi_database:
-            #landsat_download(site)
+        #    landsat_download(site)
     print("downloader exit !")
 
+'''
+    p = Pool(len(sites_aoi_database), init_worker)
+    try:
+#        p = Pool(len(sites_aoi_database))
+        results = []
+        for i in range(len(sites_aoi_database)):
+            if options.remote_host == "s2":        
+                results.append(p.apply_async(sentinel_download, (sites_aoi_database[i],)))
+                #used only in debug mode
+                #for site in sites_aoi_database:
+                #    sentinel_download(site)
+            else:
+                results.append(p.apply_async(landsat_download, (sites_aoi_database[i],)))
+                #used only in debug mode
+                #for site in sites_aoi_database:
+                #    landsat_download(site)
+        p.close()    
+        while True:
+            if all(r.ready() for r in results):
+                print "All processes completed"                
+                print("downloader exit !")
+                sys.exit(0)
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print "Caught KeyboardInterrupt, terminating workers"
+        p.terminate()
+        p.join()
 
+
+'''
 
