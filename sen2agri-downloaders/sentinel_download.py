@@ -89,10 +89,10 @@ class Sentinel2Obj(object):
 def product_download(s2Obj, aoiContext, db):
     global general_log_filename
     if aoiContext.fileExists(s2Obj.filename):
-        log(aoiContext.writeDir, "FILE ALREADY DOWNLOADED, SKIP IT! {}".format(s2Obj.filename), general_log_filename)
+        log(aoiContext.writeDir, "FILE ALREADY DOWNLOADED or ABORTED, SKIP IT! {}".format(s2Obj.filename), general_log_filename)
         return False
     log(aoiContext.writeDir, "Downloading from {} ".format(aoiContext.sentinelLocation), general_log_filename)
-
+    abs_filename = "{}/{}".format(aoiContext.writeDir, s2Obj.filename)
     if float(s2Obj.cloud) < float(aoiContext.maxCloudCoverage) and len(aoiContext.aoiTiles) > 0:
         cmd_dwn = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/S2ProductDownloader-1.0.jar", "--user", s2Obj.user, "--password", s2Obj.password]
         if len(s2Obj.proxy) >= 2:
@@ -115,8 +115,7 @@ def product_download(s2Obj, aoiContext, db):
         else:
             log(aoiContext.writeDir, "product_download: The location is not an expected one (scihub or amazon) for product {}".format(s2Obj.filename), general_log_filename)
             return False
-        #TODO: insert the product name into the downloader_history
-        abs_filename = "{}/{}".format(aoiContext.writeDir, s2Obj.filename)
+
         if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, s2Obj.product_date_as_string, abs_filename, s2Obj.orbit_id, aoiContext.maxRetries):
             log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADING for {}".format(s2Obj.filename), general_log_filename)
             return False        
@@ -134,7 +133,9 @@ def product_download(s2Obj, aoiContext, db):
             log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADED for {}".format(s2Obj.filename), general_log_filename)
             return False
     else:
-        log(aoiContext.writeDir, "Too many clouds to download this product or no tiles to download".format(s2Obj.filename), general_log_filename)
+        log(aoiContext.writeDir, "Product {} has too many clouds ( {}% ) to be downloaded or it doesn't have the requested tiles ( requested tiles {})".format(s2Obj.filename, s2Obj.cloud, len(aoiContext.aoiTiles)), general_log_filename)
+        if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_ABORTED_VALUE, s2Obj.product_date_as_string, abs_filename, s2Obj.orbit_id, aoiContext.maxRetries):
+            log(aoiContext.writeDir, "Couldn't upsert into database with status ABORTED (too many clouds {} or no requested tiles {}) for {}".format(s2Obj.filename, s2Obj.cloud, len(aoiContext.aoiTiles)), general_log_filename)
     return True
 
 

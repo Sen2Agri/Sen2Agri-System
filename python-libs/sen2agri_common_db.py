@@ -39,6 +39,7 @@ import shutil
 import psycopg2
 import psycopg2.errorcodes
 import optparse
+import signal
 
 FAKE_COMMAND = 0
 DEBUG = True
@@ -66,8 +67,9 @@ DATABASE_DOWNLOADER_STATUS_FAILED_VALUE = int(3)
 DATABASE_DOWNLOADER_STATUS_ABORTED_VALUE = int(4)
 DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE = int(5)
 
-g_exit_flag = False
+TIME_INTERVAL_RETRY = 8 #hours
 
+g_exit_flag = False
 
 def log(location, info, log_filename = ""):
     try:
@@ -95,6 +97,8 @@ def run_command(cmd_array, log_path = "", log_filename = ""):
     log(log_path, "Command finished {} in {} : {}".format((ok if res == 0 else nok),datetime.timedelta(seconds=(time.time() - start)), cmd_str), log_filename)
     return res
 
+def init_worker():
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 def signal_handler(signal, frame):
     global exitFlag
@@ -679,10 +683,11 @@ class AOIInfo(object):
                     try:
                         self.cursor.execute("""select \"product_name\" from downloader_history where satellite_id = %(sat_id)s :: smallint and
                                                                        site_id = %(site_id)s :: smallint and
-                                                                       status_id != %(status_failed)s ::smallint """, {
+                                                                       (status_id != %(status_failed)s ::smallint and status_id != %(status_downloading)s ::smallint) """, {
                                                                            "sat_id" : satelliteId,
                                                                            "site_id" : currentAOI.siteId,
-                                                                           "status_failed" : DATABASE_DOWNLOADER_STATUS_FAILED_VALUE
+                                                                           "status_failed" : DATABASE_DOWNLOADER_STATUS_FAILED_VALUE,
+                                                                           "status_downloading" : DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE
                                                                        })
                         if self.cursor.rowcount > 0:
                             result = self.cursor.fetchall()
@@ -712,7 +717,7 @@ class AOIInfo(object):
             return False
         try:
             #see if the record does already exist in db
-            self.cursor.execute("""SELECT id, status_id, no_of_retries FROM downloader_history 
+            self.cursor.execute("""SELECT id, status_id, no_of_retries, created_timestamp FROM downloader_history 
                                 WHERE site_id = %(site_id)s and
                                 satellite_id = %(satellite_id)s and
                                 product_name = %(product_name)s""", 
@@ -749,13 +754,14 @@ class AOIInfo(object):
                                     })
             else:
                 #if the record for this product name does exist, act accordingyl the provided status
-                if len(rows[0]) != 3:
-                    print("DB result has more than 3 fields !")
+                if len(rows[0]) != 4:
+                    print("DB result from 'SELECT id, status_id, no_of_retries, created_timestamp FROM downloader_history....' query has more than 4 fields !")
                     self.databaseDisconnect()
                     return False
                 db_l1c_id = rows[0][0]
                 db_status_id = rows[0][1]
                 db_no_of_retries = rows[0][2]
+                db_created_timestamp = rows[0][3]
                 #for the following values, only the status will be updated
                 if status == DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE or \
                 status == DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE or \
@@ -773,7 +779,15 @@ class AOIInfo(object):
                     if db_no_of_retries >= maxRetries:
                         status = DATABASE_DOWNLOADER_STATUS_ABORTED_VALUE
                     else:
-                        db_no_of_retries += 1
+                        #no of retries means a certain amount of time (TIME_INTERVAL_RETRY hours for example) used for trying to download the product
+                        #after this amount of time passed, the number of retries will be incremented
+                        #note: db_created_timestamp is an 'python offset-naive datetime' (this is how PG returns) 
+                        #so it should be converted to 'python offset-aware datetime'
+                        #only in this way the datetime can be added with TIME_INTERVAL_RETRY * no_of_retries hours. this is done through '.replace(tzinfo=None)'
+                        db_product_timestamp_to_check = (db_created_timestamp + datetime.timedelta(hours=(db_no_of_retries * TIME_INTERVAL_RETRY))).replace(tzinfo=None)
+                        now = datetime.datetime.now()
+                        if db_product_timestamp_to_check <= now:
+                            db_no_of_retries += 1
                     self.cursor.execute("""UPDATE downloader_history SET status_id = %(status_id)s :: smallint , no_of_retries = %(no_of_retries)s :: smallint
                                         WHERE id = %(l1c_id)s :: smallint """, 
                                         {
