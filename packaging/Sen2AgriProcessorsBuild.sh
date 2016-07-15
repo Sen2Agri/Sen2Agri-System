@@ -111,9 +111,6 @@ function build_SEN2AGRI_downloaders_demmacs_RPM_Package()
    ###put downloaders *.jar files into the install folder :usr/share/sen2agri/sen2agri-downloaders
    cp -f ${SOURCES_DIR_PATH}/sen2agri-downloaders/*.jar ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-downloaders
 
-   ###put downloaders *.cfg files into the install folder :usr/share/sen2agri/sen2agri-downloaders
-   cp -f ${SOURCES_DIR_PATH}/sen2agri-downloaders/*.cfg ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-downloaders
-
    ###put downloaders *.txt files into the install folder :usr/share/sen2agri/sen2agri-downloaders
    cp -f ${SOURCES_DIR_PATH}/sen2agri-downloaders/*.txt ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-downloaders
 
@@ -125,7 +122,6 @@ function build_SEN2AGRI_downloaders_demmacs_RPM_Package()
    ###########################################
    ###put demmaccs script files into the install folder  usr/share/sen2agri/sen2agri-demmaccs
    cp -f ${SOURCES_DIR_PATH}/sen2agri-processors/DEM-WB/test/*.py  ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-demmaccs
-   cp -f ${SOURCES_DIR_PATH}/sen2agri-processors/DEM-WB/test/*.cfg  ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-demmaccs
 
    cp -rf ${SOURCES_DIR_PATH}/sen2agri-processors/DEM-WB/UserConfiguration ${DOWNL_DEM_INSTALL_PATH}/usr/share/sen2agri/sen2agri-demmaccs
 
