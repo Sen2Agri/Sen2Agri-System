@@ -1,6 +1,7 @@
 #include <QJsonDocument>
 #include <QJsonObject>
 #include <QRegularExpression>
+#include <fstream>
 
 #include "cropmaskhandler.hpp"
 #include "processorhandlerhelper.h"
@@ -82,33 +83,29 @@ QList<std::reference_wrapper<TaskToSubmit>> CropMaskHandler::CreateNoInSituTasks
 }
 
 void CropMaskHandler::HandleNewTilesList(EventProcessingContext &ctx,
-                                         const JobSubmittedEvent &event,
+                                         const CropMaskJobConfig &cfg,
                                          const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                          CropMaskGlobalExecutionInfos &globalExecInfos)
 {
     QStringList listProducts = ProcessorHandlerHelper::GetTemporalTileFiles(tileTemporalFilesInfo);
 
-    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
-    const auto &referencePolygons = parameters["reference_polygons"].toString();
-    if(referencePolygons.size() > 0) {
+    if(cfg.referencePolygons.size() > 0) {
         allTasksListRef = CreateInSituTasksForNewProducts(globalExecInfos.allTasksList,
                                                           globalExecInfos.prodFormatParams.parentsTasksRef);
-        SubmitTasks(ctx, event.jobId, allTasksListRef);
-        HandleInsituJob(ctx, event, tileTemporalFilesInfo, listProducts, globalExecInfos);
+        SubmitTasks(ctx, cfg.jobId, allTasksListRef);
+        HandleInsituJob(cfg, tileTemporalFilesInfo, listProducts, globalExecInfos);
     } else {
-        const auto &reference_raster = parameters["reference_raster"].toString();
-        if(reference_raster.size() == 0) {
-            ctx.MarkJobFailed(event.jobId);
+        if(cfg.referenceRaster.size() == 0) {
+            ctx.MarkJobFailed(cfg.jobId);
             throw std::runtime_error(
                 QStringLiteral("Neither of the parameters reference_polygons nor reference_raster were found!").
                         toStdString());
         }
         allTasksListRef = CreateNoInSituTasksForNewProducts(globalExecInfos.allTasksList,
                                                             globalExecInfos.prodFormatParams.parentsTasksRef);
-        SubmitTasks(ctx, event.jobId, allTasksListRef);
-        HandleNoInsituJob(ctx, event, tileTemporalFilesInfo, listProducts, globalExecInfos);
+        SubmitTasks(ctx, cfg.jobId, allTasksListRef);
+        HandleNoInsituJob(cfg, tileTemporalFilesInfo, listProducts, globalExecInfos);
     }
 }
 
@@ -127,10 +124,12 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                                                ProductType::L2AProductTypeId);
     QList<CropMaskProductFormatterParams> listParams;
 
+    CropMaskJobConfig cfg;
+    GetJobConfig(ctx, event, cfg);
+
     TaskToSubmit productFormatterTask{"product-formatter", {}};
     NewStepList allSteps;
     //container for all task
-    //QList<TaskToSubmit> allTasksList;
     QList<CropMaskGlobalExecutionInfos> listCropMaskInfos;
     for(auto tileId : mapTiles.keys())
     {
@@ -138,17 +137,16 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
        listCropMaskInfos.append(CropMaskGlobalExecutionInfos());
        CropMaskGlobalExecutionInfos &infos = listCropMaskInfos[listCropMaskInfos.size()-1];
        infos.prodFormatParams.tileId = GetProductFormatterTile(tileId);
-       HandleNewTilesList(ctx, event, listTemporalTiles, infos);
+       HandleNewTilesList(ctx, cfg, listTemporalTiles, infos);
        listParams.append(infos.prodFormatParams);
        productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
-       //allTasksList.append(infos.allTasksList);
        allSteps.append(infos.allStepsList);
     }
 
     SubmitTasks(ctx, event.jobId, {productFormatterTask});
 
     // finally format the product
-    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event, listProducts, listParams);
+    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, cfg, listProducts, listParams);
 
     // add these steps to the steps list to be submitted
     allSteps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
@@ -234,73 +232,95 @@ void CropMaskHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     }
 }
 
-void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
-                                      const JobSubmittedEvent &event,
+void CropMaskHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmittedEvent &event,CropMaskJobConfig &cfg) {
+    auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4a.");
+    auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.");
+    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
+
+    cfg.jobId = event.jobId;
+    cfg.siteId = event.siteId;
+    cfg.resolution = 0;
+    if(!GetParameterValueAsInt(parameters, "resolution", cfg.resolution) ||
+            cfg.resolution == 0) {
+        cfg.resolution = 10;
+    }
+
+    cfg.referencePolygons = parameters["reference_polygons"].toString();
+    cfg.referenceRaster = parameters["reference_raster"].toString();
+
+    // if the reference raster is not set, then initialize it with the reference map
+    if(cfg.referenceRaster.size() == 0) {
+        cfg.referenceRaster = configParameters["processor.l4a.reference-map"];
+    }
+
+    cfg.lutPath = configParameters["processor.l4a.lut_path"];
+    cfg.appsMem = resourceParameters["resources.working-mem"];
+
+    cfg.randomSeed = configParameters["processor.l4a.random_seed"];
+    if(cfg.randomSeed.isEmpty())  cfg.randomSeed = "0";
+
+    cfg.sampleRatio = configParameters["processor.l4a.sample-ratio"];
+    if(cfg.sampleRatio.length() == 0) cfg.sampleRatio = "0.75";
+
+    cfg.temporalResamplingMode = configParameters["processor.l4a.temporal_resampling_mode"];
+    if(cfg.temporalResamplingMode != "resample") cfg.temporalResamplingMode = "gapfill";
+
+    cfg.window = configParameters["processor.l4a.window"];
+    if(cfg.window.length() == 0) cfg.window = "6";
+
+    cfg.nbcomp = configParameters["processor.l4a.nbcomp"];
+    if(cfg.nbcomp.length() == 0) cfg.nbcomp = "6";
+
+    cfg.spatialr = configParameters["processor.l4a.segmentation-spatial-radius"];
+    if(cfg.spatialr.length() == 0) cfg.spatialr = "10";
+
+    cfg.ranger = configParameters["processor.l4a.range-radius"];
+    if(cfg.ranger.length() == 0) cfg.ranger = "0.65";
+
+    cfg.minsize = configParameters["processor.l4a.segmentation-minsize"];
+    if(cfg.minsize.length() == 0) cfg.minsize = "10";
+
+    cfg.minarea = configParameters["processor.l4a.min-area"];
+    if(cfg.minarea.length() == 0) cfg.minarea = "20";
+
+    cfg.classifier = configParameters["processor.l4a.classifier"];
+    if(cfg.classifier.length() == 0) cfg.classifier = "rf";
+
+    cfg.fieldName = configParameters["processor.l4a.classifier.field"];
+    if(cfg.fieldName.length() == 0) cfg.fieldName = "CROP";
+
+    cfg.classifierRfNbTrees = configParameters["processor.l4a.classifier.rf.nbtrees"];
+    if(cfg.classifierRfNbTrees.length() == 0) cfg.classifierRfNbTrees = "100";
+
+    cfg.classifierRfMinSamples = configParameters["processor.l4a.classifier.rf.min"];
+    if(cfg.classifierRfMinSamples.length() == 0) cfg.classifierRfMinSamples = "25";
+
+    cfg.classifierRfMaxDepth = configParameters["processor.l4a.classifier.rf.max"];
+    if(cfg.classifierRfMaxDepth.length() == 0) cfg.classifierRfMaxDepth = "25";
+
+    cfg.classifierSvmKernel = configParameters["processor.l4a.classifier.svm.k"];
+    cfg.classifierSvmOptimize = configParameters["processor.l4a.classifier.svm.opt"];
+
+    cfg.nbtrsample = configParameters["processor.l4a.training-samples-number"];
+    if(cfg.nbtrsample.length() == 0) cfg.nbtrsample = "4000";
+
+    cfg.lmbd = configParameters["processor.l4a.smoothing-lambda"];
+    if(cfg.lmbd.length() == 0) cfg.lmbd = "2";
+
+    cfg.erode_radius = configParameters["processor.l4a.erode-radius"];
+    if(cfg.erode_radius.length() == 0) cfg.erode_radius = "1";
+
+    cfg.alpha = configParameters["processor.l4a.mahalanobis-alpha"];
+    if(cfg.alpha.length() == 0) cfg.alpha = "0.01";
+}
+
+void CropMaskHandler::HandleInsituJob(const CropMaskJobConfig &cfg,
                                       const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                       const QStringList &listProducts,
                                       CropMaskGlobalExecutionInfos &globalExecInfos)
 
 {
-    auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4a.");
-    auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.");
-
-    const auto &appsMem = resourceParameters["resources.working-mem"];
-
-    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-
-    const auto &referencePolygons = parameters["reference_polygons"].toString();
-
-//    auto mission = configParameters["processor.l4a.mission"];
-//    if(mission.length() == 0) mission = "SENTINEL";
     auto mission = ProcessorHandlerHelper::GetMissionNamePrefixFromSatelliteId(tileTemporalFilesInfo.primarySatelliteId);
-
-    int resolution = 0;
-    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
-            resolution == 0) {
-        resolution = 10;    // TODO: We should configure the default resolution in DB
-    }
-
-    auto randomSeed = configParameters["processor.l4a.random_seed"];
-    if(randomSeed.isEmpty())  randomSeed = "0";
-
-    auto sampleRatio = configParameters["processor.l4a.sample-ratio"];
-    if(sampleRatio.length() == 0) sampleRatio = "0.75";
-
-    auto temporalResamplingMode = configParameters["processor.l4a.temporal_resampling_mode"];
-    if(temporalResamplingMode != "resample") temporalResamplingMode = "gapfill";
-
-    auto window = configParameters["processor.l4a.window"];
-    if(window.length() == 0) window = "6";
-
-    auto nbcomp = configParameters["processor.l4a.nbcomp"];
-    if(nbcomp.length() == 0) nbcomp = "6";
-
-    auto spatialr = configParameters["processor.l4a.segmentation-spatial-radius"];
-    if(spatialr.length() == 0) spatialr = "10";
-
-    auto ranger = configParameters["processor.l4a.range-radius"];
-    if(ranger.length() == 0) ranger = "0.65";
-
-    auto minsize = configParameters["processor.l4a.segmentation-minsize"];
-    if(minsize.length() == 0) minsize = "10";
-
-    auto minarea = configParameters["processor.l4a.min-area"];
-    if(minarea.length() == 0) minarea = "20";
-
-    auto &classifier = configParameters["processor.l4a.classifier"];
-    if(classifier.length() == 0) classifier = "rf";
-    auto fieldName = configParameters["processor.l4a.classifier.field"];
-    if(fieldName.length() == 0) fieldName = "CROP";
-
-    auto classifierRfNbTrees = configParameters["processor.l4a.classifier.rf.nbtrees"];
-    if(classifierRfNbTrees.length() == 0) classifierRfNbTrees = "100";
-    auto classifierRfMinSamples = configParameters["processor.l4a.classifier.rf.min"];
-    if(classifierRfMinSamples.length() == 0) classifierRfMinSamples = "25";
-    auto classifierRfMaxDepth = configParameters["processor.l4a.classifier.rf.max"];
-    if(classifierRfMaxDepth.length() == 0) classifierRfMaxDepth = "25";
-
-    const auto &classifierSvmKernel = configParameters["processor.l4a.classifier.svm.k"];
-    const auto &classifierSvmOptimize = configParameters["processor.l4a.classifier.svm.opt"];
 
     QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
 
@@ -328,7 +348,6 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
     TaskToSubmit &computeConfusionMatrixTask2 = allTasksList[curTaskIdx++];
     TaskToSubmit &convertTask = allTasksList[curTaskIdx++];
     TaskToSubmit &xmlStatisticsTask = allTasksList[curTaskIdx++];
-    //TaskToSubmit productFormatterTask{ "product-formatter", { xmlStatisticsTask } };
 
     const auto &rawtocr = bandsExtractorTask.GetFilePath("rawtocr.tif");
     const auto &rawmask = bandsExtractorTask.GetFilePath("rawmask.tif");
@@ -392,80 +411,80 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
 
     QStringList trainImagesClassifierArgs = {
         "-io.il",      features,   "-io.vd",         trainingPolys,
-        "-io.imstat",  statistics, "-rand",          randomSeed,
+        "-io.imstat",  statistics, "-rand",          cfg.randomSeed,
         "-sample.bm",  "0",        "-io.confmatout", confusionMatrix,
         "-io.out",     model,      "-sample.mt",     "4000",
-        "-sample.mv",  "-1",       "-sample.vtr",    sampleRatio,
-        "-sample.vfn", fieldName,  "-classifier",    classifier
+        "-sample.mv",  "-1",       "-sample.vtr",    cfg.sampleRatio,
+        "-sample.vfn", cfg.fieldName,  "-classifier",    cfg.classifier
     };
 
-    if (classifier == "rf") {
+    if (cfg.classifier == "rf") {
         trainImagesClassifierArgs.append("-classifier.rf.nbtrees");
-        trainImagesClassifierArgs.append(classifierRfNbTrees);
+        trainImagesClassifierArgs.append(cfg.classifierRfNbTrees);
         trainImagesClassifierArgs.append("-classifier.rf.min");
-        trainImagesClassifierArgs.append(classifierRfMinSamples);
+        trainImagesClassifierArgs.append(cfg.classifierRfMinSamples);
         trainImagesClassifierArgs.append("-classifier.rf.max");
-        trainImagesClassifierArgs.append(classifierRfMaxDepth);
+        trainImagesClassifierArgs.append(cfg.classifierRfMaxDepth);
     } else {
         trainImagesClassifierArgs.append("-classifier.svm.k");
-        trainImagesClassifierArgs.append(classifierSvmKernel);
+        trainImagesClassifierArgs.append(cfg.classifierSvmKernel);
         trainImagesClassifierArgs.append("-classifier.svm.opt");
-        trainImagesClassifierArgs.append(classifierSvmOptimize);
+        trainImagesClassifierArgs.append(cfg.classifierSvmOptimize);
     }
 
     QStringList imageClassifierArgs = { "-in",    features, "-imstat", statistics,
                                         "-model", model,    "-out",    raw_crop_mask_uncompressed };
 
     globalExecInfos.allStepsList = {
-        qualityFlagsExtractorTask.CreateStep("QualityFlagsExtractor", GetQualityFlagsExtractorArgs(mission, statusFlags, listProducts, resolution)),
+        qualityFlagsExtractorTask.CreateStep("QualityFlagsExtractor", GetQualityFlagsExtractorArgs(mission, statusFlags, listProducts, cfg.resolution)),
         bandsExtractorTask.CreateStep("BandsExtractor", GetBandsExtractorArgs(mission, rawtocr, rawmask, dates, shape,
-                                        listProducts, resolution)),
+                                        listProducts, cfg.resolution)),
         gdalWarpTask.CreateStep("ClipRasterImage",
                               { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
-                                "-crop_to_cutline", "-multi", "-wm", appsMem, rawtocr, tocr }),
+                                "-crop_to_cutline", "-multi", "-wm", cfg.appsMem, rawtocr, tocr }),
         gdalWarpTask.CreateStep("ClipRasterMask",
                               { "-dstnodata", "-10000", "-overwrite", "-cutline", shape,
-                                "-crop_to_cutline", "-multi", "-wm", appsMem, rawmask, mask }),
+                                "-crop_to_cutline", "-multi", "-wm", cfg.appsMem, rawmask, mask }),
         temporalResamplingTask.CreateStep("TemporalResampling",
                                       { "TemporalResampling", "-tocr", tocr, "-mask", mask, "-ind",
                                         dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16",
-                                        "-rtocr", rtocr, "-outdays", days, "-mode", temporalResamplingMode, "-merge", "1" }),
+                                        "-rtocr", rtocr, "-outdays", days, "-mode", cfg.temporalResamplingMode, "-merge", "1" }),
         featureExtractionTask.CreateStep("FeatureExtraction",
                                      { "FeatureExtraction", "-rtocr", rtocr, "-ndvi", ndvi, "-ndwi",
                                        ndwi, "-brightness", brightness }),
 
         featureWithInSituTask.CreateStep("FeaturesWithInsitu",
                                         {"FeaturesWithInsitu", "-ndvi",ndvi,"-ndwi",ndwi,"-brightness",brightness,
-                                        "-dates",outdays,"-window", window,"-bm", "true", "-out",features}),
+                                        "-dates",outdays,"-window", cfg.window,"-bm", "true", "-out",features}),
 
         computeImagesStatisticsTask.CreateStep("ComputeImagesStatistics", {"-il", features,"-out",statistics}),
 
         ogr2ogrTask.CreateStep(
-            "ReprojectPolys", { "-t_srs", shapeEsriPrj, "-overwrite", refPolysReprojected, referencePolygons }),
+            "ReprojectPolys", { "-t_srs", shapeEsriPrj, "-overwrite", refPolysReprojected, cfg.referencePolygons }),
 
         ogr2ogrTask2.CreateStep(
             "ClipPolys", { "-clipsrc", shape, "-overwrite", refPolysClipped, refPolysReprojected }),
 
         sampleSelectionTask.CreateStep("SampleSelection",
                                    { "SampleSelection", "-ref", refPolysClipped, "-ratio",
-                                     sampleRatio, "-seed", randomSeed, "-tp", trainingPolys, "-vp", validationPolys,
+                                     cfg.sampleRatio, "-seed", cfg.randomSeed, "-tp", trainingPolys, "-vp", validationPolys,
                                      "-nofilter", "true" }),
 
         trainImagesClassifierTask.CreateStep("TrainImagesClassifier", trainImagesClassifierArgs),
         imageClassifierTask.CreateStep("ImageClassifier", imageClassifierArgs),
-        computeConfusionMatrixTask.CreateStep("ComputeConfusionMatrix",GetConfusionMatrixArgs(raw_crop_mask_uncompressed, confusionMatrixValidation, validationPolys, "vector", fieldName)),
+        computeConfusionMatrixTask.CreateStep("ComputeConfusionMatrix",GetConfusionMatrixArgs(raw_crop_mask_uncompressed, confusionMatrixValidation, validationPolys, "vector", cfg.fieldName)),
 
         // The following steps are common for insitu and without insitu data
-        principalComponentAnalysisTask.CreateStep("PrincipalComponentAnalysis", { "PrincipalComponentAnalysis", "-ndvi", ndvi, "-nc", nbcomp, "-out", pca }),
-        meanShiftSmoothingTask.CreateStep("MeanShiftSmoothing", { "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger,
+        principalComponentAnalysisTask.CreateStep("PrincipalComponentAnalysis", { "PrincipalComponentAnalysis", "-ndvi", ndvi, "-nc", cfg.nbcomp, "-out", pca }),
+        meanShiftSmoothingTask.CreateStep("MeanShiftSmoothing", { "-in", pca,"-modesearch","0", "-spatialr", cfg.spatialr, "-ranger", cfg.ranger,
                                                               "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing }),
         lsmsSegmentationTask.CreateStep("LSMSSegmentation", { "-in", mean_shift_smoothing,"-inpos",
-                                                          mean_shift_smoothing_spatial, "-spatialr", spatialr, "-ranger", ranger, "-minsize",
+                                                          mean_shift_smoothing_spatial, "-spatialr", cfg.spatialr, "-ranger", cfg.ranger, "-minsize",
                                                           "0", "-tilesizex", "1024", "-tilesizey", "1024", "-tmpdir", tmpfolder, "-out", segmented, "uint32" }),
-        lsmsSmallRegionsMergingTask.CreateStep("LSMSSmallRegionsMerging", { "-in", mean_shift_smoothing,"-inseg", segmented, "-minsize", minsize,
+        lsmsSmallRegionsMergingTask.CreateStep("LSMSSmallRegionsMerging", { "-in", mean_shift_smoothing,"-inseg", segmented, "-minsize", cfg.minsize,
                                                                         "-tilesizex", "1024", "-tilesizey", "1024", "-out", segmented_merged, "uint32", }),
 
-        majorityVotingTask.CreateStep("MajorityVoting", { "MajorityVoting", "-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", minarea,
+        majorityVotingTask.CreateStep("MajorityVoting", { "MajorityVoting", "-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", cfg.minarea,
                                                     "-inclass", raw_crop_mask_uncompressed, "-inseg", segmented_merged, "-rout", crop_mask_uncut }),
 
         gdalWarpTask2.CreateStep("gdalwarp_raw", { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
@@ -474,7 +493,7 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
                                               "-crop_to_cutline", crop_mask_uncut, crop_mask_uncompressed }),
 
         // This is specific only for Insitu data
-        computeConfusionMatrixTask2.CreateStep("ComputeConfusionMatrix",GetConfusionMatrixArgs(crop_mask_uncompressed, confusion_matrix_validation, validationPolys, "vector", fieldName)),
+        computeConfusionMatrixTask2.CreateStep("ComputeConfusionMatrix",GetConfusionMatrixArgs(crop_mask_uncompressed, confusion_matrix_validation, validationPolys, "vector", cfg.fieldName)),
         convertTask.CreateStep("CompressionCropMask", GetCompressionArgs(crop_mask_uncompressed, crop_mask)),
         convertTask.CreateStep("CompressionRawCrop", GetCompressionArgs(crop_mask_cut_uncompressed, raw_crop_mask)),
 
@@ -488,84 +507,13 @@ void CropMaskHandler::HandleInsituJob(EventProcessingContext &ctx,
     productFormatterParams.statusFlags = statusFlags;
 }
 
-void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
-                                        const JobSubmittedEvent &event,
+void CropMaskHandler::HandleNoInsituJob(const CropMaskJobConfig &cfg,
                                         const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                         const QStringList &listProducts,
                                         CropMaskGlobalExecutionInfos &globalExecInfos)
 {
-    auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4a.");
-    auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.");
-
-    const auto &appsMem = resourceParameters["resources.working-mem"];
-
-    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-
-    const auto &reference = parameters["reference_raster"].toString();
-
-    //auto mission = configParameters["processor.l4a.mission"];
-    //if(mission.length() == 0) mission = "SPOT";
     auto mission = ProcessorHandlerHelper::GetMissionNamePrefixFromSatelliteId(tileTemporalFilesInfo.primarySatelliteId);
-
-    int resolution = 0;
-    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
-            resolution == 0) {
-        resolution = 10;    // TODO: We should configure the default resolution in DB
-    }
-    const auto &resolutionStr = QString::number(resolution);
-    auto randomSeed = configParameters["processor.l4a.random_seed"];
-    if(randomSeed.isEmpty())  randomSeed = "0";
-
-    auto sampleRatio = configParameters["processor.l4a.sample-ratio"];
-    if(sampleRatio.length() == 0) sampleRatio = "0.75";
-
-    auto temporalResamplingMode = configParameters["processor.l4a.temporal_resampling_mode"];
-    if(temporalResamplingMode != "resample") temporalResamplingMode = "gapfill";
-
-    auto window = configParameters["processor.l4a.window"];
-    if(window.length() == 0) window = "6";
-
-    auto nbcomp = configParameters["processor.l4a.nbcomp"];
-    if(nbcomp.length() == 0) nbcomp = "6";
-
-    auto spatialr = configParameters["processor.l4a.segmentation-spatial-radius"];
-    if(spatialr.length() == 0) spatialr = "10";
-
-    auto ranger = configParameters["processor.l4a.range-radius"];
-    if(ranger.length() == 0) ranger = "0.65";
-
-    auto minsize = configParameters["processor.l4a.segmentation-minsize"];
-    if(minsize.length() == 0) minsize = "10";
-
-    auto nbtrsample = configParameters["processor.l4a.training-samples-number"];
-    if(nbtrsample.length() == 0) nbtrsample = "4000";
-
-    auto lmbd = configParameters["processor.l4a.smoothing-lambda"];
-    if(lmbd.length() == 0) lmbd = "2";
-
-    auto erode_radius = configParameters["processor.l4a.erode-radius"];
-    if(erode_radius.length() == 0) erode_radius = "1";
-
-    auto alpha = configParameters["processor.l4a.mahalanobis-alpha"];
-    if(alpha.length() == 0) alpha = "0.01";
-
-    auto minarea = configParameters["processor.l4a.min-area"];
-    if(minarea.length() == 0) minarea = "20";
-
-    auto &classifier = configParameters["processor.l4a.classifier"];
-    if(classifier.length() == 0) classifier = "rf";
-    auto fieldName = configParameters["processor.l4a.classifier.field"];
-    if(fieldName.length() == 0) fieldName = "CROP";
-
-    auto classifierRfNbTrees = configParameters["processor.l4a.classifier.rf.nbtrees"];
-    if(classifierRfNbTrees.length() == 0) classifierRfNbTrees = "100";
-    auto classifierRfMinSamples = configParameters["processor.l4a.classifier.rf.min"];
-    if(classifierRfMinSamples.length() == 0) classifierRfMinSamples = "25";
-    auto classifierRfMaxDepth = configParameters["processor.l4a.classifier.rf.max"];
-    if(classifierRfMaxDepth.length() == 0) classifierRfMaxDepth = "25";
-
-    const auto &classifierSvmKernel = configParameters["processor.l4a.classifier.svm.k"];
-    const auto &classifierSvmOptimize = configParameters["processor.l4a.classifier.svm.opt"];
+    const auto &resolutionStr = QString::number(cfg.resolution);
 
     QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
     int curTaskIdx = 0;
@@ -658,54 +606,54 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
     QStringList trainImagesClassifierArgs = {"TrainImagesClassifierNew",
         "-io.il",           spectral_features,  "-io.rs",       trimmed_reference_raster,
         "-nodatalabel",     "\"-10000\"",           "-io.imstat",   statistics_noinsitu,
-        "-rand",            randomSeed,         "-sample.bm",   "0",
+        "-rand",            cfg.randomSeed,         "-sample.bm",   "0",
         "-io.confmatout",   confusionMatrix,    "-io.out",      model,
-        "-sample.mt",       nbtrsample,         "-sample.mv",   "\"-1\"",
-        "-sample.vtr",      sampleRatio,        "-classifier",  classifier
+        "-sample.mt",       cfg.nbtrsample,         "-sample.mv",   "\"-1\"",
+        "-sample.vtr",      cfg.sampleRatio,        "-classifier",  cfg.classifier
     };
 
-    if (classifier == "rf") {
+    if (cfg.classifier == "rf") {
         trainImagesClassifierArgs.append("-classifier.rf.nbtrees");
-        trainImagesClassifierArgs.append(classifierRfNbTrees);
+        trainImagesClassifierArgs.append(cfg.classifierRfNbTrees);
         trainImagesClassifierArgs.append("-classifier.rf.min");
-        trainImagesClassifierArgs.append(classifierRfMinSamples);
+        trainImagesClassifierArgs.append(cfg.classifierRfMinSamples);
         trainImagesClassifierArgs.append("-classifier.rf.max");
-        trainImagesClassifierArgs.append(classifierRfMaxDepth);
+        trainImagesClassifierArgs.append(cfg.classifierRfMaxDepth);
     } else {
         trainImagesClassifierArgs.append("-classifier.svm.k");
-        trainImagesClassifierArgs.append(classifierSvmKernel);
+        trainImagesClassifierArgs.append(cfg.classifierSvmKernel);
         trainImagesClassifierArgs.append("-classifier.svm.opt");
-        trainImagesClassifierArgs.append(classifierSvmOptimize);
+        trainImagesClassifierArgs.append(cfg.classifierSvmOptimize);
     }
 
     QStringList imageClassifierArgs = { "-in",    spectral_features, "-imstat", statistics_noinsitu,
                                         "-model", model,    "-out",    raw_crop_mask_uncompressed };
 
     globalExecInfos.allStepsList = {
-        qualityFlagsExtractorTask.CreateStep("QualityFlagsExtractor", GetQualityFlagsExtractorArgs(mission, statusFlags, listProducts, resolution)),
-        bandsExtractorTask.CreateStep("BandsExtractor", GetBandsExtractorArgs(mission, rawtocr, rawmask, dates, shape, listProducts, resolution)),
+        qualityFlagsExtractorTask.CreateStep("QualityFlagsExtractor", GetQualityFlagsExtractorArgs(mission, statusFlags, listProducts, cfg.resolution)),
+        bandsExtractorTask.CreateStep("BandsExtractor", GetBandsExtractorArgs(mission, rawtocr, rawmask, dates, shape, listProducts, cfg.resolution)),
         gdalWarpTask.CreateStep("ClipRasterImage",
                               { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
-                                "-crop_to_cutline", "-multi", "-wm", appsMem, rawtocr, tocr }),
+                                "-crop_to_cutline", "-multi", "-wm", cfg.appsMem, rawtocr, tocr }),
         gdalWarpTask.CreateStep("ClipRasterMask",
                               { "-dstnodata", "-10000", "-overwrite", "-cutline", shape,
-                                "-crop_to_cutline", "-multi", "-wm", appsMem, rawmask, mask }),
+                                "-crop_to_cutline", "-multi", "-wm", cfg.appsMem, rawmask, mask }),
 
         // The following steps are specific to the noinsitu data
         temporalResamplingTask.CreateStep("TemporalResampling",
                                       { "TemporalResampling", "-tocr", tocr, "-mask", mask, "-ind",
                                         dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16",
-                                        "-rtocr", rtocr, "-mode", temporalResamplingMode, "-merge", "1" }),
+                                        "-rtocr", rtocr, "-mode", cfg.temporalResamplingMode, "-merge", "1" }),
         featureExtractionTask.CreateStep("FeatureExtraction",  { "FeatureExtraction", "-rtocr", rtocr, "-ndvi", rndvi }),
         featureExtractionTask.CreateStep("FeatureExtractionNdvi", { "FeatureExtraction", "-rtocr", tocr, "-ndvi", ndvi }),
 
         dataSmoothingTask.CreateStep("NDVIDataSmoothing",
                                         {"DataSmoothing", "-ts",ndvi,"-mask",mask,"-dates",dates,
-                                        "-lambda",lmbd,"-sts", ndvi_smooth,"-outdays", outdays_smooth}),
+                                        "-lambda",cfg.lmbd,"-sts", ndvi_smooth,"-outdays", outdays_smooth}),
 
         dataSmoothingTask.CreateStep("ReflDataSmoothing",
                                         {"DataSmoothing", "-ts",tocr,"-mask",mask,"-dates",dates,
-                                        "-lambda",lmbd,"-sts", rtocr_smooth}),
+                                        "-lambda",cfg.lmbd,"-sts", rtocr_smooth}),
         featuresWithoutInsituTask.CreateStep("FeaturesWithoutInsitu",
                                         {"FeaturesWithoutInsitu", "-ndvi",ndvi_smooth,"-ts",rtocr_smooth,"-dates",outdays_smooth, "-sf", spectral_features}),
 
@@ -714,32 +662,32 @@ void CropMaskHandler::HandleNoInsituJob(EventProcessingContext &ctx,
 
         // The following steps cannot be inserted in one task because they need to be executed one after each other, not parallel
         gdalWarpTask2.CreateStep(
-            "RefMap", { "-dstnodata", "0", "-overwrite", "-crop_to_cutline", "-cutline", shape, reference, cropped_reference }),
+            "RefMap", { "-dstnodata", "0", "-overwrite", "-crop_to_cutline", "-cutline", shape, cfg.referenceRaster, cropped_reference }),
         gdalWarpTask2_1.CreateStep(
             "ReprojectRefMap", { "-dstnodata", "0", "-overwrite", "-t_srs", shapeEsriPrj, cropped_reference, reprojected_reference }),
         gdalWarpTask2_2.CreateStep(
             "ResampleRefMap", { "-dstnodata", "0", "-overwrite", "-crop_to_cutline", "-cutline", shape, "-tr", resolutionStr, resolutionStr, reprojected_reference, crop_reference }),
 
-        erosionTask.CreateStep("Erosion", { "Erosion", "-in", crop_reference,  "-out", eroded_reference, "-radius", erode_radius }),
+        erosionTask.CreateStep("Erosion", { "Erosion", "-in", crop_reference,  "-out", eroded_reference, "-radius", cfg.erode_radius }),
         trimmingTask.CreateStep("Trimming", { "Trimming", "-feat", spectral_features,
-                                              "-ref", eroded_reference, "-out", trimmed_reference_raster, "-alpha", alpha,
-                                              "-nbsamples", "0", "-seed", randomSeed}),
+                                              "-ref", eroded_reference, "-out", trimmed_reference_raster, "-alpha", cfg.alpha,
+                                              "-nbsamples", "0", "-seed", cfg.randomSeed}),
 
         trainImagesClassifierNewTask.CreateStep("TrainImagesClassifierNew", trainImagesClassifierArgs),
         imageClassifierTask.CreateStep("ImageClassifier", imageClassifierArgs),
         computeConfusionMatrixTask.CreateStep("ComputeConfusionMatrix", GetConfusionMatrixArgs(raw_crop_mask_uncompressed, raw_crop_mask_confusion_matrix_validation, trimmed_reference_raster)),
 
         // The following steps are common for insitu and without insitu data
-        principalComponentAnalysisTask.CreateStep("PrincipalComponentAnalysis", { "PrincipalComponentAnalysis", "-ndvi", ndvi, "-nc", nbcomp, "-out", pca }),
-        meanShiftSmoothingTask.CreateStep("MeanShiftSmoothing", { "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger,
+        principalComponentAnalysisTask.CreateStep("PrincipalComponentAnalysis", { "PrincipalComponentAnalysis", "-ndvi", ndvi, "-nc", cfg.nbcomp, "-out", pca }),
+        meanShiftSmoothingTask.CreateStep("MeanShiftSmoothing", { "-in", pca,"-modesearch","0", "-spatialr", cfg.spatialr, "-ranger", cfg.ranger,
                                                               "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing }),
         lsmsSegmentationTask.CreateStep("LSMSSegmentation", { "-in", mean_shift_smoothing,"-inpos",
-                                                          mean_shift_smoothing_spatial, "-spatialr", spatialr, "-ranger", ranger, "-minsize",
+                                                          mean_shift_smoothing_spatial, "-spatialr", cfg.spatialr, "-ranger", cfg.ranger, "-minsize",
                                                           "0", "-tilesizex", "1024", "-tilesizey", "1024", "-tmpdir", tmpfolder, "-out", segmented, "uint32" }),
-        lsmsSmallRegionsMergingTask.CreateStep("LSMSSmallRegionsMerging", { "-in", mean_shift_smoothing,"-inseg", segmented, "-minsize", minsize,
+        lsmsSmallRegionsMergingTask.CreateStep("LSMSSmallRegionsMerging", { "-in", mean_shift_smoothing,"-inseg", segmented, "-minsize", cfg.minsize,
                                                                         "-tilesizex", "1024", "-tilesizey", "1024", "-out", segmented_merged, "uint32", }),
 
-        majorityVotingTask.CreateStep("MajorityVoting", { "MajorityVoting", "-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", minarea,
+        majorityVotingTask.CreateStep("MajorityVoting", { "MajorityVoting", "-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", cfg.minarea,
                                                     "-inclass", raw_crop_mask_uncompressed, "-inseg", segmented_merged, "-rout", crop_mask_uncut }),
 
         gdalWarpTask3.CreateStep("gdalwarp_raw", { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
@@ -820,18 +768,84 @@ QStringList CropMaskHandler::GetGdalWarpArgs(const QString &inImg, const QString
     return retList;
 }
 
-QStringList CropMaskHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                    const QStringList &listProducts, const QList<CropMaskProductFormatterParams> &productParams) {
+void CropMaskHandler::WriteExecutionInfosFile(const QString &executionInfosPath,
+                                               const CropMaskJobConfig &cfg,
+                                               const QStringList &listProducts) {
+    std::ofstream executionInfosFile;
+    try
+    {
+        executionInfosFile.open(executionInfosPath.toStdString().c_str(), std::ofstream::out);
+        executionInfosFile << "<?xml version=\"1.0\" ?>" << std::endl;
+        executionInfosFile << "<metadata>" << std::endl;
+        executionInfosFile << "  <General>" << std::endl;
+        executionInfosFile << "  </General>" << std::endl;
+
+        // Get the parameters from the configuration
+        executionInfosFile << "  <Parameters>" << std::endl;
+
+        if(cfg.referencePolygons.size() > 0) {
+            executionInfosFile << "    <reference_polygons>"            << cfg.referencePolygons.toStdString()        <<          "</reference_polygons>" << std::endl;
+        } else {
+            executionInfosFile << "    <reference_raster>"              << cfg.referenceRaster.toStdString()          <<          "</reference_raster>" << std::endl;
+            executionInfosFile << "    <training-samples-number>"       << cfg.nbtrsample.toStdString()               <<          "</training-samples-number>" << std::endl;
+            executionInfosFile << "    <smoothing-lambda>"              << cfg.lmbd.toStdString()                     <<          "</smoothing-lambda>" << std::endl;
+            executionInfosFile << "    <erode-radius>"                  << cfg.erode_radius.toStdString()             <<          "</erode-radius>" << std::endl;
+            executionInfosFile << "    <mahalanobis-alpha>"             << cfg.alpha.toStdString()                    <<          "</mahalanobis-alpha>" << std::endl;
+        }
+
+        executionInfosFile << "    <random_seed>"                       << cfg.randomSeed.toStdString()               <<          "</random_seed>" << std::endl;
+        executionInfosFile << "    <sample-ratio>"                      << cfg.sampleRatio.toStdString()              <<          "</sample-ratio>" << std::endl;
+        executionInfosFile << "    <temporal_resampling_mode>"          << cfg.temporalResamplingMode.toStdString()   <<          "</temporal_resampling_mode>" << std::endl;
+        executionInfosFile << "    <window>"                            << cfg.window.toStdString()                   <<          "</window>" << std::endl;
+        executionInfosFile << "    <nbcomp>"                            << cfg.nbcomp.toStdString()                   <<          "</nbcomp>" << std::endl;
+        executionInfosFile << "    <segmentation-spatial-radius>"       << cfg.spatialr.toStdString()                 <<          "</segmentation-spatial-radius>" << std::endl;
+        executionInfosFile << "    <range-radius>"                      << cfg.ranger.toStdString()                   <<          "</range-radius>" << std::endl;
+        executionInfosFile << "    <segmentation-minsize>"              << cfg.minsize.toStdString()                  <<          "</segmentation-minsize>" << std::endl;
+        executionInfosFile << "    <min-area>"                          << cfg.minarea.toStdString()                  <<          "</min-area>" << std::endl;
+        executionInfosFile << "    <classifier>"                        << cfg.classifier.toStdString()               <<          "</classifier>" << std::endl;
+        executionInfosFile << "    <classifier.field>"                  << cfg.fieldName.toStdString()                <<          "</classifier.field>" << std::endl;
+        executionInfosFile << "    <classifier.rf.nbtrees>"             << cfg.classifierRfNbTrees.toStdString()      <<          "</classifier.rf.nbtrees>" << std::endl;
+        executionInfosFile << "    <classifier.rf.min>"                 << cfg.classifierRfMinSamples.toStdString()   <<          "</classifier.rf.min>" << std::endl;
+        executionInfosFile << "    <classifier.rf.max>"                 << cfg.classifierRfMaxDepth.toStdString()     <<          "</classifier.rf.max>" << std::endl;
+        executionInfosFile << "    <classifier.svm.k>"                  << cfg.classifierSvmKernel.toStdString()      <<          "</classifier.svm.k>" << std::endl;
+        executionInfosFile << "    <classifier.svm.opt>"                << cfg.classifierSvmOptimize.toStdString()    <<          "</classifier.svm.opt>" << std::endl;
+        executionInfosFile << "    <lut_map>"                           << cfg.lutPath.toStdString()                  <<          "</lut_map>" << std::endl;
+
+        executionInfosFile << "  </Parameters>" << std::endl;
+        executionInfosFile << "  <XML_files>" << std::endl;
+        for (int i = 0; i<listProducts.size(); i++) {
+            executionInfosFile << "    <XML_" << std::to_string(i) << ">" << listProducts[i].toStdString()
+                               << "</XML_" << std::to_string(i) << ">" << std::endl;
+        }
+        executionInfosFile << "  </XML_files>" << std::endl;
+        executionInfosFile << "</metadata>" << std::endl;
+        executionInfosFile.close();
+    }
+    catch(...)
+    {
+
+    }
+}
+
+
+QStringList CropMaskHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const CropMaskJobConfig &cfg,
+                                                     const QStringList &listProducts, const QList<CropMaskProductFormatterParams> &productParams) {
 
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
-    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
+    // TODO: Write also the execution infos (see LAI)
+    //std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4a.");
+    const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
+    WriteExecutionInfosFile(executionInfosPath, cfg, listProducts);
+
+    const auto &targetFolder = GetFinalProductFolder(ctx, cfg.jobId, cfg.siteId);
     QStringList productFormatterArgs = { "ProductFormatter",
                                          "-destroot", targetFolder,
                                          "-fileclass", "SVT1",
                                          "-level", "L4A",
                                          "-baseline", "01.00",
-                                         "-siteid", QString::number(event.siteId),
+                                         "-siteid", QString::number(cfg.siteId),
                                          "-processor", "cropmask",
+                                         "-gipp", executionInfosPath,
                                          "-outprops", outPropsPath};
     productFormatterArgs += "-il";
     productFormatterArgs += listProducts;
@@ -858,6 +872,11 @@ QStringList CropMaskHandler::GetProductFormatterArgs(TaskToSubmit &productFormat
     for(const CropMaskProductFormatterParams &params: productParams) {
         productFormatterArgs += GetProductFormatterTile(params.tileId);
         productFormatterArgs += params.statusFlags;
+    }
+
+    if(cfg.lutPath.size() > 0) {
+        productFormatterArgs += "-lut";
+        productFormatterArgs += cfg.lutPath;
     }
 
     return productFormatterArgs;
