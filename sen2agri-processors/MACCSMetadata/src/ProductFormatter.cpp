@@ -1541,7 +1541,8 @@ private:
       }
       if(((m_strProductLevel.compare("L3B") == 0) ||
           (m_strProductLevel.compare("L3C") == 0) ||
-          (m_strProductLevel.compare("L3D") == 0)) &&
+          (m_strProductLevel.compare("L3D") == 0) ||
+          (m_strProductLevel.compare("L4A") == 0)) &&
           (m_strLutFile != ""))
       {
             iChannelNo = 3;

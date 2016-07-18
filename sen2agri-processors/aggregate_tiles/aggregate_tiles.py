@@ -56,6 +56,7 @@ import datetime
 
 LAI_MAP_PATH = "/usr/share/sen2agri/lai.map"
 COMPOSITE_MAP_PATH = "/usr/share/sen2agri/composite.map"
+CROP_MASK_MAP_PATH = "/usr/share/sen2agri/crop-mask.map"
 
 #---------------------------------------------------------------
 #max number of Channels in Channel List for otb Quicklook application
@@ -1074,13 +1075,16 @@ def create_mosaic_quicklook(context):
 
    product_proc_level = get_product_processing_level(context)
    print("--------->product_proc_level: {}".format(product_proc_level))
-   if (product_proc_level == "L3A") or (product_proc_level == "L3B") or (product_proc_level == "L3C") or (product_proc_level == "L3D") :
+   if (product_proc_level == "L3A") or (product_proc_level == "L3B") or (product_proc_level == "L3C") or (product_proc_level == "L3D") or (product_proc_level == "L4A") :
       if (product_proc_level == "L3A") :
          lut_map = COMPOSITE_MAP_PATH
          is_rgb_img = True
       else :
-         lut_map = LAI_MAP_PATH
-         is_rgb_img = False
+         is_rgb_img = False      
+         if (product_proc_level == "L4A") :
+            lut_map = CROP_MASK_MAP_PATH
+         else :
+            lut_map = LAI_MAP_PATH
 
       newRgbTif = context.post_process_out_filename + "_RGB.tif"
       create_rgb_image(context.post_process_out_filename, newRgbTif, lut_map, is_rgb_img)
