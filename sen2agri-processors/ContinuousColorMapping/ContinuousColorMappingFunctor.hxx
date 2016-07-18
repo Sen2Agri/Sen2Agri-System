@@ -123,11 +123,12 @@ public:
             }
             result = Round<uint8_t>(curResult);
         } else {
+            float fVal = in[m_BandIdx[0]];
             for (const auto &entry : m_Ramp)
             {
-                if (in[m_BandIdx[0]] >= entry.min && in[m_BandIdx[0]] < entry.max)
+                if (fVal >= entry.min && fVal < entry.max)
                 {
-                    float t = (in[m_BandIdx[0]] - entry.min) / (entry.max - entry.min);
+                    float t = (fVal - entry.min) / (entry.max - entry.min);
                     result = Round<uint8_t>(Lerp(t, entry.minColor, entry.maxColor));
                     break;
                 }
