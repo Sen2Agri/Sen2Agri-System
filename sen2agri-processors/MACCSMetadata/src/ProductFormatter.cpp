@@ -57,6 +57,7 @@
 #define LAI_FITTED_FLAGS_SUFFIX         "MLAIFFLG"
 #define CROP_MASK_IMG_SUFFIX            "CM"
 #define CROP_TYPE_IMG_SUFFIX            "CT"
+#define CROP_TYPE_RAW_IMG_SUFFIX        "RAW"
 #define CROP_MASK_RAW_IMG_SUFFIX        "RAW"
 #define CROP_MASK_FLAGS_SUFFIX          "MCMFLG"
 #define CROP_TYPE_FLAGS_SUFFIX          "MCTFLG"
@@ -141,6 +142,7 @@ typedef enum{
     CROP_MASK_RASTER,
     RAW_CROP_MASK_RASTER,
     CROP_TYPE_RASTER,
+    CROP_TYPE_RAW_RASTER,
     PHENO_RASTER,
     PHENO_FLAGS,
     CROP_MASK_FLAGS,
@@ -301,8 +303,11 @@ private:
 
 
 //crop type parameters
-        AddParameter(ParameterType_InputFilenameList, "processor.croptype.file", "CROP TYPE raster file  separated by TILE_{tile_id} delimiter");
+        AddParameter(ParameterType_InputFilenameList, "processor.croptype.file", "CROP TYPE raster files, separated by TILE_{tile_id} delimiter");
         MandatoryOff("processor.croptype.file");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.croptype.rawfile", "CROP TYPE unmasked raster files, separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.croptype.rawfile");
 
         AddParameter(ParameterType_InputFilenameList, "processor.croptype.quality", "CROP TYPE quality file");
         MandatoryOff("processor.croptype.quality");
@@ -517,6 +522,9 @@ private:
           std::vector<std::string> filesList;
           filesList = this->GetParameterStringList("processor.croptype.file");
           UnpackRastersList(filesList, CROP_TYPE_RASTER, false);
+
+          filesList = this->GetParameterStringList("processor.croptype.rawfile");
+          UnpackRastersList(filesList, CROP_TYPE_RAW_RASTER, false);
 
           //get quality file list
           filesList = this->GetParameterStringList("processor.croptype.quality");
@@ -1352,6 +1360,8 @@ private:
                return true;
           case CROP_TYPE_RASTER:
               return true;
+          case CROP_TYPE_RAW_RASTER:
+              return false;
           case CROP_MASK_RASTER:
              return true;
           default:
@@ -1401,6 +1411,9 @@ private:
                      break;
                 case CROP_TYPE_RASTER:
                     rasterCateg = CROP_TYPE_IMG_SUFFIX;
+                    break;
+                case CROP_TYPE_RAW_RASTER:
+                    rasterCateg = CROP_TYPE_RAW_IMG_SUFFIX;
                     break;
                 case CROP_MASK_RASTER:
                     rasterCateg = CROP_MASK_IMG_SUFFIX;
