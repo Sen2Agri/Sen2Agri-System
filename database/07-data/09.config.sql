@@ -163,6 +163,7 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.lut
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3a.lut_path', NULL, '/usr/share/sen2agri/composite.map', '2016-02-29 14:08:07.963143+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.mission', NULL, 'SENTINEL', '2016-03-09 16:28:59.820251+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.random_seed', NULL, '0', '2016-03-09 16:41:20.194169+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.lut_path', NULL, '/usr/share/sen2agri/crop-type.lut', '2016-02-29 14:08:07.963143+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3a.keep_job_folders', NULL, '1', '2016-03-09 16:41:20.194169+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3b.keep_job_folders', NULL, '1', '2016-03-09 16:41:20.194169+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3e.keep_job_folders', NULL, '1', '2016-03-09 16:41:20.194169+02');
