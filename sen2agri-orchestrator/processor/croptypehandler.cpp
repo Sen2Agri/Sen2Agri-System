@@ -276,8 +276,9 @@ void CropTypeHandler::HandleMaskTilesList(EventProcessingContext &ctx,
         trainImagesClassifier.CreateStep("TrainImagesClassifier", trainImagesClassifierArgs),
 
         imageClassifier.CreateStep("ImageClassifier", { "-in",    feFts, "-imstat", statistics,
-                                                        "-model", model, "-out",    cropTypeMapNoMaskUncut, "-mask", croppedCropMaskFile }),
-        bandMathMasking.CreateStep("BandMathMasking", {"BandMath", "-il", croppedCropMaskFile, cropTypeMapNoMaskUncut, "-out", cropTypeMapUncut + "?gdal:co:COMPRESS=DEFLATE", "-exp", "im1b1 == 1 ? im2b1 : 0"}),
+                                                        "-model", model, "-out",    cropTypeMapNoMaskUncut}),
+        bandMathMasking.CreateStep("BandMathMasking", {"BandMath", "-il", croppedCropMaskFile, cropTypeMapNoMaskUncut, "-out", cropTypeMapUncut +
+                                                       "?gdal:co:COMPRESS=DEFLATE", "-exp", "\"im1b1 == 1 ? im2b1 : 0\""}),
         clipCropTypeNoMask.CreateStep("ClipCropTypeMapNoMask", {"-dstnodata", "\"-10000\"", "-co", "COMPRESS=LZW", "-ot", "int16", "-overwrite", "-cutline", shape,
                                                                 "-crop_to_cutline", cropTypeMapNoMaskUncut, cropTypeMapNoMaskUncompressed}),
         clipCropType.CreateStep("ClipCropTypeMap", { "-dstnodata", "\"-10000\"", "-co", "COMPRESS=LZW", "-ot", "int16", "-overwrite", "-cutline", shape,
