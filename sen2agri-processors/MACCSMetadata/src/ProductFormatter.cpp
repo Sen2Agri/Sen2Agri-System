@@ -891,7 +891,8 @@ private:
       return extent;
   }
 
-  bool generateRgbFromLut(const std::string &rasterFullFilePath, const std::string &ourRasterFullFilePath, const std::string &lutMap, bool bIsRgbImg)
+  bool generateRgbFromLut(const std::string &rasterFullFilePath, const std::string &ourRasterFullFilePath, 
+                          const std::string &lutMap, bool bIsRgbImg, bool bIsRangeMapFile)
   {
       std::vector<const char *> args;
       args.emplace_back("ContinuousColorMapping");
@@ -905,6 +906,10 @@ private:
       std::string strIsRgbImg = std::to_string(bIsRgbImg);
       args.emplace_back(strIsRgbImg.c_str());
 
+      args.emplace_back("-isrange");
+      std::string strIsRangeMapFile = std::to_string(bIsRangeMapFile);
+      args.emplace_back(strIsRangeMapFile.c_str());
+      
       return ExecuteExternalProgram("otbcli", args);
   }
 
@@ -1542,6 +1547,7 @@ private:
       // check if we should use the LUT table for LAI
       bool bUseLut = false;
       bool bIsRgbImg = false;
+      bool bIsRangeMapFile = true;
 
       if ((m_strProductLevel.compare("L2A") == 0) ||
           (m_strProductLevel.compare("L3A") == 0))
@@ -1555,11 +1561,15 @@ private:
       if(((m_strProductLevel.compare("L3B") == 0) ||
           (m_strProductLevel.compare("L3C") == 0) ||
           (m_strProductLevel.compare("L3D") == 0) ||
-          (m_strProductLevel.compare("L4A") == 0)) &&
+          (m_strProductLevel.compare("L4A") == 0) ||
+          (m_strProductLevel.compare("L4B") == 0)) &&
           (m_strLutFile != ""))
       {
             iChannelNo = 3;
             bUseLut = true;
+            if((m_strProductLevel.compare("L4B") == 0)) {
+                bIsRangeMapFile = false;
+            }            
       }
 
       //std::cout << "ChannelNo = " << iChannelNo << std::endl;
@@ -1581,7 +1591,8 @@ private:
                  bool bQuicklookGenerated = false;
                  if(bUseLut) {
                      std::string outL3BRgbPreviewFile = previewFileEl.strPreviewFileName + "_RGB.tif";
-                     if(!generateRgbFromLut(previewFileEl.strPreviewFileName, outL3BRgbPreviewFile, m_strLutFile, bIsRgbImg)) {
+                     if(!generateRgbFromLut(previewFileEl.strPreviewFileName, outL3BRgbPreviewFile, m_strLutFile, 
+                                            bIsRgbImg, bIsRangeMapFile)) {
                          otbAppLogWARNING("Error creating RGB file from LUT " << strTilePreviewFullPath);
                      } else {
                          //transform .tif file in .jpg file directly in tile directory
