@@ -89,7 +89,16 @@ reprojected_crop_mask=os.path.join(args.outdir, "reprojected_crop_mask.tif")
 cropped_crop_mask=os.path.join(args.outdir, "cropped_crop_mask.tif")
 
 crop_type_map_uncut=os.path.join(args.outdir, "crop_type_map_uncut.tif")
-crop_type_map_uncompressed=os.path.join(args.outdir, "crop_type_map_uncompressed.tif")
+crop_type_map_nomask_uncut=os.path.join(args.outdir, "crop_type_map_nomask_uncut.tif")
+
+crop_type_map_nomask_uncompressed=os.path.join(args.outdir, "crop_type_map_nomask_uncompressed.tif")
+crop_type_map_mask_uncompressed=os.path.join(args.outdir, "crop_type_map_mask_uncompressed.tif")
+has_mask = os.path.isfile(crop_mask)
+if has_mask:
+    main_classified_map = crop_type_map_mask_uncompressed
+else:
+    main_classified_map = crop_type_map_nomask_uncompressed
+
 crop_type_map=os.path.join(args.outdir, "crop_type_map.tif")
 color_crop_type_map=os.path.join(args.outdir, "color_crop_type_map.tif")
 
@@ -140,7 +149,8 @@ try:
         executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il",
                 fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed,
                 "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt",
-                "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr","0.1","-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min", rfmin,"-classifier.rf.max",rfmax, skip=fromstep>10)
+                "-1","-sample.mv","-1","-sample.vfn","CODE","-sample.vtr","0.1","-classifier","rf",
+                "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min", rfmin,"-classifier.rf.max",rfmax, skip=fromstep>10)
     elif classifier == "svm":
         executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il",
                 fts,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed,
@@ -150,36 +160,42 @@ try:
 
 # Crop Mask Preparation (Step 11 and 12)
     if os.path.isfile(crop_mask):
-        executeStep("gdalwarp for reprojecting crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-t_srs", shape_wkt, crop_mask, reprojected_crop_mask, skip=fromstep>11)
-
-        executeStep("gdalwarp for cutting crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_crop_mask, cropped_crop_mask, skip=fromstep>12)
+        executeStep("gdalwarp for reprojecting crop mask", "gdalwarp", "-dstnodata", "0", "-overwrite", "-t_srs", shape_wkt, crop_mask, reprojected_crop_mask, skip=fromstep>11)
+        executeStep("gdalwarp for cutting crop mask", "gdalwarp", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_crop_mask, cropped_crop_mask, skip=fromstep>12)
 
 #Image Classifier (Step 13)
-    if os.path.isfile(crop_mask):
-        executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts,"-imstat",statistics,"-model", model, "-mask", cropped_crop_mask, "-out", crop_type_map_uncut, "int16", skip=fromstep>13, rmfiles=[] if keepfiles else [fts])
-    else:
-        executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts,"-imstat",statistics,"-model", model, "-out", crop_type_map_uncut, "int16", skip=fromstep>13, rmfiles=[] if keepfiles else [fts])
+    executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts, "-imstat", statistics, "-model", model, "-out", crop_type_map_nomask_uncut, "int16", skip=fromstep>13, rmfiles=[] if keepfiles else [fts])
 
-# gdalwarp (Step 14)
-    executeStep("gdalwarp for crop type", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_type_map_uncut, crop_type_map_uncompressed, skip=fromstep>14)
+# Masking (Step 14)
+    if has_mask:
+        executeStep("Masking", "otbcli_BandMath", "-il", crop_mask, crop_type_map_nomask_uncut, "-out", crop_type_map_uncut + "?gdal:co:COMPRESS=DEFLATE", "-exp", "im1b1 == 1 ? im2b1 : 0", skip=fromstep>14)
+
+# gdalwarp (Step 15)
+    executeStep("gdalwarp for crop type", "gdalwarp", "-dstnodata", "\"-10000\"", "-co", "COMPRESS=LZW", "-ot", "int16", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_type_map_nomask_uncut, crop_type_map_nomask_uncompressed, skip=fromstep>15)
+    if has_mask:
+        executeStep("gdalwarp for crop type", "gdalwarp", "-dstnodata", "\"-10000\"", "-co", "COMPRESS=LZW", "-ot", "int16", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_type_map_uncut, crop_type_map_mask_uncompressed, skip=fromstep>15)
 
 #Validation (Step 15)
-    executeStep("Validation for Crop Type", "otbcli_ComputeConfusionMatrix", "-in",  crop_type_map_uncompressed, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CODE", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>15)
+    executeStep("Validation for Crop Type", "otbcli_ComputeConfusionMatrix", "-in",  main_classified_map, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CODE", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>15)
 
 #Color image (Step 16)
-    executeStep("ColorMapping", "otbcli_ColorMapping", "-in", crop_type_map_uncompressed,"-method","custom","-method.custom.lut", lut, "-out", color_crop_type_map, "int32", skip=fromstep>16)
-
-#Compression (Step 17)
-    executeStep("Compression", "otbcli_Convert", "-in",  crop_type_map_uncompressed, "-out", crop_type_map+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>17, rmfiles=[] if keepfiles else [crop_type_map_uncompressed])
+    executeStep("ColorMapping", "otbcli_ColorMapping", "-in", main_classified_map,"-method", "custom", "-method.custom.lut", lut, "-out", color_crop_type_map, "int32", skip=fromstep>16)
 
 #XML conversion (Step 18)
     executeStep("XML Conversion for Crop Type", "otbcli", "XMLStatistics", buildFolder, "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics, skip=fromstep>18)
 
 # Quality Flags Extractor (Step 19)
-    executeStep("QualityFlagsExtractor", "otbcli", "QualityFlagsExtractor", buildFolder,"-mission",mission,"-out",statusFlags+"?gdal:co:COMPRESS=DEFLATE","-pixsize", pixsize,"-il", *indesc, skip=fromstep>19)
-    
+    executeStep("QualityFlagsExtractor", "otbcli", "QualityFlagsExtractor", buildFolder, "-mission", mission, "-out", statusFlags+"?gdal:co:COMPRESS=DEFLATE","-pixsize", pixsize,"-il", *indesc, skip=fromstep>19)
+
 #Product creation (Step 20)
-    executeStep("ProductFormatter", "otbcli", "ProductFormatter", buildFolder, "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-baseline", "01.00", "-siteid", siteId, "-processor", "croptype", "-processor.croptype.file", "TILE_"+tilename, crop_type_map, "-processor.croptype.flags", "TILE_"+tilename, statusFlags, "-processor.croptype.quality",  "TILE_"+tilename, xml_validation_metrics, "-il", *indesc, skip=fromstep>20)
+    args = ["ProductFormatter", "otbcli", "ProductFormatter", buildFolder,
+            "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-baseline", "01.00", "-siteid", siteId, "-processor", "croptype",
+            "-processor.croptype.file", "TILE_" + tilename, main_classified_map,
+            "-processor.croptype.flags", "TILE_" + tilename, statusFlags,
+            "-processor.croptype.quality", "TILE_" + tilename, xml_validation_metrics, "-il"] + indesc
+    if has_mask:
+        args += ["-processor.croptype.rawfile", "TILE_" + tilename, crop_type_map_nomask_uncompressed]
+    executeStep(*args, skip=fromstep>20)
 
 except:
     print sys.exc_info()

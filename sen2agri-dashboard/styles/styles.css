@@ -92,7 +92,13 @@ div#pnl_current_jobs table td
 }
 
 div#pnl_current_jobs table td {
-	border-right: 1px dashed #eaeaea;
+	border-top: 2px solid #eaeaea;
+}
+
+div#pnl_current_jobs table td:nth-child(1):nth-last-child(2),
+div#pnl_current_jobs table td:nth-child(2):nth-last-child(1)
+{
+	border-top: 1px dotted #eaeaea;
 }
 
 div#pnl_current_jobs table td:nth-child(8),
@@ -101,7 +107,6 @@ div#pnl_current_jobs table td:nth-child(1):nth-last-child(2)
 	padding: 1px;
 	font-size: 11px;
 	text-align: left;
-	border-right: none;
 }
 
 div#pnl_current_jobs table td:nth-child(9),
@@ -109,7 +114,6 @@ div#pnl_current_jobs table td:nth-child(2):nth-last-child(1)
 {
 	padding: 1px;
 	font-size: 11px;
-	border-right: none;
 }
 
 div.panel table.default_panel_style th, div.panel table.default_panel_style td
@@ -392,6 +396,57 @@ div.pop_up #close_button {
 	line-height: 22px;
 }
 
+.sensor label {
+	margin: 0px 15px 0px 0px;
+}
+
+.sensor input[type=checkbox].form-control,
+.subgroup input[type=checkbox].form-control {
+	cursor: pointer;
+    display: inline-block;
+    width: 13px;
+    height: 13px;
+    margin: 0px 2px 0px 0px;
+	padding: 0px;
+}
+
+.subgroup {
+	border: 1px solid #cccccc;
+	width: 100%;
+	padding: 10px;
+	margin-bottom: 15px;
+}
+
+.subgroup > label {
+    background-color: #f4f2e1;
+    width: 100%;
+    padding: 10px;
+    margin: -10px 0px 0px -10px;
+}
+
+.subgroup div {
+	margin: 10px 0px 10px 30px;
+}
+
+.subgroup input,
+.subgroup select {
+	width: 50%;
+}
+
+.lai > label {
+	margin-bottom: 10px;
+}
+
+.lai > div > label {
+	cursor: pointer;
+	margin: 0px;
+	font-weight: 400;
+}
+.lai .help-block {
+	display: inline-block;
+	float: right;
+}
+
 /* LOGIN STYLES -------------------------------------------------- */
 #signin {
 	display: block;
@@ -574,7 +629,9 @@ div.add-edit-site .submit-buttons input.add-edit-btn {
 	border-radius: 10px;
 }
 
-input.add-edit-btn {
+input.add-edit-btn,
+.config input[type="submit"]
+ {
 	border: 0px solid transparent;
 	outline: 0px solid transparent;
 	padding: 10px;
@@ -584,11 +641,13 @@ input.add-edit-btn {
 	font-size: 1.1em;
 	font-weight: 400;
 }
-input.add-edit-btn:hover {
+input.add-edit-btn:hover,
+.config input[type="submit"]:hover {
 	background-color: #99BF52;
 	color: yellow;
 }
-input.add-edit-btn:active {
+input.add-edit-btn:active,
+.config input[type="submit"]:active {
 	background-color: #7EAF50;
 	color:yellow;
 }
@@ -599,3 +658,50 @@ div.create-site .bootstrap-switch.bootstrap-switch-mini span {
 }
 
 /* --------------------------------------------- */
+
+.panel {
+	position: relative;
+}
+
+.panel .collapsing .control_advanced {
+	display: none;
+}
+
+.control_advanced {
+	cursor: pointer;
+	position: absolute;
+	top: 0px;
+	right: 0px;
+	margin: 0px;
+	padding: 11px;
+	color: #587b1d;
+	font-size: 13px;
+	font-weight: 400;
+}
+
+.control_advanced input {
+	float: left;
+	margin: 0px 5px;
+}
+.control_advanced:hover {
+	text-decoration: underline;
+}
+
+.config div.panel-heading {
+	padding: 0px;
+}
+.config h4.panel-title {
+}
+.config h4.panel-title a:hover {
+}
+.config h4.panel-title a {
+	display: inline-block;
+	width: 98%;
+	text-decoration: none;
+	padding: 10px;
+    background-color: #dbecb9;
+}
+.config h4.panel-title a:hover {
+    background-color: #bcd68c;
+}
+

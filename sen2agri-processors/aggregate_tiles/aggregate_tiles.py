@@ -56,6 +56,8 @@ import datetime
 
 LAI_MAP_PATH = "/usr/share/sen2agri/lai.map"
 COMPOSITE_MAP_PATH = "/usr/share/sen2agri/composite.map"
+CROP_MASK_MAP_PATH = "/usr/share/sen2agri/crop-mask.map"
+CROP_TYPE_MAP_PATH = "/usr/share/sen2agri/crop-type.lut"
 
 #---------------------------------------------------------------
 #max number of Channels in Channel List for otb Quicklook application
@@ -72,13 +74,14 @@ def quicklook_mosaic(inpFileName, outFileName, channelList):
                  "-out", outFileName])
                  
 #----------------------------------------------------------------
-def create_rgb_image(post_process_out_filename, newRgbTif, lutMap, isRGB):
+def create_rgb_image(post_process_out_filename, newRgbTif, lutMap, isRGB, isRangeMapFile):
     run_command(["otbcli",
                  "ContinuousColorMapping",
                  "-in",post_process_out_filename,
                  "-out", newRgbTif,
                  "-map", lutMap,
-                 "-rgbimg", ("1" if isRGB else "0")])
+                 "-rgbimg", ("1" if isRGB else "0"),
+                 "-isrange", ("1" if isRangeMapFile else "0")])
                  
 #----------------------------------------------------------------
 def process_mosaic_images(interpolName, listOfImages, imgAggregatedName):
@@ -1074,16 +1077,24 @@ def create_mosaic_quicklook(context):
 
    product_proc_level = get_product_processing_level(context)
    print("--------->product_proc_level: {}".format(product_proc_level))
-   if (product_proc_level == "L3A") or (product_proc_level == "L3B") or (product_proc_level == "L3C") or (product_proc_level == "L3D") :
+   if (product_proc_level == "L3A") or (product_proc_level == "L3B") or (product_proc_level == "L3C") or (product_proc_level == "L3D") or (product_proc_level == "L4A") or (product_proc_level == "L4B") :
+      is_range_map_file = 1
       if (product_proc_level == "L3A") :
          lut_map = COMPOSITE_MAP_PATH
          is_rgb_img = True
       else :
-         lut_map = LAI_MAP_PATH
-         is_rgb_img = False
+         is_rgb_img = False      
+         if (product_proc_level == "L4A") :
+            lut_map = CROP_MASK_MAP_PATH
+         else :
+            if (product_proc_level == "L4B") :
+               lut_map = CROP_TYPE_MAP_PATH
+               is_range_map_file = 0
+            else :
+               lut_map = LAI_MAP_PATH
 
       newRgbTif = context.post_process_out_filename + "_RGB.tif"
-      create_rgb_image(context.post_process_out_filename, newRgbTif, lut_map, is_rgb_img)
+      create_rgb_image(context.post_process_out_filename, newRgbTif, lut_map, is_rgb_img, is_range_map_file)
       quicklook_mosaic(newRgbTif, context.quicklook_out_filename, ["Channel1", "Channel2", "Channel3"])
       os.remove(newRgbTif)
    else:

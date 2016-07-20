@@ -57,6 +57,7 @@
 #define LAI_FITTED_FLAGS_SUFFIX         "MLAIFFLG"
 #define CROP_MASK_IMG_SUFFIX            "CM"
 #define CROP_TYPE_IMG_SUFFIX            "CT"
+#define CROP_TYPE_RAW_IMG_SUFFIX        "RAW"
 #define CROP_MASK_RAW_IMG_SUFFIX        "RAW"
 #define CROP_MASK_FLAGS_SUFFIX          "MCMFLG"
 #define CROP_TYPE_FLAGS_SUFFIX          "MCTFLG"
@@ -141,6 +142,7 @@ typedef enum{
     CROP_MASK_RASTER,
     RAW_CROP_MASK_RASTER,
     CROP_TYPE_RASTER,
+    CROP_TYPE_RAW_RASTER,
     PHENO_RASTER,
     PHENO_FLAGS,
     CROP_MASK_FLAGS,
@@ -301,8 +303,11 @@ private:
 
 
 //crop type parameters
-        AddParameter(ParameterType_InputFilenameList, "processor.croptype.file", "CROP TYPE raster file  separated by TILE_{tile_id} delimiter");
+        AddParameter(ParameterType_InputFilenameList, "processor.croptype.file", "CROP TYPE raster files, separated by TILE_{tile_id} delimiter");
         MandatoryOff("processor.croptype.file");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.croptype.rawfile", "CROP TYPE unmasked raster files, separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.croptype.rawfile");
 
         AddParameter(ParameterType_InputFilenameList, "processor.croptype.quality", "CROP TYPE quality file");
         MandatoryOff("processor.croptype.quality");
@@ -517,6 +522,9 @@ private:
           std::vector<std::string> filesList;
           filesList = this->GetParameterStringList("processor.croptype.file");
           UnpackRastersList(filesList, CROP_TYPE_RASTER, false);
+
+          filesList = this->GetParameterStringList("processor.croptype.rawfile");
+          UnpackRastersList(filesList, CROP_TYPE_RAW_RASTER, false);
 
           //get quality file list
           filesList = this->GetParameterStringList("processor.croptype.quality");
@@ -883,7 +891,8 @@ private:
       return extent;
   }
 
-  bool generateRgbFromLut(const std::string &rasterFullFilePath, const std::string &ourRasterFullFilePath, const std::string &lutMap, bool bIsRgbImg)
+  bool generateRgbFromLut(const std::string &rasterFullFilePath, const std::string &ourRasterFullFilePath, 
+                          const std::string &lutMap, bool bIsRgbImg, bool bIsRangeMapFile)
   {
       std::vector<const char *> args;
       args.emplace_back("ContinuousColorMapping");
@@ -897,6 +906,10 @@ private:
       std::string strIsRgbImg = std::to_string(bIsRgbImg);
       args.emplace_back(strIsRgbImg.c_str());
 
+      args.emplace_back("-isrange");
+      std::string strIsRangeMapFile = std::to_string(bIsRangeMapFile);
+      args.emplace_back(strIsRangeMapFile.c_str());
+      
       return ExecuteExternalProgram("otbcli", args);
   }
 
@@ -1352,6 +1365,8 @@ private:
                return true;
           case CROP_TYPE_RASTER:
               return true;
+          case CROP_TYPE_RAW_RASTER:
+              return false;
           case CROP_MASK_RASTER:
              return true;
           default:
@@ -1401,6 +1416,9 @@ private:
                      break;
                 case CROP_TYPE_RASTER:
                     rasterCateg = CROP_TYPE_IMG_SUFFIX;
+                    break;
+                case CROP_TYPE_RAW_RASTER:
+                    rasterCateg = CROP_TYPE_RAW_IMG_SUFFIX;
                     break;
                 case CROP_MASK_RASTER:
                     rasterCateg = CROP_MASK_IMG_SUFFIX;
@@ -1529,6 +1547,7 @@ private:
       // check if we should use the LUT table for LAI
       bool bUseLut = false;
       bool bIsRgbImg = false;
+      bool bIsRangeMapFile = true;
 
       if ((m_strProductLevel.compare("L2A") == 0) ||
           (m_strProductLevel.compare("L3A") == 0))
@@ -1541,11 +1560,16 @@ private:
       }
       if(((m_strProductLevel.compare("L3B") == 0) ||
           (m_strProductLevel.compare("L3C") == 0) ||
-          (m_strProductLevel.compare("L3D") == 0)) &&
+          (m_strProductLevel.compare("L3D") == 0) ||
+          (m_strProductLevel.compare("L4A") == 0) ||
+          (m_strProductLevel.compare("L4B") == 0)) &&
           (m_strLutFile != ""))
       {
             iChannelNo = 3;
             bUseLut = true;
+            if((m_strProductLevel.compare("L4B") == 0)) {
+                bIsRangeMapFile = false;
+            }            
       }
 
       //std::cout << "ChannelNo = " << iChannelNo << std::endl;
@@ -1567,7 +1591,8 @@ private:
                  bool bQuicklookGenerated = false;
                  if(bUseLut) {
                      std::string outL3BRgbPreviewFile = previewFileEl.strPreviewFileName + "_RGB.tif";
-                     if(!generateRgbFromLut(previewFileEl.strPreviewFileName, outL3BRgbPreviewFile, m_strLutFile, bIsRgbImg)) {
+                     if(!generateRgbFromLut(previewFileEl.strPreviewFileName, outL3BRgbPreviewFile, m_strLutFile, 
+                                            bIsRgbImg, bIsRangeMapFile)) {
                          otbAppLogWARNING("Error creating RGB file from LUT " << strTilePreviewFullPath);
                      } else {
                          //transform .tif file in .jpg file directly in tile directory

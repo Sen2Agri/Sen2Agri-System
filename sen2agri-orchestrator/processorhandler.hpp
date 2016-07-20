@@ -32,7 +32,7 @@ protected:
     QString GetProductFormatterProductName(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterQuicklook(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterFootprint(EventProcessingContext &ctx, const TaskFinishedEvent &event);
-    bool GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,  QDateTime &startTime, QDateTime &endTime,
+    bool GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,  QDateTime &startTime, QDateTime &endTime, const QDateTime &executionDate,
                                 const ConfigurationParameterValueMap &requestOverrideCfgValues);
     QStringList GetL2AInputProductsTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                     QMap<QString, QStringList> &mapProductToTilesMetaFiles);
