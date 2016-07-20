@@ -24,10 +24,10 @@
 											</div>
 											<div class="form-group form-group-sm sensor">
 												<label  style="">Sensor:</label>
-												<input class="form-control" id="landsatTiles" type="checkbox" name="sensor" value="L8" checked="checked">
-												<label class="control-label">L8</label>
-												<input class="form-control" id="sentinel2Tiles" type="checkbox" name="sensor" value="S2" checked="checked">
-												<label class="control-label">S2</label>
+												<input class="form-control chkS2" id="l3a_chkS2" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
+												<label class="control-label" for="l3a_chkS2">S2</label>
+												<input class="form-control chkL8" id="l3a_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
+												<label class="control-label" for="l3a_chkL8">L8</label>
 											</div>
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
@@ -111,10 +111,10 @@
 											</div>
 											<div class="form-group form-group-sm sensor">
 												<label  style="">Sensor:</label>
-												<input class="form-control" id="landsatTiles" type="checkbox" name="sensor" value="L8" checked="checked">
-												<label class="control-label">L8</label>
-												<input class="form-control" id="sentinel2Tiles" type="checkbox" name="sensor" value="S2" checked="checked">
-												<label class="control-label">S2</label>
+												<input class="form-control chkS2" id="l3b_chkS2" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
+												<label class="control-label" for="l3b_chkS2">S2</label>
+												<input class="form-control chkL8" id="l3b_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
+												<label class="control-label" for="l3b_chkL8">L8</label>
 											</div>
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
@@ -195,10 +195,10 @@
 											</div>
 											<div class="form-group form-group-sm sensor">
 												<label  style="">Sensor:</label>
-												<input class="form-control" id="landsatTiles" type="checkbox" name="sensor" value="L8" checked="checked">
-												<label class="control-label">L8</label>
-												<input class="form-control" id="sentinel2Tiles" type="checkbox" name="sensor" value="S2" checked="checked">
-												<label class="control-label">S2</label>
+												<input class="form-control chkS2" id="l3b_nvdi_chkS2" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
+												<label class="control-label" for="l3b_nvdi_chkS2">S2</label>
+												<input class="form-control chkL8" id="l3b_nvdi_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
+												<label class="control-label" for="l3b_nvdi_chkL8">L8</label>
 											</div>
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
@@ -244,10 +244,10 @@
 											</div>
 											<div class="form-group form-group-sm sensor">
 												<label  style="">Sensor:</label>
-												<input class="form-control" id="landsatTiles" type="checkbox" name="sensor" value="L8" checked="checked">
-												<label class="control-label">L8</label>
-												<input class="form-control" id="sentinel2Tiles" type="checkbox" name="sensor" value="S2" checked="checked">
-												<label class="control-label">S2</label>
+												<input class="form-control chkS2" id="l4a_chkS2" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
+												<label class="control-label" for="l4a_chkS2">S2</label>
+												<input class="form-control chkL8" id="l4a_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
+												<label class="control-label" for="l4a_chkL8">L8</label>
 											</div>
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
@@ -426,10 +426,10 @@
 											</div>
 											<div class="form-group form-group-sm sensor">
 												<label  style="">Sensor:</label>
-												<input class="form-control" id="landsatTiles" type="checkbox" name="sensor" value="L8">
-												<label class="control-label">L8</label>
-												<input class="form-control" id="sentinel2Tiles" type="checkbox" name="sensor" value="S2" checked="checked">
-												<label class="control-label">S2</label>
+												<input class="form-control chkS2" id="l4a_wo_chkS2" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
+												<label class="control-label" for="l4a_wo_chkS2">S2</label>
+												<input class="form-control chkL8" id="l4a_wo_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
+												<label class="control-label" for="l4a_wo_chkL8">L8</label>
 											</div>
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>
@@ -609,10 +609,10 @@
 											</div>
 											<div class="form-group form-group-sm sensor">
 												<label  style="">Sensor:</label>
-												<input class="form-control" id="landsatTiles" type="checkbox" name="sensor" value="L8" checked="checked">
-												<label class="control-label">L8</label>
-												<input class="form-control" id="sentinel2Tiles" type="checkbox" name="sensor" value="S2" checked="checked">
-												<label class="control-label">S2</label>
+												<input class="form-control chkS2" id="l4b_chkS2" type="checkbox" name="sensor" value="S2" checked="checked" disabled>
+												<label class="control-label" for="l4b_chkS2">S2</label>
+												<input class="form-control chkL8" id="l4b_chkL8" type="checkbox" name="sensor" value="L8" checked="checked">
+												<label class="control-label" for="l4b_chkL8">L8</label>
 											</div>
 											<div class="form-group form-group-sm required">
 												<label class="control-label" for="inputFiles">Available input files:</label>

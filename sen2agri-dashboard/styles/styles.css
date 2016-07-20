@@ -398,6 +398,7 @@ div.pop_up #close_button {
 
 .sensor label {
 	margin: 0px 15px 0px 0px;
+	cursor: pointer;
 }
 
 .sensor input[type=checkbox].form-control,
