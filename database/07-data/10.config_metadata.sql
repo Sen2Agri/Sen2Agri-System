@@ -95,7 +95,6 @@ INSERT INTO config_metadata VALUES ('processor.l3b.production_interval', 'The ba
 INSERT INTO config_metadata VALUES ('processor.l3b.reproc_production_interval', 'The backward processing interval from the scheduled date for L3C products', 'int', true, 4);
 INSERT INTO config_metadata VALUES ('downloader.summer-season.start', 'Summer Season Start', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('downloader.summer-season.end', 'Summer Season End', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('processor.l4b.crop-mask', 'Crop mask file path or product folder to be used', 'file', true, 6);
 INSERT INTO config_metadata VALUES ('site.upload-path', 'Upload path', 'string', true, 17);
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-bv-input-variable-generation', 'BV input variables generator', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-prosail-simulator', 'Prosail simulator', 'file', true, 8);
@@ -129,13 +128,11 @@ INSERT INTO config_metadata VALUES ('processor.l4a.reference_data_dir', 'CropMas
 INSERT INTO config_metadata VALUES ('processor.l4a.mission', 'The main mission for the time series', 'string', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.temporal_resampling_mode', 'The temporal resampling mode choices=[resample, gapfill]', 'string', true, 5);
 INSERT INTO config_metadata VALUES ('downloader.s2.write-dir', 'Write directory for Sentinel2', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('processor.l4a.radius', 'The radius used for gapfilling in days', 'int', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.random_seed', 'The random seed used for training', 'float', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.window', 'The window expressed in number of records used for the temporal features extraction', 'int', true, 5);
 INSERT INTO config_metadata VALUES ('downloader.l8.write-dir', 'Write directory for Landsat8', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('downloader.winter-season.end', 'Winter Season End', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('processor.l4a.smoothing-lambda', 'The lambda parameter used in data smoothing', 'float', true, 5);
-INSERT INTO config_metadata VALUES ('processor.l4a.weight', 'The weight factor for data smoothing', 'float', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.nbcomp', 'The number of components used by dimensionality reduction', 'int', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.segmentation-spatial-radius', 'The spatial radius of the neighborhood used for segmentation', 'int', true, 5);
 INSERT INTO config_metadata VALUES ('downloader.winter-season.start', 'Winter Season Start', 'string', false, 15);
@@ -150,7 +147,6 @@ INSERT INTO config_metadata VALUES ('processor.l4a.classifier.rf.max', 'maximum 
 INSERT INTO config_metadata VALUES ('processor.l4a.classifier.rf.min', 'minimum number of samples in each node used by the classifier', 'int', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.sample-ratio', 'The ratio between the validation and training polygons', 'float', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.training-samples-number', 'The number of samples included in the training set', 'int', true, 5);
-INSERT INTO config_metadata VALUES ('processor.l4a.sampling-rate', '', 'int', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.classifier.svm.k', '', 'string', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.classifier.svm.opt', '', 'string', true, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.reference-map', 'Reference map for crop mask with no in-situ data', 'string', true, 5);
@@ -163,7 +159,6 @@ INSERT INTO config_metadata VALUES ('processor.l4b.classifier.rf.nbtrees', 'The 
 INSERT INTO config_metadata VALUES ('processor.l4b.classifier.svm.k', 'Type of kernel', 'string', true, 6);
 INSERT INTO config_metadata VALUES ('processor.l4b.classifier.svm.opt', 'Automatic optimisation of the parameters', 'string', true, 6);
 INSERT INTO config_metadata VALUES ('processor.l4b.sample-ratio', 'The ratio between the validation and training polygons', 'float', true, 6);
-INSERT INTO config_metadata VALUES ('processor.l4b.sampling-rate', '', 'int', true, 6);
 INSERT INTO config_metadata VALUES ('processor.l4b.temporal_resampling_mode', 'The temporal resampling mode choices=[resample, gapfill]', 'string', true, 6);
 INSERT INTO config_metadata VALUES ('processor.l4b.mission', 'The main mission for the time series', 'string', true, 6);
 INSERT INTO config_metadata VALUES ('processor.l4b.random_seed', 'The random seed used for training', 'float', true, 6);
