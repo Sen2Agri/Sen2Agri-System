@@ -106,6 +106,7 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s2.wri
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.write-dir', NULL, '/mnt/archive/dwn_def/l8/default', '2016-02-26 19:30:06.821627+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.s2.max-retries', NULL, '3', '2016-03-15 15:44:14.118906+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.l8.max-retries', NULL, '3', '2016-03-15 15:44:22.03691+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.start.offset', NULL, '3', '2016-07-20 20:05:00');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.summer-season.start', NULL, '0501', '2016-02-04 11:44:18.411587+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.summer-season.end', NULL, '0930', '2016-02-04 11:44:35.847675+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('downloader.winter-season.start', NULL, '1101', '2016-02-04 11:44:40.262676+02');
