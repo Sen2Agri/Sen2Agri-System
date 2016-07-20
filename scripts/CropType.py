@@ -72,7 +72,7 @@ rawtocr=os.path.join(args.outdir, "rawtocr.tif")
 tocr=os.path.join(args.outdir, "tocr.tif")
 rawmask=os.path.join(args.outdir, "rawmask.tif")
 
-statusFlags=os.path.join(args.outdir, "status_flags.tif")
+status_flags=os.path.join(args.outdir, "status_flags.tif")
 
 mask=os.path.join(args.outdir, "mask.tif")
 dates=os.path.join(args.outdir, "dates.txt")
@@ -91,16 +91,15 @@ cropped_crop_mask=os.path.join(args.outdir, "cropped_crop_mask.tif")
 crop_type_map_uncut=os.path.join(args.outdir, "crop_type_map_uncut.tif")
 crop_type_map_nomask_uncut=os.path.join(args.outdir, "crop_type_map_nomask_uncut.tif")
 
-crop_type_map_nomask_uncompressed=os.path.join(args.outdir, "crop_type_map_nomask_uncompressed.tif")
-crop_type_map_mask_uncompressed=os.path.join(args.outdir, "crop_type_map_mask_uncompressed.tif")
+crop_type_map_nomask=os.path.join(args.outdir, "crop_type_map_nomask.tif")
+crop_type_map_mask=os.path.join(args.outdir, "crop_type_map_mask.tif")
 has_mask = os.path.isfile(crop_mask)
 if has_mask:
-    main_classified_map = crop_type_map_mask_uncompressed
+    main_classified_map = crop_type_map_mask
 else:
-    main_classified_map = crop_type_map_nomask_uncompressed
+    main_classified_map = crop_type_map_nomask
 
 crop_type_map=os.path.join(args.outdir, "crop_type_map.tif")
-color_crop_type_map=os.path.join(args.outdir, "color_crop_type_map.tif")
 
 confusion_matrix_validation=os.path.join(args.outdir, "confusion-matrix-validation.csv")
 quality_metrics=os.path.join(args.outdir, "quality-metrics.txt")
@@ -161,41 +160,47 @@ try:
 # Crop Mask Preparation (Step 11 and 12)
     if os.path.isfile(crop_mask):
         executeStep("gdalwarp for reprojecting crop mask", "gdalwarp", "-dstnodata", "0", "-overwrite", "-t_srs", shape_wkt, crop_mask, reprojected_crop_mask, skip=fromstep>11)
-        executeStep("gdalwarp for cutting crop mask", "gdalwarp", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_crop_mask, cropped_crop_mask, skip=fromstep>12)
+        executeStep("gdalwarp for cutting crop mask", "gdalwarp", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_crop_mask, cropped_crop_mask, skip=fromstep>12, rm=[] if keepfiles else [reprojected_crop_mask])
 
 #Image Classifier (Step 13)
     executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts, "-imstat", statistics, "-model", model, "-out", crop_type_map_nomask_uncut, "int16", skip=fromstep>13, rmfiles=[] if keepfiles else [fts])
 
 # Masking (Step 14)
     if has_mask:
-        executeStep("Masking", "otbcli_BandMath", "-il", crop_mask, crop_type_map_nomask_uncut, "-out", crop_type_map_uncut + "?gdal:co:COMPRESS=DEFLATE", "-exp", "im1b1 == 1 ? im2b1 : 0", skip=fromstep>14)
+        executeStep("Masking", "otbcli_BandMath", "-il", cropped_crop_mask, crop_type_map_nomask_uncut, "-out", crop_type_map_uncut + "?gdal:co:COMPRESS=DEFLATE", "-exp", "im1b1 == 1 ? im2b1 : 0", skip=fromstep>14, rmfiles=[] if keepfiles else [cropped_crop_mask])
 
-# gdalwarp (Step 15)
-    executeStep("gdalwarp for crop type", "gdalwarp", "-dstnodata", "\"-10000\"", "-co", "COMPRESS=LZW", "-ot", "int16", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_type_map_nomask_uncut, crop_type_map_nomask_uncompressed, skip=fromstep>15)
+# gdalwarp (Step 15 and 16)
+    executeStep("gdalwarp for crop type", "gdalwarp", "-dstnodata", "\"-10000\"", "-co", "COMPRESS=LZW", "-ot", "int16", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_type_map_nomask_uncut, crop_type_map_nomask, skip=fromstep>15, rmfiles=[] if keepfiles else [crop_type_map_nomask_uncut])
     if has_mask:
-        executeStep("gdalwarp for crop type", "gdalwarp", "-dstnodata", "\"-10000\"", "-co", "COMPRESS=LZW", "-ot", "int16", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_type_map_uncut, crop_type_map_mask_uncompressed, skip=fromstep>15)
+        executeStep("gdalwarp for crop type", "gdalwarp", "-dstnodata", "\"-10000\"", "-co", "COMPRESS=LZW", "-ot", "int16", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_type_map_uncut, crop_type_map_mask, skip=fromstep>16, rmfiles=[] if keepfiles else [crop_type_map_uncut])
 
-#Validation (Step 15)
-    executeStep("Validation for Crop Type", "otbcli_ComputeConfusionMatrix", "-in",  main_classified_map, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CODE", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>15)
-
-#Color image (Step 16)
-    executeStep("ColorMapping", "otbcli_ColorMapping", "-in", main_classified_map,"-method", "custom", "-method.custom.lut", lut, "-out", color_crop_type_map, "int32", skip=fromstep>16)
+#Validation (Step 17)
+    executeStep("Validation for Crop Type", "otbcli_ComputeConfusionMatrix", "-in",  main_classified_map, "-out", confusion_matrix_validation, "-ref", "vector", "-ref.vector.in", validation_polygons, "-ref.vector.field", "CODE", "-nodatalabel", "-10000", outf=quality_metrics, skip=fromstep>17)
 
 #XML conversion (Step 18)
     executeStep("XML Conversion for Crop Type", "otbcli", "XMLStatistics", buildFolder, "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropType", "-out", xml_validation_metrics, skip=fromstep>18)
 
 # Quality Flags Extractor (Step 19)
-    executeStep("QualityFlagsExtractor", "otbcli", "QualityFlagsExtractor", buildFolder, "-mission", mission, "-out", statusFlags+"?gdal:co:COMPRESS=DEFLATE","-pixsize", pixsize,"-il", *indesc, skip=fromstep>19)
+    executeStep("QualityFlagsExtractor", "otbcli", "QualityFlagsExtractor", buildFolder, "-mission", mission, "-out", status_flags+"?gdal:co:COMPRESS=DEFLATE","-pixsize", pixsize,"-il", *indesc, skip=fromstep>19)
 
 #Product creation (Step 20)
+    script_dir = os.path.dirname(__file__)
+    lut_path = os.path.join(script_dir, "../sen2agri-processors/CropType/crop-type.lut")
+    if not os.path.isfile(lut_path):
+        lut_path = os.path.join(script_dir, "../share/sen2agri/crop-type.lut")
+    if not os.path.isfile(lut_path):
+        lut_path = None
     args = ["ProductFormatter", "otbcli", "ProductFormatter", buildFolder,
             "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4B", "-baseline", "01.00", "-siteid", siteId, "-processor", "croptype",
             "-processor.croptype.file", "TILE_" + tilename, main_classified_map,
-            "-processor.croptype.flags", "TILE_" + tilename, statusFlags,
+            "-processor.croptype.flags", "TILE_" + tilename, status_flags,
             "-processor.croptype.quality", "TILE_" + tilename, xml_validation_metrics, "-il"] + indesc
+    rmfiles = [status_flags, crop_type_map_nomask, crop_type_map_mask]
     if has_mask:
-        args += ["-processor.croptype.rawfile", "TILE_" + tilename, crop_type_map_nomask_uncompressed]
-    executeStep(*args, skip=fromstep>20)
+        args += ["-processor.croptype.rawfile", "TILE_" + tilename, crop_type_map_nomask]
+    if lut_path is not None:
+        args += ["-lut", lut_path]
+    executeStep(*args, skip=fromstep>20, rmfiles=[] if keepfiles else rmfiles)
 
 except:
     print sys.exc_info()
