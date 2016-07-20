@@ -160,7 +160,7 @@ try:
 # Crop Mask Preparation (Step 11 and 12)
     if os.path.isfile(crop_mask):
         executeStep("gdalwarp for reprojecting crop mask", "gdalwarp", "-dstnodata", "0", "-overwrite", "-t_srs", shape_wkt, crop_mask, reprojected_crop_mask, skip=fromstep>11)
-        executeStep("gdalwarp for cutting crop mask", "gdalwarp", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_crop_mask, cropped_crop_mask, skip=fromstep>12, rm=[] if keepfiles else [reprojected_crop_mask])
+        executeStep("gdalwarp for cutting crop mask", "gdalwarp", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_crop_mask, cropped_crop_mask, skip=fromstep>12, rmfiles=[] if keepfiles else [reprojected_crop_mask])
 
 #Image Classifier (Step 13)
     executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", fts, "-imstat", statistics, "-model", model, "-out", crop_type_map_nomask_uncut, "int16", skip=fromstep>13, rmfiles=[] if keepfiles else [fts])
