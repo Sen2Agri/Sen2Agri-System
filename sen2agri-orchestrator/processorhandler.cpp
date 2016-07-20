@@ -229,8 +229,9 @@ QString ProcessorHandler::GetProductFormatterFootprint(EventProcessingContext &c
 
 bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,
                                               QDateTime &startTime, QDateTime &endTime,
+                                              const QDateTime &executionDate,
                                               const ConfigurationParameterValueMap &requestOverrideCfgValues) {
-    QDate currentDate = QDate::currentDate();
+    QDate currentDate = executionDate.date();//QDate::currentDate();
     int curYear = currentDate.year();
 
     ConfigurationParameterValueMap seasonCfgValues = ctx.GetConfigurationParameters("downloader.", siteId, requestOverrideCfgValues);
@@ -241,7 +242,7 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     if(startSummerSeasonDate.isValid() && endSummerSeasonDate.isValid()) {
         // normally this should not happen for summer season but can happen for winter season
         if(endSummerSeasonDate < startSummerSeasonDate) {
-            endSummerSeasonDate.addYears(-1);
+            startSummerSeasonDate.addYears(-1);
         }
         if(currentDate >= startSummerSeasonDate && currentDate <= endSummerSeasonDate) {
             startTime = QDateTime(startSummerSeasonDate);
@@ -252,7 +253,7 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     if(startWinterSeasonDate.isValid() && endWinterSeasonDate.isValid()) {
         // this can happen for winter season
         if(endWinterSeasonDate < startWinterSeasonDate) {
-            endWinterSeasonDate.addYears(-1);
+            startWinterSeasonDate.addYears(-1);
         }
 
         if(currentDate >= startWinterSeasonDate && currentDate <= endWinterSeasonDate) {
@@ -272,7 +273,7 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     if(defStartSummerSeasonDate.isValid() && defEndSummerSeasonDate.isValid()) {
         // normally this should not happen for summer season but can happen for winter season
         if(defEndSummerSeasonDate < defStartSummerSeasonDate) {
-            defEndSummerSeasonDate.addYears(-1);
+            defStartSummerSeasonDate.addYears(-1);
         }
 
         if(currentDate >= defStartSummerSeasonDate && currentDate <= defEndSummerSeasonDate) {
@@ -284,7 +285,7 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     if(defStartWinterSeasonDate.isValid() && defEndWinterSeasonDate.isValid()) {
         // this can happen for winter season
         if(defEndWinterSeasonDate < defStartWinterSeasonDate) {
-            defEndWinterSeasonDate.addYears(-1);
+            defStartWinterSeasonDate.addYears(-1);
         }
 
         if(currentDate >= defStartWinterSeasonDate && currentDate <= defEndWinterSeasonDate) {
