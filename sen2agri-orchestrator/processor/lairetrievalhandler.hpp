@@ -64,7 +64,8 @@ private:
 
     void CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList, const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                    LAIProductFormatterParams &outProdFormatterParams,
-                                   const QStringList &listProducts, bool bGenModels, bool bMonoDateLai, bool bNDayReproc, bool bFittedReproc);
+                                   const QStringList &listProducts, const QStringList &monoDateMskFlagsLaiFileNames,
+                                   bool bGenModels, bool bMonoDateLai, bool bNDayReproc, bool bFittedReproc);
 
     void HandleNewTilesList(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                             const TileTemporalFilesInfo &tileTemporalFilesInfo, const QList<L2AToL3B> &listL2AToL3BProducts,
@@ -134,6 +135,9 @@ private:
     bool GetMonoDateFormatterParamInfosForProduct(const QString &product, const QMap<QString, TileTemporalFilesInfo> &mapTiles,
             const QMap<QString, LAIProductFormatterParams> &mapTileToParams, const QMap<QString, QStringList> &inputProductToTilesMap,
             QStringList &outProductTiles, QList<LAIMonoDateProductFormatterParams> &outProductParams, QStringList &outProductTileMetaFiles);
+
+    void ExtractExistingL3BProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QStringList &listTilesMetaFiles, const QMap<QString, QStringList> &inputProductToTilesMap, QList<L2AToL3B> &listL2AToL3BProducts,
+                                    QStringList &listL3BProducts, QStringList &missingL3BInputsTiles, QStringList &missingL3BInputs);
 private:
     int m_nFirstReprocessingIdx;
     int m_nTimeSeriesBuilderIdx;
