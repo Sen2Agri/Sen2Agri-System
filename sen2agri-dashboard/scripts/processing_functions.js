@@ -844,7 +844,7 @@ function update_sites(json_data)
 		});
 	});
 	
-	var chkL8All = $("input#landsatTiles");
+	var chkL8All = $(".chkL8");
 	$.each(chkL8All, function(index, chkL8) {
 		chkL8 = $(chkL8);
 		chkL8.change(function (event) {
@@ -861,7 +861,7 @@ function update_sites(json_data)
 			}
 		});
 	});
-	var chkS2All = $("input#sentinel2Tiles");
+	var chkS2All = $(".chkS2");
 	$.each(chkS2All, function(index, chkS2) {
 		chkS2 = $(chkS2);
 		chkS2.change(function (event) {
@@ -1012,12 +1012,12 @@ function update_products(json_data, productsEl)
 	
 	$.each(json_data, function(index, productObj) {
 		// select S2 products
-		var chkS2 = $("#"+productsEl[0].form.id+" #sentinel2Tiles");
+		var chkS2 = $("#"+productsEl[0].form.id+" .chkS2");
 		if (((chkS2.length == 0) || chkS2.is(":checked")) && productObj.satellite_id == 1) {
 			productsEl.append('<option value="'+productObj.product+'">'+productObj.product+'</option>');	
 		}
 		// select L8 products
-		var chkL8 = $("#"+productsEl[0].form.id+" #landsatTiles");
+		var chkL8 = $("#"+productsEl[0].form.id+" .chkL8");
 		if (((chkL8.length == 0) || chkL8.is(":checked")) && productObj.satellite_id == 2) {
 			productsEl.append('<option value="'+productObj.product+'">'+productObj.product+'</option>');	
 		}

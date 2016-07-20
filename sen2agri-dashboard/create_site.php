@@ -144,18 +144,18 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
 	if ($polygons_file) {
 		switch ($_REQUEST ['seasonAdd']) {
 			case "0": // Winter season selected
-				$winter_start = dayMonth ( date("Y") . "-" . $_REQUEST['startseason_winter'] );
-				$winter_end   = dayMonth ( date("Y") . "-" . $_REQUEST['endseason_winter'] );
+				$winter_start = dayMonth ($_REQUEST['startseason_winter'] );
+				$winter_end   = dayMonth ($_REQUEST['endseason_winter'] );
 				break;
 			case "1": // Summer season selected
-				$summer_start = dayMonth ( date("Y") . "-" . $_REQUEST['startseason_summer'] );
-				$summer_end   = dayMonth ( date("Y") . "-" . $_REQUEST['endseason_summer'] );
+				$summer_start = dayMonth ($_REQUEST['startseason_summer'] );
+				$summer_end   = dayMonth ($_REQUEST['endseason_summer'] );
 				break;
 			case "2": // Winter and Summer season selected
-				$winter_start = dayMonth ( date("Y") . "-" . $_REQUEST['startseason_winter'] );
-				$winter_end   = dayMonth ( date("Y") . "-" . $_REQUEST['endseason_winter'] );
-				$summer_start = dayMonth ( date("Y") . "-" . $_REQUEST['startseason_summer'] );
-				$summer_end   = dayMonth ( date("Y") . "-" . $_REQUEST['endseason_summer'] );
+				$winter_start = dayMonth ($_REQUEST['startseason_winter'] );
+				$winter_end   = dayMonth ($_REQUEST['endseason_winter'] );
+				$summer_start = dayMonth ($_REQUEST['startseason_summer'] );
+				$summer_end   = dayMonth ($_REQUEST['endseason_summer'] );
 				break;
 		}
 		insertSiteSeason ( $site_name, $coord_geog, $winter_start, $winter_end, $summer_start, $summer_end, $site_enabled );
@@ -226,18 +226,18 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 	if ($status == "OK") {
 		switch ($_REQUEST ['seasonEdit']) {
 			case "0": // Winter season selected
-				$winter_start = dayMonth ( date("Y") . "-" . $_REQUEST ['startseason_winterEdit'] );
-				$winter_end   = dayMonth ( date("Y") . "-" . $_REQUEST ['endseason_winterEdit'] );
+				$winter_start = dayMonth ($_REQUEST ['startseason_winterEdit'] );
+				$winter_end   = dayMonth ($_REQUEST ['endseason_winterEdit'] );
 				break;
 			case "1": // Summer season selected
-				$summer_start = dayMonth ( date("Y") . "-" . $_REQUEST ['startseason_summerEdit'] );
-				$summer_end   = dayMonth ( date("Y") . "-" . $_REQUEST ['endseason_summerEdit'] );
+				$summer_start = dayMonth ($_REQUEST ['startseason_summerEdit'] );
+				$summer_end   = dayMonth ($_REQUEST ['endseason_summerEdit'] );
 				break;
 			case "2": // Winter and Summer season selected
-				$winter_start = dayMonth ( date("Y") . "-" . $_REQUEST ['startseason_winterEdit'] );
-				$winter_end   = dayMonth ( date("Y") . "-" . $_REQUEST ['endseason_winterEdit'] );
-				$summer_start = dayMonth ( date("Y") . "-" . $_REQUEST ['startseason_summerEdit'] );
-				$summer_end   = dayMonth ( date("Y") . "-" . $_REQUEST ['endseason_summerEdit'] );
+				$winter_start = dayMonth ($_REQUEST ['startseason_winterEdit'] );
+				$winter_end   = dayMonth ($_REQUEST ['endseason_winterEdit'] );
+				$summer_start = dayMonth ($_REQUEST ['startseason_summerEdit'] );
+				$summer_end   = dayMonth ($_REQUEST ['endseason_summerEdit'] );
 				break;
 		}
 		updateSiteSeason($site_id, $shortname, $shape_file, $winter_start, $winter_end, $summer_start, $summer_end, $site_enabled);
@@ -346,7 +346,7 @@ if (!(empty($_SESSION ['siteId']))) {
 						<form enctype="multipart/form-data" id="siteform_edit" action="create_site.php" method="post">
 							<div class="row">
 								<div class="col-md-1">
-									<div class="form-group  form-group-sm">
+									<div class="form-group form-group-sm">
 										<label class="control-label" for="edit_sitename">Site name:</label>
 										<input type="text" class="form-control" id="edit_sitename" name="edit_sitename" value="" readonly>
 										<input type="hidden" class="form-control" id="edit_siteid" name="edit_siteid" value="">
@@ -355,7 +355,7 @@ if (!(empty($_SESSION ['siteId']))) {
 							</div>
 							<div class="row">
 								<div class="col-md-1">
-									<div class="form-group  form-group-sm">
+									<div class="form-group form-group-sm">
 										<label class="control-label" for="shortname">Short name:</label>
 										<input type="text" class="form-control" id="shortname" name="shortname" value="">
 									</div>
@@ -439,8 +439,8 @@ if (!(empty($_SESSION ['siteId']))) {
 								<th rowspan='2'>Enabled</th>
 							</tr>
 							<tr>
-								<th>[mm-dd]&nbsp;&nbsp;[mm-dd]</th>
-								<th>[mm-dd]&nbsp;&nbsp;[mm-dd]</th>
+								<th style="font-size: 11px;">[yyyy-mm-dd]&nbsp;&nbsp;[yyyy-mm-dd]</th>
+								<th style="font-size: 11px;">[yyyy-mm-dd]&nbsp;&nbsp;[yyyy-mm-dd]</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -459,13 +459,38 @@ if (!(empty($_SESSION ['siteId']))) {
 							$summerEnd = "";
 							$winterStart = "";
 							$winterEnd = "";
-
-							function dayMonthYear($param) {
-								$year = date ( 'Y' );
-								$date = $year . "-" . $param [0] . "-" . $param [1];
-								return $date;
+							
+							function seasonStartEnd($start, $stop) {
+								$currentYear     = date ( 'Y' );
+								$currentMonth    = date ( 'M' );
+								$startSeasonYear = $currentYear;
+								$endSeasonYear   = $currentYear;
+								
+								//check if the season comprises 2 consecutive years (e.q. from october to march next year)
+								$startSeasonMonth = $start[0];
+								$startSeasonDay   = $start[1];
+								$endSeasonMonth   = $stop[0];
+								$endSeasonDay     = $stop[1];
+								
+								if ($startSeasonMonth > $endSeasonMonth) {
+									if (($currentMonth >= $startSeasonMonth) && ($currentMonth <= 12)) {
+										$endSeasonYear = $currentYear + 1;
+									} else {
+										if ($currentMonth >= 1) {
+											$startSeasonYear = $currentYear - 1;
+										}
+									}
+								} else {
+									if ($currentMonth < $startSeasonMonth) {
+										$startSeasonYear = $currentYear - 1;
+										$endSeasonYear = $currentYear - 1;
+									}
+								}
+								
+								return array( $startSeasonYear . "-" . $startSeasonMonth . "-" . $startSeasonDay,
+											  $endSeasonYear   . "-" . $endSeasonMonth   . "-" . $endSeasonDay );
 							}
-
+							
 							$sql_select = "";
 							$result = "";
 							$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
@@ -493,8 +518,9 @@ if (!(empty($_SESSION ['siteId']))) {
 								if (strlen($summerStart . $summerEnd) == 8) {
 									$summerDate1 = str_split( $summerStart, 2 ) ;
 									$summerDate2 = str_split( $summerEnd,   2 ) ;
-									$summer1 = $summerDate1[0] . "-" . $summerDate1[1];
-									$summer2 = $summerDate2[0] . "-" . $summerDate1[1];
+									$summerStartEnd = seasonStartEnd($summerDate1, $summerDate2);
+									$summer1 = $summerStartEnd[0];
+									$summer2 = $summerStartEnd[1];
 									$summerSeason = $summer1 . "&nbsp;&nbsp;&nbsp;&nbsp;" . $summer2;
 								} else {
 									$summerSeason = "-";
@@ -505,8 +531,9 @@ if (!(empty($_SESSION ['siteId']))) {
 								if (strlen($winterStart . $winterEnd) == 8) {
 									$winterDate1 =  str_split( $winterStart, 2 ) ;
 									$winterDate2 =  str_split( $winterEnd,   2 ) ;
-									$winter1 = $winterDate1[0] . "-" . $winterDate1[1];
-									$winter2 = $winterDate2[0] . "-" . $winterDate2[1];
+									$winterStartEnd = seasonStartEnd($winterDate1, $winterDate2);
+									$winter1 = $winterStartEnd[0];
+									$winter2 = $winterStartEnd[1];
 									$winterSeason = $winter1 . "&nbsp;&nbsp;&nbsp;&nbsp;" . $winter2;
 								} else {
 									$winterSeason = "-";
@@ -609,16 +636,16 @@ $(document).ready( function() {
 
 	// datepickers for add site form
 	$("#startseason_winter").datepicker({
-		dateFormat: "mm-dd"
+		dateFormat: "yy-mm-dd"
 	});
 	$('#endseason_winter').datepicker({
-		dateFormat: "mm-dd"
+		dateFormat: "yy-mm-dd"
 	});
 	$("#startseason_summer").datepicker({
-		dateFormat: "mm-dd"
+		dateFormat: "yy-mm-dd"
 	});
 	$('#endseason_summer').datepicker({
-		dateFormat: "mm-dd"
+		dateFormat: "yy-mm-dd"
 	});
 	// onChange event for start datepickers for add site form
 	$("#startseason_winter").on('change dp.change', function() {
@@ -638,16 +665,16 @@ $(document).ready( function() {
 
 	// datepickers for edit site form
 	$( "#startseason_winterEdit" ).datepicker({
-		dateFormat: "mm-dd"
+		dateFormat: "yy-mm-dd"
 	});
 	$( "#endseason_winterEdit" ).datepicker({
-		dateFormat: "mm-dd"
+		dateFormat: "yy-mm-dd"
 	});
 	$("#startseason_summerEdit").datepicker({
-		dateFormat: "mm-dd"
+		dateFormat: "yy-mm-dd"
 	});
 	$('#endseason_summerEdit').datepicker({
-		dateFormat: "mm-dd"
+		dateFormat: "yy-mm-dd"
 	});
 	// onChange event for start datepickers for edit site form
 	$("#startseason_winterEdit").on('change dp.change', function() {
@@ -774,10 +801,10 @@ function formEditSite(id, name, short_name, winter1, winter2, summer1, summer2, 
 	$("#edit_enabled").bootstrapSwitch('state', site_enabled);
 
 	// select season
-	if (summer1.length + summer2.length + winter1.length + winter2.length == 20) {
+	if (summer1.length + summer2.length + winter1.length + winter2.length == 40) {
 		// Winter and Summer
 		$("#seasonEdit").val(2);
-	} else if (summer1.length + summer2.length == 10) {
+	} else if (summer1.length + summer2.length == 20) {
 		// Summer
 		$("#seasonEdit").val(1);
 	} else {
