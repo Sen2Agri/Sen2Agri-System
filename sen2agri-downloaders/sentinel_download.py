@@ -150,7 +150,8 @@ def sentinel_download(aoiContext):
 
     url_search="https://scihub.copernicus.eu/apihub/search?q="
     general_log_filename = "sentinel_download.log"
-    general_log_path = aoiContext.writeDir    
+    general_log_path = aoiContext.writeDir
+    manage_log_file(general_log_path, general_log_filename)
     apihubFile = aoiContext.remoteSiteCredentials
     proxy = {}
     # read password file
