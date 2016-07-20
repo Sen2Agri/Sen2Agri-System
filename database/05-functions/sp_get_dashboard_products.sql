@@ -9,9 +9,10 @@ CREATE OR REPLACE FUNCTION sp_get_dashboard_products(
 $BODY$
 DECLARE return_string text;
 BEGIN
-	WITH data(id, product,product_type,product_type_description,processor,site,full_path,quicklook_image,footprint,created_timestamp,site_coord) AS (
+	WITH data(id, satellite_id, product,product_type,product_type_description,processor,site,full_path,quicklook_image,footprint,created_timestamp,site_coord) AS (
 		SELECT
 		    P.id,
+		    P.satellite_id,
 		    P.name, 
 			PT.name,
             PT.description,            
@@ -37,7 +38,7 @@ BEGIN
 	RETURN return_string::json;
 END
 $BODY$
-  LANGUAGE plpgsql VOLATILE
+  LANGUAGE plpgsql STABLE
   COST 100;
 ALTER FUNCTION sp_get_dashboard_products(smallint, smallint)
   OWNER TO admin;
