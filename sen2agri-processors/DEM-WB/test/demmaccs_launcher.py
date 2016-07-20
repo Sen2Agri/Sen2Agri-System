@@ -135,7 +135,7 @@ def launch_demmaccs(l1c_context):
         sat_id = 0
         acquisition_date = ""
         base_abs_path = os.path.dirname(os.path.abspath(__file__)) + "/"
-        demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "--processes-number-dem", "20", "--processes-number-maccs", "8", "--gipp-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-launcher", demmaccs_config.maccs_launcher, "--delete-temp", "False", l1c[3], output_path]
+        demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "--processes-number-dem", "20", "--processes-number-maccs", "1", "--gipp-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-launcher", demmaccs_config.maccs_launcher, "--delete-temp", "False", l1c[3], output_path]
         if len(demmaccs_config.maccs_ip_address) > 0:
             demmaccs_command += ["--maccs-address", demmaccs_config.maccs_ip_address]
         if l1c_context.skip_dem != None:
@@ -196,6 +196,7 @@ parser.add_argument('--skip-dem', required=False,
                         help="skip DEM if a directory with previous work of DEM is given", default=None)
 
 args = parser.parse_args()
+manage_log_file(os.path.join(general_log_path, general_log_filename))
 
 # get the db configuration from cfg file
 config = Config()

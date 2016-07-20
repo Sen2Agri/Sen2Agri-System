@@ -67,7 +67,9 @@ DATABASE_DOWNLOADER_STATUS_FAILED_VALUE = int(3)
 DATABASE_DOWNLOADER_STATUS_ABORTED_VALUE = int(4)
 DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE = int(5)
 
-TIME_INTERVAL_RETRY = 8 #hours
+TIME_INTERVAL_RETRY = int(8) #hours
+MAX_LOG_FILE_SIZE = int(419430400) #bytes -> 400 MB
+MAX_NUMBER_OF_KEPT_LOG_FILES = int(4) #number of maximum logfiles to be kept
 
 g_exit_flag = False
 
@@ -84,6 +86,52 @@ def log(location, info, log_filename = ""):
     except:
         print("Could NOT write inside the log file {}".format(logfile))     
 
+def manage_log_file(location, log_filename):
+    try:
+        log_file = os.path.join(location, log_filename)
+        if not os.path.isfile(log_file):
+            print("The logfile {} does not exist yet".format(log_file))
+            return
+        if os.stat(log_file).st_size >= MAX_LOG_FILE_SIZE:
+            print("Log file is bigger than {}".format(MAX_LOG_FILE_SIZE))
+            #take the  current datetime
+            new_log_file = "{}_{}".format(log_file, datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+            #move the log file with the new name, with datetime at the end
+            print("Log file {} moved to {}".format(log_file, new_log_file))
+            shutil.move(log_file, new_log_file)
+            #check if there are other previous saved log files and delete the oldest one
+            previous_log_files = glob.glob("{}*.log_20*".format(location if location.endswith("/") else location + "/"))
+            while len(previous_log_files) > MAX_NUMBER_OF_KEPT_LOG_FILES:
+                oldest_idx = -1
+                idx = 0
+                oldest_datetime = datetime.datetime.strptime("40000101000001", "%Y%m%d%H%M%S")
+                for log_file in previous_log_files:
+                    underscore_idx = log_file.rfind('_')
+                    if underscore_idx > 0 and underscore_idx + 1 < len(log_file):
+                        str_log_datetime = log_file[underscore_idx + 1:len(log_file)]
+                        if len(str_log_datetime) != 14: #number of digits in the timestamp
+                            idx += 1
+                            continue
+                        log_datetime = datetime.datetime.strptime(str_log_datetime, "%Y%m%d%H%M%S")
+                        if log_datetime <= oldest_datetime:
+                            oldest_datetime = log_datetime
+                            oldest_idx = idx
+                    idx += 1
+                # remove the oldest file if found
+                print("oldest_datetime: {} | oldest_idx: {}" .format(oldest_datetime, oldest_idx))
+                if oldest_idx > -1:
+                    os.remove(previous_log_files[oldest_idx])
+                    print("Log file {} removed".format(previous_log_files[oldest_idx]))
+                else:
+                    break
+                #the main 'if'  can be replaced by 'while', and the following line should 
+                #be uncommented. be aware though...it can lead to infinite loop (probably not, but never say never again
+                previous_log_files = glob.glob("{}*.log_20*".format(location if location.endswith("/") else location + "/"))
+    except Exception, e:
+        print("Error in manage_log_file: exception {} !".format(e))
+                              
+        
+    
 
 def run_command(cmd_array, log_path = "", log_filename = ""):
     start = time.time()
@@ -96,6 +144,7 @@ def run_command(cmd_array, log_path = "", log_filename = ""):
     nok = "NOK"
     log(log_path, "Command finished {} in {} : {}".format((ok if res == 0 else nok),datetime.timedelta(seconds=(time.time() - start)), cmd_str), log_filename)
     return res
+
 
 def init_worker():
     signal.signal(signal.SIGINT, signal.SIG_IGN)
@@ -232,7 +281,7 @@ def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearAr
             if currentMonth >= 1:
                 yearArray[0] = currentYear - 1
     else:
-        if currentMonth <= startSeasonMonth:
+        if currentMonth < startSeasonMonth:
             yearArray[0] = currentYear - 1
             yearArray[1] = currentYear - 1
     

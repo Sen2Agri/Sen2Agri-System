@@ -312,6 +312,7 @@ def landsat_download(aoiContext):
 
      general_log_filename = "landsat_download.log"
      general_log_path = aoiContext.writeDir
+     manage_log_file(general_log_path, general_log_filename)
      usgsFile = aoiContext.remoteSiteCredentials
      proxy = {}
      # read password file
@@ -373,7 +374,7 @@ def landsat_download(aoiContext):
               return
          curr_date=next_overpass(start_date, int(path), product)
 
-         while (curr_date < end_date):
+         while (curr_date < end_date and curr_date <= datetime.datetime.now()):             
              date_asc=curr_date.strftime("%Y%j")
 
              log(aoiContext.writeDir, "Searching for images on (julian date): {}...".format(date_asc), general_log_filename)
@@ -403,6 +404,6 @@ def landsat_download(aoiContext):
                                          if downloadChunks(url, nom_prod, prod_date, lsdestdir, aoiContext, db):
                                               downloaded_ids.append(nom_prod)                                              
          if len(downloaded_ids) > 0:
-              log(aoiContext.writeDir, "Downloaded ids: {}".format(downloaded_ids), general_log_filename)
+              log(aoiContext.writeDir, "Downloaded product: {}".format(downloaded_ids), general_log_filename)
          else: 
-              log(aoiContext.writeDir, "No downloaded ids ", general_log_filename)
+              log(aoiContext.writeDir, "No product has been downloaded ", general_log_filename)
