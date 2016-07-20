@@ -22,6 +22,7 @@
 
 #include "ContinuousColorMappingFilter.hxx"
 #include "otbStreamingStatisticsVectorImageFilter.h"
+#include <boost/algorithm/string.hpp>
 
 namespace otb
 {
@@ -72,6 +73,10 @@ private:
         SetDefaultParameterInt("rgbimg", 0);
         MandatoryOff("rgbimg");
 
+        AddParameter(ParameterType_Int, "isrange", "Specifies if the lines in the file contain ranges or single values");
+        SetDefaultParameterInt("isrange", 1);
+        MandatoryOff("isrange");
+
         SetDocExampleParameterValue("in", "in.tif");
         SetDocExampleParameterValue("out", "out.tif");
         SetDocExampleParameterValue("map", "ramp.map");
@@ -118,7 +123,10 @@ private:
             }
         }
 
-        auto &&ramp = bIsRGBImage ? ReadRGBColorMap(in, mapFile) : ReadColorMap(mapFile);
+        bool bIsRangeLineRepresentation = (GetParameterInt("isrange") != 0);
+        auto &&ramp = bIsRGBImage ? ReadRGBColorMap(in, mapFile) :
+                                    (bIsRangeLineRepresentation ? ReadColorMap(mapFile) :
+                                                                  ReadSimpleLut(mapFile));
 
         m_Filter = ContinuousColorMappingFilter::New();
         m_Filter->SetInput(in);
@@ -131,6 +139,40 @@ private:
 
         SetParameterOutputImagePixelType("out", ImagePixelType_uint8);
         SetParameterOutputImage("out", m_Filter->GetOutput());
+    }
+
+    static Ramp ReadSimpleLut(std::istream &mapFile)
+    {
+        Ramp ramp;
+
+        float min;
+        uint32_t rMin, gMin, bMin;
+        // if we have single values, the range is from min to min+1
+        // and the RGB max values are the same as the minumum values
+        std::string line;
+        while (std::getline(mapFile, line))
+        {
+            boost::trim_left(line);
+            if (line[0] != '#')
+            {
+                std::istringstream iss(line);
+                //while the iss is a number
+                if (iss >> min >> rMin >> gMin >> bMin)
+                {
+                    itk::RGBPixel<uint8_t> minColor, maxColor;
+                    minColor[0] = static_cast<uint8_t>(rMin);
+                    minColor[1] = static_cast<uint8_t>(gMin);
+                    minColor[2] = static_cast<uint8_t>(bMin);
+                    maxColor[0] = static_cast<uint8_t>(rMin);
+                    maxColor[1] = static_cast<uint8_t>(gMin);
+                    maxColor[2] = static_cast<uint8_t>(bMin);
+
+                    ramp.emplace_back(min, min+1, minColor, maxColor);
+                }
+            }
+        }
+
+        return ramp;
     }
 
     static Ramp ReadColorMap(std::istream &mapFile)
