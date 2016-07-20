@@ -712,10 +712,10 @@ ProcessorJobDefinitionParams CompositeHandler::GetProcessingDefinitionImpl(Sched
 
     QDateTime seasonStartDate;
     QDateTime seasonEndDate;
-    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
-    QDateTime limitDate = seasonEndDate.addMonths(2);
     // extract the scheduled date
     QDateTime qScheduledDate = QDateTime::fromTime_t(scheduledDate);
+    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, qScheduledDate, requestOverrideCfgValues);
+    QDateTime limitDate = seasonEndDate.addMonths(2);
     if(qScheduledDate > limitDate) {
         return params;
     }

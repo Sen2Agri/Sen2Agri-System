@@ -234,7 +234,7 @@ void CropMaskHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 
 void CropMaskHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmittedEvent &event,CropMaskJobConfig &cfg) {
     auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4a.");
-    auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.");
+    auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.working-mem");
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
     cfg.jobId = event.jobId;
@@ -832,8 +832,6 @@ QStringList CropMaskHandler::GetProductFormatterArgs(TaskToSubmit &productFormat
                                                      const QStringList &listProducts, const QList<CropMaskProductFormatterParams> &productParams) {
 
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
-    // TODO: Write also the execution infos (see LAI)
-    //std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4a.");
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
     WriteExecutionInfosFile(executionInfosPath, cfg, listProducts);
 
@@ -891,10 +889,10 @@ ProcessorJobDefinitionParams CropMaskHandler::GetProcessingDefinitionImpl(Schedu
 
     QDateTime seasonStartDate;
     QDateTime seasonEndDate;
-    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
-    QDateTime limitDate = seasonEndDate.addMonths(2);
     // extract the scheduled date
     QDateTime qScheduledDate = QDateTime::fromTime_t(scheduledDate);
+    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, qScheduledDate, requestOverrideCfgValues);
+    QDateTime limitDate = seasonEndDate.addMonths(2);
     if(qScheduledDate > limitDate) {
         return params;
     }
