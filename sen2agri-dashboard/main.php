@@ -16,7 +16,7 @@
     <script src="libraries/openlayers/build/ol.js"></script>
     <script src="scripts/config.js"></script>
     <script src="scripts/helpers.js"></script>
-    
+    <script src="./theme/OpenLayers.js"></script>
 	<script>
 		var styleSelected = new ol.style.Style({
 			stroke: new ol.style.Stroke({
@@ -28,40 +28,27 @@
 				color: 'rgba(0, 0, 255, 0.01)'
 			})
 		});
-		
-		var raster = new ol.layer.Tile({
-		  source: new ol.source.MapQuest({layer: 'sat'})
-		});
-		
-		/*var vector = new ol.layer.Vector({
-		  source: new ol.source.Vector({
-		    url: 'productsMapData.json',
-		    format: new ol.format.GeoJSON()
-		  })
-		});*/
-		
 		var vector = new ol.layer.Vector({
-		  source: new ol.source.Vector(),
-		  style: styleSelected
+			source: new ol.source.Vector(),
+			style: styleSelected
 		});
 		vector.setZIndex(10);
 		
-		var view = new ol.View({
-		    center: [0, 0],
-		    zoom: 2
-		});
+		var view = new ol.View({ center: [0, 0], zoom: 3 });
+		var raster = new ol.layer.Tile({ source: new ol.source.Stamen({layer: 'watercolor'}) });
 		
 		var map = new ol.Map({
-		  layers: [raster, vector], // [raster, vector]
+		  layers: [raster, vector],
 		  target: 'map',
 		  view: view
 		});
-		
-		//map.addLayer(vector);
+		var lat = 40;
+		var lon = 22;
+		map.getView().setCenter(ol.proj.transform([lon, lat], 'EPSG:4326', 'EPSG:3857'));
+		map.getView().setZoom(3);
 		
 		// Create an image layer
 		var imageLayer;
-		
 		var displayProductImage = function(imageUrl, imageWidth, imageHeight, extent) {
 			if(imageLayer) map.removeLayer(imageLayer);
 			
