@@ -188,7 +188,7 @@ if args.scatteringcoef:
 
 if args.lut:
     fullLut = ["-lut", args.lut]
-    print(fullScatCoeffs)
+    print(fullLut)
     
 if args.tileid:
     tileID = "TILE_{}".format(args.tileid)
