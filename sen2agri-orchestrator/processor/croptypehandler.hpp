@@ -8,6 +8,7 @@ typedef struct {
     QList<std::reference_wrapper<const TaskToSubmit>> parentsTasksRef;
     // args
     QString cropTypeMap;
+    QString rawCropTypeMap;
     QString xmlValidationMetrics;
     QString statusFlags;
     QString tileId;
@@ -52,12 +53,21 @@ private:
     void HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 const TaskFinishedEvent &event) override;
 
-    QList<std::reference_wrapper<TaskToSubmit>> CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
-                                                    QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList,
-                                                    bool bCropMaskEmpty);
+    QList<std::reference_wrapper<TaskToSubmit>> CreateMaskTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
+                                                    QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList);
+    QList<std::reference_wrapper<TaskToSubmit>> CreateNoMaskTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
+                                                    QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList);
+
     void HandleNewTilesList(EventProcessingContext &ctx,
                             const CropTypeJobConfig &cfg, const TileTemporalFilesInfo &tileTemporalFilesInfo,
                             const QString &cropMask, CropTypeGlobalExecutionInfos &globalExecInfos);
+    void HandleMaskTilesList(EventProcessingContext &ctx,
+                            const CropTypeJobConfig &cfg, const TileTemporalFilesInfo &tileTemporalFilesInfo,
+                            const QString &cropMask, CropTypeGlobalExecutionInfos &globalExecInfos);
+    void HandleNoMaskTilesList(EventProcessingContext &ctx,
+                            const CropTypeJobConfig &cfg, const TileTemporalFilesInfo &tileTemporalFilesInfo,
+                            CropTypeGlobalExecutionInfos &globalExecInfos);
+
     QStringList GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const CropTypeJobConfig &cfg,
                                         const QStringList &listProducts, const QList<CropTypeProductFormatterParams> &productParams);
 
