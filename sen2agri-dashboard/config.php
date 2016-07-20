@@ -132,24 +132,26 @@
 												</select>
 												<span class="help-block">Resolution of the output image (in meters).</span>
 											</div>
+											
 											<div class="subgroup lai">
 												<label class="control-label">Generate LAI mono-dates:</label>
 												<div class="form-group form-group-sm">
-													<input class="form-control" id="lai_monolai" type="radio" name="lai" value="monolai" checked="checked">
-													<label class="control-label" for="lai_monolai">Generate LAI mono-dates</label>
+													<input class="form-control" id="monolai" type="checkbox" name="monolai" value="monolai" checked="checked">
+													<label class="control-label" for="monolai">Generate LAI mono-dates</label>
 													<span class="help-block">(Generate LAI mono-dates)</span>
 												</div>
 												<div class="form-group form-group-sm">
-													<input class="form-control" id="lai_reproc"  type="radio" name="lai" value="reproc">
-													<label class="control-label" for="lai_reproc">Reprocessing with the last N-Days</label>
+													<input class="form-control" id="reproc" type="checkbox" name="reproc" value="reproc" checked="checked">
+													<label class="control-label" for="reproc">Reprocessing with the last N-Days</label>
 													<span class="help-block">(Performe reprocessing with the last N-Days)</span>
 												</div>
 												<div class="form-group form-group-sm">
-													<input class="form-control" id="lai_fitted"  type="radio" name="lai" value="fitted">
-													<label class="control-label" for="lai_fitted">LAI time series fitting at the end of the season</label>
+													<input class="form-control" id="fitted" type="checkbox" name="fitted" value="fitted">
+													<label class="control-label" for="fitted">LAI time series fitting at the end of the season</label>
 													<span class="help-block">(Performe reprocessing at the end of the season)</span>
 												</div>
 											</div>
+											
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="bwr">Backward window:</label>
 												<input type="number" class="form-control" id="bwr" name="bwr" value="2">
@@ -299,7 +301,7 @@
 													<option value="gapfill">GAPFILL</option>
 												</select>
 											</div>
-											<div class="form-group form-group-sm advanced">
+											<div class="form-group form-group-sm hidden">
 												<label class="control-label" for="radius">Radius:</label>
 												<input type="number" min="0" step="1" class="form-control" id="radius" name="radius" value="15">
 												<span class="help-block">The radius used for gap filling, in days.</span>
@@ -481,7 +483,7 @@
 													<option value="gapfill" selected="selected">GAPFILL</option>
 												</select>
 											</div>
-											<div class="form-group form-group-sm advanced">
+											<div class="form-group form-group-sm hidden">
 												<label class="control-label" for="radius">Radius:</label>
 												<input type="number" min="0" step="1" class="form-control" id="radius" name="radius" value="15">
 												<span class="help-block">The radius used for gap filling, in days.</span>
@@ -506,7 +508,7 @@
 												<input type="number" min="0" step="1" class="form-control" id="lmbd" name="lmbd" value="2">
 												<span class="help-block">The lambda parameter used in data smoothing.</span>
 											</div>
-											<div class="form-group form-group-sm advanced">
+											<div class="form-group form-group-sm hidden">
 												<label class="control-label" for="weight">Weight:</label>
 												<input type="number" min="0" step="1" class="form-control" id="weight" name="weight" value="1">
 												<span class="help-block">The weight factor for data smoothing.</span>
