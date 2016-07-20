@@ -20,8 +20,8 @@
 
 void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList, const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                                     LAIProductFormatterParams &outProdFormatterParams,
-                                                    const QStringList &listProducts, bool bGenModels, bool
-                                                    bMonoDateLai, bool bNDayReproc, bool bFittedReproc) {
+                                                    const QStringList &listProducts, const QStringList &monoDateMskFlagsLaiFileNames,
+                                                    bool bGenModels, bool bMonoDateLai, bool bNDayReproc, bool bFittedReproc) {
     // just create the tasks but with no information so far
     // first we add the tasks to be performed for each product
     //int TasksNoPerProduct = 0;
@@ -67,10 +67,12 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
 
     if(bNDayReproc || bFittedReproc) {
         for(int i = 0; i<nbLaiMonoProducts; i++) {
-            if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
-                outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
-                outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
-                outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
+            if(monoDateMskFlagsLaiFileNames[i] != "") {
+                if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
+                    outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
+                    outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
+                    outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
+                }
             }
         }
         outAllTasksList.append(TaskToSubmit{"lai-time-series-builder", {}});
@@ -234,35 +236,52 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
 
     if(bNDayReproc || bFittedReproc) {
         m_nFirstReprocessingIdx = nCurTaskIdx;
+        QList<int> tmpLaiMonoDateFlgsIdxs;
+        QList<int> tmpQuantifyImageInvIdxs;
+        QList<int> tmpQuantifyErrImageInvIdxs;
+
         for(i = 0; i<nbLaiMonoProducts; i++) {
-            if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
-                int cutFlagsTasksIdx = nCurTaskIdx++;
-                // the cut flags task in this case will wait (for simplicity) for all other flags generation
-                // NOTE: This raster can be cut multiple times if mono-date is also generated but this will
-                // not happen in production
-                for(int idx: laiMonoDateFlgsIdxs) {
-                    outAllTasksList[cutFlagsTasksIdx].parentTasks.append(outAllTasksList[idx]);
-                }
-                // Make time series builder wait also for this task
-                laiMonoDateFlgsIdxs.append(cutFlagsTasksIdx);
+            if(monoDateMskFlagsLaiFileNames[i] != "") {
+                if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
+                    int cutFlagsTasksIdx = nCurTaskIdx++;
+                    // the cut flags task in this case will wait (for simplicity) for all other flags generation
+                    // NOTE: This raster can be cut multiple times if mono-date is also generated but this will
+                    // not happen in production
+                    for(int idx: laiMonoDateFlgsIdxs) {
+                        outAllTasksList[cutFlagsTasksIdx].parentTasks.append(outAllTasksList[idx]);
+                    }
+                    // Make time series builder wait also for this task
+                    tmpLaiMonoDateFlgsIdxs.append(cutFlagsTasksIdx);
 
-                int cutLaiTasksIdx = nCurTaskIdx++;
-                // the cut LAI task in this case will wait (for simplicity) for all other LAI generation
-                for(int idx: quantifyImageInvIdxs) {
-                    outAllTasksList[cutLaiTasksIdx].parentTasks.append(outAllTasksList[idx]);
-                }
-                // Make time series builder wait also for this task
-                quantifyImageInvIdxs.append(cutLaiTasksIdx);
+                    int cutLaiTasksIdx = nCurTaskIdx++;
+                    // the cut LAI task in this case will wait (for simplicity) for all other LAI generation
+                    for(int idx: quantifyImageInvIdxs) {
+                        outAllTasksList[cutLaiTasksIdx].parentTasks.append(outAllTasksList[idx]);
+                    }
+                    // Make time series builder wait also for this task
+                    tmpQuantifyImageInvIdxs.append(cutLaiTasksIdx);
 
-                // the cut LAI ERR task in this case will wait (for simplicity) for all other LAI ERR generation
-                int cutLaiErrTasksIdx = nCurTaskIdx++;
-                for(int idx: quantifyErrImageInvIdxs) {
-                    outAllTasksList[cutLaiErrTasksIdx].parentTasks.append(outAllTasksList[idx]);
+                    // the cut LAI ERR task in this case will wait (for simplicity) for all other LAI ERR generation
+                    int cutLaiErrTasksIdx = nCurTaskIdx++;
+                    for(int idx: quantifyErrImageInvIdxs) {
+                        outAllTasksList[cutLaiErrTasksIdx].parentTasks.append(outAllTasksList[idx]);
+                    }
+                    // Make time series builder wait also for this task
+                    tmpQuantifyErrImageInvIdxs.append(cutLaiErrTasksIdx);
                 }
-                // Make time series builder wait also for this task
-                quantifyErrImageInvIdxs.append(cutLaiErrTasksIdx);
             }
         }
+        // add the eventual cut tasks in the list of tasks for which time series builders are waiting
+        for(int idx: tmpLaiMonoDateFlgsIdxs) {
+            laiMonoDateFlgsIdxs.append(idx);
+        }
+        for(int idx: tmpQuantifyImageInvIdxs) {
+            quantifyImageInvIdxs.append(idx);
+        }
+        for(int idx: tmpQuantifyErrImageInvIdxs) {
+            quantifyErrImageInvIdxs.append(idx);
+        }
+
         // time-series-builder -> ALL last bv-image-inversion/quantified-images
         m_nTimeSeriesBuilderIdx = nCurTaskIdx++;
         for(int idx: quantifyImageInvIdxs) {
@@ -667,7 +686,8 @@ void LaiRetrievalHandler::HandleNewTilesList(EventProcessingContext &ctx, const 
     bool bFittedReproc = IsFittedReproc(parameters, configParameters);
 
     QStringList monoDateInputs = listProducts;
-    // make the quantifiedLaiFileNames to have the same dimmension as the input products
+    // make the quantifiedLaiFileNames to have the same dimmension as the input products.
+    // Only the existing ones will be filled
     for(int i = 0; i<listProducts.size(); i++) {
         quantifiedLaiFileNames.append("");
         quantifiedErrLaiFileNames.append("");
@@ -704,13 +724,17 @@ void LaiRetrievalHandler::HandleNewTilesList(EventProcessingContext &ctx, const 
         if(!bMonoDateLai && quantifiedLaiFileNames.size() == 0)
             return;
     }
+    // no need to generate models if no monodate LAI generation
+    if(!bMonoDateLai) {
+        bGenModels = false;
+    }
 
     QList<TaskToSubmit> &allTasksList = outGlobalExecInfos.allTasksList;
     LAIProductFormatterParams &productFormatterParams = outGlobalExecInfos.prodFormatParams;
 
     // create the tasks
     CreateTasksForNewProducts(allTasksList, tileTemporalFilesInfo, outGlobalExecInfos.prodFormatParams, monoDateInputs,
-                              bGenModels, bMonoDateLai, bNDayReproc, bFittedReproc);
+                              monoDateMskFlagsLaiFileNames, bGenModels, bMonoDateLai, bNDayReproc, bFittedReproc);
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     for(TaskToSubmit &task: allTasksList) {
@@ -841,6 +865,54 @@ void LaiRetrievalHandler::WriteExecutionInfosFile(const QString &executionInfosP
     }
 }
 
+void LaiRetrievalHandler::ExtractExistingL3BProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QStringList &listTilesMetaFiles,
+                                                     const QMap<QString, QStringList> &inputProductToTilesMap,
+                                                     QList<L2AToL3B> &listL2AToL3BProducts,
+                                                     QStringList &listL3BProducts, QStringList &missingL3BInputsTiles,
+                                                     QStringList &missingL3BInputs) {
+    QStringList tempMissingL3BInputsTiles;
+    QList<ProcessorHandlerHelper::SatelliteIdType> satIds;
+    for (const auto &tileMetaFile : listTilesMetaFiles) {
+        ProcessorHandlerHelper::SatelliteIdType satId;
+        ProcessorHandlerHelper::GetTileId(tileMetaFile, satId);
+        if(!satIds.contains(satId)) {
+            satIds.append(satId);
+        }
+        // if it is reprocessing but we do not have mono-date, we need also the L3B products
+        // if we have reprocessing and we have mono-date, the generated monodates will be internally used
+        QDateTime dtStartDate = ProcessorHandlerHelper::GetL2AProductDateFromPath(tileMetaFile);
+        QDateTime dtEndDate = dtStartDate.addSecs(SECONDS_IN_DAY-1);
+        // get all the products from that day
+        ProductList l3bProductList = ctx.GetProducts(event.siteId, (int)ProductType::L3BProductTypeId, dtStartDate, dtEndDate);
+        if(l3bProductList.size() > 0) {
+            // get the last of the products
+            const QString &l3bProdPath = l3bProductList[l3bProductList.size()-1].fullPath;
+            if(!listL3BProducts.contains(l3bProdPath)) {
+                listL3BProducts.append(l3bProdPath);
+                Logger::debug(QStringLiteral("Using existing L3B for reprocessing: %1").arg(l3bProdPath));
+            }
+            // add the meta file regardless if the l3b already appears as we might have meta files for several
+            // tiles that were encapsulated in the same product
+            listL2AToL3BProducts.append({tileMetaFile, l3bProdPath});
+        } else {
+            tempMissingL3BInputsTiles.append(tileMetaFile);
+        }
+    }
+    // generating missing L3B is supported only when not in combinations with Sentinel2 due to complications
+    // that occur
+    if(satIds.size() == 1) {
+        for (const auto &tileMetaFile : tempMissingL3BInputsTiles) {
+            missingL3BInputsTiles.append(tileMetaFile);
+            QString productForTile = GetL2AProductForTileMetaFile(inputProductToTilesMap, tileMetaFile);
+            if(!missingL3BInputs.contains(productForTile)) {
+                missingL3BInputs.append(productForTile);
+                Logger::debug(QStringLiteral("The L3B will be created for missing product: %1").arg(productForTile));
+            }
+        }
+    }
+
+}
+
 void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                              const JobSubmittedEvent &event)
 {
@@ -882,32 +954,8 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     QStringList missingL3BInputsTiles;
     QStringList missingL3BInputs;
     if(!bMonoDateLai) {
-        for (const auto &tileMetaFile : listTilesMetaFiles) {
-            // if it is reprocessing but we do not have mono-date, we need also the L3B products
-            // if we have reprocessing and we have mono-date, the generated monodates will be internally used
-            QDateTime dtStartDate = ProcessorHandlerHelper::GetL2AProductDateFromPath(tileMetaFile);
-            QDateTime dtEndDate = dtStartDate.addSecs(SECONDS_IN_DAY-1);
-            // get all the products from that day
-            ProductList l3bProductList = ctx.GetProducts(event.siteId, (int)ProductType::L3BProductTypeId, dtStartDate, dtEndDate);
-            if(l3bProductList.size() > 0) {
-                // get the last of the products
-                const QString &l3bProdPath = l3bProductList[l3bProductList.size()-1].fullPath;
-                if(!listL3BProducts.contains(l3bProdPath)) {
-                    listL3BProducts.append(l3bProdPath);
-                    Logger::debug(QStringLiteral("Using existing L3B for reprocessing: %1").arg(l3bProdPath));
-                }
-                // add the meta file regardless if the l3b already appears as we might have meta files for several
-                // tiles that were encapsulated in the same product
-                listL2AToL3BProducts.append({tileMetaFile, l3bProdPath});
-            } else {
-                missingL3BInputsTiles.append(tileMetaFile);
-                QString productForTile = GetL2AProductForTileMetaFile(inputProductToTilesMap, tileMetaFile);
-                if(!missingL3BInputs.contains(productForTile)) {
-                    missingL3BInputs.append(productForTile);
-                    Logger::debug(QStringLiteral("The L3B will be created for missing product: %1").arg(productForTile));
-                }
-            }
-        }
+        ExtractExistingL3BProducts(ctx, event, listTilesMetaFiles, inputProductToTilesMap, listL2AToL3BProducts,
+                                   listL3BProducts, missingL3BInputsTiles, missingL3BInputs);
     }
 
     QList<LAIProductFormatterParams> listParams;
@@ -1471,10 +1519,10 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
 
     QDateTime seasonStartDate;
     QDateTime seasonEndDate;
-    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
-    QDateTime limitDate = seasonEndDate.addMonths(2);
     // extract the scheduled date
     QDateTime qScheduledDate = QDateTime::fromTime_t(scheduledDate);
+    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, qScheduledDate, requestOverrideCfgValues);
+    QDateTime limitDate = seasonEndDate.addMonths(2);
     if(qScheduledDate > limitDate) {
         return params;
     }
