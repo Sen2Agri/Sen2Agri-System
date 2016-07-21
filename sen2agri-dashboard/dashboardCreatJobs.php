@@ -1,4 +1,22 @@
 <?php
+
+function getAction($processorId) {
+	if ($processorId == '2') {
+		$action = "dashboard.php#tab_l3a";
+	} elseif ($processorId == '3') {
+		$action = "dashboard.php#tab_l3b";
+	} elseif ($processorId == '4'){
+		$action = "dashboard.php#tab_l3e_pheno";
+	} elseif ($processorId == '5') {
+		$action = "dashboard.php#tab_l4a";
+	} elseif ($processorId == '6') {
+		$action = "dashboard.php#tab_l4b";
+	} else {
+		$action = "dashboard.php";
+	}
+	return $action;
+}
+
 function add_new_scheduled_jobs_layout_LAI($processorId) {
 	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 	$sql = "SELECT * FROM sp_get_sites()";
@@ -10,19 +28,22 @@ function add_new_scheduled_jobs_layout_LAI($processorId) {
 
 		$option_site = $option_site . $option;
 	}
-
+	
+	$action = getAction($processorId);
+	/*
 	if ($processorId == '2') {
 		$action = "dashboard.php#tab_l3a";
 	} elseif ($processorId == '3') {
 		$action = "dashboard.php#tab_l3b";
-	} elseif ($processorId == '4') {
-		$action = "dashboard.php#tab_l4a";
 	} elseif ($processorId == '5') {
+		$action = "dashboard.php#tab_l4a";
+	} elseif ($processorId == '6') {
 		$action = "dashboard.php#tab_l4b";
-	}elseif ($processorId == '7'){
+	}elseif ($processorId == '4'){
 		$action = "dashboard.php#tab_l3e_pheno";
 	}
-
+	*/
+	
 	$div =<<<ADDJOB
 	<div class="panel_job_container">
 	<div class="panel panel-default panel_job">
@@ -97,7 +118,9 @@ function update_scheduled_jobs_layout_LAI($processor_id) {
 	 * cycle = 1,
 	 * repeat=2
 	 */
-
+	
+	$action = getAction($processor_id);
+	/*
 	if ($processor_id == '2') {
 		$action = "dashboard.php#tab_l3a";
 	} elseif ($processor_id == '3') {
@@ -109,7 +132,8 @@ function update_scheduled_jobs_layout_LAI($processor_id) {
 	}elseif ($processor_id == '7'){
 		$action = "dashboard.php#tab_l3e_pheno";
 	}
-
+	*/
+	
 	$sql = "SELECT * from sp_get_dashboard_processor_scheduled_task('$processor_id')";
 	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
 
@@ -242,6 +266,8 @@ function add_new_scheduled_jobs_layout($processorId) {
 		$option_site = $option_site . $option;
 	}
 	
+	$action = getAction($processorId);
+	/*
 	if ($processorId == '2') {
 		$action = "dashboard.php#tab_l3a";
 	} elseif ($processorId == '3') {
@@ -253,7 +279,8 @@ function add_new_scheduled_jobs_layout($processorId) {
 	}elseif ($processorId == '7'){
 		$action = "dashboard.php#tab_l3e_pheno";
 	}
-
+	*/
+	
 $div =<<<ADDJOB
 	<div class="panel_job_container">
 	<div class="panel panel-default panel_job">
@@ -314,7 +341,9 @@ function update_scheduled_jobs_layout($processor_id) {
 	 * cycle = 1,
 	 * repeat=2
 	 */
-	
+	 
+	$action = getAction($processor_id);
+	/*
 	if ($processor_id == '2') {
 		$action = "dashboard.php#tab_l3a";
 	} elseif ($processor_id == '3') {
@@ -326,7 +355,8 @@ function update_scheduled_jobs_layout($processor_id) {
 	}elseif ($processor_id == '7'){
 		$action = "dashboard.php#tab_l3e_pheno";
 	}
-
+	*/
+	
 	$sql = "SELECT * from sp_get_dashboard_processor_scheduled_task('$processor_id')";
 	$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
 	
