@@ -338,25 +338,25 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 											<form id="form_add_sched_l3e_pheno" method="post">
 												<input name="schedule_add" type="submit"
 													class="btn btn-primary " value="Add Job"> <input
-													type="hidden" name="processorId" value="7">
+													type="hidden" name="processorId" value="4">
 											</form>
 
 										</div>
 									</div>
 
 									<div class="panel panel-default panel_scheduled_job">
-										<!-- l3e pheno NDVI processor_id = 7 -->
+										<!-- l3e pheno NDVI processor_id = 4 -->
 									<?php
 									
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
-										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '7') {
+										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '4') {
 											
-											add_new_scheduled_jobs_layout ( 7 );
+											add_new_scheduled_jobs_layout ( 4 );
 										}
 									}
 									?>
 										
-									<?php update_scheduled_jobs_layout(7);?>
+									<?php update_scheduled_jobs_layout(4);?>
 									
 									</div>
 								</div>
@@ -417,24 +417,24 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 											<form id="form_add_sched" method="post">
 												<input name="schedule_add" type="submit"
 													class="btn btn-primary " value="Add Job"> <input
-													type="hidden" name="processorId" value="4">
+													type="hidden" name="processorId" value="5">
 											</form>
 
 										</div>
 									</div>
 
 									<div class="panel panel-default panel_scheduled_job">
-										<!-- l4a processor_id = 4 -->
+										<!-- l4a processor_id = 5 -->
 									<?php
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
-										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '4') {
+										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '5') {
 											
-											add_new_scheduled_jobs_layout ( 4 );
+											add_new_scheduled_jobs_layout ( 5 );
 										}
 									}
 									?>
 										
-									<?php update_scheduled_jobs_layout(4);?>
+									<?php update_scheduled_jobs_layout(5);?>
 									</div>
 								</div>
 							</div>
@@ -497,25 +497,25 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 											<form id="form_add_sched" method="post">
 												<input name="schedule_add" type="submit"
 													class="btn btn-primary " value="Add Job"> <input
-													type="hidden" name="processorId" value="5">
+													type="hidden" name="processorId" value="6">
 											</form>
 
 										</div>
 									</div>
 									<div class="panel panel-default panel_scheduled_job">
 
-										<!-- l4b processor_id = 5 -->
+										<!-- l4b processor_id = 6 -->
 									<?php
 									
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
-										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '5') {
+										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '6') {
 											
-											add_new_scheduled_jobs_layout ( 5 );
+											add_new_scheduled_jobs_layout ( 6 );
 										}
 									}
 									?>
 										
-									<?php update_scheduled_jobs_layout(5);?>
+									<?php update_scheduled_jobs_layout(6);?>
 									
 									</div>
 								</div>
