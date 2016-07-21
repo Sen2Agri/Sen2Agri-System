@@ -31,4 +31,11 @@ if (isset($_SESSION['loginMessage'])) {
 			</div>
         </div>
     </div>
+	<script type="text/javascript">
+		$(document).ready( function() {
+			if ($('input[name="user"]').length) {
+				$('input[name="user"]').focus();	
+			}
+		});
+	</script>
 <?php include "ms_foot.php" ?>
