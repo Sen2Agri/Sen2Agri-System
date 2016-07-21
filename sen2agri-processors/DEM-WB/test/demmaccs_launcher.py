@@ -196,7 +196,7 @@ parser.add_argument('--skip-dem', required=False,
                         help="skip DEM if a directory with previous work of DEM is given", default=None)
 
 args = parser.parse_args()
-manage_log_file(os.path.join(general_log_path, general_log_filename))
+manage_log_file(general_log_path, general_log_filename)
 
 # get the db configuration from cfg file
 config = Config()
