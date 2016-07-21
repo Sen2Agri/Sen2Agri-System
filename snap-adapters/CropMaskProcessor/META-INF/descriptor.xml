@@ -3,25 +3,41 @@
   <operatorClass>org.esa.snap.core.gpf.operators.tooladapter.ToolAdapterOp</operatorClass>
   <alias>CropMaskProcessor</alias>
   <label>Crop Mask Processor</label>
-  <version>1.0</version>
-  <description>Sen2Agri Crop Mask Processor</description>
-  <authors>Ramona Manda</authors>
-  <copyright>(C)2015 CS ROMANIA</copyright>
+  <version>1.3</version>
+  <description>Sen2Agri L4A Crop Mask Processor</description>
+  <authors>Ramona Manda, Cosmin Cara</authors>
+  <copyright>(C)2016 Sen2Agri Consortium</copyright>
   <internal>false</internal>
   <autoWriteSuppressed>false</autoWriteSuppressed>
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>CropMask.py</mainToolFileLocation>
-  <workingDir>$HOME</workingDir>
-  <templateFileLocation>CropMaskProcessor-template.vm</templateFileLocation>
+  <mainToolFileLocation>$SCRIPT_PATH\CropMask.py</mainToolFileLocation>
+  <workingDir>$WORKING_DIR_PATH</workingDir>
+  <template>
+    <file>CropMaskProcessor-template.vm</file>
+  </template>
   <progressPattern>(?:.+): (\d{1,3})% (?:.+)</progressPattern>
   <errorPattern>ERROR: (.+)</errorPattern>
   <stepPattern>(?:.+)Executing (.+)</stepPattern>
   <variables>
     <variable>
-      <key>HOME</key>
-      <value></value>
+      <key>SCRIPT_PATH</key>
+      <value>/usr/bin</value>
+      <isShared>false</isShared>
+    </variable>
+    <osvariable>
+      <key>PYTHON_BIN</key>
+      <value>python.exe</value>
+      <isShared>false</isShared>
+      <windows>python.exe</windows>
+      <linux>/bin/python2.7</linux>
+      <macosx>/bin/python2.7</macosx>
+      <isTransient>false</isTransient>
+    </osvariable>
+    <variable>
+      <key>WORKING_DIR_PATH</key>
+      <value>/mnt/archive/temp</value>
       <isShared>false</isShared>
     </variable>
   </variables>
@@ -34,62 +50,28 @@
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>referencePolygons</name>
+      <name>refPolygons</name>
       <dataType>java.io.File</dataType>
-      <defaultValue>UA_KYIV_LC_FO_2013.shp</defaultValue>
+      <defaultValue>\</defaultValue>
       <description>The reference polygons</description>
+      <label>Reference Polygons</label>
       <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
+      <notNull>true</notNull>
+      <notEmpty>true</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>ratio</name>
-      <dataType>java.lang.Float</dataType>
-      <defaultValue>0.75</defaultValue>
-      <description>The ratio between the validation and training polygons</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>noSamples</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>4000</defaultValue>
-      <description>The number of samples included in the training set.</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>randomSeed</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>0</defaultValue>
       <description>The random seed used for training</description>
+      <label>Random Seed</label>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>lambdaParam</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>2</defaultValue>
-      <description>The lambda parameter used in data smoothing (default 2)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>inputFiles</name>
@@ -99,210 +81,41 @@
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>weightFactor</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>1</defaultValue>
-      <description>The weight factor for data smoothing (default 1)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>noComponents</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>6</defaultValue>
-      <description>The number of components used by dimensionality reduction (default 6)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>spatialRadius</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>10</defaultValue>
-      <description>The spatial radius of the neighborhood used for segmentation (default 10)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>rangeRadius</name>
-      <dataType>java.lang.Float</dataType>
-      <defaultValue>0.65</defaultValue>
-      <description>The range radius defining the radius (expressed in radiometry unit) in the multispectral space (default 0.65)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>minsize</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>10</defaultValue>
-      <description>Minimum size of a region (in pixel unit) in segmentation. (default 10)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>noTrainingTrees</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>100</defaultValue>
-      <description>The number of trees used for training (default 100)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>maxDepthTrees</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>25</defaultValue>
-      <description>maximum depth of the trees used for Random Forest classifier (default 25)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>minDepthTrees</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>5</defaultValue>
-      <description>minimum number of samples in each node used by the classifier (default 5)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>pixelSize</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>10</defaultValue>
       <description>The size, in meters, of a pixel (default 10)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>erosionRadius</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>1</defaultValue>
-      <description>The radius used for erosion (default 1)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>alphaParam</name>
-      <dataType>java.lang.Float</dataType>
-      <defaultValue>0.01</defaultValue>
-      <description>The parameter alpha used by the mahalanobis function (default 0.01)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>window</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>6</defaultValue>
-      <description>The window, expressed in number of records, used for the temporal features extraction</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>minPixelArea</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>20</defaultValue>
-      <description>The minium number of pixel in an area where, for an equal number of crop and nocrop samples, the crop decision is taken (default 20)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>tileName</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>T0000</defaultValue>
-      <description>The name of the tile</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>temporalResampling</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>gapfill</defaultValue>
-      <description>The temporal resampling mode</description>
-      <label></label>
+      <label>Pixel Size</label>
+      <unit>m</unit>
       <valueSet>
-        <string>resample</string>
-        <string>gapfill</string>
+        <string>10</string>
+        <string>20</string>
+        <string>30</string>
+        <string>60</string>
       </valueSet>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>mission</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>SPOT</defaultValue>
-      <description>The main mission for the time series</description>
-      <label></label>
-      <interval></interval>
-      <valueSet>
-        <string>SPOT</string>
-        <string>LANDSAT</string>
-        <string>SENTINEL</string>
-      </valueSet>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>siteId</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>0</defaultValue>
-      <description>The site ID</description>
+      <name>outDir</name>
+      <dataType>java.io.File</dataType>
+      <defaultValue>\mnt\archive\temp</defaultValue>
+      <description>Output folder</description>
+      <label>Output Folder</label>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
+      <parameterType>FolderParameter</parameterType>
     </parameter>
   </parameters>
-  <source>user</source>
+  <source>package</source>
   <isSystem>false</isSystem>
   <isHandlingOutputName>true</isHandlingOutputName>
   <sourceProductDescriptors/>
   <targetPropertyDescriptors/>
   <numSourceProducts>0</numSourceProducts>
+  <templateType>VELOCITY</templateType>
 </operator>
