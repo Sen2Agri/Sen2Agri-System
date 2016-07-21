@@ -26,6 +26,8 @@ SENTINEL2_SATELLITE_ID = int(1)
 LANDSAT8_SATELLITE_ID = int(2)
 general_log_filename = "log.log"
 
+DEBUG = 1
+
 def log(location, info, log_filename = None):
     if log_filename == None:
         log_filename = "log.txt"
@@ -194,9 +196,10 @@ class L2AInfo(object):
         if not self.database_connect():
             return ""
         try:
-            self.cursor.execute("select id from site where short_name={}".format(short_name))
+            self.cursor.execute("select id from site where short_name='{}'".format(short_name))
             rows = self.cursor.fetchall()
         except:
+            print("Unable to execute select id from site")
             self.database_disconnect()
             return ""
         self.database_disconnect()
