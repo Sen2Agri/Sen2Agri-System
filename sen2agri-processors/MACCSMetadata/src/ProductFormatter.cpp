@@ -1185,6 +1185,7 @@ private:
 
 
       //if(m_tileIDList.size() > 1)
+      if (!m_geoProductInfo.empty())
       {
           //for multiple tiles if there are differences between HorizCSName values and HorizCSCode values, add GEO_TABLES = "EPSG" and HorizCSType = "GEOGRAPHIC"
           //check for differeces
