@@ -107,7 +107,7 @@ else:
             aoi.setLandsatDirNumber(options.dir)
             aoi.setLandsatStation(options.station)
     else:
-        print("Unkown remote host")
+        log(general_log_path, "Unkown remote host. Has to be 's2' or 'l8'. The received input is {}".format(options.remote_host), general_log_filename)
         sys.exit(-1)
 
     if len(sites_aoi_database) <= 0:

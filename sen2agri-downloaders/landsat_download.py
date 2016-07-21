@@ -337,7 +337,7 @@ def landsat_download(aoiContext):
              log(general_log_path, "Proxy info: {}".format(proxy), general_log_filename)        
         f.close()
      except :
-        log(general_log_path, "Error with usgs password file", general_log_filename)
+        log(general_log_path, "Error raised when reading the landsat 8 password file {} ".format(usgsFile), general_log_filename)
         return
 
      db = LandsatAOIInfo(aoiContext.configObj.host, aoiContext.configObj.database, aoiContext.configObj.user, aoiContext.configObj.password)

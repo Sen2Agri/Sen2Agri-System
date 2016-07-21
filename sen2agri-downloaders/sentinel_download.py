@@ -175,7 +175,7 @@ def sentinel_download(aoiContext):
             log(general_log_path, "Proxy info: {}".format(proxy), general_log_filename)        
         f.close()
     except :
-        log(aoiContext.writeDir, "error with password file ".format(str(apihubFile)), general_log_filename)
+        log(aoiContext.writeDir, "Error raised when reading the sentinel 2 apihub password file {} ".format(str(apihubFile)), general_log_filename)
         return
 
     s2Objs = []
