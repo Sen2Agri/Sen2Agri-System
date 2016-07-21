@@ -56,10 +56,10 @@ BEGIN
 	END IF;
 	midDate := startDate + (endDate - startDate) / 2;
 
-	PERFORM sp_insert_scheduled_task(_short_name || '_L3A' :: character varying, (SELECT id FROM processor WHERE short_name = 'l3a'), return_id :: int, 2::smallint, 0::smallint, 31::smallint, CAST((SELECT date_trunc('month', startDate) + interval '1 month' - interval '1 day') AS character varying), 60, 1 :: smallint, '{}' :: json);
-	PERFORM sp_insert_scheduled_task(_short_name || '_L3B' :: character varying, (SELECT id FROM processor WHERE short_name = 'l3b_lai'), return_id :: int, 1::smallint, 10::smallint, 0::smallint, CAST((startDate + 10) AS character varying), 60, 1 :: smallint, '{"general_params":{"product_type":"L3B"}}' :: json);
-	PERFORM sp_insert_scheduled_task(_short_name || '_L4A' :: character varying, (SELECT id FROM processor WHERE short_name = 'l4a'), return_id :: int, 2::smallint, 0::smallint, 31::smallint, CAST((midDate) AS character varying), 60, 1 :: smallint, '{}' :: json);
-	PERFORM sp_insert_scheduled_task(_short_name || '_L4B' :: character varying, (SELECT id FROM processor WHERE short_name = 'l4b'), return_id :: int, 2::smallint, 0::smallint, 31::smallint, CAST((midDate) AS character varying), 60, 1 :: smallint, '{}' :: json);
+	PERFORM sp_insert_scheduled_task(_short_name || '_L3A' :: character varying, 2, return_id :: int, 2::smallint, 0::smallint, 31::smallint, CAST((SELECT date_trunc('month', startDate) + interval '1 month' - interval '1 day') AS character varying), 60, 1 :: smallint, '{}' :: json);
+	PERFORM sp_insert_scheduled_task(_short_name || '_L3B' :: character varying, 3, return_id :: int, 1::smallint, 10::smallint, 0::smallint, CAST((startDate + 10) AS character varying), 60, 1 :: smallint, '{"general_params":{"product_type":"L3B"}}' :: json);
+	PERFORM sp_insert_scheduled_task(_short_name || '_L4A' :: character varying, 5, return_id :: int, 2::smallint, 0::smallint, 31::smallint, CAST((midDate) AS character varying), 60, 1 :: smallint, '{}' :: json);
+	PERFORM sp_insert_scheduled_task(_short_name || '_L4B' :: character varying, 6, return_id :: int, 2::smallint, 0::smallint, 31::smallint, CAST((midDate) AS character varying), 60, 1 :: smallint, '{}' :: json);
 
 END;
 $BODY$
