@@ -1,10 +1,8 @@
 --input
-$inputFiles
---outdir
-$HOME/Vegetation/out
---tileid
-$tileId
+#foreach ($inputFile in $inputFiles)
+$inputFile.AbsolutePath
+#end
 --resolution
 $resolution
---siteid
-$siteId
+--outdir
+$WORKING_DIR_PATH

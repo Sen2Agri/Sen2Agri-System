@@ -2,142 +2,124 @@
   <name>org.esa.snap.core.gpf.operators.tooladapter.MACCSProcessor</name>
   <operatorClass>org.esa.snap.core.gpf.operators.tooladapter.ToolAdapterOp</operatorClass>
   <alias>MACCSProcessor</alias>
-  <label>MACCSProcessor</label>
-  <version>1.0</version>
+  <label>MACCS Processor</label>
+  <version>1.3</version>
   <description>MACCS Processor for L2A</description>
-  <authors>RamonaM</authors>
-  <copyright>(c) ESA</copyright>
+  <authors>Ramona Manda, Cosmin Cara</authors>
+  <copyright>(C)2016 Sen2Agri Consortium</copyright>
   <internal>false</internal>
   <autoWriteSuppressed>false</autoWriteSuppressed>
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>/home/ramonag/sen2agri/sources/sen2agri/sen2agri-processors/DEM-WB/test/demmaccs.py</mainToolFileLocation>
-  <workingDir>/home/ramonag/sen2agri/workingDir</workingDir>
-  <templateFileLocation>MACCSProcessor-template.vm</templateFileLocation>
+  <mainToolFileLocation>$SCRIPT_PATH\demmaccs.py</mainToolFileLocation>
+  <workingDir>$WORKING_DIR_PATH</workingDir>
+  <template>
+    <file>MACCSProcessor-template.vm</file>
+  </template>
   <variables>
     <variable>
       <key>WORKING_DIR_PATH</key>
-      <value>/home/ramonag/sen2agri/workingDir/</value>
+      <value>/mnt/archive/temp_maccs/workingDir</value>
+      <isShared>false</isShared>
+    </variable>
+    <variable>
+      <key>SCRIPT_PATH</key>
+      <value>/usr/share/sen2agri/sen2agri-demmaccs</value>
+      <isShared>false</isShared>
     </variable>
   </variables>
   <parameters>
     <parameter>
       <name>targetProductFile</name>
       <dataType>java.io.File</dataType>
+      <description>Output file</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>SRTMDataset</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>/mnt/archive/srtm</defaultValue>
+      <alias>SRTM Path</alias>
+      <dataType>java.io.File</dataType>
+      <defaultValue>\mnt\archive\srtm</defaultValue>
       <description>SRTM dataset path</description>
+      <label>SRTM Path</label>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
+      <parameterType>FolderParameter</parameterType>
     </parameter>
     <parameter>
       <name>SWBDDataset</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>/mnt/archive/swbd</defaultValue>
+      <alias>SWBD Path</alias>
+      <dataType>java.io.File</dataType>
+      <defaultValue>\mnt\archive\swbd</defaultValue>
       <description>SWBD dataset path</description>
+      <label>SWBD Path</label>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
+      <parameterType>FolderParameter</parameterType>
     </parameter>
     <parameter>
       <name>processNumber</name>
+      <alias>DEM Processes</alias>
       <dataType>java.lang.Integer</dataType>
-      <defaultValue>3</defaultValue>
+      <defaultValue>20</defaultValue>
+      <description>Number of parallel DEM processes</description>
+      <label>DEM Processes</label>
+      <unit></unit>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>gipDirectory</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>/mnt/archive/gips</defaultValue>
-      <description>directory where gip are to be found</description>
+      <alias>GIP Path</alias>
+      <dataType>java.io.File</dataType>
+      <defaultValue>\mnt\archive\gips</defaultValue>
+      <description>Directory where gip are to be found</description>
+      <label>GIP Path</label>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>workingDir</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>/mnt/archive/ramona_temp_maccs/workingDir/</defaultValue>
-      <description>working directory</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>MACCSAddress</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>192.168.60.79</defaultValue>
-      <description>MACCS machine address</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
+      <parameterType>FolderParameter</parameterType>
     </parameter>
     <parameter>
       <name>MACCSLauncher</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>/opt/maccs/core/4.7/bin/maccs</defaultValue>
-      <description>the shell from the remote pc which lauches MACCS</description>
+      <alias>MACCS Path</alias>
+      <dataType>java.io.File</dataType>
+      <defaultValue>\opt\maccs\core\5.0\bin\maccs</defaultValue>
+      <description>Path to MACCS binaries</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
+      <parameterType>FolderParameter</parameterType>
     </parameter>
     <parameter>
       <name>inputProductDir</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>/mnt/archive/Sen2Agri_DataSets/2015/Ukraine/EO/L8/LC81810252015240LGN00/</defaultValue>
-      <description>the directory where L1C input product is located</description>
+      <alias>L1C Path</alias>
+      <dataType>java.io.File</dataType>
+      <defaultValue>\mnt\archive</defaultValue>
+      <description>Path to L1C input products</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
+      <parameterType>FolderParameter</parameterType>
     </parameter>
     <parameter>
       <name>outDir</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>/mnt/archive/ramona_temp_maccs/</defaultValue>
-      <description>output location</description>
+      <alias>Output Path</alias>
+      <dataType>java.io.File</dataType>
+      <defaultValue>\mnt\archive\temp_maccs</defaultValue>
+      <description>Output location</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>DemLauncher</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>/home/ramonag/sen2agri/sources/sen2agri/sen2agri-processors/DEM-WB/test/dem.py</defaultValue>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
+      <parameterType>FolderParameter</parameterType>
     </parameter>
   </parameters>
   <source>package</source>
@@ -146,4 +128,5 @@
   <sourceProductDescriptors/>
   <targetPropertyDescriptors/>
   <numSourceProducts>0</numSourceProducts>
+  <templateType>VELOCITY</templateType>
 </operator>

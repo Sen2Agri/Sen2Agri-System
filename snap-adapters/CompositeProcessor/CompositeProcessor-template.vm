@@ -1,16 +1,14 @@
---syntdate
-$synthesysDate
---synthalf
-$halfSynthesis
 --input
-$inputFiles
+#foreach ($inputFile in $inputFiles)
+$inputFile.AbsolutePath
+#end
 --res
 $resolution
 --outdir
-$HOME/Composite/out
+$WORKING_DIR_PATH
+--syndate
+$synthesysDate
+--synthalf
+$halfSynthesis
 --bandsmap
-$bandsMappingFile
---tileid
-$tileId
---siteid
-$siteId
+/usr/share/sen2agri/$bandMapping
