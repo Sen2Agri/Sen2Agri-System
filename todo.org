@@ -25,7 +25,7 @@
 * DONE add orbit files to source control
 * TODO simplify site bounds
 * TODO update product folder in website config
-* TODO reorganize snap-adapters on git
+* DONE reorganize snap-adapters on git
 * TODO consolidate dashboard settings
 * TODO add visibility setting in config_metadata
 * DONE see why sen2agri-config doesn't run any more
