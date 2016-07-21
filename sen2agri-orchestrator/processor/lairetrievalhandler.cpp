@@ -11,41 +11,70 @@
 // The number of tasks that are executed for each product before executing time series tasks
 #define LAI_TASKS_PER_PRODUCT       6
 #define MODEL_GEN_TASKS_PER_PRODUCT 4
+#define CUT_TASKS_NO                5
 
 #define DEFAULT_GENERATED_SAMPLES_NO    "40000"
 #define DEFAULT_NOISE_VAR               "0.01"
 #define DEFAULT_BEST_OF                 "1"
 #define DEFAULT_REGRESSOR               "nn"
 
-void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
+void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList, const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                                     LAIProductFormatterParams &outProdFormatterParams,
-                                                     int nbLaiMonoProducts, bool bGenModels, bool bMonoDateLai, bool bNDayReproc, bool bFittedReproc) {
+                                                    const QStringList &listProducts, const QStringList &monoDateMskFlagsLaiFileNames,
+                                                    bool bGenModels, bool bMonoDateLai, bool bNDayReproc, bool bFittedReproc) {
     // just create the tasks but with no information so far
     // first we add the tasks to be performed for each product
-    int TasksNoPerProduct = 0;
-    if(bGenModels)
-        TasksNoPerProduct += MODEL_GEN_TASKS_PER_PRODUCT;
-    if(bMonoDateLai)
-        TasksNoPerProduct += LAI_TASKS_PER_PRODUCT;
+    //int TasksNoPerProduct = 0;
+    //if(bGenModels)
+    //    TasksNoPerProduct += MODEL_GEN_TASKS_PER_PRODUCT;
 
+    bool bCreateFootprint = false;
+    if(bMonoDateLai && (tileTemporalFilesInfo.uniqueSatteliteIds.size() > 1 && tileTemporalFilesInfo.shapePath == "")) {
+        //TasksNoPerProduct += LAI_TASKS_PER_PRODUCT;
+        // if we have multiple satellites and we don't have yet the shape file for this tile, then we must
+        // create the footprint for the primary satellite ID
+        outAllTasksList.append(TaskToSubmit{ "lai-create-tile-footprint", {} });
+        bCreateFootprint = true;
+    }
+
+    int nbLaiMonoProducts = listProducts.size();
     for(int i = 0; i<nbLaiMonoProducts; i++) {
-        if(bGenModels) {
-            outAllTasksList.append(TaskToSubmit{ "lai-bv-input-variable-generation", {} });
-            outAllTasksList.append(TaskToSubmit{ "lai-prosail-simulator", {} });
-            outAllTasksList.append(TaskToSubmit{ "lai-training-data-generator", {} });
-            outAllTasksList.append(TaskToSubmit{ "lai-inverse-model-learning", {} });
-        }
-        if(bMonoDateLai) {
-            outAllTasksList.append(TaskToSubmit{"lai-mono-date-mask-flags", {}});
-            outAllTasksList.append(TaskToSubmit{"lai-ndvi-rvi-extractor", {}});
-            outAllTasksList.append(TaskToSubmit{"lai-bv-image-invertion", {}});
-            outAllTasksList.append(TaskToSubmit{"lai-bv-err-image-invertion", {}});
-            outAllTasksList.append(TaskToSubmit{"lai-quantify-image", {}});
-            outAllTasksList.append(TaskToSubmit{"lai-quantify-err-image", {}});
+        // we might have here empty products as maybe we do not generate monodates just for the missing ones
+        if(listProducts[i] != "") {
+            if(bGenModels) {
+                outAllTasksList.append(TaskToSubmit{ "lai-bv-input-variable-generation", {} });
+                outAllTasksList.append(TaskToSubmit{ "lai-prosail-simulator", {} });
+                outAllTasksList.append(TaskToSubmit{ "lai-training-data-generator", {} });
+                outAllTasksList.append(TaskToSubmit{ "lai-inverse-model-learning", {} });
+            }
+            if(bMonoDateLai) {
+                outAllTasksList.append(TaskToSubmit{"lai-mono-date-mask-flags", {}});
+                outAllTasksList.append(TaskToSubmit{"lai-ndvi-rvi-extractor", {}});
+                if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
+                    outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
+                    outAllTasksList.append(TaskToSubmit{"compression", {}});
+                    outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
+                    outAllTasksList.append(TaskToSubmit{"compression", {}});
+                    outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
+                }
+                outAllTasksList.append(TaskToSubmit{"lai-bv-image-invertion", {}});
+                outAllTasksList.append(TaskToSubmit{"lai-bv-err-image-invertion", {}});
+                outAllTasksList.append(TaskToSubmit{"lai-quantify-image", {}});
+                outAllTasksList.append(TaskToSubmit{"lai-quantify-err-image", {}});
+            }
         }
     }
 
     if(bNDayReproc || bFittedReproc) {
+        for(int i = 0; i<nbLaiMonoProducts; i++) {
+            if(monoDateMskFlagsLaiFileNames[i] != "") {
+                if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
+                    outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
+                    outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
+                    outAllTasksList.append(TaskToSubmit{"gdalwarp", {}});
+                }
+            }
+        }
         outAllTasksList.append(TaskToSubmit{"lai-time-series-builder", {}});
         outAllTasksList.append(TaskToSubmit{"lai-err-time-series-builder", {}});
         outAllTasksList.append(TaskToSubmit{"lai-msk-flags-time-series-builder", {}});
@@ -63,7 +92,8 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
     // now fill the tasks hierarchy infos
 
     //   ----------------------------- LOOP --------------------------------------------
-    //   |                                                                              |
+    //   |                      lai-create-tile-footprint      (optional)               |
+    //   |                              |                                               |
     //   |                      bv-input-variable-generation   (optional)               |
     //   |                              |                                               |
     //   |                      prosail-simulator              (optional)               |
@@ -114,97 +144,182 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
     // we execute in parallel and launch at once all processing chains for each product
     // for example, if we have genModels, we launch all bv-input-variable-generation for all products
     // if we do not have genModels, we launch all NDVIRVIExtraction in the same time for all products
+    int nCurTaskIdx = bCreateFootprint ? 1 : 0;
     for(i = 0; i<nbLaiMonoProducts; i++) {
-        int loopFirstIdx = i*TasksNoPerProduct;
-        // initialize the ndviRvi task index
-        int genMasksIdx = loopFirstIdx;
-        // add the tasks for generating models
-        if(bGenModels) {
-            int prosailSimulatorIdx = loopFirstIdx+1;
-            outAllTasksList[prosailSimulatorIdx].parentTasks.append(outAllTasksList[loopFirstIdx]);
-            outAllTasksList[prosailSimulatorIdx+1].parentTasks.append(outAllTasksList[prosailSimulatorIdx]);
-            outAllTasksList[prosailSimulatorIdx+2].parentTasks.append(outAllTasksList[prosailSimulatorIdx+1]);
-            // now update the index for the ndviRvi task and set its parent to the inverse-model-learning task
-            genMasksIdx += MODEL_GEN_TASKS_PER_PRODUCT;
-            outAllTasksList[genMasksIdx].parentTasks.append(outAllTasksList[prosailSimulatorIdx+2]);
-        }
-        if(bMonoDateLai) {
-            laiMonoDateFlgsIdxs.append(genMasksIdx);
+        // we might have here empty products as maybe we do not generate monodates just for the missing ones
+        if(listProducts[i] != "") {
+            // add the tasks for generating models
+            if(bGenModels) {
+                if(bCreateFootprint) {
+                    // Do not start BVVariableGeneration until footprint is created
+                    outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[0]);
+                }
+                // prosail simulator -> generate-vars
+                // skip over the BVVariableGeneration
+                nCurTaskIdx++;
+                outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+                nCurTaskIdx++;
+                // trainig -> prosail simulator
+                outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+                nCurTaskIdx++;
+                // inverse model -> trainig
+                outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+                nCurTaskIdx++;
+                // now update the index for the lai-mono-date-mask-flags task and set its parent to the inverse-model-learning task
+                //genMasksIdx += MODEL_GEN_TASKS_PER_PRODUCT;
+                outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+            } else if(bMonoDateLai && bCreateFootprint) {
+                // Do not start until footprint is created
+                outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[0]);
+            }
+            if(bMonoDateLai) {
+                int genFlagsIdx = nCurTaskIdx++;
 
-            // ndvi-rvi-extraction -> lai-mono-date-mask-flags
-            int ndviRviExtrIdx = genMasksIdx+1;
-            outAllTasksList[ndviRviExtrIdx].parentTasks.append(outAllTasksList[genMasksIdx]);
+                // ndvi-rvi-extraction -> lai-mono-date-mask-flags
+                int ndviRviExtrIdx = nCurTaskIdx++;
+                outAllTasksList[ndviRviExtrIdx].parentTasks.append(outAllTasksList[ndviRviExtrIdx-1]);
 
-            // the others comme naturally updated
-            // bv-image-inversion -> ndvi-rvi-extraction
-            int nBVImageInversionIdx = ndviRviExtrIdx+1;
-            outAllTasksList[nBVImageInversionIdx].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
-            bvImageInvIdxs.append(nBVImageInversionIdx);
+                // Cut the NDVI/RVI and the flags images if necessary
+                if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
+                    int cutFlagsTaksIdx = nCurTaskIdx++;
+                    // add the task for cutting the flags
+                    outAllTasksList[cutFlagsTaksIdx].parentTasks.append(outAllTasksList[cutFlagsTaksIdx-1]);
+                    int compressCutFlagsTaksIdx = nCurTaskIdx++;
+                    // add the task for cutting the flags
+                    outAllTasksList[compressCutFlagsTaksIdx].parentTasks.append(outAllTasksList[cutFlagsTaksIdx]);
+                    genFlagsIdx = compressCutFlagsTaksIdx;  // the flags index becomes this one
 
-            // bv-err-image-inversion -> ndvi-rvi-extraction
-            int nBVErrImageInversionIdx = nBVImageInversionIdx+1;
-            outAllTasksList[nBVErrImageInversionIdx].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
-            bvErrImageInvIdxs.append(nBVErrImageInversionIdx);
+                    // add the task for cutting the single ndvi
+                    int cutSingleNdviTaksIdx = nCurTaskIdx++;
+                    outAllTasksList[cutSingleNdviTaksIdx].parentTasks.append(outAllTasksList[cutSingleNdviTaksIdx-1]);
+                    int compressedCutSingleNdviTaksIdx = nCurTaskIdx++;
+                    outAllTasksList[compressedCutSingleNdviTaksIdx].parentTasks.append(outAllTasksList[cutSingleNdviTaksIdx]);
 
-            // quantify-image -> bv-image-inversion
-            int nQuantifyImageInversionIdx = nBVErrImageInversionIdx+1;
-            outAllTasksList[nQuantifyImageInversionIdx].parentTasks.append(outAllTasksList[nBVImageInversionIdx]);
-            quantifyImageInvIdxs.append(nQuantifyImageInversionIdx);
+                    // add the task for cutting the ndvi-rvi raster
+                    int cutNdviRviTaksIdx = nCurTaskIdx++;
+                    outAllTasksList[cutNdviRviTaksIdx].parentTasks.append(outAllTasksList[cutNdviRviTaksIdx-1]);
+                    ndviRviExtrIdx = cutNdviRviTaksIdx; // the ndviRvi index now is the cutted NdviRvi
+                                                        // so bv-image-inversion will wait after this one
+                }
+                // we add it here in list as we might have a cut before
+                laiMonoDateFlgsIdxs.append(genFlagsIdx);
 
-            // quantify-err-image -> bv-err-image-inversion
-            int nQuantifyErrImageInversionIdx = nQuantifyImageInversionIdx+1;
-            outAllTasksList[nQuantifyErrImageInversionIdx].parentTasks.append(outAllTasksList[nBVErrImageInversionIdx]);
-            quantifyErrImageInvIdxs.append(nQuantifyErrImageInversionIdx);
+                // the others comme naturally updated
+                // bv-image-inversion -> ndvi-rvi-extraction
+                int nBVImageInversionIdx = nCurTaskIdx++;
+                outAllTasksList[nBVImageInversionIdx].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
+                bvImageInvIdxs.append(nBVImageInversionIdx);
 
-            // add the quantify image tasks to the list of the product formatter corresponding to this product
-            LAIMonoDateProductFormatterParams monoParams;
-            monoParams.parentsTasksRef.append(outAllTasksList[nQuantifyImageInversionIdx]);
-            monoParams.parentsTasksRef.append(outAllTasksList[nQuantifyErrImageInversionIdx]);
-            outProdFormatterParams.listLaiMonoParams.append(monoParams);
+                // bv-err-image-inversion -> ndvi-rvi-extraction
+                int nBVErrImageInversionIdx = nCurTaskIdx++;
+                outAllTasksList[nBVErrImageInversionIdx].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
+                bvErrImageInvIdxs.append(nBVErrImageInversionIdx);
+
+                // quantify-image -> bv-image-inversion
+                int nQuantifyImageInversionIdx = nCurTaskIdx++;
+                outAllTasksList[nQuantifyImageInversionIdx].parentTasks.append(outAllTasksList[nBVImageInversionIdx]);
+                quantifyImageInvIdxs.append(nQuantifyImageInversionIdx);
+
+                // quantify-err-image -> bv-err-image-inversion
+                int nQuantifyErrImageInversionIdx = nCurTaskIdx++;
+                outAllTasksList[nQuantifyErrImageInversionIdx].parentTasks.append(outAllTasksList[nBVErrImageInversionIdx]);
+                quantifyErrImageInvIdxs.append(nQuantifyErrImageInversionIdx);
+
+                // add the quantify image tasks to the list of the product formatter corresponding to this product
+                LAIMonoDateProductFormatterParams monoParams;
+                monoParams.parentsTasksRef.append(outAllTasksList[nQuantifyImageInversionIdx]);
+                monoParams.parentsTasksRef.append(outAllTasksList[nQuantifyErrImageInversionIdx]);
+                outProdFormatterParams.listLaiMonoParams.append(monoParams);
+            }
         }
     }
-    int nCurIdx = nbLaiMonoProducts*TasksNoPerProduct;
-
 
     if(bNDayReproc || bFittedReproc) {
+        m_nFirstReprocessingIdx = nCurTaskIdx;
+        QList<int> tmpLaiMonoDateFlgsIdxs;
+        QList<int> tmpQuantifyImageInvIdxs;
+        QList<int> tmpQuantifyErrImageInvIdxs;
+
+        for(i = 0; i<nbLaiMonoProducts; i++) {
+            if(monoDateMskFlagsLaiFileNames[i] != "") {
+                if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
+                    int cutFlagsTasksIdx = nCurTaskIdx++;
+                    // the cut flags task in this case will wait (for simplicity) for all other flags generation
+                    // NOTE: This raster can be cut multiple times if mono-date is also generated but this will
+                    // not happen in production
+                    for(int idx: laiMonoDateFlgsIdxs) {
+                        outAllTasksList[cutFlagsTasksIdx].parentTasks.append(outAllTasksList[idx]);
+                    }
+                    // Make time series builder wait also for this task
+                    tmpLaiMonoDateFlgsIdxs.append(cutFlagsTasksIdx);
+
+                    int cutLaiTasksIdx = nCurTaskIdx++;
+                    // the cut LAI task in this case will wait (for simplicity) for all other LAI generation
+                    for(int idx: quantifyImageInvIdxs) {
+                        outAllTasksList[cutLaiTasksIdx].parentTasks.append(outAllTasksList[idx]);
+                    }
+                    // Make time series builder wait also for this task
+                    tmpQuantifyImageInvIdxs.append(cutLaiTasksIdx);
+
+                    // the cut LAI ERR task in this case will wait (for simplicity) for all other LAI ERR generation
+                    int cutLaiErrTasksIdx = nCurTaskIdx++;
+                    for(int idx: quantifyErrImageInvIdxs) {
+                        outAllTasksList[cutLaiErrTasksIdx].parentTasks.append(outAllTasksList[idx]);
+                    }
+                    // Make time series builder wait also for this task
+                    tmpQuantifyErrImageInvIdxs.append(cutLaiErrTasksIdx);
+                }
+            }
+        }
+        // add the eventual cut tasks in the list of tasks for which time series builders are waiting
+        for(int idx: tmpLaiMonoDateFlgsIdxs) {
+            laiMonoDateFlgsIdxs.append(idx);
+        }
+        for(int idx: tmpQuantifyImageInvIdxs) {
+            quantifyImageInvIdxs.append(idx);
+        }
+        for(int idx: tmpQuantifyErrImageInvIdxs) {
+            quantifyErrImageInvIdxs.append(idx);
+        }
+
         // time-series-builder -> ALL last bv-image-inversion/quantified-images
-        m_nTimeSeriesBuilderIdx = nCurIdx++;
+        m_nTimeSeriesBuilderIdx = nCurTaskIdx++;
         for(int idx: quantifyImageInvIdxs) {
             outAllTasksList[m_nTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[idx]);
         }
         //err-time-series-builder -> ALL bv-err-image-inversion/quantified-err-images
-        m_nErrTimeSeriesBuilderIdx = nCurIdx++;
+        m_nErrTimeSeriesBuilderIdx = nCurTaskIdx++;
         for(int idx: quantifyErrImageInvIdxs) {
             outAllTasksList[m_nErrTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[idx]);
         }
 
         //lai-msk-flags-time-series-builder -> ALL lai-mono-date-mask-flags
-        m_nLaiMskFlgsTimeSeriesBuilderIdx = nCurIdx++;
+        m_nLaiMskFlgsTimeSeriesBuilderIdx = nCurTaskIdx++;
         for(int idx: laiMonoDateFlgsIdxs) {
             outAllTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx].parentTasks.append(outAllTasksList[idx]);
         }
 
         if(bNDayReproc) {
             //profile-reprocessing -> time-series-builder AND err-time-series-builder AND lai-msk-flags-time-series-builder
-            m_nProfileReprocessingIdx = nCurIdx++;
+            m_nProfileReprocessingIdx = nCurTaskIdx++;
             outAllTasksList[m_nProfileReprocessingIdx].parentTasks.append(outAllTasksList[m_nTimeSeriesBuilderIdx]);
             outAllTasksList[m_nProfileReprocessingIdx].parentTasks.append(outAllTasksList[m_nErrTimeSeriesBuilderIdx]);
             outAllTasksList[m_nProfileReprocessingIdx].parentTasks.append(outAllTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx]);
 
             //reprocessed-profile-splitter -> profile-reprocessing
-            m_nReprocessedProfileSplitterIdx = nCurIdx++;
+            m_nReprocessedProfileSplitterIdx = nCurTaskIdx++;
             outAllTasksList[m_nReprocessedProfileSplitterIdx].parentTasks.append(outAllTasksList[m_nProfileReprocessingIdx]);
         }
 
         if(bFittedReproc) {
             //fitted-profile-reprocessing -> time-series-builder AND err-time-series-builder AND lai-msk-flags-time-series-builder
-            m_nFittedProfileReprocessingIdx = nCurIdx++;
+            m_nFittedProfileReprocessingIdx = nCurTaskIdx++;
             outAllTasksList[m_nFittedProfileReprocessingIdx].parentTasks.append(outAllTasksList[m_nTimeSeriesBuilderIdx]);
             outAllTasksList[m_nFittedProfileReprocessingIdx].parentTasks.append(outAllTasksList[m_nErrTimeSeriesBuilderIdx]);
             outAllTasksList[m_nFittedProfileReprocessingIdx].parentTasks.append(outAllTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx]);
 
             //fitted-reprocessed-profile-splitter -> fitted-profile-reprocessing
-            m_nFittedProfileReprocessingSplitterIdx = nCurIdx++;
+            m_nFittedProfileReprocessingSplitterIdx = nCurTaskIdx++;
             outAllTasksList[m_nFittedProfileReprocessingSplitterIdx].parentTasks.append(outAllTasksList[m_nFittedProfileReprocessingIdx]);
         }
         //product-formatter -> reprocessed-profile-splitter OR fitted-reprocessed-profile-splitter (OR BOTH)
@@ -217,9 +332,342 @@ void LaiRetrievalHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllT
     }
 }
 
+NewStepList LaiRetrievalHandler::GetStepsToGenModel(std::map<QString, QString> &configParameters,
+                                             const TileTemporalFilesInfo &tileTemporalFilesInfo,
+                                             bool bHasMonoDateLai,
+                                             const QStringList &listProducts,
+                                             QList<TaskToSubmit> &allTasksList)
+{
+    NewStepList steps;
+    bool bCreateFootprint = false;
+    if(tileTemporalFilesInfo.uniqueSatteliteIds.size() > 1 && tileTemporalFilesInfo.shapePath == "") {
+        bCreateFootprint = true;
+    }
+    const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
+    const auto &rsrCfgFile = configParameters["processor.l3b.lai.rsrcfgfile"];
+    int curIdx = bCreateFootprint ? 1 : 0;
+    for(int i = 0; i<listProducts.size(); i++) {
+        const QString &curXml = listProducts[i];
+        if(curXml != "") {
+            int loopFirstIdx = curIdx;
+            TaskToSubmit &bvInputVariableGenerationTask = allTasksList[loopFirstIdx];
+            TaskToSubmit &prosailSimulatorTask = allTasksList[loopFirstIdx+1];
+            TaskToSubmit &trainingDataGeneratorTask = allTasksList[loopFirstIdx+2];
+            TaskToSubmit &inverseModelLearningTask = allTasksList[loopFirstIdx+3];
+
+            const auto & generatedSampleFile = bvInputVariableGenerationTask.GetFilePath("out_bv_dist_samples.txt");
+            const auto & simuReflsFile = prosailSimulatorTask.GetFilePath("out_simu_refls.txt");
+            const auto & anglesFile = prosailSimulatorTask.GetFilePath("out_angles.txt");
+            const auto & trainingFile = trainingDataGeneratorTask.GetFilePath("out_training.txt");
+            const auto & modelFile = inverseModelLearningTask.GetFilePath("out_model.txt");
+            const auto & errEstModelFile = inverseModelLearningTask.GetFilePath("out_err_est_model.txt");
+
+
+            QStringList BVInputVariableGenerationArgs = GetBVInputVariableGenerationArgs(configParameters, generatedSampleFile);
+            QStringList ProSailSimulatorArgs = GetProSailSimulatorArgs(curXml, generatedSampleFile, rsrCfgFile, simuReflsFile, anglesFile, configParameters);
+            QStringList TrainingDataGeneratorArgs = GetTrainingDataGeneratorArgs(curXml, generatedSampleFile, simuReflsFile, trainingFile);
+            QStringList InverseModelLearningArgs = GetInverseModelLearningArgs(trainingFile, curXml, modelFile, errEstModelFile, modelsFolder, configParameters);
+
+            steps.append(bvInputVariableGenerationTask.CreateStep("BVInputVariableGeneration", BVInputVariableGenerationArgs));
+            steps.append(prosailSimulatorTask.CreateStep("ProSailSimulator", ProSailSimulatorArgs));
+            steps.append(trainingDataGeneratorTask.CreateStep("TrainingDataGenerator", TrainingDataGeneratorArgs));
+            steps.append(inverseModelLearningTask.CreateStep("InverseModelLearning", InverseModelLearningArgs));
+            curIdx += MODEL_GEN_TASKS_PER_PRODUCT;
+            if (bHasMonoDateLai) curIdx += LAI_TASKS_PER_PRODUCT;
+            if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
+                curIdx += CUT_TASKS_NO;
+            }
+        }
+    }
+
+    return steps;
+}
+
+NewStepList LaiRetrievalHandler::GetStepsForMonodateLai(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                                                    const TileTemporalFilesInfo &tileTemporalFilesInfo,
+                                                    const QStringList &monoDateInputs, QList<TaskToSubmit> &allTasksList,
+                                                    LAIProductFormatterParams &productFormatterParams,
+                                                    QStringList &monoDateMskFlagsLaiFileNames,
+                                                    QStringList &quantifiedLaiFileNames,
+                                                    QStringList &quantifiedErrLaiFileNames)
+{
+    if((monoDateInputs.size() != monoDateMskFlagsLaiFileNames.size()) ||
+            (monoDateInputs.size() != quantifiedLaiFileNames.size()) ||
+            (monoDateInputs.size() != quantifiedErrLaiFileNames.size())) {
+        throw std::runtime_error(
+            QStringLiteral("The list of input products should have the same size as the L3B lists").toStdString());
+    }
+
+    NewStepList steps;
+    const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
+
+    // Get the resolution value
+    int resolution = 0;
+    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
+            resolution == 0) {
+        resolution = 10;    // TODO: We should configure the default resolution in DB
+    }
+    const auto &resolutionStr = QString::number(resolution);
+
+    bool bGenModels = IsGenModels(parameters, configParameters);
+
+    const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
+    bool bFootprintTaskCreated = false;
+    QString shapePath = tileTemporalFilesInfo.shapePath;
+    // if we have multiple satellites and we don't have yet the shape file for this tile, then we must
+    // create the footprint for the primary satellite ID
+    if(tileTemporalFilesInfo.uniqueSatteliteIds.size() > 1 && tileTemporalFilesInfo.shapePath == "") {
+        // CreateFootprint should execute on the first primary product metadatafrom the tile
+        QString primaryTileMetadata;
+        for(int i = 0; i<tileTemporalFilesInfo.temporalTilesFileInfos.size(); i++) {
+            if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId == tileTemporalFilesInfo.primarySatelliteId) {
+                primaryTileMetadata = tileTemporalFilesInfo.temporalTilesFileInfos[i].file;
+                break;
+            }
+        }
+        // The create footprint task is the first task in the list
+        TaskToSubmit &createFootprintTaskHandler = allTasksList[0];
+        std::map<QString, QString> executorConfigParameters =
+            ctx.GetJobConfigurationParameters(event.jobId, "executor.shapes_dir");
+        QString shapeFilesFolder = executorConfigParameters["executor.shapes_dir"];
+        shapePath = ProcessorHandlerHelper::BuildShapeName(shapeFilesFolder, tileTemporalFilesInfo.tileId,
+                                                           event.jobId, createFootprintTaskHandler.taskId);
+        QStringList createFootprintArgs = { "CreateFootprint", "-in", primaryTileMetadata,
+                                            "-mode", "metadata", "-out", shapePath};
+        steps.append(createFootprintTaskHandler.CreateStep("CreateFootprint", createFootprintArgs));
+        bFootprintTaskCreated = true;
+    }
+
+    int curTaskIdx = bFootprintTaskCreated ? 1 : 0;
+    int curValidProduct = 0;
+    for (int i = 0; i<monoDateInputs.size(); i++) {
+        const auto &inputProduct = monoDateInputs[i];
+        if(inputProduct != "") {
+            int flagsCutIdx = -1;
+            int compressedFlagsCutIdx = -1;
+            int singleNdviCutIdx = -1;
+            int compressedNdviCutIdx = -1;
+            int ndviRviCutIdx = -1;
+
+            bool bIsSecondarySat = (tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId);
+            if(bGenModels) {
+                // now update the index for the ndviRvi task
+                curTaskIdx += MODEL_GEN_TASKS_PER_PRODUCT;
+            }
+            TaskToSubmit &genMonoDateMskFagsTask = allTasksList[curTaskIdx++];
+            TaskToSubmit &ndviRviExtractorTask = allTasksList[curTaskIdx++];
+            if(bIsSecondarySat) {
+                // if we have a secondary satellite, save the cut task indexes
+                flagsCutIdx = curTaskIdx++;
+                compressedFlagsCutIdx = curTaskIdx++;
+                singleNdviCutIdx = curTaskIdx++;
+                compressedNdviCutIdx = curTaskIdx++;
+                ndviRviCutIdx = curTaskIdx++;
+            }
+            TaskToSubmit &bvImageInversionTask = allTasksList[curTaskIdx++];
+            TaskToSubmit &bvErrImageInversionTask = allTasksList[curTaskIdx++];
+            TaskToSubmit &quantifyImageTask = allTasksList[curTaskIdx++];
+            TaskToSubmit &quantifyErrImageTask = allTasksList[curTaskIdx++];
+
+            const auto & monoDateMskFlgsFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img.tif");
+            auto monoDateMskFlgsResFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img_resampled.tif");
+            auto singleNdviFile = ndviRviExtractorTask.GetFilePath("single_ndvi.tif");
+            auto ftsFile = ndviRviExtractorTask.GetFilePath("ndvi_rvi.tif");
+            const auto & monoDateLaiFileName = bvImageInversionTask.GetFilePath("LAI_mono_date_img.tif");
+            const auto & monoDateErrFileName = bvErrImageInversionTask.GetFilePath("LAI_mono_date_ERR_img.tif");
+            const auto & quantifiedLaiFileName = quantifyImageTask.GetFilePath("LAI_mono_date_img_16.tif");
+            const auto & quantifiedErrFileName = quantifyErrImageTask.GetFilePath("LAI_mono_date_ERR_img_16.tif");
+
+            QStringList genMonoDateMskFagsArgs = GetMonoDateMskFlagsArgs(inputProduct, monoDateMskFlgsFileName,
+                                                                         "\"" + monoDateMskFlgsResFileName+"?gdal:co:COMPRESS=DEFLATE\"",
+                                                                         resolutionStr);
+            QStringList ndviRviExtractionArgs = GetNdviRviExtractionArgs(inputProduct, monoDateMskFlgsFileName,
+                                                                         ftsFile, "\"" + singleNdviFile+"?gdal:co:COMPRESS=DEFLATE\"",
+                                                                         resolutionStr);
+
+            // add these steps to the steps list to be submitted
+            steps.append(genMonoDateMskFagsTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
+            steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtraction2", ndviRviExtractionArgs));
+
+            // if we are a secondary satellite, then cut the Flags, Ndvi and NdviRvi images
+            if(bIsSecondarySat) {
+                TaskToSubmit &flagsCutTask = allTasksList[flagsCutIdx];
+                TaskToSubmit &compressedFlagsCutTask = allTasksList[compressedFlagsCutIdx];
+                TaskToSubmit &singleNdviCutTask = allTasksList[singleNdviCutIdx];
+                TaskToSubmit &compressedSingleNdviCutTask = allTasksList[compressedNdviCutIdx];
+                TaskToSubmit &ndviRviCutTask = allTasksList[ndviRviCutIdx];
+
+                // Here cut the monodate and the ndvi flags
+                const auto & cutMonoDateMskFlgsResFileName = flagsCutTask.GetFilePath("LAI_mono_date_msk_flgs_img_cut.tif");
+                const auto & comprCutMonoDateMskFlgsResFileName = compressedFlagsCutTask.GetFilePath("LAI_mono_date_msk_flgs_img_cut_compr.tif");
+                const auto & cutSingleNdviFile = singleNdviCutTask.GetFilePath("single_ndvi_cut.tif");
+                const auto & comprCutSingleNdviFile = compressedSingleNdviCutTask.GetFilePath("single_ndvi_cut_compr.tif");
+                const auto & cutFtsFile = ndviRviCutTask.GetFilePath("ndvi_rvi_cut.tif");
+
+                QStringList cutFlgsArgs = GetCutImgArgs(shapePath, monoDateMskFlgsResFileName, cutMonoDateMskFlgsResFileName);
+                QStringList comprCutFlgsArgs = GetCompressImgArgs(cutMonoDateMskFlgsResFileName, comprCutMonoDateMskFlgsResFileName);
+                QStringList cutSingleNdviArgs = GetCutImgArgs(shapePath, singleNdviFile, cutSingleNdviFile);
+                QStringList comprCutSingleNdviArgs = GetCompressImgArgs(cutSingleNdviFile, comprCutSingleNdviFile);
+                QStringList cutNdviRviArgs = GetCutImgArgs(shapePath, ftsFile, cutFtsFile);
+                steps.append(flagsCutTask.CreateStep("lai-gdal-flags", cutFlgsArgs));
+                steps.append(compressedFlagsCutTask.CreateStep("lai-gdal-flags-compression", comprCutFlgsArgs));
+                steps.append(singleNdviCutTask.CreateStep("lai-gdal-ndvi", cutSingleNdviArgs));
+                steps.append(compressedSingleNdviCutTask.CreateStep("lai-gdal-ndvi-compression", comprCutSingleNdviArgs));
+                steps.append(ndviRviCutTask.CreateStep("lai-gdal-ndvi-rvi", cutNdviRviArgs));
+
+                // overwrite the value for the single ndvi file with the cut one
+                monoDateMskFlgsResFileName = comprCutMonoDateMskFlgsResFileName;
+                singleNdviFile = comprCutSingleNdviFile;
+                ftsFile = cutFtsFile;
+            }
+            QStringList bvImageInvArgs = GetBvImageInvArgs(ftsFile, monoDateMskFlgsResFileName, inputProduct, modelsFolder, monoDateLaiFileName);
+            QStringList bvErrImageInvArgs = GetBvErrImageInvArgs(ftsFile, monoDateMskFlgsResFileName, inputProduct, modelsFolder, monoDateErrFileName);
+            QStringList quantifyImageArgs = GetQuantifyImageArgs(monoDateLaiFileName, quantifiedLaiFileName);
+            QStringList quantifyErrImageArgs = GetQuantifyImageArgs(monoDateErrFileName, quantifiedErrFileName);
+
+            // save the mono date LAI file name list
+            productFormatterParams.listLaiMonoParams[curValidProduct].ndvi = singleNdviFile;
+            productFormatterParams.listLaiMonoParams[curValidProduct].laiMonoDate = quantifiedLaiFileName;
+            productFormatterParams.listLaiMonoParams[curValidProduct].laiMonoDateErr = quantifiedErrFileName;
+            productFormatterParams.listLaiMonoParams[curValidProduct].laiMonoDateFlgs = monoDateMskFlgsResFileName;
+
+            // Save the list for using in the Reprocessed task below (if needed).
+            // We cannot use the lists in the productFormatterParams.listLaiMonoParams as these are not filled in the case
+            // when we do not have Mono-date products creation (Here we might have just filling the
+            // gaps for the missing L3B products)
+            monoDateMskFlagsLaiFileNames[i] = monoDateMskFlgsResFileName;
+            quantifiedLaiFileNames[i] = quantifiedLaiFileName;
+            quantifiedErrLaiFileNames[i] = quantifiedErrFileName;
+
+            steps.append(bvImageInversionTask.CreateStep("BVImageInversion", bvImageInvArgs));
+            steps.append(bvErrImageInversionTask.CreateStep("BVImageInversion", bvErrImageInvArgs));
+            steps.append(quantifyImageTask.CreateStep("QuantifyImage", quantifyImageArgs));
+            steps.append(quantifyErrImageTask.CreateStep("QuantifyImage", quantifyErrImageArgs));
+            curValidProduct++;
+        }
+    }
+
+    return steps;
+}
+
+NewStepList LaiRetrievalHandler::GetStepsForMultiDateReprocessing(std::map<QString, QString> &configParameters,
+                const TileTemporalFilesInfo &tileTemporalFilesInfo, const QStringList &listProducts, QList<TaskToSubmit> &allTasksList,
+                bool bNDayReproc, bool bFittedReproc, LAIProductFormatterParams &productFormatterParams,
+                QStringList &monoDateMskFlagsLaiFileNames, QStringList &quantifiedLaiFileNames, QStringList &quantifiedErrLaiFileNames)
+{
+    NewStepList steps;
+    QString fittedFileListFileName;
+    QString fittedFlagsFileListFileName;
+    QString reprocFileListFileName;
+    QString reprocFlagsFileListFileName;
+
+    QStringList monoDateMskFlagsLaiFileNames2;
+    QStringList quantifiedLaiFileNames2;
+    QStringList quantifiedErrLaiFileNames2;
+    int nCurTaskIdx = m_nFirstReprocessingIdx;
+
+    // Check that quantifiedLaiFileNames size is equal with listProducts size (normally it should)
+    if((listProducts.size() != monoDateMskFlagsLaiFileNames.size()) ||
+            (listProducts.size() != quantifiedLaiFileNames.size()) ||
+            (listProducts.size() != quantifiedErrLaiFileNames.size())) {
+        throw std::runtime_error(
+            QStringLiteral("The list of input products should have the same size as the L3B lists").toStdString());
+    }
+
+    for(int i = 0; i< listProducts.size(); i++) {
+        // if we are a secondary satellite, then cut the Flags, Ndvi and NdviRvi images
+        if(monoDateMskFlagsLaiFileNames[i] != "") {
+            if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
+                TaskToSubmit &flagsCutTask = allTasksList[nCurTaskIdx++];
+                TaskToSubmit &laiCutTask = allTasksList[nCurTaskIdx++];
+                TaskToSubmit &laiErrCutTask = allTasksList[nCurTaskIdx++];
+
+                // Here cut the monodate and the ndvi flags
+                const auto & cutFlgsFileName = flagsCutTask.GetFilePath("flags_cut.tif");
+                const auto & cutLaiFile = laiCutTask.GetFilePath("lai_cut.tif");
+                const auto & cutLaiErrFile = laiErrCutTask.GetFilePath("lai_err_cut.tif");
+
+                QStringList cutFlgsArgs = GetCutImgArgs(tileTemporalFilesInfo.shapePath, monoDateMskFlagsLaiFileNames[i], cutFlgsFileName);
+                QStringList cutLaiArgs = GetCutImgArgs(tileTemporalFilesInfo.shapePath, quantifiedLaiFileNames[i], cutLaiFile);
+                QStringList cutLaiErrArgs = GetCutImgArgs(tileTemporalFilesInfo.shapePath, quantifiedErrLaiFileNames[i], cutLaiErrFile);
+                steps.append(flagsCutTask.CreateStep("lai-gdal-flags", cutFlgsArgs));
+                steps.append(laiCutTask.CreateStep("lai-gdal-lai", cutLaiArgs));
+                steps.append(laiErrCutTask.CreateStep("lai-gdal-err-lai", cutLaiErrArgs));
+
+                monoDateMskFlagsLaiFileNames2.append(cutFlgsFileName);
+                quantifiedLaiFileNames2.append(cutLaiFile);
+                quantifiedErrLaiFileNames2.append(cutLaiErrFile);
+            } else {
+                monoDateMskFlagsLaiFileNames2.append(monoDateMskFlagsLaiFileNames[i]);
+                quantifiedLaiFileNames2.append(quantifiedLaiFileNames[i]);
+                quantifiedErrLaiFileNames2.append(quantifiedErrLaiFileNames[i]);
+            }
+        }
+    }
+
+    TaskToSubmit &imgTimeSeriesBuilderTask = allTasksList[m_nTimeSeriesBuilderIdx];
+    TaskToSubmit &errTimeSeriesBuilderTask = allTasksList[m_nErrTimeSeriesBuilderIdx];
+    TaskToSubmit &mskFlagsTimeSeriesBuilderTask = allTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx];
+
+    const auto & allLaiTimeSeriesFileName = imgTimeSeriesBuilderTask.GetFilePath("LAI_time_series.tif");
+    const auto & allErrTimeSeriesFileName = errTimeSeriesBuilderTask.GetFilePath("Err_time_series.tif");
+    const auto & allMskFlagsTimeSeriesFileName = mskFlagsTimeSeriesBuilderTask.GetFilePath("Mask_Flags_time_series.tif");
+
+    // TODO: In order to have consistent situation in the cases when we have only Reprocessing or (Monodate AND Reprocessing)
+    // we should use here the list of the quantified values for the LAI monodate. Otherwise, we get different results in this situation
+    QStringList timeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(quantifiedLaiFileNames2, allLaiTimeSeriesFileName);
+    QStringList errTimeSeriesBuilderArgs = GetErrTimeSeriesBuilderArgs(quantifiedErrLaiFileNames2, allErrTimeSeriesFileName);
+    QStringList mskFlagsTimeSeriesBuilderArgs = GetMskFlagsTimeSeriesBuilderArgs(monoDateMskFlagsLaiFileNames2, allMskFlagsTimeSeriesFileName);
+
+    steps.append(imgTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", timeSeriesBuilderArgs));
+    steps.append(errTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", errTimeSeriesBuilderArgs));
+    steps.append(mskFlagsTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", mskFlagsTimeSeriesBuilderArgs));
+
+    if(bNDayReproc) {
+        TaskToSubmit &profileReprocTask = allTasksList[m_nProfileReprocessingIdx];
+        TaskToSubmit &profileReprocSplitTask = allTasksList[m_nReprocessedProfileSplitterIdx];
+
+        const auto & reprocTimeSeriesFileName = profileReprocTask.GetFilePath("ReprocessedTimeSeries.tif");
+        reprocFileListFileName = profileReprocSplitTask.GetFilePath("ReprocessedFilesList.txt");
+        reprocFlagsFileListFileName = profileReprocSplitTask.GetFilePath("ReprocessedFlagsFilesList.txt");
+
+        QStringList profileReprocessingArgs = GetProfileReprocessingArgs(configParameters, allLaiTimeSeriesFileName,
+                                                                         allErrTimeSeriesFileName, allMskFlagsTimeSeriesFileName,
+                                                                         reprocTimeSeriesFileName, listProducts);
+        QStringList reprocProfileSplitterArgs = GetReprocProfileSplitterArgs(reprocTimeSeriesFileName, reprocFileListFileName,
+                                                                             reprocFlagsFileListFileName, listProducts);
+        steps.append(profileReprocTask.CreateStep("ProfileReprocessing", profileReprocessingArgs));
+        steps.append(profileReprocSplitTask.CreateStep("ReprocessedProfileSplitter2", reprocProfileSplitterArgs));
+        productFormatterParams.laiReprocParams.fileLaiReproc = reprocFileListFileName;
+        productFormatterParams.laiReprocParams.fileLaiReprocFlgs = reprocFlagsFileListFileName;
+
+    }
+
+    if(bFittedReproc) {
+        TaskToSubmit &fittedProfileReprocTask = allTasksList[m_nFittedProfileReprocessingIdx];
+        TaskToSubmit &fittedProfileReprocSplitTask = allTasksList[m_nFittedProfileReprocessingSplitterIdx];
+
+        const auto & fittedTimeSeriesFileName = fittedProfileReprocTask.GetFilePath("FittedTimeSeries.tif");
+        fittedFileListFileName = fittedProfileReprocSplitTask.GetFilePath("FittedFilesList.txt");
+        fittedFlagsFileListFileName = fittedProfileReprocSplitTask.GetFilePath("FittedFlagsFilesList.txt");
+
+        QStringList fittedProfileReprocArgs = GetFittedProfileReprocArgs(allLaiTimeSeriesFileName, allErrTimeSeriesFileName,
+                                                                         allMskFlagsTimeSeriesFileName, fittedTimeSeriesFileName, listProducts);
+        QStringList fittedProfileReprocSplitterArgs = GetFittedProfileReprocSplitterArgs(fittedTimeSeriesFileName, fittedFileListFileName,
+                                                                                         fittedFlagsFileListFileName, listProducts);
+        steps.append(fittedProfileReprocTask.CreateStep("ProfileReprocessing", fittedProfileReprocArgs));
+        steps.append(fittedProfileReprocSplitTask.CreateStep("ReprocessedProfileSplitter2", fittedProfileReprocSplitterArgs));
+        productFormatterParams.laiFitParams.fileLaiReproc = fittedFileListFileName;
+        productFormatterParams.laiFitParams.fileLaiReprocFlgs = fittedFlagsFileListFileName;
+    }
+
+    return steps;
+}
+
 void LaiRetrievalHandler::HandleNewTilesList(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                              const TileTemporalFilesInfo &tileTemporalFilesInfo,
-                                             const QStringList &listL3BTiles,
+                                             const QList<L2AToL3B> &listL2AToL3BProducts,
                                              const TileTemporalFilesInfo &missingL3BTileTemporalFilesInfo,
                                              LAIGlobalExecutionInfos &outGlobalExecInfos) {
 
@@ -232,189 +680,152 @@ void LaiRetrievalHandler::HandleNewTilesList(EventProcessingContext &ctx, const 
     QStringList quantifiedLaiFileNames;
     QStringList quantifiedErrLaiFileNames;
 
-    // Get the resolution value
-    int resolution = 0;
-    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
-            resolution == 0) {
-        resolution = 10;    // TODO: We should configure the default resolution in DB
-    }
-    const auto &resolutionStr = QString::number(resolution);
-
     bool bGenModels = IsGenModels(parameters, configParameters);
     bool bMonoDateLai = IsGenMonoDate(parameters, configParameters);
     bool bNDayReproc = IsNDayReproc(parameters, configParameters);
     bool bFittedReproc = IsFittedReproc(parameters, configParameters);
 
     QStringList monoDateInputs = listProducts;
+    // make the quantifiedLaiFileNames to have the same dimmension as the input products.
+    // Only the existing ones will be filled
+    for(int i = 0; i<listProducts.size(); i++) {
+        quantifiedLaiFileNames.append("");
+        quantifiedErrLaiFileNames.append("");
+        monoDateMskFlagsLaiFileNames.append("");
+    }
     if(!bMonoDateLai) {
-        for(const QString &l3bTileFolder: listL3BTiles) {
-            quantifiedLaiFileNames.append(ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileFolder, "SLAIMONO"));
-            quantifiedErrLaiFileNames.append(ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileFolder, "MLAIERR", true));
-            monoDateMskFlagsLaiFileNames.append(ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileFolder, "MMONODFLG", true));
-        }
+        ExtractExistingL3BProductsFiles(listProducts, tileTemporalFilesInfo, listL2AToL3BProducts, monoDateMskFlagsLaiFileNames,
+                                        quantifiedLaiFileNames, quantifiedErrLaiFileNames);
 
         if(missingL3BInputs.size() > 0) {
+            // fill the monodate inputs with the products that are empty
+            // but filling with empty string the products that already have monodate products
             monoDateInputs = QStringList();
+            int addedMonodateProds = 0;
             for(const QString &inputProd: listProducts) {
+                bool bAdded = false;
                 for(const QString &missingProd: missingL3BInputs) {
                     if(inputProd == missingProd) {
                         monoDateInputs.append(inputProd);
+                        addedMonodateProds++;
+                        bAdded = true;
+                        break;
                     }
+                }
+                if(!bAdded) {
+                    monoDateInputs.append("");
                 }
             }
             // Force mono-date for the missing L3B inputs
-            if(monoDateInputs.size() > 0)
+            if(addedMonodateProds > 0)
                 bMonoDateLai = true;
         }
         // if we have no monodate to produce and also we found no rasters for the existing L3B list, we create no task
         if(!bMonoDateLai && quantifiedLaiFileNames.size() == 0)
             return;
     }
-
+    // no need to generate models if no monodate LAI generation
+    if(!bMonoDateLai) {
+        bGenModels = false;
+    }
 
     QList<TaskToSubmit> &allTasksList = outGlobalExecInfos.allTasksList;
     LAIProductFormatterParams &productFormatterParams = outGlobalExecInfos.prodFormatParams;
 
     // create the tasks
-    CreateTasksForNewProducts(allTasksList, outGlobalExecInfos.prodFormatParams, monoDateInputs.size(), bGenModels, bMonoDateLai, bNDayReproc, bFittedReproc);
+    CreateTasksForNewProducts(allTasksList, tileTemporalFilesInfo, outGlobalExecInfos.prodFormatParams, monoDateInputs,
+                              monoDateMskFlagsLaiFileNames, bGenModels, bMonoDateLai, bNDayReproc, bFittedReproc);
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     for(TaskToSubmit &task: allTasksList) {
         allTasksListRef.append(task);
     }
     // submit all tasks
-    ctx.SubmitTasks(event.jobId, allTasksListRef);
+    SubmitTasks(ctx, event.jobId, allTasksListRef);
 
     NewStepList &steps = outGlobalExecInfos.allStepsList;
 
     // first extract the model file names from the models folder
-    int TasksNoPerProduct = bMonoDateLai ? LAI_TASKS_PER_PRODUCT : 0;
     if(bGenModels) {
-        GetStepsToGenModel(configParameters, bMonoDateLai, monoDateInputs, allTasksList, steps);
-        TasksNoPerProduct += MODEL_GEN_TASKS_PER_PRODUCT;
+        steps += GetStepsToGenModel(configParameters, tileTemporalFilesInfo, bMonoDateLai, monoDateInputs, allTasksList);
     }
 
     if(bMonoDateLai) {
-        const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
-        int i;
-        for (i = 0; i<monoDateInputs.size(); i++) {
-            const auto &inputProduct = monoDateInputs[i];
-            // initialize the ndviRvi task index
-            int genMsksIdx = i*TasksNoPerProduct;
-            if(bGenModels) {
-                // now update the index for the ndviRvi task
-                genMsksIdx += MODEL_GEN_TASKS_PER_PRODUCT;
-            }
-            TaskToSubmit &genMonoDateMskFagsTask = allTasksList[genMsksIdx];
-            TaskToSubmit &ndviRviExtractorTask = allTasksList[genMsksIdx+1];
-            TaskToSubmit &bvImageInversionTask = allTasksList[genMsksIdx+2];
-            TaskToSubmit &bvErrImageInversionTask = allTasksList[genMsksIdx+3];
-            TaskToSubmit &quantifyImageTask = allTasksList[genMsksIdx+4];
-            TaskToSubmit &quantifyErrImageTask = allTasksList[genMsksIdx+5];
-
-            const auto & monoDateMskFlgsFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img.tif");
-            const auto & monoDateMskFlgsResFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img_resampled.tif");
-            const auto & singleNdviFile = ndviRviExtractorTask.GetFilePath("single_ndvi.tif");
-            const auto & ftsFile = ndviRviExtractorTask.GetFilePath("ndvi_rvi.tif");
-            const auto & monoDateLaiFileName = bvImageInversionTask.GetFilePath("LAI_mono_date_img.tif");
-            const auto & monoDateErrFileName = bvErrImageInversionTask.GetFilePath("LAI_mono_date_ERR_img.tif");
-            const auto & quantifiedLaiFileName = quantifyImageTask.GetFilePath("LAI_mono_date_img_16.tif");
-            const auto & quantifiedErrFileName = quantifyErrImageTask.GetFilePath("LAI_mono_date_ERR_img_16.tif");
-
-            // save the mono date LAI file name list
-            productFormatterParams.listLaiMonoParams[i].ndvi = singleNdviFile;
-            productFormatterParams.listLaiMonoParams[i].laiMonoDate = quantifiedLaiFileName;
-            productFormatterParams.listLaiMonoParams[i].laiMonoDateErr = quantifiedErrFileName;
-            productFormatterParams.listLaiMonoParams[i].laiMonoDateFlgs = monoDateMskFlgsResFileName;
-            //ndviFileNames.append(singleNdviFile);
-            //monoDateLaiFileNames.append(monoDateLaiFileName);
-            //monoDateErrLaiFileNames.append(monoDateErrFileName);
-
-            // Save the list for using in the Reprocessed task below (if needed).
-            // We cannot use the lists in the productFormatterParams.listLaiMonoParams as these are not filled in the case
-            // when we do not have Mono-date products creation.
-            monoDateMskFlagsLaiFileNames.append(monoDateMskFlgsResFileName);
-            quantifiedLaiFileNames.append(quantifiedLaiFileName);
-            quantifiedErrLaiFileNames.append(quantifiedErrFileName);
-
-            QStringList genMonoDateMskFagsArgs = GetMonoDateMskFlagsArgs(inputProduct, monoDateMskFlgsFileName, monoDateMskFlgsResFileName, resolutionStr);
-            QStringList ndviRviExtractionArgs = GetNdviRviExtractionArgs(inputProduct, monoDateMskFlgsFileName, ftsFile, singleNdviFile, resolutionStr);
-            QStringList bvImageInvArgs = GetBvImageInvArgs(ftsFile, monoDateMskFlgsFileName, inputProduct, modelsFolder, monoDateLaiFileName);
-            QStringList bvErrImageInvArgs = GetBvErrImageInvArgs(ftsFile, monoDateMskFlgsFileName, inputProduct, modelsFolder, monoDateErrFileName);
-            QStringList quantifyImageArgs = GetQuantifyImageArgs(monoDateLaiFileName, quantifiedLaiFileName);
-            QStringList quantifyErrImageArgs = GetQuantifyImageArgs(monoDateErrFileName, quantifiedErrFileName);
-
-            // add these steps to the steps list to be submitted
-            steps.append(genMonoDateMskFagsTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
-            steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtraction2", ndviRviExtractionArgs));
-            steps.append(bvImageInversionTask.CreateStep("BVImageInversion", bvImageInvArgs));
-            steps.append(bvErrImageInversionTask.CreateStep("BVImageInversion", bvErrImageInvArgs));
-            steps.append(quantifyImageTask.CreateStep("QuantifyImage", quantifyImageArgs));
-            steps.append(quantifyErrImageTask.CreateStep("QuantifyImage", quantifyErrImageArgs));
-        }
+        steps += GetStepsForMonodateLai(ctx, event, tileTemporalFilesInfo, monoDateInputs, allTasksList, productFormatterParams,
+                               monoDateMskFlagsLaiFileNames, quantifiedLaiFileNames, quantifiedErrLaiFileNames);
     }
 
-    QString fittedFileListFileName;
-    QString fittedFlagsFileListFileName;
-    QString reprocFileListFileName;
-    QString reprocFlagsFileListFileName;
-
     if(bNDayReproc || bFittedReproc) {
-        TaskToSubmit &imgTimeSeriesBuilderTask = allTasksList[m_nTimeSeriesBuilderIdx];
-        TaskToSubmit &errTimeSeriesBuilderTask = allTasksList[m_nErrTimeSeriesBuilderIdx];
-        TaskToSubmit &mskFlagsTimeSeriesBuilderTask = allTasksList[m_nLaiMskFlgsTimeSeriesBuilderIdx];
+        steps += GetStepsForMultiDateReprocessing(configParameters, tileTemporalFilesInfo, listProducts, allTasksList, bNDayReproc, bFittedReproc, productFormatterParams,
+                                                  monoDateMskFlagsLaiFileNames, quantifiedLaiFileNames, quantifiedErrLaiFileNames);
+    }
+}
 
-        const auto & allLaiTimeSeriesFileName = imgTimeSeriesBuilderTask.GetFilePath("LAI_time_series.tif");
-        const auto & allErrTimeSeriesFileName = errTimeSeriesBuilderTask.GetFilePath("Err_time_series.tif");
-        const auto & allMskFlagsTimeSeriesFileName = mskFlagsTimeSeriesBuilderTask.GetFilePath("Mask_Flags_time_series.tif");
-
-        // TODO: In order to have consistent situation in the cases when we have only Reprocessing or (Monodate AND Reprocessing)
-        // we should use here the list of the quantified values for the LAI monodate. Otherwise, we get different results in this situation
-        QStringList timeSeriesBuilderArgs = GetTimeSeriesBuilderArgs(quantifiedLaiFileNames, allLaiTimeSeriesFileName);
-        QStringList errTimeSeriesBuilderArgs = GetErrTimeSeriesBuilderArgs(quantifiedErrLaiFileNames, allErrTimeSeriesFileName);
-        QStringList mskFlagsTimeSeriesBuilderArgs = GetMskFlagsTimeSeriesBuilderArgs(monoDateMskFlagsLaiFileNames, allMskFlagsTimeSeriesFileName);
-
-        steps.append(imgTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", timeSeriesBuilderArgs));
-        steps.append(errTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", errTimeSeriesBuilderArgs));
-        steps.append(mskFlagsTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", mskFlagsTimeSeriesBuilderArgs));
-
-        if(bNDayReproc) {
-            TaskToSubmit &profileReprocTask = allTasksList[m_nProfileReprocessingIdx];
-            TaskToSubmit &profileReprocSplitTask = allTasksList[m_nReprocessedProfileSplitterIdx];
-
-            const auto & reprocTimeSeriesFileName = profileReprocTask.GetFilePath("ReprocessedTimeSeries.tif");
-            reprocFileListFileName = profileReprocSplitTask.GetFilePath("ReprocessedFilesList.txt");
-            reprocFlagsFileListFileName = profileReprocSplitTask.GetFilePath("ReprocessedFlagsFilesList.txt");
-
-            QStringList profileReprocessingArgs = GetProfileReprocessingArgs(configParameters, allLaiTimeSeriesFileName,
-                                                                             allErrTimeSeriesFileName, allMskFlagsTimeSeriesFileName,
-                                                                             reprocTimeSeriesFileName, listProducts);
-            QStringList reprocProfileSplitterArgs = GetReprocProfileSplitterArgs(reprocTimeSeriesFileName, reprocFileListFileName,
-                                                                                 reprocFlagsFileListFileName, listProducts);
-            steps.append(profileReprocTask.CreateStep("ProfileReprocessing", profileReprocessingArgs));
-            steps.append(profileReprocSplitTask.CreateStep("ReprocessedProfileSplitter2", reprocProfileSplitterArgs));
-            productFormatterParams.laiReprocParams.fileLaiReproc = reprocFileListFileName;
-            productFormatterParams.laiReprocParams.fileLaiReprocFlgs = reprocFlagsFileListFileName;
-
+// fill the monoDateMskFlagsLaiFileNames,quantifiedLaiFileNames, quantifiedErrLaiFileNames for the existing products
+// or let empty string if not possible to find these files
+// It is assumed these lists have the same size with the product list
+void LaiRetrievalHandler::ExtractExistingL3BProductsFiles(const QStringList &listProducts,
+                                     const TileTemporalFilesInfo &tileTemporalFilesInfo,
+                                     const QList<L2AToL3B> &listL2AToL3BProducts, QStringList &monoDateMskFlagsLaiFileNames,
+                                     QStringList &quantifiedLaiFileNames,
+                                     QStringList &quantifiedErrLaiFileNames) {
+    ProcessorHandlerHelper::SatelliteIdType satId;
+    if((listProducts.size() != monoDateMskFlagsLaiFileNames.size()) ||
+            (listProducts.size() != quantifiedLaiFileNames.size()) ||
+            (listProducts.size() != quantifiedErrLaiFileNames.size())) {
+        throw std::runtime_error(
+            QStringLiteral("The list of input products should have the same size as the L3B lists").toStdString());
+    }
+    for(int i = 0; i<listProducts.size(); i++) {
+        const QString &productMeta = listProducts[i];
+        // Get the L3B product folder for this product metadata
+        //  if it does not exists, add empty quantifiedLaiFileNames
+        // else
+        //  Get the tile id for this L2A product metadata
+        //  Search in the tiles map the L3B product for the found tile
+        //  if it exists, get the quantifiedLaiFileNames
+        //  otherwise, add empty string
+        //
+        QString l3bProd;
+        for(const L2AToL3B &l2aToL3BProd: listL2AToL3BProducts) {
+            if(l2aToL3BProd.L2A == productMeta) {
+                l3bProd = l2aToL3BProd.L3B;
+                break;
+            }
         }
-
-        if(bFittedReproc) {
-            TaskToSubmit &fittedProfileReprocTask = allTasksList[m_nFittedProfileReprocessingIdx];
-            TaskToSubmit &fittedProfileReprocSplitTask = allTasksList[m_nFittedProfileReprocessingSplitterIdx];
-
-            const auto & fittedTimeSeriesFileName = fittedProfileReprocTask.GetFilePath("FittedTimeSeries.tif");
-            fittedFileListFileName = fittedProfileReprocSplitTask.GetFilePath("FittedFilesList.txt");
-            fittedFlagsFileListFileName = fittedProfileReprocSplitTask.GetFilePath("FittedFlagsFilesList.txt");
-
-            QStringList fittedProfileReprocArgs = GetFittedProfileReprocArgs(allLaiTimeSeriesFileName, allErrTimeSeriesFileName,
-                                                                             allMskFlagsTimeSeriesFileName, fittedTimeSeriesFileName, listProducts);
-            QStringList fittedProfileReprocSplitterArgs = GetFittedProfileReprocSplitterArgs(fittedTimeSeriesFileName, fittedFileListFileName,
-                                                                                             fittedFlagsFileListFileName, listProducts);
-            steps.append(fittedProfileReprocTask.CreateStep("ProfileReprocessing", fittedProfileReprocArgs));
-            steps.append(fittedProfileReprocSplitTask.CreateStep("ReprocessedProfileSplitter2", fittedProfileReprocSplitterArgs));
-            productFormatterParams.laiFitParams.fileLaiReproc = fittedFileListFileName;
-            productFormatterParams.laiFitParams.fileLaiReprocFlgs = fittedFlagsFileListFileName;
+        if(l3bProd != "") {
+            // we have an L3B product folder for this metadata
+            QString tileId = ProcessorHandlerHelper::GetTileId(productMeta, satId);
+            QMap<QString, QString> mapTiles = ProcessorHandlerHelper::GetHighLevelProductTilesDirs(l3bProd);
+            if(tileId == tileTemporalFilesInfo.tileId) {
+                // get the tiles and their folders for the L3B product
+                // search the tile Id (normally, we should have it)
+                QString tileDir = mapTiles.contains(tileId) ? mapTiles[tileId] : "";
+                if(tileDir != "") {
+                    // fill the empty gaps for these lists
+                    quantifiedLaiFileNames[i] = ProcessorHandlerHelper::GetHigLevelProductTileFile(tileDir, "SLAIMONO");
+                    quantifiedErrLaiFileNames[i] = ProcessorHandlerHelper::GetHigLevelProductTileFile(tileDir, "MLAIERR", true);
+                    monoDateMskFlagsLaiFileNames[i] = ProcessorHandlerHelper::GetHigLevelProductTileFile(tileDir, "MMONODFLG", true);
+                }
+            } else {
+                // we have probably a secondary satellite
+                // we could check here the sat Id with the primary sat ID
+                // Here we might have the following situations:
+                //  - either the product was created from a pure secondary product and in this case it has a product Id specific to that satellite
+                //  - the L3B product was created and cut from a secondary satellite product but for the tiles from a primary satellite
+                // Search the primary tile id into the product tiles
+                QString tileDir = mapTiles.contains(tileTemporalFilesInfo.tileId) ?
+                            mapTiles[tileTemporalFilesInfo.tileId] :
+                            (mapTiles.contains(tileId) ? mapTiles[tileId] : "");
+                if(tileDir != "") {
+                    // fill the empty gaps for these lists
+                    quantifiedLaiFileNames[i] = ProcessorHandlerHelper::GetHigLevelProductTileFile(tileDir, "SLAIMONO");
+                    quantifiedErrLaiFileNames[i] = ProcessorHandlerHelper::GetHigLevelProductTileFile(tileDir, "MLAIERR", true);
+                    monoDateMskFlagsLaiFileNames[i] = ProcessorHandlerHelper::GetHigLevelProductTileFile(tileDir, "MMONODFLG", true);
+                }
+            }
         }
+        // if not added, the lists quantifiedLaiFileNames will remain with the default value (empty string)
     }
 }
 
@@ -454,6 +865,54 @@ void LaiRetrievalHandler::WriteExecutionInfosFile(const QString &executionInfosP
     }
 }
 
+void LaiRetrievalHandler::ExtractExistingL3BProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QStringList &listTilesMetaFiles,
+                                                     const QMap<QString, QStringList> &inputProductToTilesMap,
+                                                     QList<L2AToL3B> &listL2AToL3BProducts,
+                                                     QStringList &listL3BProducts, QStringList &missingL3BInputsTiles,
+                                                     QStringList &missingL3BInputs) {
+    QStringList tempMissingL3BInputsTiles;
+    QList<ProcessorHandlerHelper::SatelliteIdType> satIds;
+    for (const auto &tileMetaFile : listTilesMetaFiles) {
+        ProcessorHandlerHelper::SatelliteIdType satId;
+        ProcessorHandlerHelper::GetTileId(tileMetaFile, satId);
+        if(!satIds.contains(satId)) {
+            satIds.append(satId);
+        }
+        // if it is reprocessing but we do not have mono-date, we need also the L3B products
+        // if we have reprocessing and we have mono-date, the generated monodates will be internally used
+        QDateTime dtStartDate = ProcessorHandlerHelper::GetL2AProductDateFromPath(tileMetaFile);
+        QDateTime dtEndDate = dtStartDate.addSecs(SECONDS_IN_DAY-1);
+        // get all the products from that day
+        ProductList l3bProductList = ctx.GetProducts(event.siteId, (int)ProductType::L3BProductTypeId, dtStartDate, dtEndDate);
+        if(l3bProductList.size() > 0) {
+            // get the last of the products
+            const QString &l3bProdPath = l3bProductList[l3bProductList.size()-1].fullPath;
+            if(!listL3BProducts.contains(l3bProdPath)) {
+                listL3BProducts.append(l3bProdPath);
+                Logger::debug(QStringLiteral("Using existing L3B for reprocessing: %1").arg(l3bProdPath));
+            }
+            // add the meta file regardless if the l3b already appears as we might have meta files for several
+            // tiles that were encapsulated in the same product
+            listL2AToL3BProducts.append({tileMetaFile, l3bProdPath});
+        } else {
+            tempMissingL3BInputsTiles.append(tileMetaFile);
+        }
+    }
+    // generating missing L3B is supported only when not in combinations with Sentinel2 due to complications
+    // that occur
+    if(satIds.size() == 1) {
+        for (const auto &tileMetaFile : tempMissingL3BInputsTiles) {
+            missingL3BInputsTiles.append(tileMetaFile);
+            QString productForTile = GetL2AProductForTileMetaFile(inputProductToTilesMap, tileMetaFile);
+            if(!missingL3BInputs.contains(productForTile)) {
+                missingL3BInputs.append(productForTile);
+                Logger::debug(QStringLiteral("The L3B will be created for missing product: %1").arg(productForTile));
+            }
+        }
+    }
+
+}
+
 void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                              const JobSubmittedEvent &event)
 {
@@ -469,6 +928,17 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
             QStringLiteral("At least one processing needs to be defined (LAI mono-date,"
                            " LAI N-reprocessing or LAI Fitted)").toStdString());
     }
+    
+    bool bGenModels = IsGenModels(parameters, configParameters);
+    if(bGenModels) {
+        const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
+        if(!QDir::root().mkpath(modelsFolder)) {
+            ctx.MarkJobFailed(event.jobId);
+            throw std::runtime_error(
+                        QStringLiteral("Unable to create path %1 for creating models!").arg(modelsFolder).toStdString());
+        }
+    }
+
     QMap<QString, QStringList> inputProductToTilesMap;
     QStringList listTilesMetaFiles = GetL2AInputProductsTiles(ctx, event, inputProductToTilesMap);
     if(listTilesMetaFiles.size() == 0) {
@@ -479,33 +949,13 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
 
     // The list of input products that do not have a L3B LAI Monodate created
+    QList<L2AToL3B> listL2AToL3BProducts;
     QStringList listL3BProducts;
     QStringList missingL3BInputsTiles;
     QStringList missingL3BInputs;
     if(!bMonoDateLai) {
-        for (const auto &tileMetaFile : listTilesMetaFiles) {
-            // if it is reprocessing but we do not have mono-date, we need also the L3B products
-            // if we have reprocessing and we have mono-date, the generated monodates will be internally used
-            QDateTime dtStartDate = ProcessorHandlerHelper::GetL2AProductDateFromPath(tileMetaFile);
-            QDateTime dtEndDate = dtStartDate.addSecs(SECONDS_IN_DAY-1);
-            // get all the products from that day
-            ProductList l3bProductList = ctx.GetProducts(event.siteId, (int)ProductType::L3BProductTypeId, dtStartDate, dtEndDate);
-            if(l3bProductList.size() > 0) {
-                // get the last of the products
-                const QString &l3bProdPath = l3bProductList[l3bProductList.size()-1].fullPath;
-                if(!listL3BProducts.contains(l3bProdPath)) {
-                    listL3BProducts.append(l3bProdPath);
-                    Logger::debug(QStringLiteral("Using existing L3B for reprocessing: %1").arg(l3bProdPath));
-                }
-            } else {
-                missingL3BInputsTiles.append(tileMetaFile);
-                QString productForTile = GetL2AProductForTileMetaFile(inputProductToTilesMap, tileMetaFile);
-                if(!missingL3BInputs.contains(productForTile)) {
-                    missingL3BInputs.append(productForTile);
-                    Logger::debug(QStringLiteral("The L3B will be created for missing product: %1").arg(productForTile));
-                }
-            }
-        }
+        ExtractExistingL3BProducts(ctx, event, listTilesMetaFiles, inputProductToTilesMap, listL2AToL3BProducts,
+                                   listL3BProducts, missingL3BInputsTiles, missingL3BInputs);
     }
 
     QList<LAIProductFormatterParams> listParams;
@@ -515,26 +965,27 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     QList<TaskToSubmit> allTasksList;
     //container for all global execution infos
     QList<LAIGlobalExecutionInfos> allLaiGlobalExecInfos;
-    // Create a map containing for each tile Id the list of the
+    // Create a map containing for each tile Id the list of the temporal file infos
+    // NOTE: This map contains only the determined primary satellite tiles
     QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.jobId, listTilesMetaFiles,
                                                                ProductType::L2AProductTypeId);
+
+    //TODO: if the missing tiles are only from the secondary satellite ID (we have in the map tiles 2 satellites),
+    //      this will produce later an error as it will consider the secondary satellite as primary and will keep their TileIds
+    //      THIS Should be updated to receive the primary satellite ID
     QMap<QString, TileTemporalFilesInfo> mapMissingL3BTiles = GroupTiles(ctx, event.jobId, missingL3BInputsTiles,
                                                                          ProductType::L2AProductTypeId);
-    // In the case of Mono-lai we might have something in the listL3BProducts
-    QMap<QString, QStringList> mapL3BTiles = ProcessorHandlerHelper::GroupHighLevelProductTiles(listL3BProducts);
-
     for(auto tileId : mapTiles.keys())
     {
        const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
        const TileTemporalFilesInfo &listL3bMissingInputsTiles = mapMissingL3BTiles.value(tileId);
-       QStringList listL3bTiles = mapL3BTiles.value(tileId);
 
        Logger::debug(QStringLiteral("Handling tile %1 from a number of %2 tiles").arg(tileId).arg(mapTiles.size()));
 
        allLaiGlobalExecInfos.append(LAIGlobalExecutionInfos());
        LAIGlobalExecutionInfos &infosRef = allLaiGlobalExecInfos[allLaiGlobalExecInfos.size()-1];
        infosRef.prodFormatParams.tileId = GetProductFormatterTile(tileId);
-       HandleNewTilesList(ctx, event, listTemporalTiles, listL3bTiles, listL3bMissingInputsTiles, infosRef);
+       HandleNewTilesList(ctx, event, listTemporalTiles, listL2AToL3BProducts, listL3bMissingInputsTiles, infosRef);
        if(infosRef.allTasksList.size() > 0 && infosRef.allStepsList.size() > 0) {
            listParams.append(infosRef.prodFormatParams);
            mapTileToParams[tileId] = infosRef.prodFormatParams;
@@ -548,22 +999,20 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
         QStringList listMonoDateInputProducts = bMonoDateLai ? inputProductToTilesMap.keys() : missingL3BInputs;
         QMap<QString, TileTemporalFilesInfo> mapMonoDateInputProducts = bMonoDateLai ? mapTiles : mapMissingL3BTiles;
         // create the product formatters for each LAI monodate product
+        bool noValidMonoLai = true;
         for(int i = 0; i < listMonoDateInputProducts.size(); i++) {
             QStringList outProdTiles, outProdTilesMetaFiles;
             QList<LAIMonoDateProductFormatterParams> outProdParams;
             if(!GetMonoDateFormatterParamInfosForProduct(listMonoDateInputProducts[i], mapMonoDateInputProducts, mapTileToParams,
                                                          inputProductToTilesMap, outProdTiles, outProdParams, outProdTilesMetaFiles)) {
-                ctx.MarkJobFailed(event.jobId);
-                throw std::runtime_error(
-                    QStringLiteral("Cannot process job - inconsistent tiles - product configuration (this is likely a bug)")
-                            .toStdString());
+                continue;
             }
             QStringList ndviList;
             QStringList laiList;
             QStringList laiErrList;
             QStringList laiFlgsList;
             allTasksList.append({"lai-mono-date-product-formatter", {}});
-            TaskToSubmit &laiMonoProductFormatterTask = allTasksList[allTasksList.size()-1];//laiMonoProductFormatterTask{"lai-mono-date-product-formatter", {}};
+            TaskToSubmit &laiMonoProductFormatterTask = allTasksList[allTasksList.size()-1];
             for(int i = 0; i<outProdTiles.size(); i++) {
                 ndviList.append(outProdParams[i].ndvi);
                 laiList.append(outProdParams[i].laiMonoDate);
@@ -571,42 +1020,45 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                 laiFlgsList.append(outProdParams[i].laiMonoDateFlgs);
                 laiMonoProductFormatterTask.parentTasks.append(outProdParams[i].parentsTasksRef);
             }
-            ctx.SubmitTasks(event.jobId, {laiMonoProductFormatterTask});
+            SubmitTasks(ctx, event.jobId, {laiMonoProductFormatterTask});
             QStringList productFormatterArgs = GetLaiMonoProductFormatterArgs(
                         laiMonoProductFormatterTask, ctx, event, outProdTilesMetaFiles,
                         outProdTiles, ndviList, laiList, laiErrList, laiFlgsList);
             allSteps.append(laiMonoProductFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
-            //allTasksList.append(laiMonoProductFormatterTask);
+            noValidMonoLai = false;
+        }
+        if(noValidMonoLai) {
+            ctx.MarkJobFailed(event.jobId);
+            throw std::runtime_error(
+                QStringLiteral("Cannot process job - inconsistent tiles - product configuration (this is likely a bug)")
+                        .toStdString());
         }
     }
 
     // Create the product formatter tasks for the Reprocessed and/or Fitted Products (if needed)
     if(bNDayReproc) {
         allTasksList.append({"lai-reproc-product-formatter", {}});
-        TaskToSubmit &laiReprocProductFormatterTask = allTasksList[allTasksList.size()-1];//{"lai-reproc-product-formatter", {}};
+        TaskToSubmit &laiReprocProductFormatterTask = allTasksList[allTasksList.size()-1];
         for(LAIProductFormatterParams params: listParams) {
             laiReprocProductFormatterTask.parentTasks.append(params.laiReprocParams.parentsTasksRef);
         }
-        ctx.SubmitTasks(event.jobId, {laiReprocProductFormatterTask});
+        SubmitTasks(ctx, event.jobId, {laiReprocProductFormatterTask});
         QStringList productFormatterArgs = GetReprocProductFormatterArgs(laiReprocProductFormatterTask, ctx, event, listTilesMetaFiles,
                                                                          listParams, false);
         // add these steps to the steps list to be submitted
         allSteps.append(laiReprocProductFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
-        //allTasksList.append(laiReprocProductFormatterTask);
     }
     if(bFittedReproc) {
         allTasksList.append({"lai-fitted-product-formatter", {}});
         TaskToSubmit &laiFittedProductFormatterTask = allTasksList[allTasksList.size()-1];
-        //TaskToSubmit laiFittedProductFormatterTask{"lai-fitted-product-formatter", {}};
         for(LAIProductFormatterParams params: listParams) {
             laiFittedProductFormatterTask.parentTasks.append(params.laiFitParams.parentsTasksRef);
         }
-        ctx.SubmitTasks(event.jobId, {laiFittedProductFormatterTask});
+        SubmitTasks(ctx, event.jobId, {laiFittedProductFormatterTask});
         QStringList productFormatterArgs = GetReprocProductFormatterArgs(laiFittedProductFormatterTask, ctx, event, listTilesMetaFiles,
                                                                          listParams, true);
         // add these steps to the steps list to be submitted
         allSteps.append(laiFittedProductFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
-        //allTasksList.append(laiFittedProductFormatterTask);
     }
 
     QList<std::reference_wrapper<const TaskToSubmit>> allTasksListRef;
@@ -615,7 +1067,7 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
     TaskToSubmit endOfJobDummyTask{"lai-end-of-job", {}};
     endOfJobDummyTask.parentTasks.append(allTasksListRef);
-    ctx.SubmitTasks(event.jobId, {endOfJobDummyTask});
+    SubmitTasks(ctx, event.jobId, {endOfJobDummyTask});
     allSteps.append(endOfJobDummyTask.CreateStep("EndOfLAIDummy", QStringList()));
 
     ctx.SubmitSteps(allSteps);
@@ -649,7 +1101,7 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             Logger::debug(QStringLiteral("InsertProduct for %1 returned %2").arg(prodName).arg(ret));
 
             // Now remove the job folder containing temporary files
-            //RemoveJobFolder(ctx, event.jobId);
+            RemoveJobFolder(ctx, event.jobId, "l3b");
         } else {
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
         }
@@ -668,6 +1120,21 @@ void LaiRetrievalHandler::GetModelFileList(QStringList &outListModels, const QSt
             outListModels.append(it.filePath());
         }
     }
+}
+
+QStringList LaiRetrievalHandler::GetCutImgArgs(const QString &shapePath, const QString &inFile, const QString &outFile) {
+    return { "-dstnodata", "0", "-overwrite",
+             "-cutline", shapePath,
+             "-crop_to_cutline",
+             inFile,
+             outFile
+           };
+}
+
+QStringList LaiRetrievalHandler::GetCompressImgArgs(const QString &inFile, const QString &outFile) {
+    return { "-in", inFile,
+             "-out", "\"" + outFile+"?gdal:co:COMPRESS=DEFLATE\""
+           };
 }
 
 QStringList LaiRetrievalHandler::GetNdviRviExtractionArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile,
@@ -708,7 +1175,7 @@ QStringList LaiRetrievalHandler::GetBvErrImageInvArgs(const QString &ftsFile, co
 QStringList LaiRetrievalHandler::GetQuantifyImageArgs(const QString &inFileName, const QString &outFileName)  {
     return { "QuantifyImage",
         "-in", inFileName,
-        "-out", outFileName
+        "-out", "\"" + outFileName+"?gdal:co:COMPRESS=DEFLATE\""
     };
 }
 
@@ -719,7 +1186,6 @@ QStringList LaiRetrievalHandler::GetMonoDateMskFlagsArgs(const QString &inputPro
       "-out", monoDateMskFlgsFileName,
       "-outres", resStr,
       "-outresampled", monoDateMskFlgsResFileName
-
     };
 }
 
@@ -826,6 +1292,8 @@ QStringList LaiRetrievalHandler::GetLaiMonoProductFormatterArgs(TaskToSubmit &pr
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
 
+    const auto &lutFile = configParameters["processor.l3b.lai.lut_path"];
+
     WriteExecutionInfosFile(executionInfosPath, configParameters, products, false);
 
     QStringList productFormatterArgs = { "ProductFormatter",
@@ -839,6 +1307,11 @@ QStringList LaiRetrievalHandler::GetLaiMonoProductFormatterArgs(TaskToSubmit &pr
                             "-outprops", outPropsPath};
     productFormatterArgs += "-il";
     productFormatterArgs.append(products);
+
+    if(lutFile.size() > 0) {
+        productFormatterArgs += "-lut";
+        productFormatterArgs += lutFile;
+    }
 
     productFormatterArgs += "-processor.vegetation.laindvi";
     for(int i = 0; i<tileIdsList.size(); i++) {
@@ -925,44 +1398,6 @@ QStringList LaiRetrievalHandler::GetReprocProductFormatterArgs(TaskToSubmit &pro
     return productFormatterArgs;
 }
 
-void LaiRetrievalHandler::GetStepsToGenModel(std::map<QString, QString> &configParameters,
-                                             bool bHasMonoDateLai,
-                                             const QStringList &listProducts,
-                                             QList<TaskToSubmit> &allTasksList,
-                                             NewStepList &steps)
-{
-    const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
-    const auto &rsrCfgFile = configParameters["processor.l3b.lai.rsrcfgfile"];
-    int i = 0;
-    int TasksNoPerProduct = MODEL_GEN_TASKS_PER_PRODUCT;
-    if (bHasMonoDateLai) TasksNoPerProduct += LAI_TASKS_PER_PRODUCT;
-    for(const QString& curXml : listProducts) {
-        int loopFirstIdx = i*TasksNoPerProduct;
-        TaskToSubmit &bvInputVariableGenerationTask = allTasksList[loopFirstIdx];
-        TaskToSubmit &prosailSimulatorTask = allTasksList[loopFirstIdx+1];
-        TaskToSubmit &trainingDataGeneratorTask = allTasksList[loopFirstIdx+2];
-        TaskToSubmit &inverseModelLearningTask = allTasksList[loopFirstIdx+3];
-
-        const auto & generatedSampleFile = bvInputVariableGenerationTask.GetFilePath("out_bv_dist_samples.txt");
-        const auto & simuReflsFile = prosailSimulatorTask.GetFilePath("out_simu_refls.txt");
-        const auto & anglesFile = prosailSimulatorTask.GetFilePath("out_angles.txt");
-        const auto & trainingFile = trainingDataGeneratorTask.GetFilePath("out_training.txt");
-        const auto & modelFile = inverseModelLearningTask.GetFilePath("out_model.txt");
-        const auto & errEstModelFile = inverseModelLearningTask.GetFilePath("out_err_est_model.txt");
-
-
-        QStringList BVInputVariableGenerationArgs = GetBVInputVariableGenerationArgs(configParameters, generatedSampleFile);
-        QStringList ProSailSimulatorArgs = GetProSailSimulatorArgs(curXml, generatedSampleFile, rsrCfgFile, simuReflsFile, anglesFile, configParameters);
-        QStringList TrainingDataGeneratorArgs = GetTrainingDataGeneratorArgs(curXml, generatedSampleFile, simuReflsFile, trainingFile);
-        QStringList InverseModelLearningArgs = GetInverseModelLearningArgs(trainingFile, curXml, modelFile, errEstModelFile, modelsFolder, configParameters);
-
-        steps.append(bvInputVariableGenerationTask.CreateStep("BVInputVariableGeneration", BVInputVariableGenerationArgs));
-        steps.append(prosailSimulatorTask.CreateStep("ProSailSimulator", ProSailSimulatorArgs));
-        steps.append(trainingDataGeneratorTask.CreateStep("TrainingDataGenerator", TrainingDataGeneratorArgs));
-        steps.append(inverseModelLearningTask.CreateStep("InverseModelLearning", InverseModelLearningArgs));
-        i++;
-    }
-}
 
 QStringList LaiRetrievalHandler::GetBVInputVariableGenerationArgs(std::map<QString, QString> &configParameters, const QString &strGenSampleFile) {
     QString samplesNo = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.samples", DEFAULT_GENERATED_SAMPLES_NO);
@@ -1079,10 +1514,29 @@ bool LaiRetrievalHandler::IsFittedReproc(const QJsonObject &parameters, std::map
 ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                           const ConfigurationParameterValueMap &requestOverrideCfgValues)
 {
-    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.l3b."), siteId, requestOverrideCfgValues);
-
     ProcessorJobDefinitionParams params;
     params.isValid = false;
+
+    QDateTime seasonStartDate;
+    QDateTime seasonEndDate;
+    // extract the scheduled date
+    QDateTime qScheduledDate = QDateTime::fromTime_t(scheduledDate);
+    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, qScheduledDate, requestOverrideCfgValues);
+    QDateTime limitDate = seasonEndDate.addMonths(2);
+    if(qScheduledDate > limitDate) {
+        return params;
+    }
+    if(!seasonStartDate.isValid()) {
+        Logger::error(QStringLiteral("Season start date for site ID %1 is invalid in the database!")
+                      .arg(siteId));
+        return params;
+    }
+
+    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.l3b."), siteId, requestOverrideCfgValues);
+
+    // we might have an offset in days from starting the downloading products to start the L3B/L3C/L3D production
+    int startSeasonOffset = mapCfg["processor.l3b.start_season_offset"].value.toInt();
+    seasonStartDate = seasonStartDate.addDays(startSeasonOffset);
 
     int generateLai = false;
     int generateReprocess = false;
@@ -1106,28 +1560,25 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
         return params;
     }
 
-    QDateTime seasonStartDate;
-    QDateTime seasonEndDate;
-    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
-    if(!seasonStartDate.isValid()) {
-        return params;
-    }
-
     // by default the start date is the season start date
     QDateTime startDate = seasonStartDate;
-    QDateTime endDate = QDateTime::fromTime_t(scheduledDate);
+    QDateTime endDate = qScheduledDate;
 
     if(generateLai || generateReprocess) {
         int productionInterval = mapCfg[generateLai ? "processor.l3b.production_interval":
                                                       "processor.l3b.reproc_production_interval"].value.toInt();
         startDate = endDate.addDays(-productionInterval);
+        // Use only the products after the configured start season date
         if(startDate < seasonStartDate) {
             startDate = seasonStartDate;
         }
     }
 
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
-    if (params.productList.size() > 0) {
+    // Normally, we need at least 1 product available in order to be able to create a L3B/L3C/L3D product
+    // but if we do not return here, the schedule block waiting for products (that might never happen)
+    bool waitForAvailProcInputs = (mapCfg["processor.l3b.sched_wait_proc_inputs"].value.toInt() != 0);
+    if((waitForAvailProcInputs == false) || (params.productList.size() > 0)) {
         params.isValid = true;
 //        if(generateLai) {
 //            params.isValid = true;
@@ -1138,6 +1589,18 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
 //        } else if (generateReprocess > 2) {
 //            params.isValid = true;
 //        }
+        Logger::debug(QStringLiteral("Executing scheduled job. Scheduler extracted for L3B/L3C/L3D a number "
+                                     "of %1 products for site ID %2 with start date %3 and end date %4!")
+                      .arg(params.productList.size())
+                      .arg(siteId)
+                      .arg(startDate.toString())
+                      .arg(endDate.toString()));
+    } else {
+        Logger::debug(QStringLiteral("Scheduled job for L3B/L3C/L3D and site ID %1 with start date %2 and end date %3 "
+                                     "will not be executed (no products)!")
+                      .arg(siteId)
+                      .arg(startDate.toString())
+                      .arg(endDate.toString()));
     }
 
     return params;

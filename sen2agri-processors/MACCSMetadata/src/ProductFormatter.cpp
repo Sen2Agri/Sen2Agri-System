@@ -57,6 +57,7 @@
 #define LAI_FITTED_FLAGS_SUFFIX         "MLAIFFLG"
 #define CROP_MASK_IMG_SUFFIX            "CM"
 #define CROP_TYPE_IMG_SUFFIX            "CT"
+#define CROP_TYPE_RAW_IMG_SUFFIX        "RAW"
 #define CROP_MASK_RAW_IMG_SUFFIX        "RAW"
 #define CROP_MASK_FLAGS_SUFFIX          "MCMFLG"
 #define CROP_TYPE_FLAGS_SUFFIX          "MCTFLG"
@@ -141,6 +142,7 @@ typedef enum{
     CROP_MASK_RASTER,
     RAW_CROP_MASK_RASTER,
     CROP_TYPE_RASTER,
+    CROP_TYPE_RAW_RASTER,
     PHENO_RASTER,
     PHENO_FLAGS,
     CROP_MASK_FLAGS,
@@ -158,12 +160,14 @@ struct rasterInfo
     std::string rasterTimePeriod;
     int nRasterExpectedBandsNo;
     std::string strNewRasterFullPath;
+    bool bNeedsPreview;
 };
 
 struct qualityInfo
 {
     std::string strFileName;
     std::string strTileID;
+    std::string strRegion;
 };
 
 struct previewInfo
@@ -299,8 +303,11 @@ private:
 
 
 //crop type parameters
-        AddParameter(ParameterType_InputFilenameList, "processor.croptype.file", "CROP TYPE raster file  separated by TILE_{tile_id} delimiter");
+        AddParameter(ParameterType_InputFilenameList, "processor.croptype.file", "CROP TYPE raster files, separated by TILE_{tile_id} delimiter");
         MandatoryOff("processor.croptype.file");
+
+        AddParameter(ParameterType_InputFilenameList, "processor.croptype.rawfile", "CROP TYPE unmasked raster files, separated by TILE_{tile_id} delimiter");
+        MandatoryOff("processor.croptype.rawfile");
 
         AddParameter(ParameterType_InputFilenameList, "processor.croptype.quality", "CROP TYPE quality file");
         MandatoryOff("processor.croptype.quality");
@@ -501,7 +508,7 @@ private:
 
           //get quality file list
           filesList = this->GetParameterStringList("processor.cropmask.quality");
-          UnpackNonRastersList(filesList);
+          UnpackQualityFlagsList(filesList);
 
           // get the CropMask flags
           filesList = this->GetParameterStringList("processor.cropmask.flags");
@@ -516,9 +523,12 @@ private:
           filesList = this->GetParameterStringList("processor.croptype.file");
           UnpackRastersList(filesList, CROP_TYPE_RASTER, false);
 
+          filesList = this->GetParameterStringList("processor.croptype.rawfile");
+          UnpackRastersList(filesList, CROP_TYPE_RAW_RASTER, false);
+
           //get quality file list
           filesList = this->GetParameterStringList("processor.croptype.quality");
-          UnpackNonRastersList(filesList);
+          UnpackQualityFlagsList(filesList);
 
           // get the CropType flags
           filesList = this->GetParameterStringList("processor.croptype.flags");
@@ -616,6 +626,7 @@ private:
       std::string strTileID;
       rasterInfo rasterInfoEl;
       rasterInfoEl.bIsQiData = bIsQiData;
+      rasterInfoEl.bNeedsPreview = false;
 
       // get the number of tiles elements in the rasters list (including duplicates)
       //std::string strTileID = UnpackTiles(rastersList, allTilesCnt);
@@ -638,6 +649,7 @@ private:
               rasterInfoEl.iRasterType = rasterType;
               rasterInfoEl.strRasterFileName = rasterFileEl;
               rasterInfoEl.strTileID = strTileID;
+              rasterInfoEl.bNeedsPreview = IsRasterNeedsPreview(rasterType);
               // update the date
               if(bAllRastersHaveDate) {
                   if(LevelHasAcquisitionTime()) {
@@ -663,9 +675,10 @@ private:
       return nTotalFoundTiles;
   }
 
-  void UnpackNonRastersList(std::vector<std::string> &filesList) {
+  void UnpackQualityFlagsList(std::vector<std::string> &filesList) {
       qualityInfo qualityInfoEl;
       std::string strTileID;
+      std::string strRegion;
       for (const auto &fileEl : filesList) {
           if(fileEl.compare(0, 5, "TILE_") == 0)
           {
@@ -677,9 +690,12 @@ private:
                 tileInfoEl.strTileID = strTileID;
                 m_tileIDList.emplace_back(tileInfoEl);
               }
+          } else if (fileEl.compare(0, 7, "REGION_") == 0) {
+              strRegion = fileEl.substr(7, fileEl.length() - 7);
           } else  {
               qualityInfoEl.strFileName = fileEl;
               qualityInfoEl.strTileID = strTileID;
+              qualityInfoEl.strRegion = strRegion;
               m_qualityList.emplace_back(qualityInfoEl);
           }
       }
@@ -875,7 +891,8 @@ private:
       return extent;
   }
 
-  bool generateRgbFromLut(const std::string &rasterFullFilePath, const std::string &ourRasterFullFilePath, const std::string &lutMap, bool bIsRgbImg)
+  bool generateRgbFromLut(const std::string &rasterFullFilePath, const std::string &ourRasterFullFilePath, 
+                          const std::string &lutMap, bool bIsRgbImg, bool bIsRangeMapFile)
   {
       std::vector<const char *> args;
       args.emplace_back("ContinuousColorMapping");
@@ -889,6 +906,10 @@ private:
       std::string strIsRgbImg = std::to_string(bIsRgbImg);
       args.emplace_back(strIsRgbImg.c_str());
 
+      args.emplace_back("-isrange");
+      std::string strIsRangeMapFile = std::to_string(bIsRangeMapFile);
+      args.emplace_back(strIsRangeMapFile.c_str());
+      
       return ExecuteExternalProgram("otbcli", args);
   }
 
@@ -923,7 +944,7 @@ private:
       int iResolution;
       bool bResolutionExistingAlready = false;
       bool bGeoPositionExistingAlready = false;
-      bool bPreview = !m_previewList.empty();
+      //bool bPreview = !m_previewList.empty();
 
       auto writer = itk::TileMetadataWriter::New();
 
@@ -956,13 +977,23 @@ private:
 
               iResolution = output->GetSpacing()[0];
 
-              if((!bPreview) && IsPreviewNeeded(rasterFileEl, iResolution))
+              if(/*(!bPreview) && */IsPreviewNeeded(rasterFileEl, iResolution))
               {
-                previewInfo previewInfoEl;
-                previewInfoEl.strPreviewFileName = rasterFileEl.strRasterFileName;
-                previewInfoEl.strTileID = tileInfoEl.strTileID;
-                m_previewList.emplace_back(previewInfoEl);
-                bPreview = true;
+                  bool bFound = false;
+                  for(size_t i = 0; i < m_previewList.size(); i++) {
+                      if(m_previewList[i].strPreviewFileName == rasterFileEl.strRasterFileName &&
+                              m_previewList[i].strTileID == tileInfoEl.strTileID) {
+                          bFound = true;
+                          break;
+                      }
+                  }
+                  if(!bFound) {
+                      previewInfo previewInfoEl;
+                      previewInfoEl.strPreviewFileName = rasterFileEl.strRasterFileName;
+                      previewInfoEl.strTileID = tileInfoEl.strTileID;
+                      m_previewList.emplace_back(previewInfoEl);
+                      //bPreview = true;
+                  }
               }
 
               if(rasterFileEl.iRasterType != COMPOSITE_REFLECTANCE_RASTER)
@@ -1295,7 +1326,7 @@ private:
       {
           //fail to create tile folder
           bResult = false;
-          itkExceptionMacro("Fail to create tile directory!");
+          itkExceptionMacro("Fail to create tile directory " + strTileFullPath);
       }
 
       /* create IMG_DATA subfolder */
@@ -1303,7 +1334,7 @@ private:
       {
            //fail to create IMG_DATA subfolder
           bResult = false;
-          itkExceptionMacro("Fail to create IMG_DATA subfolder in tile directory!");
+          itkExceptionMacro("Fail to create IMG_DATA subfolder in tile directory " + strTileFullPath);
       }
 
       /* create QI_DATA subfolder */
@@ -1311,10 +1342,37 @@ private:
       {
            //fail to create QI_DATA subfolder
           bResult = false;
-          itkExceptionMacro("Fail to create QI_DATA subfolder in tile directory!");
+          itkExceptionMacro("Fail to create QI_DATA subfolder in tile directory " + strTileFullPath);
       }
 
       return bResult;
+  }
+
+  bool IsRasterNeedsPreview(rasterTypes rasterType) {
+      switch(rasterType) {
+          case COMPOSITE_REFLECTANCE_RASTER:
+              // this does not needs a preview because it is actually the RGB image that is previewed
+              return false;
+          case LAI_MONO_DATE_RASTER:
+              return true;
+          case LAI_MONO_DATE_ERR_RASTER:
+              return true;
+          case LAI_REPR_RASTER:
+              return true;
+          case LAI_FIT_RASTER:
+              return true;
+          case PHENO_RASTER:
+               return true;
+          case CROP_TYPE_RASTER:
+              return true;
+          case CROP_TYPE_RAW_RASTER:
+              return false;
+          case CROP_MASK_RASTER:
+             return true;
+          default:
+             return false;
+      }
+      return false;
   }
 
   void ComputeNewNameOfRasterFiles(const tileInfo &tileInfoEl)
@@ -1358,6 +1416,9 @@ private:
                      break;
                 case CROP_TYPE_RASTER:
                     rasterCateg = CROP_TYPE_IMG_SUFFIX;
+                    break;
+                case CROP_TYPE_RAW_RASTER:
+                    rasterCateg = CROP_TYPE_RAW_IMG_SUFFIX;
                     break;
                 case CROP_MASK_RASTER:
                     rasterCateg = CROP_MASK_IMG_SUFFIX;
@@ -1469,7 +1530,7 @@ private:
             }
           } else {
               boost::filesystem::path p(qualityFileEl.strFileName);
-              strNewQualityFileName = BuildFileName(QUALITY_CATEG, "", p.extension().string());
+              strNewQualityFileName = BuildFileName(QUALITY_CATEG, "", p.extension().string(), "", "", "", qualityFileEl.strRegion);
 
                //quality files are copied to tileDirectory/QI_DATA
               CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName +
@@ -1486,6 +1547,7 @@ private:
       // check if we should use the LUT table for LAI
       bool bUseLut = false;
       bool bIsRgbImg = false;
+      bool bIsRangeMapFile = true;
 
       if ((m_strProductLevel.compare("L2A") == 0) ||
           (m_strProductLevel.compare("L3A") == 0))
@@ -1498,11 +1560,16 @@ private:
       }
       if(((m_strProductLevel.compare("L3B") == 0) ||
           (m_strProductLevel.compare("L3C") == 0) ||
-          (m_strProductLevel.compare("L3D") == 0)) &&
+          (m_strProductLevel.compare("L3D") == 0) ||
+          (m_strProductLevel.compare("L4A") == 0) ||
+          (m_strProductLevel.compare("L4B") == 0)) &&
           (m_strLutFile != ""))
       {
             iChannelNo = 3;
             bUseLut = true;
+            if((m_strProductLevel.compare("L4B") == 0)) {
+                bIsRangeMapFile = false;
+            }            
       }
 
       //std::cout << "ChannelNo = " << iChannelNo << std::endl;
@@ -1524,7 +1591,8 @@ private:
                  bool bQuicklookGenerated = false;
                  if(bUseLut) {
                      std::string outL3BRgbPreviewFile = previewFileEl.strPreviewFileName + "_RGB.tif";
-                     if(!generateRgbFromLut(previewFileEl.strPreviewFileName, outL3BRgbPreviewFile, m_strLutFile, bIsRgbImg)) {
+                     if(!generateRgbFromLut(previewFileEl.strPreviewFileName, outL3BRgbPreviewFile, m_strLutFile, 
+                                            bIsRgbImg, bIsRangeMapFile)) {
                          otbAppLogWARNING("Error creating RGB file from LUT " << strTilePreviewFullPath);
                      } else {
                          //transform .tif file in .jpg file directly in tile directory
@@ -1640,7 +1708,7 @@ private:
   }
 
   bool IsPreviewNeeded(const rasterInfo &rasterFileEl, int nRes) {
-        if(rasterFileEl.bIsQiData ||
+        if(!rasterFileEl.bNeedsPreview || rasterFileEl.bIsQiData ||
            ((rasterFileEl.iRasterType == COMPOSITE_REFLECTANCE_RASTER) && (nRes != 10))) {
             return false;
         }
@@ -1736,8 +1804,8 @@ private:
   }
 
   std::string BuildFileName(const std::string &fileCateg, const std::string &tileId, const std::string &extension="", const std::string &strTimePeriod = "",
-                            const std::string &site = "", const std::string &creationDate = "") {
-      std::string strFileName = "{project_id}_{product_level}_{file_category}_S{originator_site}_{creation_date}_V{time_period}_T{tile_id}";
+                            const std::string &site = "", const std::string &creationDate = "", const std::string &region = "") {
+      std::string strFileName = "{project_id}_{product_level}_{file_category}_S{originator_site}_{creation_date}_V{time_period}_T{tile_id}_R{region}";
       strFileName = ReplaceString(strFileName, "{project_id}", PROJECT_ID);
       strFileName = ReplaceString(strFileName, "{product_level}", m_strProductLevel);
       if(fileCateg.length() > 0) {
@@ -1772,6 +1840,12 @@ private:
           strFileName = ReplaceString(strFileName, "_T{tile_id}", tileId);
       } else {
           strFileName = ReplaceString(strFileName, "_T{tile_id}", "_T" + tileId);
+      }
+
+      if (!region.empty()) {
+          strFileName = ReplaceString(strFileName, "{region}", region);
+      } else {
+          strFileName = ReplaceString(strFileName, "_R{region}", "");
       }
 
       if(extension.length() > 0)

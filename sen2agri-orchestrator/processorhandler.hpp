@@ -27,12 +27,12 @@ protected:
     QString GetFinalProductFolder(EventProcessingContext &ctx, int jobId, int siteId);
     QString GetFinalProductFolder(EventProcessingContext &ctx, int jobId, int siteId, const QString &productName);
     QString GetFinalProductFolder(const std::map<QString, QString> &cfgKeys, const QString &siteName, const QString &processorName);
-    bool RemoveJobFolder(EventProcessingContext &ctx, int jobId);
+    bool RemoveJobFolder(EventProcessingContext &ctx, int jobId, const QString &procName);
     QString GetProductFormatterOutputProductPath(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterProductName(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterQuicklook(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterFootprint(EventProcessingContext &ctx, const TaskFinishedEvent &event);
-    bool GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,  QDateTime &startTime, QDateTime &endTime,
+    bool GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,  QDateTime &startTime, QDateTime &endTime, const QDateTime &executionDate,
                                 const ConfigurationParameterValueMap &requestOverrideCfgValues);
     QStringList GetL2AInputProductsTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                     QMap<QString, QStringList> &mapProductToTilesMetaFiles);
@@ -42,6 +42,8 @@ protected:
 
     QMap<QString, TileTemporalFilesInfo> GroupTiles(EventProcessingContext &ctx, int jobId, const QStringList &listAllProductsTiles, ProductType productType);
     QString GetProductFormatterTile(const QString &tile);
+
+    void SubmitTasks(EventProcessingContext &ctx, int jobId, const QList<std::reference_wrapper<TaskToSubmit> > &tasks);
 
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,

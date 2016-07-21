@@ -52,6 +52,7 @@ BEGIN
 		INNER JOIN site ON job.site_id = site.id
 		INNER JOIN activity_status ON job.status_id = activity_status.id
 	WHERE job.status_id NOT IN (6,7,8) -- Finished, Cancelled, Error
+	  AND EXISTS(SELECT * FROM task WHERE task.job_id = job.id) -- this is to prevent an empty dashboard display when there are inconsistencies in the job state
 		ORDER BY job.id DESC
 		OFFSET oset LIMIT lmt;
 
@@ -72,20 +73,12 @@ BEGIN
 			current_task_steps_completed,
 			current_task_steps_remaining
 		)
-		WITH modules as (SELECT DISTINCT task.module_short_name FROM task WHERE task.job_id = 542)
+		WITH modules as (SELECT DISTINCT task.module_short_name FROM task WHERE task.job_id = current_job.id)
 			SELECT  modules.module_short_name,
-				(select count(*) from task where task.job_id = 542 and task.module_short_name = modules.module_short_name AND task.status_id = 4),
-				(select count(*) from task where task.job_id = 542 and task.module_short_name = modules.module_short_name)
+				(select count(*) from task where task.job_id = current_job.id and task.module_short_name = modules.module_short_name AND task.status_id = 4),
+				(select count(*) from task where task.job_id = current_job.id and task.module_short_name = modules.module_short_name)
 			FROM modules
 			ORDER BY modules.module_short_name;
--- 		SELECT 
--- 		task.module_short_name,
--- 		(SELECT count(*) FROM step WHERE step.task_id = task.id AND step.status_id IN (6,7,8)),	-- Finished, Cancelled, Error
--- 		(SELECT count(*) FROM step WHERE step.task_id = task.id AND step.status_id NOT IN (6,7,8))
--- 		FROM task 
--- 		WHERE task.job_id = current_job.id AND task.status_id IN (1,4) -- Submitted, Running
--- 		GROUP BY task.module_short_name
--- 		ORDER BY task.id;
 
 			IF current_job.status_id != 5 /*Paused*/ THEN
 				temp_json := json_build_array(1,3,4);

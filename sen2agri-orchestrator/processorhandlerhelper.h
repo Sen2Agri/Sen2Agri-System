@@ -43,24 +43,28 @@ public:
         QList<SatelliteIdType> uniqueSatteliteIds;
         SatelliteIdType primarySatelliteId;
         QString shapePath;
+        QString projectionPath;
     } TileTemporalFilesInfo;
 
 
     ProcessorHandlerHelper();
 
-    static ProductType GetProductTypeFromFileName(const QString &path);
+    static ProductType GetProductTypeFromFileName(const QString &path, bool useParentDirIfDir = true);
     static QString GetTileId(const QString &path, SatelliteIdType &satelliteId);
     //static QStringList GetProductTileIds(const QStringList &listFiles);
     static QMap<QString, TileTemporalFilesInfo> GroupTiles(const QStringList &listAllProductsTiles, QList<SatelliteIdType> &outAllSatIds, SatelliteIdType &outPrimarySatelliteId);
+    static SatelliteIdType GetPrimarySatelliteId(const QList<ProcessorHandlerHelper::SatelliteIdType> &satIds);
+    static QString GetMissionNamePrefixFromSatelliteId(SatelliteIdType satId);
     static QStringList GetTextFileLines(const QString &filePath);
     static QString GetFileNameFromPath(const QString &filePath);
     static bool IsValidHighLevelProduct(const QString &path);
     static bool GetHigLevelProductAcqDatesFromName(const QString &productName, QDateTime &minDate, QDateTime &maxDate);
     static QString GetHigLevelProductTileFile(const QString &tileDir, const QString &fileIdentif, bool isQiData=false);
     static QMap<QString, QString> GetHigLevelProductFiles(const QString &productDir, const QString &fileIdentif, bool isQiData=false);
+    static QMap<QString, QString> GetHighLevelProductTilesDirs(const QString &productDir);
     static QMap<QString, QStringList> GroupHighLevelProductTiles(const QStringList &listAllProductFolders);
 
-    //static QString GetL2ATileMainImageFilePath(const QString &tileMetadataPath);
+    static QString GetL2ATileMainImageFilePath(const QString &tileMetadataPath);
     static const L2MetaTileNameInfos &GetL2AProductTileNameInfos(const QString &metaFileName);
     static L2ProductType GetL2AProductTypeFromTile(const QString &tileMetadataPath);
     static QDateTime GetL2AProductDateFromPath(const QString &path);
@@ -71,7 +75,9 @@ public:
                                                  QStringList &listSecondarySatLoadedProds, SatelliteIdType secondarySatId,
                                                  TileTemporalFilesInfo &primarySatInfos);
     static QString BuildShapeName(const QString &shapeFilesDir, const QString &tileId, int jobId, int taskId);
+    static QString BuildProjectionFileName(const QString &projFilesDir, const QString &tileId, int jobId, int taskId);
     static QString GetShapeForTile(const QString &shapeFilesDir, const QString &tileId);
+    static QString GetProjectionForTile(const QString &projFilesDir, const QString &tileId);
     static QStringList GetTemporalTileFiles(const TileTemporalFilesInfo &temporalTileInfo);
     static bool TemporalTileInfosHasFile(const TileTemporalFilesInfo &temporalTileInfo, const QString &filePath);
     static void SortTemporalTileInfoFiles(TileTemporalFilesInfo &temporalTileInfo);

@@ -4,9 +4,6 @@
             <div id="main3">
 				<table cellpadding="0px" cellspacing="0px">
 					<tr>
-						<td colspan=3"><h3 style="margin-top: 0px;">Available products</h3></td>
-					</tr>
-					<tr>
 						<td><div id="tree" class="tree"></div></td>
 						<td>&nbsp;&nbsp;&nbsp;&nbsp;</td>
 						<td><div id="map" class="map"></div></td>
@@ -19,7 +16,7 @@
     <script src="libraries/openlayers/build/ol.js"></script>
     <script src="scripts/config.js"></script>
     <script src="scripts/helpers.js"></script>
-    
+    <script src="./theme/OpenLayers.js"></script>
 	<script>
 		var styleSelected = new ol.style.Style({
 			stroke: new ol.style.Stroke({
@@ -31,40 +28,27 @@
 				color: 'rgba(0, 0, 255, 0.01)'
 			})
 		});
-		
-		var raster = new ol.layer.Tile({
-		  source: new ol.source.MapQuest({layer: 'sat'})
-		});
-		
-		/*var vector = new ol.layer.Vector({
-		  source: new ol.source.Vector({
-		    url: 'productsMapData.json',
-		    format: new ol.format.GeoJSON()
-		  })
-		});*/
-		
 		var vector = new ol.layer.Vector({
-		  source: new ol.source.Vector(),
-		  style: styleSelected
+			source: new ol.source.Vector(),
+			style: styleSelected
 		});
 		vector.setZIndex(10);
 		
-		var view = new ol.View({
-		    center: [0, 0],
-		    zoom: 2
-		});
+		var view = new ol.View({ center: [0, 0], zoom: 3 });
+		var raster = new ol.layer.Tile({ source: new ol.source.Stamen({layer: 'watercolor'}) });
 		
 		var map = new ol.Map({
-		  layers: [raster, vector], // [raster, vector]
+		  layers: [raster, vector],
 		  target: 'map',
 		  view: view
 		});
-		
-		//map.addLayer(vector);
+		var lat = 40;
+		var lon = 22;
+		map.getView().setCenter(ol.proj.transform([lon, lat], 'EPSG:4326', 'EPSG:3857'));
+		map.getView().setZoom(3);
 		
 		// Create an image layer
 		var imageLayer;
-		
 		var displayProductImage = function(imageUrl, imageWidth, imageHeight, extent) {
 			if(imageLayer) map.removeLayer(imageLayer);
 			
@@ -141,6 +125,7 @@
 		
 		initInteraction();
 		
+		$('#toggle-one').toggle();
 		var treeData;
 		var initTree = function() {
 			$.ajax({
@@ -153,6 +138,7 @@
 				{
 					treeData = data;
 					renderTree();
+					$(".list-group").css("width", $(".tree").width() - 20);	
 				},
 				error: function (responseData, textStatus, errorThrown) {
 					console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
@@ -171,8 +157,9 @@
 				expandIcon: "glyphicon glyphicon-folder-close",
 				emptyIcon: "glyphicon glyphicon-file",
 				levels: 1,
-				enableLinks: true
-				
+				enableLinks: false,
+				enableTooltips: true,
+				enableDownloadButtons: true
 			});
 			
 			$('#tree').on('nodeSelected', function(event, data) {
@@ -195,7 +182,7 @@
 				}
 				
 				displayProductImage(data['productImageUrl'], data['productImageWidth'], data['productImageHeight'], extent);
-						
+				
 				panToLocation(extent);
 				
 				//Create polygone for the site
@@ -203,21 +190,20 @@
 				var feature2 = format.readFeature(data.siteCoord);
 				feature2.getGeometry().transform('EPSG:4326', 'EPSG:3857');
 				
-				/*
-				var olCoordArr = new Array();
-			    for(var i=0; i<data.siteCoord.length;i++) {
-					pointCoords = data.siteCoord[i].split(" ");
-					olCoordArr.push([Number(pointCoords[0]), Number(pointCoords[1])]);
-				}
-				polygon = new ol.geom.Polygon([olCoordArr]);
-				polygon.transform('EPSG:4326', 'EPSG:3857');
-				var feature2 = new ol.Feature(polygon);
-				*/
-				
 				selectedFeatures.addFeature(feature2);
+			});
+			
+			$('#tree').on('click', function(event, data) {
+				var max = 350;
+				$(".floatingleaf").each(function(){
+					c_width = parseInt($(this).width()) + 100;
+					if (c_width > max) { max = c_width; }
+				});
+				$(".list-group").css("width", max);					
 			});
 		};
 		
 		initTree();
 	</script>
+	
 <?php include "ms_foot.php" ?>

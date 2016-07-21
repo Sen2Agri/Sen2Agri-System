@@ -23,7 +23,7 @@ function SignIn()
 			$_SESSION['siteId'] = $siteId;
 			$_SESSION['userName'] = $_POST['user'];
 			$_SESSION['loginMessage'] = "";
-			header("Location: main.php");
+			header("Location: create_site.php");
 			exit;
 		} else {
 			$_SESSION['loginMessage'] = "Invalid username or password. Please retry!";

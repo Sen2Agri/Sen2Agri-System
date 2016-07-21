@@ -7,7 +7,7 @@ _____________________________________________________________________________
    Language:     Python
    Copyright:    2015-2016, CS Romania, office@c-s.ro
    See COPYRIGHT file for details.
-   
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,28 +35,6 @@ import pipes
 import zipfile
 from multiprocessing import Pool
 from sen2agri_common_db import *
-
-def GetExtent(gt, cols, rows):
-    ext = []
-    xarr = [0, cols]
-    yarr = [0, rows]
-
-    for px in xarr:
-        for py in yarr:
-            x = gt[0] + px * gt[1] + py * gt[2]
-            y = gt[3] + px * gt[4] + py * gt[5]
-            ext.append([x, y])
-        yarr.reverse()
-    return ext
-
-
-def ReprojectCoords(coords, src_srs, tgt_srs):
-    trans_coords = []
-    transform = osr.CoordinateTransformation(src_srs, tgt_srs)
-    for x, y in coords:
-        x, y, z = transform.TransformPoint(x, y)
-        trans_coords.append([x, y])
-    return trans_coords
 
 
 def resample_dataset(src_file_name, dst_file_name, dst_spacing_x, dst_spacing_y):
@@ -153,7 +131,7 @@ def get_landsat_dir_info(name):
 
 def get_sentinel2_dir_info(name):
     m = re.match("S2A\w+_(\d{8}T\d{6})\w+.SAFE", name)
-    
+
     return m and ('S2', m.group(1))
 
 
@@ -179,13 +157,14 @@ def create_context(args):
     if not os.path.exists(dir_base) or not os.path.isdir(dir_base):
         print("The path does not exist ! {}".format(dir_base))
         return []
+    log_path = dir_base
     if dir_base.rfind('/') + 1 == len(dir_base):
         dir_base = dir_base[0:len(dir_base)-1]
     mode, date = get_dir_info(dir_base)
     context_array = []
     #if mode == None:
         #print("Error in reading directory, is not in S2 neither L8 format")
-        #return context_array    
+        #return context_array
 
     images = []
     tiles_to_process = []
@@ -195,6 +174,9 @@ def create_context(args):
         images.append("{}/{}_B1.TIF".format(dir_base, os.path.basename(dir_base)))
     elif mode == 'S2':
         dir_base += "/GRANULE/"
+        if not os.path.exists(dir_base) or not os.path.isdir(dir_base):
+            log(log_path, "The path for Sentinel 2 (with GRANULE) does not exist ! {}".format(dir_base), "dem.log")
+            return []
         tile_dirs = ["{}{}".format(dir_base, f) for f in os.listdir(dir_base) if isdir(join(dir_base, f))]
         for tile_dir in tile_dirs:
             tile_dir += "/IMG_DATA/"
@@ -202,7 +184,7 @@ def create_context(args):
             if len(image_band2) == 1:
                 if len(tiles_to_process) > 0:
                     mode_f, tile_id = get_tile_id(image_band2[0])
-                    if tile_id in tiles_to_process:                      
+                    if tile_id in tiles_to_process:
                         images.append(image_band2[0])
                 else:
                     images.append(image_band2[0])
@@ -320,7 +302,7 @@ def create_metadata(context):
     mission = "LANDSAT_8"
     if context.mode == 'S2':
         mission = "SENTINEL-2_"
-    
+
     return E.Earth_Explorer_Header(
             E.Fixed_Header(
                 E.Mission(mission),
@@ -356,12 +338,13 @@ def process_DTM(context):
             [os.path.basename(tile) for tile in missing_tiles], context.srtm_directory))
         return False
 
-    run_command(["gdalbuildvrt",
+    run_command(["gdalbuildvrt", "-q",
                  context.dem_vrt] + dtm_tiles)
     run_command(["otbcli_BandMath",
                  "-il", context.dem_vrt,
                  "-out", context.dem_nodata,
-                 "-exp", "im1b1 == -32768 ? 0 : im1b1"])
+                 "-exp", "im1b1 == -32768 ? 0 : im1b1",
+                 "-progress", "false"])
     run_command(["otbcli_OrthoRectification",
                  "-io.in", context.dem_nodata,
                  "-io.out", context.dem_r1,
@@ -373,7 +356,8 @@ def process_DTM(context):
                  "-outputs.spacingy", str(context.spacing_y),
                  "-outputs.ulx", str(context.extent[0][0]),
                  "-outputs.uly", str(context.extent[0][1]),
-                 "-opt.gridspacing", str(grid_spacing)])
+                 "-opt.gridspacing", str(grid_spacing),
+                 "-progress", "false"])
 
     if context.dem_r2:
         # run_command(["gdal_translate",
@@ -408,23 +392,23 @@ def process_DTM(context):
     #              "-transform.type.id.scalex", str(scale),
     #              "-transform.type.id.scaley", str(scale)])
 
-    run_command(["gdaldem", "slope",
+    run_command(["gdaldem", "slope", "-q",
                  # "-s", "111120",
                  "-compute_edges",
                  context.dem_r1,
                  context.slope_degrees])
-    run_command(["gdaldem", "aspect",
+    run_command(["gdaldem", "aspect", "-q",
                  # "-s", "111120",
                  "-compute_edges",
                  context.dem_r1,
                  context.aspect_degrees])
 
-    run_command(["gdal_translate",
+    run_command(["gdal_translate", "-q",
                  "-ot", "Int16",
                  "-scale", "0", "90", "0", "157",
                  context.slope_degrees,
                  context.slope_r1])
-    run_command(["gdal_translate",
+    run_command(["gdal_translate", "-q",
                  "-ot", "Int16",
                  "-scale", "0", "368", "0", "628",
                  context.aspect_degrees,
@@ -436,7 +420,8 @@ def process_DTM(context):
                      "-inm", context.slope_r1,
                      "-interpolator", "linear",
                      "-lms", "40",
-                     "-out", context.slope_r2])
+                     "-out", context.slope_r2,
+                     "-progress", "false"])
 
     if context.aspect_r2:
         run_command(["otbcli_Superimpose",
@@ -444,21 +429,24 @@ def process_DTM(context):
                      "-inm", context.aspect_r1,
                      "-interpolator", "linear",
                      "-lms", "40",
-                     "-out", context.aspect_r2])
+                     "-out", context.aspect_r2,
+                     "-progress", "false"])
 
     run_command(["otbcli_Superimpose",
                  "-inr", context.dem_coarse,
                  "-inm", context.slope_r1,
                  "-interpolator", "linear",
                  "-lms", "40",
-                 "-out", context.slope_coarse])
+                 "-out", context.slope_coarse,
+                 "-progress", "false"])
 
     run_command(["otbcli_Superimpose",
                  "-inr", context.dem_coarse,
                  "-inm", context.aspect_r1,
                  "-interpolator", "linear",
                  "-lms", "40",
-                 "-out", context.aspect_coarse])
+                 "-out", context.aspect_coarse,
+                 "-progress", "false"])
     return True
 
 def process_WB(context):
@@ -467,14 +455,17 @@ def process_WB(context):
                  "-il", context.dem_r1,
                  "-mode", "list",
                  "-mode.list.indir", context.swbd_directory,
-                 "-mode.list.outlist", context.swbd_list])
+                 "-mode.list.outlist", context.swbd_list,
+                 "-progress", "false"])
 
     with open(context.swbd_list) as f:
         swbd_tiles = f.read().splitlines()
 
+    empty_shp = os.path.join(context.swbd_directory, "empty.shp")
     run_command(["otbcli_ConcatenateVectorData",
+                 "-progress", "false",
                  "-out", context.wb,
-                 "-vd"] + swbd_tiles)
+                 "-vd", empty_shp] + swbd_tiles)
 
     run_command(["ogr2ogr",
                  "-s_srs", "EPSG:4326",
@@ -486,7 +477,8 @@ def process_WB(context):
                  "-in", context.wb_reprojected,
                  "-out", context.water_mask, "uint8",
                  "-im", context.dem_coarse,
-                 "-mode.binary.foreground", "1"])
+                 "-mode.binary.foreground", "1",
+                 "-progress", "false"])
 
 
 def change_extension(file, new_extension):
@@ -529,7 +521,7 @@ def process_context(context):
     except:
         print("Couldn't remove the temp dir {}".format(context.temp_directory))
 
-def parse_arguments():    
+def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Creates DEM and WB data for MACCS")
     parser.add_argument('input', help="input L1C directory")
@@ -540,7 +532,7 @@ def parse_arguments():
                         help="working directory")
     parser.add_argument('-p', '--processes-number', required=False,
                         help="number of processed to run", default="3")
-    parser.add_argument('output', help="output location")    
+    parser.add_argument('output', help="output location")
 
     args = parser.parse_args()
 

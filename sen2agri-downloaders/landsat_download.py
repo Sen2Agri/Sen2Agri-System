@@ -1,6 +1,20 @@
 #! /usr/bin/env python
-# -*- coding: iso-8859-1 -*-
+# -*- coding: utf-8 -*-
 """
+_____________________________________________________________________________
+
+   Program:      Sen2Agri-Processors
+   Language:     Python
+   Copyright:    2015-2016, CS Romania, office@c-s.ro
+   See COPYRIGHT file for details.
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+_____________________________________________________________________________
+
     Landsat Data download from earth explorer. Original source code from Olivier Hagolle
     https://github.com/olivierhagolle/LANDSAT-Download
     Incorporates jake-Brinkmann improvements
@@ -104,6 +118,7 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
   print("prod_date: {}".format(prod_date))
   print("abs_prod_path: {}".format(abs_prod_path))
   print("INFO STOP")
+
   log(aoiContext.writeDir, "Trying to download {0}".format(nom_fic), general_log_filename)
   try:
     req = urllib2.urlopen(url, timeout=100)
@@ -184,6 +199,11 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
          return False
     return False
   if unzipimage(prod_name, aoiContext.writeDir):
+       #apply north-south correction for all bands
+       landsat_tif_files = glob.glob("{}/*_B*.TIF".format(abs_prod_path))
+       base_path = os.path.dirname(os.path.abspath(__file__)) + "/../"
+       if run_command([base_path + "fix_utm_proj.py"] + landsat_tif_files):
+            log(aoiContext.writeDir, "Error: fix_utm_proj.py did not work for {}. This product will still be used as is (with north-south coordonates switched)".format(prod_name), general_log_filename)
        #write the filename in history
        if not db.upsertLandsatProductHistory(aoiContext.siteId, prod_name, DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE, prod_date, abs_prod_path, aoiContext.maxRetries):
             log(aoiContext.writeDir, "Couldn't upsert into database with status FAILED for {}".format(prod_name), general_log_filename)
@@ -244,7 +264,7 @@ def unzipimage(tgzfile, outputdir):
                 subprocess.call('tartool '+outputdir+'/'+tgzfile+'.tgz '+ outputdir+'/'+tgzfile, shell=True)  #W32
             success = True
             os.remove(outputdir+'/'+tgzfile+'.tgz')
-            log(outputdir,  "decompress succeded. removing the .tgz file {}".format(outputdir+'/'+tgzfile), general_log_filename)
+            log(outputdir,  "decompress succeded. removing the .tgz file {}.tgz".format(outputdir+'/'+tgzfile), general_log_filename)
         except TypeError:
             log(outputdir, "Failed to unzip {}".format(tgzfile), general_log_filename)
             os.remove(outputdir)
@@ -283,7 +303,7 @@ def check_cloud_limit(imagepath,limit):
 
 ######################################################################################
 
-signal.signal(signal.SIGINT, signal_handler)
+#signal.signal(signal.SIGINT, signal_handler)
 
 def landsat_download(aoiContext):
      global g_exit_flag
@@ -292,6 +312,7 @@ def landsat_download(aoiContext):
 
      general_log_filename = "landsat_download.log"
      general_log_path = aoiContext.writeDir
+     manage_log_file(general_log_path, general_log_filename)
      usgsFile = aoiContext.remoteSiteCredentials
      proxy = {}
      # read password file
@@ -325,7 +346,7 @@ def landsat_download(aoiContext):
      end_date   = datetime.datetime(aoiContext.endSeasonYear, aoiContext.endSeasonMonth, aoiContext.endSeasonDay)
 
      for tile in aoiContext.aoiTiles:
-         log(aoiContext.writeDir, "Starting the process for tile {}".format(tile), general_log_filename)
+         log(aoiContext.writeDir, "Starting the process for tile {} for time interval [{} - {}]".format(tile, start_date, end_date), general_log_filename)
          if len(tile) != 6:
              log(aoiContext.writeDir, "The length for tile is not 6. There should be ppprrr, where ppp = path and rrr = row. The string is {}".format(tile), general_log_filename)
              continue
@@ -353,7 +374,7 @@ def landsat_download(aoiContext):
               return
          curr_date=next_overpass(start_date, int(path), product)
 
-         while (curr_date < end_date):
+         while (curr_date < end_date and curr_date <= datetime.datetime.now()):             
              date_asc=curr_date.strftime("%Y%j")
 
              log(aoiContext.writeDir, "Searching for images on (julian date): {}...".format(date_asc), general_log_filename)
@@ -379,10 +400,10 @@ def landsat_download(aoiContext):
                                          # get the date by transforming it from doy to date
                                          year = date_asc[0:4]
                                          days = date_asc[4:]
-                                         prod_date = (datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(days))).strftime("%Y%m%dT000101")
+                                         prod_date = (datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(days))).strftime("%Y%m%dT000000")
                                          if downloadChunks(url, nom_prod, prod_date, lsdestdir, aoiContext, db):
                                               downloaded_ids.append(nom_prod)                                              
          if len(downloaded_ids) > 0:
-              log(aoiContext.writeDir, "Downloaded ids: {}".format(downloaded_ids), general_log_filename)
+              log(aoiContext.writeDir, "Downloaded product: {}".format(downloaded_ids), general_log_filename)
          else: 
-              log(aoiContext.writeDir, "No downloaded ids: ", general_log_filename)
+              log(aoiContext.writeDir, "No product has been downloaded ", general_log_filename)

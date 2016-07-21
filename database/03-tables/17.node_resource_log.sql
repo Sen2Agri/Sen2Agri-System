@@ -7,9 +7,9 @@ CREATE TABLE node_resource_log
   mem_used_kb INT NOT NULL,
   swap_total_kb INT NOT NULL,
   swap_used_kb INT NOT NULL,
-  load_avg_1m SMALLINT NOT NULL,
-  load_avg_5m SMALLINT NOT NULL,
-  load_avg_15m SMALLINT NOT NULL,
+  load_avg_1m INT NOT NULL,
+  load_avg_5m INT NOT NULL,
+  load_avg_15m INT NOT NULL,
   disk_total_bytes BIGINT NOT NULL,
   disk_used_bytes BIGINT NOT NULL,
   "timestamp" TIMESTAMP WITHOUT TIME ZONE NOT NULL

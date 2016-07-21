@@ -12,37 +12,23 @@
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>$SCRIPT_PATH/CropType.py</mainToolFileLocation>
-  <workingDir>$WORKING_DIR_PATH/CropType</workingDir>
+  <mainToolFileLocation>CropType.py</mainToolFileLocation>
+  <workingDir>$HOME</workingDir>
   <templateFileLocation>CropTypeProcessor-template.vm</templateFileLocation>
   <progressPattern>(?:.+): (\d{1,3})% (?:.+)</progressPattern>
   <errorPattern>ERROR: (.+)</errorPattern>
   <variables>
     <variable>
-      <key>SCRIPT_PATH</key>
-      <value>/home/ramonag/sen2agri/sources/sen2agri/scripts</value>
-    </variable>
-    <osvariable>
-      <key>PYTHON_BIN</key>
+      <key>HOME</key>
       <value></value>
-      <windows>python.exe</windows>
-      <linux>/bin/python2.7</linux>
-      <macosx>/bin/python2.7</macosx>
-      <isTransient>false</isTransient>
-    </osvariable>
-    <variable>
-      <key>WORKING_DIR_PATH</key>
-      <value>/home/ramonag/sen2agri/workingDir/</value>
-    </variable>
-    <variable>
-      <key>SENTINEL_BUILD_PATH</key>
-      <value>/home/ramonag/sen2agri/sources/sen2agri-build/</value>
+      <isShared>false</isShared>
     </variable>
   </variables>
   <parameters>
     <parameter>
       <name>targetProductFile</name>
       <dataType>java.io.File</dataType>
+      <description>Output file</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
@@ -52,7 +38,7 @@
     <parameter>
       <name>referencePolygons</name>
       <dataType>java.io.File</dataType>
-      <defaultValue>/mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp</defaultValue>
+      <defaultValue>UA_KYIV_LC_FO_2013.shp</defaultValue>
       <description>The reference polygons</description>
       <valueSet/>
       <notNull>false</notNull>
@@ -198,8 +184,17 @@
       <parameterType>RegularParameter</parameterType>
       <toolParameterDescriptors/>
     </parameter>
+    <parameter>
+      <name>siteId</name>
+      <dataType>java.lang.Integer</dataType>
+      <defaultValue>0</defaultValue>
+      <description>The site ID</description>
+      <valueSet/>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
   </parameters>
-  <source>package</source>
+  <source>user</source>
   <isSystem>false</isSystem>
   <isHandlingOutputName>true</isHandlingOutputName>
   <sourceProductDescriptors/>

@@ -550,22 +550,6 @@ function check_paths()
         fi
     fi
 
-    if [ ! -d /mnt/scratch ]; then
-        echo "Please create /mnt/scratch with mode 777."
-        echo "Actually only the sen2agri-service user requires access to the directory, but the installer does not support that."
-        echo "Exiting now"
-        exit 1
-    fi
-
-    out=($(stat -c "%a %U" /mnt/scratch))
-    if [ "${out[0]}" != "777" ] && [ "${out[1]}" != "sen2agri-service" ]; then
-        read -p "/mnt/scratch should be writable by sen2agri-service. Continue? (y/n) "
-        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-            echo "Exiting now"
-            exit 1
-        fi
-    fi
-
     if ! ls -A /mnt/archive/srtm > /dev/null 2>&1; then
         if [ -f ../srtm.zip ]; then
             mkdir -p /mnt/archive/srtm && unzip ../srtm.zip -d /mnt/archive/srtm
@@ -618,6 +602,13 @@ function check_paths()
         else
             echo "Cannot find MACCS GIPP files in the distribution, please copy them to /mnt/archive/gipp"
         fi
+    fi
+
+    echo "Creating /mnt/archive/reference_data"
+    mkdir -p /mnt/archive/reference_data
+    echo "Copying reference data"
+    if [ -d ../reference_data/ ]; then
+        cp -rf ../reference_data/* /mnt/archive/reference_data
     fi
 }
 
@@ -703,9 +694,9 @@ function install_maccs()
         echo "Cannot find installed MACCS. Did you install it under a different path?"
     fi
 
-    echo "If a MACCS installation is available, please enter the path to the 'maccs' binary"
+    echo "If MACCS is already installed, please enter the path to the 'maccs' executable (e.g. /opt/maccs/core/4.7/bin/maccs)"
     while :; do
-        read -ep "Path to maccs binary: "
+        read -ep "Path to maccs executable: "
         if [ $? -ne 0 ]; then
             echo "Cancelled, exiting"
             exit 1
@@ -729,6 +720,15 @@ function disable_selinux()
     sed -i -e 's/SELINUX=enforcing/SELINUX=permissive/' /etc/selinux/config
 }
 
+# This is needed for SLURM because it uses dynamically-allocated ports
+# The other services could do with a couple of rules
+function disable_firewall()
+{
+    echo "Disabling the firewall"
+    firewall-cmd --set-default-zone=trusted
+    firewall-cmd --reload
+}
+
 ###########################################################
 ##### MAIN                                              ###
 ###########################################################
@@ -741,6 +741,7 @@ fi
 check_paths
 
 disable_selinux
+disable_firewall
 
 ##install EPEL for packages dependencies installation
 yum -y install epel-release
@@ -783,3 +784,7 @@ install_downloaders_demmacs
 systemctl enable --now sen2agri-orchestrator
 systemctl enable --now sen2agri-scheduler
 systemctl enable --now sen2agri-http-listener
+
+echo "Please edit the following files to set up your USGS and SciHub credentials:"
+echo "/usr/share/sen2agri/sen2agri-downloaders/usgs.txt"
+echo "/usr/share/sen2agri/sen2agri-downloaders/apihub.txt"

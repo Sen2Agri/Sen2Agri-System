@@ -6,6 +6,7 @@
 #include "phenondvihandler.hpp"
 #include "processorhandlerhelper.h"
 #include "json_conversions.hpp"
+#include "logger.hpp"
 
 void PhenoNdviHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
                                                 QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList)
@@ -42,7 +43,7 @@ void PhenoNdviHandler::HandleNewTilesList(EventProcessingContext &ctx,
     for(TaskToSubmit &task: allTasksList) {
         allTasksListRef.append(task);
     }
-    ctx.SubmitTasks(event.jobId, allTasksListRef);
+    SubmitTasks(ctx, event.jobId, allTasksListRef);
 
     TaskToSubmit &bandsExtractorTask = allTasksList[0];
     TaskToSubmit &featureExtractionTask = allTasksList[1];
@@ -119,7 +120,7 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
        allSteps.append(infos.allStepsList);
     }
 
-    ctx.SubmitTasks(event.jobId, {productFormatterTask});
+    SubmitTasks(ctx, event.jobId, {productFormatterTask});
 
     // finally format the product
     QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event, listProducts, listParams);
@@ -149,8 +150,9 @@ void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 prodName, quicklook, footPrint, std::experimental::nullopt, TileList() });
 
             // Now remove the job folder containing temporary files
-            // TODO: Reinsert this line - commented only for debug purposes
-            //RemoveJobFolder(ctx, event.jobId);
+            RemoveJobFolder(ctx, event.jobId, "l3e");
+        } else {
+            Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
         }
     }
 }
@@ -218,16 +220,42 @@ ProcessorJobDefinitionParams PhenoNdviHandler::GetProcessingDefinitionImpl(Sched
 
     QDateTime seasonStartDate;
     QDateTime seasonEndDate;
-    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, requestOverrideCfgValues);
+    // extract the scheduled date
+    QDateTime qScheduledDate = QDateTime::fromTime_t(scheduledDate);
+    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, qScheduledDate, requestOverrideCfgValues);
+    QDateTime limitDate = seasonEndDate.addMonths(2);
+    if(qScheduledDate > limitDate) {
+        return params;
+    }
+
+    ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.l3e."), siteId, requestOverrideCfgValues);
+    // we might have an offset in days from starting the downloading products to start the L3E production
+    int startSeasonOffset = mapCfg["processor.l3e.start_season_offset"].value.toInt();
+    seasonStartDate = seasonStartDate.addDays(startSeasonOffset);
+
     // Get the start and end date for the production
-    QDateTime endDate = QDateTime::fromTime_t(scheduledDate);
+    QDateTime endDate = qScheduledDate;
     QDateTime startDate = seasonStartDate;
 
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
-    // for PhenoNDVI we need at least 4 products available in order to be able to create a L3E product
-    if(params.productList.size() >= 4) {
+    // Normally for PhenoNDVI we need at least 4 products available in order to be able to create a L3E product
+    // but if we do not return here, the schedule block waiting for products (that might never happen)
+    bool waitForAvailProcInputs = (mapCfg["processor.l3e.sched_wait_proc_inputs"].value.toInt() != 0);
+    if((waitForAvailProcInputs == false) || (params.productList.size() >= 4)) {
         params.isValid = true;
+        Logger::debug(QStringLiteral("Executing scheduled job. Scheduler extracted for L3E a number "
+                                     "of %1 products for site ID %2 with start date %3 and end date %4!")
+                      .arg(params.productList.size())
+                      .arg(siteId)
+                      .arg(startDate.toString())
+                      .arg(endDate.toString()));
+    } else {
+        Logger::debug(QStringLiteral("Scheduled job for L3E and site ID %1 with start date %2 and end date %3 "
+                                     "will not be executed (no products)!")
+                      .arg(siteId)
+                      .arg(startDate.toString())
+                      .arg(endDate.toString()));
     }
-    //return QString("Cannot execute PhenoNDVI processor. There should be at least 4 products but we have only %1 L2A products available!").arg(usedProductList.size());
+
     return params;
 }

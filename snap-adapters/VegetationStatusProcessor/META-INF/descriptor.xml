@@ -12,41 +12,23 @@
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>$PROCESSORS_PATH/VegetationStatus/TestScripts/lai_retrieve_processing.py</mainToolFileLocation>
-  <workingDir>$WORKING_DIR_PATH/VegetationLAI</workingDir>
+  <mainToolFileLocation>lai_retrieve_processing.py</mainToolFileLocation>
+  <workingDir>$HOME</workingDir>
   <templateFileLocation>VegetationStatusProcessor-template.vm</templateFileLocation>
   <progressPattern>(?:.+): (\d{1,3})% (?:.+)</progressPattern>
   <errorPattern>ERROR: (.+)</errorPattern>
   <variables>
-    <osvariable>
-      <key>PYTHON_BIN</key>
+    <variable>
+      <key>HOME</key>
       <value></value>
-      <windows>python.exe</windows>
-      <linux></linux>
-      <macosx>/bin/python2.7</macosx>
-      <isTransient>false</isTransient>
-    </osvariable>
-    <variable>
-      <key>SENTINEL_BUILD_PATH</key>
-      <value>/home/ramonag/sen2agri/sources/sen2agri-build/</value>
-    </variable>
-    <variable>
-      <key>SCRIPT_PATH</key>
-      <value>/home/ramonag/sen2agri/sources/sen2agri/scripts/</value>
-    </variable>
-    <variable>
-      <key>PROCESSORS_PATH</key>
-      <value>/home/ramonag/sen2agri/sources/sen2agri/sen2agri-processors/</value>
-    </variable>
-    <variable>
-      <key>WORKING_DIR_PATH</key>
-      <value>/home/ramonag/sen2agri/workingDir/</value>
+      <isShared>false</isShared>
     </variable>
   </variables>
   <parameters>
     <parameter>
       <name>targetProductFile</name>
       <dataType>java.io.File</dataType>
+      <description>Output file</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
@@ -77,30 +59,8 @@
     <parameter>
       <name>RSRFile</name>
       <dataType>java.io.File</dataType>
-      <defaultValue>/home/ramonag/sen2agri/sources/sen2agri/sen2agri-processors/VegetationStatus/otb-bv/data/spot4hrvir1.rsr</defaultValue>
+      <defaultValue>/usr/share/sen2agri/landsat8.rsr</defaultValue>
       <description>file containing spectral response of a sensor</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>startDate</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>20130206</defaultValue>
-      <description>The start date for the temporal resampling interval (in format YYYYMMDD)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>endDate</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>20130616</defaultValue>
-      <description>The end date for the temporal resampling interval (in format YYYYMMDD)</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
@@ -110,6 +70,7 @@
     <parameter>
       <name>RSRConfigFile</name>
       <dataType>java.io.File</dataType>
+      <defaultValue>/usr/share/sen2agri/rsr_cfg.txt</defaultValue>
       <description>The RSR configuration file each mission (/path/filename)</description>
       <valueSet/>
       <notNull>false</notNull>
@@ -183,8 +144,32 @@
       <parameterType>RegularParameter</parameterType>
       <toolParameterDescriptors/>
     </parameter>
+    <parameter>
+      <name>generateMonodate</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>NO</defaultValue>
+      <unit></unit>
+      <valueSet>
+        <string>YES</string>
+        <string>NO</string>
+      </valueSet>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
+    <parameter>
+      <name>siteId</name>
+      <dataType>java.lang.Integer</dataType>
+      <defaultValue>0</defaultValue>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+      <toolParameterDescriptors/>
+    </parameter>
   </parameters>
-  <source>package</source>
+  <source>user</source>
   <isSystem>false</isSystem>
   <isHandlingOutputName>true</isHandlingOutputName>
   <sourceProductDescriptors/>

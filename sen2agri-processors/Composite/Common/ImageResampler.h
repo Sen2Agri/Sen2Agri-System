@@ -103,8 +103,29 @@ ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWid
          return getResampler(image, scale, -1, -1, interpolator);
     }
 
+    ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const float& ratio,
+                              typename TOutput::PointType origin, Interpolator_Type interpolator=Interpolator_Linear) {
+         // Scale Transform
+         OutputVectorType scale;
+         scale[0] = 1.0 / ratio;
+         scale[1] = 1.0 / ratio;
+         return getResampler(image, scale, -1, -1, origin, interpolator);
+    }
+
     ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const OutputVectorType& scale,
                              int forcedWidth, int forcedHeight, Interpolator_Type interpolatorType=Interpolator_Linear) {
+        ResamplerInputImgSpacingType spacing = image->GetSpacing();
+        typename TOutput::PointType origin = image->GetOrigin();
+        typename TOutput::PointType outputOrigin;
+        outputOrigin[0] = std::round(origin[0] + 0.5 * spacing[0] * (scale[0] - 1.0));
+        outputOrigin[1] = std::round(origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0));
+
+        return getResampler(image, scale, forcedWidth, forcedHeight, outputOrigin, interpolatorType);
+    }
+
+    ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const OutputVectorType& scale,
+                             int forcedWidth, int forcedHeight, typename TOutput::PointType origin,
+                              Interpolator_Type interpolatorType=Interpolator_Linear) {
          ResamplerPtr resampler = ResampleFilterType::New();
          resampler->SetInput(image);
 
@@ -144,13 +165,7 @@ ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWid
          OutputSpacing[1] = std::round(spacing[1] * scale[1]);
 
          resampler->SetOutputSpacing(OutputSpacing);
-
-         typename TOutput::PointType origin = image->GetOrigin();
-         typename TOutput::PointType outputOrigin;
-         outputOrigin[0] = std::round(origin[0] + 0.5 * spacing[0] * (scale[0] - 1.0));
-         outputOrigin[1] = std::round(origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0));
-
-         resampler->SetOutputOrigin(outputOrigin);
+         resampler->SetOutputOrigin(origin);
          resampler->SetTransform(transform);
 
          // Evaluate size
@@ -179,6 +194,8 @@ ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWid
          m_ResamplersList->PushBack(resampler);
          return resampler;
     }
+
+
 private:
     ResampleFilterListTypePtr             m_ResamplersList;
     int     m_BCORadius;

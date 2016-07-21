@@ -49,7 +49,12 @@ void ProcessorHandler::HandleProductAvailable(EventProcessingContext &ctx,
 void ProcessorHandler::HandleJobSubmitted(EventProcessingContext &ctx,
                                           const JobSubmittedEvent &event)
 {
-    HandleJobSubmittedImpl(ctx, event);
+    try {
+        HandleJobSubmittedImpl(ctx, event);
+    } catch (const std::exception &e) {
+        ctx.MarkJobFailed(event.jobId);
+        throw std::runtime_error(e.what());
+    }
 }
 
 void ProcessorHandler::HandleTaskFinished(EventProcessingContext &ctx,
@@ -100,15 +105,23 @@ QString ProcessorHandler::GetFinalProductFolder(const std::map<QString, QString>
     return folderName;
 }
 
-bool ProcessorHandler::RemoveJobFolder(EventProcessingContext &ctx, int jobId)
+bool ProcessorHandler::RemoveJobFolder(EventProcessingContext &ctx, int jobId, const QString &procName)
 {
-    QString jobOutputPath = ctx.GetJobOutputPath(jobId);
-    return removeDir(jobOutputPath);
+    QString strKey = "executor.processor." + procName + ".keep_job_folders";
+    auto configParameters = ctx.GetJobConfigurationParameters(jobId, strKey);
+    auto keepStr = configParameters[strKey];
+    bool bRemove = true;
+    if(keepStr == "1") bRemove = false;
+    if(bRemove) {
+        QString jobOutputPath = ctx.GetJobOutputPath(jobId, procName);
+        return removeDir(jobOutputPath);
+    }
+    return true;
 }
 
 QString ProcessorHandler::GetProductFormatterOutputProductPath(EventProcessingContext &ctx,
                                                         const TaskFinishedEvent &event) {
-    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) +
+    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) +
             "/" + PRODUCT_FORMATTER_OUT_PROPS_FILE;
     QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
     if(fileLines.size() > 0) {
@@ -131,7 +144,7 @@ QString ProcessorHandler::GetProductFormatterProductName(EventProcessingContext 
 
 QString ProcessorHandler::GetProductFormatterQuicklook(EventProcessingContext &ctx,
                                                         const TaskFinishedEvent &event) {
-    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) +
+    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) +
             "/" + PRODUCT_FORMATTER_OUT_PROPS_FILE;
     QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
     QString quickLookName("");
@@ -157,7 +170,7 @@ QString ProcessorHandler::GetProductFormatterQuicklook(EventProcessingContext &c
 
 QString ProcessorHandler::GetProductFormatterFootprint(EventProcessingContext &ctx,
                                                         const TaskFinishedEvent &event) {
-    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module) +
+    QString prodFolderOutPath = ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) +
             "/" + PRODUCT_FORMATTER_OUT_PROPS_FILE;
     QStringList fileLines = ProcessorHandlerHelper::GetTextFileLines(prodFolderOutPath);
     if(fileLines.size() > 0) {
@@ -216,8 +229,9 @@ QString ProcessorHandler::GetProductFormatterFootprint(EventProcessingContext &c
 
 bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,
                                               QDateTime &startTime, QDateTime &endTime,
+                                              const QDateTime &executionDate,
                                               const ConfigurationParameterValueMap &requestOverrideCfgValues) {
-    QDate currentDate = QDate::currentDate();
+    QDate currentDate = executionDate.date();//QDate::currentDate();
     int curYear = currentDate.year();
 
     ConfigurationParameterValueMap seasonCfgValues = ctx.GetConfigurationParameters("downloader.", siteId, requestOverrideCfgValues);
@@ -228,7 +242,7 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     if(startSummerSeasonDate.isValid() && endSummerSeasonDate.isValid()) {
         // normally this should not happen for summer season but can happen for winter season
         if(endSummerSeasonDate < startSummerSeasonDate) {
-            endSummerSeasonDate.addYears(-1);
+            startSummerSeasonDate.addYears(-1);
         }
         if(currentDate >= startSummerSeasonDate && currentDate <= endSummerSeasonDate) {
             startTime = QDateTime(startSummerSeasonDate);
@@ -239,7 +253,7 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     if(startWinterSeasonDate.isValid() && endWinterSeasonDate.isValid()) {
         // this can happen for winter season
         if(endWinterSeasonDate < startWinterSeasonDate) {
-            endWinterSeasonDate.addYears(-1);
+            startWinterSeasonDate.addYears(-1);
         }
 
         if(currentDate >= startWinterSeasonDate && currentDate <= endWinterSeasonDate) {
@@ -259,7 +273,7 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     if(defStartSummerSeasonDate.isValid() && defEndSummerSeasonDate.isValid()) {
         // normally this should not happen for summer season but can happen for winter season
         if(defEndSummerSeasonDate < defStartSummerSeasonDate) {
-            defEndSummerSeasonDate.addYears(-1);
+            defStartSummerSeasonDate.addYears(-1);
         }
 
         if(currentDate >= defStartSummerSeasonDate && currentDate <= defEndSummerSeasonDate) {
@@ -271,7 +285,7 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     if(defStartWinterSeasonDate.isValid() && defEndWinterSeasonDate.isValid()) {
         // this can happen for winter season
         if(defEndWinterSeasonDate < defStartWinterSeasonDate) {
-            defEndWinterSeasonDate.addYears(-1);
+            defStartWinterSeasonDate.addYears(-1);
         }
 
         if(currentDate >= defStartWinterSeasonDate && currentDate <= defEndWinterSeasonDate) {
@@ -409,6 +423,7 @@ QMap<QString, TileTemporalFilesInfo> ProcessorHandler::GroupTiles(
         if(isPrimarySatIdInfo) {
             // now search to see if we can find a shapefile already created for the current tile
             info.shapePath = ProcessorHandlerHelper::GetShapeForTile(shapeFilesFolder, info.tileId);
+            info.projectionPath = ProcessorHandlerHelper::GetProjectionForTile(shapeFilesFolder, info.tileId);
 
             // Sort the products by date as maybe we added secondary products at the end
             ProcessorHandlerHelper::SortTemporalTileInfoFiles(info);
@@ -425,4 +440,10 @@ QString ProcessorHandler::GetProductFormatterTile(const QString &tile) {
     if(tile.indexOf("TILE_") == 0)
         return tile;
     return ("TILE_" + tile);
+}
+
+void ProcessorHandler::SubmitTasks(EventProcessingContext &ctx,
+                                   int jobId,
+                                   const QList<std::reference_wrapper<TaskToSubmit>> &tasks) {
+    ctx.SubmitTasks(jobId, tasks, processorDescr.shortName);
 }

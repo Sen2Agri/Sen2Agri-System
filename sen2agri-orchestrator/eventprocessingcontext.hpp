@@ -18,7 +18,7 @@ public:
 
     std::map<QString, QString> GetJobConfigurationParameters(int jobId, QString prefix);
 
-    int SubmitTask(const NewTask &task);
+    int SubmitTask(const NewTask &task, const QString &submitterProcName);
     void SubmitSteps(const NewStepList &steps);
 
     void MarkJobPaused(int jobId);
@@ -47,10 +47,10 @@ public:
     ProductList GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate);
     ProductList GetProductsForTile(const QString &tileId, ProductType productType, int tileSatelliteId, int targetSatelliteId);
     QStringList GetProductFiles(const QString &path, const QString &pattern) const;
-    QString GetJobOutputPath(int jobId);
-    QString GetOutputPath(int jobId, int taskId, const QString &module);
+    QString GetJobOutputPath(int jobId, const QString& procName);
+    QString GetOutputPath(int jobId, int taskId, const QString &module, const QString& procName);
 
-    void SubmitTasks(int jobId, const QList<std::reference_wrapper<TaskToSubmit>> &tasks);
+    void SubmitTasks(int jobId, const QList<std::reference_wrapper<TaskToSubmit>> &tasks, const QString &submitterProcName);
 
     template <typename F>
     NewStepList CreateStepsFromInput(int taskId,
@@ -75,5 +75,5 @@ public:
     QStringList findProductFiles(const QString &path);
 
 private:
-    QString GetScratchPath(int jobId);
+    QString GetScratchPath(int jobId, const QString& procName);
 };

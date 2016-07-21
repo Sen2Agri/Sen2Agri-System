@@ -60,8 +60,8 @@ img {
 
 #header2 {
     margin: 0 auto;
-    width: 990px;
-    height: 200px;
+    width: 830px;
+    height: 120px;
     padding: 0 130px;
     background: #0B171E url('../images/bg.gif') repeat-y;
 }
@@ -133,21 +133,20 @@ p#subtitle {
 
 #menu2 {
     margin: 0 auto;
-    width: 1040px;
+    width: 1070px;
     height: 44px;
-    padding: 11px 80px 36px 130px;
-    background: #8FB63F url('../images/menu.jpg');
+    padding: 5px 90px 42px 90px;
+    background: #8FB63F url('../images/menu.png');
 }
 
 #menu ul {
     list-style: none;
+	padding-top: 10px;
 }
 
 #menu ul li {
     cursor: default;
-    display: block;
-    float: left;
-    padding-right: 50px;
+    display: inline-flex;
     font: 22px/40px "Roboto Condensed", Arial, Helvetica, sans-serif;
     text-transform: lowercase;
 }
@@ -157,16 +156,45 @@ p#subtitle {
     text-shadow: 0px -1px 0px #607725;
     color: #FFFFFF;
 	cursor: pointer;
+	padding: 5px 25px 7px 25px;
+	border-radius: 10px 10px 0px 0px;
 }
 
-#menu ul.activemenu li a:hover {
+#menu ul.activemenu li.selected a {
+	color: #739631;
+	background-color: #f8f7eb;
+	text-shadow: 0px 0px 0px #607725;
+	border-radius: 20px 20px 0px 0px;
+}
+
+#menu ul.activemenu li:not(.selected) a:hover {
+	color: yellow;
+	background-color: #AACA6B;
+	padding-bottom: 5px;
+}
+
+#menu ul.activemenu li:not(.selected) a:active {
+	color:yellow;
 	text-shadow: 0px 1px 0px #607725;
-	color: yellow;
 }
 
-#menu ul.activemenu li a:active {
-	color: yellow;
-	text-shadow: 0px -1px 0px #607725;
+#menu ul.activemenu li.logout {
+	float: right;
+	font-size: 1.2em;
+}
+#menu ul.activemenu li.logout a{
+	padding: 8px 25px 4px 25px;
+}
+#menu ul.activemenu li.logout a:hover {
+	background-color: transparent;
+}
+
+#menu ul.inactivemenu li {
+	text-decoration: none;
+	text-shadow: 0px 1px 0px #607725;
+	color: #D6D6D6;
+	padding: 5px 25px 7px 25px;
+	cursor: default;
 }
 
 /* main */
@@ -179,7 +207,7 @@ p#subtitle {
 #main2 {
     margin: 0 auto;
     width: 1250px;
-    background: #F8F7ED url('../images/main2.gif') repeat-y;
+	background: #F8F7ED url('../images/main2.png') repeat-y;*/
 }
 
 #main3 {
@@ -329,6 +357,8 @@ p.readmore a {
     width: 1250px;
     padding: 50px 0 100px 0;
     background: #0B171E url('../images/bg.gif') repeat-y top;
+	font-size: 11px;
+	color:#2B373E;
 }
 
 #footer2 p {

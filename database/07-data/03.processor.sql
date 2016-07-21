@@ -1,29 +1,29 @@
 ﻿INSERT INTO processor
-(name, short_name)
-VALUES 
-('L2A Atmospheric Corrections','l2a');
+(id, name, short_name)
+VALUES
+(1, 'L2A Atmospheric Corrections','l2a');
 
 INSERT INTO processor
-(name, short_name)
-VALUES 
-('L3A Composite','l3a');
+(id, name, short_name)
+VALUES
+(2, 'L3A Composite','l3a');
 
 INSERT INTO processor
-(name, short_name)
-VALUES 
-('L3B Vegetation Status','l3b_lai');
+(id, name, short_name)
+VALUES
+(3, 'L3B Vegetation Status','l3b_lai');
 
 INSERT INTO processor
-(name, short_name)
-VALUES 
-('L3E Pheno NDVI metrics','l3e_pheno');
+(id, name, short_name)
+VALUES
+(4, 'L3E Pheno NDVI metrics','l3e_pheno');
 
 INSERT INTO processor
-(name, short_name)
-VALUES 
-('L4A Crop Mask','l4a');
+(id, name, short_name)
+VALUES
+(5, 'L4A Crop Mask','l4a');
 
 INSERT INTO processor
-(name, short_name)
-VALUES 
-('L4B Crop Type','l4b');
+(id, name, short_name)
+VALUES
+(6, 'L4B Crop Type','l4b');

@@ -1,10 +1,14 @@
 [Unit]
 Description=Orchestrator for Sen2Agri
+After=postgresql-9.4.service
+Requires=postgresql-9.4.service
 
 [Service]
 BusName=org.esa.sen2agri.orchestrator
 ExecStart=/usr/bin/sen2agri-orchestrator
 User=sen2agri-service
+RestartSec=5
+Restart=on-failure
 
 [Install]
 WantedBy=multi-user.target

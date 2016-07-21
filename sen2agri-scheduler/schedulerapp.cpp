@@ -72,6 +72,9 @@ void SchedulerApp::RunOnce()
                 m_orchestrator->SubmitJob(jd);
                 task.taskStatus.lastSuccesfullTimestamp = QDateTime::currentDateTime();
                 task.taskStatus.lastSuccesfullScheduledRun = task.taskStatus.nextScheduledRunTime;
+                qDebug() << "Submitted new job for processor: " << jd.processorId <<
+                            ", siteId: " << jd.siteId <<
+                            " and definition: " << jd.jobDefinitionJson.toStdString().c_str();
                 // Defensive strategy
                 break;
             }

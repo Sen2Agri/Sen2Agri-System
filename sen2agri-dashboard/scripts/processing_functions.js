@@ -38,11 +38,12 @@ function update_current_jobs(json_data)
 		if(!job.current_tasks)
 		{
 			// Break if there aren't any tasks; should not happen in 'real life'
+			// Break if there aren't any tasks; should not happen in 'real life'
 			return;
 		}
 
 		var new_row = "<tr class=\"to_be_refreshed\">" +
-		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.id + "</td>" +
+		"<td id='ID' rowspan=\"" + job.current_tasks.length + "\">" + job.id + "</td>" +
 		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.processor + "</td>" +
 		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.site + "</td>" +
 		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.triggered_by + "</td>" +
@@ -374,23 +375,22 @@ function move_to_first_jobs_page()
 	get_current_job_data();
 }
 
-function move_to_last_jobs_page()
-{
-	jsonJobsPage = jsonJobsPage;
-	get_current_job_data();
-}
-
 function move_to_previous_jobs_page()
 {
-	jsonJobsPage --;
-    jsonJobsPage = jsonJobsPage < 1 ? 1 : jsonJobsPage;
-	get_current_job_data();
+	if (jsonJobsPage > 1) {
+		jsonJobsPage --;
+		get_current_job_data();
+	} else {
+		jsonJobsPage = 1;
+	}
 }
 
 function move_to_next_jobs_page()
 {
-	jsonJobsPage ++;
-	get_current_job_data();
+	if (!$("#page_move_next").hasClass("disabled")) {
+		jsonJobsPage ++;
+		get_current_job_data();
+	}
 }
 
 function get_current_job_data()
@@ -404,6 +404,16 @@ function get_current_job_data()
 		success: function(json_data)
 		{
 			update_current_jobs(json_data);
+			
+			// display page number
+			$("#page_current").html(jsonJobsPage);
+			// toggle move_next button availability
+			if ($("#pnl_current_jobs #ID").length < 5) {
+				$("#page_move_next").addClass("disabled");
+			} else {
+				$("#page_move_next").removeClass("disabled");
+			}
+			
 			// Schedule the next request
 			setTimeout(get_current_job_data, get_current_job_data_interval);
 		},
@@ -802,9 +812,8 @@ function get_all_sites()
 
 function update_sites(json_data)
 {
-	var siteElArr = $("select#siteId");
-	
-	$.each(siteElArr, function(index, siteEl) {
+	var siteElAll = $("select#siteId");
+	$.each(siteElAll, function(index, siteEl) {
 		//Remove the old options
 		siteEl = $(siteEl);
 		siteEl.empty();
@@ -829,6 +838,41 @@ function update_sites(json_data)
 			} else {
 				//update_sentinel2_tiles(new Array(), sentinel2TilesEl);
 				//update_landsat_tiles(new Array(), landsatTilesEl);
+				update_products(new Array(), productsEl);
+				update_crop_mask(new Array(), cropMaskEl);
+			}
+		});
+	});
+	
+	var chkL8All = $(".chkL8");
+	$.each(chkL8All, function(index, chkL8) {
+		chkL8 = $(chkL8);
+		chkL8.change(function (event) {
+			var chkEl = event.target;
+			var siteEl     = $("#"+chkEl.form.id+" select#siteId")[0];
+			var productsEl = $("#"+chkEl.form.id+" select#inputFiles");
+			var cropMaskEl = $("#"+chkEl.form.id+" select#cropMask");
+			if(siteEl.selectedIndex > 0) {
+				get_products(siteEl.options[siteEl.selectedIndex].value, productsEl);
+				get_crop_mask(siteEl.options[siteEl.selectedIndex].value, cropMaskEl);
+			} else {
+				update_products(new Array(), productsEl);
+				update_crop_mask(new Array(), cropMaskEl);
+			}
+		});
+	});
+	var chkS2All = $(".chkS2");
+	$.each(chkS2All, function(index, chkS2) {
+		chkS2 = $(chkS2);
+		chkS2.change(function (event) {
+			var chkEl = event.target;
+			var siteEl     = $("#"+chkEl.form.id+" select#siteId")[0];
+			var productsEl = $("#"+chkEl.form.id+" select#inputFiles");
+			var cropMaskEl = $("#"+chkEl.form.id+" select#cropMask");
+			if(siteEl.selectedIndex > 0) {
+				get_products(siteEl.options[siteEl.selectedIndex].value, productsEl);
+				get_crop_mask(siteEl.options[siteEl.selectedIndex].value, cropMaskEl);
+			} else {
 				update_products(new Array(), productsEl);
 				update_crop_mask(new Array(), cropMaskEl);
 			}
@@ -967,7 +1011,16 @@ function update_products(json_data, productsEl)
 	productsEl.empty();
 	
 	$.each(json_data, function(index, productObj) {
-		productsEl.append('<option value="'+productObj.product+'">'+productObj.product+'</option>');
+		// select S2 products
+		var chkS2 = $("#"+productsEl[0].form.id+" .chkS2");
+		if (((chkS2.length == 0) || chkS2.is(":checked")) && productObj.satellite_id == 1) {
+			productsEl.append('<option value="'+productObj.product+'">'+productObj.product+'</option>');	
+		}
+		// select L8 products
+		var chkL8 = $("#"+productsEl[0].form.id+" .chkL8");
+		if (((chkL8.length == 0) || chkL8.is(":checked")) && productObj.satellite_id == 2) {
+			productsEl.append('<option value="'+productObj.product+'">'+productObj.product+'</option>');	
+		}
 	});
 }
 

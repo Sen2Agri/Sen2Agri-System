@@ -1,6 +1,6 @@
 ﻿CREATE TABLE config
 (
-  id serial,
+  id serial not null,
   key character varying NOT NULL,
   site_id smallint DEFAULT NULL,
   value character varying NOT NULL,

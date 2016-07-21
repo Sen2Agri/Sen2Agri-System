@@ -634,11 +634,11 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 		$(document).ready(function() {
 			$( ".startdate" ).datepicker({
 				 dateFormat: "yy-mm-dd",
-				 minDate: 0
+				 //minDate: 0
 					  });
 			$( "#add_startdate" ).datepicker({
 				 dateFormat: "yy-mm-dd",
-				 minDate: 0
+				 //minDate: 0
 					  });
 	
 			<?php //if (isset ( $_REQUEST ['schedule_saveJob'] )){

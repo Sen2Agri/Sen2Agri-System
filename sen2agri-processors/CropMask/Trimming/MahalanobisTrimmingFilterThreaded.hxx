@@ -218,6 +218,8 @@ MahalanobisTrimmingFilterThreaded< TInputImage, TOutputImage >
     itk::SizeValueType removed_cnt = 1;
     itkDebugMacro(<< "Number of points at the begining: " << m_Points.size());
 
+    // initialise the random number generator
+    std::srand(m_Seed);
     while (m_Points.size() > 0 && removed_cnt > 0) {
         // first add the points to the sample
         sample->Clear();
@@ -268,8 +270,6 @@ MahalanobisTrimmingFilterThreaded< TInputImage, TOutputImage >
         typename PointsContainerType::iterator st = m_Points.begin();
         int pixSel = 0;
         int size = m_Points.size();
-        // initialise the random number generator
-        std::srand(m_Seed);
         while (pixSel < m_NbSamples) {
             typename PointsContainerType::iterator r = st;
             float rnd = (float)std::rand() / (float)RAND_MAX;

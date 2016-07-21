@@ -24,11 +24,11 @@ std::map<QString, QString> EventProcessingContext::GetJobConfigurationParameters
     return result;
 }
 
-int EventProcessingContext::SubmitTask(const NewTask &task)
+int EventProcessingContext::SubmitTask(const NewTask &task, const QString &submitterProcName)
 {
     auto taskId = persistenceManager.SubmitTask(task);
 
-    const auto &path = GetOutputPath(task.jobId, taskId, task.module);
+    const auto &path = GetOutputPath(task.jobId, taskId, task.module, submitterProcName);
     if (!QDir::root().mkpath(path)) {
         throw std::runtime_error(
             QStringLiteral("Unable to create job output path %1").arg(path).toStdString());
@@ -110,24 +110,24 @@ QStringList EventProcessingContext::GetProductFiles(const QString &path,
     return QDir(path).entryList(QStringList() << pattern, QDir::Files);
 }
 
-QString EventProcessingContext::GetJobOutputPath(int jobId)
+QString EventProcessingContext::GetJobOutputPath(int jobId, const QString &procName)
 {
-    QString jobIdPath = GetScratchPath(jobId);
+    QString jobIdPath = GetScratchPath(jobId, procName);
     jobIdPath = jobIdPath.left(jobIdPath.indexOf("{job_id}") + sizeof("{job_id}"));
     return jobIdPath.replace(QLatin1String("{job_id}"), QString::number(jobId));
 }
 
-QString EventProcessingContext::GetOutputPath(int jobId, int taskId, const QString &module)
+QString EventProcessingContext::GetOutputPath(int jobId, int taskId, const QString &module, const QString &procName)
 {
-    return GetScratchPath(jobId)
+    return GetScratchPath(jobId, procName)
         .replace(QLatin1String("{job_id}"), QString::number(jobId))
         .replace(QLatin1String("{task_id}"), QString::number(taskId))
         .replace(QLatin1String("{module}"), module);
 }
 
-QString EventProcessingContext::GetScratchPath(int jobId)
+QString EventProcessingContext::GetScratchPath(int jobId, const QString &procName)
 {
-    const auto &parameters = persistenceManager.GetJobConfigurationParameters(
+    const auto &parameters = GetJobConfigurationParameters(
         jobId, QStringLiteral("general.scratch-path"));
 
     if (parameters.empty()) {
@@ -135,13 +135,25 @@ QString EventProcessingContext::GetScratchPath(int jobId)
                                  "temporary file path");
     }
 
-    Q_ASSERT(parameters.size() == 1);
+    Q_ASSERT(parameters.size() >= 1);
+    std::map<QString,QString>::const_iterator it = parameters.find(QStringLiteral("general.scratch-path"));
+    if (procName != "") {
+        QString newKey = "general.scratch-path."+procName;
+        std::map<QString,QString>::const_iterator it1 = parameters.find(newKey);
+        if(it1 != parameters.end()) {
+            if(it1->second != "") {
+                it = it1;
+            }
+        }
+    }
+    Q_ASSERT(it != parameters.end());
 
-    return QDir::cleanPath(parameters.front().value) + QDir::separator();
+    return QDir::cleanPath(it->second) + QDir::separator();
 }
 
 void EventProcessingContext::SubmitTasks(int jobId,
-                                         const QList<std::reference_wrapper<TaskToSubmit>> &tasks)
+                                         const QList<std::reference_wrapper<TaskToSubmit>> &tasks,
+                                         const QString &submitterProcName)
 {
     for (auto taskRef : tasks) {
         auto &task = taskRef.get();
@@ -159,9 +171,10 @@ void EventProcessingContext::SubmitTasks(int jobId,
             parentTaskIds.append(parentTask.taskId);
         }
 
-        task.taskId = SubmitTask({ jobId, task.moduleName, QStringLiteral("null"), parentTaskIds });
+        task.taskId = SubmitTask({ jobId, task.moduleName, QStringLiteral("null"), parentTaskIds },
+                                 submitterProcName);
 
-        task.outputPath = GetOutputPath(jobId, task.taskId, task.moduleName);
+        task.outputPath = GetOutputPath(jobId, task.taskId, task.moduleName, submitterProcName);
     }
 }
 

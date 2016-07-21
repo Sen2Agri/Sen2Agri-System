@@ -174,8 +174,14 @@ private:
         MeanAngles_Type sensorBandAngles;
         bool hasAngles = true;
         if(pHelper->HasBandMeanAngles()) {
-            // we use the angle of the first band
-            sensorBandAngles = pHelper->GetSensorMeanAngles(0);
+            // we use the first valid angle from the band list
+            int nTotalBandsNo = pHelper->GetTotalBandsNo();
+            for(int j = 0; j<nTotalBandsNo; j++) {
+                sensorBandAngles = pHelper->GetSensorMeanAngles(j);
+                if(!std::isnan(sensorBandAngles.azimuth) && !std::isnan(sensorBandAngles.zenith)) {
+                    break;
+                }
+            }
         } else if(pHelper->HasGlobalMeanAngles()) {
             sensorBandAngles = pHelper->GetSensorMeanAngles();
         } else {

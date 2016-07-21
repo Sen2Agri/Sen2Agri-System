@@ -5,47 +5,57 @@ CREATE OR REPLACE FUNCTION sp_dashboard_update_site(
     _winter_season_start character varying,
     _winter_season_end character varying,
     _summer_season_start character varying,
-    _summer_season_end character varying)
+    _summer_season_end character varying,
+    _enabled boolean)
   RETURNS void AS
 $BODY$
-BEGIN 
+DECLARE _parameters json[] := '{}';
+BEGIN
 
-UPDATE site
-SET short_name = _short_name,
-    geog = ST_Force2D(ST_GeometryFromText(_geog)) :: geography
-WHERE id = _id;
-
-UPDATE config
-SET value =_winter_season_start
-WHERE key = 'downloader.winter-season.start' AND site_id = _id;
-IF NOT FOUND THEN 
-INSERT INTO config(key,site_id,value)
-		VALUES ('downloader.winter-season.start',_id,_winter_season_start);
-		END IF;
-
-UPDATE config
-SET value =_winter_season_end
-WHERE key = 'downloader.winter-season.end' AND site_id = _id;
-IF NOT FOUND THEN 
-INSERT INTO config(key,site_id,value)
-		VALUES ('downloader.winter-season.end',_id,_winter_season_end);
-		END IF;
-
-UPDATE config
-SET value =_summer_season_start
-WHERE key = 'downloader.summer-season.start' AND site_id = _id;
-IF NOT FOUND THEN 
-INSERT INTO config(key,site_id,value)
-		VALUES ('downloader.summer-season.start',_id,_summer_season_start);
+IF NULLIF(_short_name, '') IS NOT NULL THEN
+    UPDATE site
+    SET short_name = _short_name
+    WHERE id = _id;
 END IF;
 
-UPDATE config
-SET value =_summer_season_end
-WHERE key = 'downloader.summer-season.end' AND site_id = _id;
-IF NOT FOUND THEN 
-INSERT INTO config(key,site_id,value)
-		VALUES ('downloader.summer-season.end',_id,_summer_season_end);
-		END IF;
+IF _enabled IS NOT NULL THEN
+    UPDATE site
+    SET enabled = _enabled
+    WHERE id = _id;
+END IF;
+
+IF NULLIF(_geog, '') IS NOT NULL THEN
+    UPDATE site
+    SET geog = ST_Multi(ST_Force2D(ST_GeometryFromText(_geog)))
+    WHERE id = _id;
+END IF;
+
+IF _winter_season_start IS NOT NULL THEN
+    _parameters := _parameters || json_build_object('key', 'downloader.winter-season.start',
+                                                    'site_id', _id,
+                                                    'value', NULLIF(_winter_season_start, ''));
+END IF;
+IF _winter_season_end IS NOT NULL THEN
+    _parameters := _parameters || json_build_object('key', 'downloader.winter-season.end',
+                                                    'site_id', _id,
+                                                    'value', NULLIF(_winter_season_end, ''));
+END IF;
+IF _summer_season_start IS NOT NULL THEN
+    _parameters := _parameters || json_build_object('key', 'downloader.summer-season.start',
+                                                    'site_id', _id,
+                                                    'value', NULLIF(_summer_season_start, ''));
+END IF;
+IF _summer_season_end IS NOT NULL THEN
+    _parameters := _parameters || json_build_object('key', 'downloader.summer-season.end',
+                                                    'site_id', _id,
+                                                    'value', NULLIF(_summer_season_end, ''));
+END IF;
+
+if array_length(_parameters, 1) > 0 THEN
+    PERFORM sp_upsert_parameters(
+                array_to_json(_parameters),
+                false);
+END IF;
 
 END;
 $BODY$

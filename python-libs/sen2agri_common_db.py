@@ -1,5 +1,24 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
+"""
+_____________________________________________________________________________
+
+   Program:      Sen2Agri-Processors
+   Language:     Python
+   Copyright:    2015-2016, CS Romania, office@c-s.ro
+   See COPYRIGHT file for details.
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+_____________________________________________________________________________
+
+"""
+
 from __future__ import print_function
+from __future__ import with_statement
 import argparse
 import re
 import glob
@@ -11,15 +30,16 @@ from lxml.builder import E
 import math
 import os
 from os.path import isfile, isdir, join
-import glob
 import sys
 import time, datetime
 from time import gmtime, strftime
+from subprocess import check_output
 import pipes
 import shutil
 import psycopg2
 import psycopg2.errorcodes
 import optparse
+import signal
 
 FAKE_COMMAND = 0
 DEBUG = True
@@ -27,7 +47,8 @@ DEBUG = True
 DOWNLOADER_NUMBER_OF_CONFIG_PARAMS_FROM_DB = int(7)
 SENTINEL2_SATELLITE_ID = int(1)
 LANDSAT8_SATELLITE_ID = int(2)
-
+FILES_IN_LANDSAT_L1_PRODUCT = int(13)
+UNKNOWN_SATELLITE_ID = int(-1)
 #should not exceed 11 !!!!
 MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED = int(2)
 
@@ -46,46 +67,138 @@ DATABASE_DOWNLOADER_STATUS_FAILED_VALUE = int(3)
 DATABASE_DOWNLOADER_STATUS_ABORTED_VALUE = int(4)
 DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE = int(5)
 
+TIME_INTERVAL_RETRY = int(8) #hours
+MAX_LOG_FILE_SIZE = int(419430400) #bytes -> 400 MB
+MAX_NUMBER_OF_KEPT_LOG_FILES = int(4) #number of maximum logfiles to be kept
+
 g_exit_flag = False
 
-
-def log(location, info, log_filename = None):
-    if log_filename == None:
-        log_filename = "log.txt"
+def log(location, info, log_filename = ""):
     try:
-        logfile = os.path.join(location, log_filename)
-        if DEBUG:
-            #print("logfile: {}".format(logfile))
-            print("{}:{}".format(str(datetime.datetime.now()), str(info)))
+        if DEBUG:        
+            print("{}:[{}]:{}".format(str(datetime.datetime.now()), os.getpid(), str(info)))
             sys.stdout.flush()
-        log = open(logfile, 'a')
-        log.write("{}:{}\n".format(str(datetime.datetime.now()),str(info)))
-        log.close()
+        if len(location) > 0 and len(log_filename) > 0:
+            logfile = os.path.join(location, log_filename)
+            log = open(logfile, 'a')
+            log.write("{}:[{}]:{}\n".format(str(datetime.datetime.now()), os.getpid(), str(info)))
+            log.close()
     except:
-        print("Could NOT write inside the log file {}".format(logfile))
-        sys.stdout.flush()
+        print("Could NOT write inside the log file {}".format(logfile))     
 
+def manage_log_file(location, log_filename):
+    try:
+        log_file = os.path.join(location, log_filename)
+        if not os.path.isfile(log_file):
+            print("The logfile {} does not exist yet".format(log_file))
+            return
+        if os.stat(log_file).st_size >= MAX_LOG_FILE_SIZE:
+            print("Log file is bigger than {}".format(MAX_LOG_FILE_SIZE))
+            #take the  current datetime
+            new_log_file = "{}_{}".format(log_file, datetime.datetime.now().strftime("%Y%m%d%H%M%S"))
+            #move the log file with the new name, with datetime at the end
+            print("Log file {} moved to {}".format(log_file, new_log_file))
+            shutil.move(log_file, new_log_file)
+            #check if there are other previous saved log files and delete the oldest one
+            previous_log_files = glob.glob("{}*.log_20*".format(location if location.endswith("/") else location + "/"))
+            while len(previous_log_files) > MAX_NUMBER_OF_KEPT_LOG_FILES:
+                oldest_idx = -1
+                idx = 0
+                oldest_datetime = datetime.datetime.strptime("40000101000001", "%Y%m%d%H%M%S")
+                for log_file in previous_log_files:
+                    underscore_idx = log_file.rfind('_')
+                    if underscore_idx > 0 and underscore_idx + 1 < len(log_file):
+                        str_log_datetime = log_file[underscore_idx + 1:len(log_file)]
+                        if len(str_log_datetime) != 14: #number of digits in the timestamp
+                            idx += 1
+                            continue
+                        log_datetime = datetime.datetime.strptime(str_log_datetime, "%Y%m%d%H%M%S")
+                        if log_datetime <= oldest_datetime:
+                            oldest_datetime = log_datetime
+                            oldest_idx = idx
+                    idx += 1
+                # remove the oldest file if found
+                print("oldest_datetime: {} | oldest_idx: {}" .format(oldest_datetime, oldest_idx))
+                if oldest_idx > -1:
+                    os.remove(previous_log_files[oldest_idx])
+                    print("Log file {} removed".format(previous_log_files[oldest_idx]))
+                else:
+                    break
+                #the main 'if'  can be replaced by 'while', and the following line should 
+                #be uncommented. be aware though...it can lead to infinite loop (probably not, but never say never again
+                previous_log_files = glob.glob("{}*.log_20*".format(location if location.endswith("/") else location + "/"))
+    except Exception, e:
+        print("Error in manage_log_file: exception {} !".format(e))
+                              
+        
+    
 
 def run_command(cmd_array, log_path = "", log_filename = ""):
     start = time.time()
     cmd_str = " ".join(map(pipes.quote, cmd_array))
-    if len(log_path) > 0 and len(log_filename) > 0:
-        log(log_path, "Starting command: {}".format(cmd_str), log_filename)
+    log(log_path, "Starting command: {}".format(cmd_str), log_filename)
     res = 0
     if not FAKE_COMMAND:
         res = subprocess.call(cmd_array, shell=False)
-    if len(log_path) > 0 and len(log_filename) > 0:
-        ok = "OK"
-        nok = "NOK"
-        log(log_path, "Command finished {} in {} : {}".format((ok if res == 0 else nok),datetime.timedelta(seconds=(time.time() - start)), cmd_str), log_filename)
+    ok = "OK"
+    nok = "NOK"
+    log(log_path, "Command finished {} in {} : {}".format((ok if res == 0 else nok),datetime.timedelta(seconds=(time.time() - start)), cmd_str), log_filename)
     return res
 
 
+def init_worker():
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+
 def signal_handler(signal, frame):
     global exitFlag
-    print("SIGINT caught")
+    print("SIGINT caught!")
     exitFlag = True
     sys.exit(0)
+
+
+def GetExtent(gt, cols, rows):
+    ext = []
+    xarr = [0, cols]
+    yarr = [0, rows]
+
+    for px in xarr:
+        for py in yarr:
+            x = gt[0] + px * gt[1] + py * gt[2]
+            y = gt[3] + px * gt[4] + py * gt[5]
+            ext.append([x, y])
+        yarr.reverse()
+    return ext
+
+
+def ReprojectCoords(coords, src_srs, tgt_srs):
+    trans_coords = []
+    transform = osr.CoordinateTransformation(src_srs, tgt_srs)
+    for x, y in coords:
+        x, y, z = transform.TransformPoint(x, y)
+        trans_coords.append([x, y])
+    return trans_coords
+
+def get_footprint(image_filename):
+    dataset = gdal.Open(image_filename, gdal.gdalconst.GA_ReadOnly)
+
+    size_x = dataset.RasterXSize
+    size_y = dataset.RasterYSize
+
+    geo_transform = dataset.GetGeoTransform()
+
+    spacing_x = geo_transform[1]
+    spacing_y = geo_transform[5]
+
+    extent = GetExtent(geo_transform, size_x, size_y)
+
+    source_srs = osr.SpatialReference()
+    source_srs.ImportFromWkt(dataset.GetProjection())
+    epsg_code = source_srs.GetAttrValue("AUTHORITY", 1)
+    target_srs = osr.SpatialReference()
+    target_srs.ImportFromEPSG(4326)
+
+    wgs84_extent = ReprojectCoords(extent, source_srs, target_srs)
+    return (wgs84_extent, extent)
 
         
 def create_recursive_dirs(dir_name):
@@ -108,20 +221,41 @@ def create_recursive_dirs(dir_name):
     return True
 
 
+def remove_dir(directory):
+    try:
+        shutil.rmtree(directory)        
+    except:
+        return False
+    return True
+
+
+def copy_directory(src, dest):
+    try:
+        #print("Fake copy {} to {}".format(src, dest))
+        shutil.copytree(src, dest)
+    # Directories are the same
+    except shutil.Error as e:
+        print("Directory not copied. Error: {}".format(e))
+        return False
+    # Any error saying that the directory doesn't exist
+    except OSError as e:
+        print("Directory not copied. Error: {}".format(e))
+        return False
+    return True
+
 def get_product_info(product_name):
     acquisition_date = None
-    sat_id = 0
+    sat_id = UNKNOWN_SATELLITE_ID
     if product_name.startswith("S2"):
         m = re.match("\w+_V(\d{8}T\d{6})_\w+.SAFE", product_name)
         if m != None:
-            sat_id = 1
+            sat_id = SENTINEL2_SATELLITE_ID
             acquisition_date = m.group(1)
     elif product_name.startswith("LC8"):
         m = re.match("LC8\d{6}(\d{7})LGN\d{2}", product_name)
         if m != None:
-            sat_id = 2
-            acquisition_date = m.group(1)
-            acquisition_date = strftime("%Y%m%dT%H%M%S", gmtime())
+            sat_id = LANDSAT8_SATELLITE_ID
+            acquisition_date = datetime.datetime.strptime("{} {}".format(m.group(1)[0:4],m.group(1)[4:]), '%Y %j').strftime("%Y%m%dT%H%M%S")
     return sat_id and (sat_id, acquisition_date)
 
 
@@ -147,7 +281,7 @@ def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearAr
             if currentMonth >= 1:
                 yearArray[0] = currentYear - 1
     else:
-        if currentMonth <= startSeasonMonth:
+        if currentMonth < startSeasonMonth:
             yearArray[0] = currentYear - 1
             yearArray[1] = currentYear - 1
     
@@ -163,6 +297,110 @@ def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearAr
     if currentDate < datetime.date(int(yearArray[0]), int(startSeasonMonth), int(startSeasonDay)) or currentDate > datetime.date(endSeasonYearToCheck, endSeasonMonthToCheck, endSeasonDayToCheck):
         return False
     return True
+
+
+def landsat_crop_to_cutline(landsat_product_path, working_dir):
+    product_name = os.path.basename(landsat_product_path[:len(landsat_product_path) - 1]) if landsat_product_path.endswith("/") else os.path.basename(landsat_product_path)
+    tile = re.match("LC8(\w{6})\w+", product_name)
+    if tile is None:
+        return "", "Couldn't get the tile id for the LANDSAT product {} found here {}. Imposible to process the alignment, exit".format(product_name, landsat_product_path)
+
+    tile_id = tile.group(1)
+    alignment_directory = "{}/{}_alignment".format(working_dir, tile_id)
+    aligned_landsat_directory_path = "{}/{}".format(alignment_directory, product_name)
+    if not create_recursive_dirs(alignment_directory):
+        return "", "Could not create the alignment directory {} for LANDSAT product {}".format(alignment_directory, landsat_product_path)
+    if not create_recursive_dirs(aligned_landsat_directory_path):
+        return "", "Could not create the aligned landsat {} directory for LANDSAT product {}".format(aligned_landsat_directory_path, landsat_product_path)
+
+    landsat_files = glob.glob("{}/*".format(landsat_product_path))
+    if(len(landsat_files) < FILES_IN_LANDSAT_L1_PRODUCT):
+        return "", "Found {} files in LANDSAT product {}. Should have been {}".format(len(landsat_files), landsat_product_path, FILES_IN_LANDSAT_L1_PRODUCT)
+
+    first_tile_file_path = None
+    tmp_shape_file = ""
+    for landsat_file in landsat_files:
+        landsat_file_basename = os.path.basename(landsat_file[:len(landsat_file) - 1]) if landsat_file.endswith("/") else os.path.basename(landsat_file)
+        band = re.match("LC8\w{13}LGN\w{2}_B1.TIF", landsat_file_basename)
+        if band is not None:
+            # the filename for the first output tile is created only (not accessed)
+            first_tile_file_path = "{}/{}".format(aligned_landsat_directory_path, landsat_file_basename)
+            out = check_output(["gdalsrsinfo", "-o", "wkt", landsat_file])
+            print("out = {}".format(out))
+            tmp_shape_file = "{}/tmp.shp".format(alignment_directory)
+            print("tmp = {}".format(tmp_shape_file))
+            #TODO: handle errors !!!!
+            run_command(["ogr2ogr", "-t_srs", out, "-where", "PR={}".format(tile_id), "-overwrite", tmp_shape_file, "/usr/share/sen2agri/wrs2_descending/wrs2_descending.shp"])    
+            break
+    if not first_tile_file_path :
+	return "", "Unable to find B1 in output product"
+
+    processed_files_counter = 0
+    for landsat_file in landsat_files:
+        landsat_file_basename = os.path.basename(landsat_file[:len(landsat_file) - 1]) if landsat_file.endswith("/") else os.path.basename(landsat_file)
+        print("landsat_file_basename = {}".format(landsat_file_basename))
+        band = re.match("LC8\w{13}LGN\w{2}_B\w+.TIF", landsat_file_basename)
+        if band is not None:            
+            output_file = "{}/{}".format(aligned_landsat_directory_path, landsat_file_basename)
+            run_command(["gdalwarp", "-overwrite", "-crop_to_cutline", "-cutline", tmp_shape_file, landsat_file, output_file])
+            processed_files_counter += 1
+
+    print("Using footprint reference: {}".format(first_tile_file_path))
+
+    for landsat_file in landsat_files:
+        landsat_file_basename = os.path.basename(landsat_file[:len(landsat_file) - 1]) if landsat_file.endswith("/") else os.path.basename(landsat_file)
+	metadata = re.match("LC8\w{13}LGN\w{2}_MTL.txt", landsat_file_basename)
+	if metadata is not None:
+	    output_metadata_file = "{}/{}".format(aligned_landsat_directory_path, landsat_file_basename)
+	    print(output_metadata_file)
+	    shape_env_points_wgs84, shape_env_points = get_footprint(first_tile_file_path)
+	    try:
+	        with open(landsat_file, 'r') as genuine_metadata, open(output_metadata_file, 'w') as modified_metadata:
+		    for line in genuine_metadata:
+		        # UTM coordinates
+		        if "CORNER_UL_PROJECTION_X_PRODUCT" in line:
+		    	    line = "    CORNER_UL_PROJECTION_X_PRODUCT = " + str(shape_env_points[0][0]) + "\n"
+		        if "CORNER_UL_PROJECTION_Y_PRODUCT" in line:
+		    	    line = "    CORNER_UL_PROJECTION_Y_PRODUCT = " + str(shape_env_points[0][1]) + "\n"
+		        if "CORNER_UR_PROJECTION_X_PRODUCT" in line:
+		    	    line = "    CORNER_UR_PROJECTION_X_PRODUCT = " + str(shape_env_points[3][0]) + "\n"
+		        if "CORNER_UR_PROJECTION_Y_PRODUCT" in line:
+		    	    line = "    CORNER_UR_PROJECTION_Y_PRODUCT = " + str(shape_env_points[3][1]) + "\n"
+		        if "CORNER_LL_PROJECTION_X_PRODUCT" in line:
+		    	    line = "    CORNER_LL_PROJECTION_X_PRODUCT = " + str(shape_env_points[1][0]) + "\n"
+		        if "CORNER_LL_PROJECTION_Y_PRODUCT" in line:
+		    	    line = "    CORNER_LL_PROJECTION_Y_PRODUCT = " + str(shape_env_points[1][1]) + "\n"
+		        if "CORNER_LR_PROJECTION_X_PRODUCT" in line:
+		    	    line = "    CORNER_LR_PROJECTION_X_PRODUCT = " + str(shape_env_points[2][0]) + "\n"
+		        if "CORNER_LR_PROJECTION_Y_PRODUCT" in line:
+		    	    line = "    CORNER_LR_PROJECTION_Y_PRODUCT = " + str(shape_env_points[2][1]) + "\n"
+		        # latlong coordinates
+		        
+		        if "CORNER_UL_LAT_PRODUCT" in line:
+		    	    line = "    CORNER_UL_LAT_PRODUCT = " + str(shape_env_points_wgs84[0][0]) + "\n"
+		        if "CORNER_UL_LON_PRODUCT" in line:
+		    	    line = "    CORNER_UL_LON_PRODUCT = " + str(shape_env_points_wgs84[0][1]) + "\n"
+		        if "CORNER_UR_LAT_PRODUCT" in line:
+		    	    line = "    CORNER_UR_LAT_PRODUCT = " + str(shape_env_points_wgs84[3][0]) + "\n"
+		        if "CORNER_UR_LON_PRODUCT" in line:
+		    	    line = "    CORNER_UR_LON_PRODUCT = " + str(shape_env_points_wgs84[3][1]) + "\n"
+		        if "CORNER_LL_LAT_PRODUCT" in line:
+		    	    line = "    CORNER_LL_LAT_PRODUCT = " + str(shape_env_points_wgs84[1][0]) + "\n"
+		        if "CORNER_LL_LON_PRODUCT" in line:
+		    	    line = "    CORNER_LL_LON_PRODUCT = " + str(shape_env_points_wgs84[1][1]) + "\n"
+		        if "CORNER_LR_LAT_PRODUCT" in line:
+		    	    line = "    CORNER_LR_LAT_PRODUCT = " + str(shape_env_points_wgs84[2][0]) + "\n"
+		        if "CORNER_LR_LON_PRODUCT" in line:
+		    	    line = "    CORNER_LR_LON_PRODUCT = " + str(shape_env_points_wgs84[2][1]) + "\n"
+		        
+		        modified_metadata.write(line)
+	    except EnvironmentError:
+	        return "", "Could not open the landsat metadata file for alignment or could not create the output file: Input = {} | Output = {}".format(landsat_file, output_metadata_file)
+	    processed_files_counter += 1
+    if(processed_files_counter != FILES_IN_LANDSAT_L1_PRODUCT):
+        return "", "The number of processed files in LANDSAT alignment is {} which is different than how many the should have been: {}".format(processed_files_counter, FILES_IN_LANDSAT_L1_PRODUCT)
+    #all went ok, return the path for the aligned product
+    return aligned_landsat_directory_path, ""
 
 
 ###########################################################################
@@ -263,6 +501,7 @@ class AOIContext(object):
     def setConfigParams(self, configParams, forced_season = False):
         if len(configParams) != DOWNLOADER_NUMBER_OF_CONFIG_PARAMS_FROM_DB:
             return False
+        
         startSummerSeason = configParams[0]
         endSummerSeason = configParams[1]
         startWinterSeason = configParams[2]
@@ -270,7 +509,7 @@ class AOIContext(object):
         self.maxCloudCoverage = int(configParams[4])
         self.maxRetries = int(configParams[5])
         self.writeDir = configParams[6]
-
+        #print("Seasons: summer:{}-{} / winter:{}-{}".format(startSummerSeason, endSummerSeason, startWinterSeason, endWinterSeason))
         # first position is the startSeasonYear, the second is the endPositionYear
         currentYearArray = []
         if forced_season:
@@ -280,12 +519,12 @@ class AOIContext(object):
             self.endSeasonMonth = int(endSummerSeason[0:2])
             self.endSeasonDay = int(endSummerSeason[2:4])
         else:
-            if check_if_season(startSummerSeason, endSummerSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray):
+            if startSummerSeason != "null" and endSummerSeason != "null" and check_if_season(startSummerSeason, endSummerSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray):
                 self.startSeasonMonth = int(startSummerSeason[0:2])
                 self.startSeasonDay = int(startSummerSeason[2:4])
                 self.endSeasonMonth = int(endSummerSeason[0:2])
                 self.endSeasonDay = int(endSummerSeason[2:4])
-            elif check_if_season(startWinterSeason, endWinterSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray):
+            elif startWinterSeason != "null" and endWinterSeason != "null" and check_if_season(startWinterSeason, endWinterSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray):
                 self.startSeasonMonth = int(startWinterSeason[0:2])
                 self.startSeasonDay = int(startWinterSeason[2:4])
                 self.endSeasonMonth = int(endWinterSeason[0:2])
@@ -430,10 +669,12 @@ class AOIInfo(object):
                 currentAOI.siteId = int(row[0])
                 currentAOI.siteName = row[2]
                 currentAOI.polygon = row[3]
+                
                 baseQuery = "select * from sp_get_parameters(\'downloader."
                 whereQuery = "where \"site_id\"="
                 suffixArray = ["summer-season.start\')", "summer-season.end\')", "winter-season.start\')", "winter-season.end\')", "max-cloud-coverage\')", "{}max-retries')".format(writeDirSatelliteName), "{}write-dir\')".format(writeDirSatelliteName)]
                 dbHandler = True
+                idx = 0
                 configArray = []
                 for suffix in suffixArray:
                     baseQuerySite = "{}{}".format(baseQuery, suffix)
@@ -441,20 +682,28 @@ class AOIInfo(object):
                     #print("query with where={}".format(query))
                     baseQuerySite += " where \"site_id\" is null"
                     try:
-                        self.cursor.execute(query)
+                        self.cursor.execute(query)                        
                         if self.cursor.rowcount <= 0:
-                            self.cursor.execute(baseQuerySite)
-                            if self.cursor.rowcount <= 0:
-                                print("Could not get even the default value for downloader.{}".format(suffix))
-                                dbHandler = False
-                                break
-                        if self.cursor.rowcount != 1:
-                            print("More than 1 result from the db for downloader.{}".format(suffix))
-                            dbHandler = False
-                            break
-                        result = self.cursor.fetchall()
-                        #print("result={}".format(result))
-                        configArray.append(result[0][2])
+                            if idx <= 3:
+                                configArray.append("null")
+                            else:
+                                self.cursor.execute(baseQuerySite)
+                                if self.cursor.rowcount <= 0:
+                                    print("Could not get even the default value for downloader.{}".format(suffix))
+                                    dbHandler = False
+                                    break
+                                if self.cursor.rowcount != 1:
+                                    print("More than 1 result from the db for downloader.{}".format(suffix))
+                                    dbHandler = False
+                                    break
+                                result = self.cursor.fetchall()
+                                #print("result={}".format(result))
+                                configArray.append(result[0][2])
+                        else:
+                            result = self.cursor.fetchall()
+                            #print("result={}".format(result))
+                            configArray.append(result[0][2])
+                        idx += 1
                     except Exception, e:
                         print("exception in query for downloader.{}:".format(suffix))
                         print("{}".format(e))
@@ -469,10 +718,12 @@ class AOIInfo(object):
                     if len(start_date) > 0 and len(end_date) > 0:
                         configArray[0] = start_date
                         configArray[1] = end_date
-                        configArray[2] = start_date
-                        configArray[3] = end_date
-                        print("Forcing manually downloading for time interval: {} - {}".format(start_date, end_date))
-                        sys.stdout.flush()
+                        configArray[2] = "null"
+                        configArray[3] = "null"
+                        if site_id > 0:
+                            # the offline_l1_handler app is calling this function with site_id set to -1, so don't print this message for it
+                            print("Forcing manuall download for time interval: {} - {}".format(start_date, end_date))
+                            sys.stdout.flush()
                         forced_season = True
                     if not currentAOI.setConfigParams(configArray, forced_season):
                         print("OUT OF THE SEASON")
@@ -481,10 +732,11 @@ class AOIInfo(object):
                     try:
                         self.cursor.execute("""select \"product_name\" from downloader_history where satellite_id = %(sat_id)s :: smallint and
                                                                        site_id = %(site_id)s :: smallint and
-                                                                       status_id != %(status_failed)s ::smallint """, {
+                                                                       (status_id != %(status_failed)s ::smallint and status_id != %(status_downloading)s ::smallint) """, {
                                                                            "sat_id" : satelliteId,
                                                                            "site_id" : currentAOI.siteId,
-                                                                           "status_failed" : DATABASE_DOWNLOADER_STATUS_FAILED_VALUE
+                                                                           "status_failed" : DATABASE_DOWNLOADER_STATUS_FAILED_VALUE,
+                                                                           "status_downloading" : DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE
                                                                        })
                         if self.cursor.rowcount > 0:
                             result = self.cursor.fetchall()
@@ -514,7 +766,7 @@ class AOIInfo(object):
             return False
         try:
             #see if the record does already exist in db
-            self.cursor.execute("""SELECT id, status_id, no_of_retries FROM downloader_history 
+            self.cursor.execute("""SELECT id, status_id, no_of_retries, created_timestamp FROM downloader_history 
                                 WHERE site_id = %(site_id)s and
                                 satellite_id = %(satellite_id)s and
                                 product_name = %(product_name)s""", 
@@ -550,14 +802,15 @@ class AOIInfo(object):
                                         "orbit_id" : orbit_id
                                     })
             else:
-                #if the record for this product name does exist, act accordingly the provided status
-                if len(rows[0]) != 3:
-                    print("DB result has more than 3 fields !")
+                #if the record for this product name does exist, act accordingyl the provided status
+                if len(rows[0]) != 4:
+                    print("DB result from 'SELECT id, status_id, no_of_retries, created_timestamp FROM downloader_history....' query has more than 4 fields !")
                     self.databaseDisconnect()
                     return False
                 db_l1c_id = rows[0][0]
                 db_status_id = rows[0][1]
                 db_no_of_retries = rows[0][2]
+                db_created_timestamp = rows[0][3]
                 #for the following values, only the status will be updated
                 if status == DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE or \
                 status == DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE or \
@@ -575,7 +828,15 @@ class AOIInfo(object):
                     if db_no_of_retries >= maxRetries:
                         status = DATABASE_DOWNLOADER_STATUS_ABORTED_VALUE
                     else:
-                        db_no_of_retries += 1
+                        #no of retries means a certain amount of time (TIME_INTERVAL_RETRY hours for example) used for trying to download the product
+                        #after this amount of time passed, the number of retries will be incremented
+                        #note: db_created_timestamp is an 'python offset-naive datetime' (this is how PG returns) 
+                        #so it should be converted to 'python offset-aware datetime'
+                        #only in this way the datetime can be added with TIME_INTERVAL_RETRY * no_of_retries hours. this is done through '.replace(tzinfo=None)'
+                        db_product_timestamp_to_check = (db_created_timestamp + datetime.timedelta(hours=(db_no_of_retries * TIME_INTERVAL_RETRY))).replace(tzinfo=None)
+                        now = datetime.datetime.now()
+                        if db_product_timestamp_to_check <= now:
+                            db_no_of_retries += 1
                     self.cursor.execute("""UPDATE downloader_history SET status_id = %(status_id)s :: smallint , no_of_retries = %(no_of_retries)s :: smallint
                                         WHERE id = %(l1c_id)s :: smallint """, 
                                         {
@@ -588,8 +849,8 @@ class AOIInfo(object):
                     print("The provided status {} is not one of the known status from DB. Check downloader_status table !".format(status))
                     return False
             self.conn.commit()
-        except:
-            print("The query for product {} raised an exception !".format(productName))
+        except Exception, e:
+            print("The query for product {} raised an exception {} !".format(productName, e))
             self.databaseDisconnect()
             return False
         self.databaseDisconnect()
@@ -789,16 +1050,18 @@ class L1CInfo(object):
         self.database_disconnect()
         return retArray
 
-    def get_previous_l2a_tile_path(self, satellite_id, tile_id, l1c_date, l1c_orbit_id):
+    def get_previous_l2a_tile_path(self, satellite_id, tile_id, l1c_date, l1c_orbit_id, site_id):
         if not self.database_connect():
             return ""
         path = ""
         try:
-            self.cursor.execute("""SELECT path FROM sp_get_last_l2a_product(%(tile_id)s, 
+            self.cursor.execute("""SELECT path FROM sp_get_last_l2a_product(%(site_id)s :: smallint,
+                                                                            %(tile_id)s, 
                                                                             %(satellite_id)s :: smallint,
                                                                             %(l1c_orbit_id)s :: integer,
                                                                             %(l1c_date)s :: timestamp)""",
                                 {
+                                    "site_id" : site_id,
                                     "tile_id" : tile_id,
                                     "satellite_id" : satellite_id,
                                     "l1c_orbit_id" : l1c_orbit_id,

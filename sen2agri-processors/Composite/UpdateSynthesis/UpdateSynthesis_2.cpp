@@ -126,14 +126,59 @@ private:
         std::string inXml = GetParameterAsString("xml");
         std::string strBandsMappingFileName = GetParameterAsString("bmap");
         m_L2AIn = GetParameterFloatVectorImage("in");
-        m_L2AIn->UpdateOutputInformation();
-        if(resolution <= 0) {
-            resolution = m_L2AIn->GetSpacing()[0];
-        }
         m_CSM = GetParameterFloatVectorImage("csm");
         m_WM = GetParameterFloatVectorImage("wm");
         m_SM = GetParameterFloatVectorImage("sm");
         m_WeightsL2A = GetParameterFloatVectorImage("wl2a");
+
+        m_L2AIn->UpdateOutputInformation();
+        m_CSM->UpdateOutputInformation();
+        m_WM->UpdateOutputInformation();
+        m_SM->UpdateOutputInformation();
+        m_WeightsL2A->UpdateOutputInformation();
+
+        if(resolution <= 0) {
+            resolution = m_WeightsL2A->GetSpacing()[0];
+        }
+
+
+        InputImageType::SpacingType spacingL2AIn = m_L2AIn->GetSpacing();
+        InputImageType::PointType originL2AIn = m_WeightsL2A->GetOrigin();
+        InputImageType::SpacingType spacingCSM = m_CSM->GetSpacing();
+        InputImageType::PointType originCSM = m_WeightsL2A->GetOrigin();
+        InputImageType::SpacingType spacingWM = m_WM->GetSpacing();
+        InputImageType::PointType originWM = m_WeightsL2A->GetOrigin();
+        InputImageType::SpacingType spacingSM = m_SM->GetSpacing();
+        InputImageType::PointType originSM = m_WeightsL2A->GetOrigin();
+        InputImageType::SpacingType spacingWeightsL2A = m_WeightsL2A->GetSpacing();
+        InputImageType::PointType originWeightsL2A = m_WeightsL2A->GetOrigin();
+
+        // After with gdalwarp cut for an L8 that is used with S2 the spacing and origin might be changed.
+        // The reference is the weight clouds that is corrected
+        if((spacingWeightsL2A[0] != spacingL2AIn[0]) || (spacingWeightsL2A[1] != spacingL2AIn[1]) ||
+           (originWeightsL2A[0] != originL2AIn[0]) || (originWeightsL2A[1] != originL2AIn[1])) {
+            float fMultiplicationFactor = ((float)spacingL2AIn[0])/spacingWeightsL2A[0];
+            //force the origin and the resolution to the one from cloud image
+            m_L2AIn = m_Resampler.getResampler(m_L2AIn, fMultiplicationFactor, originWeightsL2A)->GetOutput();
+        }
+        if((spacingWeightsL2A[0] != spacingCSM[0]) || (spacingWeightsL2A[1] != spacingCSM[1]) ||
+           (originWeightsL2A[0] != originCSM[0]) || (originWeightsL2A[1] != originCSM[1])) {
+            float fMultiplicationFactor = ((float)spacingCSM[0])/spacingWeightsL2A[0];
+            //force the origin and the resolution to the one from cloud image
+            m_CSM = m_Resampler.getResampler(m_CSM, fMultiplicationFactor, originWeightsL2A)->GetOutput();
+        }
+        if((spacingWeightsL2A[0] != spacingWM[0]) || (spacingWeightsL2A[1] != spacingWM[1]) ||
+           (originWeightsL2A[0] != originWM[0]) || (originWeightsL2A[1] != originWM[1])) {
+            float fMultiplicationFactor = ((float)spacingWM[0])/spacingWeightsL2A[0];
+            //force the origin and the resolution to the one from cloud image
+            m_WM = m_Resampler.getResampler(m_WM, fMultiplicationFactor, originWeightsL2A)->GetOutput();
+        }
+        if((spacingWeightsL2A[0] != spacingSM[0]) || (spacingWeightsL2A[1] != spacingSM[1]) ||
+           (originWeightsL2A[0] != originSM[0]) || (originWeightsL2A[1] != originSM[1])) {
+            float fMultiplicationFactor = ((float)spacingSM[0])/spacingWeightsL2A[0];
+            //force the origin and the resolution to the one from cloud image
+            m_SM = m_Resampler.getResampler(m_SM, fMultiplicationFactor, originWeightsL2A)->GetOutput();
+        }
 
         auto szL2A = m_L2AIn->GetLargestPossibleRegion().GetSize();
         int nL2AWidth = szL2A[0];
@@ -309,6 +354,7 @@ private:
 
     BandsCfgMappingParser m_bandsCfgMappingParser;
     ResamplingBandExtractor m_ResampledBandsExtractor;
+    ImageResampler<InputImageType, InputImageType> m_Resampler;
 /*
     VectorImageToImageListType::Pointer       m_imgSplit;
     ImageListToVectorImageFilterType::Pointer m_allConcat;

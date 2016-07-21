@@ -26,5 +26,7 @@ install(FILES TestScripts/bands_mapping_s2.txt
               TestScripts/bands_mapping_spot4.txt 
               TestScripts/scattering_coeffs_10m.txt
               TestScripts/scattering_coeffs_20m.txt 
+              TestScripts/scattering_coeffs_droy_10m.txt
+              TestScripts/scattering_coeffs_droy_20m.txt
               composite.map 
         DESTINATION usr/share/sen2agri/)

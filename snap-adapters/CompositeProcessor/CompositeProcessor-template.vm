@@ -1,5 +1,3 @@
---applocation
-$SENTINEL_BUILD_PATH
 --syntdate
 $synthesysDate
 --synthalf
@@ -9,8 +7,10 @@ $inputFiles
 --res
 $resolution
 --outdir
-$WORKING_DIR_PATH/Composite/out
+$HOME/Composite/out
 --bandsmap
 $bandsMappingFile
 --tileid
 $tileId
+--siteid
+$siteId

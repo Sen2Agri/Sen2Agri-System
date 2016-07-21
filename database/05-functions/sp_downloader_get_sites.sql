@@ -16,7 +16,8 @@ BEGIN
                 FROM (
                     SELECT ST_AsText((ST_Dump(site.geog :: geometry)).geom :: geography) AS geog
                 ) polys) AS geog
-        FROM site;
+        FROM site
+	WHERE enabled;
 END
 $$
 LANGUAGE plpgsql STABLE;

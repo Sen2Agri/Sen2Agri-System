@@ -58,9 +58,9 @@ def noInSituDataAvailable() :
         with open(shape_proj, 'r') as file:
             shape_wkt = "ESRI::" + file.read()
 
-	executeStep("gdalwarp for reprojecting Reference map", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-t_srs", shape_wkt, reference, reprojected_reference, skip=fromstep>19)
-
-	executeStep("gdalwarp for cutting Reference map", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_reference, crop_reference, skip=fromstep>20)
+	executeStep("gdalwarp for cropping Reference map", "/usr/local/bin/gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shape, "-crop_to_cutline", reference, cropped_reference, skip=fromstep>19)
+	executeStep("gdalwarp for reprojecting Reference map", "/usr/local/bin/gdalwarp", "-dstnodata", "0", "-overwrite", "-t_srs", shape_wkt, cropped_reference, reprojected_reference, skip=fromstep>19, rmfiles=[] if keepfiles else [cropped_reference])
+	executeStep("gdalwarp for resampling Reference map", "/usr/local/bin/gdalwarp", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_reference, crop_reference, skip=fromstep>20, rmfiles=[] if keepfiles else [reprojected_reference])
 
 	# Erosion (Step 21)
 	executeStep("Erosion", "otbcli", "Erosion", buildFolder,"-in", crop_reference, "-out", eroded_reference, "-radius", erode_radius, skip=fromstep>21, rmfiles=[] if keepfiles else [crop_reference])
@@ -93,11 +93,10 @@ parser.add_argument('-rseed', help='The random seed used for training (default 0
 
 parser.add_argument('-window', help='The window, expressed in number of records, used for the temporal features extraction (default 6)', required=False, metavar='window', default=6)
 parser.add_argument('-lmbd', help='The lambda parameter used in data smoothing (default 2)', required=False, metavar='lmbd', default=2)
-parser.add_argument('-weight', help='The weight factor for data smoothing (default 1)', required=False, metavar='weight', default=1)
 parser.add_argument('-nbcomp', help='The number of components used by dimensionality reduction (default 6)', required=False, metavar='nbcomp', default=6)
 parser.add_argument('-spatialr', help='The spatial radius of the neighborhood used for segmentation (default 10)', required=False, metavar='spatialr', default=10)
 parser.add_argument('-ranger', help='The range radius defining the radius (expressed in radiometry unit) in the multispectral space (default 0.65)', required=False, metavar='ranger', default=0.65)
-parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) in segmentation.  (default 200)', required=False, metavar='minsize', default=200)
+parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) for segmentation.(default 10)', required=False, metavar='minsize', default=10)
 
 parser.add_argument('-refr', help='The reference raster when insitu data is not available', required=False, metavar='reference', default='')
 parser.add_argument('-eroderad', help='The radius used for erosion (default 1)', required=False, metavar='erode_radius', default='1')
@@ -137,7 +136,6 @@ rfnbtrees=str(args.rfnbtrees)
 rfmax=str(args.rfmax)
 rfmin=str(args.rfmin)
 lmbd=str(args.lmbd)
-weight=str(args.weight)
 nbcomp=str(args.nbcomp)
 spatialr=str(args.spatialr)
 ranger=str(args.ranger)
@@ -189,6 +187,7 @@ spectral_features=os.path.join(args.outdir, "spectral_features.tif")
 triming_features=os.path.join(args.outdir, "triming_features.tif")
 
 eroded_reference=os.path.join(args.outdir, "eroded_reference.tif")
+cropped_reference=os.path.join(args.outdir, "crop_reference.tif")
 reprojected_reference = os.path.join(args.outdir, "reprojected_reference.tif")
 crop_reference=os.path.join(args.outdir, "crop_reference.tif")
 trimmed_reference_raster=os.path.join(args.outdir, "trimmed_reference_raster.tif")
@@ -205,7 +204,8 @@ segmented_merged=os.path.join(args.outdir, "segmented_merged.tif")
 
 confmatout=os.path.join(args.outdir, "confusion-matrix.csv")
 model=os.path.join(args.outdir, "crop-mask-model.txt")
-raw_crop_mask_uncompressed=os.path.join(args.outdir, "raw_crop_mask_uncompressed.tif")
+raw_crop_mask_uncompressed=os.path.join(args.outdir, "raw_crop_mask_uncomp.tif")
+raw_crop_mask_cut_uncompressed=os.path.join(args.outdir, "raw_crop_mask_cut_uncomp.tif")
 raw_crop_mask=os.path.join(args.outdir, "raw_crop_mask.tif")
 raw_crop_mask_confusion_matrix_validation=os.path.join(args.outdir, "raw-crop-mask-confusion-matrix-validation.csv")
 raw_crop_mask_quality_metrics=os.path.join(args.outdir, "raw-crop-mask-quality-metrics.txt")
@@ -228,7 +228,7 @@ globalStart = datetime.datetime.now()
 
 try:
 # Bands Extractor (Step 1)
-    executeStep("BandsExtractor", "otbcli", "BandsExtractor", buildFolder,"-mission",mission,"-out",rawtocr,"-mask",rawmask, "-statusflags", statusFlags, "-outdate", dates, "-shape", shape, "-pixsize", pixsize,"-merge", "false", "-il", *indesc, skip=fromstep>1)
+    executeStep("BandsExtractor", "otbcli", "BandsExtractor", buildFolder,"-mission",mission,"-out",rawtocr,"-mask",rawmask, "-outdate", dates, "-shape", shape, "-pixsize", pixsize,"-merge", "false", "-il", *indesc, skip=fromstep>1)
 
 # gdalwarp (Step 2 and 3)
     executeStep("gdalwarp for reflectances", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawtocr, tocr, skip=fromstep>2, rmfiles=[] if keepfiles else [rawtocr])
@@ -294,7 +294,8 @@ try:
     executeStep("MajorityVoting", "otbcli", "MajorityVoting",buildFolder ,"-nodatasegvalue", "0", "-nodataclassifvalue", "-10000", "-minarea", minarea, "-inclass", raw_crop_mask_uncompressed, "-inseg", segmented_merged, "-rout", crop_mask_uncut, skip=fromstep>30, rmfiles=[] if keepfiles else [segmented_merged])
 
 # gdalwarp (Step 31)
-    executeStep("gdalwarp for crop mask", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_mask_uncut, crop_mask_uncompressed, skip=fromstep>31)
+    executeStep("gdalwarp for raw crop mask", "gdalwarp", "-dstnodata", "\"-10000\"", "-ot", "Int16", "-overwrite", "-cutline", shape, "-crop_to_cutline", raw_crop_mask_uncompressed, raw_crop_mask_cut_uncompressed, skip=fromstep>31)
+    executeStep("gdalwarp for segmented crop mask", "gdalwarp", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", crop_mask_uncut, crop_mask_uncompressed, skip=fromstep>31)
 
 #Validation (Step 32)
     if reference_polygons != "" :
@@ -304,13 +305,16 @@ try:
 
 #Compression (Step 33)
     executeStep("Compression", "otbcli_Convert", "-in", crop_mask_uncompressed, "-out", crop_mask+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>33, rmfiles=[] if keepfiles else [crop_mask_uncompressed])
-    executeStep("Compression", "otbcli_Convert", "-in", raw_crop_mask_uncompressed, "-out", raw_crop_mask+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>33, rmfiles=[] if keepfiles else [raw_crop_mask_uncompressed])
+    executeStep("Compression", "otbcli_Convert", "-in", raw_crop_mask_cut_uncompressed, "-out", raw_crop_mask+"?gdal:co:COMPRESS=DEFLATE", "int16",  skip=fromstep>33, rmfiles=[] if keepfiles else [raw_crop_mask_cut_uncompressed])
 
 #XML conversion (Step 34)
     executeStep("XML Conversion for Crop Mask", "otbcli", "XMLStatistics", buildFolder, "-confmat", confusion_matrix_validation, "-quality", quality_metrics, "-root", "CropMask", "-out", xml_validation_metrics,  skip=fromstep>34)
 
-#Product creation (Step 35)
-    executeStep("ProductFormatter", "otbcli", "ProductFormatter", buildFolder, "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-baseline", "01.00", "-siteid", siteId, "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.rawfile", "TILE_"+tilename, raw_crop_mask, "-processor.cropmask.quality",  "TILE_"+tilename, xml_validation_metrics, "-processor.cropmask.flags", "TILE_"+tilename, statusFlags, "-il", *indesc, skip=fromstep>35)
+# Quality Flags Extractor (Step 35)
+    executeStep("QualityFlagsExtractor", "otbcli", "QualityFlagsExtractor", buildFolder,"-mission",mission,"-out",statusFlags+"?gdal:co:COMPRESS=DEFLATE","-pixsize", pixsize,"-il", *indesc, skip=fromstep>35)
+
+#Product creation (Step 36)
+    executeStep("ProductFormatter", "otbcli", "ProductFormatter", buildFolder, "-destroot", targetFolder, "-fileclass", "SVT1", "-level", "L4A", "-baseline", "01.00", "-siteid", siteId, "-processor", "cropmask", "-processor.cropmask.file", "TILE_"+tilename, crop_mask, "-processor.cropmask.rawfile", "TILE_"+tilename, raw_crop_mask, "-processor.cropmask.quality",  "TILE_"+tilename, xml_validation_metrics, "-processor.cropmask.flags", "TILE_"+tilename, statusFlags, "-il", *indesc, skip=fromstep>36)
 
 except:
     print sys.exc_info()

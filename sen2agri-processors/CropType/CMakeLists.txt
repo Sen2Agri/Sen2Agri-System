@@ -3,6 +3,7 @@ add_subdirectory(BandsExtractor)
 add_subdirectory(FeatureExtractionOld)
 add_subdirectory(FeatureExtraction)
 add_subdirectory(TemporalResampling)
+add_subdirectory(QualityFlagsExtractor)
 
 install(FILES ../../scripts/CropType.py
         DESTINATION usr/bin/

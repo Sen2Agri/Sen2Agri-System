@@ -25,8 +25,6 @@ typedef struct {
 class CompositeHandler : public ProcessorHandler
 {
 private:
-    void HandleProductAvailableImpl(EventProcessingContext &ctx,
-                                    const ProductAvailableEvent &event) override;
     void HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                 const JobSubmittedEvent &event) override;
     void HandleTaskFinishedImpl(EventProcessingContext &ctx,
@@ -51,6 +49,9 @@ private:
 
     QStringList GetMissionsFromBandsMapping(const QString &bandsMappingFile);
     QString DeductBandsMappingFile(const QStringList &listProducts, const QString &bandsMappingFile, int &resolution);
+
+    QStringList GetGdalWarpArgs(const QString &inImg, const QString &outImg, const QString &dtsNoData,
+                                const QString &gdalwarpMem, const QString &shape, const QString &resolutionStr);
 };
 
 #endif // COMPOSITEHANDLER_HPP

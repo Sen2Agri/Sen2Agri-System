@@ -14,6 +14,8 @@ BEGIN
 
 	JOIN processor ON scheduled_task.processor_id=processor.id
 
+	WHERE site.enabled
+
 	ORDER BY site.name;
 
 END

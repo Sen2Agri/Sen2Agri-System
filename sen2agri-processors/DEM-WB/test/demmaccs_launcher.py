@@ -31,28 +31,6 @@ from sen2agri_common_db import *
 general_log_path = "/tmp/"
 general_log_filename = "demmaccs.log"
 
-def GetExtent(gt, cols, rows):
-    ext = []
-    xarr = [0, cols]
-    yarr = [0, rows]
-
-    for px in xarr:
-        for py in yarr:
-            x = gt[0] + px * gt[1] + py * gt[2]
-            y = gt[3] + px * gt[4] + py * gt[5]
-            ext.append([x, y])
-        yarr.reverse()
-    return ext
-
-
-def ReprojectCoords(coords, src_srs, tgt_srs):
-    trans_coords = []
-    transform = osr.CoordinateTransformation(src_srs, tgt_srs)
-    for x, y in coords:
-        x, y, z = transform.TransformPoint(x, y)
-        trans_coords.append([x, y])
-    return trans_coords
-
 
 def get_envelope(footprints):
     geomCol = ogr.Geometry(ogr.wkbGeometryCollection)
@@ -72,29 +50,6 @@ def get_envelope(footprints):
     return hull.ExportToWkt()
 
 
-def get_footprint(image_filename):
-    dataset = gdal.Open(image_filename, gdal.gdalconst.GA_ReadOnly)
-
-    size_x = dataset.RasterXSize
-    size_y = dataset.RasterYSize
-
-    geo_transform = dataset.GetGeoTransform()
-
-    spacing_x = geo_transform[1]
-    spacing_y = geo_transform[5]
-
-    extent = GetExtent(geo_transform, size_x, size_y)
-
-    source_srs = osr.SpatialReference()
-    source_srs.ImportFromWkt(dataset.GetProjection())
-    epsg_code = source_srs.GetAttrValue("AUTHORITY", 1)
-    target_srs = osr.SpatialReference()
-    target_srs.ImportFromEPSG(4326)
-
-    wgs84_extent = ReprojectCoords(extent, source_srs, target_srs)
-    return wgs84_extent
-
-
 class L1CContext(object):
     def __init__(self, l1c_list, l1c_db, processor_short_name, base_output_path, skip_dem = None):
         self.l1c_list = l1c_list
@@ -104,7 +59,7 @@ class L1CContext(object):
         self.skip_dem = skip_dem
 
 
-def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_orbit_id, l1c_db):
+def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_orbit_id, l1c_db, site_id):
     #get all the tiles of the input. they will be used to find if there is a previous L2A product
     l1c_tiles = []
     if satellite_id == SENTINEL2_SATELLITE_ID:
@@ -125,7 +80,7 @@ def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_o
     l2a_tiles = []
     l2a_tiles_paths = []
     for l1c_tile in l1c_tiles:
-        l2a_tile = l1c_db.get_previous_l2a_tile_path(satellite_id, l1c_tile, l1c_date, l1c_orbit_id)
+        l2a_tile = l1c_db.get_previous_l2a_tile_path(satellite_id, l1c_tile, l1c_date, l1c_orbit_id, site_id)
         if len(l2a_tile) > 0:
             l2a_tiles.append(l1c_tile)
             l2a_tiles_paths.append(l2a_tile)
@@ -169,7 +124,7 @@ def launch_demmaccs(l1c_context):
             log(general_log_path, "Could not create the output directory", general_log_filename)
             continue
             
-        l2a_tiles, l2a_tiles_paths = get_previous_l2a_tiles_paths(satellite_id, l1c[3], l1c[4], l1c[5], l1c_context.l1c_db)
+        l2a_tiles, l2a_tiles_paths = get_previous_l2a_tiles_paths(satellite_id, l1c[3], l1c[4], l1c[5], l1c_context.l1c_db, l1c[1])
 
         if len(l2a_tiles) != len(l2a_tiles_paths):
             log(output_path, "The lengths of lists l1c tiles and previous l2a tiles are different for {}".format(l2a_basename), general_log_filename)
@@ -180,7 +135,7 @@ def launch_demmaccs(l1c_context):
         sat_id = 0
         acquisition_date = ""
         base_abs_path = os.path.dirname(os.path.abspath(__file__)) + "/"
-        demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "--processes-number-dem", "20", "--processes-number-maccs", "8", "--gip-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-launcher", demmaccs_config.maccs_launcher, "--delete-temp", "True", l1c[3], output_path]
+        demmaccs_command = [base_abs_path + "demmaccs.py", "--srtm", demmaccs_config.srtm_path, "--swbd", demmaccs_config.swbd_path, "--processes-number-dem", "20", "--processes-number-maccs", "1", "--gipp-dir", demmaccs_config.gips_path, "--working-dir", demmaccs_config.working_dir, "--maccs-launcher", demmaccs_config.maccs_launcher, "--delete-temp", "False", l1c[3], output_path]
         if len(demmaccs_config.maccs_ip_address) > 0:
             demmaccs_command += ["--maccs-address", demmaccs_config.maccs_ip_address]
         if l1c_context.skip_dem != None:
@@ -202,7 +157,7 @@ def launch_demmaccs(l1c_context):
                     tile_img = (glob.glob("{}/*_FRE.DBL.TIF".format(tile_dir)))                
                 
                 if len(tile_img) > 0:
-                    wgs84_extent_list.append(get_footprint(tile_img[0]))
+                    wgs84_extent_list.append(get_footprint(tile_img[0])[0])
             wkt = get_envelope(wgs84_extent_list)
 
             if len(wkt) == 0:
@@ -241,6 +196,7 @@ parser.add_argument('--skip-dem', required=False,
                         help="skip DEM if a directory with previous work of DEM is given", default=None)
 
 args = parser.parse_args()
+manage_log_file(os.path.join(general_log_path, general_log_filename))
 
 # get the db configuration from cfg file
 config = Config()

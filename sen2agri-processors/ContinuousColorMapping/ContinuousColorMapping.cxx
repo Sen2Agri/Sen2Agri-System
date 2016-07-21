@@ -21,6 +21,8 @@
 #include "otbVectorImage.h"
 
 #include "ContinuousColorMappingFilter.hxx"
+#include "otbStreamingStatisticsVectorImageFilter.h"
+#include <boost/algorithm/string.hpp>
 
 namespace otb
 {
@@ -32,6 +34,9 @@ namespace Wrapper
 class ContinuousColorMapping : public Application
 {
 public:
+
+    typedef otb::StreamingStatisticsVectorImageFilter<FloatVectorImageType> StreamingStatisticsVectorImageFilterType;
+
     typedef ContinuousColorMapping Self;
     typedef Application Superclass;
     typedef itk::SmartPointer<Self> Pointer;
@@ -67,6 +72,10 @@ private:
         AddParameter(ParameterType_Int, "rgbimg", "Specifies if the input image has at least 3 bands that will be translated to RGB");
         SetDefaultParameterInt("rgbimg", 0);
         MandatoryOff("rgbimg");
+
+        AddParameter(ParameterType_Int, "isrange", "Specifies if the lines in the file contain ranges or single values");
+        SetDefaultParameterInt("isrange", 1);
+        MandatoryOff("isrange");
 
         SetDocExampleParameterValue("in", "in.tif");
         SetDocExampleParameterValue("out", "out.tif");
@@ -106,15 +115,18 @@ private:
             }
         } else {
             if(bIsRGBImage) {
-                bandIdx.emplace_back(2);
-                bandIdx.emplace_back(1);
                 bandIdx.emplace_back(0);
+                bandIdx.emplace_back(1);
+                bandIdx.emplace_back(2);
             } else {
                 bandIdx.emplace_back(0);
             }
         }
 
-        auto &&ramp = bIsRGBImage ? ReadRGBColorMap(mapFile) : ReadColorMap(mapFile);
+        bool bIsRangeLineRepresentation = (GetParameterInt("isrange") != 0);
+        auto &&ramp = bIsRGBImage ? ReadRGBColorMap(in, mapFile) :
+                                    (bIsRangeLineRepresentation ? ReadColorMap(mapFile) :
+                                                                  ReadSimpleLut(mapFile));
 
         m_Filter = ContinuousColorMappingFilter::New();
         m_Filter->SetInput(in);
@@ -127,6 +139,40 @@ private:
 
         SetParameterOutputImagePixelType("out", ImagePixelType_uint8);
         SetParameterOutputImage("out", m_Filter->GetOutput());
+    }
+
+    static Ramp ReadSimpleLut(std::istream &mapFile)
+    {
+        Ramp ramp;
+
+        float min;
+        uint32_t rMin, gMin, bMin;
+        // if we have single values, the range is from min to min+1
+        // and the RGB max values are the same as the minumum values
+        std::string line;
+        while (std::getline(mapFile, line))
+        {
+            boost::trim_left(line);
+            if (line[0] != '#')
+            {
+                std::istringstream iss(line);
+                //while the iss is a number
+                if (iss >> min >> rMin >> gMin >> bMin)
+                {
+                    itk::RGBPixel<uint8_t> minColor, maxColor;
+                    minColor[0] = static_cast<uint8_t>(rMin);
+                    minColor[1] = static_cast<uint8_t>(gMin);
+                    minColor[2] = static_cast<uint8_t>(bMin);
+                    maxColor[0] = static_cast<uint8_t>(rMin);
+                    maxColor[1] = static_cast<uint8_t>(gMin);
+                    maxColor[2] = static_cast<uint8_t>(bMin);
+
+                    ramp.emplace_back(min, min+1, minColor, maxColor);
+                }
+            }
+        }
+
+        return ramp;
     }
 
     static Ramp ReadColorMap(std::istream &mapFile)
@@ -151,19 +197,31 @@ private:
         return ramp;
     }
 
-    Ramp ReadRGBColorMap(std::istream &mapFile)
+    Ramp ReadRGBColorMap(FloatVectorImageType::Pointer in, std::istream &mapFile)
     {
         Ramp ramp;
 
+        StreamingStatisticsVectorImageFilterType::Pointer stats = StreamingStatisticsVectorImageFilterType::New();
+        stats->SetInput(in);
+        stats->Update();
+        // we are interested only in the maximum as the minimum will be considered always 0
+        auto pixelMaxVals = stats->GetMaximum();
+
         float min, max;
+        size_t i = 0;
         uint32_t rMin, rMax;
         while (mapFile >> min >> max >> rMin >> rMax)
         {
             itk::RGBPixel<uint8_t> minColor, maxColor;
             minColor[0] = static_cast<uint8_t>(rMin);
             maxColor[0] = static_cast<uint8_t>(rMax);
-
+            // get the minimum between the maximum value specified in map file and
+            // the maximum value found in image
+            if(i < pixelMaxVals.Size()) {
+                max = std::min(max, (float)pixelMaxVals[i]);
+            }
             ramp.emplace_back(min, max, minColor, maxColor);
+            i++;
         }
         if(ramp.size() < 3) {
             itkExceptionMacro("Invalid number of rows in map file. It should be at least 3 but we found only " << ramp.size());
