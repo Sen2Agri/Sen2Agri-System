@@ -3,24 +3,40 @@
   <operatorClass>org.esa.snap.core.gpf.operators.tooladapter.ToolAdapterOp</operatorClass>
   <alias>VegetationStatusProcessor</alias>
   <label>Vegetation Status Processor</label>
-  <version>1.0</version>
-  <description>Sen2Agri LAI Processor</description>
-  <authors>Ramona Manda</authors>
-  <copyright>(C)2015 CS ROMANIA</copyright>
+  <version>1.3</version>
+  <description>Sen2Agri L3B LAI Processor</description>
+  <authors>Ramona Manda, Cosmin Cara</authors>
+  <copyright>(C)2016 Sen2Agri Consortium</copyright>
   <internal>false</internal>
   <autoWriteSuppressed>false</autoWriteSuppressed>
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>lai_retrieve_processing.py</mainToolFileLocation>
-  <workingDir>$HOME</workingDir>
-  <templateFileLocation>VegetationStatusProcessor-template.vm</templateFileLocation>
+  <mainToolFileLocation>$SCRIPT_PATH\lai_retrieve_processing.py</mainToolFileLocation>
+  <workingDir>$WORKING_DIR_PATH</workingDir>
+  <template>
+    <file>VegetationStatusProcessor-template.vm</file>
+  </template>
   <progressPattern>(?:.+): (\d{1,3})% (?:.+)</progressPattern>
   <errorPattern>ERROR: (.+)</errorPattern>
   <variables>
+    <osvariable>
+      <key>PYTHON_BIN</key>
+      <value>python.exe</value>
+      <isShared>false</isShared>
+      <windows>python.exe</windows>
+      <linux></linux>
+      <macosx>/bin/python2.7</macosx>
+      <isTransient>false</isTransient>
+    </osvariable>
     <variable>
-      <key>HOME</key>
-      <value></value>
+      <key>SCRIPT_PATH</key>
+      <value>/usr/bin</value>
+      <isShared>false</isShared>
+    </variable>
+    <variable>
+      <key>WORKING_DIR_PATH</key>
+      <value>/mnt/archive/temp</value>
       <isShared>false</isShared>
     </variable>
   </variables>
@@ -33,93 +49,63 @@
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>resolution</name>
       <dataType>java.lang.Integer</dataType>
-      <defaultValue>20</defaultValue>
-      <description></description>
-      <valueSet/>
+      <defaultValue>10</defaultValue>
+      <description>The LAI product resolution</description>
+      <label>Resolution</label>
+      <unit>m</unit>
+      <valueSet>
+        <string>10</string>
+        <string>20</string>
+      </valueSet>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>inputFiles</name>
       <dataType>[Ljava.io.File;</dataType>
-      <description>the list of files representing the metadata files of the products</description>
+      <description>The list of files representing the metadata files of the products</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>RSRFile</name>
-      <dataType>java.io.File</dataType>
-      <defaultValue>/usr/share/sen2agri/landsat8.rsr</defaultValue>
-      <description>file containing spectral response of a sensor</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>RSRConfigFile</name>
-      <dataType>java.io.File</dataType>
-      <defaultValue>/usr/share/sen2agri/rsr_cfg.txt</defaultValue>
-      <description>The RSR configuration file each mission (/path/filename)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>tileId</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>T0000</defaultValue>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>modelsFolder</name>
-      <dataType>java.lang.String</dataType>
-      <description></description>
+      <dataType>java.io.File</dataType>
+      <defaultValue>\</defaultValue>
+      <description>The folder where the models are located</description>
+      <label>Models Folder</label>
+      <unit></unit>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
+      <parameterType>FolderParameter</parameterType>
     </parameter>
     <parameter>
       <name>generateModel</name>
       <dataType>java.lang.String</dataType>
-      <defaultValue>NO</defaultValue>
+      <defaultValue>YES</defaultValue>
       <description>Generate the model (YES/NO)</description>
-      <unit></unit>
+      <label>Generate Model</label>
       <valueSet>
         <string>YES</string>
         <string>NO</string>
       </valueSet>
-      <pattern></pattern>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>generateReprocessedLai</name>
       <dataType>java.lang.String</dataType>
-      <defaultValue>NO</defaultValue>
+      <defaultValue>YES</defaultValue>
       <description>Generate the reprocessed N-Days LAI (YES/NO)</description>
-      <label></label>
+      <label>Generate Reprocessed LAI</label>
       <valueSet>
         <string>YES</string>
         <string>NO</string>
@@ -127,14 +113,13 @@
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>generateFittedLai</name>
       <dataType>java.lang.String</dataType>
-      <defaultValue>NO</defaultValue>
+      <defaultValue>YES</defaultValue>
       <description>Generate the Fitted LAI (YES/NO)</description>
-      <interval></interval>
+      <label>Generate Fitted LAI</label>
       <valueSet>
         <string>YES</string>
         <string>NO</string>
@@ -142,37 +127,13 @@
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>generateMonodate</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>NO</defaultValue>
-      <unit></unit>
-      <valueSet>
-        <string>YES</string>
-        <string>NO</string>
-      </valueSet>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>siteId</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>0</defaultValue>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
   </parameters>
-  <source>user</source>
+  <source>package</source>
   <isSystem>false</isSystem>
   <isHandlingOutputName>true</isHandlingOutputName>
   <sourceProductDescriptors/>
   <targetPropertyDescriptors/>
   <numSourceProducts>0</numSourceProducts>
+  <templateType>VELOCITY</templateType>
 </operator>

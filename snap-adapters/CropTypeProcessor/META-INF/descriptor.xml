@@ -3,24 +3,40 @@
   <operatorClass>org.esa.snap.core.gpf.operators.tooladapter.ToolAdapterOp</operatorClass>
   <alias>CropTypeProcessor</alias>
   <label>Crop Type Processor</label>
-  <version>1.0</version>
-  <description>Sen2Agri Crop Type Processor</description>
-  <authors>Cosmin Cara</authors>
-  <copyright>(C)2015 CS ROMANIA</copyright>
+  <version>1.3</version>
+  <description>Sen2Agri L4B Crop Type Processor</description>
+  <authors>Ramona Manda, Cosmin Cara</authors>
+  <copyright>(C)2016 Sen2Agri Consortium</copyright>
   <internal>false</internal>
   <autoWriteSuppressed>false</autoWriteSuppressed>
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>CropType.py</mainToolFileLocation>
-  <workingDir>$HOME</workingDir>
-  <templateFileLocation>CropTypeProcessor-template.vm</templateFileLocation>
+  <mainToolFileLocation>$SCRIPT_PATH\CropType.py</mainToolFileLocation>
+  <workingDir>$WORKING_DIR_PATH</workingDir>
+  <template>
+    <file>CropTypeProcessor-template.vm</file>
+  </template>
   <progressPattern>(?:.+): (\d{1,3})% (?:.+)</progressPattern>
   <errorPattern>ERROR: (.+)</errorPattern>
   <variables>
     <variable>
-      <key>HOME</key>
-      <value></value>
+      <key>SCRIPT_PATH</key>
+      <value>/usr/bin</value>
+      <isShared>false</isShared>
+    </variable>
+    <osvariable>
+      <key>PYTHON_BIN</key>
+      <value>python.exe</value>
+      <isShared>false</isShared>
+      <windows>python.exe</windows>
+      <linux>/bin/python2.7</linux>
+      <macosx>/bin/python2.7</macosx>
+      <isTransient>false</isTransient>
+    </osvariable>
+    <variable>
+      <key>WORKING_DIR_PATH</key>
+      <value>/mnt/archive/temp</value>
       <isShared>false</isShared>
     </variable>
   </variables>
@@ -33,73 +49,51 @@
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>referencePolygons</name>
       <dataType>java.io.File</dataType>
-      <defaultValue>UA_KYIV_LC_FO_2013.shp</defaultValue>
+      <defaultValue>\</defaultValue>
       <description>The reference polygons</description>
+      <label>Reference Polygons</label>
       <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
+      <notNull>true</notNull>
+      <notEmpty>true</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>ratio</name>
-      <dataType>java.lang.Float</dataType>
-      <defaultValue>0.75</defaultValue>
-      <description>The ratio between the validation and training polygons</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>samplingRate</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>5</defaultValue>
       <description>The sampling rate for the temporal series, in days</description>
+      <label>Sampling Rate</label>
+      <unit>day</unit>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>classifier</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>rf</defaultValue>
-      <description>The classifier used for training (either rf or svm)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>randomSeed</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>0</defaultValue>
       <description>The random seed used for training</description>
+      <label>Random Seed</label>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>cropMask</name>
       <dataType>java.io.File</dataType>
-      <defaultValue>/home/ramonag/sen2agri/workingDir/CropMask/out/crop_mask.tif</defaultValue>
+      <defaultValue>\</defaultValue>
       <description>The crop mask</description>
+      <label>Crop Mask</label>
       <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
+      <notNull>true</notNull>
+      <notEmpty>true</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>inputFiles</name>
@@ -109,95 +103,52 @@
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>pixelSize</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>20</defaultValue>
       <description>The size, in meters, of a pixel (default 10)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>trainingNoTrees</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>100</defaultValue>
-      <description>The number of trees used for training (default 100)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>maxDepthTrees</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>25</defaultValue>
-      <description>maximum depth of the trees used for Random Forest classifier (default 25)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>minNoSamples</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>5</defaultValue>
-      <description>minimum number of samples in each node used by the classifier (default 5)</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>mission</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>SPOT</defaultValue>
-      <description>The main mission for the series</description>
+      <label>Pixel Size</label>
+      <unit>m</unit>
       <valueSet>
-        <string>SPOT</string>
-        <string>LANDSAT</string>
-        <string>SENTINEL</string>
+        <string>10</string>
+        <string>20</string>
+        <string>30</string>
+        <string>60</string>
       </valueSet>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>tempResampling</name>
+      <name>t0</name>
       <dataType>java.lang.String</dataType>
-      <defaultValue>gapfill</defaultValue>
-      <description>The temporal resampling mode (default gapfill)</description>
-      <valueSet>
-        <string>gapfill</string>
-        <string>resample</string>
-      </valueSet>
+      <defaultValue>20130206</defaultValue>
+      <description>Start date</description>
+      <label>Start Date</label>
+      <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
-      <name>siteId</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>0</defaultValue>
-      <description>The site ID</description>
+      <name>tend</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>20130616</defaultValue>
+      <description>End date</description>
+      <label>End Date</label>
       <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
   </parameters>
-  <source>user</source>
+  <source>package</source>
   <isSystem>false</isSystem>
   <isHandlingOutputName>true</isHandlingOutputName>
   <sourceProductDescriptors/>
   <targetPropertyDescriptors/>
   <numSourceProducts>0</numSourceProducts>
+  <templateType>VELOCITY</templateType>
 </operator>

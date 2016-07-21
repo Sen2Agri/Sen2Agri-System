@@ -3,24 +3,40 @@
   <operatorClass>org.esa.snap.core.gpf.operators.tooladapter.ToolAdapterOp</operatorClass>
   <alias>VegetationPhenoProcessor</alias>
   <label>Vegetation Phenology Processor</label>
-  <version>1.0</version>
+  <version>1.3</version>
   <description>Sen2Agri Vegetation Phenology Processor</description>
-  <authors>Ramona Manda</authors>
-  <copyright>(C)2015 CS ROMANIA</copyright>
+  <authors>Ramona Manda, Cosmin Cara</authors>
+  <copyright>(C)2016 Sen2Agri Consortium</copyright>
   <internal>false</internal>
   <autoWriteSuppressed>false</autoWriteSuppressed>
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>pheno_processing.py</mainToolFileLocation>
-  <workingDir>$HOME</workingDir>
-  <templateFileLocation>VegetationPhenoProcessor-template.vm</templateFileLocation>
+  <mainToolFileLocation>$SCRIPT_PATH\pheno_processing.py</mainToolFileLocation>
+  <workingDir>$WORKING_DIR_PATH</workingDir>
+  <template>
+    <file>VegetationPhenoProcessor-template.vm</file>
+  </template>
   <progressPattern>(?:.+): (\d{1,3})% (?:.+)</progressPattern>
   <errorPattern>ERROR: (.+)</errorPattern>
   <variables>
+    <osvariable>
+      <key>PYTHON_BIN</key>
+      <value>python.exe</value>
+      <isShared>false</isShared>
+      <windows>python.exe</windows>
+      <linux></linux>
+      <macosx>/bin/python2.7</macosx>
+      <isTransient>false</isTransient>
+    </osvariable>
     <variable>
-      <key>HOME</key>
-      <value></value>
+      <key>WORKING_DIR_PATH</key>
+      <value>/mnt/archive/temp</value>
+      <isShared>false</isShared>
+    </variable>
+    <variable>
+      <key>SCRIPT_PATH</key>
+      <value>/usr/bin</value>
       <isShared>false</isShared>
     </variable>
   </variables>
@@ -33,7 +49,6 @@
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>inputFiles</name>
@@ -43,34 +58,30 @@
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
-    </parameter>
-    <parameter>
-      <name>tileId</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>T0000</defaultValue>
-      <description>Tile id</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
     <parameter>
       <name>resolution</name>
       <dataType>java.lang.Integer</dataType>
+      <defaultValue>20</defaultValue>
       <description>Resample to this resolution. Use the same resolution as input files if you don&apos;t want any resample</description>
-      <valueSet/>
+      <label>Resolution</label>
+      <unit>m</unit>
+      <valueSet>
+        <string>10</string>
+        <string>20</string>
+        <string>30</string>
+        <string>60</string>
+      </valueSet>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
-      <toolParameterDescriptors/>
     </parameter>
   </parameters>
-  <source>user</source>
+  <source>package</source>
   <isSystem>false</isSystem>
   <isHandlingOutputName>true</isHandlingOutputName>
   <sourceProductDescriptors/>
   <targetPropertyDescriptors/>
   <numSourceProducts>0</numSourceProducts>
+  <templateType>VELOCITY</templateType>
 </operator>
