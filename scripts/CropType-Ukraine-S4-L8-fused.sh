@@ -2,9 +2,7 @@
 
 source set_build_folder.sh
 
-./CropTypeFused.py \
-    -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp \
-    -input \
+FILES=( \
     /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130206_N2A_EUkraineD0000B0000.xml \
     /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130226_N2A_EUkraineD0000B0000.xml \
     /mnt/Sen2Agri_DataSets/L2A/Spot4-T5/Ukraine/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000/SPOT4_HRVIR1_XS_20130318_N2A_EUkraineD0000B0000.xml \
@@ -33,6 +31,24 @@ source set_build_folder.sh
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20130822_L8_181_025/EUkraineS2A_20130822_L8_181_025.HDR \
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20131110_L8_181_025/EUkraineS2A_20131110_L8_181_025.HDR \
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20131228_L8_181_025/EUkraineS2A_20131228_L8_181_025.HDR \
+)
+
+    # -ecoareas ~/areas.shp \
+./CropTypeFused.py \
+    -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp \
+    -input ${FILES[@]} \
     -rseed 0 -pixsize 20 \
     -outdir /mnt/data/ukraine/Ukraine-type \
-    -buildfolder $BUILD_FOLDER -keepfiles
+    -buildfolder "$BUILD_FOLDER" -keepfiles -crop data -mode train
+./CropTypeFused.py \
+    -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp \
+    -input ${FILES[@]} \
+    -rseed 0 -pixsize 20 \
+    -outdir /mnt/data/ukraine/Ukraine-type \
+    -buildfolder "$BUILD_FOLDER" -keepfiles -crop data -mode classify
+./CropTypeFused.py \
+    -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp \
+    -input ${FILES[@]} \
+    -rseed 0 -pixsize 20 \
+    -outdir /mnt/data/ukraine/Ukraine-type \
+    -buildfolder "$BUILD_FOLDER" -keepfiles -crop data -mode validate
