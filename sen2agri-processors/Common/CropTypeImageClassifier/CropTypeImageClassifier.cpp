@@ -204,6 +204,7 @@ private:
 
     AddParameter(ParameterType_OutputFilename, "outstat", "Statistics file");
     SetParameterDescription("outstat", "Statistics file");
+    MandatoryOff("outstat");
 
     AddParameter(ParameterType_InputImage, "mask", "Input mask");
     SetParameterDescription("mask", "The mask allows to restrict classification of the input image to the area where mask pixel values are greater than 0");
@@ -313,7 +314,7 @@ private:
       MeasurementType variance;
       Application::Pointer app;
 
-      if (!GetParameterEmpty("singletile")) {
+      if (!GetParameterEmpty("singletile") && HasValue("outstat")) {
           app = ApplicationRegistry::CreateApplication("ComputeImagesStatistics");
           if (!app) {
               itkExceptionMacro("Unable to load the ComputeImagesStatistics application");
@@ -336,6 +337,8 @@ private:
           otbAppLogINFO("Computing statistics");
           app->ExecuteAndWriteOutput();
           otbAppLogINFO("Statistics written");
+      } else {
+          otbAppLogINFO("Skipping statistics");
       }
 
       app = otb::Wrapper::ApplicationRegistry::CreateApplication("ImageClassifier");
@@ -355,8 +358,10 @@ private:
       app->EnableParameter("model");
       app->SetParameterString("model", GetParameterString("model"));
 
-      app->EnableParameter("imstat");
-      app->SetParameterString("imstat", GetParameterString("outstat"));
+      if (HasValue("outstat")) {
+        app->EnableParameter("imstat");
+        app->SetParameterString("imstat", GetParameterString("outstat"));
+      }
 
       app->EnableParameter("out");
       app->SetParameterString("out", GetParameterString("out"));

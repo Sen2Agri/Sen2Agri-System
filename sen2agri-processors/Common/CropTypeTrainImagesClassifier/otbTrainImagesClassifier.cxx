@@ -89,6 +89,7 @@ void CropTypeTrainImagesClassifier::DoInit()
 
   AddParameter(ParameterType_OutputFilename, "outstat", "Statistics file");
   SetParameterDescription("outstat", "Statistics file");
+  MandatoryOff("outstat");
 
   AddParameter(ParameterType_InputFilenameList, "il", "Input descriptors");
   SetParameterDescription( "il", "The list of descriptors. They must be sorted by tiles." );
@@ -298,21 +299,6 @@ void CropTypeTrainImagesClassifier::DoExecute()
   // Build a MeasurementVector of variance
   MeasurementType variance;
 
-  auto app = otb::Wrapper::ApplicationRegistry::CreateApplication("ComputeImagesStatistics");
-  if (!app) {
-      itkExceptionMacro("Unable to load the ComputeImagesStatistics application");
-  }
-  if (HasValue("nodatalabel")) {
-      app->EnableParameter("bv");
-      app->SetParameterFloat("bv", GetParameterInt("nodatalabel"));
-  }
-
-  app->EnableParameter("out");
-  app->SetParameterString("out", GetParameterString("outstat"));
-
-  app->EnableParameter("il");
-  auto imageList = dynamic_cast<InputImageListParameter *>(app->GetParameterByKey("il"));
-
   std::vector<FloatVectorImageType::Pointer> images;
   images.reserve(preprocessors->Size());
 
@@ -322,15 +308,37 @@ void CropTypeTrainImagesClassifier::DoExecute()
       auto output = preprocessor->GetOutput();
 
       images.emplace_back(output);
-      imageList->AddImage(output);
   }
-  app->UpdateParameters();
 
-  otbAppLogINFO("Computing statistics");
-  app->ExecuteAndWriteOutput();
-  otbAppLogINFO("Statistics written");
+  if (HasValue("outstat")) {
+      auto app = otb::Wrapper::ApplicationRegistry::CreateApplication("ComputeImagesStatistics");
+      if (!app) {
+          itkExceptionMacro("Unable to load the ComputeImagesStatistics application");
+      }
+      if (HasValue("nodatalabel")) {
+          app->EnableParameter("bv");
+          app->SetParameterFloat("bv", GetParameterInt("nodatalabel"));
+      }
 
-  app = otb::Wrapper::ApplicationRegistry::CreateApplication("TrainImagesClassifierNew");
+      app->EnableParameter("out");
+      app->SetParameterString("out", GetParameterString("outstat"));
+
+      app->EnableParameter("il");
+      auto imageList = dynamic_cast<InputImageListParameter *>(app->GetParameterByKey("il"));
+
+      for (const auto &image : images) {
+          imageList->AddImage(image);
+      }
+      app->UpdateParameters();
+
+      otbAppLogINFO("Computing statistics");
+      app->ExecuteAndWriteOutput();
+      otbAppLogINFO("Statistics written");
+  } else {
+      otbAppLogINFO("Skipping statistics");
+  }
+
+  auto app = otb::Wrapper::ApplicationRegistry::CreateApplication("TrainImagesClassifierNew");
   if (!app) {
         itkExceptionMacro("Unable to load the TrainImagesClassifierNew application");
   }
@@ -439,11 +447,13 @@ void CropTypeTrainImagesClassifier::DoExecute()
       app->SetParameterStringList("io.vd", GetParameterStringList("io.vd"));
   }
 
-  app->EnableParameter("io.imstat");
-  app->SetParameterString("io.imstat", GetParameterString("outstat"));
+  if (HasValue("outstat")) {
+    app->EnableParameter("io.imstat");
+    app->SetParameterString("io.imstat", GetParameterString("outstat"));
+  }
 
   app->EnableParameter("io.il");
-  imageList = dynamic_cast<InputImageListParameter *>(app->GetParameterByKey("io.il"));
+  auto imageList = dynamic_cast<InputImageListParameter *>(app->GetParameterByKey("io.il"));
 
   for (const auto &img : images) {
       imageList->AddImage(img);
