@@ -175,3 +175,4 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.sch
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3e.sched_wait_proc_inputs', NULL, '1', '2015-07-10 17:54:17.288095+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.sched_wait_proc_inputs', NULL, '1', '2015-07-10 17:54:17.288095+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.sched_wait_proc_inputs', NULL, '1', '2015-07-10 17:54:17.288095+03');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.files-remover', NULL, '/usr/bin/rm', '2015-08-24 17:44:38.29255+03');
