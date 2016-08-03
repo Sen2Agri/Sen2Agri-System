@@ -430,10 +430,10 @@ protected:
         std::string rootFolder = extractFolder(filename);
 
         // Get the bands
-        descriptor.bands = getLandsatBands(meta, rootFolder,td);
+        descriptor.bands = getSentinelBands(meta, rootFolder,td);
 
         // Get the mask
-        descriptor.mask = getLandsatMask(meta, rootFolder,td);
+        descriptor.mask = getSentinelMask(meta, rootFolder,td);
     }
 
     // Get the id of the band. Return -1 if band not found.
