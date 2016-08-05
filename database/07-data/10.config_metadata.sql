@@ -54,7 +54,6 @@ INSERT INTO config_metadata VALUES ('processor.l3a.weight.aot.maxaot', 'Maximum 
 INSERT INTO config_metadata VALUES ('processor.l3a.weight.cloud.sigmasmall', 'Standard deviation of gaussian filter for distance to small clouds', 'float', true, 3);
 INSERT INTO config_metadata VALUES ('processor.l3a.weight.cloud.sigmalarge', 'Standard deviation of gaussian filter for distance to large clouds', 'float', true, 3);
 INSERT INTO config_metadata VALUES ('processor.l3a.weight.total.weightdatemin', 'Minimum weight at edge of the synthesis time window', 'float', true, 3);
-INSERT INTO config_metadata VALUES ('processor.l3a.weight.total.bandsmapping', 'The bands mapping for the master and secondary product types', 'file', true, 3);
 INSERT INTO config_metadata VALUES ('executor.module.path.composite-mask-handler', 'Composite Mask Handler path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.composite-preprocessing', 'Composite Mask Handler path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.composite-weigh-aot', 'Composite Mask Handler path', 'file', true, 8);
