@@ -84,7 +84,6 @@ div.panel table.table td {
 	font-size: 10px;
 }
 
-div.panel table#history_jobs td,
 div#pnl_current_jobs table td
 {
 	padding: 4px;
@@ -557,55 +556,19 @@ input.right {
 }
 
 /* SITES related styles --------------------------------------------- */
-div.create-site .panel-heading {
-	margin-top: -10px;
-}
-div.create-site table.table {
-	margin: 0px;
-}
-div.create-site table.table tr:first-child th {
-	font-weight: 700;
-}
-div.create-site table.table tr:first-child th:last-child {
-	text-align: center;
-}
-div.create-site table.table th {
-	background-color: #E9E9E9;
-	border: 0px solid transparent;
-	text-align: left;
-	font-weight: 400;
-	padding: 2px 8px;
-}
-div.create-site table.table tr.editing {
-	background-color: #8BB245;
-	color: white;
-}
-div.create-site table.table tr:hover {
-	background-color: #E7F3D0;
-}
-div.create-site table.table td {
-	font-size: 12px;
-	line-height: 0.9;
-	text-align: left;
-	padding: 3px 8px;
-}
-div.create-site table.table td:last-child {
-	text-align: center;
-}
-div.create-site table.table tr td a {
-	cursor: pointer;
-	color: #009C00;
-	font-size: 1.1em;
-	font-weight: 700;
-	cursor: pointer;
-	text-decoration: underline;
-}
-div.create-site table.table tr td a:hover {
-	color: #5CB85C;
-}
-div.create-site table.table tr.editing td a {
-	color: white;
-}
+div.create-site .panel-heading{margin-top:-10px}
+div.create-site table.table{margin:0px}
+div.create-site table.table tr:first-child th{font-weight:700}
+div.create-site table.table tr:first-child th:last-child{text-align:center}
+div.create-site table.table th{background-color:#E9E9E9;border:0px solid transparent;text-align:left;font-weight:400;padding:2px 8px;}
+div.create-site table.table tr.editing{background-color:#8BB245;color:white;}
+div.create-site table.table tr:hover{background-color:#E7F3D0;}
+div.create-site table.table td{font-size:12px;line-height:0.9;text-align:left;padding:3px 8px;}
+div.create-site table.table td:last-child{text-align:center;}
+div.create-site table.table tr td a{cursor:pointer;color:#009C00;font-size:1.1em;font-weight:700;cursor:pointer;text-decoration:underline;}
+div.create-site table.table tr td a:hover{color:#5CB85C;}
+div.create-site table.table tr.editing td a{color:white;}
+div.create-site .bootstrap-switch.bootstrap-switch-mini span{padding:0px;font-size:10px;}
 
 div.add-edit-site form {
 	width: 500px;
@@ -652,13 +615,7 @@ input.add-edit-btn:active,
 	background-color: #7EAF50;
 	color:yellow;
 }
-
-div.create-site .bootstrap-switch.bootstrap-switch-mini span {
-	padding: 0px;
-	font-size: 10px;
-}
-
-/* --------------------------------------------- */
+/* End SITES related styles --------------------------------------------- */
 
 .panel {
 	position: relative;
@@ -688,21 +645,50 @@ div.create-site .bootstrap-switch.bootstrap-switch-mini span {
 	text-decoration: underline;
 }
 
-.config div.panel-heading {
-	padding: 0px;
-}
-.config h4.panel-title {
-}
-.config h4.panel-title a:hover {
-}
-.config h4.panel-title a {
-	display: inline-block;
-	width: 98%;
-	text-decoration: none;
-	padding: 10px;
-    background-color: #dbecb9;
-}
-.config h4.panel-title a:hover {
-    background-color: #bcd68c;
-}
+.config div.panel-heading{padding:0px}
+.config h4.panel-title a,.config h4.panel-title span{display:inline-block;width:98%;text-decoration:none;padding:10px;background-color:#dbecb9}
+.config h4.panel-title a:hover{background-color:#bcd68c}
 
+div.for-table h4.panel-title span,
+div.for-table h4.panel-title a{display:inline-block;width:98%;text-decoration:none;padding:10px;background-color:#dbecb9;font-weight:700}
+div.for-table h4.panel-title a:hover{background-color:#bcd68c}
+div.for-table table.table{margin:0px}
+div.for-table table.table th{background-color:#E9E9E9;border:0px solid transparent;text-align:left;font-weight:700;padding:8px 4px}
+div.for-table table.table tr:hover{background-color:#E7F3D0}
+div.for-table table.table tr td{font-size:0.8em;line-height:1.5;text-align:left;padding:3px 8px}
+div.for-table table.table tr td a{cursor:pointer;color:#009C00;font-size:1.1em;font-weight:700;cursor:pointer;text-decoration:underline}
+div.for-table table.table tr td a:hover{color:#5CB85C}
+
+/* ---------------- PAGINATION ---------------- */
+.pagination{font-size:14px;display:inline-block;position:relative;zoom:1;*display:inline;width:100%;margin:0}
+.pagination label.rows_per_page{float:left;margin:0;padding:2px;font-weight:700}
+.pagination select.rows_per_page{width:50px;height:20px;border:1px solid #bdcbbd;padding:2px;margin-left:5px;font-weight:400}
+.pagination ul.pages{list-style:none;float:left;margin:0;padding:0;white-space:nowrap;float:right}
+.pagination ul.pages li{float:left;padding:0;cursor:pointer;margin:0 0 0 2px}
+.pagination ul.pages li a{width:16px;height:15px;display:inline-block;text-align:center;text-decoration:none;color:#555555;margin:0;border:1px solid #afbeb0;background-color:#e6eae5}
+.pagination ul.pages li a span{-webkit-touch-callout:none;-webkit-user-select:none;-khtml-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
+.pagination ul.pages li.number a{padding:5px 7px}
+.pagination ul.pages li a:hover{border:1px solid #8c9b8c}
+.pagination ul.pages li.current a,.pagination ul.pages li.current a:hover{color:#2c3635;border:1px solid #8c9b8c;background:#fff;cursor:default;font-weight:700}
+.pagination ul.pages li.dotdotdot a{border:1px solid #bdcbbd;background-color:#d2d8d0;padding:5px 1px;font-weight:700}
+.pagination ul.pages li.dotdotdot a:hover{border:1px solid #8c9b8c;background:#555555;color:#fff}
+.pagination ul.pages li.prev{margin-left:10px}
+.pagination ul.pages li.next{margin-left:2px}
+.pagination ul.pages li.prev a,.pagination ul.pages li.next a{width:50px}
+.pagination ul.pages li.prev a{padding:5px 0 5px 15px;border-radius:8px 0 0 8px;background:#e6eae5 url("/scripts/pager/images/prev-pale.png") no-repeat left 0}
+.pagination ul.pages li.next a{padding:5px 15px 5px 0;border-radius:0 8px 8px 0;background:#e6eae5 url("/scripts/pager/images/next-pale.png") no-repeat right 0}
+.pagination ul.pages li.prev a:hover,.pagination ul.pages li.next a:hover{border:1px solid #8c9b8c;color:#555555}
+.pagination ul.pages li.prev a:hover{background-position:left -25px}
+.pagination ul.pages li.snext a:hover{background-position:right -25px}
+.pagination ul.pages li.prev a:active{background-position:left -50px}
+.pagination ul.pages li.next a:active{background-position:right -50px}
+.pagination ul.pages li.prev a.disabled,.pagination ul.pages li.prev a.disabled:hover,.pagination ul.pages li.next a.disabled,.pagination ul.pages li.next a.disabled:hover{color:#93aa99;border:1px solid #bdcbbd;cursor:default}
+.pagination ul.pages li.prev a.disabled,.pagination ul.pages li.prev a.disabled:hover{background:#e6eae5 url("/scripts/pager/images/prev.png") no-repeat left -50px}
+.pagination ul.pages li.next a.disabled,.pagination ul.pages li.next a.disabled:hover{background:#e6eae5 url("/scripts/pager/images/next.png") no-repeat right -50px}
+.pagination div.gotobox{display:block;font-size:12px;width:140px;border:1px solid #afbeb0;z-index:99;margin:0;padding:0 4px 7px 7px;position:absolute;top:36px;border-radius:4px;background-color:#edf1ec}
+.pagination div.gotobox div.text{padding:0;float:left;margin:5px 3px}
+.pagination div.gotobox a.smbutton-go{display:inline-block;margin:0 3px 0 0 !important;padding:5px 8px !important;border-radius:0 5px 5px 0}
+.pagination div.gotobox a.smbutton-green{background:#e6eae5 url("/scripts/pager/images/next-pale.png") no-repeat left 0;border:1px solid #8c9b8c;color:#555555}
+.pagination div.gotobox input[type="text"]{display:block;float:left;margin:0;letter-spacing:-0.25px;border:1px solid #8c9b8c;border-right-width:0;padding:5px 4px;background:#f7f7f7;border-radius:3px 0 0 3px;width:22px;vertical-align:top}
+.pagination div.gotobox div.uparrow{background:url("/scripts/pager/images/gotobox-uparrow.png") no-repeat top center;height:7px;position:relative;display:block;float:left;top:-7px;width:100%;margin:0}
+/* ---------------- END PAGINATION ---------------- */

@@ -1,268 +1,183 @@
 <?php include 'master.php'; ?>
 <?php
-if (! (empty ( $_SESSION ['siteId'] ))) { // not admin
-		header("Location: monitoring_user.php");
-		exit();
-	}
-
 function select_option() {
-	if (empty ( $_SESSION ['siteId'] )) { 
-		 // if admin
-		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-		$sql = "SELECT * FROM sp_get_sites()";
-		$result = pg_query ( $db, $sql ) or die ( "Could not execute." );
-		
+	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
+	if (empty ( $_SESSION ['siteId'] )) {
+		// admin
+		$sql         = "SELECT * FROM sp_get_sites()";
+		$result      = pg_query ( $db, $sql ) or die ( "Could not execute." );
 		$option_site = "<option value=\"0\" selected>Select a site...</option>";
-		while ( $row = pg_fetch_row ( $result ) ) {
-			$option = "<option value=\"$row[0]\">" . $row [1] . "</option>";
-			$option_site = $option_site . $option;
-		}
-		echo $option_site;
+	} else {
+		// not admin
+		$sql         = "SELECT * FROM sp_get_sites($1)";
+		$result      = pg_query_params ( $db, $sql, array ($_SESSION ['siteId']) ) or die ( "Could not execute." );
+		$option_site = "";
 	}
-}
-
-function statistics_admin(){
-	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-	$result_downloads ="";
-	$result_downloads = pg_query_params ( $db, "SELECT * FROM sp_get_dashboard_downloader_history(null)", array () ) or die ( "Could not execute." );
-	
-	$table="";
-	while ( $row = pg_fetch_row ( $result_downloads ) ) {
-
-		$td = "<td>" . $row [1] . "</td>";
-		$table = $table . $td;
-	}
-	echo $table;
-}
-
-function current_downloads_admin(){
-	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-	$result="";
-	$result = pg_query_params ( $db, "SELECT * FROM sp_get_dashboard_current_downloads(null)", array () ) or die ( "Could not execute." );
-	
-	$tr_current ="";
 	while ( $row = pg_fetch_row ( $result ) ) {
-		$tr = "<tr>".
-				"<td>". $row[0]."</td>".
-				"<td>". $row[1]."</td>".
-				"<td>". $row[2]."</td>".
-				"<td>". $row[3]."</td>".
-			"</tr>";
-		$tr_current = $tr_current . $tr;
+		$option = "<option value=\"$row[0]\">" . $row [1] . "</option>";
+		$option_site = $option_site . $option;
 	}
-	echo $tr_current;
-}
-function get_history_jobs_admin(){
-	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-	$result="";
-	$result = pg_query_params ( $db, "SELECT * FROM sp_get_job_history(null, 1)", array () ) or die ( "Could not execute." );
-	
-	$tr_current ="";
-	while ( $row = pg_fetch_row ( $result ) ) {
-		$tr = "<tr>".
-				"<td>". $row[0]."</td>".
-				"<td>". $row[1]."</td>".
-				"<td>". $row[2]."</td>".
-				"<td>". $row[3]."</td>".
-				"<td>". $row[4]."</td>".
-				"<td>". $row[5]."</td>".
-			"</tr>";
-		$tr_current = $tr_current . $tr;
-	}
-	echo $tr_current;
+	echo $option_site;
 }
 ?>
+
 <div id="main">
 	<div id="main2">
 		<div id="main3">
-			<!-- main -->
-			<div class="panel panel-default">
-				<div class="panel-heading">Monitoring</div>
-				<div class="panel-body">
-					
-					<div class="row">
-						<div class="col-md-2">
-							<!-- select site -->
-							<div class="form-group form-group-sm">
-								<select class="form-control" name="site_select"
-										onchange="siteInfo(this.value); siteInfoCurrent(this.value); siteJobs(this.value, 1);">
-									<?php select_option();?>
-								</select>
-							</div>
-							<!-- end select site -->
-						</div>
+			<!-- Select Site -->
+			<div class="row">
+				<div class="col-md-2">
+					<div class="form-group form-group-sm">
+						<select class="form-control" name="site_select" onchange="siteInfo(); siteInfoCurrent(); siteJobs(1);">
+							<?php select_option();?>
+						</select>
 					</div>
-					
-					<!-------------- Download statistics ---------------->
-						<div class="panel panel-default">
-							<div class="panel-heading">Download statistics</div>
-							<table class="table full_width">
-								<thead>
-									<tr>
-										<th>Downloads in progress</th>
-										<th>Successful downloads</th>
-										<th>Failed downloads</th>
-									</tr>
-								</thead>
-								<tbody >
-								
-									<tr id="refresh_statistics">
-										<?php statistics_admin();?>
-									</tr>
-									
-								</tbody>								
-							</table>
-						</div>
-						<!-------------- End Download statistics ---------------->
-						
-						<!-------------- Current processing details ---------------->
-						<div class="panel panel-default">
-							<div class="panel-heading">Current downloads</div>
-							<div class="panel-body">
-								<table class="table full_width" style="text-align: left">
-									<thead>
-										<tr>
-											<th>Site</th>
-											<th>Product</th>
-											<th>Product Type</th>
-											<th>Status modified</th>
-										</tr>
-									</thead>
-									<tbody id="refresh_downloading">
-										<?php current_downloads_admin();?>
-									</tbody>
-								</table>
-							</div>
-						</div>
-						<!-------------- Current processing details ---------------->
-						
-						<!-------------- Job history ---------------->
-						<div class="panel panel-default">
-							<div class="panel-heading">Current downloads</div>
-							<div style="float: right; padding: 10px;">
-								<button id="page_move_first" type="button" class="btn btn-default" onclick="move_to_first_jobs_page();">&lt;&lt;</button>
-								<button id="page_move_prev"  type="button" class="btn btn-default" onclick="move_to_previous_jobs_page();">Previous Page</button>
-								<button id="page_current"    type="button" class="btn btn-default" style="font-weight: 700;">1</button>
-								<button id="page_move_next"  type="button" class="btn btn-default" onclick="move_to_next_jobs_page()">Next Page</button>
-								<button id="page_move_last"  type="button" class="btn btn-default disabled">&gt;&gt;</button>
-							</div>
-							<div class="panel-body">
-								<table class="table full_width" style="text-align: left" id="history_jobs">
-									<thead>
-										<tr>
-											<th>Job ID</th>
-											<th>End timestamp</th>
-											<th>Processor</th>
-											<th>Site</th>
-											<th>Status</th>
-											<th>Start type</th>
-										</tr>
-									</thead>
-									<tbody id="refresh_jobs">
-										<?php get_history_jobs_admin();?>
-									</tbody>
-								</table>
-							</div>
-						</div>
-						<!-------------- Job history ---------------->
 				</div>
 			</div>
-			<!-- main -->
+			<!-- End Select Site -->
+			
+			<!-------------- Download statistics ---------------->
+			<div class="panel panel-default config for-table">
+				<div class="panel-heading"><h4 class="panel-title"><span>Download statistics</span></h4></div>
+				<div class="panel-body">
+					<table class="table table-striped">
+						<thead>
+							<tr>
+								<th>Downloads in progress</th>
+								<th>Successful downloads</th>
+								<th>Failed downloads</th>
+							</tr>
+						</thead>
+						<tbody >
+							<tr id="refresh_statistics">
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+			
+			<!-------------- Current processing details ---------------->
+			<div class="panel panel-default config for-table">
+				<div class="panel-heading"><h4 class="panel-title"><span>Current downloads</span></h4></div>
+				<div class="panel-body">
+					<table class="table table-striped" style="text-align: left">
+						<thead>
+							<tr>
+								<th>Site</th>
+								<th>Product</th>
+								<th>Product Type</th>
+								<th>Status modified</th>
+							</tr>
+						</thead>
+						<tbody id="refresh_downloading">
+						</tbody>
+					</table>
+				</div>
+			</div>
+			
+			<!-------------- Job history ---------------->
+			<div class="panel panel-default config for-table">
+				<div class="panel-heading"><h4 class="panel-title"><span>Jobs history</span></h4></div>
+				<div class="panel-body">
+					<div class="pagination">
+						<label class="rows_per_page" for="rows_per_page">Rows/page:
+							<select class="rows_per_page" name="rows_per_page" id="rows_per_page" onchange="pagingGo(1);">
+								<option value="10" selected>10</option>
+								<option value="20">20</option>
+								<option value="50">50</option>
+							</select>
+						</label>
+						<ul class="pages"></ul>
+						<div class="gotobox hidden" id="gotobox">
+							<div class="uparrow"></div>
+							<div class="text">Go to page:</div> 
+							<input type="text" maxlength="3" name="gotobox-input" id="gotobox-input" value=""/>
+							<a href="javascript:;" class="smbutton-go smbutton-green" onclick='pagingGoTo();'>Go</a>&nbsp;
+						</div>
+					</div>
+					<table class="table table-striped" style="text-align: left" id="history_jobs">
+						<thead>
+							<tr>
+								<th>Job ID</th>
+								<th>End timestamp</th>
+								<th>Processor</th>
+								<th>Site</th>
+								<th>Status</th>
+								<th>Start type</th>
+							</tr>
+						</thead>
+						<tbody id="refresh_jobs">
+						</tbody>
+					</table>
+				</div>
+			</div>
+			<!-------------- Job history ---------------->
 		</div>
 	</div>
 </div>
-
+<script src="scripts/pager/pager.js"></script>
 <script type="text/javascript">
-var timer1;
-var timer2;
-var timer3;
-
-function siteInfo(id) {
-	$.ajax({
-        type: "get",
-        url: "getHistoryDownloads.php",
-        data: {'siteID_selected' : id},
-        success: function(result) {
-          	$("#refresh_statistics").html(result);
-        	 clearTimeout(timer1);
-        	 timer1 = setTimeout(siteInfo, 5000, id);
-        }
-    });
-}
-
-function siteInfoCurrent(id) {
-	$.ajax({
-        type: "post",
-        url: "getHistoryDownloadsCurrent.php",
-		data:  {'siteID_selected' : id}, 
-        success: function(result) {
-        	$("#refresh_downloading").html(result);
-        	// Schedule the next request
-     		clearTimeout(timer2);
-        	timer2 =  setTimeout(siteInfoCurrent, 5000, id);
-        }
-    });
-}
-
-function siteJobs(id, page_no) {
-	jsonJobsPage = page_no;
-	$.ajax({
-        type: "post",
-        url: "getHistoryJobs.php",
-		data:  { 'siteID_selected': id, 'page': page_no }, 
-        success: function(result) {
-        	$("#refresh_jobs").html(result);
-        	
-			// display page number
-			$("#page_current").html(page_no);
-			// toggle move_next button availability
-			if ($("#history_jobs").children('tbody').children('tr').length < 20) {
-				$("#page_move_next").addClass("disabled");
-			} else {
-				$("#page_move_next").removeClass("disabled");
+	var timer1;
+	var timer2;
+	
+	function siteInfo() {
+		var id = $('select[name=site_select] option:selected').val();
+		$.ajax({
+			type: "get",
+			url: "getHistoryDownloads.php",
+			data: {'siteID_selected' : id},
+			success: function(result) {
+				$("#refresh_statistics").html(result);
+				 clearTimeout(timer1);
+				 timer1 = setTimeout(siteInfo, 10000);
 			}
-			
-			// Schedule the next request
-     		clearTimeout(timer3);
-        	timer3 =  setTimeout(siteJobs, 5000, id, page_no);
-        }
-    });
-}
-
-function move_to_first_jobs_page()
-{
-	id = $('select[name=site_select] option:selected').val();
-	jsonJobsPage = 1;
-	siteJobs(id, jsonJobsPage);
-}
-
-function move_to_previous_jobs_page()
-{
-	if (jsonJobsPage > 1) {
-		id = $('select[name=site_select] option:selected').val();
-		jsonJobsPage --;
-		siteJobs(id, jsonJobsPage);
-	} else {
-		jsonJobsPage = 1;
+		});
 	}
-}
+	
+	function siteInfoCurrent() {
+		var id = $('select[name=site_select] option:selected').val();
+		$.ajax({
+			type: "post",
+			url: "getHistoryDownloadsCurrent.php",
+			data:  {'siteID_selected' : id}, 
+			success: function(result) {
+				$("#refresh_downloading").html(result);
+				// Schedule the next request
+				clearTimeout(timer2);
+				timer2 = setTimeout(siteInfoCurrent, 10000);
+			}
+		});
+	}
+	
+	function siteJobs(page_no) {
+		var id = $('select[name=site_select] option:selected').val();
+		var rows_per_page = $('select[name=rows_per_page] option:selected').val();
+		$.ajax({
+			type: "post",
+			url:  "getHistoryJobs.php",
+			data:  { 'siteID_selected': id, 'page': page_no, 'rows_per_page': rows_per_page }, 
+			success: function(result) {
+				// refresh pagination: set count & redraw
+				var count_rows = result.substring(4, result.indexOf("-"+"->"));
+				pagingRefresh(count_rows, page_no);
+				// refresh jobs history table
+				$("#refresh_jobs").html(result);
+			}
+		});
+	}
+	
+	$( document ).ready(function() {
+		siteInfo();
+		siteInfoCurrent();
+		siteJobs(1);
+	});
 
-function move_to_next_jobs_page()
-{
-	if (!$("#page_move_next").hasClass("disabled")) {
-		id = $('select[name=site_select] option:selected').val();
-		jsonJobsPage ++;
-		siteJobs(id, jsonJobsPage);
+	// Actions to be performed when page changes
+	var orig_pagingGo = window.pagingGo;
+	window.pagingGo = function(page_no) {
+		orig_pagingGo(page_no);
+		siteJobs(page_no);
 	}
-}
-$( document ).ready(function() {
-	// toggle move_next button availability
-	if ($("#history_jobs").children('tbody').children('tr').length < 20) {
-		$("#page_move_next").addClass("disabled");
-	} else {
-		$("#page_move_next").removeClass("disabled");
-	}
-});
 </script>
 
 <?php include 'ms_foot.php'; ?>
