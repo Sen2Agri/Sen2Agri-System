@@ -1,6 +1,7 @@
-CREATE OR REPLACE FUNCTION sp_get_job_history(
+CREATE OR REPLACE FUNCTION sp_get_job_history_custom_page(
     IN _siteid smallint DEFAULT NULL::smallint,
-    IN _page integer DEFAULT 1)
+    IN _page integer DEFAULT 1,
+    IN _rows_per_page integer DEFAULT 20)
   RETURNS TABLE(id integer, end_timestamp timestamp with time zone, processor character varying, site character varying, status character varying, start_type character varying) AS
 $BODY$
 BEGIN
@@ -13,7 +14,11 @@ BEGIN
 			JOIN activity_status AST ON J.status_id = AST.id
 		WHERE   $1 IS NULL OR site_id = _siteid
 	ORDER BY J.end_timestamp DESC
-	OFFSET ($2 - 1) * 20 LIMIT 20;
+	OFFSET ($2 - 1) * _rows_per_page LIMIT _rows_per_page;
 END
 $BODY$
-  LANGUAGE plpgsql STABLE;
+  LANGUAGE plpgsql STABLE
+  COST 100
+  ROWS 1000;
+ALTER FUNCTION sp_get_job_history_custom_page(smallint, integer, integer)
+  OWNER TO admin;
