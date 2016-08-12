@@ -68,8 +68,8 @@ void CropTypeTrainImagesClassifier::DoInit()
   SetParameterDescription("io", "This group of parameters allows to set input and output data.");
 //  AddParameter(ParameterType_InputImageList, "io.il", "Input Image List");
 //  SetParameterDescription("io.il", "A list of input images.");
-  AddParameter(ParameterType_InputVectorDataList, "io.vd", "Input Vector Data List");
-  SetParameterDescription("io.vd", "A list of vector data to select the training samples.");
+  AddParameter(ParameterType_InputVectorData, "io.vd", "Input Vector Data");
+  SetParameterDescription("io.vd", "Vector data to select the training samples.");
   AddParameter(ParameterType_OutputFilename, "io.confmatout", "Output confusion matrix");
   SetParameterDescription("io.confmatout", "Output file containing the confusion matrix (.csv format).");
   MandatoryOff("io.confmatout");
@@ -444,7 +444,7 @@ void CropTypeTrainImagesClassifier::DoExecute()
 
   if (HasValue("io.vd")) {
       app->EnableParameter("io.vd");
-      app->SetParameterStringList("io.vd", GetParameterStringList("io.vd"));
+      app->SetParameterString("io.vd", GetParameterString("io.vd"));
   }
 
   if (HasValue("outstat")) {
