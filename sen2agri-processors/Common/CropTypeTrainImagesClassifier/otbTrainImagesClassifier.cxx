@@ -288,6 +288,8 @@ void CropTypeTrainImagesClassifier::DoExecute()
       // compute the desired size of the processed rasters
       preprocessor->updateRequiredImageSize(descriptors, startIndex, endIndex, td);
       preprocessor->Build(descriptors.begin() + startIndex, descriptors.begin() + endIndex, td);
+
+    startIndex = endIndex;
   }
 
   const auto &sensorOutDays = getOutputDays(preprocessors, resample, sp);
