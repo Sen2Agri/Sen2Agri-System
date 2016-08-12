@@ -91,6 +91,9 @@ void CropTypeTrainImagesClassifier::DoInit()
   SetParameterDescription("outstat", "Statistics file");
   MandatoryOff("outstat");
 
+  AddParameter(ParameterType_OutputFilename, "outdays", "Resampled output days");
+  SetParameterDescription("outdays", "The output days after temporal resampling.");
+
   AddParameter(ParameterType_InputFilenameList, "il", "Input descriptors");
   SetParameterDescription( "il", "The list of descriptors. They must be sorted by tiles." );
 
@@ -288,6 +291,8 @@ void CropTypeTrainImagesClassifier::DoExecute()
   }
 
   const auto &sensorOutDays = getOutputDays(preprocessors, resample, sp);
+
+  writeOutputDays(sensorOutDays, GetParameterString("outdays"));
 
   // Samples
   typedef double ValueType;

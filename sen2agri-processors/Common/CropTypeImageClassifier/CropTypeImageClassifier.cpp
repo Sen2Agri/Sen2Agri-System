@@ -188,12 +188,6 @@ private:
 
     AddParameter(ParameterType_StringList, "sp", "Temporal sampling rate");
 
-    AddParameter(ParameterType_Choice, "mode", "Mode");
-    SetParameterDescription("mode", "Specifies the choice of output dates (default: resample)");
-    AddChoice("mode.resample", "Specifies the temporal resampling mode");
-    AddChoice("mode.gapfill", "Specifies the gapfilling mode");
-    SetParameterString("mode", "resample");
-
     AddParameter(ParameterType_Float, "pixsize", "The size of a pixel, in meters");
     SetDefaultParameterFloat("pixsize", 10.0); // The default value is 10 meters
     SetMinimumParameterFloatValue("pixsize", 1.0);
@@ -205,6 +199,9 @@ private:
     AddParameter(ParameterType_OutputFilename, "outstat", "Statistics file");
     SetParameterDescription("outstat", "Statistics file");
     MandatoryOff("outstat");
+
+    AddParameter(ParameterType_OutputFilename, "indays", "Resampled input days");
+    SetParameterDescription("indays", "The output days after temporal resampling.");
 
     AddParameter(ParameterType_InputImage, "mask", "Input mask");
     SetParameterDescription("mask", "The mask allows to restrict classification of the input image to the area where mask pixel values are greater than 0");
@@ -225,7 +222,6 @@ private:
 
     //  Software Guide : BeginCodeSnippet
     SetDocExampleParameterValue("il", "image1.xml image2.xml");
-    SetDocExampleParameterValue("mode", "resample");
     SetDocExampleParameterValue("sp", "SENTINEL 10 LANDSAT 7");
     SetDocExampleParameterValue("out", "statistics.xml");
     //  Software Guide : EndCodeSnippet
@@ -249,7 +245,6 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoExecute()
   {
-      bool resample = GetParameterString("mode") == "resample";
       std::map<std::string, int> sp;
       if (HasValue("sp")) {
           const auto &spValues = GetParameterStringList("sp");
@@ -299,7 +294,7 @@ private:
       preprocessor->updateRequiredImageSize(descriptors, 0, descriptors.size(), td);
       preprocessor->Build(descriptors.begin(), descriptors.end(), td);
 
-      const auto &sensorOutDays = getOutputDays(preprocessors, resample, sp);
+      const auto &sensorOutDays = readOutputDays(GetParameterString("indays"));
       preprocessor->SetSensorOutDays(sensorOutDays);
       auto output = preprocessor->GetOutput();
 

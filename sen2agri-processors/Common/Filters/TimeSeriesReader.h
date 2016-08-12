@@ -796,3 +796,25 @@ std::map<std::string, std::vector<int>> getOutputDays(TTimeSeriesReaderList prep
 
     return sensorOutDays;
 }
+
+void writeOutputDays(const std::map<std::string, std::vector<int>> &days, const std::string &file)
+{
+    std::ofstream f(file);
+    for (const auto &p : days) {
+        for (auto d : p.second) {
+            f << p.first << ' ' << d << '\n';
+        }
+    }
+}
+
+const std::map<std::string, std::vector<int>> readOutputDays(const std::string &file)
+{
+    std::map<std::string, std::vector<int>> days;
+    std::ifstream f(file);
+    std::string mission;
+    int day;
+    while (f >> mission >> day) {
+        days[mission].emplace_back(day);
+    }
+    return days;
+}
