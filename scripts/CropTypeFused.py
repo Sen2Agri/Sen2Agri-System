@@ -684,8 +684,8 @@ try:
                 if area_mask_raster:
                     step_args += ["-mask", area_mask_raster]
 
-                # run_step(Step("ImageClassifier_{}_{}".format(
-                #      stratum.id, tile.id), step_args))
+                run_step(Step("ImageClassifier_{}_{}".format(
+                     stratum.id, tile.id), step_args))
 
         for tile in tiles:
             print("Merging classification results for tile:", tile.id)
