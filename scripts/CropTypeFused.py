@@ -79,9 +79,10 @@ class Stratum(object):
         self.tiles = []
 
 class Tile(object):
-    def __init__(self, id, descriptors):
+    def __init__(self, id, descriptors, crop_mask):
         self.id = id
         self.descriptors = descriptors
+        self.crop_mask = crop_mask
         self.footprint = None
         self.area = None
         self.strata = []
@@ -360,8 +361,8 @@ parser.add_argument('-normalize', help='Normalize the input before classificatio
                     required=False, action='store_true')
 parser.add_argument('-rseed', help='The random seed used for training (default 0)',
                     required=False, metavar='random_seed', default=0)
-parser.add_argument('-mask', help='The crop mask',
-                    required=False, metavar='crop_mask', default='')
+parser.add_argument('-mask', help='The crop mask for each tile',
+                    required=False, nargs='+', default='')
 parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)',
                     required=False, metavar='pixsize', default=10)
 parser.add_argument('-tilename', help="The name of the tile", default="T0000")
@@ -407,11 +408,15 @@ indesc = args.input
 
 start = 0
 tiles = []
-for t in args.prodspertile:
+for idx, t in enumerate(args.prodspertile):
     end = start + t
     descriptors = indesc[start:end]
     id = get_tileid_for_descriptors(descriptors)
-    tiles.append(Tile(id, descriptors))
+    if args.mask is not None and args.mask[idx] != "NONE":
+        crop_mask = args.mask[idx]
+    else:
+        crop_mask = None
+    tiles.append(Tile(id, descriptors, crop_mask))
     start += t
 
 mission = args.mission
@@ -423,7 +428,6 @@ sp = args.rate
 trm = args.trm
 classifier = args.classifier
 random_seed = args.rseed
-crop_mask = args.mask
 pixsize = args.pixsize
 rfnbtrees = str(args.rfnbtrees)
 rfmax = str(args.rfmax)
@@ -632,7 +636,6 @@ try:
 
                 tile_crop_type_map_uncut = os.path.join(args.outdir,
                                                         "crop_type_map_uncut_{}_{}.tif".format(stratum.id, tile.id))
-                area_mask_raster = None
                 tile_reference_raster = get_reference_raster(
                     tile.descriptors[0])
                 print("Reference raster for tile:",
@@ -681,8 +684,8 @@ try:
                 if area_mask_raster:
                     step_args += ["-mask", area_mask_raster]
 
-                run_step(Step("ImageClassifier_{}_{}".format(
-                     stratum.id, tile.id), step_args))
+                # run_step(Step("ImageClassifier_{}_{}".format(
+                #      stratum.id, tile.id), step_args))
 
         for tile in tiles:
             print("Merging classification results for tile:", tile.id)
@@ -698,6 +701,8 @@ try:
 
             tile_crop_map = os.path.join(
                 args.outdir, "crop_type_map_{}.tif".format(tile.id))
+            tile_crop_map_masked = os.path.join(
+                args.outdir, "crop_type_map_masked_{}.tif".format(tile.id))
             tile_quality_flags = os.path.join(
                 args.outdir, "status_flags_{}.tif".format(tile.id))
 
@@ -713,6 +718,13 @@ try:
                                   "-a_nodata", -10000,
                                   tile_crop_map]))
 
+            if tile.crop_mask is not None:
+                step_args = ["otbcli_BandMath",
+                            "-exp", "im2b1 == 0 ? 0 : im1b1",
+                            "-il", tile_crop_map, tile.crop_mask,
+                            "-out", tile_crop_map_masked + "?gdal:co:COMPRESS=DEFLATE", "int16"]
+                run_step(Step("Mask by crop mask " + tile.id, step_args))
+
             step_args = ["otbcli", "QualityFlagsExtractor", buildFolder,
                          "-mission", mission,
                          "-out", tile_quality_flags + "?gdal:co:COMPRESS=DEFLATE",
@@ -725,7 +737,13 @@ try:
         for tile in tiles:
             tile_crop_map = os.path.join(
                 args.outdir, "crop_type_map_{}.tif".format(tile.id))
-            files.append(tile_crop_map)
+            tile_crop_map_masked = os.path.join(
+                args.outdir, "crop_type_map_masked_{}.tif".format(tile.id))
+
+            if tile.crop_mask is not None:
+                files.append(tile_crop_map_masked)
+            else:
+                files.append(tile_crop_map)
 
         for stratum in strata:
             area_validation_polygons = os.path.join(
@@ -767,15 +785,40 @@ try:
                      "-level", "L4B",
                      "-baseline", "01.00",
                      "-siteid", siteId,
-                     "-processor", "croptype",
-                     "-processor.croptype.file"]
+                     "-processor", "croptype"]
 
-        for tile in tiles:
-            tile_crop_map = os.path.join(
-                args.outdir, "crop_type_map_{}.tif".format(tile.id))
+        if args.mask is None:
+            step_args.append("-processor.croptype.file")
+            for tile in tiles:
+                tile_crop_map = os.path.join(
+                    args.outdir, "crop_type_map_{}.tif".format(tile.id))
 
-            step_args.append("TILE_" + tile.id)
-            step_args.append(tile_crop_map)
+                step_args.append("TILE_" + tile.id)
+                step_args.append(tile_crop_map)
+
+        else:
+            step_args.append("-processor.croptype.file")
+            for tile in tiles:
+                tile_crop_map = os.path.join(
+                    args.outdir, "crop_type_map_{}.tif".format(tile.id))
+                tile_crop_map_masked = os.path.join(
+                    args.outdir, "crop_type_map_masked_{}.tif".format(tile.id))
+
+                step_args.append("TILE_" + tile.id)
+
+                if tile.crop_mask is not None:
+                    step_args.append(tile_crop_map_masked)
+                else:
+                    step_args.append(tile_crop_map)
+
+            step_args.append("-processor.croptype.rawfile")
+            for tile in tiles:
+                if tile.crop_mask is not None:
+                    tile_crop_map = os.path.join(
+                        args.outdir, "crop_type_map_{}.tif".format(tile.id))
+
+                    step_args.append("TILE_" + tile.id)
+                    step_args.append(tile_crop_map)
 
         step_args.append("-processor.croptype.flags")
         for tile in tiles:
