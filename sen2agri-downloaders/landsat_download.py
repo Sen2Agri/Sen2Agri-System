@@ -30,6 +30,7 @@ import signal
 import osgeo.ogr as ogr
 import osgeo.osr as osr
 from sen2agri_common_db import *
+from bs4 import BeautifulSoup
 
 general_log_path = "/tmp/"
 general_log_filename = "landsat_download.log"
@@ -42,8 +43,8 @@ DEBUG = True
 #############################"Connection to Earth explorer with proxy
 
 def connect_earthexplorer_proxy(proxy_info,usgs):
-     print "Establishing connection to Earthexplorer with proxy..."
-     # contruction d'un "opener" qui utilise une connexion proxy avec autorisation
+     log(general_log_path, "Establishing connection to Earthexplorer using a proxy...", general_log_filename)
+     cookies = urllib2.HTTPCookieProcessor()
      proxy_support = None
      print("http://%(host)s:%(port)s" % proxy_info)
      if len(proxy_info) == 2: 
@@ -53,29 +54,31 @@ def connect_earthexplorer_proxy(proxy_info,usgs):
           proxy_support = urllib2.ProxyHandler({"http" : "http://%(user)s:%(pass)s@%(host)s:%(port)s" % proxy_info,
                                                 "https" : "http://%(user)s:%(pass)s@%(host)s:%(port)s" % proxy_info})
      else:
-          print("Proxy information erroneous, check credential file.")
+          log(general_log_path, "Proxy information erroneous, check credential file.", general_log_filename)
           return False
-     print("{}".format(proxy_support))
+
+     log(general_log_path, "proxy_support = {}".format(proxy_support), general_log_filename)
      if proxy_support == None:
-          print("Could not create proxy object.")
+          log(general_log_path, "Could not create proxy object.", general_log_filename)
           return False
-     opener = urllib2.build_opener(proxy_support, urllib2.HTTPCookieProcessor)
+     opener = urllib2.build_opener(proxy_support, cookies)
 
      # installation
      urllib2.install_opener(opener)
-
+     # deal with csrftoken required by USGS as of 7-20-2016
+     soup = BeautifulSoup(urllib2.urlopen("https://ers.cr.usgs.gov/login").read())
+     token = soup.find('input', {'name': 'csrf_token'})
      # parametres de connection
-     params = urllib.urlencode(dict(username=usgs['account'], password=usgs['passwd']))
-
+     params = urllib.urlencode(dict(username=usgs['account'], password=usgs['passwd'], csrf_token=token['value']))
      # utilisation
-     f = opener.open('https://ers.cr.usgs.gov/login', params)
+     f = opener.open('https://ers.cr.usgs.gov/login', params, headers={})
      data = f.read()
      f.close()
 
-     if data.find('You must sign in as a registered user to download data or place orders for USGS EROS products')>0 :
+     if data.find('You must sign in as a registered user to download data or place orders for USGS EROS products') > 0 :
         print "Authentification failed"
         return False
-     print("Connected through proxy")
+     log(general_log_path, "Connected through proxy", general_log_filename)
      return True
 
 
@@ -84,16 +87,24 @@ def connect_earthexplorer_proxy(proxy_info,usgs):
 def connect_earthexplorer_no_proxy(usgs):
      global general_log_path
      global general_log_filename
+     cookies = urllib2.HTTPCookieProcessor()
+     # mkmitchel (https://github.com/mkmitchell) solved the token issue
      log(general_log_path, "Establishing connection to Earthexplorer...", general_log_filename)
-     opener = urllib2.build_opener(urllib2.HTTPCookieProcessor())
+     opener = urllib2.build_opener(cookies)
      urllib2.install_opener(opener)
-     params = urllib.urlencode(dict(username=usgs['account'],password= usgs['passwd']))
-     f = opener.open("https://ers.cr.usgs.gov/login", params)
+     # deal with csrftoken required by USGS as of 7-20-2016
+     soup = BeautifulSoup(urllib2.urlopen("https://ers.cr.usgs.gov/login").read())
+     token = soup.find('input', {'name': 'csrf_token'})
+     params = urllib.urlencode(dict(username=usgs['account'],password= usgs['passwd'], csrf_token=token['value']))
+     request = urllib2.Request("https://ers.cr.usgs.gov/login", params, headers={})
+     f = urllib2.urlopen(request)
+
      data = f.read()
      f.close()
-     if data.find('You must sign in as a registered user to download data or place orders for USGS EROS products')>0 :
+     if data.find('You must sign in as a registered user to download data or place orders for USGS EROS products') > 0 :
           log(general_log_path, "Authentification failed !", general_log_filename)
           return False
+     log(general_log_path, "Connected", general_log_filename)
      return True
 
 #############################
@@ -109,7 +120,7 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
   """ Downloads large files in pieces
    inspired by http://josh.gourneau.com
   """
-  global g_exit_flag
+#  global g_exit_flag
   nom_fic = prod_name + ".tgz"
   print("INFO START")
   print("url: {}".format(url))
@@ -171,6 +182,7 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
 	     sys.stdout.flush()
 	     if not chunk: break
 	     fp.write(chunk)
+             print(g_exit_flag)
              if g_exit_flag:
                   log(aoiContext.writeDir, "SIGINT signal caught", general_log_filename)
                   return
@@ -365,10 +377,13 @@ def landsat_download(aoiContext):
 
          downloaded_ids = []
          connection = False
-         if len(proxy) >= 2:
-             connection = connect_earthexplorer_proxy(proxy,usgs)
-         else:
-             connection = connect_earthexplorer_no_proxy(usgs)
+         try:
+             if len(proxy) >= 2:
+                  connection = connect_earthexplorer_proxy(proxy,usgs)
+             else:
+                  connection = connect_earthexplorer_no_proxy(usgs)
+         except Exception, e:
+              log(aoiContext.writeDir, "Exception caugt when trying to connect at USGS server: {}".format(e), general_log_filename)
 
          if connection == False:
               return
