@@ -120,7 +120,6 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
   """ Downloads large files in pieces
    inspired by http://josh.gourneau.com
   """
-#  global g_exit_flag
   nom_fic = prod_name + ".tgz"
   print("INFO START")
   print("url: {}".format(url))
@@ -169,7 +168,7 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
     with open(aoiContext.writeDir+'/'+nom_fic, 'wb') as fp:
         start = time.clock()
         log(aoiContext.writeDir, 'Downloading {0} ({1})'.format(nom_fic, total_size_fmt), general_log_filename)
-	while True and not g_exit_flag:
+	while True:
 	     chunk = req.read(CHUNK)
              downloaded += len(chunk)
 	     done = int(50 * downloaded / total_size)
@@ -182,10 +181,6 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
 	     sys.stdout.flush()
 	     if not chunk: break
 	     fp.write(chunk)
-             print(g_exit_flag)
-             if g_exit_flag:
-                  log(aoiContext.writeDir, "SIGINT signal caught", general_log_filename)
-                  return
   except socket.timeout, e:
        log(aoiContext.writeDir, "Timeout for file {0} ".format(nom_fic), general_log_filename)
        return False
@@ -318,7 +313,6 @@ def check_cloud_limit(imagepath,limit):
 #signal.signal(signal.SIGINT, signal_handler)
 
 def landsat_download(aoiContext):
-     global g_exit_flag
      global general_log_filename
      global general_log_path
 
@@ -396,9 +390,6 @@ def landsat_download(aoiContext):
              curr_date=curr_date+datetime.timedelta(16)
              for station in stations:
                  for version in ['00','01','02']:
-                                         if g_exit_flag:
-                                             log(aoiContext.writeDir, "SIGINT was caught")
-                                             return
                                          nom_prod = product + tile + date_asc + station + version
                                          tgzfile = os.path.join(aoiContext.writeDir, nom_prod + '.tgz')
                                          lsdestdir = os.path.join(aoiContext.writeDir, nom_prod)
@@ -406,7 +397,6 @@ def landsat_download(aoiContext):
 
                                          if aoiContext.fileExists(nom_prod):
                                              log(aoiContext.writeDir, "File {} found in history so it's already downloaded".format(nom_prod), general_log_filename)
-                                             #TODO: shall this be unzipped if it does not exist?
                                              if not os.path.exists(lsdestdir):
                                                  log(aoiContext.writeDir, "Trying to decompress {}. If an error will be raised, means that the archived tgz file was phisically erased (manually or automatically) ".format(nom_prod), general_log_filename)
                                                  unzipimage(nom_prod, aoiContext.writeDir)

@@ -150,10 +150,10 @@ def init_worker():
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 def signal_handler(signal, frame):
-    global exitFlag
-    print("SIGINT caught!")
-    exitFlag = True
-    sys.exit(0)
+    global g_exit_flag    
+    g_exit_flag = True
+    print("SIGINT caught! {}".format(g_exit_flag))
+    #sys.exit(0)
 
 
 def GetExtent(gt, cols, rows):
