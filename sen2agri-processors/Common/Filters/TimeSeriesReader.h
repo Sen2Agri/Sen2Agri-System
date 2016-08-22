@@ -45,6 +45,7 @@
 #include "../Filters/otbLandsatMaskFilter.h"
 #include "../Filters/otbSentinelMaskFilter.h"
 
+#include <tuple>
 #include <string>
 
 typedef otb::VectorImage<float, 2>                                 ImageType;
@@ -348,6 +349,40 @@ protected:
 
     virtual ~TimeSeriesReader()
     {
+    }
+
+    std::tuple<ConcatenateVectorImagesFilterType::OutputImageType *, ConcatenateVectorImagesFilterType::OutputImageType *, otb::SensorDataCollection> GetBands()
+    {
+        // Merge the rasters and the masks
+        ConcatenateVectorImagesFilterType::Pointer bandsConcat = ConcatenateVectorImagesFilterType::New();
+        ConcatenateVectorImagesFilterType::Pointer maskConcat = ConcatenateVectorImagesFilterType::New();
+        // Also build the image dates structures
+        otb::SensorDataCollection sdCollection;
+
+        int index = 0;
+        std::string lastMission = "";
+        for (const ImageDescriptor& id : m_Descriptors) {
+            if (id.mission != lastMission) {
+                otb::SensorData sd;
+                sd.sensorName = id.mission;
+                sd.outDates = m_SensorOutDays[id.mission];
+                sdCollection.push_back(sd);
+                lastMission = id.mission;
+            }
+
+            auto &sd = sdCollection.back();
+            int inDay = getDaysFromEpoch(id.aquisitionDate);
+
+            sd.inDates.push_back(inDay);
+
+            bandsConcat->PushBackInput(id.bands);
+            maskConcat->PushBackInput(id.mask);
+            index++;
+        }
+        m_ImageMergers->PushBack(bandsConcat);
+        m_ImageMergers->PushBack(maskConcat);
+
+        return std::make_tuple(bandsConcat->GetOutput(), maskConcat->GetOutput(), sdCollection);
     }
 
     // Sort the descriptors based on the aquisition date

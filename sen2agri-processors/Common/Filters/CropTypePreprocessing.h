@@ -62,49 +62,19 @@ public:
 
     otb::Wrapper::FloatVectorImageType * GetOutput()
     {
-        // Merge the rasters and the masks
-        ConcatenateVectorImagesFilterType::Pointer bandsConcat = ConcatenateVectorImagesFilterType::New();
-        ConcatenateVectorImagesFilterType::Pointer maskConcat = ConcatenateVectorImagesFilterType::New();
-        // Also build the image dates structures
-        otb::SensorDataCollection sdCollection;
-
-        int index = 0;
-        std::string lastMission = "";
-        for (const ImageDescriptor& id : m_Descriptors) {
-            if (id.mission != lastMission) {
-                otb::SensorData sd;
-                sd.sensorName = id.mission;
-                sd.outDates = m_SensorOutDays[id.mission];
-                sdCollection.push_back(sd);
-                lastMission = id.mission;
-            }
-
-            auto &sd = sdCollection.back();
-            int inDay = getDaysFromEpoch(id.aquisitionDate);
-
-            sd.inDates.push_back(inDay);
-
-            bandsConcat->PushBackInput(id.bands);
-            maskConcat->PushBackInput(id.mask);
-            index++;
-        }
-        m_ImageMergers->PushBack(bandsConcat);
-        m_ImageMergers->PushBack(maskConcat);
+        auto bands = GetBands();
 
         // Set the temporal resampling / gap filling filter
-        m_TemporalResampler->SetInputRaster(bandsConcat->GetOutput());
-        m_TemporalResampler->SetInputMask(maskConcat->GetOutput());
+        m_TemporalResampler->SetInputRaster(std::get<0>(bands));
+        m_TemporalResampler->SetInputMask(std::get<1>(bands));
         // The output days will be updated later
-        m_TemporalResampler->SetInputData(sdCollection);
+        m_TemporalResampler->SetInputData(std::get<2>(bands));
 
         // Set the feature extractor
         m_FeatureExtractor->SetInput(m_TemporalResampler->GetOutput());
 
         return m_FeatureExtractor->GetOutput();
     }
-
-protected:
-
 };
 
 typedef otb::ObjectList<CropTypePreprocessing>              CropTypePreprocessingList;
