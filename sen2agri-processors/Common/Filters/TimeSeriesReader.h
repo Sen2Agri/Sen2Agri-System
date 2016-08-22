@@ -37,7 +37,6 @@
 // Filters
 #include "otbMultiChannelExtractROI.h"
 #include "otbConcatenateVectorImagesFilter.h"
-#include "../Filters/otbCropTypeFeatureExtractionFilter.h"
 #include "../Filters/otbTemporalResamplingFilter.h"
 #include "../Filters/otbTemporalMergingFilter.h"
 
@@ -85,9 +84,6 @@ typedef otb::ObjectList<ConcatenateVectorImagesFilterType>  ConcatenateVectorIma
 typedef otb::TemporalResamplingFilter<ImageType>            TemporalResamplingFilterType;
 typedef otb::ObjectList<TemporalResamplingFilterType>       TemporalResamplingFilterListType;
 
-typedef otb::CropTypeFeatureExtractionFilter<ImageType>     CropTypeFeatureExtractionFilterType;
-typedef otb::ObjectList<CropTypeFeatureExtractionFilterType>
-                                                            CropTypeFeatureExtractionFilterListType;
 
 typedef itk::MACCSMetadataReader                            MACCSMetadataReaderType;
 typedef itk::SPOT4MetadataReader                            SPOT4MetadataReaderType;
@@ -326,7 +322,6 @@ protected:
     ConcatenateVectorImagesFilterListType::Pointer    m_ImageMergers;
 
     TemporalResamplingFilterType::Pointer             m_TemporalResampler;
-    CropTypeFeatureExtractionFilterType::Pointer      m_FeatureExtractor;
 
 
     TimeSeriesReader()
@@ -344,7 +339,6 @@ protected:
         m_ImageMergers = ConcatenateVectorImagesFilterListType::New();
 
         m_TemporalResampler = TemporalResamplingFilterType::New();
-        m_FeatureExtractor = CropTypeFeatureExtractionFilterType::New();
     }
 
     virtual ~TimeSeriesReader()

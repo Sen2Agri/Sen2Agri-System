@@ -37,6 +37,7 @@
 // Filters
 #include "otbMultiChannelExtractROI.h"
 #include "otbConcatenateVectorImagesFilter.h"
+
 #include "../Filters/otbCropTypeFeatureExtractionFilter.h"
 #include "../Filters/otbTemporalResamplingFilter.h"
 #include "../Filters/otbTemporalMergingFilter.h"
@@ -49,6 +50,9 @@
 
 #include <string>
 
+typedef otb::CropTypeFeatureExtractionFilter<ImageType>     CropTypeFeatureExtractionFilterType;
+typedef otb::ObjectList<CropTypeFeatureExtractionFilterType>
+                                                            CropTypeFeatureExtractionFilterListType;
 class CropTypePreprocessing : public TimeSeriesReader
 {
 public:
@@ -59,6 +63,11 @@ public:
 
     itkNewMacro(Self)
     itkTypeMacro(CropTypePreprocessing, TimeSeriesReader)
+
+    CropTypePreprocessing()
+    {
+        m_FeatureExtractor = CropTypeFeatureExtractionFilterType::New();
+    }
 
     otb::Wrapper::FloatVectorImageType * GetOutput()
     {
@@ -75,6 +84,9 @@ public:
 
         return m_FeatureExtractor->GetOutput();
     }
+
+private:
+    CropTypeFeatureExtractionFilterType::Pointer      m_FeatureExtractor;
 };
 
 typedef otb::ObjectList<CropTypePreprocessing>              CropTypePreprocessingList;
