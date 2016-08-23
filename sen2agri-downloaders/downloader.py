@@ -30,7 +30,7 @@ from sentinel_download import *
 from landsat_download import *
 from multiprocessing import Pool
 
-signal.signal(signal.SIGINT, signal_handler)
+#signal.signal(signal.SIGINT, signal_handler)
 
 if len(sys.argv) == 1:
     prog = os.path.basename(sys.argv[0])
@@ -123,7 +123,7 @@ else:
         aoiContext.setRemoteSiteCredentials(options.site_credentials)
         aoiContext.setProxy(options.proxy)    
         aoiContext.printInfo()
-        print("------------------------")    
+        print("------------------------")
 
     p = Pool(len(sites_aoi_database))
     if options.remote_host == "s2":        
@@ -139,33 +139,25 @@ else:
     print("downloader exit !")
 
 '''
-    p = Pool(len(sites_aoi_database), init_worker)
-    try:
-#        p = Pool(len(sites_aoi_database))
-        results = []
-        for i in range(len(sites_aoi_database)):
-            if options.remote_host == "s2":        
-                results.append(p.apply_async(sentinel_download, (sites_aoi_database[i],)))
-                #used only in debug mode
-                #for site in sites_aoi_database:
-                #    sentinel_download(site)
-            else:
-                results.append(p.apply_async(landsat_download, (sites_aoi_database[i],)))
-                #used only in debug mode
-                #for site in sites_aoi_database:
-                #    landsat_download(site)
-        p.close()    
-        while True:
-            if all(r.ready() for r in results):
-                print "All processes completed"                
-                print("downloader exit !")
-                sys.exit(0)
-            time.sleep(1)
+
+    #this works for KeyboardInterrupt. Due to a python bug, there is no other way to catch a SIGINT and terminate all processes launched with Pool
+    original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
+    p = Pool(len(sites_aoi_database))
+    signal.signal(signal.SIGINT, original_sigint_handler)
+    try:        
+        if options.remote_host == "s2":        
+            res = p.map_async(sentinel_download, sites_aoi_database)
+        else:
+            res = p.map_async(landsat_download, sites_aoi_database)
+        res.get(99999999999999999999999999999) # Without the timeout this blocking call ignores all signals.
     except KeyboardInterrupt:
-        print "Caught KeyboardInterrupt, terminating workers"
+        print("Caught KeyboardInterrupt, terminating workers")
         p.terminate()
+    else:
+        print("Normal termination")
         p.join()
 
-
 '''
+
+
 

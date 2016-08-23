@@ -101,8 +101,9 @@ def connect_earthexplorer_no_proxy(usgs):
 
      data = f.read()
      f.close()
-     if data.find('You must sign in as a registered user to download data or place orders for USGS EROS products') > 0 :
-          log(general_log_path, "Authentification failed !", general_log_filename)
+     if data.find("You must sign in as a registered user to download data or place orders for USGS EROS products") > 0 or\
+        data.find("Invalid username/password") > 0:
+          log(general_log_path, "Authentification failed ! Check the usgs.txt file and fill the first line with a correct 'username password'", general_log_filename)
           return False
      log(general_log_path, "Connected", general_log_filename)
      return True
@@ -315,7 +316,7 @@ def check_cloud_limit(imagepath,limit):
 def landsat_download(aoiContext):
      global general_log_filename
      global general_log_path
-
+     print("START")
      general_log_filename = "landsat_download.log"
      general_log_path = aoiContext.writeDir
      manage_log_file(general_log_path, general_log_filename)
