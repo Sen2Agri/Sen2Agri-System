@@ -8,9 +8,7 @@
 #include "json_conversions.hpp"
 #include "logger.hpp"
 
-#define TasksNoPerProduct 7
-
-void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
+void CompositeHandler::CreateTasksForNewProducts(const CompositeJobConfig &cfg, QList<TaskToSubmit> &outAllTasksList,
                                                 QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList,
                                                 const TileTemporalFilesInfo &tileTemporalFilesInfo)
 {
@@ -44,6 +42,9 @@ void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
         outAllTasksList.append(TaskToSubmit{ "composite-total-weight", {} });
         outAllTasksList.append(TaskToSubmit{ "composite-update-synthesis", {} });
         outAllTasksList.append(TaskToSubmit{ "composite-splitter", {} });
+        if(!cfg.keepJobFiles) {
+            outAllTasksList.append(TaskToSubmit{ "files-remover", {} });
+        }
     }
 
     // now fill the tasks hierarchy infos
@@ -120,55 +121,31 @@ void CompositeHandler::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTask
         // composite-splitter -> update-synthesis
         outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
         nCurTaskIdx++;
+        if(!cfg.keepJobFiles) {
+            // cleanup-intermediate-files -> composite-splitter
+            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+            nCurTaskIdx++;
+        }
+
     }
     // product-formatter -> the last composite-splitter
     outProdFormatterParentsList.append(outAllTasksList[outAllTasksList.size() - 1]);
 }
 
 void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
-                                          const JobSubmittedEvent &event,
+                                          const CompositeJobConfig &cfg,
                                           const TileTemporalFilesInfo &tileTemporalFilesInfo,
                                           CompositeGlobalExecutionInfos &globalExecInfos,
                                           int resolution)
 {
     QStringList listProducts = ProcessorHandlerHelper::GetTemporalTileFiles(tileTemporalFilesInfo);
-    int jobId = event.jobId;
-    const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    std::map<QString, QString> configParameters =
-        ctx.GetJobConfigurationParameters(jobId, "processor.l3a.");
-
-    // Get L3A Synthesis date
-    const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
-    auto synthalf = parameters["half_synthesis"].toString();
-
-    // Get the parameters from the configuration
-    // Get the Half Synthesis interval value if it was not specified by the user
-    if(synthalf.length() == 0) {
-        synthalf = configParameters["processor.l3a.half_synthesis"];
-        if(synthalf.length() == 0) {
-            synthalf = "15";
-        }
-    }
-    auto bandsMapping = configParameters["processor.l3a.bandsmapping"];
-    const auto &scatCoeffs = configParameters[resolution == 10 ? "processor.l3a.preproc.scatcoeffs_10m" :
-                                                                  "processor.l3a.preproc.scatcoeffs_20m"];
-    const auto &weightAOTMin = configParameters["processor.l3a.weight.aot.minweight"];
-    const auto &weightAOTMax = configParameters["processor.l3a.weight.aot.maxweight"];
-    const auto &AOTMax = configParameters["processor.l3a.weight.aot.maxaot"];
-
-    const auto &coarseRes = configParameters["processor.l3a.weight.cloud.coarseresolution"];
-    const auto &sigmaSmallCloud = configParameters["processor.l3a.weight.cloud.sigmasmall"];
-    const auto &sigmaLargeCloud = configParameters["processor.l3a.weight.cloud.sigmalarge"];
-
-    const auto &weightDateMin = configParameters["processor.l3a.weight.total.weightdatemin"];
-
-    bandsMapping = DeductBandsMappingFile(listProducts, bandsMapping, resolution);
-
+    QString bandsMapping = DeductBandsMappingFile(listProducts, cfg.bandsMapping, resolution);
     const auto &resolutionStr = QString::number(resolution);
+    QString scatCoeffs = ((resolution == 10) ? cfg.scatCoeffs10M : cfg.scatCoeffs20M);
 
     QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
     QList<std::reference_wrapper<const TaskToSubmit>> &prodFormParTsksList = globalExecInfos.prodFormatParams.parentsTasksRef;
-    CreateTasksForNewProducts(allTasksList, prodFormParTsksList, tileTemporalFilesInfo);
+    CreateTasksForNewProducts(cfg, allTasksList, prodFormParTsksList, tileTemporalFilesInfo);
 
     NewStepList &steps = globalExecInfos.allStepsList;
     int nCurTaskIdx = 0;
@@ -186,12 +163,9 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             }
         }
         TaskToSubmit &createFootprintTaskHandler = allTasksList[nCurTaskIdx++];
-        SubmitTasks(ctx, jobId, {createFootprintTaskHandler});
-        std::map<QString, QString> executorConfigParameters =
-            ctx.GetJobConfigurationParameters(jobId, "executor.shapes_dir");
-        QString shapeFilesFolder = executorConfigParameters["executor.shapes_dir"];
-        shapePath = ProcessorHandlerHelper::BuildShapeName(shapeFilesFolder, tileTemporalFilesInfo.tileId,
-                                                           event.jobId, createFootprintTaskHandler.taskId);
+        SubmitTasks(ctx, cfg.jobId, {createFootprintTaskHandler});
+        shapePath = ProcessorHandlerHelper::BuildShapeName(cfg.shapeFilesFolder, tileTemporalFilesInfo.tileId,
+                                                           cfg.jobId, createFootprintTaskHandler.taskId);
         QStringList createFootprintArgs = { "CreateFootprint", "-in", primaryTileMetadata,
                                             "-mode", "metadata", "-out", shapePath};
         steps.append(createFootprintTaskHandler.CreateStep("CreateFootprint", createFootprintArgs));
@@ -203,17 +177,19 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     QString prevL3AProdDates;
     QString prevL3ARgbFile;
     for (int i = 0; i < listProducts.size(); i++) {
+        QStringList cleanupTemporaryFilesList;
         const auto &inputProduct = listProducts[i];
         // Mask Handler Step
         TaskToSubmit &maskHandler = allTasksList[nCurTaskIdx++];
-        SubmitTasks(ctx, jobId, {maskHandler});
+        SubmitTasks(ctx, cfg.jobId, {maskHandler});
         const auto &masksFile = maskHandler.GetFilePath("all_masks_file.tif");
         QStringList maskHandlerArgs = { "MaskHandler", "-xml",         inputProduct, "-out",
                                         masksFile,     "-sentinelres", resolutionStr };
         steps.append(maskHandler.CreateStep("MaskHandler", maskHandlerArgs));
+        cleanupTemporaryFilesList.append(masksFile);
 
         TaskToSubmit &compositePreprocessing = allTasksList[nCurTaskIdx++];
-        SubmitTasks(ctx, jobId, {compositePreprocessing});
+        SubmitTasks(ctx, cfg.jobId, {compositePreprocessing});
         // Composite preprocessing Step
         auto outResImgBands = compositePreprocessing.GetFilePath("img_res_bands.tif");
         auto cldResImg = compositePreprocessing.GetFilePath("cld_res.tif");
@@ -225,6 +201,13 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
                                                    "-msk", masksFile, "-outres", outResImgBands,
                                                    "-outcmres", cldResImg, "-outwmres", waterResImg,
                                                    "-outsmres", snowResImg, "-outaotres", aotResImg };
+
+        cleanupTemporaryFilesList.append(outResImgBands);
+        cleanupTemporaryFilesList.append(cldResImg);
+        cleanupTemporaryFilesList.append(waterResImg);
+        cleanupTemporaryFilesList.append(snowResImg);
+        cleanupTemporaryFilesList.append(aotResImg);
+
         if(scatCoeffs.length() > 0) {
             compositePreprocessingArgs.append("-scatcoef");
             compositePreprocessingArgs.append(scatCoeffs);
@@ -233,81 +216,84 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
 
         if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
             TaskToSubmit &cutImgTask = allTasksList[nCurTaskIdx++];
-            SubmitTasks(ctx, jobId, {cutImgTask});
+            SubmitTasks(ctx, cfg.jobId, {cutImgTask});
 
             const auto &cutImgFile = cutImgTask.GetFilePath("img_res_bands_clipped.tif");
             QStringList gdalWarpArgs = GetGdalWarpArgs(outResImgBands, cutImgFile, "-10000", "2048", shapePath, resolutionStr);
-            //{ "-dstnodata", "-10000", "-overwrite", "-cutline", shapePath, "-crop_to_cutline", outResImgBands, cutImgFile};
             steps.append(cutImgTask.CreateStep("gdalwarp-img", gdalWarpArgs));
             outResImgBands = cutImgFile;
+            cleanupTemporaryFilesList.append(cutImgFile);
 
             TaskToSubmit &cutAotTask = allTasksList[nCurTaskIdx++];
-            SubmitTasks(ctx, jobId, {cutAotTask});
+            SubmitTasks(ctx, cfg.jobId, {cutAotTask});
             const auto &cutAotFile = cutAotTask.GetFilePath("aot_res_clipped.tif");
             QStringList gdalWarpAotArgs = GetGdalWarpArgs(aotResImg, cutAotFile, "-10000", "2048", shapePath, resolutionStr);
-            //{ "-dstnodata", "-10000", "-overwrite", "-cutline", shapePath, "-crop_to_cutline", aotResImg, cutAotFile};
             steps.append(cutAotTask.CreateStep("gdalwarp-aot", gdalWarpAotArgs));
             aotResImg = cutAotFile;
+            cleanupTemporaryFilesList.append(cutAotFile);
 
             TaskToSubmit &cutCldTask = allTasksList[nCurTaskIdx++];
-            SubmitTasks(ctx, jobId, {cutCldTask});
+            SubmitTasks(ctx, cfg.jobId, {cutCldTask});
             const auto &cutCldFile = cutCldTask.GetFilePath("cld_res_clipped.tif");
             QStringList gdalWarpCldArgs = GetGdalWarpArgs(cldResImg, cutCldFile, "-10000", "2048", shapePath, resolutionStr);
-            //{ "-dstnodata", "0", "-overwrite", "-cutline", shapePath, "-crop_to_cutline", cldResImg, cutCldFile};
             steps.append(cutCldTask.CreateStep("gdalwarp-cld", gdalWarpCldArgs));
             cldResImg = cutCldFile;
+            cleanupTemporaryFilesList.append(cutCldFile);
 
             TaskToSubmit &cutWatTask = allTasksList[nCurTaskIdx++];
-            SubmitTasks(ctx, jobId, {cutWatTask});
+            SubmitTasks(ctx, cfg.jobId, {cutWatTask});
             const auto &cutWatFile = cutWatTask.GetFilePath("water_res_clipped.tif");
             QStringList gdalWarpWatArgs = GetGdalWarpArgs(waterResImg, cutWatFile, "-10000", "2048", shapePath, resolutionStr);
-            //{ "-dstnodata", "0", "-overwrite", "-cutline", shapePath, "-crop_to_cutline", waterResImg, cutWatFile};
             steps.append(cutWatTask.CreateStep("gdalwarp-wat", gdalWarpWatArgs));
             waterResImg = cutWatFile;
+            cleanupTemporaryFilesList.append(cutWatFile);
 
             TaskToSubmit &cutSnowTask = allTasksList[nCurTaskIdx++];
-            SubmitTasks(ctx, jobId, {cutSnowTask});
+            SubmitTasks(ctx, cfg.jobId, {cutSnowTask});
             const auto &cutSnowFile = cutSnowTask.GetFilePath("snow_res_clipped.tif");
             QStringList gdalWarpSnowArgs = GetGdalWarpArgs(snowResImg, cutSnowFile, "-10000", "2048", shapePath, resolutionStr);
-            //{ "-dstnodata", "0", "-overwrite", "-cutline", shapePath, "-crop_to_cutline", snowResImg, cutSnowFile};
             steps.append(cutSnowTask.CreateStep("gdalwarp-snow", gdalWarpSnowArgs));
             snowResImg = cutSnowFile;
+            cleanupTemporaryFilesList.append(cutSnowFile);
         }
         TaskToSubmit &weightAot = allTasksList[nCurTaskIdx++];
-        SubmitTasks(ctx, jobId, {weightAot});
+        SubmitTasks(ctx, cfg.jobId, {weightAot});
         TaskToSubmit &weightOnClouds = allTasksList[nCurTaskIdx++];
-        SubmitTasks(ctx, jobId, {weightOnClouds});
+        SubmitTasks(ctx, cfg.jobId, {weightOnClouds});
         TaskToSubmit &totalWeight = allTasksList[nCurTaskIdx++];
-        SubmitTasks(ctx, jobId, {totalWeight});
+        SubmitTasks(ctx, cfg.jobId, {totalWeight});
         TaskToSubmit &updateSynthesis = allTasksList[nCurTaskIdx++];
-        SubmitTasks(ctx, jobId, {updateSynthesis});
+        SubmitTasks(ctx, cfg.jobId, {updateSynthesis});
         TaskToSubmit &compositeSplitter = allTasksList[nCurTaskIdx++];
-        SubmitTasks(ctx, jobId, {compositeSplitter});
+        SubmitTasks(ctx, cfg.jobId, {compositeSplitter});
 
         // Weight AOT Step
         const auto &outWeightAotFile = weightAot.GetFilePath("weight_aot.tif");
         QStringList weightAotArgs = { "WeightAOT",     "-xml",     inputProduct, "-in",
-                                      aotResImg,       "-waotmin", weightAOTMin, "-waotmax",
-                                      weightAOTMax,    "-aotmax",  AOTMax,       "-out",
+                                      aotResImg,       "-waotmin", cfg.weightAOTMin, "-waotmax",
+                                      cfg.weightAOTMax,    "-aotmax",  cfg.AOTMax,       "-out",
                                       outWeightAotFile };
         steps.append(weightAot.CreateStep("WeightAOT", weightAotArgs));
+        cleanupTemporaryFilesList.append(outWeightAotFile);
 
         // Weight on clouds Step
         const auto &outWeightCldFile = weightOnClouds.GetFilePath("weight_cloud.tif");
         QStringList weightOnCloudArgs = { "WeightOnClouds", "-inxml",         inputProduct,
                                           "-incldmsk",      cldResImg,        "-coarseres",
-                                          coarseRes,        "-sigmasmallcld", sigmaSmallCloud,
-                                          "-sigmalargecld", sigmaLargeCloud,  "-out", outWeightCldFile };
+                                          cfg.coarseRes,        "-sigmasmallcld", cfg.sigmaSmallCloud,
+                                          "-sigmalargecld", cfg.sigmaLargeCloud,  "-out", outWeightCldFile };
         steps.append(weightOnClouds.CreateStep("WeightOnClouds", weightOnCloudArgs));
+        cleanupTemporaryFilesList.append(outWeightCldFile);
 
         // Total weight Step
         const auto &outTotalWeighFile = totalWeight.GetFilePath("weight_total.tif");
         QStringList totalWeightArgs = { "TotalWeight",    "-xml",           inputProduct,
                                         "-waotfile",      outWeightAotFile, "-wcldfile",
-                                        outWeightCldFile, "-l3adate",       l3aSynthesisDate,
-                                        "-halfsynthesis", synthalf,         "-wdatemin",
-                                        weightDateMin,    "-out",           outTotalWeighFile };
+                                        outWeightCldFile, "-l3adate",       cfg.l3aSynthesisDate,
+                                        "-halfsynthesis", cfg.synthalf,         "-wdatemin",
+                                        cfg.weightDateMin,    "-out",           outTotalWeighFile };
         steps.append(totalWeight.CreateStep("TotalWeight", totalWeightArgs));
+        cleanupTemporaryFilesList.append(outTotalWeighFile);
 
         // Update Synthesis Step
         const auto &outL3AResultFile = updateSynthesis.GetFilePath("L3AResult.tif");
@@ -327,6 +313,7 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             updateSynthesisArgs.append(prevL3AProdFlags);
         }
         steps.append(updateSynthesis.CreateStep("UpdateSynthesis", updateSynthesisArgs));
+        cleanupTemporaryFilesList.append(outL3AResultFile);
 
         // Composite Splitter Step
         const auto &outL3AResultReflsFile = compositeSplitter.GetFilePath("L3AResult_refls.tif");
@@ -351,6 +338,12 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
         prevL3AProdFlags = outL3AResultFlagsFile;
         prevL3AProdDates = outL3AResultDatesFile;
         prevL3ARgbFile = outL3AResultRgbFile;
+
+        if(!cfg.keepJobFiles) {
+            TaskToSubmit &cleanupTemporaryFiles = allTasksList[nCurTaskIdx++];
+            SubmitTasks(ctx, cfg.jobId, {cleanupTemporaryFiles});
+            steps.append(cleanupTemporaryFiles.CreateStep("CleanupTemporaryFiles", cleanupTemporaryFilesList));
+        }
     }
 
     CompositeProductFormatterParams &productFormatterParams = globalExecInfos.prodFormatParams;
@@ -376,70 +369,46 @@ QStringList CompositeHandler::GetGdalWarpArgs(const QString &inImg, const QStrin
 
 
 void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath,
-                                               const QJsonObject &parameters,
-                                               std::map<QString, QString> &configParameters,
+                                               const CompositeJobConfig &cfg,
                                                const QStringList &listProducts)
 {
     std::ofstream executionInfosFile;
     try {
-        // Get L3A Synthesis date
-        const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
-        // Get the Half Synthesis interval value
-        auto synthalf = parameters["half_synthesis"].toString();
-        if(synthalf.length() == 0) {
-            synthalf = configParameters["processor.l3a.half_synthesis"];
-            if(synthalf.length() == 0) {
-                synthalf = "15";
-            }
-        }
-
-        // Get the parameters from the configuration
-        const auto &bandsMapping = configParameters["processor.l3a.bandsmapping"];
-        const auto &scatCoeffs = configParameters["processor.l3a.preproc.scatcoeffs_10m"];
-
-        const auto &weightAOTMin = configParameters["processor.l3a.weight.aot.minweight"];
-        const auto &weightAOTMax = configParameters["processor.l3a.weight.aot.maxweight"];
-        const auto &AOTMax = configParameters["processor.l3a.weight.aot.maxaot"];
-
-        const auto &coarseRes = configParameters["processor.l3a.weight.cloud.coarseresolution"];
-        const auto &sigmaSmallCloud = configParameters["processor.l3a.weight.cloud.sigmasmall"];
-        const auto &sigmaLargeCloud = configParameters["processor.l3a.weight.cloud.sigmalarge"];
-
-        const auto &weightDateMin = configParameters["processor.l3a.weight.total.weightdatemin"];
-
         executionInfosFile.open(executionInfosPath.toStdString().c_str(), std::ofstream::out);
         executionInfosFile << "<?xml version=\"1.0\" ?>" << std::endl;
         executionInfosFile << "<metadata>" << std::endl;
         executionInfosFile << "  <General>" << std::endl;
-        executionInfosFile << "    <bands_mapping_file>" << bandsMapping.toStdString()
+        executionInfosFile << "    <bands_mapping_file>" << cfg.bandsMapping.toStdString()
                            << "</bands_mapping_file>" << std::endl;
-        executionInfosFile << "    <scattering_coefficients_file>" << scatCoeffs.toStdString()
-                           << "</scattering_coefficients_file>" << std::endl;
+        executionInfosFile << "    <scattering_coefficients_10M_file>" << cfg.scatCoeffs10M.toStdString()
+                           << "</scattering_coefficients_10M_file>" << std::endl;
+        executionInfosFile << "    <scattering_coefficients_20M_file>" << cfg.scatCoeffs20M.toStdString()
+                           << "</scattering_coefficients_20M_file>" << std::endl;
         executionInfosFile << "  </General>" << std::endl;
 
         executionInfosFile << "  <Weight_AOT>" << std::endl;
-        executionInfosFile << "    <weight_aot_min>" << weightAOTMin.toStdString()
+        executionInfosFile << "    <weight_aot_min>" << cfg.weightAOTMin.toStdString()
                            << "</weight_aot_min>" << std::endl;
-        executionInfosFile << "    <weight_aot_max>" << weightAOTMax.toStdString()
+        executionInfosFile << "    <weight_aot_max>" << cfg.weightAOTMax.toStdString()
                            << "</weight_aot_max>" << std::endl;
-        executionInfosFile << "    <aot_max>" << AOTMax.toStdString() << "</aot_max>" << std::endl;
+        executionInfosFile << "    <aot_max>" << cfg.AOTMax.toStdString() << "</aot_max>" << std::endl;
         executionInfosFile << "  </Weight_AOT>" << std::endl;
 
         executionInfosFile << "  <Weight_On_Clouds>" << std::endl;
-        executionInfosFile << "    <coarse_res>" << coarseRes.toStdString() << "</coarse_res>"
+        executionInfosFile << "    <coarse_res>" << cfg.coarseRes.toStdString() << "</coarse_res>"
                            << std::endl;
-        executionInfosFile << "    <sigma_small_cloud>" << sigmaSmallCloud.toStdString()
+        executionInfosFile << "    <sigma_small_cloud>" << cfg.sigmaSmallCloud.toStdString()
                            << "</sigma_small_cloud>" << std::endl;
-        executionInfosFile << "    <sigma_large_cloud>" << sigmaLargeCloud.toStdString()
+        executionInfosFile << "    <sigma_large_cloud>" << cfg.sigmaLargeCloud.toStdString()
                            << "</sigma_large_cloud>" << std::endl;
         executionInfosFile << "  </Weight_On_Clouds>" << std::endl;
 
         executionInfosFile << "  <Weight_On_Date>" << std::endl;
-        executionInfosFile << "    <weight_date_min>" << weightDateMin.toStdString()
+        executionInfosFile << "    <weight_date_min>" << cfg.weightDateMin.toStdString()
                            << "</weight_date_min>" << std::endl;
-        executionInfosFile << "    <l3a_product_date>" << l3aSynthesisDate.toStdString()
+        executionInfosFile << "    <l3a_product_date>" << cfg.l3aSynthesisDate.toStdString()
                            << "</l3a_product_date>" << std::endl;
-        executionInfosFile << "    <half_synthesis>" << synthalf.toStdString()
+        executionInfosFile << "    <half_synthesis>" << cfg.synthalf.toStdString()
                            << "</half_synthesis>" << std::endl;
         executionInfosFile << "  </Weight_On_Date>" << std::endl;
 
@@ -447,9 +416,9 @@ void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath
         // TODO: We should get these infos somehow but without parsing here anything
         // executionInfosFile << "    <start_date>" << 2013031 << "</start_date>" << std::endl;
         // executionInfosFile << "    <end_date>" << 20130422 << "</end_date>" << std::endl;
-        executionInfosFile << "    <synthesis_date>" << l3aSynthesisDate.toStdString()
+        executionInfosFile << "    <synthesis_date>" << cfg.l3aSynthesisDate.toStdString()
                            << "</synthesis_date>" << std::endl;
-        executionInfosFile << "    <synthesis_half>" << synthalf.toStdString()
+        executionInfosFile << "    <synthesis_half>" << cfg.synthalf.toStdString()
                            << "</synthesis_half>" << std::endl;
         executionInfosFile << "  </Dates_information>" << std::endl;
 
@@ -489,18 +458,11 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
             QStringLiteral("No products provided at input or no products available in the specified interval").
                     toStdString());
     }
-    const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    int resolution = 0;
-    if(!GetParameterValueAsInt(parameters, "resolution", resolution) ||
-            resolution == 0) {
-        resolution = 10;
-    }
-    bool bGenerate20MS2Res = false;
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3a.");
-    // Get L3A Synthesis date
-    const QString &generate20MS2ResStr = configParameters["processor.l3a.generate_20m_s2_resolution"];
-    bGenerate20MS2Res = (generate20MS2ResStr.toInt() != 0);
 
+    CompositeJobConfig cfg;
+    GetJobConfig(ctx, event, cfg);
+
+    int resolution = cfg.resolution;
     QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.jobId, listProducts,
                                                                ProductType::L2AProductTypeId);
     QList<CompositeProductFormatterParams> listParams;
@@ -520,13 +482,13 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                 if(bHasS2 && resolution != 20) { curRes = 10;}  // if S2 and resolution not 20m, force it to 10m
             } else {
                 // if we are at the second iteration, check if we have S2, if we should generate for 20m and if we had previously 10m
-                if(bGenerate20MS2Res && bHasS2 && resolution != 20) { curRes = 20;}
+                if(cfg.bGenerate20MS2Res && bHasS2 && resolution != 20) { curRes = 20;}
                 else { break;}  // exit the loop and do not execute anymore the second step
             }
             listCompositeInfos.append(CompositeGlobalExecutionInfos());
             CompositeGlobalExecutionInfos &infos = listCompositeInfos[listCompositeInfos.size()-1];
             infos.prodFormatParams.tileId = GetProductFormatterTile(tileId);
-            HandleNewTilesList(ctx, event, listTemporalTiles, infos, curRes);
+            HandleNewTilesList(ctx, cfg, listTemporalTiles, infos, curRes);
             listParams.append(infos.prodFormatParams);
             productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
             allSteps.append(infos.allStepsList);
@@ -536,7 +498,7 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     SubmitTasks(ctx, event.jobId, {productFormatterTask});
 
     // finally format the product
-    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, event, listProducts, listParams);
+    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, cfg, listProducts, listParams);
 
     // add these steps to the steps list to be submitted
     allSteps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
@@ -568,37 +530,82 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
     }
 }
 
-QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
+void CompositeHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmittedEvent &event,CompositeJobConfig &cfg) {
+    auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3a.");
+    std::map<QString, QString> executorConfigParameters = ctx.GetJobConfigurationParameters(event.jobId, "executor.shapes_dir");
+    auto execProcConfigParameters = ctx.GetJobConfigurationParameters(event.jobId, "executor.processor.l3a.keep_job_folders");
+    //auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.working-mem");
+    const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
+
+    cfg.jobId = event.jobId;
+    cfg.siteId = event.siteId;
+    cfg.resolution = 0;
+    if(!GetParameterValueAsInt(parameters, "resolution", cfg.resolution) ||
+            cfg.resolution == 0) {
+        cfg.resolution = 10;
+    }
+
+    const QString &generate20MS2ResStr = configParameters["processor.l3a.generate_20m_s2_resolution"];
+    cfg.bGenerate20MS2Res = (generate20MS2ResStr.toInt() != 0);
+
+
+    cfg.l3aSynthesisDate = parameters["synthesis_date"].toString();
+    cfg.synthalf = parameters["half_synthesis"].toString();
+
+    // Get the parameters from the configuration
+    // Get the Half Synthesis interval value if it was not specified by the user
+    if(cfg.synthalf.length() == 0) {
+        cfg.synthalf = configParameters["processor.l3a.half_synthesis"];
+        if(cfg.synthalf.length() == 0) {
+            cfg.synthalf = "15";
+        }
+    }
+    cfg.lutPath = configParameters["processor.l3a.lut_path"];
+
+    cfg.bandsMapping = configParameters["processor.l3a.bandsmapping"];
+    cfg.scatCoeffs10M = configParameters["processor.l3a.preproc.scatcoeffs_10m"];
+    cfg.scatCoeffs20M = configParameters["processor.l3a.preproc.scatcoeffs_20m"];
+    cfg.weightAOTMin = configParameters["processor.l3a.weight.aot.minweight"];
+    cfg.weightAOTMax = configParameters["processor.l3a.weight.aot.maxweight"];
+    cfg.AOTMax = configParameters["processor.l3a.weight.aot.maxaot"];
+    cfg.coarseRes = configParameters["processor.l3a.weight.cloud.coarseresolution"];
+    cfg.sigmaSmallCloud = configParameters["processor.l3a.weight.cloud.sigmasmall"];
+    cfg.sigmaLargeCloud = configParameters["processor.l3a.weight.cloud.sigmalarge"];
+    cfg.weightDateMin = configParameters["processor.l3a.weight.total.weightdatemin"];
+
+    cfg.shapeFilesFolder = executorConfigParameters["executor.shapes_dir"];
+
+    // by default, do not keep job files
+    cfg.keepJobFiles = false;
+    auto keepStr = execProcConfigParameters["executor.processor.l3a.keep_job_folders"];
+    if(keepStr == "1") cfg.keepJobFiles = true;
+}
+
+QStringList CompositeHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const CompositeJobConfig &cfg,
                                     const QStringList &listProducts, const QList<CompositeProductFormatterParams> &productParams) {
 
-    const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3a.");
-
-    const auto &lutFile = configParameters["processor.l3a.lut_path"];
-
-    const auto &targetFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId);
+    const auto &targetFolder = GetFinalProductFolder(ctx, cfg.jobId, cfg.siteId);
     const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
     const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
-    const auto &l3aSynthesisDate = parameters["synthesis_date"].toString();
 
-    WriteExecutionInfosFile(executionInfosPath, parameters, configParameters, listProducts);
+    WriteExecutionInfosFile(executionInfosPath, cfg, listProducts);
 
     QStringList productFormatterArgs = { "ProductFormatter",
                                          "-destroot", targetFolder,
                                          "-fileclass", "SVT1",
                                          "-level", "L3A",
-                                         "-timeperiod", l3aSynthesisDate,
+                                         "-timeperiod", cfg.l3aSynthesisDate,
                                          "-baseline", "01.00",
-                                         "-siteid", QString::number(event.siteId),
+                                         "-siteid", QString::number(cfg.siteId),
                                          "-processor", "composite",
                                          "-gipp", executionInfosPath,
                                          "-outprops", outPropsPath};
     productFormatterArgs += "-il";
     productFormatterArgs += listProducts[listProducts.size() - 1];
 
-    if(lutFile.size() > 0) {
+    if(cfg.lutPath.size() > 0) {
         productFormatterArgs += "-lut";
-        productFormatterArgs += lutFile;
+        productFormatterArgs += cfg.lutPath;
     }
 
     productFormatterArgs += "-processor.composite.refls";

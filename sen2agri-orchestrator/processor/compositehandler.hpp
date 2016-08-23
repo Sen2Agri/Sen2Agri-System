@@ -22,6 +22,34 @@ typedef struct {
     CompositeProductFormatterParams prodFormatParams;
 } CompositeGlobalExecutionInfos;
 
+typedef struct {
+    int jobId;
+    int siteId;
+    int resolution;
+
+    QString lutPath;
+
+    bool bGenerate20MS2Res;
+
+    QString l3aSynthesisDate;
+    QString synthalf;
+    QString bandsMapping;
+    QString scatCoeffs10M;
+    QString scatCoeffs20M;
+    QString weightAOTMin;
+    QString weightAOTMax;
+    QString AOTMax;
+    QString coarseRes;
+    QString sigmaSmallCloud;
+    QString sigmaLargeCloud;
+    QString weightDateMin;
+
+    QString shapeFilesFolder;
+
+    bool keepJobFiles;
+
+} CompositeJobConfig;
+
 class CompositeHandler : public ProcessorHandler
 {
 private:
@@ -31,17 +59,15 @@ private:
                                 const TaskFinishedEvent &event) override;
 
     void HandleNewTilesList(EventProcessingContext &ctx,
-                               const JobSubmittedEvent &event,
-                               const TileTemporalFilesInfo &tileTemporalFilesInfo, CompositeGlobalExecutionInfos &globalExecInfos, int resolution);
+                            const CompositeJobConfig &cfg,
+                            const TileTemporalFilesInfo &tileTemporalFilesInfo, CompositeGlobalExecutionInfos &globalExecInfos, int resolution);
     bool IsProductAcceptableForJob(int jobId, const ProductAvailableEvent &event);
     void FilterInputProducts(QStringList &listFiles, int productDate, int halfSynthesis);
 
-    void CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList, QList<std::reference_wrapper<const TaskToSubmit> > &outProdFormatterParentsList, const TileTemporalFilesInfo &tileTemporalFilesInfo);
-    void WriteExecutionInfosFile(const QString &executionInfosPath,
-                                 const QJsonObject &parameters,
-                                 std::map<QString, QString> &configParameters,
+    void CreateTasksForNewProducts(const CompositeJobConfig &cfg, QList<TaskToSubmit> &outAllTasksList, QList<std::reference_wrapper<const TaskToSubmit> > &outProdFormatterParentsList, const TileTemporalFilesInfo &tileTemporalFilesInfo);
+    void WriteExecutionInfosFile(const QString &executionInfosPath, const CompositeJobConfig &cfg,
                                  const QStringList &listProducts);
-    QStringList GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
+    QStringList GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const CompositeJobConfig &cfg,
                                         const QStringList &listProducts, const QList<CompositeProductFormatterParams> &productParams);
 
     ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
@@ -52,6 +78,7 @@ private:
 
     QStringList GetGdalWarpArgs(const QString &inImg, const QString &outImg, const QString &dtsNoData,
                                 const QString &gdalwarpMem, const QString &shape, const QString &resolutionStr);
+    void GetJobConfig(EventProcessingContext &ctx,const JobSubmittedEvent &event,CompositeJobConfig &cfg);
 };
 
 #endif // COMPOSITEHANDLER_HPP
