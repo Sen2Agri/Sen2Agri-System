@@ -15,7 +15,7 @@
 : ${SEN2AGRI_URL:="git@192.168.60.52:/srv/git/sen2agri.git"}
 
 ### DEPENDENCIES FOR GENERATED RPM PACKAGES
-: ${PLATFORM_INSTALL_OTHER_DEP:="-d "otb""}
+: ${PLATFORM_INSTALL_OTHER_DEP:="-d otb -d gdal-python"}
 
 ### CONFIG PATHS FOR SCRIPT
 : ${DEFAULT_DIR:=$(pwd)}
