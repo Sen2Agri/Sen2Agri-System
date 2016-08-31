@@ -103,17 +103,15 @@ TOutput UpdateSynthesisFunctor<TInput,TOutput>::operator()( const TInput & A )
     OutFunctorInfos outInfos(m_nNbOfL3AReflectanceBands);
 
     ResetCurrentPixelValues(A, outInfos);
-    if(IsLandPixel(A))
-    {
+    if(IsLandPixel(A)) {
         HandleLandPixel(A, outInfos);
     } else {
-        if(IsSnowPixel(A) || IsWaterPixel(A))
-        {
-            // if pixel is snow or water *replace the reflectance value
-            HandleSnowOrWaterPixel(A, outInfos);
-        } else {
+        if(IsCloudPixel(A)) {
             // if pixel is cloud or shadow *pixel never observed cloud snow or water free
             HandleCloudOrShadowPixel(A, outInfos);
+        } else if(IsSnowPixel(A) || IsWaterPixel(A)) {
+            // if pixel is snow or water *replace the reflectance value
+            HandleSnowOrWaterPixel(A, outInfos);
         }
     }
 
@@ -308,7 +306,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleSnowOrWaterPixel(const TInput
             } else {
                 // pixel already observed cloud free, keep the previous weighted average
                 float fPrevRefl = GetPrevL3AReflectanceValue(A, i);
-                if(IsNoDataValue(fPrevRefl, 0)) {
+                if(IsNoDataValue(fPrevRefl, NO_DATA_VALUE)) {
                     // if we had previously LAND, we need to check for all bands if the prev reflectance is NO_DATA
                     // This might happen for combinations on 2 satellites, when we had only few bands valid, and the rest missing
                     outInfos.m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
@@ -424,7 +422,7 @@ void UpdateSynthesisFunctor<TInput,TOutput>::HandleCloudOrShadowPixel(const TInp
                 if(nCurrentBandIndex != -1)
                 {
                     float fPrevRefl = GetPrevL3AReflectanceValue(A, i);
-                    if(IsNoDataValue(fPrevRefl, 0)) {
+                    if(IsNoDataValue(fPrevRefl, NO_DATA_VALUE)) {
                         outInfos.m_CurrentWeightedReflectances[i] = GetL2AReflectanceForPixelVal(A[nCurrentBandIndex]);
                     }
                 }
