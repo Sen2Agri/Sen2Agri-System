@@ -36,7 +36,7 @@
 // Filters
 #include "otbMultiChannelExtractROI.h"
 
-#include "otbCropTypeFeatureExtractionFilter.h"
+#include "ComputeNDVIFilter.h"
 #include "otbTemporalResamplingFilter.h"
 #include "otbTemporalMergingFilter.h"
 
@@ -45,27 +45,30 @@
 #include "otbSentinelMaskFilter.h"
 
 #include "TimeSeriesReader.h"
+#include "TemporalMerging.hxx"
+#include "CropMaskFeaturesSupervised.hxx"
 
 #include <string>
 
-typedef otb::CropTypeFeatureExtractionFilter<ImageType>     CropTypeFeatureExtractionFilterType;
-typedef otb::ObjectList<CropTypeFeatureExtractionFilterType>
-                                                            CropTypeFeatureExtractionFilterListType;
-class CropTypePreprocessing : public TimeSeriesReader
+typedef ComputeNDVIFunctor<ImageType::PixelType> NDVIFunctorType;
+typedef UnaryFunctorImageFilterWithNBands<NDVIFunctorType> ComputeNDVIFilterType;
+
+class CropMaskNDVIPreprocessing : public TimeSeriesReader
 {
 public:
-    typedef CropTypePreprocessing Self;
+    typedef CropMaskNDVIPreprocessing Self;
     typedef TimeSeriesReader Superclass;
     typedef itk::SmartPointer<Self> Pointer;
     typedef itk::SmartPointer<const Self> ConstPointer;
 
     itkNewMacro(Self)
-    itkTypeMacro(CropTypePreprocessing, TimeSeriesReader)
+    itkTypeMacro(CropMaskPreprocessing, TimeSeriesReader)
 
-    CropTypePreprocessing()
+    CropMaskNDVIPreprocessing()
     {
         m_TemporalResampler = TemporalResamplingFilterType::New();
-        m_FeatureExtractor = CropTypeFeatureExtractionFilterType::New();
+        m_Merger = otb::BinaryFunctorImageFilterWithNBands<ImageType, TemporalMergingFunctor<ImageType::PixelType>>::New();
+        m_ComputeNDVIFilter = ComputeNDVIFilterType::New();
     }
 
     otb::Wrapper::FloatVectorImageType * GetOutput()
@@ -105,16 +108,59 @@ public:
         // The output days will be updated later
         m_TemporalResampler->SetInputData(sdCollection);
 
-        // Set the feature extractor
-        m_FeatureExtractor->SetInput(m_TemporalResampler->GetOutput());
+        std::vector<ImageInfo> imgInfos;
+        int priority = 10;
+        index = 0;
+        for (const auto &sd : sdCollection) {
+            for (auto date : sd.outDates) {
+                ImageInfo ii(index++, date, priority);
+                imgInfos.push_back(ii);
+            }
+            priority--;
+        }
+        std::sort(imgInfos.begin(), imgInfos.end(), [](const ImageInfo& o1, const ImageInfo& o2) {
+            return (o1.day < o2.day) || ((o1.day == o2.day) && (o1.priority > o2.priority));
+        });
 
-        return m_FeatureExtractor->GetOutput();
+        // count the number of output images and create the out days file
+        std::vector<int> od;
+        int lastDay = -1;
+        std::cerr << "dates:\n";
+        for (auto& imgInfo : imgInfos) {
+            if (lastDay != imgInfo.day) {
+                std::cerr << imgInfo.day << std::endl;
+                od.push_back(imgInfo.day);
+                lastDay = imgInfo.day;
+            }
+        }
+
+        bandsConcat->UpdateOutputInformation();
+        maskConcat->UpdateOutputInformation();
+        // The number of image bands can be computed as the ratio between the bands in the image and
+        // the bands in the mask
+        int imageBands = bandsConcat->GetOutput()->GetNumberOfComponentsPerPixel() /
+                         maskConcat->GetOutput()->GetNumberOfComponentsPerPixel();
+
+
+        m_Merger->SetNumberOfOutputBands(imageBands * od.size());
+        m_Merger->SetFunctor(TemporalMergingFunctor<ImageType::PixelType>(imgInfos, od.size(), imageBands));
+
+        m_Merger->SetInput(0, m_TemporalResampler->GetOutput());
+        m_Merger->SetInput(1, maskConcat->GetOutput());
+
+        m_ComputeNDVIFilter->SetNumberOfOutputBands(od.size());
+        m_ComputeNDVIFilter->SetInput(m_TemporalResampler->GetOutput());
+//        m_ComputeNDVIFilter->SetInput(m_Merger->GetOutput());
+
+        return m_ComputeNDVIFilter->GetOutput();
     }
-
 
 private:
     TemporalResamplingFilterType::Pointer             m_TemporalResampler;
-    CropTypeFeatureExtractionFilterType::Pointer      m_FeatureExtractor;
+    otb::BinaryFunctorImageFilterWithNBands<ImageType,
+        TemporalMergingFunctor<ImageType::PixelType>>
+    ::Pointer                                         m_Merger;
+    ComputeNDVIFilterType::Pointer                    m_ComputeNDVIFilter;
 };
 
-typedef otb::ObjectList<CropTypePreprocessing>              CropTypePreprocessingList;
+typedef otb::ObjectList<CropMaskNDVIPreprocessing>              CropMaskNDVIPreprocessingList;

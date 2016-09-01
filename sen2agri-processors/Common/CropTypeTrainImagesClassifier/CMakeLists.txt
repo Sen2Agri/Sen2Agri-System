@@ -1,6 +1,7 @@
 otb_create_application(
   NAME           CropTypeTrainImagesClassifier
   SOURCES        otbTrainImagesClassifier.cxx otbTrainImagesClassifier.h
+                 ../Filters/CropTypePreprocessing.h
   LINK_LIBRARIES ${OTB_LIBRARIES} MACCSMetadata)
 
 if(BUILD_TESTING)

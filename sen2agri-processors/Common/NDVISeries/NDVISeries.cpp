@@ -67,7 +67,6 @@
 // Filters
 #include "otbMultiChannelExtractROI.h"
 #include "otbConcatenateVectorImagesFilter.h"
-#include "../Filters/otbCropTypeFeatureExtractionFilter.h"
 #include "../Filters/otbTemporalResamplingFilter.h"
 #include "../Filters/otbTemporalMergingFilter.h"
 
@@ -75,7 +74,7 @@
 #include "../Filters/otbLandsatMaskFilter.h"
 #include "../Filters/otbSentinelMaskFilter.h"
 
-#include "../Filters/CropTypePreprocessing.h"
+#include "../Filters/CropMaskNDVIPreprocessing.h"
 
 namespace otb
 {
@@ -97,7 +96,7 @@ namespace Wrapper
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
-class CropTypeImageClassifier : public Application
+class NDVISeries : public Application
 //  Software Guide : EndCodeSnippet
 {
 public:
@@ -106,7 +105,7 @@ public:
   // Software Guide : EndLatex
 
   //  Software Guide : BeginCodeSnippet
-  typedef CropTypeImageClassifier Self;
+  typedef NDVISeries Self;
   typedef Application Superclass;
   typedef itk::SmartPointer<Self> Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
@@ -119,7 +118,7 @@ public:
   //  Software Guide : BeginCodeSnippet
   itkNewMacro(Self)
 
-  itkTypeMacro(CropTypeImageClassifier, otb::Application)
+  itkTypeMacro(NDVISeries, otb::Application)
   //  Software Guide : EndCodeSnippet
 
 
@@ -146,13 +145,12 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-      SetName("CropTypeImageClassifier");
-      SetDescription("Build the statistics from a set of tiles");
+      SetName("NDVISeries");
+      SetDescription("Extracts a temporally-resampled NDVI series");
 
-      SetDocName("CropTypeImageClassifier");
-      SetDocLongDescription("Build the statistics from a set of tiles.");
+      SetDocName("NDVISeries");
+      SetDocLongDescription("Extracts a temporally-resampled NDVI series.");
       SetDocLimitations("None");
-      SetDocAuthors("LBU");
       SetDocSeeAlso(" ");
     //  Software Guide : EndCodeSnippet
 
@@ -179,14 +177,16 @@ private:
     AddParameter(ParameterType_InputFilenameList, "il", "Input descriptors");
     SetParameterDescription( "il", "The list of descriptors. They must be sorted by tiles." );
 
-    AddParameter(ParameterType_OutputFilename, "out", "Output Image");
+    AddParameter(ParameterType_OutputImage, "out", "Output Image");
     SetParameterDescription( "out", "Output image" );
 
-    AddParameter(ParameterType_Float, "bv", "Background Value");
-    SetParameterDescription( "bv", "Background value to ignore in statistics computation." );
-    MandatoryOff("bv");
-
     AddParameter(ParameterType_StringList, "sp", "Temporal sampling rate");
+
+    AddParameter(ParameterType_Choice, "mode", "Mode");
+    SetParameterDescription("mode", "Specifies the choice of output dates (default: resample)");
+    AddChoice("mode.resample", "Specifies the temporal resampling mode");
+    AddChoice("mode.gapfill", "Specifies the gapfilling mode");
+    SetParameterString("mode", "resample");
 
     AddParameter(ParameterType_Float, "pixsize", "The size of a pixel, in meters");
     SetDefaultParameterFloat("pixsize", 10.0); // The default value is 10 meters
@@ -196,24 +196,7 @@ private:
     AddParameter(ParameterType_String, "mission", "The main raster series that will be used. By default SPOT is used");
     MandatoryOff("mission");
 
-    AddParameter(ParameterType_OutputFilename, "outstat", "Statistics file");
-    SetParameterDescription("outstat", "Statistics file");
-    MandatoryOff("outstat");
-
-    AddParameter(ParameterType_OutputFilename, "indays", "Resampled input days");
-    SetParameterDescription("indays", "The output days after temporal resampling.");
-
-    AddParameter(ParameterType_InputImage, "mask", "Input mask");
-    SetParameterDescription("mask", "The mask allows to restrict classification of the input image to the area where mask pixel values are greater than 0");
-    MandatoryOff("mask");
-
-    AddParameter(ParameterType_InputFilename, "model", "Model file");
-    SetParameterDescription("model", "A model file (maximum class label = 65535)");
-
-    AddParameter(ParameterType_Empty, "singletile", "Single tile mode");
-    SetParameterDescription("singletile", "Reuses image statistics from the training step");
-
-     //  Software Guide : EndCodeSnippet
+    //  Software Guide : EndCodeSnippet
 
     // Software Guide : BeginLatex
     // An example commandline is automatically generated. Method \code{SetDocExampleParameterValue()} is
@@ -224,7 +207,10 @@ private:
     SetDocExampleParameterValue("il", "image1.xml image2.xml");
     SetDocExampleParameterValue("sp", "SENTINEL 10 LANDSAT 7");
     SetDocExampleParameterValue("out", "statistics.xml");
+    SetDocExampleParameterValue("nbcomp", "6");
     //  Software Guide : EndCodeSnippet
+
+    m_Preprocessor = CropMaskNDVIPreprocessing::New();
   }
 
   // Software Guide : BeginLatex
@@ -280,94 +266,29 @@ private:
           mission = this->GetParameterString("mission");
       }
 
+      bool resample = GetParameterString("mode") == "resample";
 
       TileData td;
 
-      auto preprocessor = CropTypePreprocessing::New();
-      preprocessor->SetPixelSize(pixSize);
-      preprocessor->SetMission(mission);
+      m_Preprocessor = CropMaskNDVIPreprocessing::New();
+      m_Preprocessor->SetPixelSize(pixSize);
+      m_Preprocessor->SetMission(mission);
 
       // compute the desired size of the processed rasters
-      preprocessor->updateRequiredImageSize(descriptors, 0, descriptors.size(), td);
-      preprocessor->Build(descriptors.begin(), descriptors.end(), td);
+      m_Preprocessor->updateRequiredImageSize(descriptors, 0, descriptors.size(), td);
+      m_Preprocessor->Build(descriptors.begin(), descriptors.end(), td);
 
-      const auto &sensorOutDays = readOutputDays(GetParameterString("indays"));
-      preprocessor->SetSensorOutDays(sensorOutDays);
-      auto output = preprocessor->GetOutput();
+      auto preprocessors = CropMaskNDVIPreprocessingList::New();
+      preprocessors->PushBack(m_Preprocessor);
+      const auto &sensorOutDays = getOutputDays(preprocessors, resample, sp);
 
-      // Samples
-      typedef double ValueType;
-      typedef itk::VariableLengthVector<ValueType> MeasurementType;
+      m_Preprocessor->SetSensorOutDays(sensorOutDays);
+      auto output = m_Preprocessor->GetOutput();
 
-      // Build a Measurement Vector of mean
-      MeasurementType mean;
-
-      // Build a MeasurementVector of variance
-      MeasurementType variance;
-      Application::Pointer app;
-
-      if (!GetParameterEmpty("singletile") && HasValue("outstat")) {
-          app = ApplicationRegistry::CreateApplication("ComputeImagesStatistics");
-          if (!app) {
-              itkExceptionMacro("Unable to load the ComputeImagesStatistics application");
-          }
-          if (HasValue("bv")) {
-              app->EnableParameter("bv");
-              app->SetParameterFloat("bv", GetParameterFloat("bv"));
-          }
-
-          app->EnableParameter("out");
-          app->SetParameterString("out", GetParameterString("outstat"));
-
-          app->EnableParameter("il");
-          auto imageList = dynamic_cast<InputImageListParameter *>(app->GetParameterByKey("il"));
-
-          imageList->AddImage(output);
-
-          app->UpdateParameters();
-
-          otbAppLogINFO("Computing statistics");
-          app->ExecuteAndWriteOutput();
-          otbAppLogINFO("Statistics written");
-      } else {
-          otbAppLogINFO("Skipping statistics");
-      }
-
-      app = otb::Wrapper::ApplicationRegistry::CreateApplication("ImageClassifier");
-      if (!app) {
-          itkExceptionMacro("Unable to load the ImageClassifier application");
-      }
-
-      app->EnableParameter("in");
-      auto inputParameter = dynamic_cast<InputImageParameter *>(app->GetParameterByKey("in"));
-      inputParameter->SetImage(output);
-
-      if (HasValue("mask")) {
-          app->EnableParameter("mask");
-          app->SetParameterString("mask", GetParameterString("mask"));
-      }
-
-      app->EnableParameter("model");
-      app->SetParameterString("model", GetParameterString("model"));
-
-      if (HasValue("outstat")) {
-        app->EnableParameter("imstat");
-        app->SetParameterString("imstat", GetParameterString("outstat"));
-      }
-
-      app->EnableParameter("out");
-      app->SetParameterString("out", GetParameterString("out"));
-      app->SetParameterOutputImagePixelType("out", ImagePixelType_uint16);
-
-      app->UpdateParameters();
-
-      otbAppLogINFO("Performing classification");
-      app->ExecuteAndWriteOutput();
-      otbAppLogINFO("Classification done");
+      SetParameterOutputImage("out", output);
   }
 
-  //  Software Guide :EndCodeSnippet
-
+    CropMaskNDVIPreprocessing::Pointer m_Preprocessor;
 };
 }
 }
@@ -376,5 +297,5 @@ private:
 // Finally \code{OTB\_APPLICATION\_EXPORT} is called.
 // Software Guide : EndLatex
 //  Software Guide :BeginCodeSnippet
-OTB_APPLICATION_EXPORT(otb::Wrapper::CropTypeImageClassifier)
+OTB_APPLICATION_EXPORT(otb::Wrapper::NDVISeries)
 //  Software Guide :EndCodeSnippet

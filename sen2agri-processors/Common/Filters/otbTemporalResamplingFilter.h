@@ -316,6 +316,56 @@ private:
   SensorDataCollection  m_InputData;
 
 };
+
+/** Binary functor image filter which produces a vector image with a
+* number of bands different from the input images */
+template<typename ImageType, typename Functor>
+class ITK_EXPORT BinaryFunctorImageFilterWithNBands
+    : public itk::BinaryFunctorImageFilter<ImageType,
+                                           ImageType,
+                                           ImageType,
+                                           Functor >
+{
+public:
+    typedef BinaryFunctorImageFilterWithNBands Self;
+    typedef itk::BinaryFunctorImageFilter<ImageType,
+                                          ImageType,
+                                          ImageType,
+                                          Functor > Superclass;
+    typedef itk::SmartPointer<Self> Pointer;
+    typedef itk::SmartPointer<const Self> ConstPointer;
+
+    /** Method for creation through the object factory. */
+    itkNewMacro(Self);
+
+    /** Macro defining the type*/
+    itkTypeMacro(BinaryFunctorImageFilterWithNBands, SuperClass);
+
+    /** Accessors for the number of bands*/
+    itkSetMacro(NumberOfOutputBands, unsigned int);
+    itkGetConstMacro(NumberOfOutputBands, unsigned int);
+
+protected:
+    BinaryFunctorImageFilterWithNBands()
+    {
+    }
+    virtual ~BinaryFunctorImageFilterWithNBands()
+    {
+    }
+
+    void GenerateOutputInformation()
+    {
+        Superclass::GenerateOutputInformation();
+        this->GetOutput()->SetNumberOfComponentsPerPixel(m_NumberOfOutputBands);
+    }
+
+private:
+    BinaryFunctorImageFilterWithNBands(const Self &); // purposely not implemented
+    void operator=(const Self &); // purposely not implemented
+
+    unsigned int m_NumberOfOutputBands;
+};
+
 } // end namespace otb
 #ifndef OTB_MANUAL_INSTANTIATION
 #include "otbTemporalResamplingFilter.txx"

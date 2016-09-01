@@ -67,7 +67,6 @@
 // Filters
 #include "otbMultiChannelExtractROI.h"
 #include "otbConcatenateVectorImagesFilter.h"
-#include "../Filters/otbCropTypeFeatureExtractionFilter.h"
 #include "../Filters/otbTemporalResamplingFilter.h"
 #include "../Filters/otbTemporalMergingFilter.h"
 
@@ -75,7 +74,7 @@
 #include "../Filters/otbLandsatMaskFilter.h"
 #include "../Filters/otbSentinelMaskFilter.h"
 
-#include "../Filters/CropTypePreprocessing.h"
+#include "../Filters/CropMaskPreprocessing.h"
 
 namespace otb
 {
@@ -97,7 +96,7 @@ namespace Wrapper
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
-class CropTypeImageClassifier : public Application
+class CropMaskImageClassifier : public Application
 //  Software Guide : EndCodeSnippet
 {
 public:
@@ -106,7 +105,7 @@ public:
   // Software Guide : EndLatex
 
   //  Software Guide : BeginCodeSnippet
-  typedef CropTypeImageClassifier Self;
+  typedef CropMaskImageClassifier Self;
   typedef Application Superclass;
   typedef itk::SmartPointer<Self> Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
@@ -119,7 +118,7 @@ public:
   //  Software Guide : BeginCodeSnippet
   itkNewMacro(Self)
 
-  itkTypeMacro(CropTypeImageClassifier, otb::Application)
+  itkTypeMacro(CropMaskImageClassifier, otb::Application)
   //  Software Guide : EndCodeSnippet
 
 
@@ -146,10 +145,10 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-      SetName("CropTypeImageClassifier");
+      SetName("CropMaskImageClassifier");
       SetDescription("Build the statistics from a set of tiles");
 
-      SetDocName("CropTypeImageClassifier");
+      SetDocName("CropMaskImageClassifier");
       SetDocLongDescription("Build the statistics from a set of tiles.");
       SetDocLimitations("None");
       SetDocAuthors("LBU");
@@ -195,6 +194,14 @@ private:
 
     AddParameter(ParameterType_String, "mission", "The main raster series that will be used. By default SPOT is used");
     MandatoryOff("mission");
+
+    AddParameter(ParameterType_Int, "window", "The number of dates in the temporal window");
+    SetDefaultParameterInt("window", 2);
+
+    AddParameter(ParameterType_Empty,
+                 "bm",
+                 "If set use the features from Benchmarking instead of the features from ATBD");
+    MandatoryOff("bm");
 
     AddParameter(ParameterType_OutputFilename, "outstat", "Statistics file");
     SetParameterDescription("outstat", "Statistics file");
@@ -281,11 +288,19 @@ private:
       }
 
 
+      auto bm = GetParameterEmpty("bm");
+      auto window = GetParameterInt("window");
+
       TileData td;
 
-      auto preprocessor = CropTypePreprocessing::New();
+      auto preprocessor = CropMaskPreprocessing::New();
       preprocessor->SetPixelSize(pixSize);
       preprocessor->SetMission(mission);
+
+      preprocessor->SetBM(bm);
+      preprocessor->SetW(window);
+      preprocessor->SetDelta(0.05f);
+      preprocessor->SetTSoil(0.2f);
 
       // compute the desired size of the processed rasters
       preprocessor->updateRequiredImageSize(descriptors, 0, descriptors.size(), td);
@@ -376,5 +391,5 @@ private:
 // Finally \code{OTB\_APPLICATION\_EXPORT} is called.
 // Software Guide : EndLatex
 //  Software Guide :BeginCodeSnippet
-OTB_APPLICATION_EXPORT(otb::Wrapper::CropTypeImageClassifier)
+OTB_APPLICATION_EXPORT(otb::Wrapper::CropMaskImageClassifier)
 //  Software Guide :EndCodeSnippet

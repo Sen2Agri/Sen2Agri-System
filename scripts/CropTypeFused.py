@@ -71,18 +71,16 @@ def get_tileid(product):
 
 
 class Stratum(object):
-    def __init__(self, id, shapefile, extent, crop_features):
+    def __init__(self, id, shapefile, extent):
         self.id = id
         self.shapefile = shapefile
         self.extent = extent
-        self.crop_features = crop_features
         self.tiles = []
 
 class Tile(object):
-    def __init__(self, id, descriptors, crop_mask):
+    def __init__(self, id, descriptors):
         self.id = id
         self.descriptors = descriptors
-        self.crop_mask = crop_mask
         self.footprint = None
         self.area = None
         self.strata = []
@@ -141,6 +139,30 @@ def filter_polygons(crop_features, site_footprint_wgs84, out_folder):
 
     return out_name
 
+def load_features(data):
+    out_srs = osr.SpatialReference()
+    out_srs.ImportFromEPSG(4326)
+
+    data_ds = ogr.Open(data, 0)
+    data_layer = data_ds.GetLayer()
+    data_layer_def = data_layer.GetLayerDefn()
+    data_srs = data_layer.GetSpatialRef()
+
+    transform = osr.CoordinateTransformation(data_srs, out_srs)
+
+    result = []
+    for region in data_layer:
+        region_geom = region.GetGeometryRef()
+        region_geom_wgs84 = region_geom.Clone()
+        region_geom_wgs84.Transform(transform)
+
+        reprojected_feature = ogr.Feature(data_layer_def)
+        reprojected_feature.SetGeometry(region_geom_wgs84)
+
+        result.append(reprojected_feature)
+
+    return result
+
 def split_strata(areas, data, site_footprint_wgs84, out_folder):
     area_ds = ogr.Open(areas, 0)
     if area_ds is None:
@@ -149,12 +171,12 @@ def split_strata(areas, data, site_footprint_wgs84, out_folder):
     out_srs = osr.SpatialReference()
     out_srs.ImportFromEPSG(4326)
 
-    data_ds = ogr.Open(data, 0)
     in_layer = area_ds.GetLayer()
     in_layer_def = in_layer.GetLayerDefn()
     in_srs = in_layer.GetSpatialRef()
     area_transform = osr.CoordinateTransformation(in_srs, out_srs)
 
+    data_ds = ogr.Open(data, 0)
     data_layer = data_ds.GetLayer()
     data_layer_def = data_layer.GetLayerDefn()
     data_srs = data_layer.GetSpatialRef()
@@ -193,7 +215,7 @@ def split_strata(areas, data, site_footprint_wgs84, out_folder):
         for i in xrange(data_layer_def.GetFieldCount()):
             out_layer.CreateField(data_layer_def.GetFieldDefn(i))
 
-        reprojected_features = []
+        out_features = 0
         data_layer.ResetReading()
         for region in data_layer:
             region_geom = region.GetGeometryRef()
@@ -203,6 +225,7 @@ def split_strata(areas, data, site_footprint_wgs84, out_folder):
             region_geom_wgs84 = region_geom_wgs84.Intersection(area_geom_wgs84)
             if region_geom_wgs84.GetArea() > 0:
                 out_feature = ogr.Feature(out_layer_def)
+                out_features += 1
 
                 for i in xrange(out_layer_def.GetFieldCount()):
                     out_feature.SetField(out_layer_def.GetFieldDefn(
@@ -211,11 +234,12 @@ def split_strata(areas, data, site_footprint_wgs84, out_folder):
                 out_feature.SetGeometry(region_geom_wgs84)
                 out_layer.CreateFeature(out_feature)
 
-                reprojected_feature = ogr.Feature(out_layer_def)
-                reprojected_feature.SetGeometry(region_geom_wgs84)
-
-                reprojected_features.append(reprojected_feature)
-        result.append(Stratum(area_id, out_name, area_feature, reprojected_features))
+        print("Stratum {}: {} features".format(area_id, out_features))
+        if out_features > 0:
+            print("Stratum {}: {} features".format(area_id, out_features))
+            result.append(Stratum(area_id, out_name, area_feature))
+        else:
+            print("Ignoring stratum {}: no features inside of site extent".format(area_id))
 
     return result
 
@@ -274,34 +298,6 @@ def get_raster_footprint(image_filename):
 
     return geom
 
-def load_footprints(footprints):
-    result = []
-
-    out_srs = osr.SpatialReference()
-    out_srs.ImportFromEPSG(4326)
-
-    for file in footprints:
-        ds = ogr.Open(file, 0)
-        if ds is None:
-            raise Exception("Could not open stratum dataset", file)
-
-        layer = ds.GetLayer()
-        layer_def = layer.GetLayerDefn()
-
-        in_srs = layer.GetSpatialRef()
-        transform = osr.CoordinateTransformation(in_srs, out_srs)
-
-        feature = layer.GetNextFeature()
-        geom = feature.GetGeometryRef()
-        geom.Transform(transform)
-
-        reprojected_feature = ogr.Feature(layer_def)
-        reprojected_feature.SetGeometry(geom)
-
-        result.append(reprojected_feature)
-    return result
-
-
 def save_to_shp(file_name, geom, out_srs=None):
     if not out_srs:
         out_srs = osr.SpatialReference()
@@ -339,470 +335,438 @@ def build_merge_expression(n):
     else:
         return "-10000"
 
-parser = argparse.ArgumentParser(description='CropType Python processor')
+def format_otb_filename(file, compression=None):
+    if compression is not None:
+        file += "?gdal:co:COMPRESS=" + compression
+    return file
 
-parser.add_argument('-mission', help='The main mission for the series',
-                    required=False, default='SPOT')
-parser.add_argument('-ref', help='The reference polygons',
-                    required=True, metavar='reference_polygons')
-parser.add_argument('-ratio', help='The ratio between the validation and training polygons (default 0.75)',
-                    required=False, metavar='sample_ratio', default=0.75)
-parser.add_argument('-input', help='The list of products descriptors',
-                    required=True, metavar='product_descriptor', nargs='+')
-parser.add_argument('-prodspertile', help='Number of products for each tile',
-                    type=int, nargs='+')
-parser.add_argument('-trm', help='The temporal resampling mode (default gapfill)',
-                    choices=['resample', 'gapfill'], required=False, default='gapfill')
-parser.add_argument('-rate', help='The sampling rate for the temporal series, in days (default 5)',
-                    required=False, metavar='sampling_rate', default=5)
-parser.add_argument('-classifier', help='The classifier (rf or svm) used for training (default rf)',
-                    required=False, metavar='classifier', choices=['rf', 'svm'], default='rf')
-parser.add_argument('-normalize', help='Normalize the input before classification', default=False,
-                    required=False, action='store_true')
-parser.add_argument('-rseed', help='The random seed used for training (default 0)',
-                    required=False, metavar='random_seed', default=0)
-parser.add_argument('-mask', help='The crop mask for each tile',
-                    required=False, nargs='+', default='')
-parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)',
-                    required=False, metavar='pixsize', default=10)
-parser.add_argument('-tilename', help="The name of the tile", default="T0000")
-parser.add_argument('-outdir', help="Output directory", default=".")
-parser.add_argument('-buildfolder', help="Build folder", default="")
-parser.add_argument(
-    '-targetfolder', help="The folder where the target product is built", default="")
+class ProcessorBase(object):
+    def execute(self):
+        start_time = datetime.datetime.now()
+        try:
+            context = self.create_context()
 
-parser.add_argument('-rfnbtrees', help='The number of trees used for training (default 100)',
-                    required=False, metavar='rfnbtrees', default=100) # 100
-parser.add_argument('-rfmax', help='maximum depth of the trees used for Random Forest classifier (default 25)',
-                    required=False, metavar='rfmax', default=25) # 25
-parser.add_argument('-rfmin', help='minimum number of samples in each node used by the classifier (default 25)',
-                    required=False, metavar='rfmin', default=25) # 25
+            self.prepare_tiles()
 
-parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)",
-                    default=False, action='store_true')
-parser.add_argument(
-    '-fromstep', help="Run from the selected step (default 1)", type=int, default=1)
-parser.add_argument('-siteid', help='The site ID', required=False)
-parser.add_argument(
-    '-strata', help='Shapefiles with polygons for the strata')
-parser.add_argument('-mode', help='The execution mode',
-                    required=True, choices=['train', 'classify', 'validate'])
-parser.add_argument('-crop', help='Border cropping mode',
-                    required=False, choices=['extent', 'data'], default='extent')
-args = parser.parse_args()
+            for tile in self.tiles:
+                self.after_prepare_tile(tile)
 
-if not args.prodspertile:
-    args.prodspertile = [len(args.input)]
-else:
-    psum = sum(args.prodspertile)
-    if psum != len(args.input):
-        print("The number of input products ({}) doesn't match the total tile count ({})".format(
-            len(args.input), psum))
+            if self.args.mode == "train":
+                for stratum in self.strata:
+                    if len(stratum.tiles) > 0:
+                        print("Building model for stratum:", stratum.id)
+                        self.train_stratum(stratum)
+                    else:
+                        print("Skipping training for stratum: ", stratum.id)
+            elif self.args.mode == "classify":
+                for stratum in self.strata:
+                    print("Applying model for stratum:", stratum.id)
 
-ntiles = len(args.prodspertile)
-print("Tiles:", ntiles)
-single_stratum = args.strata is None
-print("Single stratum:", single_stratum)
+                    for tile in stratum.tiles:
+                        print("Processing tile:", tile.id)
+                        if len(tile.strata) == 0:
+                            print(
+                                "Warning: no stratum found for tile {}. Classification will not be performed.".format(tile.id))
+                            continue
+                        elif len(tile.strata) == 1:
+                            print(
+                                "Tile {} is covered by a single stratum".format(tile.id))
 
-indesc = args.input
+                        self.rasterize_tile_mask(stratum, tile)
+                        self.classify_tile(stratum, tile)
 
-start = 0
-tiles = []
-for idx, t in enumerate(args.prodspertile):
-    end = start + t
-    descriptors = indesc[start:end]
-    id = get_tileid_for_descriptors(descriptors)
-    if args.mask is not None and args.mask[idx] != "NONE":
-        crop_mask = args.mask[idx]
-    else:
-        crop_mask = None
-    tiles.append(Tile(id, descriptors, crop_mask))
-    start += t
+                self.merge_classification_outputs()
 
-mission = args.mission
+                for tile in self.tiles:
+                    self.postprocess_tile(tile)
 
-reference_polygons = args.ref
-sample_ratio = str(args.ratio)
-
-sp = args.rate
-trm = args.trm
-classifier = args.classifier
-random_seed = args.rseed
-pixsize = args.pixsize
-rfnbtrees = str(args.rfnbtrees)
-rfmax = str(args.rfmax)
-rfmin = str(args.rfmin)
-siteId = "nn"
-if args.siteid:
-    siteId = str(args.siteid)
-
-buildFolder = args.buildfolder
-
-targetFolder = args.targetfolder if args.targetfolder != "" else args.outdir
-tilename = args.tilename
-
-reference_polygons_reproject = os.path.join(
-    args.outdir, "reference_polygons_reproject.shp")
-reference_polygons_clip = os.path.join(args.outdir, "reference_clip.shp")
-training_polygons = os.path.join(args.outdir, "training_polygons.shp")
-validation_polygons = os.path.join(args.outdir, "validation_polygons.shp")
-rawtocr = os.path.join(args.outdir, "rawtocr.tif")
-tocr = os.path.join(args.outdir, "tocr.tif")
-rawmask = os.path.join(args.outdir, "rawmask.tif")
-
-statusFlags = os.path.join(args.outdir, "status_flags.tif")
-
-mask = os.path.join(args.outdir, "mask.tif")
-dates = os.path.join(args.outdir, "dates.txt")
-shape = os.path.join(args.outdir, "shape.shp")
-shape_proj = os.path.join(args.outdir, "shape.prj")
-rtocr = os.path.join(args.outdir, "rtocr.tif")
-fts = os.path.join(args.outdir, "feature-time-series.tif")
-lut = os.path.join(args.outdir, "lut.txt")
-
-reprojected_crop_mask = os.path.join(args.outdir, "reprojected_crop_mask.tif")
-cropped_crop_mask = os.path.join(args.outdir, "cropped_crop_mask.tif")
-
-crop_type_map_uncompressed = os.path.join(
-    args.outdir, "crop_type_map_uncompressed.tif")
-crop_type_map = os.path.join(args.outdir, "crop_type_map.tif")
-color_crop_type_map = os.path.join(args.outdir, "color_crop_type_map.tif")
-
-confusion_matrix_validation = os.path.join(
-    args.outdir, "confusion-matrix-validation.csv")
-quality_metrics = os.path.join(args.outdir, "quality-metrics.txt")
-xml_validation_metrics = os.path.join(args.outdir, "validation-metrics.xml")
-
-keepfiles = args.keepfiles
-fromstep = args.fromstep
-
-if not os.path.exists(args.outdir):
-    os.makedirs(args.outdir)
-
-globalStart = datetime.datetime.now()
-
-try:
-    site_footprint_wgs84 = ogr.Geometry(ogr.wkbPolygon)
-    for tile in tiles:
-        tile.footprint = get_raster_footprint(get_reference_raster(tile.descriptors[0]))
-        tile.area = tile.footprint.Area()
-        site_footprint_wgs84 = site_footprint_wgs84.Union(tile.footprint)
-
-    if not single_stratum:
-        strata = split_strata(args.strata, args.ref, site_footprint_wgs84, args.outdir)
-        tile_best_weights = [0.0] * ntiles
-
-        for tile in tiles:
-            tile_best_weight = 0.0
-            tile_strata = []
-            for stratum in strata:
-                weight = stratum.extent.GetGeometryRef().Intersection(
-                    tile.footprint).Area() / tile.area
-
-                if weight > tile_best_weight:
-                    tile_best_weight = weight
-                    tile.main_stratum = stratum
-
-                if args.mode == 'train':
-                    include = False
-                    for area_feature in stratum.crop_features:
-                        if area_feature.GetGeometryRef().Intersection(tile.footprint).Area() > 0:
-                            include = True
-                            break
-                else:
-                    include = True
-
-                if include:
-                    tile_strata.append((stratum, weight))
-
-            tile_strata.sort(key=lambda x: -x[1])
-
-            min_coverage = 0
-            if len(tile_strata) == 0:
-                pass
-            elif tile_strata[0][1] <= min_coverage:
-                tile_strata = [tile_strata[0]]
+                self.compute_quality_flags()
             else:
-                tile_strata = [x for x in tile_strata if x[1] > min_coverage]
+                self.validate(context)
+        except:
+            traceback.print_exc()
+        finally:
+            end_time = datetime.datetime.now()
+            print("Processor CropType finished in", str(end_time - start_time))
 
-            print("Strata for tile {}: {}".format(tile.id, map(lambda x: x[0].id, tile_strata)))
+    def compute_quality_flags(self):
+        for tile in self.tiles:
+            tile_quality_flags = self.get_output_path("status_flags_{}.tif", tile.id)
 
-            for (stratum, _) in tile_strata:
-                stratum.tiles.append(tile)
-                tile.strata.append(stratum)
-
-        if args.mode == 'classify':
-            for tile in tiles:
-                geom = tile.footprint.Clone()
-
-                for stratum in tile.strata:
-                    if stratum != tile.main_stratum:
-                        geom = geom.Difference(stratum.extent.GetGeometryRef())
-
-                tile.main_mask = geom
-    else:
-        filtered_polygons = filter_polygons(args.ref, site_footprint_wgs84, args.outdir)
-        stratum = Stratum(0, filtered_polygons, None, None)
-        stratum.tiles = tiles;
-        strata = [stratum]
-        for tile in tiles:
-            tile.strata = [stratum]
-            tile.main_stratum = stratum
-
-        if args.mode == 'classify':
-            for tile in tiles:
-                tile.main_mask = tile.footprint
-
-    #print("Tiles for areas: {}".format(tiles_for_area))
-    #print("Areas per tile: {}".format(areas_per_tile))
-    #print("Tile main areas: {}".format(tile_main_area))
-
-    sp = ["SENTINEL", "10", "SPOT", "5", "LANDSAT", "16"]
-    if args.mode == 'train':
-        for stratum in strata:
-            print("Building model for area:", stratum.id)
-            area_training_polygons = os.path.join(
-                args.outdir, "training_polygons-{}.shp".format(stratum.id))
-            area_validation_polygons = os.path.join(
-                args.outdir, "validation_polygons-{}.shp".format(stratum.id))
-            area_statistics = os.path.join(
-                args.outdir, "statistics-{}.xml".format(stratum.id))
-            area_model = os.path.join(
-                args.outdir, "model-{}.txt".format(stratum.id))
-            area_confmatout = os.path.join(
-                args.outdir, "confusion-matrix-training-{}.csv".format(stratum.id))
-            area_days = os.path.join(
-                args.outdir, "days-{}.txt".format(stratum.id))
-
-            area_descriptors = []
-            area_prodpertile = []
-            for tile in stratum.tiles:
-                area_descriptors += tile.descriptors
-                area_prodpertile.append(len(tile.descriptors))
-
-            run_step(Step("SampleSelection", ["otbcli", "SampleSelection", buildFolder,
-                                         "-ref", stratum.shapefile,
-                                         "-ratio", sample_ratio,
-                                         "-seed", random_seed,
-                                         "-tp", area_training_polygons,
-                                         "-vp", area_validation_polygons]))
-            step_args = ["otbcli", "CropTypeTrainImagesClassifier", buildFolder,
-                            "-mission", mission,
-                            "-nodatalabel", -10000,
-                            "-pixsize", pixsize,
-                            "-outdays", area_days,
-                            "-mode", trm,
-                            "-io.vd", area_training_polygons,
-                            "-rand", random_seed,
-                            "-sample.bm", 0,
-                            "-io.confmatout", area_confmatout,
-                            "-io.out", area_model,
-                            "-sample.mt", -1,
-                            "-sample.mv", -1,
-                            "-sample.vfn", "CODE",
-                            "-sample.vtr", 0.1,
-                            "-classifier", classifier]
-            step_args += ["-sp"] + sp
-            step_args += ["-prodpertile"] + area_prodpertile
-            step_args += ["-il"] + area_descriptors
-            if classifier == "rf":
-                step_args += ["-classifier.rf.nbtrees", rfnbtrees,
-                                "-classifier.rf.min", rfmin,
-                                "-classifier.rf.max", rfmax]
-                if args.normalize:
-                    step_args += ["-outstat", area_statistics]
-            else:
-                step_args += ["-classifier.svm.k", "rbf",
-                              "-classifier.svm.opt", 1,
-                              "-outstat", area_statistics]
-            run_step(Step("TrainImagesClassifier", step_args))
-    elif args.mode == 'classify':
-        for stratum in strata:
-            print("Applying model for area:", stratum.id)
-            area_model = os.path.join(
-                args.outdir, "model-{}.txt".format(stratum.id))
-            area_days = os.path.join(
-                args.outdir, "days-{}.txt".format(stratum.id))
-            area_statistics = os.path.join(
-                args.outdir, "statistics-{}.xml".format(stratum.id))
-            area_mask_shape = os.path.join(
-                args.outdir, "classification-mask-{}.shp".format(stratum.id))
-
-            area_prodpertile = []
-            single_tile = len(stratum.tiles) == 1
-            for tile in stratum.tiles:
-                print("Processing tile:", tile.id)
-                area_prodpertile.append(len(tile.descriptors))
-
-                tile_crop_type_map_uncut = os.path.join(args.outdir,
-                                                        "crop_type_map_uncut_{}_{}.tif".format(stratum.id, tile.id))
-                tile_reference_raster = get_reference_raster(
-                    tile.descriptors[0])
-                print("Reference raster for tile:",
-                      tile_reference_raster)
-
-                area_mask_raster = os.path.join(
-                    args.outdir, "classification-mask-{}-{}.tif".format(stratum.id, tile.id))
-                if not single_stratum:
-                    if len(tile.strata) == 0:
-                        print(
-                            "Warning: no stratum found for tile {}. Classification will not be performed.".format(tile.id))
-                        continue
-                    elif len(tile.strata) == 1:
-                        print(
-                            "Tile {} is covered by a single stratum".format(tile.id))
-
-                tile_mask = os.path.join(
-                    args.outdir, "tile_mask_{}_{}.shp".format(stratum.id, tile.id))
-
-                if stratum == tile.main_stratum:
-                    classification_mask = tile.main_mask
-                else:
-                    classification_mask = stratum.extent.GetGeometryRef().Intersection(tile.footprint)
-
-                save_to_shp(tile_mask, classification_mask)
-                run_step(Step("Rasterize mask",
-                                  ["otbcli_Rasterization",
-                                   "-in", tile_mask,
-                                   "-im", tile_reference_raster,
-                                   "-out", area_mask_raster, "uint8",
-                                   "-mode", "binary"]))
-
-                step_args = ["otbcli", "CropTypeImageClassifier", buildFolder,
-                             "-mission", mission,
-                             "-pixsize", pixsize,
-                             "-indays", area_days,
-                             "-singletile", "true" if single_tile else "false",
-                             "-bv", -10000,
-                             "-model", area_model,
-                             "-out", tile_crop_type_map_uncut]
-                step_args += ["-il"] + tile.descriptors
-                step_args += ["-sp"] + sp
-                if classifier == "svm" or args.normalize:
-                    step_args += ["-outstat", area_statistics]
-
-                if area_mask_raster:
-                    step_args += ["-mask", area_mask_raster]
-
-                run_step(Step("ImageClassifier_{}_{}".format(
-                     stratum.id, tile.id), step_args))
-
-        for tile in tiles:
-            print("Merging classification results for tile:", tile.id)
-            files = []
-            for stratum in tile.strata:
-                tile_crop_type_map_uncut = os.path.join(args.outdir,
-                                                        "crop_type_map_uncut_{}_{}.tif".format(stratum.id, tile.id))
-                area_mask_raster = os.path.join(
-                    args.outdir, "classification-mask-{}-{}.tif".format(stratum.id, tile.id))
-
-                files.append(tile_crop_type_map_uncut)
-                files.append(area_mask_raster)
-
-            tile_crop_map = os.path.join(
-                args.outdir, "crop_type_map_{}.tif".format(tile.id))
-            tile_crop_map_masked = os.path.join(
-                args.outdir, "crop_type_map_masked_{}.tif".format(tile.id))
-            tile_quality_flags = os.path.join(
-                args.outdir, "status_flags_{}.tif".format(tile.id))
-
-            step_args = ["otbcli_BandMath",
-                         "-exp", build_merge_expression(len(tile.strata)),
-                         "-out", tile_crop_map + "?gdal:co:COMPRESS=DEFLATE", "int16"]
-            step_args += ["-il"] + files
-
-            run_step(Step("BandMath_" + str(tile.id), step_args))
-
-            run_step(Step("Nodata_" + str(tile.id),
-                              ["gdal_edit.py",
-                                  "-a_nodata", -10000,
-                                  tile_crop_map]))
-
-            if tile.crop_mask is not None:
-                step_args = ["otbcli_BandMath",
-                            "-exp", "im2b1 == 0 ? 0 : im1b1",
-                            "-il", tile_crop_map, tile.crop_mask,
-                            "-out", tile_crop_map_masked + "?gdal:co:COMPRESS=DEFLATE", "int16"]
-                run_step(Step("Mask by crop mask " + tile.id, step_args))
-
-            step_args = ["otbcli", "QualityFlagsExtractor", buildFolder,
-                         "-mission", mission,
-                         "-out", tile_quality_flags + "?gdal:co:COMPRESS=DEFLATE",
-                         "-pixsize", pixsize]
+            step_args = ["otbcli", "QualityFlagsExtractor", self.args.buildfolder,
+                            "-mission", self.args.mission,
+                            "-out", format_otb_filename(tile_quality_flags, compression='DEFLATE'),
+                            "-pixsize", self.args.pixsize]
             step_args += ["-il"] + tile.descriptors
 
             run_step(Step("QualityFlags_" + str(tile.id), step_args))
-    else:
-        files = []
-        for tile in tiles:
-            tile_crop_map = os.path.join(
-                args.outdir, "crop_type_map_{}.tif".format(tile.id))
-            tile_crop_map_masked = os.path.join(
-                args.outdir, "crop_type_map_masked_{}.tif".format(tile.id))
 
+    def prepare_tiles(self):
+        if not self.args.prodspertile:
+            self.args.prodspertile = [len(self.args.input)]
+        else:
+            psum = sum(self.args.prodspertile)
+            if psum != len(self.args.input):
+                print("The number of input products ({}) doesn't match the total tile count ({})".format(
+                    len(self.args.input), psum))
+
+        print("Tiles:", len(self.args.prodspertile))
+        self.single_stratum = self.args.strata is None
+        print("Single stratum:", self.single_stratum)
+
+        start = 0
+        self.tiles = []
+        for idx, t in enumerate(self.args.prodspertile):
+            end = start + t
+            descriptors = self.args.input[start:end]
+            id = get_tileid_for_descriptors(descriptors)
+            self.tiles.append(Tile(id, descriptors))
+            start += t
+
+        if not self.args.targetfolder:
+            self.args.targetfolder = self.args.outdir
+
+        if not os.path.exists(self.args.outdir):
+            os.makedirs(self.args.outdir)
+
+        self.site_footprint_wgs84 = ogr.Geometry(ogr.wkbPolygon)
+        for tile in self.tiles:
+            tile.footprint = get_raster_footprint(get_reference_raster(tile.descriptors[0]))
+            tile.area = tile.footprint.Area()
+            self.site_footprint_wgs84 = self.site_footprint_wgs84.Union(tile.footprint)
+
+        if not self.single_stratum:
+            self.strata = split_strata(self.args.strata, self.args.ref, self.site_footprint_wgs84, self.args.outdir)
+            tile_best_weights = [0.0] * len(self.tiles)
+
+            for tile in self.tiles:
+                tile_best_weight = 0.0
+                tile_strata = []
+                for stratum in self.strata:
+                    weight = stratum.extent.GetGeometryRef().Intersection(
+                        tile.footprint).Area() / tile.area
+
+                    if weight > tile_best_weight:
+                        tile_best_weight = weight
+                        tile.main_stratum = stratum
+
+                    if self.args.mode != 'train' or self.tile_has_features(stratum, tile):
+                        tile_strata.append((stratum, weight))
+
+                tile_strata.sort(key=lambda x: -x[1])
+
+                print(tile.id, [(ts[0].id, ts[1]) for ts in tile_strata])
+                min_coverage = 0
+                if len(tile_strata) == 0:
+                    pass
+                elif tile_strata[0][1] <= min_coverage:
+                    tile_strata = [tile_strata[0]]
+                else:
+                    tile_strata = [x for x in tile_strata if x[1] > min_coverage]
+                print(tile.id, [(ts[0].id, ts[1]) for ts in tile_strata])
+
+                print("Strata for tile {}: {}".format(tile.id, map(lambda x: x[0].id, tile_strata)))
+
+                for (stratum, _) in tile_strata:
+                    stratum.tiles.append(tile)
+                    tile.strata.append(stratum)
+
+            if self.args.mode == 'classify':
+                for tile in self.tiles:
+                    geom = tile.footprint.Clone()
+
+                    for stratum in tile.strata:
+                        if stratum != tile.main_stratum:
+                            geom = geom.Difference(stratum.extent.GetGeometryRef())
+
+                    tile.main_mask = geom
+        else:
+            filtered_polygons = filter_polygons(self.args.ref, self.site_footprint_wgs84, self.args.outdir)
+            stratum = Stratum(0, filtered_polygons, None)
+            stratum.tiles = self.tiles;
+            self.strata = [stratum]
+            for tile in self.tiles:
+                tile.strata = [stratum]
+                tile.main_stratum = stratum
+
+            if self.args.mode == 'classify':
+                for tile in self.tiles:
+                    tile.main_mask = tile.footprint
+
+    def merge_strata_for_tile(self, tile, inputs, output, compression=None):
+        files = []
+        for idx, stratum in enumerate(tile.strata):
+            input = inputs[idx]
+            area_mask_raster = self.get_output_path("classification-mask-{}-{}.tif", stratum.id, tile.id)
+
+            files.append(input)
+            files.append(area_mask_raster)
+
+        step_args = ["otbcli_BandMath",
+                        "-exp", build_merge_expression(len(tile.strata)),
+                        "-out", format_otb_filename(output, compression='DEFLATE'), "int16"]
+        step_args += ["-il"] + files
+
+        run_step(Step("BandMath_" + str(tile.id), step_args))
+
+        run_step(Step("Nodata_" + str(tile.id),
+                            ["gdal_edit.py",
+                                "-a_nodata", -10000,
+                                output]))
+
+    def merge_classification_outputs(self):
+        for tile in self.tiles:
+            print("Merging classification results for tile:", tile.id)
+
+            tile_crop_map = self.get_tile_classification_output(tile)
+            inputs = [self.get_stratum_tile_classification_output(stratum, tile) for stratum in tile.strata]
+
+            self.merge_strata_for_tile(tile, inputs, tile_crop_map, compression='DEFLATE')
+
+    def rasterize_tile_mask(self, stratum, tile):
+        tile_mask = self.get_output_path("tile-mask-{}-{}.shp", stratum.id, tile.id)
+        stratum_tile_mask = self.get_stratum_tile_mask(stratum, tile)
+
+        if stratum == tile.main_stratum:
+            classification_mask = tile.main_mask
+        else:
+            classification_mask = stratum.extent.GetGeometryRef().Intersection(tile.footprint)
+
+        save_to_shp(tile_mask, classification_mask)
+
+        tile_reference_raster = get_reference_raster(tile.descriptors[0])
+        print("Reference raster for tile:", tile_reference_raster)
+
+        run_step(Step("Rasterize mask",
+                            ["otbcli_Rasterization",
+                            "-in", tile_mask,
+                            "-im", tile_reference_raster,
+                            "-out", stratum_tile_mask, "uint8",
+                            "-mode", "binary"]))
+
+    def get_output_path(self, fmt, *args):
+        return os.path.join(self.args.outdir, fmt.format(*args))
+
+    def get_stratum_tile_mask(self, stratum, tile):
+        return self.get_output_path("classification-mask-{}-{}.tif", stratum.id, tile.id)
+
+
+class CropTypeProcessor(ProcessorBase):
+    def create_context(self):
+        parser = argparse.ArgumentParser(description='Crop Type Processor')
+
+        parser.add_argument('-mission', help='The main mission for the series',
+                            required=False, default='SPOT')
+        parser.add_argument('-ref', help='The reference polygons',
+                            required=True, metavar='reference_polygons')
+        parser.add_argument('-ratio', help='The ratio between the validation and training polygons (default 0.75)',
+                            required=False, metavar='sample_ratio', default=0.75)
+        parser.add_argument('-input', help='The list of products descriptors',
+                            required=True, metavar='product_descriptor', nargs='+')
+        parser.add_argument('-prodspertile', help='Number of products for each tile',
+                            type=int, nargs='+')
+        parser.add_argument('-trm', help='The temporal resampling mode (default gapfill)',
+                            choices=['resample', 'gapfill'], required=False, default='resample')
+        parser.add_argument('-classifier', help='The classifier (rf or svm) used for training (default rf)',
+                            required=False, metavar='classifier', choices=['rf', 'svm'], default='rf')
+        parser.add_argument('-normalize', help='Normalize the input before classification', default=False,
+                            required=False, action='store_true')
+        parser.add_argument('-rseed', help='The random seed used for training (default 0)',
+                            required=False, metavar='random_seed', default=0)
+        parser.add_argument('-mask', help='The crop mask for each tile',
+                            required=False, nargs='+', default=None)
+        parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)',
+                            required=False, metavar='pixsize', default=10)
+        parser.add_argument('-sp', help='Per-sensor sampling rates (default SENTINEL 10 SPOT 5 LANDSAT 16)',
+                            required=False, nargs='+', default=["SENTINEL", "10", "SPOT", "5", "LANDSAT", "16"])
+
+        parser.add_argument('-outdir', help="Output directory", default=".")
+        parser.add_argument('-buildfolder', help="Build folder", default="")
+        parser.add_argument(
+            '-targetfolder', help="The folder where the target product is built", default="")
+
+        parser.add_argument('-rfnbtrees', help='The number of trees used for training (default 100)',
+                            required=False, metavar='rfnbtrees', default=100)
+        parser.add_argument('-rfmax', help='maximum depth of the trees used for Random Forest classifier (default 25)',
+                            required=False, metavar='rfmax', default=25)
+        parser.add_argument('-rfmin', help='minimum number of samples in each node used by the classifier (default 25)',
+                            required=False, metavar='rfmin', default=25)
+
+        parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)",
+                            default=False, action='store_true')
+        parser.add_argument('-siteid', help='The site ID', required=False, default='nn')
+        parser.add_argument(
+            '-strata', help='Shapefiles with polygons for the strata')
+        parser.add_argument('-mode', help='The execution mode',
+                            required=True, choices=['train', 'classify', 'validate'])
+        self.args = parser.parse_args()
+
+        self.crop_features = load_features(self.args.ref)
+
+    def after_prepare_tile(self, tile):
+        for idx, tile in self.tiles:
+            if self.args.mask is not None and self.args.mask[idx] != "NONE":
+                tile.crop_mask = self.args.mask[idx]
+            else:
+                tile.crop_mask = None
+
+    def tile_has_features(self, stratum, tile):
+        if stratum.extent is None:
+            geom = tile.footprint
+        else:
+            geom = stratum.extent.GetGeometryRef().Intersection(tile.footprint)
+
+        for feature in self.crop_features:
+            if geom.Intersection(feature.GetGeometryRef()).Area() > 0:
+                return True
+
+        return False
+
+    def train_stratum(self, stratum):
+        area_training_polygons = self.get_output_path("training_polygons-{}.shp", stratum.id)
+        area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
+        area_statistics = self.get_output_path("statistics-{}.xml", stratum.id)
+        area_model = self.get_output_path("model-{}.txt", stratum.id)
+        area_confmatout = self.get_output_path("confusion-matrix-training-{}.csv", stratum.id)
+        area_days = self.get_output_path("days-{}.txt", stratum.id)
+
+        area_descriptors = []
+        area_prodpertile = []
+        for tile in stratum.tiles:
+            area_descriptors += tile.descriptors
+            area_prodpertile.append(len(tile.descriptors))
+
+        run_step(Step("SampleSelection", ["otbcli", "SampleSelection", self.args.buildfolder,
+                                        "-ref", stratum.shapefile,
+                                        "-ratio", self.args.ratio,
+                                        "-seed", self.args.rseed,
+                                        "-tp", area_training_polygons,
+                                        "-vp", area_validation_polygons]))
+        step_args = ["otbcli", "CropTypeTrainImagesClassifier", self.args.buildfolder,
+                        "-mission", self.args.mission,
+                        "-nodatalabel", -10000,
+                        "-pixsize", self.args.pixsize,
+                        "-outdays", area_days,
+                        "-mode", self.args.trm,
+                        "-io.vd", area_training_polygons,
+                        "-rand", self.args.rseed,
+                        "-sample.bm", 0,
+                        "-io.confmatout", area_confmatout,
+                        "-io.out", area_model,
+                        "-sample.mt", -1,
+                        "-sample.mv", -1,
+                        "-sample.vfn", "CODE",
+                        "-sample.vtr", 0.1,
+                        "-classifier", self.args.classifier]
+        step_args += ["-sp"] + self.args.sp
+        step_args += ["-prodpertile"] + area_prodpertile
+        step_args += ["-il"] + area_descriptors
+        if self.args.classifier == "rf":
+            step_args += ["-classifier.rf.nbtrees", self.args.rfnbtrees,
+                            "-classifier.rf.min", self.args.rfmin,
+                            "-classifier.rf.max", self.args.rfmax]
+            if self.args.normalize:
+                step_args += ["-outstat", area_statistics]
+        else:
+            step_args += ["-classifier.svm.k", "rbf",
+                            "-classifier.svm.opt", 1,
+                            "-outstat", area_statistics]
+        run_step(Step("TrainImagesClassifier", step_args))
+
+    def classify_tile(self, stratum, tile):
+        area_model = self.get_output_path("model-{}.txt", stratum.id)
+        area_days = self.get_output_path("days-{}.txt", stratum.id)
+        area_statistics = self.get_output_path("statistics-{}.xml", stratum.id)
+
+        tile_crop_type_map_uncut = self.get_stratum_tile_classification_output(stratum, tile)
+        stratum_tile_mask = self.get_stratum_tile_mask(stratum, tile)
+
+        step_args = ["otbcli", "CropTypeImageClassifier", self.args.buildfolder,
+                        "-mission", self.args.mission,
+                        "-pixsize", self.args.pixsize,
+                        "-indays", area_days,
+                        "-singletile", "true" if len(stratum.tiles) == 1 else "false",
+                        "-bv", -10000,
+                        "-model", area_model,
+                        "-out", tile_crop_type_map_uncut]
+        step_args += ["-il"] + tile.descriptors
+        step_args += ["-sp"] + self.args.sp
+        if self.args.classifier == "svm" or self.args.normalize:
+            step_args += ["-outstat", area_statistics]
+
+        step_args += ["-mask", stratum_tile_mask]
+
+        run_step(Step("ImageClassifier_{}_{}".format(
+                stratum.id, tile.id), step_args))
+
+    def postprocess_tile(self, tile):
+        if tile.crop_mask is not None:
+            tile_crop_map = self.get_output_path("crop_type_map_{}.tif", tile.id)
+            tile_crop_map_masked = self.get_output_path("crop_type_map_masked_{}.tif", tile.id)
+
+            step_args = ["otbcli_BandMath",
+                         "-exp", "im2b1 == 0 ? 0 : im1b1",
+                         "-il", tile_crop_map, tile.crop_mask,
+                         "-out", format_otb_filename(tile_crop_map_masked, compression='DEFLATE'), "int16"]
+
+            run_step(Step("Mask by crop mask " + tile.id, step_args))
+
+    def validate(self, context):
+        files = []
+        for tile in self.tiles:
             if tile.crop_mask is not None:
+                tile_crop_map_masked = self.get_output_path("crop_type_map_masked_{}.tif", tile.id)
+
                 files.append(tile_crop_map_masked)
             else:
+                tile_crop_map = self.get_output_path("crop_type_map_{}.tif", tile.id)
+
                 files.append(tile_crop_map)
 
-        for stratum in strata:
-            area_validation_polygons = os.path.join(
-                args.outdir, "validation_polygons-{}.shp".format(stratum.id))
-            area_statistics = os.path.join(
-                args.outdir, "confusion-matrix-validation-{}.csv".format(stratum.id))
-            area_quality_metrics = os.path.join(
-                args.outdir, "quality-metrics-{}.txt".format(stratum.id))
+        for stratum in self.strata:
+            area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
+            area_statistics = self.get_output_path("confusion-matrix-validation-{}.csv", stratum.id)
+            area_quality_metrics = self.get_output_path("quality-metrics-{}.txt", stratum.id)
+            area_validation_metrics_xml = self.get_output_path("validation-metrics-{}.xml", stratum.id)
 
-            step_args = ["otbcli", "ComputeConfusionMatrixMulti", buildFolder,
-                         "-ref", "vector",
-                         "-ref.vector.in", area_validation_polygons,
-                         "-ref.vector.field", "CODE",
-                         "-out", area_statistics,
-                         "-nodatalabel", -10000,
-                         "-il"]
+            step_args = ["otbcli", "ComputeConfusionMatrixMulti", self.args.buildfolder,
+                            "-ref", "vector",
+                            "-ref.vector.in", area_validation_polygons,
+                            "-ref.vector.field", "CODE",
+                            "-out", area_statistics,
+                            "-nodatalabel", -10000,
+                            "-il"]
             step_args += files
             run_step(Step("ComputeConfusionMatrix_" + str(stratum.id),
-                              step_args, out_file=area_quality_metrics))
+                                step_args, out_file=area_quality_metrics))
 
-        for stratum in strata:
-            area_statistics = os.path.join(
-                args.outdir, "confusion-matrix-validation-{}.csv".format(stratum.id))
-            area_quality_metrics = os.path.join(
-                args.outdir, "quality-metrics-{}.txt".format(stratum.id))
-            area_validation_metrics_xml = os.path.join(
-                args.outdir, "validation-metrics-{}.xml".format(stratum.id))
-
-            step_args = ["otbcli", "XMLStatistics", buildFolder,
-                         "-root", "CropType",
-                         "-confmat", area_statistics,
-                         "-quality", area_quality_metrics,
-                         "-out", area_validation_metrics_xml]
+            step_args = ["otbcli", "XMLStatistics", self.args.buildfolder,
+                            "-root", "CropType",
+                            "-confmat", area_statistics,
+                            "-quality", area_quality_metrics,
+                            "-out", area_validation_metrics_xml]
             run_step(Step("XMLStatistics_" + str(stratum.id), step_args))
 
-        step_args = ["otbcli", "ProductFormatter", buildFolder,
-                     "-destroot", targetFolder,
-                     "-fileclass", "SVT1",
-                     "-level", "L4B",
-                     "-baseline", "01.00",
-                     "-siteid", siteId,
-                     "-processor", "croptype"]
+        step_args = ["otbcli", "ProductFormatter", self.args.buildfolder,
+                        "-destroot", self.args.targetfolder,
+                        "-fileclass", "SVT1",
+                        "-level", "L4B",
+                        "-baseline", "01.00",
+                        "-siteid", self.args.siteid,
+                        "-processor", "croptype"]
 
-        if args.mask is None:
+        if not self.args.mask:
             step_args.append("-processor.croptype.file")
-            for tile in tiles:
-                tile_crop_map = os.path.join(
-                    args.outdir, "crop_type_map_{}.tif".format(tile.id))
+            for tile in self.tiles:
+                tile_crop_map = self.get_output_path("crop_type_map_{}.tif", tile.id)
 
                 step_args.append("TILE_" + tile.id)
                 step_args.append(tile_crop_map)
-
         else:
             step_args.append("-processor.croptype.file")
-            for tile in tiles:
-                tile_crop_map = os.path.join(
-                    args.outdir, "crop_type_map_{}.tif".format(tile.id))
-                tile_crop_map_masked = os.path.join(
-                    args.outdir, "crop_type_map_masked_{}.tif".format(tile.id))
+            for tile in self.tiles:
+                tile_crop_map = self.get_output_path("crop_type_map_{}.tif", tile.id)
+                tile_crop_map_masked = self.get_output_path("crop_type_map_masked_{}.tif", tile.id)
 
                 step_args.append("TILE_" + tile.id)
 
@@ -812,37 +776,347 @@ try:
                     step_args.append(tile_crop_map)
 
             step_args.append("-processor.croptype.rawfile")
-            for tile in tiles:
+            for tile in self.tiles:
                 if tile.crop_mask is not None:
-                    tile_crop_map = os.path.join(
-                        args.outdir, "crop_type_map_{}.tif".format(tile.id))
+                    tile_crop_map = self.get_output_path("crop_type_map_{}.tif", tile.id)
 
                     step_args.append("TILE_" + tile.id)
                     step_args.append(tile_crop_map)
 
         step_args.append("-processor.croptype.flags")
-        for tile in tiles:
-            tile_quality_flags = os.path.join(
-                args.outdir, "status_flags_{}.tif".format(tile.id))
+        for tile in self.tiles:
+            tile_quality_flags = self.get_output_path("status_flags_{}.tif", tile.id)
 
             step_args.append("TILE_" + tile.id)
             step_args.append(tile_quality_flags)
 
         step_args.append("-processor.croptype.quality")
-        for stratum in strata:
-            area_validation_metrics_xml = os.path.join(
-                args.outdir, "validation-metrics-{}.xml".format(stratum.id))
+        for stratum in self.strata:
+            area_validation_metrics_xml = self.get_output_path("validation-metrics-{}.xml", stratum.id)
 
-            if not single_stratum:
+            if not self.single_stratum:
                 step_args.append("REGION_" + str(stratum.id))
             step_args.append(area_validation_metrics_xml)
 
         step_args.append("-il")
-        step_args += indesc
+        step_args += self.args.input
 
         run_step(Step("ProductFormatter", step_args))
-except:
-    traceback.print_exc()
-finally:
-    globalEnd = datetime.datetime.now()
-    print("Processor CropType finished in", str(globalEnd - globalStart))
+
+    def get_stratum_tile_classification_output(self, stratum, tile):
+        return self.get_output_path("crop_type_map_uncut_{}_{}.tif", stratum.id, tile.id)
+
+    def get_tile_classification_output(self, tile):
+        return self.get_output_path("crop_type_map_{}.tif", tile.id)
+
+
+class CropMaskProcessor(ProcessorBase):
+    def create_context(self):
+        parser = argparse.ArgumentParser(description='Crop Mask Processor')
+
+        parser.add_argument('-mission', help='The main mission for the series',
+                            required=False, default='SPOT')
+        parser.add_argument('-ref', help='The reference polygons',
+                            required=True, metavar='reference_polygons')
+        parser.add_argument('-ratio', help='The ratio between the validation and training polygons (default 0.75)',
+                            required=False, metavar='sample_ratio', default=0.75)
+        parser.add_argument('-input', help='The list of products descriptors',
+                            required=True, metavar='product_descriptor', nargs='+')
+        parser.add_argument('-prodspertile', help='Number of products for each tile',
+                            type=int, nargs='+')
+        parser.add_argument('-trm', help='The temporal resampling mode (default gapfill)',
+                            choices=['resample', 'gapfill'], required=False, default='gapfill')
+        parser.add_argument('-classifier', help='The classifier (rf or svm) used for training (default rf)',
+                            required=False, metavar='classifier', choices=['rf', 'svm'], default='rf')
+        parser.add_argument('-normalize', help='Normalize the input before classification', default=False,
+                            required=False, action='store_true')
+        parser.add_argument('-rseed', help='The random seed used for training (default 0)',
+                            required=False, metavar='random_seed', default=0)
+        parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)',
+                            required=False, metavar='pixsize', default=10)
+        parser.add_argument('-sp', help='Per-sensor sampling rates (default SENTINEL 10 SPOT 5 LANDSAT 16)',
+                            required=False, nargs='+', default=["SENTINEL", "10", "SPOT", "5", "LANDSAT", "16"])
+
+        parser.add_argument('-outdir', help="Output directory", default=".")
+        parser.add_argument('-buildfolder', help="Build folder", default="")
+        parser.add_argument(
+            '-targetfolder', help="The folder where the target product is built", default="")
+
+        parser.add_argument('-rfnbtrees', help='The number of trees used for training (default 100)',
+                            required=False, metavar='rfnbtrees', default=100)
+        parser.add_argument('-rfmax', help='maximum depth of the trees used for Random Forest classifier (default 25)',
+                            required=False, metavar='rfmax', default=25)
+        parser.add_argument('-rfmin', help='minimum number of samples in each node used by the classifier (default 25)',
+                            required=False, metavar='rfmin', default=25)
+
+        parser.add_argument('-bm', help='Use benchmarking (vs. ATBD) features (default False)', required=False, type=bool, default=True)
+        parser.add_argument('-window', help='The window, expressed in number of records, used for the temporal features extraction (default 6)', required=False, type=int, default=6)
+
+        parser.add_argument('-nbcomp', help='The number of components used for dimensionality reduction (default 6)', required=False, type=int, default=6)
+        parser.add_argument('-spatialr', help='The spatial radius of the neighborhood used for segmentation (default 10)', required=False, default=10)
+        parser.add_argument('-ranger', help='The range radius defining the radius (expressed in radiometry unit) in the multispectral space (default 0.65)', required=False, default=0.65)
+        parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) for segmentation.(default 10)', required=False, default=10)
+        parser.add_argument('-minarea', help="The minium number of pixel in an area where, for an equal number of crop and nocrop samples, the crop decision is taken (default 20)", required=False, default=20)
+
+        parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)",
+                            default=False, action='store_true')
+        parser.add_argument('-siteid', help='The site ID', required=False, default='nn')
+        parser.add_argument(
+            '-strata', help='Shapefiles with polygons for the strata')
+        parser.add_argument('-mode', help='The execution mode',
+                            required=True, choices=['train', 'classify', 'validate'])
+        self.args = parser.parse_args()
+
+        self.args.tmpfolder = self.args.outdir
+        self.crop_features = load_features(self.args.ref)
+
+    def after_prepare_tile(self, tile):
+        pass
+
+    def tile_has_features(self, stratum, tile):
+        if stratum.extent is None:
+            geom = tile.footprint
+        else:
+            geom = stratum.extent.GetGeometryRef().Intersection(tile.footprint)
+
+        for feature in self.crop_features:
+            if geom.Intersection(feature.GetGeometryRef()).Area() > 0:
+                return True
+
+        return False
+
+    def train_stratum(self, stratum):
+        area_training_polygons = self.get_output_path("training_polygons-{}.shp", stratum.id)
+        area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
+        area_statistics = self.get_output_path("statistics-{}.xml", stratum.id)
+        area_model = self.get_output_path("model-{}.txt", stratum.id)
+        area_confmatout = self.get_output_path("confusion-matrix-training-{}.csv", stratum.id)
+        area_days = self.get_output_path("days-{}.txt", stratum.id)
+
+        area_descriptors = []
+        area_prodpertile = []
+        for tile in stratum.tiles:
+            area_descriptors += tile.descriptors
+            area_prodpertile.append(len(tile.descriptors))
+
+        run_step(Step("SampleSelection", ["otbcli", "SampleSelection", self.args.buildfolder,
+                                        "-ref", stratum.shapefile,
+                                        "-ratio", self.args.ratio,
+                                        "-seed", self.args.rseed,
+                                        "-nofilter", "true",
+                                        "-tp", area_training_polygons,
+                                        "-vp", area_validation_polygons]))
+        step_args = ["otbcli", "CropMaskTrainImagesClassifier", self.args.buildfolder,
+                        "-mission", self.args.mission,
+                        "-nodatalabel", -10000,
+                        "-pixsize", self.args.pixsize,
+                        "-outdays", area_days,
+                        "-mode", self.args.trm,
+                        "-io.vd", area_training_polygons,
+                        "-rand", self.args.rseed,
+                        "-sample.bm", 0,
+                        "-io.confmatout", area_confmatout,
+                        "-io.out", area_model,
+                        "-sample.mt", 4000,
+                        "-sample.mv", -1,
+                        "-sample.vfn", "CROP",
+                        "-sample.vtr", 0.5,
+                        "-window", self.args.window,
+                        "-bm", "true" if self.args.bm else "false",
+                        "-classifier", self.args.classifier]
+        step_args += ["-sp"] + self.args.sp
+        step_args += ["-prodpertile"] + area_prodpertile
+        step_args += ["-il"] + area_descriptors
+        if self.args.classifier == "rf":
+            step_args += ["-classifier.rf.nbtrees", self.args.rfnbtrees,
+                            "-classifier.rf.min", self.args.rfmin,
+                            "-classifier.rf.max", self.args.rfmax]
+            if self.args.normalize:
+                step_args += ["-outstat", area_statistics]
+        else:
+            step_args += ["-classifier.svm.k", "rbf",
+                            "-classifier.svm.opt", 1,
+                            "-outstat", area_statistics]
+
+        run_step(Step("TrainImagesClassifier", step_args))
+
+    def classify_tile(self, stratum, tile):
+        area_model = self.get_output_path("model-{}.txt", stratum.id)
+        area_days = self.get_output_path("days-{}.txt", stratum.id)
+        area_statistics = self.get_output_path("statistics-{}.xml", stratum.id)
+
+        tile_crop_type_map_uncut = self.get_stratum_tile_classification_output(stratum, tile)
+        stratum_tile_mask = self.get_stratum_tile_mask(stratum, tile)
+
+        step_args = ["otbcli", "CropMaskImageClassifier", self.args.buildfolder,
+                        "-mission", self.args.mission,
+                        "-pixsize", self.args.pixsize,
+                        "-indays", area_days,
+                        "-singletile", "true" if len(stratum.tiles) == 1 else "false",
+                        "-bv", -10000,
+                        "-window", self.args.window,
+                        "-bm", "true" if self.args.bm else "false",
+                        "-model", area_model,
+                        "-out", tile_crop_type_map_uncut]
+        step_args += ["-il"] + tile.descriptors
+        step_args += ["-sp"] + self.args.sp
+        if self.args.classifier == "svm" or self.args.normalize:
+            step_args += ["-outstat", area_statistics]
+
+        step_args += ["-mask", stratum_tile_mask]
+
+        run_step(Step("ImageClassifier_{}_{}".format(stratum.id, tile.id), step_args))
+
+    def postprocess_tile(self, tile):
+        tile_crop_mask = self.get_tile_classification_output(tile)
+
+        tile_ndvi = self.get_output_path("ndvi-{}.tif", tile.id)
+        tile_pca = self.get_output_path("pca-{}.tif", tile.id)
+
+        step_args = ["otbcli", "NDVISeries", self.args.buildfolder,
+                        "-mission", self.args.mission,
+                        "-pixsize", self.args.pixsize,
+                        "-mode", self.args.trm,
+                        "-out", tile_ndvi]
+        step_args += ["-il"] + tile.descriptors
+        step_args += ["-sp"] + self.args.sp
+
+        run_step(Step("NDVI Series " + tile.id, step_args))
+
+        step_args = ["otbcli_DimensionalityReduction",
+                        "-method", "pca",
+                        "-nbcomp", self.args.nbcomp,
+                        "-in", tile_ndvi,
+                        "-out", tile_pca]
+
+        run_step(Step("NDVI PCA " + tile.id, step_args))
+
+        tile_smoothed = self.get_output_path("smoothed-{}.tif", tile.id)
+        tile_smoothed_spatial = self.get_output_path("smoothed-spatial-{}.tif", tile.id)
+        tile_segmentation = self.get_output_path("segmentation-{}.tif", tile.id)
+        tile_segmentation_merged = self.get_output_path("segmentation-merged-{}.tif", tile.id)
+        tile_segmented = self.get_output_path("crop-mask-segmented-{}.tif", tile.id)
+
+        step_args = ["otbcli_MeanShiftSmoothing",
+                     "-in", tile_pca,
+                     "-modesearch", 0,
+                     "-spatialr", self.args.spatialr,
+                     "-ranger", self.args.ranger,
+                     "-maxiter", 20,
+                     "-fout", tile_smoothed,
+                     "-foutpos", tile_smoothed_spatial]
+        run_step(Step("Mean-Shift Smoothing " + tile.id, step_args))
+
+        step_args = ["otbcli_LSMSSegmentation",
+                     "-in", tile_smoothed,
+                     "-inpos", tile_smoothed_spatial,
+                     "-spatialr", self.args.spatialr,
+                     "-ranger", self.args.ranger,
+                     "-minsize", 0,
+                     "-tilesizex", 1024,
+                     "-tilesizey", 1024,
+                     "-tmpdir", self.args.tmpfolder,
+                     "-out", tile_segmentation, "uint32"]
+        run_step(Step("Segmentation " + tile.id, step_args))
+
+        step_args = ["otbcli_LSMSSmallRegionsMerging",
+                     "-in", tile_smoothed,
+                     "-inseg", tile_segmentation,
+                     "-minsize", self.args.minsize,
+                     "-tilesizex", 1024,
+                     "-tilesizey", 1024,
+                     "-out", tile_segmentation_merged, "uint32"]
+        run_step(Step("Small region merging " + tile.id, step_args))
+
+        step_args = ["otbcli", "MajorityVoting", self.args.buildfolder,
+                     "-nodatasegvalue", 0,
+                     "-nodataclassifvalue", "-10000",
+                     "-minarea", self.args.minarea,
+                     "-inclass", tile_crop_mask,
+                     "-inseg", tile_segmentation_merged,
+                     "-rout", tile_segmented]
+        run_step(Step("Majority voting " + tile.id, step_args))
+
+    def validate(self, context):
+        files = []
+        for tile in self.tiles:
+            tile_segmented = self.get_output_path("crop-mask-segmented-{}.tif", tile.id)
+
+            files.append(tile_segmented)
+
+        for stratum in self.strata:
+            area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
+            area_statistics = self.get_output_path("confusion-matrix-validation-{}.csv", stratum.id)
+            area_quality_metrics = self.get_output_path("quality-metrics-{}.txt", stratum.id)
+            area_validation_metrics_xml = self.get_output_path("validation-metrics-{}.xml", stratum.id)
+
+            step_args = ["otbcli", "ComputeConfusionMatrixMulti", self.args.buildfolder,
+                            "-ref", "vector",
+                            "-ref.vector.in", area_validation_polygons,
+                            "-ref.vector.field", "CROP",
+                            "-out", area_statistics,
+                            "-nodatalabel", -10000,
+                            "-il"]
+            step_args += files
+            run_step(Step("ComputeConfusionMatrix_" + str(stratum.id),
+                                step_args, out_file=area_quality_metrics))
+
+            step_args = ["otbcli", "XMLStatistics", self.args.buildfolder,
+                            "-root", "CropType",
+                            "-confmat", area_statistics,
+                            "-quality", area_quality_metrics,
+                            "-out", area_validation_metrics_xml]
+            run_step(Step("XMLStatistics_" + str(stratum.id), step_args))
+
+        step_args = ["otbcli", "ProductFormatter", self.args.buildfolder,
+                        "-destroot", self.args.targetfolder,
+                        "-fileclass", "SVT1",
+                        "-level", "L4A",
+                        "-baseline", "01.00",
+                        "-siteid", self.args.siteid,
+                        "-processor", "cropmask"]
+
+        step_args.append("-processor.cropmask.file")
+        for tile in self.tiles:
+            tile_segmented = self.get_output_path("crop-mask-segmented-{}.tif", tile.id)
+
+            step_args.append("TILE_" + tile.id)
+            step_args.append(tile_segmented)
+
+        step_args.append("-processor.cropmask.rawfile")
+        for tile in self.tiles:
+            tile_crop_mask = self.get_tile_classification_output(tile)
+
+            step_args.append("TILE_" + tile.id)
+            step_args.append(tile_segmented)
+
+        step_args.append("-processor.cropmask.flags")
+        for tile in self.tiles:
+            tile_quality_flags = self.get_output_path("status_flags_{}.tif", tile.id)
+
+            step_args.append("TILE_" + tile.id)
+            step_args.append(tile_quality_flags)
+
+        step_args.append("-processor.cropmask.quality")
+        for stratum in self.strata:
+            area_validation_metrics_xml = self.get_output_path("validation-metrics-{}.xml", stratum.id)
+
+            if not self.single_stratum:
+                step_args.append("REGION_" + str(stratum.id))
+
+            step_args.append(area_validation_metrics_xml)
+
+        step_args.append("-il")
+        step_args += self.args.input
+
+        run_step(Step("ProductFormatter", step_args))
+
+    def get_stratum_tile_classification_output(self, stratum, tile):
+        return self.get_output_path("crop_mask_map_uncut_{}_{}.tif", stratum.id, tile.id)
+
+    def get_tile_classification_output(self, tile):
+        return self.get_output_path("crop_mask_map_{}.tif", tile.id)
+
+# processor = CropTypeProcessor()
+processor = CropMaskProcessor()
+processor.execute()
