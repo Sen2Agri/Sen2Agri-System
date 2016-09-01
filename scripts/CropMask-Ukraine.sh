@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source ./set_build_folder.sh
+
 ./CropMask.py \
     -refp /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp \
     -input \
