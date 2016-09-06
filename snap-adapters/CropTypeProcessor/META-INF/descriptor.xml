@@ -12,7 +12,7 @@
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>$SCRIPT_PATH\CropType.py</mainToolFileLocation>
+  <mainToolFileLocation>$SCRIPT_PATH/CropType.py</mainToolFileLocation>
   <workingDir>$WORKING_DIR_PATH</workingDir>
   <template>
     <file>CropTypeProcessor-template.vm</file>
@@ -27,7 +27,7 @@
     </variable>
     <osvariable>
       <key>PYTHON_BIN</key>
-      <value>python.exe</value>
+      <value>/bin/python2.7</value>
       <isShared>false</isShared>
       <windows>python.exe</windows>
       <linux>/bin/python2.7</linux>
@@ -53,7 +53,7 @@
     <parameter>
       <name>referencePolygons</name>
       <dataType>java.io.File</dataType>
-      <defaultValue>\</defaultValue>
+      <defaultValue>/</defaultValue>
       <description>The reference polygons</description>
       <label>Reference Polygons</label>
       <valueSet/>
@@ -87,7 +87,7 @@
     <parameter>
       <name>cropMask</name>
       <dataType>java.io.File</dataType>
-      <defaultValue>\</defaultValue>
+      <defaultValue>/</defaultValue>
       <description>The crop mask</description>
       <label>Crop Mask</label>
       <valueSet/>

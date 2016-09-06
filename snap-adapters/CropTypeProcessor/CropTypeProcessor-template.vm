@@ -1,13 +1,7 @@
 -ref
 $referencePolygons.AbsolutePath
 -input
-#foreach ($inputFile in $inputFiles)
-$inputFile.AbsolutePath
-#end
--t0
-$t0
--tend
-$tend
+$inputFiles
 -rate
 $samplingRate
 -rseed

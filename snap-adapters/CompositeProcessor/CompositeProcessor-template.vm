@@ -1,12 +1,10 @@
 --input
-#foreach ($inputFile in $inputFiles)
-$inputFile.AbsolutePath
-#end
+$inputFiles
 --res
 $resolution
 --outdir
 $WORKING_DIR_PATH
---syndate
+--syntdate
 $synthesysDate
 --synthalf
 $halfSynthesis

@@ -12,7 +12,7 @@
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>$SCRIPT_PATH\demmaccs.py</mainToolFileLocation>
+  <mainToolFileLocation>$SCRIPT_PATH/demmaccs.py</mainToolFileLocation>
   <workingDir>$WORKING_DIR_PATH</workingDir>
   <template>
     <file>MACCSProcessor-template.vm</file>
@@ -20,7 +20,7 @@
   <variables>
     <variable>
       <key>WORKING_DIR_PATH</key>
-      <value>/mnt/archive/temp_maccs/workingDir</value>
+      <value>/mnt/archive/temp_maccs</value>
       <isShared>false</isShared>
     </variable>
     <variable>
@@ -43,7 +43,7 @@
       <name>SRTMDataset</name>
       <alias>SRTM Path</alias>
       <dataType>java.io.File</dataType>
-      <defaultValue>\mnt\archive\srtm</defaultValue>
+      <defaultValue>/mnt/archive/srtm</defaultValue>
       <description>SRTM dataset path</description>
       <label>SRTM Path</label>
       <valueSet/>
@@ -55,7 +55,7 @@
       <name>SWBDDataset</name>
       <alias>SWBD Path</alias>
       <dataType>java.io.File</dataType>
-      <defaultValue>\mnt\archive\swbd</defaultValue>
+      <defaultValue>/mnt/archive/swbd</defaultValue>
       <description>SWBD dataset path</description>
       <label>SWBD Path</label>
       <valueSet/>
@@ -80,7 +80,7 @@
       <name>gipDirectory</name>
       <alias>GIP Path</alias>
       <dataType>java.io.File</dataType>
-      <defaultValue>\mnt\archive\gips</defaultValue>
+      <defaultValue>/mnt/archive/gipp</defaultValue>
       <description>Directory where gip are to be found</description>
       <label>GIP Path</label>
       <valueSet/>
@@ -92,7 +92,7 @@
       <name>MACCSLauncher</name>
       <alias>MACCS Path</alias>
       <dataType>java.io.File</dataType>
-      <defaultValue>\opt\maccs\core\5.0\bin\maccs</defaultValue>
+      <defaultValue>/opt/maccs/core/5.0/bin/maccs</defaultValue>
       <description>Path to MACCS binaries</description>
       <valueSet/>
       <notNull>false</notNull>
@@ -103,7 +103,7 @@
       <name>inputProductDir</name>
       <alias>L1C Path</alias>
       <dataType>java.io.File</dataType>
-      <defaultValue>\mnt\archive</defaultValue>
+      <defaultValue>/mnt/archive</defaultValue>
       <description>Path to L1C input products</description>
       <valueSet/>
       <notNull>false</notNull>
@@ -114,7 +114,7 @@
       <name>outDir</name>
       <alias>Output Path</alias>
       <dataType>java.io.File</dataType>
-      <defaultValue>\mnt\archive\temp_maccs</defaultValue>
+      <defaultValue>/mnt/archive/temp_maccs</defaultValue>
       <description>Output location</description>
       <valueSet/>
       <notNull>false</notNull>

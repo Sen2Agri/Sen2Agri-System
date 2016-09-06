@@ -1,7 +1,5 @@
 --input
-#foreach ($inputFile in $inputFiles)
-$inputFile.AbsolutePath
-#end
+$inputFiles
 --resolution
 $resolution
 --outdir

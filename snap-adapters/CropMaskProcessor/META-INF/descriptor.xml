@@ -12,7 +12,7 @@
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>$SCRIPT_PATH\CropMask.py</mainToolFileLocation>
+  <mainToolFileLocation>$SCRIPT_PATH/CropMask.py</mainToolFileLocation>
   <workingDir>$WORKING_DIR_PATH</workingDir>
   <template>
     <file>CropMaskProcessor-template.vm</file>
@@ -28,7 +28,7 @@
     </variable>
     <osvariable>
       <key>PYTHON_BIN</key>
-      <value>python.exe</value>
+      <value>/bin/python2.7</value>
       <isShared>false</isShared>
       <windows>python.exe</windows>
       <linux>/bin/python2.7</linux>
@@ -54,7 +54,7 @@
     <parameter>
       <name>refPolygons</name>
       <dataType>java.io.File</dataType>
-      <defaultValue>\</defaultValue>
+      <defaultValue>/</defaultValue>
       <description>The reference polygons</description>
       <label>Reference Polygons</label>
       <valueSet/>
@@ -102,7 +102,7 @@
     <parameter>
       <name>outDir</name>
       <dataType>java.io.File</dataType>
-      <defaultValue>\mnt\archive\temp</defaultValue>
+      <defaultValue>/mnt/archive/temp</defaultValue>
       <description>Output folder</description>
       <label>Output Folder</label>
       <valueSet/>

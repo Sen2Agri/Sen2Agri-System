@@ -6,7 +6,7 @@ $SRTMDataset.AbsolutePath
 $SWBDDataset.AbsolutePath
 --processes-number-dem
 $processNumber
---gip-dir
+--gipp-dir
 $gipDirectory.AbsolutePath
 --maccs-launcher
 $MACCSLauncher.AbsolutePath

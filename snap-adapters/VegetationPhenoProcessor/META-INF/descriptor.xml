@@ -12,7 +12,7 @@
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>$SCRIPT_PATH\pheno_processing.py</mainToolFileLocation>
+  <mainToolFileLocation>$SCRIPT_PATH/pheno_processing.py</mainToolFileLocation>
   <workingDir>$WORKING_DIR_PATH</workingDir>
   <template>
     <file>VegetationPhenoProcessor-template.vm</file>
@@ -22,10 +22,10 @@
   <variables>
     <osvariable>
       <key>PYTHON_BIN</key>
-      <value>python.exe</value>
+      <value>/bin/python2.7</value>
       <isShared>false</isShared>
       <windows>python.exe</windows>
-      <linux></linux>
+      <linux>/bin/python2.7</linux>
       <macosx>/bin/python2.7</macosx>
       <isTransient>false</isTransient>
     </osvariable>

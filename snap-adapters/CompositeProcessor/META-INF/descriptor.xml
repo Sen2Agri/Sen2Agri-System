@@ -12,7 +12,7 @@
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>$SCRIPT_PATH\composite_processing.py</mainToolFileLocation>
+  <mainToolFileLocation>$SCRIPT_PATH/composite_processing.py</mainToolFileLocation>
   <workingDir>$WORKING_DIR_PATH</workingDir>
   <template>
     <file>CompositeProcessor-template.vm</file>
@@ -28,7 +28,7 @@
     </variable>
     <osvariable>
       <key>PYTHON_BIN</key>
-      <value>python.exe</value>
+      <value>/bin/python2.7</value>
       <isShared>false</isShared>
       <windows>python.exe</windows>
       <linux>/bin/python2.7</linux>

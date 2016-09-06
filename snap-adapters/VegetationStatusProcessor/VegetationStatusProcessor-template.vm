@@ -1,7 +1,5 @@
 --input
-#foreach ($inputFile in $inputFiles)
-$inputFile.AbsolutePath
-#end
+$inputFiles
 --res
 $resolution
 --outdir
@@ -12,6 +10,8 @@ $WORKING_DIR_PATH
 $modelsFolder
 --generatemodel
 $generateModel
+--generatemonodate
+$generateMonoDate
 --genreprocessedlai
 $generateReprocessedLai
 --genfittedlai
