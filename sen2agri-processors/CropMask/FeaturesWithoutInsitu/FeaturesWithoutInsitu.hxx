@@ -16,7 +16,7 @@
 #ifndef TEMPORALRESAMPLING_HXX
 #define TEMPORALRESAMPLING_HXX
 
-#include "itkBinaryFunctorImageFilter.h"
+#include "itkUnaryFunctorImageFilter.h"
 #include "otbVectorImage.h"
 
 #define MAXNDVISLOPE 0
@@ -41,10 +41,28 @@ public:
     {
     }
 
-    PixelType operator()(PixelType ndvi, PixelType ts) const
+    PixelType operator()(PixelType ts) const
     {
         // compute the number of input image
         int numImages = m_id.size();
+
+        PixelType ndvi(numImages);
+
+        auto ok = false;
+        for (int imgIndex = 0; imgIndex < numImages; imgIndex++) {
+            int b1 = ts[4 * imgIndex];
+            int b2 = ts[4 * imgIndex + 1];
+            int b3 = ts[4 * imgIndex + 2];
+            int b4 = ts[4 * imgIndex + 3];
+
+            if (b1 != -10000 && b2 != -10000 && b3 != -10000 && b4 != -10000) {
+                ok = true;
+
+                ndvi[imgIndex] = (std::abs(b3+b2)<0.000001) ? 0 : static_cast<PixelValueType>(b3-b2)/(b3+b2);
+            } else {
+                ndvi[imgIndex] = -10000;
+            }
+        }
 
         // Create the output pixel
 #if 1
@@ -142,15 +160,15 @@ protected:
     std::vector<int> m_id;
 };
 
-/** Binary functor image filter which produces a vector image with a
+/** Unary functor image filter which produces a vector image with a
 * number of bands different from the input images */
 template <typename TFunctor>
-class ITK_EXPORT BinaryFunctorImageFilterWithNBands
-    : public itk::BinaryFunctorImageFilter<ImageType, ImageType, ImageType, TFunctor>
+class ITK_EXPORT UnaryFunctorImageFilterWithNBands
+    : public itk::UnaryFunctorImageFilter<ImageType, ImageType, TFunctor>
 {
 public:
-    typedef BinaryFunctorImageFilterWithNBands Self;
-    typedef itk::BinaryFunctorImageFilter<ImageType, ImageType, ImageType, TFunctor> Superclass;
+    typedef UnaryFunctorImageFilterWithNBands Self;
+    typedef itk::UnaryFunctorImageFilter<ImageType, ImageType, TFunctor> Superclass;
     typedef itk::SmartPointer<Self> Pointer;
     typedef itk::SmartPointer<const Self> ConstPointer;
 
@@ -158,17 +176,17 @@ public:
     itkNewMacro(Self);
 
     /** Macro defining the type*/
-    itkTypeMacro(BinaryFunctorImageFilterWithNBands, SuperClass);
+    itkTypeMacro(UnaryFunctorImageFilterWithNBands, SuperClass);
 
     /** Accessors for the number of bands*/
     itkSetMacro(NumberOfOutputBands, unsigned int);
     itkGetConstMacro(NumberOfOutputBands, unsigned int);
 
 protected:
-    BinaryFunctorImageFilterWithNBands()
+    UnaryFunctorImageFilterWithNBands()
     {
     }
-    virtual ~BinaryFunctorImageFilterWithNBands()
+    virtual ~UnaryFunctorImageFilterWithNBands()
     {
     }
 
@@ -179,7 +197,7 @@ protected:
     }
 
 private:
-    BinaryFunctorImageFilterWithNBands(const Self &); // purposely not implemented
+    UnaryFunctorImageFilterWithNBands(const Self &); // purposely not implemented
     void operator=(const Self &);                     // purposely not implemented
 
     unsigned int m_NumberOfOutputBands;

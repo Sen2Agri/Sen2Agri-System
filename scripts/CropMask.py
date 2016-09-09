@@ -42,14 +42,12 @@ def inSituDataAvailable() :
 
 def noInSituDataAvailable() :
 	global validation_polygons
-	#Data Smoothing for NDVI (Step 15)
-	executeStep("DataSmoothing for NDVI", "otbcli", "DataSmoothing", buildFolder,"-ts", ndvi, "-mask", mask, "-dates", dates, "-lambda", lmbd, "-sts", ndvi_smooth, "-outdays", outdays_smooth, skip=fromstep>15)
 
 	#Data Smoothing for Reflectances (Step 16)
-	executeStep("DataSmoothing for Reflectances", "otbcli", "DataSmoothing", buildFolder,"-ts", tocr, "-mask", mask, "-dates", dates, "-lambda", lmbd, "-sts",rtocr_smooth, skip=fromstep>16, rmfiles=[] if keepfiles else [rtocr])
+	executeStep("DataSmoothing for Reflectances", "otbcli", "DataSmoothing", buildFolder,"-ts", tocr, "-mask", mask, "-dates", dates, "-lambda", lmbd, "-sts",rtocr_smooth, "-outdays", outdays_smooth, skip=fromstep>16, rmfiles=[] if keepfiles else [rtocr])
 
 	#Features when no insitu data is available (Step 17)
-	executeStep("FeaturesWithoutInsitu", "otbcli", "FeaturesWithoutInsitu", buildFolder,"-ndvi",ndvi_smooth,"-ts", rtocr_smooth, "-dates", outdays_smooth , "-sf", spectral_features, skip=fromstep>17, rmfiles=[] if keepfiles else [ndvi_smooth, rtocr_smooth])
+	executeStep("FeaturesWithoutInsitu", "otbcli", "FeaturesWithoutInsitu", buildFolder, "-ts", rtocr_smooth, "-dates", outdays_smooth , "-sf", spectral_features, skip=fromstep>17, rmfiles=[] if keepfiles else [rtocr_smooth])
 
 	# Image Statistics (Step 18)
 	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", spectral_features, "-out", statistics_noinsitu, skip=fromstep>18)
@@ -179,7 +177,6 @@ features=os.path.join(args.outdir, "concat_features.tif")
 statistics=os.path.join(args.outdir, "statistics.xml")
 
 rndvi=os.path.join(args.outdir, "rndvi.tif")
-ndvi_smooth=os.path.join(args.outdir, "ndvi_smooth.tif")
 rtocr_smooth=os.path.join(args.outdir, "rtocr_smooth.tif")
 outdays_smooth=os.path.join(args.outdir, "days_smooth.txt")
 tf_noinsitu=os.path.join(args.outdir, "tf_noinsitu.tif")
@@ -261,11 +258,6 @@ try:
             executeStep("FeatureExtraction", "otbcli", "FeatureExtraction",
                     buildFolder, "-rtocr", rtocr,
                     "-ndvi", rndvi, skip=fromstep>6)
-
-            # Feature Extraction without insitu (Step 6)
-            executeStep("FeatureExtraction", "otbcli", "FeatureExtraction",
-                    buildFolder, "-rtocr", tocr,
-                    "-ndvi", ndvi, skip=fromstep>6)
 
             #Perform Noinsitu specific steps
             noInSituDataAvailable()

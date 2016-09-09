@@ -50,9 +50,9 @@
 
 #include "FeaturesWithoutInsitu.hxx"
 
-typedef otb::ImageFileReader<ImageType>                                         ReaderType;
+typedef otb::ImageFileReader<ImageType>                                 ReaderType;
 typedef FeaturesNoInsituFunctor<ImageType::PixelType>                   FeaturesNoInsituFunctorType;
-typedef BinaryFunctorImageFilterWithNBands<FeaturesNoInsituFunctorType>  BinaryFunctorImageFilterWithNBandsType;
+typedef UnaryFunctorImageFilterWithNBands<FeaturesNoInsituFunctorType>  UnaryFunctorImageFilterWithNBandsType;
 
 //  Software Guide : EndCodeSnippet
 
@@ -160,7 +160,6 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-    AddParameter(ParameterType_InputImage, "ndvi", "NDVI time series");
     AddParameter(ParameterType_InputImage, "ts", "Initial time series");
     AddParameter(ParameterType_InputFilename, "dates", "The dates for the input series, expressed as days from epoch");
 
@@ -175,7 +174,6 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-    SetDocExampleParameterValue("ndvi", "ndvi.tif");
     SetDocExampleParameterValue("ts", "ts.tif");
     SetDocExampleParameterValue("dates", "dates.txt");
     SetDocExampleParameterValue("sf", "spectral_features.tif");
@@ -190,9 +188,8 @@ private:
   void DoUpdateParameters()
   {
 
-      m_NDVIReader = ReaderType::New();
       m_TSReader = ReaderType::New();
-      m_filter = BinaryFunctorImageFilterWithNBandsType::New();
+      m_filter = UnaryFunctorImageFilterWithNBandsType::New();
 
   }
   //  Software Guide : EndCodeSnippet
@@ -224,13 +221,11 @@ private:
       datesFile.close();
 
       //Read the input files
-      m_NDVIReader->SetFileName(GetParameterString("ndvi"));
-      m_NDVIReader->UpdateOutputInformation();
       m_TSReader->SetFileName(GetParameterString("ts"));
       m_TSReader->UpdateOutputInformation();
 
       int outImages = 5;
-      int bpi = m_TSReader->GetOutput()->GetNumberOfComponentsPerPixel() / m_NDVIReader->GetOutput()->GetNumberOfComponentsPerPixel();
+      int bpi = 4;
 
       // connect the functor based filter
 #if 1
@@ -240,8 +235,7 @@ private:
 #endif
       m_filter->SetFunctor(FeaturesNoInsituFunctorType(outImages, bpi, m_inDates));
 
-      m_filter->SetInput(0, m_NDVIReader->GetOutput());
-      m_filter->SetInput(1, m_TSReader->GetOutput());
+      m_filter->SetInput(m_TSReader->GetOutput());
 
       SetParameterOutputImage("sf", m_filter->GetOutput());
 
@@ -251,9 +245,8 @@ private:
   // the dates for the images
   std::vector<int> m_inDates;
 
-  ReaderType::Pointer                                m_NDVIReader;
   ReaderType::Pointer                                m_TSReader;
-  BinaryFunctorImageFilterWithNBandsType::Pointer    m_filter;
+  UnaryFunctorImageFilterWithNBandsType::Pointer     m_filter;
 };
 }
 }
