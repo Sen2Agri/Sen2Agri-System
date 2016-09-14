@@ -218,6 +218,9 @@ class CropMaskProcessor(ProcessorBase):
                      "-foutpos", tile_smoothed_spatial]
         run_step(Step("Mean-Shift Smoothing " + tile.id, step_args))
 
+        if not self.args.keepfiles:
+            os.remove(tile_pca)
+
         step_args = ["otbcli_LSMSSegmentation",
                      "-in", tile_smoothed,
                      "-inpos", tile_smoothed_spatial,
