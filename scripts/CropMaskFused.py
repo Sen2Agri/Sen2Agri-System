@@ -199,6 +199,9 @@ class CropMaskProcessor(ProcessorBase):
 
         run_step(Step("NDVI PCA " + tile.id, step_args))
 
+        if not self.args.keepfiles:
+            os.remove(tile_ndvi)
+
         tile_smoothed = self.get_output_path("smoothed-{}.tif", tile.id)
         tile_smoothed_spatial = self.get_output_path("smoothed-spatial-{}.tif", tile.id)
         tile_segmentation = self.get_output_path("segmentation-{}.tif", tile.id)
@@ -235,6 +238,11 @@ class CropMaskProcessor(ProcessorBase):
                      "-tilesizey", 1024,
                      "-out", format_otb_filename(tile_segmentation_merged, compression='DEFLATE'), "uint32"]
         run_step(Step("Small region merging " + tile.id, step_args))
+
+        if not self.args.keepfiles:
+            os.remove(tile_smoothed)
+            os.remove(tile_smoothed_spatial)
+            os.remove(tile_segmentation)
 
         step_args = ["otbcli", "MajorityVoting", self.args.buildfolder,
                      "-nodatasegvalue", 0,
