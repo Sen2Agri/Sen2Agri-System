@@ -108,9 +108,6 @@ for l1 in l1_list:
             log(general_log_path, "Unknown satellite id {} found for {}. Continue...".format(sat_id, l1), general_log_filename)
             continue
         new_dir = "{}/{}".format(write_dir, l1_basename)
-        if not create_recursive_dirs(new_dir):
-            log(new_dir, "Could not create the destination directory {}".format(new_dir), general_log_filename)
-            continue
         #check if there is already a product with the same name
         if os.path.isdir(new_dir):
             #check if overwrite flag is applied. otherwise, no action will be taken
@@ -124,7 +121,10 @@ for l1 in l1_list:
                 shutil.rmtree(new_dir)
             except:
                 log(write_dir, "Couldn't remove the old dir {}".format(new_dir), general_log_filename)
-        
+        #create the dir structure
+#        if not create_recursive_dirs(new_dir):
+#            log(new_dir, "Could not create the destination directory {}".format(new_dir), general_log_filename)
+#            continue
         #log(write_dir, "Set downloading status for {}".format(new_dir), general_log_filename)
         #if sat_id == SENTINEL2_SATELLITE_ID:
         #    if not sentinel_db_info.upsertSentinelProductHistory(sentinel_aoi_context.siteId, l1_basename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, acquisition_date, new_dir, orbit_id, sentinel_aoi_context.maxRetries):
