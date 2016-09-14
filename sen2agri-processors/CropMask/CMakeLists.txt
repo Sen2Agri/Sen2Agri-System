@@ -10,7 +10,7 @@ add_subdirectory(Erosion)
 add_subdirectory(FeaturesWithInsitu)
 add_subdirectory(FeaturesWithoutInsitu)
 
-install(FILES ../../scripts/CropMask.py  
+install(FILES ../../scripts/CropMask.py ../../scripts/CropMaskFused.py
         DESTINATION usr/bin/
 	PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
         GROUP_READ GROUP_EXECUTE 

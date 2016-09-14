@@ -5,7 +5,7 @@ add_subdirectory(FeatureExtraction)
 add_subdirectory(TemporalResampling)
 add_subdirectory(QualityFlagsExtractor)
 
-install(FILES ../../scripts/CropType.py
+install(FILES ../../scripts/CropType.py ../../scripts/CropTypeFused.py
         DESTINATION usr/bin/
 	    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
                     GROUP_READ GROUP_EXECUTE
