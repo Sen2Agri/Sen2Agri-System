@@ -70,7 +70,7 @@ void PersistenceItfModule::RequestConfiguration()
 
 QString PersistenceItfModule::GetExecutorQos(int processorId) {
     QString qos;
-    const auto &strProcQosKey = QString("executor.processor.%1.qos")
+    const auto &strProcQosKey = QString("executor.processor.%1.slurm_qos")
             .arg(clientInterface.GetProcessorShortName(processorId));
     const auto &keys = clientInterface.GetConfigurationParameters(strProcQosKey);
     GetValueForKey(keys, strProcQosKey, qos);
@@ -79,7 +79,7 @@ QString PersistenceItfModule::GetExecutorQos(int processorId) {
 
 QString PersistenceItfModule::GetExecutorPartition(int processorId) {
     QString partition;
-    const auto &strProcPartKey = QString("executor.processor.%1.qos")
+    const auto &strProcPartKey = QString("executor.processor.%1.slurm_partition")
             .arg(clientInterface.GetProcessorShortName(processorId));
     const auto &keys = clientInterface.GetConfigurationParameters(strProcPartKey);
     GetValueForKey(keys, strProcPartKey, partition);
