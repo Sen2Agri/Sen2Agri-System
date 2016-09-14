@@ -19,17 +19,18 @@ from sen2agri_common import executeStep
 
 class Step(object):
 
-    def __init__(self, name, arguments, out_file=None):
+    def __init__(self, name, arguments, out_file=None, retry=False):
         self.name = name
         self.arguments = arguments
         self.out_file = out_file
+        self.retry = retry
 
 
 def run_step(step):
     if step.out_file:
-        executeStep(step.name, *step.arguments, outf=step.out_file)
+        executeStep(step.name, *step.arguments, outf=step.out_file, retry=step.retry)
     else:
-        executeStep(step.name, *step.arguments)
+        executeStep(step.name, *step.arguments, retry=step.retry)
 
 def get_reference_raster(product):
     file = os.path.basename(product)
@@ -234,7 +235,6 @@ def split_strata(areas, data, site_footprint_wgs84, out_folder):
                 out_feature.SetGeometry(region_geom_wgs84)
                 out_layer.CreateFeature(out_feature)
 
-        print("Stratum {}: {} features".format(area_id, out_features))
         if out_features > 0:
             print("Stratum {}: {} features".format(area_id, out_features))
             result.append(Stratum(area_id, out_name, area_feature))
@@ -351,14 +351,12 @@ class ProcessorBase(object):
             for tile in self.tiles:
                 self.after_prepare_tile(tile)
 
-            if self.args.mode == "train":
+            if self.args.mode is None or self.args.mode == 'train':
                 for stratum in self.strata:
-                    if len(stratum.tiles) > 0:
-                        print("Building model for stratum:", stratum.id)
-                        self.train_stratum(stratum)
-                    else:
-                        print("Skipping training for stratum: ", stratum.id)
-            elif self.args.mode == "classify":
+                    print("Building model for stratum:", stratum.id)
+                    self.train_stratum(stratum)
+
+            if self.args.mode is None or self.args.mode == 'classify':
                 for stratum in self.strata:
                     print("Applying model for stratum:", stratum.id)
 
@@ -381,13 +379,14 @@ class ProcessorBase(object):
                     self.postprocess_tile(tile)
 
                 self.compute_quality_flags()
-            else:
+
+            if self.args.mode is None or self.args.mode == 'validate':
                 self.validate(context)
         except:
             traceback.print_exc()
         finally:
             end_time = datetime.datetime.now()
-            print("Processor CropType finished in", str(end_time - start_time))
+            print("Processor finished in", str(end_time - start_time))
 
     def compute_quality_flags(self):
         for tile in self.tiles:
@@ -410,10 +409,6 @@ class ProcessorBase(object):
                 print("The number of input products ({}) doesn't match the total tile count ({})".format(
                     len(self.args.input), psum))
 
-        print("Tiles:", len(self.args.prodspertile))
-        self.single_stratum = self.args.strata is None
-        print("Single stratum:", self.single_stratum)
-
         start = 0
         self.tiles = []
         for idx, t in enumerate(self.args.prodspertile):
@@ -422,6 +417,14 @@ class ProcessorBase(object):
             id = get_tileid_for_descriptors(descriptors)
             self.tiles.append(Tile(id, descriptors))
             start += t
+
+        print("Tiles:", len(self.tiles))
+
+        for tile in self.tiles:
+            print(tile.id, len(tile.descriptors))
+
+        self.single_stratum = self.args.strata is None
+        print("Single stratum:", self.single_stratum)
 
         if not self.args.targetfolder:
             self.args.targetfolder = self.args.outdir
@@ -442,6 +445,7 @@ class ProcessorBase(object):
             for tile in self.tiles:
                 tile_best_weight = 0.0
                 tile_strata = []
+
                 for stratum in self.strata:
                     weight = stratum.extent.GetGeometryRef().Intersection(
                         tile.footprint).Area() / tile.area
@@ -450,8 +454,7 @@ class ProcessorBase(object):
                         tile_best_weight = weight
                         tile.main_stratum = stratum
 
-                    if self.args.mode != 'train' or self.tile_has_features(stratum, tile):
-                        tile_strata.append((stratum, weight))
+                    tile_strata.append((stratum, weight))
 
                 tile_strata.sort(key=lambda x: -x[1])
 
@@ -471,15 +474,14 @@ class ProcessorBase(object):
                     stratum.tiles.append(tile)
                     tile.strata.append(stratum)
 
-            if self.args.mode == 'classify':
-                for tile in self.tiles:
-                    geom = tile.footprint.Clone()
+            for tile in self.tiles:
+                geom = tile.footprint.Clone()
 
-                    for stratum in tile.strata:
-                        if stratum != tile.main_stratum:
-                            geom = geom.Difference(stratum.extent.GetGeometryRef())
+                for stratum in tile.strata:
+                    if stratum != tile.main_stratum:
+                        geom = geom.Difference(stratum.extent.GetGeometryRef())
 
-                    tile.main_mask = geom
+                tile.main_mask = geom
         else:
             filtered_polygons = filter_polygons(self.args.ref, self.site_footprint_wgs84, self.args.outdir)
             stratum = Stratum(0, filtered_polygons, None)
@@ -489,9 +491,8 @@ class ProcessorBase(object):
                 tile.strata = [stratum]
                 tile.main_stratum = stratum
 
-            if self.args.mode == 'classify':
-                for tile in self.tiles:
-                    tile.main_mask = tile.footprint
+            for tile in self.tiles:
+                tile.main_mask = tile.footprint
 
     def merge_strata_for_tile(self, tile, inputs, output, compression=None):
         files = []
@@ -565,7 +566,7 @@ class CropTypeProcessor(ProcessorBase):
                             required=True, metavar='product_descriptor', nargs='+')
         parser.add_argument('-prodspertile', help='Number of products for each tile',
                             type=int, nargs='+')
-        parser.add_argument('-trm', help='The temporal resampling mode (default gapfill)',
+        parser.add_argument('-trm', help='The temporal resampling mode (default resample)',
                             choices=['resample', 'gapfill'], required=False, default='resample')
         parser.add_argument('-classifier', help='The classifier (rf or svm) used for training (default rf)',
                             required=False, metavar='classifier', choices=['rf', 'svm'], default='rf')
@@ -575,6 +576,7 @@ class CropTypeProcessor(ProcessorBase):
                             required=False, metavar='random_seed', default=0)
         parser.add_argument('-mask', help='The crop mask for each tile',
                             required=False, nargs='+', default=None)
+        parser.add_argument('-maskprod', help='A crop mask product for the same tiles', required=False, default=None)
         parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)',
                             required=False, metavar='pixsize', default=10)
         parser.add_argument('-sp', help='Per-sensor sampling rates (default SENTINEL 10 SPOT 5 LANDSAT 16)',
@@ -598,17 +600,55 @@ class CropTypeProcessor(ProcessorBase):
         parser.add_argument(
             '-strata', help='Shapefiles with polygons for the strata')
         parser.add_argument('-mode', help='The execution mode',
-                            required=True, choices=['train', 'classify', 'validate'])
+                            required=False, choices=['train', 'classify', 'validate'], default=None)
         self.args = parser.parse_args()
 
         self.crop_features = load_features(self.args.ref)
 
+        if self.args.mask is not None and self.args.maskprod is not None:
+            raise("The -mask and -maskprod arguments are exclusive")
+
     def after_prepare_tile(self, tile):
-        for idx, tile in self.tiles:
-            if self.args.mask is not None and self.args.mask[idx] != "NONE":
-                tile.crop_mask = self.args.mask[idx]
-            else:
-                tile.crop_mask = None
+        for tile in self.tiles:
+            tile.crop_mask = None
+
+        if self.args.mask is not None:
+            for idx, tile in self.tiles:
+                if self.args.mask[idx] != 'NONE':
+                    tile.crop_mask = self.args.mask[idx]
+        elif self.args.maskprod is not None:
+            mask_dict = {}
+            tile_path = os.path.join(self.args.maskprod, 'TILES')
+            tile_id_re = re.compile('_T([a-zA-Z0-9]+)$')
+
+            for tile_dir in os.listdir(tile_path):
+                m = tile_id_re.search(tile_dir)
+                if m:
+                    tile_id = m.group(1)
+                    segmented_mask = None
+                    raw_mask = None
+
+                    img_data_path = os.path.join(os.path.join(tile_path, tile_dir), 'IMG_DATA')
+                    for file in os.listdir(img_data_path):
+                        if file.startswith('S2AGRI_L4A_CM'):
+                            segmented_mask = os.path.join(img_data_path, file)
+                        elif file.startswith('S2AGRI_L4A_RAW'):
+                            raw_mask = os.path.join(img_data_path, file)
+
+                    if segmented_mask is not None:
+                        mask_dict[tile_id] = segmented_mask
+                    elif raw_mask is not None:
+                        mask_dict[tile_id] = raw_mask
+
+            for tile in self.tiles:
+                mask = mask_dict.get(tile.id)
+                if mask is not None:
+                    tile.crop_mask = mask
+
+        for tile in self.tiles:
+            if tile.crop_mask is not None:
+                print("Crop mask for tile {}: {}".format(tile.id, tile.crop_mask))
+
 
     def tile_has_features(self, stratum, tile):
         if stratum.extent is None:
@@ -654,9 +694,9 @@ class CropTypeProcessor(ProcessorBase):
                         "-io.confmatout", area_confmatout,
                         "-io.out", area_model,
                         "-sample.mt", -1,
-                        "-sample.mv", -1,
+                        "-sample.mv", 1000,
                         "-sample.vfn", "CODE",
-                        "-sample.vtr", 0.1,
+                        "-sample.vtr", 0.01,
                         "-classifier", self.args.classifier]
         step_args += ["-sp"] + self.args.sp
         step_args += ["-prodpertile"] + area_prodpertile
@@ -696,8 +736,7 @@ class CropTypeProcessor(ProcessorBase):
 
         step_args += ["-mask", stratum_tile_mask]
 
-        run_step(Step("ImageClassifier_{}_{}".format(
-                stratum.id, tile.id), step_args))
+        run_step(Step("ImageClassifier_{}_{}".format(stratum.id, tile.id), step_args, retry=True))
 
     def postprocess_tile(self, tile):
         if tile.crop_mask is not None:
@@ -755,7 +794,13 @@ class CropTypeProcessor(ProcessorBase):
                         "-siteid", self.args.siteid,
                         "-processor", "croptype"]
 
-        if not self.args.mask:
+        has_mask = False
+        for tile in self.tiles:
+            if tile.crop_mask is not None:
+                has_mask = True
+                break
+
+        if not has_mask:
             step_args.append("-processor.croptype.file")
             for tile in self.tiles:
                 tile_crop_map = self.get_output_path("crop_type_map_{}.tif", tile.id)
@@ -824,8 +869,8 @@ class CropMaskProcessor(ProcessorBase):
                             required=True, metavar='product_descriptor', nargs='+')
         parser.add_argument('-prodspertile', help='Number of products for each tile',
                             type=int, nargs='+')
-        parser.add_argument('-trm', help='The temporal resampling mode (default gapfill)',
-                            choices=['resample', 'gapfill'], required=False, default='gapfill')
+        parser.add_argument('-trm', help='The temporal resampling mode (default resample)',
+                            choices=['resample', 'gapfill'], required=False, default='resample')
         parser.add_argument('-classifier', help='The classifier (rf or svm) used for training (default rf)',
                             required=False, metavar='classifier', choices=['rf', 'svm'], default='rf')
         parser.add_argument('-normalize', help='Normalize the input before classification', default=False,
@@ -849,7 +894,7 @@ class CropMaskProcessor(ProcessorBase):
         parser.add_argument('-rfmin', help='minimum number of samples in each node used by the classifier (default 25)',
                             required=False, metavar='rfmin', default=25)
 
-        parser.add_argument('-bm', help='Use benchmarking (vs. ATBD) features (default False)', required=False, type=bool, default=True)
+        parser.add_argument('-bm', help='Use benchmarking (vs. ATBD) features (default False)', required=False, type=bool, default=False)
         parser.add_argument('-window', help='The window, expressed in number of records, used for the temporal features extraction (default 6)', required=False, type=int, default=6)
 
         parser.add_argument('-nbcomp', help='The number of components used for dimensionality reduction (default 6)', required=False, type=int, default=6)
@@ -864,7 +909,7 @@ class CropMaskProcessor(ProcessorBase):
         parser.add_argument(
             '-strata', help='Shapefiles with polygons for the strata')
         parser.add_argument('-mode', help='The execution mode',
-                            required=True, choices=['train', 'classify', 'validate'])
+                            required=False, choices=['train', 'classify', 'validate'], default=None)
         self.args = parser.parse_args()
 
         self.args.tmpfolder = self.args.outdir
@@ -917,10 +962,11 @@ class CropMaskProcessor(ProcessorBase):
                         "-sample.bm", 0,
                         "-io.confmatout", area_confmatout,
                         "-io.out", area_model,
-                        "-sample.mt", 4000,
-                        "-sample.mv", -1,
+                        #"-sample.mt", 400000,
+                        "-sample.mt", 40000,
+                        "-sample.mv", 1000,
                         "-sample.vfn", "CROP",
-                        "-sample.vtr", 0.5,
+                        "-sample.vtr", 0.01,
                         "-window", self.args.window,
                         "-bm", "true" if self.args.bm else "false",
                         "-classifier", self.args.classifier]
@@ -965,7 +1011,7 @@ class CropMaskProcessor(ProcessorBase):
 
         step_args += ["-mask", stratum_tile_mask]
 
-        run_step(Step("ImageClassifier_{}_{}".format(stratum.id, tile.id), step_args))
+        run_step(Step("ImageClassifier_{}_{}".format(stratum.id, tile.id), step_args, retry=True))
 
     def postprocess_tile(self, tile):
         tile_crop_mask = self.get_tile_classification_output(tile)
@@ -976,7 +1022,7 @@ class CropMaskProcessor(ProcessorBase):
         step_args = ["otbcli", "NDVISeries", self.args.buildfolder,
                         "-mission", self.args.mission,
                         "-pixsize", self.args.pixsize,
-                        "-mode", self.args.trm,
+                        "-mode", "gapfill",
                         "-out", tile_ndvi]
         step_args += ["-il"] + tile.descriptors
         step_args += ["-sp"] + self.args.sp
@@ -1016,7 +1062,7 @@ class CropMaskProcessor(ProcessorBase):
                      "-tilesizex", 1024,
                      "-tilesizey", 1024,
                      "-tmpdir", self.args.tmpfolder,
-                     "-out", tile_segmentation, "uint32"]
+                     "-out", format_otb_filename(tile_segmentation, compression='DEFLATE'), "uint32"]
         run_step(Step("Segmentation " + tile.id, step_args))
 
         step_args = ["otbcli_LSMSSmallRegionsMerging",
@@ -1025,7 +1071,7 @@ class CropMaskProcessor(ProcessorBase):
                      "-minsize", self.args.minsize,
                      "-tilesizex", 1024,
                      "-tilesizey", 1024,
-                     "-out", tile_segmentation_merged, "uint32"]
+                     "-out", format_otb_filename(tile_segmentation_merged, compression='DEFLATE'), "uint32"]
         run_step(Step("Small region merging " + tile.id, step_args))
 
         step_args = ["otbcli", "MajorityVoting", self.args.buildfolder,
@@ -1034,7 +1080,7 @@ class CropMaskProcessor(ProcessorBase):
                      "-minarea", self.args.minarea,
                      "-inclass", tile_crop_mask,
                      "-inseg", tile_segmentation_merged,
-                     "-rout", tile_segmented]
+                     "-rout", format_otb_filename(tile_segmented, compression='DEFLATE')]
         run_step(Step("Majority voting " + tile.id, step_args))
 
     def validate(self, context):
@@ -1088,7 +1134,7 @@ class CropMaskProcessor(ProcessorBase):
             tile_crop_mask = self.get_tile_classification_output(tile)
 
             step_args.append("TILE_" + tile.id)
-            step_args.append(tile_segmented)
+            step_args.append(tile_crop_mask)
 
         step_args.append("-processor.cropmask.flags")
         for tile in self.tiles:
@@ -1117,6 +1163,6 @@ class CropMaskProcessor(ProcessorBase):
     def get_tile_classification_output(self, tile):
         return self.get_output_path("crop_mask_map_{}.tif", tile.id)
 
-# processor = CropTypeProcessor()
-processor = CropMaskProcessor()
+processor = CropTypeProcessor()
+# processor = CropMaskProcessor()
 processor.execute()
