@@ -35,22 +35,10 @@ FILES=( \
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20131228_L8_181_025/EUkraineS2A_20131228_L8_181_025.HDR \
 )
 
-    # -ecoareas ~/areas.shp \
-./CropTypeFused.py \
+    # -strata ~/areas.shp \
+./CropMaskFused.py \
     -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp \
     -input ${FILES[@]} \
     -rseed 0 -pixsize 20 \
     -outdir /mnt/data/ukraine/Ukraine-mask \
-    -buildfolder "$BUILD_FOLDER" -keepfiles -mode train
-./CropTypeFused.py \
-    -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp \
-    -input ${FILES[@]} \
-    -rseed 0 -pixsize 20 \
-    -outdir /mnt/data/ukraine/Ukraine-mask \
-    -buildfolder "$BUILD_FOLDER" -keepfiles -mode classify
-./CropTypeFused.py \
-    -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp \
-    -input ${FILES[@]} \
-    -rseed 0 -pixsize 20 \
-    -outdir /mnt/data/ukraine/Ukraine-mask \
-    -buildfolder "$BUILD_FOLDER" -keepfiles -mode validate
+    -buildfolder "$BUILD_FOLDER" # -keepfiles

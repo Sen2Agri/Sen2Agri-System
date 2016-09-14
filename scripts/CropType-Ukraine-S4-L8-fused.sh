@@ -41,16 +41,4 @@ FILES=( \
     -input ${FILES[@]} \
     -rseed 0 -pixsize 20 \
     -outdir /mnt/data/ukraine/Ukraine-type \
-    -buildfolder "$BUILD_FOLDER" -keepfiles -mode train
-./CropTypeFused.py \
-    -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp \
-    -input ${FILES[@]} \
-    -rseed 0 -pixsize 20 \
-    -outdir /mnt/data/ukraine/Ukraine-type \
-    -buildfolder "$BUILD_FOLDER" -keepfiles -mode classify
-./CropTypeFused.py \
-    -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp \
-    -input ${FILES[@]} \
-    -rseed 0 -pixsize 20 \
-    -outdir /mnt/data/ukraine/Ukraine-type \
-    -buildfolder "$BUILD_FOLDER" -keepfiles -mode validate
+    -buildfolder "$BUILD_FOLDER" -keepfiles # -maskprod /mnt/data/ukraine/Ukraine-mask/S2AGRI_L4A_PRD_Snn_20160913T155443_V20130206_20131228
