@@ -542,7 +542,7 @@ class ProcessorBase(object):
                             ["otbcli_Rasterization",
                             "-in", tile_mask,
                             "-im", tile_reference_raster,
-                            "-out", stratum_tile_mask, "uint8",
+                            "-out", format_otb_filename(stratum_tile_mask, compression='DEFLATE'), "uint8",
                             "-mode", "binary"]))
 
     def get_output_path(self, fmt, *args):
@@ -728,7 +728,7 @@ class CropTypeProcessor(ProcessorBase):
                         "-singletile", "true" if len(stratum.tiles) == 1 else "false",
                         "-bv", -10000,
                         "-model", area_model,
-                        "-out", tile_crop_type_map_uncut]
+                        "-out", format_otb_filename(tile_crop_type_map_uncut, compression='DEFLATE')]
         step_args += ["-il"] + tile.descriptors
         step_args += ["-sp"] + self.args.sp
         if self.args.classifier == "svm" or self.args.normalize:
