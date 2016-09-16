@@ -295,18 +295,16 @@ def split_strata(areas, data, site_footprint_wgs84, out_folder):
         data_layer.SetSpatialFilter(area_geom_reprojected)
         for region in data_layer:
             region_geom = region.GetGeometryRef()
-            region_geom_intersection = region_geom.Intersection(area_geom_reprojected)
 
-            if region_geom_intersection.GetArea() > 0:
-                out_feature = ogr.Feature(out_layer_def)
-                out_features += 1
+            out_feature = ogr.Feature(out_layer_def)
+            out_features += 1
 
-                for i in xrange(out_layer_def.GetFieldCount()):
-                    out_feature.SetField(out_layer_def.GetFieldDefn(
-                        i).GetNameRef(), region.GetField(i))
+            for i in xrange(out_layer_def.GetFieldCount()):
+                out_feature.SetField(out_layer_def.GetFieldDefn(
+                    i).GetNameRef(), region.GetField(i))
 
-                out_feature.SetGeometry(region_geom_intersection)
-                out_layer.CreateFeature(out_feature)
+            out_feature.SetGeometry(region_geom)
+            out_layer.CreateFeature(out_feature)
 
         if out_features > 0:
             print("Stratum {}: {} features".format(area_id, out_features))
