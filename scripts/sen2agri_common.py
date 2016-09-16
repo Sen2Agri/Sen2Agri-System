@@ -230,36 +230,46 @@ def load_features(data):
     return result
 
 def split_strata(areas, data, site_footprint_wgs84, out_folder):
+    wgs84_srs = osr.SpatialReference()
+    wgs84_srs.ImportFromEPSG(4326)
+
     area_ds = ogr.Open(areas, 0)
     if area_ds is None:
         raise Exception("Could not open stratum dataset", areas)
 
-    out_srs = osr.SpatialReference()
-    out_srs.ImportFromEPSG(4326)
-
-    in_layer = area_ds.GetLayer()
-    in_layer_def = in_layer.GetLayerDefn()
-    in_srs = in_layer.GetSpatialRef()
-    area_transform = osr.CoordinateTransformation(in_srs, out_srs)
-
     data_ds = ogr.Open(data, 0)
+    if data_ds is None:
+        raise Exception("Could not open feature dataset", data)
+
     data_layer = data_ds.GetLayer()
     data_layer_def = data_layer.GetLayerDefn()
     data_srs = data_layer.GetSpatialRef()
-    data_transform = osr.CoordinateTransformation(data_srs, out_srs)
+
+    print("Features SRS: {}".format(data_srs))
+
+    area_layer = area_ds.GetLayer()
+    area_layer_def = area_layer.GetLayerDefn()
+    area_srs = area_layer.GetSpatialRef()
+    area_transform = osr.CoordinateTransformation(area_srs, data_srs)
+    area_wgs84_transform = osr.CoordinateTransformation(area_srs, wgs84_srs)
 
     driver = ogr.GetDriverByName('ESRI Shapefile')
     result = []
-    for area in in_layer:
+    for area in area_layer:
         area_id = area.GetField('ID')
         area_geom_wgs84 = area.GetGeometryRef().Clone()
-        area_geom_wgs84.Transform(area_transform)
+        area_geom_wgs84.Transform(area_wgs84_transform)
         area_geom_wgs84 = area_geom_wgs84.Intersection(site_footprint_wgs84)
         if area_geom_wgs84.GetArea() == 0:
+            print("Stratum {} does not intersect the site extent".format(area_id))
             continue
+        area_feature_wgs84 = ogr.Feature(data_layer_def)
+        area_feature_wgs84.SetGeometry(area_geom_wgs84)
 
-        area_feature = ogr.Feature(in_layer_def)
-        area_feature.SetGeometry(area_geom_wgs84)
+        area_geom_reprojected = area.GetGeometryRef().Clone()
+        area_geom_reprojected.Transform(area_transform)
+        area_feature_reprojected = ogr.Feature(data_layer_def)
+        area_feature_reprojected.SetGeometry(area_geom_reprojected)
 
         name = os.path.splitext(os.path.basename(data))[0]
         out_name = os.path.join(out_folder, "{}-{}.shp".format(name, area_id))
@@ -273,8 +283,7 @@ def split_strata(areas, data, site_footprint_wgs84, out_folder):
         if out_ds is None:
             raise Exception("Could not create output dataset", out_name)
 
-        print("Output SRS: {}".format(in_srs))
-        out_layer = out_ds.CreateLayer('features', srs=out_srs,
+        out_layer = out_ds.CreateLayer('features', srs=data_srs,
                                        geom_type=ogr.wkbMultiPolygon)
         out_layer_def = out_layer.GetLayerDefn()
 
@@ -283,13 +292,12 @@ def split_strata(areas, data, site_footprint_wgs84, out_folder):
 
         out_features = 0
         data_layer.ResetReading()
+        data_layer.SetSpatialFilter(area_geom_reprojected)
         for region in data_layer:
             region_geom = region.GetGeometryRef()
-            region_geom_wgs84 = region_geom.Clone()
-            region_geom_wgs84.Transform(data_transform)
+            region_geom_intersection = region_geom.Intersection(area_geom_reprojected)
 
-            region_geom_wgs84 = region_geom_wgs84.Intersection(area_geom_wgs84)
-            if region_geom_wgs84.GetArea() > 0:
+            if region_geom_intersection.GetArea() > 0:
                 out_feature = ogr.Feature(out_layer_def)
                 out_features += 1
 
@@ -297,12 +305,12 @@ def split_strata(areas, data, site_footprint_wgs84, out_folder):
                     out_feature.SetField(out_layer_def.GetFieldDefn(
                         i).GetNameRef(), region.GetField(i))
 
-                out_feature.SetGeometry(region_geom_wgs84)
+                out_feature.SetGeometry(region_geom_intersection)
                 out_layer.CreateFeature(out_feature)
 
         if out_features > 0:
             print("Stratum {}: {} features".format(area_id, out_features))
-            result.append(Stratum(area_id, out_name, area_feature))
+            result.append(Stratum(area_id, out_name, area_feature_wgs84))
         else:
             print("Ignoring stratum {}: no features inside of site extent".format(area_id))
 
