@@ -269,10 +269,20 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
         }
         QStringList sbatchParams;
         //sbatchParams.push_back(QString(" <<EOF\n#!/bin/sh\nsrun %1\nEOF").arg(paramsStr));
-        sbatchParams.push_back(tempFile.fileName());
+        if(!strQos.isEmpty()) {
+            sbatchParams.push_back(SRUN_QOS_PARAM);
+            sbatchParams.push_back(strQos);
 
+        }
+        if(!strPartition.isEmpty()) {
+            sbatchParams.push_back(SRUN_PARTITION_PARAM);
+            sbatchParams.push_back(strPartition);
+        }
+
+        sbatchParams.push_back(tempFile.fileName());
+        QString batchParamsStr = BuildParamsString(sbatchParams);
         Logger::debug(QString("HandleStartProcessor: Executing command %1 with params %2")
-                          .arg(SBATCH_CMD, sbatchParams.at(0)));
+                          .arg(SBATCH_CMD, batchParamsStr));
 
         CommandInvoker cmdInvoker;
         if (!cmdInvoker.InvokeCommand(SBATCH_CMD, sbatchParams, false)) {
