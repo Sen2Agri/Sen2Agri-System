@@ -187,7 +187,7 @@ class CropTypeProcessor(ProcessorBase):
         area_days = self.get_output_path("days-{}.txt", stratum.id)
         area_statistics = self.get_output_path("statistics-{}.xml", stratum.id)
 
-        tile_crop_type_map_uncut = self.get_stratum_tile_classification_output(stratum, tile)
+        tile_crop_type_map_uncompressed = self.get_output_path("crop_type_map_uncut_{}_{}_uncompressed.tif", stratum.id, tile.id)
         stratum_tile_mask = self.get_stratum_tile_mask(stratum, tile)
 
         step_args = ["otbcli", "CropTypeImageClassifier", self.args.buildfolder,
@@ -197,7 +197,7 @@ class CropTypeProcessor(ProcessorBase):
                         "-singletile", "true" if len(stratum.tiles) == 1 else "false",
                         "-bv", -10000,
                         "-model", area_model,
-                        "-out", format_otb_filename(tile_crop_type_map_uncut, compression='DEFLATE')]
+                        "-out", tile_crop_type_map_uncompressed]
         step_args += ["-il"] + tile.descriptors
         step_args += ["-sp"] + self.args.sp
         if self.args.classifier == "svm" or self.args.normalize:
@@ -206,6 +206,15 @@ class CropTypeProcessor(ProcessorBase):
         step_args += ["-mask", stratum_tile_mask]
 
         run_step(Step("ImageClassifier_{}_{}".format(stratum.id, tile.id), step_args, retry=True))
+
+        tile_crop_type_map_uncut = self.get_stratum_tile_classification_output(stratum, tile)
+        step_args = ["otbcli_Convert",
+                        "-in", tile_crop_type_map_uncompressed,
+                        "-out", format_otb_filename(tile_crop_type_map_uncut, compression='DEFLATE'), "int16"]
+        run_step(Step("Compression_{}_{}".format(stratum.id, tile.id), step_args))
+
+        if not self.args.keepfiles:
+            os.remove(tile_crop_type_map_uncompressed)
 
     def postprocess_tile(self, tile):
         if tile.crop_mask is not None:
