@@ -461,11 +461,16 @@ def process_WB(context):
     with open(context.swbd_list) as f:
         swbd_tiles = f.read().splitlines()
 
-    empty_shp = os.path.join(context.swbd_directory, "empty.shp")
-    run_command(["otbcli_ConcatenateVectorData",
-                 "-progress", "false",
-                 "-out", context.wb,
-                 "-vd", empty_shp] + swbd_tiles)
+    if len(swbd_tiles) == 0:
+        empty_shp = os.path.join(context.swbd_directory, "empty.shp")
+        run_command(["ogr2ogr", context.wb, empty_shp])
+    elif len(swbd_tiles) == 1:
+        run_command(["ogr2ogr", context.wb, swbd_tiles[0]])
+    else:
+        run_command(["otbcli_ConcatenateVectorData",
+                     "-progress", "false",
+                     "-out", context.wb,
+                     "-vd"] + swbd_tiles)
 
     run_command(["ogr2ogr",
                  "-s_srs", "EPSG:4326",
