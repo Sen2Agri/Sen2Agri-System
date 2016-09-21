@@ -424,14 +424,26 @@ class ProcessorBase(object):
 
             if self.args.mode is None or self.args.mode == 'train':
                 for stratum in self.strata:
+                    if self.args.stratum_filter and stratum.id not in self.args.stratum_filter:
+                        print("Skipping training for stratum {} due to stratum filter".format(stratum.id))
+                        continue
+
                     print("Building model for stratum:", stratum.id)
                     self.train_stratum(stratum)
 
             if self.args.mode is None or self.args.mode == 'classify':
                 for stratum in self.strata:
+                    if self.args.stratum_filter and stratum.id not in self.args.stratum_filter:
+                        print("Skipping classification for stratum {} due to stratum filter".format(stratum.id))
+                        continue
+
                     print("Applying model for stratum:", stratum.id)
 
                     for tile in stratum.tiles:
+                        if self.args.tile_filter and tile.id not in self.args.tile_filter:
+                            print("Skipping classification for tile {} due to tile filter".format(tile.id))
+                            continue
+
                         print("Processing tile:", tile.id)
                         if len(tile.strata) == 0:
                             print(
