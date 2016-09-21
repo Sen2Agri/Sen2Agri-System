@@ -456,6 +456,13 @@ class ProcessorBase(object):
                         self.rasterize_tile_mask(stratum, tile)
                         self.classify_tile(stratum, tile)
 
+                if self.args.stratum_filter:
+                    print("Stratum filter used, exiting")
+                    return
+                if self.args.tile_filter:
+                    print("Tile filter used, exiting")
+                    return
+
                 self.merge_classification_outputs()
 
                 for tile in self.tiles:
