@@ -24,7 +24,6 @@ add_subdirectory(DEM-WB)
 add_subdirectory(CreateFootprint)
 add_subdirectory(Common)
 add_subdirectory(ContinuousColorMapping)
-#add_subdirectory(AppDimensionalityReduction)
 
 install(FILES ../scripts/sen2agri_common.py
               ../scripts/split_shapefile.py
