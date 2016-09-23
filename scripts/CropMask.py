@@ -268,7 +268,7 @@ try:
 #Dimension reduction (Step 26)
     executeStep("DimensionalityReduction", "otbcli_DimensionalityReduction",
             "-method", "pca", "-nbcomp", nbcomp,
-            "-in", rndvi, "-out", "pca", skip=fromstep>26, rmfiles=[] if keepfiles else [rndvi])
+            "-in", rndvi, "-out", pca, skip=fromstep>26, rmfiles=[] if keepfiles else [rndvi])
 
 #Mean-Shift segmentation (Step 27, 28 and 29)
     executeStep("MeanShiftSmoothing", "otbcli_MeanShiftSmoothing", "-in", pca,"-modesearch","0", "-spatialr", spatialr, "-ranger", ranger, "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing, skip=fromstep>27, rmfiles=[] if keepfiles else [pca])
