@@ -176,3 +176,9 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3e.sch
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.sched_wait_proc_inputs', NULL, '1', '2015-07-10 17:54:17.288095+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.sched_wait_proc_inputs', NULL, '1', '2015-07-10 17:54:17.288095+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.files-remover', NULL, '/usr/bin/rm', '2015-08-24 17:44:38.29255+03');
+
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3a.slurm_qos', NULL, 'qoscomposite', '2015-08-24 17:44:38.29255+03');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3b_lai.slurm_qos', NULL, 'qoslai', '2015-08-24 17:44:38.29255+03');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3e_pheno.slurm_qos', NULL, 'qospheno', '2015-08-24 17:44:38.29255+03');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l4a.slurm_qos', NULL, 'qoscropmask', '2015-08-24 17:44:38.29255+03');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l4b.slurm_qos', NULL, 'qoscroptype', '2015-08-24 17:44:38.29255+03');
