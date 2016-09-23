@@ -550,13 +550,12 @@ class ProcessorBase(object):
                 tile_strata.sort(key=lambda x: -x[1])
 
                 print(tile.id, [(ts[0].id, ts[1]) for ts in tile_strata])
-                min_coverage = 0
                 if len(tile_strata) == 0:
                     pass
-                elif tile_strata[0][1] <= min_coverage:
+                elif tile_strata[0][1] <= self.args.min_coverage:
                     tile_strata = [tile_strata[0]]
                 else:
-                    tile_strata = [x for x in tile_strata if x[1] > min_coverage]
+                    tile_strata = [x for x in tile_strata if x[1] > self.args.min_coverage]
                 print(tile.id, [(ts[0].id, ts[1]) for ts in tile_strata])
 
                 print("Strata for tile {}: {}".format(tile.id, map(lambda x: x[0].id, tile_strata)))
