@@ -69,7 +69,6 @@ ConcatenateVectorImagesFilter<TInputImage, TOutputImage>
   Superclass::BeforeThreadedGenerateData();
 
   typename Superclass::InputImageConstPointer inputPtr1 = this->GetInput(0);
-  typename Superclass::OutputImagePointer     outputPtr = this->GetOutput();
 
   for (unsigned int i = 1; i < this->GetNumberOfIndexedInputs(); ++i)
     {
@@ -105,39 +104,36 @@ ConcatenateVectorImagesFilter<TInputImage, TOutputImage>
 
   typedef std::vector<InputIteratorType> InputIteratorContainerType;
 
+  auto numInputs = this->GetNumberOfIndexedInputs();
   // Iterators declaration
   InputIteratorContainerType inputIts;
-  std::vector<unsigned int> pixelSizes;
-  inputIts.reserve(this->GetNumberOfIndexedInputs());
-  pixelSizes.reserve(this->GetNumberOfIndexedInputs());
-  for (unsigned int i = 0; i < this->GetNumberOfIndexedInputs(); ++i)
+  inputIts.reserve(numInputs);
+  for (unsigned int i = 0; i < numInputs; ++i)
     {
     InputIteratorType it(const_cast<InputImageType *>(this->GetInput(i)), inputRegionForThread);
     it.GoToBegin();
+
     inputIts.push_back(it);
-    pixelSizes.push_back(it.Get().GetSize());
     }
 
   OutputIteratorType outputIt(output, outputRegionForThread);
-
   outputIt.GoToBegin();
 
-  typename OutputImageType::PixelType outputPix(outputIt.Get().GetSize());
+  typename OutputImageType::PixelType outputPix(output->GetVectorLength());
 
   // Iterate through the pixels
   while (!outputIt.IsAtEnd())
     {
 
     unsigned int outputPos = 0;
-    for (unsigned int i = 0; i < this->GetNumberOfIndexedInputs(); ++i)
+    for (unsigned int i = 0; i < numInputs; ++i)
       {
       // Reference to the input pixel
       InputPixelType const& pix = inputIts[i].Get();
-      // Check the size of the input pixel
-      assert(pixelSizes[i] == pix.GetSize());
 
       // Loop through each band of the image
-      for (unsigned int b = 0; b < pixelSizes[i]; ++b)
+      auto pixelSize = const_cast<InputImageType *>(this->GetInput(i))->GetVectorLength();
+      for (unsigned int b = 0; b < pixelSize; ++b)
         {
         // Fill the output pixel
         outputPix[outputPos++] = static_cast<typename OutputImageType::InternalPixelType>(pix[b]);
@@ -153,6 +149,7 @@ ConcatenateVectorImagesFilter<TInputImage, TOutputImage>
     outputIt.Set(outputPix);
     // Increment the output iterator
     ++outputIt;
+    progress.CompletedPixel();
     }
 
 }

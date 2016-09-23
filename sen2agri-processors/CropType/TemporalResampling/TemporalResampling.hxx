@@ -19,9 +19,9 @@
 #include "itkBinaryFunctorImageFilter.h"
 #include "otbVectorImage.h"
 
-#define NOVALUEPIXEL -10000.0
+#include <cmath>
 
-typedef otb::VectorImage<short, 2> ImageType;
+#define NOVALUEPIXEL -10000.0
 
 typedef std::vector<int> RasterDates;
 
@@ -42,7 +42,7 @@ struct SensorData
     std::vector<int> outDates;
 };
 
-template <typename PixelType>
+template <typename PixelType, typename MaskType>
 class GapFillingFunctor
 {
 public:
@@ -60,7 +60,7 @@ public:
         }
     }
 
-    PixelType operator()(PixelType pix, PixelType mask) const
+    PixelType operator()(PixelType pix, MaskType mask) const
     {
         // Create the output pixel
         PixelType result(outputSize * bands);

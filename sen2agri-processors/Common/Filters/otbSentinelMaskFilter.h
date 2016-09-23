@@ -18,6 +18,8 @@
 
 #include "itkBinaryFunctorImageFilter.h"
 #include "otbVectorImage.h"
+#include "otbWrapperTypes.h"
+#include "otbImage.h"
 
 #define NODATA          -10000
 
@@ -26,28 +28,23 @@ namespace otb
 {
 
 
-template <typename PixelType>
 class SentinelMaskFunctor
 {
 public:
     SentinelMaskFunctor() {}
 
-    PixelType operator()(const PixelType &maskQuality, const PixelType &maskClouds) const
+    uint8_t operator()(const itk::VariableLengthVector<uint8_t> &maskQuality, const uint8_t &maskClouds) const
     {
-        PixelType result(1);
-
         // Band 3 from the Quality mask contains the pixel validity
         // Band 1 from the Quality mask contains the saturation
-        result[0] = (((static_cast<unsigned short>(maskQuality[2]) & 0x01) |
-                       static_cast<unsigned short>(maskQuality[0]) |
-                       static_cast<unsigned short>(maskClouds[0])) == 0) ? 0 : 1;
-
-        return result;
+        return (((maskQuality[2] & 0x01) |
+                  maskQuality[0] |
+                  maskClouds) == 0) ? 0 : 1;
     }
 
     bool operator!=(const SentinelMaskFunctor) const
     {
-        return false ;
+        return false;
     }
 
     bool operator==(const SentinelMaskFunctor) const
@@ -62,25 +59,24 @@ public:
  *
  * \ingroup OTBImageManipulation
  */
-template<class TImage>
 class ITK_EXPORT SentinelMaskFilter
-  : public itk::BinaryFunctorImageFilter<TImage, TImage, TImage, SentinelMaskFunctor<typename TImage::PixelType> >
+  : public itk::BinaryFunctorImageFilter<otb::Wrapper::UInt8VectorImageType, otb::Wrapper::UInt8ImageType, otb::Wrapper::UInt8ImageType, SentinelMaskFunctor>
 {
 public:
   /** Standard class typedefs. */
   typedef SentinelMaskFilter                       Self;
-  typedef itk::BinaryFunctorImageFilter<TImage, TImage, TImage, SentinelMaskFunctor<typename TImage::PixelType> > Superclass;
+  typedef itk::BinaryFunctorImageFilter<otb::Wrapper::UInt8VectorImageType, otb::Wrapper::UInt8ImageType, otb::Wrapper::UInt8ImageType, SentinelMaskFunctor> Superclass;
   typedef itk::SmartPointer<Self>                             Pointer;
   typedef itk::SmartPointer<const Self>                       ConstPointer;
 
   /** Method for creation through the object factory. */
-  itkNewMacro(Self);
+  itkNewMacro(Self)
 
   /** Run-time type information (and related methods). */
-  itkTypeMacro(VectorImageToImagePixelAccessor, BinaryFunctorImageFilter);
+  itkTypeMacro(SentinelMaskFilter, BinaryFunctorImageFilter)
 
   /** Template related typedefs */
-  typedef TImage ImageType;
+  typedef otb::Wrapper::UInt8ImageType ImageType;
 
   typedef typename ImageType::Pointer  ImagePointerType;
 
@@ -91,13 +87,13 @@ public:
 
 
   /** ImageDimension constant */
-  itkStaticConstMacro(OutputImageDimension, unsigned int, TImage::ImageDimension);
+  itkStaticConstMacro(OutputImageDimension, unsigned int, ImageType::ImageDimension);
 
   /** Set the Sentinel quality mask (it contains a band for validity and a band for saturation). */
-  void SetInputQualityMask(const TImage *qualityMask);
+  void SetInputQualityMask(const otb::Wrapper::UInt8VectorImageType *qualityMask);
 
   /** Set the Sentinel Cloud mask. */
-  void SetInputCloudsMask(const TImage *cloudsMask);
+  void SetInputCloudsMask(const otb::Wrapper::UInt8ImageType *cloudsMask);
 
 
 protected:

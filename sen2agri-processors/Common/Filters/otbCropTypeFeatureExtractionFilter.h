@@ -112,7 +112,7 @@ public:
   itkNewMacro(Self);
 
   /** Run-time type information (and related methods). */
-  itkTypeMacro(VectorImageToImagePixelAccessor, UnaryFunctorImageFilter);
+  itkTypeMacro(CropTypeFeatureExtractionFilter, UnaryFunctorImageFilter);
 
   /** Template related typedefs */
   typedef TImage ImageType;

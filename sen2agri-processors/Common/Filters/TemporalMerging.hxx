@@ -31,14 +31,14 @@ struct ImageInfo
     }
 };
 
-template <typename PixelType>
+template <typename PixelType, typename MaskType>
 class TemporalMergingFunctor
 {
 public:
     TemporalMergingFunctor() :  numOutputImages(0), bands(0) {}
     TemporalMergingFunctor(std::vector<ImageInfo>& iInfos, int n, int b) : imgInfos(iInfos), numOutputImages(n), bands(b) {}
 
-    PixelType operator()(const PixelType &pix, const PixelType &mask) const
+    PixelType operator()(const PixelType &pix, const MaskType &mask) const
     {
         PixelType result(numOutputImages * bands);
 

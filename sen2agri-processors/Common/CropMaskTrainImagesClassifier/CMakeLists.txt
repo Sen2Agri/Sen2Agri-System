@@ -4,6 +4,7 @@ otb_create_application(
                  ../Filters/CropMaskPreprocessing.h
                  ../Filters/CropMaskNDVIPreprocessing.h
                  ../Filters/CropMaskFeaturesSupervised.hxx
+
                  ../Filters/ComputeNDVIFilter.h
                  ../Filters/TemporalMerging.hxx
   LINK_LIBRARIES ${OTB_LIBRARIES} MACCSMetadata)

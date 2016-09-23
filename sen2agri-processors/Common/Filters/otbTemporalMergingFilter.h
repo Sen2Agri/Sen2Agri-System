@@ -130,7 +130,7 @@ public:
   itkNewMacro(Self);
 
   /** Run-time type information (and related methods). */
-  itkTypeMacro(VectorImageToImagePixelAccessor, BinaryFunctorImageFilter);
+  itkTypeMacro(TemporalMergingFilter, BinaryFunctorImageFilter);
 
   /** Template related typedefs */
   typedef TImage ImageType;

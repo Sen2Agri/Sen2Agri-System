@@ -9,8 +9,6 @@ otb_create_application(
                  ../Filters/otbTemporalMergingFilter.txx
                  ../Filters/otbSpotMaskFilter.h
                  ../Filters/otbSpotMaskFilter.txx
-                 ../Filters/otbLandsatMaskFilter.h
-                 ../Filters/otbLandsatMaskFilter.txx
                  ../Filters/otbSentinelMaskFilter.h
                  ../Filters/otbSentinelMaskFilter.txx
                  ../Filters/CropMaskPreprocessing.h

@@ -58,3 +58,53 @@ public:
       return true;
   }
 };
+
+template<class TImage>
+class ITK_EXPORT ComputeNDVIFilter
+  : public itk::UnaryFunctorImageFilter<TImage, TImage, ComputeNDVIFunctor<typename TImage::PixelType>>
+{
+public:
+  /** Standard class typedefs. */
+  typedef ComputeNDVIFilter                       Self;
+  typedef itk::UnaryFunctorImageFilter<TImage, TImage, ComputeNDVIFunctor<typename TImage::PixelType>> Superclass;
+  typedef itk::SmartPointer<Self>                             Pointer;
+  typedef itk::SmartPointer<const Self>                       ConstPointer;
+
+  /** Method for creation through the object factory. */
+  itkNewMacro(Self);
+
+  /** Run-time type information (and related methods). */
+  itkTypeMacro(ComputeNDVIFilter, UnaryFunctorImageFilter);
+
+  /** Template related typedefs */
+  typedef TImage ImageType;
+
+  typedef typename ImageType::Pointer           ImagePointerType;
+
+  typedef typename ImageType::PixelType         ImagePixelType;
+
+  typedef typename ImageType::InternalPixelType InternalPixelType;
+  typedef typename ImageType::RegionType        ImageRegionType;
+
+
+  ComputeNDVIFilter() { }
+  virtual ~ComputeNDVIFilter() { }
+
+  /** ImageDimension constant */
+  itkStaticConstMacro(OutputImageDimension, unsigned int, TImage::ImageDimension);
+
+protected:
+  virtual void GenerateOutputInformation()
+  {
+      // Call to the superclass implementation
+      Superclass::GenerateOutputInformation();
+
+      // initialize the number of channels of the output image
+      this->GetOutput()->SetNumberOfComponentsPerPixel(this->GetInput()->GetNumberOfComponentsPerPixel() / 4);
+  }
+
+
+private:
+  ComputeNDVIFilter(const Self &); //purposely not implemented
+  void operator =(const Self&); //purposely not implemented
+};

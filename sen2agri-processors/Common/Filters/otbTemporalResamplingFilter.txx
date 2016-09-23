@@ -25,8 +25,8 @@ namespace otb
 /**
  * Constructor.
  */
-template <class TImage>
-TemporalResamplingFilter<TImage>
+template <class TInputImage, class TMask, class TOutputImage>
+TemporalResamplingFilter<TInputImage, TMask, TOutputImage>
 ::TemporalResamplingFilter()
 {
   this->SetNumberOfRequiredInputs(2);
@@ -34,14 +34,14 @@ TemporalResamplingFilter<TImage>
 /**
  * Destructor.
  */
-template <class TImage>
-TemporalResamplingFilter<TImage>
+template <class TInputImage, class TMask, class TOutputImage>
+TemporalResamplingFilter<TInputImage, TMask, TOutputImage>
 ::~TemporalResamplingFilter()
 {}
 
-template <class TImage>
+template <class TInputImage, class TMask, class TOutputImage>
 void
-TemporalResamplingFilter<TImage>
+TemporalResamplingFilter<TInputImage, TMask, TOutputImage>
 ::GenerateOutputInformation()
 {
   // Call to the superclass implementation
@@ -68,9 +68,9 @@ TemporalResamplingFilter<TImage>
   outputPtr->SetNumberOfComponentsPerPixel(nbBands);
 }
 
-template <class TImage>
+template <class TInputImage, class TMask, class TOutputImage>
 void
-TemporalResamplingFilter<TImage>
+TemporalResamplingFilter<TInputImage, TMask, TOutputImage>
 ::BeforeThreadedGenerateData()
 {
   Superclass::BeforeThreadedGenerateData();
@@ -82,36 +82,24 @@ TemporalResamplingFilter<TImage>
     }
 
   // Create the functor
-  this->SetFunctor(GapFillingFunctor<typename TImage::PixelType>(this->m_InputData));
+  this->SetFunctor(GapFillingFunctor<typename TInputImage::PixelType, typename TMask::PixelType, typename TOutputImage::PixelType>(this->m_InputData));
 }
 
-template <class TImage>
+template <class TInputImage, class TMask, class TOutputImage>
 void
-TemporalResamplingFilter<TImage>
-::SetInputRaster(const TImage *raster)
+TemporalResamplingFilter<TInputImage, TMask, TOutputImage>
+::SetInputRaster(const TInputImage *raster)
 {
     this->SetInput1(raster);
 }
 
-template <class TImage>
+template <class TInputImage, class TMask, class TOutputImage>
 void
-TemporalResamplingFilter<TImage>
-::SetInputMask(const TImage *mask)
+TemporalResamplingFilter<TInputImage, TMask, TOutputImage>
+::SetInputMask(const TMask *mask)
 {
     this->SetInput2(mask);
 }
 
-
-
-/**
- * PrintSelf method.
- */
-template <class TImage>
-void
-TemporalResamplingFilter<TImage>
-::PrintSelf(std::ostream& os, itk::Indent indent) const
-{
-  Superclass::PrintSelf(os, indent);
-}
 } // end namespace otb
 #endif

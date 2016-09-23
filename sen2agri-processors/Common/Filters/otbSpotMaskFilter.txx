@@ -25,24 +25,21 @@ namespace otb
 /**
  * Constructor.
  */
-template <class TImage>
-SpotMaskFilter<TImage>
+SpotMaskFilter
 ::SpotMaskFilter()
 {
-  this->SetNumberOfRequiredInputs(1);
-  this->SetFunctor(SpotMaskFunctor<typename TImage::PixelType>());
+  this->SetNumberOfRequiredInputs(3);
+  this->SetFunctor(SpotMaskFunctor());
 }
 /**
  * Destructor.
  */
-template <class TImage>
-SpotMaskFilter<TImage>
+SpotMaskFilter
 ::~SpotMaskFilter()
 {}
 
-template <class TImage>
 void
-SpotMaskFilter<TImage>
+SpotMaskFilter
 ::GenerateOutputInformation()
 {
   // Call to the superclass implementation
@@ -56,26 +53,23 @@ SpotMaskFilter<TImage>
   outputPtr->SetNumberOfComponentsPerPixel(nbComponentsPerPixel);
 }
 
-template <class TImage>
 void
-SpotMaskFilter<TImage>
-::SetInputValidityMask(const TImage *validityMask)
+SpotMaskFilter
+::SetInputValidityMask(const otb::Wrapper::UInt8ImageType *validityMask)
 {
     this->SetInput1(validityMask);
 }
 
-template <class TImage>
 void
-SpotMaskFilter<TImage>
-::SetInputSaturationMask(const TImage *saturationMask)
+SpotMaskFilter
+::SetInputSaturationMask(const otb::Wrapper::UInt8ImageType *saturationMask)
 {
     this->SetInput2(saturationMask);
 }
 
-template <class TImage>
 void
-SpotMaskFilter<TImage>
-::SetInputCloudsMask(const TImage *cloudsMask)
+SpotMaskFilter
+::SetInputCloudsMask(const otb::Wrapper::UInt16ImageType *cloudsMask)
 {
     this->SetInput3(cloudsMask);
 }
@@ -84,9 +78,8 @@ SpotMaskFilter<TImage>
 /**
  * PrintSelf method.
  */
-template <class TImage>
 void
-SpotMaskFilter<TImage>
+SpotMaskFilter
 ::PrintSelf(std::ostream& os, itk::Indent indent) const
 {
   Superclass::PrintSelf(os, indent);

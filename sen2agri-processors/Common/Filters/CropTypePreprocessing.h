@@ -41,7 +41,6 @@
 #include "otbTemporalMergingFilter.h"
 
 #include "otbSpotMaskFilter.h"
-#include "otbLandsatMaskFilter.h"
 #include "otbSentinelMaskFilter.h"
 
 #include "TimeSeriesReader.h"
@@ -66,16 +65,16 @@ public:
     {
         m_TemporalResampler = TemporalResamplingFilterType::New();
         m_FeatureExtractor = CropTypeFeatureExtractionFilterType::New();
+        m_FloatImageList = FloatImageListType::New();
+        m_UInt8ImageList = UInt8ImageListType::New();
+        m_BandsConcat = ConcatenateFloatImagesFilterType::New();
+        m_MaskConcat = ConcatenateUInt8ImagesFilterType::New();
     }
 
     otb::Wrapper::FloatVectorImageType * GetOutput()
     {
-        // Merge the rasters and the masks
-        ConcatenateVectorImagesFilterType::Pointer bandsConcat = ConcatenateVectorImagesFilterType::New();
-        ConcatenateVectorImagesFilterType::Pointer maskConcat = ConcatenateVectorImagesFilterType::New();
         // Also build the image dates structures
         otb::SensorDataCollection sdCollection;
-
         int index = 0;
         std::string lastMission = "";
         for (const ImageDescriptor& id : m_Descriptors) {
@@ -92,20 +91,21 @@ public:
 
             sd.inDates.push_back(inDay);
 
-            bandsConcat->PushBackInput(id.bands);
-            maskConcat->PushBackInput(id.mask);
+            for (const auto &b : id.bands) {
+                m_FloatImageList->PushBack(b);
+            }
+            m_UInt8ImageList->PushBack(id.mask);
             index++;
         }
-        m_ImageMergers->PushBack(bandsConcat);
-        m_ImageMergers->PushBack(maskConcat);
+        m_BandsConcat->SetInput(m_FloatImageList);
+        m_MaskConcat->SetInput(m_UInt8ImageList);
 
         // Set the temporal resampling / gap filling filter
-        m_TemporalResampler->SetInputRaster(bandsConcat->GetOutput());
-        m_TemporalResampler->SetInputMask(maskConcat->GetOutput());
+        m_TemporalResampler->SetInputRaster(m_BandsConcat->GetOutput());
+        m_TemporalResampler->SetInputMask(m_MaskConcat->GetOutput());
         // The output days will be updated later
         m_TemporalResampler->SetInputData(sdCollection);
 
-        // Set the feature extractor
         m_FeatureExtractor->SetInput(m_TemporalResampler->GetOutput());
 
         return m_FeatureExtractor->GetOutput();
@@ -115,6 +115,10 @@ public:
 private:
     TemporalResamplingFilterType::Pointer             m_TemporalResampler;
     CropTypeFeatureExtractionFilterType::Pointer      m_FeatureExtractor;
+    FloatImageListType::Pointer                       m_FloatImageList;
+    UInt8ImageListType::Pointer                       m_UInt8ImageList;
+    ConcatenateFloatImagesFilterType::Pointer         m_BandsConcat;
+    ConcatenateUInt8ImagesFilterType::Pointer         m_MaskConcat;
 };
 
-typedef otb::ObjectList<CropTypePreprocessing>              CropTypePreprocessingList;
+typedef otb::ObjectList<CropTypePreprocessing>        CropTypePreprocessingList;

@@ -55,7 +55,7 @@ struct SensorData
 
 typedef std::vector<SensorData> SensorDataCollection;
 
-template <typename PixelType>
+template <typename PixelType, typename MaskType, typename OutputType>
 class GapFillingFunctor
 {
 public:
@@ -80,10 +80,10 @@ public:
         }
     }
 
-    PixelType operator()(PixelType pix, PixelType mask) const
+    OutputType operator()(const PixelType &pix, const MaskType &mask) const
     {
         // Create the output pixel
-        PixelType result(outputSize * bands);
+        OutputType result(outputSize * bands);
 
         int outPixelId = 0;
         int offset = 0;
@@ -127,7 +127,7 @@ public:
                         float a = (y1 - y2) / (x1 - x2);
                         float b = y1 - a * x1;
 
-                        result[outPixelId] = static_cast<typename PixelType::ValueType>(a * outDate + b);
+                        result[outPixelId] = static_cast<typename OutputType::ValueType>(a * outDate + b);
                     }
                     outPixelId++;
                 }
@@ -251,14 +251,14 @@ private:
  *
  * \ingroup OTBImageManipulation
  */
-template<class TImage>
+template<class TInputImage, class TMask, class TOutputImage>
 class ITK_EXPORT TemporalResamplingFilter
-  : public itk::BinaryFunctorImageFilter<TImage,TImage, TImage, GapFillingFunctor<typename TImage::PixelType> >
+  : public itk::BinaryFunctorImageFilter<TInputImage, TMask, TInputImage, GapFillingFunctor<typename TInputImage::PixelType, typename TMask::PixelType, typename TOutputImage::PixelType> >
 {
 public:
   /** Standard class typedefs. */
   typedef TemporalResamplingFilter                       Self;
-  typedef itk::BinaryFunctorImageFilter<TImage,TImage, TImage, GapFillingFunctor<typename TImage::PixelType> > Superclass;
+  typedef itk::BinaryFunctorImageFilter<TInputImage, TMask, TInputImage, GapFillingFunctor<typename TInputImage::PixelType, typename TMask::PixelType, typename TOutputImage::PixelType> > Superclass;
   typedef itk::SmartPointer<Self>                             Pointer;
   typedef itk::SmartPointer<const Self>                       ConstPointer;
 
@@ -266,21 +266,7 @@ public:
   itkNewMacro(Self);
 
   /** Run-time type information (and related methods). */
-  itkTypeMacro(VectorImageToImagePixelAccessor, BinaryFunctorImageFilter);
-
-  /** Template related typedefs */
-  typedef TImage ImageType;
-
-  typedef typename ImageType::Pointer  ImagePointerType;
-
-  typedef typename ImageType::PixelType        ImagePixelType;
-
-  typedef typename ImageType::InternalPixelType InternalPixelType;
-  typedef typename ImageType::RegionType        ImageRegionType;
-
-
-  /** ImageDimension constant */
-  itkStaticConstMacro(OutputImageDimension, unsigned int, TImage::ImageDimension);
+  itkTypeMacro(TemporalResamplingFilter, BinaryFunctorImageFilter);
 
   /** Accessors for the sensors data */
   void SetInputData(const SensorDataCollection _arg)
@@ -294,10 +280,10 @@ public:
   }
 
   /** Set the input raster. */
-  void SetInputRaster(const TImage *raster);
+  void SetInputRaster(const TInputImage *raster);
 
   /** Set the input mask. */
-  void SetInputMask(const TImage *mask);
+  void SetInputMask(const TMask *mask);
 
 protected:
   /** Constructor. */
@@ -306,8 +292,6 @@ protected:
   virtual ~TemporalResamplingFilter();
   virtual void BeforeThreadedGenerateData();
   virtual void GenerateOutputInformation();
-  /** PrintSelf method */
-  void PrintSelf(std::ostream& os, itk::Indent indent) const;
 
 private:
   TemporalResamplingFilter(const Self &); //purposely not implemented
@@ -319,18 +303,18 @@ private:
 
 /** Binary functor image filter which produces a vector image with a
 * number of bands different from the input images */
-template<typename ImageType, typename Functor>
+template<typename Input1ImageType, typename Input2ImageType, typename OutputImageType, typename Functor>
 class ITK_EXPORT BinaryFunctorImageFilterWithNBands
-    : public itk::BinaryFunctorImageFilter<ImageType,
-                                           ImageType,
-                                           ImageType,
+    : public itk::BinaryFunctorImageFilter<Input1ImageType,
+                                           Input2ImageType,
+                                           OutputImageType,
                                            Functor >
 {
 public:
     typedef BinaryFunctorImageFilterWithNBands Self;
-    typedef itk::BinaryFunctorImageFilter<ImageType,
-                                          ImageType,
-                                          ImageType,
+    typedef itk::BinaryFunctorImageFilter<Input1ImageType,
+                                          Input2ImageType,
+                                          OutputImageType,
                                           Functor > Superclass;
     typedef itk::SmartPointer<Self> Pointer;
     typedef itk::SmartPointer<const Self> ConstPointer;

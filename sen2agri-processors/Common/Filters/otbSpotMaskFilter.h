@@ -18,6 +18,7 @@
 
 #include "itkTernaryFunctorImageFilter.h"
 #include "otbVectorImage.h"
+#include "otbWrapperTypes.h"
 
 #define NODATA          -10000
 
@@ -26,26 +27,21 @@ namespace otb
 {
 
 
-template <typename PixelType>
 class SpotMaskFunctor
 {
 public:
     SpotMaskFunctor() {}
 
-    PixelType operator()(const PixelType &maskValidity, const PixelType &maskSaturation, const PixelType &maskClouds) const
+    uint8_t operator()(const uint8_t &maskValidity, const uint8_t &maskSaturation, const uint16_t &maskClouds) const
     {
-        PixelType result(1);
-
-        result[0] = (((static_cast<unsigned short>(maskValidity[0]) & 0x01) |
-                       static_cast<unsigned short>(maskSaturation[0]) |
-                       static_cast<unsigned short>(maskClouds[0])) == 0) ? 0 : 1;
-
-        return result;
+        return (((maskValidity & 0x01) |
+                  maskSaturation |
+                  maskClouds) == 0) ? 0 : 1;
     }
 
     bool operator!=(const SpotMaskFunctor) const
     {
-        return false ;
+        return false;
     }
 
     bool operator==(const SpotMaskFunctor) const
@@ -60,14 +56,13 @@ public:
  *
  * \ingroup OTBImageManipulation
  */
-template<class TImage>
 class ITK_EXPORT SpotMaskFilter
-  : public itk::TernaryFunctorImageFilter<TImage,TImage, TImage, TImage, SpotMaskFunctor<typename TImage::PixelType> >
+  : public itk::TernaryFunctorImageFilter<otb::Wrapper::UInt8ImageType, otb::Wrapper::UInt8ImageType, otb::Wrapper::UInt16ImageType, otb::Wrapper::UInt8ImageType, SpotMaskFunctor>
 {
 public:
   /** Standard class typedefs. */
   typedef SpotMaskFilter                       Self;
-  typedef itk::TernaryFunctorImageFilter<TImage,TImage, TImage, TImage, SpotMaskFunctor<typename TImage::PixelType> > Superclass;
+  typedef itk::TernaryFunctorImageFilter<otb::Wrapper::UInt8ImageType, otb::Wrapper::UInt8ImageType, otb::Wrapper::UInt16ImageType, otb::Wrapper::UInt8ImageType, SpotMaskFunctor> Superclass;
   typedef itk::SmartPointer<Self>                             Pointer;
   typedef itk::SmartPointer<const Self>                       ConstPointer;
 
@@ -75,10 +70,10 @@ public:
   itkNewMacro(Self);
 
   /** Run-time type information (and related methods). */
-  itkTypeMacro(VectorImageToImagePixelAccessor, TernaryFunctorImageFilter);
+  itkTypeMacro(SpotMaskFilter, TernaryFunctorImageFilter);
 
   /** Template related typedefs */
-  typedef TImage ImageType;
+  typedef otb::Wrapper::UInt8ImageType ImageType;
 
   typedef typename ImageType::Pointer  ImagePointerType;
 
@@ -89,16 +84,16 @@ public:
 
 
   /** ImageDimension constant */
-  itkStaticConstMacro(OutputImageDimension, unsigned int, TImage::ImageDimension);
+  itkStaticConstMacro(OutputImageDimension, unsigned int, otb::Wrapper::UInt8ImageType::ImageDimension);
 
   /** Set the SPOT validity mask. */
-  void SetInputValidityMask(const TImage *validityMask);
+  void SetInputValidityMask(const otb::Wrapper::UInt8ImageType *validityMask);
 
   /** Set the SPOT saturation mask. */
-  void SetInputSaturationMask(const TImage *saturationMask);
+  void SetInputSaturationMask(const otb::Wrapper::UInt8ImageType *saturationMask);
 
   /** Set the SPOT Cloud mask. */
-  void SetInputCloudsMask(const TImage *cloudsMask);
+  void SetInputCloudsMask(const otb::Wrapper::UInt16ImageType *cloudsMask);
 
 
 protected:

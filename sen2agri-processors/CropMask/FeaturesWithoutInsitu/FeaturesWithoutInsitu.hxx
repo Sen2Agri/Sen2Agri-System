@@ -41,7 +41,7 @@ public:
     {
     }
 
-    PixelType operator()(PixelType ts) const
+    PixelType operator()(const PixelType &ts) const
     {
         // compute the number of input image
         int numImages = m_id.size();
@@ -65,16 +65,9 @@ public:
         }
 
         // Create the output pixel
-#if 1
         PixelType result(m_outImages * m_bpi);
-#else
-        PixelType result(m_outImages);
-#endif
-        // If the input pixel is nodata return nodata
-        PixelType nodata(numImages);
-        nodata.Fill(static_cast<PixelValueType>(-10000));
 
-        if (ndvi == nodata) {
+        if (!ok) {
             result.Fill(static_cast<PixelValueType>(-10000));
             return result;
         }
@@ -95,7 +88,7 @@ public:
         double maxNDVI = ndvi[0];
         double maxRed = ts[1];
 
-        // Get the indeces for the required values
+        // Get the indices for the required values
         for (int i = 0; i < numImages; i++) {
             if (i > 0 && i < numImages - 1) {
                 // compute the slope
@@ -125,18 +118,11 @@ public:
             }
         }
 
-// build the result
-#if 1
         for (int i = 0; i < m_outImages; i++) {
             for (int j = 0; j < m_bpi; j++) {
                 result[i * m_bpi + j] = (index[i] == -1 ? -10000 : ts[index[i] * m_bpi + j]);
             }
         }
-#else
-        for (int i = 0; i < m_outImages; i++) {
-            result[i] = index[i];
-        }
-#endif
 
         return result;
     }
@@ -173,14 +159,14 @@ public:
     typedef itk::SmartPointer<const Self> ConstPointer;
 
     /** Method for creation through the object factory. */
-    itkNewMacro(Self);
+    itkNewMacro(Self)
 
     /** Macro defining the type*/
-    itkTypeMacro(UnaryFunctorImageFilterWithNBands, SuperClass);
+    itkTypeMacro(UnaryFunctorImageFilterWithNBands, SuperClass)
 
     /** Accessors for the number of bands*/
-    itkSetMacro(NumberOfOutputBands, unsigned int);
-    itkGetConstMacro(NumberOfOutputBands, unsigned int);
+    itkSetMacro(NumberOfOutputBands, unsigned int)
+    itkGetConstMacro(NumberOfOutputBands, unsigned int)
 
 protected:
     UnaryFunctorImageFilterWithNBands()

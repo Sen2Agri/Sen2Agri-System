@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(TestBandsSimple)
 
     auto image = makeItkVector({ 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 });
     auto mask = makeItkVector({ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 });
-    GapFillingFunctor<itk::VariableLengthVector<float> > functor(sd, 0, 2);
+    GapFillingFunctor<itk::VariableLengthVector<float>, itk::VariableLengthVector<uint8_t>> functor(sd, 0, 2);
 
     auto result = functor(image, mask);
     BOOST_REQUIRE_EQUAL(result.Size(), 10);
@@ -59,7 +59,7 @@ BOOST_AUTO_TEST_CASE(TestInterpolationSymmetric)
 
     auto image = makeItkVector({ 2, 5, 6, 9, 10 });
     auto mask = makeItkVector({ 0, 0, 1, 0, 0 });
-    GapFillingFunctor<itk::VariableLengthVector<float> > functor(sd, 0, 1);
+    GapFillingFunctor<itk::VariableLengthVector<float>, itk::VariableLengthVector<uint8_t>> functor(sd, 0, 1);
 
     auto result = functor(image, mask);
     BOOST_REQUIRE_EQUAL(result.Size(), 5);
@@ -76,7 +76,7 @@ BOOST_AUTO_TEST_CASE(TestInterpolationAsymmetric)
 
     auto image = makeItkVector({ 2, 5, 6, 9, 10 });
     auto mask = makeItkVector({ 0, 0, 1, 0, 0 });
-    GapFillingFunctor<itk::VariableLengthVector<float> > functor(sd, 0, 1);
+    GapFillingFunctor<itk::VariableLengthVector<float>, itk::VariableLengthVector<uint8_t>> functor(sd, 0, 1);
 
     auto result = functor(image, mask);
     BOOST_REQUIRE_EQUAL(result.Size(), 5);
@@ -93,7 +93,7 @@ BOOST_AUTO_TEST_CASE(TestInterpolationEdges)
 
     auto image = makeItkVector({ 2, 5, 6, 9, 10 });
     auto mask = makeItkVector({ 1, 0, 0, 0, 1 });
-    GapFillingFunctor<itk::VariableLengthVector<float> > functor(sd, 0, 1);
+    GapFillingFunctor<itk::VariableLengthVector<float>, itk::VariableLengthVector<uint8_t>> functor(sd, 0, 1);
 
     auto result = functor(image, mask);
     BOOST_REQUIRE_EQUAL(result.Size(), 5);
@@ -110,7 +110,7 @@ BOOST_AUTO_TEST_CASE(TestInterpolationNoData)
 
     auto image = makeItkVector({ 2, 5, 6, 9, 10 });
     auto mask = makeItkVector({ 1, 1, 1, 1, 1 });
-    GapFillingFunctor<itk::VariableLengthVector<float> > functor(sd, 0, 1);
+    GapFillingFunctor<itk::VariableLengthVector<float>, itk::VariableLengthVector<uint8_t>> functor(sd, 0, 1);
 
     auto result = functor(image, mask);
     BOOST_REQUIRE_EQUAL(result.Size(), 5);
@@ -128,7 +128,7 @@ BOOST_AUTO_TEST_CASE(TestMultipleSensors)
 
     auto image = makeItkVector({ 10, 11, 12, 13, 14, 20, 21, 22, 23, 24 });
     auto mask = makeItkVector({ 0, 0, 1, 0, 0, 1, 0, 0, 0, 1 });
-    GapFillingFunctor<itk::VariableLengthVector<float> > functor(sd, 0, 1);
+    GapFillingFunctor<itk::VariableLengthVector<float>, itk::VariableLengthVector<uint8_t>> functor(sd, 0, 1);
 
     auto result = functor(image, mask);
     BOOST_REQUIRE_EQUAL(result.Size(), 10);
@@ -151,7 +151,7 @@ BOOST_AUTO_TEST_CASE(TestInterleaving)
 
     auto image = makeItkVector({ 20, 30, 40, 50, 60 });
     auto mask = makeItkVector({ 0, 0, 0, 0, 0 });
-    GapFillingFunctor<itk::VariableLengthVector<float> > functor(sd, 0, 1);
+    GapFillingFunctor<itk::VariableLengthVector<float>, itk::VariableLengthVector<uint8_t>> functor(sd, 0, 1);
 
     auto result = functor(image, mask);
     BOOST_REQUIRE_EQUAL(result.Size(), 5);

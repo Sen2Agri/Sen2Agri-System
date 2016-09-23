@@ -56,6 +56,7 @@
 //  Software Guide : EndCodeSnippet
 
 // define all needed types
+typedef otb::VectorImage<short, 2> ImageType;
 typedef otb::ImageFileReader<ImageType> ReaderType;
 
 namespace otb
@@ -333,14 +334,14 @@ private:
                          maskReader->GetOutput()->GetNumberOfComponentsPerPixel();
 
         // Create the instance of the filter which will perform all computations
-        filter = BinaryFunctorImageFilterWithNBands<ImageType, GapFillingFunctor<ImageType::PixelType>>::New();
+        filter = BinaryFunctorImageFilterWithNBands<ImageType, GapFillingFunctor<ImageType::PixelType, ImageType::PixelType>>::New();
 
         int dateCount = 0;
         for (const auto &sd : inData) {
             dateCount += sd.outDates.size();
         }
         filter->SetNumberOfOutputBands(imageBands * dateCount);
-        filter->SetFunctor(GapFillingFunctor<ImageType::PixelType>(inData, 0, imageBands));
+        filter->SetFunctor(GapFillingFunctor<ImageType::PixelType, ImageType::PixelType>(inData, 0, imageBands));
 
         filter->SetInput(0, imgReader->GetOutput());
         filter->SetInput(1, maskReader->GetOutput());
@@ -401,7 +402,7 @@ private:
 private:
     ReaderType::Pointer imgReader;
     ReaderType::Pointer maskReader;
-    BinaryFunctorImageFilterWithNBands<ImageType, GapFillingFunctor<ImageType::PixelType>>::Pointer filter;
+    BinaryFunctorImageFilterWithNBands<ImageType, GapFillingFunctor<ImageType::PixelType, ImageType::PixelType>>::Pointer filter;
     BinaryFunctorImageFilterWithNBands<ImageType, TemporalMergingFunctor<ImageType::PixelType>>::Pointer merger;
 
     inline int getDaysFromEpoch(const std::string &date)

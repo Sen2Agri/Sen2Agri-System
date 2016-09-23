@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 /*=========================================================================
 
   Program:   ORFEO Toolbox
@@ -66,13 +66,11 @@
 
 // Filters
 #include "otbMultiChannelExtractROI.h"
-#include "otbConcatenateVectorImagesFilter.h"
 #include "../Filters/otbCropTypeFeatureExtractionFilter.h"
 #include "../Filters/otbTemporalResamplingFilter.h"
 #include "../Filters/otbTemporalMergingFilter.h"
 
 #include "../Filters/otbSpotMaskFilter.h"
-#include "../Filters/otbLandsatMaskFilter.h"
 #include "../Filters/otbSentinelMaskFilter.h"
 
 #include "../Filters/CropTypePreprocessing.h"

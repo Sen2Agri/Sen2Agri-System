@@ -25,24 +25,21 @@ namespace otb
 /**
  * Constructor.
  */
-template <class TImage>
-SentinelMaskFilter<TImage>
+SentinelMaskFilter
 ::SentinelMaskFilter()
 {
   this->SetNumberOfRequiredInputs(1);
-  this->SetFunctor(SentinelMaskFunctor<typename TImage::PixelType>());
+  this->SetFunctor(SentinelMaskFunctor());
 }
 /**
  * Destructor.
  */
-template <class TImage>
-SentinelMaskFilter<TImage>
+SentinelMaskFilter
 ::~SentinelMaskFilter()
 {}
 
-template <class TImage>
 void
-SentinelMaskFilter<TImage>
+SentinelMaskFilter
 ::GenerateOutputInformation()
 {
   // Call to the superclass implementation
@@ -56,18 +53,16 @@ SentinelMaskFilter<TImage>
   outputPtr->SetNumberOfComponentsPerPixel(nbComponentsPerPixel);
 }
 
-template <class TImage>
 void
-SentinelMaskFilter<TImage>
-::SetInputQualityMask(const TImage *qualityMask)
+SentinelMaskFilter
+::SetInputQualityMask(const otb::Wrapper::UInt8VectorImageType *qualityMask)
 {
     this->SetInput1(qualityMask);
 }
 
-template <class TImage>
 void
-SentinelMaskFilter<TImage>
-::SetInputCloudsMask(const TImage *cloudsMask)
+SentinelMaskFilter
+::SetInputCloudsMask(const otb::Wrapper::UInt8ImageType  *cloudsMask)
 {
     this->SetInput2(cloudsMask);
 }
@@ -76,9 +71,8 @@ SentinelMaskFilter<TImage>
 /**
  * PrintSelf method.
  */
-template <class TImage>
 void
-SentinelMaskFilter<TImage>
+SentinelMaskFilter
 ::PrintSelf(std::ostream& os, itk::Indent indent) const
 {
   Superclass::PrintSelf(os, indent);

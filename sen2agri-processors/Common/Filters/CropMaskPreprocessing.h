@@ -41,7 +41,6 @@
 #include "otbTemporalMergingFilter.h"
 
 #include "otbSpotMaskFilter.h"
-#include "otbLandsatMaskFilter.h"
 #include "otbSentinelMaskFilter.h"
 
 #include "TimeSeriesReader.h"
@@ -49,12 +48,15 @@
 
 #include <string>
 
-typedef CropMaskFeaturesSupervisedFunctor<ImageType::PixelType> FeaturesFunctorType;
-typedef CropMaskFeaturesSupervisedBMFunctor<ImageType::PixelType> FeaturesBMFunctorType;
+typedef CropMaskFeaturesSupervisedFunctor<ImageType::PixelType>     FeaturesFunctorType;
+typedef CropMaskFeaturesSupervisedBMFunctor<ImageType::PixelType>   FeaturesBMFunctorType;
 
-typedef UnaryFunctorImageFilterWithNBands<FeaturesFunctorType> UnaryFunctorImageFilterWithNBandsType;
-typedef UnaryFunctorImageFilterWithNBands<FeaturesBMFunctorType> UnaryFunctorImageFilterBMWithNBandsType;
+typedef UnaryFunctorImageFilterWithNBands<FeaturesFunctorType>      UnaryFunctorImageFilterWithNBandsType;
+typedef UnaryFunctorImageFilterWithNBands<FeaturesBMFunctorType>    UnaryFunctorImageFilterBMWithNBandsType;
 
+typedef TemporalMergingFunctor<ImageType::PixelType, MaskType::PixelType> TemporalMergingFunctorType;
+typedef otb::BinaryFunctorImageFilterWithNBands<ImageType, MaskType, ImageType,
+        TemporalMergingFunctorType> TemporalMergingFilterType;
 
 class CropMaskPreprocessing : public TimeSeriesReader
 {
@@ -84,17 +86,17 @@ public:
         m_TemporalResampler = TemporalResamplingFilterType::New();
         m_FeatureExtractor = UnaryFunctorImageFilterWithNBandsType::New();
         m_FeatureExtractorBM = UnaryFunctorImageFilterBMWithNBandsType::New();
-        m_Merger = otb::BinaryFunctorImageFilterWithNBands<ImageType, TemporalMergingFunctor<ImageType::PixelType>>::New();
+        m_Merger = TemporalMergingFilterType::New();
+        m_FloatImageList = FloatImageListType::New();
+        m_UInt8ImageList = UInt8ImageListType::New();
+        m_BandsConcat = ConcatenateFloatImagesFilterType::New();
+        m_MaskConcat = ConcatenateUInt8ImagesFilterType::New();
     }
 
     otb::Wrapper::FloatVectorImageType * GetOutput()
     {
-        // Merge the rasters and the masks
-        ConcatenateVectorImagesFilterType::Pointer bandsConcat = ConcatenateVectorImagesFilterType::New();
-        ConcatenateVectorImagesFilterType::Pointer maskConcat = ConcatenateVectorImagesFilterType::New();
         // Also build the image dates structures
         otb::SensorDataCollection sdCollection;
-
         int index = 0;
         std::string lastMission = "";
         for (const ImageDescriptor& id : m_Descriptors) {
@@ -111,16 +113,18 @@ public:
 
             sd.inDates.push_back(inDay);
 
-            bandsConcat->PushBackInput(id.bands);
-            maskConcat->PushBackInput(id.mask);
+            for (const auto &b : id.bands) {
+                m_FloatImageList->PushBack(b);
+            }
+            m_UInt8ImageList->PushBack(id.mask);
             index++;
         }
-        m_ImageMergers->PushBack(bandsConcat);
-        m_ImageMergers->PushBack(maskConcat);
+        m_BandsConcat->SetInput(m_FloatImageList);
+        m_MaskConcat->SetInput(m_UInt8ImageList);
 
         // Set the temporal resampling / gap filling filter
-        m_TemporalResampler->SetInputRaster(bandsConcat->GetOutput());
-        m_TemporalResampler->SetInputMask(maskConcat->GetOutput());
+        m_TemporalResampler->SetInputRaster(m_BandsConcat->GetOutput());
+        m_TemporalResampler->SetInputMask(m_MaskConcat->GetOutput());
         // The output days will be updated later
         m_TemporalResampler->SetInputData(sdCollection);
 
@@ -150,19 +154,20 @@ public:
             }
         }
 
-        bandsConcat->UpdateOutputInformation();
-        maskConcat->UpdateOutputInformation();
+        m_BandsConcat->UpdateOutputInformation();
+        m_MaskConcat->UpdateOutputInformation();
+
         // The number of image bands can be computed as the ratio between the bands in the image and
         // the bands in the mask
-        int imageBands = bandsConcat->GetOutput()->GetNumberOfComponentsPerPixel() /
-                         maskConcat->GetOutput()->GetNumberOfComponentsPerPixel();
+        int imageBands = m_BandsConcat->GetOutput()->GetNumberOfComponentsPerPixel() /
+                         m_MaskConcat->GetOutput()->GetNumberOfComponentsPerPixel();
 
 
         m_Merger->SetNumberOfOutputBands(imageBands * od.size());
-        m_Merger->SetFunctor(TemporalMergingFunctor<ImageType::PixelType>(imgInfos, od.size(), imageBands));
+        m_Merger->SetFunctor(TemporalMergingFunctor<ImageType::PixelType, MaskType::PixelType>(imgInfos, od.size(), imageBands));
 
-        m_Merger->SetInput(0, m_TemporalResampler->GetOutput());
-        m_Merger->SetInput(1, maskConcat->GetOutput());
+        m_Merger->SetInput1(m_TemporalResampler->GetOutput());
+        m_Merger->SetInput2(m_MaskConcat->GetOutput());
 
         if (m_BM) {
             m_FeatureExtractorBM->GetFunctor().m_W = m_W;
@@ -191,9 +196,11 @@ private:
     TemporalResamplingFilterType::Pointer             m_TemporalResampler;
     UnaryFunctorImageFilterWithNBandsType::Pointer    m_FeatureExtractor;
     UnaryFunctorImageFilterBMWithNBandsType::Pointer  m_FeatureExtractorBM;
-    otb::BinaryFunctorImageFilterWithNBands<ImageType,
-        TemporalMergingFunctor<ImageType::PixelType>>
-    ::Pointer                                         m_Merger;
+    TemporalMergingFilterType::Pointer                m_Merger;
+    FloatImageListType::Pointer                       m_FloatImageList;
+    UInt8ImageListType::Pointer                       m_UInt8ImageList;
+    ConcatenateFloatImagesFilterType::Pointer         m_BandsConcat;
+    ConcatenateUInt8ImagesFilterType::Pointer         m_MaskConcat;
 
     int m_W;
     PixelValueType m_Delta;
@@ -201,4 +208,4 @@ private:
     bool m_BM;
 };
 
-typedef otb::ObjectList<CropMaskPreprocessing>              CropMaskPreprocessingList;
+typedef otb::ObjectList<CropMaskPreprocessing>        CropMaskPreprocessingList;

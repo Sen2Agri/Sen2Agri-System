@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 /*=========================================================================
  Program:   ORFEO Toolbox
  Language:  C++
@@ -55,13 +55,11 @@
 #include "otbMultiChannelExtractROI.h"
 #include "otbStreamingResampleImageFilter.h"
 
-#include "otbConcatenateVectorImagesFilter.h"
 #include "../Filters/otbCropTypeFeatureExtractionFilter.h"
 #include "../Filters/otbTemporalResamplingFilter.h"
 #include "../Filters/otbTemporalMergingFilter.h"
 
 #include "../Filters/otbSpotMaskFilter.h"
-#include "../Filters/otbLandsatMaskFilter.h"
 #include "../Filters/otbSentinelMaskFilter.h"
 
 typedef otb::VectorImage<float, 2>                                 ImageType;
@@ -116,7 +114,7 @@ private:
 #ifdef OTB_USE_LIBSVM
   void InitLibSVMParams();
 #endif
-  
+
 #ifdef OTB_USE_OPENCV
   void InitBoostParams();
   void InitSVMParams();
@@ -137,14 +135,9 @@ private:
   float                                 m_pixSize;
 
   ImageReaderListType::Pointer          m_ImageReaderList;
-  ResampleFilterListType::Pointer       m_ResamplersList;
 
   SpotMaskFilterListType::Pointer                   m_SpotMaskFilters;
-  LandsatMaskFilterListType::Pointer                m_LandsatMaskFilters;
   SentinelMaskFilterListType::Pointer               m_SentinelMaskFilters;
-  MultiChannelExtractROIListType::Pointer           m_ChannelExtractors;
-  ConcatenateVectorImagesFilterListType::Pointer    m_ImageMergers;
-  TemporalResamplingFilterListType::Pointer         m_TempResamplers;
   CropTypeFeatureExtractionFilterListType::Pointer  m_FeatureExtrators;
   ImageListType::Pointer                            m_InputImages;
 };
