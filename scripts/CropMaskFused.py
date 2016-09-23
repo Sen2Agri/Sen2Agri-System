@@ -76,6 +76,7 @@ class CropMaskProcessor(ProcessorBase):
                             required=False, type=int, nargs='+', default=None)
         parser.add_argument('-tile-filter', help='The list of tiles to apply the classification to',
                             required=False, nargs='+', default=None)
+        parser.add_argument('-skip-segmentation', help="Skip the segmentation step, creating the product with just the raw mask (default false)", default=False, action='store_true')
         self.args = parser.parse_args()
 
         self.args.tmpfolder = self.args.outdir
@@ -189,6 +190,9 @@ class CropMaskProcessor(ProcessorBase):
             os.remove(tile_crop_mask_uncompressed)
 
     def postprocess_tile(self, tile):
+        if self.args.skip_segmentation:
+            return
+
         tile_crop_mask = self.get_tile_classification_output(tile)
 
         tile_ndvi = self.get_output_path("ndvi-{}.tif", tile.id)
@@ -272,9 +276,12 @@ class CropMaskProcessor(ProcessorBase):
     def validate(self, context):
         files = []
         for tile in self.tiles:
-            tile_segmented = self.get_output_path("crop-mask-segmented-{}.tif", tile.id)
-
-            files.append(tile_segmented)
+            if self.args.skip_segmentation:
+                tile_crop_mask = self.get_tile_classification_output(tile)
+                files.append(tile_crop_mask)
+            else:
+                tile_segmented = self.get_output_path("crop-mask-segmented-{}.tif", tile.id)
+                files.append(tile_segmented)
 
         for stratum in self.strata:
             area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
@@ -308,19 +315,27 @@ class CropMaskProcessor(ProcessorBase):
                         "-siteid", self.args.siteid,
                         "-processor", "cropmask"]
 
-        step_args.append("-processor.cropmask.file")
-        for tile in self.tiles:
-            tile_segmented = self.get_output_path("crop-mask-segmented-{}.tif", tile.id)
+        if self.args.skip_segmentation:
+            step_args.append("-processor.cropmask.file")
+            for tile in self.tiles:
+                tile_crop_mask = self.get_tile_classification_output(tile)
 
-            step_args.append("TILE_" + tile.id)
-            step_args.append(tile_segmented)
+                step_args.append("TILE_" + tile.id)
+                step_args.append(tile_crop_mask)
+        else:
+            step_args.append("-processor.cropmask.file")
+            for tile in self.tiles:
+                tile_segmented = self.get_output_path("crop-mask-segmented-{}.tif", tile.id)
 
-        step_args.append("-processor.cropmask.rawfile")
-        for tile in self.tiles:
-            tile_crop_mask = self.get_tile_classification_output(tile)
+                step_args.append("TILE_" + tile.id)
+                step_args.append(tile_segmented)
 
-            step_args.append("TILE_" + tile.id)
-            step_args.append(tile_crop_mask)
+            step_args.append("-processor.cropmask.rawfile")
+            for tile in self.tiles:
+                tile_crop_mask = self.get_tile_classification_output(tile)
+
+                step_args.append("TILE_" + tile.id)
+                step_args.append(tile_crop_mask)
 
         step_args.append("-processor.cropmask.flags")
         for tile in self.tiles:

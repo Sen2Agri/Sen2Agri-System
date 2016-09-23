@@ -568,7 +568,7 @@ class ProcessorBase(object):
         else:
             filtered_polygons = filter_polygons(self.args.ref, self.site_footprint_wgs84, self.args.outdir)
             stratum = Stratum(0, filtered_polygons, None)
-            stratum.tiles = self.tiles;
+            stratum.tiles = self.tiles
             self.strata = [stratum]
             for tile in self.tiles:
                 tile.strata = [stratum]
