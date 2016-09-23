@@ -456,6 +456,7 @@ class ProcessorBase(object):
                         self.rasterize_tile_mask(stratum, tile)
                         self.classify_tile(stratum, tile)
 
+            if self.args.mode is None or self.args.mode == 'validate':
                 self.merge_classification_outputs()
 
                 for tile in self.tiles:
@@ -463,7 +464,6 @@ class ProcessorBase(object):
 
                 self.compute_quality_flags()
 
-            if self.args.mode is None or self.args.mode == 'validate':
                 self.validate(context)
         except:
             traceback.print_exc()
