@@ -456,13 +456,22 @@ class ProcessorBase(object):
                         self.rasterize_tile_mask(stratum, tile)
                         self.classify_tile(stratum, tile)
 
-            if self.args.mode is None or self.args.mode == 'validate':
-                self.merge_classification_outputs()
-
                 for tile in self.tiles:
+                    if self.args.tile_filter and tile.id not in self.args.tile_filter:
+                        print("Skipping post-processing for tile {} due to tile filter".format(tile.id))
+                        continue
+
                     self.postprocess_tile(tile)
 
-                self.compute_quality_flags()
+                for tile in self.tiles:
+                    if self.args.tile_filter and tile.id not in self.args.tile_filter:
+                        print("Skipping quality flags extraction for tile {} due to tile filter".format(tile.id))
+                        continue
+
+                    self.compute_quality_flags(tile)
+
+            if self.args.mode is None or self.args.mode == 'validate':
+                self.merge_classification_outputs()
 
                 self.validate(context)
         except:
@@ -471,17 +480,16 @@ class ProcessorBase(object):
             end_time = datetime.datetime.now()
             print("Processor finished in", str(end_time - start_time))
 
-    def compute_quality_flags(self):
-        for tile in self.tiles:
-            tile_quality_flags = self.get_output_path("status_flags_{}.tif", tile.id)
+    def compute_quality_flags(self, tile):
+        tile_quality_flags = self.get_output_path("status_flags_{}.tif", tile.id)
 
-            step_args = ["otbcli", "QualityFlagsExtractor", self.args.buildfolder,
-                            "-mission", self.args.mission,
-                            "-out", format_otb_filename(tile_quality_flags, compression='DEFLATE'),
-                            "-pixsize", self.args.pixsize]
-            step_args += ["-il"] + tile.descriptors
+        step_args = ["otbcli", "QualityFlagsExtractor", self.args.buildfolder,
+                        "-mission", self.args.mission,
+                        "-out", format_otb_filename(tile_quality_flags, compression='DEFLATE'),
+                        "-pixsize", self.args.pixsize]
+        step_args += ["-il"] + tile.descriptors
 
-            run_step(Step("QualityFlags_" + str(tile.id), step_args))
+        run_step(Step("QualityFlags_" + str(tile.id), step_args))
 
     def prepare_tiles(self):
         if not self.args.prodspertile:
