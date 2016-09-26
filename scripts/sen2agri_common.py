@@ -137,9 +137,8 @@ def get_tileid(product):
 
 
 class Stratum(object):
-    def __init__(self, id, shapefile, extent):
+    def __init__(self, id, extent):
         self.id = id
-        self.shapefile = shapefile
         self.extent = extent
         self.tiles = []
 
@@ -154,22 +153,18 @@ class Tile(object):
         self.main_mask = None
 
 
-def filter_polygons(crop_features, site_footprint_wgs84, out_folder):
-    features_ds = ogr.Open(crop_features, 0)
-    if features_ds is None:
-        raise Exception("Could not open reference dataset", crop_features)
-
-    wgs84_srs = osr.SpatialReference()
-    wgs84_srs.ImportFromEPSG(4326)
-
-    in_layer = features_ds.GetLayer()
-    in_layer_def = in_layer.GetLayerDefn()
-    in_srs = in_layer.GetSpatialRef()
-
-    wgs84_transform = osr.CoordinateTransformation(in_srs, wgs84_srs)
-
+def split_features(stratum, data, out_folder):
     driver = ogr.GetDriverByName('ESRI Shapefile')
-    out_name = os.path.join(out_folder, "filtered-features.shp")
+
+    data_ds = ogr.Open(data, 0)
+    if data_ds is None:
+        raise Exception("Could not open feature dataset", data)
+
+    data_layer = data_ds.GetLayer()
+    data_layer_def = data_layer.GetLayerDefn()
+    data_srs = data_layer.GetSpatialRef()
+
+    out_name = os.path.join(out_folder, "features-{}.shp".format(stratum.id))
 
     if os.path.exists(out_name):
         driver.DeleteDataSource(out_name)
@@ -180,56 +175,39 @@ def filter_polygons(crop_features, site_footprint_wgs84, out_folder):
     if out_ds is None:
         raise Exception("Could not create output dataset", out_name)
 
-    out_layer = out_ds.CreateLayer('features', srs=in_srs,
-                                   geom_type=ogr.wkbMultiPolygon)
+    out_layer = out_ds.CreateLayer('features', srs=data_srs,
+                                    geom_type=ogr.wkbMultiPolygon)
     out_layer_def = out_layer.GetLayerDefn()
 
-    for i in xrange(in_layer_def.GetFieldCount()):
-        out_layer.CreateField(in_layer_def.GetFieldDefn(i))
+    for i in xrange(data_layer_def.GetFieldCount()):
+        out_layer.CreateField(data_layer_def.GetFieldDefn(i))
 
-    for region in in_layer:
-        region_geom = region.GetGeometryRef()
-        region_geom_wgs84 = region_geom.Clone()
-        region_geom_wgs84.Transform(wgs84_transform)
+    wgs84_srs = osr.SpatialReference()
+    wgs84_srs.ImportFromEPSG(4326)
 
-        region_geom_wgs84 = region_geom_wgs84.Intersection(site_footprint_wgs84)
-        if region_geom_wgs84.GetArea() > 0:
-            out_feature = ogr.Feature(out_layer_def)
+    area_transform = osr.CoordinateTransformation(wgs84_srs, data_srs)
+    area_geom_reprojected = stratum.extent.Clone()
+    area_geom_reprojected.Transform(area_transform)
 
-            for i in xrange(out_layer_def.GetFieldCount()):
-                out_feature.SetField(out_layer_def.GetFieldDefn(
-                    i).GetNameRef(), region.GetField(i))
-
-            out_feature.SetGeometry(region_geom)
-            out_layer.CreateFeature(out_feature)
-
-    return out_name
-
-def load_features(data):
-    out_srs = osr.SpatialReference()
-    out_srs.ImportFromEPSG(4326)
-
-    data_ds = ogr.Open(data, 0)
-    data_layer = data_ds.GetLayer()
-    data_layer_def = data_layer.GetLayerDefn()
-    data_srs = data_layer.GetSpatialRef()
-
-    transform = osr.CoordinateTransformation(data_srs, out_srs)
-
-    result = []
+    out_features = 0
+    data_layer.ResetReading()
+    data_layer.SetSpatialFilter(area_geom_reprojected)
     for region in data_layer:
         region_geom = region.GetGeometryRef()
-        region_geom_wgs84 = region_geom.Clone()
-        region_geom_wgs84.Transform(transform)
 
-        reprojected_feature = ogr.Feature(data_layer_def)
-        reprojected_feature.SetGeometry(region_geom_wgs84)
+        out_feature = ogr.Feature(out_layer_def)
+        out_features += 1
 
-        result.append(reprojected_feature)
+        for i in xrange(out_layer_def.GetFieldCount()):
+            out_feature.SetField(out_layer_def.GetFieldDefn(
+                i).GetNameRef(), region.GetField(i))
 
-    return result
+        out_feature.SetGeometry(region_geom)
+        out_layer.CreateFeature(out_feature)
 
-def split_strata(areas, data, site_footprint_wgs84, out_folder):
+    return out_features
+
+def load_strata(areas, site_footprint_wgs84):
     wgs84_srs = osr.SpatialReference()
     wgs84_srs.ImportFromEPSG(4326)
 
@@ -237,20 +215,9 @@ def split_strata(areas, data, site_footprint_wgs84, out_folder):
     if area_ds is None:
         raise Exception("Could not open stratum dataset", areas)
 
-    data_ds = ogr.Open(data, 0)
-    if data_ds is None:
-        raise Exception("Could not open feature dataset", data)
-
-    data_layer = data_ds.GetLayer()
-    data_layer_def = data_layer.GetLayerDefn()
-    data_srs = data_layer.GetSpatialRef()
-
-    print("Features SRS: {}".format(data_srs))
-
     area_layer = area_ds.GetLayer()
     area_layer_def = area_layer.GetLayerDefn()
     area_srs = area_layer.GetSpatialRef()
-    area_transform = osr.CoordinateTransformation(area_srs, data_srs)
     area_wgs84_transform = osr.CoordinateTransformation(area_srs, wgs84_srs)
 
     driver = ogr.GetDriverByName('ESRI Shapefile')
@@ -263,54 +230,11 @@ def split_strata(areas, data, site_footprint_wgs84, out_folder):
         if area_geom_wgs84.GetArea() == 0:
             print("Stratum {} does not intersect the site extent".format(area_id))
             continue
-        area_feature_wgs84 = ogr.Feature(data_layer_def)
+
+        area_feature_wgs84 = ogr.Feature(area_layer_def)
         area_feature_wgs84.SetGeometry(area_geom_wgs84)
 
-        area_geom_reprojected = area.GetGeometryRef().Clone()
-        area_geom_reprojected.Transform(area_transform)
-        area_feature_reprojected = ogr.Feature(data_layer_def)
-        area_feature_reprojected.SetGeometry(area_geom_reprojected)
-
-        name = os.path.splitext(os.path.basename(data))[0]
-        out_name = os.path.join(out_folder, "{}-{}.shp".format(name, area_id))
-
-        if os.path.exists(out_name):
-            driver.DeleteDataSource(out_name)
-
-        print("Writing {}".format(out_name))
-
-        out_ds = driver.CreateDataSource(out_name)
-        if out_ds is None:
-            raise Exception("Could not create output dataset", out_name)
-
-        out_layer = out_ds.CreateLayer('features', srs=data_srs,
-                                       geom_type=ogr.wkbMultiPolygon)
-        out_layer_def = out_layer.GetLayerDefn()
-
-        for i in xrange(data_layer_def.GetFieldCount()):
-            out_layer.CreateField(data_layer_def.GetFieldDefn(i))
-
-        out_features = 0
-        data_layer.ResetReading()
-        data_layer.SetSpatialFilter(area_geom_reprojected)
-        for region in data_layer:
-            region_geom = region.GetGeometryRef()
-
-            out_feature = ogr.Feature(out_layer_def)
-            out_features += 1
-
-            for i in xrange(out_layer_def.GetFieldCount()):
-                out_feature.SetField(out_layer_def.GetFieldDefn(
-                    i).GetNameRef(), region.GetField(i))
-
-            out_feature.SetGeometry(region_geom)
-            out_layer.CreateFeature(out_feature)
-
-        if out_features > 0:
-            print("Stratum {}: {} features".format(area_id, out_features))
-            result.append(Stratum(area_id, out_name, area_feature_wgs84))
-        else:
-            print("Ignoring stratum {}: no features inside of site extent".format(area_id))
+        result.append(Stratum(area_id, area_feature_wgs84.GetGeometryRef().Clone()))
 
     return result
 
@@ -417,10 +341,19 @@ class ProcessorBase(object):
         try:
             context = self.create_context()
 
-            self.prepare_tiles()
+            self.load_tiles()
+            self.after_load_tiles()
 
-            for tile in self.tiles:
-                self.after_prepare_tile(tile)
+            if self.args.mode is None or self.args.mode == 'prepare-site':
+                self.prepare_site()
+
+            if self.args.mode is None or self.args.mode == 'prepare-tiles':
+                for tile in self.tiles:
+                    if self.args.tile_filter and tile.id not in self.args.tile_filter:
+                        print("Skipping pre-processing for tile {} due to tile filter".format(tile.id))
+                        continue
+
+                    self.prepare_tile(tile)
 
             if self.args.mode is None or self.args.mode == 'train':
                 for stratum in self.strata:
@@ -456,6 +389,10 @@ class ProcessorBase(object):
                         self.rasterize_tile_mask(stratum, tile)
                         self.classify_tile(stratum, tile)
 
+            if self.args.mode is None or self.args.mode == 'merge':
+                self.merge_classification_outputs()
+
+            if self.args.mode is None or self.args.mode == 'postprocess-tiles':
                 for tile in self.tiles:
                     if self.args.tile_filter and tile.id not in self.args.tile_filter:
                         print("Skipping post-processing for tile {} due to tile filter".format(tile.id))
@@ -463,16 +400,17 @@ class ProcessorBase(object):
 
                     self.postprocess_tile(tile)
 
-                for tile in self.tiles:
-                    if self.args.tile_filter and tile.id not in self.args.tile_filter:
-                        print("Skipping quality flags extraction for tile {} due to tile filter".format(tile.id))
-                        continue
+                if self.args.skip_quality_flags:
+                    print("Skipping quality flags extraction")
+                else:
+                    for tile in self.tiles:
+                        if self.args.tile_filter and tile.id not in self.args.tile_filter:
+                            print("Skipping quality flags extraction for tile {} due to tile filter".format(tile.id))
+                            continue
 
-                    self.compute_quality_flags(tile)
+                        self.compute_quality_flags(tile)
 
             if self.args.mode is None or self.args.mode == 'validate':
-                self.merge_classification_outputs()
-
                 self.validate(context)
         except:
             traceback.print_exc()
@@ -491,7 +429,16 @@ class ProcessorBase(object):
 
         run_step(Step("QualityFlags_" + str(tile.id), step_args))
 
-    def prepare_tiles(self):
+    def prepare_site(self):
+        pass
+
+    def prepare_tile(self, tile):
+        pass
+
+    def postprocess_tile(self, tile):
+        pass
+
+    def load_tiles(self):
         if not self.args.prodspertile:
             self.args.prodspertile = [len(self.args.input)]
         else:
@@ -530,7 +477,7 @@ class ProcessorBase(object):
             self.site_footprint_wgs84 = self.site_footprint_wgs84.Union(tile.footprint)
 
         if not self.single_stratum:
-            self.strata = split_strata(self.args.strata, self.args.ref, self.site_footprint_wgs84, self.args.outdir)
+            self.strata = load_strata(self.args.strata, self.site_footprint_wgs84)
             tile_best_weights = [0.0] * len(self.tiles)
 
             for tile in self.tiles:
@@ -538,8 +485,7 @@ class ProcessorBase(object):
                 tile_strata = []
 
                 for stratum in self.strata:
-                    weight = stratum.extent.GetGeometryRef().Intersection(
-                        tile.footprint).Area() / tile.area
+                    weight = stratum.extent.Intersection(tile.footprint).Area() / tile.area
 
                     if weight > tile_best_weight:
                         tile_best_weight = weight
@@ -569,12 +515,11 @@ class ProcessorBase(object):
 
                 for stratum in tile.strata:
                     if stratum != tile.main_stratum:
-                        geom = geom.Difference(stratum.extent.GetGeometryRef())
+                        geom = geom.Difference(stratum.extent)
 
                 tile.main_mask = geom
         else:
-            filtered_polygons = filter_polygons(self.args.ref, self.site_footprint_wgs84, self.args.outdir)
-            stratum = Stratum(0, filtered_polygons, None)
+            stratum = Stratum(0, self.site_footprint_wgs84)
             stratum.tiles = self.tiles
             self.strata = [stratum]
             for tile in self.tiles:
@@ -583,6 +528,9 @@ class ProcessorBase(object):
 
             for tile in self.tiles:
                 tile.main_mask = tile.footprint
+
+    def after_load_tiles(self):
+        pass
 
     def merge_strata_for_tile(self, tile, inputs, output, compression=None):
         files = []
@@ -621,7 +569,7 @@ class ProcessorBase(object):
         if stratum == tile.main_stratum:
             classification_mask = tile.main_mask
         else:
-            classification_mask = stratum.extent.GetGeometryRef().Intersection(tile.footprint)
+            classification_mask = stratum.extent.Intersection(tile.footprint)
 
         save_to_shp(tile_mask, classification_mask)
 

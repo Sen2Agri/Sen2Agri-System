@@ -66,19 +66,18 @@ class CropTypeProcessor(ProcessorBase):
             '-strata', help='Shapefiles with polygons for the strata')
         parser.add_argument('-min-coverage', help="Minimum coverage (0 to 1) for considering a tile for stratification (default 0.1)", required=False, type=float, default=0.1)
         parser.add_argument('-mode', help='The execution mode',
-                            required=False, choices=['train', 'classify', 'validate'], default=None)
+                            required=False, choices=['prepare-site', 'prepare-tiles', 'train', 'classify', 'merge', 'postprocess-tiles', 'validate'], default=None)
         parser.add_argument('-stratum-filter', help='The list of strata to use in training and classification',
                             required=False, type=int, nargs='+', default=None)
         parser.add_argument('-tile-filter', help='The list of tiles to apply the classification to',
                             required=False, nargs='+', default=None)
+        parser.add_argument('-skip-quality-flags', help="Skip quality flags extraction, (default false)", default=False, action='store_true')
         self.args = parser.parse_args()
-
-        self.crop_features = load_features(self.args.ref)
 
         if self.args.mask is not None and self.args.maskprod is not None:
             raise("The -mask and -maskprod arguments are exclusive")
 
-    def after_prepare_tile(self, tile):
+    def after_load_tiles(self):
         for tile in self.tiles:
             tile.crop_mask = None
 
@@ -119,20 +118,11 @@ class CropTypeProcessor(ProcessorBase):
             if tile.crop_mask is not None:
                 print("Crop mask for tile {}: {}".format(tile.id, tile.crop_mask))
 
-
-    def tile_has_features(self, stratum, tile):
-        if stratum.extent is None:
-            geom = tile.footprint
-        else:
-            geom = stratum.extent.GetGeometryRef().Intersection(tile.footprint)
-
-        for feature in self.crop_features:
-            if geom.Intersection(feature.GetGeometryRef()).Area() > 0:
-                return True
-
-        return False
-
     def train_stratum(self, stratum):
+        features_shapefile = self.get_output_path("features-{}.shp", stratum.id)
+
+        split_features(stratum, self.args.ref, self.args.outdir)
+
         area_training_polygons = self.get_output_path("training_polygons-{}.shp", stratum.id)
         area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
         area_statistics = self.get_output_path("statistics-{}.xml", stratum.id)
@@ -147,7 +137,7 @@ class CropTypeProcessor(ProcessorBase):
             area_prodpertile.append(len(tile.descriptors))
 
         run_step(Step("SampleSelection", ["otbcli", "SampleSelection", self.args.buildfolder,
-                                        "-ref", stratum.shapefile,
+                                        "-ref", features_shapefile,
                                         "-ratio", self.args.ratio,
                                         "-seed", self.args.rseed,
                                         "-tp", area_training_polygons,
