@@ -72,6 +72,7 @@ class CropTypeProcessor(ProcessorBase):
         parser.add_argument('-tile-filter', help='The list of tiles to apply the classification to',
                             required=False, nargs='+', default=None)
         parser.add_argument('-skip-quality-flags', help="Skip quality flags extraction, (default false)", default=False, action='store_true')
+        parser.add_argument('-include-raw-mask', help="Include the unmasked crop type map even when a crop mask was used, (default false)", default=False, action='store_true')
         self.args = parser.parse_args()
 
         if self.args.mask is not None and self.args.maskprod is not None:
@@ -289,13 +290,14 @@ class CropTypeProcessor(ProcessorBase):
                 else:
                     step_args.append(tile_crop_map)
 
-            step_args.append("-processor.croptype.rawfile")
-            for tile in self.tiles:
-                if tile.crop_mask is not None:
-                    tile_crop_map = self.get_output_path("crop_type_map_{}.tif", tile.id)
+            if self.args.include_raw_mask:
+                step_args.append("-processor.croptype.rawfile")
+                for tile in self.tiles:
+                    if tile.crop_mask is not None:
+                        tile_crop_map = self.get_output_path("crop_type_map_{}.tif", tile.id)
 
-                    step_args.append("TILE_" + tile.id)
-                    step_args.append(tile_crop_map)
+                        step_args.append("TILE_" + tile.id)
+                        step_args.append(tile_crop_map)
 
         step_args.append("-processor.croptype.flags")
         for tile in self.tiles:
