@@ -23,7 +23,7 @@ class CropTypeProcessor(ProcessorBase):
 
         parser.add_argument('-mission', help='The main mission for the series',
                             required=False, default='SPOT')
-        parser.add_argument('-ref', help='The reference polygons',
+        parser.add_argument('-refp', help='The reference polygons',
                             required=True, metavar='reference_polygons')
         parser.add_argument('-ratio', help='The ratio between the validation and training polygons (default 0.75)',
                             required=False, metavar='sample_ratio', default=0.75)
@@ -122,7 +122,7 @@ class CropTypeProcessor(ProcessorBase):
     def train_stratum(self, stratum):
         features_shapefile = self.get_output_path("features-{}.shp", stratum.id)
 
-        split_features(stratum, self.args.ref, self.args.outdir)
+        split_features(stratum, self.args.refp, self.args.outdir)
 
         area_training_polygons = self.get_output_path("training_polygons-{}.shp", stratum.id)
         area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
