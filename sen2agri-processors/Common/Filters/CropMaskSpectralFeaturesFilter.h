@@ -1,23 +1,11 @@
-/*=========================================================================
-  *
-  * Program:      Sen2agri-Processors
-  * Language:     C++
-  * Copyright:    2015-2016, CS Romania, office@c-s.ro
-  * See COPYRIGHT file for details.
-  *
-  * Unless required by applicable law or agreed to in writing, software
-  * distributed under the License is distributed on an "AS IS" BASIS,
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
+#pragma once
 
- =========================================================================*/
- 
-#ifndef TEMPORALRESAMPLING_HXX
-#define TEMPORALRESAMPLING_HXX
-
-#include "itkUnaryFunctorImageFilter.h"
 #include "otbVectorImage.h"
+#include "otbWrapperTypes.h"
+
+typedef float PixelValueType;
+typedef otb::VectorImage<PixelValueType, 2> ImageType;
+typedef otb::Wrapper::UInt8VectorImageType MaskImageType;
 
 #define MAXNDVISLOPE 0
 #define MINNDVISLOPE 1
@@ -26,14 +14,11 @@
 #define MAXRED 4
 #define INDEXSIZE 5
 
-typedef float PixelValueType;
-typedef otb::VectorImage<PixelValueType, 2> ImageType;
-
 template <typename PixelType>
 class FeaturesNoInsituFunctor
 {
 public:
-    FeaturesNoInsituFunctor() : m_bpi(4), m_id(0)
+    FeaturesNoInsituFunctor() : m_bpi(4), m_id()
     {
     }
     FeaturesNoInsituFunctor(int bpi, std::vector<int> id)
@@ -136,6 +121,16 @@ public:
         return !(*this != a);
     }
 
+    void SetBands(int bands)
+    {
+        this->m_bpi = bands;
+    }
+
+    void SetInputDates(std::vector<int> inputDates)
+    {
+        this->m_id = inputDates;
+    }
+
 protected:
     // the number of bands per image in the input and output raster
     int m_bpi;
@@ -179,50 +174,5 @@ protected:
 
 private:
     CropMaskSpectralFeaturesFilter(const Self &); // purposely not implemented
-    void operator=(const Self &);                     // purposely not implemented
+    void operator=(const Self &);                 // purposely not implemented
 };
-
-/** Unary functor image filter which produces a vector image with a
-* number of bands different from the input images */
-template <typename TFunctor>
-class ITK_EXPORT UnaryFunctorImageFilterWithNBands
-    : public itk::UnaryFunctorImageFilter<ImageType, ImageType, TFunctor>
-{
-public:
-    typedef UnaryFunctorImageFilterWithNBands Self;
-    typedef itk::UnaryFunctorImageFilter<ImageType, ImageType, TFunctor> Superclass;
-    typedef itk::SmartPointer<Self> Pointer;
-    typedef itk::SmartPointer<const Self> ConstPointer;
-
-    /** Method for creation through the object factory. */
-    itkNewMacro(Self)
-
-    /** Macro defining the type*/
-    itkTypeMacro(UnaryFunctorImageFilterWithNBands, SuperClass)
-
-    /** Accessors for the number of bands*/
-    itkSetMacro(NumberOfOutputBands, unsigned int)
-    itkGetConstMacro(NumberOfOutputBands, unsigned int)
-
-protected:
-    UnaryFunctorImageFilterWithNBands()
-    {
-    }
-    virtual ~UnaryFunctorImageFilterWithNBands()
-    {
-    }
-
-    void GenerateOutputInformation()
-    {
-        Superclass::GenerateOutputInformation();
-        this->GetOutput()->SetNumberOfComponentsPerPixel(m_NumberOfOutputBands);
-    }
-
-private:
-    UnaryFunctorImageFilterWithNBands(const Self &); // purposely not implemented
-    void operator=(const Self &);                     // purposely not implemented
-
-    unsigned int m_NumberOfOutputBands;
-};
-
-#endif // TEMPORALRESAMPLING_HXX

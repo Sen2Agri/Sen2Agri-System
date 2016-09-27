@@ -52,7 +52,7 @@
 
 typedef otb::ImageFileReader<ImageType>                                 ReaderType;
 typedef FeaturesNoInsituFunctor<ImageType::PixelType>                   FeaturesNoInsituFunctorType;
-typedef UnaryFunctorImageFilterWithNBands<FeaturesNoInsituFunctorType>  UnaryFunctorImageFilterWithNBandsType;
+typedef CropMaskSpectralFeaturesFilter<FeaturesNoInsituFunctorType>     CropMaskSpectralFeaturesFilterType;
 
 //  Software Guide : EndCodeSnippet
 
@@ -189,7 +189,7 @@ private:
   {
 
       m_TSReader = ReaderType::New();
-      m_filter = UnaryFunctorImageFilterWithNBandsType::New();
+      m_filter = CropMaskSpectralFeaturesFilterType::New();
 
   }
   //  Software Guide : EndCodeSnippet
@@ -224,16 +224,10 @@ private:
       m_TSReader->SetFileName(GetParameterString("ts"));
       m_TSReader->UpdateOutputInformation();
 
-      int outImages = 5;
       int bpi = 4;
 
       // connect the functor based filter
-#if 1
-      m_filter->SetNumberOfOutputBands(bpi*outImages);
-#else
-      m_filter->SetNumberOfOutputBands(outImages);
-#endif
-      m_filter->SetFunctor(FeaturesNoInsituFunctorType(outImages, bpi, m_inDates));
+      m_filter->SetFunctor(FeaturesNoInsituFunctorType(bpi, m_inDates));
 
       m_filter->SetInput(m_TSReader->GetOutput());
 
@@ -246,7 +240,7 @@ private:
   std::vector<int> m_inDates;
 
   ReaderType::Pointer                                m_TSReader;
-  UnaryFunctorImageFilterWithNBandsType::Pointer     m_filter;
+  CropMaskSpectralFeaturesFilterType::Pointer        m_filter;
 };
 }
 }

@@ -57,7 +57,7 @@ typedef otb::ObjectList<ImageReaderType>                           ImageReaderLi
 typedef otb::ImageFileReader<otb::Wrapper::UInt8ImageType>         UInt8ImageReaderType;
 typedef otb::ObjectList<UInt8ImageReaderType>                      UInt8ImageReaderListType;
 
-typedef otb::ImageFileReader<otb::Wrapper::Int16VectorImageType>         Int16ImageReaderType;
+typedef otb::ImageFileReader<otb::Wrapper::Int16VectorImageType>   Int16ImageReaderType;
 typedef otb::ObjectList<Int16ImageReaderType>                      Int16ImageReaderListType;
 
 typedef otb::ImageFileReader<otb::Wrapper::UInt16ImageType>        UInt16ImageReaderType;
@@ -99,9 +99,6 @@ typedef otb::ObjectList<ConcatenateUInt8ImagesFilterType>                       
 
 typedef otb::ImageListToVectorImageFilter<otb::ImageList<otb::Wrapper::Int16ImageType>, otb::Wrapper::Int16VectorImageType>       ConcatenateInt16ImagesFilterType;
 typedef otb::ObjectList<ConcatenateInt16ImagesFilterType>                                                                         ConcatenateInt16ImagesFilterListType;
-
-typedef otb::TemporalResamplingFilter<ImageType, MaskType, ImageType>  TemporalResamplingFilterType;
-typedef otb::ObjectList<TemporalResamplingFilterType>       TemporalResamplingFilterListType;
 
 typedef itk::CastImageFilter<otb::Wrapper::Int16ImageType, otb::Wrapper::FloatImageType>    CastInt16FloatFilterType;
 typedef otb::ObjectList<CastInt16FloatFilterType>                                           CastInt16FloatFilterListType;

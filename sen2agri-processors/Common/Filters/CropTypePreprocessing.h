@@ -47,6 +47,9 @@
 
 #include <string>
 
+typedef otb::TemporalResamplingFilter<ImageType, MaskType, ImageType>  TemporalResamplingFilterType;
+typedef otb::ObjectList<TemporalResamplingFilterType>       TemporalResamplingFilterListType;
+
 typedef otb::CropTypeFeatureExtractionFilter<ImageType>     CropTypeFeatureExtractionFilterType;
 typedef otb::ObjectList<CropTypeFeatureExtractionFilterType>
                                                             CropTypeFeatureExtractionFilterListType;

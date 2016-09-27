@@ -50,6 +50,9 @@
 
 #include <string>
 
+typedef otb::TemporalResamplingFilter<ImageType, MaskType, ImageType>  TemporalResamplingFilterType;
+typedef otb::ObjectList<TemporalResamplingFilterType>       TemporalResamplingFilterListType;
+
 typedef ComputeNDVIFilter<ImageType> ComputeNDVIFilterType;
 
 class CropMaskNDVIPreprocessing : public TimeSeriesReader

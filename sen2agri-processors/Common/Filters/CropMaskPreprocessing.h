@@ -54,6 +54,9 @@ typedef CropMaskFeaturesSupervisedBMFunctor<ImageType::PixelType>   FeaturesBMFu
 typedef UnaryFunctorImageFilterWithNBands<FeaturesFunctorType>      UnaryFunctorImageFilterWithNBandsType;
 typedef UnaryFunctorImageFilterWithNBands<FeaturesBMFunctorType>    UnaryFunctorImageFilterBMWithNBandsType;
 
+typedef otb::TemporalResamplingFilter<ImageType, MaskType, ImageType>  TemporalResamplingFilterType;
+typedef otb::ObjectList<TemporalResamplingFilterType>       TemporalResamplingFilterListType;
+
 typedef TemporalMergingFunctor<ImageType::PixelType, MaskType::PixelType> TemporalMergingFunctorType;
 typedef otb::BinaryFunctorImageFilterWithNBands<ImageType, MaskType, ImageType,
         TemporalMergingFunctorType> TemporalMergingFilterType;
