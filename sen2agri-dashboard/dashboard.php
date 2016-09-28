@@ -530,7 +530,6 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 	</div>
 </div>
 
-<script src="scripts/config.js"></script>
 <script src="scripts/helpers.js"></script>
 <script src="scripts/processing_functions.js"></script>
 <script src="scripts/processing.js"></script>

@@ -1,47 +1,48 @@
 //This file contains the javascript processing functions that update the page on the client side.
+var get_current_job_data_interval          = 60000;
+var get_server_resource_data_interval      = 10000;
+var get_processor_statistics_interval      = 60000;
+var get_product_availability_data_interval = 60000;
+var get_job_timeline_interval              = 60000;
 
 //Update current jobs and server resources --------------------------------------------------------------------------------------------------------------------------
-
-function update_current_jobs(json_data)
-{
+function update_current_jobs(json_data) {
 	//Remove the old rows
 	$("#pnl_current_jobs table:first tr.to_be_refreshed").remove();
-
-	if(!json_data.current_jobs)
-	{
+	
+	if(!json_data.current_jobs) {
 		return;
 	}
-
+	
 	json_data.current_jobs.forEach(function(job) {
-
+/*		
 		var action_buttons = "<div class=\"btn-group\">";
-		job.actions.forEach(function(action)
-			{
-				switch(action)
-				{
-					case 1:
-						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action(pause_job_url, " + job.id + ")\">Pause</button>";
-						break;
-					case 2:
-						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action(resume_job_url, " + job.id + ")\">Resume</button>";
-						break;
-					case 3:
-						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action(cancel_job_url, " + job.id + ")\">Cancel</button>";
-						break;
-					case 4:
-						action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"get_job_config(" + job.id + ")\">View Config</button>";
-						break;
-				}
-			});
+		job.actions.forEach(function(action) {
+			switch(action) {
+				case 1:
+					//action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action(pause_job_url, " + job.id + ")\">Pause</button>";
+					action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action('pauseJob', " + job.id + ")\">Pause</button>";
+					break;
+				case 2:
+					//action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action(resume_job_url, " + job.id + ")\">Resume</button>";
+					action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action('resumeJob', " + job.id + ")\">Resume</button>";
+					break;
+				case 3:
+					//action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action(cancel_job_url, " + job.id + ")\">Cancel</button>";
+					action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"perform_job_action('cancelJob', " + job.id + ")\">Cancel</button>";
+					break;
+				case 4:
+					action_buttons += "<button type=\"button\" class=\"btn btn-default btn-xs\" onclick=\"get_job_config(" + job.id + ")\">View Config</button>";
+					break;
+			}
+		});
 		action_buttons += "</div>";
-
-		if(!job.current_tasks)
-		{
-			// Break if there aren't any tasks; should not happen in 'real life'
+*/		
+		if(!job.current_tasks) {
 			// Break if there aren't any tasks; should not happen in 'real life'
 			return;
 		}
-
+		
 		var new_row = "<tr class=\"to_be_refreshed\">" +
 		"<td id='ID' rowspan=\"" + job.current_tasks.length + "\">" + job.id + "</td>" +
 		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.processor + "</td>" +
@@ -52,30 +53,27 @@ function update_current_jobs(json_data)
 		"<td rowspan=\"" + job.current_tasks.length + "\">" + job.tasks_completed + " / " + job.tasks_remaining + "</td>" +
 		"<td>" + job.current_tasks[0].current_task_module + "</td>" +
 		"<td>" + job.current_tasks[0].current_task_steps_completed + " / " + job.current_tasks[0].current_task_steps_remaining + "</td>" +
-		//"<td rowspan=\"" + job.current_tasks.length + "\">" + action_buttons + "</td>" +
+//		"<td rowspan=\"" + job.current_tasks.length + "\">" + action_buttons + "</td>" +
 		"</tr>";
-
+		
 		$("#pnl_current_jobs table:first").append(new_row);
-
+		
 		// For the rest of the current tasks, add their own row
-		for (idx = 1; idx < job.current_tasks.length; idx++)
-		{
+		for (idx = 1; idx < job.current_tasks.length; idx++) {
 			new_row = "<tr class=\"to_be_refreshed\">" +
 			"<td>" + job.current_tasks[idx].current_task_module + "</td>" +
 			"<td>" + job.current_tasks[idx].current_task_steps_completed + " / " + job.current_tasks[idx].current_task_steps_remaining + "</td>" +
 			"</tr>";
-
+			
 			$("#pnl_current_jobs table:first").append(new_row);
 		}
 	});
-
 }
 
 //Hashmap to hold the plos objects.
 var plots = {};
 
-function update_server_resources_layout(json_data)
-{
+function update_server_resources_layout(json_data) {
 	//Remove the old tables
 	$("#pnl_server_resources table.to_be_refreshed_when_needed").remove();
 
@@ -310,8 +308,7 @@ function update_server_resources_layout(json_data)
 }
 
 //This should only be called after update_server_resources_layout.
-function update_server_resources(json_data)
-{
+function update_server_resources(json_data) {
 	var counter = 0; // DO NOT REMOVE - This is used when updating.
 	json_data.server_resources.forEach(function(server) {
 
@@ -354,8 +351,7 @@ function update_server_resources(json_data)
 	$('[data-toggle="tooltip"]').tooltip();
 }
 
-function update_plot(element_id, series_data, series_idxs)
-{
+function update_plot(element_id, series_data, series_idxs) {
 	var plot = plots[element_id];
 	var series = plot.getData();
 	var options = plot.getOptions();
@@ -369,14 +365,11 @@ function update_plot(element_id, series_data, series_idxs)
 
 }
 
-function move_to_first_jobs_page()
-{
+function move_to_first_jobs_page() {
 	jsonJobsPage = 1;
 	get_current_job_data();
 }
-
-function move_to_previous_jobs_page()
-{
+function move_to_previous_jobs_page() {
 	if (jsonJobsPage > 1) {
 		jsonJobsPage --;
 		get_current_job_data();
@@ -384,23 +377,25 @@ function move_to_previous_jobs_page()
 		jsonJobsPage = 1;
 	}
 }
-
-function move_to_next_jobs_page()
-{
+function move_to_next_jobs_page() {
 	if (!$("#page_move_next").hasClass("disabled")) {
 		jsonJobsPage ++;
 		get_current_job_data();
 	}
 }
 
-function get_current_job_data()
-{
+function get_current_job_data() {
 	$.ajax({
-		url: get_current_job_data_url + "?page=" + jsonJobsPage,
+		//url: get_current_job_data_url + "?page=" + jsonJobsPage,
+		url: "processing.php",
 		type: "get",
 		cache: false,
 		crosDomain: true,
 		dataType: "json",
+		data: {
+			action: "getDashboardCurrentJobData",
+			page: jsonJobsPage
+		},
 		success: function(json_data)
 		{
 			update_current_jobs(json_data);
@@ -424,22 +419,23 @@ function get_current_job_data()
 		}
 	});
 }
-
-function set_current_job_refresh()
-{
+function set_current_job_refresh() {
 	// Run the get function now and schedule the next executions.
 	get_current_job_data();
 	//setInterval(get_current_job_data, get_current_job_data_interval);
 }
 
-function get_server_resource_data()
-{
+function get_server_resource_data() {
 	$.ajax({
-		url: get_server_resource_data_url,
+		//url: get_server_resource_data_url,
+		url: "processing.php",
 		type: "get",
 		cache: false,
 		crosDomain: true,
 		dataType: "json",
+		data: {
+			action: "getDashboardServerResourceData"
+		},
 		success: function(json_data)
 		{
 			if($("#pnl_server_resources table.to_be_refreshed_when_needed").length != json_data.server_resources.length)
@@ -458,22 +454,23 @@ function get_server_resource_data()
 		}
 	});
 }
-
-function set_server_resource_refresh()
-{
+function set_server_resource_refresh() {
 	// Run the get function now and schedule the next executions.
 	get_server_resource_data();
 	//setInterval(get_server_resource_data, get_server_resource_data_interval);
 }
 
-function perform_job_action(action_url, job_id)
-{
+/*
+function perform_job_action(action_url, job_id) {
 	$.ajax({
-		url: action_url,
-		type: "get",
+		//url: action_url,
+		url: "processing.php",
+		//type: "get",
+		type: "post",
 		cache: false,
 		crosDomain: true,
 		data: {
+			action: action_url,
 			jobId: job_id
 		},
 		success: function()
@@ -485,14 +482,13 @@ function perform_job_action(action_url, job_id)
 		}
 	});
 }
-
-function get_job_config(job_id)
-{
+function get_job_config(job_id) {
 	$.ajax({
 		url: get_job_config_data_url,
 		type: "get",
 		cache: false,
 		crosDomain: true,
+		dataType: "json",
 		data: {
 			jobId: job_id
 		},
@@ -505,9 +501,7 @@ function get_job_config(job_id)
 		}
 	});
 }
-
-function show_job_config(json_data)
-{
+function show_job_config(json_data) {
 	//Remove the old rows
 	$("#popup_content_container table:first tr.to_be_refreshed").remove();
 	// First show the configuration parameters
@@ -517,13 +511,11 @@ function show_job_config(json_data)
 
 	toggleMultipleAdditionalContent([$('#popup_content_parent'), $('#popup_content')], [true, true]);
 }
+*/
 
 //Update processor statistics --------------------------------------------------------------------------------------------------------------------------
-
-function fill_key_value_table(parent, list)
-{
-	if (!list)
-	{
+function fill_key_value_table(parent, list) {
+	if (!list) {
 		return;
 	}
 
@@ -537,8 +529,7 @@ function fill_key_value_table(parent, list)
 	});
 }
 
-function update_l2a_statistics(json_data)
-{
+function update_l2a_statistics(json_data) {
 	//Remove the old rows
 	$("#pnl_l2a_resources table:first tr.to_be_refreshed").remove();
 	$("#pnl_l2a_output table:first tr.to_be_refreshed").remove();
@@ -548,9 +539,7 @@ function update_l2a_statistics(json_data)
 	fill_key_value_table("#pnl_l2a_output", json_data.l2a_statistics.output);
 	fill_key_value_table("#pnl_l2a_configuration", json_data.l2a_statistics.configuration);
 }
-
-function update_l3a_statistics(json_data)
-{
+function update_l3a_statistics(json_data) {
 	//Remove the old rows
 	$("#pnl_l3a_resources table:first tr.to_be_refreshed").remove();
 	$("#pnl_l3a_output table:first tr.to_be_refreshed").remove();
@@ -560,22 +549,7 @@ function update_l3a_statistics(json_data)
 	fill_key_value_table("#pnl_l3a_output", json_data.l3a_statistics.output);
 	fill_key_value_table("#pnl_l3a_configuration", json_data.l3a_statistics.configuration);
 }
-
-/*old
- * function update_l3b_statistics(json_data)
-{
-	//Remove the old rows
-	$("#pnl_l3b_resources table:first tr.to_be_refreshed").remove();
-	$("#pnl_l3b_output table:first tr.to_be_refreshed").remove();
-	$("#pnl_l3b_configuration table:first tr.to_be_refreshed").remove();
-
-	fill_key_value_table("#pnl_l3b_resources", json_data.l3b_lai_statistics.resources);
-	fill_key_value_table("#pnl_l3b_output", json_data.l3b_lai_statistics.output);
-	fill_key_value_table("#pnl_l3b_configuration", json_data.l3b_lai_statistics.configuration);
-}*/
-
- function update_l3b_statistics(json_data)
-{
+function update_l3b_statistics(json_data) {
 	//Remove the old rows
 	$("#pnl_l3b_resources table:first tr.to_be_refreshed").remove();
 	$("#pnl_l3b_output table:first tr.to_be_refreshed").remove();
@@ -585,9 +559,7 @@ function update_l3a_statistics(json_data)
 	fill_key_value_table("#pnl_l3b_output", json_data.l3b_lai_statistics.output);
 	fill_key_value_table("#pnl_l3b_configuration", json_data.l3b_lai_statistics.configuration);
 }
- 
- function update_l3e_pheno_statistics(json_data)
- {
+function update_l3e_pheno_statistics(json_data)  {
  	//Remove the old rows
  	$("#pnl_l3e_pheno_resources table:first tr.to_be_refreshed").remove();
  	$("#pnl_l3e_pheno_output table:first tr.to_be_refreshed").remove();
@@ -596,11 +568,8 @@ function update_l3a_statistics(json_data)
  	fill_key_value_table("#pnl_l3e_pheno_resources", json_data.l3e_pheno_statistics.resources);
  	fill_key_value_table("#pnl_l3e_pheno_output", json_data.l3e_pheno_statistics.output);
  	fill_key_value_table("#pnl_l3e_pheno_configuration", json_data.l3e_pheno_statistics.configuration);
- }
-
-
-function update_l4a_statistics(json_data)
-{
+}
+function update_l4a_statistics(json_data) {
 	//Remove the old rows
 	$("#pnl_l4a_resources table:first tr.to_be_refreshed").remove();
 	$("#pnl_l4a_output table:first tr.to_be_refreshed").remove();
@@ -610,9 +579,7 @@ function update_l4a_statistics(json_data)
 	fill_key_value_table("#pnl_l4a_output", json_data.l4a_statistics.output);
 	fill_key_value_table("#pnl_l4a_configuration", json_data.l4a_statistics.configuration);
 }
-
-function update_l4b_statistics(json_data)
-{
+function update_l4b_statistics(json_data) {
 	//Remove the old rows
 	$("#pnl_l4b_resources table:first tr.to_be_refreshed").remove();
 	$("#pnl_l4b_output table:first tr.to_be_refreshed").remove();
@@ -623,14 +590,17 @@ function update_l4b_statistics(json_data)
 	fill_key_value_table("#pnl_l4b_configuration", json_data.l4b_statistics.configuration);
 }
 
-function get_processor_statistics()
-{
+function get_processor_statistics() {
 	$.ajax({
-		url: get_processor_statistics_url,
+		//url: get_processor_statistics_url,
+		url: "processing.php",
 		type: "get",
 		cache: false,
 		crosDomain: true,
 		dataType: "json",
+		data: {
+			action: "getDashboardProcessorStatistics"
+		},
 		success: function(json_data)
 		{
 			update_l2a_statistics(json_data);
@@ -650,18 +620,16 @@ function get_processor_statistics()
 		}
 	});
 }
-
-function set_processor_statistics_refresh()
-{
+function set_processor_statistics_refresh() {
 	// Run the get function now and schedule the next executions.
 	get_processor_statistics();
 	//setInterval(get_processor_statistics, get_processor_statistics_interval);
 }
 
 //Update product availability --------------------------------------------------------------------------------------------------------------------------
-
-function update_product_availability(json_data)
-{
+var product_availability_interval_pointer;
+var product_availability_since = (new Date()).toISOString();
+function update_product_availability(json_data) {
 	nv.addGraph(function() {
 
 		var tree = nv.models.indentedTree()
@@ -690,19 +658,16 @@ function update_product_availability(json_data)
 		return tree;
 	});
 }
-
-var product_availability_interval_pointer;
-var product_availability_since = (new Date()).toISOString();
-
-function get_product_availability_data()
-{
+function get_product_availability_data() {
 	$.ajax({
-		url: get_product_availability_data_url,
+		//url: get_product_availability_data_url,
+		url: "processing.php",
 		type: "get",
 		cache: false,
 		crosDomain: true,
 		dataType: "json",
 		data: {
+			action: "getDashboardProductAvailability",
 			since: product_availability_since
 		},
 		success: function(json_data)
@@ -714,9 +679,7 @@ function get_product_availability_data()
 		}
 	});
 }
-
-function set_product_availability_data_refresh()
-{
+function set_product_availability_data_refresh() {
 	$("#cbo_products_since li a").click(function(){
 			  var selText = $(this).text();
 			  $("#cbo_products_since_selection").html(selText+'<span class="caret"></span>');
@@ -761,15 +724,16 @@ function set_product_availability_data_refresh()
 	product_availability_interval_pointer = setInterval(get_product_availability_data, get_product_availability_data_interval);
 }
 
-function get_job_timeline(jobId)
-{
+function get_job_timeline(jobId) {
 	$.ajax({
-		url: get_job_timeline_url,
+		//url: get_job_timeline_url,
+		url: "processing.php",
 		type: "get",
 		cache: false,
 		crosDomain: true,
 		dataType: "json",
 		data: {
+			action: "getDashboardJobTimeline",
             jobId: jobId
 		},
 		success: function(json_data)
@@ -781,23 +745,21 @@ function get_job_timeline(jobId)
 		}
 	});
 }
-
-function update_job_timeline(json_data)
-{
+function update_job_timeline(json_data) {
     var container = $("#visualization").get(0);
     var timeline = new vis.Timeline(container, json_data.items, json_data.groups);
 }
 
-function get_all_sites()
-{
+function get_all_sites() {
 	$.ajax({
-		url: get_all_sites_url,
+		//url: get_all_sites_url,
+		url: "processing.php",
 		type: "get",
 		cache: false,
 		crosDomain: true,
 		dataType: "json",
 		data: {
-            
+            action: "getDashboardSites"
 		},
 		success: function(json_data)
 		{
@@ -809,9 +771,7 @@ function get_all_sites()
 		}
 	});
 }
-
-function update_sites(json_data)
-{
+function update_sites(json_data) {
 	var siteElAll = $("select#siteId");
 	$.each(siteElAll, function(index, siteEl) {
 		//Remove the old options
@@ -880,15 +840,16 @@ function update_sites(json_data)
 	});
 }
 
-function get_crop_mask(siteId, cropMaskEl)
-{
+function get_crop_mask(siteId, cropMaskEl) {
 	$.ajax({
-		url: get_products_url,
+		//url: get_products_url,
+		url: "processing.php",
 		type: "get",
 		cache: false,
 		crosDomain: true,
 		dataType: "json",
 		data: {
+			action: "getDashboardProducts",
 			siteId: siteId,
 			processorId: l4a_proc_id
 		},
@@ -902,8 +863,7 @@ function get_crop_mask(siteId, cropMaskEl)
 		}
 	});
 }
-function update_crop_mask(json_data, cropMaskEl)
-{
+function update_crop_mask(json_data, cropMaskEl) {
 	//Remove the old options
 	cropMaskEl.empty();
 	
@@ -914,83 +874,16 @@ function update_crop_mask(json_data, cropMaskEl)
 	});
 }
 
-/*
-function get_sentinel2_tiles(siteId, sentinel2TilesEl)
-{
+function get_products(siteId, productsEl) {
 	$.ajax({
-		url: get_sentinel2_tiles_url,
+		//url: get_products_url,
+		url: "processing.php",
 		type: "get",
 		cache: false,
 		crosDomain: true,
 		dataType: "json",
 		data: {
-			siteId: siteId
-		},
-		success: function(json_data)
-		{
-			update_sentinel2_tiles(json_data, sentinel2TilesEl);
-		},
-		error: function (responseData, textStatus, errorThrown) {
-			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
-			update_sentinel2_tiles(new Array(), sentinel2TilesEl);
-		}
-	});
-}
-function update_sentinel2_tiles(json_data, sentinel2TilesEl)
-{
-	//Remove the old options
-	sentinel2TilesEl.empty();
-	
-	sentinel2TilesEl.append('<option value="">Select a tile</option>');
-	
-	$.each(json_data, function(index, sentinel2TilesObj) {
-		sentinel2TilesEl.append('<option value="'+sentinel2TilesObj.code+'">'+sentinel2TilesObj.code+'</option>');
-	});
-}
-
-function get_landsat_tiles(siteId, landsatTilesEl)
-{
-	$.ajax({
-		url: get_landsat_tiles_url,
-		type: "get",
-		cache: false,
-		crosDomain: true,
-		dataType: "json",
-		data: {
-			siteId: siteId
-		},
-		success: function(json_data)
-		{
-			update_landsat_tiles(json_data, landsatTilesEl);
-		},
-		error: function (responseData, textStatus, errorThrown) {
-			console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
-			update_landsat_tiles(new Array(), landsatTilesEl);
-		}
-	});
-}
-function update_landsat_tiles(json_data, landsatTilesEl)
-{
-	//Remove the old options
-	landsatTilesEl.empty();
-	
-	landsatTilesEl.append('<option value="">Select a tile</option>');
-	
-	$.each(json_data, function(index, landsatTilesObj) {
-		landsatTilesEl.append('<option value="'+landsatTilesObj.code+'">'+landsatTilesObj.code+'</option>');
-	});
-}
-*/
-
-function get_products(siteId, productsEl)
-{
-	$.ajax({
-		url: get_products_url,
-		type: "get",
-		cache: false,
-		crosDomain: true,
-		dataType: "json",
-		data: {
+			action: "getDashboardProducts",
 			siteId: siteId,
 			processorId: l2a_proc_id
 		},
@@ -1004,9 +897,7 @@ function get_products(siteId, productsEl)
 		}
 	});
 }
-
-function update_products(json_data, productsEl)
-{
+function update_products(json_data, productsEl) {
 	//Remove the old options
 	productsEl.empty();
 	
@@ -1024,16 +915,16 @@ function update_products(json_data, productsEl)
 	});
 }
 
-function get_processor_id(proc_short_name, assign_to)
-{
+function get_processor_id(proc_short_name, assign_to) {
 	$.ajax({
-		url: get_processors_url,
+		//url: get_processors_url,
+		url: "processing.php",
 		type: "get",
 		cache: false,
 		crosDomain: true,
 		dataType: "json",
 		data: {
-			
+			action: "getDashboardProcessors"
 		},
 		success: function(json_data)
 		{

@@ -42,7 +42,6 @@
             </div>
         </div>
     </div><!-- main --><!-- main2 --><!-- main3 -->
-    <script src="scripts/config.js"></script>
     <script src="scripts/helpers.js"></script>
     <script src="scripts/processing_functions.js"></script>
     <script src="scripts/processing_server.js"></script>

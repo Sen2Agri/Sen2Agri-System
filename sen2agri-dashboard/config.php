@@ -736,7 +736,6 @@
 
 <script src="libraries/jquery-validate/jquery.validate.min.js"></script>
 <script src="libraries/jquery-validate/additional-methods.min.js"></script>
-<script src="scripts/config.js"></script>
 <script src="scripts/processing_functions.js"></script>
 <link rel="stylesheet" href="libraries/jquery-ui/jquery-ui.min.css">
 <script src="libraries/jquery-ui/jquery-ui.min.js"></script>

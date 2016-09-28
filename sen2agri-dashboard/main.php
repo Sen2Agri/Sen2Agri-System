@@ -14,7 +14,6 @@
     </div>
 	
     <script src="libraries/openlayers/build/ol.js"></script>
-    <script src="scripts/config.js"></script>
     <script src="scripts/helpers.js"></script>
     <script src="./theme/OpenLayers.js"></script>
 	<script>

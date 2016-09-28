@@ -6,7 +6,7 @@ class ConfigParams {
     static $CONN_STRING;
 
     static $HOST_NAME = 'sen2agri-dev';
-    static $DB_HOST = 'localhost'; // don't change this without configuring postgres to listen on *
+    static $DB_HOST = 'sen2agri-dev'; // don't change this without configuring postgres to listen on *
     static $DB_NAME = 'sen2agri';
     static $DB_USER = 'admin';
     static $DB_PASS = 'sen2agri';
