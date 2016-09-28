@@ -222,18 +222,13 @@ class CropTypeProcessor(ProcessorBase):
 
             run_step(Step("Mask by crop mask " + tile.id, step_args))
 
+    def get_tile_crop_mask(self, tile):
+        if tile.crop_mask is not None:
+            return self.get_output_path("crop_type_map_masked_{}.tif", tile.id)
+        else:
+            return self.get_output_path("crop_type_map_{}.tif", tile.id)
+
     def validate(self, context):
-        files = []
-        for tile in self.tiles:
-            if tile.crop_mask is not None:
-                tile_crop_map_masked = self.get_output_path("crop_type_map_masked_{}.tif", tile.id)
-
-                files.append(tile_crop_map_masked)
-            else:
-                tile_crop_map = self.get_output_path("crop_type_map_{}.tif", tile.id)
-
-                files.append(tile_crop_map)
-
         for stratum in self.strata:
             area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
             area_statistics = self.get_output_path("confusion-matrix-validation-{}.csv", stratum.id)
@@ -247,7 +242,9 @@ class CropTypeProcessor(ProcessorBase):
                             "-out", area_statistics,
                             "-nodatalabel", -10000,
                             "-il"]
-            step_args += files
+            for tile in stratum.tiles:
+                step_args.append(self.get_tile_crop_mask(tile))
+
             run_step(Step("ComputeConfusionMatrix_" + str(stratum.id),
                                 step_args, out_file=area_quality_metrics))
 
