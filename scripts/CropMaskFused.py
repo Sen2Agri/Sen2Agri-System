@@ -6,6 +6,7 @@ from osgeo import ogr, osr
 import gdal
 import os
 import os.path
+import shutil
 import glob
 import argparse
 import csv
@@ -265,6 +266,12 @@ class CropMaskProcessor(ProcessorBase):
                      "-rout", format_otb_filename(tile_segmented, compression='DEFLATE')]
         run_step(Step("Majority voting " + tile.id, step_args))
 
+    def get_tile_crop_mask(self, tile):
+        if self.args.skip_segmentation:
+            return self.get_tile_classification_output(tile)
+        else:
+            return self.get_output_path("crop-mask-segmented-{}.tif", tile.id)
+
     def validate(self, context):
         files = []
         for tile in self.tiles:
@@ -299,6 +306,47 @@ class CropMaskProcessor(ProcessorBase):
                             "-out", area_validation_metrics_xml]
             run_step(Step("XMLStatistics_" + str(stratum.id), step_args))
 
+        if not self.single_stratum:
+            global_validation_polygons = self.get_output_path("validation_polygons_global.shp")
+            global_prj_file = self.get_output_path("validation_polygons_global.prj")
+            global_statistics = self.get_output_path("confusion-matrix-validation-global.csv")
+            global_quality_metrics = self.get_output_path("quality-metrics-global.txt")
+            global_validation_metrics_xml = self.get_output_path("validation-metrics-global.xml")
+
+            files = []
+            for stratum in self.strata:
+                area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
+
+                files.append(area_validation_polygons)
+
+            step_args = ["otbcli_ConcatenateVectorData",
+                            "-out", global_validation_polygons,
+                            "-vd"] + files
+            run_step(Step("ConcatenateVectorData", step_args))
+
+            first_prj_file = self.get_output_path("validation_polygons-{}.prj", self.strata[0].id)
+            shutil.copyfile(first_prj_file, global_prj_file)
+
+            step_args = ["otbcli", "ComputeConfusionMatrixMulti", self.args.buildfolder,
+                            "-ref", "vector",
+                            "-ref.vector.in", global_validation_polygons,
+                            "-ref.vector.field", "CODE",
+                            "-out", global_statistics,
+                            "-nodatalabel", -10000,
+                            "-il"]
+            for tile in self.tiles:
+                step_args.append(self.get_tile_crop_mask(tile))
+
+            run_step(Step("ComputeConfusionMatrix_Global",
+                                step_args, out_file=global_quality_metrics))
+
+            step_args = ["otbcli", "XMLStatistics", self.args.buildfolder,
+                            "-root", "CropMask",
+                            "-confmat", global_statistics,
+                            "-quality", global_quality_metrics,
+                            "-out", global_validation_metrics_xml]
+            run_step(Step("XMLStatistics_Global", step_args))
+
         step_args = ["otbcli", "ProductFormatter", self.args.buildfolder,
                         "-destroot", self.args.targetfolder,
                         "-fileclass", "SVT1",
@@ -307,21 +355,14 @@ class CropMaskProcessor(ProcessorBase):
                         "-siteid", self.args.siteid,
                         "-processor", "cropmask"]
 
-        if self.args.skip_segmentation:
-            step_args.append("-processor.cropmask.file")
-            for tile in self.tiles:
-                tile_crop_mask = self.get_tile_classification_output(tile)
+        step_args.append("-processor.cropmask.file")
+        for tile in self.tiles:
+            tile_crop_mask = self.get_tile_crop_mask(tile)
 
-                step_args.append("TILE_" + tile.id)
-                step_args.append(tile_crop_mask)
-        else:
-            step_args.append("-processor.cropmask.file")
-            for tile in self.tiles:
-                tile_segmented = self.get_output_path("crop-mask-segmented-{}.tif", tile.id)
+            step_args.append("TILE_" + tile.id)
+            step_args.append(tile_crop_mask)
 
-                step_args.append("TILE_" + tile.id)
-                step_args.append(tile_segmented)
-
+        if not self.args.skip_segmentation:
             step_args.append("-processor.cropmask.rawfile")
             for tile in self.tiles:
                 tile_crop_mask = self.get_tile_classification_output(tile)
@@ -337,6 +378,11 @@ class CropMaskProcessor(ProcessorBase):
             step_args.append(tile_quality_flags)
 
         step_args.append("-processor.cropmask.quality")
+        if not self.single_stratum:
+            global_validation_metrics_xml = self.get_output_path("validation-metrics-global.xml")
+
+            step_args.append(global_validation_metrics_xml)
+
         for stratum in self.strata:
             area_validation_metrics_xml = self.get_output_path("validation-metrics-{}.xml", stratum.id)
 
