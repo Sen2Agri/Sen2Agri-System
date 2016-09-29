@@ -293,7 +293,7 @@ class CropMaskProcessor(ProcessorBase):
                                 step_args, out_file=area_quality_metrics))
 
             step_args = ["otbcli", "XMLStatistics", self.args.buildfolder,
-                            "-root", "CropType",
+                            "-root", "CropMask",
                             "-confmat", area_statistics,
                             "-quality", area_quality_metrics,
                             "-out", area_validation_metrics_xml]
