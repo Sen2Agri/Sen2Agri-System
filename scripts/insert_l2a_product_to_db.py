@@ -280,6 +280,10 @@ if (not args.site_name):
     sys.exit('Please provide the site name')
   
 output_path = args.dir
+if not output_path.endswith(os.path.sep):
+    output_path += os.path.sep
+    
+print("Output path: {}".format(output_path))
         
 l2a_processed_tiles = []
 wkt = []
