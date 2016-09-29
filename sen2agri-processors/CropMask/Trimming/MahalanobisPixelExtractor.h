@@ -43,6 +43,8 @@
 #include "itkVariableSizeMatrix.h"
 #include "itkVariableLengthVector.h"
 
+#include <unordered_map>
+
 template<class TInputImage>
 class ITK_EXPORT PersistentMahalanobisPixelExtractorFilter :
   public otb::PersistentImageFilter<TInputImage, TInputImage>
@@ -78,11 +80,11 @@ public:
   typedef itk::ProcessObject::DataObjectPointerArraySizeType DataObjectPointerArraySizeType;
 
   /** Type to use for computations. */
-  typedef std::vector<IndexType>                        IndexVectorType;
-  typedef std::map<short, IndexVectorType>              IndexMapType;
+  typedef std::vector<IndexType>                                  IndexVectorType;
+  typedef std::unordered_map<short, IndexVectorType>              IndexMapType;
 
-  typedef std::vector<PixelType>                        PixelVectorType;
-  typedef std::map<short, PixelVectorType>              PixelMapType;
+  typedef std::vector<PixelType>                                  PixelVectorType;
+  typedef std::unordered_map<short, PixelVectorType>              PixelMapType;
 
 
 
