@@ -31,7 +31,7 @@ import osgeo.ogr as ogr
 import osgeo.osr as osr
 from sen2agri_common_db import *
 from bs4 import BeautifulSoup
-
+import traceback
 general_log_path = "/tmp/"
 general_log_filename = "landsat_download.log"
 
@@ -49,10 +49,10 @@ def connect_earthexplorer_proxy(proxy_info,usgs):
      print("http://%(host)s:%(port)s" % proxy_info)
      if len(proxy_info) == 2: 
           proxy_support = urllib2.ProxyHandler({"http" : "http://%(host)s:%(port)s" % proxy_info,
-                                                "https" : "http://%(host)s:%(port)s" % proxy_info})
+                                                "https" : "https://%(host)s:%(port)s" % proxy_info})
      elif len(proxy_info) == 4:
           proxy_support = urllib2.ProxyHandler({"http" : "http://%(user)s:%(pass)s@%(host)s:%(port)s" % proxy_info,
-                                                "https" : "http://%(user)s:%(pass)s@%(host)s:%(port)s" % proxy_info})
+                                                "https" : "https://%(user)s:%(pass)s@%(host)s:%(port)s" % proxy_info})
      else:
           log(general_log_path, "Proxy information erroneous, check credential file.", general_log_filename)
           return False
@@ -62,18 +62,26 @@ def connect_earthexplorer_proxy(proxy_info,usgs):
           log(general_log_path, "Could not create proxy object.", general_log_filename)
           return False
      opener = urllib2.build_opener(proxy_support, cookies)
+     log(general_log_path, "opener = {}".format(opener), general_log_filename)
 
      # installation
      urllib2.install_opener(opener)
+     log(general_log_path, "Opener installed", general_log_filename)
      # deal with csrftoken required by USGS as of 7-20-2016
      soup = BeautifulSoup(urllib2.urlopen("https://ers.cr.usgs.gov/login").read())
+     log(general_log_path, "Soup created", general_log_filename)
      token = soup.find('input', {'name': 'csrf_token'})
+     log(general_log_path, "token = {}".format(token), general_log_filename)
      # parametres de connection
      params = urllib.urlencode(dict(username=usgs['account'], password=usgs['passwd'], csrf_token=token['value']))
+     log(general_log_path, "params = {}".format(params), general_log_filename)
      # utilisation
-     f = opener.open('https://ers.cr.usgs.gov/login', params, headers={})
+     f = opener.open('https://ers.cr.usgs.gov/login', params)
+     log(general_log_path, "Link opened", general_log_filename)
      data = f.read()
+     log(general_log_path, "Data read", general_log_filename)
      f.close()
+     log(general_log_path, "Link closed", general_log_filename)
 
      if data.find('You must sign in as a registered user to download data or place orders for USGS EROS products') > 0 :
         print "Authentification failed"
@@ -351,7 +359,10 @@ def landsat_download(aoiContext):
 
      start_date = datetime.datetime(aoiContext.startSeasonYear, aoiContext.startSeasonMonth, aoiContext.startSeasonDay)
      end_date   = datetime.datetime(aoiContext.endSeasonYear, aoiContext.endSeasonMonth, aoiContext.endSeasonDay)
-
+     log(general_log_path, "Number of tiles found {}".format(len(aoiContext.aoiTiles)), general_log_filename)
+     if len(aoiContext.aoiTiles) == 0:
+          log(general_log_path, "No tiles, nothing to do, exit".format(len(aoiContext.aoiTiles)), general_log_filename)
+          return
      for tile in aoiContext.aoiTiles:
          log(aoiContext.writeDir, "Starting the process for tile {} for time interval [{} - {}]".format(tile, start_date, end_date), general_log_filename)
          if len(tile) != 6:
@@ -378,7 +389,8 @@ def landsat_download(aoiContext):
              else:
                   connection = connect_earthexplorer_no_proxy(usgs)
          except Exception, e:
-              log(aoiContext.writeDir, "Exception caugt when trying to connect at USGS server: {}".format(e), general_log_filename)
+              traceback.print_exc()
+              log(aoiContext.writeDir, "Exception caught when trying to connect at USGS server: {}".format(e), general_log_filename)
 
          if connection == False:
               return

@@ -180,6 +180,12 @@ def sentinel_download(aoiContext):
 
     s2Objs = []
     index = int(0)
+
+    log(aoiContext.writeDir, "Number of polygons {}".format(len(aoiContext.polygon)), general_log_filename)
+    if len(aoiContext.polygon) == 0:
+         log(aoiContext.writeDir, "No polygons, nothing to do, exit".format(len(aoiContext.polygon)), general_log_filename)
+         return
+
     for polygon in aoiContext.polygon:
         #==================================================
         #      prepare wget command line to search catalog

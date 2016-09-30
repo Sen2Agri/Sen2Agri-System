@@ -142,7 +142,7 @@ def run_command(cmd_array, log_path = "", log_filename = ""):
         res = subprocess.call(cmd_array, shell=False)
     ok = "OK"
     nok = "NOK"
-    log(log_path, "Command finished {} in {} : {}".format((ok if res == 0 else nok),datetime.timedelta(seconds=(time.time() - start)), cmd_str), log_filename)
+    log(log_path, "Command finished {} (res = {}) in {} : {}".format((ok if res == 0 else nok), res, datetime.timedelta(seconds=(time.time() - start)), cmd_str), log_filename)
     return res
 
 
