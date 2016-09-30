@@ -221,7 +221,6 @@ def load_strata(areas, site_footprint_wgs84):
     area_srs = area_layer.GetSpatialRef()
     area_wgs84_transform = osr.CoordinateTransformation(area_srs, wgs84_srs)
 
-    driver = ogr.GetDriverByName('ESRI Shapefile')
     result = []
     for area in area_layer:
         area_id = area.GetField('ID')
@@ -236,6 +235,31 @@ def load_strata(areas, site_footprint_wgs84):
         area_feature_wgs84.SetGeometry(area_geom_wgs84)
 
         result.append(Stratum(area_id, area_feature_wgs84.GetGeometryRef().Clone()))
+
+    # driver = ogr.GetDriverByName('ESRI Shapefile')
+
+    # if os.path.exists(relabelled_areas):
+    #     driver.DeleteDataSource(relabelled_areas)
+
+    # out_ds = driver.CreateDataSource(relabelled_areas)
+    # if out_ds is None:
+    #     raise Exception(
+    #         "Could not create output shapefile", relabelled_areas)
+
+    # out_layer = out_ds.CreateLayer('strata', srs=area_srs, geom_type=area_layer_def.GetGeomType())
+    # field_index = ogr.FieldDefn("Index", ogr.OFTInteger)
+    # field_index.SetWidth(3)
+    # out_layer.CreateField(field_index)
+    # field_id = ogr.FieldDefn("Id", ogr.OFTInteger)
+    # field_id.SetWidth(3)
+    # out_layer.CreateField(field_id)
+    # out_layer_def = out_layer.GetLayerDefn()
+
+    # feature = ogr.Feature(out_layer_def)
+    # feature.SetGeometry(geom)
+    # out_layer.CreateFeature(feature)
+
+    # result.sort(key=lambda stratum: stratum.id)
 
     return result
 
@@ -343,7 +367,11 @@ class ProcessorBase(object):
             context = self.create_context()
 
             self.load_tiles()
-            self.after_load_tiles()
+
+            metadata_file = self.get_metadata_file()
+
+            metadata = self.build_metadata()
+            metadata.write(metadata_file, xml_declaration=True, encoding='UTF-8', pretty_print=True)
 
             if self.args.mode is None or self.args.mode == 'prepare-site':
                 self.prepare_site()
@@ -479,6 +507,26 @@ class ProcessorBase(object):
 
         if not self.single_stratum:
             self.strata = load_strata(self.args.strata, self.site_footprint_wgs84)
+
+            strata_relabelled = self.get_output_path("strata_relabelled.shp")
+
+            step_args = ["ogr2ogr",
+                            "-overwrite",
+                            strata_relabelled,
+                            self.args.strata]
+            run_step(Step("Duplicate stratum list", step_args))
+
+            step_args = ["ogrinfo",
+                            "-sql", "alter table strata_relabelled add column index integer",
+                            strata_relabelled]
+            run_step(Step("Add index column", step_args))
+
+            step_args = ["ogrinfo",
+                            "-dialect", "sqlite",
+                            "-sql", "update strata_relabelled set `index` = (select count(*) from strata_relabelled sr where sr.id < strata_relabelled.id)",
+                            strata_relabelled]
+            run_step(Step("Re-number strata", step_args))
+
             tile_best_weights = [0.0] * len(self.tiles)
 
             for tile in self.tiles:
@@ -537,9 +585,6 @@ class ProcessorBase(object):
             for tile in self.tiles:
                 tile.main_mask = tile.footprint
 
-    def after_load_tiles(self):
-        pass
-
     def merge_strata_for_tile(self, tile, inputs, output, compression=None):
         files = []
         for idx, stratum in enumerate(tile.strata):
@@ -596,3 +641,6 @@ class ProcessorBase(object):
 
     def get_stratum_tile_mask(self, stratum, tile):
         return self.get_output_path("classification-mask-{}-{}.tif", stratum.id, tile.id)
+
+    def get_metadata_file(self):
+        return self.get_output_path("metadata.xml")

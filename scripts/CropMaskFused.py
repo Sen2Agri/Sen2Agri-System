@@ -15,6 +15,8 @@ import sys
 from sys import argv
 import traceback
 import datetime
+from lxml import etree
+from lxml.builder import E
 from sen2agri_common import *
 
 
@@ -25,7 +27,9 @@ class CropMaskProcessor(ProcessorBase):
         parser.add_argument('-mission', help='The main mission for the series',
                             required=False, default='SPOT')
         parser.add_argument('-refp', help='The reference polygons',
-                            required=True, metavar='reference_polygons')
+                            required=False, metavar='reference_polygons')
+        parser.add_argument('-refr', help='The reference raster',
+                            required=False, metavar='reference_raster')
         parser.add_argument('-ratio', help='The ratio between the validation and training polygons (default 0.75)',
                             required=False, metavar='sample_ratio', default=0.75)
         parser.add_argument('-input', help='The list of products descriptors',
@@ -38,6 +42,8 @@ class CropMaskProcessor(ProcessorBase):
                             required=False, metavar='classifier', choices=['rf', 'svm'], default='rf')
         parser.add_argument('-normalize', help='Normalize the input before classification', default=False,
                             required=False, action='store_true')
+        parser.add_argument('-nbtrsample', help='The number of samples included in the training set (default 40000)',
+                            required=False, metavar='nbtrsample', default=40000)
         parser.add_argument('-rseed', help='The random seed used for training (default 0)',
                             required=False, metavar='random_seed', default=0)
         parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)',
@@ -59,16 +65,22 @@ class CropMaskProcessor(ProcessorBase):
 
         parser.add_argument('-bm', help='Use benchmarking (vs. ATBD) features (default False)', required=False, type=bool, default=False)
         parser.add_argument('-window', help='The window, expressed in number of records, used for the temporal features extraction (default 6)', required=False, type=int, default=6)
+        parser.add_argument('-lmbd', help='The lambda parameter used in data smoothing (default 2)', required=False, metavar='lmbd', default=2)
+        parser.add_argument('-eroderad', help='The radius used for erosion (default 1)', required=False, metavar='erode_radius', default='1')
+        parser.add_argument('-alpha', help='The parameter alpha used by the mahalanobis function (default 0.01)', required=False, metavar='alpha', default='0.01')
 
         parser.add_argument('-nbcomp', help='The number of components used for dimensionality reduction (default 6)', required=False, type=int, default=6)
         parser.add_argument('-spatialr', help='The spatial radius of the neighborhood used for segmentation (default 10)', required=False, default=10)
         parser.add_argument('-ranger', help='The range radius defining the radius (expressed in radiometry unit) in the multispectral space (default 0.65)', required=False, default=0.65)
-        parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) for segmentation.(default 10)', required=False, default=10)
+        parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) for segmentation (default 10)', required=False, default=10)
         parser.add_argument('-minarea', help="The minium number of pixel in an area where, for an equal number of crop and nocrop samples, the crop decision is taken (default 20)", required=False, default=20)
 
         parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)",
                             default=False, action='store_true')
         parser.add_argument('-siteid', help='The site ID', required=False, default='nn')
+        parser.add_argument('-lut', help='Color LUT for previews (see /usr/share/sen2agri/crop-mask.map)', required=False)
+        parser.add_argument('-outprops', help='Output properties file', required=False)
+
         parser.add_argument(
             '-strata', help='Shapefiles with polygons for the strata')
         # parser.add_argument('-min-coverage', help="Minimum coverage (0 to 1) for considering a tile for stratification (default 0.1)", required=False, type=float, default=0.1)
@@ -82,69 +94,184 @@ class CropMaskProcessor(ProcessorBase):
         parser.add_argument('-skip-quality-flags', help="Skip quality flags extraction, (default false)", default=False, action='store_true')
         self.args = parser.parse_args()
 
+        if self.args.refp is None and self.args.refr is None:
+            raise Exception("One of refp and refr must be set")
+        if self.args.refp is not None and self.args.refr is not None:
+            raise Exception("Only one of refp and refr must be set")
+
         self.args.min_coverage = 0
+        self.args.lut = self.get_lut_path()
 
         self.args.tmpfolder = self.args.outdir
 
     def train_stratum(self, stratum):
-        features_shapefile = self.get_output_path("features-{}.shp", stratum.id)
-
-        split_features(stratum, self.args.refp, self.args.outdir)
-
-        area_training_polygons = self.get_output_path("training_polygons-{}.shp", stratum.id)
-        area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
-        area_statistics = self.get_output_path("statistics-{}.xml", stratum.id)
         area_model = self.get_output_path("model-{}.txt", stratum.id)
         area_confmatout = self.get_output_path("confusion-matrix-training-{}.csv", stratum.id)
-        area_days = self.get_output_path("days-{}.txt", stratum.id)
+        if self.args.refp is not None:
+            features_shapefile = self.get_output_path("features-{}.shp", stratum.id)
 
-        area_descriptors = []
-        area_prodpertile = []
-        for tile in stratum.tiles:
-            area_descriptors += tile.descriptors
-            area_prodpertile.append(len(tile.descriptors))
+            split_features(stratum, self.args.refp, self.args.outdir)
 
-        run_step(Step("SampleSelection", ["otbcli", "SampleSelection", self.args.buildfolder,
-                                        "-ref", features_shapefile,
-                                        "-ratio", self.args.ratio,
-                                        "-seed", self.args.rseed,
-                                        "-nofilter", "true",
-                                        "-tp", area_training_polygons,
-                                        "-vp", area_validation_polygons]))
-        step_args = ["otbcli", "CropMaskTrainImagesClassifier", self.args.buildfolder,
-                        "-mission", self.args.mission,
-                        "-nodatalabel", -10000,
-                        "-pixsize", self.args.pixsize,
-                        "-outdays", area_days,
-                        "-mode", self.args.trm,
-                        "-io.vd", area_training_polygons,
-                        "-rand", self.args.rseed,
-                        "-sample.bm", 0,
-                        "-io.confmatout", area_confmatout,
-                        "-io.out", area_model,
-                        #"-sample.mt", 400000,
-                        "-sample.mt", 40000,
-                        "-sample.mv", 1000,
-                        "-sample.vfn", "CROP",
-                        "-sample.vtr", 0.01,
-                        "-window", self.args.window,
-                        "-bm", "true" if self.args.bm else "false",
-                        "-classifier", self.args.classifier]
-        step_args += ["-sp"] + self.args.sp
-        step_args += ["-prodpertile"] + area_prodpertile
-        step_args += ["-il"] + area_descriptors
-        if self.args.classifier == "rf":
-            step_args += ["-classifier.rf.nbtrees", self.args.rfnbtrees,
-                            "-classifier.rf.min", self.args.rfmin,
-                            "-classifier.rf.max", self.args.rfmax]
-            if self.args.normalize:
-                step_args += ["-outstat", area_statistics]
+            area_training_polygons = self.get_output_path("training_polygons-{}.shp", stratum.id)
+            area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
+            area_statistics = self.get_output_path("statistics-{}.xml", stratum.id)
+            area_days = self.get_output_path("days-{}.txt", stratum.id)
+
+            area_descriptors = []
+            area_prodpertile = []
+            for tile in stratum.tiles:
+                area_descriptors += tile.descriptors
+                area_prodpertile.append(len(tile.descriptors))
+
+            run_step(Step("SampleSelection", ["otbcli", "SampleSelection", self.args.buildfolder,
+                                            "-ref", features_shapefile,
+                                            "-ratio", self.args.ratio,
+                                            "-seed", self.args.rseed,
+                                            "-nofilter", "true",
+                                            "-tp", area_training_polygons,
+                                            "-vp", area_validation_polygons]))
+            step_args = ["otbcli", "CropMaskTrainImagesClassifier", self.args.buildfolder,
+                            "-mission", self.args.mission,
+                            "-nodatalabel", -10000,
+                            "-pixsize", self.args.pixsize,
+                            "-outdays", area_days,
+                            "-mode", self.args.trm,
+                            "-io.vd", area_training_polygons,
+                            "-rand", self.args.rseed,
+                            "-sample.bm", 0,
+                            "-io.confmatout", area_confmatout,
+                            "-io.out", area_model,
+                            "-sample.mt", self.args.nbtrsample,
+                            "-sample.mv", 10,
+                            "-sample.vfn", "CROP",
+                            "-sample.vtr", 0.01,
+                            "-window", self.args.window,
+                            "-bm", "true" if self.args.bm else "false",
+                            "-classifier", self.args.classifier]
+            step_args += ["-sp"] + self.args.sp
+            step_args += ["-prodpertile"] + area_prodpertile
+            step_args += ["-il"] + area_descriptors
+            if self.args.classifier == "rf":
+                step_args += ["-classifier.rf.nbtrees", self.args.rfnbtrees,
+                                "-classifier.rf.min", self.args.rfmin,
+                                "-classifier.rf.max", self.args.rfmax]
+                if self.args.normalize:
+                    step_args += ["-outstat", area_statistics]
+            else:
+                step_args += ["-classifier.svm.k", "rbf",
+                                "-classifier.svm.opt", 1,
+                                "-outstat", area_statistics]
+
+            run_step(Step("TrainImagesClassifier", step_args))
         else:
-            step_args += ["-classifier.svm.k", "rbf",
-                            "-classifier.svm.opt", 1,
-                            "-outstat", area_statistics]
+            for tile in stratum.tiles:
+                break
+                print(tile.id)
 
-        run_step(Step("TrainImagesClassifier", step_args))
+                reference_raster = get_reference_raster(tile.descriptors[0])
+                tile_footprint = self.get_output_path("footprint-{}.shp", tile.id)
+                tile_prj = self.get_output_path("footprint-{}.prj", tile.id)
+                tile_reference_cropped = self.get_output_path("reference-cropped-{}.tif", tile.id)
+                tile_reference_reprojected = self.get_output_path("reference-reprojected-{}.tif", tile.id)
+                tile_reference_resampled = self.get_output_path("reference-resampled-{}.tif", tile.id)
+                tile_reference_eroded = self.get_output_path("reference-eroded-{}.tif", tile.id)
+                tile_reference_trimmed = self.get_output_path("reference-trimmed-{}.tif", tile.id)
+                tile_spectral_features = self.get_output_path("spectral-features-{}.tif", tile.id)
+
+                run_step(Step("CreateFootprint_" + tile.id, ["otbcli", "CreateFootprint", self.args.buildfolder,
+                                                     "-in", reference_raster,
+                                                     "-out", tile_footprint]))
+                run_step(Step("CropReference_" + tile.id, ["gdalwarp",
+                                                            "-dstnodata", 0,
+                                                            "-overwrite",
+                                                            "-crop_to_cutline",
+                                                            "-cutline", tile_footprint,
+                                                            "-ot", "Byte",
+                                                            self.args.refr,
+                                                            tile_reference_cropped]))
+                run_step(Step("ReprojectReference_" + tile.id, ["gdalwarp",
+                                                                "-t_srs", tile_prj,
+                                                                "-dstnodata", 0,
+                                                                "-overwrite",
+                                                                "-ot", "Byte",
+                                                                tile_reference_cropped,
+                                                                tile_reference_reprojected]))
+                run_step(Step("ResampleReference_" + tile.id, ["gdalwarp",
+                                                                "-tr", self.args.pixsize, self.args.pixsize,
+                                                                "-dstnodata", 0,
+                                                                "-overwrite",
+                                                                "-crop_to_cutline",
+                                                                "-cutline", tile_footprint,
+                                                                "-ot", "Byte",
+                                                                tile_reference_reprojected,
+                                                                tile_reference_resampled]))
+                run_step(Step("Erosion_" + tile.id, ["otbcli", "Erosion", self.args.buildfolder,
+                                                        "-radius", self.args.eroderad,
+                                                        "-in", tile_reference_resampled,
+                                                        "-out", tile_reference_eroded]))
+
+                run_step(Step("SpectralFeatures_" + tile.id, ["otbcli", "SpectralFeaturesExtraction", self.args.buildfolder,
+                                                                "-mission", self.args.mission,
+                                                                "-pixsize", self.args.pixsize,
+                                                                "-lambda", self.args.lmbd,
+                                                                "-out", tile_spectral_features,
+                                                                "-il"] + tile.descriptors))
+
+                run_step(Step("Trimming_" + tile.id, ["otbcli", "Trimming", self.args.buildfolder,
+                                                        "-alpha", self.args.alpha,
+                                                        "-nbsamples", 0,
+                                                        "-seed", self.args.rseed,
+                                                        "-feat", tile_spectral_features,
+                                                        "-ref", tile_reference_eroded,
+                                                        "-out", tile_reference_trimmed]))
+
+            # TODO statistics
+            step_args = ["otbcli", "TrainImagesClassifierNew", self.args.buildfolder,
+                            "-nodatalabel", -10000,
+                            "-rand", self.args.rseed,
+                            "-sample.bm", 0,
+                            "-io.confmatout", area_confmatout,
+                            "-io.out", area_model,
+                            "-sample.mt", self.args.nbtrsample,
+                            "-sample.mv", 1000,
+                            "-sample.vfn", "CROP",
+                            "-sample.vtr", 0.01,
+                            "-classifier", self.args.classifier]
+            if self.args.classifier == "rf":
+                step_args += ["-classifier.rf.nbtrees", self.args.rfnbtrees,
+                                "-classifier.rf.min", self.args.rfmin,
+                                "-classifier.rf.max", self.args.rfmax]
+                if self.args.normalize:
+                    step_args += ["-outstat", area_statistics]
+            else:
+                step_args += ["-classifier.svm.k", "rbf",
+                                "-classifier.svm.opt", 1,
+                                "-outstat", area_statistics]
+
+            step_args.append("-io.rs")
+            for tile in stratum.tiles:
+                tile_reference_trimmed = self.get_output_path("reference-trimmed-{}.tif", tile.id)
+
+                step_args.append(tile_reference_trimmed)
+
+            step_args.append("-io.il")
+            for tile in stratum.tiles:
+                tile_spectral_features = self.get_output_path("spectral-features-{}.tif", tile.id)
+
+                step_args.append(tile_spectral_features)
+
+            run_step(Step("TrainImagesClassifier", step_args))
+
+            for tile in stratum.tiles:
+                tile_spectral_features = self.get_output_path("spectral-features-{}.tif", tile.id)
+                tile_crop_mask = self.get_output_path("crop-mask-{}.tif", tile.id)
+
+                run_step(Step("ImageClassifier_" + tile.id, ["otbcli_ImageClassifier",
+                                                                "-model", area_model,
+                                                                "-in", tile_spectral_features,
+                                                                "-out", tile_crop_mask]))
+
+            sys.exit(0)
 
     def classify_tile(self, stratum, tile):
         area_model = self.get_output_path("model-{}.txt", stratum.id)
@@ -353,7 +480,12 @@ class CropMaskProcessor(ProcessorBase):
                         "-level", "L4A",
                         "-baseline", "01.00",
                         "-siteid", self.args.siteid,
+                        "-lut", self.args.lut,
+                        "-gipp", self.get_metadata_file(),
                         "-processor", "cropmask"]
+
+        if self.args.outprops is not None:
+            step_args += ["-outprops", self.args.outprops]
 
         step_args.append("-processor.cropmask.file")
         for tile in self.tiles:
@@ -401,6 +533,119 @@ class CropMaskProcessor(ProcessorBase):
 
     def get_tile_classification_output(self, tile):
         return self.get_output_path("crop_mask_map_{}.tif", tile.id)
+
+    def get_lut_path(self):
+        if self.args.lut is not None:
+            lut_path = self.args.lut
+            if os.path.isfile(lut_path):
+                return lut_path
+            else:
+                print("Warning: The LUT file {} does not exist, using the default one".format(self.args.lut))
+
+        script_dir = os.path.dirname(__file__)
+        lut_path = os.path.join(script_dir, "../sen2agri-processors/CropMask/crop-mask.map")
+        if not os.path.isfile(lut_path):
+            lut_path = os.path.join(script_dir, "../share/sen2agri/crop-mask.map")
+        if not os.path.isfile(lut_path):
+            lut_path = None
+
+        return lut_path
+
+    def build_metadata(self):
+        tiles = E.Tiles()
+        for tile in self.tiles:
+            inputs = E.Inputs()
+            for descriptor in tile.descriptors:
+                inputs.append(
+                    E.Input(os.path.splitext(os.path.basename(descriptor))[0])
+                )
+
+            tiles.append(
+                E.Tile(
+                    E.Id(tile.id),
+                    inputs
+                )
+            )
+
+
+        metadata = E.Metadata(
+            E.ProductType("Crop Mask"),
+            E.Level("L4A"),
+            E.SiteId(self.args.siteid)
+        )
+
+        if self.args.refp is not None:
+            metadata.append(
+                E.ReferencePolygons(os.path.basename(self.args.refp))
+            )
+        else:
+            metadata.append(
+                E.ReferenceData(os.path.basename(self.args.refr))
+            )
+
+        if self.args.strata is not None:
+            metadata.append(
+                E.Strata(os.path.basename(self.args.strata))
+            )
+
+        metadata.append(tiles)
+
+        parameters = E.Parameters(
+            E.MainMission(self.args.mission),
+            E.PixelSize(self.args.pixsize),
+            E.SampleRatio(str(self.args.ratio)),
+            E.Classifier(self.args.classifier),
+            E.Seed(self.args.rseed),
+            E.LUT(os.path.basename(self.args.lut))
+        )
+
+        metadata.append(parameters)
+
+        if self.args.refr is not None:
+            parameters.append(
+                E.Smoothing(
+                    E.Window(str(self.args.window)),
+                    E.Lambda(str(self.args.lmbd)),
+                )
+            )
+            parameters.append(
+                E.ErosionRadius(str(self.args.eroderad))
+            )
+            parameters.append(
+                E.TrimmingAlpha(str(self.args.alpha))
+            )
+
+        classifier = E.Classifier(
+            E.TrainingSamplesPerTile(str(self.args.nbtrsample))
+        )
+
+        if self.args.classifier == 'rf':
+            classifier.append(
+                E.RF(
+                    E.NbTrees(str(self.args.rfnbtrees)),
+                    E.Min(str(self.args.rfmin)),
+                    E.Max(str(self.args.rfmax))
+                )
+            )
+        else:
+            classifier.append(
+                E.SVM()
+            )
+        parameters.append(
+            classifier
+        )
+
+        parameters.append(
+            E.Segmentation(
+                E.PCAComponents(str(self.args.nbcomp)),
+                E.SpatialRadius(str(self.args.spatialr)),
+                E.RangeRadius(str(self.args.ranger)),
+                E.MinSize(str(self.args.minsize)),
+                E.MinCropArea(str(self.args.minarea)),
+            )
+        )
+
+        return etree.ElementTree(metadata)
 
 processor = CropMaskProcessor()
 processor.execute()

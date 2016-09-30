@@ -15,6 +15,8 @@ import sys
 from sys import argv
 import traceback
 import datetime
+from lxml import etree
+from lxml.builder import E
 from sen2agri_common import *
 
 
@@ -63,6 +65,9 @@ class CropTypeProcessor(ProcessorBase):
         parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)",
                             default=False, action='store_true')
         parser.add_argument('-siteid', help='The site ID', required=False, default='nn')
+        parser.add_argument('-lut', help='Color LUT for previews (see /usr/share/sen2agri/crop-type.lut)', required=False)
+        parser.add_argument('-outprops', help='Output properties file', required=False)
+
         parser.add_argument(
             '-strata', help='Shapefiles with polygons for the strata')
         # parser.add_argument('-min-coverage', help="Minimum coverage (0 to 1) for considering a tile for stratification (default 0.1)", required=False, type=float, default=0.1)
@@ -77,11 +82,14 @@ class CropTypeProcessor(ProcessorBase):
         self.args = parser.parse_args()
 
         self.args.min_coverage = 0
+        self.args.lut = self.get_lut_path()
 
         if self.args.mask is not None and self.args.maskprod is not None:
             raise("The -mask and -maskprod arguments are exclusive")
 
-    def after_load_tiles(self):
+    def load_tiles(self):
+        super(CropTypeProcessor, self).load_tiles()
+
         for tile in self.tiles:
             tile.crop_mask = None
 
@@ -158,7 +166,7 @@ class CropTypeProcessor(ProcessorBase):
                         "-io.confmatout", area_confmatout,
                         "-io.out", area_model,
                         "-sample.mt", -1,
-                        "-sample.mv", 1000,
+                        "-sample.mv", 10,
                         "-sample.vfn", "CODE",
                         "-sample.vtr", 0.01,
                         "-classifier", self.args.classifier]
@@ -303,7 +311,12 @@ class CropTypeProcessor(ProcessorBase):
                         "-level", "L4B",
                         "-baseline", "01.00",
                         "-siteid", self.args.siteid,
+                        "-lut", self.args.lut,
+                        "-gipp", self.get_metadata_file(),
                         "-processor", "croptype"]
+
+        if self.args.outprops is not None:
+            step_args += ["-outprops", self.args.outprops]
 
         has_mask = False
         for tile in self.tiles:
@@ -357,6 +370,89 @@ class CropTypeProcessor(ProcessorBase):
 
     def get_tile_classification_output(self, tile):
         return self.get_output_path("crop_type_map_{}.tif", tile.id)
+
+    def get_lut_path(self):
+        if self.args.lut is not None:
+            lut_path = self.args.lut
+            if os.path.isfile(lut_path):
+                return lut_path
+            else:
+                print("Warning: The LUT file {} does not exist, using the default one".format(self.args.lut))
+
+        script_dir = os.path.dirname(__file__)
+        lut_path = os.path.join(script_dir, "../sen2agri-processors/CropType/crop-type.lut")
+        if not os.path.isfile(lut_path):
+            lut_path = os.path.join(script_dir, "../share/sen2agri/crop-type.lut")
+        if not os.path.isfile(lut_path):
+            lut_path = None
+
+        return lut_path
+
+    def build_metadata(self):
+        tiles = E.Tiles()
+        for tile in self.tiles:
+            inputs = E.Inputs()
+            for descriptor in tile.descriptors:
+                inputs.append(
+                    E.Input(os.path.splitext(os.path.basename(descriptor))[0])
+                )
+
+            tile_el = E.Tile(
+                E.Id(tile.id),
+                inputs
+            )
+            if tile.crop_mask is not None:
+                tile_el.append(
+                    E.Mask(os.path.splitext(os.path.basename(tile.crop_mask))[0])
+                )
+
+            tiles.append(tile_el)
+
+
+        for tile in self.tiles:
+            if tile.crop_mask is not None:
+                pass
+
+        metadata = E.Metadata(
+            E.ProductType("Crop Type"),
+            E.Level("L4B"),
+            E.SiteId(self.args.siteid),
+            E.ReferencePolygons(os.path.basename(self.args.refp)))
+
+        if self.args.strata is not None:
+            metadata.append(
+                E.Strata(os.path.basename(self.args.strata))
+            )
+
+        metadata.append(tiles)
+
+        classifier = E.Classifier()
+        if self.args.classifier == 'rf':
+            classifier.append(
+                E.RF(
+                    E.NbTrees(str(self.args.rfnbtrees)),
+                    E.Min(str(self.args.rfmin)),
+                    E.Max(str(self.args.rfmax))
+                )
+            )
+        else:
+            classifier.append(
+                E.SVM()
+            )
+
+        metadata.append(
+            E.Parameters(
+                E.MainMission(self.args.mission),
+                E.PixelSize(self.args.pixsize),
+                E.SampleRatio(str(self.args.ratio)),
+                E.Classifier(self.args.classifier),
+                E.Seed(self.args.rseed),
+                E.LUT(os.path.basename(self.args.lut)),
+                classifier
+            )
+        )
+
+        return etree.ElementTree(metadata)
 
 processor = CropTypeProcessor()
 processor.execute()

@@ -35,10 +35,10 @@ FILES=( \
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20131228_L8_181_025/EUkraineS2A_20131228_L8_181_025.HDR \
 )
 
-    # -ecoareas ~/areas.shp \
+    # -strata ~/areas.shp \
 ./CropTypeFused.py \
     -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp \
     -input ${FILES[@]} \
     -rseed 0 -pixsize 20 \
     -outdir /mnt/data/ukraine/Ukraine-type \
-    -buildfolder "$BUILD_FOLDER" # -keepfiles -maskprod /mnt/data/ukraine/Ukraine-mask/S2AGRI_L4A_PRD_Snn_20160913T155443_V20130206_20131228
+    -buildfolder "$BUILD_FOLDER" # -keepfiles -maskprod /mnt/data/ukraine/Ukraine-mask/S2AGRI_L4A_PRD_Snn_20160929T125901_V20130206_20131228
