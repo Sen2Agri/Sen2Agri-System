@@ -30,9 +30,14 @@ SOURCES += main.cpp \
     processorhandler.cpp \
     processor/croptypehandler.cpp \
     processor/cropmaskhandler.cpp \
+    processor/croptypehandler_new.cpp \
+    processor/cropmaskhandler_new.cpp \
     tasktosubmit.cpp \
     processor/compositehandler.cpp \
     processor/lairetrievalhandler.cpp \
+    processor/lairetrievalhandler_new.cpp \
+    processor/lairetrievalhandler_l3b.cpp \
+    processor/lairetrievalhandler_l3c.cpp \
     processor/phenondvihandler.cpp \
     processorhandlerhelper.cpp \
     schedulingcontext.cpp
@@ -45,9 +50,14 @@ HEADERS += \
     processorhandler.hpp \
     processor/croptypehandler.hpp \
     processor/cropmaskhandler.hpp \
+    processor/croptypehandler_new.hpp \
+    processor/cropmaskhandler_new.hpp \
     tasktosubmit.hpp \
     processor/compositehandler.hpp \
     processor/lairetrievalhandler.hpp \
+    processor/lairetrievalhandler_new.hpp \
+    processor/lairetrievalhandler_l3b.hpp \
+    processor/lairetrievalhandler_l3c.hpp \
     processor/phenondvihandler.hpp \
     processorhandlerhelper.h \
     schedulingcontext.h
