@@ -21,6 +21,7 @@
 #include "otbBandMathImageFilter.h"
 #include "MetadataHelperFactory.h"
 #include "GlobalDefs.h"
+#include "ImageResampler.h"
 
 namespace otb
 {
@@ -80,6 +81,10 @@ private:
         SetDefaultParameterFloat("deqval", -1);
         MandatoryOff("deqval");
 
+        AddParameter(ParameterType_String, "main", "The image from the il that is used for the cutting other images");
+        MandatoryOff("main");
+
+
         SetDocExampleParameterValue("il", "image1.tif image2.tif");
         SetDocExampleParameterValue("out", "result.tif");
   }
@@ -94,31 +99,32 @@ private:
         m_deqFunctorList = DeqFunctorListType::New();
         m_imagesList = ImagesListType::New();
 
-        float deqValue = GetParameterFloat("deqval");
+        m_deqValue = GetParameterFloat("deqval");
 
         std::vector<std::string> imgsList = this->GetParameterStringList("il");
-
         if( imgsList.size()== 0 )
         {
             itkExceptionMacro("No input file set...");
         }
 
+        // update the width, hight and origin if we have a main image
+        updateRequiredImageSize();
+        // keep the first image one that has the origin and dimmension of the main one (if it is the case)
+        //imgsList = trimLeftInvalidPrds(imgsList);
+
         ImageListType::Pointer allBandsList = ImageListType::New();
         for (const std::string& strImg : imgsList)
         {
             ImageReaderType::Pointer reader = getReader(strImg);
-            reader->GetOutput()->UpdateOutputInformation();
-
-            DequantifyFilterType::Pointer deqFunctor = DequantifyFilterType::New();
-            m_deqFunctorList->PushBack(deqFunctor);
-            if(deqValue > 0) {
-                deqFunctor->GetFunctor().Initialize(deqValue, 0);
-                deqFunctor->SetInput(reader->GetOutput());
-                int nComponents = reader->GetOutput()->GetNumberOfComponentsPerPixel();
-                deqFunctor->GetOutput()->SetNumberOfComponentsPerPixel(nComponents);
-            }
-            ImageType::Pointer img = (deqValue > 0) ? deqFunctor->GetOutput() : reader->GetOutput();
+            ImageType::Pointer img = reader->GetOutput();
             img->UpdateOutputInformation();
+
+            // cut the image if we need to
+            img = cutImage(img);
+
+            // dequantify image if we need to
+            img = dequantifyImage(img);
+
             m_imagesList->PushBack(img);
 
             VectorImageToImageListType::Pointer splitter = getSplitter(img);
@@ -154,12 +160,123 @@ private:
       return imgSplit;
   }
 
+  ImageType::Pointer dequantifyImage(const ImageType::Pointer &img) {
+      if(m_deqValue > 0) {
+          DequantifyFilterType::Pointer deqFunctor = DequantifyFilterType::New();
+          m_deqFunctorList->PushBack(deqFunctor);
+          deqFunctor->GetFunctor().Initialize(m_deqValue, 0);
+          deqFunctor->SetInput(img);
+          int nComponents = img->GetNumberOfComponentsPerPixel();
+          ImageType::Pointer newImg = deqFunctor->GetOutput();
+          newImg->SetNumberOfComponentsPerPixel(nComponents);
+          newImg->UpdateOutputInformation();
+          return newImg;
+      }
+      return img;
+  }
+
+  ImageType::Pointer cutImage(const ImageType::Pointer &img) {
+      if(m_bCutImages) {
+          float imageWidth = img->GetLargestPossibleRegion().GetSize()[0] / m_scale;
+          float imageHeight = img->GetLargestPossibleRegion().GetSize()[1] / m_scale;
+
+          ImageType::PointType origin = img->GetOrigin();
+          ImageType::PointType imageOrigin;
+          //ImageType::SpacingType spacing = img->GetSpacing();
+          imageOrigin[0] = origin[0];// + 0.5 * spacing[0] * (m_scale - 1.0);
+          imageOrigin[1] = origin[1];// + 0.5 * spacing[1] * (m_scale - 1.0);
+
+          if((imageWidth != m_imageWidth) || (imageHeight != m_imageHeight) ||
+                  (m_imageOrigin[0] != imageOrigin[0]) || (m_imageOrigin[1] != imageOrigin[1])) {
+              ImageResampler<ImageType, ImageType>::ResamplerPtr resampler = m_ImageResampler.getResampler(
+                          img, m_scale, m_imageWidth, m_imageHeight, Interpolator_Linear);
+              ImageType::Pointer newImg = resampler->GetOutput();
+              newImg->UpdateOutputInformation();
+              return newImg;
+          }
+      }
+
+      return img;
+
+  }
+
+  void updateRequiredImageSize() {
+      m_bCutImages = false;
+      m_imageWidth = 0;
+      m_imageHeight = 0;
+      m_scale = 1.0; //(float)m_pixSize / curRes;
+
+      std::string mainImg;
+      if (HasValue("main")) {
+          mainImg = this->GetParameterString("main");
+          m_bCutImages = true;
+      } else {
+          return;
+      }
+
+      ImageReaderType::Pointer reader = getReader(mainImg);
+      reader->GetOutput()->UpdateOutputInformation();
+      //float curRes = reader->GetOutput()->GetSpacing()[0];
+
+      m_imageWidth = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[0] / m_scale;
+      m_imageHeight = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[1] / m_scale;
+
+      ImageType::PointType origin = reader->GetOutput()->GetOrigin();
+      //ImageType::SpacingType spacing = reader->GetOutput()->GetSpacing();
+      m_imageOrigin[0] = origin[0]; // + 0.5 * spacing[0] * (m_scale - 1.0);
+      m_imageOrigin[1] = origin[1]; // + 0.5 * spacing[1] * (m_scale - 1.0);
+
+  }
+
+  std::vector<std::string> trimLeftInvalidPrds(std::vector<std::string> imgsList) {
+      if(!m_bCutImages) {
+          return imgsList;
+      }
+      std::vector<std::string> retImgsList;
+
+      bool bFirstValidFound = false;
+      for (const std::string& strImg : imgsList)
+      {
+          if(!bFirstValidFound) {
+              ImageReaderType::Pointer reader = getReader(strImg);
+              ImageType::Pointer img = reader->GetOutput();
+              img->UpdateOutputInformation();
+              float imageWidth = img->GetLargestPossibleRegion().GetSize()[0] / m_scale;
+              float imageHeight = img->GetLargestPossibleRegion().GetSize()[1] / m_scale;
+
+              ImageType::PointType origin = img->GetOrigin();
+              ImageType::PointType imageOrigin;
+              //ImageType::SpacingType spacing = img->GetSpacing();
+              imageOrigin[0] = origin[0];// + 0.5 * spacing[0] * (m_scale - 1.0);
+              imageOrigin[1] = origin[1];// + 0.5 * spacing[1] * (m_scale - 1.0);
+
+              if((imageWidth == m_imageWidth) && (imageHeight == m_imageHeight) &&
+                      (m_imageOrigin[0] == imageOrigin[0]) && (m_imageOrigin[1] == imageOrigin[1])) {
+                  bFirstValidFound = true;
+                  retImgsList.push_back(strImg);
+              }
+          } else {
+                retImgsList.push_back(strImg);
+          }
+      }
+      return retImgsList;
+  }
+
 
     ImageReaderListType::Pointer                m_ImageReaderList;
     SplitFilterListType::Pointer                m_ImageSplitList;
     ImageListToVectorImageFilterType::Pointer   m_bandsConcat;
     DeqFunctorListType::Pointer                 m_deqFunctorList;
     ImagesListType::Pointer                     m_imagesList;
+
+    float                                 m_pixSize;
+    double                                m_imageWidth;
+    double                                m_imageHeight;
+    ImageType::PointType                  m_imageOrigin;
+    bool m_bCutImages;
+    ImageResampler<ImageType, ImageType>  m_ImageResampler;
+    float                                 m_scale;
+    float                                 m_deqValue;
 };
 
 }
