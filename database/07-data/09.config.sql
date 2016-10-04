@@ -182,3 +182,6 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processo
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3e_pheno.slurm_qos', NULL, 'qospheno', '2015-08-24 17:44:38.29255+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l4a.slurm_qos', NULL, 'qoscropmask', '2015-08-24 17:44:38.29255+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l4b.slurm_qos', NULL, 'qoscroptype', '2015-08-24 17:44:38.29255+03');
+
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-mask-fused', NULL, 'CropMaskFused.py', '2015-12-17 14:25:14.193131+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-type-fused', NULL, 'CropTypeFused.py', '2015-12-17 14:25:14.193131+02');
