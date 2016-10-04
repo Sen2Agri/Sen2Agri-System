@@ -738,18 +738,18 @@ def getMajorityWGS_PROJCS(listFiles):
       source_srs = osr.SpatialReference()
       source_srs.ImportFromWkt(dataset.GetProjection())
 
-      if not source_srs in proj_CS_dict:
-         proj_CS_dict[source_srs] = 1
-      else:
-         proj_CS_dict[source_srs] += 1
+      proj_CS_dict[source_srs.ExportToWkt()] += 1
 
-   max_srs = max(proj_CS_dict.iteritems(), key=operator.itemgetter(1))[0]
+   max_srs_wkt = max(proj_CS_dict.iteritems(), key=operator.itemgetter(1))[0]
+
+   srs = osr.SpatialReference()
+   srs.ImportFromWkt(max_srs_wkt)
 
    #prepare the output as a tuple
-   proj_CS_name_computed = max_srs.GetAttrValue("PROJCS", 0)
-   proj_CS_code_computed = max_srs.GetAttrValue("AUTHORITY", 1)
+   proj_CS_name_computed = srs.GetAttrValue("PROJCS", 0)
+   proj_CS_code_computed = srs.GetAttrValue("AUTHORITY", 1)
 
-   ret_val = str(max_srs), proj_CS_name_computed, proj_CS_code_computed
+   ret_val = srs, proj_CS_name_computed, proj_CS_code_computed
 
    return ret_val
 #----------------------------------------------------------------
