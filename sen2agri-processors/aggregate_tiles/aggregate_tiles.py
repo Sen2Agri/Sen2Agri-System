@@ -7,7 +7,7 @@ _____________________________________________________________________________
    Language:     Python
    Copyright:    2015-2016, CS Romania, office@c-s.ro
    See COPYRIGHT file for details.
-   
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,7 +25,7 @@ Following steps are performed in order to obtain the mosaic from all tiles of th
          Reprojection is performed to the majority Coordinate_Reference_System found in all the tiles from productFolder/TILES/*/IMG_DATA
          and respectively to the majority Coordinate_Reference_System found in all the masks from productFolder/TILES/*/QI_DATA
        - Build mosaic files from TILES/*/IMG_DATA and TILES/*/QI_DATA into corresponding LEGACY_DATA folder
-         Mosaic/aggregation is performed keeping into account that one distinct mosaic file is generated for each type of tile: 
+         Mosaic/aggregation is performed keeping into account that one distinct mosaic file is generated for each type of tile:
          ex: one distinct mosaic for each biospherical suffix or mask suffix
        - Post process operation for files found into folder LEGACY_DATA/IMG_DATA. This is performed in order to concatenate all mosaic files produced
          on previous step (all files having or not biosferical suffix are concatenated into a single final aggragate/mosaic image)
@@ -72,7 +72,7 @@ def quicklook_mosaic(inpFileName, outFileName, channelList):
                  "-in",inpFileName,
                  "-cl"] + channelList + [
                  "-out", outFileName])
-                 
+
 #----------------------------------------------------------------
 def create_rgb_image(post_process_out_filename, newRgbTif, lutMap, isRGB, isRangeMapFile):
     run_command(["otbcli",
@@ -82,7 +82,7 @@ def create_rgb_image(post_process_out_filename, newRgbTif, lutMap, isRGB, isRang
                  "-map", lutMap,
                  "-rgbimg", ("1" if isRGB else "0"),
                  "-isrange", ("1" if isRangeMapFile else "0")])
-                 
+
 #----------------------------------------------------------------
 def process_mosaic_images(interpolName, listOfImages, imgAggregatedName):
     run_command(["otbcli",
@@ -93,7 +93,6 @@ def process_mosaic_images(interpolName, listOfImages, imgAggregatedName):
                  "-interpolator", interpolName ])
 #----------------------------------------------------------------
 def image_reproject_and_rescale(reprojIsNecesary, targetSrs, rescaleIsNecesary, targetSizeX, targetSizeY, resampleMethod, inpFile, outFile ):
-
    if reprojIsNecesary and rescaleIsNecesary:
       #perform both reprojection and rescale
       run_command(["gdalwarp",
@@ -157,17 +156,27 @@ def create_context(args):
        fieldAsStr = ''.join(fieldOptionList)
        characterField = fieldAsStr[0] + fieldAsStr[1]
 
-    ret_val_img = "", "", ""
-    if len(retrieved_img_data_list):
-       #extract CS_NAME, CS_CODE and PROJCS from all the input tiles (IMG_DATA)
-       ret_val_img = getMajorityWGS_PROJCS(retrieved_img_data_list)
+    if args.outsrs is None:
+        ret_val_img = "", "", ""
+        if len(retrieved_img_data_list):
+        #extract CS_NAME, CS_CODE and PROJCS from all the input tiles (IMG_DATA)
+            ret_val_img = getMajorityWGS_PROJCS(retrieved_img_data_list)
 
-    ret_val_qi = "", "", ""
-    if len(retrieved_qi_data_list):
-       #extract CS_NAME, CS_CODE and PROJCS from all the input masks (QI_DATA)
-       ret_val_qi = getMajorityWGS_PROJCS(retrieved_qi_data_list)
+        ret_val_qi = "", "", ""
+        if len(retrieved_qi_data_list):
+        #extract CS_NAME, CS_CODE and PROJCS from all the input masks (QI_DATA)
+            ret_val_qi = getMajorityWGS_PROJCS(retrieved_qi_data_list)
+    else:
+        srs = osr.SpatialReference()
+        srs.SetWellKnownGeogCS(args.outsrs)
 
-    #create a dictionary holding all necessary information for processing 
+        wkt = srs.ExportToWkt()
+        projcs_name = srs.GetAttrValue("PROJCS", 0)
+        projcs_code = srs.GetAttrValue("AUTHORITY", 1)
+
+        ret_val_img = ret_val_qi = wkt, projcs_name, projcs_code
+
+    #create a dictionary holding all necessary information for processing
     d = dict(#reprojection and rescale to desired rescale_output
              img_data_inp_list = retrieved_img_data_list,
              qi_data_inp_list = retrieved_qi_data_list,
@@ -209,11 +218,11 @@ def create_context(args):
 def create_processing_list_upon_sufix_post_processing(postList):
    images_by_patterns = defaultdict(list)
 
-   for fullFileName in postList:  
+   for fullFileName in postList:
       #extract the file name
       fileName = os.path.basename(fullFileName)
-      
-      #try split file name before DATE Time Period:_Vyyyymmdd_YYYYMMDD    
+
+      #try split file name before DATE Time Period:_Vyyyymmdd_YYYYMMDD
       file_name_parts = fileName.split(context.field_separator)
 
       #search if biosferical status/mask suffix (SRFL_10, MDAT,etc) exists in second part of
@@ -227,18 +236,18 @@ def create_processing_list_upon_sufix_post_processing(postList):
       else:
          #add entry in dictionnary with key result.group(1)
          images_by_patterns[""].append(fullFileName)
-      
+
    return images_by_patterns
 #----------------------------------------------------------------
 
 def create_processing_list_upon_sufix(initialList):
    images_by_patterns = defaultdict(list)
 
-   for fullFileName in initialList:  
+   for fullFileName in initialList:
       #extract the file name
       fileName = os.path.basename(fullFileName)
-      
-      #try split file name before DATE Time Period:_Vyyyymmdd_YYYYMMDD    
+
+      #try split file name before DATE Time Period:_Vyyyymmdd_YYYYMMDD
       file_name_parts = fileName.split(context.field_separator)
 
       #search if biosferical status/mask suffix (SRFL, MDAT,etc) exists in first part of
@@ -269,7 +278,7 @@ def create_processing_list_upon_sufix(initialList):
       else:
          #add entry in dictionnary with key result.group(1)
          images_by_patterns[""].append(fullFileName)
-      
+
    return images_by_patterns
 #----------------------------------------------------------------
 def build_standardized_legacy_file_name_output(inputFileName):
@@ -282,7 +291,7 @@ def build_standardized_legacy_file_name_output(inputFileName):
    pattern = re.compile("_([AV]+[0-9]{6,}\w+$)")
    #extract part V20130206_20130616 or A20130206_20130616 for example
    result_sec=pattern.search(inputFileName)
-   
+
    #build name as doc states for legacy file  #insert LY tag after product name
    # ex: S2AGRI_PRD_L3B_LY_V20130206_20130206
    legacy_file = str(result_first.group(1)) + "_LY_" + str(result_sec.group(1))
@@ -330,10 +339,10 @@ def build_file_name_output(prodFolderName, patternName, extensionFileName, outFo
 #----------------------------------------------------------------
 def get_list_img_file_names(prodDir, srcDirProcess, imgDataFolder):
     """
-    This function will generate the file names in a directory 
+    This function will generate the file names in a directory
     """
     list_file_paths = []  # List which will store all of the full filepaths.
-     	
+
     #imgFolder : IMG_DATA or QI_DATA  srcDirProcess : TILES
     full_folder_path=os.path.join(prodDir, srcDirProcess, '*', imgDataFolder, '*.TIF')
 
@@ -349,7 +358,7 @@ def crete_dirs_tree(context, outFolderName):
         os.makedirs(path_to_check)
 
     #create subdir IMG_DATA or QI_DATA in LEGACY_DATA folder
-    path_to_check=os.path.join(context.prodFolderName, context.destRootFolder, outFolderName) 
+    path_to_check=os.path.join(context.prodFolderName, context.destRootFolder, outFolderName)
     if not os.path.isdir(path_to_check):
       os.makedirs(path_to_check)
 
@@ -364,6 +373,7 @@ def parse_arguments():
         description="Creates Agregate Images for LEGACY_DATA folder")
     parser.add_argument('-prodfolder', required=True, help="input dir path. Ex: /FullProductNamePath")
     parser.add_argument('-rescaleval', required=True, help="pixel scale on output mosaic . Ex: 60")
+    parser.add_argument('-outsrs', required=False, help="output projection (default: majority, example: EPSG:4326)", default=None)
 
     args = parser.parse_args()
     return create_context(args)
@@ -387,7 +397,7 @@ def collect_image_resolution_name(fullFileName):
 
     #create tuple as : resolution pixels, x_size, y_size, file_name without full path
     tuple_entry = size_x*size_y, size_x, size_y, os.path.basename(fullFileName)
-   
+
     return tuple_entry
 #----------------------------------------------------------------
 def resolution_mismatch_found(context):
@@ -400,7 +410,7 @@ def resolution_mismatch_found(context):
 #----------------------------------------------------------------
 def resize_resolution_to_referece_val(context, width, height, dataFolder):
    #inspect the processing list
-   for item in context.post_process_list: 
+   for item in context.post_process_list:
       if cmp(item[1], width) or cmp(item[2], height):
          #compute input file name to be resized
          inpFileName = os.path.join(dataFolder, item[3])
@@ -408,7 +418,7 @@ def resize_resolution_to_referece_val(context, width, height, dataFolder):
          #compute output file name (ex: inpFileName_resized.TIF)
          compFileName = (item[3].split('.'))[0] + "_resized" + ".TIF"
          outFileName = os.path.join(dataFolder, compFileName)
-         
+
          #perform resize opeartion with GDAL
          run_command(["gdalwarp",
                        "-of", "GTiff",
@@ -433,7 +443,7 @@ def perform_images_concatenation(context, listOfFiles, dataFolder):
    #build intermediary dictionnary
    tmp_data_dictionary = create_processing_list_upon_sufix_post_processing(listOfFiles)
 
-   #create a list of tupples to store files upon scale resolution: 10,20,.. 
+   #create a list of tupples to store files upon scale resolution: 10,20,..
    list_img_by_scale = list()
    for key, fileList in tmp_data_dictionary.iteritems():
       if key:
@@ -461,10 +471,10 @@ def perform_images_concatenation(context, listOfFiles, dataFolder):
 
    #store full file name into context variable
    context.post_process_out_filename = os.path.join(dataFolder, file_tmp)
-   
+
    #concatenate files into one single mosaic image
    concatenate_mosaic_files(context, [f[2] for f in list_img_by_scale])
-   
+
    #remove files which were inputfor concatenation - keeping the final output name
    for fileName in list_img_by_scale:
       os.remove(fileName[2])
@@ -473,14 +483,14 @@ def format_file_name_output(fileName):
 
    #split file name before DATE Time Period:_Vyyyymmdd_YYYYMMDD or _Ayyyymmdd_YYYYMMDD
    file_name_parts = fileName.split(context.field_separator)
-  
+
    #extract needed date parts to build the output name for the file
    #from 20150728_none_SRFL_10.TIF it extracts 20150728
    #from 20150728_20150602_SRFL_20.TIF it extracts [20150728, 20150602]
    pattern = re.compile("([\d]{8}(?:[A-Z])?)")
    #list of matches
    resultList=pattern.findall(file_name_parts[1])
-   
+
    datePart = ""
    #concatenate list elements
    if len(resultList) == 1:
@@ -501,24 +511,24 @@ def post_process_mosaic_images(context, dataFolder):
    #obtain mosaic files
    list_file_paths=glob.glob(os.path.join(dataFolder, '*.TIF'))
 
-   #when none or one mosaic file produced -- nothing to do furher 
+   #when none or one mosaic file produced -- nothing to do furher
    if len(list_file_paths) == 0:
       print("No post processing needed ")
    elif len(list_file_paths) == 1:
       print("Format file name to match documentation naming")
       file_name = os.path.basename(list_file_paths[0])
-      
+
       #format file name
       legacy_final_out_name = format_file_name_output(file_name)
       new_file_name = os.path.join(dataFolder, legacy_final_out_name + ".TIF")
-    
+
       #update field in dict for final out name for mosaic file
       context.post_process_out_filename = new_file_name
 
       #rename the only one file found in directory with the computed new name (biosferical suffix discarded)
       os.rename(''.join(list_file_paths), new_file_name)
    else:
-      #perform resolution adjust after creating mosaic files in order to 
+      #perform resolution adjust after creating mosaic files in order to
       #bring all mosaic files to same resolution for being able to concatenate them
       #get resolution of each file and save it
       for idx, fullFileName in enumerate(list_file_paths):
@@ -565,7 +575,7 @@ def perform_tiles_aggreagtion(context):
 
        #clear list
        del context.img_data_out_list[:]
-      
+
     else:
        print("List of files from IMG_DATA is empty")
 
@@ -589,14 +599,14 @@ def perform_tiles_aggreagtion(context):
     else:
        print("List of files from QI_DATA is empty")
 
-     
+
 #----------------------------------------------------------------
 def get_resolution_and_projection(fileName):
    #current projection system
    dataset = gdal.Open(fileName, gdal.gdalconst.GA_ReadOnly)
    source_srs = osr.SpatialReference()
    source_srs.ImportFromWkt(dataset.GetProjection())
-   
+
    #current scale
    geo_transform = dataset.GetGeoTransform()
    spacing = geo_transform[1]
@@ -635,7 +645,7 @@ def raster_reprojection_and_rescale(listOfFiles, targetSrs, resamplAlg, destFold
       #compute output file name (ex: same as inpFileName.TIF) - The reprojected file will reside to LEGACY_DATA/IMG_DATA or LEGACY_DATA/QI_DATA
       shortFilename = os.path.basename(fileName)
       outFullPathFilename = os.path.join(context.prodFolderName,context.destRootFolder, destFolder, shortFilename)
-      
+
       #update list with reprojected files
       if destFolder == "IMG_DATA":
          context.img_data_out_list.append(outFullPathFilename)
@@ -691,7 +701,7 @@ def getReprojectedDatasetGdal(dataset):
     source_srs = osr.SpatialReference()
     source_srs.ImportFromWkt(dataset.GetProjection())
     epsg_code = source_srs.GetAttrValue("AUTHORITY", 1)
-    
+
     target_srs = osr.SpatialReference()
     target_srs.ImportFromEPSG(4326)
 
@@ -701,7 +711,7 @@ def getReprojectedDatasetGdal(dataset):
 #----------------------------------------------------------------
 def granule_img_build_dict(listOfInitialInputFiles):
    granule_dict = defaultdict(list)
-   
+
    for itemFullPath in listOfInitialInputFiles:
       #extract tilenamefolder and list of tiles inside ../tilenamefolder/IMG_DATA/
       split_list = itemFullPath.split('/')
@@ -790,7 +800,7 @@ def build_info_from_mosaic(mosaicFileName):
 
    #Number of bands from mosaic file for BAND_NAME xml node
    mosaic_dict["nb_mosaic_bands"] = dataset.RasterCount
-   
+
    #granule List from all input TILES files for Granules/IMAGE_ID xml node
    mosaic_dict["granule_list"] = granule_img_build_dict(context.img_data_inp_list)
 
@@ -1000,7 +1010,7 @@ def create_xml_mosaic_metadata(context):
    node = get_node_element_upon_name(dom, 'Geoposition')
    create_xml_node(dom, node, 'YDIM', [], context.xml_info_from_mosaic_dict["ydim"])
 
-   #remove node <Quality_Control_Checks> 
+   #remove node <Quality_Control_Checks>
    node = get_node_element_upon_name(dom, 'Quality_Indicators_Info')
    if node :
       remove_xml_node(node, 'Quality_Control_Checks')
@@ -1083,7 +1093,7 @@ def create_mosaic_quicklook(context):
          lut_map = COMPOSITE_MAP_PATH
          is_rgb_img = True
       else :
-         is_rgb_img = False      
+         is_rgb_img = False
          if (product_proc_level == "L4A") :
             lut_map = CROP_MASK_MAP_PATH
          else :
@@ -1117,12 +1127,12 @@ def get_product_processing_level(context):
    #open xml file from product folder
    dom = parse(input_xml_file)
    root = dom.documentElement
-   
+
    #get the text from <PROCESSING_LEVEL> node
    node = get_node_element_upon_name(dom, 'PROCESSING_LEVEL')
-   
+
    return node.firstChild.nodeValue
-        
+
 ###################################################################################################
 #################################  MAIN ###########################################################
 ###################################################################################################
