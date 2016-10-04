@@ -231,6 +231,11 @@ class CropTypeProcessor(ProcessorBase):
 
             run_step(Step("Mask by crop mask " + tile.id, step_args))
 
+            run_step(Step("Nodata_" + tile.id,
+                                ["gdal_edit.py",
+                                    "-a_nodata", -10000,
+                                    tile_crop_map_masked]))
+
     def get_tile_crop_map(self, tile):
         if tile.crop_mask is not None:
             return self.get_output_path("crop_type_map_masked_{}.tif", tile.id)
