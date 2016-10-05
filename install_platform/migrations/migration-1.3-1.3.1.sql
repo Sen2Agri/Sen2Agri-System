@@ -2,6 +2,8 @@ begin transaction;
 
 do $migration$
 begin
+    raise notice 'running migrations';
+
     if not exists (select * from information_schema.tables where table_schema = 'public' and table_name = 'meta') then
         raise notice 'upgrading from 1.3 to 1.3.1';
 
@@ -125,6 +127,8 @@ begin
         insert into meta(version) values('1.3.1');
 
     end if;
+
+    raise notice 'complete';
 end;
 $migration$;
 
