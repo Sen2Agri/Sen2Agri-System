@@ -185,3 +185,6 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processo
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-mask-fused', NULL, 'CropMaskFused.py', '2015-12-17 14:25:14.193131+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-type-fused', NULL, 'CropTypeFused.py', '2015-12-17 14:25:14.193131+02');
+
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.strata_shp', NULL, '', '2016-02-29 14:08:07.963143+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.strata_shp', NULL, '', '2016-03-09 16:28:59.820251+02');
