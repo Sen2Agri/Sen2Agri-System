@@ -136,17 +136,17 @@
 											<div class="subgroup lai">
 												<label class="control-label">Generate LAI mono-dates:</label>
 												<div class="form-group form-group-sm">
-													<input class="form-control" id="monolai" type="checkbox" name="monolai" value="monolai" checked="checked">
+													<input class="form-control" id="monolai" type="radio" name="lai" value="monolai" checked="checked">
 													<label class="control-label" for="monolai">Generate LAI mono-dates</label>
 													<span class="help-block">(Generate LAI mono-dates)</span>
 												</div>
 												<div class="form-group form-group-sm">
-													<input class="form-control" id="reproc" type="checkbox" name="reproc" value="reproc" checked="checked">
+													<input class="form-control" id="reproc" type="radio" name="lai" value="reproc">
 													<label class="control-label" for="reproc">Reprocessing with the last N-Days</label>
 													<span class="help-block">(Performe reprocessing with the last N-Days)</span>
 												</div>
 												<div class="form-group form-group-sm">
-													<input class="form-control" id="fitted" type="checkbox" name="fitted" value="fitted">
+													<input class="form-control" id="fitted" type="radio" name="lai" value="fitted">
 													<label class="control-label" for="fitted">LAI time series fitting at the end of the season</label>
 													<span class="help-block">(Performe reprocessing at the end of the season)</span>
 												</div>
