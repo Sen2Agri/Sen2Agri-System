@@ -184,6 +184,3 @@ INSERT INTO config_metadata VALUES ('executor.processor.l4b.slurm_qos', 'Slurm Q
 
 INSERT INTO config_metadata VALUES ('executor.module.path.crop-mask-fused', 'Crop mask script with stratification', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.crop-type-fused', 'Crop type script with stratification', 'file', true, 8);
-
-INSERT INTO config_metadata VALUES ('processor.l4a.strata_shp', 'Default strata shape file for CropMask (should be provided for each site)', 'string', true, 5);
-INSERT INTO config_metadata VALUES ('processor.l4b.strata_shp', 'Default strata shape file for CropType (should be provided for each site)', 'string', true, 6);
