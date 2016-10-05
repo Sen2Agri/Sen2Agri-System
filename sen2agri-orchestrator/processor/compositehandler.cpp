@@ -311,6 +311,12 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             updateSynthesisArgs.append(prevL3AProdRefls);
             updateSynthesisArgs.append("-prevl3af");
             updateSynthesisArgs.append(prevL3AProdFlags);
+            // remove at this step the previous files
+            cleanupTemporaryFilesList.append(prevL3AProdWeights);
+            cleanupTemporaryFilesList.append(prevL3AProdDates);
+            cleanupTemporaryFilesList.append(prevL3AProdRefls);
+            cleanupTemporaryFilesList.append(prevL3AProdFlags);
+            cleanupTemporaryFilesList.append(prevL3ARgbFile);
         }
         steps.append(updateSynthesis.CreateStep("UpdateSynthesis", updateSynthesisArgs));
         cleanupTemporaryFilesList.append(outL3AResultFile);
@@ -465,6 +471,8 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     int resolution = cfg.resolution;
     QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.jobId, listProducts,
                                                                ProductType::L2AProductTypeId);
+    //ProcessorHandlerHelper::TrimLeftSecondarySatellite(listProducts, mapTiles);
+
     QList<CompositeProductFormatterParams> listParams;
 
     TaskToSubmit productFormatterTask{"product-formatter", {}};
@@ -509,11 +517,12 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                               const TaskFinishedEvent &event)
 {
     if (event.module == "product-formatter") {
-        ctx.MarkJobFinished(event.jobId);
-
         QString prodName = GetProductFormatterProductName(ctx, event);
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId) + "/" + prodName;
         if(prodName != "" && ProcessorHandlerHelper::IsValidHighLevelProduct(productFolder)) {
+            // mark the job as finished
+            ctx.MarkJobFinished(event.jobId);
+
             QString quicklook = GetProductFormatterQuicklook(ctx, event);
             QString footPrint = GetProductFormatterFootprint(ctx, event);
             // Insert the product into the database
@@ -522,11 +531,13 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             ctx.InsertProduct({ ProductType::L3AProductTypeId, event.processorId, event.siteId,
                                 event.jobId, productFolder, maxDate, prodName, quicklook,
                                 footPrint, std::experimental::nullopt, TileList() });
-            // Now remove the job folder containing temporary files
-            RemoveJobFolder(ctx, event.jobId, "l3a");
         } else {
+            // mark the job as failed
+            ctx.MarkJobFailed(event.jobId);
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
         }
+        // Now remove the job folder containing temporary files
+        RemoveJobFolder(ctx, event.jobId, "l3a");
     }
 }
 
