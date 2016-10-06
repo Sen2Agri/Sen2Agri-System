@@ -1,6 +1,7 @@
 #pragma once
 
 #include "processorhandler.hpp"
+#include "cropmaskhandler.hpp"
 
 typedef struct {
     int jobId;
@@ -41,6 +42,7 @@ typedef struct {
 class CropMaskHandlerNew : public ProcessorHandler
 {
 private:
+    void SetProcessorDescription(const ProcessorDescription &procDescr) override;
     void HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                 const JobSubmittedEvent &event) override;
     void HandleTaskFinishedImpl(EventProcessingContext &ctx,
@@ -55,4 +57,8 @@ private:
                             const QStringList &listProducts);
     QStringList GetCropTypeTaskArgs(EventProcessingContext &ctx, const CropMaskJobConfig &cfg,
                                         const QStringList &listProducts, TaskToSubmit &cropMaskTask);
+
+private:
+    //TODO: This should be removed when the unsupervised mode will be implemented in CropMaskFused.py
+    CropMaskHandler m_oldL4BHandler;
 };

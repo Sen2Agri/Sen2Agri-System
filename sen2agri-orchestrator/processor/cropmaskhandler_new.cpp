@@ -7,6 +7,12 @@
 #include "processorhandlerhelper.h"
 #include "logger.hpp"
 
+void CropMaskHandlerNew::SetProcessorDescription(const ProcessorDescription &procDescr) {
+    this->processorDescr = procDescr;
+    m_oldL4BHandler.SetProcessorDescription(procDescr);
+}
+
+
 void CropMaskHandlerNew::GetJobConfig(EventProcessingContext &ctx,const JobSubmittedEvent &event,CropMaskJobConfig &cfg) {
     auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4a.");
     auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.working-mem");
@@ -24,7 +30,17 @@ void CropMaskHandlerNew::GetJobConfig(EventProcessingContext &ctx,const JobSubmi
     cfg.strataShp = parameters["strata_shape"].toString();
     // if the strata is not set by the user, try to take it from the database
     if(cfg.strataShp.size() == 0) {
-        cfg.strataShp = configParameters["processor.l4a.strata"];
+        QString siteName = ctx.GetSiteShortName(event.siteId);
+        // Get the reference dir
+        QString refDir = configParameters["processor.l4a.reference_data_dir"];
+        refDir = refDir.replace("{site}", siteName);
+        QString tmpShpFile;
+        QString tmpRefRasterFile;
+        QString tmpStrataFile;
+        if(ProcessorHandlerHelper::GetCropReferenceFile(refDir, tmpShpFile, tmpRefRasterFile, tmpStrataFile) &&
+                QFile::exists(tmpStrataFile)) {
+            cfg.strataShp = tmpStrataFile;
+        }
     }
 
     cfg.referenceRaster = parameters["reference_raster"].toString();
@@ -227,6 +243,12 @@ void CropMaskHandlerNew::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     CropMaskJobConfig cfg;
     GetJobConfig(ctx, event, cfg);
 
+    //TODO: This should be removed when the unsupervised mode will be implemented in CropMaskFused.py
+    if(cfg.referencePolygons.length() == 0) {
+        m_oldL4BHandler.HandleJobSubmitted(ctx, event);
+        return;
+    }
+
     QList<TaskToSubmit> allTasksList;
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef = CreateTasks(allTasksList);
     SubmitTasks(ctx, cfg.jobId, allTasksListRef);
@@ -256,6 +278,10 @@ void CropMaskHandlerNew::HandleTaskFinishedImpl(EventProcessingContext &ctx,
         }
         // Now remove the job folder containing temporary files
         RemoveJobFolder(ctx, event.jobId, "l4a");
+    } else {
+        // check if the message can be handled by the old handler
+        //TODO: This should be removed when the unsupervised mode will be implemented in CropMaskFused.py
+        m_oldL4BHandler.HandleTaskFinished(ctx, event);
     }
 }
 
