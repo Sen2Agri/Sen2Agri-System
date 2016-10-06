@@ -151,7 +151,7 @@ function insertjob($name, $description, $processor_short_name, $site_id, $start_
 		// send notification through CURL
 		try {
 			//url of the service
-			$url= ConfigParams::$SERVICES_NOTIFY_ORCHESTRATOR_URL;
+			$url= ConfigParams::$SERVICES_URL."/NotifyOrchestrator";
 			
 			//initialise connection
 			$ch = curl_init();

@@ -47,24 +47,10 @@ function getProductImageSize($file) {
 $products = array();
 
 try {
-	$URL = ConfigParams::$SERVICES_DASHBOARD_PRODUCTS_URL;
-	$PRODUCT_ROOT_FOLDER = ConfigParams::$PRODUCT_ROOT_FOLDER;
-	$SITE_PRODUCT_RELATIVE_FOLDER = ConfigParams::$SITE_PRODUCT_RELATIVE_FOLDER;
-	
-	//Needs extra lib
-	//$responseJson = http_get($URL);
-	
-	$ch = curl_init();
-	$timeout = 5;
-	
-	curl_setopt($ch, CURLOPT_URL, $URL);
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
-	curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, $timeout);
-	
-	$responseJson = curl_exec($ch);
-	curl_close($ch);
-	
-	$productRows = json_decode($responseJson);
+	$dbconn       = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+	$rows         = pg_query($dbconn, "select * from sp_get_dashboard_products(".ConfigParams::$SITE_ID.")") or die(pg_last_error());
+	$responseJson = pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "";
+	$productRows  = json_decode($responseJson);
 	
     foreach($productRows as $productRow) {
         $siteObj = findSite($productRow->site, $products);
