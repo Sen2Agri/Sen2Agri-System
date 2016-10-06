@@ -5,3 +5,9 @@ Description=Executor for Sen2Agri
 BusName=org.esa.sen2agri.processorsExecutor
 ExecStart=/usr/bin/sen2agri-executor
 User=sen2agri-service
+RestartSec=5
+Restart=on-failure
+Before=slurmd.service
+
+[Install]
+WantedBy=multi-user.target
