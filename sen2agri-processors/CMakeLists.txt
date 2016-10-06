@@ -39,4 +39,4 @@ install(FILES dist/sen2agri-disable-thp.conf
         DESTINATION usr/lib/tmpfiles.d)
 
 install(FILES dist/50-open-files.conf
-        DESTINATION etc/security.d/limits.d)
+        DESTINATION etc/security/limits.d)
