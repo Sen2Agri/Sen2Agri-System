@@ -9,6 +9,7 @@
 
 void CropTypeHandlerNew::GetJobConfig(EventProcessingContext &ctx,const JobSubmittedEvent &event,CropTypeJobConfig &cfg) {
     auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4b.");
+    auto l4aConfigParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4a.reference_data_dir");
     auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.working-mem");
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
@@ -24,7 +25,17 @@ void CropTypeHandlerNew::GetJobConfig(EventProcessingContext &ctx,const JobSubmi
     cfg.strataShp = parameters["strata_shape"].toString();
     // if the strata is not set by the user, try to take it from the database
     if(cfg.strataShp.size() == 0) {
-        cfg.strataShp = configParameters["processor.l4b.strata"];
+        QString siteName = ctx.GetSiteShortName(event.siteId);
+        // Get the reference dir
+        QString refDir = l4aConfigParameters["processor.l4a.reference_data_dir"];
+        refDir = refDir.replace("{site}", siteName);
+        QString tmpShpFile;
+        QString tmpRefRasterFile;
+        QString tmpStrataFile;
+        if(ProcessorHandlerHelper::GetCropReferenceFile(refDir, tmpShpFile, tmpRefRasterFile, tmpStrataFile) &&
+                QFile::exists(tmpStrataFile)) {
+            cfg.strataShp = tmpStrataFile;
+        }
     }
 
     // get the crop mask

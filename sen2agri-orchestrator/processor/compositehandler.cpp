@@ -177,7 +177,7 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     QString prevL3AProdDates;
     QString prevL3ARgbFile;
     for (int i = 0; i < listProducts.size(); i++) {
-        QStringList cleanupTemporaryFilesList;
+        QStringList cleanupTemporaryFilesList;// = {"-f"};
         const auto &inputProduct = listProducts[i];
         // Mask Handler Step
         TaskToSubmit &maskHandler = allTasksList[nCurTaskIdx++];
@@ -316,7 +316,8 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             cleanupTemporaryFilesList.append(prevL3AProdDates);
             cleanupTemporaryFilesList.append(prevL3AProdRefls);
             cleanupTemporaryFilesList.append(prevL3AProdFlags);
-            cleanupTemporaryFilesList.append(prevL3ARgbFile);
+            // normally this will not be created in intermedaiate steps
+            //cleanupTemporaryFilesList.append(prevL3ARgbFile);
         }
         steps.append(updateSynthesis.CreateStep("UpdateSynthesis", updateSynthesisArgs));
         cleanupTemporaryFilesList.append(outL3AResultFile);
@@ -333,9 +334,13 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
                                               "-outweights", (isLastProduct ? ("\"" + outL3AResultWeightsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultWeightsFile),
                                               "-outdates", (isLastProduct ? ("\"" + outL3AResultDatesFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultDatesFile),
                                               "-outrefls", (isLastProduct ? ("\"" + outL3AResultReflsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultReflsFile),
-                                              "-outflags", (isLastProduct ? ("\"" + outL3AResultFlagsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultFlagsFile),
-                                              "-outrgb", (isLastProduct ? ("\"" + outL3AResultRgbFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultRgbFile)
+                                              "-outflags", (isLastProduct ? ("\"" + outL3AResultFlagsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultFlagsFile)
                                             };
+        // we need to create the rgb file only if the last product
+        if(isLastProduct) {
+            compositeSplitterArgs.append("-outrgb");
+            compositeSplitterArgs.append("\"" + outL3AResultRgbFile+"?gdal:co:COMPRESS=DEFLATE\"");
+        }
         steps.append(compositeSplitter.CreateStep("CompositeSplitter", compositeSplitterArgs));
 
         // save the created L3A product file for the next product creation
