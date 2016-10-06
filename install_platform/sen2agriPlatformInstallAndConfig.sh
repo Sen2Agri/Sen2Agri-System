@@ -446,10 +446,6 @@ function install_and_config_webserver()
 
    ##install Sen2Agri Website
    yum -y install ../rpm_binaries/sen2agri-website-1.0.centos7.x86_64.rpm
-
-   ##update file /var/www/html/ConfigParams.php
-   ##replace "sen2agri-dev" with hostname into file /var/www/html/ConfigParams.php
-   sed -i "s/sen2agri-dev/$(hostname -s)/" /var/www/html/ConfigParams.php
 }
 #-----------------------------------------------------------#
 function install_downloaders_demmacs()
