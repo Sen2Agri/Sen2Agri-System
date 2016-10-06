@@ -393,6 +393,9 @@ class CropMaskProcessor(ProcessorBase):
                      "-rout", format_otb_filename(tile_segmented, compression='DEFLATE')]
         run_step(Step("Majority voting " + tile.id, step_args))
 
+        if not self.args.keepfiles:
+            os.remove(tile_segmentation_merged)
+
     def get_tile_crop_mask(self, tile):
         if self.args.skip_segmentation:
             return self.get_tile_classification_output(tile)
@@ -457,7 +460,7 @@ class CropMaskProcessor(ProcessorBase):
             step_args = ["otbcli", "ComputeConfusionMatrixMulti", self.args.buildfolder,
                             "-ref", "vector",
                             "-ref.vector.in", global_validation_polygons,
-                            "-ref.vector.field", "CODE",
+                            "-ref.vector.field", "CROP",
                             "-out", global_statistics,
                             "-nodatalabel", -10000,
                             "-il"]
