@@ -123,6 +123,13 @@ begin
             version text NOT NULL
         );
 
+        -- 04b66cb98a160882120e579fd38ea685191e916d
+        raise notice 'applying 04b66cb98a160882120e579fd38ea685191e916d';
+        raise notice 'update config set key = ''executor.module.path.dimensionality-reduction'', value=''otbcli_DimensionalityReduction'' where key = ''executor.module.path.principal-component-analysis''';
+        update config set key = 'executor.module.path.dimensionality-reduction', value='otbcli_DimensionalityReduction' where key = 'executor.module.path.principal-component-analysis';
+        raise notice 'update config_metadata set key = ''executor.module.path.dimensionality-reduction'', friendly_name=''Dimensionality reduction'' where key = ''executor.module.path.principal-component-analysis''';
+        update config_metadata set key = 'executor.module.path.dimensionality-reduction', friendly_name='Dimensionality reduction' where key = 'executor.module.path.principal-component-analysis';
+
         raise notice 'insert into meta(version) values(''1.3.1'');';
         insert into meta(version) values('1.3.1');
 
