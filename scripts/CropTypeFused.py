@@ -448,10 +448,10 @@ class CropTypeProcessor(ProcessorBase):
         metadata.append(
             E.Parameters(
                 E.MainMission(self.args.mission),
-                E.PixelSize(self.args.pixsize),
+                E.PixelSize(str(self.args.pixsize)),
                 E.SampleRatio(str(self.args.ratio)),
                 E.Classifier(self.args.classifier),
-                E.Seed(self.args.rseed),
+                E.Seed(str(self.args.rseed)),
                 E.LUT(os.path.basename(self.args.lut)),
                 classifier
             )
