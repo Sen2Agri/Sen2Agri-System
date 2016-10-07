@@ -26,6 +26,7 @@
 ### Fixed
 - The server hostname no longer needs to be configured in `ConfigParams.php`. This should have been done by the installer, but was unreliable at times
 - The dashboard products page is now much faster
+- The dashboard no longer displays the load average multiplied by 100
 - The SAFE formatting application chose the output SRS at random when creating the `LEGACY_DATA` mosaics and previews. It now chooses the one that is the most common among the product tiles
 - The number of concurrent jobs started at once in the automated mode can now limited via the `GrpJobs` SLURM `QOS` parameter (e.g. `sacctmgr modify qos qoscomposite set GrpJobs=5`)
 - A missing `gdal-python` dependency was added to the `sen2agri-processors` package
@@ -39,7 +40,7 @@
 ### Known issues
 - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
 - With multiple input tiles, the training pixel sampling distribution for crop type and crop mask products can be skewed if the training classes are not uniformly distributed
-- Performance of the multi-tile Crop Type and Crop Mask processors can be poor with a large number of input products
+- Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products
 - The trimming step of the Crop Mask processor still uses a large amount of memory
 - The SAFE formatting application uses both segmented and raw crop masks for the mosaic
 - The SAFE formatting application outputs mosaics that are outside of the SRS bounds for products spanning multiple SRSs. It should use `EPSG:4326/WGS 84` unless told otherwise.
@@ -53,4 +54,5 @@
 - The version number of the RPM packages is incorrect
 - The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented in the manual
 - The L3A, L3B, L3C processors and the quality flags extraction step of the L4A and L4B processors fail when one of the input product paths contains no directory separator. A workaround is to place a `./` before the product file.
+- The dashboard previews don't match their bounds rectangle because of WGS 84 / Web Mercator projection mismatch
 - The `demmaccs.py` command line help message contains positional arguments (`input` and `output`) placed immediately after optional arguments taking multiple values (`--prev-l2a-tiles` and `--prev-l2a-products-paths`). This can prove troublesome for unsuspecting users. The workaround is to put a `--` or a different optional argument before the positional arguments
