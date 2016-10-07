@@ -29,12 +29,10 @@ void CropTypeHandlerNew::GetJobConfig(EventProcessingContext &ctx,const JobSubmi
         // Get the reference dir
         QString refDir = l4aConfigParameters["processor.l4a.reference_data_dir"];
         refDir = refDir.replace("{site}", siteName);
-        QString tmpShpFile;
-        QString tmpRefRasterFile;
-        QString tmpStrataFile;
-        if(ProcessorHandlerHelper::GetCropReferenceFile(refDir, tmpShpFile, tmpRefRasterFile, tmpStrataFile) &&
-                QFile::exists(tmpStrataFile)) {
-            cfg.strataShp = tmpStrataFile;
+        QString strataFile;
+        if(ProcessorHandlerHelper::GetStrataFile(refDir, strataFile) &&
+                QFile::exists(strataFile)) {
+            cfg.strataShp = strataFile;
         }
     }
 
