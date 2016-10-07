@@ -45,6 +45,8 @@
 
 #include <string>
 
+#include <boost/filesystem.hpp>
+
 typedef otb::VectorImage<float, 2>                                 ImageType;
 typedef otb::Wrapper::UInt8VectorImageType                         MaskType;
 
@@ -221,13 +223,15 @@ public:
             if (auto meta = maccsMetadataReader->ReadMetadata(desc)) {
                 // check if the raster corresponds to the main mission
                 if (meta->Header.FixedHeader.Mission.find(m_mission) != std::string::npos) {
-                    std::string rootFolder = extractFolder(desc);
+                    boost::filesystem::path rootFolder(desc);
+                    rootFolder.remove_filename();
+
                     std::string imageFile = getMACCSRasterFileName(rootFolder, meta->ProductOrganization.ImageFiles, "_FRE");
                     if (imageFile.size() == 0) {
                         imageFile = getMACCSRasterFileName(rootFolder, meta->ProductOrganization.ImageFiles, "_FRE_R1");
                     }
                     auto reader = getInt16ImageReader(imageFile);
-                    reader->UpdateOutputInformation();
+                    reader->GetOutput()->UpdateOutputInformation();
                     float curRes = reader->GetOutput()->GetSpacing()[0];
 
 
@@ -247,10 +251,12 @@ public:
                 // check if the raster corresponds to the main mission
                 if (meta->Header.Ident.find(m_mission) != std::string::npos) {
                     // get the root foloder from the descriptor file name
-                    std::string rootFolder = extractFolder(desc);
-                    std::string imageFile = rootFolder + meta->Files.OrthoSurfCorrPente;
-                    auto reader = getInt16ImageReader(imageFile);
-                    reader->UpdateOutputInformation();
+                    boost::filesystem::path rootFolder(desc);
+                    rootFolder.remove_filename();
+
+                    const auto &imageFile = rootFolder / meta->Files.OrthoSurfCorrPente;
+                    auto reader = getInt16ImageReader(imageFile.string());
+                    reader->GetOutput()->UpdateOutputInformation();
                     float curRes = reader->GetOutput()->GetSpacing()[0];
 
 
@@ -401,8 +407,8 @@ protected:
         descriptor.mission = SPOT;
         descriptor.isMain = m_mission.compare(descriptor.mission) == 0;
 
-        // get the root foloder from the descriptor file name
-        std::string rootFolder = extractFolder(filename);
+        boost::filesystem::path rootFolder(filename);
+        rootFolder.remove_filename();
 
         // Get the spot bands
         getSpotBands(meta, rootFolder, td, descriptor);
@@ -424,8 +430,8 @@ protected:
         descriptor.mission = LANDSAT;
         descriptor.isMain = m_mission.compare(descriptor.mission) == 0;
 
-        // get the root foloder from the descriptor file name
-        std::string rootFolder = extractFolder(filename);
+        boost::filesystem::path rootFolder(filename);
+        rootFolder.remove_filename();
 
         // Get the bands
         getLandsatBands(meta, rootFolder, td, descriptor);
@@ -448,8 +454,8 @@ protected:
         descriptor.mission = SENTINEL;
         descriptor.isMain = m_mission.compare(descriptor.mission) == 0;
 
-        // get the root foloder from the descriptor file name
-        std::string rootFolder = extractFolder(filename);
+        boost::filesystem::path rootFolder(filename);
+        rootFolder.remove_filename();
 
         // Get the bands
         getSentinelBands(meta, rootFolder, td, descriptor);
@@ -513,12 +519,12 @@ protected:
     }
 
     // Return the path to a file for which the name end in the ending
-    std::string getMACCSRasterFileName(const std::string& rootFolder, const std::vector<MACCSFileInformation>& imageFiles, const std::string& ending) {
+    std::string getMACCSRasterFileName(const boost::filesystem::path &rootFolder, const std::vector<MACCSFileInformation>& imageFiles, const std::string& ending) {
 
         for (const MACCSFileInformation& fileInfo : imageFiles) {
             if (fileInfo.LogicalName.length() >= ending.length() &&
                     0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
-                return rootFolder + fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF";
+                return (rootFolder / (fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF")).string();
             }
 
         }
@@ -527,59 +533,23 @@ protected:
 
 
     // Return the path to a file for which the name end in the ending
-    std::string getMACCSMaskFileName(const std::string& rootFolder, const std::vector<MACCSAnnexInformation>& maskFiles, const std::string& ending) {
+    std::string getMACCSMaskFileName(const boost::filesystem::path &rootFolder, const std::vector<MACCSAnnexInformation>& maskFiles, const std::string& ending) {
 
         for (const MACCSAnnexInformation& fileInfo : maskFiles) {
             if (fileInfo.File.LogicalName.length() >= ending.length() &&
                     0 == fileInfo.File.LogicalName.compare (fileInfo.File.LogicalName.length() - ending.length(), ending.length(), ending)) {
-                return rootFolder + fileInfo.File.FileLocation.substr(0, fileInfo.File.FileLocation.find_last_of('.')) + ".DBL.TIF";
+                return (rootFolder / (fileInfo.File.FileLocation.substr(0, fileInfo.File.FileLocation.find_last_of('.')) + ".DBL.TIF")).string();
             }
         }
         return "";
     }
 
-    // TODO replace with Boost.Filesystem
-    // Extract the folder from a given path.
-    std::string extractFolder(const std::string& filename) {
-        size_t pos = filename.find_last_of("/\\");
-        if (pos == std::string::npos) {
-            return "";
-        }
-
-        return filename.substr(0, pos) + "/";
-    }
-
-    // Get the path to the Spot4 raster
-    std::string getSPOT4RasterFileName(const SPOT4Metadata & desc, const std::string& folder) {
-        return folder + desc.Files.OrthoSurfCorrPente;
-    }
-
-    // Return the path to a SPOT4 mask file
-    std::string getSPOT4MaskFileName(const SPOT4Metadata & desc, const std::string& rootFolder, const unsigned char maskType) {
-
-        std::string file;
-        switch (maskType) {
-        case MASK_TYPE_NUA:
-            file = desc.Files.MaskNua;
-            break;
-        case MASK_TYPE_DIV:
-            file = desc.Files.MaskDiv;
-            break;
-        case MASK_TYPE_SAT:
-        default:
-            file = desc.Files.MaskSaturation;
-            break;
-        }
-
-        return rootFolder + file;
-    }
-
-    void getSpotBands(const SPOT4Metadata& meta, const std::string& rootFolder, const TileData& td, ImageDescriptor &descriptor) {
+    void getSpotBands(const SPOT4Metadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor) {
         // Return the bands associated with a SPOT product
         // get the bands
-        std::string imageFile = rootFolder + meta.Files.OrthoSurfCorrPente;
-        auto reader = getInt16ImageReader(imageFile);
-        reader->UpdateOutputInformation();
+        const auto &imageFile = rootFolder / meta.Files.OrthoSurfCorrPente;
+        auto reader = getInt16ImageReader(imageFile.string());
+        reader->GetOutput()->UpdateOutputInformation();
         float curRes = reader->GetOutput()->GetSpacing()[0];
 
         auto channelExtractor1 = ExtractChannelFilterType::New();
@@ -609,21 +579,22 @@ protected:
         descriptor.bands.push_back(getResampledFloatBand(channelExtractor4->GetOutput(), td, curRes));
     }
 
-    otb::Wrapper::UInt8ImageType::Pointer getSpotMask(const SPOT4Metadata& meta, const std::string& rootFolder, const TileData& td) {
+    otb::Wrapper::UInt8ImageType::Pointer getSpotMask(const SPOT4Metadata& meta, const boost::filesystem::path &rootFolder, const TileData& td) {
         // Return the mask associated with a SPOT product
         // Get the validity mask
-        std::string maskFileDiv = rootFolder + meta.Files.MaskDiv;
-        UInt8ImageReaderType::Pointer maskReaderDiv = getUInt8ImageReader(maskFileDiv);
-        maskReaderDiv->UpdateOutputInformation();
+        const auto &maskFileDiv = rootFolder / meta.Files.MaskDiv;
+
+        UInt8ImageReaderType::Pointer maskReaderDiv = getUInt8ImageReader(maskFileDiv.string());
+        maskReaderDiv->GetOutput()->UpdateOutputInformation();
         float curRes = maskReaderDiv->GetOutput()->GetSpacing()[0];
 
         // Get the saturation mask
-        std::string maskFileSat = rootFolder + meta.Files.MaskSaturation;
-        UInt8ImageReaderType::Pointer maskReaderSat = getUInt8ImageReader(maskFileSat);
+        const auto &maskFileSat = rootFolder / meta.Files.MaskSaturation;
+        UInt8ImageReaderType::Pointer maskReaderSat = getUInt8ImageReader(maskFileSat.string());
 
         // Get the clouds mask
-        std::string maskFileNua = rootFolder + meta.Files.MaskNua;
-        UInt16ImageReaderType::Pointer maskReaderNua = getUInt16ImageReader(maskFileNua);
+        const auto &maskFileNua = rootFolder / meta.Files.MaskNua;
+        UInt16ImageReaderType::Pointer maskReaderNua = getUInt16ImageReader(maskFileNua.string());
 
         // Build the SpotMaskFilter
         SpotMaskFilterType::Pointer spotMaskFilter = SpotMaskFilterType::New();
@@ -638,12 +609,12 @@ protected:
         return getResampledUInt8Bands(spotMaskFilter->GetOutput(), td, curRes);
     }
 
-    void getLandsatBands(const MACCSFileMetadata& meta, const std::string& rootFolder, const TileData& td, ImageDescriptor &descriptor) {
+    void getLandsatBands(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor) {
         // Return the bands associated with a LANDSAT product
         // get the bands
         std::string imageFile = getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE");
         auto reader = getInt16ImageReader(imageFile);
-        reader->UpdateOutputInformation();
+        reader->GetOutput()->UpdateOutputInformation();
         float curRes = reader->GetOutput()->GetSpacing()[0];
 
         // Extract the bands from 3 to 6
@@ -674,14 +645,14 @@ protected:
         descriptor.bands.push_back(getResampledFloatBand(channelExtractor4->GetOutput(), td, curRes));
     }
 
-    otb::Wrapper::UInt8ImageType::Pointer getLandsatMask(const MACCSFileMetadata& meta, const std::string& rootFolder, const TileData& td) {
+    otb::Wrapper::UInt8ImageType::Pointer getLandsatMask(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td) {
         // Return the mask associated with a LANDSAT product
 
         // Get the quality mask
         std::string maskFileQuality = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_QLT");
 
         auto maskReaderQuality = getUInt8VectorImageReader(maskFileQuality);
-        maskReaderQuality->UpdateOutputInformation();
+        maskReaderQuality->GetOutput()->UpdateOutputInformation();
         float curRes = maskReaderQuality->GetOutput()->GetSpacing()[0];
 
          // Get the cloud mask
@@ -700,13 +671,13 @@ protected:
         return getResampledUInt8Bands(sentinelMaskFilter->GetOutput(), td, curRes);
     }
 
-    void getSentinelBands(const MACCSFileMetadata& meta, const std::string& rootFolder, const TileData& td, ImageDescriptor &descriptor) {
+    void getSentinelBands(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor) {
         // Return the bands associated with a SENTINEL product
         // get the bands
         //Extract the first 3 bands form the first file.
         std::string imageFile1 = getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE_R1");
         auto reader1 = getInt16ImageReader(imageFile1);
-        reader1->UpdateOutputInformation();
+        reader1->GetOutput()->UpdateOutputInformation();
         float curRes1 = reader1->GetOutput()->GetSpacing()[0];
 
         // Get the index of the green band
@@ -736,7 +707,7 @@ protected:
         //Extract the last band form the second file.
         std::string imageFile2 = getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE_R2");
         auto reader2 = getInt16ImageReader(imageFile2);
-        reader2->UpdateOutputInformation();
+        reader2->GetOutput()->UpdateOutputInformation();
         float curRes2 = reader2->GetOutput()->GetSpacing()[0];
 
         // Get the index of the SWIR band
@@ -753,14 +724,14 @@ protected:
         descriptor.bands.push_back(getResampledFloatBand(channelExtractor4->GetOutput(), td, curRes2));
     }
 
-    otb::Wrapper::UInt8ImageType::Pointer getSentinelMask(const MACCSFileMetadata& meta, const std::string& rootFolder, const TileData& td) {
+    otb::Wrapper::UInt8ImageType::Pointer getSentinelMask(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td) {
         // Return the mask associated with a SENTINEL product
 
         // Get the quality mask
         std::string maskFileQuality = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_QLT_R1");
 
         auto maskReaderQuality = getUInt8VectorImageReader(maskFileQuality);
-        maskReaderQuality->UpdateOutputInformation();
+        maskReaderQuality->GetOutput()->UpdateOutputInformation();
         float curRes = maskReaderQuality->GetOutput()->GetSpacing()[0];
 
          // Get the cloud mask
