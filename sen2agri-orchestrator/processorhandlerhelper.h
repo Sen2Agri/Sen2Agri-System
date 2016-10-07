@@ -74,6 +74,7 @@ public:
     static bool IsValidL2AMetadataFileName(const QString &path);
     static bool GetL2AIntevalFromProducts(const QStringList &productsList, QDateTime &minTime, QDateTime &maxTime);
     static bool GetCropReferenceFile(const QString &refDir, QString &shapeFile, QString &referenceRasterFile);
+    static bool GetStrataFile(const QString &refDir, QString &strataShapeFile);
     static bool GetCropReferenceFile(const QString &refDir, QString &shapeFile, QString &referenceRasterFile, QString &strataShapeFile);
     static void AddSatteliteIntersectingProducts(QMap<QString, TileTemporalFilesInfo> &mapSatellitesTilesInfos,
                                                  QStringList &listSecondarySatLoadedProds, SatelliteIdType secondarySatId,

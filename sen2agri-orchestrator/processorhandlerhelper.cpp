@@ -535,18 +535,24 @@ bool ProcessorHandlerHelper::GetL2AIntevalFromProducts(const QStringList &produc
     return false;
 }
 
-bool ProcessorHandlerHelper::GetCropReferenceFile(const QString &refDir, QString &shapeFile, QString &referenceRasterFile, QString &strataShapeFile) {
-    bool bRet = GetCropReferenceFile(refDir, shapeFile, referenceRasterFile);
-    if(bRet) {
-        QDirIterator itStrataDir(refDir, QStringList() << "strata" << "STRATA", QDir::Dirs);
-        while (itStrataDir.hasNext()) {
-            QDirIterator itStrataFile(itStrataDir.next(), QStringList() << "*.shp" << "*.SHP", QDir::Files);
-            // get the last strata shape file found
-            while (itStrataFile.hasNext()) {
-                strataShapeFile = itStrataFile.next();
-            }
+bool ProcessorHandlerHelper::GetStrataFile(const QString &refDir, QString &strataShapeFile) {
+    bool bRet = false;
+    QDirIterator itStrataDir(refDir, QStringList() << "strata" << "STRATA", QDir::Dirs);
+    while (itStrataDir.hasNext()) {
+        QDirIterator itStrataFile(itStrataDir.next(), QStringList() << "*.shp" << "*.SHP", QDir::Files);
+        // get the last strata shape file found
+        while (itStrataFile.hasNext()) {
+            strataShapeFile = itStrataFile.next();
+            bRet = true;
         }
     }
+
+    return bRet;
+}
+
+bool ProcessorHandlerHelper::GetCropReferenceFile(const QString &refDir, QString &shapeFile, QString &referenceRasterFile, QString &strataShapeFile) {
+    bool bRet = GetCropReferenceFile(refDir, shapeFile, referenceRasterFile);
+    GetStrataFile(refDir, strataShapeFile);
 
     return bRet;
 }

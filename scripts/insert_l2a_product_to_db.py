@@ -448,10 +448,11 @@ if (not args.product_type):
     sys.exit("Please provide the product type using -t or --product_type. Available options: {}".format(l2a_db.get_product_type_names()))
 if (not args.site_name):        
     sys.exit("Please provide the site short name using -s or --site_name. Available options: {}".format(l2a_db.get_site_names()))
-  
-root_dir = args.dir
+
+root_dir = os.path.abspath(args.dir)
 if not root_dir.endswith(os.path.sep):
     root_dir += os.path.sep
+#print("Provided dir {} (using {})".format(args.dir, root_dir))
     
 if args.multi :
     for name in os.listdir(root_dir):
