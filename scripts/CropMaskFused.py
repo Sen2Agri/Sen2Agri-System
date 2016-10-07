@@ -437,45 +437,51 @@ class CropMaskProcessor(ProcessorBase):
             run_step(Step("XMLStatistics_" + str(stratum.id), step_args))
 
         if not self.single_stratum:
-            global_validation_polygons = self.get_output_path("validation_polygons_global.shp")
-            global_prj_file = self.get_output_path("validation_polygons_global.prj")
-            global_statistics = self.get_output_path("confusion-matrix-validation-global.csv")
-            global_quality_metrics = self.get_output_path("quality-metrics-global.txt")
             global_validation_metrics_xml = self.get_output_path("validation-metrics-global.xml")
 
-            files = []
-            for stratum in self.strata:
-                area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
+            if len(self.strata > 1):
+                global_validation_polygons = self.get_output_path("validation_polygons_global.shp")
+                global_prj_file = self.get_output_path("validation_polygons_global.prj")
+                global_statistics = self.get_output_path("confusion-matrix-validation-global.csv")
+                global_quality_metrics = self.get_output_path("quality-metrics-global.txt")
 
-                files.append(area_validation_polygons)
+                files = []
+                for stratum in self.strata:
+                    area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
 
-            step_args = ["otbcli_ConcatenateVectorData",
-                            "-out", global_validation_polygons,
-                            "-vd"] + files
-            run_step(Step("ConcatenateVectorData", step_args))
+                    files.append(area_validation_polygons)
 
-            first_prj_file = self.get_output_path("validation_polygons-{}.prj", self.strata[0].id)
-            shutil.copyfile(first_prj_file, global_prj_file)
+                step_args = ["otbcli_ConcatenateVectorData",
+                                "-out", global_validation_polygons,
+                                "-vd"] + files
+                run_step(Step("ConcatenateVectorData", step_args))
 
-            step_args = ["otbcli", "ComputeConfusionMatrixMulti", self.args.buildfolder,
-                            "-ref", "vector",
-                            "-ref.vector.in", global_validation_polygons,
-                            "-ref.vector.field", "CROP",
-                            "-out", global_statistics,
-                            "-nodatalabel", -10000,
-                            "-il"]
-            for tile in self.tiles:
-                step_args.append(self.get_tile_crop_mask(tile))
+                first_prj_file = self.get_output_path("validation_polygons-{}.prj", self.strata[0].id)
+                shutil.copyfile(first_prj_file, global_prj_file)
 
-            run_step(Step("ComputeConfusionMatrix_Global",
-                                step_args, out_file=global_quality_metrics))
+                step_args = ["otbcli", "ComputeConfusionMatrixMulti", self.args.buildfolder,
+                                "-ref", "vector",
+                                "-ref.vector.in", global_validation_polygons,
+                                "-ref.vector.field", "CROP",
+                                "-out", global_statistics,
+                                "-nodatalabel", -10000,
+                                "-il"]
+                for tile in self.tiles:
+                    step_args.append(self.get_tile_crop_mask(tile))
 
-            step_args = ["otbcli", "XMLStatistics", self.args.buildfolder,
-                            "-root", "CropMask",
-                            "-confmat", global_statistics,
-                            "-quality", global_quality_metrics,
-                            "-out", global_validation_metrics_xml]
-            run_step(Step("XMLStatistics_Global", step_args))
+                run_step(Step("ComputeConfusionMatrix_Global",
+                                    step_args, out_file=global_quality_metrics))
+
+                step_args = ["otbcli", "XMLStatistics", self.args.buildfolder,
+                                "-root", "CropMask",
+                                "-confmat", global_statistics,
+                                "-quality", global_quality_metrics,
+                                "-out", global_validation_metrics_xml]
+                run_step(Step("XMLStatistics_Global", step_args))
+            else:
+                area_validation_metrics_xml = self.get_output_path("validation-metrics-{}.xml", self.strata[0].id)
+
+                shutil.copyfile(area_validation_metrics_xml, global_validation_metrics_xml)
 
         step_args = ["otbcli", "ProductFormatter", self.args.buildfolder,
                         "-destroot", self.args.targetfolder,

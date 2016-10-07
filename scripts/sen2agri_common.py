@@ -516,6 +516,9 @@ class ProcessorBase(object):
 
         if not self.single_stratum:
             self.strata = load_strata(self.args.strata, self.site_footprint_wgs84)
+            if len(self.strata) == 0:
+                print("No training data found inside any of the strata, exiting")
+                sys.exit(1)
 
             strata_relabelled = self.get_output_path("strata_relabelled.shp")
 
