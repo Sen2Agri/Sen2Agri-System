@@ -22,7 +22,6 @@ void LaiRetrievalHandlerNew::SetProcessorDescription(const ProcessorDescription 
     this->processorDescr = procDescr;
     m_l3bHandler.SetProcessorDescription(procDescr);
     m_l3cHandler.SetProcessorDescription(procDescr);
-    // TODO: add for L3C and L3D
 }
 
 void LaiRetrievalHandlerNew::HandleJobSubmittedImpl(EventProcessingContext &ctx,
