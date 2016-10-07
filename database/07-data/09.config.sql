@@ -1,5 +1,5 @@
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.mission', NULL, 'SENTINEL', '2016-03-09 16:28:59.820251+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.temporal_resampling_mode', NULL, 'gapfill', '2016-03-09 16:40:46.810185+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.temporal_resampling_mode', NULL, 'resample', '2016-03-09 16:40:46.810185+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3a.path', NULL, '/bin/false', '2015-07-20 16:31:23.208369+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l3b.path', NULL, '/bin/false', '2015-07-20 16:31:23.208369+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processor.l4a.path', NULL, '/bin/false', '2015-07-20 16:31:23.208369+03');
@@ -141,8 +141,8 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.p
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-mask-features-with-insitu', NULL, '/usr/local/bin/otbcli', '2016-02-24 19:07:08.416696+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3a.synth_date_sched_offset', NULL, '30', '2016-02-25 09:00:47.212845+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3a.half_synthesis', NULL, '15', '2016-02-25 09:00:57.21868+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.training-samples-number', NULL, '4000', '2016-03-10 11:40:44.732473+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.temporal_resampling_mode', NULL, 'gapfill', '2016-03-10 18:40:21.140908+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.training-samples-number', NULL, '40000', '2016-03-10 11:40:44.732473+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.temporal_resampling_mode', NULL, 'resample', '2016-03-10 18:40:21.140908+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.generate_models', NULL, '1', '2016-02-29 12:03:08.445828+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.mono_date_lai', NULL, '0', '2016-02-29 12:03:15.149961+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.reprocess', NULL, '0', '2016-02-29 12:03:21.142049+02');

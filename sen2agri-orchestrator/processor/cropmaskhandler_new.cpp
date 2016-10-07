@@ -96,7 +96,7 @@ void CropMaskHandlerNew::GetJobConfig(EventProcessingContext &ctx,const JobSubmi
     cfg.classifierSvmOptimize = configParameters["processor.l4a.classifier.svm.opt"];
 
     cfg.nbtrsample = configParameters["processor.l4a.training-samples-number"];
-    if(cfg.nbtrsample.length() == 0) cfg.nbtrsample = "4000";
+    if(cfg.nbtrsample.length() == 0) cfg.nbtrsample = "40000";
 
     cfg.lmbd = configParameters["processor.l4a.smoothing-lambda"];
     if(cfg.lmbd.length() == 0) cfg.lmbd = "2";
