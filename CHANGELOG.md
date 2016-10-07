@@ -11,10 +11,13 @@
 - A script to insert L2A products into the database (`insert_l2a_product_to_db.py`)
 
 ### Changed
-- Slight performance improvements for every processor from reducing allocations in the bicubic resampler implementation and removing logging code in the GDAL OTB IO module
 - Slight performance improvement for unsupervised Crop Mask processor from writing fewer temporary files to disk
-- The memory usage of the unsupervised crop mask trimming step was reduced by about a third to a half
-- The dashboard no longer performs AJAX requests to a web service running on port 8080. This simplifies deployment behind a firewall and makes reverse proxy-ing possible. When configuring a reverse proxy, note that the dashboard still assumes it's running from the root of the site, so rewrite rules need to be defined accordingly.
+- Reduced by about half the memory usage of the unsupervised crop mask training step
+- Reduced by about half the memory usage of the unsupervised crop mask trimming step
+- Increased default supervised crop mask training sample count from `4000` to `40000`
+- Changed default crop type and crop mask resampling mode from `gapfill` to `resample`
+- Updated SNAP adapters
+- The dashboard no longer performs AJAX requests to a web service running on port `8080`. This simplifies deployment behind a firewall and makes reverse proxy-ing possible. When configuring a reverse proxy, note that the dashboard still assumes it's running from the root of the site, so rewrite rules need to be defined accordingly.
 - The install script is now more robust against being run multiple times without dropping the `sen2agri` PostgreSQL database. This is still not a supported scenario.
 - Temporary files are now removed when running the the automated mode
 - Landsat 8 download works again by making use of the CSRF token on the USGS site
@@ -22,9 +25,11 @@
 
 ### Fixed
 - The server hostname no longer needs to be configured in `ConfigParams.php`. This should have been done by the installer, but was unreliable at times
+- The dashboard products page is now much faster
 - The SAFE formatting application chose the output SRS at random when creating the `LEGACY_DATA` mosaics and previews. It now chooses the one that is the most common among the product tiles
 - The number of concurrent jobs started at once in the automated mode can now limited via the `GrpJobs` SLURM `QOS` parameter (e.g. `sacctmgr modify qos qoscomposite set GrpJobs=5`)
 - A missing `gdal-python` dependency was added to the `sen2agri-processors` package
+- Fixed proxy usage in the Sentinel-2 and Landsat 8 downloaders
 - The `sen2agri-executor` daemon and the downloader and `sen2agri-demmaccs` timers now start automatically after a system reboot
 - The `demmaccs.py` script no longer fails when given paths that don't end in a directory separator
 
