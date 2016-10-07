@@ -364,6 +364,8 @@ class ProcessorBase(object):
     def execute(self):
         start_time = datetime.datetime.now()
         try:
+            exit_status = 0
+            exit_requested = False
             context = self.create_context()
 
             self.load_tiles()
@@ -441,11 +443,18 @@ class ProcessorBase(object):
 
             if self.args.mode is None or self.args.mode == 'validate':
                 self.validate(context)
+        except SystemExit:
+            exit_requested = True
+            pass
         except:
             traceback.print_exc()
+            exit_status = 1
         finally:
-            end_time = datetime.datetime.now()
-            print("Processor finished in", str(end_time - start_time))
+            if not exit_requested:
+                end_time = datetime.datetime.now()
+                print("Processor finished in", str(end_time - start_time))
+
+            sys.exit(exit_status)
 
     def compute_quality_flags(self, tile):
         tile_quality_flags = self.get_output_path("status_flags_{}.tif", tile.id)
