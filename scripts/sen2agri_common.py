@@ -548,6 +548,9 @@ class ProcessorBase(object):
                 for stratum in self.strata:
                     weight = stratum.extent.Intersection(tile.footprint).Area() / tile.area
 
+                    # this will change
+                    if weight < 0.0001:
+                        continue
                     if weight > tile_best_weight:
                         tile_best_weight = weight
                         tile.main_stratum = stratum
