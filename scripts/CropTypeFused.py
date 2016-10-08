@@ -272,7 +272,7 @@ class CropTypeProcessor(ProcessorBase):
         if not self.single_stratum:
             global_validation_metrics_xml = self.get_output_path("validation-metrics-global.xml")
 
-            if len(self.strata > 1):
+            if len(self.strata) > 1:
                 global_validation_polygons = self.get_output_path("validation_polygons_global.shp")
                 global_prj_file = self.get_output_path("validation_polygons_global.prj")
                 global_statistics = self.get_output_path("confusion-matrix-validation-global.csv")
