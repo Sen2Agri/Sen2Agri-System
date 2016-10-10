@@ -9,6 +9,8 @@
 - Upgrading from `1.3` to `1.3.1` is now possible by running the `update.sh` script. Upgrading from previous versions is not supported. Upgrading directly from `1.3` will not be possible in future versions.
 - The SAFE formatting application now accepts the desired output SRS. This is not available when running the processors.
 - A script to insert L2A products into the database (`insert_l2a_product_to_db.py`)
+- New keys in the database config for the QOS names for each processor used to limit the number of jobs of a processor to be executed at a given moment of time in Slurm
+- Added removal of temporary files also during the execution of jobs for Composite and LAI (and not only at the end)
 
 ### Changed
 - Slight performance improvement for unsupervised Crop Mask processor from writing fewer temporary files to disk
@@ -33,6 +35,7 @@
 - Fixed proxy usage in the Sentinel-2 and Landsat 8 downloaders
 - The `sen2agri-executor` daemon and the downloader and `sen2agri-demmaccs` timers now start automatically after a system reboot
 - The `demmaccs.py` script no longer fails when given paths that don't end in a directory separator
+- Correction for low value reflectances in the composite (correction for error in ATBD)
 
 ### Security
 - The dashboard no longer calls via AJAX an unauthenticated web service endpoint
