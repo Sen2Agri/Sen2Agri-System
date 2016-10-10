@@ -47,7 +47,6 @@
 - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges when some tiles need to be reprojected.
 - The SAFE formatting application sometimes outputs unusable previews
 - The SAFE formatting application uses bilinear resampling for the crop type and crop mask mosaics. It should use nearest-neighbour instead.
-- The SAFE `LEGACY_DATA` mosaics are not compressed
 - The L4A and L4B products don't contain a QGIS style file
 - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels. It should expect a binary map.
 - The SAFE and L2A product previews are not gamma-corrected and can be too dark
