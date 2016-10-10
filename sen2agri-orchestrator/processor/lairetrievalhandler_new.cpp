@@ -51,36 +51,8 @@ void LaiRetrievalHandlerNew::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 void LaiRetrievalHandlerNew::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
-    if (event.module == "lai-end-of-job") {
-        ctx.MarkJobFinished(event.jobId);
-    }
-    bool isMonoDatePf, isReprocPf = false, isFittedPf = false;
-    if ((isMonoDatePf = (event.module == "lai-mono-date-product-formatter")) ||
-         (isReprocPf = (event.module == "lai-reproc-product-formatter")) ||
-         (isFittedPf = (event.module == "lai-fitted-product-formatter"))) {
-        QString prodName = GetProductFormatterProductName(ctx, event);
-        QString productFolder = GetProductFormatterOutputProductPath(ctx, event);
-        if((prodName != "") && ProcessorHandlerHelper::IsValidHighLevelProduct(productFolder)) {
-            QString quicklook = GetProductFormatterQuicklook(ctx, event);
-            QString footPrint = GetProductFormatterFootprint(ctx, event);
-            ProductType prodType = ProductType::L3BProductTypeId;
-            if(isReprocPf) prodType = ProductType::L3CProductTypeId;
-            else if (isFittedPf) prodType = ProductType::L3DProductTypeId;
-
-            // Insert the product into the database
-            QDateTime minDate, maxDate;
-            ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
-            int ret = ctx.InsertProduct({ prodType, event.processorId, event.siteId, event.jobId,
-                                productFolder, maxDate, prodName,
-                                quicklook, footPrint, std::experimental::nullopt, TileList() });
-            Logger::debug(QStringLiteral("InsertProduct for %1 returned %2").arg(prodName).arg(ret));
-
-            // Now remove the job folder containing temporary files
-            RemoveJobFolder(ctx, event.jobId, "l3b");
-        } else {
-            Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
-        }
-    }
+    this->m_l3bHandler.HandleTaskFinished(ctx, event);
+    this->m_l3cHandler.HandleTaskFinished(ctx, event);
 }
 
 ProcessorJobDefinitionParams LaiRetrievalHandlerNew::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,

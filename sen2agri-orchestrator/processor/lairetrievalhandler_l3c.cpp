@@ -435,9 +435,6 @@ void LaiRetrievalHandlerL3C::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 void LaiRetrievalHandlerL3C::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
-    if (event.module == "lai-end-of-job") {
-        ctx.MarkJobFinished(event.jobId);
-    }
     bool isReprocPf = false, isFittedPf = false;
     if ((isReprocPf = (event.module == "lai-reproc-product-formatter")) ||
          (isFittedPf = (event.module == "lai-fitted-product-formatter"))) {
@@ -458,11 +455,12 @@ void LaiRetrievalHandlerL3C::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 quicklook, footPrint, std::experimental::nullopt, TileList() });
             Logger::debug(QStringLiteral("InsertProduct for %1 returned %2").arg(prodName).arg(ret));
 
-            // Now remove the job folder containing temporary files
-            RemoveJobFolder(ctx, event.jobId, "l3b");
         } else {
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
+            ctx.MarkJobFailed(event.jobId);
         }
+        // Now remove the job folder containing temporary files
+        RemoveJobFolder(ctx, event.jobId, "l3b");
     }
 }
 

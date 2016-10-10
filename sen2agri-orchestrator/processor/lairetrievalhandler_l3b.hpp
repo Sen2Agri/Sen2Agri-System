@@ -13,7 +13,7 @@ private:
 
     void CreateTasksForNewProduct(QList<TaskToSubmit> &outAllTasksList,
                                    const QStringList &prdTilesList,
-                                   bool bGenModels);
+                                   bool bGenModels, bool bRemoveTempFiles);
 
     void GetModelFileList(QStringList &outListModels, const QString &strPattern, std::map<QString, QString> &configParameters);
     void WriteExecutionInfosFile(const QString &executionInfosPath,
@@ -31,7 +31,7 @@ private:
                                                const QStringList &products, const QStringList &ndviList,
                                                const QStringList &laiList, const QStringList &laiErrList, const QStringList &laiFlgsList);
     NewStepList GetStepsForMonodateLai(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                       const QStringList &prdTilesList, QList<TaskToSubmit> &allTasksList);
+                                       const QStringList &prdTilesList, QList<TaskToSubmit> &allTasksList, bool bRemoveTempFiles);
     NewStepList GetStepsToGenModel(std::map<QString, QString> &configParameters,
                                    const QStringList &listProducts, QList<TaskToSubmit> &allTasksList);
     QStringList GetBVInputVariableGenerationArgs(std::map<QString, QString> &configParameters, const QString &strGenSampleFile);

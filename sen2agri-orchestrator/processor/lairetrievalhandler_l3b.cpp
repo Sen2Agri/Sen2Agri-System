@@ -19,7 +19,7 @@
 
 void LaiRetrievalHandlerL3B::CreateTasksForNewProduct(QList<TaskToSubmit> &outAllTasksList,
                                                     const QStringList &listProducts,
-                                                    bool bGenModels) {
+                                                    bool bGenModels, bool bRemoveTempFiles) {
     int nbLaiMonoProducts = listProducts.size();
     for(int i = 0; i<nbLaiMonoProducts; i++) {
         if(bGenModels) {
@@ -36,6 +36,9 @@ void LaiRetrievalHandlerL3B::CreateTasksForNewProduct(QList<TaskToSubmit> &outAl
         outAllTasksList.append(TaskToSubmit{"lai-quantify-err-image", {}});
     }
     outAllTasksList.append({"lai-mono-date-product-formatter", {}});
+    if(bRemoveTempFiles) {
+        outAllTasksList.append(TaskToSubmit{ "files-remover", {} });
+    }
 
     //   ----------------------------- LOOP --------------------------------------------
     //   |                      lai-create-tile-footprint      (optional)               |
@@ -134,6 +137,11 @@ void LaiRetrievalHandlerL3B::CreateTasksForNewProduct(QList<TaskToSubmit> &outAl
     }
     int productFormatterIdx = nCurTaskIdx++;
     outAllTasksList[productFormatterIdx].parentTasks.append(productFormatterParentsRefs);
+    if(bRemoveTempFiles) {
+        // cleanup-intermediate-files -> product formatter
+        outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+    }
+
 }
 
 NewStepList LaiRetrievalHandlerL3B::GetStepsToGenModel(std::map<QString, QString> &configParameters,
@@ -177,7 +185,8 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsToGenModel(std::map<QString, QString
 }
 
 NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                                    const QStringList &prdTilesList, QList<TaskToSubmit> &allTasksList)
+                                                    const QStringList &prdTilesList, QList<TaskToSubmit> &allTasksList,
+                                                    bool bRemoveTempFiles)
 {
     NewStepList steps;
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
@@ -200,7 +209,7 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
     QStringList laiList;
     QStringList laiErrList;
     QStringList laiFlgsList;
-
+    QStringList cleanupTemporaryFilesList;
     for (int i = 0; i<prdTilesList.size(); i++) {
         const auto &prdTile = prdTilesList[i];
         if(bGenModels) {
@@ -215,11 +224,12 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
         TaskToSubmit &quantifyErrImageTask = allTasksList[curTaskIdx++];
 
         const auto & monoDateMskFlgsFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img.tif");
-        auto monoDateMskFlgsResFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img_resampled.tif");
-        auto singleNdviFile = ndviRviExtractorTask.GetFilePath("single_ndvi.tif");
         auto ftsFile = ndviRviExtractorTask.GetFilePath("ndvi_rvi.tif");
         const auto & monoDateLaiFileName = bvImageInversionTask.GetFilePath("LAI_mono_date_img.tif");
         const auto & monoDateErrFileName = bvErrImageInversionTask.GetFilePath("LAI_mono_date_ERR_img.tif");
+
+        auto singleNdviFile = ndviRviExtractorTask.GetFilePath("single_ndvi.tif");
+        auto monoDateMskFlgsResFileName = genMonoDateMskFagsTask.GetFilePath("LAI_mono_date_msk_flgs_img_resampled.tif");
         const auto & quantifiedLaiFileName = quantifyImageTask.GetFilePath("LAI_mono_date_img_16.tif");
         const auto & quantifiedErrFileName = quantifyErrImageTask.GetFilePath("LAI_mono_date_ERR_img_16.tif");
 
@@ -249,14 +259,27 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
         steps.append(bvErrImageInversionTask.CreateStep("BVImageInversion", bvErrImageInvArgs));
         steps.append(quantifyImageTask.CreateStep("QuantifyImage", quantifyImageArgs));
         steps.append(quantifyErrImageTask.CreateStep("QuantifyImage", quantifyErrImageArgs));
+
+        cleanupTemporaryFilesList.append(monoDateMskFlgsFileName);
+        cleanupTemporaryFilesList.append(ftsFile);
+        cleanupTemporaryFilesList.append(monoDateLaiFileName);
+        cleanupTemporaryFilesList.append(monoDateErrFileName);
+        cleanupTemporaryFilesList.append(singleNdviFile);
+        cleanupTemporaryFilesList.append(monoDateMskFlgsResFileName);
+        cleanupTemporaryFilesList.append(quantifiedLaiFileName);
+        cleanupTemporaryFilesList.append(quantifiedErrFileName);
     }
     TaskToSubmit &laiMonoProductFormatterTask = allTasksList[curTaskIdx++];
-
     QStringList productFormatterArgs = GetLaiMonoProductFormatterArgs(
                 laiMonoProductFormatterTask, ctx, event, prdTilesList,
                 ndviList, laiList, laiErrList, laiFlgsList);
     steps.append(laiMonoProductFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
 
+    if(bRemoveTempFiles) {
+        TaskToSubmit &cleanupTemporaryFilesTask = allTasksList[curTaskIdx++];
+        // add also the cleanup step
+        steps.append(cleanupTemporaryFilesTask.CreateStep("CleanupTemporaryFiles", cleanupTemporaryFilesList));
+    }
 
     return steps;
 }
@@ -293,10 +316,11 @@ void LaiRetrievalHandlerL3B::HandleProduct(EventProcessingContext &ctx, const Jo
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
 
     bool bGenModels = IsGenModels(parameters, configParameters);
+    bool bRemoveTempFiles = NeedRemoveJobFolder(ctx, event.jobId, "l3b");
 
     QList<TaskToSubmit> allTasksList;
     // create the tasks
-    CreateTasksForNewProduct(allTasksList, prdTilesList, bGenModels);
+    CreateTasksForNewProduct(allTasksList, prdTilesList, bGenModels, bRemoveTempFiles);
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     for(TaskToSubmit &task: allTasksList) {
@@ -312,7 +336,7 @@ void LaiRetrievalHandlerL3B::HandleProduct(EventProcessingContext &ctx, const Jo
         steps += GetStepsToGenModel(configParameters, prdTilesList, allTasksList);
     }
 
-    steps += GetStepsForMonodateLai(ctx, event, prdTilesList, allTasksList);
+    steps += GetStepsForMonodateLai(ctx, event, prdTilesList, allTasksList, bRemoveTempFiles);
     ctx.SubmitSteps(steps);
 }
 
@@ -379,7 +403,7 @@ void LaiRetrievalHandlerL3B::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             ctx.MarkJobFailed(event.jobId);
         }
         // Now remove the job folder containing temporary files
-        RemoveJobFolder(ctx, event.jobId, "l3b");
+        //RemoveJobFolder(ctx, event.jobId, "l3b");
     }
 }
 
