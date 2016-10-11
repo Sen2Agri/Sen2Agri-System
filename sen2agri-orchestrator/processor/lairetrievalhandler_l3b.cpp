@@ -20,6 +20,8 @@
 void LaiRetrievalHandlerL3B::CreateTasksForNewProduct(QList<TaskToSubmit> &outAllTasksList,
                                                     const QStringList &listProducts,
                                                     bool bGenModels, bool bRemoveTempFiles) {
+    // in allTasksList we might have tasks from other products. We start from the first task of the current product
+    int initialTasksNo = outAllTasksList.size();
     int nbLaiMonoProducts = listProducts.size();
     for(int i = 0; i<nbLaiMonoProducts; i++) {
         if(bGenModels) {
@@ -70,23 +72,28 @@ void LaiRetrievalHandlerL3B::CreateTasksForNewProduct(QList<TaskToSubmit> &outAl
     // NOTE: In this moment, the products in loop are not executed in parallel. To do this, the if(i > 0) below
     //      should be removed but in this case, the time-series-builders should wait for all the monodate images
     int i;
-    QList<int> laiMonoDateFlgsIdxs;
-    QList<int> bvImageInvIdxs;
-    QList<int> bvErrImageInvIdxs;
-    QList<int> quantifyImageInvIdxs;
-    QList<int> quantifyErrImageInvIdxs;
-
     QList<std::reference_wrapper<const TaskToSubmit>> productFormatterParentsRefs;
 
     // we execute in parallel and launch at once all processing chains for each product
     // for example, if we have genModels, we launch all bv-input-variable-generation for all products
     // if we do not have genModels, we launch all NDVIRVIExtraction in the same time for all products
-    int nCurTaskIdx = 0;
+    int nCurTaskIdx = initialTasksNo;
+
+    // Specifies if the products creation should be chained or not.
+    // TODO: This should be taken from the configuration
+    bool bChainProducts = true;
+
     for(i = 0; i<nbLaiMonoProducts; i++) {
         // add the tasks for generating models
         if(bGenModels) {
             // prosail simulator -> generate-vars
-            // skip over the BVVariableGeneration
+            // if we want chaining products and we have a previous product executed
+            if(bChainProducts && initialTasksNo > 0) {
+                // we create a dependency to the last task of the previous product
+                outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+            }   // else skip over the  as we run the BVVariableGeneration with no previous dependency, allowing
+                // running several products in parallel
+
             nCurTaskIdx++;
             outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
             nCurTaskIdx++;
@@ -97,39 +104,38 @@ void LaiRetrievalHandlerL3B::CreateTasksForNewProduct(QList<TaskToSubmit> &outAl
             outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
             nCurTaskIdx++;
             // now update the index for the lai-mono-date-mask-flags task and set its parent to the inverse-model-learning task
-            //genMasksIdx += MODEL_GEN_TASKS_PER_PRODUCT;
             outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+        } else {
+            // if we want chaining products and we have a previous product executed
+            if(bChainProducts && initialTasksNo > 0) {
+                // we create a dependency to the last task of the previous product
+                outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+            }   // else  skip over the lai-mono-date-mask-flags as we run it with no previous dependency,
+                // allowing running several products in parallel
         }
-
-        int genFlagsIdx = nCurTaskIdx++;
+        // increment the current index for ndvi-rvi-extraction
+        nCurTaskIdx++;
 
         // ndvi-rvi-extraction -> lai-mono-date-mask-flags
         int ndviRviExtrIdx = nCurTaskIdx++;
         outAllTasksList[ndviRviExtrIdx].parentTasks.append(outAllTasksList[ndviRviExtrIdx-1]);
 
-        // we add it here in list as we might have a cut before
-        laiMonoDateFlgsIdxs.append(genFlagsIdx);
-
         // the others comme naturally updated
         // bv-image-inversion -> ndvi-rvi-extraction
         int nBVImageInversionIdx = nCurTaskIdx++;
         outAllTasksList[nBVImageInversionIdx].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
-        bvImageInvIdxs.append(nBVImageInversionIdx);
 
         // bv-err-image-inversion -> ndvi-rvi-extraction
         int nBVErrImageInversionIdx = nCurTaskIdx++;
         outAllTasksList[nBVErrImageInversionIdx].parentTasks.append(outAllTasksList[ndviRviExtrIdx]);
-        bvErrImageInvIdxs.append(nBVErrImageInversionIdx);
 
         // quantify-image -> bv-image-inversion
         int nQuantifyImageInversionIdx = nCurTaskIdx++;
         outAllTasksList[nQuantifyImageInversionIdx].parentTasks.append(outAllTasksList[nBVImageInversionIdx]);
-        quantifyImageInvIdxs.append(nQuantifyImageInversionIdx);
 
         // quantify-err-image -> bv-err-image-inversion
         int nQuantifyErrImageInversionIdx = nCurTaskIdx++;
         outAllTasksList[nQuantifyErrImageInversionIdx].parentTasks.append(outAllTasksList[nBVErrImageInversionIdx]);
-        quantifyErrImageInvIdxs.append(nQuantifyErrImageInversionIdx);
 
         // add the quantify image tasks to the list of the product formatter corresponding to this product
         productFormatterParentsRefs.append(outAllTasksList[nQuantifyImageInversionIdx]);
@@ -146,12 +152,13 @@ void LaiRetrievalHandlerL3B::CreateTasksForNewProduct(QList<TaskToSubmit> &outAl
 
 NewStepList LaiRetrievalHandlerL3B::GetStepsToGenModel(std::map<QString, QString> &configParameters,
                                              const QStringList &listProducts,
-                                             QList<TaskToSubmit> &allTasksList)
+                                             QList<TaskToSubmit> &allTasksList, int tasksStartIdx)
 {
     NewStepList steps;
     const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
     const auto &rsrCfgFile = configParameters["processor.l3b.lai.rsrcfgfile"];
-    int curIdx = 0;
+    // in allTasksList we might have tasks from other products. We start from the first task of the current product
+    int curIdx = tasksStartIdx;
     for(int i = 0; i<listProducts.size(); i++) {
         const QString &curXml = listProducts[i];
         int loopFirstIdx = curIdx;
@@ -186,7 +193,7 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsToGenModel(std::map<QString, QString
 
 NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                                     const QStringList &prdTilesList, QList<TaskToSubmit> &allTasksList,
-                                                    bool bRemoveTempFiles)
+                                                    bool bRemoveTempFiles, int tasksStartIdx)
 {
     NewStepList steps;
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
@@ -203,7 +210,8 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
     bool bGenModels = IsGenModels(parameters, configParameters);
 
     const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
-    int curTaskIdx = 0;
+    // in allTasksList we might have tasks from other products. We start from the first task of the current product
+    int curTaskIdx = tasksStartIdx;
 
     QStringList ndviList;
     QStringList laiList;
@@ -310,7 +318,7 @@ void LaiRetrievalHandlerL3B::WriteExecutionInfosFile(const QString &executionInf
 }
 
 void LaiRetrievalHandlerL3B::HandleProduct(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                            const QStringList &prdTilesList) {
+                                            const QStringList &prdTilesList, QList<TaskToSubmit> &allTasksList) {
 
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
@@ -318,13 +326,14 @@ void LaiRetrievalHandlerL3B::HandleProduct(EventProcessingContext &ctx, const Jo
     bool bGenModels = IsGenModels(parameters, configParameters);
     bool bRemoveTempFiles = NeedRemoveJobFolder(ctx, event.jobId, "l3b");
 
-    QList<TaskToSubmit> allTasksList;
+    int tasksStartIdx = allTasksList.size();
     // create the tasks
     CreateTasksForNewProduct(allTasksList, prdTilesList, bGenModels, bRemoveTempFiles);
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
-    for(TaskToSubmit &task: allTasksList) {
-        allTasksListRef.append(task);
+    for(int i = tasksStartIdx; i < allTasksList.size(); i++) {
+        const TaskToSubmit &task = allTasksList.at(i);
+        allTasksListRef.append((TaskToSubmit&)task);
     }
     // submit all tasks
     SubmitTasks(ctx, event.jobId, allTasksListRef);
@@ -333,11 +342,30 @@ void LaiRetrievalHandlerL3B::HandleProduct(EventProcessingContext &ctx, const Jo
 
     // first extract the model file names from the models folder
     if(bGenModels) {
-        steps += GetStepsToGenModel(configParameters, prdTilesList, allTasksList);
+        steps += GetStepsToGenModel(configParameters, prdTilesList, allTasksList, tasksStartIdx);
     }
 
-    steps += GetStepsForMonodateLai(ctx, event, prdTilesList, allTasksList, bRemoveTempFiles);
+    steps += GetStepsForMonodateLai(ctx, event, prdTilesList, allTasksList, bRemoveTempFiles, tasksStartIdx);
     ctx.SubmitSteps(steps);
+}
+
+void LaiRetrievalHandlerL3B::SubmitEndOfLaiTask(EventProcessingContext &ctx,
+                                                const JobSubmittedEvent &event,
+                                                const QList<TaskToSubmit> &allTasksList) {
+    // add the end of lai job that will perform the cleanup
+    QList<std::reference_wrapper<const TaskToSubmit>> prdFormatterTasksListRef;
+    for(const TaskToSubmit &task: allTasksList) {
+        if(task.moduleName == "lai-mono-date-product-formatter") {
+            prdFormatterTasksListRef.append(task);
+        }
+    }
+    // we add a task in order to wait for all product formatter to finish.
+    // This will allow us to mark the job as finished and to remove the job folder
+    TaskToSubmit endOfJobDummyTask{"lai-end-of-job", {}};
+    endOfJobDummyTask.parentTasks.append(prdFormatterTasksListRef);
+    SubmitTasks(ctx, event.jobId, {endOfJobDummyTask});
+    ctx.SubmitSteps({endOfJobDummyTask.CreateStep("EndOfLAIDummy", QStringList())});
+
 }
 
 void LaiRetrievalHandlerL3B::HandleJobSubmittedImpl(EventProcessingContext &ctx,
@@ -372,16 +400,27 @@ void LaiRetrievalHandlerL3B::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                     toStdString());
     }
 
+    //container for all task
+    QList<TaskToSubmit> allTasksList;
     for(const auto &prd : inputProductToTilesMap.keys()) {
         const QStringList &prdTilesList = inputProductToTilesMap[prd];
-        HandleProduct(ctx, event, prdTilesList);
+        HandleProduct(ctx, event, prdTilesList, allTasksList);
     }
+
+    // we add a task in order to wait for all product formatter to finish.
+    // This will allow us to mark the job as finished and to remove the job folder
+    SubmitEndOfLaiTask(ctx, event, allTasksList);
 }
 
 void LaiRetrievalHandlerL3B::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
     bool isMonoDatePf;
+    if (event.module == "lai-end-of-job") {
+        ctx.MarkJobFinished(event.jobId);
+        // Now remove the job folder containing temporary files
+        RemoveJobFolder(ctx, event.jobId, "l3b");
+    }
     if ((isMonoDatePf = (event.module == "lai-mono-date-product-formatter"))) {
         QString prodName = GetProductFormatterProductName(ctx, event);
         QString productFolder = GetProductFormatterOutputProductPath(ctx, event);
@@ -397,13 +436,11 @@ void LaiRetrievalHandlerL3B::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 productFolder, maxDate, prodName,
                                 quicklook, footPrint, std::experimental::nullopt, TileList() });
             Logger::debug(QStringLiteral("InsertProduct for %1 returned %2").arg(prodName).arg(ret));
-            ctx.MarkJobFinished(event.jobId);
+            //ctx.MarkJobFinished(event.jobId);
         } else {
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
             ctx.MarkJobFailed(event.jobId);
         }
-        // Now remove the job folder containing temporary files
-        //RemoveJobFolder(ctx, event.jobId, "l3b");
     }
 }
 
