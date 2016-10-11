@@ -31,9 +31,9 @@ private:
                                                const QStringList &products, const QStringList &ndviList,
                                                const QStringList &laiList, const QStringList &laiErrList, const QStringList &laiFlgsList);
     NewStepList GetStepsForMonodateLai(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                       const QStringList &prdTilesList, QList<TaskToSubmit> &allTasksList, bool bRemoveTempFiles);
+                                       const QStringList &prdTilesList, QList<TaskToSubmit> &allTasksList, bool bRemoveTempFiles, int tasksStartIdx);
     NewStepList GetStepsToGenModel(std::map<QString, QString> &configParameters,
-                                   const QStringList &listProducts, QList<TaskToSubmit> &allTasksList);
+                                   const QStringList &listProducts, QList<TaskToSubmit> &allTasksList, int tasksStartIdx);
     QStringList GetBVInputVariableGenerationArgs(std::map<QString, QString> &configParameters, const QString &strGenSampleFile);
     QStringList GetProSailSimulatorArgs(const QString &product, const QString &bvFileName, const QString &rsrCfgFileName,
                                        const QString &outSimuReflsFile, const QString &outAngles, std::map<QString, QString> &configParameters);
@@ -49,7 +49,10 @@ private:
     bool IsGenMonoDate(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     bool IsNDayReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     bool IsFittedReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
-    void HandleProduct(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QStringList &prdTilesList);
+    void HandleProduct(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QStringList &prdTilesList,
+                       QList<TaskToSubmit> &allTasksList);
+    void SubmitEndOfLaiTask(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                            const QList<TaskToSubmit> &allTasksList);
 private:
 
 };

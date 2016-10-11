@@ -41,10 +41,8 @@ void LaiRetrievalHandlerNew::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
     if(bMonoDateLai) {
         m_l3bHandler.HandleJobSubmitted(ctx, event);
-    } else if(bNDayReproc) {
+    } else if(bNDayReproc || bFittedReproc) {
         m_l3cHandler.HandleJobSubmitted(ctx, event);
-    } else {    // Fitted
-        // TODO
     }
 }
 
