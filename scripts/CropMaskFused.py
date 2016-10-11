@@ -292,7 +292,6 @@ class CropMaskProcessor(ProcessorBase):
                         "-model", area_model,
                         "-out", tile_crop_mask_uncompressed]
         step_args += ["-il"] + tile.descriptors
-        step_args += ["-sp"] + self.args.sp
         if self.args.classifier == "svm" or self.args.normalize:
             step_args += ["-outstat", area_statistics]
 

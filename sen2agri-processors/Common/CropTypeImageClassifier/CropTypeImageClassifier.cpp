@@ -53,26 +53,6 @@
 #include "otbVectorImage.h"
 #include "otbImageList.h"
 
-#include "otbStreamingResampleImageFilter.h"
-#include "otbGridResampleImageFilter.h"
-
-//Transform
-#include "itkScalableAffineTransform.h"
-//#include "itkIdentityTransform.h"
-#include "itkScaleTransform.h"
-
-#include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
-#include "../../MACCSMetadata/include/SPOT4MetadataReader.hpp"
-
-// Filters
-#include "otbMultiChannelExtractROI.h"
-#include "../Filters/otbCropTypeFeatureExtractionFilter.h"
-#include "../Filters/otbTemporalResamplingFilter.h"
-#include "../Filters/otbTemporalMergingFilter.h"
-
-#include "../Filters/otbSpotMaskFilter.h"
-#include "../Filters/otbSentinelMaskFilter.h"
-
 #include "../Filters/CropTypePreprocessing.h"
 
 namespace otb
@@ -184,8 +164,6 @@ private:
     SetParameterDescription( "bv", "Background value to ignore in statistics computation." );
     MandatoryOff("bv");
 
-    AddParameter(ParameterType_StringList, "sp", "Temporal sampling rate");
-
     AddParameter(ParameterType_Float, "pixsize", "The size of a pixel, in meters");
     SetDefaultParameterFloat("pixsize", 10.0); // The default value is 10 meters
     SetMinimumParameterFloatValue("pixsize", 1.0);
@@ -220,7 +198,6 @@ private:
 
     //  Software Guide : BeginCodeSnippet
     SetDocExampleParameterValue("il", "image1.xml image2.xml");
-    SetDocExampleParameterValue("sp", "SENTINEL 10 LANDSAT 7");
     SetDocExampleParameterValue("out", "statistics.xml");
     //  Software Guide : EndCodeSnippet
   }
@@ -243,25 +220,6 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoExecute()
   {
-      std::map<std::string, int> sp;
-      if (HasValue("sp")) {
-          const auto &spValues = GetParameterStringList("sp");
-          auto n = spValues.size();
-          if (n % 2) {
-              itkExceptionMacro("Parameter 'sp' must be a list of string and number pairs.");
-          }
-
-          for (size_t i = 0; i < n; i += 2) {
-              const auto sensor = spValues[i];
-              const auto rateStr = spValues[i + 1];
-              auto rate = std::stoi(rateStr);
-              if (rate <= 0) {
-                  itkExceptionMacro("Invalid sampling rate " << rateStr << " for sensor " << sensor)
-              }
-              sp[sensor] = rate;
-          }
-      }
-
       // Get the list of input files
       const std::vector<std::string> &descriptors = this->GetParameterStringList("il");
       if( descriptors.size()== 0 )

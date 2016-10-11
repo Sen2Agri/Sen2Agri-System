@@ -20,6 +20,7 @@ if(BUILD_TESTING)
 endif()
 
 include_directories(../OTBExtensions)
+include_directories(../Filters)
 
 add_dependencies(otbapp_CropTypeImageClassifier OTBExtensions)
 
