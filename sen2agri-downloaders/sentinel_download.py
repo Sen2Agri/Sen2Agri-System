@@ -239,12 +239,19 @@ def sentinel_download(aoiContext):
                     totalRes=int(words[5]) + 1
                     query = query + "&rows=" + str(totalRes)
                     #wget_command='%s %s %s "%s%s"'%(wg,auth,search_output,url_search,query)
+                    queryResultsFilename = aoiContext.writeDir + "/" + str(aoiContext.siteName) + "_query_results_all_{}.xml".format(index-1)
+                    print("queryResultsFilename = {}".format(queryResultsFilename))
+
+                    search_output = ["--output-document", queryResultsFilename]
                     wget_command = wg + auth + search_output + [url_search+query]
                     log(aoiContext.writeDir, "Changing the pagination to {0} to get all of the existing files, command: {1}".format(totalRes, wget_command), general_log_filename)
                     if run_command(wget_command, aoiContext.writeDir, general_log_filename) != 0:
                         log(aoiContext.writeDir, "Could not get the catalog output (re-pagination) for {}".format(query_geom), general_log_filename)
                         return
-                    xml=minidom.parse("query_results.xml")
+                    if not os.path.isfile(queryResultsFilename):
+                        log(aoiContext.writeDir, "Could not find the catalog output with all in one page {} for {}".format(queryResultsFilename, aoiContext.siteName), general_log_filename)
+                        return                        
+                    xml=minidom.parse(queryResultsFilename)
                 except ValueError:
                     log(aoiContext.writeDir, "Exception: it was expected for the word in position 5 (starting from 0) to be an int. It ain't. The checked string is: {}".format(subtitle), general_log_filename)
                     log(aoiContext.writeDir, "Could not get the catalog output (exception for re-pagination) for {}".format(query_geom), general_log_filename)
