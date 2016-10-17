@@ -104,8 +104,8 @@ private:
 
   AddChoice("ref.vector","Ground truth as a vector data file");
 
-  AddParameter(ParameterType_InputImage,"ref.raster.in","Input reference image");
-  SetParameterDescription("ref.raster.in","Input image containing the ground truth labels");
+  AddParameter(ParameterType_InputImageList,"ref.raster.in","Input reference images");
+  SetParameterDescription("ref.raster.in","Input images containing the ground truth labels");
 
   AddParameter(ParameterType_InputFilename,"ref.vector.in","Input reference vector data");
   SetParameterDescription("ref.vector.in", "Input vector data of the ground truth");
@@ -218,6 +218,7 @@ private:
     std::string field;
     int nodata = this->GetParameterInt("nodatalabel");
 
+    std::vector<std::string> referenceImages = this->GetParameterStringList("ref.raster.in");
 
     Int32ImageType::Pointer reference;
     otb::ogr::DataSource::Pointer ogrRef;
@@ -229,11 +230,7 @@ private:
     int itLabelRef = 0, itLabelProd = 0;
 
     bool rasterMode = GetParameterString("ref") == "raster";
-    if (rasterMode)
-      {
-      reference = this->GetParameterInt32Image("ref.raster.in");
-      }
-    else
+    if (!rasterMode)
       {
       ogrRef = otb::ogr::DataSource::New(GetParameterString("ref.vector.in"), otb::ogr::DataSource::Modes::Read);
       field = this->GetParameterString("ref.vector.field");
@@ -248,7 +245,9 @@ private:
     float bias = 2.0; // empiric value;
     streamingManager->SetBias(bias);
     
+    ImageReaderType::Pointer referenceReader;
     ImageReaderType::Pointer reader = ImageReaderType::New();
+
     std::vector<std::string>::const_iterator itImages;
     std::vector<std::string>::const_iterator itImagesEnd = images.end();
     for (itImages = images.begin(); itImages != itImagesEnd; ++itImages)
@@ -274,6 +273,15 @@ private:
 
         reference = rasterizeReference->GetOutput();
         reference->UpdateOutputInformation();
+        }
+      else
+        {
+          size_t imageIndex = std::distance(images.begin(), itImages);
+
+          referenceReader = otb::ImageFileReader<Int32ImageType>::New();
+          referenceReader->SetFileName(referenceImages[imageIndex]);
+          reference = referenceReader->GetOutput();
+          reference->UpdateOutputInformation();
         }
 
       unsigned long numberOfStreamDivisions = streamingManager->GetNumberOfSplits();
