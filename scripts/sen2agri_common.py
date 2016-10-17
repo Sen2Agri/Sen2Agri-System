@@ -259,7 +259,7 @@ def load_strata(areas, site_footprint_wgs84):
     # feature.SetGeometry(geom)
     # out_layer.CreateFeature(feature)
 
-    # result.sort(key=lambda stratum: stratum.id)
+    result.sort(key=lambda stratum: stratum.id)
 
     return result
 
@@ -348,13 +348,6 @@ def get_tileid_for_descriptors(descriptors):
         if tileid:
             return tileid
 
-
-def build_merge_expression(n):
-    if n > 0:
-        return "im{}b1 > 0 ? im{}b1 : ({})".format(2 * n, 2 * n - 1, build_merge_expression(n - 1))
-    else:
-        return "-10000"
-
 def format_otb_filename(file, compression=None):
     if compression is not None:
         file += "?gdal:co:COMPRESS=" + compression
@@ -380,10 +373,6 @@ class ProcessorBase(object):
 
             if self.args.mode is None or self.args.mode == 'prepare-tiles':
                 for tile in self.tiles:
-                    if self.args.tile_filter and tile.id not in self.args.tile_filter:
-                        print("Skipping pre-processing for tile {} due to tile filter".format(tile.id))
-                        continue
-
                     self.prepare_tile(tile)
 
             if self.args.mode is None or self.args.mode == 'train':
@@ -396,32 +385,13 @@ class ProcessorBase(object):
                     self.train_stratum(stratum)
 
             if self.args.mode is None or self.args.mode == 'classify':
-                for stratum in self.strata:
-                    if self.args.stratum_filter and stratum.id not in self.args.stratum_filter:
-                        print("Skipping classification for stratum {} due to stratum filter".format(stratum.id))
+                for tile in self.tiles:
+                    if self.args.tile_filter and tile.id not in self.args.tile_filter:
+                        print("Skipping classification for tile {} due to tile filter".format(tile.id))
                         continue
 
-                    print("Applying model for stratum:", stratum.id)
-
-                    for tile in stratum.tiles:
-                        if self.args.tile_filter and tile.id not in self.args.tile_filter:
-                            print("Skipping classification for tile {} due to tile filter".format(tile.id))
-                            continue
-
-                        print("Processing tile:", tile.id)
-                        if len(tile.strata) == 0:
-                            print(
-                                "Warning: no stratum found for tile {}. Classification will not be performed.".format(tile.id))
-                            continue
-                        elif len(tile.strata) == 1:
-                            print(
-                                "Tile {} is covered by a single stratum".format(tile.id))
-
-                        self.rasterize_tile_mask(stratum, tile)
-                        self.classify_tile(stratum, tile)
-
-            if self.args.mode is None or self.args.mode == 'merge':
-                self.merge_classification_outputs()
+                    print("Performing classification for tile:", tile.id)
+                    self.classify_tile(tile)
 
             if self.args.mode is None or self.args.mode == 'postprocess-tiles':
                 for tile in self.tiles:
@@ -537,6 +507,7 @@ class ProcessorBase(object):
                             "-dialect", "sqlite",
                             "-sql", "update strata_relabelled set `index` = (select count(*) from strata_relabelled sr where sr.id < strata_relabelled.id)",
                             strata_relabelled]
+
             run_step(Step("Re-number strata", step_args))
 
             tile_best_weights = [0.0] * len(self.tiles)
@@ -599,36 +570,6 @@ class ProcessorBase(object):
 
             for tile in self.tiles:
                 tile.main_mask = tile.footprint
-
-    def merge_strata_for_tile(self, tile, inputs, output, compression=None):
-        files = []
-        for idx, stratum in enumerate(tile.strata):
-            input = inputs[idx]
-            area_mask_raster = self.get_output_path("classification-mask-{}-{}.tif", stratum.id, tile.id)
-
-            files.append(input)
-            files.append(area_mask_raster)
-
-        step_args = ["otbcli_BandMath",
-                        "-exp", build_merge_expression(len(tile.strata)),
-                        "-out", format_otb_filename(output, compression='DEFLATE'), "int16"]
-        step_args += ["-il"] + files
-
-        run_step(Step("BandMath_" + str(tile.id), step_args))
-
-        run_step(Step("Nodata_" + str(tile.id),
-                            ["gdal_edit.py",
-                                "-a_nodata", -10000,
-                                output]))
-
-    def merge_classification_outputs(self):
-        for tile in self.tiles:
-            print("Merging classification results for tile:", tile.id)
-
-            tile_crop_map = self.get_tile_classification_output(tile)
-            inputs = [self.get_stratum_tile_classification_output(stratum, tile) for stratum in tile.strata]
-
-            self.merge_strata_for_tile(tile, inputs, tile_crop_map, compression='DEFLATE')
 
     def rasterize_tile_mask(self, stratum, tile):
         tile_mask = self.get_output_path("tile-mask-{}-{}.shp", stratum.id, tile.id)

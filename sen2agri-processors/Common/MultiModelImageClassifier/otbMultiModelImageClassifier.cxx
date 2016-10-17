@@ -79,8 +79,8 @@ private:
 
     AddDocTag(Tags::Learning);
 
-    AddParameter(ParameterType_InputImage, "in",  "Input Image");
-    SetParameterDescription( "in", "The input image to classify.");
+    AddParameter(ParameterType_InputImageList, "in",  "Input Images");
+    SetParameterDescription( "in", "The input images (one for each model) to classify.");
 
     AddParameter(ParameterType_InputImage,  "mask",   "Input model Mask");
     SetParameterDescription( "mask", "The mask specifies which model applies to an input image pixel.");
@@ -119,10 +119,10 @@ private:
   void DoExecute()
   {
     // Load input image
-    FloatVectorImageType::Pointer inImage = GetParameterImage("in");
+    FloatVectorImageListType::Pointer inImage = GetParameterImageList("in");
     inImage->UpdateOutputInformation();
 
-    // Load model
+    // Load models
     otbAppLogINFO("Loading models");
 
     m_Models = ModelListType::New();
@@ -167,26 +167,42 @@ private:
       otbAppLogINFO( "mean used: " << meanMeasurementVector );
       otbAppLogINFO( "standard deviation used: " << stddevMeasurementVector );
       // Rescale vector image
-      m_Rescaler->SetScale(stddevMeasurementVector);
-      m_Rescaler->SetShift(meanMeasurementVector);
-      m_Rescaler->SetInput(inImage);
+      // TODO
+//      m_Rescaler->SetScale(stddevMeasurementVector);
+//      m_Rescaler->SetShift(meanMeasurementVector);
+//      m_Rescaler->SetInput(inImage);
 
-      m_ClassificationFilter->SetInput(m_Rescaler->GetOutput());
+//      m_ClassificationFilter->SetInput(m_Rescaler->GetOutput());
       }
     else
       {
       otbAppLogINFO("Input image normalization deactivated.");
-      m_ClassificationFilter->SetInput(inImage);
-      }
+
+      if(IsParameterEnabled("mask"))
+        {
+        otbAppLogINFO("Using model mask");
+        // Load mask image and cast into LabeledImageType
+        MaskImageType::Pointer inMask = GetParameterUInt8Image("mask");
+
+        m_ClassificationFilter->SetUseModelMask(true);
+        m_ClassificationFilter->SetModelMask(inMask);
+        }
 
 
-    if(IsParameterEnabled("mask"))
-      {
-      otbAppLogINFO("Using model mask");
-      // Load mask image and cast into LabeledImageType
-      MaskImageType::Pointer inMask = GetParameterUInt8Image("mask");
-
-      m_ClassificationFilter->SetModelMask(inMask);
+      if (inImage->Size() == 1)
+        {
+        for (size_t i = 0; i < m_Models->Size(); i++)
+          {
+          m_ClassificationFilter->PushBackInput(inImage->GetNthElement(0));
+          }
+        }
+      else
+        {
+        for (size_t i = 0; i < m_Models->Size(); i++)
+          {
+          m_ClassificationFilter->PushBackInput(inImage->GetNthElement(i));
+          }
+        }
       }
 
     if(HasValue("nodatalabel"))

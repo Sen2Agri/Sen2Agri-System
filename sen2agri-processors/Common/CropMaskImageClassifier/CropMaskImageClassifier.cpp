@@ -50,6 +50,14 @@
 #include "otbWrapperApplicationRegistry.h"
 #include "otbWrapperInputImageListParameter.h"
 
+#include "otbStatisticsXMLFileReader.h"
+#include "otbShiftScaleVectorImageFilter.h"
+#include "../MultiModelImageClassifier/otbMultiModelImageClassificationFilter.h"
+#include "otbMultiToMonoChannelExtractROI.h"
+#include "otbImageToVectorImageCastFilter.h"
+#include "otbMachineLearningModelFactory.h"
+#include "otbObjectList.h"
+
 #include "otbVectorImage.h"
 #include "otbImageList.h"
 
@@ -100,6 +108,20 @@ public:
   itkTypeMacro(CropMaskImageClassifier, otb::Application)
   //  Software Guide : EndCodeSnippet
 
+  typedef UInt16ImageType                                                                                OutputImageType;
+  typedef UInt8ImageType                                                                                 MaskImageType;
+  typedef itk::VariableLengthVector<FloatVectorImageType::InternalPixelType>                             MeasurementType;
+  typedef otb::StatisticsXMLFileReader<MeasurementType>                                                  StatisticsReader;
+  typedef otb::ShiftScaleVectorImageFilter<FloatVectorImageType, FloatVectorImageType>                   RescalerType;
+  typedef otb::MultiModelImageClassificationFilter<FloatVectorImageType, OutputImageType, MaskImageType> ClassificationFilterType;
+  typedef ClassificationFilterType::Pointer                                                              ClassificationFilterPointerType;
+  typedef ClassificationFilterType::ModelType                                                            ModelType;
+  typedef ModelType::Pointer                                                                             ModelPointerType;
+  typedef otb::ObjectList<ModelType>                                                                     ModelListType;
+  typedef otb::ObjectList<ModelType>::Pointer                                                            ModelListPointerType;
+  typedef ClassificationFilterType::ValueType                                                            ValueType;
+  typedef ClassificationFilterType::LabelType                                                            LabelType;
+  typedef otb::MachineLearningModelFactory<ValueType, LabelType>                                         MachineLearningModelFactoryType;
 
 private:
 
@@ -157,8 +179,9 @@ private:
     AddParameter(ParameterType_InputFilenameList, "il", "Input descriptors");
     SetParameterDescription( "il", "The list of descriptors. They must be sorted by tiles." );
 
-    AddParameter(ParameterType_OutputFilename, "out", "Output Image");
+    AddParameter(ParameterType_OutputImage, "out", "Output Image");
     SetParameterDescription( "out", "Output image" );
+    SetParameterOutputImagePixelType("out", ImagePixelType_uint16);
 
     AddParameter(ParameterType_Float, "bv", "Background Value");
     SetParameterDescription( "bv", "Background value to ignore in statistics computation." );
@@ -184,15 +207,19 @@ private:
     SetParameterDescription("outstat", "Statistics file");
     MandatoryOff("outstat");
 
-    AddParameter(ParameterType_OutputFilename, "indays", "Resampled input days");
-    SetParameterDescription("indays", "The output days after temporal resampling.");
+    AddParameter(ParameterType_InputFilenameList, "indays", "Resampled input days for each stratum");
+    SetParameterDescription("indays", "The output days after temporal resampling, one file per stratum.");
 
     AddParameter(ParameterType_InputImage, "mask", "Input mask");
     SetParameterDescription("mask", "The mask allows to restrict classification of the input image to the area where mask pixel values are greater than 0");
     MandatoryOff("mask");
 
-    AddParameter(ParameterType_InputFilename, "model", "Model file");
-    SetParameterDescription("model", "A model file (maximum class label = 65535)");
+    AddParameter(ParameterType_InputFilenameList, "model", "Model files");
+    SetParameterDescription("model", "One or more model files (produced by TrainImagesClassifier application, maximal class label = 65535).");
+
+    AddParameter(ParameterType_Int, "nodatalabel", "No data label");
+    SetDefaultParameterInt("nodatalabel", 0);
+    SetParameterDescription("nodatalabel", "The label to output for masked pixels.");
 
     AddParameter(ParameterType_Empty, "singletile", "Single tile mode");
     SetParameterDescription("singletile", "Reuses image statistics from the training step");
@@ -250,7 +277,7 @@ private:
 
       TileData td;
 
-      auto preprocessor = CropMaskPreprocessing::New();
+      preprocessor = CropMaskPreprocessing::New();
       preprocessor->SetPixelSize(pixSize);
       preprocessor->SetMission(mission);
 
@@ -263,9 +290,7 @@ private:
       preprocessor->updateRequiredImageSize(descriptors, 0, descriptors.size(), td);
       preprocessor->Build(descriptors.begin(), descriptors.end(), td);
 
-      const auto &sensorOutDays = readOutputDays(GetParameterString("indays"));
-      preprocessor->SetSensorOutDays(sensorOutDays);
-      auto output = preprocessor->GetOutput();
+      const auto &inDays = GetParameterStringList("indays");
 
       // Samples
       typedef double ValueType;
@@ -278,68 +303,166 @@ private:
       MeasurementType variance;
       Application::Pointer app;
 
-      if (!GetParameterEmpty("singletile") && HasValue("outstat")) {
-          app = ApplicationRegistry::CreateApplication("ComputeImagesStatistics");
-          if (!app) {
-              itkExceptionMacro("Unable to load the ComputeImagesStatistics application");
+//      if (!GetParameterEmpty("singletile") && HasValue("outstat")) {
+//          app = ApplicationRegistry::CreateApplication("ComputeImagesStatistics");
+//          if (!app) {
+//              itkExceptionMacro("Unable to load the ComputeImagesStatistics application");
+//          }
+//          if (HasValue("bv")) {
+//              app->EnableParameter("bv");
+//              app->SetParameterFloat("bv", GetParameterFloat("bv"));
+//          }
+
+//          app->EnableParameter("out");
+//          app->SetParameterString("out", GetParameterString("outstat"));
+
+//          app->EnableParameter("il");
+//          auto imageList = dynamic_cast<InputImageListParameter *>(app->GetParameterByKey("il"));
+
+//          imageList->AddImage(output);
+
+//          app->UpdateParameters();
+
+//          otbAppLogINFO("Computing statistics");
+//          app->ExecuteAndWriteOutput();
+//          otbAppLogINFO("Statistics written");
+//      } else {
+//          otbAppLogINFO("Skipping statistics");
+//      }
+
+      // Load models
+      otbAppLogINFO("Loading models");
+
+      m_Models = ModelListType::New();
+      const std::vector<std::string> &modelFiles = GetParameterStringList("model");
+      m_Models->Reserve(modelFiles.size());
+
+      for (std::vector<std::string>::const_iterator it = modelFiles.begin(), itEnd = modelFiles.end(); it != itEnd; ++it)
+        {
+        ModelPointerType model = MachineLearningModelFactoryType::CreateMachineLearningModel(*it,
+                                                                              MachineLearningModelFactoryType::ReadMode);
+
+        if (model.IsNull())
+          {
+          otbAppLogFATAL(<< "Error when loading model " << *it << " : unsupported model type");
           }
-          if (HasValue("bv")) {
-              app->EnableParameter("bv");
-              app->SetParameterFloat("bv", GetParameterFloat("bv"));
+
+        model->Load(*it);
+
+        m_Models->PushBack(model);
+      }
+
+      otbAppLogINFO("Models loaded");
+
+      // Normalize input image (optional)
+      StatisticsReader::Pointer  statisticsReader = StatisticsReader::New();
+      MeasurementType  meanMeasurementVector;
+      MeasurementType  stddevMeasurementVector;
+      m_Rescaler = RescalerType::New();
+
+      // Classify
+      m_ClassificationFilter = ClassificationFilterType::New();
+      m_ClassificationFilter->SetModels(m_Models);
+
+      if(IsParameterEnabled("mask"))
+        {
+        otbAppLogINFO("Using model mask");
+        // Load mask image and cast into LabeledImageType
+        MaskImageType::Pointer inMask = GetParameterUInt8Image("mask");
+
+        m_ClassificationFilter->SetUseModelMask(true);
+        m_ClassificationFilter->SetModelMask(inMask);
+        }
+
+      // Normalize input image if asked
+//      if(IsParameterEnabled("imstat")  )
+//        {
+//        otbAppLogINFO("Input image normalization activated.");
+//        // Load input image statistics
+//        statisticsReader->SetFileName(GetParameterString("imstat"));
+//        meanMeasurementVector   = statisticsReader->GetStatisticVectorByName("mean");
+//        stddevMeasurementVector = statisticsReader->GetStatisticVectorByName("stddev");
+//        otbAppLogINFO( "mean used: " << meanMeasurementVector );
+//        otbAppLogINFO( "standard deviation used: " << stddevMeasurementVector );
+//        // Rescale vector image
+//        m_Rescaler->SetScale(stddevMeasurementVector);
+//        m_Rescaler->SetShift(meanMeasurementVector);
+////        m_Rescaler->SetInput(output);
+
+//        m_ClassificationFilter->SetInput(m_Rescaler->GetOutput());
+//        }
+//      else
+        {
+        otbAppLogINFO("Input image normalization deactivated.");
+        if (m_Models->Size() == 1)
+          {
+          const auto &sensorOutDays = readOutputDays(inDays[0]);
+          auto output = preprocessor->GetOutput(sensorOutDays);
+
+          for (size_t i = 0; i < m_Models->Size(); i++)
+            {
+            m_ClassificationFilter->PushBackInput(output);
+            }
           }
+        else
+          {
+          for (size_t i = 0; i < m_Models->Size(); i++)
+            {
+            const auto &sensorOutDays = readOutputDays(inDays[i]);
+            auto output = preprocessor->GetOutput(sensorOutDays);
 
-          app->EnableParameter("out");
-          app->SetParameterString("out", GetParameterString("outstat"));
+            m_ClassificationFilter->PushBackInput(output);
+            }
+          }
+        }
 
-          app->EnableParameter("il");
-          auto imageList = dynamic_cast<InputImageListParameter *>(app->GetParameterByKey("il"));
 
-          imageList->AddImage(output);
+      if(HasValue("nodatalabel"))
+        {
+          m_ClassificationFilter->SetDefaultLabel(GetParameterInt("nodatalabel"));
+        }
 
-          app->UpdateParameters();
+      SetParameterOutputImage<OutputImageType>("out", m_ClassificationFilter->GetOutput());
 
-          otbAppLogINFO("Computing statistics");
-          app->ExecuteAndWriteOutput();
-          otbAppLogINFO("Statistics written");
-      } else {
-          otbAppLogINFO("Skipping statistics");
-      }
+//      app = otb::Wrapper::ApplicationRegistry::CreateApplication("ImageClassifier");
+//      if (!app) {
+//          itkExceptionMacro("Unable to load the ImageClassifier application");
+//      }
 
-      app = otb::Wrapper::ApplicationRegistry::CreateApplication("ImageClassifier");
-      if (!app) {
-          itkExceptionMacro("Unable to load the ImageClassifier application");
-      }
+//      app->EnableParameter("in");
+//      auto inputParameter = dynamic_cast<InputImageParameter *>(app->GetParameterByKey("in"));
+//      inputParameter->SetImage(output);
 
-      app->EnableParameter("in");
-      auto inputParameter = dynamic_cast<InputImageParameter *>(app->GetParameterByKey("in"));
-      inputParameter->SetImage(output);
+//      if (HasValue("mask")) {
+//          app->EnableParameter("mask");
+//          app->SetParameterString("mask", GetParameterString("mask"));
+//      }
 
-      if (HasValue("mask")) {
-          app->EnableParameter("mask");
-          app->SetParameterString("mask", GetParameterString("mask"));
-      }
+//      app->EnableParameter("model");
+//      app->SetParameterString("model", GetParameterString("model"));
 
-      app->EnableParameter("model");
-      app->SetParameterString("model", GetParameterString("model"));
+//      if (HasValue("outstat")) {
+//        app->EnableParameter("imstat");
+//        app->SetParameterString("imstat", GetParameterString("outstat"));
+//      }
 
-      if (HasValue("outstat")) {
-        app->EnableParameter("imstat");
-        app->SetParameterString("imstat", GetParameterString("outstat"));
-      }
+//      app->EnableParameter("out");
+//      app->SetParameterString("out", GetParameterString("out"));
+//      app->SetParameterOutputImagePixelType("out", ImagePixelType_uint16);
 
-      app->EnableParameter("out");
-      app->SetParameterString("out", GetParameterString("out"));
-      app->SetParameterOutputImagePixelType("out", ImagePixelType_uint16);
+//      app->UpdateParameters();
 
-      app->UpdateParameters();
-
-      otbAppLogINFO("Performing classification");
-      app->ExecuteAndWriteOutput();
-      otbAppLogINFO("Classification done");
+//      otbAppLogINFO("Performing classification");
+//      app->ExecuteAndWriteOutput();
+//      otbAppLogINFO("Classification done");
   }
 
   //  Software Guide :EndCodeSnippet
 
+  ClassificationFilterType::Pointer m_ClassificationFilter;
+  ModelListPointerType m_Models;
+  RescalerType::Pointer m_Rescaler;
+  CropMaskPreprocessing::Pointer                    preprocessor;
 };
 }
 }

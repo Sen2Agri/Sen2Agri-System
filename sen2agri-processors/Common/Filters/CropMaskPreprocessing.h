@@ -51,15 +51,19 @@
 typedef CropMaskFeaturesSupervisedFunctor<ImageType::PixelType>     FeaturesFunctorType;
 typedef CropMaskFeaturesSupervisedBMFunctor<ImageType::PixelType>   FeaturesBMFunctorType;
 
-typedef UnaryFunctorImageFilterWithNBands<FeaturesFunctorType>      UnaryFunctorImageFilterWithNBandsType;
-typedef UnaryFunctorImageFilterWithNBands<FeaturesBMFunctorType>    UnaryFunctorImageFilterBMWithNBandsType;
+typedef UnaryFunctorImageFilterWithNBands<FeaturesFunctorType>      FeatureExtractorFilterType;
+typedef UnaryFunctorImageFilterWithNBands<FeaturesBMFunctorType>    FeatureExtractorBMFilterType;
+
+typedef otb::ObjectList<FeatureExtractorFilterType>                 FeatureExtractorFilterListType;
+typedef otb::ObjectList<FeatureExtractorBMFilterType>               FeatureExtractorBMFilterListType;
 
 typedef otb::TemporalResamplingFilter<ImageType, MaskType, ImageType>  TemporalResamplingFilterType;
-typedef otb::ObjectList<TemporalResamplingFilterType>       TemporalResamplingFilterListType;
+typedef otb::ObjectList<TemporalResamplingFilterType>                  TemporalResamplingFilterListType;
 
-typedef TemporalMergingFunctor<ImageType::PixelType, MaskType::PixelType> TemporalMergingFunctorType;
+typedef TemporalMergingFunctor<ImageType::PixelType, MaskType::PixelType>       TemporalMergingFunctorType;
 typedef otb::BinaryFunctorImageFilterWithNBands<ImageType, MaskType, ImageType,
-        TemporalMergingFunctorType> TemporalMergingFilterType;
+        TemporalMergingFunctorType>                                             TemporalMergingFilterType;
+typedef otb::ObjectList<TemporalMergingFilterType>                              TemporalMergingFilterListType;
 
 class CropMaskPreprocessing : public TimeSeriesReader
 {
@@ -86,27 +90,22 @@ public:
 
     CropMaskPreprocessing()
     {
-        m_TemporalResampler = TemporalResamplingFilterType::New();
-        m_FeatureExtractor = UnaryFunctorImageFilterWithNBandsType::New();
-        m_FeatureExtractorBM = UnaryFunctorImageFilterBMWithNBandsType::New();
-        m_Merger = TemporalMergingFilterType::New();
-        m_FloatImageList = FloatImageListType::New();
-        m_UInt8ImageList = UInt8ImageListType::New();
-        m_BandsConcat = ConcatenateFloatImagesFilterType::New();
-        m_MaskConcat = ConcatenateUInt8ImagesFilterType::New();
+        m_TemporalResamplers = TemporalResamplingFilterListType::New();
+        m_TemporalMergers = TemporalMergingFilterListType::New();
+        m_FeatureExtractors = FeatureExtractorFilterListType::New();
+        m_FeatureExtractorsBM = FeatureExtractorBMFilterListType::New();
     }
 
-    otb::Wrapper::FloatVectorImageType * GetOutput()
+    otb::Wrapper::FloatVectorImageType * GetOutput(const std::map<std::string, std::vector<int> > &sensorOutDays)
     {
         // Also build the image dates structures
         otb::SensorDataCollection sdCollection;
-        int index = 0;
         std::string lastMission = "";
         for (const ImageDescriptor& id : m_Descriptors) {
             if (id.mission != lastMission) {
                 otb::SensorData sd;
                 sd.sensorName = id.mission;
-                sd.outDates = m_SensorOutDays[id.mission];
+                sd.outDates = sensorOutDays.find(id.mission)->second;
                 sdCollection.push_back(sd);
                 lastMission = id.mission;
             }
@@ -115,25 +114,23 @@ public:
             int inDay = getDaysFromEpoch(id.aquisitionDate);
 
             sd.inDates.push_back(inDay);
-
-            for (const auto &b : id.bands) {
-                m_FloatImageList->PushBack(b);
-            }
-            m_UInt8ImageList->PushBack(id.mask);
-            index++;
         }
-        m_BandsConcat->SetInput(m_FloatImageList);
-        m_MaskConcat->SetInput(m_UInt8ImageList);
 
         // Set the temporal resampling / gap filling filter
-        m_TemporalResampler->SetInputRaster(m_BandsConcat->GetOutput());
-        m_TemporalResampler->SetInputMask(m_MaskConcat->GetOutput());
+        auto temporalResampler = TemporalResamplingFilterType::New();
+        auto temporalMerger = TemporalMergingFilterType::New();
+
+        m_TemporalResamplers->PushBack(temporalResampler);
+        m_TemporalMergers->PushBack(temporalMerger);
+
+        temporalResampler->SetInputRaster(m_BandsConcat->GetOutput());
+        temporalResampler->SetInputMask(m_MaskConcat->GetOutput());
         // The output days will be updated later
-        m_TemporalResampler->SetInputData(sdCollection);
+        temporalResampler->SetInputData(sdCollection);
 
         std::vector<ImageInfo> imgInfos;
         int priority = 10;
-        index = 0;
+        int index = 0;
         for (const auto &sd : sdCollection) {
             for (auto date : sd.outDates) {
                 ImageInfo ii(index++, date, priority);
@@ -148,10 +145,8 @@ public:
         // count the number of output images and create the out days file
         std::vector<int> od;
         int lastDay = -1;
-        std::cerr << "dates:\n";
         for (auto& imgInfo : imgInfos) {
             if (lastDay != imgInfo.day) {
-                std::cerr << imgInfo.day << std::endl;
                 od.push_back(imgInfo.day);
                 lastDay = imgInfo.day;
             }
@@ -166,44 +161,46 @@ public:
                          m_MaskConcat->GetOutput()->GetNumberOfComponentsPerPixel();
 
 
-        m_Merger->SetNumberOfOutputBands(imageBands * od.size());
-        m_Merger->SetFunctor(TemporalMergingFunctor<ImageType::PixelType, MaskType::PixelType>(imgInfos, od.size(), imageBands));
+        temporalMerger->SetNumberOfOutputBands(imageBands * od.size());
+        temporalMerger->SetFunctor(TemporalMergingFunctor<ImageType::PixelType, MaskType::PixelType>(imgInfos, od.size(), imageBands));
 
-        m_Merger->SetInput1(m_TemporalResampler->GetOutput());
-        m_Merger->SetInput2(m_MaskConcat->GetOutput());
+        temporalMerger->SetInput1(temporalResampler->GetOutput());
+        temporalMerger->SetInput2(m_MaskConcat->GetOutput());
 
         if (m_BM) {
-            m_FeatureExtractorBM->GetFunctor().m_W = m_W;
-            m_FeatureExtractorBM->GetFunctor().m_Delta = m_Delta;
-            m_FeatureExtractorBM->GetFunctor().m_TSoil = m_TSoil;
-            m_FeatureExtractorBM->GetFunctor().id = od;
-            m_FeatureExtractorBM->SetNumberOfOutputBands(26);
+            auto featureExtractorBM = FeatureExtractorBMFilterType::New();
+            m_FeatureExtractorsBM->PushBack(featureExtractorBM);
 
-            m_FeatureExtractorBM->SetInput(m_Merger->GetOutput());
+            featureExtractorBM->GetFunctor().m_W = m_W;
+            featureExtractorBM->GetFunctor().m_Delta = m_Delta;
+            featureExtractorBM->GetFunctor().m_TSoil = m_TSoil;
+            featureExtractorBM->GetFunctor().id = od;
+            featureExtractorBM->SetNumberOfOutputBands(26);
 
-            return m_FeatureExtractorBM->GetOutput();
+            featureExtractorBM->SetInput(temporalMerger->GetOutput());
+
+            return featureExtractorBM->GetOutput();
         } else {
-            m_FeatureExtractor->GetFunctor().m_W = m_W;
-            m_FeatureExtractor->GetFunctor().m_Delta = m_Delta;
-            m_FeatureExtractor->GetFunctor().m_TSoil = m_TSoil;
-            m_FeatureExtractor->GetFunctor().id = od;
-            m_FeatureExtractor->SetNumberOfOutputBands(27);
+            auto featureExtractor = FeatureExtractorFilterType::New();
+            m_FeatureExtractors->PushBack(featureExtractor);
 
-            m_FeatureExtractor->SetInput(m_Merger->GetOutput());
+            featureExtractor->GetFunctor().m_W = m_W;
+            featureExtractor->GetFunctor().m_Delta = m_Delta;
+            featureExtractor->GetFunctor().m_TSoil = m_TSoil;
+            featureExtractor->GetFunctor().id = od;
+            featureExtractor->SetNumberOfOutputBands(27);
 
-            return m_FeatureExtractor->GetOutput();
+            featureExtractor->SetInput(temporalMerger->GetOutput());
+
+            return featureExtractor->GetOutput();
         }
     }
 
 private:
-    TemporalResamplingFilterType::Pointer             m_TemporalResampler;
-    UnaryFunctorImageFilterWithNBandsType::Pointer    m_FeatureExtractor;
-    UnaryFunctorImageFilterBMWithNBandsType::Pointer  m_FeatureExtractorBM;
-    TemporalMergingFilterType::Pointer                m_Merger;
-    FloatImageListType::Pointer                       m_FloatImageList;
-    UInt8ImageListType::Pointer                       m_UInt8ImageList;
-    ConcatenateFloatImagesFilterType::Pointer         m_BandsConcat;
-    ConcatenateUInt8ImagesFilterType::Pointer         m_MaskConcat;
+    TemporalResamplingFilterListType::Pointer         m_TemporalResamplers;
+    TemporalMergingFilterListType::Pointer            m_TemporalMergers;
+    FeatureExtractorFilterListType::Pointer           m_FeatureExtractors;
+    FeatureExtractorBMFilterListType::Pointer         m_FeatureExtractorsBM;
 
     int m_W;
     PixelValueType m_Delta;

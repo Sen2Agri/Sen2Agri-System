@@ -30,8 +30,8 @@ namespace otb
 template <class TInputImage, class TOutputImage, class TMaskImage>
 MultiModelImageClassificationFilter<TInputImage, TOutputImage, TMaskImage>
 ::MultiModelImageClassificationFilter()
+    : m_UseModelMask()
 {
-  this->SetNumberOfIndexedInputs(2);
   this->SetNumberOfRequiredInputs(1);
   m_DefaultLabel = itk::NumericTraits<LabelType>::ZeroValue();
 }
@@ -41,7 +41,7 @@ void
 MultiModelImageClassificationFilter<TInputImage, TOutputImage, TMaskImage>
 ::SetModelMask(const MaskImageType * mask)
 {
-  this->itk::ProcessObject::SetNthInput(1, const_cast<MaskImageType *>(mask));
+  this->itk::ProcessObject::SetNthInput(0, const_cast<MaskImageType *>(mask));
 }
 
 template <class TInputImage, class TOutputImage, class TMaskImage>
@@ -54,7 +54,7 @@ MultiModelImageClassificationFilter<TInputImage, TOutputImage, TMaskImage>
     {
     return 0;
     }
-  return static_cast<const MaskImageType *>(this->itk::ProcessObject::GetInput(1));
+  return static_cast<const MaskImageType *>(this->itk::ProcessObject::GetInput(0));
 }
 
 template <class TInputImage, class TOutputImage, class TMaskImage>
@@ -74,52 +74,95 @@ MultiModelImageClassificationFilter<TInputImage, TOutputImage, TMaskImage>
 ::ThreadedGenerateData(const OutputImageRegionType& outputRegionForThread, itk::ThreadIdType threadId)
 {
   // Get the input pointers
-  InputImageConstPointerType inputPtr     = this->GetInput();
-  MaskImageConstPointerType  inputMaskPtr = this->GetModelMask();
+//  InputImageConstPointerType inputPtr     = this->GetInput();
+  MaskImageConstPointerType  inputMaskPtr;
+  if (m_UseModelMask)
+    {
+      inputMaskPtr = this->GetModelMask();
+    }
+
   OutputImagePointerType     outputPtr    = this->GetOutput();
 
   // Progress reporting
   itk::ProgressReporter progress(this, threadId, outputRegionForThread.GetNumberOfPixels());
+
+  typename InputImageType::RegionType inputRegionForThread;
+  this->CallCopyOutputRegionToInputRegion(inputRegionForThread, outputRegionForThread);
 
   // Define iterators
   typedef itk::ImageRegionConstIterator<InputImageType> InputIteratorType;
   typedef itk::ImageRegionConstIterator<MaskImageType>  MaskIteratorType;
   typedef itk::ImageRegionIterator<OutputImageType>     OutputIteratorType;
 
-  InputIteratorType inIt(inputPtr, outputRegionForThread);
+  typedef std::vector<InputIteratorType> InputIteratorContainerType;
+
+  auto numInputs = this->GetNumberOfIndexedInputs();
+  if (m_UseModelMask)
+    {
+      numInputs--;
+    }
+
+  // Iterators declaration
+  InputIteratorContainerType inputIts;
+  inputIts.reserve(numInputs);
+  for (unsigned int i = 0; i < numInputs; ++i)
+    {
+    int idx;
+    if (m_UseModelMask)
+      {
+        idx = i + 1;
+      }
+      else
+      {
+        idx = i;
+      }
+
+    InputIteratorType it(const_cast<InputImageType *>(this->GetInput(idx)), inputRegionForThread);
+    it.GoToBegin();
+
+    inputIts.push_back(it);
+    }
+
+//  InputIteratorType inIt(inputPtr, outputRegionForThread);
   OutputIteratorType outIt(outputPtr, outputRegionForThread);
 
   // Eventually iterate on masks
   MaskIteratorType maskIt;
-  if (inputMaskPtr)
+  if (m_UseModelMask)
     {
     maskIt = MaskIteratorType(inputMaskPtr, outputRegionForThread);
     maskIt.GoToBegin();
     }
 
   // Walk the part of the image
-  for (inIt.GoToBegin(), outIt.GoToBegin(); !inIt.IsAtEnd() && !outIt.IsAtEnd(); ++inIt, ++outIt)
+  for (outIt.GoToBegin(); !outIt.IsAtEnd(); ++outIt)
     {
     unsigned char model;
-    if (inputMaskPtr)
+    if (m_UseModelMask)
       {
       model = maskIt.Get();
       ++maskIt;
       }
     else
       {
-      model = 0;
+      model = 1;
       }
 
     if (model > 0)
       {
       // Classify
-      outIt.Set(m_Models->GetNthElement(model - 1)->Predict(inIt.Get())[0]);
+      outIt.Set(m_Models->GetNthElement(model - 1)->Predict(inputIts[model - 1].Get())[0]);
       }
     else
       {
       // else, set default value
       outIt.Set(m_DefaultLabel);
+      }
+
+    for (unsigned int i = 0; i < numInputs; ++i)
+      {
+      // Increment the input iterators
+      ++inputIts[i];
       }
 
     progress.CompletedPixel();

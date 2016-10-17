@@ -47,10 +47,10 @@ public:
   typedef itk::SmartPointer<const Self>                      ConstPointer;
 
   /** Type macro */
-  itkNewMacro(Self);
+  itkNewMacro(Self)
 
   /** Creation through object factory macro */
-  itkTypeMacro(MultiModelImageClassificationFilter, ImageToImageFilter);
+  itkTypeMacro(MultiModelImageClassificationFilter, ImageToImageFilter)
 
   typedef TInputImage                                InputImageType;
   typedef typename InputImageType::ConstPointer      InputImageConstPointerType;
@@ -72,12 +72,15 @@ public:
   typedef typename ModelListType::Pointer            ModelListPointerType;
 
   /** Set/Get the model */
-  itkSetObjectMacro(Models, ModelListType);
-  itkGetObjectMacro(Models, ModelListType);
+  itkSetObjectMacro(Models, ModelListType)
+  itkGetObjectMacro(Models, ModelListType)
 
   /** Set/Get the default label */
-  itkSetMacro(DefaultLabel, LabelType);
-  itkGetMacro(DefaultLabel, LabelType);
+  itkSetMacro(DefaultLabel, LabelType)
+  itkGetMacro(DefaultLabel, LabelType)
+
+  itkSetMacro(UseModelMask, bool)
+  itkGetMacro(UseModelMask, bool)
 
   /**
    * If set, the mask pixels specify which input model to use.
@@ -114,6 +117,7 @@ private:
   /** Default label for invalid pixels (when a mask with a pixel of 0) */
   LabelType m_DefaultLabel;
 
+  bool m_UseModelMask;
 };
 } // End namespace otb
 #ifndef OTB_MANUAL_INSTANTIATION

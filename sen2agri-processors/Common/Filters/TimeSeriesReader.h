@@ -207,6 +207,15 @@ public:
 
         // sort the descriptors after the aquisition date
         std::sort(m_Descriptors.begin(), m_Descriptors.end(), TimeSeriesReader::SortUnmergedMetadata);
+
+        for (const ImageDescriptor& id : m_Descriptors) {
+            for (const auto &b : id.bands) {
+                m_FloatImageList->PushBack(b);
+            }
+            m_UInt8ImageList->PushBack(id.mask);
+        }
+        m_BandsConcat->SetInput(m_FloatImageList);
+        m_MaskConcat->SetInput(m_UInt8ImageList);
     }
 
 
@@ -318,15 +327,15 @@ public:
         return m_SamplingRates;
     }
 
-    void SetSensorOutDays(std::map<std::string, std::vector<int> > sensorOutDays)
-    {
-        m_SensorOutDays = std::move(sensorOutDays);
-    }
+//    void SetSensorOutDays(std::map<std::string, std::vector<int> > sensorOutDays)
+//    {
+//        m_SensorOutDays = std::move(sensorOutDays);
+//    }
 
-    const std::map<std::string, std::vector<int> > & GetSensorOutDays() const
-    {
-        return m_SensorOutDays;
-    }
+//    const std::map<std::string, std::vector<int> > & GetSensorOutDays() const
+//    {
+//        return m_SensorOutDays;
+//    }
 
 protected:
     std::string m_mission;
@@ -352,6 +361,10 @@ protected:
     SentinelMaskFilterListType::Pointer               m_SentinelMaskFilters;
     ExtractChannelListType::Pointer                   m_ChannelExtractors;
 
+    FloatImageListType::Pointer                       m_FloatImageList;
+    UInt8ImageListType::Pointer                       m_UInt8ImageList;
+    ConcatenateFloatImagesFilterType::Pointer         m_BandsConcat;
+    ConcatenateUInt8ImagesFilterType::Pointer         m_MaskConcat;
 
     TimeSeriesReader()
     {
@@ -372,6 +385,11 @@ protected:
         m_SentinelMaskFilters = SentinelMaskFilterListType::New();
 
         m_ChannelExtractors = ExtractChannelListType::New();
+
+        m_FloatImageList = FloatImageListType::New();
+        m_UInt8ImageList = UInt8ImageListType::New();
+        m_BandsConcat = ConcatenateFloatImagesFilterType::New();
+        m_MaskConcat = ConcatenateUInt8ImagesFilterType::New();
     }
 
     virtual ~TimeSeriesReader()

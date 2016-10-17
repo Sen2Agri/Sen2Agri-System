@@ -326,8 +326,7 @@ void CropMaskTrainImagesClassifier::DoExecute()
 
   for (size_t i = 0; i < prodPerTile.size(); i++) {
       auto preprocessor = preprocessors->GetNthElement(i);
-      preprocessor->SetSensorOutDays(sensorOutDays);
-      auto output = preprocessor->GetOutput();
+      auto output = preprocessor->GetOutput(sensorOutDays);
 
       images.emplace_back(output);
   }
