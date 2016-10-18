@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 #ifndef DIRECTIONAL_CORRECTION_H
 #define DIRECTIONAL_CORRECTION_H
 
@@ -33,7 +33,7 @@
 #include "otbMultiToMonoChannelExtractROI.h"
 #include "DirectionalCorrectionFunctor.h"
 #include "MetadataHelperFactory.h"
-#include "ResamplingBandExtractor2.h"
+#include "ResamplingBandExtractor.h"
 
 
 class DirectionalCorrection
@@ -88,7 +88,7 @@ private:
     DirectionalCorrectionFunctorType        m_Functor;
 
     ReaderType::Pointer                     m_inputImageReader;
-    ResamplingBandExtractor2<float>         m_ResampledBandsExtractor;
+    ResamplingBandExtractor<float>         m_ResampledBandsExtractor;
 };
 
 #endif // DIRECTIONAL_CORRECTION_H

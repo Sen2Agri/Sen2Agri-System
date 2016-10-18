@@ -5,7 +5,7 @@ set(MetadataHelper_HEADERS
     Spot4MetadataHelper.h
     GlobalDefs.h
     BandsCfgMappingParser.h
-    ResamplingBandExtractor2.h
+    ResamplingBandExtractor.h
     ImageResampler.h)
 
 set(MetadataHelper_SOURCES

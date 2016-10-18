@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 #include "otbBandMathImageFilter.h"
@@ -35,7 +35,7 @@
 #include "UpdateSynthesisFunctor_2.h"
 #include "MetadataHelperFactory.h"
 #include "BandsCfgMappingParser.h"
-#include "ResamplingBandExtractor2.h"
+#include "ResamplingBandExtractor.h"
 #include "itkMetaDataDictionary.h"
 
 namespace otb
@@ -363,7 +363,7 @@ private:
 
 
     BandsCfgMappingParser m_bandsCfgMappingParser;
-    ResamplingBandExtractor2<float> m_ResampledBandsExtractor;
+    ResamplingBandExtractor<float> m_ResampledBandsExtractor;
     ImageResampler<InputImageType, InputImageType> m_Resampler;
 /*
     VectorImageToImageListType::Pointer       m_imgSplit;

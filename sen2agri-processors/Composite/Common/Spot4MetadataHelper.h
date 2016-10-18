@@ -12,12 +12,12 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 #ifndef SPOT4METADATAHELPER_H
 #define SPOT4METADATAHELPER_H
 
 #include "MetadataHelper.h"
-#include "ResamplingBandExtractor2.h"
+#include "ResamplingBandExtractor.h"
 
 #include "../../MACCSMetadata/include/SPOT4MetadataReader.hpp"
 #include "itkNaryFunctorImageFilter.h"
@@ -127,7 +127,7 @@ protected:
 
     std::unique_ptr<SPOT4Metadata> m_metadata;
 
-    ResamplingBandExtractor2<short> m_bandsExtractor;
+    ResamplingBandExtractor<short> m_bandsExtractor;
 
     NaryMaskHandlerFunctorType m_maskHandlerFunctor;
     NaryFunctorImageFilterType::Pointer m_maskHandlerFilter;

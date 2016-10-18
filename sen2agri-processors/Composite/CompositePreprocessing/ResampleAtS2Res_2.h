@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 #ifndef RESAMPLE_AT_S2_RES_2_H
 #define RESAMPLE_AT_S2_RES_2_H
 
@@ -28,7 +28,7 @@
 //Transform
 #include "itkComposeImageFilter.h"
 #include "itkScalableAffineTransform.h"
-#include "ResamplingBandExtractor2.h"
+#include "ResamplingBandExtractor.h"
 #include "MetadataHelperFactory.h"
 
 #include "BandsCfgMappingParser.h"
@@ -85,7 +85,7 @@ private:
     int m_nRes;
     ImageReaderType::Pointer m_inputImgReader;
 
-    ResamplingBandExtractor2<float> m_ResampledBandsExtractor;
+    ResamplingBandExtractor<float> m_ResampledBandsExtractor;
     std::unique_ptr<MetadataHelper> m_pMetadataHelper;
 
     BandsCfgMappingParser m_bandsCfgMappingParser;

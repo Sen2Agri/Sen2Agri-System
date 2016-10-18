@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 #ifndef RESAMPLING_BAND_EXTRACTOR_H
 #define RESAMPLING_BAND_EXTRACTOR_H
 
@@ -31,7 +31,7 @@
 #include "ImageResampler.h"
 
 template <typename PixelType>
-class ResamplingBandExtractor2
+class ResamplingBandExtractor
 {
 public:
     typedef otb::VectorImage<PixelType, 2>             ImageType;
@@ -50,7 +50,7 @@ public:
     typedef typename ScalableTransformType::OutputVectorType     OutputVectorType;
 
 public:
-    ResamplingBandExtractor2()
+    ResamplingBandExtractor()
     {
         m_ExtractorList = ExtractROIFilterListType::New();
         m_ImageReaderList = ImageReaderListType::New();
