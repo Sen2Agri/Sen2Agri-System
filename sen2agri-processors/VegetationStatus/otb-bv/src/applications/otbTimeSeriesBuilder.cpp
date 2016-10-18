@@ -81,6 +81,10 @@ private:
         SetDefaultParameterFloat("deqval", -1);
         MandatoryOff("deqval");
 
+        AddParameter(ParameterType_Int, "isflg", "Specifies if the time series is built of flags");
+        SetDefaultParameterInt("isflg", 0);
+        MandatoryOff("isflg");
+
         AddParameter(ParameterType_String, "main", "The image from the il that is used for the cutting other images");
         MandatoryOff("main");
 
@@ -100,6 +104,7 @@ private:
         m_imagesList = ImagesListType::New();
 
         m_deqValue = GetParameterFloat("deqval");
+        m_isFlagsTimeSeries = GetParameterInt("isflg");
 
         std::vector<std::string> imgsList = this->GetParameterStringList("il");
         if( imgsList.size()== 0 )
@@ -189,7 +194,8 @@ private:
           if((imageWidth != m_imageWidth) || (imageHeight != m_imageHeight) ||
                   (m_imageOrigin[0] != imageOrigin[0]) || (m_imageOrigin[1] != imageOrigin[1])) {
               ImageResampler<ImageType, ImageType>::ResamplerPtr resampler = m_ImageResampler.getResampler(
-                          img, m_scale, m_imageWidth, m_imageHeight, Interpolator_Linear);
+                          img, m_scale, m_imageWidth, m_imageHeight,
+                          m_isFlagsTimeSeries == 0 ? Interpolator_NNeighbor : Interpolator_Linear);
               ImageType::Pointer newImg = resampler->GetOutput();
               newImg->UpdateOutputInformation();
               return newImg;
@@ -277,6 +283,7 @@ private:
     ImageResampler<ImageType, ImageType>  m_ImageResampler;
     float                                 m_scale;
     float                                 m_deqValue;
+    int                                   m_isFlagsTimeSeries;
 };
 
 }

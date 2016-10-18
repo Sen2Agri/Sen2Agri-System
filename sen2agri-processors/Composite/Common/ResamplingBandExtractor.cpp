@@ -16,15 +16,14 @@
 #include "ResamplingBandExtractor.h"
 
 
-ResamplingBandExtractor::ResamplingBandExtractor()
+ResamplingBandExtractor1::ResamplingBandExtractor1()
 {
     m_ExtractorList = ExtractROIFilterListType::New();
     m_ImageReaderList = ImageReaderListType::New();
 }
 
-ResamplingBandExtractor::InternalImageType::Pointer ResamplingBandExtractor::ExtractResampledBand(
-        const std::string &filePath, int nChannel, int nCurRes, int nDesiredRes, int nForcedOutWidth, int nForcedOutHeight,
-        Interpolator_Type interpolator)
+ResamplingBandExtractor1::InternalImageType::Pointer ResamplingBandExtractor1::ExtractResampledBand(const std::string &filePath, int nChannel,
+        Interpolator_Type interpolator, int nCurRes, int nDesiredRes, int nForcedOutWidth, int nForcedOutHeight)
 {
     // get a reader from the file path
     ImageReaderType::Pointer reader = ImageReaderType::New();
@@ -36,15 +35,14 @@ ResamplingBandExtractor::InternalImageType::Pointer ResamplingBandExtractor::Ext
     if(nDesiredRes > 0 && nCurRes == -1) {
         nCurRes = reader->GetOutput()->GetSpacing()[0];
     }
-    return ExtractResampledBand(reader->GetOutput(), nChannel, nCurRes,
-                                nDesiredRes, nForcedOutWidth, nForcedOutHeight,
-                                interpolator);
+    return ExtractImgResampledBand(reader->GetOutput(), nChannel, interpolator, nCurRes,
+                                nDesiredRes, nForcedOutWidth, nForcedOutHeight);
 }
 
-int ResamplingBandExtractor::ExtractAllResampledBands(const std::string &filePath,
+int ResamplingBandExtractor1::ExtractAllResampledBands(const std::string &filePath,
                                                       otb::ImageList<otb::Wrapper::FloatImageType>::Pointer &outList,
-                                                      int nCurRes, int nDesiredRes, int nForcedOutWidth, int nForcedOutHeight,
-                                                      Interpolator_Type interpolator)
+                                                      Interpolator_Type interpolator,
+                                                      int nCurRes, int nDesiredRes, int nForcedOutWidth, int nForcedOutHeight)
 {
     // get a reader from the file path
     ImageReaderType::Pointer reader = ImageReaderType::New();
@@ -56,12 +54,13 @@ int ResamplingBandExtractor::ExtractAllResampledBands(const std::string &filePat
     if(nDesiredRes > 0 && nCurRes == -1) {
         nCurRes = reader->GetOutput()->GetSpacing()[0];
     }
-    return ExtractAllResampledBands(reader->GetOutput(), outList, nCurRes, nDesiredRes, nForcedOutWidth,
-                             nForcedOutHeight, interpolator);
+    return ExtractAllResampledBands(reader->GetOutput(), outList, interpolator, nCurRes, nDesiredRes, nForcedOutWidth,
+                             nForcedOutHeight);
 }
 
-ResamplingBandExtractor::InternalImageType::Pointer ResamplingBandExtractor::ExtractResampledBand(const ImageType::Pointer img, int nChannel, int curRes,
-                                              int nDesiredRes, int nForcedOutWidth, int nForcedOutHeight, Interpolator_Type interpolator)
+ResamplingBandExtractor1::InternalImageType::Pointer ResamplingBandExtractor1::ExtractImgResampledBand(const ImageType::Pointer img,
+                                              int nChannel, Interpolator_Type interpolator, int curRes,
+                                              int nDesiredRes, int nForcedOutWidth, int nForcedOutHeight)
 {
     //Resample the cloud mask
     ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
@@ -73,9 +72,9 @@ ResamplingBandExtractor::InternalImageType::Pointer ResamplingBandExtractor::Ext
     return getResampledImage(curRes, nDesiredRes, nForcedOutWidth, nForcedOutHeight, extractor, interpolator);
 }
 
-int ResamplingBandExtractor::ExtractAllResampledBands(const ImageType::Pointer img,
-                                              otb::ImageList<otb::Wrapper::FloatImageType>::Pointer &outList,
-                                              int curRes, int nDesiredRes, int nForcedOutWidth, int nForcedOutHeight, Interpolator_Type interpolator)
+int ResamplingBandExtractor1::ExtractAllResampledBands(const ImageType::Pointer img,
+                                              otb::ImageList<otb::Wrapper::FloatImageType>::Pointer &outList, Interpolator_Type interpolator,
+                                              int curRes, int nDesiredRes, int nForcedOutWidth, int nForcedOutHeight)
 {
     int nbBands = img->GetNumberOfComponentsPerPixel();
     for(int j=0; j < nbBands; j++)
@@ -94,7 +93,7 @@ int ResamplingBandExtractor::ExtractAllResampledBands(const ImageType::Pointer i
     return nbBands;
 }
 
-ResamplingBandExtractor::InternalImageType::Pointer ResamplingBandExtractor::getResampledImage(int nCurRes, int nDesiredRes,
+ResamplingBandExtractor1::InternalImageType::Pointer ResamplingBandExtractor1::getResampledImage(int nCurRes, int nDesiredRes,
                                              int forcedWidth, int forcedHeight, ExtractROIFilterType::Pointer extractor,
                                              Interpolator_Type interpolator) {
     // if the resolutions are identical AND desired dimensions are not set

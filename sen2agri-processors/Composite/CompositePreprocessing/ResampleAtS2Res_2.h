@@ -28,7 +28,7 @@
 //Transform
 #include "itkComposeImageFilter.h"
 #include "itkScalableAffineTransform.h"
-#include "ResamplingBandExtractor.h"
+#include "ResamplingBandExtractor2.h"
 #include "MetadataHelperFactory.h"
 
 #include "BandsCfgMappingParser.h"
@@ -85,7 +85,7 @@ private:
     int m_nRes;
     ImageReaderType::Pointer m_inputImgReader;
 
-    ResamplingBandExtractor m_ResampledBandsExtractor;
+    ResamplingBandExtractor2<float> m_ResampledBandsExtractor;
     std::unique_ptr<MetadataHelper> m_pMetadataHelper;
 
     BandsCfgMappingParser m_bandsCfgMappingParser;

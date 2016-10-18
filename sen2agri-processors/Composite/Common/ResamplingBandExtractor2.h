@@ -57,8 +57,9 @@ public:
     }
 
     typename InternalImageType::Pointer ExtractResampledBand(const std::string &filePath, int nChannel,
-                                                  int nCurRes = -1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                                  Interpolator_Type interpolator=Interpolator_Linear)
+                                                  Interpolator_Type interpolator,
+                                                  int nCurRes = -1, int nDesiredRes=-1, int
+                                                  nForcedOutWidth=-1, int nForcedOutHeight=-1)
     {
         // get a reader from the file path
         typename ImageReaderType::Pointer reader = ImageReaderType::New();
@@ -70,14 +71,15 @@ public:
         if(nDesiredRes > 0 && nCurRes == -1) {
             nCurRes = reader->GetOutput()->GetSpacing()[0];
         }
-        return ExtractResampledBand(reader->GetOutput(), nChannel, nCurRes,
-                                    nDesiredRes, nForcedOutWidth, nForcedOutHeight,
-                                    interpolator);
+        return ExtractImgResampledBand(reader->GetOutput(), nChannel,
+                                    interpolator, nCurRes,nDesiredRes,
+                                    nForcedOutWidth, nForcedOutHeight);
     }
 
     int ExtractAllResampledBands(const std::string &filePath, typename otb::ImageList<otb::Image<PixelType>>::Pointer &outList,
-                                int nCurRes = -1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                Interpolator_Type interpolator=Interpolator_Linear)
+                                 Interpolator_Type interpolator,
+                                 int nCurRes = -1, int nDesiredRes=-1,
+                                 int nForcedOutWidth=-1, int nForcedOutHeight=-1)
     {
         // get a reader from the file path
         typename ImageReaderType::Pointer reader = ImageReaderType::New();
@@ -89,13 +91,14 @@ public:
         if(nDesiredRes > 0 && nCurRes == -1) {
             nCurRes = reader->GetOutput()->GetSpacing()[0];
         }
-        return ExtractAllResampledBands(reader->GetOutput(), outList, nCurRes, nDesiredRes, nForcedOutWidth,
-                                 nForcedOutHeight, interpolator);
+        return ExtractAllResampledBands(reader->GetOutput(), outList, interpolator, nCurRes, nDesiredRes, nForcedOutWidth,
+                                 nForcedOutHeight);
     }
 
-    typename InternalImageType::Pointer ExtractResampledBand(const typename ImageType::Pointer img, int nChannel, int curRes=-1,
-                                                  int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                                  Interpolator_Type interpolator=Interpolator_Linear)
+    typename InternalImageType::Pointer ExtractImgResampledBand(const typename ImageType::Pointer img, int nChannel,
+                                                  Interpolator_Type interpolator,
+                                                  int curRes=-1, int nDesiredRes=-1,
+                                                  int nForcedOutWidth=-1, int nForcedOutHeight=-1)
     {
         //Resample the cloud mask
         typename ExtractROIFilterType::Pointer extractor = ExtractROIFilterType::New();
@@ -108,8 +111,9 @@ public:
     }
 
     int ExtractAllResampledBands(const typename ImageType::Pointer img, typename otb::ImageList<otb::Image<PixelType>>::Pointer &outList,
-                                int curRes=-1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                Interpolator_Type interpolator=Interpolator_Linear)
+                                 Interpolator_Type interpolator,
+                                 int curRes=-1, int nDesiredRes=-1,
+                                 int nForcedOutWidth=-1, int nForcedOutHeight=-1)
     {
         int nbBands = img->GetNumberOfComponentsPerPixel();
         for(int j=0; j < nbBands; j++)

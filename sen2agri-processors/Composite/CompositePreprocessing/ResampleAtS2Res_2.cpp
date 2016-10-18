@@ -57,7 +57,7 @@ void ResampleAtS2Res2::DoExecute()
     std::vector<int> vectIdxs = bandsMappingCfg.GetAbsoluteBandIndexes(m_nRes, missionName);
     for(unsigned int i = 0; i<vectIdxs.size(); i++) {
         int nRelBandIdx = m_pMetadataHelper->GetRelativeBandIndex(vectIdxs[i]);
-        m_ImageList->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(img, nRelBandIdx, curRes, m_nRes, false));
+        m_ImageList->PushBack(m_ResampledBandsExtractor.ExtractImgResampledBand(img, nRelBandIdx, Interpolator_Linear, curRes, m_nRes));
     }
 
     // Extract (and resample, if needed) the cloud, water and snow masks
@@ -116,7 +116,7 @@ void ResampleAtS2Res2::ExtractResampledAotImage()
     //m_ImageAot = m_ResampledBandsExtractor.ExtractResampledBand(aotImage, aotBandIdx, curRes, m_nRes, sz[0], sz[1], true);
     // TODO: Here we should take into account also the sz[0] and sz[1] but unfortunatelly,
     //       the input image is likely to be also resampled so we should receive them from outside
-    m_ImageAot = m_ResampledBandsExtractor.ExtractResampledBand(aotImage, aotBandIdx, curRes, m_nRes, true);
+    m_ImageAot = m_ResampledBandsExtractor.ExtractImgResampledBand(aotImage, aotBandIdx, Interpolator_Linear, curRes, m_nRes);
 
 }
 
@@ -131,11 +131,11 @@ bool ResampleAtS2Res2::ExtractResampledMasksImages()
     img->UpdateOutputInformation();
     int curRes = img->GetSpacing()[0];
     //Extract and Resample the cloud mask
-    m_ImageCloud = m_ResampledBandsExtractor.ExtractResampledBand(img, 1, curRes, m_nRes, true);
+    m_ImageCloud = m_ResampledBandsExtractor.ExtractImgResampledBand(img, 1, Interpolator_NNeighbor, curRes, m_nRes);
     //Resample the water mask
-    m_ImageWater = m_ResampledBandsExtractor.ExtractResampledBand(img, 2, curRes, m_nRes, true);
+    m_ImageWater = m_ResampledBandsExtractor.ExtractImgResampledBand(img, 2, Interpolator_NNeighbor, curRes, m_nRes);
     //Resample the snow mask
-    m_ImageSnow = m_ResampledBandsExtractor.ExtractResampledBand(img, 3, curRes, m_nRes, true);
+    m_ImageSnow = m_ResampledBandsExtractor.ExtractImgResampledBand(img, 3, Interpolator_NNeighbor, curRes, m_nRes);
 
     return true;
 }

@@ -30,7 +30,7 @@
 
 #include "ImageResampler.h"
 
-class ResamplingBandExtractor
+class ResamplingBandExtractor1
 {
 public:
     typedef float                                      PixelType;
@@ -50,24 +50,24 @@ public:
     typedef typename ScalableTransformType::OutputVectorType     OutputVectorType;
 
 public:
-    ResamplingBandExtractor();
+    ResamplingBandExtractor1();
     InternalImageType::Pointer ExtractResampledBand(const std::string &fileName, int nChannel,
-                                                  int nCurRes = -1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                                  Interpolator_Type interpolator=Interpolator_Linear);
+                                                  Interpolator_Type interpolator,
+                                                  int nCurRes = -1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1);
 
     int ExtractAllResampledBands(const std::string &fileName, otb::ImageList<otb::Wrapper::FloatImageType>::Pointer &outList,
-                                int nCurRes = -1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                Interpolator_Type interpolator=Interpolator_Linear);
+                                 Interpolator_Type interpolator,
+                                 int nCurRes = -1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1);
 
-    InternalImageType::Pointer ExtractResampledBand(const ImageType::Pointer img, int nChannel, int curRes=-1,
-                                                  int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                                  Interpolator_Type interpolator=Interpolator_Linear);
+    InternalImageType::Pointer ExtractImgResampledBand(const ImageType::Pointer img, int nChannel,
+                                                  Interpolator_Type interpolator, int curRes=-1,
+                                                  int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1);
 
     int ExtractAllResampledBands(const ImageType::Pointer img, otb::ImageList<otb::Wrapper::FloatImageType>::Pointer &outList,
-                                int curRes=-1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1,
-                                Interpolator_Type interpolator=Interpolator_Linear);
+                                Interpolator_Type interpolator,
+                                int curRes=-1, int nDesiredRes=-1, int nForcedOutWidth=-1, int nForcedOutHeight=-1);
 
-    const char * GetNameOfClass() { return "ResamplingBandExtractor"; }
+    const char * GetNameOfClass() { return "ResamplingBandExtractor1"; }
 
 private:
     InternalImageType::Pointer getResampledImage(int nCurRes, int nDesiredRes, int forcedWidth, int forcedHeight,

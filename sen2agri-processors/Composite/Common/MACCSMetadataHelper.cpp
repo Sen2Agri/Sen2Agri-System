@@ -571,18 +571,18 @@ MetadataHelper::SingleBandShortImageType::Pointer MACCSMetadataHelper::GetMasksI
     std::vector< MetadataHelper::SingleBandShortImageType::Pointer> vecImgs;
     // extract the cld, div and saturation mask image bands
     if((nMaskFlags & MSK_CLOUD) != 0) {
-        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getCloudFileName(), 1));
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getCloudFileName(), 1, Interpolator_NNeighbor));
     }
 
     if((nMaskFlags & MSK_SAT) != 0) {
-        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getQualityFileName(), 1));
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getQualityFileName(), 1, Interpolator_NNeighbor));
     }
     if((nMaskFlags & MSK_VALID) != 0) {
-        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getQualityFileName(), 3));
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getQualityFileName(), 3, Interpolator_NNeighbor));
     }
 
     if((nMaskFlags & MSK_SNOW) != 0 || (nMaskFlags & MSK_WATER) != 0 ) {
-        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getWaterFileName(), 1));
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getWaterFileName(), 1, Interpolator_NNeighbor));
     }
 
     m_maskHandlerFunctor.Initialize(nMaskFlags, binarizeResult);

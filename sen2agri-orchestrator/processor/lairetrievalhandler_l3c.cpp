@@ -493,6 +493,7 @@ QStringList LaiRetrievalHandlerL3C::GetMskFlagsTimeSeriesBuilderArgs(const QStri
     QStringList timeSeriesBuilderArgs = { "TimeSeriesBuilder",
       "-out", allMskFlagsTimeSeriesFileName,
       "-main", mainImg,
+      "-isflg", "1",
       "-il"
     };
     timeSeriesBuilderArgs += monoDateMskFlagsLaiFileNames;

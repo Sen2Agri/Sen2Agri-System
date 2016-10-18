@@ -173,15 +173,15 @@ MetadataHelper::SingleBandShortImageType::Pointer Spot4MetadataHelper::GetMasksI
     std::vector< MetadataHelper::SingleBandShortImageType::Pointer> vecImgs;
     // extract the cld, div and saturation mask image bands
     if((nMaskFlags & MSK_CLOUD) != 0) {
-        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getCloudFileName(), 1));
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getCloudFileName(), 1, Interpolator_NNeighbor));
     }
 
        if((nMaskFlags & MSK_SNOW) != 0 || (nMaskFlags & MSK_WATER) != 0 || (nMaskFlags & MSK_VALID) != 0) {
-        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getWaterFileName(), 1));
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getWaterFileName(), 1, Interpolator_NNeighbor));
     }
 
     if((nMaskFlags & MSK_SAT) != 0) {
-        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getSaturationFileName(), 1));
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getSaturationFileName(), 1, Interpolator_NNeighbor));
     }
     m_maskHandlerFunctor.Initialize(nMaskFlags, binarizeResult);
     m_maskHandlerFilter = NaryFunctorImageFilterType::New();
