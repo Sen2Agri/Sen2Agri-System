@@ -87,6 +87,7 @@ def create_rgb_image(post_process_out_filename, newRgbTif, lutMap, isRGB, isRang
 def process_mosaic_images(interpolName, listOfImages, imgAggregatedName):
     run_command(["otbcli",
                  "Mosaic",
+		 "-progress", "false",
                  "-il"] + listOfImages + [
                  "-out", imgAggregatedName +"?gdal:co:COMPRESS=DEFLATE",
                  "-comp.feather", "none",

@@ -896,6 +896,8 @@ private:
   {
       std::vector<const char *> args;
       args.emplace_back("ContinuousColorMapping");
+      args.emplace_back("-progress");
+      args.emplace_back("false");
       args.emplace_back("-in");
       args.emplace_back(rasterFullFilePath.c_str());
       args.emplace_back("-out");
@@ -916,6 +918,8 @@ private:
   bool generateQuicklook(const std::string &rasterFullFilePath, const std::vector<std::string> &channels,const std::string &jpegFullFilePath)
   {
       std::vector<const char *> args;
+      args.emplace_back("-progress");
+      args.emplace_back("false");
       args.emplace_back("-in");
       args.emplace_back(rasterFullFilePath.c_str());
       args.emplace_back("-out");
@@ -1763,36 +1767,37 @@ private:
   }
 
   bool ExecuteExternalProgram(const char *appExe, std::vector<const char *> appArgs) {
-          int error, status;
-          pid_t pid, waitres;
-          std::vector<const char *> args;
-          std::string cmdInfo;
-          args.emplace_back(appExe);
-          cmdInfo = appExe;
-          for(unsigned int i = 0; i<appArgs.size(); i++) {
-                args.emplace_back(appArgs[i]);
-                cmdInfo += " ";
-                cmdInfo += appArgs[i];
-          }
-          otbAppLogINFO("Executing external command: " << cmdInfo);
+      int status;
+      pid_t pid, waitres;
+      std::vector<const char *> args;
+      std::string cmdInfo;
+      args.emplace_back(appExe);
+      cmdInfo = appExe;
+      for(unsigned int i = 0; i<appArgs.size(); i++) {
+            args.emplace_back(appArgs[i]);
+            cmdInfo += " ";
+            cmdInfo += appArgs[i];
+      }
+      otbAppLogINFO("Executing external command: " << cmdInfo);
 
-          args.emplace_back(nullptr);
+      args.emplace_back(nullptr);
 
-          posix_spawnattr_t attr;
-          posix_spawnattr_init(&attr);
-          posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
-          error = posix_spawnp(&pid, args[0], NULL, &attr, (char *const *)args.data(), environ);
-          if(error != 0) {
-              otbAppLogWARNING("Error creating process for " << appExe << ". The resulting files will not be created. Error was: " << error);
-              return false;
+      pid = fork();
+      if (!pid) {
+          unsetenv("ITK_AUTOLOAD_PATH");
+          if (execvp(args[0], (char* const*)args.data()) < 0) {
+              std::string msg{strerror(errno)};
+              otbAppLogWARNING("Error running process: " << msg);
           }
-          posix_spawnattr_destroy(&attr);
+      } else {
           waitres = waitpid(pid, &status, 0);
           if(waitres == pid && (WIFEXITED(status) && WEXITSTATUS(status) == 0)) {
               return true;
           }
           otbAppLogWARNING("Error running " << appExe << ". The resulting file(s) might not be created. The return was: " << status);
           return false;
+      }
+      return true;
   }
 
   std::string BuildProductDirectoryName() {
