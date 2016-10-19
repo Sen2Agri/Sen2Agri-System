@@ -1,6 +1,8 @@
 add_subdirectory(OTBExtensions)
 add_subdirectory(XMLStatistics)
 add_subdirectory(TrainImagesClassifierNew)
+add_subdirectory(CropTypeStatistics)
+add_subdirectory(CropMaskStatistics)
 add_subdirectory(CropTypeTrainImagesClassifier)
 add_subdirectory(CropMaskTrainImagesClassifier)
 add_subdirectory(CropTypeImageClassifier)

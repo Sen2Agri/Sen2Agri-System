@@ -54,11 +54,9 @@ public:
   typedef otb::StatisticsXMLFileReader<MeasurementType>                                                  StatisticsReader;
   typedef otb::ShiftScaleVectorImageFilter<FloatVectorImageType, FloatVectorImageType>                   RescalerType;
   typedef otb::MultiModelImageClassificationFilter<FloatVectorImageType, OutputImageType, MaskImageType> ClassificationFilterType;
-  typedef ClassificationFilterType::Pointer                                                              ClassificationFilterPointerType;
   typedef ClassificationFilterType::ModelType                                                            ModelType;
-  typedef ModelType::Pointer                                                                             ModelPointerType;
   typedef otb::ObjectList<ModelType>                                                                     ModelListType;
-  typedef otb::ObjectList<ModelType>::Pointer                                                            ModelListPointerType;
+  typedef otb::ObjectList<RescalerType>                                                                  RescalerListType;
   typedef ClassificationFilterType::ValueType                                                            ValueType;
   typedef ClassificationFilterType::LabelType                                                            LabelType;
   typedef otb::MachineLearningModelFactory<ValueType, LabelType>                                         MachineLearningModelFactoryType;
@@ -93,8 +91,8 @@ private:
     SetDefaultParameterInt("nodatalabel", 0);
     SetParameterDescription("nodatalabel", "The label to output for masked pixels.");
 
-    AddParameter(ParameterType_InputFilename, "imstat", "Statistics file");
-    SetParameterDescription("imstat", "A XML file containing mean and standard deviation to center and reduce samples before classification (produced by ComputeImagesStatistics application).");
+    AddParameter(ParameterType_InputFilenameList, "imstat", "Statistics file");
+    SetParameterDescription("imstat", "One XML file per model containing mean and standard deviation to center and reduce samples before classification (produced by ComputeImagesStatistics application).");
     MandatoryOff("imstat");
 
     AddParameter(ParameterType_OutputImage, "out",  "Output Image");
@@ -119,8 +117,8 @@ private:
   void DoExecute()
   {
     // Load input image
-    FloatVectorImageListType::Pointer inImage = GetParameterImageList("in");
-    inImage->UpdateOutputInformation();
+    FloatVectorImageListType::Pointer inImages = GetParameterImageList("in");
+    inImages->UpdateOutputInformation();
 
     // Load models
     otbAppLogINFO("Loading models");
@@ -131,7 +129,7 @@ private:
 
     for (std::vector<std::string>::const_iterator it = modelFiles.begin(), itEnd = modelFiles.end(); it != itEnd; ++it)
       {
-      ModelPointerType model = MachineLearningModelFactoryType::CreateMachineLearningModel(*it,
+      ModelType::Pointer model = MachineLearningModelFactoryType::CreateMachineLearningModel(*it,
                                                                             MachineLearningModelFactoryType::ReadMode);
 
       if (model.IsNull())
@@ -150,58 +148,59 @@ private:
     StatisticsReader::Pointer  statisticsReader = StatisticsReader::New();
     MeasurementType  meanMeasurementVector;
     MeasurementType  stddevMeasurementVector;
-    m_Rescaler = RescalerType::New();
+    m_Rescalers = RescalerListType::New();
 
     // Classify
     m_ClassificationFilter = ClassificationFilterType::New();
     m_ClassificationFilter->SetModels(m_Models);
 
     // Normalize input image if asked
-    if(IsParameterEnabled("imstat")  )
+    bool useStatistics = IsParameterEnabled("imstat");
+    if (useStatistics)
       {
+      const std::vector<std::string> &statisticsFiles = GetParameterStringList("imstat");
       otbAppLogINFO("Input image normalization activated.");
       // Load input image statistics
-      statisticsReader->SetFileName(GetParameterString("imstat"));
-      meanMeasurementVector   = statisticsReader->GetStatisticVectorByName("mean");
-      stddevMeasurementVector = statisticsReader->GetStatisticVectorByName("stddev");
-      otbAppLogINFO( "mean used: " << meanMeasurementVector );
-      otbAppLogINFO( "standard deviation used: " << stddevMeasurementVector );
-      // Rescale vector image
-      // TODO
-//      m_Rescaler->SetScale(stddevMeasurementVector);
-//      m_Rescaler->SetShift(meanMeasurementVector);
-//      m_Rescaler->SetInput(inImage);
-
-//      m_ClassificationFilter->SetInput(m_Rescaler->GetOutput());
+      for (std::vector<std::string>::const_iterator statsIt = statisticsFiles.begin(), statsEnd = statisticsFiles.end(); statsIt != statsEnd; ++statsIt)
+        {
+        statisticsReader->SetFileName(*statsIt);
+        meanMeasurementVector   = statisticsReader->GetStatisticVectorByName("mean");
+        stddevMeasurementVector = statisticsReader->GetStatisticVectorByName("stddev");
+        otbAppLogINFO( "mean used: " << meanMeasurementVector );
+        otbAppLogINFO( "standard deviation used: " << stddevMeasurementVector );
+        // Rescale vector image
+        RescalerType::Pointer rescaler = RescalerType::New();
+        rescaler->SetScale(stddevMeasurementVector);
+        rescaler->SetShift(meanMeasurementVector);
+        rescaler->SetInput(inImages->GetNthElement(std::distance(statisticsFiles.begin(), statsIt)));
+        m_Rescalers->PushBack(rescaler);
+        }
       }
     else
       {
       otbAppLogINFO("Input image normalization deactivated.");
+      }
 
-      if(IsParameterEnabled("mask"))
+    if(IsParameterEnabled("mask"))
+      {
+      otbAppLogINFO("Using model mask");
+      // Load mask image and cast into LabeledImageType
+      MaskImageType::Pointer inMask = GetParameterUInt8Image("mask");
+
+      m_ClassificationFilter->SetUseModelMask(true);
+      m_ClassificationFilter->SetModelMask(inMask);
+      }
+
+
+    for (size_t i = 0; i < m_Models->Size(); i++)
+      {
+      if (useStatistics)
         {
-        otbAppLogINFO("Using model mask");
-        // Load mask image and cast into LabeledImageType
-        MaskImageType::Pointer inMask = GetParameterUInt8Image("mask");
-
-        m_ClassificationFilter->SetUseModelMask(true);
-        m_ClassificationFilter->SetModelMask(inMask);
-        }
-
-
-      if (inImage->Size() == 1)
-        {
-        for (size_t i = 0; i < m_Models->Size(); i++)
-          {
-          m_ClassificationFilter->PushBackInput(inImage->GetNthElement(0));
-          }
+        m_ClassificationFilter->PushBackInput(m_Rescalers->GetNthElement(i)->GetOutput());
         }
       else
         {
-        for (size_t i = 0; i < m_Models->Size(); i++)
-          {
-          m_ClassificationFilter->PushBackInput(inImage->GetNthElement(i));
-          }
+        m_ClassificationFilter->PushBackInput(inImages->GetNthElement(i));
         }
       }
 
@@ -213,9 +212,9 @@ private:
     SetParameterOutputImage<OutputImageType>("out", m_ClassificationFilter->GetOutput());
   }
 
-  ClassificationFilterType::Pointer m_ClassificationFilter;
-  ModelListPointerType m_Models;
-  RescalerType::Pointer m_Rescaler;
+  ClassificationFilterType::Pointer  m_ClassificationFilter;
+  ModelListType::Pointer             m_Models;
+  RescalerListType::Pointer          m_Rescalers;
 };
 
 

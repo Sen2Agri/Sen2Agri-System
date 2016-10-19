@@ -38,8 +38,6 @@ class CropTypeProcessor(ProcessorBase):
                             choices=['resample', 'gapfill'], required=False, default='resample')
         parser.add_argument('-classifier', help='The classifier (rf or svm) used for training (default rf)',
                             required=False, metavar='classifier', choices=['rf', 'svm'], default='rf')
-        parser.add_argument('-normalize', help='Normalize the input before classification', default=False,
-                            required=False, action='store_true')
         parser.add_argument('-rseed', help='The random seed used for training (default 0)',
                             required=False, metavar='random_seed', default=0)
         parser.add_argument('-mask', help='The crop mask for each tile',
@@ -177,12 +175,10 @@ class CropTypeProcessor(ProcessorBase):
             step_args += ["-classifier.rf.nbtrees", self.args.rfnbtrees,
                             "-classifier.rf.min", self.args.rfmin,
                             "-classifier.rf.max", self.args.rfmax]
-            if self.args.normalize:
-                step_args += ["-outstat", area_statistics]
         else:
             step_args += ["-classifier.svm.k", "rbf",
                             "-classifier.svm.opt", 1,
-                            "-outstat", area_statistics]
+                            "-imstat", area_statistics]
         run_step(Step("TrainImagesClassifier", step_args))
 
     def classify_tile(self, tile):
@@ -217,14 +213,13 @@ class CropTypeProcessor(ProcessorBase):
                         "-mission", self.args.mission,
                         "-pixsize", self.args.pixsize,
                         "-indays"] + days + [
-                        "-singletile", "true" if len(stratum.tiles) == 1 else "false",
                         "-bv", -10000,
                         "-nodatalabel", -10000,
                         "-out", tile_crop_type_map_uncompressed,
                         "-model"] + models
         step_args += ["-il"] + tile.descriptors
-        if self.args.classifier == "svm" or self.args.normalize:
-            step_args += ["-outstat"] + statistics
+        if self.args.classifier == "svm":
+            step_args += ["-imstat"] + statistics
 
         if not self.single_stratum:
             step_args += ["-mask", tile_model_mask]
