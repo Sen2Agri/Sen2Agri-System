@@ -63,21 +63,30 @@ CROP_TYPE_MAP_PATH = "/usr/share/sen2agri/crop-type.lut"
 #max number of Channels in Channel List for otb Quicklook application
 CONST_NB_BANDS_QUIKLOOL_LIMIT = "4"
 #---------------------------------------------------------------
+def get_otb_launcher():
+    if os.getenv("ITK_AUTOLOAD_PATH") is None:
+        return "otbcli"
+    else:
+        return "otbApplicationLauncherCommandLine"
+#---------------------------------------------------------------
 def run_command(args):
     print(" ".join(map(pipes.quote, args)))
     subprocess.call(args)
 #----------------------------------------------------------------
 def quicklook_mosaic(inpFileName, outFileName, channelList):
-    run_command(["otbcli_Quicklook",
+    run_command([get_otb_launcher(),
+                 "Quicklook",
                  "-in",inpFileName,
+                 "-progress", "false",
                  "-cl"] + channelList + [
                  "-out", outFileName])
 
 #----------------------------------------------------------------
 def create_rgb_image(post_process_out_filename, newRgbTif, lutMap, isRGB, isRangeMapFile):
-    run_command(["otbcli",
+    run_command([get_otb_launcher(),
                  "ContinuousColorMapping",
                  "-in",post_process_out_filename,
+                 "-progress", "false",
                  "-out", newRgbTif,
                  "-map", lutMap,
                  "-rgbimg", ("1" if isRGB else "0"),
@@ -85,9 +94,9 @@ def create_rgb_image(post_process_out_filename, newRgbTif, lutMap, isRGB, isRang
 
 #----------------------------------------------------------------
 def process_mosaic_images(interpolName, listOfImages, imgAggregatedName):
-    run_command(["otbcli",
+    run_command([get_otb_launcher(),
                  "Mosaic",
-		 "-progress", "false",
+		         "-progress", "false",
                  "-il"] + listOfImages + [
                  "-out", imgAggregatedName +"?gdal:co:COMPRESS=DEFLATE",
                  "-comp.feather", "none",
@@ -435,8 +444,9 @@ def resize_resolution_to_referece_val(context, width, height, dataFolder):
 #----------------------------------------------------------------
 def concatenate_mosaic_files(context, listOfImages):
    #perform concatenation
-   run_command(["otbcli",
+   run_command([get_otb_launcher(),
                 "ConcatenateImages",
+                "-progress", "false",
                 "-il"] + listOfImages + [
                 "-out", context.post_process_out_filename +"?gdal:co:COMPRESS=DEFLATE"])
 #----------------------------------------------------------------

@@ -912,12 +912,13 @@ private:
       std::string strIsRangeMapFile = std::to_string(bIsRangeMapFile);
       args.emplace_back(strIsRangeMapFile.c_str());
       
-      return ExecuteExternalProgram("otbcli", args);
+      return ExecuteExternalProgram("otbApplicationLauncherCommandLine", args);
   }
 
   bool generateQuicklook(const std::string &rasterFullFilePath, const std::vector<std::string> &channels,const std::string &jpegFullFilePath)
   {
       std::vector<const char *> args;
+      args.emplace_back("Quicklook");
       args.emplace_back("-progress");
       args.emplace_back("false");
       args.emplace_back("-in");
@@ -931,7 +932,7 @@ private:
       for (const auto &channel : channels) {
           args.emplace_back(channel.c_str());
       }
-      bool bRet = ExecuteExternalProgram("otbcli_Quicklook", args);
+      bool bRet = ExecuteExternalProgram("otbApplicationLauncherCommandLine", args);
 
       //remove  file with extension jpg.aux.xml generated after preview obtained
       std::string strFileToBeRemoved = jpegFullFilePath + ".aux.xml";
@@ -1767,7 +1768,7 @@ private:
   }
 
   bool ExecuteExternalProgram(const char *appExe, std::vector<const char *> appArgs) {
-      int status;
+      int error, status;
       pid_t pid, waitres;
       std::vector<const char *> args;
       std::string cmdInfo;
@@ -1782,22 +1783,20 @@ private:
 
       args.emplace_back(nullptr);
 
-      pid = fork();
-      if (!pid) {
-          unsetenv("ITK_AUTOLOAD_PATH");
-          if (execvp(args[0], (char* const*)args.data()) < 0) {
-              std::string msg{strerror(errno)};
-              otbAppLogWARNING("Error running process: " << msg);
-          }
-      } else {
-          waitres = waitpid(pid, &status, 0);
-          if(waitres == pid && (WIFEXITED(status) && WEXITSTATUS(status) == 0)) {
-              return true;
-          }
-          otbAppLogWARNING("Error running " << appExe << ". The resulting file(s) might not be created. The return was: " << status);
-          return false;
+      posix_spawnattr_t attr;
+      posix_spawnattr_init(&attr);
+      posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
+      error = posix_spawnp(&pid, args[0], NULL, &attr, (char *const *)args.data(), environ);
+      if(error != 0) {
+        otbAppLogWARNING("Error creating process for " << appExe << ". The resulting files will not be created. Error was: " << error);
+        return false;
       }
-      return true;
+      waitres = waitpid(pid, &status, 0);
+      if(waitres == pid && (WIFEXITED(status) && WEXITSTATUS(status) == 0)) {
+        return true;
+      }
+      otbAppLogWARNING("Error running " << appExe << ". The resulting file(s) might not be created. The return was: " << status);
+      return false;
   }
 
   std::string BuildProductDirectoryName() {
