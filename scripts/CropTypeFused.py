@@ -68,7 +68,6 @@ class CropTypeProcessor(ProcessorBase):
 
         parser.add_argument(
             '-strata', help='Shapefiles with polygons for the strata')
-        # parser.add_argument('-min-coverage', help="Minimum coverage (0 to 1) for considering a tile for stratification (default 0.1)", required=False, type=float, default=0.1)
         parser.add_argument('-mode', help='The execution mode',
                             required=False, choices=['prepare-site', 'train', 'classify', 'postprocess-tiles', 'validate'], default=None)
         parser.add_argument('-stratum-filter', help='The list of strata to use in training and classification',
@@ -79,7 +78,6 @@ class CropTypeProcessor(ProcessorBase):
         parser.add_argument('-include-raw-mask', help="Include the unmasked crop type map even when a crop mask was used, (default false)", default=False, action='store_true')
         self.args = parser.parse_args()
 
-        self.args.min_coverage = 0
         self.args.lut = self.get_lut_path()
 
         if self.args.mask is not None and self.args.maskprod is not None:

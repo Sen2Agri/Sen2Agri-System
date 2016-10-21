@@ -81,7 +81,6 @@ class CropMaskProcessor(ProcessorBase):
 
         parser.add_argument(
             '-strata', help='Shapefiles with polygons for the strata')
-        # parser.add_argument('-min-coverage', help="Minimum coverage (0 to 1) for considering a tile for stratification (default 0.1)", required=False, type=float, default=0.1)
         parser.add_argument('-mode', help='The execution mode',
                             required=False, choices=['prepare-site', 'train', 'classify', 'postprocess-tiles', 'validate'], default=None)
         parser.add_argument('-stratum-filter', help='The list of strata to use in training and classification',
@@ -97,7 +96,6 @@ class CropMaskProcessor(ProcessorBase):
         if self.args.refp is not None and self.args.refr is not None:
             raise Exception("Only one of refp and refr must be set")
 
-        self.args.min_coverage = 0
         self.args.lut = self.get_lut_path()
 
         self.args.tmpfolder = self.args.outdir

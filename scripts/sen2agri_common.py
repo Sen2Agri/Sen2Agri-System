@@ -141,7 +141,6 @@ class Stratum(object):
         self.id = id
         self.extent = extent
         self.tiles = []
-        self.training_tiles = []
 
 class Tile(object):
     def __init__(self, id, descriptors):
@@ -519,26 +518,11 @@ class ProcessorBase(object):
                 tile_strata.sort(key=lambda x: -x[1])
 
                 print(tile.id, [(ts[0].id, ts[1]) for ts in tile_strata])
-                if len(tile_strata) == 0:
-                    pass
-                elif tile_strata[0][1] <= self.args.min_coverage:
-                    tile_training_strata = [tile_strata[0]]
-                else:
-                    tile_training_strata = [x for x in tile_strata if x[1] > self.args.min_coverage]
-                print(tile.id, [(ts[0].id, ts[1]) for ts in tile_strata])
-
                 print("Strata for tile {}: {}".format(tile.id, map(lambda x: x[0].id, tile_strata)))
-                print("Training strata for tile {}: {}".format(tile.id, map(lambda x: x[0].id, tile_training_strata)))
-
-                if len(tile_training_strata) == 0:
-                    pass
 
                 for (stratum, _) in tile_strata:
                     stratum.tiles.append(tile)
                     tile.strata.append(stratum)
-
-                for (stratum, _) in tile_training_strata:
-                    stratum.training_tiles.append(tile)
         else:
             stratum = Stratum(0, self.site_footprint_wgs84)
             stratum.tiles = self.tiles
