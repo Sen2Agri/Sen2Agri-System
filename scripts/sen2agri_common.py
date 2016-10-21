@@ -150,8 +150,6 @@ class Tile(object):
         self.footprint = None
         self.area = None
         self.strata = []
-        self.main_stratum = None
-        self.main_mask = None
 
 
 def split_features(stratum, data, out_folder):
@@ -510,23 +508,13 @@ class ProcessorBase(object):
 
             run_step(Step("Re-number strata", step_args))
 
-            tile_best_weights = [0.0] * len(self.tiles)
-
             for tile in self.tiles:
-                tile_best_weight = 0.0
                 tile_strata = []
 
                 for stratum in self.strata:
                     weight = stratum.extent.Intersection(tile.footprint).Area() / tile.area
-
-                    # this will change
-                    if weight < 0.0001:
-                        continue
-                    if weight > tile_best_weight:
-                        tile_best_weight = weight
-                        tile.main_stratum = stratum
-
-                    tile_strata.append((stratum, weight))
+                    if weight > 0.0:
+                        tile_strata.append((stratum, weight))
 
                 tile_strata.sort(key=lambda x: -x[1])
 
@@ -551,34 +539,18 @@ class ProcessorBase(object):
 
                 for (stratum, _) in tile_training_strata:
                     stratum.training_tiles.append(tile)
-
-            for tile in self.tiles:
-                geom = tile.footprint.Clone()
-
-                for stratum in tile.strata:
-                    if stratum != tile.main_stratum:
-                        geom = geom.Difference(stratum.extent)
-
-                tile.main_mask = geom
         else:
             stratum = Stratum(0, self.site_footprint_wgs84)
             stratum.tiles = self.tiles
             self.strata = [stratum]
             for tile in self.tiles:
                 tile.strata = [stratum]
-                tile.main_stratum = stratum
-
-            for tile in self.tiles:
-                tile.main_mask = tile.footprint
 
     def rasterize_tile_mask(self, stratum, tile):
         tile_mask = self.get_output_path("tile-mask-{}-{}.shp", stratum.id, tile.id)
         stratum_tile_mask = self.get_stratum_tile_mask(stratum, tile)
 
-        if stratum == tile.main_stratum:
-            classification_mask = tile.main_mask
-        else:
-            classification_mask = stratum.extent.Intersection(tile.footprint)
+        classification_mask = stratum.extent.Intersection(tile.footprint)
 
         save_to_shp(tile_mask, classification_mask)
 
