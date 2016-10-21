@@ -543,10 +543,10 @@ class CropMaskProcessor(ProcessorBase):
 
                         files.append(area_validation_polygons)
 
-                    step_args = ["otbcli_ConcatenateVectorData",
+                    run_step(Step("ConcatenateVectorData",
+                                    ["otbcli_ConcatenateVectorData",
                                     "-out", global_validation_polygons,
-                                    "-vd"] + files
-                    run_step(Step("ConcatenateVectorData", step_args))
+                                    "-vd"] + files))
 
                     first_prj_file = self.get_output_path("validation_polygons-{}.prj", self.strata[0].id)
                     shutil.copyfile(first_prj_file, global_prj_file)
