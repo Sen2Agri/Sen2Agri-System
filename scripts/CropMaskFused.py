@@ -557,9 +557,11 @@ class CropMaskProcessor(ProcessorBase):
                         "-level", "L4A",
                         "-baseline", "01.00",
                         "-siteid", self.args.siteid,
-                        "-lut", self.args.lut,
                         "-gipp", self.get_metadata_file(),
                         "-processor", "cropmask"]
+
+        if self.args.lut is not None:
+            step_args += ["-lut", self.args.lut]
 
         if self.args.outprops is not None:
             step_args += ["-outprops", self.args.outprops]
@@ -621,6 +623,10 @@ class CropMaskProcessor(ProcessorBase):
         if not os.path.isfile(lut_path):
             lut_path = os.path.join(script_dir, "../share/sen2agri/crop-mask.map")
         if not os.path.isfile(lut_path):
+            lut_path = os.path.join(script_dir, "crop-mask.map")
+        if not os.path.isfile(lut_path):
+            lut_path = os.path.join(script_dir, "/usr/share/sen2agri/crop-mask.map")
+        if not os.path.isfile(lut_path):
             lut_path = None
 
         return lut_path
@@ -669,9 +675,13 @@ class CropMaskProcessor(ProcessorBase):
             E.PixelSize(str(self.args.pixsize)),
             E.SampleRatio(str(self.args.ratio)),
             E.Classifier(self.args.classifier),
-            E.Seed(str(self.args.rseed)),
-            E.LUT(os.path.basename(self.args.lut))
+            E.Seed(str(self.args.rseed))
         )
+
+        if self.args.lut is not None:
+            parameters.append(
+                E.LUT(os.path.basename(self.args.lut))
+            )
 
         metadata.append(parameters)
 
@@ -679,7 +689,7 @@ class CropMaskProcessor(ProcessorBase):
             parameters.append(
                 E.Smoothing(
                     E.Window(str(self.args.window)),
-                    E.Lambda(str(self.args.lmbd)),
+                    E.Lambda(str(self.args.lmbd))
                 )
             )
             parameters.append(
@@ -705,6 +715,7 @@ class CropMaskProcessor(ProcessorBase):
             classifier.append(
                 E.SVM()
             )
+
         parameters.append(
             classifier
         )

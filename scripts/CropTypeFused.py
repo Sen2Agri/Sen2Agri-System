@@ -338,9 +338,11 @@ class CropTypeProcessor(ProcessorBase):
                         "-level", "L4B",
                         "-baseline", "01.00",
                         "-siteid", self.args.siteid,
-                        "-lut", self.args.lut,
                         "-gipp", self.get_metadata_file(),
                         "-processor", "croptype"]
+
+        if self.args.lut is not None:
+            step_args += ["-lut", self.args.lut]
 
         if self.args.outprops is not None:
             step_args += ["-outprops", self.args.outprops]
@@ -408,6 +410,10 @@ class CropTypeProcessor(ProcessorBase):
         if not os.path.isfile(lut_path):
             lut_path = os.path.join(script_dir, "../share/sen2agri/crop-type.lut")
         if not os.path.isfile(lut_path):
+            lut_path = os.path.join(script_dir, "crop-type.lut")
+        if not os.path.isfile(lut_path):
+            lut_path = os.path.join(script_dir, "/usr/share/sen2agri/crop-type.lut")
+        if not os.path.isfile(lut_path):
             lut_path = None
 
         return lut_path
@@ -464,16 +470,25 @@ class CropTypeProcessor(ProcessorBase):
                 E.SVM()
             )
 
-        metadata.append(
-            E.Parameters(
+        parameters = E.Parameters(
                 E.MainMission(self.args.mission),
                 E.PixelSize(str(self.args.pixsize)),
                 E.SampleRatio(str(self.args.ratio)),
                 E.Classifier(self.args.classifier),
-                E.Seed(str(self.args.rseed)),
-                E.LUT(os.path.basename(self.args.lut)),
-                classifier
+                E.Seed(str(self.args.rseed))
             )
+
+        if self.args.lut is not None:
+            parameters.append(
+                E.LUT(os.path.basename(self.args.lut))
+            )
+
+        parameters.append(
+            classifier
+        )
+
+        metadata.append(
+            parameters
         )
 
         return etree.ElementTree(metadata)
