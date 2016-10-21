@@ -206,7 +206,7 @@ class CropTypeProcessor(ProcessorBase):
                                 "-im", get_reference_raster(tile.descriptors[0]),
                                 "-out", format_otb_filename(tile_model_mask, compression='DEFLATE'), "uint8"]))
 
-        tile_crop_type_map_uncompressed = self.get_output_path("crop_type_map_uncut_{}_uncompressed.tif", tile.id)
+        tile_crop_type_map_uncompressed = self.get_output_path("crop_type_map_{}_uncompressed.tif", tile.id)
         stratum_tile_mask = self.get_stratum_tile_mask(stratum, tile)
 
         step_args = ["otbcli", "CropTypeImageClassifier", self.args.buildfolder,
@@ -226,10 +226,10 @@ class CropTypeProcessor(ProcessorBase):
 
         run_step(Step("ImageClassifier_{}".format(tile.id), step_args, retry=True))
 
-        tile_crop_type_map_uncut = self.get_tile_classification_output(tile)
+        tile_crop_type_map = self.get_tile_classification_output(tile)
         step_args = ["otbcli_Convert",
                         "-in", tile_crop_type_map_uncompressed,
-                        "-out", format_otb_filename(tile_crop_type_map_uncut, compression='DEFLATE'), "int16"]
+                        "-out", format_otb_filename(tile_crop_type_map, compression='DEFLATE'), "int16"]
         run_step(Step("Compression_{}".format(tile.id), step_args))
 
         if not self.args.keepfiles:
