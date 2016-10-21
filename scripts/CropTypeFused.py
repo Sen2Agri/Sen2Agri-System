@@ -226,6 +226,9 @@ class CropTypeProcessor(ProcessorBase):
 
         run_step(Step("ImageClassifier_{}".format(tile.id), step_args, retry=True))
 
+        if not self.args.keepfiles and not self.single_stratum:
+            os.remove(tile_model_mask)
+
         tile_crop_type_map = self.get_tile_classification_output(tile)
         step_args = ["otbcli_Convert",
                         "-in", tile_crop_type_map_uncompressed,

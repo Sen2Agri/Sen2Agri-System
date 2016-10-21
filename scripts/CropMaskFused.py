@@ -293,6 +293,12 @@ class CropMaskProcessor(ProcessorBase):
 
             run_step(Step("TrainImagesClassifier", step_args))
 
+            if not self.args.keepfiles:
+                for tile in stratum.tiles:
+                    tile_stratum_reference_trimmed = self.get_output_path("reference-trimmed-{}-{}.tif", stratum.id, tile.id)
+
+                    os.remove(tile_stratum_reference_trimmed)
+
     def classify_tile(self, tile):
         models = []
         days = []
@@ -347,6 +353,16 @@ class CropMaskProcessor(ProcessorBase):
                 step_args += ["-mask", tile_model_mask]
 
         run_step(Step("ImageClassifier_{}".format(tile.id), step_args, retry=True))
+
+        if not self.args.keepfiles:
+            if not self.single_stratum:
+                os.remove(tile_model_mask)
+
+            if self.args.refp is None:
+                for tile in self.tiles:
+                    tile_spectral_features = self.get_output_path("spectral-features-{}.tif", tile.id)
+
+                    os.remove(tile_spectral_features)
 
         tile_crop_mask_map = self.get_tile_classification_output(tile)
         step_args = ["otbcli_Convert",
