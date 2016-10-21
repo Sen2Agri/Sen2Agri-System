@@ -41,4 +41,4 @@ FILES=( \
     -input ${FILES[@]} \
     -rseed 0 -pixsize 20 \
     -outdir /mnt/data/ukraine/Ukraine-mask \
-    -buildfolder "$BUILD_FOLDER" -keepfiles
+    -buildfolder "$BUILD_FOLDER" # -keepfiles
