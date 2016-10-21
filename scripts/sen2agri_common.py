@@ -435,7 +435,25 @@ class ProcessorBase(object):
         run_step(Step("QualityFlags_" + str(tile.id), step_args))
 
     def prepare_site(self):
-        pass
+        strata_relabelled = self.get_output_path("strata_relabelled.shp")
+
+        step_args = ["ogr2ogr",
+                        "-overwrite",
+                        strata_relabelled,
+                        self.args.strata]
+        run_step(Step("Duplicate stratum list", step_args))
+
+        step_args = ["ogrinfo",
+                        "-sql", "alter table strata_relabelled add column index integer",
+                        strata_relabelled]
+        run_step(Step("Add index column", step_args))
+
+        step_args = ["ogrinfo",
+                        "-dialect", "sqlite",
+                        "-sql", "update strata_relabelled set `index` = (select count(*) from strata_relabelled sr where sr.id < strata_relabelled.id)",
+                        strata_relabelled]
+
+        run_step(Step("Re-number strata", step_args))
 
     def prepare_tile(self, tile):
         pass
@@ -486,26 +504,6 @@ class ProcessorBase(object):
             if len(self.strata) == 0:
                 print("No training data found inside any of the strata, exiting")
                 sys.exit(1)
-
-            strata_relabelled = self.get_output_path("strata_relabelled.shp")
-
-            step_args = ["ogr2ogr",
-                            "-overwrite",
-                            strata_relabelled,
-                            self.args.strata]
-            run_step(Step("Duplicate stratum list", step_args))
-
-            step_args = ["ogrinfo",
-                            "-sql", "alter table strata_relabelled add column index integer",
-                            strata_relabelled]
-            run_step(Step("Add index column", step_args))
-
-            step_args = ["ogrinfo",
-                            "-dialect", "sqlite",
-                            "-sql", "update strata_relabelled set `index` = (select count(*) from strata_relabelled sr where sr.id < strata_relabelled.id)",
-                            strata_relabelled]
-
-            run_step(Step("Re-number strata", step_args))
 
             for tile in self.tiles:
                 tile_strata = []
