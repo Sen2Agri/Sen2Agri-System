@@ -364,6 +364,7 @@ class CropMaskProcessor(ProcessorBase):
         tile_crop_mask = self.get_tile_classification_output(tile)
 
         tile_ndvi = self.get_output_path("ndvi-{}.tif", tile.id)
+        tile_ndvi_filled = self.get_output_path("ndvi-filled-{}.tif", tile.id)
         tile_pca = self.get_output_path("pca-{}.tif", tile.id)
 
         step_args = ["otbcli", "NDVISeries", self.args.buildfolder,
@@ -376,16 +377,26 @@ class CropMaskProcessor(ProcessorBase):
 
         run_step(Step("NDVI Series " + tile.id, step_args))
 
+        step_args = ["otbcli", "FillNoData", self.args.buildfolder,
+                        "-in", tile_ndvi,
+                        "-bv", -10000,
+                        "-out", tile_ndvi_filled]
+
+        run_step(Step("FillNoData " + tile.id, step_args))
+
+        if not self.args.keepfiles:
+            os.remove(tile_ndvi)
+
         step_args = ["otbcli_DimensionalityReduction",
                         "-method", "pca",
                         "-nbcomp", self.args.nbcomp,
-                        "-in", tile_ndvi,
+                        "-in", tile_ndvi_filled,
                         "-out", tile_pca]
 
         run_step(Step("NDVI PCA " + tile.id, step_args))
 
         if not self.args.keepfiles:
-            os.remove(tile_ndvi)
+            os.remove(tile_ndvi_filled)
 
         tile_smoothed = self.get_output_path("smoothed-{}.tif", tile.id)
         tile_smoothed_spatial = self.get_output_path("smoothed-spatial-{}.tif", tile.id)
