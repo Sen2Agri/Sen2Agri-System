@@ -77,8 +77,6 @@ private:
   // implemented
 
   IndexMapType         m_Points;
-  // Class 11 exists in the input pixels
-  bool                 m_Has11;
 };
 
 #ifndef ITK_MANUAL_INSTANTIATION

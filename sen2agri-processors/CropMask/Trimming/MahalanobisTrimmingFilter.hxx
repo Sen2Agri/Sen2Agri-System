@@ -39,7 +39,7 @@
  */
 template< typename TInputImage, typename TOutputImage >
 MahalanobisTrimmingFilter< TInputImage, TOutputImage >
-::MahalanobisTrimmingFilter() : m_Has11(false)
+::MahalanobisTrimmingFilter()
 {
   m_Points.clear();
 }
@@ -61,10 +61,6 @@ MahalanobisTrimmingFilter< TInputImage, TOutputImage >
 ::SetPoints(const IndexMapType & points)
 {
   m_Points = points;
-  m_Has11 = true;
-  if (m_Points.find(11) == m_Points.end()) {
-      m_Has11 = false;
-  }
 }
 
 //template< typename TInputImage, typename TOutputImage >
@@ -108,7 +104,7 @@ MahalanobisTrimmingFilter< TInputImage, TOutputImage >
     // loop through each class
     for (auto& points : m_Points) {
         OutputPixelType pix;
-        if (points.first == 11 || points.first == 20 || (points.first == 10 && !m_Has11)) {
+        if (points.first == 10 || points.first == 11 || points.first == 20) {
             //Crop
             pix = static_cast<OutputPixelType>(1);
         } else {
