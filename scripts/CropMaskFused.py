@@ -291,12 +291,6 @@ class CropMaskProcessor(ProcessorBase):
 
             run_step(Step("TrainImagesClassifier", step_args))
 
-            if not self.args.keepfiles:
-                for tile in stratum.tiles:
-                    tile_stratum_reference_trimmed = self.get_output_path("reference-trimmed-{}-{}.tif", stratum.id, tile.id)
-
-                    os.remove(tile_stratum_reference_trimmed)
-
     def classify_tile(self, tile):
         models = []
         days = []
