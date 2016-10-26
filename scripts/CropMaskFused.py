@@ -76,7 +76,7 @@ class CropMaskProcessor(ProcessorBase):
         parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)",
                             default=False, action='store_true')
         parser.add_argument('-siteid', help='The site ID', required=False, default='nn')
-        parser.add_argument('-lut', help='Color LUT for previews (see /usr/share/sen2agri/crop-mask.map)', required=False)
+        parser.add_argument('-lut', help='Color LUT for previews (see /usr/share/sen2agri/crop-mask.lut)', required=False)
         parser.add_argument('-outprops', help='Output properties file', required=False)
 
         parser.add_argument(
@@ -638,13 +638,13 @@ class CropMaskProcessor(ProcessorBase):
                 print("Warning: The LUT file {} does not exist, using the default one".format(self.args.lut))
 
         script_dir = os.path.dirname(__file__)
-        lut_path = os.path.join(script_dir, "../sen2agri-processors/CropMask/crop-mask.map")
+        lut_path = os.path.join(script_dir, "../sen2agri-processors/CropMask/crop-mask.lut")
         if not os.path.isfile(lut_path):
-            lut_path = os.path.join(script_dir, "../share/sen2agri/crop-mask.map")
+            lut_path = os.path.join(script_dir, "../share/sen2agri/crop-mask.lut")
         if not os.path.isfile(lut_path):
-            lut_path = os.path.join(script_dir, "crop-mask.map")
+            lut_path = os.path.join(script_dir, "crop-mask.lut")
         if not os.path.isfile(lut_path):
-            lut_path = os.path.join(script_dir, "/usr/share/sen2agri/crop-mask.map")
+            lut_path = os.path.join(script_dir, "/usr/share/sen2agri/crop-mask.lut")
         if not os.path.isfile(lut_path):
             lut_path = None
 

@@ -56,7 +56,7 @@ import datetime
 
 LAI_MAP_PATH = "/usr/share/sen2agri/lai.map"
 COMPOSITE_MAP_PATH = "/usr/share/sen2agri/composite.map"
-CROP_MASK_MAP_PATH = "/usr/share/sen2agri/crop-mask.map"
+CROP_MASK_MAP_PATH = "/usr/share/sen2agri/crop-mask.lut"
 CROP_TYPE_MAP_PATH = "/usr/share/sen2agri/crop-type.lut"
 
 #---------------------------------------------------------------

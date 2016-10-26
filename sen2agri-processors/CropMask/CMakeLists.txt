@@ -17,5 +17,5 @@ install(FILES ../../scripts/CropMask.py ../../scripts/CropMaskFused.py
         GROUP_READ GROUP_EXECUTE
         WORLD_READ WORLD_EXECUTE)
 
-install(FILES crop-mask.map
+install(FILES crop-mask.lut
         DESTINATION usr/share/sen2agri)
