@@ -10,16 +10,16 @@
 - Classification is no longer perform the classification on tile regions that are outside of a strata. Previously, the strata covering the most of the tile was used.
 - Strata intersecting a small region of a tile are now classified accordingly. Previously, pixels in those region used the strata covering most of the tile.
 - Crop mask and crop type try to use a system-wide LUT when they are running as a local install and another LUT is not found
+- The unsupervised crop mask processor now includes CCI-LC class 10 as crop instead of the previous rule ("11 or 20 or even 10, but only if there is no pixel with class 11")
 
 ### Fixed
 - Crop mask and crop type no longer crash when the LUT was not found
 - The larger temporary files are now removed by the crop mask and crop type processors unless -keepfiles is used
+- The RPM package version numbers are now correct
 
 ### Known issues
 - The upgrade script overwrites SciHub user/proxy configuration files
 - The L4A and L4B products don't contain a QGIS style file
-- The unsupervised crop mask processor should consider classes 10, 11 and 20 as crops instead of the current rule ("11 or 20 or even 10, but only if there is no pixel with class 11")
-- The version number of the RPM packages is incorrect
 - The crop type processor should use red edge bands
 - The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented
 - SNAP adapters need to be updated
