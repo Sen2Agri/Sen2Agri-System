@@ -1,6 +1,49 @@
 # Change Log
 
-## [1.3.1] - 2016-10-TBD
+## [1.4] - 2016-10-TBD
+### Added
+- Multi-tile implementation of the unsupervised Crop Mask processor, which should be more precise, faster and use less temporary disk space
+
+### Changed
+- The crop mask segmentation is now performed on a "nodata-filled" version of the NDVI series. No data pixels are replaced with the average of that band, in order to avoid the PCA step giving a higher priority to them.
+- The multi-tile crop mask and crop type classification is now faster for tiles that are intersected by multiple strata
+- Classification is no longer perform the classification on tile regions that are outside of a strata. Previously, the strata covering the most of the tile was used.
+- Strata intersecting a small region of a tile are now classified accordingly. Previously, pixels in those region used the strata covering most of the tile.
+- Crop mask and crop type try to use a system-wide LUT when they are running as a local install and another LUT is not found
+
+### Fixed
+- Crop mask and crop type no longer crash when the LUT was not found
+- The larger temporary files are now removed by the crop mask and crop type processors unless -keepfiles is used
+
+### Known issues
+- The upgrade script overwrites SciHub user/proxy configuration files
+- The L4A and L4B products don't contain a QGIS style file
+- The unsupervised crop mask processor should consider classes 10, 11 and 20 as crops instead of the current rule ("11 or 20 or even 10, but only if there is no pixel with class 11")
+- The version number of the RPM packages is incorrect
+- The crop type processor should use red edge bands
+- The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented
+- SNAP adapters need to be updated
+- When using inputs from different sensors and projections for a single tile, the inputs are not reprojected
+- The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
+- With multiple input tiles, the training pixel sampling for crop type and crop mask products can be skewed if the training classes are not uniformly distributed
+- The SAFE formatting application uses both segmented and raw crop masks for the mosaic
+- The SAFE formatting application outputs mosaics that are outside of the SRS bounds for products spanning multiple SRSs. It should use `EPSG:4326`.
+- The SAFE formatting application sometimes outputs mosaics with black edges around tile edges when some tiles need to be reprojected.
+- The SAFE formatting application sometimes outputs unusable (e.g. black) previews
+- The SAFE formatting application uses bilinear resampling for the crop type and crop mask mosaics. It should use nearest-neighbour instead.
+- The SAFE and L2A product previews are not gamma-corrected and can be too dark
+- The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
+- The crop type and mask training step sometimes crashes while loading the OpenCV models
+- MACCS and quicklook generation sometimes crash or hang
+- Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
+- The trimming step of the Crop Mask processor still uses a large amount of memory
+- The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels. It should expect a binary map.
+- The L3A, L3B and L3C processors and the quality flags extraction step of the L4A and L4B processors fail when one of the input product paths contains no directory separator. A workaround is to place a `./` before the product file.
+- The dashboard previews don't match their bounds rectangle because of projection mismatch
+- The `demmaccs.py` command line help message contains positional arguments (`input` and `output`) placed immediately after optional arguments taking multiple values (`--prev-l2a-tiles` and `--prev-l2a-products-paths`). This can prove troublesome for unsuspecting users. The workaround is to put a `--` or a different optional argument before the positional arguments
+- For LAI the model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
+
+## [1.3.1] - 2016-10-10
 ### Added
 - A change log
 - Multi-tile implementations of the Crop Type and supervised Crop Mask processors which should be faster and use less temporary disk space. The new executables are called `CropTypeFused.py` and `CropMaskFused.py`.
