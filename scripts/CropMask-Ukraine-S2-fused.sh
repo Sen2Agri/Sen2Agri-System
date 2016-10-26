@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 source set_build_folder.sh
 
