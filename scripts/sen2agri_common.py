@@ -147,7 +147,6 @@ class Tile(object):
         self.id = id
         self.descriptors = descriptors
         self.footprint = None
-        self.area = None
         self.strata = []
 
 
@@ -497,7 +496,6 @@ class ProcessorBase(object):
         self.site_footprint_wgs84 = ogr.Geometry(ogr.wkbPolygon)
         for tile in self.tiles:
             tile.footprint = get_raster_footprint(get_reference_raster(tile.descriptors[0]))
-            tile.area = tile.footprint.Area()
             self.site_footprint_wgs84 = self.site_footprint_wgs84.Union(tile.footprint)
 
         if not self.single_stratum:
@@ -507,21 +505,12 @@ class ProcessorBase(object):
                 sys.exit(1)
 
             for tile in self.tiles:
-                tile_strata = []
-
                 for stratum in self.strata:
-                    weight = stratum.extent.Intersection(tile.footprint).Area() / tile.area
-                    if weight > 0.0:
-                        tile_strata.append((stratum, weight))
+                    if stratum.extent.Intersection(tile.footprint).Area() > 0:
+                        tile.strata.append(stratum)
+                        stratum.tiles.append(tile)
 
-                tile_strata.sort(key=lambda x: -x[1])
-
-                print(tile.id, [(ts[0].id, ts[1]) for ts in tile_strata])
-                print("Strata for tile {}: {}".format(tile.id, map(lambda x: x[0].id, tile_strata)))
-
-                for (stratum, _) in tile_strata:
-                    stratum.tiles.append(tile)
-                    tile.strata.append(stratum)
+                print("Strata for tile {}: {}".format(tile.id, map(lambda x: x.id, tile.strata)))
         else:
             stratum = Stratum(0, self.site_footprint_wgs84)
             stratum.tiles = self.tiles
