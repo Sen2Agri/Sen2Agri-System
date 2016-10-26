@@ -27,6 +27,7 @@
 
 #include "otbStreamingResampleImageFilter.h"
 #include "otbGridResampleImageFilter.h"
+#include "otbGenericRSResampleImageFilter.h"
 
 //Transform
 #include "itkScalableAffineTransform.h"
@@ -69,19 +70,16 @@ typedef otb::ImageFileReader<otb::Wrapper::UInt8VectorImageType>   UInt8VectorIm
 typedef otb::ObjectList<UInt8VectorImageReaderType>                UInt8VectorImageReaderListType;
 
 typedef otb::GridResampleImageFilter<otb::Wrapper::FloatImageType, otb::Wrapper::FloatImageType, double>    FloatResampleFilterType;
-typedef otb::ObjectList<FloatResampleFilterType>                                                            FloatResampleFilterListType;
-
 typedef otb::GridResampleImageFilter<otb::Wrapper::UInt8ImageType, otb::Wrapper::UInt8ImageType, double>    UInt8ResampleFilterType;
-typedef otb::ObjectList<UInt8ResampleFilterType>                                                            UInt8ResampleFilterListType;
-
 typedef otb::GridResampleImageFilter<otb::Wrapper::UInt8VectorImageType, otb::Wrapper::UInt8VectorImageType, double>    UInt8VectorResampleFilterType;
-typedef otb::ObjectList<UInt8VectorResampleFilterType>                                                                  UInt8VectorResampleFilterListType;
-
 typedef otb::GridResampleImageFilter<otb::Wrapper::Int16ImageType, otb::Wrapper::Int16ImageType, double>                Int16ResampleFilterType;
-typedef otb::ObjectList<Int16ResampleFilterType>                                                                        Int16ResampleFilterListType;
-
 typedef otb::GridResampleImageFilter<otb::Wrapper::Int16ImageType, otb::Wrapper::FloatImageType, double>                Int16FloatResampleFilterType;
-typedef otb::ObjectList<Int16FloatResampleFilterType>                                                                   Int16FloatResampleFilterListType;
+
+typedef otb::GenericRSResampleImageFilter<otb::Wrapper::FloatImageType, otb::Wrapper::FloatImageType>    FloatReprojectResampleFilterType;
+typedef otb::GenericRSResampleImageFilter<otb::Wrapper::UInt8ImageType, otb::Wrapper::UInt8ImageType>    UInt8ReprojectResampleFilterType;
+typedef otb::GenericRSResampleImageFilter<otb::Wrapper::UInt8VectorImageType, otb::Wrapper::UInt8VectorImageType>    UInt8VectorReprojectResampleFilterType;
+typedef otb::GenericRSResampleImageFilter<otb::Wrapper::Int16ImageType, otb::Wrapper::Int16ImageType>                Int16ReprojectResampleFilterType;
+typedef otb::GenericRSResampleImageFilter<otb::Wrapper::Int16ImageType, otb::Wrapper::FloatImageType>                Int16FloatReprojectResampleFilterType;
 
 typedef otb::SpotMaskFilter                                 SpotMaskFilterType;
 typedef otb::ObjectList<SpotMaskFilterType>                 SpotMaskFilterListType;
@@ -135,6 +133,7 @@ struct TileData {
     double                                m_imageWidth;
     double                                m_imageHeight;
     ImageType::PointType                  m_imageOrigin;
+    std::string                           m_projection;
 };
 
 struct ImageDescriptor {
@@ -218,8 +217,6 @@ public:
         m_MaskConcat->SetInput(m_UInt8ImageList);
     }
 
-
-    // TODO we're opening the files and reading metadata twice, here and in Build()
     void updateRequiredImageSize(const std::vector<std::string>& descriptors, int startIndex, int endIndex, TileData& td) {
         td.m_imageWidth = 0;
         td.m_imageHeight = 0;
@@ -253,6 +250,8 @@ public:
                     td.m_imageOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale - 1.0);
                     td.m_imageOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale - 1.0);
 
+                    td.m_projection = reader->GetOutput()->GetProjectionRef();
+
                     break;
                 }
 
@@ -277,6 +276,8 @@ public:
                     ImageType::SpacingType spacing = reader->GetOutput()->GetSpacing();
                     td.m_imageOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale - 1.0);
                     td.m_imageOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale - 1.0);
+
+                    td.m_projection = reader->GetOutput()->GetProjectionRef();
 
                     break;
                 }
@@ -350,11 +351,6 @@ protected:
     UInt16ImageReaderListType::Pointer       m_UInt16ImageReaderList;
     UInt8VectorImageReaderListType::Pointer  m_UInt8VectorImageReaderList;
 
-    FloatResampleFilterListType::Pointer         m_FloatResamplersList;
-    UInt8ResampleFilterListType::Pointer         m_UInt8ResamplersList;
-    Int16FloatResampleFilterListType::Pointer    m_Int16FloatResamplersList;
-    UInt8VectorResampleFilterListType::Pointer   m_UInt8VectorResamplersList;
-
     CastInt16FloatFilterListType::Pointer        m_CastInt16FloatFilterFilst;
 
     SpotMaskFilterListType::Pointer                   m_SpotMaskFilters;
@@ -368,11 +364,6 @@ protected:
 
     TimeSeriesReader()
     {
-        m_FloatResamplersList = FloatResampleFilterListType::New();
-        m_UInt8ResamplersList = UInt8ResampleFilterListType::New();
-        m_Int16FloatResamplersList = Int16FloatResampleFilterListType::New();
-        m_UInt8VectorResamplersList = UInt8VectorResampleFilterListType::New();
-
         m_ImageReaderList = ImageReaderListType::New();
         m_UInt8ImageReaderList = UInt8ImageReaderListType::New();
         m_Int16ImageReaderList = Int16ImageReaderListType::New();
@@ -568,7 +559,6 @@ protected:
         const auto &imageFile = rootFolder / meta.Files.OrthoSurfCorrPente;
         auto reader = getInt16ImageReader(imageFile.string());
         reader->GetOutput()->UpdateOutputInformation();
-        float curRes = reader->GetOutput()->GetSpacing()[0];
 
         auto channelExtractor1 = ExtractChannelFilterType::New();
         channelExtractor1->SetInput(reader->GetOutput());
@@ -591,10 +581,10 @@ protected:
         m_ChannelExtractors->PushBack(channelExtractor4);
 
         // For SPOT series the bands are already in order. Only a resampling might be required
-        descriptor.bands.push_back(getResampledFloatBand(channelExtractor1->GetOutput(), td, curRes));
-        descriptor.bands.push_back(getResampledFloatBand(channelExtractor2->GetOutput(), td, curRes));
-        descriptor.bands.push_back(getResampledFloatBand(channelExtractor3->GetOutput(), td, curRes));
-        descriptor.bands.push_back(getResampledFloatBand(channelExtractor4->GetOutput(), td, curRes));
+        descriptor.bands.push_back(getResampledFloatBand(channelExtractor1->GetOutput(), td));
+        descriptor.bands.push_back(getResampledFloatBand(channelExtractor2->GetOutput(), td));
+        descriptor.bands.push_back(getResampledFloatBand(channelExtractor3->GetOutput(), td));
+        descriptor.bands.push_back(getResampledFloatBand(channelExtractor4->GetOutput(), td));
     }
 
     otb::Wrapper::UInt8ImageType::Pointer getSpotMask(const SPOT4Metadata& meta, const boost::filesystem::path &rootFolder, const TileData& td) {
@@ -604,7 +594,6 @@ protected:
 
         UInt8ImageReaderType::Pointer maskReaderDiv = getUInt8ImageReader(maskFileDiv.string());
         maskReaderDiv->GetOutput()->UpdateOutputInformation();
-        float curRes = maskReaderDiv->GetOutput()->GetSpacing()[0];
 
         // Get the saturation mask
         const auto &maskFileSat = rootFolder / meta.Files.MaskSaturation;
@@ -624,7 +613,7 @@ protected:
         m_SpotMaskFilters->PushBack(spotMaskFilter);
 
         // Return the mask resampled to the required value
-        return getResampledUInt8Bands(spotMaskFilter->GetOutput(), td, curRes);
+        return getResampledUInt8Bands(spotMaskFilter->GetOutput(), td);
     }
 
     void getLandsatBands(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor) {
@@ -633,7 +622,6 @@ protected:
         std::string imageFile = getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE");
         auto reader = getInt16ImageReader(imageFile);
         reader->GetOutput()->UpdateOutputInformation();
-        float curRes = reader->GetOutput()->GetSpacing()[0];
 
         // Extract the bands from 3 to 6
         auto channelExtractor1 = ExtractChannelFilterType::New();
@@ -657,10 +645,10 @@ protected:
         m_ChannelExtractors->PushBack(channelExtractor4);
 
         // A resampling might be required
-        descriptor.bands.push_back(getResampledFloatBand(channelExtractor1->GetOutput(), td, curRes));
-        descriptor.bands.push_back(getResampledFloatBand(channelExtractor2->GetOutput(), td, curRes));
-        descriptor.bands.push_back(getResampledFloatBand(channelExtractor3->GetOutput(), td, curRes));
-        descriptor.bands.push_back(getResampledFloatBand(channelExtractor4->GetOutput(), td, curRes));
+        descriptor.bands.push_back(getResampledFloatBand(channelExtractor1->GetOutput(), td));
+        descriptor.bands.push_back(getResampledFloatBand(channelExtractor2->GetOutput(), td));
+        descriptor.bands.push_back(getResampledFloatBand(channelExtractor3->GetOutput(), td));
+        descriptor.bands.push_back(getResampledFloatBand(channelExtractor4->GetOutput(), td));
     }
 
     otb::Wrapper::UInt8ImageType::Pointer getLandsatMask(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td) {
@@ -671,7 +659,6 @@ protected:
 
         auto maskReaderQuality = getUInt8VectorImageReader(maskFileQuality);
         maskReaderQuality->GetOutput()->UpdateOutputInformation();
-        float curRes = maskReaderQuality->GetOutput()->GetSpacing()[0];
 
          // Get the cloud mask
         std::string maskFileCloud = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_CLD");
@@ -686,7 +673,7 @@ protected:
         m_SentinelMaskFilters->PushBack(sentinelMaskFilter);
 
         // Resample if needed
-        return getResampledUInt8Bands(sentinelMaskFilter->GetOutput(), td, curRes);
+        return getResampledUInt8Bands(sentinelMaskFilter->GetOutput(), td);
     }
 
     void getSentinelBands(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor) {
@@ -696,7 +683,6 @@ protected:
         std::string imageFile1 = getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE_R1");
         auto reader1 = getInt16ImageReader(imageFile1);
         reader1->GetOutput()->UpdateOutputInformation();
-        float curRes1 = reader1->GetOutput()->GetSpacing()[0];
 
         // Get the index of the green band
         int gIndex = getBandIndex(meta.ImageInformation.Resolutions[0].Bands, "B3");
@@ -726,7 +712,6 @@ protected:
         std::string imageFile2 = getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE_R2");
         auto reader2 = getInt16ImageReader(imageFile2);
         reader2->GetOutput()->UpdateOutputInformation();
-        float curRes2 = reader2->GetOutput()->GetSpacing()[0];
 
         // Get the index of the SWIR band
         int swirIndex = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B11");
@@ -736,10 +721,10 @@ protected:
         m_ChannelExtractors->PushBack(channelExtractor4);
 
         // Return the concatenation result
-        descriptor.bands.push_back(getResampledFloatBand(channelExtractor1->GetOutput(), td, curRes1));
-        descriptor.bands.push_back(getResampledFloatBand(channelExtractor2->GetOutput(), td, curRes1));
-        descriptor.bands.push_back(getResampledFloatBand(channelExtractor3->GetOutput(), td, curRes1));
-        descriptor.bands.push_back(getResampledFloatBand(channelExtractor4->GetOutput(), td, curRes2));
+        descriptor.bands.push_back(getResampledFloatBand(channelExtractor1->GetOutput(), td));
+        descriptor.bands.push_back(getResampledFloatBand(channelExtractor2->GetOutput(), td));
+        descriptor.bands.push_back(getResampledFloatBand(channelExtractor3->GetOutput(), td));
+        descriptor.bands.push_back(getResampledFloatBand(channelExtractor4->GetOutput(), td));
     }
 
     otb::Wrapper::UInt8ImageType::Pointer getSentinelMask(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td) {
@@ -750,7 +735,6 @@ protected:
 
         auto maskReaderQuality = getUInt8VectorImageReader(maskFileQuality);
         maskReaderQuality->GetOutput()->UpdateOutputInformation();
-        float curRes = maskReaderQuality->GetOutput()->GetSpacing()[0];
 
          // Get the cloud mask
         std::string maskFileCloud = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_CLD_R1");
@@ -765,39 +749,30 @@ protected:
         m_SentinelMaskFilters->PushBack(sentinelMaskFilter);
 
         // Resample if needed
-        return getResampledUInt8Bands(sentinelMaskFilter->GetOutput(), td, curRes);
+        return getResampledUInt8Bands(sentinelMaskFilter->GetOutput(), td);
     }
 
-    typename otb::Wrapper::FloatImageType::Pointer getResampledFloatBand(const otb::Wrapper::FloatImageType::Pointer& image, const TileData& td, const float curRes) {
-        typedef otb::BCOInterpolateImageFunction<otb::Wrapper::FloatImageType,
-                                                    double>          BicubicInterpolationType;
-        typedef itk::ScalableAffineTransform<double, otb::Wrapper::FloatImageType::ImageDimension> ScalableTransformType;
-        typedef typename ScalableTransformType::OutputVectorType                         OutputVectorType;
+    otb::ObjectList<itk::ProcessObject>::Pointer m_Filters = otb::ObjectList<itk::ProcessObject>::New();
 
-        const float invRatio = static_cast<float>(m_pixSize) / curRes;
+    typename otb::Wrapper::FloatImageType::Pointer getResampledFloatBand(const otb::Wrapper::FloatImageType::Pointer& image, const TileData& td) {
+        typedef otb::Wrapper::FloatImageType ImageType;
 
-         // Scale Transform
-         OutputVectorType scale;
-         scale[0] = invRatio;
-         scale[1] = invRatio;
+        typedef otb::BCOInterpolateImageFunction<ImageType, double>          BicubicInterpolationType;
 
          image->UpdateOutputInformation();
          auto imageSize = image->GetLargestPossibleRegion().GetSize();
 
          // Evaluate size
          FloatResampleFilterType::SizeType recomputedSize;
-         if (td.m_imageWidth != 0 && td.m_imageHeight != 0) {
-             recomputedSize[0] = td.m_imageWidth;
-             recomputedSize[1] = td.m_imageHeight;
-         } else {
-             recomputedSize[0] = imageSize[0] / scale[0];
-             recomputedSize[1] = imageSize[1] / scale[1];
-         }
+         recomputedSize[0] = td.m_imageWidth;
+         recomputedSize[1] = td.m_imageHeight;
 
          if (imageSize == recomputedSize)
              return image;
 
          FloatResampleFilterType::Pointer resampler = FloatResampleFilterType::New();
+         m_Filters->PushBack(resampler);
+
          resampler->SetInput(image);
 
          // Set the interpolator
@@ -807,10 +782,9 @@ protected:
          resampler->SetOutputParametersFromImage( image );
 
          // Evaluate spacing
-         otb::Wrapper::FloatImageType::SpacingType spacing = image->GetSpacing();
-         otb::Wrapper::FloatImageType::SpacingType OutputSpacing;
-         OutputSpacing[0] = spacing[0] * scale[0];
-         OutputSpacing[1] = spacing[1] * scale[1];
+         ImageType::SpacingType OutputSpacing;
+         OutputSpacing[0] = m_pixSize;
+         OutputSpacing[1] = -m_pixSize;
 
          resampler->SetOutputSpacing(OutputSpacing);
 
@@ -822,41 +796,28 @@ protected:
          // Pad with nodata
          resampler->SetEdgePaddingValue(-10000.0f);
 
-
-         m_FloatResamplersList->PushBack(resampler);
          return resampler->GetOutput();
     }
 
-    typename otb::Wrapper::UInt8ImageType::Pointer getResampledUInt8Bands(const otb::Wrapper::UInt8ImageType::Pointer& image, const TileData& td, const float curRes) {
-        typedef itk::NearestNeighborInterpolateImageFunction<otb::Wrapper::UInt8ImageType, double>             NearestNeighborInterpolationType;
+    typename otb::Wrapper::UInt8ImageType::Pointer getResampledUInt8Bands(const otb::Wrapper::UInt8ImageType::Pointer& image, const TileData& td) {
+        typedef otb::Wrapper::UInt8ImageType ImageType;
 
-        typedef itk::ScalableAffineTransform<double, otb::Wrapper::UInt8ImageType::ImageDimension> ScalableTransformType;
-        typedef typename ScalableTransformType::OutputVectorType                         OutputVectorType;
-
-        const float invRatio = static_cast<float>(m_pixSize) / curRes;
-
-         // Scale Transform
-         OutputVectorType scale;
-         scale[0] = invRatio;
-         scale[1] = invRatio;
+        typedef itk::NearestNeighborInterpolateImageFunction<ImageType, double>             NearestNeighborInterpolationType;
 
          image->UpdateOutputInformation();
          auto imageSize = image->GetLargestPossibleRegion().GetSize();
 
          // Evaluate size
          UInt8ResampleFilterType::SizeType recomputedSize;
-         if (td.m_imageWidth != 0 && td.m_imageHeight != 0) {
-             recomputedSize[0] = td.m_imageWidth;
-             recomputedSize[1] = td.m_imageHeight;
-         } else {
-             recomputedSize[0] = imageSize[0] / scale[0];
-             recomputedSize[1] = imageSize[1] / scale[1];
-         }
+         recomputedSize[0] = td.m_imageWidth;
+         recomputedSize[1] = td.m_imageHeight;
 
          if (imageSize == recomputedSize)
              return image;
 
          UInt8ResampleFilterType::Pointer resampler = UInt8ResampleFilterType::New();
+         m_Filters->PushBack(resampler);
+
          resampler->SetInput(image);
 
          NearestNeighborInterpolationType::Pointer interpolator = NearestNeighborInterpolationType::New();
@@ -865,10 +826,9 @@ protected:
          resampler->SetOutputParametersFromImage( image );
 
          // Evaluate spacing
-         otb::Wrapper::UInt8ImageType::SpacingType spacing = image->GetSpacing();
-         otb::Wrapper::UInt8ImageType::SpacingType OutputSpacing;
-         OutputSpacing[0] = spacing[0] * scale[0];
-         OutputSpacing[1] = spacing[1] * scale[1];
+         ImageType::SpacingType OutputSpacing;
+         OutputSpacing[0] = m_pixSize;
+         OutputSpacing[1] = -m_pixSize;
 
          resampler->SetOutputSpacing(OutputSpacing);
 
@@ -880,40 +840,28 @@ protected:
          // Pad with nodata
          resampler->SetEdgePaddingValue(1);
 
-         m_UInt8ResamplersList->PushBack(resampler);
          return resampler->GetOutput();
     }
 
-    typename otb::Wrapper::UInt8VectorImageType::Pointer getResampledUInt8Bands(const otb::Wrapper::UInt8VectorImageType::Pointer& image, const TileData& td, const float curRes) {
-        typedef itk::NearestNeighborInterpolateImageFunction<otb::Wrapper::UInt8VectorImageType, double>             NearestNeighborInterpolationType;
+    typename otb::Wrapper::UInt8VectorImageType::Pointer getResampledUInt8Bands(const otb::Wrapper::UInt8VectorImageType::Pointer& image, const TileData& td) {
+        typedef otb::Wrapper::UInt8VectorImageType ImageType;
 
-        typedef itk::ScalableAffineTransform<double, otb::Wrapper::UInt8VectorImageType::ImageDimension> ScalableTransformType;
-        typedef typename ScalableTransformType::OutputVectorType                         OutputVectorType;
-
-        const float invRatio = static_cast<float>(m_pixSize) / curRes;
-
-         // Scale Transform
-         OutputVectorType scale;
-         scale[0] = invRatio;
-         scale[1] = invRatio;
+        typedef itk::NearestNeighborInterpolateImageFunction<ImageType, double>             NearestNeighborInterpolationType;
 
          image->UpdateOutputInformation();
          auto imageSize = image->GetLargestPossibleRegion().GetSize();
 
          // Evaluate size
          UInt8VectorResampleFilterType::SizeType recomputedSize;
-         if (td.m_imageWidth != 0 && td.m_imageHeight != 0) {
-             recomputedSize[0] = td.m_imageWidth;
-             recomputedSize[1] = td.m_imageHeight;
-         } else {
-             recomputedSize[0] = imageSize[0] / scale[0];
-             recomputedSize[1] = imageSize[1] / scale[1];
-         }
+         recomputedSize[0] = td.m_imageWidth;
+         recomputedSize[1] = td.m_imageHeight;
 
          if (imageSize == recomputedSize)
              return image;
 
          UInt8VectorResampleFilterType::Pointer resampler = UInt8VectorResampleFilterType::New();
+         m_Filters->PushBack(resampler);
+
          resampler->SetInput(image);
 
          NearestNeighborInterpolationType::Pointer interpolator = NearestNeighborInterpolationType::New();
@@ -922,10 +870,9 @@ protected:
          resampler->SetOutputParametersFromImage( image );
 
          // Evaluate spacing
-         otb::Wrapper::UInt8VectorImageType::SpacingType spacing = image->GetSpacing();
-         otb::Wrapper::UInt8VectorImageType::SpacingType OutputSpacing;
-         OutputSpacing[0] = spacing[0] * scale[0];
-         OutputSpacing[1] = spacing[1] * scale[1];
+         ImageType::SpacingType OutputSpacing;
+         OutputSpacing[0] = m_pixSize;
+         OutputSpacing[1] = -m_pixSize;
 
          resampler->SetOutputSpacing(OutputSpacing);
 
@@ -935,78 +882,13 @@ protected:
          resampler->SetOutputSize(recomputedSize);
 
          // Pad with nodata
-         typename otb::Wrapper::UInt8VectorImageType::PixelType defaultValue;
-         itk::NumericTraits<otb::Wrapper::UInt8VectorImageType::PixelType>::SetLength(defaultValue, image->GetNumberOfComponentsPerPixel());
+         typename ImageType::PixelType defaultValue;
+         itk::NumericTraits<ImageType::PixelType>::SetLength(defaultValue, image->GetNumberOfComponentsPerPixel());
+         defaultValue.Fill(1);
          resampler->SetEdgePaddingValue(defaultValue);
 
-         m_UInt8VectorResamplersList->PushBack(resampler);
          return resampler->GetOutput();
     }
-
-    typename otb::Wrapper::FloatImageType::Pointer getResampledInt16Band(const otb::Wrapper::Int16ImageType::Pointer& image, const TileData& td, const float curRes) {
-        typedef otb::BCOInterpolateImageFunction<otb::Wrapper::Int16ImageType,
-                                                    double>          BicubicInterpolationType;
-        typedef itk::ScalableAffineTransform<double, otb::Wrapper::FloatImageType::ImageDimension> ScalableTransformType;
-        typedef typename ScalableTransformType::OutputVectorType                         OutputVectorType;
-
-        const float invRatio = static_cast<float>(m_pixSize) / curRes;
-
-         // Scale Transform
-         OutputVectorType scale;
-         scale[0] = invRatio;
-         scale[1] = invRatio;
-
-         image->UpdateOutputInformation();
-         auto imageSize = image->GetLargestPossibleRegion().GetSize();
-
-         // Evaluate size
-         FloatResampleFilterType::SizeType recomputedSize;
-         if (td.m_imageWidth != 0 && td.m_imageHeight != 0) {
-             recomputedSize[0] = td.m_imageWidth;
-             recomputedSize[1] = td.m_imageHeight;
-         } else {
-             recomputedSize[0] = imageSize[0] / scale[0];
-             recomputedSize[1] = imageSize[1] / scale[1];
-         }
-
-         if (imageSize == recomputedSize) {
-             auto castFilter = CastInt16FloatFilterType::New();
-             castFilter->SetInput(image);
-             m_CastInt16FloatFilterFilst->PushBack(castFilter);
-             return castFilter->GetOutput();
-         }
-
-         Int16FloatResampleFilterType::Pointer resampler = Int16FloatResampleFilterType::New();
-         resampler->SetInput(image);
-
-         // Set the interpolator
-         BicubicInterpolationType::Pointer interpolator = BicubicInterpolationType::New();
-         resampler->SetInterpolator(interpolator);
-
-         resampler->SetOutputParametersFromImage( image );
-
-         // Evaluate spacing
-         otb::Wrapper::FloatImageType::SpacingType spacing = image->GetSpacing();
-         otb::Wrapper::FloatImageType::SpacingType OutputSpacing;
-         OutputSpacing[0] = spacing[0] * scale[0];
-         OutputSpacing[1] = spacing[1] * scale[1];
-
-         resampler->SetOutputSpacing(OutputSpacing);
-
-         resampler->SetOutputOrigin(td.m_imageOrigin);
-         resampler->SetCheckOutputBounds(false);
-
-         resampler->SetOutputSize(recomputedSize);
-
-         // Pad with nodata
-         resampler->SetEdgePaddingValue(-10000.0f);
-
-
-         m_Int16FloatResamplersList->PushBack(resampler);
-         return resampler->GetOutput();
-    }
-
-
 
     // build the date for spot products as YYYYMMDD
     inline std::string formatSPOT4Date(const std::string& date) {

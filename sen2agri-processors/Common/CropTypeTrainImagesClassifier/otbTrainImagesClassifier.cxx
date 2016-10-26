@@ -296,10 +296,6 @@ void CropTypeTrainImagesClassifier::DoExecute()
 
   writeOutputDays(sensorOutDays, GetParameterString("outdays"));
 
-  // Samples
-  typedef double ValueType;
-  typedef itk::VariableLengthVector<ValueType> MeasurementType;
-
   std::vector<FloatVectorImageType::Pointer> images;
   images.reserve(preprocessors->Size());
 
