@@ -37,7 +37,7 @@ public:
   FeatureTimeSeriesFunctor() : m_BandsPerInput(4) { }
   FeatureTimeSeriesFunctor(int bands) : m_BandsPerInput(bands) { }
 
-  PixelType operator()(PixelType rtocr) const
+  PixelType operator()(const PixelType &rtocr) const
   {
     // get the size of the rtocr raster
     int rtocrSize = rtocr.Size();
