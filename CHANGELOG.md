@@ -13,6 +13,7 @@
 - Crop mask and crop type try to use a system-wide LUT when they are running as a local install and another LUT is not found
 - The unsupervised crop mask processor now includes CCI-LC class 10 as crop instead of the previous rule ("11 or 20 or even 10, but only if there is no pixel with class 11")
 - Improved reprojection of crop mask reference map
+- The crop mask and crop type processors now reproject the input images if they are not in the same SRS as the images from the main sensor
 
 ### Fixed
 - Crop mask and crop type no longer crash when the LUT was not found
@@ -22,7 +23,6 @@
 - 20m composite products are now generated
 
 ### Known issues
-- When using inputs from different sensors and projections for a single tile, the inputs are not reprojected
 - Quality flags extraction gives wrong results when inputs are in a different projection
 - The crop type processor should use red edge bands
 - The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented
