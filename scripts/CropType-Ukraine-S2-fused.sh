@@ -1,6 +1,6 @@
 #!/bin/sh
 
-source set_build_folder.sh
+source ./set_build_folder.sh
 
 ./CropTypeFused.py \
     -mission SENTINEL \
