@@ -3,6 +3,7 @@
 ## [1.4] - 2016-10-TBD
 ### Added
 - Multi-tile implementation of the unsupervised Crop Mask processor, which should be more precise, faster and use less temporary disk space
+- Crop mask and crop type products now include a QGIS style file
 
 ### Changed
 - The crop mask segmentation is now performed on a "nodata-filled" version of the NDVI series. No data pixels are replaced with the average of that band, in order to avoid the PCA step giving a higher priority to them.
@@ -19,12 +20,10 @@
 - The RPM packages correctly preserve the configuration files changed by the administrator
 
 ### Known issues
-- The upgrade script overwrites SciHub user/proxy configuration files
-- The L4A and L4B products don't contain a QGIS style file
+- When using inputs from different sensors and projections for a single tile, the inputs are not reprojected
 - The crop type processor should use red edge bands
 - The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented
 - SNAP adapters need to be updated
-- When using inputs from different sensors and projections for a single tile, the inputs are not reprojected
 - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
 - With multiple input tiles, the training pixel sampling for crop type and crop mask products can be skewed if the training classes are not uniformly distributed
 - The SAFE formatting application uses both segmented and raw crop masks for the mosaic
