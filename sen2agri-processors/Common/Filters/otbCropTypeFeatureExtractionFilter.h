@@ -34,8 +34,8 @@ template <typename PixelType>
 class FeatureTimeSeriesFunctor
 {
 public:
-  FeatureTimeSeriesFunctor() : m_bands(4){}
-  FeatureTimeSeriesFunctor(int bands) : m_bands(bands){}
+  FeatureTimeSeriesFunctor() : m_BandsPerInput(4) { }
+  FeatureTimeSeriesFunctor(int bands) : m_BandsPerInput(bands) { }
 
   PixelType operator()(PixelType rtocr) const
   {
@@ -43,11 +43,11 @@ public:
     int rtocrSize = rtocr.Size();
 
     // compute the number of images in the input file
-    int numImages = rtocrSize / m_bands;
+    int numImages = rtocrSize / m_BandsPerInput;
 
     // compute the size of the output
     // for each image there are 7 bands - the initial ones + ndvi, ndwi and brightness
-    int outSize = numImages * (m_bands + 3);
+    int outSize = numImages * (m_BandsPerInput + 3);
 
     // Create the output pixel
     PixelType result(outSize);
@@ -55,13 +55,13 @@ public:
     // Loop trough the images
     int outIndex = 0;
     for (int i = 0; i < numImages; i++) {
-        int inIndex = i * m_bands;
+        int inIndex = i * m_BandsPerInput;
         int b1 = rtocr[inIndex];
         int b2 = rtocr[inIndex + 1];
         int b3 = rtocr[inIndex + 2];
         int b4 = rtocr[inIndex + 3];
         // copy the bands to the output
-        for (int j = 0; j < m_bands; j++) {
+        for (int j = 0; j < m_BandsPerInput; j++) {
             result[outIndex++] = rtocr[inIndex + j];
         }
         // compute the ndvi
@@ -77,7 +77,7 @@ public:
 
   bool operator!=(const FeatureTimeSeriesFunctor a) const
   {
-    return (this->m_bands != a.m_bands);
+    return (this->m_BandsPerInput != a.m_BandsPerInput);
   }
 
   bool operator==(const FeatureTimeSeriesFunctor a) const
@@ -85,9 +85,8 @@ public:
     return !(*this != a);
   }
 
-protected:
   // the number of bands of each image from the temporal series
-  int m_bands;
+  int m_BandsPerInput;
 };
 
 
@@ -109,10 +108,10 @@ public:
   typedef itk::SmartPointer<const Self>                       ConstPointer;
 
   /** Method for creation through the object factory. */
-  itkNewMacro(Self);
+  itkNewMacro(Self)
 
   /** Run-time type information (and related methods). */
-  itkTypeMacro(CropTypeFeatureExtractionFilter, UnaryFunctorImageFilter);
+  itkTypeMacro(CropTypeFeatureExtractionFilter, UnaryFunctorImageFilter)
 
   /** Template related typedefs */
   typedef TImage ImageType;
@@ -127,6 +126,9 @@ public:
   /** ImageDimension constant */
   itkStaticConstMacro(OutputImageDimension, unsigned int, TImage::ImageDimension);
 
+  itkSetMacro(BandsPerInput, unsigned int)
+  itkGetMacro(BandsPerInput, unsigned int)
+
 protected:
   /** Constructor. */
   CropTypeFeatureExtractionFilter();
@@ -139,6 +141,8 @@ protected:
 private:
   CropTypeFeatureExtractionFilter(const Self &); //purposely not implemented
   void operator =(const Self&); //purposely not implemented
+
+  unsigned int m_BandsPerInput;
 };
 } // end namespace otb
 #ifndef OTB_MANUAL_INSTANTIATION

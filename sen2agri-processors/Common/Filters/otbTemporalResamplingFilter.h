@@ -59,9 +59,9 @@ template <typename PixelType, typename MaskType, typename OutputType>
 class GapFillingFunctor
 {
 public:
-    GapFillingFunctor() : radius(0), bands(0) {}
-    GapFillingFunctor(std::vector<SensorData> &inData, int r, int b)
-        : inputData(inData), radius(r), bands(b)
+    GapFillingFunctor() : radius(0) {}
+    GapFillingFunctor(std::vector<SensorData> &inData, int r)
+        : inputData(inData), radius(r)
     {
         radius = 365000;
 
@@ -72,7 +72,7 @@ public:
     }
 
     GapFillingFunctor(std::vector<SensorData> &inData)
-        : inputData(inData), radius(365000), bands(4)
+        : inputData(inData), radius(365000)
     {
         outputSize = 0;
         for (const SensorData &sd : inputData) {
@@ -82,6 +82,7 @@ public:
 
     OutputType operator()(const PixelType &pix, const MaskType &mask) const
     {
+        int bands = pix.Size() / mask.Size();
         // Create the output pixel
         OutputType result(outputSize * bands);
 
@@ -140,7 +141,7 @@ public:
 
     bool operator!=(const GapFillingFunctor a) const
     {
-        return (this->radius != a.radius) || (this->bands != a.bands);
+        return (this->radius != a.radius);
     }
 
     bool operator==(const GapFillingFunctor a) const
@@ -153,8 +154,6 @@ protected:
     std::vector<SensorData> inputData;
     // the radius for date search
     int radius;
-    // the number of bands per image
-    int bands;
     // the number of output size in days
     int outputSize;
 
