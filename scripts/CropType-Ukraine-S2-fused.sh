@@ -4,10 +4,10 @@ source set_build_folder.sh
 
 ./CropTypeFused.py \
     -mission SENTINEL \
-    -refp /mnt/archive/insitu/ukraine/UA_ALLC_LC_SM_201606_TRAIN.shp \
+    -refp /mnt/archive/insitu/ukraine/UA_ALLC_LC_SM_201606_ALL.shp \
     -rseed 0 \
     -outdir /mnt/archive/ukraine/l4b/ \
-    -strata /mnt/archive/strata/ukraine/UKr_Strata_simplified.shp \
+    -strata /mnt/archive/strata/ukraine/UKr_Strata_All.shp \
     -input \
     /mnt/archive/maccs_def/ukraine/l2a/S2A_OPER_PRD_MSIL2A_PDMC_20160408T063900_R136_V20160407T093031_20160407T093031.SAFE/S2A_OPER_SSC_L2VALD_34UEU____20160407.HDR \
     /mnt/archive/maccs_def/ukraine/l2a/S2A_OPER_PRD_MSIL2A_PDMC_20160420T132811_R036_V20160420T094202_20160420T094202.SAFE/S2A_OPER_SSC_L2VALD_34UEU____20160420.HDR \
