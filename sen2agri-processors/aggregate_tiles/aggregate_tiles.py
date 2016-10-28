@@ -1107,6 +1107,7 @@ def create_mosaic_quicklook(context):
          is_rgb_img = False
          if (product_proc_level == "L4A") :
             lut_map = CROP_MASK_MAP_PATH
+            is_range_map_file = 0
          else :
             if (product_proc_level == "L4B") :
                lut_map = CROP_TYPE_MAP_PATH

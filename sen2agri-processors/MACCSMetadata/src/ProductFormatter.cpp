@@ -73,6 +73,7 @@
 #define METADATA_CATEG "MTD"
 //#define MASK_CATEG "MSK"
 #define PARAMETER_CATEG "IPP"
+#define LUT_CATEG       "LUT"
 #define QUALITY_CATEG "QLT"
 #define NO_DATA_VALUE "-10000"
 
@@ -339,6 +340,9 @@ private:
         AddParameter(ParameterType_String, "lut", "The LUT file");
         MandatoryOff("lut");
 
+        AddParameter(ParameterType_String, "lutqgis", "QGIS color map file");
+        MandatoryOff("lutqgis");
+
         AddParameter(ParameterType_Int, "aggregatescale", "The aggregate rescale resolution");
         MandatoryOff("aggregatescale");
         SetDefaultParameterInt("aggregatescale", 60);
@@ -550,6 +554,9 @@ private:
       if(bDirStructBuiltOk)
       {
           TransferPreviewFiles();
+          if (HasValue("lutqgis")) {
+              TransferAndRenameLUTFile(GetParameterString("lutqgis"));
+          }
           TransferAndRenameGIPPFiles();          
           const std::string strProductFileName = BuildFileName(METADATA_CATEG, "", ".xml");
           generateProductMetadataFile(strMainFolderFullPath + "/" + strProductFileName);
@@ -1488,6 +1495,14 @@ private:
    }
 
 
+  void TransferAndRenameLUTFile(const std::string &lut)
+  {
+      boost::filesystem::path p(lut);
+      std::string outputFilename = BuildFileName(LUT_CATEG, "", p.extension().string());
+
+      CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + AUX_DATA_FOLDER_NAME + "/" + outputFilename, lut);
+  }
+
   void TransferAndRenameGIPPFiles()
   {
       std::string strNewGIPPFileName;
@@ -1573,7 +1588,7 @@ private:
       {
             iChannelNo = 3;
             bUseLut = true;
-            if((m_strProductLevel.compare("L4B") == 0)) {
+            if(m_strProductLevel == "L4A" || m_strProductLevel == "L4B") {
                 bIsRangeMapFile = false;
             }            
       }

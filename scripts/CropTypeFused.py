@@ -343,7 +343,10 @@ class CropTypeProcessor(ProcessorBase):
                         "-processor", "croptype"]
 
         if self.args.lut is not None:
-            step_args += ["-lut", self.args.lut]
+            qgis_lut = self.get_output_path("qgis-color-map.txt")
+
+            step_args += ["-lut", self.args.lut,
+                          "-lutqgis", qgis_lut]
 
         if self.args.outprops is not None:
             step_args += ["-outprops", self.args.outprops]

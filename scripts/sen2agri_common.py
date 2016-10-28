@@ -152,6 +152,21 @@ class Tile(object):
         self.strata = []
 
 
+def load_lut(lut):
+    r = []
+    with open(lut, 'r') as f:
+        for line in f:
+            m = re.match("(-?\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*#\s*(.*)", line)
+            if m:
+                value = m.group(1)
+                red = m.group(2)
+                green = m.group(3)
+                blue = m.group(4)
+                label = m.group(5)
+
+                r.append((value, red, green, blue, label))
+    return r
+
 def split_features(stratum, data, out_folder):
     driver = ogr.GetDriverByName('ESRI Shapefile')
 
@@ -466,6 +481,15 @@ class ProcessorBase(object):
                             strata_relabelled]
 
             run_step(Step("Re-number strata", step_args))
+
+        if self.args.lut is not None:
+            qgis_lut = self.get_output_path("qgis-color-map.txt")
+
+            lut = load_lut(self.args.lut)
+            with open(qgis_lut, 'w') as f:
+                f.write("INTERPOLATION:EXACT\n")
+                for entry in lut:
+                    f.write("{},{},{},{},255,{}\n".format(*entry))
 
     def prepare_tile(self, tile):
         pass
