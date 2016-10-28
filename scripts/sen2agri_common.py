@@ -147,6 +147,8 @@ class Tile(object):
         self.id = id
         self.descriptors = descriptors
         self.footprint = None
+        self.footprint_wgs84 = None
+        self.projection = None
         self.strata = []
 
 
@@ -294,6 +296,16 @@ def get_raster_footprint(image_filename):
 
     extent = GetExtent(geo_transform, size_x, size_y)
 
+    ring = ogr.Geometry(ogr.wkbLinearRing)
+    ring.AddPoint_2D(extent[0][0], extent[0][1])
+    ring.AddPoint_2D(extent[3][0], extent[3][1])
+    ring.AddPoint_2D(extent[2][0], extent[2][1])
+    ring.AddPoint_2D(extent[1][0], extent[1][1])
+    ring.AddPoint_2D(extent[0][0], extent[0][1])
+
+    geom = ogr.Geometry(ogr.wkbPolygon)
+    geom.AddGeometry(ring)
+
     source_srs = osr.SpatialReference()
     source_srs.ImportFromWkt(dataset.GetProjection())
     epsg_code = source_srs.GetAttrValue("AUTHORITY", 1)
@@ -309,10 +321,10 @@ def get_raster_footprint(image_filename):
     ring.AddPoint_2D(wgs84_extent[1][0], wgs84_extent[1][1])
     ring.AddPoint_2D(wgs84_extent[0][0], wgs84_extent[0][1])
 
-    geom = ogr.Geometry(ogr.wkbPolygon)
-    geom.AddGeometry(ring)
+    geom_wgs84 = ogr.Geometry(ogr.wkbPolygon)
+    geom_wgs84.AddGeometry(ring)
 
-    return geom
+    return (geom, geom_wgs84, source_srs)
 
 def save_to_shp(file_name, geom, out_srs=None):
     if not out_srs:
@@ -495,8 +507,8 @@ class ProcessorBase(object):
 
         self.site_footprint_wgs84 = ogr.Geometry(ogr.wkbPolygon)
         for tile in self.tiles:
-            tile.footprint = get_raster_footprint(get_reference_raster(tile.descriptors[0]))
-            self.site_footprint_wgs84 = self.site_footprint_wgs84.Union(tile.footprint)
+            (tile.footprint, tile.footprint_wgs84, tile.projection) = get_raster_footprint(get_reference_raster(tile.descriptors[0]))
+            self.site_footprint_wgs84 = self.site_footprint_wgs84.Union(tile.footprint_wgs84)
 
         if not self.single_stratum:
             self.strata = load_strata(self.args.strata, self.site_footprint_wgs84)
@@ -506,7 +518,7 @@ class ProcessorBase(object):
 
             for tile in self.tiles:
                 for stratum in self.strata:
-                    if stratum.extent.Intersection(tile.footprint).Area() > 0:
+                    if stratum.extent.Intersection(tile.footprint_wgs84).Area() > 0:
                         tile.strata.append(stratum)
                         stratum.tiles.append(tile)
 
@@ -522,7 +534,7 @@ class ProcessorBase(object):
         tile_mask = self.get_output_path("tile-mask-{}-{}.shp", stratum.id, tile.id)
         stratum_tile_mask = self.get_stratum_tile_mask(stratum, tile)
 
-        classification_mask = stratum.extent.Intersection(tile.footprint)
+        classification_mask = stratum.extent.Intersection(tile.footprint_wgs84)
 
         save_to_shp(tile_mask, classification_mask)
 

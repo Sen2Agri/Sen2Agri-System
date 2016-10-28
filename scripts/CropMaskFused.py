@@ -103,45 +103,25 @@ class CropMaskProcessor(ProcessorBase):
     def prepare_tile(self, tile):
         if self.args.refr is not None:
             reference_raster = get_reference_raster(tile.descriptors[0])
-            tile_footprint = self.get_output_path("footprint-{}.shp", tile.id)
-            tile_prj = self.get_output_path("footprint-{}.prj", tile.id)
-            tile_reference_cropped = self.get_output_path("reference-cropped-{}.tif", tile.id)
-            tile_reference_reprojected = self.get_output_path("reference-reprojected-{}.tif", tile.id)
-            tile_reference_resampled = self.get_output_path("reference-resampled-{}.tif", tile.id)
+            tile_reference = self.get_output_path("reference-{}.tif", tile.id)
             tile_reference_eroded = self.get_output_path("reference-eroded-{}.tif", tile.id)
             tile_reference_trimmed = self.get_output_path("reference-trimmed-{}.tif", tile.id)
             tile_spectral_features = self.get_output_path("spectral-features-{}.tif", tile.id)
 
-            run_step(Step("CreateFootprint_" + tile.id, ["otbcli", "CreateFootprint", self.args.buildfolder,
-                                                    "-in", reference_raster,
-                                                    "-out", tile_footprint]))
-            run_step(Step("CropReference_" + tile.id, ["gdalwarp",
-                                                        "-dstnodata", 0,
-                                                        "-overwrite",
-                                                        "-crop_to_cutline",
-                                                        "-cutline", tile_footprint,
-                                                        "-ot", "Byte",
-                                                        self.args.refr,
-                                                        tile_reference_cropped]))
-            run_step(Step("ReprojectReference_" + tile.id, ["gdalwarp",
-                                                            "-t_srs", tile_prj,
-                                                            "-dstnodata", 0,
-                                                            "-overwrite",
-                                                            "-ot", "Byte",
-                                                            tile_reference_cropped,
-                                                            tile_reference_reprojected]))
-            run_step(Step("ResampleReference_" + tile.id, ["gdalwarp",
-                                                            "-tr", self.args.pixsize, self.args.pixsize,
-                                                            "-dstnodata", 0,
-                                                            "-overwrite",
-                                                            "-crop_to_cutline",
-                                                            "-cutline", tile_footprint,
-                                                            "-ot", "Byte",
-                                                            tile_reference_reprojected,
-                                                            tile_reference_resampled]))
+            ring = tile.footprint.GetGeometryRef(0)
+            ll, ur = ring.GetPoint(3), ring.GetPoint(1)
+
+            run_step(Step("PrepareReference_" + tile.id, ["gdalwarp",
+                                                          "-dstnodata", 0,
+                                                          "-t_srs", tile.projection,
+                                                          "-te", ll[0], ll[1], ur[0], ur[1],
+                                                          "-tr", self.args.pixsize, self.args.pixsize,
+                                                          "-overwrite",
+                                                          self.args.refr,
+                                                          tile_reference]))
             run_step(Step("Erosion_" + tile.id, ["otbcli", "Erosion", self.args.buildfolder,
                                                     "-radius", self.args.eroderad,
-                                                    "-in", tile_reference_resampled,
+                                                    "-in", tile_reference,
                                                     "-out", tile_reference_eroded]))
 
             run_step(Step("SpectralFeatures_" + tile.id, ["otbcli", "SpectralFeaturesExtraction", self.args.buildfolder,
