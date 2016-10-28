@@ -16,6 +16,7 @@
 - Crop mask and crop type no longer crash when the LUT was not found
 - The larger temporary files are now removed by the crop mask and crop type processors unless -keepfiles is used
 - The RPM package version numbers are now correct
+- The RPM packages correctly preserve the configuration files changed by the administrator
 
 ### Known issues
 - The upgrade script overwrites SciHub user/proxy configuration files
