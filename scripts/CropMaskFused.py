@@ -331,10 +331,9 @@ class CropMaskProcessor(ProcessorBase):
                 os.remove(tile_model_mask)
 
             if self.args.refp is None:
-                for tile in self.tiles:
-                    tile_spectral_features = self.get_output_path("spectral-features-{}.tif", tile.id)
+                tile_spectral_features = self.get_output_path("spectral-features-{}.tif", tile.id)
 
-                    os.remove(tile_spectral_features)
+                os.remove(tile_spectral_features)
 
         tile_crop_mask_map = self.get_tile_classification_output(tile)
         step_args = ["otbcli_Convert",
