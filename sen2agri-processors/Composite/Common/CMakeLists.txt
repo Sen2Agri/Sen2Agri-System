@@ -6,7 +6,8 @@ set(MetadataHelper_HEADERS
     GlobalDefs.h
     BandsCfgMappingParser.h
     ResamplingBandExtractor.h
-    ImageResampler.h)
+    ImageResampler.h
+    GenericRSImageResampler.h)
 
 set(MetadataHelper_SOURCES
     MetadataHelper.cpp
