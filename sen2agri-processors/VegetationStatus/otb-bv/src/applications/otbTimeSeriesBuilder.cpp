@@ -22,6 +22,7 @@
 #include "MetadataHelperFactory.h"
 #include "GlobalDefs.h"
 #include "ImageResampler.h"
+#include "GenericRSImageResampler.h"
 
 namespace otb
 {
@@ -112,7 +113,7 @@ private:
             itkExceptionMacro("No input file set...");
         }
 
-        // update the width, hight and origin if we have a main image
+        // update the width, hight, origin and projection if we have a main image
         updateRequiredImageSize();
         // keep the first image one that has the origin and dimmension of the main one (if it is the case)
         //imgsList = trimLeftInvalidPrds(imgsList);
@@ -181,36 +182,46 @@ private:
   }
 
   ImageType::Pointer cutImage(const ImageType::Pointer &img) {
+      ImageType::Pointer retImg = img;
       if(m_bCutImages) {
-          float imageWidth = img->GetLargestPossibleRegion().GetSize()[0] / m_scale;
-          float imageHeight = img->GetLargestPossibleRegion().GetSize()[1] / m_scale;
+          float imageWidth = img->GetLargestPossibleRegion().GetSize()[0];
+          float imageHeight = img->GetLargestPossibleRegion().GetSize()[1];
 
           ImageType::PointType origin = img->GetOrigin();
           ImageType::PointType imageOrigin;
-          //ImageType::SpacingType spacing = img->GetSpacing();
-          imageOrigin[0] = origin[0];// + 0.5 * spacing[0] * (m_scale - 1.0);
-          imageOrigin[1] = origin[1];// + 0.5 * spacing[1] * (m_scale - 1.0);
+          imageOrigin[0] = origin[0];
+          imageOrigin[1] = origin[1];
+          int curImgRes = img->GetSpacing()[0];
+          const float scale = (float)m_nPrimaryImgRes / curImgRes;
 
-          if((imageWidth != m_imageWidth) || (imageHeight != m_imageHeight) ||
-                  (m_imageOrigin[0] != imageOrigin[0]) || (m_imageOrigin[1] != imageOrigin[1])) {
-              ImageResampler<ImageType, ImageType>::ResamplerPtr resampler = m_ImageResampler.getResampler(
-                          img, m_scale, m_imageWidth, m_imageHeight,
-                          m_isFlagsTimeSeries == 0 ? Interpolator_NNeighbor : Interpolator_Linear);
-              ImageType::Pointer newImg = resampler->GetOutput();
-              newImg->UpdateOutputInformation();
-              return newImg;
+          if((imageWidth != m_primaryMissionImgWidth) || (imageHeight != m_primaryMissionImgHeight) ||
+                  (m_primaryMissionImgOrigin[0] != imageOrigin[0]) || (m_primaryMissionImgOrigin[1] != imageOrigin[1])) {
+
+              Interpolator_Type interpolator = (m_isFlagsTimeSeries == 0 ? Interpolator_Linear :
+                                                    Interpolator_NNeighbor);
+              std::string imgProjRef = img->GetProjectionRef();
+              // if the projections are equal
+              if(imgProjRef == m_strPrMissionImgProjRef) {
+                  // use the streaming resampler
+                  retImg = m_ImageResampler.getResampler(img, scale,m_primaryMissionImgWidth,
+                              m_primaryMissionImgHeight,interpolator)->GetOutput();
+              } else {
+                  // use the generic RS resampler that allows reprojecting
+                  retImg = m_GenericRSImageResampler.getResampler(img, scale,m_primaryMissionImgWidth,
+                              m_primaryMissionImgHeight,interpolator)->GetOutput();
+              }
+              retImg->UpdateOutputInformation();
           }
       }
 
-      return img;
+      return retImg;
 
   }
 
   void updateRequiredImageSize() {
       m_bCutImages = false;
-      m_imageWidth = 0;
-      m_imageHeight = 0;
-      m_scale = 1.0; //(float)m_pixSize / curRes;
+      m_primaryMissionImgWidth = 0;
+      m_primaryMissionImgHeight = 0;
 
       std::string mainImg;
       if (HasValue("main")) {
@@ -221,19 +232,24 @@ private:
       }
 
       ImageReaderType::Pointer reader = getReader(mainImg);
-      reader->GetOutput()->UpdateOutputInformation();
-      //float curRes = reader->GetOutput()->GetSpacing()[0];
+      m_primaryMissionImg = reader->GetOutput();
+      reader->UpdateOutputInformation();
+      m_primaryMissionImg->UpdateOutputInformation();
 
-      m_imageWidth = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[0] / m_scale;
-      m_imageHeight = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[1] / m_scale;
+      m_primaryMissionImgWidth = m_primaryMissionImg->GetLargestPossibleRegion().GetSize()[0];
+      m_primaryMissionImgHeight = m_primaryMissionImg->GetLargestPossibleRegion().GetSize()[1];
 
-      ImageType::PointType origin = reader->GetOutput()->GetOrigin();
       //ImageType::SpacingType spacing = reader->GetOutput()->GetSpacing();
-      m_imageOrigin[0] = origin[0]; // + 0.5 * spacing[0] * (m_scale - 1.0);
-      m_imageOrigin[1] = origin[1]; // + 0.5 * spacing[1] * (m_scale - 1.0);
+      m_nPrimaryImgRes = m_primaryMissionImg->GetSpacing()[0];
 
+      ImageType::PointType origin = m_primaryMissionImg->GetOrigin();
+      m_primaryMissionImgOrigin[0] = origin[0];
+      m_primaryMissionImgOrigin[1] = origin[1];
+
+      m_strPrMissionImgProjRef = m_primaryMissionImg->GetProjectionRef();
+      m_GenericRSImageResampler.SetOutputProjection(m_strPrMissionImgProjRef);
   }
-
+/*
   std::vector<std::string> trimLeftInvalidPrds(std::vector<std::string> imgsList) {
       if(!m_bCutImages) {
           return imgsList;
@@ -267,7 +283,7 @@ private:
       }
       return retImgsList;
   }
-
+*/
 
     ImageReaderListType::Pointer                m_ImageReaderList;
     SplitFilterListType::Pointer                m_ImageSplitList;
@@ -276,14 +292,18 @@ private:
     ImagesListType::Pointer                     m_imagesList;
 
     float                                 m_pixSize;
-    double                                m_imageWidth;
-    double                                m_imageHeight;
-    ImageType::PointType                  m_imageOrigin;
+    double                                m_primaryMissionImgWidth;
+    double                                m_primaryMissionImgHeight;
+    ImageType::PointType                  m_primaryMissionImgOrigin;
+    int                                   m_nPrimaryImgRes;
     bool m_bCutImages;
     ImageResampler<ImageType, ImageType>  m_ImageResampler;
-    float                                 m_scale;
+    GenericRSImageResampler<ImageType, ImageType>  m_GenericRSImageResampler;
     float                                 m_deqValue;
     int                                   m_isFlagsTimeSeries;
+
+    ImageType::Pointer m_primaryMissionImg;
+    std::string m_strPrMissionImgProjRef;
 };
 
 }

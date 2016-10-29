@@ -80,6 +80,9 @@ private:
         AddParameter(ParameterType_String, "masterinfo", "Information about the product (created only if is master)");
         MandatoryOff("masterinfo");
 
+        AddParameter(ParameterType_String, "pmxml", "A primary mission xml whose origin, dimensions and projection will be used");
+        MandatoryOff("pmxml");
+
         SetDocExampleParameterValue("xml", "/path/to/L2Aproduct_maccs.xml");
         SetDocExampleParameterValue("msk", "/path/to/msks.tif");
         SetDocExampleParameterValue("allinone", "1");
@@ -112,7 +115,12 @@ private:
         if(HasValue("masterinfo")) {
             masterInfoFileName = GetParameterString("masterinfo");
         }
-        m_resampleAtS2Res.Init(inXml, mskImg, strBandsMappingFileName, res, masterInfoFileName);
+        std::string primaryMissionXml;
+        if(HasValue("pmxml")) {
+            primaryMissionXml = GetParameterString("pmxml");
+        }
+        m_resampleAtS2Res.Init(inXml, mskImg, strBandsMappingFileName,
+                               res, masterInfoFileName, primaryMissionXml);
         m_resampleAtS2Res.DoExecute();
 
         // if we have detailded angles, then we apply the directional correction

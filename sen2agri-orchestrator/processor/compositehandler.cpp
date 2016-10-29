@@ -29,14 +29,14 @@ void CompositeHandler::CreateTasksForNewProducts(const CompositeJobConfig &cfg, 
 
         // if it is a secondary satellite, then we must cut the masks and the image with
         // gdalwarp according to the primary satellite shape
-        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
+/*        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
             outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
             outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
             outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
             outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
             outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
         }
-
+*/
         outAllTasksList.append(TaskToSubmit{ "composite-weight-aot", {} });
         outAllTasksList.append(TaskToSubmit{ "composite-weight-on-clouds", {} });
         outAllTasksList.append(TaskToSubmit{ "composite-total-weight", {} });
@@ -70,7 +70,7 @@ void CompositeHandler::CreateTasksForNewProducts(const CompositeJobConfig &cfg, 
         nCurTaskIdx++;
 
         // check if we need to cut (according to primary shape) the product components if we have secondary satellite product
-        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
+/*        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
             // launch in parallel all the cutting gdalwarp tasks
             int prevTaskId = nCurTaskIdx-1;
             int imgCutIdx = nCurTaskIdx++;
@@ -103,7 +103,7 @@ void CompositeHandler::CreateTasksForNewProducts(const CompositeJobConfig &cfg, 
             outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[snowCutIdx]);
             nCurTaskIdx++;
         } else {
-            // this is the case when we need to do no cutting (we are either primary satellite or we have only one satellite)
+*/            // this is the case when we need to do no cutting (we are either primary satellite or we have only one satellite)
             // weigh-aot -> composite-preprocessing
             outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
             nCurTaskIdx++;
@@ -117,7 +117,7 @@ void CompositeHandler::CreateTasksForNewProducts(const CompositeJobConfig &cfg, 
             // update-synthesis -> total-weight
             outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
             nCurTaskIdx++;
-        }
+//        }
         // composite-splitter -> update-synthesis
         outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
         nCurTaskIdx++;
@@ -151,17 +151,17 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     int nCurTaskIdx = 0;
 
     QString shapePath = tileTemporalFilesInfo.shapePath;
+    QString primaryTileMetadata;
+    for(int i = 0; i<tileTemporalFilesInfo.temporalTilesFileInfos.size(); i++) {
+        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId == tileTemporalFilesInfo.primarySatelliteId) {
+            primaryTileMetadata = tileTemporalFilesInfo.temporalTilesFileInfos[i].file;
+            break;
+        }
+    }
     // if we have multiple satellites and we don't have yet the shape file for this tile, then we must
     // create the footprint for the primary satellite ID
     if(tileTemporalFilesInfo.uniqueSatteliteIds.size() > 1 && tileTemporalFilesInfo.shapePath == "") {
         // CreateFootprint should execute on the first primary product metadatafrom the tile
-        QString primaryTileMetadata;
-        for(int i = 0; i<tileTemporalFilesInfo.temporalTilesFileInfos.size(); i++) {
-            if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId == tileTemporalFilesInfo.primarySatelliteId) {
-                primaryTileMetadata = tileTemporalFilesInfo.temporalTilesFileInfos[i].file;
-                break;
-            }
-        }
         TaskToSubmit &createFootprintTaskHandler = allTasksList[nCurTaskIdx++];
         SubmitTasks(ctx, cfg.jobId, {createFootprintTaskHandler});
         shapePath = ProcessorHandlerHelper::BuildShapeName(cfg.shapeFilesFolder, tileTemporalFilesInfo.tileId,
@@ -212,9 +212,14 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             compositePreprocessingArgs.append("-scatcoef");
             compositePreprocessingArgs.append(scatCoeffs);
         }
+        if((primaryTileMetadata != "") &&
+           (tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId)) {
+            compositePreprocessingArgs.append("-pmxml");
+            compositePreprocessingArgs.append(primaryTileMetadata);
+        }
         steps.append(compositePreprocessing.CreateStep("CompositePreprocessing", compositePreprocessingArgs));
 
-        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
+/*        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
             TaskToSubmit &cutImgTask = allTasksList[nCurTaskIdx++];
             SubmitTasks(ctx, cfg.jobId, {cutImgTask});
 
@@ -256,6 +261,7 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             snowResImg = cutSnowFile;
             cleanupTemporaryFilesList.append(cutSnowFile);
         }
+*/
         TaskToSubmit &weightAot = allTasksList[nCurTaskIdx++];
         SubmitTasks(ctx, cfg.jobId, {weightAot});
         TaskToSubmit &weightOnClouds = allTasksList[nCurTaskIdx++];
