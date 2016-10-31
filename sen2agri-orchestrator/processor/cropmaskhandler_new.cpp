@@ -48,6 +48,7 @@ void CropMaskHandlerNew::GetJobConfig(EventProcessingContext &ctx,const JobSubmi
     }
 
     cfg.lutPath = configParameters["processor.l4a.lut_path"];
+    cfg.skipSegmentation = configParameters["processor.l4a.skip-segmentation"] == "true";
     cfg.appsMem = resourceParameters["resources.working-mem"];
 
     cfg.randomSeed = configParameters["processor.l4a.random_seed"];
@@ -221,6 +222,10 @@ QStringList CropMaskHandlerNew::GetCropTypeTaskArgs(EventProcessingContext &ctx,
     if(cfg.lutPath.size() > 0) {
         cropMaskArgs += "-lut";
         cropMaskArgs += cfg.lutPath;
+    }
+
+    if (cfg.skipSegmentation) {
+        cropMaskArgs += "-skip-segmentation";
     }
 
     return cropMaskArgs;
