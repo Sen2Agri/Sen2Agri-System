@@ -40,7 +40,6 @@ public:
 
 private:
     OutputImageType::Pointer            m_AnglesRaster;
-    std::string                         m_DirName;
     std::string                         m_inXml;
     int                                 m_nOutRes;
     ImageResampler<OutputImageType, OutputImageType> m_ResampledBandsExtractor;

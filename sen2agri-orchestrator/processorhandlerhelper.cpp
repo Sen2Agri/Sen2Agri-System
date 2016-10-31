@@ -229,17 +229,23 @@ bool ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(const QString &p
     QStringList pieces = productName.split("_");
     for (int i = 0; i < pieces.size(); i++) {
         const QString &piece = pieces[i];
-        if(piece.indexOf("V") == 0) {
-            minDate = QDateTime::fromString(piece.right(piece.size()-1), "yyyyMMdd");
-            if((i+1) < pieces.size())
-                maxDate = QDateTime::fromString(pieces[i+1], "yyyyMMdd");
+        if(piece.length() == 0) // is it possible?
+            continue;
+        bool bIsInterval = (piece[0] == 'V');
+        bool bIsAcquisition = (piece[0] == 'A');
+        if(bIsInterval || bIsAcquisition) {
+            QString timeFormat("yyyyMMdd");
+            QString trimmedPiece = piece.right(piece.size()-1);
+            // check if the date is in formate yyyyMMddTHHmmss (ISO 8601)
+            if(trimmedPiece.length() == 15 && trimmedPiece[8] == 'T') {
+                // use this format, more precise
+                timeFormat = "yyyyMMddTHHmmss";
+            }
+            minDate = QDateTime::fromString(trimmedPiece, timeFormat);
+            if(bIsInterval && (i+1) < pieces.size())
+                maxDate = QDateTime::fromString(pieces[i+1], timeFormat);
             else
                 maxDate = minDate;
-            return true;
-        }
-        if (piece.indexOf("A") == 0) {
-            minDate = QDateTime::fromString(piece.right(piece.size()-1), "yyyyMMdd");
-            maxDate = minDate;
             return true;
         }
     }

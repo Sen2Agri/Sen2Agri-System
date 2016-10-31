@@ -156,9 +156,13 @@ def create_context(args):
 
     #retrieve Field option Time Period :_V or Aquisition Period Field:_A from the Product Folder
     productFolderName = (args.prodfolder.split('/'))[-1]
-    pattern = re.compile("(_[AV][\d]{8})")
-    #extract part _AYYYYMMDD or _VYYYYMMDD where YYYYMMDD= YearMonthDay
+    pattern = re.compile("(_[AV][\d]{8}T[\d]{6})")
+    #try first to extract part _AYYYYMMDDTHHmmss or _VYYYYMMDDTHHmmss where YYYYMMDDTHHmmss= YearMonthDayTHourMinutesSeconds
     fieldOptionList = pattern.findall(productFolderName)
+    if not fieldOptionList:
+        pattern = re.compile("(_[AV][\d]{8})")
+        #extract part _AYYYYMMDD or _VYYYYMMDD where YYYYMMDD= YearMonthDay
+        fieldOptionList = pattern.findall(productFolderName)
     if not fieldOptionList:
        sys.exit("ERROR:Raster images from TILES folder should have Time Period or Aquisition Period Field ")
     else:
@@ -498,9 +502,12 @@ def format_file_name_output(fileName):
    #extract needed date parts to build the output name for the file
    #from 20150728_none_SRFL_10.TIF it extracts 20150728
    #from 20150728_20150602_SRFL_20.TIF it extracts [20150728, 20150602]
-   pattern = re.compile("([\d]{8}(?:[A-Z])?)")
-   #list of matches
+   pattern = re.compile("([\d]{8}T[\d]{6}(?:[A-Z])?)")
    resultList=pattern.findall(file_name_parts[1])
+   if len(resultList) == 0:
+      pattern = re.compile("([\d]{8}(?:[A-Z])?)")
+      #list of matches
+      resultList=pattern.findall(file_name_parts[1])
 
    datePart = ""
    #concatenate list elements

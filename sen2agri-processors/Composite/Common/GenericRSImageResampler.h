@@ -13,8 +13,8 @@
 
  =========================================================================*/
  
-#ifndef IMAGE_RESAMPLER_H
-#define IMAGE_RESAMPLER_H
+#ifndef GENERIC_RS_IMAGE_RESAMPLER_H
+#define GENERIC_RS_IMAGE_RESAMPLER_H
 
 #include "otbWrapperTypes.h"
 #include "otbStreamingResampleImageFilter.h"
@@ -23,6 +23,7 @@
 #include "otbImageFileReader.h"
 #include "otbImageFileWriter.h"
 #include "otbImageListToVectorImageFilter.h"
+#include "otbGenericRSResampleImageFilter.h"
 
 #include "libgen.h"
 
@@ -31,12 +32,12 @@
 #include "GlobalDefs.h"
 
 template <class TInput, class TOutput>
-class ImageResampler
+class GenericRSImageResampler
 {
 public:
-
-    typedef otb::StreamingResampleImageFilter<TInput, TOutput, double>                           ResampleFilterType;
-    typedef otb::ObjectList<ResampleFilterType>                                                 ResampleFilterListType;
+    /** Generic Remote Sensor Resampler */
+    typedef otb::GenericRSResampleImageFilter<TInput, TOutput>                        ResampleFilterType;
+    typedef otb::ObjectList<ResampleFilterType>                                       ResampleFilterListType;
 
     typedef itk::NearestNeighborInterpolateImageFunction<TOutput, double>             NearestNeighborInterpolationType;
     typedef itk::LinearInterpolateImageFunction<TOutput, double>                      LinearInterpolationType;
@@ -59,7 +60,7 @@ public:
 public:
     const char * GetNameOfClass() { return "ImageResampler"; }
 
-    ImageResampler()
+    GenericRSImageResampler()
     {
         m_ResamplersList = ResampleFilterListType::New();
         m_BCORadius = 2;
@@ -71,49 +72,8 @@ public:
         m_fBCOAlpha = BCOAlpha;
     }
 
-
-    ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWidth,
-                          const int wantedHeight, Interpolator_Type interpolator=Interpolator_Linear)
-    {
-        auto sz = image->GetLargestPossibleRegion().GetSize();
-        OutputVectorType scale;
-        scale[0] = (float)sz[0] / wantedWidth;
-        scale[1] = (float)sz[1] / wantedHeight;
-        ResamplerPtr resampler = getResampler(image, scale, wantedWidth, wantedHeight, interpolator);
-        ResamplerSizeType recomputedSize;
-        recomputedSize[0] = wantedWidth;
-        recomputedSize[1] = wantedHeight;
-        resampler->SetOutputSize(recomputedSize);
-        return resampler;
-    }
-
-    ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const float& ratio,
-                              Interpolator_Type interpolator=Interpolator_Linear) {
-         // Scale Transform
-         OutputVectorType scale;
-         scale[0] = 1.0 / ratio;
-         scale[1] = 1.0 / ratio;
-         return getResampler(image, scale, -1, -1, interpolator);
-    }
-
-    ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const float& ratio,
-                              typename TOutput::PointType origin, Interpolator_Type interpolator=Interpolator_Linear) {
-         // Scale Transform
-         OutputVectorType scale;
-         scale[0] = 1.0 / ratio;
-         scale[1] = 1.0 / ratio;
-         return getResampler(image, scale, -1, -1, origin, interpolator);
-    }
-
-    ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const OutputVectorType& scale,
-                             int forcedWidth, int forcedHeight, Interpolator_Type interpolatorType=Interpolator_Linear) {
-        ResamplerInputImgSpacingType spacing = image->GetSpacing();
-        typename TOutput::PointType origin = image->GetOrigin();
-        typename TOutput::PointType outputOrigin;
-        outputOrigin[0] = std::round(origin[0] + 0.5 * spacing[0] * (scale[0] - 1.0));
-        outputOrigin[1] = std::round(origin[1] + 0.5 * spacing[1] * (scale[1] - 1.0));
-
-        return getResampler(image, scale, forcedWidth, forcedHeight, outputOrigin, interpolatorType);
+    void SetOutputProjection(const std::string &projRef) {
+        m_OutputProjectionRef = projRef;
     }
 
     ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const OutputVectorType& scale,
@@ -121,6 +81,14 @@ public:
                               Interpolator_Type interpolatorType=Interpolator_Linear) {
          ResamplerPtr resampler = ResampleFilterType::New();
          resampler->SetInput(image);
+         std::string srcProjRef = image->GetProjectionRef();
+         auto srcImgKeywordList = image->GetImageKeywordlist();
+
+         // Set the output projection Ref
+         resampler->SetInputProjectionRef(srcProjRef);
+         resampler->SetInputKeywordList(srcImgKeywordList);
+         resampler->SetOutputProjectionRef(m_OutputProjectionRef);
+
 
          // Set the interpolator
          switch ( interpolatorType )
@@ -147,10 +115,6 @@ public:
              break;
          }
 
-         IdentityTransformTypePtr transform = IdentityTransformType::New();
-
-         resampler->SetOutputParametersFromImage( image );
-
          // Evaluate spacing
          ResamplerInputImgSpacingType spacing = image->GetSpacing();
          ResamplerInputImgSpacingType OutputSpacing;
@@ -159,7 +123,6 @@ public:
 
          resampler->SetOutputSpacing(OutputSpacing);
          resampler->SetOutputOrigin(origin);
-         resampler->SetTransform(transform);
 
          // Evaluate size
          ResamplerSizeType recomputedSize;
@@ -168,11 +131,8 @@ public:
              recomputedSize[0] = forcedWidth;
              recomputedSize[1] = forcedHeight;
          } else {
-//            recomputedSize[0] = vcl_ceil(image->GetLargestPossibleRegion().GetSize()[0] / scale[0]);
-//            recomputedSize[1] = vcl_ceil(image->GetLargestPossibleRegion().GetSize()[1] / scale[1]);
             recomputedSize[0] = image->GetLargestPossibleRegion().GetSize()[0] / scale[0];
             recomputedSize[1] = image->GetLargestPossibleRegion().GetSize()[1] / scale[1];
-
          }
 
          resampler->SetOutputSize(recomputedSize);
@@ -193,7 +153,8 @@ private:
     ResampleFilterListTypePtr             m_ResamplersList;
     int     m_BCORadius;
     float   m_fBCOAlpha;
+    std::string                     m_OutputProjectionRef;
 };
 
-#endif // IMAGE_RESAMPLER_H
+#endif // GENERIC_RS_IMAGE_RESAMPLER_H
 

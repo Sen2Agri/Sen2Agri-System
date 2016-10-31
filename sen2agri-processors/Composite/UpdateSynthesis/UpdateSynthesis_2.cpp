@@ -270,16 +270,6 @@ private:
         int nbComponents = m_Functor.GetNbOfOutputComponents();
         m_UpdateSynthesisFunctor->GetOutput()->SetNumberOfComponentsPerPixel(nbComponents);
 
-        if(l3aExist && (masterMission != missionName)) {
-            const itk::MetaDataDictionary &dic = m_PrevL3AFlags->GetMetaDataDictionary();
-            std::string projRef;
-            itk::ExposeMetaData(dic, MetaDataKey::ProjectionRefKey, projRef);
-            itk::MetaDataDictionary &retDict = m_UpdateSynthesisFunctor->GetOutput()->GetMetaDataDictionary();
-            itk::EncapsulateMetaData<std::string>(retDict, MetaDataKey::ProjectionRefKey, projRef);
-            m_UpdateSynthesisFunctor->GetOutput()->SetMetaDataDictionary(retDict);
-        }
-
-
         SetParameterOutputImagePixelType("out", ImagePixelType_int16);
         SetParameterOutputImage("out", m_UpdateSynthesisFunctor->GetOutput());
         //splitOutputs();

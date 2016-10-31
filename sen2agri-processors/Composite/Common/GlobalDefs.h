@@ -26,6 +26,12 @@
 
 typedef enum {IMG_FLG_NO_DATA=0, IMG_FLG_CLOUD=1, IMG_FLG_SNOW=2, IMG_FLG_WATER=3, IMG_FLG_LAND=4, IMG_FLG_CLOUD_SHADOW=5, IMG_FLG_SATURATION=6} FlagType;
 
+typedef enum
+{
+  Interpolator_NNeighbor,
+  Interpolator_Linear,
+  Interpolator_BCO
+} Interpolator_Type;
 
 template<typename T>
 struct HasSizeMethod
