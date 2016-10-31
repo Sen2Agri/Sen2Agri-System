@@ -119,12 +119,12 @@ std::vector<CompositeBand> CompositeBandList = {
     {2, "560 nm", "Green", 10, "GREEN", "GREEN"},
     {3, "665 nm", "Red", 10, "RED", "RED"},
     {4, "842 nm", "Near Infrared", 10, "NIR1", "NIR1"},
-    {5, "705 nm", "Vegetation red-edge", 10, "RE1", ""},
-    {6, "740 nm", "Vegetation red-edge", 10, "RE2", ""},
-    {7, "783 nm", "Vegetation red-edge", 10, "RE3", ""},
-    {8, "865 nm", "Vegetation red-edge", 10, "NIR2", ""},
-    {9, "1610 nm", "Short-Wave infrared", 10, "SWIR1", "SWIR1"},
-    {10, "2190 nm", "Short-Wave infrared", 10, "SWIR2", ""}
+    {5, "705 nm", "Vegetation red-edge", 20, "RE1", ""},
+    {6, "740 nm", "Vegetation red-edge", 20, "RE2", ""},
+    {7, "783 nm", "Vegetation red-edge", 20, "RE3", ""},
+    {8, "865 nm", "Vegetation red-edge", 20, "NIR2", ""},
+    {9, "1610 nm", "Short-Wave infrared", 20, "SWIR1", "SWIR1"},
+    {10, "2190 nm", "Short-Wave infrared", 20, "SWIR2", ""}
 };
 
 typedef enum{
@@ -395,18 +395,18 @@ private:
       // Get the list of input files
       std::vector<std::string> descriptors = this->GetParameterStringList("il");
       LoadAllDescriptors(descriptors);
-      m_strMinAcquisitionDate = *std::min_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
-      m_strMaxAcquisitionDate = *std::max_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
+      const std::string &strMinAcquisitionDate = *std::min_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
+      const std::string &strMaxAcquisitionDate = *std::max_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
       if(m_strTimePeriod.empty()) {
           m_bDynamicallyTimePeriod = true;
           if(LevelHasAcquisitionTime()) {
-              if(m_strMinAcquisitionDate != m_strMaxAcquisitionDate)
+              if(strMinAcquisitionDate != strMaxAcquisitionDate)
                     itkGenericExceptionMacro(<< "You should have the same date for all tiles in the il parameter as this product has Aquisition time: " << m_strProductLevel);
               // we have a single date and min acquisition date should be the same as max acquisition date
-              m_strTimePeriod = m_strMaxAcquisitionDate;
+              m_strTimePeriod = strMaxAcquisitionDate;
           } else {
               // we have an interval
-              m_strTimePeriod = m_strMinAcquisitionDate + "_" + m_strMaxAcquisitionDate;
+              m_strTimePeriod = strMinAcquisitionDate + "_" + strMaxAcquisitionDate;
           }
       }
 
@@ -662,7 +662,7 @@ private:
                   if(LevelHasAcquisitionTime()) {
                       rasterInfoEl.rasterTimePeriod = m_acquisitionDatesList[curRaster];
                   } else {
-                      rasterInfoEl.rasterTimePeriod = m_strTimePeriod; //m_strMinAcquisitionDate + "_" + m_acquisitionDatesList[curRaster];
+                      rasterInfoEl.rasterTimePeriod = m_strTimePeriod;
                   }
               } else {
                   rasterInfoEl.rasterTimePeriod = m_strTimePeriod;
@@ -1678,15 +1678,38 @@ private:
     specialValue.SpecialValueIndex = metadata->ImageInformation.NoDataValue;
     m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
 
-    AddAcquisitionDate(metadata->InstanceId.AcquisitionDate);
+    std::string acqDateTime = metadata->ProductInformation.AcquisitionDateTime;
+    // Remove the eventual UTC= from the prefix of the date
+    std::string::size_type pos = acqDateTime.find('=');
+    acqDateTime = (pos!= std::string::npos) ? acqDateTime.substr(pos+1) : acqDateTime;
+    // normally, the product date time respects already the standard ISO 8601
+    // we need just to replace - and : from it
+    acqDateTime.erase(std::remove(acqDateTime.begin(), acqDateTime.end(), '-'), acqDateTime.end());
+    acqDateTime.erase(std::remove(acqDateTime.begin(), acqDateTime.end(), ':'), acqDateTime.end());
+
+    AddAcquisitionDate(acqDateTime);
+    //AddAcquisitionDate(metadata->InstanceId.AcquisitionDate);
   }
 
   void FillMetadataInfoForSPOT(std::unique_ptr<SPOT4Metadata> &metadata)
   {
       /* the source is a SPOT file */
       //nothing to load????
-      AddAcquisitionDate(metadata->Header.DatePdv.substr(0,4) +
-              metadata->Header.DatePdv.substr(5,2) + metadata->Header.DatePdv.substr(8,2));
+      // we use the acquisition date instead of processing date
+      std::string acqDateTime = metadata->Header.DateProd;
+      std::string::size_type pos = acqDateTime.find('.');
+      // remove the milliseconds part of the acquisition date/time
+      acqDateTime = (pos != std::string::npos) ? acqDateTime.substr(0, pos) : acqDateTime;
+      acqDateTime.erase(std::remove(acqDateTime.begin(), acqDateTime.end(), '-'), acqDateTime.end());
+      acqDateTime.erase(std::remove(acqDateTime.begin(), acqDateTime.end(), ':'), acqDateTime.end());
+      // the product date does has a space separator between date and time. We need to replace it with T
+      std::replace( acqDateTime.begin(), acqDateTime.end(), ' ', 'T');
+      AddAcquisitionDate(acqDateTime);
+
+//      AddAcquisitionDate(metadata->Header.DatePdv.substr(0,4) +
+//              metadata->Header.DatePdv.substr(5,2) + metadata->Header.DatePdv.substr(8,2)
+//              + "T" + metadata->Header.DatePdv.substr(11,2) + metadata->Header.DatePdv.substr(14,2) +
+//              metadata->Header.DatePdv.substr(17,2));
   }
 
   void AddAcquisitionDate(const std::string &acquisitionDate) {
@@ -1946,8 +1969,6 @@ private:
   std::vector<geoProductInfo> m_geoProductInfo;
 
     std::vector<std::string> m_acquisitionDatesList;
-    std::string m_strMinAcquisitionDate;
-    std::string m_strMaxAcquisitionDate;
     bool m_bDynamicallyTimePeriod;
 
 };
