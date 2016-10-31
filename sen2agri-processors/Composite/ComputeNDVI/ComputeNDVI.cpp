@@ -53,6 +53,8 @@
 #include "MACCSMetadataReader.hpp"
 #include <vector>
 #include "libgen.h"
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem.hpp>
 
 #define RESOLUTION_10_M 10
 #define RESOLUTION_20_M 20
@@ -227,7 +229,7 @@ private:
         if(resolution != RESOLUTION_10_M && resolution != RESOLUTION_20_M)
             itkExceptionMacro("Accepted resolutions for Sentinel mission are 10 or 20 only!");
 
-        std::string imageFile1 = getMACCSRasterFileName(m_DirName, meta->ProductOrganization.ImageFiles, "_FRE_R1", false);//getMACCSRasterFileName(m_DirName, (*meta).ProductOrganization.ImageFiles, "_FRE_R1");
+        std::string imageFile1 = getMACCSRasterFileName(m_DirName, meta->ProductOrganization.ImageFiles, "_FRE_R1", false);
         if(imageFile1.length() <= 0)
             itkExceptionMacro("Couldn't get the FRE_R1 file name !");
         m_InImage = ImageReaderType::New();
@@ -342,9 +344,10 @@ private:
         for (const MACCSFileInformation& fileInfo : imageFiles) {
             if (fileInfo.LogicalName.length() >= ending.length() &&
                     0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
-                return rootFolder + fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + (fileTypeMeta ?  ".HDR" : ".DBL.TIF");
+                boost::filesystem::path rootFolderPath(rootFolder);
+                return (rootFolderPath / (fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) +
+                                      (fileTypeMeta ?  ".HDR" : ".DBL.TIF"))).string();
             }
-
         }
         return "";
     }

@@ -35,6 +35,8 @@
 
 #include "otbOGRIOHelper.h"
 #include "MetadataHelperFactory.h"
+#include "GenericRSImageResampler.h"
+#include "ImageResampler.h"
 #include "GlobalDefs.h"
 
 
@@ -185,9 +187,9 @@ private:
     AddParameter(ParameterType_InputFilenameList, "il", "The xml files");
     AddParameter(ParameterType_OutputImage, "out", "A raster containing the number of dates for each pixel that have valid land values.");
 
-    AddParameter(ParameterType_Float, "pixsize", "The size of a pixel, in meters");
-    SetDefaultParameterFloat("pixsize", 10.0); // The default value is 10 meters
-    SetMinimumParameterFloatValue("pixsize", 1.0);
+    AddParameter(ParameterType_Int, "pixsize", "The size of a pixel, in meters");
+    SetDefaultParameterInt("pixsize", 10); // The default value is 10 meters
+    SetMinimumParameterIntValue("pixsize", 1);
     MandatoryOff("pixsize");
 
     AddParameter(ParameterType_String, "mission", "The main raster series that will be used. By default SENTINEL is used");
@@ -209,12 +211,12 @@ private:
   void DoExecute()
   {
       // get the required pixel size
-      m_pixSize = this->GetParameterFloat("pixsize");
+      m_nPrimaryImgRes = this->GetParameterInt("pixsize");
 
       // get the main mission
-      m_mission = SENTINEL;
+      m_strPrimaryMission = SENTINEL;
       if (HasValue("mission")) {
-          m_mission = this->GetParameterString("mission");
+          m_strPrimaryMission = this->GetParameterString("mission");
       }
 
       // Get the list of input files
@@ -245,23 +247,33 @@ private:
   }
 
   void updateRequiredImageSize(const std::vector<std::unique_ptr<MetadataHelper>> &vectHelpers) {
-      m_imageWidth = 0;
-      m_imageHeight = 0;
+      m_primaryMissionImgWidth = -1;
+      m_primaryMissionImgHeight = -1;
+      m_bCutImages = false;
       for (const std::unique_ptr<MetadataHelper>& helper: vectHelpers) {
-          if(helper->GetMissionName().find(m_mission) != std::string::npos) {
+          if(helper->GetMissionName().find(m_strPrimaryMission) != std::string::npos) {
                 std::string imageFile = helper->GetImageFileName();
                 ImageReaderType::Pointer reader = getReader(imageFile);
                 reader->UpdateOutputInformation();
-                float curRes = reader->GetOutput()->GetSpacing()[0];
+                //float curRes = reader->GetOutput()->GetSpacing()[0];
 
-                const float scale = (float)m_pixSize / curRes;
-                m_imageWidth = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[0] / scale;
-                m_imageHeight = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[1] / scale;
+                //const float scale = (float)m_nPrimaryMissionRes / curRes;
+                // if we have primary mission set, then we ignore the given primary mission resolution
+                // and we use the one in the primary mission product
+                m_primaryMissionImgWidth = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[0];// / scale;
+                m_primaryMissionImgHeight = reader->GetOutput()->GetLargestPossibleRegion().GetSize()[1];// / scale;
+
+                m_nPrimaryImgRes = reader->GetOutput()->GetSpacing()[0];
 
                 FloatVectorImageType::PointType origin = reader->GetOutput()->GetOrigin();
-                InternalImageType::SpacingType spacing = reader->GetOutput()->GetSpacing();
-                m_imageOrigin[0] = origin[0] + 0.5 * spacing[0] * (scale - 1.0);
-                m_imageOrigin[1] = origin[1] + 0.5 * spacing[1] * (scale - 1.0);
+                //InternalImageType::SpacingType spacing = reader->GetOutput()->GetSpacing();
+                m_primaryMissionImgOrigin[0] = origin[0];// + 0.5 * spacing[0] * (scale - 1.0);
+                m_primaryMissionImgOrigin[1] = origin[1];// + 0.5 * spacing[1] * (scale - 1.0);
+
+                m_strPrMissionImgProjRef = reader->GetOutput()->GetProjectionRef();
+                m_GenericRSImageResampler.SetOutputProjection(m_strPrMissionImgProjRef);
+                m_bCutImages = true;
+
                 break;
           }
       }
@@ -284,13 +296,12 @@ private:
       } else {
           itkExceptionMacro("Unsupported mission " << mission);
       }
-      descriptor.isMain = m_mission.compare(descriptor.mission) == 0;
+      descriptor.isMain = m_strPrimaryMission.compare(descriptor.mission) == 0;
 
       ImageReaderType::Pointer reader = getReader(helper->GetImageFileName());
       reader->UpdateOutputInformation();
-      float curRes = reader->GetOutput()->GetSpacing()[0];
 
-      descriptor.curMask = getResampledBand(helper->GetMasksImage(ALL, false), curRes, true);
+      descriptor.curMask = cutImage(helper->GetMasksImage(ALL, false));
   }
 
 
@@ -321,82 +332,59 @@ private:
       return reader;
   }
 
-  InternalImageType::Pointer getResampledBand(const InternalImageType::Pointer& image, const float curRes, const bool isMask) {
-       const float invRatio = static_cast<float>(m_pixSize) / curRes;
+  InternalImageType::Pointer cutImage(const InternalImageType::Pointer &img) {
+      InternalImageType::Pointer retImg = img;
+      img->UpdateOutputInformation();
+      int curImgRes = img->GetSpacing()[0];
+      const float scale = (float)m_nPrimaryImgRes / curImgRes;
+      if(m_bCutImages) {
+          float imageWidth = img->GetLargestPossibleRegion().GetSize()[0];
+          float imageHeight = img->GetLargestPossibleRegion().GetSize()[1];
 
-       // Scale Transform
-       OutputVectorType scale;
-       scale[0] = invRatio;
-       scale[1] = invRatio;
+          ImageType::PointType origin = img->GetOrigin();
+          ImageType::PointType imageOrigin;
+          imageOrigin[0] = origin[0];
+          imageOrigin[1] = origin[1];
 
-       image->UpdateOutputInformation();
+          if((imageWidth != m_primaryMissionImgWidth) || (imageHeight != m_primaryMissionImgHeight) ||
+                  (m_primaryMissionImgOrigin[0] != imageOrigin[0]) || (m_primaryMissionImgOrigin[1] != imageOrigin[1])) {
 
-       auto imageSize = image->GetLargestPossibleRegion().GetSize();
+              std::string imgProjRef = img->GetProjectionRef();
+              // if the projections are equal
+              if(imgProjRef == m_strPrMissionImgProjRef) {
+                  // use the streaming resampler
+                  retImg = m_ImageResampler.getResampler(img, scale,m_primaryMissionImgWidth,
+                              m_primaryMissionImgHeight,m_primaryMissionImgOrigin, Interpolator_NNeighbor)->GetOutput();
+              } else {
+                  // use the generic RS resampler that allows reprojecting
+                  retImg = m_GenericRSImageResampler.getResampler(img, scale,m_primaryMissionImgWidth,
+                              m_primaryMissionImgHeight,m_primaryMissionImgOrigin, Interpolator_NNeighbor)->GetOutput();
+              }
+              retImg->UpdateOutputInformation();
+          }
+      } else if (m_nPrimaryImgRes != curImgRes) {
+          // in this case, if the main mission was not given, we just resample the image to the demanded resolution
+          retImg = m_ImageResampler.getResampler(img, scale,Interpolator_NNeighbor)->GetOutput();
+      }
 
-       // Evaluate size
-       ResampleFilterType::SizeType recomputedSize;
-       if (m_imageWidth != 0 && m_imageHeight != 0) {
-           recomputedSize[0] = m_imageWidth;
-           recomputedSize[1] = m_imageHeight;
-       } else {
-           recomputedSize[0] = imageSize[0] / scale[0];
-           recomputedSize[1] = imageSize[1] / scale[1];
-       }
-
-       if (imageSize == recomputedSize)
-           return image;
-
-       ResampleFilterType::Pointer resampler = ResampleFilterType::New();
-       resampler->SetInput(image);
-
-       // Set the interpolator
-       if (isMask) {
-           NearestNeighborInterpolationType::Pointer interpolator = NearestNeighborInterpolationType::New();
-           resampler->SetInterpolator(interpolator);
-       } else {
-           BicubicInterpolationType::Pointer interpolator = BicubicInterpolationType::New();
-           resampler->SetInterpolator(interpolator);
-       }
-
-       IdentityTransformType::Pointer transform = IdentityTransformType::New();
-
-       resampler->SetOutputParametersFromImage( image );
-
-       // Evaluate spacing
-       InternalImageType::SpacingType spacing = image->GetSpacing();
-       InternalImageType::SpacingType OutputSpacing;
-       OutputSpacing[0] = spacing[0] * scale[0];
-       OutputSpacing[1] = spacing[1] * scale[1];
-
-       resampler->SetOutputSpacing(OutputSpacing);
-       resampler->SetOutputOrigin(m_imageOrigin);
-       resampler->SetTransform(transform);
-       resampler->SetOutputSize(recomputedSize);
-
-       // Padd with nodata
-       InternalImageType::PixelType defaultValue;
-       itk::NumericTraits<InternalImageType::PixelType>::SetLength(defaultValue, image->GetNumberOfComponentsPerPixel());
-       if(!isMask) {
-           defaultValue = -10000;
-       }
-       resampler->SetEdgePaddingValue(defaultValue);
-
-
-       m_ResamplersList->PushBack(resampler);
-       return resampler->GetOutput();
+      return retImg;
   }
-
 
   ListConcatenerFilterType::Pointer     m_AllMasks;
   ResampleFilterListType::Pointer       m_ResamplersList;
   InternalImageListType::Pointer        m_AllMasksList;
   ImageReaderListType::Pointer          m_ImageReaderList;
   std::vector<ImageDescriptor>          m_DescriptorsList;
-  std::string                           m_mission;
-  float                                 m_pixSize;
-  double                                m_imageWidth;
-  double                                m_imageHeight;
-  FloatVectorImageType::PointType       m_imageOrigin;
+  std::string                           m_strPrimaryMission;
+  int                                   m_nPrimaryImgRes;
+  double                                m_primaryMissionImgWidth;
+  double                                m_primaryMissionImgHeight;
+  FloatVectorImageType::PointType       m_primaryMissionImgOrigin;
+  bool                                  m_bCutImages;
+  std::string                           m_strPrMissionImgProjRef;
+  GenericRSImageResampler<InternalImageType, InternalImageType>  m_GenericRSImageResampler;
+  ImageResampler<InternalImageType, InternalImageType>  m_ImageResampler;
+  bool                                  m_bUseGenericRSResampler;
 
   MaskStatusFlagsExtractorFilterType::Pointer m_MskStatusFlagsExtractorFunctor;
   std::vector<std::unique_ptr<MetadataHelper>> m_vectHelpers;

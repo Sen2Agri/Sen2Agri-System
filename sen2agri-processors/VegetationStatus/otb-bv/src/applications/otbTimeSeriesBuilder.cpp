@@ -204,11 +204,11 @@ private:
               if(imgProjRef == m_strPrMissionImgProjRef) {
                   // use the streaming resampler
                   retImg = m_ImageResampler.getResampler(img, scale,m_primaryMissionImgWidth,
-                              m_primaryMissionImgHeight,interpolator)->GetOutput();
+                              m_primaryMissionImgHeight,m_primaryMissionImgOrigin, interpolator)->GetOutput();
               } else {
                   // use the generic RS resampler that allows reprojecting
                   retImg = m_GenericRSImageResampler.getResampler(img, scale,m_primaryMissionImgWidth,
-                              m_primaryMissionImgHeight,interpolator)->GetOutput();
+                              m_primaryMissionImgHeight,m_primaryMissionImgOrigin, interpolator)->GetOutput();
               }
               retImg->UpdateOutputInformation();
           }
