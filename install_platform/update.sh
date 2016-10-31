@@ -6,10 +6,8 @@ yum -y install python-beautifulsoup4
 
 rpm -Uvh --force ../rpm_binaries/*.rpm
 
-for file in migrations/*.sql
-do
-    cat "$file" | su -l postgres -c "psql sen2agri"
-done
+cat migrations/migration-1.3-1.3.1.sql | su -l postgres -c "psql sen2agri"
+cat migrations/migration-1.3.1-1.4.sql | su -l postgres -c "psql sen2agri"
 
 systemctl daemon-reload
 
