@@ -37,6 +37,7 @@ typedef struct {
     QString erode_radius;
     QString alpha;
 
+    bool skipSegmentation;
 } CropMaskJobConfig;
 
 class CropMaskHandlerNew : public ProcessorHandler

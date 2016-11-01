@@ -1,6 +1,6 @@
 #!/bin/sh
 
-source set_build_folder.sh
+source ./set_build_folder.sh
 
 # -strata /mnt/data/south_africa_medium/Test_3Strata.shp \
 ./CropMaskFused.py \

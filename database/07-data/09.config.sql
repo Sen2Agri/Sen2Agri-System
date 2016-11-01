@@ -156,6 +156,7 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3a.gen
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3a.preproc.scatcoeffs_20m', NULL, '/usr/share/sen2agri/scattering_coeffs_20m.txt', '2016-02-29 14:08:07.963143+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.lut_path', NULL, '/usr/share/sen2agri/lai.map', '2016-02-29 14:08:07.963143+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.lut_path', NULL, '/usr/share/sen2agri/crop-mask.lut', '2016-02-29 14:08:07.963143+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.skip-segmentation', NULL, 'false', '2016-10-31 17:32:00+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3a.lut_path', NULL, '/usr/share/sen2agri/composite.map', '2016-02-29 14:08:07.963143+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.mission', NULL, 'SENTINEL', '2016-03-09 16:28:59.820251+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.random_seed', NULL, '0', '2016-03-09 16:41:20.194169+02');
