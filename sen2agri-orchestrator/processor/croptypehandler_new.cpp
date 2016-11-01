@@ -80,25 +80,22 @@ QList<std::reference_wrapper<TaskToSubmit>> CropTypeHandlerNew::CreateTasks(QLis
     return allTasksListRef;
 }
 
-NewStepList CropTypeHandlerNew::CreateSteps(EventProcessingContext &ctx, QList<TaskToSubmit> &allTasksList, const CropTypeJobConfig &cfg,
-                        const QStringList &listProducts) {
+NewStepList CropTypeHandlerNew::CreateSteps(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+            QList<TaskToSubmit> &allTasksList, const CropTypeJobConfig &cfg, const QStringList &listProducts) {
     int curTaskIdx = 0;
     NewStepList allSteps;
     TaskToSubmit &cropTypeTask = allTasksList[curTaskIdx++];
 
-    QStringList corpTypeArgs = GetCropTypeTaskArgs(ctx, cfg, listProducts, cropTypeTask);
+    QStringList corpTypeArgs = GetCropTypeTaskArgs(ctx, event, cfg, listProducts, cropTypeTask);
     allSteps.append(cropTypeTask.CreateStep("CropTypeFused", corpTypeArgs));
     return allSteps;
 }
 
-QStringList CropTypeHandlerNew::GetCropTypeTaskArgs(EventProcessingContext &ctx, const CropTypeJobConfig &cfg,
-                                    const QStringList &listProducts, TaskToSubmit &cropTypeTask) {
+QStringList CropTypeHandlerNew::GetCropTypeTaskArgs(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                    const CropTypeJobConfig &cfg, const QStringList &listProducts, TaskToSubmit &cropTypeTask) {
 
-    // perform a first iteration to see the satellites IDs in all tiles
-    QList<ProcessorHandlerHelper::SatelliteIdType> satIds;
-    // Get the primary satellite id
-    ProcessorHandlerHelper::SatelliteIdType primarySatId;
-    QMap<QString, TileTemporalFilesInfo>  mapTiles = ProcessorHandlerHelper::GroupTiles(listProducts, satIds, primarySatId);
+    QMap<QString, TileTemporalFilesInfo>  mapTiles = GroupTiles(ctx, event.jobId, listProducts,
+                                                                ProductType::L2AProductTypeId);
 
     const auto &outputDir = cropTypeTask.GetFilePath("");
     const auto &outPropsPath = cropTypeTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
@@ -117,16 +114,16 @@ QStringList CropTypeHandlerNew::GetCropTypeTaskArgs(EventProcessingContext &ctx,
                                  "-outdir", outputDir,
                                  "-targetfolder", targetFolder,
                                  "-outprops", outPropsPath};
-    QStringList primarySatFiles;
-    QStringList secondarySatFiles;
-    QStringList primarySatTileNumbers;
-    QStringList secondarySatTileNumbers;
+    QStringList satFiles;
+    QStringList satTileNumbers;
     QString mission;
     // first add the products for the primary satellite
     for(auto tileId : mapTiles.keys())
     {
+        QStringList tilePrimarySatFiles;
+        QStringList tileSecondarySatFiles;
+
         // We know that we have for each tile only one satellite type
-        bool isPrimarySat = false;
         const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
         for(const ProcessorHandlerHelper::InfoTileFile &fileInfo: listTemporalTiles.temporalTilesFileInfos) {
             if(mission.length() == 0) {
@@ -134,25 +131,20 @@ QStringList CropTypeHandlerNew::GetCropTypeTaskArgs(EventProcessingContext &ctx,
             }
 
            if(fileInfo.satId == listTemporalTiles.primarySatelliteId) {
-               isPrimarySat = true;
-               primarySatFiles.append(fileInfo.file);
+               tilePrimarySatFiles.append(fileInfo.file);
            } else {
-               secondarySatFiles.append(fileInfo.file);
+               tileSecondarySatFiles.append(fileInfo.file);
            }
         }
-        if(isPrimarySat) {
-            primarySatTileNumbers.append(QString::number(listTemporalTiles.temporalTilesFileInfos.size()));
-        } else {
-            secondarySatTileNumbers.append(QString::number(listTemporalTiles.temporalTilesFileInfos.size()));
-        }
+        satFiles.append(tilePrimarySatFiles);
+        satFiles.append(tileSecondarySatFiles);
+        satTileNumbers.append(QString::number(listTemporalTiles.temporalTilesFileInfos.size()));
     }
     cropTypeArgs += "-input";
-    cropTypeArgs += primarySatFiles;
-    cropTypeArgs += secondarySatFiles;
+    cropTypeArgs += satFiles;
 
     cropTypeArgs += "-prodspertile";
-    cropTypeArgs += primarySatTileNumbers;
-    cropTypeArgs += secondarySatTileNumbers;
+    cropTypeArgs += satTileNumbers;
 
     cropTypeArgs += "-mission";
     cropTypeArgs += mission;
@@ -215,7 +207,7 @@ void CropTypeHandlerNew::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     QList<TaskToSubmit> allTasksList;
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef = CreateTasks(allTasksList);
     SubmitTasks(ctx, cfg.jobId, allTasksListRef);
-    NewStepList allSteps = CreateSteps(ctx, allTasksList, cfg, listProducts);
+    NewStepList allSteps = CreateSteps(ctx, event, allTasksList, cfg, listProducts);
     ctx.SubmitSteps(allSteps);
 }
 
