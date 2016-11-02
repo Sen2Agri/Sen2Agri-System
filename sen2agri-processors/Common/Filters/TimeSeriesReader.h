@@ -69,8 +69,12 @@ typedef otb::ObjectList<UInt16ImageReaderType>                     UInt16ImageRe
 typedef otb::ImageFileReader<otb::Wrapper::UInt8VectorImageType>   UInt8VectorImageReaderType;
 typedef otb::ObjectList<UInt8VectorImageReaderType>                UInt8VectorImageReaderListType;
 
+typedef otb::ImageFileReader<otb::Wrapper::FloatVectorImageType>   FloatVectorImageReaderType;
+
 typedef otb::Image<float>                                          FloatImageType;
+typedef otb::VectorImage<float>                                    FloatVectorImageType;
 typedef otb::Image<uint8_t>                                        UInt8ImageType;
+typedef otb::VectorImage<uint8_t>                                  UInt8VectorImageType;
 
 typedef otb::GridResampleImageFilter<otb::Wrapper::UInt8VectorImageType, otb::Wrapper::UInt8VectorImageType, double>    UInt8VectorResampleFilterType;
 typedef otb::GridResampleImageFilter<otb::Wrapper::Int16ImageType, otb::Wrapper::Int16ImageType, double>                Int16ResampleFilterType;
@@ -91,6 +95,9 @@ typedef otb::ObjectList<SentinelMaskFilterType>             SentinelMaskFilterLi
 typedef itk::VectorIndexSelectionCastImageFilter<
             otb::Wrapper::Int16VectorImageType, otb::Wrapper::FloatImageType>        ExtractChannelFilterType;
 typedef otb::ObjectList<ExtractChannelFilterType>                                    ExtractChannelListType;
+
+typedef itk::VectorIndexSelectionCastImageFilter<
+            otb::Wrapper::FloatVectorImageType, otb::Wrapper::FloatImageType>        ExtractFloatChannelFilterType;
 
 typedef otb::ImageListToVectorImageFilter<otb::ImageList<otb::Wrapper::FloatImageType>, otb::Wrapper::FloatVectorImageType>       ConcatenateFloatImagesFilterType;
 typedef otb::ObjectList<ConcatenateFloatImagesFilterType>                                                                         ConcatenateFloatImagesFilterListType;
@@ -528,6 +535,17 @@ protected:
         return reader;
     }
 
+    FloatVectorImageReaderType::Pointer getFloatVectorImageReader(const std::string& filePath) {
+        auto reader = FloatVectorImageReaderType::New();
+
+        // set the file name
+        reader->SetFileName(filePath);
+
+        // add it to the list and return
+        m_Filters->PushBack(reader);
+        return reader;
+    }
+
     // Return the path to a file for which the name end in the ending
     std::string getMACCSRasterFileName(const boost::filesystem::path &rootFolder, const std::vector<MACCSFileInformation>& imageFiles, const std::string& ending) {
 
@@ -619,37 +637,36 @@ protected:
 
     void getLandsatBands(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor) {
         // Return the bands associated with a LANDSAT product
-        // get the bands
         std::string imageFile = getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE");
-        auto reader = getInt16ImageReader(imageFile);
+        auto reader = getFloatVectorImageReader(imageFile);
         reader->GetOutput()->UpdateOutputInformation();
 
-        // Extract the bands from 3 to 6
-        auto channelExtractor1 = ExtractChannelFilterType::New();
-        channelExtractor1->SetInput(reader->GetOutput());
+        auto resampledBands = getResampledBand<FloatVectorImageType>(reader->GetOutput(), td, true);
+
+        auto channelExtractor1 = ExtractFloatChannelFilterType::New();
+        channelExtractor1->SetInput(resampledBands);
         channelExtractor1->SetIndex(2);
-        m_ChannelExtractors->PushBack(channelExtractor1);
+        m_Filters->PushBack(channelExtractor1);
 
-        auto channelExtractor2 = ExtractChannelFilterType::New();
-        channelExtractor2->SetInput(reader->GetOutput());
+        auto channelExtractor2 = ExtractFloatChannelFilterType::New();
+        channelExtractor2->SetInput(resampledBands);
         channelExtractor2->SetIndex(3);
-        m_ChannelExtractors->PushBack(channelExtractor2);
+        m_Filters->PushBack(channelExtractor2);
 
-        auto channelExtractor3 = ExtractChannelFilterType::New();
-        channelExtractor3->SetInput(reader->GetOutput());
+        auto channelExtractor3 = ExtractFloatChannelFilterType::New();
+        channelExtractor3->SetInput(resampledBands);
         channelExtractor3->SetIndex(4);
-        m_ChannelExtractors->PushBack(channelExtractor3);
+        m_Filters->PushBack(channelExtractor3);
 
-        auto channelExtractor4 = ExtractChannelFilterType::New();
-        channelExtractor4->SetInput(reader->GetOutput());
+        auto channelExtractor4 = ExtractFloatChannelFilterType::New();
+        channelExtractor4->SetInput(resampledBands);
         channelExtractor4->SetIndex(5);
-        m_ChannelExtractors->PushBack(channelExtractor4);
+        m_Filters->PushBack(channelExtractor4);
 
-        // A resampling might be required
-        descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor1->GetOutput(), td, false));
-        descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor2->GetOutput(), td, false));
-        descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor3->GetOutput(), td, false));
-        descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor4->GetOutput(), td, false));
+        descriptor.bands.push_back(channelExtractor1->GetOutput());
+        descriptor.bands.push_back(channelExtractor2->GetOutput());
+        descriptor.bands.push_back(channelExtractor3->GetOutput());
+        descriptor.bands.push_back(channelExtractor4->GetOutput());
     }
 
     otb::Wrapper::UInt8ImageType::Pointer getLandsatMask(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td) {
@@ -769,8 +786,11 @@ protected:
 
         std::string inputProjection = image->GetProjectionRef();
         bool sameProjection = inputProjection == td.m_projection;
-        if (imageSize == recomputedSize && sameProjection)
+        bool sameOrigin = image->GetOrigin() == td.m_imageOrigin;
+        if (imageSize == recomputedSize && sameOrigin && sameProjection)
+        {
             return image;
+        }
 
         // Evaluate spacing
         typename ImageType::SpacingType outputSpacing;
@@ -798,24 +818,50 @@ protected:
             edgeValue = -10000;
         }
 
+        typedef typename ImageType::PixelType PixelType;
+
+        PixelType edgePixel;
+        itk::NumericTraits<PixelType>::SetLength(edgePixel, image->GetNumberOfComponentsPerPixel());
+        edgePixel = edgeValue * itk::NumericTraits<PixelType>::OneValue(edgePixel);
+
         typename ImageType::Pointer output;
         if (sameProjection)
         {
-            typedef otb::GridResampleImageFilter<ImageType, ImageType, double>  ResampleFilterType;
+            if (sameOrigin)
+            {
+                typedef otb::GridResampleImageFilter<ImageType, ImageType, double>  ResampleFilterType;
 
-            typename ResampleFilterType::Pointer resampler = ResampleFilterType::New();
-            m_Filters->PushBack(resampler);
+                typename ResampleFilterType::Pointer resampler = ResampleFilterType::New();
+                m_Filters->PushBack(resampler);
 
-            resampler->SetInput(image);
-            resampler->SetInterpolator(interpolator);
-            resampler->SetOutputParametersFromImage(image);
-            resampler->SetOutputSpacing(outputSpacing);
-            resampler->SetOutputOrigin(td.m_imageOrigin);
-            resampler->SetCheckOutputBounds(false);
-            resampler->SetOutputSize(recomputedSize);
-            resampler->SetEdgePaddingValue(edgeValue);
+                resampler->SetInput(image);
+                resampler->SetInterpolator(interpolator);
+                resampler->SetOutputParametersFromImage(image);
+                resampler->SetOutputSpacing(outputSpacing);
+                resampler->SetOutputOrigin(td.m_imageOrigin);
+                resampler->SetOutputSize(recomputedSize);
+                resampler->SetEdgePaddingValue(edgePixel);
+                resampler->SetCheckOutputBounds(false);
 
-            output = resampler->GetOutput();
+                output = resampler->GetOutput();
+            }
+            else
+            {
+                typedef otb::StreamingResampleImageFilter<ImageType, ImageType, double>  ResampleFilterType;
+
+                typename ResampleFilterType::Pointer resampler = ResampleFilterType::New();
+                m_Filters->PushBack(resampler);
+
+                resampler->SetInput(image);
+                resampler->SetInterpolator(interpolator);
+                resampler->SetOutputParametersFromImage(image);
+                resampler->SetOutputSpacing(outputSpacing);
+                resampler->SetOutputOrigin(td.m_imageOrigin);
+                resampler->SetOutputSize(recomputedSize);
+                resampler->SetEdgePaddingValue(edgePixel);
+
+                output = resampler->GetOutput();
+            }
         }
         else
         {
@@ -834,7 +880,7 @@ protected:
             resampler->SetDisplacementFieldSpacing(outputSpacing);
             resampler->SetOutputOrigin(td.m_imageOrigin);
             resampler->SetOutputSize(recomputedSize);
-            resampler->SetEdgePaddingValue(edgeValue);
+            resampler->SetEdgePaddingValue(edgePixel);
 
             output = resampler->GetOutput();
         }
