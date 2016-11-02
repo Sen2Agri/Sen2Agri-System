@@ -76,7 +76,7 @@ def run_command(args):
 def quicklook_mosaic(inpFileName, outFileName, channelList):
     run_command([get_otb_launcher(),
                  "Quicklook",
-                 "-in",inpFileName,
+                 "-in",inpFileName, "uint8" if inpFileName.endswith(".jpg") else "",
                  "-progress", "false",
                  "-cl"] + channelList + [
                  "-out", outFileName])
