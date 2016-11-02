@@ -41,8 +41,8 @@ private:
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
     void GetJobConfig(EventProcessingContext &ctx,const JobSubmittedEvent &event,CropTypeJobConfig &cfg);
     QList<std::reference_wrapper<TaskToSubmit>> CreateTasks(QList<TaskToSubmit> &outAllTasksList);
-    NewStepList CreateSteps(EventProcessingContext &ctx, QList<TaskToSubmit> &allTasksList, const CropTypeJobConfig &cfg,
-                            const QStringList &listProducts);
-    QStringList GetCropTypeTaskArgs(EventProcessingContext &ctx, const CropTypeJobConfig &cfg,
+    NewStepList CreateSteps(EventProcessingContext &ctx, const JobSubmittedEvent &event, QList<TaskToSubmit> &allTasksList,
+                            const CropTypeJobConfig &cfg, const QStringList &listProducts);
+    QStringList GetCropTypeTaskArgs(EventProcessingContext &ctx, const JobSubmittedEvent &event, const CropTypeJobConfig &cfg,
                                         const QStringList &listProducts, TaskToSubmit &cropTypeTask);
 };
