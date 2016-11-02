@@ -9,7 +9,6 @@
 
 void CropMaskHandlerNew::SetProcessorDescription(const ProcessorDescription &procDescr) {
     this->processorDescr = procDescr;
-    m_oldL4BHandler.SetProcessorDescription(procDescr);
 }
 
 
@@ -246,12 +245,6 @@ void CropMaskHandlerNew::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     CropMaskJobConfig cfg;
     GetJobConfig(ctx, event, cfg);
 
-    //TODO: This should be removed when the unsupervised mode will be implemented in CropMaskFused.py
-    if(cfg.referencePolygons.length() == 0) {
-        m_oldL4BHandler.HandleJobSubmitted(ctx, event);
-        return;
-    }
-
     QList<TaskToSubmit> allTasksList;
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef = CreateTasks(allTasksList);
     SubmitTasks(ctx, cfg.jobId, allTasksListRef);
@@ -281,10 +274,6 @@ void CropMaskHandlerNew::HandleTaskFinishedImpl(EventProcessingContext &ctx,
         }
         // Now remove the job folder containing temporary files
         RemoveJobFolder(ctx, event.jobId, "l4a");
-    } else {
-        // check if the message can be handled by the old handler
-        //TODO: This should be removed when the unsupervised mode will be implemented in CropMaskFused.py
-        m_oldL4BHandler.HandleTaskFinished(ctx, event);
     }
 }
 
