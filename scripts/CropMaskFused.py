@@ -449,15 +449,6 @@ class CropMaskProcessor(ProcessorBase):
             return self.get_output_path("crop-mask-segmented-{}.tif", tile.id)
 
     def validate(self, context):
-        files = []
-        for tile in self.tiles:
-            if self.args.skip_segmentation:
-                tile_crop_mask = self.get_tile_classification_output(tile)
-                files.append(tile_crop_mask)
-            else:
-                tile_segmented = self.get_output_path("crop-mask-segmented-{}.tif", tile.id)
-                files.append(tile_segmented)
-
         for stratum in self.strata:
             area_statistics = self.get_output_path("confusion-matrix-validation-{}.csv", stratum.id)
             area_quality_metrics = self.get_output_path("quality-metrics-{}.txt", stratum.id)
@@ -467,7 +458,9 @@ class CropMaskProcessor(ProcessorBase):
                             "-out", area_statistics,
                             "-nodatalabel", -10000,
                             "-il"]
-            step_args += files
+            for tile in stratum.tiles:
+                step_args.append(self.get_tile_crop_mask(tile))
+
             if self.args.refp is not None:
                 area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
 
