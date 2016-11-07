@@ -69,7 +69,7 @@ public:
 
         outputSize = 0;
         for (const SensorData &sd : inputData) {
-            outputSize += sd.outDates.size();
+            outputSize += sd.outDates.size() * sd.bandCount;
         }
     }
 
@@ -78,16 +78,16 @@ public:
     {
         outputSize = 0;
         for (const SensorData &sd : inputData) {
-            outputSize += sd.outDates.size();
+            outputSize += sd.outDates.size() * sd.bandCount;
         }
     }
 
     OutputType operator()(const PixelType &pix, const MaskType &mask) const
     {
-        int bands = pix.Size() / mask.Size();
         // Create the output pixel
-        OutputType result(outputSize * bands);
+        OutputType result(outputSize);
 
+        int sensorStart = 0;
         int outPixelId = 0;
         int offset = 0;
         for (const auto &sd : inputData) {
@@ -102,31 +102,27 @@ public:
                 // get the id of the first valid date after or equal to the output date
                 int afterId = getPixelDateIndex(ind.minHi, ind.maxHi, mask, offset);
 
-                // build the offseted ids
-                int beforeRasterId = beforeId + offset;
-                int afterRasterId = afterId + offset;
-
                 // for each band
-                for (int band = 0; band < bands; band++) {
+                for (int band = 0; band < sd.bandCount; band++) {
 
                     if (beforeId == -1 && afterId == -1) {
                         // if no valid pixel then set a default value (0.0)
                         result[outPixelId] = NODATA;
                     } else if (beforeId == -1) {
                         // use only the after value
-                        result[outPixelId] = pix[afterRasterId * bands + band];
+                        result[outPixelId] = pix[sensorStart + afterId * sd.bandCount + band];
                     } else if (afterId == -1) {
                         // use only the before value
-                        result[outPixelId] = pix[beforeRasterId * bands + band];
+                        result[outPixelId] = pix[sensorStart + beforeId * sd.bandCount + band];
                     } else if (beforeId == afterId) {
                         // use only the before value which is equal to the after value
-                        result[outPixelId] = pix[beforeRasterId * bands + band];
+                        result[outPixelId] = pix[sensorStart + beforeId * sd.bandCount + band];
                     } else {
                         // use linear interpolation to compute the pixel value
                         float x1 = sd.inDates[beforeId];
-                        float y1 = pix[beforeRasterId * bands + band];
+                        float y1 = pix[sensorStart + beforeId * sd.bandCount + band];
                         float x2 = sd.inDates[afterId];
-                        float y2 = pix[afterRasterId * bands + band];
+                        float y2 = pix[sensorStart + afterId * sd.bandCount + band];
                         float a = (y1 - y2) / (x1 - x2);
                         float b = y1 - a * x1;
 
@@ -136,6 +132,7 @@ public:
                 }
             }
             offset += sd.inDates.size();
+            sensorStart += sd.inDates.size() * sd.bandCount;
         }
 
         return result;
@@ -156,7 +153,7 @@ protected:
     std::vector<SensorData> inputData;
     // the radius for date search
     int radius;
-    // the number of output size in days
+    // the number of output bands
     int outputSize;
 
 private:
