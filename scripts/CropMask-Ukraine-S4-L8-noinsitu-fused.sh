@@ -36,9 +36,10 @@ FILES=( \
 )
 
     # -strata ~/areas.shp \
+    #/mnt/archive/reference_data/ESACCI-LC-L4-LCCS-Map-300m-P5Y-2010-v1.6.1.tif
 ./CropMaskFused.py \
-    -refr /mnt/archive/reference_data/ESACCI-LC-L4-LCCS-Map-300m-P5Y-2010-v1.6.1.tif \
+    -refr /mnt/data/reference/Reference_Ukraine.tif \
     -input ${FILES[@]} \
     -rseed 0 -pixsize 20 \
     -outdir /mnt/data/ukraine/Ukraine-mask-noinsitu \
-    -buildfolder "$BUILD_FOLDER" # -mode validate # -keepfiles
+    -buildfolder "$BUILD_FOLDER" # -keepfiles
