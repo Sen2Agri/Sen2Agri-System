@@ -24,4 +24,5 @@ source ./set_build_folder.sh
         /mnt/archive/test/Borno_South/S2A_OPER_PRD_MSIL2A_PDMC_20160817T214327_R136_V20160815T093042_20160815T094108.SAFE/S2A_OPER_SSC_L2VALD_32PRT____20160815.HDR \
         /mnt/archive/test/Borno_South/LC81860522016182LGN00_L2A/L8_TEST_L8C_L2VALD_186052_20160630.HDR \
         /mnt/archive/test/Borno_South/LC81860532016182LGN00_L2A/L8_TEST_L8C_L2VALD_186053_20160630.HDR \
-    -prodspertile 4 4 4 4
+    -prodspertile 4 4 4 4 \
+    -buildfolder "$BUILD_FOLDER"
