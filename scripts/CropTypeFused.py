@@ -215,7 +215,7 @@ class CropTypeProcessor(ProcessorBase):
                         "-bv", -10000,
                         "-nodatalabel", -10000,
                         "-out", tile_crop_type_map_uncompressed]
-        step_args += ["-mask", tile_model_mask]
+        step_args += ["-model"] + models
         step_args += ["-il"] + tile.descriptors
         if self.args.classifier == "svm":
             step_args += ["-imstat"] + statistics
