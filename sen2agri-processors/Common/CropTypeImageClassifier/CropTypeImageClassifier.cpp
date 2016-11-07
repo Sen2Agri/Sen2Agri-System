@@ -205,6 +205,9 @@ private:
     AddParameter(ParameterType_InputFilenameList, "model", "Model files");
     SetParameterDescription("model", "One or more model files (produced by TrainImagesClassifier application, maximal class label = 65535).");
 
+    AddParameter(ParameterType_StringList, "modelid", "Model identifiers");
+    SetParameterDescription("modelid", "Model identifiers");
+
     AddParameter(ParameterType_Int, "nodatalabel", "No data label");
     SetDefaultParameterInt("nodatalabel", 0);
     SetParameterDescription("nodatalabel", "The label to output for masked pixels.");
@@ -312,9 +315,18 @@ private:
         otbAppLogINFO("Using model mask");
         // Load mask image and cast into LabeledImageType
         MaskImageType::Pointer inMask = GetParameterUInt8Image("mask");
+        std::vector<std::string> modelIds = GetParameterStringList("modelid");
+
+        std::vector<uint8_t> modelMap(255);
+        for (size_t i = 0; i < modelIds.size(); i++)
+          {
+          uint8_t modelId = std::stoi(modelIds[i]);
+          modelMap[modelId] = i + 1;
+          }
 
         m_ClassificationFilter->SetUseModelMask(true);
         m_ClassificationFilter->SetModelMask(inMask);
+        m_ClassificationFilter->SetModelMap(modelMap);
         }
 
       bool useStatistics = IsParameterEnabled("imstat");

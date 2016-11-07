@@ -87,6 +87,9 @@ private:
     AddParameter(ParameterType_InputFilenameList, "model", "Model files");
     SetParameterDescription("model", "One or more model files (produced by TrainImagesClassifier application, maximal class label = 65535).");
 
+    AddParameter(ParameterType_StringList, "modelid", "Model identifiers");
+    SetParameterDescription("modelid", "Model identifiers");
+
     AddParameter(ParameterType_Int, "nodatalabel", "No data label");
     SetDefaultParameterInt("nodatalabel", 0);
     SetParameterDescription("nodatalabel", "The label to output for masked pixels.");
@@ -172,7 +175,9 @@ private:
         RescalerType::Pointer rescaler = RescalerType::New();
         rescaler->SetScale(stddevMeasurementVector);
         rescaler->SetShift(meanMeasurementVector);
-        rescaler->SetInput(inImages->GetNthElement(std::distance(statisticsFiles.begin(), statsIt)));
+        size_t idx = std::distance(statisticsFiles.begin(), statsIt);
+        size_t imIdx = inImages->Size() == 1 ? 0 : idx;
+        rescaler->SetInput(inImages->GetNthElement(imIdx));
         m_Rescalers->PushBack(rescaler);
         }
       }
@@ -186,9 +191,18 @@ private:
       otbAppLogINFO("Using model mask");
       // Load mask image and cast into LabeledImageType
       MaskImageType::Pointer inMask = GetParameterUInt8Image("mask");
+      std::vector<std::string> modelIds = GetParameterStringList("modelid");
+
+      std::vector<uint8_t> modelMap(255);
+      for (size_t i = 0; i < modelIds.size(); i++)
+        {
+        uint8_t modelId = std::stoi(modelIds[i]);
+        modelMap[modelId] = i + 1;
+        }
 
       m_ClassificationFilter->SetUseModelMask(true);
       m_ClassificationFilter->SetModelMask(inMask);
+      m_ClassificationFilter->SetModelMap(modelMap);
       }
 
 
@@ -200,7 +214,8 @@ private:
         }
       else
         {
-        m_ClassificationFilter->PushBackInput(inImages->GetNthElement(i));
+        size_t imIdx = inImages->Size() == 1 ? 0 : i;
+        m_ClassificationFilter->PushBackInput(inImages->GetNthElement(imIdx));
         }
       }
 

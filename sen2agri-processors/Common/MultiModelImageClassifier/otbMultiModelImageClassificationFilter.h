@@ -82,6 +82,9 @@ public:
   itkSetMacro(UseModelMask, bool)
   itkGetMacro(UseModelMask, bool)
 
+  itkSetMacro(ModelMap, std::vector<uint8_t>)
+  itkGetMacro(ModelMap, std::vector<uint8_t>)
+
   /**
    * If set, the mask pixels specify which input model to use.
    * All pixels with a value greater than 0 in the mask will be classified.
@@ -118,6 +121,7 @@ private:
   LabelType m_DefaultLabel;
 
   bool m_UseModelMask;
+  std::vector<uint8_t> m_ModelMap;
 };
 } // End namespace otb
 #ifndef OTB_MANUAL_INSTANTIATION

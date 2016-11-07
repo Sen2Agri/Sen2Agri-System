@@ -141,6 +141,8 @@ MultiModelImageClassificationFilter<TInputImage, TOutputImage, TMaskImage>
     if (m_UseModelMask)
       {
       model = maskIt.Get();
+      model = m_ModelMap[model];
+
       ++maskIt;
       }
     else

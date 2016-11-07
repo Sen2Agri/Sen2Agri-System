@@ -181,6 +181,7 @@ class CropTypeProcessor(ProcessorBase):
 
     def classify_tile(self, tile):
         models = []
+        model_ids = []
         days = []
         statistics = []
         for stratum in self.strata:
@@ -189,18 +190,18 @@ class CropTypeProcessor(ProcessorBase):
             area_statistics = self.get_output_path("statistics-{}.xml", stratum.id)
 
             models.append(area_model)
+            model_ids.append(stratum.id)
             days.append(area_days)
             statistics.append(area_statistics)
 
         if not self.single_stratum:
             tile_model_mask = self.get_output_path("model-mask-{}.tif", tile.id)
-            strata_relabelled = self.get_output_path("strata_relabelled.shp")
 
             run_step(Step("Rasterize model mask",
                                 ["otbcli_Rasterization",
                                 "-mode", "attribute",
                                 "-mode.attribute.field", "ID",
-                                "-in", strata_relabelled,
+                                "-in", self.args.strata,
                                 "-im", get_reference_raster(tile.descriptors[0]),
                                 "-out", format_otb_filename(tile_model_mask, compression='DEFLATE'), "uint8"]))
 
@@ -213,14 +214,15 @@ class CropTypeProcessor(ProcessorBase):
                         "-indays"] + days + [
                         "-bv", -10000,
                         "-nodatalabel", -10000,
-                        "-out", tile_crop_type_map_uncompressed,
-                        "-model"] + models
+                        "-out", tile_crop_type_map_uncompressed]
+        step_args += ["-mask", tile_model_mask]
         step_args += ["-il"] + tile.descriptors
         if self.args.classifier == "svm":
             step_args += ["-imstat"] + statistics
 
         if not self.single_stratum:
             step_args += ["-mask", tile_model_mask]
+            step_args += ["-modelid"] + model_ids
 
         run_step(Step("ImageClassifier_{}".format(tile.id), step_args, retry=True))
 
