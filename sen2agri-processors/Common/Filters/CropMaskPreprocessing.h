@@ -106,6 +106,7 @@ public:
                 otb::SensorData sd;
                 sd.sensorName = id.mission;
                 sd.outDates = sensorOutDays.find(id.mission)->second;
+                sd.bandCount = id.bands.size();
                 sdCollection.push_back(sd);
                 lastMission = id.mission;
             }

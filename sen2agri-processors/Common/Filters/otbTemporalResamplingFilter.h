@@ -44,6 +44,8 @@ struct SensorData
     // the dates for the output
     RasterDates outDates;
 
+    int bandCount;
+
     bool operator ==(const SensorData a) const {
         return !(*this != a);
     }

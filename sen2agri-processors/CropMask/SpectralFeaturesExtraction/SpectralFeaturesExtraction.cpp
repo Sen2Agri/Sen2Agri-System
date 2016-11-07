@@ -103,6 +103,7 @@ public:
             int inDay = getDaysFromEpoch(id.aquisitionDate);
 
             sd.inDates.push_back(inDay);
+            sd.bandCount = id.bands.size();
 
             for (const auto &b : id.bands) {
                 m_FloatImageList->PushBack(b);
