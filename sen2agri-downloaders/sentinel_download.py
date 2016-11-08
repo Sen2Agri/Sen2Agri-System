@@ -270,7 +270,8 @@ def sentinel_download(aoiContext):
 
             product_date = re.search(r"_V(\d{8}T\d{6})_", filename)
             orbit_id = re.search(r"_R(\d{3})_", filename)
-            if len(filename) == 0 or cloud > 100 or product_date == None or orbit_id == None:
+            if len(filename) == 0 or cloud > 100 or product_date == None or orbit_id == None: 
+                log(aoiContext.writeDir, "Something went wrong with filename: filename:{} | cloud percentage:{} | product date: {} | orbit id: {}".format(filename, cloud, product_date, orbit_id), general_log_filename)                
                 continue
 
             s2Objs.append(Sentinel2Obj(filename, link, product_date.group(1), cloud, orbit_id.group(1), account, passwd, proxy))
