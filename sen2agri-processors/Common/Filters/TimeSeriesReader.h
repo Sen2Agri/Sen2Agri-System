@@ -641,7 +641,7 @@ protected:
         auto reader = getFloatVectorImageReader(imageFile);
         reader->GetOutput()->UpdateOutputInformation();
 
-        auto resampledBands = getResampledBand<FloatVectorImageType>(reader->GetOutput(), td, true);
+        auto resampledBands = getResampledBand<FloatVectorImageType>(reader->GetOutput(), td, false);
 
         auto channelExtractor1 = ExtractFloatChannelFilterType::New();
         channelExtractor1->SetInput(resampledBands);
