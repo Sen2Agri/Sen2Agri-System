@@ -141,6 +141,36 @@ def product_download(s2Obj, aoiContext, db):
 
 ###########################################################################
 
+def get_s2obj_from_file(aoiContext, xml, account, passwd, proxy):
+    ret_s2Objs = []
+    products = xml.getElementsByTagName("entry")
+    for prod in products:
+        ident = prod.getElementsByTagName("id")[0].firstChild.data
+        link = prod.getElementsByTagName("link")[0].attributes.items()[0][1]
+        filename = ""
+        cloud = float(200)
+        product_date = None
+        for node in prod.getElementsByTagName("str"):
+            (name,value)=node.attributes.items()[0]
+            if value=="filename":
+                filename= str(node.toxml()).split('>')[1].split('<')[0]   #ugly, but minidom is not straightforward
+
+        for node in prod.getElementsByTagName("double"):
+            (name,value)=node.attributes.items()[0]
+            if value=="cloudcoverpercentage":
+                cloud=float((node.toxml()).split('>')[1].split('<')[0])
+
+        product_date = re.search(r"_V(\d{8}T\d{6})_", filename)
+        orbit_id = re.search(r"_R(\d{3})_", filename)
+        if len(filename) == 0 or cloud > 100 or product_date == None or orbit_id == None:
+            log(aoiContext.writeDir, "Something went wrong with the filename: filename:{} | cloud percentage:{} | product date: {} | orbit id: {}".format(filename, cloud, product_date, orbit_id), general_log_filename)
+            continue
+
+        ret_s2Objs.append(Sentinel2Obj(filename, link, product_date.group(1), cloud, orbit_id.group(1), account, passwd, proxy))  
+    
+    return ret_s2Objs
+    
+    
 #signal.signal(signal.SIGINT, signal_handler)
 
 def sentinel_download(aoiContext):
@@ -211,7 +241,7 @@ def sentinel_download(aoiContext):
             wget_command += ["-e", "use_proxy=yes", "-e", "http_proxy=%(host)s:%(port)s" % proxy, "-e", "https_proxy=%(host)s:%(port)s" % proxy]
             if len(proxy) == 4:
                 wget_command += ["--proxy-user=%(user)s" % proxy, "--proxy-password=%(pass)s" % proxy]
-        wget_command.append(url_search + query + "&rows=1000")
+        wget_command.append(url_search + query + "&rows=100")
         log(aoiContext.writeDir, wget_command, general_log_filename)
 
         if run_command(wget_command, aoiContext.writeDir, general_log_filename) != 0:
@@ -227,6 +257,8 @@ def sentinel_download(aoiContext):
             log(aoiContext.writeDir, "Could not find the catalog output {} for {}".format(queryResultsFilename, aoiContext.siteName), general_log_filename)
             return
         xml=minidom.parse(queryResultsFilename)
+        retS2Objs = get_s2obj_from_file(aoiContext, xml, account, passwd, proxy)
+        s2Objs.extend(retS2Objs)
 
         #check if all the results are returned
         subtitle=xml.getElementsByTagName("subtitle")[0].firstChild.data
@@ -237,44 +269,36 @@ def sentinel_download(aoiContext):
             if len(words) > 2 and words[2] != "results." and len(words) > 5:
                 try:
                     totalRes=int(words[5]) + 1
-                    query = query + "&rows=" + str(totalRes)
-                    #wget_command='%s %s %s "%s%s"'%(wg,auth,search_output,url_search,query)
-                    wget_command = wg + auth + search_output + [url_search+query]
-                    log(aoiContext.writeDir, "Changing the pagination to {0} to get all of the existing files, command: {1}".format(totalRes, wget_command), general_log_filename)
-                    if run_command(wget_command, aoiContext.writeDir, general_log_filename) != 0:
-                        log(aoiContext.writeDir, "Could not get the catalog output (re-pagination) for {}".format(query_geom), general_log_filename)
-                        return
-                    xml=minidom.parse("query_results.xml")
+                    pages = totalRes / 100
+                    remainderRes = totalRes % 100
+                    print("Total results: {}".format(totalRes))
+                    print("Pages: {}".format(pages))
+                    for count in range(0,pages): 
+                        if (count < (pages - 1)) or remainderRes > 0 :
+                            curPage = count + 1
+                            startIndex = curPage*100
+                            print("StartIndex: {}".format(startIndex))
+                            newQuery = query + "&rows=100&start=" + str(startIndex)
+                            queryResultsFilename = aoiContext.writeDir + "/" + str(aoiContext.siteName) + "_query_results_all_{}.xml".format(index)
+                            index += 1                        
+                            print("queryResultsFilename = {}".format(queryResultsFilename))
+                            search_output = ["--output-document", queryResultsFilename]
+                            wget_command = wg + auth + search_output + [url_search+newQuery]
+                            log(aoiContext.writeDir, "Retrieving page {0}, starting from index {1}, command: {2}".format(curPage+1, startIndex, wget_command), general_log_filename)
+                            if run_command(wget_command, aoiContext.writeDir, general_log_filename) != 0:
+                                log(aoiContext.writeDir, "Could not get the catalog output (re-pagination) for {}".format(query_geom), general_log_filename)
+                                return
+
+                            if not os.path.isfile(queryResultsFilename):
+                                log(aoiContext.writeDir, "Could not find the catalog output {} for {}".format(queryResultsFilename, aoiContext.siteName), general_log_filename)
+                                return
+                            xml=minidom.parse(queryResultsFilename)
+                            retS2Objs = get_s2obj_from_file(aoiContext, xml, account, passwd, proxy)
+                            s2Objs.extend(retS2Objs)
                 except ValueError:
                     log(aoiContext.writeDir, "Exception: it was expected for the word in position 5 (starting from 0) to be an int. It ain't. The checked string is: {}".format(subtitle), general_log_filename)
                     log(aoiContext.writeDir, "Could not get the catalog output (exception for re-pagination) for {}".format(query_geom), general_log_filename)
                     return
-
-        products = xml.getElementsByTagName("entry")
-
-        for prod in products:
-            ident = prod.getElementsByTagName("id")[0].firstChild.data
-            link = prod.getElementsByTagName("link")[0].attributes.items()[0][1]
-            filename = ""
-            cloud = float(200)
-            product_date = None
-            for node in prod.getElementsByTagName("str"):
-                (name,value)=node.attributes.items()[0]
-                if value=="filename":
-                    filename= str(node.toxml()).split('>')[1].split('<')[0]   #ugly, but minidom is not straightforward
-
-            for node in prod.getElementsByTagName("double"):
-                (name,value)=node.attributes.items()[0]
-                if value=="cloudcoverpercentage":
-                    cloud=float((node.toxml()).split('>')[1].split('<')[0])
-
-            product_date = re.search(r"_V(\d{8}T\d{6})_", filename)
-            orbit_id = re.search(r"_R(\d{3})_", filename)
-            if len(filename) == 0 or cloud > 100 or product_date == None or orbit_id == None: 
-                log(aoiContext.writeDir, "Something went wrong with filename: filename:{} | cloud percentage:{} | product date: {} | orbit id: {}".format(filename, cloud, product_date, orbit_id), general_log_filename)                
-                continue
-
-            s2Objs.append(Sentinel2Obj(filename, link, product_date.group(1), cloud, orbit_id.group(1), account, passwd, proxy))
     
     #sort the products using product date
     s2Objs.sort()

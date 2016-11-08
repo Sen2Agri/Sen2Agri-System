@@ -70,23 +70,19 @@ public:
     {
         m_TemporalResampler = TemporalResamplingFilterType::New();
         m_ComputeNDVIFilter = ComputeNDVIFilterType::New();
-        m_FloatImageList = FloatImageListType::New();
-        m_UInt8ImageList = UInt8ImageListType::New();
-        m_BandsConcat = ConcatenateFloatImagesFilterType::New();
-        m_MaskConcat = ConcatenateUInt8ImagesFilterType::New();
     }
 
-    otb::Wrapper::FloatVectorImageType * GetOutput()
+    otb::Wrapper::FloatVectorImageType * GetOutput(const std::map<std::string, std::vector<int> > &sensorOutDays)
     {
         // Also build the image dates structures
         otb::SensorDataCollection sdCollection;
-        int index = 0;
         std::string lastMission = "";
         for (const ImageDescriptor& id : m_Descriptors) {
             if (id.mission != lastMission) {
                 otb::SensorData sd;
                 sd.sensorName = id.mission;
-                sd.outDates = m_SensorOutDays[id.mission];
+                sd.outDates = sensorOutDays.find(id.mission)->second;
+                sd.bandCount = id.bands.size();
                 sdCollection.push_back(sd);
                 lastMission = id.mission;
             }
@@ -95,15 +91,7 @@ public:
             int inDay = getDaysFromEpoch(id.aquisitionDate);
 
             sd.inDates.push_back(inDay);
-
-            for (const auto &b : id.bands) {
-                m_FloatImageList->PushBack(b);
-            }
-            m_UInt8ImageList->PushBack(id.mask);
-            index++;
         }
-        m_BandsConcat->SetInput(m_FloatImageList);
-        m_MaskConcat->SetInput(m_UInt8ImageList);
 
         // Set the temporal resampling / gap filling filter
         m_TemporalResampler->SetInputRaster(m_BandsConcat->GetOutput());
@@ -119,10 +107,6 @@ public:
 private:
     TemporalResamplingFilterType::Pointer             m_TemporalResampler;
     ComputeNDVIFilterType::Pointer                    m_ComputeNDVIFilter;
-    FloatImageListType::Pointer                       m_FloatImageList;
-    UInt8ImageListType::Pointer                       m_UInt8ImageList;
-    ConcatenateFloatImagesFilterType::Pointer         m_BandsConcat;
-    ConcatenateUInt8ImagesFilterType::Pointer         m_MaskConcat;
 };
 
 typedef otb::ObjectList<CropMaskNDVIPreprocessing>    CropMaskNDVIPreprocessingList;

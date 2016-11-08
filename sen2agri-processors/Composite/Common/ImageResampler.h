@@ -30,13 +30,6 @@
 #include "itkScalableAffineTransform.h"
 #include "GlobalDefs.h"
 
-typedef enum
-{
-  Interpolator_NNeighbor,
-  Interpolator_Linear,
-  Interpolator_BCO
-} Interpolator_Type;
-
 template <class TInput, class TOutput>
 class ImageResampler
 {
@@ -79,7 +72,7 @@ public:
     }
 
 
-ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWidth,
+    ResamplerPtr getResampler(const ResamplerInputImgPtr& image, const int wantedWidth,
                           const int wantedHeight, Interpolator_Type interpolator=Interpolator_Linear)
     {
         auto sz = image->GetLargestPossibleRegion().GetSize();

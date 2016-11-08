@@ -1,4 +1,4 @@
-﻿CREATE OR REPLACE FUNCTION sp_get_dashboard_server_resource_data() 
+﻿CREATE OR REPLACE FUNCTION sp_get_dashboard_server_resource_data()
 RETURNS json AS $$
 DECLARE current_node RECORD;
 DECLARE temp_json json;
@@ -46,7 +46,7 @@ BEGIN
 
 	-- Ensure that default values are set for some of the fields
 	UPDATE current_nodes
-	SET 
+	SET
 		cpu_user_now = 0,
 		cpu_system_now = 0,
 		ram_now = 0,
@@ -67,7 +67,7 @@ BEGIN
 
 		-- First, get the NOW data
 		UPDATE current_nodes
-		SET 
+		SET
 			cpu_user_now = coalesce(current_node_now.cpu_user,0) / 10,
 			cpu_system_now = coalesce(current_node_now.cpu_system,0) / 10,
 			ram_now = round(coalesce(current_node_now.mem_used_kb,0)::numeric / 1048576::numeric, 2),	-- Convert to GB
@@ -79,9 +79,9 @@ BEGIN
 			disk_used = round(coalesce(current_node_now.disk_used_bytes,0)::numeric / 1073741824::numeric, 2),	-- Convert to GB
 			disk_available = round(coalesce(current_node_now.disk_total_bytes,0)::numeric / 1073741824::numeric, 2),	-- Convert to GB
 			disk_unit = 'GB',
-			load_1min = coalesce(current_node_now.load_avg_1m,0),
-			load_5min = coalesce(current_node_now.load_avg_5m,0),
-			load_15min = coalesce(current_node_now.load_avg_15m,0)
+			load_1min = coalesce(current_node_now.load_avg_1m,0) / 100,
+			load_5min = coalesce(current_node_now.load_avg_5m,0) / 100,
+			load_15min = coalesce(current_node_now.load_avg_15m,0) / 100
 		FROM (SELECT * FROM node_resource_log WHERE node_resource_log.node_name = current_node.name
 		AND timestamp >= now() - '1 minute'::interval
 		ORDER BY timestamp DESC LIMIT 1) AS current_node_now
@@ -89,16 +89,16 @@ BEGIN
 
 		-- The history will be shown since:
 		since := now() - '15 minutes'::interval;
-		
+
 		-- Next, get the HISTORY data
-		SELECT  
+		SELECT
 			array_to_json(array_agg( json_build_array(extract(epoch from resource_history.timestamp)::bigint * 1000, resource_history.cpu_user / 10))),
 			array_to_json(array_agg( json_build_array(extract(epoch from resource_history.timestamp)::bigint * 1000, resource_history.cpu_system / 10))),
 			array_to_json(array_agg( json_build_array(extract(epoch from resource_history.timestamp)::bigint * 1000, round(resource_history.mem_used_kb::numeric / 1048576::numeric, 2)))),	-- Convert to GB
 			array_to_json(array_agg( json_build_array(extract(epoch from resource_history.timestamp)::bigint * 1000, round(resource_history.swap_used_kb::numeric / 1048576::numeric, 2)))),	-- Convert to GB
-			array_to_json(array_agg( json_build_array(extract(epoch from resource_history.timestamp)::bigint * 1000, resource_history.load_avg_1m))),
-			array_to_json(array_agg( json_build_array(extract(epoch from resource_history.timestamp)::bigint * 1000, resource_history.load_avg_5m))),
-			array_to_json(array_agg( json_build_array(extract(epoch from resource_history.timestamp)::bigint * 1000, resource_history.load_avg_15m))) 
+			array_to_json(array_agg( json_build_array(extract(epoch from resource_history.timestamp)::bigint * 1000, resource_history.load_avg_1m / 100))),
+			array_to_json(array_agg( json_build_array(extract(epoch from resource_history.timestamp)::bigint * 1000, resource_history.load_avg_5m / 100))),
+			array_to_json(array_agg( json_build_array(extract(epoch from resource_history.timestamp)::bigint * 1000, resource_history.load_avg_15m / 100)))
 		INTO
 			cpu_user_history_json,
 			cpu_system_history_json,
@@ -108,7 +108,7 @@ BEGIN
 			load_5min_history_json,
 			load_15min_history_json
 		FROM (
-			SELECT 
+			SELECT
 			timestamp,
 			cpu_user,
 			cpu_system,
@@ -117,8 +117,8 @@ BEGIN
 			load_avg_1m,
 			load_avg_5m,
 			load_avg_15m
-			FROM node_resource_log 
-			WHERE node_resource_log.node_name = current_node.name 
+			FROM node_resource_log
+			WHERE node_resource_log.node_name = current_node.name
 			AND node_resource_log.timestamp >= since
 			ORDER BY timestamp DESC) resource_history;
 
@@ -141,7 +141,7 @@ BEGIN
 		load_15min_history_json := sp_pad_right_json_history_array(load_15min_history_json, since, '1 minute');
 
 		UPDATE current_nodes
-		SET 
+		SET
 			cpu_user_history = cpu_user_history_json,
 			cpu_system_history = cpu_system_history_json,
 			ram_history = ram_history_json,
@@ -150,7 +150,7 @@ BEGIN
 			load_5min_history = load_5min_history_json,
 			load_15min_history = load_15min_history_json
 		WHERE current_nodes.name = current_node.name;
-		
+
 	END LOOP;
 
 	SELECT array_to_json(array_agg(row_to_json(current_nodes_details, true))) INTO temp_json

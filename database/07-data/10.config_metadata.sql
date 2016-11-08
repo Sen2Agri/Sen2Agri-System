@@ -67,6 +67,7 @@ INSERT INTO config_metadata VALUES ('processor.l3a.preproc.scatcoeffs_10m', 'Sca
 INSERT INTO config_metadata VALUES ('processor.l3a.preproc.scatcoeffs_20m', 'Scattering coefficients file for S2 20 m', 'file', true, 3);
 INSERT INTO config_metadata VALUES ('processor.l3a.lut_path', 'L3A LUT file path', 'file', true, 3);
 INSERT INTO config_metadata VALUES ('processor.l4a.lut_path', 'L4A LUT file path', 'file', true, 5);
+INSERT INTO config_metadata VALUES ('processor.l4a.skip-segmentation', 'Skip L4A segmentation', 'bool', false, 5);
 INSERT INTO config_metadata VALUES ('processor.l4b.lut_path', 'L4B LUT file path', 'file', true, 6);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.localwnd.fwr', 'Forward radius of the window for the local algorithm', 'int', true, 4);
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-ndvi-rvi-extractor', 'LAI NDVI and RVI features extractor', 'file', true, 8);
@@ -103,7 +104,7 @@ INSERT INTO config_metadata VALUES ('executor.module.path.lai-training-data-gene
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-inverse-model-learning', 'Inverse model learning', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.rsrcfgfile', 'L3B RSR file configuration for ProsailSimulator', 'file', true, 4);
 INSERT INTO config_metadata VALUES ('archiver.archive_path', 'Archive Path', 'string', false, 7);
-INSERT INTO config_metadata VALUES ('executor.module.path.principal-component-analysis', 'Principal component analysis', 'file', true, 8);
+INSERT INTO config_metadata VALUES ('executor.module.path.dimensionality-reduction', 'Dimensionality reduction', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.mean-shift-smoothing', 'Mean shift smoothing', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.lsms-segmentation', 'LSMS segmentation', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.lsms-small-regions-merging', 'LSMS small regions merging', 'file', true, 8);
@@ -181,3 +182,6 @@ INSERT INTO config_metadata VALUES ('executor.processor.l3b_lai.slurm_qos', 'Slu
 INSERT INTO config_metadata VALUES ('executor.processor.l3e_pheno.slurm_qos', 'Slurm QOS for Pheno NDVI processor', 'string', true, 8);
 INSERT INTO config_metadata VALUES ('executor.processor.l4a.slurm_qos', 'Slurm QOS for CropMask processor', 'string', true, 8);
 INSERT INTO config_metadata VALUES ('executor.processor.l4b.slurm_qos', 'Slurm QOS for CropType processor', 'string', true, 8);
+
+INSERT INTO config_metadata VALUES ('executor.module.path.crop-mask-fused', 'Crop mask script with stratification', 'file', true, 8);
+INSERT INTO config_metadata VALUES ('executor.module.path.crop-type-fused', 'Crop type script with stratification', 'file', true, 8);

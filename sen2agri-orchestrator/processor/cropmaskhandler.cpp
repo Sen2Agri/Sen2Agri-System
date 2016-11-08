@@ -23,7 +23,7 @@ QList<std::reference_wrapper<TaskToSubmit>> CropMaskHandler::CreateInSituTasksFo
     outAllTasksList.append(TaskToSubmit{ "train-images-classifier", {outAllTasksList[9]}} );
     outAllTasksList.append(TaskToSubmit{ "image-classifier", {outAllTasksList[10]}} );
     outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[11]}} );
-    outAllTasksList.append(TaskToSubmit{ "principal-component-analysis", {outAllTasksList[12]}} );
+    outAllTasksList.append(TaskToSubmit{ "dimensionality-reduction", {outAllTasksList[12]}} );
     outAllTasksList.append(TaskToSubmit{ "mean-shift-smoothing", {outAllTasksList[13]}} );
     outAllTasksList.append(TaskToSubmit{ "lsms-segmentation", {outAllTasksList[14]}} );
     outAllTasksList.append(TaskToSubmit{ "lsms-small-regions-merging", {outAllTasksList[15]}} );
@@ -62,7 +62,7 @@ QList<std::reference_wrapper<TaskToSubmit>> CropMaskHandler::CreateNoInSituTasks
     outAllTasksList.append(TaskToSubmit{ "train-images-classifier-new", {outAllTasksList[12]}} );
     outAllTasksList.append(TaskToSubmit{ "image-classifier", {outAllTasksList[13]}} );
     outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[14]}} );
-    outAllTasksList.append(TaskToSubmit{ "principal-component-analysis", {outAllTasksList[15]}} );
+    outAllTasksList.append(TaskToSubmit{ "dimensionality-reduction", {outAllTasksList[15]}} );
     outAllTasksList.append(TaskToSubmit{ "mean-shift-smoothing", {outAllTasksList[16]}} );
     outAllTasksList.append(TaskToSubmit{ "lsms-segmentation", {outAllTasksList[17]}} );
     outAllTasksList.append(TaskToSubmit{ "lsms-small-regions-merging", {outAllTasksList[18]}} );
@@ -339,7 +339,7 @@ void CropMaskHandler::HandleInsituJob(const CropMaskJobConfig &cfg,
     TaskToSubmit &imageClassifierTask = allTasksList[curTaskIdx++];
     TaskToSubmit &computeConfusionMatrixTask = allTasksList[curTaskIdx++];
 
-    TaskToSubmit &principalComponentAnalysisTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &dimensionalityReductionTask = allTasksList[curTaskIdx++];
     TaskToSubmit &meanShiftSmoothingTask = allTasksList[curTaskIdx++];
     TaskToSubmit &lsmsSegmentationTask = allTasksList[curTaskIdx++];
     TaskToSubmit &lsmsSmallRegionsMergingTask = allTasksList[curTaskIdx++];
@@ -384,7 +384,7 @@ void CropMaskHandler::HandleInsituJob(const CropMaskJobConfig &cfg,
 
     const auto &confusionMatrixValidation = computeConfusionMatrixTask.GetFilePath("confusion-matrix-validation.csv");
 
-    const auto &pca = principalComponentAnalysisTask.GetFilePath("pca.tif");
+    const auto &pca = dimensionalityReductionTask.GetFilePath("pca.tif");
 
     const auto &mean_shift_smoothing_spatial = meanShiftSmoothingTask.GetFilePath("mean_shift_smoothing_spatial.tif");
     const auto &mean_shift_smoothing = meanShiftSmoothingTask.GetFilePath("mean_shift_smoothing.tif");
@@ -475,7 +475,8 @@ void CropMaskHandler::HandleInsituJob(const CropMaskJobConfig &cfg,
         computeConfusionMatrixTask.CreateStep("ComputeConfusionMatrix",GetConfusionMatrixArgs(raw_crop_mask_uncompressed, confusionMatrixValidation, validationPolys, "vector", cfg.fieldName)),
 
         // The following steps are common for insitu and without insitu data
-        principalComponentAnalysisTask.CreateStep("PrincipalComponentAnalysis", { "PrincipalComponentAnalysis", "-ndvi", ndvi, "-nc", cfg.nbcomp, "-out", pca }),
+        dimensionalityReductionTask.CreateStep("DimensionalityReduction", {"-method", "pca", "-nbcomp", cfg.nbcomp, "-in", ndvi,
+                                                 "-out", pca }),
         meanShiftSmoothingTask.CreateStep("MeanShiftSmoothing", { "-in", pca,"-modesearch","0", "-spatialr", cfg.spatialr, "-ranger", cfg.ranger,
                                                               "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing }),
         lsmsSegmentationTask.CreateStep("LSMSSegmentation", { "-in", mean_shift_smoothing,"-inpos",
@@ -533,7 +534,7 @@ void CropMaskHandler::HandleNoInsituJob(const CropMaskJobConfig &cfg,
     TaskToSubmit &trainImagesClassifierNewTask = allTasksList[curTaskIdx++];
     TaskToSubmit &imageClassifierTask = allTasksList[curTaskIdx++];
     TaskToSubmit &computeConfusionMatrixTask = allTasksList[curTaskIdx++];
-    TaskToSubmit &principalComponentAnalysisTask = allTasksList[curTaskIdx++];
+    TaskToSubmit &dimensionalityReductionTask = allTasksList[curTaskIdx++];
     TaskToSubmit &meanShiftSmoothingTask = allTasksList[curTaskIdx++];
     TaskToSubmit &lsmsSegmentationTask = allTasksList[curTaskIdx++];
     TaskToSubmit &lsmsSmallRegionsMergingTask = allTasksList[curTaskIdx++];
@@ -579,7 +580,7 @@ void CropMaskHandler::HandleNoInsituJob(const CropMaskJobConfig &cfg,
 
     const auto &eroded_reference = erosionTask.GetFilePath("eroded_reference.tif");
 
-    const auto &pca = principalComponentAnalysisTask.GetFilePath("pca.tif");
+    const auto &pca = dimensionalityReductionTask.GetFilePath("pca.tif");
 
     const auto &mean_shift_smoothing_spatial = meanShiftSmoothingTask.GetFilePath("mean_shift_smoothing_spatial.tif");
     const auto &mean_shift_smoothing = meanShiftSmoothingTask.GetFilePath("mean_shift_smoothing.tif");
@@ -655,7 +656,7 @@ void CropMaskHandler::HandleNoInsituJob(const CropMaskJobConfig &cfg,
                                         {"DataSmoothing", "-ts",tocr,"-mask",mask,"-dates",dates,
                                         "-lambda",cfg.lmbd,"-sts", rtocr_smooth}),
         featuresWithoutInsituTask.CreateStep("FeaturesWithoutInsitu",
-                                        {"FeaturesWithoutInsitu", "-ndvi",ndvi_smooth,"-ts",rtocr_smooth,"-dates",outdays_smooth, "-sf", spectral_features}),
+                                        {"FeaturesWithoutInsitu", "-ts",rtocr_smooth,"-dates",outdays_smooth, "-sf", spectral_features}),
 
         computeImageStatisticsTask.CreateStep("ComputeImagesStatistics", {"-il", spectral_features,"-out",statistics_noinsitu}),
 
@@ -678,7 +679,8 @@ void CropMaskHandler::HandleNoInsituJob(const CropMaskJobConfig &cfg,
         computeConfusionMatrixTask.CreateStep("ComputeConfusionMatrix", GetConfusionMatrixArgs(raw_crop_mask_uncompressed, raw_crop_mask_confusion_matrix_validation, trimmed_reference_raster)),
 
         // The following steps are common for insitu and without insitu data
-        principalComponentAnalysisTask.CreateStep("PrincipalComponentAnalysis", { "PrincipalComponentAnalysis", "-ndvi", ndvi, "-nc", cfg.nbcomp, "-out", pca }),
+        dimensionalityReductionTask.CreateStep("DimensionalityReduction", {"-method", "pca", "-nbcomp", cfg.nbcomp, "-in", ndvi,
+                                                 "-out", pca }),
         meanShiftSmoothingTask.CreateStep("MeanShiftSmoothing", { "-in", pca,"-modesearch","0", "-spatialr", cfg.spatialr, "-ranger", cfg.ranger,
                                                               "-maxiter", "20", "-foutpos", mean_shift_smoothing_spatial, "-fout", mean_shift_smoothing }),
         lsmsSegmentationTask.CreateStep("LSMSSegmentation", { "-in", mean_shift_smoothing,"-inpos",

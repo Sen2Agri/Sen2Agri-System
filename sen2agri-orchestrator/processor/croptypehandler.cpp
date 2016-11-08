@@ -735,9 +735,9 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
     if(!ProcessorHandlerHelper::GetCropReferenceFile(refDir, shapeFile, referenceRasterFile)) {
         return params;
     }
-    QString refStr = "{ \"reference_polygons\": \"\"}";
+    QString refStr = "\"reference_polygons\": \"\"";
     if(!shapeFile.isEmpty()) {
-        refStr = "{ \"reference_polygons\": \"" + shapeFile + "\"}";
+        refStr = "\"reference_polygons\": \"" + shapeFile + "\"";
     }
 
     QString cropMaskFolder;

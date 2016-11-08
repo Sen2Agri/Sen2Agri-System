@@ -141,18 +141,31 @@ class Stratum(object):
         self.id = id
         self.extent = extent
         self.tiles = []
-        self.training_tiles = []
 
 class Tile(object):
     def __init__(self, id, descriptors):
         self.id = id
         self.descriptors = descriptors
         self.footprint = None
-        self.area = None
+        self.footprint_wgs84 = None
+        self.projection = None
         self.strata = []
-        self.main_stratum = None
-        self.main_mask = None
 
+
+def load_lut(lut):
+    r = []
+    with open(lut, 'r') as f:
+        for line in f:
+            m = re.match("(-?\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*#\s*(.*)", line)
+            if m:
+                value = m.group(1)
+                red = m.group(2)
+                green = m.group(3)
+                blue = m.group(4)
+                label = m.group(5)
+
+                r.append((value, red, green, blue, label))
+    return r
 
 def split_features(stratum, data, out_folder):
     driver = ogr.GetDriverByName('ESRI Shapefile')
@@ -221,7 +234,6 @@ def load_strata(areas, site_footprint_wgs84):
     area_srs = area_layer.GetSpatialRef()
     area_wgs84_transform = osr.CoordinateTransformation(area_srs, wgs84_srs)
 
-    driver = ogr.GetDriverByName('ESRI Shapefile')
     result = []
     for area in area_layer:
         area_id = area.GetField('ID')
@@ -236,6 +248,31 @@ def load_strata(areas, site_footprint_wgs84):
         area_feature_wgs84.SetGeometry(area_geom_wgs84)
 
         result.append(Stratum(area_id, area_feature_wgs84.GetGeometryRef().Clone()))
+
+    # driver = ogr.GetDriverByName('ESRI Shapefile')
+
+    # if os.path.exists(relabelled_areas):
+    #     driver.DeleteDataSource(relabelled_areas)
+
+    # out_ds = driver.CreateDataSource(relabelled_areas)
+    # if out_ds is None:
+    #     raise Exception(
+    #         "Could not create output shapefile", relabelled_areas)
+
+    # out_layer = out_ds.CreateLayer('strata', srs=area_srs, geom_type=area_layer_def.GetGeomType())
+    # field_index = ogr.FieldDefn("Index", ogr.OFTInteger)
+    # field_index.SetWidth(3)
+    # out_layer.CreateField(field_index)
+    # field_id = ogr.FieldDefn("Id", ogr.OFTInteger)
+    # field_id.SetWidth(3)
+    # out_layer.CreateField(field_id)
+    # out_layer_def = out_layer.GetLayerDefn()
+
+    # feature = ogr.Feature(out_layer_def)
+    # feature.SetGeometry(geom)
+    # out_layer.CreateFeature(feature)
+
+    result.sort(key=lambda stratum: stratum.id)
 
     return result
 
@@ -274,6 +311,16 @@ def get_raster_footprint(image_filename):
 
     extent = GetExtent(geo_transform, size_x, size_y)
 
+    ring = ogr.Geometry(ogr.wkbLinearRing)
+    ring.AddPoint_2D(extent[0][0], extent[0][1])
+    ring.AddPoint_2D(extent[3][0], extent[3][1])
+    ring.AddPoint_2D(extent[2][0], extent[2][1])
+    ring.AddPoint_2D(extent[1][0], extent[1][1])
+    ring.AddPoint_2D(extent[0][0], extent[0][1])
+
+    geom = ogr.Geometry(ogr.wkbPolygon)
+    geom.AddGeometry(ring)
+
     source_srs = osr.SpatialReference()
     source_srs.ImportFromWkt(dataset.GetProjection())
     epsg_code = source_srs.GetAttrValue("AUTHORITY", 1)
@@ -289,10 +336,10 @@ def get_raster_footprint(image_filename):
     ring.AddPoint_2D(wgs84_extent[1][0], wgs84_extent[1][1])
     ring.AddPoint_2D(wgs84_extent[0][0], wgs84_extent[0][1])
 
-    geom = ogr.Geometry(ogr.wkbPolygon)
-    geom.AddGeometry(ring)
+    geom_wgs84 = ogr.Geometry(ogr.wkbPolygon)
+    geom_wgs84.AddGeometry(ring)
 
-    return geom
+    return (geom, geom_wgs84, source_srs)
 
 def save_to_shp(file_name, geom, out_srs=None):
     if not out_srs:
@@ -324,13 +371,6 @@ def get_tileid_for_descriptors(descriptors):
         if tileid:
             return tileid
 
-
-def build_merge_expression(n):
-    if n > 0:
-        return "im{}b1 > 0 ? im{}b1 : ({})".format(2 * n, 2 * n - 1, build_merge_expression(n - 1))
-    else:
-        return "-10000"
-
 def format_otb_filename(file, compression=None):
     if compression is not None:
         file += "?gdal:co:COMPRESS=" + compression
@@ -340,20 +380,22 @@ class ProcessorBase(object):
     def execute(self):
         start_time = datetime.datetime.now()
         try:
+            exit_status = 0
+            exit_requested = False
             context = self.create_context()
 
             self.load_tiles()
-            self.after_load_tiles()
+
+            metadata_file = self.get_metadata_file()
+
+            metadata = self.build_metadata()
+            metadata.write(metadata_file, xml_declaration=True, encoding='UTF-8', pretty_print=True)
 
             if self.args.mode is None or self.args.mode == 'prepare-site':
                 self.prepare_site()
 
             if self.args.mode is None or self.args.mode == 'prepare-tiles':
                 for tile in self.tiles:
-                    if self.args.tile_filter and tile.id not in self.args.tile_filter:
-                        print("Skipping pre-processing for tile {} due to tile filter".format(tile.id))
-                        continue
-
                     self.prepare_tile(tile)
 
             if self.args.mode is None or self.args.mode == 'train':
@@ -366,32 +408,13 @@ class ProcessorBase(object):
                     self.train_stratum(stratum)
 
             if self.args.mode is None or self.args.mode == 'classify':
-                for stratum in self.strata:
-                    if self.args.stratum_filter and stratum.id not in self.args.stratum_filter:
-                        print("Skipping classification for stratum {} due to stratum filter".format(stratum.id))
+                for tile in self.tiles:
+                    if self.args.tile_filter and tile.id not in self.args.tile_filter:
+                        print("Skipping classification for tile {} due to tile filter".format(tile.id))
                         continue
 
-                    print("Applying model for stratum:", stratum.id)
-
-                    for tile in stratum.tiles:
-                        if self.args.tile_filter and tile.id not in self.args.tile_filter:
-                            print("Skipping classification for tile {} due to tile filter".format(tile.id))
-                            continue
-
-                        print("Processing tile:", tile.id)
-                        if len(tile.strata) == 0:
-                            print(
-                                "Warning: no stratum found for tile {}. Classification will not be performed.".format(tile.id))
-                            continue
-                        elif len(tile.strata) == 1:
-                            print(
-                                "Tile {} is covered by a single stratum".format(tile.id))
-
-                        self.rasterize_tile_mask(stratum, tile)
-                        self.classify_tile(stratum, tile)
-
-            if self.args.mode is None or self.args.mode == 'merge':
-                self.merge_classification_outputs()
+                    print("Performing classification for tile:", tile.id)
+                    self.classify_tile(tile)
 
             if self.args.mode is None or self.args.mode == 'postprocess-tiles':
                 for tile in self.tiles:
@@ -413,11 +436,18 @@ class ProcessorBase(object):
 
             if self.args.mode is None or self.args.mode == 'validate':
                 self.validate(context)
+        except SystemExit:
+            exit_requested = True
+            pass
         except:
             traceback.print_exc()
+            exit_status = 1
         finally:
-            end_time = datetime.datetime.now()
-            print("Processor finished in", str(end_time - start_time))
+            if not exit_requested:
+                end_time = datetime.datetime.now()
+                print("Processor finished in", str(end_time - start_time))
+
+            sys.exit(exit_status)
 
     def compute_quality_flags(self, tile):
         tile_quality_flags = self.get_output_path("status_flags_{}.tif", tile.id)
@@ -431,7 +461,14 @@ class ProcessorBase(object):
         run_step(Step("QualityFlags_" + str(tile.id), step_args))
 
     def prepare_site(self):
-        pass
+        if self.args.lut is not None:
+            qgis_lut = self.get_output_path("qgis-color-map.txt")
+
+            lut = load_lut(self.args.lut)
+            with open(qgis_lut, 'w') as f:
+                f.write("INTERPOLATION:EXACT\n")
+                for entry in lut:
+                    f.write("{},{},{},{},255,{}\n".format(*entry))
 
     def prepare_tile(self, tile):
         pass
@@ -473,111 +510,34 @@ class ProcessorBase(object):
 
         self.site_footprint_wgs84 = ogr.Geometry(ogr.wkbPolygon)
         for tile in self.tiles:
-            tile.footprint = get_raster_footprint(get_reference_raster(tile.descriptors[0]))
-            tile.area = tile.footprint.Area()
-            self.site_footprint_wgs84 = self.site_footprint_wgs84.Union(tile.footprint)
+            (tile.footprint, tile.footprint_wgs84, tile.projection) = get_raster_footprint(get_reference_raster(tile.descriptors[0]))
+            self.site_footprint_wgs84 = self.site_footprint_wgs84.Union(tile.footprint_wgs84)
 
         if not self.single_stratum:
             self.strata = load_strata(self.args.strata, self.site_footprint_wgs84)
-            tile_best_weights = [0.0] * len(self.tiles)
+            if len(self.strata) == 0:
+                print("No training data found inside any of the strata, exiting")
+                sys.exit(1)
 
             for tile in self.tiles:
-                tile_best_weight = 0.0
-                tile_strata = []
-
                 for stratum in self.strata:
-                    weight = stratum.extent.Intersection(tile.footprint).Area() / tile.area
+                    if stratum.extent.Intersection(tile.footprint_wgs84).Area() > 0:
+                        tile.strata.append(stratum)
+                        stratum.tiles.append(tile)
 
-                    if weight > tile_best_weight:
-                        tile_best_weight = weight
-                        tile.main_stratum = stratum
-
-                    tile_strata.append((stratum, weight))
-
-                tile_strata.sort(key=lambda x: -x[1])
-
-                print(tile.id, [(ts[0].id, ts[1]) for ts in tile_strata])
-                if len(tile_strata) == 0:
-                    pass
-                elif tile_strata[0][1] <= self.args.min_coverage:
-                    tile_training_strata = [tile_strata[0]]
-                else:
-                    tile_training_strata = [x for x in tile_strata if x[1] > self.args.min_coverage]
-                print(tile.id, [(ts[0].id, ts[1]) for ts in tile_strata])
-
-                print("Strata for tile {}: {}".format(tile.id, map(lambda x: x[0].id, tile_strata)))
-                print("Training strata for tile {}: {}".format(tile.id, map(lambda x: x[0].id, tile_training_strata)))
-
-                if len(tile_training_strata) == 0:
-                    pass
-
-                for (stratum, _) in tile_strata:
-                    stratum.tiles.append(tile)
-                    tile.strata.append(stratum)
-
-                for (stratum, _) in tile_training_strata:
-                    stratum.training_tiles.append(tile)
-
-            for tile in self.tiles:
-                geom = tile.footprint.Clone()
-
-                for stratum in tile.strata:
-                    if stratum != tile.main_stratum:
-                        geom = geom.Difference(stratum.extent)
-
-                tile.main_mask = geom
+                print("Strata for tile {}: {}".format(tile.id, map(lambda x: x.id, tile.strata)))
         else:
             stratum = Stratum(0, self.site_footprint_wgs84)
             stratum.tiles = self.tiles
             self.strata = [stratum]
             for tile in self.tiles:
                 tile.strata = [stratum]
-                tile.main_stratum = stratum
-
-            for tile in self.tiles:
-                tile.main_mask = tile.footprint
-
-    def after_load_tiles(self):
-        pass
-
-    def merge_strata_for_tile(self, tile, inputs, output, compression=None):
-        files = []
-        for idx, stratum in enumerate(tile.strata):
-            input = inputs[idx]
-            area_mask_raster = self.get_output_path("classification-mask-{}-{}.tif", stratum.id, tile.id)
-
-            files.append(input)
-            files.append(area_mask_raster)
-
-        step_args = ["otbcli_BandMath",
-                        "-exp", build_merge_expression(len(tile.strata)),
-                        "-out", format_otb_filename(output, compression='DEFLATE'), "int16"]
-        step_args += ["-il"] + files
-
-        run_step(Step("BandMath_" + str(tile.id), step_args))
-
-        run_step(Step("Nodata_" + str(tile.id),
-                            ["gdal_edit.py",
-                                "-a_nodata", -10000,
-                                output]))
-
-    def merge_classification_outputs(self):
-        for tile in self.tiles:
-            print("Merging classification results for tile:", tile.id)
-
-            tile_crop_map = self.get_tile_classification_output(tile)
-            inputs = [self.get_stratum_tile_classification_output(stratum, tile) for stratum in tile.strata]
-
-            self.merge_strata_for_tile(tile, inputs, tile_crop_map, compression='DEFLATE')
 
     def rasterize_tile_mask(self, stratum, tile):
         tile_mask = self.get_output_path("tile-mask-{}-{}.shp", stratum.id, tile.id)
         stratum_tile_mask = self.get_stratum_tile_mask(stratum, tile)
 
-        if stratum == tile.main_stratum:
-            classification_mask = tile.main_mask
-        else:
-            classification_mask = stratum.extent.Intersection(tile.footprint)
+        classification_mask = stratum.extent.Intersection(tile.footprint_wgs84)
 
         save_to_shp(tile_mask, classification_mask)
 
@@ -596,3 +556,6 @@ class ProcessorBase(object):
 
     def get_stratum_tile_mask(self, stratum, tile):
         return self.get_output_path("classification-mask-{}-{}.tif", stratum.id, tile.id)
+
+    def get_metadata_file(self):
+        return self.get_output_path("metadata.xml")

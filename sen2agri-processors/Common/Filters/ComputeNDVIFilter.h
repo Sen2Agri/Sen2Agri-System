@@ -27,7 +27,7 @@ class ComputeNDVIFunctor
 {
 public:
 
-  PixelType operator()(PixelType pixel) const
+  PixelType operator()(const PixelType &pixel) const
   {
       int numImages = pixel.Size() / 4;
 

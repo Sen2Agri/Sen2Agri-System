@@ -2,62 +2,62 @@
 
 #include "processorhandler.hpp"
 
-typedef struct {
-
-    NewStepList steps;
-    QList<std::reference_wrapper<const TaskToSubmit>> parentsTasksRef;
-    // args
-    QString crop_mask;
-    QString raw_crop_mask;
-    QString xml_validation_metrics;
-    QString statusFlags;
-
-    QString tileId;
-} CropMaskProductFormatterParams;
-
-typedef struct {
-    QList<TaskToSubmit> allTasksList;
-    NewStepList allStepsList;
-    CropMaskProductFormatterParams prodFormatParams;
-} CropMaskGlobalExecutionInfos;
-
-typedef struct {
-    int jobId;
-    int siteId;
-    int resolution;
-
-    QString referencePolygons;
-    QString referenceRaster;
-
-    QString lutPath;
-    QString appsMem;
-
-    QString randomSeed;
-    QString sampleRatio;
-    QString temporalResamplingMode;
-    QString window;
-    QString nbcomp;
-    QString spatialr;
-    QString ranger;
-    QString minsize;
-    QString minarea;
-    QString classifier;
-    QString fieldName;
-    QString classifierRfNbTrees;
-    QString classifierRfMinSamples;
-    QString classifierRfMaxDepth;
-    QString classifierSvmKernel;
-    QString classifierSvmOptimize;
-
-    QString nbtrsample;
-    QString lmbd;
-    QString erode_radius;
-    QString alpha;
-
-} CropMaskJobConfig;
-
 class CropMaskHandler : public ProcessorHandler
 {
+    typedef struct {
+
+        NewStepList steps;
+        QList<std::reference_wrapper<const TaskToSubmit>> parentsTasksRef;
+        // args
+        QString crop_mask;
+        QString raw_crop_mask;
+        QString xml_validation_metrics;
+        QString statusFlags;
+
+        QString tileId;
+    } CropMaskProductFormatterParams;
+
+    typedef struct {
+        QList<TaskToSubmit> allTasksList;
+        NewStepList allStepsList;
+        CropMaskProductFormatterParams prodFormatParams;
+    } CropMaskGlobalExecutionInfos;
+
+    typedef struct {
+        int jobId;
+        int siteId;
+        int resolution;
+
+        QString referencePolygons;
+        QString referenceRaster;
+
+        QString lutPath;
+        QString appsMem;
+
+        QString randomSeed;
+        QString sampleRatio;
+        QString temporalResamplingMode;
+        QString window;
+        QString nbcomp;
+        QString spatialr;
+        QString ranger;
+        QString minsize;
+        QString minarea;
+        QString classifier;
+        QString fieldName;
+        QString classifierRfNbTrees;
+        QString classifierRfMinSamples;
+        QString classifierRfMaxDepth;
+        QString classifierSvmKernel;
+        QString classifierSvmOptimize;
+
+        QString nbtrsample;
+        QString lmbd;
+        QString erode_radius;
+        QString alpha;
+
+    } CropMaskJobConfig;
+
 private:
     void HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                 const JobSubmittedEvent &event) override;

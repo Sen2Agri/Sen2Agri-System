@@ -96,7 +96,17 @@ QString ProcessorHandlerHelper::GetTileId(const QString &path, SatelliteIdType &
                 int pieceLen = piece.length();
                 if (((pieceLen == 6) || (pieceLen == 7)) && (piece.at(0) == 'T')) {
                     // return the tile without the 'T'
-                    return QString(piece.right(pieceLen-1));
+                    QString tileId = piece.right(pieceLen-1);
+                    int tileIdLen = tileId.length();
+                    if(tileIdLen == 5) {
+                        satelliteId = SATELLITE_ID_TYPE_S2;
+                    } else if(tileIdLen == 6) {
+                        bool ok = false;
+                        tileId.toInt(&ok, 10);
+                        if(ok)
+                            satelliteId = SATELLITE_ID_TYPE_L8;
+                    }
+                    return tileId;
                 }
             }
         }
@@ -117,13 +127,13 @@ QMap<QString, ProcessorHandlerHelper::TileTemporalFilesInfo> ProcessorHandlerHel
             outAllSatIds.append(satId);
         if(mapTiles.contains(tileId)) {
             TileTemporalFilesInfo &infos = mapTiles[tileId];
-            infos.temporalTilesFileInfos.append({tileFile, satId});
+            infos.temporalTilesFileInfos.append({tileFile, satId, {}});
             if(!infos.uniqueSatteliteIds.contains(satId))
                 infos.uniqueSatteliteIds.append(satId);
         } else {
             TileTemporalFilesInfo infos;
             infos.tileId = tileId;
-            infos.temporalTilesFileInfos.append({tileFile, satId});
+            infos.temporalTilesFileInfos.append({tileFile, satId, {}});
             infos.uniqueSatteliteIds.append(satId);
             mapTiles[tileId] = infos;
         }
@@ -219,17 +229,23 @@ bool ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(const QString &p
     QStringList pieces = productName.split("_");
     for (int i = 0; i < pieces.size(); i++) {
         const QString &piece = pieces[i];
-        if(piece.indexOf("V") == 0) {
-            minDate = QDateTime::fromString(piece.right(piece.size()-1), "yyyyMMdd");
-            if((i+1) < pieces.size())
-                maxDate = QDateTime::fromString(pieces[i+1], "yyyyMMdd");
+        if(piece.length() == 0) // is it possible?
+            continue;
+        bool bIsInterval = (piece[0] == 'V');
+        bool bIsAcquisition = (piece[0] == 'A');
+        if(bIsInterval || bIsAcquisition) {
+            QString timeFormat("yyyyMMdd");
+            QString trimmedPiece = piece.right(piece.size()-1);
+            // check if the date is in formate yyyyMMddTHHmmss (ISO 8601)
+            if(trimmedPiece.length() == 15 && trimmedPiece[8] == 'T') {
+                // use this format, more precise
+                timeFormat = "yyyyMMddTHHmmss";
+            }
+            minDate = QDateTime::fromString(trimmedPiece, timeFormat);
+            if(bIsInterval && (i+1) < pieces.size())
+                maxDate = QDateTime::fromString(pieces[i+1], timeFormat);
             else
                 maxDate = minDate;
-            return true;
-        }
-        if (piece.indexOf("A") == 0) {
-            minDate = QDateTime::fromString(piece.right(piece.size()-1), "yyyyMMdd");
-            maxDate = minDate;
             return true;
         }
     }
@@ -284,6 +300,41 @@ QString ProcessorHandlerHelper::GetHigLevelProductTileFile(const QString &tileDi
     }
     return tileDir + "/IMG_DATA/" + fileName + ".TIF";
 }
+
+QString ProcessorHandlerHelper::GetHighLevelProductIppFile(const QString &productDir) {
+    QString auxDir = productDir + "/AUX_DATA/";
+    QDirIterator it(auxDir, QStringList() << "*_IPP_*.xml", QDir::Files);
+    // get the last strata shape file found
+    while (it.hasNext()) {
+        return it.next();
+    }
+    return "";
+}
+
+bool ProcessorHandlerHelper::HighLevelPrdHasL2aSource(const QString &highLevelPrd, const QString &l2aPrd) {
+    QString ippXmlFile = GetHighLevelProductIppFile(highLevelPrd);
+    if(ippXmlFile.length() == 0) {
+        // incomplete product
+        return false;
+    }
+    QFile inputFile(ippXmlFile);
+    if (inputFile.open(QIODevice::ReadOnly))
+    {
+       QTextStream in(&inputFile);
+       while (!in.atEnd())
+       {
+           QString line = in.readLine();
+           if(line.contains(l2aPrd)) {
+               inputFile.close();
+               return true;
+           }
+       }
+       inputFile.close();
+    }
+    return false;
+
+}
+
 
 QMap<QString, QString> ProcessorHandlerHelper::GetHighLevelProductTilesDirs(const QString &productDir) {
     QMap<QString, QString> mapTiles;
@@ -490,11 +541,34 @@ bool ProcessorHandlerHelper::GetL2AIntevalFromProducts(const QStringList &produc
     return false;
 }
 
+bool ProcessorHandlerHelper::GetStrataFile(const QString &refDir, QString &strataShapeFile) {
+    bool bRet = false;
+    QDirIterator itStrataDir(refDir, QStringList() << "strata" << "STRATA", QDir::Dirs);
+    while (itStrataDir.hasNext()) {
+        QDirIterator itStrataFile(itStrataDir.next(), QStringList() << "*.shp" << "*.SHP", QDir::Files);
+        // get the last strata shape file found
+        while (itStrataFile.hasNext()) {
+            strataShapeFile = itStrataFile.next();
+            bRet = true;
+        }
+    }
+
+    return bRet;
+}
+
+bool ProcessorHandlerHelper::GetCropReferenceFile(const QString &refDir, QString &shapeFile, QString &referenceRasterFile, QString &strataShapeFile) {
+    bool bRet = GetCropReferenceFile(refDir, shapeFile, referenceRasterFile);
+    GetStrataFile(refDir, strataShapeFile);
+
+    return bRet;
+}
+
 bool ProcessorHandlerHelper::GetCropReferenceFile(const QString &refDir, QString &shapeFile, QString &referenceRasterFile) {
     bool bRet = false;
     if(refDir.isEmpty()) {
         return bRet;
     }
+
     QDirIterator it(refDir, QStringList() << "*.shp" << "*.SHP", QDir::Files);
     // get the last shape file found
     while (it.hasNext()) {
@@ -517,7 +591,7 @@ void ProcessorHandlerHelper::AddSatteliteIntersectingProducts(QMap<QString, Tile
                                                      TileTemporalFilesInfo &primarySatInfos) {
 
     // mapSatellitesTilesInfos contains the sattelites infos but each tile has only  products from its satellite
-
+    // (note that we have also here tiles from the secondary satellite)
     QMap<QString, TileTemporalFilesInfo>::iterator i;
     // iterate all tiles in the map
     for (i = mapSatellitesTilesInfos.begin(); i != mapSatellitesTilesInfos.end(); ++i) {
@@ -525,12 +599,12 @@ void ProcessorHandlerHelper::AddSatteliteIntersectingProducts(QMap<QString, Tile
 
         // if we have a secondary product type
         if(info.uniqueSatteliteIds.contains(secondarySatId)) {
-            // check if the tile meta appears in the list of loaded products
+            // check if the tile meta appears in the list of loaded secondary products that were intersecting the primary ones
             for(const InfoTileFile &temporalTileFileInfo: info.temporalTilesFileInfos) {
                 if(listSecondarySatLoadedProds.contains(temporalTileFileInfo.file) &&
                         !TemporalTileInfosHasFile(primarySatInfos, temporalTileFileInfo.file)) {
-                    // add it to the target sattelite information list
-                    primarySatInfos.temporalTilesFileInfos.append({temporalTileFileInfo.file, temporalTileFileInfo.satId});
+                    // add it to the target primary sattelite information list
+                    primarySatInfos.temporalTilesFileInfos.append({temporalTileFileInfo.file, temporalTileFileInfo.satId, {}});
                     if(!primarySatInfos.uniqueSatteliteIds.contains(secondarySatId)) {
                         primarySatInfos.uniqueSatteliteIds.append(secondarySatId);
                     }
@@ -618,3 +692,51 @@ void ProcessorHandlerHelper::SortTemporalTileInfoFiles(TileTemporalFilesInfo &te
 {
     qSort(temporalTileInfo.temporalTilesFileInfos.begin(), temporalTileInfo.temporalTilesFileInfos.end(), compareTileInfoFilesDates);
 }
+
+/**
+ * @brief ProcessorHandlerHelper::TrimLeftSecondarySatellite
+ * @param productsList
+ * @param temporalTileInfo
+ * Removes from the list of products and from the map of tiles the secondary products that appear before the primary products.
+ * This is needed to avoid any import the wrong UTM or other infos from the secondary product in the final composition product.
+ * The difference of the previous function is that this ones checks at tile level if there are secondary products before primary
+ * ones and it removes from the tile infos but also from the list of products if does not appears anymore in the list of map tiles
+ */
+void ProcessorHandlerHelper::TrimLeftSecondarySatellite(QStringList &productsList, QMap<QString, TileTemporalFilesInfo> mapTiles)
+{
+    for(auto tileId : mapTiles.keys())
+    {
+        const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
+        QList<InfoTileFile> fileInfos;
+        bool bAddAllowed = false;
+        for(const InfoTileFile &fileInfo: listTemporalTiles.temporalTilesFileInfos) {
+            if(fileInfo.satId == listTemporalTiles.primarySatelliteId) {
+                bAddAllowed = true;
+            }
+            if(bAddAllowed) {
+                fileInfos.append(fileInfo);
+            }
+        }
+        mapTiles[tileId].temporalTilesFileInfos = fileInfos;
+    }
+
+    QStringList tempProdList(productsList);
+    // now search the products that do not exist in any of the tile temporal files
+    for(const QString &prod: tempProdList) {
+        bool prodFound = false;
+        for(const TileTemporalFilesInfo &listTemporalTiles : mapTiles.values()) {
+            for(const InfoTileFile &infoFile : listTemporalTiles.temporalTilesFileInfos) {
+                if(infoFile.file == prod) {
+                    prodFound = true;
+                    break;
+                }
+            }
+        }
+        // if the product was not found anymore in none of the tiles temporal files, then remove it also from
+        // the input product list
+        if(!prodFound) {
+            productsList.removeAll(prod);
+        }
+    }
+}
+

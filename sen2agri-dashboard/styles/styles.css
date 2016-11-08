@@ -400,8 +400,10 @@ div.pop_up #close_button {
 	cursor: pointer;
 }
 
-.sensor input[type=checkbox].form-control,
-.subgroup input[type=checkbox].form-control {
+.sensor   input[type=checkbox].form-control,
+.subgroup input[type=checkbox].form-control,
+.sensor   input[type=radio].form-control,
+.subgroup input[type=radio].form-control {
 	cursor: pointer;
     display: inline-block;
     width: 13px;

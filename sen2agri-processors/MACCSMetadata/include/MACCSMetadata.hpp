@@ -125,6 +125,7 @@ struct MACCSBandResolution
 
 struct MACCSProductInformation
 {
+    std::string AcquisitionDateTime;
     MACCSGeoCoverage GeoCoverage;
     MACCSAnglePair MeanSunAngle;
     MACCSAngles SolarAngles;

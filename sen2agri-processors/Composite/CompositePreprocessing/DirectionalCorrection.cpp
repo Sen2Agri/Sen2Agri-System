@@ -84,7 +84,7 @@ int DirectionalCorrection::extractBandsFromImage(InputImageType1::Pointer & imag
     for(int j=0; j < nbBands; j++)
     {
         // extract the band without resampling
-        m_ImageList->PushBack(m_ResampledBandsExtractor.ExtractResampledBand(imageType, j+1));
+        m_ImageList->PushBack(m_ResampledBandsExtractor.ExtractImgResampledBand(imageType, j+1, Interpolator_Linear));
     }
     return nbBands;
 }

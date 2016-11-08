@@ -15,7 +15,7 @@
 : ${PLATFORM_NAME_DIR:="Sen2AgriWebSite"}
 : ${RPM_DIR:="rpm_binaries"}
 : ${INSTALL_DIR:="install"}
-: ${SITE_VERSION:="1.0"}
+: ${SITE_VERSION:="1.4"}
 : ${WEB_DIR:="sen2agri-dashboard"}
 : ${SOURCES_DIR_PATH:=""}
 : ${WORKING_DIR_RPM:=${PLATFORM_NAME_DIR}/${RPM_DIR}}
@@ -28,7 +28,7 @@ function get_SEN2AGRI_sources()
    #get script path
    script_path=$(dirname $0)
 
-   ##go in the folder sen2agri/packaging and exit up one folder into the source root dir sen2agri  
+   ##go in the folder sen2agri/packaging and exit up one folder into the source root dir sen2agri
    cd $script_path
    cd ..
 
@@ -43,21 +43,21 @@ function build_SEN2AGRI_website_RPM_Package()
 
    ##create a folder var
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/var
-   
+
    ##create folder www
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/var/www
-      
+
    cp -rf ${WEBSITE_FILE_PATH}/ ${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/var/www/
-   
+
    mv ${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/var/www/${WEB_DIR} ${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/var/www/html
-   
+
    ##create a temporary dir for RPM generation
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_site
 
    ##build RPM package
    fpm -s dir -t rpm -n sen2agri-website -v ${SITE_VERSION} -C ${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/ \
    --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_site -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/sen2agri-website-VERSION.centos7.ARCH.rpm var
-  
+
    #remove temporary dir
    rm -rf ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_site
 }
@@ -75,17 +75,17 @@ function build_dir_tree()
 
    ##go into platform dir
    cd ${PLATFORM_NAME_DIR}
-   
+
    ##create install dir
    if [ ! -d ${INSTALL_DIR} ]; then
       mkdir -p ${INSTALL_DIR}
    fi
- 
+
    ##create rpm dir
    if [ ! -d ${RPM_DIR} ]; then
       mkdir -p ${RPM_DIR}
-   fi   
-   
+   fi
+
    ##exit from platform dir
    cd ..
 }
@@ -99,7 +99,7 @@ build_dir_tree
 ##get sources path
 get_SEN2AGRI_sources
 ###########################################################
-#####  SEN2AGRI WEBSITE RPM generation               ###### 
+#####  SEN2AGRI WEBSITE RPM generation               ######
 ###########################################################
 ##build RPM for SEN2AGRI website
 build_SEN2AGRI_website_RPM_Package

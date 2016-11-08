@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 #include "otbBandMathImageFilter.h"
@@ -36,6 +36,7 @@
 #include "MetadataHelperFactory.h"
 #include "BandsCfgMappingParser.h"
 #include "ResamplingBandExtractor.h"
+#include "itkMetaDataDictionary.h"
 
 namespace otb
 {
@@ -165,19 +166,19 @@ private:
            (originWeightsL2A[0] != originCSM[0]) || (originWeightsL2A[1] != originCSM[1])) {
             float fMultiplicationFactor = ((float)spacingCSM[0])/spacingWeightsL2A[0];
             //force the origin and the resolution to the one from cloud image
-            m_CSM = m_Resampler.getResampler(m_CSM, fMultiplicationFactor, originWeightsL2A)->GetOutput();
+            m_CSM = m_Resampler.getResampler(m_CSM, fMultiplicationFactor, originWeightsL2A, Interpolator_NNeighbor)->GetOutput();
         }
         if((spacingWeightsL2A[0] != spacingWM[0]) || (spacingWeightsL2A[1] != spacingWM[1]) ||
            (originWeightsL2A[0] != originWM[0]) || (originWeightsL2A[1] != originWM[1])) {
             float fMultiplicationFactor = ((float)spacingWM[0])/spacingWeightsL2A[0];
             //force the origin and the resolution to the one from cloud image
-            m_WM = m_Resampler.getResampler(m_WM, fMultiplicationFactor, originWeightsL2A)->GetOutput();
+            m_WM = m_Resampler.getResampler(m_WM, fMultiplicationFactor, originWeightsL2A, Interpolator_NNeighbor)->GetOutput();
         }
         if((spacingWeightsL2A[0] != spacingSM[0]) || (spacingWeightsL2A[1] != spacingSM[1]) ||
            (originWeightsL2A[0] != originSM[0]) || (originWeightsL2A[1] != originSM[1])) {
             float fMultiplicationFactor = ((float)spacingSM[0])/spacingWeightsL2A[0];
             //force the origin and the resolution to the one from cloud image
-            m_SM = m_Resampler.getResampler(m_SM, fMultiplicationFactor, originWeightsL2A)->GetOutput();
+            m_SM = m_Resampler.getResampler(m_SM, fMultiplicationFactor, originWeightsL2A, Interpolator_NNeighbor)->GetOutput();
         }
 
         auto szL2A = m_L2AIn->GetLargestPossibleRegion().GetSize();
@@ -204,9 +205,6 @@ private:
         m_bandsCfgMappingParser.ParseFile(strBandsMappingFileName);
         BandsMappingConfig bandsMappingCfg = m_bandsCfgMappingParser.GetBandsMappingCfg();
 
-        // TODO: Maybe the mission name should be considered
-        //std::string masterMissionName = bandsMappingCfg.GetMasterMissionName();
-
         int nDesiredWidth = -1;
         int nDesiredHeight = -1;
         // it is enough to check only one dimension
@@ -223,6 +221,7 @@ private:
         int nExtractedBandsNo = 0;
         // create an array of bands presences with the same size as the master band size
         std::vector<int> bandsPresenceVect = bandsMappingCfg.GetBandsPresence(resolution, missionName, nExtractedBandsNo);
+        std::string masterMission = bandsMappingCfg.GetMasterMissionName();
         //std::vector<int> vectIdxs = bandsMappingCfg.GetAbsoluteBandIndexes(resolution, missionName);
         // Here we have a raster that already has the extracted bands configured in the file.
         // We do not get the bands from the product anymore but from this file (in file)
@@ -230,25 +229,25 @@ private:
             //int nRelBandIdx = pHelper->GetRelativeBandIndex(vectIdxs[i]);
             int nRelBandIdx = bandsPresenceVect[i];
             if(nRelBandIdx >= 0) {
-                InternalBandImageType::Pointer l2aBandImg = m_ResampledBandsExtractor.ExtractResampledBand(m_L2AIn, nRelBandIdx+1,
-                                                                            resolution, resolution, nDesiredWidth, nDesiredHeight);
+                InternalBandImageType::Pointer l2aBandImg = m_ResampledBandsExtractor.ExtractImgResampledBand(m_L2AIn, nRelBandIdx+1,
+                                                         Interpolator_Linear, resolution, resolution, nDesiredWidth, nDesiredHeight);
                 m_ImageList->PushBack(l2aBandImg);
             }
         }
 
         //m_ResampledBandsExtractor.ExtractAllResampledBands(m_L2AIn, m_ImageList);
-        m_ResampledBandsExtractor.ExtractAllResampledBands(m_CSM, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, Interpolator_NNeighbor);
-        m_ResampledBandsExtractor.ExtractAllResampledBands(m_WM, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, Interpolator_NNeighbor);
-        m_ResampledBandsExtractor.ExtractAllResampledBands(m_SM, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, Interpolator_NNeighbor);
-        m_ResampledBandsExtractor.ExtractAllResampledBands(m_WeightsL2A, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, Interpolator_NNeighbor);
+        m_ResampledBandsExtractor.ExtractAllResampledBands(m_CSM, m_ImageList, Interpolator_NNeighbor, resolution, resolution, nDesiredWidth, nDesiredHeight);
+        m_ResampledBandsExtractor.ExtractAllResampledBands(m_WM, m_ImageList, Interpolator_NNeighbor, resolution, resolution, nDesiredWidth, nDesiredHeight);
+        m_ResampledBandsExtractor.ExtractAllResampledBands(m_SM, m_ImageList, Interpolator_NNeighbor, resolution, resolution, nDesiredWidth, nDesiredHeight);
+        m_ResampledBandsExtractor.ExtractAllResampledBands(m_WeightsL2A, m_ImageList, Interpolator_Linear, resolution, resolution, nDesiredWidth, nDesiredHeight);
 
         int nNbL3ABands = 0;
         if(HasValue("prevl3aw") && HasValue("prevl3ad") &&
            HasValue("prevl3ar") && HasValue("prevl3af")) {
-            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AWeight, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, Interpolator_NNeighbor);
-            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AAvgDate, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, Interpolator_NNeighbor);
-            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3ARefl, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight);
-            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AFlags, m_ImageList, resolution, resolution, nDesiredWidth, nDesiredHeight, Interpolator_NNeighbor);
+            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AWeight, m_ImageList, Interpolator_Linear, resolution, resolution, nDesiredWidth, nDesiredHeight);
+            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AAvgDate, m_ImageList, Interpolator_Linear, resolution, resolution, nDesiredWidth, nDesiredHeight);
+            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3ARefl, m_ImageList, Interpolator_Linear, resolution, resolution, nDesiredWidth, nDesiredHeight);
+            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AFlags, m_ImageList, Interpolator_NNeighbor, resolution, resolution, nDesiredWidth, nDesiredHeight);
         }
 
         m_Concat->SetInput(m_ImageList);
@@ -270,6 +269,7 @@ private:
         m_UpdateSynthesisFunctor->UpdateOutputInformation();
         int nbComponents = m_Functor.GetNbOfOutputComponents();
         m_UpdateSynthesisFunctor->GetOutput()->SetNumberOfComponentsPerPixel(nbComponents);
+
         SetParameterOutputImagePixelType("out", ImagePixelType_int16);
         SetParameterOutputImage("out", m_UpdateSynthesisFunctor->GetOutput());
         //splitOutputs();
@@ -353,7 +353,7 @@ private:
 
 
     BandsCfgMappingParser m_bandsCfgMappingParser;
-    ResamplingBandExtractor m_ResampledBandsExtractor;
+    ResamplingBandExtractor<float> m_ResampledBandsExtractor;
     ImageResampler<InputImageType, InputImageType> m_Resampler;
 /*
     VectorImageToImageListType::Pointer       m_imgSplit;

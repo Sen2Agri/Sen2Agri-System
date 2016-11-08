@@ -55,16 +55,12 @@ TemporalResamplingFilter<TInputImage, TMask, TOutputImage>
     itkExceptionMacro(<< "No input data available for the GapFilling functor !");
     }
 
-  // The output contains 4 bands for each output image
-  unsigned int nbInDates = 0;
-  unsigned int nbOutDates = 0;
+  unsigned int nbBands = 0;
   for (const SensorData &sd : this->m_InputData) {
-      nbInDates += sd.inDates.size();
-      nbOutDates += sd.outDates.size();
+      nbBands += sd.outDates.size() * sd.bandCount;
   }
 
   // initialize the number of channels of the output image
-  auto nbBands = (this->GetInput()->GetNumberOfComponentsPerPixel() / nbInDates) * nbOutDates;
   outputPtr->SetNumberOfComponentsPerPixel(nbBands);
 }
 

@@ -23,37 +23,30 @@ struct ImageInfo
 };
 
 void whit1(double lambda,
-           const itk::VariableLengthVector<PixelValueType> &values,
-           const itk::VariableLengthVector<double> &weights,
-           itk::VariableLengthVector<PixelValueType> &result)
+           int numValues,
+           const double * __restrict__ values,
+           const double * __restrict__ weights,
+           double * __restrict__ c, double * __restrict__ d, double * __restrict__ z)
 {
-    int numImages = values.Size();
-    // Create two temporary vectors c and d and the temporary result z.
-    std::vector<double> c(numImages);
-    std::vector<double> d(numImages);
-    std::vector<double> z(numImages);
-
     const double eps = 0.0001;
 
-    // Perform the Whitaker smoothing.
+    // Perform the Whittaker smoothing.
     // The code is inspired from the R language package "ptw"
-    int m = numImages - 1;
+    int m = numValues - 1;
     d[0] = weights[0] + lambda;
     c[0] = fabs(d[0]) > eps ? -lambda / d[0] : 0.0;
-    z[0] = weights[0] * static_cast<double>(values[0]);
+    z[0] = values[0];
 
     for (int i = 1; i < m; i++) {
         d[i] = weights[i] + 2 * lambda - c[i - 1] * c[i - 1] * d[i - 1];
         c[i] = fabs(d[i]) > eps ? -lambda / d[i] : 0.0;
-        z[i] = weights[i] * static_cast<double>(values[i]) - c[i - 1] * z[i - 1];
+        z[i] = values[i] - c[i - 1] * z[i - 1];
     }
     d[m] = weights[m] + lambda - c[m - 1] * c[m - 1] * d[m - 1];
-    z[m] = fabs(d[m]) > eps ? (weights[m] * static_cast<double>(values[m]) - c[m - 1] * z[m - 1]) / d[m] : 0.0;
+    z[m] = fabs(d[m]) > eps ? (values[m] - c[m - 1] * z[m - 1]) / d[m] : 0.0;
 
-    result[m] = static_cast<PixelValueType>(z[m]);
     for (int i = m - 1; 0 <= i; i--) {
         z[i] = (fabs(d[i]) > eps ? z[i] / d[i] : 0.0) - c[i] * z[i + 1];
-        result[i] = static_cast<PixelValueType>(z[i]);
     }
 }
 
@@ -96,8 +89,8 @@ public:
         int firstDay = inputImages.front().day;
         int tempSize = inputImages.back().day - firstDay + 1;
         itk::VariableLengthVector<int> indices(tempSize);
-        itk::VariableLengthVector<double> weights(tempSize);
-        itk::VariableLengthVector<PixelValueType> values(tempSize);
+        itk::VariableLengthVector<double> weights(tempSize * 5);
+        double *values = &weights[tempSize * 4];
 
         indices.Fill(-1);
         for (const auto &img : inputImages) {
@@ -115,7 +108,6 @@ public:
             }
         }
 
-        itk::VariableLengthVector<PixelValueType> res(tempSize);
         for (int band = 0; band < bands; band++) {
             for (int i = 0; i < tempSize; i++) {
                 if (indices[i] != -1) {
@@ -124,10 +116,11 @@ public:
                     values[i] = 0;
                 }
             }
-            whit1(lambda, values, weights, res);
+            double *z = &weights[tempSize * 3];
+            whit1(lambda, tempSize, values, &weights[0], &weights[tempSize], &weights[tempSize * 2], z);
             auto pos = 0;
             for (auto date : outputDates) {
-                result[pos++ * bands + band] = res[date - firstDay];
+                result[pos++ * bands + band] = static_cast<PixelValueType>(z[date - firstDay]);
             }
         }
 

@@ -37,7 +37,7 @@ FILES=( \
 
     # -strata ~/areas.shp \
 ./CropMaskFused.py \
-    -ref /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp \
+    -refp /mnt/Imagery_S2A/In-Situ_TDS/Ukraine/LC/UA_KYIV_LC_FO_2013.shp \
     -input ${FILES[@]} \
     -rseed 0 -pixsize 20 \
     -outdir /mnt/data/ukraine/Ukraine-mask \

@@ -23,8 +23,8 @@
 : ${INSTALL_DIR:="install"}
 : ${RPM_DIR:="rpm_binaries"}
 : ${BUILD_DIR:="build"}
-: ${PROC_VERSION:="0.8"}
-: ${DOWNL_DEM_VERSION:="1.0"}
+: ${PROC_VERSION:="1.4"}
+: ${DOWNL_DEM_VERSION:="1.4"}
 : ${WORKING_DIR_INSTALL:=${PLATFORM_NAME_DIR}/${INSTALL_DIR}}
 : ${WORKING_DIR_RPM:=${PLATFORM_NAME_DIR}/${RPM_DIR}}
 : ${WORKING_DIR_BUILD:=${PLATFORM_NAME_DIR}/${BUILD_DIR}}
@@ -146,8 +146,13 @@ function build_SEN2AGRI_downloaders_demmacs_RPM_Package()
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_download_demmacs
 
    ##build RPM package
-   fpm -s dir -t rpm -n sen2agri-downloaders-demmaccs -v ${DOWNL_DEM_VERSION} -C ${DOWNL_DEM_INSTALL_PATH}/ -d python-beautifulsoup4 \
-   --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_download_demmacs -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/sen2agri-downloaders-demmaccs-VERSION.centos7.ARCH.rpm usr
+   fpm -s dir -t rpm -n sen2agri-downloaders-demmaccs -v ${DOWNL_DEM_VERSION} -C ${DOWNL_DEM_INSTALL_PATH}/ \
+       -d python-beautifulsoup4 \
+       --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_download_demmacs \
+       --config-files usr/share/sen2agri/sen2agri-downloaders/usgs.txt \
+       --config-files usr/share/sen2agri/sen2agri-downloaders/apihub.txt \
+       -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/sen2agri-downloaders-demmaccs-VERSION.centos7.ARCH.rpm \
+       usr
 
    #remove temporary dir
    rm -rf ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_download_demmacs

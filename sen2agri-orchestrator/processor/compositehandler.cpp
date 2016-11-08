@@ -29,14 +29,14 @@ void CompositeHandler::CreateTasksForNewProducts(const CompositeJobConfig &cfg, 
 
         // if it is a secondary satellite, then we must cut the masks and the image with
         // gdalwarp according to the primary satellite shape
-        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
+/*        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
             outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
             outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
             outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
             outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
             outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
         }
-
+*/
         outAllTasksList.append(TaskToSubmit{ "composite-weight-aot", {} });
         outAllTasksList.append(TaskToSubmit{ "composite-weight-on-clouds", {} });
         outAllTasksList.append(TaskToSubmit{ "composite-total-weight", {} });
@@ -70,7 +70,7 @@ void CompositeHandler::CreateTasksForNewProducts(const CompositeJobConfig &cfg, 
         nCurTaskIdx++;
 
         // check if we need to cut (according to primary shape) the product components if we have secondary satellite product
-        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
+/*        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
             // launch in parallel all the cutting gdalwarp tasks
             int prevTaskId = nCurTaskIdx-1;
             int imgCutIdx = nCurTaskIdx++;
@@ -103,7 +103,7 @@ void CompositeHandler::CreateTasksForNewProducts(const CompositeJobConfig &cfg, 
             outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[snowCutIdx]);
             nCurTaskIdx++;
         } else {
-            // this is the case when we need to do no cutting (we are either primary satellite or we have only one satellite)
+*/            // this is the case when we need to do no cutting (we are either primary satellite or we have only one satellite)
             // weigh-aot -> composite-preprocessing
             outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
             nCurTaskIdx++;
@@ -117,7 +117,7 @@ void CompositeHandler::CreateTasksForNewProducts(const CompositeJobConfig &cfg, 
             // update-synthesis -> total-weight
             outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
             nCurTaskIdx++;
-        }
+//        }
         // composite-splitter -> update-synthesis
         outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
         nCurTaskIdx++;
@@ -151,17 +151,17 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     int nCurTaskIdx = 0;
 
     QString shapePath = tileTemporalFilesInfo.shapePath;
+    QString primaryTileMetadata;
+    for(int i = 0; i<tileTemporalFilesInfo.temporalTilesFileInfos.size(); i++) {
+        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId == tileTemporalFilesInfo.primarySatelliteId) {
+            primaryTileMetadata = tileTemporalFilesInfo.temporalTilesFileInfos[i].file;
+            break;
+        }
+    }
     // if we have multiple satellites and we don't have yet the shape file for this tile, then we must
     // create the footprint for the primary satellite ID
     if(tileTemporalFilesInfo.uniqueSatteliteIds.size() > 1 && tileTemporalFilesInfo.shapePath == "") {
         // CreateFootprint should execute on the first primary product metadatafrom the tile
-        QString primaryTileMetadata;
-        for(int i = 0; i<tileTemporalFilesInfo.temporalTilesFileInfos.size(); i++) {
-            if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId == tileTemporalFilesInfo.primarySatelliteId) {
-                primaryTileMetadata = tileTemporalFilesInfo.temporalTilesFileInfos[i].file;
-                break;
-            }
-        }
         TaskToSubmit &createFootprintTaskHandler = allTasksList[nCurTaskIdx++];
         SubmitTasks(ctx, cfg.jobId, {createFootprintTaskHandler});
         shapePath = ProcessorHandlerHelper::BuildShapeName(cfg.shapeFilesFolder, tileTemporalFilesInfo.tileId,
@@ -177,7 +177,7 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     QString prevL3AProdDates;
     QString prevL3ARgbFile;
     for (int i = 0; i < listProducts.size(); i++) {
-        QStringList cleanupTemporaryFilesList;
+        QStringList cleanupTemporaryFilesList;// = {"-f"};
         const auto &inputProduct = listProducts[i];
         // Mask Handler Step
         TaskToSubmit &maskHandler = allTasksList[nCurTaskIdx++];
@@ -212,9 +212,14 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             compositePreprocessingArgs.append("-scatcoef");
             compositePreprocessingArgs.append(scatCoeffs);
         }
+        if((primaryTileMetadata != "") &&
+           (tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId)) {
+            compositePreprocessingArgs.append("-pmxml");
+            compositePreprocessingArgs.append(primaryTileMetadata);
+        }
         steps.append(compositePreprocessing.CreateStep("CompositePreprocessing", compositePreprocessingArgs));
 
-        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
+/*        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
             TaskToSubmit &cutImgTask = allTasksList[nCurTaskIdx++];
             SubmitTasks(ctx, cfg.jobId, {cutImgTask});
 
@@ -256,6 +261,7 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             snowResImg = cutSnowFile;
             cleanupTemporaryFilesList.append(cutSnowFile);
         }
+*/
         TaskToSubmit &weightAot = allTasksList[nCurTaskIdx++];
         SubmitTasks(ctx, cfg.jobId, {weightAot});
         TaskToSubmit &weightOnClouds = allTasksList[nCurTaskIdx++];
@@ -311,6 +317,13 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
             updateSynthesisArgs.append(prevL3AProdRefls);
             updateSynthesisArgs.append("-prevl3af");
             updateSynthesisArgs.append(prevL3AProdFlags);
+            // remove at this step the previous files
+            cleanupTemporaryFilesList.append(prevL3AProdWeights);
+            cleanupTemporaryFilesList.append(prevL3AProdDates);
+            cleanupTemporaryFilesList.append(prevL3AProdRefls);
+            cleanupTemporaryFilesList.append(prevL3AProdFlags);
+            // normally this will not be created in intermedaiate steps
+            //cleanupTemporaryFilesList.append(prevL3ARgbFile);
         }
         steps.append(updateSynthesis.CreateStep("UpdateSynthesis", updateSynthesisArgs));
         cleanupTemporaryFilesList.append(outL3AResultFile);
@@ -327,9 +340,13 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
                                               "-outweights", (isLastProduct ? ("\"" + outL3AResultWeightsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultWeightsFile),
                                               "-outdates", (isLastProduct ? ("\"" + outL3AResultDatesFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultDatesFile),
                                               "-outrefls", (isLastProduct ? ("\"" + outL3AResultReflsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultReflsFile),
-                                              "-outflags", (isLastProduct ? ("\"" + outL3AResultFlagsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultFlagsFile),
-                                              "-outrgb", (isLastProduct ? ("\"" + outL3AResultRgbFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultRgbFile)
+                                              "-outflags", (isLastProduct ? ("\"" + outL3AResultFlagsFile+"?gdal:co:COMPRESS=DEFLATE\"") : outL3AResultFlagsFile)
                                             };
+        // we need to create the rgb file only if the last product
+        if(isLastProduct) {
+            compositeSplitterArgs.append("-outrgb");
+            compositeSplitterArgs.append("\"" + outL3AResultRgbFile+"?gdal:co:COMPRESS=DEFLATE\"");
+        }
         steps.append(compositeSplitter.CreateStep("CompositeSplitter", compositeSplitterArgs));
 
         // save the created L3A product file for the next product creation
@@ -465,6 +482,8 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     int resolution = cfg.resolution;
     QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.jobId, listProducts,
                                                                ProductType::L2AProductTypeId);
+    //ProcessorHandlerHelper::TrimLeftSecondarySatellite(listProducts, mapTiles);
+
     QList<CompositeProductFormatterParams> listParams;
 
     TaskToSubmit productFormatterTask{"product-formatter", {}};
@@ -509,11 +528,12 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                               const TaskFinishedEvent &event)
 {
     if (event.module == "product-formatter") {
-        ctx.MarkJobFinished(event.jobId);
-
         QString prodName = GetProductFormatterProductName(ctx, event);
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId) + "/" + prodName;
         if(prodName != "" && ProcessorHandlerHelper::IsValidHighLevelProduct(productFolder)) {
+            // mark the job as finished
+            ctx.MarkJobFinished(event.jobId);
+
             QString quicklook = GetProductFormatterQuicklook(ctx, event);
             QString footPrint = GetProductFormatterFootprint(ctx, event);
             // Insert the product into the database
@@ -522,11 +542,13 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             ctx.InsertProduct({ ProductType::L3AProductTypeId, event.processorId, event.siteId,
                                 event.jobId, productFolder, maxDate, prodName, quicklook,
                                 footPrint, std::experimental::nullopt, TileList() });
-            // Now remove the job folder containing temporary files
-            RemoveJobFolder(ctx, event.jobId, "l3a");
         } else {
+            // mark the job as failed
+            ctx.MarkJobFailed(event.jobId);
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
         }
+        // Now remove the job folder containing temporary files
+        RemoveJobFolder(ctx, event.jobId, "l3a");
     }
 }
 

@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 #ifndef RESAMPLE_AT_S2_RES_2_H
 #define RESAMPLE_AT_S2_RES_2_H
 
@@ -32,6 +32,7 @@
 #include "MetadataHelperFactory.h"
 
 #include "BandsCfgMappingParser.h"
+#include "GenericRSImageResampler.h"
 
 class ResampleAtS2Res2
 {
@@ -48,10 +49,15 @@ public:
     typedef otb::ImageListToVectorImageFilter<InternalImageListType,
                                          ImageType >                   ListConcatenerFilterType;
 
+    typedef itk::ScalableAffineTransform<double, ImageType::ImageDimension> ScalableTransformType;
+    typedef ScalableTransformType::OutputVectorType          OutputVectorType;
+
+
 public:
     ResampleAtS2Res2();
     void Init(const std::string &xml, const std::string &strMaskFileName,
-              const std::string &bandsMappingFile, int nRes, const std::string &masterInfo);
+              const std::string &bandsMappingFile, int nRes, const std::string &masterInfo,
+              const std::string &primaryMissionXml);
     void DoExecute();
 
     ImageType::Pointer GetResampledMainImg();
@@ -67,9 +73,14 @@ private:
     bool ExtractResampledMasksImages();
     void ExtractResampledAotImage();
     void CreateMasterInfoFile();
+    void ExtractPrimaryMissionInfos();
+    ImageType::Pointer ResampleImage(ImageType::Pointer img, Interpolator_Type interpolator, int &nCurRes);
 
 private:
     std::string m_strXml;
+    //if available, a primary mission could be provided in order
+    //to get the origin, dimensions and projection
+    std::string m_strPrimaryMissionXml;
     std::string m_strMaskFileName;
 
     ListConcatenerFilterType::Pointer     m_Concatener;
@@ -85,13 +96,23 @@ private:
     int m_nRes;
     ImageReaderType::Pointer m_inputImgReader;
 
-    ResamplingBandExtractor m_ResampledBandsExtractor;
+    ResamplingBandExtractor<float> m_ResampledBandsExtractor;
     std::unique_ptr<MetadataHelper> m_pMetadataHelper;
+    std::unique_ptr<MetadataHelper> m_pPrimaryMissionMetadataHelper;
 
     BandsCfgMappingParser m_bandsCfgMappingParser;
     std::string m_bandsMappingFile;
     std::string m_masterInfoFile;
 
+    ImageType::PointType m_PrimaryMissionImgOrigin;
+    std::string m_strPrMissionImgProjRef;
+    double m_PrimaryMissionImgWidth;
+    double m_PrimaryMissionImgHeight;
+    bool m_bValidPrimaryImg;
+    OutputVectorType m_scale;
+    GenericRSImageResampler<ImageType, ImageType>  m_GenericRSImageResampler;
+    ImageResampler<ImageType, ImageType>  m_ImageResampler;
+    bool m_bUseGenericRSResampler;
 };
 
 #endif // RESAMPLE_AT_S2_RES_H

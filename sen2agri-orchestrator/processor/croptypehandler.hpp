@@ -2,51 +2,51 @@
 
 #include "processorhandler.hpp"
 
-typedef struct {
-
-    NewStepList steps;
-    QList<std::reference_wrapper<const TaskToSubmit>> parentsTasksRef;
-    // args
-    QString cropTypeMap;
-    QString rawCropTypeMap;
-    QString xmlValidationMetrics;
-    QString statusFlags;
-    QString tileId;
-} CropTypeProductFormatterParams;
-
-typedef struct {
-    QList<TaskToSubmit> allTasksList;
-    NewStepList allStepsList;
-    CropTypeProductFormatterParams prodFormatParams;
-} CropTypeGlobalExecutionInfos;
-
-typedef struct {
-    int jobId;
-    int siteId;
-    int resolution;
-
-    QString referencePolygons;
-    QString cropMask;
-
-    QString lutPath;
-    QString appsMem;
-
-    QString randomSeed;
-    QString temporalResamplingMode;
-    QString sampleRatio;
-
-    QString classifier;
-    QString fieldName;
-    QString classifierRfNbTrees;
-    QString classifierRfMinSamples;
-    QString classifierRfMaxDepth;
-    QString classifierSvmKernel;
-    QString classifierSvmOptimize;
-
-} CropTypeJobConfig;
-
 class CropTypeHandler : public ProcessorHandler
 {
+    typedef struct {
+
+        NewStepList steps;
+        QList<std::reference_wrapper<const TaskToSubmit>> parentsTasksRef;
+        // args
+        QString cropTypeMap;
+        QString rawCropTypeMap;
+        QString xmlValidationMetrics;
+        QString statusFlags;
+        QString tileId;
+    } CropTypeProductFormatterParams;
+
+    typedef struct {
+        QList<TaskToSubmit> allTasksList;
+        NewStepList allStepsList;
+        CropTypeProductFormatterParams prodFormatParams;
+    } CropTypeGlobalExecutionInfos;
+
+    typedef struct {
+        int jobId;
+        int siteId;
+        int resolution;
+
+        QString referencePolygons;
+        QString cropMask;
+
+        QString lutPath;
+        QString appsMem;
+
+        QString randomSeed;
+        QString temporalResamplingMode;
+        QString sampleRatio;
+
+        QString classifier;
+        QString fieldName;
+        QString classifierRfNbTrees;
+        QString classifierRfMinSamples;
+        QString classifierRfMaxDepth;
+        QString classifierSvmKernel;
+        QString classifierSvmOptimize;
+
+    } CropTypeJobConfig;
+
 private:
     void HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                 const JobSubmittedEvent &event) override;

@@ -18,6 +18,8 @@
 
 #include "itkImageToImageFilter.h"
 
+#include <unordered_map>
+
 template< typename TInputImage, typename TOutputImage >
 class MahalanobisTrimmingFilter:
   public itk::ImageToImageFilter< TInputImage, TOutputImage >
@@ -48,8 +50,8 @@ public:
   typedef typename OutputImageType::RegionType OutputImageRegionType;
   typedef typename OutputImageType::PixelType  OutputImagePixelType;
 
-  typedef std::vector<IndexType>                        IndexVectorType;
-  typedef std::map<short, IndexVectorType>              IndexMapType;
+  typedef std::vector<IndexType>                                  IndexVectorType;
+  typedef std::unordered_map<short, IndexVectorType>              IndexMapType;
 
   void PrintSelf(std::ostream & os, itk::Indent indent) const ITK_OVERRIDE;
 
@@ -75,8 +77,6 @@ private:
   // implemented
 
   IndexMapType         m_Points;
-  // Class 11 exists in the input pixels
-  bool                 m_Has11;
 };
 
 #ifndef ITK_MANUAL_INSTANTIATION

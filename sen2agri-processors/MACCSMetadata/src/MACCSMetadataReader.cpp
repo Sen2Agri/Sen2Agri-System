@@ -408,6 +408,7 @@ MACCSProductInformation ReadProductInformation(const TiXmlElement *el)
         return result;
     }
 
+    result.AcquisitionDateTime = GetChildText(el, "Acquisition_Date_Time");
     result.GeoCoverage = ReadGeoCoverage(el->FirstChildElement("Image_Geo_Coverage"));
 
     result.MeanSunAngle = ReadAnglePair(el->FirstChildElement("Mean_Sun_Angle"),

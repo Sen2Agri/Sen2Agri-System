@@ -73,6 +73,7 @@
 #define METADATA_CATEG "MTD"
 //#define MASK_CATEG "MSK"
 #define PARAMETER_CATEG "IPP"
+#define LUT_CATEG       "LUT"
 #define QUALITY_CATEG "QLT"
 #define NO_DATA_VALUE "-10000"
 
@@ -118,12 +119,12 @@ std::vector<CompositeBand> CompositeBandList = {
     {2, "560 nm", "Green", 10, "GREEN", "GREEN"},
     {3, "665 nm", "Red", 10, "RED", "RED"},
     {4, "842 nm", "Near Infrared", 10, "NIR1", "NIR1"},
-    {5, "705 nm", "Vegetation red-edge", 10, "RE1", ""},
-    {6, "740 nm", "Vegetation red-edge", 10, "RE2", ""},
-    {7, "783 nm", "Vegetation red-edge", 10, "RE3", ""},
-    {8, "865 nm", "Vegetation red-edge", 10, "NIR2", ""},
-    {9, "1610 nm", "Short-Wave infrared", 10, "SWIR1", "SWIR1"},
-    {10, "2190 nm", "Short-Wave infrared", 10, "SWIR2", ""}
+    {5, "705 nm", "Vegetation red-edge", 20, "RE1", ""},
+    {6, "740 nm", "Vegetation red-edge", 20, "RE2", ""},
+    {7, "783 nm", "Vegetation red-edge", 20, "RE3", ""},
+    {8, "865 nm", "Vegetation red-edge", 20, "NIR2", ""},
+    {9, "1610 nm", "Short-Wave infrared", 20, "SWIR1", "SWIR1"},
+    {10, "2190 nm", "Short-Wave infrared", 20, "SWIR2", ""}
 };
 
 typedef enum{
@@ -339,6 +340,9 @@ private:
         AddParameter(ParameterType_String, "lut", "The LUT file");
         MandatoryOff("lut");
 
+        AddParameter(ParameterType_String, "lutqgis", "QGIS color map file");
+        MandatoryOff("lutqgis");
+
         AddParameter(ParameterType_Int, "aggregatescale", "The aggregate rescale resolution");
         MandatoryOff("aggregatescale");
         SetDefaultParameterInt("aggregatescale", 60);
@@ -391,18 +395,18 @@ private:
       // Get the list of input files
       std::vector<std::string> descriptors = this->GetParameterStringList("il");
       LoadAllDescriptors(descriptors);
-      m_strMinAcquisitionDate = *std::min_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
-      m_strMaxAcquisitionDate = *std::max_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
+      const std::string &strMinAcquisitionDate = *std::min_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
+      const std::string &strMaxAcquisitionDate = *std::max_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
       if(m_strTimePeriod.empty()) {
           m_bDynamicallyTimePeriod = true;
           if(LevelHasAcquisitionTime()) {
-              if(m_strMinAcquisitionDate != m_strMaxAcquisitionDate)
+              if(strMinAcquisitionDate != strMaxAcquisitionDate)
                     itkGenericExceptionMacro(<< "You should have the same date for all tiles in the il parameter as this product has Aquisition time: " << m_strProductLevel);
               // we have a single date and min acquisition date should be the same as max acquisition date
-              m_strTimePeriod = m_strMaxAcquisitionDate;
+              m_strTimePeriod = strMaxAcquisitionDate;
           } else {
               // we have an interval
-              m_strTimePeriod = m_strMinAcquisitionDate + "_" + m_strMaxAcquisitionDate;
+              m_strTimePeriod = strMinAcquisitionDate + "_" + strMaxAcquisitionDate;
           }
       }
 
@@ -550,6 +554,9 @@ private:
       if(bDirStructBuiltOk)
       {
           TransferPreviewFiles();
+          if (HasValue("lutqgis")) {
+              TransferAndRenameLUTFile(GetParameterString("lutqgis"));
+          }
           TransferAndRenameGIPPFiles();          
           const std::string strProductFileName = BuildFileName(METADATA_CATEG, "", ".xml");
           generateProductMetadataFile(strMainFolderFullPath + "/" + strProductFileName);
@@ -655,7 +662,7 @@ private:
                   if(LevelHasAcquisitionTime()) {
                       rasterInfoEl.rasterTimePeriod = m_acquisitionDatesList[curRaster];
                   } else {
-                      rasterInfoEl.rasterTimePeriod = m_strTimePeriod; //m_strMinAcquisitionDate + "_" + m_acquisitionDatesList[curRaster];
+                      rasterInfoEl.rasterTimePeriod = m_strTimePeriod;
                   }
               } else {
                   rasterInfoEl.rasterTimePeriod = m_strTimePeriod;
@@ -896,6 +903,8 @@ private:
   {
       std::vector<const char *> args;
       args.emplace_back("ContinuousColorMapping");
+      args.emplace_back("-progress");
+      args.emplace_back("false");
       args.emplace_back("-in");
       args.emplace_back(rasterFullFilePath.c_str());
       args.emplace_back("-out");
@@ -910,12 +919,15 @@ private:
       std::string strIsRangeMapFile = std::to_string(bIsRangeMapFile);
       args.emplace_back(strIsRangeMapFile.c_str());
       
-      return ExecuteExternalProgram("otbcli", args);
+      return ExecuteExternalProgram("otbApplicationLauncherCommandLine", args);
   }
 
   bool generateQuicklook(const std::string &rasterFullFilePath, const std::vector<std::string> &channels,const std::string &jpegFullFilePath)
   {
       std::vector<const char *> args;
+      args.emplace_back("Quicklook");
+      args.emplace_back("-progress");
+      args.emplace_back("false");
       args.emplace_back("-in");
       args.emplace_back(rasterFullFilePath.c_str());
       args.emplace_back("-out");
@@ -927,7 +939,7 @@ private:
       for (const auto &channel : channels) {
           args.emplace_back(channel.c_str());
       }
-      bool bRet = ExecuteExternalProgram("otbcli_Quicklook", args);
+      bool bRet = ExecuteExternalProgram("otbApplicationLauncherCommandLine", args);
 
       //remove  file with extension jpg.aux.xml generated after preview obtained
       std::string strFileToBeRemoved = jpegFullFilePath + ".aux.xml";
@@ -1483,6 +1495,14 @@ private:
    }
 
 
+  void TransferAndRenameLUTFile(const std::string &lut)
+  {
+      boost::filesystem::path p(lut);
+      std::string outputFilename = BuildFileName(LUT_CATEG, "", p.extension().string());
+
+      CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + AUX_DATA_FOLDER_NAME + "/" + outputFilename, lut);
+  }
+
   void TransferAndRenameGIPPFiles()
   {
       std::string strNewGIPPFileName;
@@ -1568,7 +1588,7 @@ private:
       {
             iChannelNo = 3;
             bUseLut = true;
-            if((m_strProductLevel.compare("L4B") == 0)) {
+            if(m_strProductLevel == "L4A" || m_strProductLevel == "L4B") {
                 bIsRangeMapFile = false;
             }            
       }
@@ -1658,15 +1678,38 @@ private:
     specialValue.SpecialValueIndex = metadata->ImageInformation.NoDataValue;
     m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
 
-    AddAcquisitionDate(metadata->InstanceId.AcquisitionDate);
+    std::string acqDateTime = metadata->ProductInformation.AcquisitionDateTime;
+    // Remove the eventual UTC= from the prefix of the date
+    std::string::size_type pos = acqDateTime.find('=');
+    acqDateTime = (pos!= std::string::npos) ? acqDateTime.substr(pos+1) : acqDateTime;
+    // normally, the product date time respects already the standard ISO 8601
+    // we need just to replace - and : from it
+    acqDateTime.erase(std::remove(acqDateTime.begin(), acqDateTime.end(), '-'), acqDateTime.end());
+    acqDateTime.erase(std::remove(acqDateTime.begin(), acqDateTime.end(), ':'), acqDateTime.end());
+
+    AddAcquisitionDate(acqDateTime);
+    //AddAcquisitionDate(metadata->InstanceId.AcquisitionDate);
   }
 
   void FillMetadataInfoForSPOT(std::unique_ptr<SPOT4Metadata> &metadata)
   {
       /* the source is a SPOT file */
       //nothing to load????
-      AddAcquisitionDate(metadata->Header.DatePdv.substr(0,4) +
-              metadata->Header.DatePdv.substr(5,2) + metadata->Header.DatePdv.substr(8,2));
+      // we use the acquisition date instead of processing date
+      std::string acqDateTime = metadata->Header.DateProd;
+      std::string::size_type pos = acqDateTime.find('.');
+      // remove the milliseconds part of the acquisition date/time
+      acqDateTime = (pos != std::string::npos) ? acqDateTime.substr(0, pos) : acqDateTime;
+      acqDateTime.erase(std::remove(acqDateTime.begin(), acqDateTime.end(), '-'), acqDateTime.end());
+      acqDateTime.erase(std::remove(acqDateTime.begin(), acqDateTime.end(), ':'), acqDateTime.end());
+      // the product date does has a space separator between date and time. We need to replace it with T
+      std::replace( acqDateTime.begin(), acqDateTime.end(), ' ', 'T');
+      AddAcquisitionDate(acqDateTime);
+
+//      AddAcquisitionDate(metadata->Header.DatePdv.substr(0,4) +
+//              metadata->Header.DatePdv.substr(5,2) + metadata->Header.DatePdv.substr(8,2)
+//              + "T" + metadata->Header.DatePdv.substr(11,2) + metadata->Header.DatePdv.substr(14,2) +
+//              metadata->Header.DatePdv.substr(17,2));
   }
 
   void AddAcquisitionDate(const std::string &acquisitionDate) {
@@ -1763,36 +1806,35 @@ private:
   }
 
   bool ExecuteExternalProgram(const char *appExe, std::vector<const char *> appArgs) {
-          int error, status;
-          pid_t pid, waitres;
-          std::vector<const char *> args;
-          std::string cmdInfo;
-          args.emplace_back(appExe);
-          cmdInfo = appExe;
-          for(unsigned int i = 0; i<appArgs.size(); i++) {
-                args.emplace_back(appArgs[i]);
-                cmdInfo += " ";
-                cmdInfo += appArgs[i];
-          }
-          otbAppLogINFO("Executing external command: " << cmdInfo);
+      int error, status;
+      pid_t pid, waitres;
+      std::vector<const char *> args;
+      std::string cmdInfo;
+      args.emplace_back(appExe);
+      cmdInfo = appExe;
+      for(unsigned int i = 0; i<appArgs.size(); i++) {
+            args.emplace_back(appArgs[i]);
+            cmdInfo += " ";
+            cmdInfo += appArgs[i];
+      }
+      otbAppLogINFO("Executing external command: " << cmdInfo);
 
-          args.emplace_back(nullptr);
+      args.emplace_back(nullptr);
 
-          posix_spawnattr_t attr;
-          posix_spawnattr_init(&attr);
-          posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
-          error = posix_spawnp(&pid, args[0], NULL, &attr, (char *const *)args.data(), environ);
-          if(error != 0) {
-              otbAppLogWARNING("Error creating process for " << appExe << ". The resulting files will not be created. Error was: " << error);
-              return false;
-          }
-          posix_spawnattr_destroy(&attr);
-          waitres = waitpid(pid, &status, 0);
-          if(waitres == pid && (WIFEXITED(status) && WEXITSTATUS(status) == 0)) {
-              return true;
-          }
-          otbAppLogWARNING("Error running " << appExe << ". The resulting file(s) might not be created. The return was: " << status);
-          return false;
+      posix_spawnattr_t attr;
+      posix_spawnattr_init(&attr);
+      posix_spawnattr_setflags(&attr, POSIX_SPAWN_USEVFORK);
+      error = posix_spawnp(&pid, args[0], NULL, &attr, (char *const *)args.data(), environ);
+      if(error != 0) {
+        otbAppLogWARNING("Error creating process for " << appExe << ". The resulting files will not be created. Error was: " << error);
+        return false;
+      }
+      waitres = waitpid(pid, &status, 0);
+      if(waitres == pid && (WIFEXITED(status) && WEXITSTATUS(status) == 0)) {
+        return true;
+      }
+      otbAppLogWARNING("Error running " << appExe << ". The resulting file(s) might not be created. The return was: " << status);
+      return false;
   }
 
   std::string BuildProductDirectoryName() {
@@ -1927,8 +1969,6 @@ private:
   std::vector<geoProductInfo> m_geoProductInfo;
 
     std::vector<std::string> m_acquisitionDatesList;
-    std::string m_strMinAcquisitionDate;
-    std::string m_strMaxAcquisitionDate;
     bool m_bDynamicallyTimePeriod;
 
 };

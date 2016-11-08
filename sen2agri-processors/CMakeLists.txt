@@ -29,8 +29,14 @@ install(FILES ../scripts/sen2agri_common.py
               ../scripts/split_shapefile.py
         DESTINATION usr/lib/python2.7/site-packages/)
 
+install(FILES ../scripts/insert_l2a_product_to_db.py
+        DESTINATION usr/bin/
+	    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                    GROUP_READ GROUP_EXECUTE
+                    WORLD_READ WORLD_EXECUTE)
+
 install(FILES dist/sen2agri-disable-thp.conf
         DESTINATION usr/lib/tmpfiles.d)
 
 install(FILES dist/50-open-files.conf
-        DESTINATION etc/security.d/limits.d)
+        DESTINATION etc/security/limits.d)

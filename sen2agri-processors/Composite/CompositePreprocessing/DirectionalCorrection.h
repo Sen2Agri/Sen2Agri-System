@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 #ifndef DIRECTIONAL_CORRECTION_H
 #define DIRECTIONAL_CORRECTION_H
 
@@ -88,7 +88,7 @@ private:
     DirectionalCorrectionFunctorType        m_Functor;
 
     ReaderType::Pointer                     m_inputImageReader;
-    ResamplingBandExtractor                 m_ResampledBandsExtractor;
+    ResamplingBandExtractor<float>         m_ResampledBandsExtractor;
 };
 
 #endif // DIRECTIONAL_CORRECTION_H

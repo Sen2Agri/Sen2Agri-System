@@ -36,4 +36,4 @@ source set_build_folder.sh
     /mnt/Sen2Agri_DataSets/L2A/Landsat8/Ukraine/MACCS_Manual_Format/EUkraineS2A_20131228_L8_181_025/EUkraineS2A_20131228_L8_181_025.HDR \
     -rseed 0 -pixsize 20 \
     -outdir /mnt/data/ukraine/Ukraine-mask-noinsitu/ \
-    -buildfolder $BUILD_FOLDER
+    -buildfolder $BUILD_FOLDER # -keepfiles

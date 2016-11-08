@@ -83,8 +83,8 @@ void TrainImagesClassifier::DoInit()
     //LBU
     // Add the possibility to use a raster to describe the training samples.
     MandatoryOff("io.vd");
-    AddParameter(ParameterType_InputImage, "io.rs", "Training samples in a raster");
-    SetParameterDescription("io.rs", "A raster containing the training samples.");
+    AddParameter(ParameterType_InputImageList, "io.rs", "Training samples in a raster");
+    SetParameterDescription("io.rs", "Either a single raster or one for each input image containing the training samples.");
     MandatoryOff("io.rs");
     AddParameter(ParameterType_Int, "nodatalabel", "No data label");
     SetParameterDescription("nodatalabel", "The label of the ignored pixels from the raster");
@@ -332,6 +332,8 @@ void TrainImagesClassifier::DoExecute()
                 }
 
                 sampleGenerator->Update();
+                std::cerr << "Training samples: " << sampleGenerator->GetTrainingListSample()->Size() << '\n';
+                std::cerr << "Validation samples: " << sampleGenerator->GetValidationListSample()->Size() << '\n';
 
                 //Concatenate training and validation samples from the image
                 concatenateTrainingLabels->AddInput(sampleGenerator->GetTrainingListLabel());
@@ -355,16 +357,33 @@ void TrainImagesClassifier::DoExecute()
             itkExceptionMacro("Unable to train classifier: " << errors);
         }
     } else if (this->HasValue("io.rs")) {
-        Int32ImageType::Pointer raster = GetParameterInt32Image("io.rs");
+        std::vector<std::string> referenceRasters = GetParameterStringList("io.rs");
+
+        typedef ImageFileReader<Int32ImageType> ImageReaderType;
+        ImageReaderType::Pointer firstReader = ImageReaderType::New();
+        firstReader->SetFileName(referenceRasters[0]);
+
         //Iterate over all input images
         for (unsigned int imgIndex = 0; imgIndex < imageList->Size(); ++imgIndex)
         {
+            otbAppLogINFO("Processing input " << imgIndex << std::endl);
+
             FloatVectorImageType::Pointer image = imageList->GetNthElement(imgIndex);
             image->UpdateOutputInformation();
 
             if (imgIndex == 0)
             {
                 nbBands = image->GetNumberOfComponentsPerPixel();
+            }
+
+            ImageReaderType::Pointer reader;
+            Int32ImageType::Pointer raster;
+            if (imgIndex == 0 || referenceRasters.size() == 1) {
+                raster = firstReader->GetOutput();
+            } else {
+                reader = ImageReaderType::New();
+                reader->SetFileName(referenceRasters[imgIndex]);
+                raster = reader->GetOutput();
             }
 
             //Sample list generator
@@ -379,6 +398,9 @@ void TrainImagesClassifier::DoExecute()
             sampleGenerator->SetValidationTrainingProportion(GetParameterFloat("sample.vtr"));
             sampleGenerator->SetBoundByMin(GetParameterInt("sample.bm")!=0);
             sampleGenerator->Update();
+
+            std::cerr << "Training samples: " << sampleGenerator->GetTrainingListSample()->Size() << '\n';
+            std::cerr << "Validation samples: " << sampleGenerator->GetValidationListSample()->Size() << '\n';
 
             //Concatenate training and validation samples from the image
             concatenateTrainingLabels->AddInput(sampleGenerator->GetTrainingListLabel());
@@ -395,6 +417,9 @@ void TrainImagesClassifier::DoExecute()
     concatenateTrainingLabels->Update();
     concatenateValidationSamples->Update();
     concatenateValidationLabels->Update();
+
+    std::cerr << "Total training samples: " << concatenateTrainingSamples->GetOutput()->Size() << '\n';
+    std::cerr << "Total validation samples: " << concatenateValidationSamples->GetOutput()->Size() << '\n';
 
     if (concatenateTrainingSamples->GetOutput()->Size() == 0)
     {

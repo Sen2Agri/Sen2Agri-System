@@ -18,6 +18,22 @@
 #include <ctime>
 #include <cmath>
 #include "libgen.h"
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+
+
+std::string dirname(const std::string &path)
+{
+    boost::filesystem::path p(path);
+    p.remove_filename();
+    return p.native();
+}
+
+std::string basename(const std::string &path)
+{
+    boost::filesystem::path p(path);
+    return p.filename().native();
+}
 
 MetadataHelper::MetadataHelper()
 {
@@ -35,7 +51,7 @@ bool MetadataHelper::LoadMetadataFile(const std::string& file, int nResolution)
     Reset();
     m_inputMetadataFileName = file;
     m_nResolution = nResolution;
-    m_DirName = extractFolder(m_inputMetadataFileName);
+    m_DirName = dirname(m_inputMetadataFileName);
 
     return DoLoadMetadata();
 }
@@ -171,19 +187,12 @@ bool MetadataHelper::GetTrueColourBandIndexes(int &redIdx, int &greenIdx, int &b
     return false;
 }
 
-// Extract the folder from a given path.
-std::string MetadataHelper::extractFolder(const std::string& filename) {
-    size_t pos = filename.find_last_of("/\\");
-    if (pos == std::string::npos) {
-        return "";
-    }
-
-    return filename.substr(0, pos) + "/";
-}
-
 std::string MetadataHelper::buildFullPath(const std::string& fileName)
 {
-    return m_DirName + "/" + fileName;
+    boost::filesystem::path p(m_DirName);
+    p /= fileName;
+    return p.string();
 }
+
 
 

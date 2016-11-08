@@ -105,18 +105,24 @@ QString ProcessorHandler::GetFinalProductFolder(const std::map<QString, QString>
     return folderName;
 }
 
-bool ProcessorHandler::RemoveJobFolder(EventProcessingContext &ctx, int jobId, const QString &procName)
+bool ProcessorHandler::NeedRemoveJobFolder(EventProcessingContext &ctx, int jobId, const QString &procName)
 {
     QString strKey = "executor.processor." + procName + ".keep_job_folders";
     auto configParameters = ctx.GetJobConfigurationParameters(jobId, strKey);
     auto keepStr = configParameters[strKey];
     bool bRemove = true;
     if(keepStr == "1") bRemove = false;
-    if(bRemove) {
+    return bRemove;
+}
+
+bool ProcessorHandler::RemoveJobFolder(EventProcessingContext &ctx, int jobId, const QString &procName)
+{
+    if(NeedRemoveJobFolder(ctx, jobId, procName)) {
         QString jobOutputPath = ctx.GetJobOutputPath(jobId, procName);
+        Logger::debug(QStringLiteral("Removing the job folder %1").arg(jobOutputPath));
         return removeDir(jobOutputPath);
     }
-    return true;
+    return false;
 }
 
 QString ProcessorHandler::GetProductFormatterOutputProductPath(EventProcessingContext &ctx,
@@ -297,10 +303,8 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     return false;
 }
 
-QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &ctx,
-                                const JobSubmittedEvent &event,
-                                QMap<QString, QStringList> &mapProductToTilesMetaFiles) {
-    QStringList listTilesMetaFiles;
+QStringList ProcessorHandler::GetL2AInputProducts(EventProcessingContext &ctx,
+                                const JobSubmittedEvent &event) {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     const auto &inputProducts = parameters["input_products"].toArray();
     QStringList listProducts;
@@ -321,6 +325,14 @@ QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &c
         }
     }
 
+    return listProducts;
+}
+
+QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &ctx,
+                                const JobSubmittedEvent &event,
+                                QMap<QString, QStringList> &mapProductToTilesMetaFiles) {
+    QStringList listTilesMetaFiles;
+    const QStringList &listProducts = GetL2AInputProducts(ctx, event);
     // for each product, get the valid tiles
     for(const QString &inPrd: listProducts) {
         QStringList tilesMetaFiles = ctx.findProductFiles(inPrd);
@@ -420,6 +432,7 @@ QMap<QString, TileTemporalFilesInfo> ProcessorHandler::GroupTiles(
             }
         }
         // at this stage we know that the infos have only one unique satellite id
+        // we keep in the returning map only the tiles from the primary satellite
         if(isPrimarySatIdInfo) {
             // now search to see if we can find a shapefile already created for the current tile
             info.shapePath = ProcessorHandlerHelper::GetShapeForTile(shapeFilesFolder, info.tileId);

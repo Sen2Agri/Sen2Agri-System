@@ -151,7 +151,7 @@ function insertjob($name, $description, $processor_short_name, $site_id, $start_
 		// send notification through CURL
 		try {
 			//url of the service
-			$url= ConfigParams::$SERVICES_NOTIFY_ORCHESTRATOR_URL;
+			$url= ConfigParams::$SERVICES_URL."/NotifyOrchestrator";
 			
 			//initialise connection
 			$ch = curl_init();
@@ -234,9 +234,9 @@ elseif (isset ( $_POST ['l3b_lai'] )) {
 	$siteId         = $_POST ['siteId'];
 	$input_products = $_POST ['inputFiles'];
 	$resolution     = $_POST ['resolution'];
-	$monolai        = isset($_POST['monolai']) ? 1 : 0;
-	$reproc         = isset($_POST['reproc']) ? 1 : 0;
-	$fitted         = isset($_POST['fitted']) ? 1 : 0;
+	$monolai        = isset($_POST['lai']) && ($_POST['lai'] == 'monolai') ? 1 : 0;
+	$reproc         = isset($_POST['lai']) && ($_POST['lai'] == 'reproc')  ? 1 : 0;
+	$fitted         = isset($_POST['lai']) && ($_POST['lai'] == 'fitted')  ? 1 : 0;
 	$bwr            = $_POST ['bwr'];
 	$fwr            = $_POST ['fwr'];
 	

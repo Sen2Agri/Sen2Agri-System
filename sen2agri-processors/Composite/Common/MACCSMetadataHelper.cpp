@@ -16,6 +16,9 @@
 #include "MACCSMetadataHelper.h"
 #include "ViewingAngles.hpp"
 
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/filesystem.hpp>
+
 #include <sys/stat.h>
 
 MACCSMetadataHelper::MACCSMetadataHelper()
@@ -365,7 +368,8 @@ bool MACCSMetadataHelper::getMACCSImageFileName(const MACCSFileInformation& file
                                                        const std::string& ending, std::string& retStr) {
     if (fileInfo.LogicalName.length() >= ending.length() &&
             0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
-        retStr = m_DirName + "/" + fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF";
+        boost::filesystem::path rootFolder(m_DirName);
+        retStr = (rootFolder / (fileInfo.FileLocation.substr(0, fileInfo.FileLocation.find_last_of('.')) + ".DBL.TIF")).string();
         if(!CheckFileExistence(retStr)) {
             itkWarningMacro("Cannot find the file (even with lowercase extension): " << retStr);
         }
@@ -400,7 +404,7 @@ bool MACCSMetadataHelper::getMACCSImageHdrName(const MACCSFileInformation& fileI
                                                       const std::string& ending, std::string &retStr) {
     if (fileInfo.LogicalName.length() >= ending.length() &&
             0 == fileInfo.LogicalName.compare (fileInfo.LogicalName.length() - ending.length(), ending.length(), ending)) {
-        retStr = m_DirName + "/" + fileInfo.FileLocation;
+        retStr = buildFullPath(fileInfo.FileLocation);
         if(!CheckFileExistence(retStr)) {
             itkWarningMacro("Cannot find the file (even with lowercase extension): " << retStr);
         }
@@ -571,18 +575,18 @@ MetadataHelper::SingleBandShortImageType::Pointer MACCSMetadataHelper::GetMasksI
     std::vector< MetadataHelper::SingleBandShortImageType::Pointer> vecImgs;
     // extract the cld, div and saturation mask image bands
     if((nMaskFlags & MSK_CLOUD) != 0) {
-        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getCloudFileName(), 1));
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getCloudFileName(), 1, Interpolator_NNeighbor));
     }
 
     if((nMaskFlags & MSK_SAT) != 0) {
-        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getQualityFileName(), 1));
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getQualityFileName(), 1, Interpolator_NNeighbor));
     }
     if((nMaskFlags & MSK_VALID) != 0) {
-        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getQualityFileName(), 3));
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getQualityFileName(), 3, Interpolator_NNeighbor));
     }
 
     if((nMaskFlags & MSK_SNOW) != 0 || (nMaskFlags & MSK_WATER) != 0 ) {
-        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getWaterFileName(), 1));
+        vecImgs.push_back(m_bandsExtractor.ExtractResampledBand(getWaterFileName(), 1, Interpolator_NNeighbor));
     }
 
     m_maskHandlerFunctor.Initialize(nMaskFlags, binarizeResult);

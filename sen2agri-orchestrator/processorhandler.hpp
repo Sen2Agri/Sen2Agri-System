@@ -14,7 +14,7 @@ class ProcessorHandler
 {
 public:
     virtual ~ProcessorHandler();
-    void SetProcessorDescription(const ProcessorDescription &procDescr) {processorDescr = procDescr;}
+    virtual void SetProcessorDescription(const ProcessorDescription &procDescr) {processorDescr = procDescr;}
 
     void HandleProductAvailable(EventProcessingContext &ctx, const ProductAvailableEvent &event);
     void HandleJobSubmitted(EventProcessingContext &ctx, const JobSubmittedEvent &event);
@@ -27,6 +27,7 @@ protected:
     QString GetFinalProductFolder(EventProcessingContext &ctx, int jobId, int siteId);
     QString GetFinalProductFolder(EventProcessingContext &ctx, int jobId, int siteId, const QString &productName);
     QString GetFinalProductFolder(const std::map<QString, QString> &cfgKeys, const QString &siteName, const QString &processorName);
+    bool NeedRemoveJobFolder(EventProcessingContext &ctx, int jobId, const QString &procName);
     bool RemoveJobFolder(EventProcessingContext &ctx, int jobId, const QString &procName);
     QString GetProductFormatterOutputProductPath(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterProductName(EventProcessingContext &ctx, const TaskFinishedEvent &event);
@@ -34,6 +35,7 @@ protected:
     QString GetProductFormatterFootprint(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     bool GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,  QDateTime &startTime, QDateTime &endTime, const QDateTime &executionDate,
                                 const ConfigurationParameterValueMap &requestOverrideCfgValues);
+    QStringList GetL2AInputProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event);
     QStringList GetL2AInputProductsTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                     QMap<QString, QStringList> &mapProductToTilesMetaFiles);
     QStringList GetL2AInputProductsTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event);

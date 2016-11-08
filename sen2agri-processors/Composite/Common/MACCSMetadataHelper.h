@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 #ifndef S2METADATAHELPER_H
 #define S2METADATAHELPER_H
 
@@ -20,7 +20,7 @@
 #include <vector>
 
 #include "../../MACCSMetadata/include/MACCSMetadataReader.hpp"
-#include "ResamplingBandExtractor2.h"
+#include "ResamplingBandExtractor.h"
 #include "itkNaryFunctorImageFilter.h"
 
 typedef itk::MACCSMetadataReader                                   MACCSMetadataReaderType;
@@ -229,7 +229,7 @@ protected:
     std::unique_ptr<MACCSFileMetadata> m_specificCldMetadata;
     std::unique_ptr<MACCSFileMetadata> m_specificMskMetadata;
 
-    ResamplingBandExtractor2<short> m_bandsExtractor;
+    ResamplingBandExtractor<short> m_bandsExtractor;
 
     NaryMaskHandlerFunctorType m_maskHandlerFunctor;
     NaryFunctorImageFilterType::Pointer m_maskHandlerFilter;

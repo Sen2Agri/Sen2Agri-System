@@ -130,7 +130,7 @@ private:
         if(nCurRes == nDesiredRes)
             return inImg;
         float fMultiplicationFactor = ((float)nCurRes)/nDesiredRes;
-        ResampleFilterType::Pointer resampler = m_Resampler.getResampler(inImg, fMultiplicationFactor);
+        ResampleFilterType::Pointer resampler = m_Resampler.getResampler(inImg, fMultiplicationFactor, Interpolator_NNeighbor);
         return resampler->GetOutput();
     }
 

@@ -103,6 +103,7 @@ public:
             int inDay = getDaysFromEpoch(id.aquisitionDate);
 
             sd.inDates.push_back(inDay);
+            sd.bandCount = id.bands.size();
 
             for (const auto &b : id.bands) {
                 m_FloatImageList->PushBack(b);
@@ -130,10 +131,8 @@ public:
         // count the number of output images and create the out days file
         std::vector<int> od;
         int lastDay = -1;
-        std::cerr << "dates:\n";
         for (auto& imgInfo : imgInfos) {
             if (lastDay != imgInfo.day) {
-                std::cerr << imgInfo.day << std::endl;
                 od.push_back(imgInfo.day);
                 lastDay = imgInfo.day;
             }

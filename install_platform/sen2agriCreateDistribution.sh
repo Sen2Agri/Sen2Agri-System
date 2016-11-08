@@ -78,6 +78,9 @@ function prepare_distribution()
    #copy content of dir "config_files" found at sent2agri/install_platform into created install_script/config
    cp -f ${SOURCES_DIR_PATH}/install_platform/config_files/*.conf ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/install_script/config
 
+   #copy database migration scripts
+   cp -rf ${SOURCES_DIR_PATH}/install_platform/migrations/ ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/install_script/
+
    #copy dir "database" found at sent2agri into subfolder created install_script/
    cp -rf ${SOURCES_DIR_PATH}/database ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/install_script/
 

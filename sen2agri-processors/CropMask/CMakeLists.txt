@@ -6,6 +6,7 @@ add_subdirectory(MajorityVoting)
 add_subdirectory(RandomForestTraining)
 add_subdirectory(Trimming)
 add_subdirectory(Erosion)
+add_subdirectory(FillNoData)
 add_subdirectory(FeaturesWithInsitu)
 add_subdirectory(FeaturesWithoutInsitu)
 add_subdirectory(SpectralFeaturesExtraction)
@@ -16,5 +17,5 @@ install(FILES ../../scripts/CropMask.py ../../scripts/CropMaskFused.py
         GROUP_READ GROUP_EXECUTE
         WORLD_READ WORLD_EXECUTE)
 
-install(FILES crop-mask.map
+install(FILES crop-mask.lut
         DESTINATION usr/share/sen2agri)

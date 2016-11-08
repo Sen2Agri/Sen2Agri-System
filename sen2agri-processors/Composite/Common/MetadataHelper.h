@@ -129,7 +129,6 @@ public:
 protected:
     virtual bool DoLoadMetadata() = 0;
     void Reset();
-    std::string extractFolder(const std::string& filename);
     std::string buildFullPath(const std::string& fileName);
 
 protected:

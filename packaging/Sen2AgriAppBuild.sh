@@ -18,6 +18,7 @@
 ### CONFIG PATHS FOR SCRIPT
 : ${DEFAULT_DIR:=$(pwd)}
 : ${PLATFORM_NAME_DIR:="Sen2AgriApp"}
+  VERSION="1.4"
 : ${INSTALL_DIR:="install"}
 : ${RPM_DIR:="rpm_binaries"}
 : ${BUILD_DIR:="build"}
@@ -63,7 +64,11 @@ function build_SEN2AGRI_app_RPM_Package()
 
    ##build RPM package
    fpm -s dir -t rpm -n sen2agri-app -C ${APP_INSTALL_PATH}/ ${PLATFORM_INSTALL_DEP} ${PLATFORM_INSTALL_OTHER_DEP} \
-   --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_app -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/sen2agri-app.centos7.ARCH.rpm usr etc
+       -v $VERSION \
+       --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_app \
+       --config-files etc \
+       -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/sen2agri-app-VERSION.centos7.ARCH.rpm \
+       usr etc
 
    #remove temporary dir
    rm -rf ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_app

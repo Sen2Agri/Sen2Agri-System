@@ -280,8 +280,7 @@ private:
       preprocessors->PushBack(m_Preprocessor);
       const auto &sensorOutDays = getOutputDays(preprocessors, resample, sp);
 
-      m_Preprocessor->SetSensorOutDays(sensorOutDays);
-      auto output = m_Preprocessor->GetOutput();
+      auto output = m_Preprocessor->GetOutput(sensorOutDays);
 
       SetParameterOutputImage("out", output);
   }

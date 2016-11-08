@@ -62,7 +62,7 @@ def areMultiMissionFiles(inputFiles) :
     
     return (len(missions) > 1)
     
-def getFirstMasterFile(inputFiles, bandsMappingFile) :
+def getMasterMissionFilePrefix(bandsMappingFile) :
     masterMissionPrefix = ""
     with open(bandsMappingFile) as f:
         content = f.readlines()
@@ -79,7 +79,11 @@ def getFirstMasterFile(inputFiles, bandsMappingFile) :
             return ""
     
     print("Master mission prefix found: {}".format(masterMissionPrefix))
-    
+
+    return masterMissionPrefix
+
+def getFirstMasterFile(inputFiles, bandsMappingFile) :
+    masterMissionPrefix = getMasterMissionFilePrefix(bandsMappingFile)
     for filePath in inputFiles:
         fileName = os.path.basename(filePath)
         words = fileName.split('_')
@@ -90,6 +94,18 @@ def getFirstMasterFile(inputFiles, bandsMappingFile) :
     
     print("No master file was found for bands mapping {}".format(bandsMappingFile))
     return ""
+
+def isMasterMissionFile(inputFile, bandsMappingFile) :
+    masterMissionPrefix = getMasterMissionFilePrefix(bandsMappingFile)    
+    fileName = os.path.basename(inputFile)
+    words = fileName.split('_')
+    if len(words) >= 1:
+        if (words[0].find(masterMissionPrefix) != -1):  
+            print("File {} is master mission file".format(inputFile))
+            return True
+    
+    print("File {} is secondary mission file".format(inputFile))
+    return False
     
 
 parser = argparse.ArgumentParser(description='Composite Python processor')
@@ -119,7 +135,9 @@ appLocation = args.applocation
 outDir = args.outdir
 siteId = "nn"
 multisatelites = areMultiMissionFiles(args.input)
+firstMasterFile = ""
 if multisatelites :
+    firstMasterFile = getFirstMasterFile(args.input, bandsMap)
     print("MULTI mission products found!")
 else :
     print("SINGLE mission products found!")
@@ -157,7 +175,7 @@ COARSE_RES="240"
 SIGMA_SMALL_CLD="2"
 SIGMA_LARGE_CLD="10"
 
-WEIGHT_DATE_MIN="0.10"
+WEIGHT_DATE_MIN="0.5"
 
 outWeights = outDir + '/L3AResult#_weights.tif'
 outDates = outDir + '/L3AResult#_dates.tif'
@@ -262,39 +280,42 @@ for xml in args.input:
     out_w_Total=outTotalWeightFile.replace("#", counterString)
     curMasterInfoFile=masterInfoFile.replace("#", counterString)
 
-    runCmd(["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outSpotMasks, "-outres", outUnclippedImgBands, "-outcmres", outUnclippedCld, "-outwmres", outUnclippedWat, "-outsmres", outUnclippedSnow, "-outaotres", outUnclippedAot, "-masterinfo", curMasterInfoFile])
+    if (not multisatelites) or isMasterMissionFile(xml, bandsMap):
+        runCmd(["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outSpotMasks, "-outres", outUnclippedImgBands, "-outcmres", outUnclippedCld, "-outwmres", outUnclippedWat, "-outsmres", outUnclippedSnow, "-outaotres", outUnclippedAot, "-masterinfo", curMasterInfoFile])
+    else:
+        runCmd(["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outSpotMasks, "-outres", outUnclippedImgBands, "-outcmres", outUnclippedCld, "-outwmres", outUnclippedWat, "-outsmres", outUnclippedSnow, "-outaotres", outUnclippedAot, "-masterinfo", curMasterInfoFile, "-pmxml", firstMasterFile])
     
     # if we have a shape file, then we will apply it on all files from preprocessing
     # else, if we don't have a shape file then 
     #   Check if it is a master product and create the shape
     #
-    unclippedImgs = False
-    if multisatelites:
-        if (not os.path.isfile(shapeFile)):
-            firstMasterFile = getFirstMasterFile(args.input, bandsMap)
-            if firstMasterFile != "" :
-                runCmd(["otbcli", "CreateFootprint", appLocation, "-in", firstMasterFile, "-mode", "metadata", "-out", shapeFile])
-        if os.path.isfile(curMasterInfoFile): 
-            unclippedImgs = True
-        else :
-            if os.path.isfile(shapeFile):
-                print("Executing GDALWARP for all files ...")
-                runCmd(["gdalwarp", "-dstnodata", "-10000", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedImgBands, outImgBands])
-                runCmd(["gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedCld, outCld])
-                runCmd(["gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedWat, outWat])
-                runCmd(["gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedSnow, outSnow])
-                runCmd(["gdalwarp", "-dstnodata", "-10000", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedAot, outAot])
-            else :
-                unclippedImgs = True
-    else:
-        unclippedImgs = True
-
-    if unclippedImgs:
-        outImgBands = outUnclippedImgBands
-        outCld = outUnclippedCld
-        outWat = outUnclippedWat
-        outSnow = outUnclippedSnow
-        outAot = outUnclippedAot
+#    unclippedImgs = False
+#    if multisatelites:
+#        if (not os.path.isfile(shapeFile)):
+#            firstMasterFile = getFirstMasterFile(args.input, bandsMap)
+#            if firstMasterFile != "" :
+#                runCmd(["otbcli", "CreateFootprint", appLocation, "-in", firstMasterFile, "-mode", "metadata", "-out", shapeFile])
+#        if os.path.isfile(curMasterInfoFile): 
+#            unclippedImgs = True
+#        else :
+#            if os.path.isfile(shapeFile):
+#                print("Executing GDALWARP for all files ...")
+#                runCmd(["gdalwarp", "-dstnodata", "-10000", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedImgBands, outImgBands])
+#                runCmd(["gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedCld, outCld])
+#                runCmd(["gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedWat, outWat])
+#                runCmd(["gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedSnow, outSnow])
+#                runCmd(["gdalwarp", "-dstnodata", "-10000", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedAot, outAot])
+#            else :
+#                unclippedImgs = True
+#    else:
+#        unclippedImgs = True
+#
+#    if unclippedImgs:
+    outImgBands = outUnclippedImgBands
+    outCld = outUnclippedCld
+    outWat = outUnclippedWat
+    outSnow = outUnclippedSnow
+    outAot = outUnclippedAot
         
     runCmd(["otbcli", "WeightAOT", appLocation, "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", out_w_Aot])
 

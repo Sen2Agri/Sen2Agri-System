@@ -34,6 +34,7 @@ public:
     typedef struct {
         QString file;
         SatelliteIdType satId;
+        QStringList additionalFiles;
     } InfoTileFile;
 
     typedef struct {
@@ -62,6 +63,8 @@ public:
     static QString GetHigLevelProductTileFile(const QString &tileDir, const QString &fileIdentif, bool isQiData=false);
     static QMap<QString, QString> GetHigLevelProductFiles(const QString &productDir, const QString &fileIdentif, bool isQiData=false);
     static QMap<QString, QString> GetHighLevelProductTilesDirs(const QString &productDir);
+    static QString GetHighLevelProductIppFile(const QString &productDir);
+    static bool HighLevelPrdHasL2aSource(const QString &highLevelPrd, const QString &l2aPrd);
     static QMap<QString, QStringList> GroupHighLevelProductTiles(const QStringList &listAllProductFolders);
 
     static QString GetL2ATileMainImageFilePath(const QString &tileMetadataPath);
@@ -71,6 +74,8 @@ public:
     static bool IsValidL2AMetadataFileName(const QString &path);
     static bool GetL2AIntevalFromProducts(const QStringList &productsList, QDateTime &minTime, QDateTime &maxTime);
     static bool GetCropReferenceFile(const QString &refDir, QString &shapeFile, QString &referenceRasterFile);
+    static bool GetStrataFile(const QString &refDir, QString &strataShapeFile);
+    static bool GetCropReferenceFile(const QString &refDir, QString &shapeFile, QString &referenceRasterFile, QString &strataShapeFile);
     static void AddSatteliteIntersectingProducts(QMap<QString, TileTemporalFilesInfo> &mapSatellitesTilesInfos,
                                                  QStringList &listSecondarySatLoadedProds, SatelliteIdType secondarySatId,
                                                  TileTemporalFilesInfo &primarySatInfos);
@@ -81,6 +86,8 @@ public:
     static QStringList GetTemporalTileFiles(const TileTemporalFilesInfo &temporalTileInfo);
     static bool TemporalTileInfosHasFile(const TileTemporalFilesInfo &temporalTileInfo, const QString &filePath);
     static void SortTemporalTileInfoFiles(TileTemporalFilesInfo &temporalTileInfo);
+    static void TrimLeftSecondarySatellite(QStringList &productsList);
+    static void TrimLeftSecondarySatellite(QStringList &productsList, QMap<QString, TileTemporalFilesInfo> mapTiles);
 
 private:
     static QMap<QString, L2MetaTileNameInfos> m_mapSensorL2ATileMetaFileInfos;

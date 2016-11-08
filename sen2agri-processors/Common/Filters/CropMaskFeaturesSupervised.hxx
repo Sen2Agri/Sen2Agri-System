@@ -31,7 +31,7 @@ public:
   CropMaskFeaturesSupervisedFunctor() : m_W(2), m_Delta(0.05), id(0), m_TSoil(0.2) {}
   CropMaskFeaturesSupervisedFunctor(int m_W, PixelValueType m_Delta, std::vector<int> id, PixelValueType m_TSoil) : m_W(m_W), m_Delta(m_Delta), id(std::move(id)), m_TSoil(m_TSoil) {}
 
-  PixelType operator()(PixelType pixel) const
+  PixelType operator()(const PixelType &pixel) const
   {
       int numImages = pixel.Size() / 4;
 
@@ -348,7 +348,7 @@ public:
   CropMaskFeaturesSupervisedBMFunctor() : m_W(2), m_Delta(0.05), id(0), m_TSoil(0.2) {}
   CropMaskFeaturesSupervisedBMFunctor(int m_W, PixelValueType m_Delta, std::vector<int> id, PixelValueType m_TSoil) : m_W(m_W), m_Delta(m_Delta), id(std::move(id)), m_TSoil(m_TSoil) {}
 
-  PixelType operator()(PixelType pixel) const
+  PixelType operator()(const PixelType &pixel) const
   {
       int numImages = pixel.Size() / 4;
 
