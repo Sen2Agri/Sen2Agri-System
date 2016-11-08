@@ -161,6 +161,9 @@ def get_s2obj_from_file(aoiContext, xml, account, passwd, proxy):
                 cloud=float((node.toxml()).split('>')[1].split('<')[0])
 
         product_date = re.search(r"_V(\d{8}T\d{6})_", filename)
+        #check if the new naiming convention applies
+        if product_date == None:
+            product_date = re.search(r"_MSIL1C_(\d{8}T\d{6})_", filename)
         orbit_id = re.search(r"_R(\d{3})_", filename)
         if len(filename) == 0 or cloud > 100 or product_date == None or orbit_id == None:
             log(aoiContext.writeDir, "Something went wrong with the filename: filename:{} | cloud percentage:{} | product date: {} | orbit id: {}".format(filename, cloud, product_date, orbit_id), general_log_filename)
