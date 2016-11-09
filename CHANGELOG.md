@@ -4,6 +4,7 @@
 ### Added
 - Multi-tile implementation of the unsupervised Crop Mask processor, which should be more precise, faster and use less temporary disk space
 - Crop mask and crop type products now include a QGIS style file
+- The crop type processor can optionally use the Sentinel-2 red edge bands via the `-red-edge` argument
 
 ### Changed
 - The crop mask segmentation is now performed on a "nodata-filled" version of the NDVI series. No data pixels are replaced with the average of that band, in order to avoid the PCA step giving a higher priority to them.
@@ -21,30 +22,29 @@
 - The RPM package version numbers are now correct
 - The RPM packages correctly preserve the configuration files changed by the administrator
 - 20m composite products are now generated
+- The LEGACY_DATA mosaic now uses nearest-neighbour resampling for L4A and L4B product
+- The LEGACY_DATA mosaic now uses tile consensus projection or `EPSG:4326` instead of picking the majority one
+- Quality flags extraction no longer gives wrong results when Landsat 8 products in a different projection are used
+- The L3A, L3B, L3C and quality flags extraction step of the L4A and L4B processors no longer crash when input products are in the current directory
 
 ### Known issues
-- Quality flags extraction gives wrong results when inputs are in a different projection
-- The crop type processor should use red edge bands
 - The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented
 - SNAP adapters need to be updated
 - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
 - With multiple input tiles, the training pixel sampling for crop type and crop mask products can be skewed if the training classes are not uniformly distributed
 - The SAFE formatting application uses both segmented and raw crop masks for the mosaic
-- The SAFE formatting application outputs mosaics that are outside of the SRS bounds for products spanning multiple SRSs. It should use `EPSG:4326`.
-- The SAFE formatting application sometimes outputs mosaics with black edges around tile edges when some tiles need to be reprojected.
+- The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
 - The SAFE formatting application sometimes outputs unusable (e.g. black) previews
-- The SAFE formatting application uses bilinear resampling for the crop type and crop mask mosaics. It should use nearest-neighbour instead.
 - The SAFE and L2A product previews are not gamma-corrected and can be too dark
 - The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
 - The crop type and mask training step sometimes crashes while loading the OpenCV models
 - MACCS and quicklook generation sometimes crash or hang
 - Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
 - The trimming step of the Crop Mask processor still uses a large amount of memory
-- The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels. It should expect a binary map.
-- The L3A, L3B and L3C processors and the quality flags extraction step of the L4A and L4B processors fail when one of the input product paths contains no directory separator. A workaround is to place a `./` before the product file.
+- The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
 - The dashboard previews don't match their bounds rectangle because of projection mismatch
 - The `demmaccs.py` command line help message contains positional arguments (`input` and `output`) placed immediately after optional arguments taking multiple values (`--prev-l2a-tiles` and `--prev-l2a-products-paths`). This can prove troublesome for unsuspecting users. The workaround is to put a `--` or a different optional argument before the positional arguments
-- For LAI the model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
+- The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
 
 ## [1.3.1] - 2016-10-10
 ### Added
