@@ -932,7 +932,7 @@ private:
       args.emplace_back(rasterFullFilePath.c_str());
       args.emplace_back("-out");
       args.emplace_back(jpegFullFilePath.c_str());
-      //args.emplace_back("uint8");
+      args.emplace_back("uint8");
       args.emplace_back("-sr");
       args.emplace_back("10");
       args.emplace_back("-cl");
