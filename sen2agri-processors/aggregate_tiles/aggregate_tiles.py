@@ -93,12 +93,15 @@ def create_rgb_image(post_process_out_filename, newRgbTif, lutMap, isRGB, isRang
                  "-isrange", ("1" if isRangeMapFile else "0")])
 
 #----------------------------------------------------------------
-def process_mosaic_images(interpolName, listOfImages, imgAggregatedName):
+def process_mosaic_images(interpolName, listOfImages, imgAggregatedName, type=None):
+    if type == None:
+        type = ''
+
     run_command([get_otb_launcher(),
                  "Mosaic",
 		         "-progress", "false",
                  "-il"] + listOfImages + [
-                 "-out", imgAggregatedName +"?gdal:co:COMPRESS=DEFLATE",
+                 "-out", imgAggregatedName +"?gdal:co:COMPRESS=DEFLATE", type,
                  "-comp.feather", "none",
                  "-interpolator", interpolName ])
 #----------------------------------------------------------------
@@ -173,25 +176,25 @@ def create_context(args):
        fieldAsStr = ''.join(fieldOptionList)
        characterField = fieldAsStr[0] + fieldAsStr[1]
 
-    if args.outsrs is None:
-        ret_val_img = "", "", ""
-        if len(retrieved_img_data_list):
-        #extract CS_NAME, CS_CODE and PROJCS from all the input tiles (IMG_DATA)
-            ret_val_img = getMajorityWGS_PROJCS(retrieved_img_data_list)
+    ret_val_img = "", "", "", True
+    if len(retrieved_img_data_list):
+    #extract CS_NAME, CS_CODE and PROJCS from all the input tiles (IMG_DATA)
+        ret_val_img = getMajorityWGS_PROJCS(retrieved_img_data_list)
 
-        ret_val_qi = "", "", ""
-        if len(retrieved_qi_data_list):
-        #extract CS_NAME, CS_CODE and PROJCS from all the input masks (QI_DATA)
-            ret_val_qi = getMajorityWGS_PROJCS(retrieved_qi_data_list)
-    else:
-        srs = osr.SpatialReference()
-        srs.SetWellKnownGeogCS(args.outsrs)
+    ret_val_qi = ret_val_img
 
-        wkt = srs.ExportToWkt()
-        projcs_name = srs.GetAttrValue("PROJCS", 0)
-        projcs_code = srs.GetAttrValue("AUTHORITY", 1)
+    same_srs = ret_val_img[3]
 
-        ret_val_img = ret_val_qi = wkt, projcs_name, projcs_code
+    if args.outsrs is not None:
+        if not same_srs:
+            srs = osr.SpatialReference()
+            srs.SetWellKnownGeogCS(args.outsrs)
+
+            wkt = srs.ExportToWkt()
+            projcs_name = srs.GetAttrValue("PROJCS", 0)
+            projcs_code = srs.GetAttrValue("AUTHORITY", 1)
+
+            ret_val_img = ret_val_qi = wkt, projcs_name, projcs_code, False
 
     #create a dictionary holding all necessary information for processing
     d = dict(#reprojection and rescale to desired rescale_output
@@ -390,7 +393,7 @@ def parse_arguments():
         description="Creates Agregate Images for LEGACY_DATA folder")
     parser.add_argument('-prodfolder', required=True, help="input dir path. Ex: /FullProductNamePath")
     parser.add_argument('-rescaleval', required=True, help="pixel scale on output mosaic . Ex: 60")
-    parser.add_argument('-outsrs', required=False, help="output projection (default: majority, example: EPSG:4326)", default=None)
+    parser.add_argument('-outsrs', required=False, help="output projection if no tile consensus (default: EPSG:4326)", default='EPSG:4326')
 
     args = parser.parse_args()
     return create_context(args)
@@ -585,10 +588,17 @@ def perform_tiles_aggreagtion(context):
        generate_names_for_output_files(context, "IMG_DATA")
 
        #call mosaic function for each processing list from IMG_DATA
+       if context.level == "L4A" or context.level == "L4B":
+           type = 'int16'
+           resampler = "nn"
+       else:
+           type = None
+           resampler = "linear"
        for keyIMGSuffix in context.img_data_dic:
-          process_mosaic_images("linear",  #use interpolator Linear for TILES
+          process_mosaic_images(resampler,
                                 context.img_data_dic[keyIMGSuffix],
-                                context.out_filename_aggreg_img_data_dict[keyIMGSuffix])
+                                context.out_filename_aggreg_img_data_dict[keyIMGSuffix],
+                                type)
 
        #remove previous generated files during reprojection and rescale - no more needed
        for fileName in context.img_data_out_list:
@@ -677,10 +687,16 @@ def raster_reprojection_and_rescale(listOfFiles, targetSrs, resamplAlg, destFold
       image_reproject_and_rescale(reprojIsNecesary, targetSrs, rescaleIsNecesary, targetX, targetY, resamplAlg, fileName, outFullPathFilename )
 #----------------------------------------------------------------
 def perform_reprojection_and_rescale(context):
+   context.level = get_product_processing_level(context)
 
    #if files in TILES/*/IMG_DATA
    if len(context.img_data_inp_list):
-      raster_reprojection_and_rescale (context.img_data_inp_list, context.projcs_reproj_coord_img, "bilinear", "IMG_DATA")
+      if context.level == 'L4A' or context.level == 'L4B':
+          resampler = 'near'
+      else:
+          resampler = 'bilinear'
+
+      raster_reprojection_and_rescale (context.img_data_inp_list, context.projcs_reproj_coord_img, resampler, "IMG_DATA")
 
    #if files in TILES/*/QI_DATA
    if len(context.qi_data_inp_list):
@@ -762,6 +778,7 @@ def getMajorityWGS_PROJCS(listFiles):
       proj_CS_dict[source_srs.ExportToWkt()] += 1
 
    max_srs_wkt = max(proj_CS_dict.iteritems(), key=operator.itemgetter(1))[0]
+   same_srs = len(proj_CS_dict) == 1
 
    srs = osr.SpatialReference()
    srs.ImportFromWkt(max_srs_wkt)
@@ -770,7 +787,7 @@ def getMajorityWGS_PROJCS(listFiles):
    proj_CS_name_computed = srs.GetAttrValue("PROJCS", 0)
    proj_CS_code_computed = srs.GetAttrValue("AUTHORITY", 1)
 
-   ret_val = srs, proj_CS_name_computed, proj_CS_code_computed
+   ret_val = srs, proj_CS_name_computed, proj_CS_code_computed, same_srs
 
    return ret_val
 #----------------------------------------------------------------
