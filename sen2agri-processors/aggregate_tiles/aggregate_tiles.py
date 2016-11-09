@@ -106,6 +106,7 @@ def image_reproject_and_rescale(reprojIsNecesary, targetSrs, rescaleIsNecesary, 
    if reprojIsNecesary and rescaleIsNecesary:
       #perform both reprojection and rescale
       run_command(["gdalwarp",
+                 "-overwrite",
                  "-of", "GTiff",
                  "-t_srs", "ESRI::" + str(targetSrs),
                  "-ts", str(targetSizeX), str(targetSizeY),
@@ -116,6 +117,7 @@ def image_reproject_and_rescale(reprojIsNecesary, targetSrs, rescaleIsNecesary, 
    elif reprojIsNecesary:
       #perform just reprojection
       run_command(["gdalwarp",
+                 "-overwrite",
                  "-of", "GTiff",
                  "-t_srs", "ESRI::" + str(targetSrs),
                  inpFile,
@@ -124,6 +126,7 @@ def image_reproject_and_rescale(reprojIsNecesary, targetSrs, rescaleIsNecesary, 
    elif rescaleIsNecesary:
       #perform just  rescale
       run_command(["gdalwarp",
+                 "-overwrite",
                  "-of", "GTiff",
                  "-t_srs", "ESRI::" + str(targetSrs),
                  "-ts", str(targetSizeX), str(targetSizeY),
