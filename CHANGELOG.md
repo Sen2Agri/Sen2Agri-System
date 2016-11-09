@@ -1,13 +1,13 @@
 # Change Log
 
-## [1.4] - 2016-10-TBD
+## [1.4] - 2016-11-TBD
 ### Added
 - Multi-tile implementation of the unsupervised Crop Mask processor, which should be more precise, faster and use less temporary disk space
 - Crop mask and crop type products now include a QGIS style file
 - The crop type processor can optionally use the Sentinel-2 red edge bands via the `-red-edge` argument
 
 ### Changed
-- The crop mask segmentation is now performed on a "nodata-filled" version of the NDVI series. No data pixels are replaced with the average of that band, in order to avoid the PCA step giving a higher priority to them.
+- The crop mask segmentation is now performed on a "nodata-filled" version of the NDVI series. No data pixels are replaced with band averages.
 - The multi-tile crop mask and crop type classification is now faster for tiles that are intersected by multiple strata
 - Classification is no longer perform the classification on tile regions that are outside of a strata. Previously, the strata covering the most of the tile was used.
 - Strata intersecting a small region of a tile are now classified accordingly. Previously, pixels in those region used the strata covering most of the tile.
