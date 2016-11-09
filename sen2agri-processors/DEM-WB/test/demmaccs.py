@@ -7,7 +7,7 @@ _____________________________________________________________________________
    Language:     Python
    Copyright:    2015-2016, CS Romania, office@c-s.ro
    See COPYRIGHT file for details.
-   
+
    Unless required by applicable law or agreed to in writing, software
    distributed under the License is distributed on an "AS IS" BASIS,
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -112,7 +112,7 @@ class DEMMACCSContext(object):
         self.prev_l2a_products_paths = prev_l2a_products_paths
         self.maccs_address = maccs_address
         self.maccs_launcher = maccs_launcher
-        self.input = l1c_input        
+        self.input = l1c_input
         self.output = l2a_output
 
 
@@ -123,7 +123,7 @@ def maccs_launcher(demmaccs_context):
     product_name = os.path.basename(demmaccs_context.input[:len(demmaccs_context.input) - 1]) if demmaccs_context.input.endswith("/") else os.path.basename(demmaccs_context.input)
     sat_id, acquistion_date = get_product_info(product_name)
     gipp_sat_prefix = ""
-    basename = os.path.basename(demmaccs_context.dem_hdr_file)    
+    basename = os.path.basename(demmaccs_context.dem_hdr_file)
     dem_dir_list = glob.glob("{0}/{1}.DBL.DIR".format(dem_output_dir, basename[0:len(basename) - 4]))
 
     if len(dem_dir_list) != 1 or not os.path.isdir(dem_dir_list[0]):
@@ -134,7 +134,7 @@ def maccs_launcher(demmaccs_context):
     gipp_sat_dir = ""
     gipp_tile_prefix = ""
     if sat_id == SENTINEL2_SATELLITE_ID:
-        gipp_sat_prefix = "S2"        
+        gipp_sat_prefix = "S2"
         common_tile_id = "CMN00"
         #no prefix for sentinel
         gipp_tile_prefix = ""
@@ -149,7 +149,7 @@ def maccs_launcher(demmaccs_context):
         gipp_sat_dir = "LANDSAT8"
         tile = re.match("L8\w+_REFDE2_(\w{6})\w+", basename[0:len(basename) - 4])
         if tile is not None:
-            tile_id = tile.group(1)            
+            tile_id = tile.group(1)
     else:
         log(demmaccs_context.output, "Unknown satellite id {} found for {}".format(sat_id, demmaccs_context.input), "demmaccs.log")
         return ""
@@ -177,9 +177,9 @@ def maccs_launcher(demmaccs_context):
     if not create_sym_links(common_gipps, working_dir, demmaccs_context.output, tile_log_filename):
         log(demmaccs_context.output, "Symbolic links for GIPP files could not be created in the output directory", tile_log_filename)
         return ""
-        
+
     gipp_tile_types = ["L2SITE", "CKEXTL", "CKQLTL"]
-    
+
     for gipp_tile_type in gipp_tile_types:
         #search for the specific gipp tile file. if it will not be found, the common one (if exists) will be used
         tmp_tile_gipp = glob.glob("{}/{}/{}*{}_S_{}{}*.EEF".format(demmaccs_context.gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, tile_id))
@@ -233,11 +233,11 @@ def maccs_launcher(demmaccs_context):
     cmd_array = []
     if demmaccs_context.maccs_address is not None:
         cmd_array = ["ssh", demmaccs_context.maccs_address]
-    cmd_array += [demmaccs_context.maccs_launcher, 
-                    "--input", working_dir, 
-                    "--TileId", tile_id, 
+    cmd_array += [demmaccs_context.maccs_launcher,
+                    "--input", working_dir,
+                    "--TileId", tile_id,
                     "--output", maccs_working_dir,
-                    "--mode", maccs_mode, 
+                    "--mode", maccs_mode,
                     "--loglevel", "DEBUG",
                     "--enableTest", "false",
                     "--CheckXMLFilesWithSchema", "false"]
@@ -248,10 +248,10 @@ def maccs_launcher(demmaccs_context):
     log(demmaccs_context.output, "Starting MACCS in {} for {} | TileID: {}".format(maccs_mode, demmaccs_context.input, tile_id), tile_log_filename)
     log(demmaccs_context.output, "MACCS_COMMAND: {}".format(cmd_array), tile_log_filename)
     if run_command(cmd_array, demmaccs_context.output, tile_log_filename) != 0:
-        log(demmaccs_context.output, "MACCS mode {} didn't work for {} | TileID: {}. Location {}".format(maccs_mode, demmaccs_context.input, tile_id, demmaccs_context.output), tile_log_filename)        
+        log(demmaccs_context.output, "MACCS mode {} didn't work for {} | TileID: {}. Location {}".format(maccs_mode, demmaccs_context.input, tile_id, demmaccs_context.output), tile_log_filename)
     else:
         log(demmaccs_context.output, "MACCS mode {} for {} tile {} finished in: {}. Location: {}".format(maccs_mode, demmaccs_context.input, tile_id, datetime.timedelta(seconds=(time.time() - start)), demmaccs_context.output), tile_log_filename)
-    # move the maccs output to the output directory. 
+    # move the maccs output to the output directory.
     # only the valid files should be moved
     maccs_dbl_dir = glob.glob("{}/*_L2VALD_*.DBL.DIR".format(maccs_working_dir))
     maccs_hdr_file = glob.glob("{}/*_L2VALD_*.HDR".format(maccs_working_dir))
@@ -279,7 +279,7 @@ def maccs_launcher(demmaccs_context):
         log(demmaccs_context.output, "Deleting MACCS working directory: rmtree: {}".format(maccs_working_dir), tile_log_filename)
         shutil.rmtree(maccs_working_dir)
     except:
-        return_tile_id = ""        
+        return_tile_id = ""
         log(demmaccs_context.output, "Exception caught when moving maccs files for tile {} to the output directory :( ".format(tile_id), tile_log_filename)
     return return_tile_id
 
@@ -291,21 +291,21 @@ parser.add_argument('-w', '--working-dir', required=True,
                     help="working directory")
 parser.add_argument('--srtm', required=True, help="SRTM dataset path")
 parser.add_argument('--swbd', required=True, help="SWBD dataset path")
+parser.add_argument('--gipp-dir', required=True, help="directory where gip are to be found")
+parser.add_argument('--maccs-launcher', required=True, help="MACCS binary path in localhost (or remote host if maccs-address is set)")
 parser.add_argument('--processes-number-dem', required=False,
                         help="number of processes to run DEM in parallel", default="3")
 parser.add_argument('--processes-number-maccs', required=False,
                         help="number of processes to run MACCS in parallel", default="2")
-parser.add_argument('--gipp-dir', required=True, help="directory where gip are to be found")
 parser.add_argument('--maccs-address', required=False, help="MACCS has to be run from a remote host. This should be the ip address of the pc where MACCS is to be found")
-parser.add_argument('--maccs-launcher', required=True, help="MACCS binary path in localhost (or remote host if maccs-address is set)")
 parser.add_argument('--skip-dem', required=False,
                         help="skip DEM if a directory with previous work of DEM is given", default=None)
-parser.add_argument('--delete-temp', required=False,
-                        help="if set to True, it will delete all the temporary files and directories. Default: True", default="True")
 parser.add_argument('--prev-l2a-tiles', required=False,
                         help="Previous processed tiles from L2A product", default=[], nargs="+")
 parser.add_argument('--prev-l2a-products-paths', required=False,
                         help="Path of the previous processed tiles from L2A product", default=[], nargs="+")
+parser.add_argument('--delete-temp', required=False,
+                        help="if set to True, it will delete all the temporary files and directories. Default: True", default="True")
 parser.add_argument('output', help="output location")
 
 args = parser.parse_args()
@@ -393,7 +393,7 @@ if len(dem_hdrs) == 0:
 
 demmaccs_contexts = []
 print("Creating demmaccs contexts with: input: {} | output {}".format(args.input, args.output))
-for dem_hdr in dem_hdrs:    
+for dem_hdr in dem_hdrs:
     print("DEM_HDR: {}".format(dem_hdr))
     demmaccs_contexts.append(DEMMACCSContext(working_dir, dem_hdr, args.gipp_dir, args.prev_l2a_tiles, args.prev_l2a_products_paths, args.maccs_address, args.maccs_launcher, args.input, args.output))
 
@@ -403,7 +403,7 @@ pool_outputs = pool.map(maccs_launcher, demmaccs_contexts)
 pool.close()
 pool.join()
 
-#DEBUG mode only, it launches sequentially 
+#DEBUG mode only, it launches sequentially
 #pool_outputs = map(maccs_launcher, demmaccs_contexts)
 
 processed_tiles = []
@@ -419,7 +419,7 @@ else:
     log(general_log_path, "MACCS processed the following tiles for L1C product {} :".format(args.input), log_filename)
     log(general_log_path, "{}".format(processed_tiles), log_filename)
     if run_command([os.path.dirname(os.path.abspath(__file__)) + "/mosaic_l2a.py", "-i", args.output, "-w", working_dir], args.output, log_filename) != 0:
-        log(general_log_path, "Mosaic didn't work", log_filename)    
+        log(general_log_path, "Mosaic didn't work", log_filename)
 
 if args.delete_temp == "True":
     log(general_log_path, "Remove all the temporary files and directory", log_filename)

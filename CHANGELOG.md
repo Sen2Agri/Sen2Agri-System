@@ -26,6 +26,7 @@
 - The LEGACY_DATA mosaic now uses tile consensus projection or `EPSG:4326` instead of picking the majority one
 - Quality flags extraction no longer gives wrong results when Landsat 8 products in a different projection are used
 - The L3A, L3B, L3C and quality flags extraction step of the L4A and L4B processors no longer crash when input products are in the current directory
+- Fixed misleading `demmaccs.py` command line help message (positional arguments placed after optional arguments taking multiple values)
 
 ### Known issues
 - The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented
@@ -39,11 +40,11 @@
 - The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
 - The crop type and mask training step sometimes crashes while loading the OpenCV models
 - MACCS and quicklook generation sometimes crash or hang
+- The NDVI no data filling step is somewhat slow
 - Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
 - The trimming step of the Crop Mask processor still uses a large amount of memory
 - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
 - The dashboard previews don't match their bounds rectangle because of projection mismatch
-- The `demmaccs.py` command line help message contains positional arguments (`input` and `output`) placed immediately after optional arguments taking multiple values (`--prev-l2a-tiles` and `--prev-l2a-products-paths`). This can prove troublesome for unsuspecting users. The workaround is to put a `--` or a different optional argument before the positional arguments
 - The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
 
 ## [1.3.1] - 2016-10-10
