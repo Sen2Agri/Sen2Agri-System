@@ -594,9 +594,18 @@ def perform_tiles_aggreagtion(context):
        else:
            type = None
            resampler = "linear"
+
        for keyIMGSuffix in context.img_data_dic:
+          if context.level == 'L4A':
+            files = []
+            for img in context.img_data_dic[keyIMGSuffix]:
+                if "_CM_" in img:
+                    files.append(img)
+          else:
+              files = context.img_data_dic[keyIMGSuffix]
+
           process_mosaic_images(resampler,
-                                context.img_data_dic[keyIMGSuffix],
+                                files,
                                 context.out_filename_aggreg_img_data_dict[keyIMGSuffix],
                                 type)
 

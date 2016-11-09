@@ -24,6 +24,7 @@
 - 20m composite products are now generated
 - The LEGACY_DATA mosaic now uses nearest-neighbour resampling for L4A and L4B product
 - The LEGACY_DATA mosaic now uses tile consensus projection or `EPSG:4326` instead of picking the majority one
+- The LEGACY_DATA mosaic of L4A products is no longer made from both segmented and raw masks
 - Quality flags extraction no longer gives wrong results when Landsat 8 products in a different projection are used
 - The L3A, L3B, L3C and quality flags extraction step of the L4A and L4B processors no longer crash when input products are in the current directory
 - Fixed misleading `demmaccs.py` command line help message (positional arguments placed after optional arguments taking multiple values)
@@ -33,7 +34,6 @@
 - SNAP adapters need to be updated
 - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
 - With multiple input tiles, the training pixel sampling for crop type and crop mask products can be skewed if the training classes are not uniformly distributed
-- The SAFE formatting application uses both segmented and raw crop masks for the mosaic
 - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
 - The SAFE formatting application sometimes outputs unusable (e.g. black) previews
 - The SAFE and L2A product previews are not gamma-corrected and can be too dark
