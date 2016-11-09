@@ -28,7 +28,6 @@ namespace otb
 template <class TImage>
 CropTypeFeatureExtractionFilter<TImage>
 ::CropTypeFeatureExtractionFilter()
-    : m_BandsPerInput(4)
 {
   this->SetNumberOfRequiredInputs(1);
   this->SetFunctor(FeatureTimeSeriesFunctor<typename TImage::PixelType>());
@@ -50,13 +49,18 @@ CropTypeFeatureExtractionFilter<TImage>
   Superclass::GenerateOutputInformation();
 
   typename Superclass::OutputImagePointer     outputPtr = this->GetOutput();
-  typename Superclass::InputImagePointer      inputPtr = this->GetInput(0);
 
-  // The output contains 3 more bands for each pixel
-  unsigned int nbComponentsPerPixel = (inputPtr->GetNumberOfComponentsPerPixel() / m_BandsPerInput ) * (m_BandsPerInput + 3);
+  unsigned int nbComponentsPerPixel = 0;
+  for (const auto &sd : m_SensorData) {
+      // The output contains 3 more bands for each pixel
+      nbComponentsPerPixel += (sd.bandCount + 3) * sd.outDates.size();
+  }
 
   // initialize the number of channels of the output image
   outputPtr->SetNumberOfComponentsPerPixel(nbComponentsPerPixel);
+
+  this->GetFunctor().m_SensorData = m_SensorData;
+  this->GetFunctor().m_OutputBands = nbComponentsPerPixel;
 }
 
 

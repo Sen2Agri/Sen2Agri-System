@@ -178,6 +178,9 @@ public:
     itkNewMacro(Self)
     itkTypeMacro(TimeSeriesReader, itk::Object)
 
+    itkSetMacro(IncludeRedEdge, bool);
+    itkGetMacro(IncludeRedEdge, bool);
+
     void Build(std::vector<std::string>::const_iterator begin, std::vector<std::string>::const_iterator end, const TileData &td)
     {
         // loop through the descriptors
@@ -352,6 +355,7 @@ protected:
     std::vector<ImageDescriptor> m_Descriptors;
     std::map<std::string, int> m_SamplingRates;
     std::map<std::string, std::vector<int> > m_SensorOutDays;
+    bool m_IncludeRedEdge;
 
     ImageReaderListType::Pointer             m_ImageReaderList;
     UInt8ImageReaderListType::Pointer        m_UInt8ImageReaderList;
@@ -371,6 +375,7 @@ protected:
     ConcatenateUInt8ImagesFilterType::Pointer         m_MaskConcat;
 
     TimeSeriesReader()
+        : m_IncludeRedEdge()
     {
         m_ImageReaderList = ImageReaderListType::New();
         m_UInt8ImageReaderList = UInt8ImageReaderListType::New();
@@ -743,6 +748,38 @@ protected:
         descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor2->GetOutput(), td, false));
         descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor3->GetOutput(), td, false));
         descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor4->GetOutput(), td, false));
+
+        if (m_IncludeRedEdge) {
+            ExtractChannelFilterType::Pointer channelExtractor;
+
+            int redEdge1Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B5");
+            channelExtractor = ExtractChannelFilterType::New();
+            channelExtractor->SetInput(reader2->GetOutput());
+            channelExtractor->SetIndex(redEdge1Index - 1);
+            m_Filters->PushBack(channelExtractor);
+            descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false));
+
+            int redEdge2Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B6");
+            channelExtractor = ExtractChannelFilterType::New();
+            channelExtractor->SetInput(reader2->GetOutput());
+            channelExtractor->SetIndex(redEdge2Index - 1);
+            m_Filters->PushBack(channelExtractor);
+            descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false));
+
+            int redEdge3Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B7");
+            channelExtractor = ExtractChannelFilterType::New();
+            channelExtractor->SetInput(reader2->GetOutput());
+            channelExtractor->SetIndex(redEdge3Index - 1);
+            m_Filters->PushBack(channelExtractor);
+            descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false));
+
+            int redEdge4Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B8A");
+            channelExtractor = ExtractChannelFilterType::New();
+            channelExtractor->SetInput(reader2->GetOutput());
+            channelExtractor->SetIndex(redEdge4Index - 1);
+            m_Filters->PushBack(channelExtractor);
+            descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false));
+        }
     }
 
     otb::Wrapper::UInt8ImageType::Pointer getSentinelMask(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td) {

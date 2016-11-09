@@ -18,6 +18,7 @@
 
 #include "itkUnaryFunctorImageFilter.h"
 #include "otbVectorImage.h"
+#include "otbTemporalResamplingFilter.h"
 
 #define NODATA          -10000
 
@@ -34,42 +35,34 @@ template <typename PixelType>
 class FeatureTimeSeriesFunctor
 {
 public:
-  FeatureTimeSeriesFunctor() : m_BandsPerInput(4) { }
-  FeatureTimeSeriesFunctor(int bands) : m_BandsPerInput(bands) { }
+  FeatureTimeSeriesFunctor() : m_OutputBands() { }
 
   PixelType operator()(const PixelType &rtocr) const
   {
-    // get the size of the rtocr raster
-    int rtocrSize = rtocr.Size();
-
-    // compute the number of images in the input file
-    int numImages = rtocrSize / m_BandsPerInput;
-
-    // compute the size of the output
-    // for each image there are 7 bands - the initial ones + ndvi, ndwi and brightness
-    int outSize = numImages * (m_BandsPerInput + 3);
-
     // Create the output pixel
-    PixelType result(outSize);
+    PixelType result(m_OutputBands);
 
-    // Loop trough the images
-    int outIndex = 0;
-    for (int i = 0; i < numImages; i++) {
-        int inIndex = i * m_BandsPerInput;
-        int b1 = rtocr[inIndex];
-        int b2 = rtocr[inIndex + 1];
-        int b3 = rtocr[inIndex + 2];
-        int b4 = rtocr[inIndex + 3];
-        // copy the bands to the output
-        for (int j = 0; j < m_BandsPerInput; j++) {
-            result[outIndex++] = rtocr[inIndex + j];
-        }
-        // compute the ndvi
-        result[outIndex++] = (b3==NODATA || b2==NODATA) ? NODATA : ((std::abs(b3+b2)<0.000001) ? 0 : static_cast<float>(b3-b2)/(b3+b2));
-        // compute the ndwi
-        result[outIndex++] = (b4==NODATA || b3==NODATA) ? NODATA : ((std::abs(b4+b3)<0.000001) ? 0 : static_cast<float>(b4-b3)/(b4+b3));
-        // compute the brightness
-        result[outIndex++] = b1==NODATA ? NODATA : std::sqrt(b1*b1 + b2*b2 + b3*b3 + b4*b4);
+    int inputPos = 0;
+    int outputPos = 0;
+    for (const auto &sd : m_SensorData) {
+      for (int i = 0; i < sd.outDates.size(); i++) {
+          for (int j = 0; j < sd.bandCount; j++) {
+              result[outputPos++] = rtocr[inputPos + j];
+          }
+          int b1 = rtocr[inputPos];
+          int b2 = rtocr[inputPos + 1];
+          int b3 = rtocr[inputPos + 2];
+          int b4 = rtocr[inputPos + 3];
+          float ndvi = (b3==NODATA || b2==NODATA) ? NODATA : ((std::abs(b3+b2)<0.000001) ? 0 : static_cast<float>(b3-b2)/(b3+b2));
+          float ndwi = (b4==NODATA || b3==NODATA) ? NODATA : ((std::abs(b4+b3)<0.000001) ? 0 : static_cast<float>(b4-b3)/(b4+b3));
+          float brightness = b1==NODATA ? NODATA : std::sqrt(b1*b1 + b2*b2 + b3*b3 + b4*b4);
+
+          result[outputPos++] = ndvi;
+          result[outputPos++] = ndwi;
+          result[outputPos++] = brightness;
+
+          inputPos += sd.bandCount;
+      }
     }
 
     return result;
@@ -77,7 +70,7 @@ public:
 
   bool operator!=(const FeatureTimeSeriesFunctor a) const
   {
-    return (this->m_BandsPerInput != a.m_BandsPerInput);
+    return (this->m_OutputBands != a.m_OutputBands);
   }
 
   bool operator==(const FeatureTimeSeriesFunctor a) const
@@ -86,7 +79,8 @@ public:
   }
 
   // the number of bands of each image from the temporal series
-  int m_BandsPerInput;
+  int m_OutputBands;
+  otb::SensorDataCollection m_SensorData;
 };
 
 
@@ -126,8 +120,8 @@ public:
   /** ImageDimension constant */
   itkStaticConstMacro(OutputImageDimension, unsigned int, TImage::ImageDimension);
 
-  itkSetMacro(BandsPerInput, unsigned int)
-  itkGetMacro(BandsPerInput, unsigned int)
+  itkSetMacro(SensorData, otb::SensorDataCollection)
+  itkGetMacro(SensorData, otb::SensorDataCollection)
 
 protected:
   /** Constructor. */
@@ -142,7 +136,7 @@ private:
   CropTypeFeatureExtractionFilter(const Self &); //purposely not implemented
   void operator =(const Self&); //purposely not implemented
 
-  unsigned int m_BandsPerInput;
+  otb::SensorDataCollection m_SensorData;
 };
 } // end namespace otb
 #ifndef OTB_MANUAL_INSTANTIATION

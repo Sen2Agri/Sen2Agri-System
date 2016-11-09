@@ -117,6 +117,9 @@ void CropTypeTrainImagesClassifier::DoInit()
   AddParameter(ParameterType_String, "mission", "The main raster series that will be used. By default SPOT is used");
   MandatoryOff("mission");
 
+  AddParameter(ParameterType_Empty, "rededge", "Include Sentinel-2 vegetation red edge bands");
+  MandatoryOff("rededge");
+
   //LBU
 
   // Elevation
@@ -284,6 +287,10 @@ void CropTypeTrainImagesClassifier::DoExecute()
       preprocessors->PushBack(preprocessor);
       preprocessor->SetPixelSize(pixSize);
       preprocessor->SetMission(mission);
+
+      if (GetParameterEmpty("rededge")) {
+          preprocessor->SetIncludeRedEdge(true);
+      }
 
       // compute the desired size of the processed rasters
       preprocessor->updateRequiredImageSize(descriptors, startIndex, endIndex, td);

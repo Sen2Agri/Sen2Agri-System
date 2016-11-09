@@ -45,6 +45,8 @@ class CropTypeProcessor(ProcessorBase):
         parser.add_argument('-maskprod', help='A crop mask product for the same tiles', required=False, default=None)
         parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)',
                             required=False, metavar='pixsize', default=10)
+        parser.add_argument('-red-edge', help='Include Sentinel-2 vegetation red edge bands',
+                            required=False, default=False, action='store_true')
         parser.add_argument('-sp', help='Per-sensor sampling rates (default SENTINEL 10 SPOT 5 LANDSAT 16)',
                             required=False, nargs='+', default=["SENTINEL", "10", "SPOT", "5", "LANDSAT", "16"])
 
@@ -166,6 +168,8 @@ class CropTypeProcessor(ProcessorBase):
                         "-sample.vfn", "CODE",
                         "-sample.vtr", 0.01,
                         "-classifier", self.args.classifier]
+        if self.args.red_edge:
+            step_args += ["-rededge", "true"]
         step_args += ["-sp"] + self.args.sp
         step_args += ["-prodpertile"] + area_prodpertile
         step_args += ["-il"] + area_descriptors
@@ -215,6 +219,8 @@ class CropTypeProcessor(ProcessorBase):
                         "-bv", -10000,
                         "-nodatalabel", -10000,
                         "-out", tile_crop_type_map_uncompressed]
+        if self.args.red_edge:
+            step_args += ["-rededge", "true"]
         step_args += ["-model"] + models
         step_args += ["-il"] + tile.descriptors
         if self.args.classifier == "svm":

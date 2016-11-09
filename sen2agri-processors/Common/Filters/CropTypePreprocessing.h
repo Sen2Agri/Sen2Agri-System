@@ -104,8 +104,7 @@ public:
         temporalResampler->SetInputData(sdCollection);
 
         featureExtractor->SetInput(temporalResampler->GetOutput());
-        featureExtractor->SetBandsPerInput(4);
-        featureExtractor->GetFunctor().m_BandsPerInput = 4;
+        featureExtractor->SetSensorData(sdCollection);
 
         return featureExtractor->GetOutput();
     }
