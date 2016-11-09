@@ -1,6 +1,6 @@
 #!/bin/sh
 
-source set_build_folder.sh
+source ./set_build_folder.sh
 
 ./CropTypeFused.py \
     -refp /mnt/data/south_africa_medium/SA_FRST_LC_SM_2016_repaired.shp \
