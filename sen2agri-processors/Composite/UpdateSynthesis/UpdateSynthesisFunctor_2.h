@@ -31,12 +31,11 @@ class OutFunctorInfos
 public:
     OutFunctorInfos(int nSize) {
         m_CurrentWeightedReflectances.resize(nSize);
-        //m_CurrentPixelWeights.resize(nSize);
+        m_CurrentPixelWeights.resize(nSize);
     }
 
     std::vector<float> m_CurrentWeightedReflectances;
-    //std::vector<float> m_CurrentPixelWeights;
-    float m_CurrentPixelWeights;
+    std::vector<float> m_CurrentPixelWeights;
     short m_nCurrentPixelFlag;
     float m_fCurrentPixelWeightedDate;
 } ;
@@ -53,8 +52,7 @@ public:
     void Initialize(const std::vector<int> presenceVect, int nExtractedL2ABandsNo, int nRedBandIdx, int nBlueBandIdx,
                     bool bPrevL3ABandsAvailable, int nDate, float fReflQuantifVal);
     int GetNbOfL3AReflectanceBands() { return m_nNbOfL3AReflectanceBands; }
-    //int GetNbOfOutputComponents() { return 2*m_nNbOfL3AReflectanceBands+2;}
-    int GetNbOfOutputComponents() { return m_nNbOfL3AReflectanceBands+3;}
+    int GetNbOfOutputComponents() { return 2*m_nNbOfL3AReflectanceBands+2;}
 
     const char * GetNameOfClass() { return "UpdateSynthesisFunctor"; }
 
@@ -71,7 +69,7 @@ private:
     bool IsLandPixel(const TInput & A);
     bool IsRedBand(int index);
     float GetCurrentL2AWeightValue(const TInput & A);
-    float GetPrevL3AWeightValue(const TInput & A);
+    float GetPrevL3AWeightValue(const TInput & A, int offset);
     float GetPrevL3AWeightedAvDateValue(const TInput & A);
     float GetPrevL3AReflectanceValue(const TInput & A, int offset);
     short GetPrevL3APixelFlagValue(const TInput & A);
