@@ -276,7 +276,7 @@ class CropMaskProcessor(ProcessorBase):
         model_ids = []
         days = []
         statistics = []
-        for stratum in self.strata:
+        for stratum in tile.strata:
             area_model = self.get_output_path("model-{}.txt", stratum.id)
             area_days = self.get_output_path("days-{}.txt", stratum.id)
             area_statistics = self.get_output_path("statistics-{}.xml", stratum.id)
