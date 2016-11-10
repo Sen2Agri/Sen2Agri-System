@@ -120,8 +120,15 @@ public:
   /** ImageDimension constant */
   itkStaticConstMacro(OutputImageDimension, unsigned int, TImage::ImageDimension);
 
-  itkSetMacro(SensorData, otb::SensorDataCollection)
-  itkGetMacro(SensorData, otb::SensorDataCollection)
+  void SetSensorData(otb::SensorDataCollection sensorData)
+  {
+      m_SensorData = std::move(sensorData);
+  }
+
+  const otb::SensorDataCollection & GetSensorData() const
+  {
+      return m_SensorData;
+  }
 
 protected:
   /** Constructor. */
