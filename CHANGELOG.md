@@ -5,6 +5,7 @@
 - Multi-tile implementation of the unsupervised Crop Mask processor, which should be more precise, faster and use less temporary disk space
 - Crop mask and crop type products now include a QGIS style file
 - The crop type processor can optionally use the Sentinel-2 red edge bands via the `-red-edge` argument
+- The Sentinel-2 downloader is now compatible with the upcoming product format changes
 
 ### Changed
 - The crop mask segmentation is now performed on a "nodata-filled" version of the NDVI series. No data pixels are replaced with band averages.
@@ -12,12 +13,13 @@
 - Classification is no longer perform the classification on tile regions that are outside of a strata. Previously, the strata covering the most of the tile was used.
 - Strata intersecting a small region of a tile are now classified accordingly. Previously, pixels in those region used the strata covering most of the tile.
 - Crop mask and crop type try to use a system-wide LUT when they are running as a local install and another LUT is not found
-- The unsupervised crop mask processor now includes CCI-LC class 10 as crop instead of the previous rule ("11 or 20 or even 10, but only if there is no pixel with class 11")
-- Improved reprojection of crop mask reference map
+- The unsupervised crop mask processor now considers CCI-LC class 10 as crop instead of the previous rule ("11 or 20 or even 10, but only if there is no pixel with class 11")
+- Improved reprojection accuracy of crop mask reference map
 - The crop mask and crop type processors now reproject the input images if they are not in the same SRS as the images from the main sensor
+- The packaged OTB version no longer performs file existence checks before opening images
 
 ### Fixed
-- Crop mask and crop type no longer crash when the LUT was not found
+- Crop mask and crop type no longer crash when the LUT is not found
 - The larger temporary files are now removed by the crop mask and crop type processors unless -keepfiles is used
 - The RPM package version numbers are now correct
 - The RPM packages correctly preserve the configuration files changed by the administrator
@@ -40,7 +42,8 @@
 - The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
 - The crop type and mask training step sometimes crashes while loading the OpenCV models
 - MACCS and quicklook generation sometimes crash or hang
-- The NDVI no data filling step is somewhat slow
+- The NDVI no data filling step is inefficient
+- The product formatting and tile aggregation steps are inefficient
 - Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
 - The trimming step of the Crop Mask processor still uses a large amount of memory
 - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
