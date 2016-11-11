@@ -32,12 +32,16 @@ public:
     OutFunctorInfos(int nSize) {
         m_CurrentWeightedReflectances.resize(nSize);
         m_CurrentPixelWeights.resize(nSize);
+        m_nCurrentPixelFlag.resize(nSize);
+        m_nCurrentPixelWeightedDate.resize(nSize);
     }
 
     std::vector<float> m_CurrentWeightedReflectances;
     std::vector<float> m_CurrentPixelWeights;
-    short m_nCurrentPixelFlag;
-    float m_fCurrentPixelWeightedDate;
+    std::vector<short> m_nCurrentPixelFlag;
+    std::vector<short> m_nCurrentPixelWeightedDate;
+    //short m_nCurrentPixelFlag;
+    //float m_fCurrentPixelWeightedDate;
 } ;
 
 template< class TInput, class TOutput>
@@ -49,10 +53,11 @@ public:
     bool operator!=( const UpdateSynthesisFunctor & other) const;
     bool operator==( const UpdateSynthesisFunctor & other ) const;
     TOutput operator()( const TInput & A );
-    void Initialize(const std::vector<int> presenceVect, int nExtractedL2ABandsNo, int nRedBandIdx, int nBlueBandIdx,
+    void Initialize(const std::vector<int> presenceVect, int nExtractedL2ABandsNo, int nBlueBandIdx,
                     bool bPrevL3ABandsAvailable, int nDate, float fReflQuantifVal);
     int GetNbOfL3AReflectanceBands() { return m_nNbOfL3AReflectanceBands; }
-    int GetNbOfOutputComponents() { return 2*m_nNbOfL3AReflectanceBands+2;}
+    //int GetNbOfOutputComponents() { return 2*m_nNbOfL3AReflectanceBands+2;}
+    int GetNbOfOutputComponents() { return 4*m_nNbOfL3AReflectanceBands;}
 
     const char * GetNameOfClass() { return "UpdateSynthesisFunctor"; }
 
@@ -67,12 +72,11 @@ private:
     bool IsWaterPixel(const TInput & A);
     bool IsCloudPixel(const TInput & A);
     bool IsLandPixel(const TInput & A);
-    bool IsRedBand(int index);
     float GetCurrentL2AWeightValue(const TInput & A);
     float GetPrevL3AWeightValue(const TInput & A, int offset);
-    float GetPrevL3AWeightedAvDateValue(const TInput & A);
+    short GetPrevL3AWeightedAvDateValue(const TInput & A, int offset);
     float GetPrevL3AReflectanceValue(const TInput & A, int offset);
-    short GetPrevL3APixelFlagValue(const TInput & A);
+    short GetPrevL3APixelFlagValue(const TInput & A, int offset);
     int GetBlueBandIndex();
     bool IsNoDataValue(float fValue, float fNoDataValue);
 
@@ -94,7 +98,6 @@ private:
     int m_nPrevL3AWeightedAvDateBandIndex;
     int m_nPrevL3AReflectanceBandStartIndex;
     int m_nPrevL3APixelFlagBandIndex;
-    int m_nRedBandIndex;
     int m_nBlueBandIndex;
 
     // precomputed value for the reflectance no data (in order to avoid its calculation each pixel)

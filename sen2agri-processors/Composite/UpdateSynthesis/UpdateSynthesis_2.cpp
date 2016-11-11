@@ -254,13 +254,11 @@ private:
 
         // Using these indexes as they are extracted is not right
         // These indexes are from the current product and they should be translated to bands presence array indexes
-        int nRedBandIdx = pHelper->GetAbsRedBandIndex();
         int nBlueBandIdx = pHelper->GetAbsBlueBandIndex();
         // here we compute the relative indexes according to the presence array for the red and blue band
-        int nRelRedBandIdx = bandsMappingCfg.GetIndexInPresenceArray(resolution, missionName, nRedBandIdx);
         int nRelBlueBandIdx = bandsMappingCfg.GetIndexInPresenceArray(resolution, missionName, nBlueBandIdx);
         int productDate = pHelper->GetAcquisitionDateAsDoy();
-        m_Functor.Initialize(bandsPresenceVect, nExtractedBandsNo, nRelRedBandIdx, nRelBlueBandIdx, l3aExist,
+        m_Functor.Initialize(bandsPresenceVect, nExtractedBandsNo, nRelBlueBandIdx, l3aExist,
                              productDate, pHelper->GetReflectanceQuantificationValue());
         m_UpdateSynthesisFunctor = FunctorFilterType::New();
         m_UpdateSynthesisFunctor->SetFunctor(m_Functor);

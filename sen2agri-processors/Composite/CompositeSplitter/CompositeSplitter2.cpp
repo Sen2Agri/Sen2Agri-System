@@ -135,7 +135,7 @@ private:
         m_RGBOutList = ImgListType::New();        
 
         int nReflsBandsNo = nExtractedBandsNo;
-        unsigned int nTotalBandsNo = (2*nReflsBandsNo+2);
+        unsigned int nTotalBandsNo = (4*nReflsBandsNo);
         if(m_L3AIn->GetNumberOfComponentsPerPixel() != nTotalBandsNo)
         {
             itkExceptionMacro("Wrong number of bands ! " + m_L3AIn->GetNumberOfComponentsPerPixel());
@@ -152,7 +152,14 @@ private:
                 cnt++;
             }
         }
-        m_DatesList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt++));
+        for(unsigned int i = 0; i < bandsPresenceVect.size(); i++) {
+            if(bandsPresenceVect[cnt] != -1) {
+                m_DatesList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt));
+                cnt++;
+            }
+        }
+
+        //m_DatesList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt++));
         int redIdx, greenIdx, blueIdx;
         auto factory = MetadataHelperFactory::New();
         auto pHelper = factory->GetMetadataHelper(inXml);
@@ -177,7 +184,13 @@ private:
                 cnt++;
             }
         }        
-        m_FlagsList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt++));
+        for(unsigned int i = 0; i < bandsPresenceVect.size(); i++) {
+            if(bandsPresenceVect[cnt] != -1) {
+                m_FlagsList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt));
+                cnt++;
+            }
+        }
+        //m_FlagsList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt++));
 
         if((redBandNo != -1) && (greenBandNo != -1) && (blueBandNo != -1)) {
             m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(redBandNo));
