@@ -25,6 +25,22 @@ begin
                 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.skip-segmentation', NULL, 'false', '2016-10-31 17:32:00+02');
             end if;
 
+            raise notice 'applying 5b0c28146f2bf122e6bf217c762eefe99784d6f1';
+            if not exists (select * from config_metadata where key = 'executor.module.path.crop-mask-fused') then
+                raise notice 'INSERT INTO config_metadata VALUES (''executor.module.path.crop-mask-fused'', ''Crop mask script with stratification'', ''file'', true, 8);';
+                INSERT INTO config_metadata VALUES ('executor.module.path.crop-mask-fused', 'Crop mask script with stratification', 'file', true, 8);
+
+                raise notice 'INSERT INTO config(key, site_id, value, last_updated) VALUES (''executor.module.path.crop-mask-fused'', NULL, ''CropMaskFused.py'', ''2015-12-17 14:25:14.193131+02'');';
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-mask-fused', NULL, 'CropMaskFused.py', '2015-12-17 14:25:14.193131+02');
+            end if;
+            if not exists (select * from config_metadata where key = 'executor.module.path.crop-type-fused') then
+                raise notice 'INSERT INTO config_metadata VALUES (''executor.module.path.crop-type-fused'', ''Crop type script with stratification'', ''file'', true, 8);';
+                INSERT INTO config_metadata VALUES ('executor.module.path.crop-type-fused', 'Crop type script with stratification', 'file', true, 8);
+
+                raise notice 'INSERT INTO config(key, site_id, value, last_updated) VALUES (''executor.module.path.crop-type-fused'', NULL, ''CropTypeFused.py'', ''2015-12-17 14:25:14.193131+02'');';
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-type-fused', NULL, 'CropTypeFused.py', '2015-12-17 14:25:14.193131+02');
+            end if;
+
             raise notice 'update meta set version = ''1.4'';';
             update meta set version = '1.4';
         end if;
