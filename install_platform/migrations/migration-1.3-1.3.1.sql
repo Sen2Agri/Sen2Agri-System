@@ -130,8 +130,8 @@ begin
         raise notice 'update config_metadata set key = ''executor.module.path.dimensionality-reduction'', friendly_name=''Dimensionality reduction'' where key = ''executor.module.path.principal-component-analysis'';';
         update config_metadata set key = 'executor.module.path.dimensionality-reduction', friendly_name='Dimensionality reduction' where key = 'executor.module.path.principal-component-analysis';
 
-        -- b57b113cc28e06ae9c72aecd5be0cfca5dcfa833
-        raise notice 'applying b57b113cc28e06ae9c72aecd5be0cfca5dcfa833';
+        -- 2449c9926ceceed2fa33e7dc05ac45336accdc4a
+        raise notice 'applying 2449c9926ceceed2fa33e7dc05ac45336accdc4a';
         raise notice 'update config set value=''40000'' where key = ''processor.l4a.training-samples-number'';';
         update config set value='40000' where key = 'processor.l4a.training-samples-number';
         raise notice 'update config set value=''resample'' where key in (''processor.l4a.temporal_resampling_mode'', ''processor.l4b.temporal_resampling_mode'');';
