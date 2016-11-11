@@ -248,6 +248,9 @@ def get_product_info(product_name):
     sat_id = UNKNOWN_SATELLITE_ID
     if product_name.startswith("S2"):
         m = re.match("\w+_V(\d{8}T\d{6})_\w+.SAFE", product_name)
+        # check if the new convention naming aplies
+        if m == None:
+            m = re.match("\w+_MSIL1C_(\d{8}T\d{6})_\w+.SAFE", product_name)
         if m != None:
             sat_id = SENTINEL2_SATELLITE_ID
             acquisition_date = m.group(1)

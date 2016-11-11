@@ -82,8 +82,15 @@ public:
   itkSetMacro(UseModelMask, bool)
   itkGetMacro(UseModelMask, bool)
 
-  itkSetMacro(ModelMap, std::vector<uint8_t>)
-  itkGetMacro(ModelMap, std::vector<uint8_t>)
+  void SetModelMap(std::vector<uint8_t> modelMap)
+  {
+      m_ModelMap = std::move(modelMap);
+  }
+
+  const std::vector<uint8_t> & GetModelMap() const
+  {
+      return m_ModelMap;
+  }
 
   /**
    * If set, the mask pixels specify which input model to use.
