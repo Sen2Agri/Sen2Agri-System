@@ -94,7 +94,7 @@ def product_download(s2Obj, aoiContext, db):
     log(aoiContext.writeDir, "Downloading from {} ".format(aoiContext.sentinelLocation), general_log_filename)
     abs_filename = "{}/{}".format(aoiContext.writeDir, s2Obj.filename)
     if float(s2Obj.cloud) < float(aoiContext.maxCloudCoverage) and len(aoiContext.aoiTiles) > 0:
-        cmd_dwn = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/S2ProductDownloader-1.0.jar", "--user", s2Obj.user, "--password", s2Obj.password]
+        cmd_dwn = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/ProductDownload.jar", "--user", s2Obj.user, "--password", s2Obj.password]
         if len(s2Obj.proxy) >= 2:
             cmd_dwn += ["--proxy.type", "http", "--proxy.host", s2Obj.proxy['host'], "--proxy.port", s2Obj.proxy['port']]
             if len(s2Obj.proxy) == 4:

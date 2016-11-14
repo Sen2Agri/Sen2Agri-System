@@ -144,7 +144,7 @@ for l1 in l1_list:
         if copy_directory(l1, new_dir):
             if sat_id == SENTINEL2_SATELLITE_ID:
                 #applay angles correction if necessary
-                cmd_angles_correction = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/S2ProductDownloader-1.0.jar", "--input", write_dir, "--ma", "NAN", "--products", l1_basename]
+                cmd_angles_correction = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/ProductDownload.jar", "--input", write_dir, "--ma", "NAN", "--products", l1_basename]
                 if run_command(cmd_angles_correction, write_dir, general_log_filename) != 0:
                     log(write_dir, "Couldn't apply the angles correction for {}".format(new_dir), general_log_filename)
                     continue
