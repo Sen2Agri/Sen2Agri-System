@@ -206,7 +206,7 @@ private:
         MeanAngles_Type solarAngles = pHelper->GetSolarMeanAngles();
         double relativeAzimuth = pHelper->GetRelativeAzimuthAngle();
 
-        MeanAngles_Type sensorBandAngles;
+        MeanAngles_Type sensorBandAngles = {0.0};
         bool hasAngles = true;
         if(pHelper->HasBandMeanAngles()) {
             // we use the angle of the first band
