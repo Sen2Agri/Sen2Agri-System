@@ -178,8 +178,8 @@ public:
     itkNewMacro(Self)
     itkTypeMacro(TimeSeriesReader, itk::Object)
 
-    itkSetMacro(IncludeRedEdge, bool);
-    itkGetMacro(IncludeRedEdge, bool);
+    itkSetMacro(IncludeRedEdge, bool)
+    itkGetMacro(IncludeRedEdge, bool)
 
     void Build(std::vector<std::string>::const_iterator begin, std::vector<std::string>::const_iterator end, const TileData &td)
     {
@@ -581,34 +581,36 @@ protected:
         // Return the bands associated with a SPOT product
         // get the bands
         const auto &imageFile = rootFolder / meta.Files.OrthoSurfCorrPente;
-        auto reader = getInt16ImageReader(imageFile.string());
+        auto reader = getFloatVectorImageReader(imageFile.string());
         reader->GetOutput()->UpdateOutputInformation();
 
-        auto channelExtractor1 = ExtractChannelFilterType::New();
-        channelExtractor1->SetInput(reader->GetOutput());
+        auto resampledBands = getResampledBand<FloatVectorImageType>(reader->GetOutput(), td, false);
+
+        auto channelExtractor1 = ExtractFloatChannelFilterType::New();
+        channelExtractor1->SetInput(resampledBands);
         channelExtractor1->SetIndex(0);
-        m_ChannelExtractors->PushBack(channelExtractor1);
+        m_Filters->PushBack(channelExtractor1);
 
-        auto channelExtractor2 = ExtractChannelFilterType::New();
-        channelExtractor2->SetInput(reader->GetOutput());
+        auto channelExtractor2 = ExtractFloatChannelFilterType::New();
+        channelExtractor2->SetInput(resampledBands);
         channelExtractor2->SetIndex(1);
-        m_ChannelExtractors->PushBack(channelExtractor2);
+        m_Filters->PushBack(channelExtractor2);
 
-        auto channelExtractor3 = ExtractChannelFilterType::New();
-        channelExtractor3->SetInput(reader->GetOutput());
+        auto channelExtractor3 = ExtractFloatChannelFilterType::New();
+        channelExtractor3->SetInput(resampledBands);
         channelExtractor3->SetIndex(2);
-        m_ChannelExtractors->PushBack(channelExtractor3);
+        m_Filters->PushBack(channelExtractor3);
 
-        auto channelExtractor4 = ExtractChannelFilterType::New();
-        channelExtractor4->SetInput(reader->GetOutput());
+        auto channelExtractor4 = ExtractFloatChannelFilterType::New();
+        channelExtractor4->SetInput(resampledBands);
         channelExtractor4->SetIndex(3);
-        m_ChannelExtractors->PushBack(channelExtractor4);
+        m_Filters->PushBack(channelExtractor4);
 
         // For SPOT series the bands are already in order. Only a resampling might be required
-        descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor1->GetOutput(), td, false));
-        descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor2->GetOutput(), td, false));
-        descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor3->GetOutput(), td, false));
-        descriptor.bands.push_back(getResampledBand<FloatImageType>(channelExtractor4->GetOutput(), td, false));
+        descriptor.bands.push_back(channelExtractor1->GetOutput());
+        descriptor.bands.push_back(channelExtractor2->GetOutput());
+        descriptor.bands.push_back(channelExtractor3->GetOutput());
+        descriptor.bands.push_back(channelExtractor4->GetOutput());
     }
 
     otb::Wrapper::UInt8ImageType::Pointer getSpotMask(const SPOT4Metadata& meta, const boost::filesystem::path &rootFolder, const TileData& td) {
@@ -707,28 +709,19 @@ protected:
         auto reader1 = getInt16ImageReader(imageFile1);
         reader1->GetOutput()->UpdateOutputInformation();
 
-        // Get the index of the green band
-        int gIndex = getBandIndex(meta.ImageInformation.Resolutions[0].Bands, "B3");
-
-        // Get the index of the red band
-        int rIndex = getBandIndex(meta.ImageInformation.Resolutions[0].Bands, "B4");
-
-        // Get the index of the NIR band
-        int nirIndex = getBandIndex(meta.ImageInformation.Resolutions[0].Bands, "B8");
-
         auto channelExtractor1 = ExtractChannelFilterType::New();
         channelExtractor1->SetInput(reader1->GetOutput());
-        channelExtractor1->SetIndex(gIndex - 1);
+        channelExtractor1->SetIndex(1);
         m_ChannelExtractors->PushBack(channelExtractor1);
 
         auto channelExtractor2 = ExtractChannelFilterType::New();
         channelExtractor2->SetInput(reader1->GetOutput());
-        channelExtractor2->SetIndex(rIndex - 1);
+        channelExtractor2->SetIndex(2);
         m_ChannelExtractors->PushBack(channelExtractor2);
 
         auto channelExtractor3 = ExtractChannelFilterType::New();
         channelExtractor3->SetInput(reader1->GetOutput());
-        channelExtractor3->SetIndex(nirIndex - 1);
+        channelExtractor3->SetIndex(3);
         m_ChannelExtractors->PushBack(channelExtractor3);
 
         //Extract the last band form the second file.
