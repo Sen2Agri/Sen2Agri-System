@@ -41,6 +41,10 @@ begin
                 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-type-fused', NULL, 'CropTypeFused.py', '2015-12-17 14:25:14.193131+02');
             end if;
 
+            raise notice 'applying e51f8c3cf07294c08a9d7ac814aad56e6b8a564c';
+            raise notice 'update config set value = ''100'' where key = ''downloader.max-cloud-coverage'';';
+            update config set value = '100' where key = 'downloader.max-cloud-coverage';
+
             raise notice 'update meta set version = ''1.4'';';
             update meta set version = '1.4';
         end if;
