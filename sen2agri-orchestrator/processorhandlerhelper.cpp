@@ -154,6 +154,61 @@ QMap<QString, ProcessorHandlerHelper::TileTemporalFilesInfo> ProcessorHandlerHel
     return mapTiles;
 }
 
+QMap<QDate, QStringList> ProcessorHandlerHelper::GroupL2AProductTilesByDate(const QMap<QString, QStringList> &inputProductToTilesMap)
+{
+    QMap<QDate, QStringList> mapDateTiles;
+    QMap<QDate, QList<ProcessorHandlerHelper::SatelliteIdType>> mapDateTilesSats;
+    // group tiles by their date
+    for(const auto &prd : inputProductToTilesMap.keys()) {
+        // iterate the list of tiles for the current product
+        const QStringList &prdTilesList = inputProductToTilesMap[prd];
+        for(const QString &prdTile: prdTilesList) {
+            // get the date of the current tile (normally, we could take only for the first tile
+            // and then add all other tiles of the product directly but is simpler this way)
+            const QDateTime &tileDateTime = ProcessorHandlerHelper::GetL2AProductDateFromPath(prdTile);
+            const QDate &tileDate = tileDateTime.date();
+            // add it to the list of the tiles from the current date
+            if(mapDateTiles.contains(tileDate)) {
+                QStringList &dateTiles = mapDateTiles[tileDate];
+                if(!dateTiles.contains(prdTile)) {
+                    dateTiles.append(prdTile);
+
+                    // add also the satellite
+                    QList<ProcessorHandlerHelper::SatelliteIdType> &listSat = mapDateTilesSats[tileDate];
+                    listSat.append(ProcessorHandlerHelper::GetL2ASatelliteFromTile(prdTile));
+                }
+            } else {
+                QStringList dateTiles;
+                dateTiles.append(prdTile);
+                mapDateTiles[tileDate] = dateTiles;
+
+                // add also the satellite
+                QList<ProcessorHandlerHelper::SatelliteIdType> listSat;
+                listSat.append(ProcessorHandlerHelper::GetL2ASatelliteFromTile(prdTile));
+                mapDateTilesSats[tileDate] = listSat;
+            }
+        }
+    }
+    // Now, we should iterate the tiles list and remove the secondary satellites from that date
+    // as if we have the primary satellite, there is no need to consider also the secondary satellite for that date
+    QMap<QDate, QStringList> retMapDateTiles;
+    for(const auto &date : mapDateTiles.keys()) {
+        QStringList filteredDateTilesList;
+        const QStringList &dateTilesList = mapDateTiles[date];
+        const QList<ProcessorHandlerHelper::SatelliteIdType> &dateTilesSatsList = mapDateTilesSats[date];
+        ProcessorHandlerHelper::SatelliteIdType primarySatId = ProcessorHandlerHelper::GetPrimarySatelliteId(dateTilesSatsList);
+        // normally we must have the same number as we above added in the same time in the two lists
+        for(int i = 0; i<dateTilesList.size(); i++) {
+            if(primarySatId == dateTilesSatsList[i]) {
+                filteredDateTilesList.append(dateTilesList[i]);
+            }
+        }
+        // normally, we must have here at least one tile so there is no need to make any check on size of list
+        retMapDateTiles[date] = filteredDateTilesList;
+    }
+    return retMapDateTiles;
+}
+
 ProcessorHandlerHelper::SatelliteIdType ProcessorHandlerHelper::GetPrimarySatelliteId(
         const QList<ProcessorHandlerHelper::SatelliteIdType> &satIds) {
     // Get the primary satellite id
@@ -164,8 +219,19 @@ ProcessorHandlerHelper::SatelliteIdType ProcessorHandlerHelper::GetPrimarySatell
         retSatId = SATELLITE_ID_TYPE_SPOT4;
     } else if (satIds.contains(SATELLITE_ID_TYPE_SPOT5)) {
         retSatId = SATELLITE_ID_TYPE_SPOT5;
-    } else if(satIds.size() == 1) {
-        retSatId = satIds[0];
+    } else if(satIds.size() >= 1) {
+        // check if all satellites in the list are the same
+        const SatelliteIdType &refSatId = satIds[0];
+        bool bAllSameSat = true;
+        for(const SatelliteIdType &satId: satIds) {
+            if(satId != refSatId) {
+                bAllSameSat = false;
+                break;
+            }
+        }
+        if(bAllSameSat) {
+            retSatId = satIds[0];
+        }
     }
 
     return retSatId;
@@ -390,18 +456,16 @@ QMap<QString, QStringList> ProcessorHandlerHelper::GroupHighLevelProductTiles(co
 }
 
 /* static */
-/*QStringList ProcessorHandlerHelper::GetProductTileIds(const QStringList &listFiles) {
-    bool bOk;
+QStringList ProcessorHandlerHelper::GetProductTileIds(const QString &prodFolder) {
     QStringList result;
-    for (const QString &fileName : listFiles) {
-        QString tileId = GetTileId(fileName, &bOk);
-        if(bOk) {
-            result.append(tileId);
-        }
+    const QMap<QString, QString> &mapProdTiles = GetHighLevelProductTilesDirs(prodFolder);
+    for(auto tile : mapProdTiles.keys())
+    {
+        result.append(tile);
     }
     return result;
 }
-*/
+
 
 QStringList ProcessorHandlerHelper::GetTextFileLines(const QString &filePath) {
     QFile inputFile(filePath);
@@ -464,6 +528,13 @@ ProcessorHandlerHelper::L2ProductType ProcessorHandlerHelper::GetL2AProductTypeF
     QString metaFile = info.fileName();
 
     return GetL2AProductTileNameInfos(metaFile).productType;
+}
+
+ProcessorHandlerHelper::SatelliteIdType ProcessorHandlerHelper::GetL2ASatelliteFromTile(const QString &tileMetadataPath) {
+    QFileInfo info(tileMetadataPath);
+    QString metaFile = info.fileName();
+
+    return GetL2AProductTileNameInfos(metaFile).satelliteIdType;
 }
 
 QDateTime ProcessorHandlerHelper::GetL2AProductDateFromPath(const QString &path) {

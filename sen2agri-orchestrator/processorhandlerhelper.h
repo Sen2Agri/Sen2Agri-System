@@ -52,8 +52,9 @@ public:
 
     static ProductType GetProductTypeFromFileName(const QString &path, bool useParentDirIfDir = true);
     static QString GetTileId(const QString &path, SatelliteIdType &satelliteId);
-    //static QStringList GetProductTileIds(const QStringList &listFiles);
+    static QStringList GetProductTileIds(const QString &prodFolder);
     static QMap<QString, TileTemporalFilesInfo> GroupTiles(const QStringList &listAllProductsTiles, QList<SatelliteIdType> &outAllSatIds, SatelliteIdType &outPrimarySatelliteId);
+    static QMap<QDate, QStringList> GroupL2AProductTilesByDate(const QMap<QString, QStringList> &inputProductToTilesMap);
     static SatelliteIdType GetPrimarySatelliteId(const QList<ProcessorHandlerHelper::SatelliteIdType> &satIds);
     static QString GetMissionNamePrefixFromSatelliteId(SatelliteIdType satId);
     static QStringList GetTextFileLines(const QString &filePath);
@@ -69,6 +70,7 @@ public:
 
     static QString GetL2ATileMainImageFilePath(const QString &tileMetadataPath);
     static const L2MetaTileNameInfos &GetL2AProductTileNameInfos(const QString &metaFileName);
+    static SatelliteIdType GetL2ASatelliteFromTile(const QString &tileMetadataPath);
     static L2ProductType GetL2AProductTypeFromTile(const QString &tileMetadataPath);
     static QDateTime GetL2AProductDateFromPath(const QString &path);
     static bool IsValidL2AMetadataFileName(const QString &path);
