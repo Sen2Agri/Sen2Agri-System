@@ -108,7 +108,7 @@ int MetadataHelper::GetAcquisitionDateAsDoy()
 }
 
 MeanAngles_Type MetadataHelper::GetSensorMeanAngles() {
-    MeanAngles_Type angles;
+    MeanAngles_Type angles = {0,0};
 
     if(HasBandMeanAngles()) {
         size_t nBandsCnt = m_sensorBandsMeanAngles.size();
@@ -143,9 +143,7 @@ MeanAngles_Type MetadataHelper::GetSensorMeanAngles() {
 }
 
 MeanAngles_Type MetadataHelper::GetSensorMeanAngles(int nBand) {
-    MeanAngles_Type angles;
-    angles.azimuth = 0;
-    angles.zenith = 0;
+    MeanAngles_Type angles = {0,0};
     if(nBand >= 0 && nBand < (int)m_sensorBandsMeanAngles.size()) {
         angles = m_sensorBandsMeanAngles[nBand];
     } else if(m_sensorBandsMeanAngles.size() > 0) {
