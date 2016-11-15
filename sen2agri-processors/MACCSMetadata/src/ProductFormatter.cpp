@@ -400,8 +400,11 @@ private:
       if(m_strTimePeriod.empty()) {
           m_bDynamicallyTimePeriod = true;
           if(LevelHasAcquisitionTime()) {
-              if(strMinAcquisitionDate != strMaxAcquisitionDate)
+              const std::string &minAcqDate = getDateFromAquisitionDateTime(strMinAcquisitionDate);
+              const std::string &maxAcqDate = getDateFromAquisitionDateTime(strMaxAcquisitionDate);
+              if(minAcqDate != maxAcqDate) {
                     itkGenericExceptionMacro(<< "You should have the same date for all tiles in the il parameter as this product has Aquisition time: " << m_strProductLevel);
+              }
               // we have a single date and min acquisition date should be the same as max acquisition date
               m_strTimePeriod = strMaxAcquisitionDate;
           } else {
@@ -1716,6 +1719,11 @@ private:
       if(std::find(m_acquisitionDatesList.begin(), m_acquisitionDatesList.end(), acquisitionDate) == m_acquisitionDatesList.end()) {
           m_acquisitionDatesList.push_back(acquisitionDate);
       }
+  }
+
+  std::string getDateFromAquisitionDateTime(const std::string &acqDateTime) {
+      std::string::size_type pos = acqDateTime.find('T');
+      return (pos!= std::string::npos) ? acqDateTime.substr(0, pos) : acqDateTime;
   }
 
   void LoadAllDescriptors(std::vector<std::string> descriptors)
