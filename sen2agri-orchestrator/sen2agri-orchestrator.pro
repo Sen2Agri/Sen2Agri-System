@@ -38,6 +38,7 @@ SOURCES += main.cpp \
     processor/lairetrievalhandler_new.cpp \
     processor/lairetrievalhandler_l3b.cpp \
     processor/lairetrievalhandler_l3c.cpp \
+    processor/maccshdrmeananglesreader.cpp \
     processor/phenondvihandler.cpp \
     processorhandlerhelper.cpp \
     schedulingcontext.cpp
@@ -58,6 +59,7 @@ HEADERS += \
     processor/lairetrievalhandler_new.hpp \
     processor/lairetrievalhandler_l3b.hpp \
     processor/lairetrievalhandler_l3c.hpp \
+    processor/maccshdrmeananglesreader.hpp \
     processor/phenondvihandler.hpp \
     processorhandlerhelper.h \
     schedulingcontext.h
