@@ -907,7 +907,7 @@ protected:
             resampler->SetInterpolator(interpolator);
             resampler->SetOutputParametersFromImage(image);
             resampler->SetOutputSpacing(outputSpacing);
-            resampler->SetDisplacementFieldSpacing(outputSpacing);
+            resampler->SetDisplacementFieldSpacing(outputSpacing * 10);
             resampler->SetOutputOrigin(td.m_imageOrigin);
             resampler->SetOutputSize(recomputedSize);
             resampler->SetEdgePaddingValue(edgePixel);
