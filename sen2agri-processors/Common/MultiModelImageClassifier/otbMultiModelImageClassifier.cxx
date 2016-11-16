@@ -89,7 +89,7 @@ private:
 
     AddParameter(ParameterType_StringList, "modelid", "Model identifiers");
     SetParameterDescription("modelid", "Model identifiers");
-    MandatoryOff("mask");
+    MandatoryOff("modelid");
 
     AddParameter(ParameterType_Int, "nodatalabel", "No data label");
     SetDefaultParameterInt("nodatalabel", 0);
