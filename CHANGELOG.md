@@ -30,6 +30,7 @@
 - Quality flags extraction no longer gives wrong results when Landsat 8 products in a different projection are used
 - The L3A, L3B, L3C and quality flags extraction step of the L4A and L4B processors no longer crash when input products are in the current directory
 - Fixed misleading `demmaccs.py` command line help message (positional arguments placed after optional arguments taking multiple values)
+- Improved startup ordering between sen2agri-executor, SLURM and Postgres
 
 ### Known issues
 - The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented
