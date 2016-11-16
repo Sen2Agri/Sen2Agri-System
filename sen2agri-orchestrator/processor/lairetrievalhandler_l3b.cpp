@@ -7,6 +7,7 @@
 #include "processorhandlerhelper.h"
 #include "json_conversions.hpp"
 #include "logger.hpp"
+#include "maccshdrmeananglesreader.hpp"
 
 // The number of tasks that are executed for each product before executing time series tasks
 #define LAI_TASKS_PER_PRODUCT       6
@@ -18,13 +19,14 @@
 #define DEFAULT_REGRESSOR               "nn"
 
 void LaiRetrievalHandlerL3B::CreateTasksForNewProduct(QList<TaskToSubmit> &outAllTasksList,
-                                                    const QStringList &listProducts,
-                                                    bool bGenModels, bool bRemoveTempFiles) {
+                                                    const QList<TileInfos> &tileInfosList,
+                                                    bool bForceGenModels, bool bRemoveTempFiles) {
     // in allTasksList we might have tasks from other products. We start from the first task of the current product
     int initialTasksNo = outAllTasksList.size();
-    int nbLaiMonoProducts = listProducts.size();
+    int nbLaiMonoProducts = tileInfosList.size();
     for(int i = 0; i<nbLaiMonoProducts; i++) {
-        if(bGenModels) {
+        const TileInfos &tileInfo = tileInfosList[i];
+        if(bForceGenModels || tileInfo.modelInfos.NeedsModelGeneration()) {
             outAllTasksList.append(TaskToSubmit{ "lai-bv-input-variable-generation", {} });
             outAllTasksList.append(TaskToSubmit{ "lai-prosail-simulator", {} });
             outAllTasksList.append(TaskToSubmit{ "lai-training-data-generator", {} });
@@ -84,8 +86,9 @@ void LaiRetrievalHandlerL3B::CreateTasksForNewProduct(QList<TaskToSubmit> &outAl
     bool bChainProducts = true;
 
     for(i = 0; i<nbLaiMonoProducts; i++) {
+        const TileInfos &tileInfo = tileInfosList[i];
         // add the tasks for generating models
-        if(bGenModels) {
+        if(bForceGenModels || tileInfo.modelInfos.NeedsModelGeneration()) {
             // prosail simulator -> generate-vars
             // if we want chaining products and we have a previous product executed
             if(bChainProducts && initialTasksNo > 0) {
@@ -151,40 +154,43 @@ void LaiRetrievalHandlerL3B::CreateTasksForNewProduct(QList<TaskToSubmit> &outAl
 }
 
 NewStepList LaiRetrievalHandlerL3B::GetStepsToGenModel(std::map<QString, QString> &configParameters,
-                                             const QStringList &listProducts,
-                                             QList<TaskToSubmit> &allTasksList, int tasksStartIdx)
+                                             const QList<TileInfos> &listPrdTiles, QList<TaskToSubmit> &allTasksList,
+                                             int tasksStartIdx, bool bForceGenModels)
 {
     NewStepList steps;
     const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
     const auto &rsrCfgFile = configParameters["processor.l3b.lai.rsrcfgfile"];
     // in allTasksList we might have tasks from other products. We start from the first task of the current product
     int curIdx = tasksStartIdx;
-    for(int i = 0; i<listProducts.size(); i++) {
-        const QString &curXml = listProducts[i];
-        int loopFirstIdx = curIdx;
-        TaskToSubmit &bvInputVariableGenerationTask = allTasksList[loopFirstIdx];
-        TaskToSubmit &prosailSimulatorTask = allTasksList[loopFirstIdx+1];
-        TaskToSubmit &trainingDataGeneratorTask = allTasksList[loopFirstIdx+2];
-        TaskToSubmit &inverseModelLearningTask = allTasksList[loopFirstIdx+3];
+    for(int i = 0; i<listPrdTiles.size(); i++) {
+        const TileInfos &tileInfo = listPrdTiles[i];
+        if(bForceGenModels || tileInfo.modelInfos.NeedsModelGeneration()) {
+            const QString &curXml = tileInfo.tileFile;
+            int loopFirstIdx = curIdx;
+            TaskToSubmit &bvInputVariableGenerationTask = allTasksList[loopFirstIdx];
+            TaskToSubmit &prosailSimulatorTask = allTasksList[loopFirstIdx+1];
+            TaskToSubmit &trainingDataGeneratorTask = allTasksList[loopFirstIdx+2];
+            TaskToSubmit &inverseModelLearningTask = allTasksList[loopFirstIdx+3];
 
-        const auto & generatedSampleFile = bvInputVariableGenerationTask.GetFilePath("out_bv_dist_samples.txt");
-        const auto & simuReflsFile = prosailSimulatorTask.GetFilePath("out_simu_refls.txt");
-        const auto & anglesFile = prosailSimulatorTask.GetFilePath("out_angles.txt");
-        const auto & trainingFile = trainingDataGeneratorTask.GetFilePath("out_training.txt");
-        const auto & modelFile = inverseModelLearningTask.GetFilePath("out_model.txt");
-        const auto & errEstModelFile = inverseModelLearningTask.GetFilePath("out_err_est_model.txt");
+            const auto & generatedSampleFile = bvInputVariableGenerationTask.GetFilePath("out_bv_dist_samples.txt");
+            const auto & simuReflsFile = prosailSimulatorTask.GetFilePath("out_simu_refls.txt");
+            const auto & anglesFile = prosailSimulatorTask.GetFilePath("out_angles.txt");
+            const auto & trainingFile = trainingDataGeneratorTask.GetFilePath("out_training.txt");
+            const auto & modelFile = inverseModelLearningTask.GetFilePath("out_model.txt");
+            const auto & errEstModelFile = inverseModelLearningTask.GetFilePath("out_err_est_model.txt");
 
 
-        QStringList BVInputVariableGenerationArgs = GetBVInputVariableGenerationArgs(configParameters, generatedSampleFile);
-        QStringList ProSailSimulatorArgs = GetProSailSimulatorArgs(curXml, generatedSampleFile, rsrCfgFile, simuReflsFile, anglesFile, configParameters);
-        QStringList TrainingDataGeneratorArgs = GetTrainingDataGeneratorArgs(curXml, generatedSampleFile, simuReflsFile, trainingFile);
-        QStringList InverseModelLearningArgs = GetInverseModelLearningArgs(trainingFile, curXml, modelFile, errEstModelFile, modelsFolder, configParameters);
+            QStringList BVInputVariableGenerationArgs = GetBVInputVariableGenerationArgs(configParameters, generatedSampleFile);
+            QStringList ProSailSimulatorArgs = GetProSailSimulatorArgs(curXml, generatedSampleFile, rsrCfgFile, simuReflsFile, anglesFile, configParameters);
+            QStringList TrainingDataGeneratorArgs = GetTrainingDataGeneratorArgs(curXml, generatedSampleFile, simuReflsFile, trainingFile);
+            QStringList InverseModelLearningArgs = GetInverseModelLearningArgs(trainingFile, curXml, modelFile, errEstModelFile, modelsFolder, configParameters);
 
-        steps.append(bvInputVariableGenerationTask.CreateStep("BVInputVariableGeneration", BVInputVariableGenerationArgs));
-        steps.append(prosailSimulatorTask.CreateStep("ProSailSimulator", ProSailSimulatorArgs));
-        steps.append(trainingDataGeneratorTask.CreateStep("TrainingDataGenerator", TrainingDataGeneratorArgs));
-        steps.append(inverseModelLearningTask.CreateStep("InverseModelLearning", InverseModelLearningArgs));
-        curIdx += MODEL_GEN_TASKS_PER_PRODUCT;
+            steps.append(bvInputVariableGenerationTask.CreateStep("BVInputVariableGeneration", BVInputVariableGenerationArgs));
+            steps.append(prosailSimulatorTask.CreateStep("ProSailSimulator", ProSailSimulatorArgs));
+            steps.append(trainingDataGeneratorTask.CreateStep("TrainingDataGenerator", TrainingDataGeneratorArgs));
+            steps.append(inverseModelLearningTask.CreateStep("InverseModelLearning", InverseModelLearningArgs));
+            curIdx += MODEL_GEN_TASKS_PER_PRODUCT;
+        }
         curIdx += LAI_TASKS_PER_PRODUCT;
     }
 
@@ -192,7 +198,7 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsToGenModel(std::map<QString, QString
 }
 
 NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                                    const QStringList &prdTilesList, QList<TaskToSubmit> &allTasksList,
+                                                    const QList<TileInfos> &prdTilesInfosList, QList<TaskToSubmit> &allTasksList,
                                                     bool bRemoveTempFiles, int tasksStartIdx)
 {
     NewStepList steps;
@@ -207,7 +213,7 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
     }
     const auto &resolutionStr = QString::number(resolution);
 
-    bool bGenModels = IsGenModels(parameters, configParameters);
+    bool bForceGenModels = IsForceGenModels(parameters, configParameters);
 
     const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
     // in allTasksList we might have tasks from other products. We start from the first task of the current product
@@ -218,9 +224,9 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
     QStringList laiErrList;
     QStringList laiFlgsList;
     QStringList cleanupTemporaryFilesList;
-    for (int i = 0; i<prdTilesList.size(); i++) {
-        const auto &prdTile = prdTilesList[i];
-        if(bGenModels) {
+    for (int i = 0; i<prdTilesInfosList.size(); i++) {
+        const auto &prdTileInfo = prdTilesInfosList[i];
+        if(bForceGenModels || prdTileInfo.modelInfos.NeedsModelGeneration()) {
             // now update the index for the ndviRvi task
             curTaskIdx += MODEL_GEN_TASKS_PER_PRODUCT;
         }
@@ -241,10 +247,10 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
         const auto & quantifiedLaiFileName = quantifyImageTask.GetFilePath("LAI_mono_date_img_16.tif");
         const auto & quantifiedErrFileName = quantifyErrImageTask.GetFilePath("LAI_mono_date_ERR_img_16.tif");
 
-        QStringList genMonoDateMskFagsArgs = GetMonoDateMskFlagsArgs(prdTile, monoDateMskFlgsFileName,
+        QStringList genMonoDateMskFagsArgs = GetMonoDateMskFlagsArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
                                                                      "\"" + monoDateMskFlgsResFileName+"?gdal:co:COMPRESS=DEFLATE\"",
                                                                      resolutionStr);
-        QStringList ndviRviExtractionArgs = GetNdviRviExtractionArgs(prdTile, monoDateMskFlgsFileName,
+        QStringList ndviRviExtractionArgs = GetNdviRviExtractionArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
                                                                      ftsFile, "\"" + singleNdviFile+"?gdal:co:COMPRESS=DEFLATE\"",
                                                                      resolutionStr);
 
@@ -252,8 +258,8 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
         steps.append(genMonoDateMskFagsTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
         steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtraction2", ndviRviExtractionArgs));
 
-        QStringList bvImageInvArgs = GetBvImageInvArgs(ftsFile, monoDateMskFlgsResFileName, prdTile, modelsFolder, monoDateLaiFileName);
-        QStringList bvErrImageInvArgs = GetBvErrImageInvArgs(ftsFile, monoDateMskFlgsResFileName, prdTile, modelsFolder, monoDateErrFileName);
+        QStringList bvImageInvArgs = GetBvImageInvArgs(ftsFile, monoDateMskFlgsResFileName, prdTileInfo.tileFile, modelsFolder, monoDateLaiFileName);
+        QStringList bvErrImageInvArgs = GetBvErrImageInvArgs(ftsFile, monoDateMskFlgsResFileName, prdTileInfo.tileFile, modelsFolder, monoDateErrFileName);
         QStringList quantifyImageArgs = GetQuantifyImageArgs(monoDateLaiFileName, quantifiedLaiFileName);
         QStringList quantifyErrImageArgs = GetQuantifyImageArgs(monoDateErrFileName, quantifiedErrFileName);
 
@@ -279,7 +285,7 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
     }
     TaskToSubmit &laiMonoProductFormatterTask = allTasksList[curTaskIdx++];
     QStringList productFormatterArgs = GetLaiMonoProductFormatterArgs(
-                laiMonoProductFormatterTask, ctx, event, prdTilesList,
+                laiMonoProductFormatterTask, ctx, event, prdTilesInfosList,
                 ndviList, laiList, laiErrList, laiFlgsList);
     steps.append(laiMonoProductFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
 
@@ -292,7 +298,7 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
     return steps;
 }
 void LaiRetrievalHandlerL3B::WriteExecutionInfosFile(const QString &executionInfosPath,
-                                               const QStringList &listProducts) {
+                                               const QList<TileInfos> &tilesInfosList) {
     std::ofstream executionInfosFile;
     try
     {
@@ -303,8 +309,8 @@ void LaiRetrievalHandlerL3B::WriteExecutionInfosFile(const QString &executionInf
         executionInfosFile << "  </General>" << std::endl;
 
         executionInfosFile << "  <XML_files>" << std::endl;
-        for (int i = 0; i<listProducts.size(); i++) {
-            executionInfosFile << "    <XML_" << std::to_string(i) << ">" << listProducts[i].toStdString()
+        for (int i = 0; i<tilesInfosList.size(); i++) {
+            executionInfosFile << "    <XML_" << std::to_string(i) << ">" << tilesInfosList[i].tileFile.toStdString()
                                << "</XML_" << std::to_string(i) << ">" << std::endl;
         }
         executionInfosFile << "  </XML_files>" << std::endl;
@@ -318,17 +324,17 @@ void LaiRetrievalHandlerL3B::WriteExecutionInfosFile(const QString &executionInf
 }
 
 void LaiRetrievalHandlerL3B::HandleProduct(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                            const QStringList &prdTilesList, QList<TaskToSubmit> &allTasksList) {
+                                            const QList<TileInfos> &prdTilesInfosList, QList<TaskToSubmit> &allTasksList) {
 
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
 
-    bool bGenModels = IsGenModels(parameters, configParameters);
+    bool bForceGenModels = IsForceGenModels(parameters, configParameters);
     bool bRemoveTempFiles = NeedRemoveJobFolder(ctx, event.jobId, "l3b");
 
     int tasksStartIdx = allTasksList.size();
     // create the tasks
-    CreateTasksForNewProduct(allTasksList, prdTilesList, bGenModels, bRemoveTempFiles);
+    CreateTasksForNewProduct(allTasksList, prdTilesInfosList, bForceGenModels, bRemoveTempFiles);
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
     for(int i = tasksStartIdx; i < allTasksList.size(); i++) {
@@ -341,11 +347,9 @@ void LaiRetrievalHandlerL3B::HandleProduct(EventProcessingContext &ctx, const Jo
     NewStepList steps;
 
     // first extract the model file names from the models folder
-    if(bGenModels) {
-        steps += GetStepsToGenModel(configParameters, prdTilesList, allTasksList, tasksStartIdx);
-    }
+    steps += GetStepsToGenModel(configParameters, prdTilesInfosList, allTasksList, tasksStartIdx, bForceGenModels);
 
-    steps += GetStepsForMonodateLai(ctx, event, prdTilesList, allTasksList, bRemoveTempFiles, tasksStartIdx);
+    steps += GetStepsForMonodateLai(ctx, event, prdTilesInfosList, allTasksList, bRemoveTempFiles, tasksStartIdx);
     ctx.SubmitSteps(steps);
 }
 
@@ -373,6 +377,7 @@ void LaiRetrievalHandlerL3B::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
+    const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
 
     bool bMonoDateLai = IsGenMonoDate(parameters, configParameters);
     if(!bMonoDateLai) {
@@ -381,16 +386,13 @@ void LaiRetrievalHandlerL3B::HandleJobSubmittedImpl(EventProcessingContext &ctx,
             QStringLiteral("LAI mono-date processing needs to be defined").toStdString());
     }
     
-    bool bGenModels = IsGenModels(parameters, configParameters);
-    if(bGenModels) {
-        const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
-        if(!QDir::root().mkpath(modelsFolder)) {
-            ctx.MarkJobFailed(event.jobId);
-            throw std::runtime_error(
-                        QStringLiteral("Unable to create path %1 for creating models!").arg(modelsFolder).toStdString());
-        }
+    if(!QDir::root().mkpath(modelsFolder)) {
+        ctx.MarkJobFailed(event.jobId);
+        throw std::runtime_error(
+                    QStringLiteral("Unable to create path %1 for creating models!").arg(modelsFolder).toStdString());
     }
 
+    // create and submit the tasks for the received products
     QMap<QString, QStringList> inputProductToTilesMap;
     QStringList listTilesMetaFiles = GetL2AInputProductsTiles(ctx, event, inputProductToTilesMap);
     if(listTilesMetaFiles.size() == 0) {
@@ -400,11 +402,34 @@ void LaiRetrievalHandlerL3B::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                     toStdString());
     }
 
+    // Group the products that belong to the same date
+    // the tiles of products from secondary satellite are not included if they happen to be from the same date with tiles from
+    // the same date
+    QMap<QDate, QStringList> dateGroupedInputProductToTilesMap = ProcessorHandlerHelper::GroupL2AProductTilesByDate(inputProductToTilesMap);
+    QStringList allModels;
+    QStringList allErrModels;
+    bool bForceGenModels = IsForceGenModels(parameters, configParameters);
+    // if we are forced to generate the models, then do not extract anymore
+    // the list of models
+    if(!bForceGenModels) {
+        GetModelFileList(modelsFolder, "Model_", allModels);
+        GetModelFileList(modelsFolder, "Err_Est_Model_", allErrModels);
+    }
+
     //container for all task
     QList<TaskToSubmit> allTasksList;
-    for(const auto &prd : inputProductToTilesMap.keys()) {
-        const QStringList &prdTilesList = inputProductToTilesMap[prd];
-        HandleProduct(ctx, event, prdTilesList, allTasksList);
+    for(const auto &key : dateGroupedInputProductToTilesMap.keys()) {
+        const QStringList &prdTilesList = dateGroupedInputProductToTilesMap[key];
+        // create structures providing the models for each tile
+        QList<TileInfos> tilesInfosList;
+        for(const QString &prdTile: prdTilesList) {
+            TileInfos tileInfo;
+            tileInfo.tileFile = prdTile;
+            tileInfo.modelInfos.model = GetExistingModelForTile(allModels, prdTile);
+            tileInfo.modelInfos.errModel = GetExistingModelForTile(allErrModels, prdTile);
+            tilesInfosList.append(tileInfo);
+        }
+        HandleProduct(ctx, event, tilesInfosList, allTasksList);
     }
 
     // we add a task in order to wait for all product formatter to finish.
@@ -429,21 +454,26 @@ void LaiRetrievalHandlerL3B::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             QString footPrint = GetProductFormatterFootprint(ctx, event);
             ProductType prodType = ProductType::L3BProductTypeId;
 
+            const QStringList &prodTiles = ProcessorHandlerHelper::GetProductTileIds(productFolder);
+
             // Insert the product into the database
             QDateTime minDate, maxDate;
             ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
             int ret = ctx.InsertProduct({ prodType, event.processorId, event.siteId, event.jobId,
                                 productFolder, maxDate, prodName,
-                                quicklook, footPrint, std::experimental::nullopt, TileList() });
+                                quicklook, footPrint, std::experimental::nullopt, prodTiles });
             Logger::debug(QStringLiteral("InsertProduct for %1 returned %2").arg(prodName).arg(ret));
-            //ctx.MarkJobFinished(event.jobId);
+
+            // submit a new job for the L3C product corresponding to this one
+            SubmitL3CJobForL3BProduct(prodName);
         } else {
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
-            ctx.MarkJobFailed(event.jobId);
+            // We might have several L3B products, we should not mark it at failed here as
+            // this will stop also all other L3B processings that might be successful
+            //ctx.MarkJobFailed(event.jobId);
         }
     }
 }
-
 
 QStringList LaiRetrievalHandlerL3B::GetCompressImgArgs(const QString &inFile, const QString &outFile) {
     return { "-in", inFile,
@@ -504,14 +534,14 @@ QStringList LaiRetrievalHandlerL3B::GetMonoDateMskFlagsArgs(const QString &input
 }
 
 QStringList LaiRetrievalHandlerL3B::GetLaiMonoProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                                                const QStringList &prdTilesList, const QStringList &ndviList,
+                                                                const QList<TileInfos> &prdTilesInfosList, const QStringList &ndviList,
                                                                 const QStringList &laiList, const QStringList &laiErrList, const QStringList &laiFlgsList) {
 
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
     QStringList tileIdsList;
-    for(const QString &metaFile: prdTilesList) {
+    for(const TileInfos &tileInfo: prdTilesInfosList) {
         ProcessorHandlerHelper::SatelliteIdType satId;
-        QString tileId = ProcessorHandlerHelper::GetTileId(metaFile, satId);
+        QString tileId = ProcessorHandlerHelper::GetTileId(tileInfo.tileFile, satId);
         tileIdsList.append(tileId);
     }
 
@@ -522,7 +552,7 @@ QStringList LaiRetrievalHandlerL3B::GetLaiMonoProductFormatterArgs(TaskToSubmit 
 
     const auto &lutFile = configParameters["processor.l3b.lai.lut_path"];
 
-    WriteExecutionInfosFile(executionInfosPath, prdTilesList);
+    WriteExecutionInfosFile(executionInfosPath, prdTilesInfosList);
 
     QStringList productFormatterArgs = { "ProductFormatter",
                             "-destroot", targetFolder,
@@ -534,7 +564,9 @@ QStringList LaiRetrievalHandlerL3B::GetLaiMonoProductFormatterArgs(TaskToSubmit 
                             "-gipp", executionInfosPath,
                             "-outprops", outPropsPath};
     productFormatterArgs += "-il";
-    productFormatterArgs.append(prdTilesList);
+    for(const TileInfos &tileInfo: prdTilesInfosList) {
+        productFormatterArgs.append(tileInfo.tileFile);
+    }
 
     if(lutFile.size() > 0) {
         productFormatterArgs += "-lut";
@@ -624,14 +656,14 @@ const QString& LaiRetrievalHandlerL3B::GetDefaultCfgVal(std::map<QString, QStrin
     return defVal;
 }
 
-bool LaiRetrievalHandlerL3B::IsGenModels(const QJsonObject &parameters, std::map<QString, QString> &configParameters) {
-    bool bGenModels = false;
+bool LaiRetrievalHandlerL3B::IsForceGenModels(const QJsonObject &parameters, std::map<QString, QString> &configParameters) {
+    bool bForceGenModels = false;
     if(parameters.contains("genmodel")) {
-        bGenModels = (parameters["genmodel"].toInt() != 0);
+        bForceGenModels = (parameters["genmodel"].toInt() != 0);
     } else {
-        bGenModels = ((configParameters["processor.l3b.generate_models"]).toInt() != 0);
+        bForceGenModels = ((configParameters["processor.l3b.generate_models"]).toInt() != 0);
     }
-    return bGenModels;
+    return bForceGenModels;
 }
 
 bool LaiRetrievalHandlerL3B::IsGenMonoDate(const QJsonObject &parameters, std::map<QString, QString> &configParameters) {
@@ -733,4 +765,104 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
     }
 
     return params;
+}
+
+void LaiRetrievalHandlerL3B::SubmitL3CJobForL3BProduct(const QString &l3bProdName)
+{
+    //TODO
+}
+
+void LaiRetrievalHandlerL3B::GetModelFileList(const QString &folderName, const QString &modelPrefix, QStringList &outModelsList) {
+    QDirIterator it(folderName, QStringList() << modelPrefix + "*.txt", QDir::Files/*, QDirIterator::NoIteratorFlags*/);
+    while (it.hasNext()) {
+        it.next();
+        if (QFileInfo(it.filePath()).isFile()) {
+            outModelsList.append(it.filePath());
+        }
+    }
+}
+
+bool LaiRetrievalHandlerL3B::InRange(double middle, double distance, double value) {
+      if((value >= (middle - distance)) &&
+         (value <= (middle + distance))) {
+            return true;
+      }
+
+      return false;
+}
+
+bool LaiRetrievalHandlerL3B::ParseModelFileName(const QString &qtModelFileName, double &solarZenith, double &sensorZenith, double &relAzimuth) {
+    //The expected file name format is:
+    // [FILEPREFIX_]THETA_S_<solarzenith>_THETA_V_<sensorzenith>_REL_PHI_%f
+    std::string modelFileName = qtModelFileName.toStdString();
+    std::size_t nThetaSPos = modelFileName.find("_THETA_S_");
+    if (nThetaSPos == std::string::npos)
+      return false;
+
+    std::size_t nThetaVPos = modelFileName.find("_THETA_V_");
+    if (nThetaVPos == std::string::npos)
+      return false;
+
+    std::size_t nRelPhiPos = modelFileName.find("_REL_PHI_");
+    if (nRelPhiPos == std::string::npos)
+      return false;
+
+    std::size_t nExtPos = modelFileName.find(".txt");
+    if (nExtPos == std::string::npos)
+      return false;
+
+    int nThetaSStartIdx = nThetaSPos + strlen("_THETA_S_");
+    const std::string &strThetaS = modelFileName.substr(nThetaSStartIdx, nThetaVPos - nThetaSStartIdx);
+
+    int nThetaVStartIdx = nThetaVPos + strlen("_THETA_V_");
+    const std::string &strThetaV = modelFileName.substr(nThetaVStartIdx, nRelPhiPos - nThetaVStartIdx);
+
+    int nRelPhiStartIdx = nRelPhiPos + strlen("_REL_PHI_");
+    const std::string &strRelPhi = modelFileName.substr(nRelPhiStartIdx, nExtPos - nRelPhiStartIdx);
+
+    solarZenith = ::atof(strThetaS.c_str());
+    sensorZenith = ::atof(strThetaV.c_str());
+    relAzimuth = ::atof(strRelPhi.c_str());
+
+    return true;
+}
+
+QString LaiRetrievalHandlerL3B::GetExistingModelForTile(const QStringList &modelsList, const QString &tileFile) {
+    // no need to parse the tile file as we have nothing to compare with
+    if(modelsList.size() == 0) {
+        return "";
+    }
+
+    double fSolarZenith;
+    double fSensorZenith;
+    double fRelAzimuth;
+
+    MaccsHdrMeanAnglesReader reader(tileFile);
+    MaccsHdrMeanAngles anglesInfos = reader.read();
+    if(!anglesInfos.IsValid()) {
+        // if the angles were not successfully loaded, then exit
+        return "";
+    }
+
+    MeanAngles solarAngles = anglesInfos.sunMeanAngles;
+    double relativeAzimuth = anglesInfos.GetRelativeAzimuthAngle();
+
+    for(int i = 0; i<(int)modelsList.size(); i++) {
+        const QString &modelName = modelsList[i];
+
+        if(ParseModelFileName(modelName, fSolarZenith, fSensorZenith, fRelAzimuth)) {
+
+            int nTotalBandsNo = anglesInfos.meanViewingAnglesList.size();
+            for(int j = 0; j<nTotalBandsNo; j++) {
+                const MeanAngles &sensorBandAngles = anglesInfos.meanViewingAnglesList[j].meanViewingAngles;
+                if(InRange(fSolarZenith, 0.5, solarAngles.zenith) &&
+                   InRange(fSensorZenith, 0.5, sensorBandAngles.zenith) &&
+                   InRange(fRelAzimuth, 0.5, relativeAzimuth)) {
+                    return modelName;
+                }
+            }
+        }
+    }
+
+    return "";
 }
