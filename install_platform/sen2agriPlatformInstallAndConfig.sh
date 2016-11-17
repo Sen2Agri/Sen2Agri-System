@@ -480,6 +480,7 @@ function install_downloaders_demmacs()
    #starting it at the same time with downloaders, will do nothing 'cause it
    #will not find any downloaded product
    systemctl enable sen2agri-demmaccs.timer
+   systemctl start sen2agri-demmaccs.timer
 
 }
 #-----------------------------------------------------------#
