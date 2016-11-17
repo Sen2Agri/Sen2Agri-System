@@ -51,6 +51,14 @@ MYSQL_CMD=${MYSQL_DB_CREATION}${MYSQL_DB_ACCESS_GRANT}
 #----------------SEN2AGRI POSTGRESQL DATABASE NAME-----------------------------------------#
 : ${SEN2AGRI_DATABASE_NAME:="sen2agri"}
 #------------------------------------------------------------------------------------------#
+
+#-----------------------SEN2AGRI RPMS------------------------------------------------------#
+SEN2AGRI_CUR_VER="1.4"
+SEN2AGRI_WEBSITE_RPM="../rpm_binaries/sen2agri-website-${SEN2AGRI_CUR_VER}.centos7.x86_64.rpm"
+SEN2AGRI_DOWNLOADERS_DEMMACCS_RPM="../rpm_binaries/sen2agri-downloaders-demmaccs-${SEN2AGRI_CUR_VER}.centos7.x86_64.rpm"
+SEN2AGRI_PROCESSORS_RPM="../rpm_binaries/sen2agri-processors-${SEN2AGRI_CUR_VER}.centos7.x86_64.rpm"
+SEN2AGRI_APP_RPM="../rpm_binaries/sen2agri-app-${SEN2AGRI_CUR_VER}.centos7.x86_64.rpm"
+#------------------------------------------------------------------------------------------#
 function parse_and_update_slurm_conf_file()
 {
    ####################################
@@ -445,7 +453,7 @@ function install_and_config_webserver()
    systemctl restart httpd.service
 
    ##install Sen2Agri Website
-   yum -y install ../rpm_binaries/sen2agri-website-1.4.centos7.x86_64.rpm
+   yum -y install ${SEN2AGRI_WEBSITE_RPM}
 }
 #-----------------------------------------------------------#
 function install_downloaders_demmacs()
@@ -454,7 +462,7 @@ function install_downloaders_demmacs()
    yum -y install wget python-lxml bzip2 python-beautifulsoup4 java-1.8.0-openjdk
 
    ##install Sen2Agri Downloaders  & Demmacs
-   yum -y install ../rpm_binaries/sen2agri-downloaders-demmaccs-1.4.centos7.x86_64.rpm
+   yum -y install ${SEN2AGRI_DOWNLOADERS_DEMMACCS_RPM}
 
    echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
    ldconfig
@@ -491,14 +499,14 @@ function install_RPMs()
    yum -y install ../rpm_binaries/gdal-local-2.0.1.centos7.x86_64.rpm
 
    ##install Sen2Agri Processors
-   yum -y install ../rpm_binaries/sen2agri-processors-1.4.centos7.x86_64.rpm
+   yum -y install ${SEN2AGRI_PROCESSORS_RPM}
 
    echo /usr/local/lib > /etc/ld.so.conf.d/local.conf
    ln -s /usr/lib64/libproj.so.0 /usr/lib64/libproj.so
    ldconfig
 
    ##install Sen2Agri Services
-   yum -y install ../rpm_binaries/sen2agri-app-1.4.centos7.x86_64.rpm
+   yum -y install ${SEN2AGRI_APP_RPM}
 
    ##########################################################
    ####  SLURM
