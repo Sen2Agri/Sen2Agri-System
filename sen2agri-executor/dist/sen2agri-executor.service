@@ -2,7 +2,7 @@
 Description=Executor for Sen2Agri
 Before=slurmd.service
 After=postgresql-9.4.service
-Requires=postgresl-9.4.service
+Requires=postgresql-9.4.service
 
 [Service]
 BusName=org.esa.sen2agri.processorsExecutor
