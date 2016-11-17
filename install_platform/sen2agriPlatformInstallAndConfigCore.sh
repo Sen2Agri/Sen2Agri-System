@@ -40,7 +40,7 @@ function install_RPMs()
    yum -y install ../rpm_binaries/gdal-local-2.0.1.centos7.x86_64.rpm
 
    ##install Sen2Agri Processors
-   yum -y install ../rpm_binaries/sen2agri-processors-0.8.centos7.x86_64.rpm
+   yum -y install ../rpm_binaries/sen2agri-processors-1.4.centos7.x86_64.rpm
 
    echo /usr/local/lib > /etc/ld.so.conf.d/local.conf
    ln -s /usr/lib64/libproj.so.0 /usr/lib64/libproj.so
