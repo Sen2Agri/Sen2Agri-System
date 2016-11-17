@@ -1,6 +1,6 @@
 # Change Log
 
-## [1.4] - 2016-11-TBD
+## [1.4] - 2016-11-17
 ### Added
 - Multi-tile implementation of the unsupervised Crop Mask processor, which should be more precise, faster and use less temporary disk space
 - Crop mask and crop type products now include a QGIS style file
