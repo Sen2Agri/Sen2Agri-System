@@ -345,19 +345,13 @@ def process_DTM(context):
                  "-out", context.dem_nodata,
                  "-exp", "im1b1 == -32768 ? 0 : im1b1",
                  "-progress", "false"])
-    run_command(["otbcli_OrthoRectification",
-                 "-io.in", context.dem_nodata,
-                 "-io.out", context.dem_r1,
-                 "-map", "epsg",
-                 "-map.epsg.code", context.epsg_code,
-                 "-outputs.sizex", str(context.size_x),
-                 "-outputs.sizey", str(context.size_y),
-                 "-outputs.spacingx", str(context.spacing_x),
-                 "-outputs.spacingy", str(context.spacing_y),
-                 "-outputs.ulx", str(context.extent[0][0]),
-                 "-outputs.uly", str(context.extent[0][1]),
-                 "-opt.gridspacing", str(grid_spacing),
-                 "-progress", "false"])
+    run_command(["gdalwarp", "-q",
+                 "-multi",
+                 "-r", "cubic",
+                 "-t_srs", "EPSG:" + str(context.epsg_code),
+                 "-tr", str(context.spacing_x), str(context.spacing_y),
+                 "-te", str(context.extent[1][0]), str(context.extent[1][1]), str(context.extent[3][0]), str(context.extent[3][1]),
+                 context.dem_nodata, context.dem_r1])
 
     if context.dem_r2:
         # run_command(["gdal_translate",
@@ -415,38 +409,27 @@ def process_DTM(context):
                  context.aspect_r1])
 
     if context.slope_r2:
-        run_command(["otbcli_Superimpose",
-                     "-inr", context.dem_r2,
-                     "-inm", context.slope_r1,
-                     "-interpolator", "linear",
-                     "-lms", "40",
-                     "-out", context.slope_r2,
-                     "-progress", "false"])
+        run_command(["gdal_translate", "-q",
+                     "-r", "cubic",
+                     "-tr", "20", "20",
+                     context.slope_r1, context.slope_r2])
 
     if context.aspect_r2:
-        run_command(["otbcli_Superimpose",
-                     "-inr", context.dem_r2,
-                     "-inm", context.aspect_r1,
-                     "-interpolator", "linear",
-                     "-lms", "40",
-                     "-out", context.aspect_r2,
-                     "-progress", "false"])
+        run_command(["gdal_translate", "-q",
+                     "-r", "cubic",
+                     "-tr", "20", "20",
+                     context.aspect_r1, context.aspect_r2])
 
-    run_command(["otbcli_Superimpose",
-                 "-inr", context.dem_coarse,
-                 "-inm", context.slope_r1,
-                 "-interpolator", "linear",
-                 "-lms", "40",
-                 "-out", context.slope_coarse,
-                 "-progress", "false"])
+    run_command(["gdal_translate", "-q",
+                 "-r", "cubic",
+                 "-tr", "240", "240",
+                 context.slope_r1, context.slope_coarse])
 
-    run_command(["otbcli_Superimpose",
-                 "-inr", context.dem_coarse,
-                 "-inm", context.aspect_r1,
-                 "-interpolator", "linear",
-                 "-lms", "40",
-                 "-out", context.aspect_coarse,
-                 "-progress", "false"])
+    run_command(["gdal_translate", "-q",
+                 "-r", "cubic",
+                 "-tr", "240", "240",
+                 context.aspect_r1, context.aspect_coarse])
+
     return True
 
 def process_WB(context):
