@@ -340,8 +340,7 @@ def process_DTM(context):
                  "-out", context.dem_nodata,
                  "-exp", "im1b1 == -32768 ? 0 : im1b1",
                  "-progress", "false"])
-    run_command(["gdalwarp", "-q",
-                 "-multi",
+    run_command(["gdalwarp", "-q", "-overwrite", "-multi",
                  "-r", "cubic",
                  "-t_srs", "EPSG:" + str(context.epsg_code),
                  "-tr", str(context.spacing_x), str(context.spacing_y),
