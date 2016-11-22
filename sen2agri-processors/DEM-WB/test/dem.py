@@ -22,18 +22,14 @@ import re
 import glob
 import gdal
 import osr
-import subprocess
 import lxml.etree
 from lxml.builder import E
-#import logging
 import math
 import os
-from os.path import isfile, isdir, join
-import glob
+from os.path import isdir, join
 import sys
-import pipes
-import zipfile
-from multiprocessing import Pool
+from signal import SIGINT, SIG_IGN
+from multiprocessing import Pool, TimeoutError
 from sen2agri_common_db import *
 
 
@@ -471,14 +467,13 @@ def process_WB(context):
 def change_extension(file, new_extension):
     return os.path.splitext(file)[0] + new_extension
 
+
 def process_context(context):
     try:
-        print(context.image_directory)
         os.makedirs(context.image_directory)
     except:
         pass
     try:
-        print(context.temp_directory)
         os.makedirs(context.temp_directory)
     except:
         pass
@@ -508,6 +503,7 @@ def process_context(context):
     except:
         print("Couldn't remove the temp dir {}".format(context.temp_directory))
 
+
 def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Creates DEM and WB data for MACCS")
@@ -531,7 +527,16 @@ if len(contexts) == 0:
     print("No context could be created")
     sys.exit(-1)
 
-p = Pool(int(proc_number))
-p.map(process_context, contexts)
-
-
+try:
+    p = Pool(int(proc_number), lambda: signal.signal(SIGINT, SIG_IGN))
+    res = p.map_async(process_context, contexts)
+    while True:
+        try:
+            res.get(1)
+            break
+        except TimeoutError:
+            pass
+    p.close()
+except KeyboardInterrupt:
+    p.terminate()
+    p.join()
