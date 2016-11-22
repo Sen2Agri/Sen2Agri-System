@@ -115,7 +115,7 @@ def get_landsat_tile_id(image):
 
 
 def get_sentinel2_tile_id(image):
-    m = re.match("\w+_T(\w{5})_B\d{2}\.\w{3}", image)
+    m = re.match("\w+_T(\w{5})_B\d{2}\.\w{3}|T(\w{5})_\d{8}T\d{6}_B\d{2}.\w{3}", image)
     return m and ('S2', m.group(1))
 
 
@@ -192,7 +192,6 @@ def create_context(args):
         return context_array
     for image_filename in images:
         mode, tile_id = get_tile_id(image_filename)
-
 
         dataset = gdal.Open(image_filename, gdal.gdalconst.GA_ReadOnly)
 
