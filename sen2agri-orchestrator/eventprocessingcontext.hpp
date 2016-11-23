@@ -46,6 +46,7 @@ public:
 
     ProductList GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate);
     ProductList GetProductsForTile(const QString &tileId, ProductType productType, int tileSatelliteId, int targetSatelliteId);
+    QStringList GetSiteTiles(int siteId, int satelliteId);
     QStringList GetProductFiles(const QString &path, const QString &pattern) const;
     QString GetJobOutputPath(int jobId, const QString& procName);
     QString GetOutputPath(int jobId, int taskId, const QString &module, const QString& procName);

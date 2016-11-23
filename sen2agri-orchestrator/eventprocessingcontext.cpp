@@ -189,6 +189,11 @@ ProductList EventProcessingContext::GetProductsForTile(const QString &tileId, Pr
     return persistenceManager.GetProductsForTile(tileId, productType, tileSatelliteId, targetSatelliteId);
 }
 
+QStringList EventProcessingContext::GetSiteTiles(int siteId, int satelliteId)
+{
+    return persistenceManager.GetSiteTiles(siteId, satelliteId);
+}
+
 QString EventProcessingContext::GetProductAbsolutePath(const QString &path) {
     QFileInfo fileInfo(path);
     QString absPath = path;

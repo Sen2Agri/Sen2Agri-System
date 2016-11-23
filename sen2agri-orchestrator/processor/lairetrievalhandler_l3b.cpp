@@ -160,6 +160,7 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsToGenModel(std::map<QString, QString
     NewStepList steps;
     const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
     const auto &rsrCfgFile = configParameters["processor.l3b.lai.rsrcfgfile"];
+    const auto &globalSampleFile = configParameters["processor.l3b.lai.global_bv_samples_file"];
     // in allTasksList we might have tasks from other products. We start from the first task of the current product
     int curIdx = tasksStartIdx;
     for(int i = 0; i<listPrdTiles.size(); i++) {
@@ -181,7 +182,12 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsToGenModel(std::map<QString, QString
 
 
             QStringList BVInputVariableGenerationArgs = GetBVInputVariableGenerationArgs(configParameters, generatedSampleFile);
-            QStringList ProSailSimulatorArgs = GetProSailSimulatorArgs(curXml, generatedSampleFile, rsrCfgFile, simuReflsFile, anglesFile, configParameters);
+            QString bvSamplesFile = generatedSampleFile;
+            // if configured a global samples file, then use it instead of the current generated one
+            if(globalSampleFile != "") {
+                bvSamplesFile = globalSampleFile;
+            }
+            QStringList ProSailSimulatorArgs = GetProSailSimulatorArgs(curXml, bvSamplesFile, rsrCfgFile, simuReflsFile, anglesFile, configParameters);
             QStringList TrainingDataGeneratorArgs = GetTrainingDataGeneratorArgs(curXml, generatedSampleFile, simuReflsFile, trainingFile);
             QStringList InverseModelLearningArgs = GetInverseModelLearningArgs(trainingFile, curXml, modelFile, errEstModelFile, modelsFolder, configParameters);
 
@@ -454,7 +460,7 @@ void LaiRetrievalHandlerL3B::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             QString footPrint = GetProductFormatterFootprint(ctx, event);
             ProductType prodType = ProductType::L3BProductTypeId;
 
-            const QStringList &prodTiles = ProcessorHandlerHelper::GetProductTileIds(productFolder);
+            const QStringList &prodTiles = ProcessorHandlerHelper::GetTileIdsFromHighLevelProduct(productFolder);
 
             // Insert the product into the database
             QDateTime minDate, maxDate;
@@ -465,7 +471,7 @@ void LaiRetrievalHandlerL3B::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             Logger::debug(QStringLiteral("InsertProduct for %1 returned %2").arg(prodName).arg(ret));
 
             // submit a new job for the L3C product corresponding to this one
-            SubmitL3CJobForL3BProduct(prodName);
+            SubmitL3CJobForL3BProduct(ctx, event.jobId, prodName);
         } else {
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
             // We might have several L3B products, we should not mark it at failed here as
@@ -767,9 +773,14 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
     return params;
 }
 
-void LaiRetrievalHandlerL3B::SubmitL3CJobForL3BProduct(const QString &l3bProdName)
+void LaiRetrievalHandlerL3B::SubmitL3CJobForL3BProduct(EventProcessingContext &ctx, int jobId, const QString &l3bProdName)
 {
     //TODO
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(jobId, "processor.l3b.lai.link_l3c_to_l3b");
+    bool bLinkL3CToL3B = ((configParameters["processor.l3b.lai.link_l3c_to_l3b"]).toInt() == 1);
+    // TODO: generate automatically only for Sentinel2
+
+
 }
 
 void LaiRetrievalHandlerL3B::GetModelFileList(const QString &folderName, const QString &modelPrefix, QStringList &outModelsList) {

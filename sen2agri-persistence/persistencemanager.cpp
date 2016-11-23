@@ -946,6 +946,34 @@ ProductList PersistenceManagerDBProvider::GetProductsForTile(const QString &tile
         });
 }
 
+QStringList PersistenceManagerDBProvider::GetSiteTiles(int siteId, int satelliteId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(
+        __func__, [&] {
+            auto query = db.prepareQuery(QStringLiteral("select * from sp_get_site_tiles("
+                                                        ":siteId, :satelliteId)"));
+            query.bindValue(QStringLiteral(":siteId"), siteId);
+            query.bindValue(QStringLiteral(":satelliteId"), satelliteId);
+            query.setForwardOnly(true);
+            if (!query.exec()) {
+                throw_query_error(db, query);
+            }
+
+            auto dataRecord = query.record();
+            auto tileIdCol = dataRecord.indexOf(QStringLiteral("tile_id"));
+
+            QStringList result;
+            while (query.next()) {
+                result.append(query.value(tileIdCol).toString());
+            }
+
+            return result;
+        });
+}
+
+
 QString PersistenceManagerDBProvider::GetDashboardCurrentJobData(int page)
 {
     auto db = getDatabase();
