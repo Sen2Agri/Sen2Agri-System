@@ -25,14 +25,14 @@ begin
                     WHEN 1 THEN
                     BEGIN
                         _geog := (SELECT geog
-                                from shape_tiles_s2
-                                WHERE shape_tiles_s2.tile_id = _tile_id);
+                                  FROM shape_tiles_s2
+                                  WHERE shape_tiles_s2.tile_id = _tile_id);
                     END;
                     WHEN 2 THEN
                     BEGIN
                         _geog := (SELECT geog
-                                from shape_tiles_l8
-                                WHERE pr = _tile_id :: INT);
+                                  FROM shape_tiles_l8
+                                  WHERE pr = _tile_id :: INT);
                     END;
                 END CASE;
 
