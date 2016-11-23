@@ -34,6 +34,7 @@ public:
     typedef struct {
         QString file;
         SatelliteIdType satId;
+        QString acquisitionDate;
         QStringList additionalFiles;
     } InfoTileFile;
 
@@ -52,7 +53,7 @@ public:
 
     static ProductType GetProductTypeFromFileName(const QString &path, bool useParentDirIfDir = true);
     static QString GetTileId(const QString &path, SatelliteIdType &satelliteId);
-    static QStringList GetProductTileIds(const QString &prodFolder);
+    static QStringList GetTileIdsFromHighLevelProduct(const QString &prodFolder);
     static QMap<QString, TileTemporalFilesInfo> GroupTiles(const QStringList &listAllProductsTiles, QList<SatelliteIdType> &outAllSatIds, SatelliteIdType &outPrimarySatelliteId);
     static QMap<QDate, QStringList> GroupL2AProductTilesByDate(const QMap<QString, QStringList> &inputProductToTilesMap);
     static SatelliteIdType GetPrimarySatelliteId(const QList<ProcessorHandlerHelper::SatelliteIdType> &satIds);
@@ -65,6 +66,7 @@ public:
     static QMap<QString, QString> GetHigLevelProductFiles(const QString &productDir, const QString &fileIdentif, bool isQiData=false);
     static QMap<QString, QString> GetHighLevelProductTilesDirs(const QString &productDir);
     static QString GetHighLevelProductIppFile(const QString &productDir);
+    static QString GetSourceL2AFromHighLevelProductIppFile(const QString &productDir);
     static bool HighLevelPrdHasL2aSource(const QString &highLevelPrd, const QString &l2aPrd);
     static QMap<QString, QStringList> GroupHighLevelProductTiles(const QStringList &listAllProductFolders);
 
@@ -86,6 +88,7 @@ public:
     static QString GetShapeForTile(const QString &shapeFilesDir, const QString &tileId);
     static QString GetProjectionForTile(const QString &projFilesDir, const QString &tileId);
     static QStringList GetTemporalTileFiles(const TileTemporalFilesInfo &temporalTileInfo);
+    static QStringList GetTemporalTileAcquisitionDates(const TileTemporalFilesInfo &temporalTileInfo);
     static bool TemporalTileInfosHasFile(const TileTemporalFilesInfo &temporalTileInfo, const QString &filePath);
     static void SortTemporalTileInfoFiles(TileTemporalFilesInfo &temporalTileInfo);
     static void TrimLeftSecondarySatellite(QStringList &productsList);

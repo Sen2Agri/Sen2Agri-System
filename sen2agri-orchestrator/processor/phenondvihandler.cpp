@@ -147,7 +147,7 @@ void PhenoNdviHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
             ctx.InsertProduct({ ProductType::L3EProductTypeId, event.processorId, event.siteId,
                                 event.jobId, productFolder, maxDate,
-                                prodName, quicklook, footPrint, std::experimental::nullopt, TileList() });
+                                prodName, quicklook, footPrint, std::experimental::nullopt, TileIdList() });
 
             // Now remove the job folder containing temporary files
             RemoveJobFolder(ctx, event.jobId, "l3e");

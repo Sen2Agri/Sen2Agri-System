@@ -46,6 +46,9 @@ protected:
     QString GetProductFormatterTile(const QString &tile);
 
     void SubmitTasks(EventProcessingContext &ctx, int jobId, const QList<std::reference_wrapper<TaskToSubmit> > &tasks);
+    QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> GetSiteTiles(EventProcessingContext &ctx, int siteId);
+    ProcessorHandlerHelper::SatelliteIdType GetSatIdForTile(const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &mapSatTiles,
+                                                                           const QString &tileId);
 
 private:
     virtual void HandleProductAvailableImpl(EventProcessingContext &ctx,

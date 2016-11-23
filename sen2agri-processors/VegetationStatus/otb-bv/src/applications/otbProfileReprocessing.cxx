@@ -199,7 +199,12 @@ private:
     AddParameter(ParameterType_InputImage, "msks", "Image containing time series mask flags.");
     SetParameterDescription( "msks", "Input file containing time series mask flags. Land is expected to be with value (4)" );
 
+    // NOTE: although not mandatory, either ilxml or ildates should be provided
     AddParameter(ParameterType_InputFilenameList, "ilxml", "The XML metadata files list");
+    MandatoryOff("ilxml");
+
+    AddParameter(ParameterType_StringList, "ildates", "The dates for the products");
+    MandatoryOff("ildates");
 
     AddParameter(ParameterType_OutputImage, "opf", "Output profile file.");
     SetParameterDescription( "opf", "Filename where the reprocessed profile saved. "
@@ -242,35 +247,51 @@ private:
       FloatVectorImageType::Pointer lai_image = this->GetParameterImage("lai");
       FloatVectorImageType::Pointer err_image = this->GetParameterImage("err");
       FloatVectorImageType::Pointer msks_image = this->GetParameterImage("msks");
-      std::vector<std::string> xmlsList = this->GetParameterStringList("ilxml");
+      unsigned int nb_dates = 0;
+      std::vector<std::string> xmlsList;
+      std::vector<std::string> datesList;
+      if (HasValue("ilxml")) {
+          xmlsList = this->GetParameterStringList("ilxml");
+          nb_dates = xmlsList.size();
+          for (const std::string &strXml : xmlsList)
+          {
+              MetadataHelperFactory::Pointer factory = MetadataHelperFactory::New();
+              // we are interested only in the 10m resolution as we need only the date
+              auto pHelper = factory->GetMetadataHelper(strXml, 10);
+              datesList.push_back(pHelper->GetAcquisitionDate());
+          }
+      } else if (HasValue("ildates")) {
+          datesList = this->GetParameterStringList("ildates");
+          nb_dates = datesList.size();
+      }
+      if (nb_dates == 0) {
+          itkExceptionMacro("Either ilxml or ildates should be provided");
+      }
       unsigned int nb_lai_bands = lai_image->GetNumberOfComponentsPerPixel();
       unsigned int nb_err_bands = err_image->GetNumberOfComponentsPerPixel();
-      unsigned int nb_xmls = xmlsList.size();
-      if((nb_lai_bands == 0) || (nb_lai_bands != nb_err_bands) || (nb_lai_bands != nb_xmls)) {
+      if((nb_lai_bands == 0) || (nb_lai_bands != nb_err_bands) || (nb_lai_bands != nb_dates)) {
           itkExceptionMacro("Invalid number of bands or xmls: lai bands=" <<
                             nb_lai_bands << ", err bands =" <<
-                            nb_err_bands << ", nb_xmls=" << nb_xmls);
+                            nb_err_bands << ", nb_dates=" << nb_dates);
       }
 
-      std::string date_str;
       std::vector<std::tm> dv;
-      VectorType inDates;
-      for (std::string strXml : xmlsList)
+      // we have dates array
+      for (const std::string &strDate : datesList)
       {
-          MetadataHelperFactory::Pointer factory = MetadataHelperFactory::New();
-          // we are interested only in the 10m resolution as we need only the date
-          auto pHelper = factory->GetMetadataHelper(strXml, 10);
-          date_str = pHelper->GetAcquisitionDate();
-          //inDates.push_back(date_to_doy(date_str));
           struct tm tmDate = {};
-          if (strptime(date_str.c_str(), "%Y%m%d", &tmDate) == NULL) {
-              itkExceptionMacro("Invalid value for a date: " + date_str);
+          std::string formatDate = "%Y%m%d";
+          if(strDate.size() == 15 && strDate[8] == 'T') {
+              formatDate = "%Y%m%dT%H%M%S";
+          }
+          if (strptime(strDate.c_str(), formatDate.c_str(), &tmDate) == NULL) {
+              itkExceptionMacro("Invalid value for a date: " + strDate);
           }
           dv.push_back(tmDate);
-
       }
+
       auto times = pheno::tm_to_doy_list(dv);
-      inDates = VectorType(dv.size());
+      VectorType inDates = VectorType(dv.size());
       std::copy(std::begin(times), std::end(times), std::begin(inDates));
 
       size_t bwr{1};

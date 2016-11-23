@@ -127,13 +127,15 @@ QMap<QString, ProcessorHandlerHelper::TileTemporalFilesInfo> ProcessorHandlerHel
             outAllSatIds.append(satId);
         if(mapTiles.contains(tileId)) {
             TileTemporalFilesInfo &infos = mapTiles[tileId];
-            infos.temporalTilesFileInfos.append({tileFile, satId, {}});
+            // The tile acquisition date should be filled later
+            infos.temporalTilesFileInfos.append({tileFile, satId, "", {}});
             if(!infos.uniqueSatteliteIds.contains(satId))
                 infos.uniqueSatteliteIds.append(satId);
         } else {
             TileTemporalFilesInfo infos;
             infos.tileId = tileId;
-            infos.temporalTilesFileInfos.append({tileFile, satId, {}});
+            // The tile acquisition date should be filled later
+            infos.temporalTilesFileInfos.append({tileFile, satId, "", {}});
             infos.uniqueSatteliteIds.append(satId);
             mapTiles[tileId] = infos;
         }
@@ -338,33 +340,48 @@ QMap<QString, QString> ProcessorHandlerHelper::GetHigLevelProductFiles(const QSt
 
 QString ProcessorHandlerHelper::GetHigLevelProductTileFile(const QString &tileDir, const QString &fileIdentif, bool isQiData) {
     // get the dir name
-    QString tileDirName = QFileInfo(tileDir).fileName();
-    QStringList pieces = tileDirName.split("_");
-    QString fileName;
-    int curPiece = 0;
-    // We have a tilename something like S2AGRI_L3A_V2013xxx_2013yyyy
-    // the file that we are looking for is something like S2AGRI_L3A_CM_V2013xxx_2013yyyy.zzz
-    // if there are multiple files with different timestamps, we get the one that has
-    // the same timestamp as the tile/product
-    int numPieces = pieces.size();
-    for (int i = 0; i<numPieces; i++) {
-        const QString &piece = pieces[i];
-        fileName += piece;
-
-        // we do not add the _ if it is the last piece
-        if(curPiece != numPieces - 1)
-            fileName += "_";
-
-        // add the identifier after the product TYPE
-        if(curPiece == 1)
-            fileName += fileIdentif + "_";
-        curPiece++;
+    QString tileFolder = tileDir + (isQiData ? "/QI_DATA/" : "/IMG_DATA/");
+    QString filesFilter = QString("*_%1_*.TIF").arg(fileIdentif);
+    QDirIterator it(tileFolder, QStringList() << filesFilter, QDir::Files);
+    QStringList listFoundFiles;
+    while (it.hasNext()) {
+        listFoundFiles.append(it.next());
     }
-    // TODO: Maybe we should check if file really exists
-    if(isQiData) {
-        return tileDir + "/QI_DATA/" + fileName + ".TIF";
+    if(listFoundFiles.size() == 0) {
+        return "";
+    } else if (listFoundFiles.size() == 1) {
+        return listFoundFiles[0];
+    } else {
+        // we have several files
+        QString tileDirName = QFileInfo(tileDir).fileName();
+        QStringList pieces = tileDirName.split("_");
+        QString fileName;
+        int curPiece = 0;
+        // We have a tilename something like S2AGRI_L3A_V2013xxx_2013yyyy
+        // the file that we are looking for is something like S2AGRI_L3A_CM_V2013xxx_2013yyyy.zzz
+        // if there are multiple files with different timestamps, we get the one that has
+        // the same timestamp as the tile/product
+        int numPieces = pieces.size();
+        for (int i = 0; i<numPieces; i++) {
+            const QString &piece = pieces[i];
+            fileName += piece;
+
+            // we do not add the _ if it is the last piece
+            if(curPiece != numPieces - 1)
+                fileName += "_";
+
+            // add the identifier after the product TYPE
+            if(curPiece == 1)
+                fileName += fileIdentif + "_";
+            curPiece++;
+        }
+        QString filePath = tileDir + (isQiData ? "/QI_DATA/" : "/IMG_DATA/") + fileName + ".TIF";
+        if(listFoundFiles.contains(filePath)) {
+            return filePath;
+        }
+        // otherwise return the last in the list as it might possibly have the latest date
+        return listFoundFiles[listFoundFiles.size()-1];
     }
-    return tileDir + "/IMG_DATA/" + fileName + ".TIF";
 }
 
 QString ProcessorHandlerHelper::GetHighLevelProductIppFile(const QString &productDir) {
@@ -376,6 +393,37 @@ QString ProcessorHandlerHelper::GetHighLevelProductIppFile(const QString &produc
     }
     return "";
 }
+
+QString ProcessorHandlerHelper::GetSourceL2AFromHighLevelProductIppFile(const QString &productDir) {
+    const QString ippXmlFile = GetHighLevelProductIppFile(productDir);
+    if(ippXmlFile.length() == 0) {
+        // incomplete product
+        return "";
+    }
+    const QString startTag("<XML_0>");
+    const QString endTag("</XML_0>");
+    QFile inputFile(ippXmlFile);
+    if (inputFile.open(QIODevice::ReadOnly))
+    {
+       QTextStream in(&inputFile);
+       while (!in.atEnd())
+       {
+           const QString &line = in.readLine();
+           int startTagIdx = line.indexOf(startTag);
+           if(startTagIdx >= 0) {
+               int endTagIdx = line.indexOf(endTag);
+               if(endTagIdx > startTagIdx) {
+                   int startIdx = startTagIdx + startTag.length();
+                   return line.mid(startIdx, endTagIdx - startIdx);
+               }
+           }
+       }
+       inputFile.close();
+    }
+
+    return "";
+}
+
 
 bool ProcessorHandlerHelper::HighLevelPrdHasL2aSource(const QString &highLevelPrd, const QString &l2aPrd) {
     QString ippXmlFile = GetHighLevelProductIppFile(highLevelPrd);
@@ -456,7 +504,7 @@ QMap<QString, QStringList> ProcessorHandlerHelper::GroupHighLevelProductTiles(co
 }
 
 /* static */
-QStringList ProcessorHandlerHelper::GetProductTileIds(const QString &prodFolder) {
+QStringList ProcessorHandlerHelper::GetTileIdsFromHighLevelProduct(const QString &prodFolder) {
     QStringList result;
     const QMap<QString, QString> &mapProdTiles = GetHighLevelProductTilesDirs(prodFolder);
     for(auto tile : mapProdTiles.keys())
@@ -675,7 +723,7 @@ void ProcessorHandlerHelper::AddSatteliteIntersectingProducts(QMap<QString, Tile
                 if(listSecondarySatLoadedProds.contains(temporalTileFileInfo.file) &&
                         !TemporalTileInfosHasFile(primarySatInfos, temporalTileFileInfo.file)) {
                     // add it to the target primary sattelite information list
-                    primarySatInfos.temporalTilesFileInfos.append({temporalTileFileInfo.file, temporalTileFileInfo.satId, {}});
+                    primarySatInfos.temporalTilesFileInfos.append({temporalTileFileInfo.file, temporalTileFileInfo.satId, "", {}});
                     if(!primarySatInfos.uniqueSatteliteIds.contains(secondarySatId)) {
                         primarySatInfos.uniqueSatteliteIds.append(secondarySatId);
                     }
@@ -746,6 +794,15 @@ QStringList ProcessorHandlerHelper::GetTemporalTileFiles(const TileTemporalFiles
     QStringList retList;
     for(const InfoTileFile &fileInfo: temporalTileInfo.temporalTilesFileInfos) {
         retList.append(fileInfo.file);
+    }
+    return retList;
+}
+
+QStringList ProcessorHandlerHelper::GetTemporalTileAcquisitionDates(const TileTemporalFilesInfo &temporalTileInfo)
+{
+    QStringList retList;
+    for(const InfoTileFile &fileInfo: temporalTileInfo.temporalTilesFileInfos) {
+        retList.append(fileInfo.acquisitionDate);
     }
     return retList;
 }

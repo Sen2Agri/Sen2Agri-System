@@ -20,7 +20,7 @@ static QString getScheduledTasksStatusesJson(const std::vector<ScheduledTaskStat
 static QString getScheduledTaskJson(const ScheduledTask &task);
 
 static QString getExecutionStatusListJson(const ExecutionStatusList &statusList);
-static QString getTilesJson(const TileList &tilesList);
+static QString getTilesJson(const TileIdList &tilesList);
 
 static void bindStepExecutionStatistics(QSqlQuery &query, const ExecutionStatistics &statistics);
 
@@ -946,7 +946,7 @@ ProductList PersistenceManagerDBProvider::GetProductsForTile(const QString &tile
         });
 }
 
-QStringList PersistenceManagerDBProvider::GetSiteTiles(int siteId, int satelliteId)
+TileList PersistenceManagerDBProvider::GetSiteTiles(int siteId, int satelliteId)
 {
     auto db = getDatabase();
 
@@ -964,15 +964,50 @@ QStringList PersistenceManagerDBProvider::GetSiteTiles(int siteId, int satellite
             auto dataRecord = query.record();
             auto tileIdCol = dataRecord.indexOf(QStringLiteral("tile_id"));
 
-            QStringList result;
+            TileList result;
             while (query.next()) {
-                result.append(query.value(tileIdCol).toString());
+                Tile tile;
+                tile.satellite = static_cast<Satellite>(satelliteId);
+                tile.tileId = query.value(tileIdCol).toString();
+
+                result.append(std::move(tile));
             }
 
             return result;
         });
 }
 
+TileList PersistenceManagerDBProvider::GetIntersectingTiles(Satellite satellite, const QString &tileId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(
+        __func__, [&] {
+            auto query = db.prepareQuery(QStringLiteral("select * from sp_get_intersecting_tiles("
+                                                        ":satelliteId, :tileId)"));
+            query.bindValue(QStringLiteral(":satelliteId"), static_cast<int>(satellite));
+            query.bindValue(QStringLiteral(":tileId"), tileId);
+            query.setForwardOnly(true);
+            if (!query.exec()) {
+                throw_query_error(db, query);
+            }
+
+            auto dataRecord = query.record();
+            auto satelliteIdCol = dataRecord.indexOf(QStringLiteral("satellite_id"));
+            auto tileIdCol = dataRecord.indexOf(QStringLiteral("tile_id"));
+
+            TileList result;
+            while (query.next()) {
+                Tile tile;
+                tile.satellite = static_cast<Satellite>(query.value(satelliteIdCol).toInt());
+                tile.tileId = query.value(tileIdCol).toString();
+
+                result.append(std::move(tile));
+            }
+
+            return result;
+        });
+}
 
 QString PersistenceManagerDBProvider::GetDashboardCurrentJobData(int page)
 {
@@ -1422,7 +1457,7 @@ static QString getExecutionStatusListJson(const ExecutionStatusList &statusList)
     return jsonToString(array);
 }
 
-static QString getTilesJson(const TileList &tilesList)
+static QString getTilesJson(const TileIdList &tilesList)
 {
     QJsonArray array;
     for (const auto &t : tilesList) {

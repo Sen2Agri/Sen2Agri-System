@@ -103,7 +103,7 @@ private:
     void DoExecute()
     {
         int resolution = GetParameterInt("res");
-        const std::string inXml = GetParameterAsString("xml");
+        bool bIsFinalProduct = (GetParameterInt("isfinal") != 0);
         std::string strBandsMappingFileName = GetParameterAsString("bmap");
         m_L3AIn = GetParameterInt16VectorImage("in");
         m_L3AIn->UpdateOutputInformation();
@@ -119,7 +119,6 @@ private:
         std::string masterMissionName = bandsMappingCfg.GetMasterMissionName();
         std::vector<int> bandsPresenceVect = bandsMappingCfg.GetBandsPresence(resolution, masterMissionName, nExtractedBandsNo);
 
-        otbAppLogINFO( << "InXML: " << inXml << std::endl );
         otbAppLogINFO( << "Resolution: " << resolution << std::endl );
 
         m_WeightsConcat = ImageListToVectorImageFilterType::New();
@@ -136,7 +135,12 @@ private:
 
         int nReflsBandsNo = nExtractedBandsNo;
         unsigned int nTotalBandsNo = (4*nReflsBandsNo);
-        if(m_L3AIn->GetNumberOfComponentsPerPixel() != nTotalBandsNo)
+        unsigned int nTotalBandsWithAddedBlueBandNo = (4*(nReflsBandsNo + 1));
+        bool bHasPrevL3ABlueBand = (m_L3AIn->GetNumberOfComponentsPerPixel() == nTotalBandsWithAddedBlueBandNo);
+        // check if we have the expected number of bands
+        if((m_L3AIn->GetNumberOfComponentsPerPixel() != nTotalBandsWithAddedBlueBandNo) &&
+           (m_L3AIn->GetNumberOfComponentsPerPixel() != nTotalBandsNo))
+
         {
             itkExceptionMacro("Wrong number of bands ! " + m_L3AIn->GetNumberOfComponentsPerPixel());
         }
@@ -145,52 +149,20 @@ private:
         m_ImgSplit->SetInput(m_L3AIn);
         m_ImgSplit->UpdateOutputInformation();
 
-        int cnt = 0;
-        for(unsigned int i = 0; i < bandsPresenceVect.size(); i++) {
-            if(bandsPresenceVect[cnt] != -1) {
-                m_WeightList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt));
-                cnt++;
-            }
-        }
-        for(unsigned int i = 0; i < bandsPresenceVect.size(); i++) {
-            if(bandsPresenceVect[cnt] != -1) {
-                m_DatesList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt));
-                cnt++;
-            }
-        }
-
-        //m_DatesList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt++));
-        int redIdx, greenIdx, blueIdx;
-        auto factory = MetadataHelperFactory::New();
-        auto pHelper = factory->GetMetadataHelper(inXml);
-        bool bHasTrueColorBandIndexes = GetTrueColorBandIndexes(bandsMappingCfg, pHelper, resolution, redIdx, greenIdx, blueIdx);
         int redBandNo = -1;
         int greenBandNo = -1;
-        int blueBandNo = -1;        
-        for(unsigned int i = 0; i < bandsPresenceVect.size(); i++) {
-            if(bandsPresenceVect[i] != -1) {
-                m_ReflectancesList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt));
-                if(bHasTrueColorBandIndexes) {
-                    if(bandsPresenceVect[i] == redIdx) {
-                        redBandNo = cnt;
-                    }
-                    if(bandsPresenceVect[i] == greenIdx) {
-                        greenBandNo = cnt;
-                    }
-                    if(bandsPresenceVect[i] == blueIdx) {
-                        blueBandNo = cnt;
-                    }
-                }
-                cnt++;
-            }
-        }        
-        for(unsigned int i = 0; i < bandsPresenceVect.size(); i++) {
-            if(bandsPresenceVect[cnt] != -1) {
-                m_FlagsList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt));
-                cnt++;
-            }
-        }
-        //m_FlagsList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt++));
+        int blueBandNo = -1;
+
+        int cnt = 0;
+        AddExtractedBandToList(bandsPresenceVect, bHasPrevL3ABlueBand, bIsFinalProduct, m_WeightList, cnt);
+        AddExtractedBandToList(bandsPresenceVect, bHasPrevL3ABlueBand, bIsFinalProduct, m_DatesList, cnt);
+
+        // first extract the RGB bands before incrementing cnt during reflectance extraction
+        GetTrueColorBandsIndexesInRaster(bandsMappingCfg, bandsPresenceVect, resolution, cnt, redBandNo, greenBandNo, blueBandNo);
+
+        // now extract the reflectance bands
+        AddExtractedBandToList(bandsPresenceVect, bHasPrevL3ABlueBand, bIsFinalProduct, m_ReflectancesList, cnt);
+        AddExtractedBandToList(bandsPresenceVect, bHasPrevL3ABlueBand, bIsFinalProduct, m_FlagsList, cnt);
 
         if((redBandNo != -1) && (greenBandNo != -1) && (blueBandNo != -1)) {
             m_RGBOutList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(redBandNo));
@@ -200,21 +172,25 @@ private:
 
         m_WeightsConcat = ImageListToVectorImageFilterType::New();
         m_WeightsConcat->SetInput(m_WeightList);
+        m_WeightsConcat->UpdateOutputInformation();
         SetParameterOutputImagePixelType("outweights", ImagePixelType_int16);
         SetParameterOutputImage("outweights", m_WeightsConcat->GetOutput());
 
         m_DatesConcat = ImageListToVectorImageFilterType::New();
         m_DatesConcat->SetInput(m_DatesList);
+        m_DatesConcat->UpdateOutputInformation();
         SetParameterOutputImagePixelType("outdates", ImagePixelType_int16);
         SetParameterOutputImage("outdates", m_DatesConcat->GetOutput());
 
         m_ReflsConcat = ImageListToVectorImageFilterType::New();
         m_ReflsConcat->SetInput(m_ReflectancesList);
+        m_ReflsConcat->UpdateOutputInformation();
         SetParameterOutputImagePixelType("outrefls", ImagePixelType_int16);
         SetParameterOutputImage("outrefls", m_ReflsConcat->GetOutput());
 
         m_FlagsConcat = ImageListToVectorImageFilterType::New();
         m_FlagsConcat->SetInput(m_FlagsList);
+        m_FlagsConcat->UpdateOutputInformation();
         SetParameterOutputImagePixelType("outflags", ImagePixelType_uint8);
         SetParameterOutputImage("outflags", m_FlagsConcat->GetOutput());
 
@@ -231,6 +207,56 @@ private:
             }
         }
         return;
+    }
+
+    void AddExtractedBandToList(const std::vector<int> &bandsPresenceVect, bool bHasPrevL3ABlueBand, bool bIsFinalProduct,
+                                ImgListType::Pointer imgList, int &cnt)
+    {
+        for(unsigned int i = 0; i < bandsPresenceVect.size(); i++) {
+            if(bandsPresenceVect[i] != -1) {
+                imgList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt++));
+            }
+        }
+        // if it is not the last product and we have an additional blue band in the reflectance raster
+        // then add this additional blue band
+        // NOTE: The additional blue band is added only for 20m resolution in case of Sentinel2 when
+        if(bHasPrevL3ABlueBand) {
+            if(!bIsFinalProduct) {
+                imgList->PushBack(m_ImgSplit->GetOutput()->GetNthElement(cnt));
+            }
+            // move to the next band (either if is final or not)
+            cnt++;
+        }
+    }
+
+    void GetTrueColorBandsIndexesInRaster(BandsMappingConfig &bandsMappingCfg, const std::vector<int> &bandsPresenceVect,
+                                          int resolution, int cnt,
+                                          int &redBandNo, int &greenBandNo, int &blueBandNo)
+    {
+        int redIdx, greenIdx, blueIdx;
+        const std::string inXml = GetParameterAsString("xml");
+        otbAppLogINFO( << "InXML: " << inXml << std::endl );
+
+        auto factory = MetadataHelperFactory::New();
+        auto pHelper = factory->GetMetadataHelper(inXml);
+        bool bHasTrueColorBandIndexes = GetTrueColorBandIndexes(bandsMappingCfg, pHelper, resolution, redIdx, greenIdx, blueIdx);
+
+        for(unsigned int i = 0; i < bandsPresenceVect.size(); i++) {
+            if(bandsPresenceVect[i] != -1) {
+                if(bHasTrueColorBandIndexes) {
+                    if(bandsPresenceVect[i] == redIdx) {
+                        redBandNo = cnt;
+                    }
+                    if(bandsPresenceVect[i] == greenIdx) {
+                        greenBandNo = cnt;
+                    }
+                    if(bandsPresenceVect[i] == blueIdx) {
+                        blueBandNo = cnt;
+                    }
+                }
+                cnt++;
+            }
+        }
     }
 
     bool GetTrueColorBandIndexes(BandsMappingConfig &bandsMappingCfg, const std::unique_ptr<MetadataHelper> &pHelper, int resolution,

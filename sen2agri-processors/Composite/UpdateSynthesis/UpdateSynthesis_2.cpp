@@ -36,6 +36,7 @@
 #include "MetadataHelperFactory.h"
 #include "BandsCfgMappingParser.h"
 #include "ResamplingBandExtractor.h"
+#include "GenericRSImageResampler.h"
 #include "itkMetaDataDictionary.h"
 
 namespace otb
@@ -60,6 +61,9 @@ public:
     typedef FloatVectorImageType                    InputImageType;
     typedef FloatImageType                          InternalBandImageType;
     typedef Int16VectorImageType                    OutImageType;
+
+    typedef otb::ImageFileReader<InputImageType>                            ImageReaderType;
+    typedef otb::ObjectList<ImageReaderType>                                ImageReaderListType;
 
     typedef otb::ImageList<InternalBandImageType>  ImageListType;
     typedef ImageListToVectorImageFilter<ImageListType, InputImageType >    ListConcatenerFilterType;
@@ -112,6 +116,7 @@ private:
         m_ImageList = ImageListType::New();
         m_Concat = ListConcatenerFilterType::New();
         m_ExtractorList = ExtractROIFilterListType::New();
+        m_ImageReaderList = ImageReaderListType::New();
     }
 
     void DoUpdateParameters()
@@ -221,18 +226,75 @@ private:
         int nExtractedBandsNo = 0;
         // create an array of bands presences with the same size as the master band size
         std::vector<int> bandsPresenceVect = bandsMappingCfg.GetBandsPresence(resolution, missionName, nExtractedBandsNo);
-        std::string masterMission = bandsMappingCfg.GetMasterMissionName();
+
+        // Using these indexes as they are extracted is not right
+        // These indexes are from the current product and they should be translated to bands presence array indexes
+        int nBlueBandIdx = pHelper->GetAbsBlueBandIndex();
+        // here we compute the relative indexes according to the presence array for the red and blue band
+        int nRelBlueBandIdx = bandsMappingCfg.GetIndexInPresenceArray(resolution, missionName, nBlueBandIdx);
+        //std::string masterMission = bandsMappingCfg.GetMasterMissionName();
         //std::vector<int> vectIdxs = bandsMappingCfg.GetAbsoluteBandIndexes(resolution, missionName);
         // Here we have a raster that already has the extracted bands configured in the file.
         // We do not get the bands from the product anymore but from this file (in file)
+        InternalBandImageType::Pointer l2aBandImg;
+        int nAddedBands = 0;
         for(unsigned int i = 0; i<bandsPresenceVect.size(); i++) {
             //int nRelBandIdx = pHelper->GetRelativeBandIndex(vectIdxs[i]);
             int nRelBandIdx = bandsPresenceVect[i];
             if(nRelBandIdx >= 0) {
-                InternalBandImageType::Pointer l2aBandImg = m_ResampledBandsExtractor.ExtractImgResampledBand(m_L2AIn, nRelBandIdx+1,
+                l2aBandImg = m_ResampledBandsExtractor.ExtractImgResampledBand(m_L2AIn, nRelBandIdx+1,
                                                          Interpolator_Linear, resolution, resolution, nDesiredWidth, nDesiredHeight);
                 m_ImageList->PushBack(l2aBandImg);
+                nAddedBands++;
             }
+        }
+        // normally, this should not happen
+        if(nAddedBands != nExtractedBandsNo) {
+            itkExceptionMacro("Inconsistent valid bands extracted from bands mapping");
+        }
+        // if the nRelBlueBandIdx is -1 resample and add it to the m_imageList from the 10m raster
+        // NOTE: this happens only for Sentinel2
+        bool bHasAppendedPrevL2ABlueBand = false;
+        if(nRelBlueBandIdx == -1) {
+            auto pDefHelper = factory->GetMetadataHelper(inXml, 10);
+            nBlueBandIdx = pDefHelper->GetAbsBlueBandIndex();
+            // here we compute the relative indexes according to the presence array for the red and blue band
+            nRelBlueBandIdx = bandsMappingCfg.GetIndexInPresenceArray(10, missionName, nBlueBandIdx);
+
+            ImageReaderType::Pointer inputImgReader = getReader(pDefHelper->GetImageFileName());
+            InputImageType::Pointer L2A10MResImg = inputImgReader->GetOutput();
+            L2A10MResImg->UpdateOutputInformation();
+
+            // extract the band without resampling it
+            l2aBandImg = m_ResampledBandsExtractor.ExtractImgResampledBand(L2A10MResImg, nRelBlueBandIdx+1,
+                                                     Interpolator_Linear);
+            l2aBandImg->UpdateOutputInformation();
+            // check if we need to reproject this image if it is the case
+            const std::string &bandProjRef = l2aBandImg->GetProjectionRef();
+            // get the input image projection
+            const std::string &inImgProjRef = m_L2AIn->GetProjectionRef();
+            int l2aBandImgRes = l2aBandImg->GetSpacing()[0];
+            const float scale = (float)resolution / l2aBandImgRes;
+
+            InputImageType::PointType origin = m_L2AIn->GetOrigin();
+            if(bandProjRef != inImgProjRef) {
+                // no need to resample as already done before
+                l2aBandImg = m_GenericRSImageResampler.getResampler(l2aBandImg, scale, nDesiredWidth,
+                      nDesiredHeight, origin, Interpolator_Linear)
+                      ->GetOutput();
+            } else {
+                // use the streaming resampler
+                l2aBandImg = m_ImageResampler.getResampler(l2aBandImg, scale, nDesiredWidth,
+                      nDesiredHeight, origin, Interpolator_Linear)
+                      ->GetOutput();
+            }
+            l2aBandImg->UpdateOutputInformation();
+
+            m_ImageList->PushBack(l2aBandImg);
+            nRelBlueBandIdx = nExtractedBandsNo++;
+            // add the added blue band also in the bands presence array
+            bandsPresenceVect.push_back(nRelBlueBandIdx);
+            bHasAppendedPrevL2ABlueBand = true;
         }
 
         //m_ResampledBandsExtractor.ExtractAllResampledBands(m_L2AIn, m_ImageList);
@@ -246,19 +308,15 @@ private:
            HasValue("prevl3ar") && HasValue("prevl3af")) {
             nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AWeight, m_ImageList, Interpolator_Linear, resolution, resolution, nDesiredWidth, nDesiredHeight);
             nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AAvgDate, m_ImageList, Interpolator_Linear, resolution, resolution, nDesiredWidth, nDesiredHeight);
-            nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3ARefl, m_ImageList, Interpolator_Linear, resolution, resolution, nDesiredWidth, nDesiredHeight);
+            int l3bReflBandsNo = m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3ARefl, m_ImageList, Interpolator_Linear, resolution, resolution, nDesiredWidth, nDesiredHeight);
+            nNbL3ABands += l3bReflBandsNo;
             nNbL3ABands += m_ResampledBandsExtractor.ExtractAllResampledBands(m_PrevL3AFlags, m_ImageList, Interpolator_NNeighbor, resolution, resolution, nDesiredWidth, nDesiredHeight);
         }
 
         m_Concat->SetInput(m_ImageList);
 
-        // Using these indexes as they are extracted is not right
-        // These indexes are from the current product and they should be translated to bands presence array indexes
-        int nBlueBandIdx = pHelper->GetAbsBlueBandIndex();
-        // here we compute the relative indexes according to the presence array for the red and blue band
-        int nRelBlueBandIdx = bandsMappingCfg.GetIndexInPresenceArray(resolution, missionName, nBlueBandIdx);
         int productDate = pHelper->GetAcquisitionDateAsDoy();
-        m_Functor.Initialize(bandsPresenceVect, nExtractedBandsNo, nRelBlueBandIdx, l3aExist,
+        m_Functor.Initialize(bandsPresenceVect, nExtractedBandsNo, nRelBlueBandIdx, bHasAppendedPrevL2ABlueBand, l3aExist,
                              productDate, pHelper->GetReflectanceQuantificationValue());
         m_UpdateSynthesisFunctor = FunctorFilterType::New();
         m_UpdateSynthesisFunctor->SetFunctor(m_Functor);
@@ -273,6 +331,18 @@ private:
         //splitOutputs();
 
         return;
+    }
+
+    // get a reader from the file path
+    ImageReaderType::Pointer getReader(const std::string& filePath) {
+        ImageReaderType::Pointer reader = ImageReaderType::New();
+
+        // set the file name
+        reader->SetFileName(filePath);
+
+        // add it to the list and return
+        m_ImageReaderList->PushBack(reader);
+        return reader;
     }
 
 /*
@@ -349,10 +419,14 @@ private:
     FunctorFilterType::Pointer          m_UpdateSynthesisFunctor;
     UpdateSynthesisFunctorType          m_Functor;
 
+    ImageReaderListType::Pointer        m_ImageReaderList;
 
     BandsCfgMappingParser m_bandsCfgMappingParser;
     ResamplingBandExtractor<float> m_ResampledBandsExtractor;
     ImageResampler<InputImageType, InputImageType> m_Resampler;
+
+    GenericRSImageResampler<InternalBandImageType, InternalBandImageType>  m_GenericRSImageResampler;
+    ImageResampler<InternalBandImageType, InternalBandImageType>  m_ImageResampler;
 /*
     VectorImageToImageListType::Pointer       m_imgSplit;
     ImageListToVectorImageFilterType::Pointer m_allConcat;

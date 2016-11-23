@@ -54,7 +54,8 @@ public:
     bool operator==( const UpdateSynthesisFunctor & other ) const;
     TOutput operator()( const TInput & A );
     void Initialize(const std::vector<int> presenceVect, int nExtractedL2ABandsNo, int nBlueBandIdx,
-                    bool bPrevL3ABandsAvailable, int nDate, float fReflQuantifVal);
+                    bool bHasAppendedPrevL2ABlueBand, bool bPrevL3ABandsAvailable,
+                    int nDate, float fReflQuantifVal);
     int GetNbOfL3AReflectanceBands() { return m_nNbOfL3AReflectanceBands; }
     //int GetNbOfOutputComponents() { return 2*m_nNbOfL3AReflectanceBands+2;}
     int GetNbOfOutputComponents() { return 4*m_nNbOfL3AReflectanceBands;}
@@ -98,7 +99,10 @@ private:
     int m_nPrevL3AWeightedAvDateBandIndex;
     int m_nPrevL3AReflectanceBandStartIndex;
     int m_nPrevL3APixelFlagBandIndex;
-    int m_nBlueBandIndex;
+    int m_nL2ABlueBandIndex;
+    int m_nL3ABlueBandIndex;
+
+    bool m_bHasAppendedPrevL2ABlueBand;
 
     // precomputed value for the reflectance no data (in order to avoid its calculation each pixel)
     //float m_fReflNoDataValue;

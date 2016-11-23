@@ -26,7 +26,6 @@ class LaiRetrievalHandlerL3C : public ProcessorHandler
     typedef struct {
          QList<LAIMonoDateProductFormatterParams> listLaiMonoParams;
          LAIReprocProductFormatterParams laiReprocParams;
-         LAIReprocProductFormatterParams laiFitParams;
          QString tileId;
     } LAIProductFormatterParams;
 
@@ -43,10 +42,10 @@ private:
                                 const TaskFinishedEvent &event) override;
 
     void CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
-                                   LAIProductFormatterParams &outProdFormatterParams, bool bNDayReproc, bool bFittedReproc);
+                                   LAIProductFormatterParams &outProdFormatterParams, bool bNDayReproc, bool bFittedReproc, bool bRemoveTempFiles);
 
     void HandleNewTilesList(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                            const TileTemporalFilesInfo &tileTemporalFilesInfo, LAIGlobalExecutionInfos &outGlobalExecInfos);
+                            const TileTemporalFilesInfo &tileTemporalFilesInfo, LAIGlobalExecutionInfos &outGlobalExecInfos, bool bRemoveTempFiles);
 
     void WriteExecutionInfosFile(const QString &executionInfosPath,
                                 std::map<QString, QString> &configParameters,
@@ -58,9 +57,9 @@ private:
     QStringList GetMskFlagsTimeSeriesBuilderArgs(const QStringList &monoDateMskFlagsLaiFileNames, const QString &allMskFlagsTimeSeriesFileName, const QString &mainImg);
     QStringList GetProfileReprocessingArgs(std::map<QString, QString> configParameters, const QString &allLaiTimeSeriesFileName,
                                            const QString &allErrTimeSeriesFileName, const QString &allMsksTimeSeriesFileName,
-                                           const QString &reprocTimeSeriesFileName, const QStringList &listProducts);
+                                           const QString &reprocTimeSeriesFileName, const QStringList &listDates);
     QStringList GetReprocProfileSplitterArgs(const QString &reprocTimeSeriesFileName, const QString &reprocFileListFileName,
-                                             const QString &reprocFlagsFileListFileName, const QStringList &allXmlsFileName);
+                                             const QString &reprocFlagsFileListFileName, const QStringList &listDates);
     QStringList GetFittedProfileReprocArgs(const QString &allLaiTimeSeriesFileName, const QString &allErrTimeSeriesFileName,
                                            const QString &allMsksTimeSeriesFileName, const QString &fittedTimeSeriesFileName,
                                            const QStringList &listProducts);
@@ -75,7 +74,8 @@ private:
                                         const QStringList &listProducts, const QList<LAIProductFormatterParams> &productParams, bool isFitted);
 
     NewStepList GetStepsForMultiDateReprocessing(std::map<QString, QString> &configParameters, const TileTemporalFilesInfo &tileTemporalFilesInfo,
-                                                 QList<TaskToSubmit> &allTasksList, bool bNDayReproc, bool bFittedReproc, LAIProductFormatterParams &productFormatterParams);
+                                                 QList<TaskToSubmit> &allTasksList, bool bNDayReproc, bool bFittedReproc,
+                                                 LAIProductFormatterParams &productFormatterParams, int tasksStartIdx, bool bRemoveTempFiles);
 
     ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
@@ -83,19 +83,28 @@ private:
     bool IsFittedReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
 
     bool GetL2AProductsInterval(const QMap<QString, QStringList> &mapTilesMeta, QDateTime &startDate, QDateTime &endDate);
-    QStringList GetL3BProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                               const QMap<QString, QStringList> &inputProductToTilesMap);
-    QMap<QString, TileTemporalFilesInfo> GetL3BMapTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                                        QMap<QString, TileTemporalFilesInfo> mapTiles, QStringList &l3bProductsFiltered);
-
+    QStringList GetL3BProducts(EventProcessingContext &ctx, int siteId);
+    QStringList GetL3BProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event);
+/*    QMap<QString, TileTemporalFilesInfo> GetL3BMapTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                                                        QMap<QString, TileTemporalFilesInfo> mapTiles, QStringList &l3bProductsFiltered, int limitL3BPrdsPerTile);
+*/
+    QMap<QString, TileTemporalFilesInfo> GetL3BMapTiles(EventProcessingContext &ctx, const QString &newestL3BProd,
+                                                        const QStringList &l3bProducts,
+                                                        const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles,
+                                                        int limitL3BPrdsPerTile);
+    int GetIntParameterValue(const QJsonObject &parameters, const QString &key, int defVal);
+    bool AddTileFileInfo(TileTemporalFilesInfo &temporalTileInfo, const QString &l3bProdDir,
+                         const QString &l3bTileDir, ProcessorHandlerHelper::SatelliteIdType satId, const QDateTime &curPrdMinDate);
+    bool AddTileFileInfo(EventProcessingContext &ctx, TileTemporalFilesInfo &temporalTileInfo, const QString &l3bPrd,
+                         const QString &tileId, const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles,
+                         ProcessorHandlerHelper::SatelliteIdType satId, const QDateTime &curPrdMinDate);
+    void SubmitEndOfLaiTask(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QList<TaskToSubmit> &allTasksList);
 private:
-    int m_nTimeSeriesBuilderIdx;
-    int m_nErrTimeSeriesBuilderIdx;
-    int m_nLaiMskFlgsTimeSeriesBuilderIdx;
-    int m_nProfileReprocessingIdx;
-    int m_nReprocessedProfileSplitterIdx;
-    int m_nFittedProfileReprocessingIdx;
-    int m_nFittedProfileReprocessingSplitterIdx;
+//    int m_nTimeSeriesBuilderIdx;
+//    int m_nErrTimeSeriesBuilderIdx;
+//    int m_nLaiMskFlgsTimeSeriesBuilderIdx;
+//    int m_nProfileReprocessingIdx;
+//    int m_nReprocessedProfileSplitterIdx;
 };
 
 #endif // LAIRETRIEVALHANDLERNEW_HPP

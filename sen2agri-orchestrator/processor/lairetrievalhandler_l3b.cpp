@@ -446,13 +446,12 @@ void LaiRetrievalHandlerL3B::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 void LaiRetrievalHandlerL3B::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
-    bool isMonoDatePf;
     if (event.module == "lai-end-of-job") {
         ctx.MarkJobFinished(event.jobId);
         // Now remove the job folder containing temporary files
         RemoveJobFolder(ctx, event.jobId, "l3b");
     }
-    if ((isMonoDatePf = (event.module == "lai-mono-date-product-formatter"))) {
+    if ((event.module == "lai-mono-date-product-formatter")) {
         QString prodName = GetProductFormatterProductName(ctx, event);
         QString productFolder = GetProductFormatterOutputProductPath(ctx, event);
         if((prodName != "") && ProcessorHandlerHelper::IsValidHighLevelProduct(productFolder)) {
@@ -471,7 +470,7 @@ void LaiRetrievalHandlerL3B::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             Logger::debug(QStringLiteral("InsertProduct for %1 returned %2").arg(prodName).arg(ret));
 
             // submit a new job for the L3C product corresponding to this one
-            SubmitL3CJobForL3BProduct(ctx, event.jobId, prodName);
+            SubmitL3CJobForL3BProduct(ctx, event, prodName);
         } else {
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
             // We might have several L3B products, we should not mark it at failed here as
@@ -773,14 +772,43 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
     return params;
 }
 
-void LaiRetrievalHandlerL3B::SubmitL3CJobForL3BProduct(EventProcessingContext &ctx, int jobId, const QString &l3bProdName)
+void LaiRetrievalHandlerL3B::SubmitL3CJobForL3BProduct(EventProcessingContext &ctx, const TaskFinishedEvent &event, const QString &l3bProdName)
 {
-    //TODO
-    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(jobId, "processor.l3b.lai.link_l3c_to_l3b");
+    std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.lai.link_l3c_to_l3b");
     bool bLinkL3CToL3B = ((configParameters["processor.l3b.lai.link_l3c_to_l3b"]).toInt() == 1);
     // TODO: generate automatically only for Sentinel2
+    if (bLinkL3CToL3B) {
+        NewJob newJob;
+        newJob.processorId = event.processorId;  //here we have for now the same processor ID
+        // TODO: I think these could be removed as might not be used
+        //newJob.name = "L3C";
+        //newJob.description = "L3C Linked to L3B";
+        newJob.siteId = event.siteId;
+        newJob.startType = JobStartType::Triggered;
 
+        QJsonObject processorParamsObj;
+        // Add also the site_name and processor_name to the parameteres
+        // TODO: I think these could be removed as might not be used
+        /*QString processorName = ctx.GetProcessorShortName(event.processorId);
+        if(processorName.length() == 0)
+            processorName = "UnknownProcessor";
+        QString siteName = ctx.GetSiteName(event.siteId);
+        if(siteName.length() == 0)
+            siteName = "UnknownSite";
+        processorParamsObj["processor_short_name"] = processorName;
+        processorParamsObj["site_name"] = siteName;
+        */
 
+        QJsonArray prodsJsonArray;
+        prodsJsonArray.append(l3bProdName);
+        processorParamsObj["input_products"] = prodsJsonArray;
+        processorParamsObj["resolution"] = "10";
+        processorParamsObj["reproc"] = "1";
+        processorParamsObj["inputs_are_l3b"] = "1";
+        newJob.parametersJson = jsonToString(processorParamsObj);
+
+        ctx.SubmitJob(newJob);
+    }
 }
 
 void LaiRetrievalHandlerL3B::GetModelFileList(const QString &folderName, const QString &modelPrefix, QStringList &outModelsList) {

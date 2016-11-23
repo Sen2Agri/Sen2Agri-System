@@ -24,6 +24,11 @@ std::map<QString, QString> EventProcessingContext::GetJobConfigurationParameters
     return result;
 }
 
+int EventProcessingContext::SubmitJob(const NewJob &job)
+{
+    return persistenceManager.SubmitJob(job);
+}
+
 int EventProcessingContext::SubmitTask(const NewTask &task, const QString &submitterProcName)
 {
     auto taskId = persistenceManager.SubmitTask(task);
@@ -189,9 +194,14 @@ ProductList EventProcessingContext::GetProductsForTile(const QString &tileId, Pr
     return persistenceManager.GetProductsForTile(tileId, productType, tileSatelliteId, targetSatelliteId);
 }
 
-QStringList EventProcessingContext::GetSiteTiles(int siteId, int satelliteId)
+TileList EventProcessingContext::GetSiteTiles(int siteId, int satelliteId)
 {
     return persistenceManager.GetSiteTiles(siteId, satelliteId);
+}
+
+TileList EventProcessingContext::GetIntersectingTiles(Satellite satellite, const QString &tileId)
+{
+    return persistenceManager.GetIntersectingTiles(satellite, tileId);
 }
 
 QString EventProcessingContext::GetProductAbsolutePath(const QString &path) {

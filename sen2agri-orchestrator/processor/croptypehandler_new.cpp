@@ -227,7 +227,7 @@ void CropTypeHandlerNew::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
             ctx.InsertProduct({ ProductType::L4BProductTypeId, event.processorId, event.siteId,
                                 event.jobId, productFolder, maxDate, prodName, quicklook,
-                                footPrint, std::experimental::nullopt, TileList() });
+                                footPrint, std::experimental::nullopt, TileIdList() });
 
         } else {
             ctx.MarkJobFailed(event.jobId);

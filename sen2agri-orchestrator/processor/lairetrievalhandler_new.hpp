@@ -18,7 +18,6 @@ private:
     ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
 
-    bool IsGenModels(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     bool IsGenMonoDate(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     bool IsNDayReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     bool IsFittedReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);

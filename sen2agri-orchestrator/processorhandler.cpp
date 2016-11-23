@@ -31,7 +31,7 @@ bool removeDir(const QString & dirName)
     return result;
 }
 
-bool compareProductDates(const QString& path1,const QString& path2)
+bool compareL2AProductDates(const QString& path1,const QString& path2)
 {
   QDateTime dtProd1=ProcessorHandlerHelper::GetL2AProductDateFromPath(path1);
   QDateTime dtProd2=ProcessorHandlerHelper::GetL2AProductDateFromPath(path2);
@@ -350,7 +350,7 @@ QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &c
     }
 
     // sort the input products according to their dates
-    qSort(listTilesMetaFiles.begin(), listTilesMetaFiles.end(), compareProductDates);
+    qSort(listTilesMetaFiles.begin(), listTilesMetaFiles.end(), compareL2AProductDates);
 
     return listTilesMetaFiles;
 }
@@ -459,4 +459,29 @@ void ProcessorHandler::SubmitTasks(EventProcessingContext &ctx,
                                    int jobId,
                                    const QList<std::reference_wrapper<TaskToSubmit>> &tasks) {
     ctx.SubmitTasks(jobId, tasks, processorDescr.shortName);
+}
+
+QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> ProcessorHandler::GetSiteTiles(EventProcessingContext &ctx, int siteId)
+{
+    // TODO: the satellites IDs should be taken from DB but a procedure should be added there
+    QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> retMap;
+    retMap[ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2] = ctx.GetSiteTiles(siteId, ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2);
+    retMap[ProcessorHandlerHelper::SATELLITE_ID_TYPE_L8] = ctx.GetSiteTiles(siteId, ProcessorHandlerHelper::SATELLITE_ID_TYPE_L8);
+
+    return retMap;
+}
+
+ProcessorHandlerHelper::SatelliteIdType ProcessorHandler::GetSatIdForTile(const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &mapSatTiles,
+                                                                       const QString &tileId)
+{
+    for(const auto &satId : mapSatTiles.keys())
+    {
+        const TileList &listTiles = mapSatTiles.value(satId);
+        for(const Tile &tile: listTiles) {
+            if(tile.tileId == tileId) {
+                return satId;
+            }
+        }
+    }
+    return ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN;
 }

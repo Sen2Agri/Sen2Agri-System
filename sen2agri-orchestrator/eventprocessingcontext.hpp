@@ -18,6 +18,8 @@ public:
 
     std::map<QString, QString> GetJobConfigurationParameters(int jobId, QString prefix);
 
+    int SubmitJob(const NewJob &job);
+
     int SubmitTask(const NewTask &task, const QString &submitterProcName);
     void SubmitSteps(const NewStepList &steps);
 
@@ -46,7 +48,8 @@ public:
 
     ProductList GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate);
     ProductList GetProductsForTile(const QString &tileId, ProductType productType, int tileSatelliteId, int targetSatelliteId);
-    QStringList GetSiteTiles(int siteId, int satelliteId);
+    TileList GetSiteTiles(int siteId, int satelliteId);
+    TileList GetIntersectingTiles(Satellite satellite, const QString &tileId);
     QStringList GetProductFiles(const QString &path, const QString &pattern) const;
     QString GetJobOutputPath(int jobId, const QString& procName);
     QString GetOutputPath(int jobId, int taskId, const QString &module, const QString& procName);

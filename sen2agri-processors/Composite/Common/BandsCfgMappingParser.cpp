@@ -171,9 +171,9 @@ std::vector<int> BandsMappingConfig::GetBandsPresence(int nRes, const std::strin
 
 int BandsMappingConfig::GetMasterBandIndex(const std::string &missionName, int nRes, int nSensorBandIdx)
 {
-    std::string masterMissionName = GetMasterMissionName();
-    std::vector<BandConfig> bandsCfg = GetBands(nRes, missionName);
-    std::vector<BandConfig> masterBandsCfg = GetBands(nRes, masterMissionName);
+    const std::string &masterMissionName = GetMasterMissionName();
+    const std::vector<BandConfig> &bandsCfg = GetBands(nRes, missionName);
+    const std::vector<BandConfig> &masterBandsCfg = GetBands(nRes, masterMissionName);
     if(bandsCfg.size() != masterBandsCfg.size()) {
         itkExceptionMacro("Invalid bands size configuration for resolution " << nRes << ". Number differ from master for mission " << missionName);
     }

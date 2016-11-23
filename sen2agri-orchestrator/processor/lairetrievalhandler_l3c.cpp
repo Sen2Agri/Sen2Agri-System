@@ -158,7 +158,7 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(std::map<QS
     steps.append(errTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", errTimeSeriesBuilderArgs));
     steps.append(mskFlagsTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", mskFlagsTimeSeriesBuilderArgs));
 
-    const QStringList &listProducts = ProcessorHandlerHelper::GetTemporalTileFiles(tileTemporalFilesInfo);
+    const QStringList &listDates = ProcessorHandlerHelper::GetTemporalTileAcquisitionDates(tileTemporalFilesInfo);
 
     TaskToSubmit &profileReprocTask = allTasksList[curTaskIdx++];
     TaskToSubmit &profileReprocSplitTask = allTasksList[curTaskIdx++];
@@ -171,14 +171,14 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(std::map<QS
     if(bNDayReproc) {
         profileReprocessingArgs = GetProfileReprocessingArgs(configParameters, allLaiTimeSeriesFileName,
                                                                          allErrTimeSeriesFileName, allMskFlagsTimeSeriesFileName,
-                                                                         reprocTimeSeriesFileName, listProducts);
+                                                                         reprocTimeSeriesFileName, listDates);
     } else if(bFittedReproc) {
         profileReprocessingArgs = GetFittedProfileReprocArgs(allLaiTimeSeriesFileName,
                                                              allErrTimeSeriesFileName, allMskFlagsTimeSeriesFileName,
-                                                             reprocTimeSeriesFileName, listProducts);
+                                                             reprocTimeSeriesFileName, listDates);
     }
     QStringList reprocProfileSplitterArgs = GetReprocProfileSplitterArgs(reprocTimeSeriesFileName, reprocFileListFileName,
-                                                                         reprocFlagsFileListFileName, listProducts);
+                                                                         reprocFlagsFileListFileName, listDates);
     steps.append(profileReprocTask.CreateStep("ProfileReprocessing", profileReprocessingArgs));
     steps.append(profileReprocSplitTask.CreateStep("ReprocessedProfileSplitter2", reprocProfileSplitterArgs));
 
@@ -334,12 +334,6 @@ QStringList LaiRetrievalHandlerL3C::GetL3BProducts(EventProcessingContext &ctx, 
     } else {
         QMap<QString, QStringList> inputProductToTilesMap;
         QStringList listTilesMetaFiles = GetL2AInputProductsTiles(ctx, event, inputProductToTilesMap);
-//        if(listTilesMetaFiles.size() == 0) {
-//            ctx.MarkJobFailed(event.jobId);
-//            throw std::runtime_error(
-//                QStringLiteral("No products provided at input or no products available in the specified interval").
-//                        toStdString());
-//        }
 
         // get the L3B products for the current product tiles
         QDateTime startDate;
@@ -363,61 +357,10 @@ QStringList LaiRetrievalHandlerL3C::GetL3BProducts(EventProcessingContext &ctx, 
 
     return filteredL3bProductList;
 }
-/*
-QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                                                            QMap<QString, TileTemporalFilesInfo> mapL2ATiles,
-                                                                            QStringList &l3bProductsFiltered, int limitL3BPrdsPerTile) {
-    // get the L3B products for the current product tiles
-    QStringList filteredL3bProductList = GetL3BProducts(ctx, event);
 
-    // iterate through the L2A tiles and get the corresponding L3B product
-    // Create a QMap<QString, TileTemporalFilesInfo> but with infos about L3B files and satelites
-    // according to the input L2A tile file info
-    QMap<QString, TileTemporalFilesInfo> l3bMapTiles;
-    for(auto tileId : mapL2ATiles.keys())
-    {
-       const TileTemporalFilesInfo &listTemporalTiles = mapL2ATiles.value(tileId);
-       TileTemporalFilesInfo newTileInfos;
-       newTileInfos.tileId = tileId;
-       // iterate the L2A tiles and for each tile, get the L3B files available
-       for(ProcessorHandlerHelper::InfoTileFile l2aTileInfo: listTemporalTiles.temporalTilesFileInfos) {
-           for(QString l3bPrd: filteredL3bProductList) {
-               // If we have a limit of maximum temporal products per tile and we reached this limit,
-               // then ignore the other products for this tile
-               if(limitL3BPrdsPerTile > 0 && newTileInfos.temporalTilesFileInfos.size() > limitL3BPrdsPerTile) {
-                   continue;
-               }
-               if(ProcessorHandlerHelper::HighLevelPrdHasL2aSource(l3bPrd, l2aTileInfo.file)) {
-                   QMap<QString, QString> mapTiles = ProcessorHandlerHelper::GetHighLevelProductTilesDirs(l3bPrd);
-                   // get the tiles and their folders for the L3B product
-                   // search the tile Id (normally, we should have it)
-                   QString tileDir;
-                   if(mapTiles.contains(tileId)) {
-                        tileDir = mapTiles[tileId];
-                   } else {
-                        // this is probably a secondary L8 product
-                        if((l2aTileInfo.satId != listTemporalTiles.primarySatelliteId) && (mapTiles.size() == 1)) {
-                            tileDir = mapTiles.first();
-                        }
-                   }
-                   // add the current product information also
-                   AddTileFileInfo(newTileInfos, tileDir);
-               }
-           }
-       }
-       if(newTileInfos.temporalTilesFileInfos.size() > 0) {
-            // update the other information
-            newTileInfos.primarySatelliteId = ProcessorHandlerHelper::GetPrimarySatelliteId(newTileInfos.uniqueSatteliteIds);
-            // add it to the returned map
-            l3bMapTiles[tileId] = newTileInfos;
-       }
-    }
-    return l3bMapTiles;
-}
-*/
-QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(const QString &newestL3BProd,
+QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(EventProcessingContext &ctx, const QString &newestL3BProd,
                                                                             const QStringList &l3bProducts,
-                                                                            const QMap<ProcessorHandlerHelper::SatelliteIdType, QStringList> &siteTiles,
+                                                                            const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles,
                                                                             int limitL3BPrdsPerTile)
 {
     QMap<QString, TileTemporalFilesInfo> retL3bMapTiles;
@@ -445,7 +388,7 @@ QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(cons
             newTileInfos.tileId = tileId;
 
             // Fill the tile information for the current tile from the current product
-            AddTileFileInfo(newTileInfos, newestL3BProd, tileId, siteTiles, tileSatId, minDate);
+            AddTileFileInfo(ctx, newTileInfos, newestL3BProd, tileId, siteTiles, tileSatId, minDate);
 
             // add the tile infos to the map
             retL3bMapTiles[tileId] = newTileInfos;
@@ -468,7 +411,7 @@ QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(cons
                 continue;
             }
             // Fill the tile information for the current tile from the current product
-            AddTileFileInfo(tileInfo, l3bPrd, tileId, siteTiles, tileSatId, curPrdMinDate);
+            AddTileFileInfo(ctx, tileInfo, l3bPrd, tileId, siteTiles, tileSatId, curPrdMinDate);
         }
 
         if(tileInfo.temporalTilesFileInfos.size() > 0) {
@@ -479,8 +422,8 @@ QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(cons
     return retL3bMapTiles;
 }
 
-bool LaiRetrievalHandlerL3C::AddTileFileInfo(TileTemporalFilesInfo &temporalTileInfo, const QString &l3bPrd, const QString &tileId,
-                                             const QMap<ProcessorHandlerHelper::SatelliteIdType, QStringList> &siteTiles,
+bool LaiRetrievalHandlerL3C::AddTileFileInfo(EventProcessingContext &ctx, TileTemporalFilesInfo &temporalTileInfo, const QString &l3bPrd, const QString &tileId,
+                                             const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles,
                                              ProcessorHandlerHelper::SatelliteIdType satId, const QDateTime &curPrdMinDate)
 {
     // Fill the tile information for the current tile from the current product
@@ -497,15 +440,21 @@ bool LaiRetrievalHandlerL3C::AddTileFileInfo(TileTemporalFilesInfo &temporalTile
         // if is primary satellite only, then add intersecting tiles from the product
         // otherwise, if secondary satellite, then use only products of its own type (with the same tile)
         if(primarySatId == satId) {
-            // TODO: get the tiles for satellite l3bPrdSatId that intersect tileId
-            QStringList intersectingTilesList;
+            // get the tiles for satellite l3bPrdSatId that intersect tileId
+            const TileList &allIntersectingTiles = ctx.GetIntersectingTiles(static_cast<Satellite>(satId), tileId);
+
             bool bAdded = false;
             // filter and add the secondary satellite tiles
-            for(const QString &tileL3bPrd: mapL3BTiles) {
-                if(intersectingTilesList.contains(tileL3bPrd)) {
-                    const QString &newTileDir = mapL3BTiles[tileId];
-                    AddTileFileInfo(temporalTileInfo, newTileDir, l3bPrdSatId, curPrdMinDate);
-                    bAdded = true;
+            for(const QString &tileL3bPrd: mapL3BTiles.keys()) {
+                for(const Tile &intersectingTile : allIntersectingTiles) {
+                    if(((int)intersectingTile.satellite != (int)satId) && (intersectingTile.tileId  == tileL3bPrd)) {
+                        const QString &newTileDir = mapL3BTiles[tileL3bPrd];
+                        // this should not happen but is better to check
+                        if(newTileDir.length() > 0) {
+                            AddTileFileInfo(temporalTileInfo, l3bPrd, newTileDir, l3bPrdSatId, curPrdMinDate);
+                            bAdded = true;
+                        }
+                    }
                 }
             }
             return bAdded;
@@ -515,10 +464,10 @@ bool LaiRetrievalHandlerL3C::AddTileFileInfo(TileTemporalFilesInfo &temporalTile
         }
     }
 
-    return AddTileFileInfo(temporalTileInfo, tileDir, satId, curPrdMinDate);
+    return AddTileFileInfo(temporalTileInfo, l3bPrd, tileDir, satId, curPrdMinDate);
 }
 
-bool LaiRetrievalHandlerL3C::AddTileFileInfo(TileTemporalFilesInfo &temporalTileInfo, const QString &l3bTileDir,
+bool LaiRetrievalHandlerL3C::AddTileFileInfo(TileTemporalFilesInfo &temporalTileInfo, const QString &l3bProdDir, const QString &l3bTileDir,
                                              ProcessorHandlerHelper::SatelliteIdType satId, const QDateTime &curPrdMinDate)
 {
     if(l3bTileDir.length() > 0) {
@@ -528,7 +477,7 @@ bool LaiRetrievalHandlerL3C::AddTileFileInfo(TileTemporalFilesInfo &temporalTile
         l3bTileInfo.satId = satId;
         // update the files
         // Set the file to the tile dir
-        l3bTileInfo.file = l3bTileDir;
+        l3bTileInfo.file = ProcessorHandlerHelper::GetSourceL2AFromHighLevelProductIppFile(l3bProdDir);
         l3bTileInfo.acquisitionDate = curPrdMinDate.toString("yyyyMMdd");
         l3bTileInfo.additionalFiles.append(ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileDir, "SLAIMONO"));
         l3bTileInfo.additionalFiles.append(ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileDir, "MLAIERR", true));
@@ -542,6 +491,25 @@ bool LaiRetrievalHandlerL3C::AddTileFileInfo(TileTemporalFilesInfo &temporalTile
         return true;
     }
     return false;
+}
+
+void LaiRetrievalHandlerL3C::SubmitEndOfLaiTask(EventProcessingContext &ctx,
+                                                const JobSubmittedEvent &event,
+                                                const QList<TaskToSubmit> &allTasksList) {
+    // add the end of lai job that will perform the cleanup
+    QList<std::reference_wrapper<const TaskToSubmit>> prdFormatterTasksListRef;
+    for(const TaskToSubmit &task: allTasksList) {
+        if((task.moduleName == "lai-reproc-product-formatter") ||
+                (task.moduleName == "lai-fitted-product-formatter")) {
+            prdFormatterTasksListRef.append(task);
+        }
+    }
+    // we add a task in order to wait for all product formatter to finish.
+    // This will allow us to mark the job as finished and to remove the job folder
+    TaskToSubmit endOfJobDummyTask{"lai-reproc-end-of-job", {}};
+    endOfJobDummyTask.parentTasks.append(prdFormatterTasksListRef);
+    SubmitTasks(ctx, event.jobId, {endOfJobDummyTask});
+    ctx.SubmitSteps({endOfJobDummyTask.CreateStep("EndOfLAIDummy", QStringList())});
 }
 
 void LaiRetrievalHandlerL3C::HandleJobSubmittedImpl(EventProcessingContext &ctx,
@@ -569,10 +537,10 @@ void LaiRetrievalHandlerL3C::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     //container for all task
     QList<TaskToSubmit> allTasksList;
 
-    const QMap<ProcessorHandlerHelper::SatelliteIdType, QStringList> &siteTiles = GetSiteTiles(ctx, event.siteId);
+    const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles = GetSiteTiles(ctx, event.siteId);
 
     for(const QString &l3bProd: listL3BProducts) {
-        const QMap<QString, TileTemporalFilesInfo> &l3bMapTiles = GetL3BMapTiles(l3bProd, allL3BProductsList, siteTiles, limitL3BPrdsPerTile);
+        const QMap<QString, TileTemporalFilesInfo> &l3bMapTiles = GetL3BMapTiles(ctx, l3bProd, allL3BProductsList, siteTiles, limitL3BPrdsPerTile);
         QList<LAIProductFormatterParams> listParams;
         NewStepList allSteps;
         //container for all global execution infos
@@ -610,12 +578,21 @@ void LaiRetrievalHandlerL3C::HandleJobSubmittedImpl(EventProcessingContext &ctx,
         allSteps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
         ctx.SubmitSteps(allSteps);
     }
+
+    // we add a task in order to wait for all product formatter to finish.
+    // This will allow us to mark the job as finished and to remove the job folder
+    SubmitEndOfLaiTask(ctx, event, allTasksList);
 }
 
 void LaiRetrievalHandlerL3C::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
     bool isReprocPf = false, isFittedPf = false;
+    if (event.module == "lai-reproc-end-of-job") {
+        ctx.MarkJobFinished(event.jobId);
+        // Now remove the job folder containing temporary files
+        RemoveJobFolder(ctx, event.jobId, "l3b");
+    }
     if ((isReprocPf = (event.module == "lai-reproc-product-formatter")) ||
          (isFittedPf = (event.module == "lai-fitted-product-formatter"))) {
         QString prodName = GetProductFormatterProductName(ctx, event);
@@ -632,15 +609,13 @@ void LaiRetrievalHandlerL3C::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
             int ret = ctx.InsertProduct({ prodType, event.processorId, event.siteId, event.jobId,
                                 productFolder, maxDate, prodName,
-                                quicklook, footPrint, std::experimental::nullopt, TileList() });
+                                quicklook, footPrint, std::experimental::nullopt, TileIdList() });
             Logger::debug(QStringLiteral("InsertProduct for %1 returned %2").arg(prodName).arg(ret));
 
         } else {
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
-            ctx.MarkJobFailed(event.jobId);
+            //ctx.MarkJobFailed(event.jobId);
         }
-        // Now remove the job folder containing temporary files
-        RemoveJobFolder(ctx, event.jobId, "l3b");
     }
 }
 
@@ -683,7 +658,7 @@ QStringList LaiRetrievalHandlerL3C::GetMskFlagsTimeSeriesBuilderArgs(const QStri
 
 QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs(std::map<QString, QString> configParameters, const QString &allLaiTimeSeriesFileName,
                                        const QString &allErrTimeSeriesFileName, const QString &allMsksTimeSeriesFileName,
-                                       const QString &reprocTimeSeriesFileName, const QStringList &listProducts) {
+                                       const QString &reprocTimeSeriesFileName, const QStringList &listDates) {
     const auto &localWindowBwr = configParameters["processor.l3b.lai.localwnd.bwr"];
     const auto &localWindowFwr = configParameters["processor.l3b.lai.localwnd.fwr"];
 
@@ -695,23 +670,23 @@ QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs(std::map<QString,
           "-algo", "local",
           "-algo.local.bwr", localWindowBwr,
           "-algo.local.fwr", localWindowFwr,
-          "-ilxml"
+          "-ildates"
     };
-    profileReprocessingArgs += listProducts;
+    profileReprocessingArgs += listDates;
     return profileReprocessingArgs;
 }
 
 QStringList LaiRetrievalHandlerL3C::GetReprocProfileSplitterArgs(const QString &reprocTimeSeriesFileName, const QString &reprocFileListFileName,
                                                               const QString &reprocFlagsFileListFileName,
-                                                              const QStringList &allXmlsFileName) {
+                                                              const QStringList &listDates) {
     QStringList args = { "ReprocessedProfileSplitter2",
             "-in", reprocTimeSeriesFileName,
             "-outrlist", reprocFileListFileName,
             "-outflist", reprocFlagsFileListFileName,
             "-compress", "1",
-            "-ilxml"
+            "-ildates"
     };
-    args += allXmlsFileName;
+    args += listDates;
     return args;
 }
 

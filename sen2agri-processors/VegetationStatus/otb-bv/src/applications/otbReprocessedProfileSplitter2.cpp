@@ -71,8 +71,13 @@ private:
         SetDocSeeAlso(" ");        
         AddDocTag(Tags::Vector);
         AddParameter(ParameterType_String,  "in",   "The BV estimation values product containing all time series");
+
         AddParameter(ParameterType_InputFilenameList, "ilxml", "The XML metadata files list");
         MandatoryOff("ilxml");
+
+        AddParameter(ParameterType_StringList, "ildates", "The dates for the products");
+        MandatoryOff("ildates");
+
         AddParameter(ParameterType_OutputFilename, "outrlist", "File containing the list of all raster files produced.");
         AddParameter(ParameterType_OutputFilename, "outflist", "File containing the list of all flag files produced.");
         AddParameter(ParameterType_Int, "compress", "Specifies if output files should be compressed or not.");
@@ -111,11 +116,27 @@ private:
         }
 
         std::vector<std::string> xmlsList;
+        std::vector<std::string> datesList;
+        int dates_no = 0;
         if(HasValue("ilxml")) {
             xmlsList = this->GetParameterStringList("ilxml");
-            if((nTotalBands != 2) && (xmlsList.size() != (size_t)(nTotalBands / 2))) {
-                itkExceptionMacro("Wrong number of input xml files. It should be " + (nTotalBands/2));
+            dates_no = xmlsList.size();
+            for (const std::string &strXml : xmlsList)
+            {
+                MetadataHelperFactory::Pointer factory = MetadataHelperFactory::New();
+                // we are interested only in the 10m resolution as we need only the date
+                auto pHelper = factory->GetMetadataHelper(strXml, 10);
+                datesList.push_back(pHelper->GetAcquisitionDate());
             }
+        } else if(HasValue("ildates")) {
+            datesList = this->GetParameterStringList("ildates");
+            dates_no = datesList.size();
+        }
+        if (dates_no == 0) {
+            itkExceptionMacro("Either ilxml or ildates should be provided");
+        }
+        if((nTotalBands != 2) && (dates_no != (size_t)(nTotalBands / 2))) {
+            itkExceptionMacro("Wrong number of input xml files or dates. It should be " + (nTotalBands/2));
         }
 
         std::string strOutPrefix = inImgStr;
@@ -134,25 +155,22 @@ private:
         for(int i = 0; i < nTotalBands; i++) {
             std::ostringstream fileNameStream;
 
-            std::string curXml = xmlsList[(i < nTotalBandsHalf) ? i : (i-nTotalBandsHalf)];
+            std::string curAcquisitionDate = datesList[(i < nTotalBandsHalf) ? i : (i-nTotalBandsHalf)];
             // if we did not generated all dates, we have only 2 bands and we consider
             // the last XML in the list
             if(nTotalBands == 2) {
-                curXml = xmlsList[xmlsList.size()-1];
+                curAcquisitionDate = datesList[dates_no-1];
             }
-            auto factory = MetadataHelperFactory::New();
-            auto pHelper = factory->GetMetadataHelper(curXml);
-            std::string acquisitionDate = pHelper->GetAcquisitionDate();
 
             // writer label
             std::ostringstream osswriter;
             bIsRaster = (i < nTotalBandsHalf);
             if(bIsRaster) {
-                fileNameStream << strOutPrefix << "_" << acquisitionDate << "_img.tif";
-                osswriter<< "writer (Image for date "<< i << " : " << acquisitionDate << ")";
+                fileNameStream << strOutPrefix << "_" << curAcquisitionDate << "_img.tif";
+                osswriter<< "writer (Image for date "<< i << " : " << curAcquisitionDate << ")";
             } else {
-                fileNameStream << strOutPrefix << "_" << acquisitionDate << "_flags.tif";
-                osswriter<< "writer (Flags for date "<< i << " : " << acquisitionDate << ")";
+                fileNameStream << strOutPrefix << "_" << curAcquisitionDate << "_flags.tif";
+                osswriter<< "writer (Flags for date "<< i << " : " << curAcquisitionDate << ")";
             }
             // we might have also compression and we do not want that in the name file
             // to be saved into the produced files list file
