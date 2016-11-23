@@ -256,6 +256,25 @@ Q_DECLARE_METATYPE(ProductList)
 QDBusArgument &operator<<(QDBusArgument &argument, const Product &message);
 const QDBusArgument &operator>>(const QDBusArgument &argument, Product &message);
 
+enum class Satellite
+{
+    Invalid = 0,
+    Sentinel2 = 1,
+    Landsat8 = 2
+};
+
+class Tile
+{
+public:
+    Satellite satellite;
+    QString tileId;
+
+    Tile();
+    Tile(Satellite satellite, QString tileId);
+};
+
+typedef QList<Tile> TileList;
+
 class ProductToArchive
 {
 public:
@@ -776,7 +795,7 @@ Q_DECLARE_METATYPE(StepConsoleOutputList)
 QDBusArgument &operator<<(QDBusArgument &argument, const StepConsoleOutput &stepOutput);
 const QDBusArgument &operator>>(const QDBusArgument &argument, StepConsoleOutput &stepOutput);
 
-typedef QList<QString> TileList;
+typedef QList<QString> TileIdList;
 
 class NewProduct
 {
@@ -791,7 +810,7 @@ public:
     QString quicklookImage;
     QString footprint;
     std::experimental::optional<int> orbitId;
-    TileList tiles;
+    TileIdList tiles;
 
     NewProduct();
     NewProduct(ProductType productType,
@@ -804,7 +823,7 @@ public:
                QString quicklookImage,
                QString footprint,
                std::experimental::optional<int> orbitId,
-               TileList tiles);
+               TileIdList tiles);
 
     static void registerMetaTypes();
 };

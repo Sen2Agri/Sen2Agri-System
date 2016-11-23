@@ -1097,7 +1097,7 @@ void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
             int ret = ctx.InsertProduct({ prodType, event.processorId, event.siteId, event.jobId,
                                 productFolder, maxDate, prodName,
-                                quicklook, footPrint, std::experimental::nullopt, TileList() });
+                                quicklook, footPrint, std::experimental::nullopt, TileIdList() });
             Logger::debug(QStringLiteral("InsertProduct for %1 returned %2").arg(prodName).arg(ret));
 
             // Now remove the job folder containing temporary files

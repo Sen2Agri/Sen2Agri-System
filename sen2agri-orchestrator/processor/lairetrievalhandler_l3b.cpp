@@ -767,7 +767,7 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
     return params;
 }
 
-void LaiRetrievalHandlerL3B::SubmitL3CJobForL3BProduct(const QString &l3bProdName)
+void LaiRetrievalHandlerL3B::SubmitL3CJobForL3BProduct(const QString &/*l3bProdName*/)
 {
     //TODO
 }

@@ -592,7 +592,7 @@ void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
             ctx.InsertProduct({ ProductType::L4BProductTypeId, event.processorId, event.siteId,
                                 event.jobId, productFolder, maxDate, prodName, quicklook,
-                                footPrint, std::experimental::nullopt, TileList() });
+                                footPrint, std::experimental::nullopt, TileIdList() });
 
             // Now remove the job folder containing temporary files
             RemoveJobFolder(ctx, event.jobId, "l4b");

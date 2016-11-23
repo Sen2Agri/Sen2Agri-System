@@ -470,6 +470,16 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Product &product)
     return argument;
 }
 
+Tile::Tile()
+    : satellite(Satellite::Invalid)
+{
+}
+
+Tile::Tile(Satellite satellite, QString tileId)
+    : satellite(satellite), tileId(std::move(tileId))
+{
+}
+
 ProductToArchive::ProductToArchive() : productId()
 {
 }
@@ -1504,7 +1514,7 @@ NewProduct::NewProduct(ProductType productType,
                        QString quicklookImage,
                        QString footprint,
                        std::experimental::optional<int> orbitId,
-                       TileList tiles)
+                       TileIdList tiles)
     : productType(productType),
       processorId(processorId),
       siteId(siteId),
