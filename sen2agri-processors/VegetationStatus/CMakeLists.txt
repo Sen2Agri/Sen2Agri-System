@@ -16,6 +16,7 @@ install(FILES TestScripts/lai_retrieve_processing.py
         WORLD_READ WORLD_EXECUTE)
 
 install(FILES lai.map
+              LaiCommonBVDistributionSamples.txt
         DESTINATION usr/share/sen2agri)
 
 install(FILES TestScripts/rsr_cfg.txt

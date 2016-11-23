@@ -155,6 +155,9 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.ref
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3a.generate_20m_s2_resolution', NULL, '1', '2016-02-26 19:30:06.821627+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3a.preproc.scatcoeffs_20m', NULL, '/usr/share/sen2agri/scattering_coeffs_20m.txt', '2016-02-29 14:08:07.963143+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.lut_path', NULL, '/usr/share/sen2agri/lai.map', '2016-02-29 14:08:07.963143+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.link_l3c_to_l3b', NULL, '0', '2016-02-29 14:08:07.963143+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.global_bv_samples_file', NULL, '/usr/share/sen2agri/LaiCommonBVDistributionSamples.txt', '2016-02-29 14:08:07.963143+02');
+
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.lut_path', NULL, '/usr/share/sen2agri/crop-mask.lut', '2016-02-29 14:08:07.963143+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.skip-segmentation', NULL, 'false', '2016-10-31 17:32:00+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3a.lut_path', NULL, '/usr/share/sen2agri/composite.map', '2016-02-29 14:08:07.963143+02');
