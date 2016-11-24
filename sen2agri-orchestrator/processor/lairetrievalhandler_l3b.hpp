@@ -65,7 +65,9 @@ private:
                        QList<TaskToSubmit> &allTasksList);
     void SubmitEndOfLaiTask(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                             const QList<TaskToSubmit> &allTasksList);
-    void SubmitL3CJobForL3BProduct(EventProcessingContext &ctx, const TaskFinishedEvent &event, const QString &l3bProdName);
+    void SubmitL3CJobForL3BProduct(EventProcessingContext &ctx, const TaskFinishedEvent &event,
+                                   const ProcessorHandlerHelper::SatelliteIdType &satId,
+                                   const QString &l3bProdName);
     QMap<QDate, QStringList> GroupProductTilesByDate(const QMap<QString, QStringList> &inputProductToTilesMap);
 
     bool InRange(double middle, double distance, double value);

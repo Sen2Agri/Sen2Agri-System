@@ -296,6 +296,8 @@ bool LaiRetrievalHandlerL3C::GetL2AProductsInterval(const QMap<QString, QStringL
 /**
  * Get all L3B products from the beginning of the season until now
  */
+//TODO: This function should receive the Product and QList<Product> instead of just product path as these can be got from DB
+//      The Product contains already the tiles, the full path and the acquisition date so can be avoided parsing files
 QStringList LaiRetrievalHandlerL3C::GetL3BProducts(EventProcessingContext &ctx, int siteId)
 {
     // extract the start and end dates
@@ -319,6 +321,8 @@ QStringList LaiRetrievalHandlerL3C::GetL3BProducts(EventProcessingContext &ctx, 
  * Get the L3B products from the received event. If the input products are L2A then the associated L3B products are
  * search and returned
  */
+//TODO: This function should receive the Product and QList<Product> instead of just product path as these can be got from DB
+//      The Product contains already the tiles, the full path and the acquisition date so can be avoided parsing files
 QStringList LaiRetrievalHandlerL3C::GetL3BProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event)
 {
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
@@ -358,6 +362,8 @@ QStringList LaiRetrievalHandlerL3C::GetL3BProducts(EventProcessingContext &ctx, 
     return filteredL3bProductList;
 }
 
+//TODO: This function should receive the Product and QList<Product> instead of just product path as these can be got from DB
+//      The Product contains already the tiles, the full path and the acquisition date so can be avoided parsing files
 QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(EventProcessingContext &ctx, const QString &newestL3BProd,
                                                                             const QStringList &l3bProducts,
                                                                             const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles,

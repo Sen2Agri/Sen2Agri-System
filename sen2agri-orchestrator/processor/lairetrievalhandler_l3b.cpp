@@ -461,16 +461,32 @@ void LaiRetrievalHandlerL3B::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 
             const QStringList &prodTiles = ProcessorHandlerHelper::GetTileIdsFromHighLevelProduct(productFolder);
 
+            // get the satellite id for the product
+            const QStringList &listL3BProdTiles = ProcessorHandlerHelper::GetTileIdsFromHighLevelProduct(productFolder);
+            const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles = GetSiteTiles(ctx, event.siteId);
+            ProcessorHandlerHelper::SatelliteIdType satId = ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN;
+            for(const auto &tileId : listL3BProdTiles) {
+                // we assume that all the tiles from the product are from the same satellite
+                // in this case, we get only once the satellite Id for all tiles
+                if(satId == ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN) {
+                    satId = GetSatIdForTile(siteTiles, tileId);
+                    // ignore tiles for which the satellite id cannot be determined
+                    if(satId != ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN) {
+                        break;
+                    }
+                }
+            }
+
             // Insert the product into the database
             QDateTime minDate, maxDate;
             ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
-            int ret = ctx.InsertProduct({ prodType, event.processorId, event.siteId, event.jobId,
+            int ret = ctx.InsertProduct({ prodType, event.processorId, static_cast<int>(satId), event.siteId, event.jobId,
                                 productFolder, maxDate, prodName,
                                 quicklook, footPrint, std::experimental::nullopt, prodTiles });
             Logger::debug(QStringLiteral("InsertProduct for %1 returned %2").arg(prodName).arg(ret));
 
             // submit a new job for the L3C product corresponding to this one
-            SubmitL3CJobForL3BProduct(ctx, event, prodName);
+            SubmitL3CJobForL3BProduct(ctx, event, satId, prodName);
         } else {
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
             // We might have several L3B products, we should not mark it at failed here as
@@ -709,29 +725,20 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
 
     ConfigurationParameterValueMap mapCfg = ctx.GetConfigurationParameters(QString("processor.l3b."), siteId, requestOverrideCfgValues);
 
-    // we might have an offset in days from starting the downloading products to start the L3B/L3C/L3D production
+    // we might have an offset in days from starting the downloading products to start the L3B production
     int startSeasonOffset = mapCfg["processor.l3b.start_season_offset"].value.toInt();
     seasonStartDate = seasonStartDate.addDays(startSeasonOffset);
 
     int generateLai = false;
-    int generateReprocess = false;
-    int generateFitted = false;
-
     if(requestOverrideCfgValues.contains("product_type")) {
         const ConfigurationParameterValue &productType = requestOverrideCfgValues["product_type"];
         if(productType.value == "L3B") {
             generateLai = true;
             params.jsonParameters = "{ \"monolai\": \"1\"}";
-        } else if(productType.value == "L3C") {
-            generateReprocess = true;
-            params.jsonParameters = "{ \"reproc\": \"1\"}";
-        } else if(productType.value == "L3D") {
-            generateFitted = true;
-            params.jsonParameters = "{ \"fitted\": \"1\"}";
         }
     }
     // we need to have at least one flag set
-    if(!generateLai && !generateReprocess && !generateFitted) {
+    if(!generateLai) {
         return params;
     }
 
@@ -739,30 +746,28 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
     QDateTime startDate = seasonStartDate;
     QDateTime endDate = qScheduledDate;
 
-    if(generateLai || generateReprocess) {
-        int productionInterval = mapCfg[generateLai ? "processor.l3b.production_interval":
-                                                      "processor.l3b.reproc_production_interval"].value.toInt();
-        startDate = endDate.addDays(-productionInterval);
-        // Use only the products after the configured start season date
-        if(startDate < seasonStartDate) {
-            startDate = seasonStartDate;
-        }
+
+    int productionInterval = mapCfg["processor.l3b.production_interval"].value.toInt();
+    startDate = endDate.addDays(-productionInterval);
+    // Use only the products after the configured start season date
+    if(startDate < seasonStartDate) {
+        startDate = seasonStartDate;
     }
 
     params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
-    // Normally, we need at least 1 product available in order to be able to create a L3B/L3C/L3D product
+    // Normally, we need at least 1 product available in order to be able to create a L3B product
     // but if we do not return here, the schedule block waiting for products (that might never happen)
     bool waitForAvailProcInputs = (mapCfg["processor.l3b.sched_wait_proc_inputs"].value.toInt() != 0);
     if((waitForAvailProcInputs == false) || (params.productList.size() > 0)) {
         params.isValid = true;
-        Logger::debug(QStringLiteral("Executing scheduled job. Scheduler extracted for L3B/L3C/L3D a number "
+        Logger::debug(QStringLiteral("Executing scheduled job. Scheduler extracted for L3B a number "
                                      "of %1 products for site ID %2 with start date %3 and end date %4!")
                       .arg(params.productList.size())
                       .arg(siteId)
                       .arg(startDate.toString())
                       .arg(endDate.toString()));
     } else {
-        Logger::debug(QStringLiteral("Scheduled job for L3B/L3C/L3D and site ID %1 with start date %2 and end date %3 "
+        Logger::debug(QStringLiteral("Scheduled job for L3B and site ID %1 with start date %2 and end date %3 "
                                      "will not be executed (no products)!")
                       .arg(siteId)
                       .arg(startDate.toString())
@@ -772,42 +777,31 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
     return params;
 }
 
-void LaiRetrievalHandlerL3B::SubmitL3CJobForL3BProduct(EventProcessingContext &ctx, const TaskFinishedEvent &event, const QString &l3bProdName)
+void LaiRetrievalHandlerL3B::SubmitL3CJobForL3BProduct(EventProcessingContext &ctx, const TaskFinishedEvent &event,
+                                                       const ProcessorHandlerHelper::SatelliteIdType &satId, const QString &l3bProdName)
 {
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.lai.link_l3c_to_l3b");
     bool bLinkL3CToL3B = ((configParameters["processor.l3b.lai.link_l3c_to_l3b"]).toInt() == 1);
-    // TODO: generate automatically only for Sentinel2
+    // generate automatically only for Sentinel2
     if (bLinkL3CToL3B) {
-        NewJob newJob;
-        newJob.processorId = event.processorId;  //here we have for now the same processor ID
-        // TODO: I think these could be removed as might not be used
-        //newJob.name = "L3C";
-        //newJob.description = "L3C Linked to L3B";
-        newJob.siteId = event.siteId;
-        newJob.startType = JobStartType::Triggered;
+        if(satId == ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2) {
 
-        QJsonObject processorParamsObj;
-        // Add also the site_name and processor_name to the parameteres
-        // TODO: I think these could be removed as might not be used
-        /*QString processorName = ctx.GetProcessorShortName(event.processorId);
-        if(processorName.length() == 0)
-            processorName = "UnknownProcessor";
-        QString siteName = ctx.GetSiteName(event.siteId);
-        if(siteName.length() == 0)
-            siteName = "UnknownSite";
-        processorParamsObj["processor_short_name"] = processorName;
-        processorParamsObj["site_name"] = siteName;
-        */
+            NewJob newJob;
+            newJob.processorId = event.processorId;  //here we have for now the same processor ID
+            newJob.siteId = event.siteId;
+            newJob.startType = JobStartType::Triggered;
 
-        QJsonArray prodsJsonArray;
-        prodsJsonArray.append(l3bProdName);
-        processorParamsObj["input_products"] = prodsJsonArray;
-        processorParamsObj["resolution"] = "10";
-        processorParamsObj["reproc"] = "1";
-        processorParamsObj["inputs_are_l3b"] = "1";
-        newJob.parametersJson = jsonToString(processorParamsObj);
+            QJsonObject processorParamsObj;
+            QJsonArray prodsJsonArray;
+            prodsJsonArray.append(l3bProdName);
+            processorParamsObj["input_products"] = prodsJsonArray;
+            processorParamsObj["resolution"] = "10";
+            processorParamsObj["reproc"] = "1";
+            processorParamsObj["inputs_are_l3b"] = "1";
+            newJob.parametersJson = jsonToString(processorParamsObj);
 
-        ctx.SubmitJob(newJob);
+            ctx.SubmitJob(newJob);
+        }
     }
 }
 
