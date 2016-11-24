@@ -98,6 +98,7 @@ private:
     bool AddTileFileInfo(EventProcessingContext &ctx, TileTemporalFilesInfo &temporalTileInfo, const QString &l3bPrd,
                          const QString &tileId, const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles,
                          ProcessorHandlerHelper::SatelliteIdType satId, const QDateTime &curPrdMinDate);
+    bool HasSufficientProducts(const TileTemporalFilesInfo &tileInfo, const ProcessorHandlerHelper::SatelliteIdType &tileSatId, int limitL3BPrdsPerTile);
     void SubmitEndOfLaiTask(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QList<TaskToSubmit> &allTasksList);
 private:
 //    int m_nTimeSeriesBuilderIdx;

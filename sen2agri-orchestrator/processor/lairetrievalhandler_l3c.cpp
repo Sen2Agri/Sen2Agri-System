@@ -392,6 +392,8 @@ QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(Even
         if(!retL3bMapTiles.contains(tileId)) {
             TileTemporalFilesInfo newTileInfos;
             newTileInfos.tileId = tileId;
+            newTileInfos.primarySatelliteId = tileSatId;
+            newTileInfos.uniqueSatteliteIds.append(tileSatId);
 
             // Fill the tile information for the current tile from the current product
             AddTileFileInfo(ctx, newTileInfos, newestL3BProd, tileId, siteTiles, tileSatId, minDate);
@@ -405,7 +407,7 @@ QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(Even
             const QString &l3bPrd = l3bProducts[i];
             // If we have a limit of maximum temporal products per tile and we reached this limit,
             // then ignore the other products for this tile
-            if(limitL3BPrdsPerTile > 0 && tileInfo.temporalTilesFileInfos.size() > limitL3BPrdsPerTile) {
+            if(HasSufficientProducts(tileInfo, tileSatId, limitL3BPrdsPerTile)) {
                 break;
             }
 
@@ -495,6 +497,29 @@ bool LaiRetrievalHandlerL3C::AddTileFileInfo(TileTemporalFilesInfo &temporalTile
         //add it to the temporal tile files info
         temporalTileInfo.temporalTilesFileInfos.append(l3bTileInfo);
         return true;
+    }
+    return false;
+}
+
+bool LaiRetrievalHandlerL3C::HasSufficientProducts(const TileTemporalFilesInfo &tileInfo,
+                                                   const ProcessorHandlerHelper::SatelliteIdType &tileSatId,
+                                                   int limitL3BPrdsPerTile)
+{
+    // TODO: Should we consider here also the orbit???
+    if(limitL3BPrdsPerTile > 0) {
+        int cntSameSat = 0;
+        // We must have at least limitL3BPrdsPerTile for the primary satellite
+        // As we do not add in the temp info file the intersecting tiles of the same satellite
+        // it is OK to count the occurences of the tile infos having the main satellite
+        // as this means it is the same tile ID
+        for(const ProcessorHandlerHelper::InfoTileFile &tempInfoFile: tileInfo.temporalTilesFileInfos) {
+            if(tempInfoFile.satId == tileSatId) {
+                cntSameSat++;
+                if(cntSameSat > limitL3BPrdsPerTile) {
+                    return true;
+                }
+            }
+        }
     }
     return false;
 }
