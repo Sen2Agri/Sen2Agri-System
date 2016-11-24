@@ -805,7 +805,7 @@ int PersistenceManagerDBProvider::InsertProduct(const NewProduct &product)
                            ":quicklookImage, :footprint, :orbitId, :tiles)"));
         query.bindValue(QStringLiteral(":productType"), static_cast<int>(product.productType));
         query.bindValue(QStringLiteral(":processorId"), product.processorId);
-        query.bindValue(QStringLiteral(":satelliteId"), QVariant());
+        query.bindValue(QStringLiteral(":satelliteId"), (product.satelliteId<=0) ? QVariant() : product.satelliteId);
         query.bindValue(QStringLiteral(":siteId"), product.siteId);
         query.bindValue(QStringLiteral(":jobId"), product.jobId);
         query.bindValue(QStringLiteral(":fullPath"), product.fullPath);

@@ -802,6 +802,7 @@ class NewProduct
 public:
     ProductType productType;
     int processorId;
+    int satelliteId;
     int siteId;
     int jobId;
     QString fullPath;
@@ -815,6 +816,18 @@ public:
     NewProduct();
     NewProduct(ProductType productType,
                int processorId,
+               int siteId,
+               int jobId,
+               QString fullPath,
+               QDateTime createdTimestamp,
+               QString name,
+               QString quicklookImage,
+               QString footprint,
+               std::experimental::optional<int> orbitId,
+               TileIdList tiles);
+    NewProduct(ProductType productType,
+               int processorId,
+               int satelliteId,
                int siteId,
                int jobId,
                QString fullPath,

@@ -1500,7 +1500,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProductType &prod
     return argument;
 }
 
-NewProduct::NewProduct() : productType(), processorId(), siteId(), jobId()
+NewProduct::NewProduct() : productType(), processorId(), satelliteId(), siteId(), jobId()
 {
 }
 
@@ -1517,6 +1517,34 @@ NewProduct::NewProduct(ProductType productType,
                        TileIdList tiles)
     : productType(productType),
       processorId(processorId),
+      satelliteId(),
+      siteId(siteId),
+      jobId(jobId),
+      fullPath(std::move(fullPath)),
+      createdTimestamp(std::move(createdTimestamp)),
+      name(std::move(name)),
+      quicklookImage(std::move(quicklookImage)),
+      footprint(std::move(footprint)),
+      orbitId(orbitId),
+      tiles(std::move(tiles))
+{
+}
+
+NewProduct::NewProduct(ProductType productType,
+                       int processorId,
+                       int satelliteId,
+                       int siteId,
+                       int jobId,
+                       QString fullPath,
+                       QDateTime createdTimestamp,
+                       QString name,
+                       QString quicklookImage,
+                       QString footprint,
+                       std::experimental::optional<int> orbitId,
+                       TileIdList tiles)
+    : productType(productType),
+      processorId(processorId),
+      satelliteId(satelliteId),
       siteId(siteId),
       jobId(jobId),
       fullPath(std::move(fullPath)),
