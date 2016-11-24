@@ -610,12 +610,14 @@ void LaiRetrievalHandlerL3C::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             if(isReprocPf) prodType = ProductType::L3CProductTypeId;
             else if (isFittedPf) prodType = ProductType::L3DProductTypeId;
 
+            const QStringList &prodTiles = ProcessorHandlerHelper::GetTileIdsFromHighLevelProduct(productFolder);
+
             // Insert the product into the database
             QDateTime minDate, maxDate;
             ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
             int ret = ctx.InsertProduct({ prodType, event.processorId, event.siteId, event.jobId,
                                 productFolder, maxDate, prodName,
-                                quicklook, footPrint, std::experimental::nullopt, TileIdList() });
+                                quicklook, footPrint, std::experimental::nullopt, prodTiles });
             Logger::debug(QStringLiteral("InsertProduct for %1 returned %2").arg(prodName).arg(ret));
 
         } else {
