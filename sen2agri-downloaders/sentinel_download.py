@@ -240,10 +240,12 @@ def sentinel_download(aoiContext):
         query = "{}{}".format(query, query_date)
         
         wget_command = wg + auth + search_output
+        wget_command_proxy = ""
         if len(proxy) >= 2:
-            wget_command += ["-e", "use_proxy=yes", "-e", "http_proxy=%(host)s:%(port)s" % proxy, "-e", "https_proxy=%(host)s:%(port)s" % proxy]
+            wget_command_proxy = ["-e", "use_proxy=yes", "-e", "http_proxy=%(host)s:%(port)s" % proxy, "-e", "https_proxy=%(host)s:%(port)s" % proxy]
             if len(proxy) == 4:
-                wget_command += ["--proxy-user=%(user)s" % proxy, "--proxy-password=%(pass)s" % proxy]
+                wget_command_proxy += ["--proxy-user=%(user)s" % proxy, "--proxy-password=%(pass)s" % proxy]
+        wget_command += wget_command_proxy
         wget_command.append(url_search + query + "&rows=100")
         log(aoiContext.writeDir, wget_command, general_log_filename)
 
@@ -286,7 +288,7 @@ def sentinel_download(aoiContext):
                             index += 1                        
                             print("queryResultsFilename = {}".format(queryResultsFilename))
                             search_output = ["--output-document", queryResultsFilename]
-                            wget_command = wg + auth + search_output + [url_search+newQuery]
+                            wget_command = wg + auth + wget_command_proxy + search_output + [url_search+newQuery]
                             log(aoiContext.writeDir, "Retrieving page {0}, starting from index {1}, command: {2}".format(curPage+1, startIndex, wget_command), general_log_filename)
                             if run_command(wget_command, aoiContext.writeDir, general_log_filename) != 0:
                                 log(aoiContext.writeDir, "Could not get the catalog output (re-pagination) for {}".format(query_geom), general_log_filename)
