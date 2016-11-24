@@ -250,12 +250,12 @@ def get_product_info(product_name):
         m = re.match("\w+_V(\d{8}T\d{6})_\w+.SAFE", product_name)
         # check if the new convention naming aplies
         if m == None:
-            m = re.match("\w+_MSIL1C_(\d{8}T\d{6})_\w+.SAFE", product_name)
+            m = re.match("\w+_(\d{8}T\d{6})_\w+.SAFE", product_name)
         if m != None:
             sat_id = SENTINEL2_SATELLITE_ID
             acquisition_date = m.group(1)
     elif product_name.startswith("LC8"):
-        m = re.match("LC8\d{6}(\d{7})LGN\d{2}", product_name)
+        m = re.match("LC8\d{6}(\d{7})[A-Z]{3}\d{2}", product_name)
         if m != None:
             sat_id = LANDSAT8_SATELLITE_ID
             acquisition_date = datetime.datetime.strptime("{} {}".format(m.group(1)[0:4],m.group(1)[4:]), '%Y %j').strftime("%Y%m%dT%H%M%S")
@@ -324,7 +324,7 @@ def landsat_crop_to_cutline(landsat_product_path, working_dir):
     tmp_shape_file = ""
     for landsat_file in landsat_files:
         landsat_file_basename = os.path.basename(landsat_file[:len(landsat_file) - 1]) if landsat_file.endswith("/") else os.path.basename(landsat_file)
-        band = re.match("LC8\w{13}LGN\w{2}_B1.TIF", landsat_file_basename)
+        band = re.match("LC8\w{13}[A-Z]{3}\w{2}_B1.TIF", landsat_file_basename)
         if band is not None:
             # the filename for the first output tile is created only (not accessed)
             first_tile_file_path = "{}/{}".format(aligned_landsat_directory_path, landsat_file_basename)
@@ -342,7 +342,7 @@ def landsat_crop_to_cutline(landsat_product_path, working_dir):
     for landsat_file in landsat_files:
         landsat_file_basename = os.path.basename(landsat_file[:len(landsat_file) - 1]) if landsat_file.endswith("/") else os.path.basename(landsat_file)
         print("landsat_file_basename = {}".format(landsat_file_basename))
-        band = re.match("LC8\w{13}LGN\w{2}_B\w+.TIF", landsat_file_basename)
+        band = re.match("LC8\w{13}[A-Z]{3}\w{2}_B\w+.TIF", landsat_file_basename)
         if band is not None:            
             output_file = "{}/{}".format(aligned_landsat_directory_path, landsat_file_basename)
             run_command(["gdalwarp", "-overwrite", "-crop_to_cutline", "-cutline", tmp_shape_file, landsat_file, output_file])
@@ -352,7 +352,7 @@ def landsat_crop_to_cutline(landsat_product_path, working_dir):
 
     for landsat_file in landsat_files:
         landsat_file_basename = os.path.basename(landsat_file[:len(landsat_file) - 1]) if landsat_file.endswith("/") else os.path.basename(landsat_file)
-	metadata = re.match("LC8\w{13}LGN\w{2}_MTL.txt", landsat_file_basename)
+	metadata = re.match("LC8\w{13}[A-Z]{3}\w{2}_MTL.txt", landsat_file_basename)
 	if metadata is not None:
 	    output_metadata_file = "{}/{}".format(aligned_landsat_directory_path, landsat_file_basename)
 	    print(output_metadata_file)

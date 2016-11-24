@@ -160,6 +160,6 @@ for l1 in l1_list:
                 #impossible to happen, but for the sake of flow
                 log(write_dir, "Unknown satellite id {} found for {}. Continue...".format(sat_id, l1), general_log_filename)
                 continue
-            log(write_dir, "Database downloader_history tabe updated with status DOWNLOADED for {}".format(new_dir), general_log_filename)
+            log(write_dir, "Database downloader_history table updated with status DOWNLOADED for {}".format(new_dir), general_log_filename)
                 
             
