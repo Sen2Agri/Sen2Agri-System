@@ -71,7 +71,7 @@ def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_o
                 l1c_tiles.append(tile.group(1))
     elif satellite_id == LANDSAT8_SATELLITE_ID:
         #for landsat, there is only 1 tile which can be taken from the l1c product name
-        tile = re.search(r"LC8(\d{6})\d{7}LGN", l1c_product_path)
+        tile = re.search(r"LC8(\d{6})\d{7}[A-Z]{3}", l1c_product_path)
         if tile is not None:
             l1c_tiles.append(tile.group(1))
     else:
