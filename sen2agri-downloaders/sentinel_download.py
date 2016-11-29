@@ -240,7 +240,7 @@ def sentinel_download(aoiContext):
         query = "{}{}".format(query, query_date)
         
         wget_command = wg + auth + search_output
-        wget_command_proxy = ""
+        wget_command_proxy = []
         if len(proxy) >= 2:
             wget_command_proxy = ["-e", "use_proxy=yes", "-e", "http_proxy=%(host)s:%(port)s" % proxy, "-e", "https_proxy=%(host)s:%(port)s" % proxy]
             if len(proxy) == 4:
