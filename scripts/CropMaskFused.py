@@ -26,9 +26,10 @@ class CropMaskProcessor(ProcessorBase):
 
         parser.add_argument('-mission', help='The main mission for the series',
                             required=False, default='SPOT')
-        parser.add_argument('-refp', help='The reference polygons',
+        group = parser.add_mutually_exclusive_group()
+        group.add_argument('-refp', help='The reference polygons',
                             required=False, metavar='reference_polygons')
-        parser.add_argument('-refr', help='The reference raster',
+        group.add_argument('-refr', help='The reference raster',
                             required=False, metavar='reference_raster')
         parser.add_argument('-ratio', help='The ratio between the validation and training polygons (default 0.75)',
                             required=False, metavar='sample_ratio', default=0.75)
