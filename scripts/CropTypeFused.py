@@ -2,22 +2,14 @@
 
 from __future__ import print_function
 
-from osgeo import ogr, osr
-import gdal
 import os
 import os.path
 import shutil
-import glob
 import argparse
-import csv
 import re
-import sys
-from sys import argv
-import traceback
-import datetime
 from lxml import etree
 from lxml.builder import E
-from sen2agri_common import *
+from sen2agri_common import ProcessorBase, Step, split_features, run_step, format_otb_filename, get_reference_raster
 
 
 class CropTypeProcessor(ProcessorBase):
@@ -147,27 +139,27 @@ class CropTypeProcessor(ProcessorBase):
             area_prodpertile.append(len(tile.descriptors))
 
         run_step(Step("SampleSelection", ["otbcli", "SampleSelection", self.args.buildfolder,
-                                        "-ref", features_shapefile,
-                                        "-ratio", self.args.ratio,
-                                        "-seed", self.args.rseed,
-                                        "-tp", area_training_polygons,
-                                        "-vp", area_validation_polygons]))
+                                          "-ref", features_shapefile,
+                                          "-ratio", self.args.ratio,
+                                          "-seed", self.args.rseed,
+                                          "-tp", area_training_polygons,
+                                          "-vp", area_validation_polygons]))
         step_args = ["otbcli", "CropTypeTrainImagesClassifier", self.args.buildfolder,
-                        "-mission", self.args.mission,
-                        "-nodatalabel", -10000,
-                        "-pixsize", self.args.pixsize,
-                        "-outdays", area_days,
-                        "-mode", self.args.trm,
-                        "-io.vd", area_training_polygons,
-                        "-rand", self.args.rseed,
-                        "-sample.bm", 0,
-                        "-io.confmatout", area_confmatout,
-                        "-io.out", area_model,
-                        "-sample.mt", -1,
-                        "-sample.mv", 10,
-                        "-sample.vfn", "CODE",
-                        "-sample.vtr", 0.01,
-                        "-classifier", self.args.classifier]
+                     "-mission", self.args.mission,
+                     "-nodatalabel", -10000,
+                     "-pixsize", self.args.pixsize,
+                     "-outdays", area_days,
+                     "-mode", self.args.trm,
+                     "-io.vd", area_training_polygons,
+                     "-rand", self.args.rseed,
+                     "-sample.bm", 0,
+                     "-io.confmatout", area_confmatout,
+                     "-io.out", area_model,
+                     "-sample.mt", -1,
+                     "-sample.mv", 10,
+                     "-sample.vfn", "CODE",
+                     "-sample.vtr", 0.01,
+                     "-classifier", self.args.classifier]
         if self.args.red_edge:
             step_args += ["-rededge", "true"]
         step_args += ["-sp"] + self.args.sp
@@ -175,12 +167,12 @@ class CropTypeProcessor(ProcessorBase):
         step_args += ["-il"] + area_descriptors
         if self.args.classifier == "rf":
             step_args += ["-classifier.rf.nbtrees", self.args.rfnbtrees,
-                            "-classifier.rf.min", self.args.rfmin,
-                            "-classifier.rf.max", self.args.rfmax]
+                          "-classifier.rf.min", self.args.rfmin,
+                          "-classifier.rf.max", self.args.rfmax]
         else:
             step_args += ["-classifier.svm.k", "rbf",
-                            "-classifier.svm.opt", 1,
-                            "-imstat", area_statistics]
+                          "-classifier.svm.opt", 1,
+                          "-imstat", area_statistics]
         run_step(Step("TrainImagesClassifier", step_args))
 
     def classify_tile(self, tile):
@@ -202,23 +194,22 @@ class CropTypeProcessor(ProcessorBase):
             tile_model_mask = self.get_output_path("model-mask-{}.tif", tile.id)
 
             run_step(Step("Rasterize model mask",
-                                ["otbcli_Rasterization",
-                                "-mode", "attribute",
-                                "-mode.attribute.field", "ID",
-                                "-in", self.args.strata,
-                                "-im", get_reference_raster(tile.descriptors[0]),
-                                "-out", format_otb_filename(tile_model_mask, compression='DEFLATE'), "uint8"]))
+                          ["otbcli_Rasterization",
+                           "-mode", "attribute",
+                           "-mode.attribute.field", "ID",
+                           "-in", self.args.strata,
+                           "-im", get_reference_raster(tile.descriptors[0]),
+                           "-out", format_otb_filename(tile_model_mask, compression='DEFLATE'), "uint8"]))
 
         tile_crop_type_map_uncompressed = self.get_output_path("crop_type_map_{}_uncompressed.tif", tile.id)
-        stratum_tile_mask = self.get_stratum_tile_mask(stratum, tile)
 
         step_args = ["otbcli", "CropTypeImageClassifier", self.args.buildfolder,
-                        "-mission", self.args.mission,
-                        "-pixsize", self.args.pixsize,
-                        "-indays"] + days + [
-                        "-bv", -10000,
-                        "-nodatalabel", -10000,
-                        "-out", tile_crop_type_map_uncompressed]
+                     "-mission", self.args.mission,
+                     "-pixsize", self.args.pixsize,
+                     "-indays"] + days + [
+                     "-bv", -10000,
+                     "-nodatalabel", -10000,
+                     "-out", tile_crop_type_map_uncompressed]
         if self.args.red_edge:
             step_args += ["-rededge", "true"]
         step_args += ["-model"] + models
@@ -237,8 +228,8 @@ class CropTypeProcessor(ProcessorBase):
 
         tile_crop_type_map = self.get_tile_classification_output(tile)
         step_args = ["otbcli_Convert",
-                        "-in", tile_crop_type_map_uncompressed,
-                        "-out", format_otb_filename(tile_crop_type_map, compression='DEFLATE'), "int16"]
+                     "-in", tile_crop_type_map_uncompressed,
+                     "-out", format_otb_filename(tile_crop_type_map, compression='DEFLATE'), "int16"]
         run_step(Step("Compression_{}".format(tile.id), step_args))
 
         if not self.args.keepfiles:
@@ -257,9 +248,9 @@ class CropTypeProcessor(ProcessorBase):
             run_step(Step("Mask by crop mask " + tile.id, step_args))
 
             run_step(Step("Nodata_" + tile.id,
-                                ["gdal_edit.py",
-                                    "-a_nodata", -10000,
-                                    tile_crop_map_masked]))
+                          ["gdal_edit.py",
+                           "-a_nodata", -10000,
+                           tile_crop_map_masked]))
 
     def get_tile_crop_map(self, tile):
         if tile.crop_mask is not None:
@@ -275,23 +266,23 @@ class CropTypeProcessor(ProcessorBase):
             area_validation_metrics_xml = self.get_output_path("validation-metrics-{}.xml", stratum.id)
 
             step_args = ["otbcli", "ComputeConfusionMatrixMulti", self.args.buildfolder,
-                            "-ref", "vector",
-                            "-ref.vector.in", area_validation_polygons,
-                            "-ref.vector.field", "CODE",
-                            "-out", area_statistics,
-                            "-nodatalabel", -10000,
-                            "-il"]
+                         "-ref", "vector",
+                         "-ref.vector.in", area_validation_polygons,
+                         "-ref.vector.field", "CODE",
+                         "-out", area_statistics,
+                         "-nodatalabel", -10000,
+                         "-il"]
             for tile in stratum.tiles:
                 step_args.append(self.get_tile_crop_map(tile))
 
             run_step(Step("ComputeConfusionMatrix_" + str(stratum.id),
-                                step_args, out_file=area_quality_metrics))
+                          step_args, out_file=area_quality_metrics))
 
             step_args = ["otbcli", "XMLStatistics", self.args.buildfolder,
-                            "-root", "CropType",
-                            "-confmat", area_statistics,
-                            "-quality", area_quality_metrics,
-                            "-out", area_validation_metrics_xml]
+                         "-root", "CropType",
+                         "-confmat", area_statistics,
+                         "-quality", area_quality_metrics,
+                         "-out", area_validation_metrics_xml]
             run_step(Step("XMLStatistics_" + str(stratum.id), step_args))
 
         if not self.single_stratum:
@@ -310,31 +301,31 @@ class CropTypeProcessor(ProcessorBase):
                     files.append(area_validation_polygons)
 
                 step_args = ["otbcli_ConcatenateVectorData",
-                                "-out", global_validation_polygons,
-                                "-vd"] + files
+                             "-out", global_validation_polygons,
+                             "-vd"] + files
                 run_step(Step("ConcatenateVectorData", step_args))
 
                 first_prj_file = self.get_output_path("validation_polygons-{}.prj", self.strata[0].id)
                 shutil.copyfile(first_prj_file, global_prj_file)
 
                 step_args = ["otbcli", "ComputeConfusionMatrixMulti", self.args.buildfolder,
-                                "-ref", "vector",
-                                "-ref.vector.in", global_validation_polygons,
-                                "-ref.vector.field", "CODE",
-                                "-out", global_statistics,
-                                "-nodatalabel", -10000,
-                                "-il"]
+                             "-ref", "vector",
+                             "-ref.vector.in", global_validation_polygons,
+                             "-ref.vector.field", "CODE",
+                             "-out", global_statistics,
+                             "-nodatalabel", -10000,
+                             "-il"]
                 for tile in self.tiles:
                     step_args.append(self.get_tile_crop_map(tile))
 
                 run_step(Step("ComputeConfusionMatrix_Global",
-                                    step_args, out_file=global_quality_metrics))
+                              step_args, out_file=global_quality_metrics))
 
                 step_args = ["otbcli", "XMLStatistics", self.args.buildfolder,
-                                "-root", "CropType",
-                                "-confmat", global_statistics,
-                                "-quality", global_quality_metrics,
-                                "-out", global_validation_metrics_xml]
+                             "-root", "CropType",
+                             "-confmat", global_statistics,
+                             "-quality", global_quality_metrics,
+                             "-out", global_validation_metrics_xml]
                 run_step(Step("XMLStatistics_Global", step_args))
             else:
                 area_validation_metrics_xml = self.get_output_path("validation-metrics-{}.xml", self.strata[0].id)
@@ -342,13 +333,13 @@ class CropTypeProcessor(ProcessorBase):
                 shutil.copyfile(area_validation_metrics_xml, global_validation_metrics_xml)
 
         step_args = ["otbcli", "ProductFormatter", self.args.buildfolder,
-                        "-destroot", self.args.targetfolder,
-                        "-fileclass", "SVT1",
-                        "-level", "L4B",
-                        "-baseline", "01.00",
-                        "-siteid", self.args.siteid,
-                        "-gipp", self.get_metadata_file(),
-                        "-processor", "croptype"]
+                     "-destroot", self.args.targetfolder,
+                     "-fileclass", "SVT1",
+                     "-level", "L4B",
+                     "-baseline", "01.00",
+                     "-siteid", self.args.siteid,
+                     "-gipp", self.get_metadata_file(),
+                     "-processor", "croptype"]
 
         if self.args.lut is not None:
             qgis_lut = self.get_output_path("qgis-color-map.txt")
@@ -449,11 +440,6 @@ class CropTypeProcessor(ProcessorBase):
                 )
 
             tiles.append(tile_el)
-
-
-        for tile in self.tiles:
-            if tile.crop_mask is not None:
-                pass
 
         metadata = E.Metadata(
             E.ProductType("Crop Type"),

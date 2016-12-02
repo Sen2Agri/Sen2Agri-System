@@ -7,19 +7,16 @@ import gdal
 import os
 import os.path
 import glob
-import argparse
-import csv
 import re
 import sys
 import pipes
 import subprocess
-from sys import argv
 import traceback
 import datetime
 
-#name:      The name of the step as it will be dispayed on screen
-#args:      The external process that must be invoked and it arguments
-#kwargs:    The list containing the arguments with default values.
+# name:      The name of the step as it will be dispayed on screen
+# args:      The external process that must be invoked and it arguments
+# kwargs:    The list containing the arguments with default values.
 #           Possible values are:
 #               outf - the file where the output is redirected to (default: "")
 #               skip - if True then this step is not executed (default: False)
@@ -37,7 +34,7 @@ def executeStep(name, *args, **kwargs):
     # Get the start date
     startTime = datetime.datetime.now()
 
-    #Check if the step should be skiped
+    # Check if the step should be skiped
     if skip:
         print("Skipping " + name + " at " + str(startTime))
         return
@@ -56,20 +53,20 @@ def executeStep(name, *args, **kwargs):
             cmdLine = cmdLine + " > " + pipes.quote(outf)
         print(cmdLine)
 
-        #invoke the external process
+        # invoke the external process
         if len(outf):
             fil = open(outf, "w")
             result = subprocess.call(args, stdout=fil)
         else:
             result = subprocess.call(args)
 
-        #Get the end time
+        # Get the end time
         endTime = datetime.datetime.now()
 
         # Check for errors
         if result != 0:
-             print("Error running " + name + " at " + str(endTime) + ". The call returned " + str(result))
-             if retries == 0:
+            print("Error running " + name + " at " + str(endTime) + ". The call returned " + str(result))
+            if retries == 0:
                 raise Exception("Error running " + name, result)
 
         # Remove intermediate files if needed
@@ -80,7 +77,8 @@ def executeStep(name, *args, **kwargs):
         if result == 0:
             print(name + " done at " + str(endTime) + ". Duration: " + str(endTime - startTime))
             break
-#end executeStep
+# end executeStep
+
 
 class Step(object):
 
@@ -96,6 +94,7 @@ def run_step(step):
         executeStep(step.name, *step.arguments, outf=step.out_file, retry=step.retry)
     else:
         executeStep(step.name, *step.arguments, retry=step.retry)
+
 
 def get_reference_raster(product):
     file = os.path.basename(product)
@@ -142,6 +141,7 @@ class Stratum(object):
         self.extent = extent
         self.tiles = []
 
+
 class Tile(object):
     def __init__(self, id, descriptors):
         self.id = id
@@ -167,6 +167,7 @@ def load_lut(lut):
                 r.append((value, red, green, blue, label))
     return r
 
+
 def split_features(stratum, data, out_folder):
     driver = ogr.GetDriverByName('ESRI Shapefile')
 
@@ -190,7 +191,7 @@ def split_features(stratum, data, out_folder):
         raise Exception("Could not create output dataset", out_name)
 
     out_layer = out_ds.CreateLayer('features', srs=data_srs,
-                                    geom_type=ogr.wkbMultiPolygon)
+                                   geom_type=ogr.wkbMultiPolygon)
     out_layer_def = out_layer.GetLayerDefn()
 
     for i in xrange(data_layer_def.GetFieldCount()):
@@ -220,6 +221,7 @@ def split_features(stratum, data, out_folder):
         out_layer.CreateFeature(out_feature)
 
     return out_features
+
 
 def load_strata(areas, site_footprint_wgs84):
     wgs84_srs = osr.SpatialReference()
@@ -276,6 +278,7 @@ def load_strata(areas, site_footprint_wgs84):
 
     return result
 
+
 def GetExtent(gt, cols, rows):
     ext = []
     xarr = [0, cols]
@@ -298,6 +301,7 @@ def ReprojectCoords(coords, src_srs, tgt_srs):
         trans_coords.append([x, y])
     return trans_coords
 
+
 def get_raster_footprint(image_filename):
     dataset = gdal.Open(image_filename, gdal.gdalconst.GA_ReadOnly)
 
@@ -305,9 +309,6 @@ def get_raster_footprint(image_filename):
     size_y = dataset.RasterYSize
 
     geo_transform = dataset.GetGeoTransform()
-
-    spacing_x = geo_transform[1]
-    spacing_y = geo_transform[5]
 
     extent = GetExtent(geo_transform, size_x, size_y)
 
@@ -323,7 +324,6 @@ def get_raster_footprint(image_filename):
 
     source_srs = osr.SpatialReference()
     source_srs.ImportFromWkt(dataset.GetProjection())
-    epsg_code = source_srs.GetAttrValue("AUTHORITY", 1)
     target_srs = osr.SpatialReference()
     target_srs.ImportFromEPSG(4326)
 
@@ -340,6 +340,7 @@ def get_raster_footprint(image_filename):
     geom_wgs84.AddGeometry(ring)
 
     return (geom, geom_wgs84, source_srs)
+
 
 def save_to_shp(file_name, geom, out_srs=None):
     if not out_srs:
@@ -371,10 +372,12 @@ def get_tileid_for_descriptors(descriptors):
         if tileid:
             return tileid
 
+
 def format_otb_filename(file, compression=None):
     if compression is not None:
         file += "?gdal:co:COMPRESS=" + compression
     return file
+
 
 class ProcessorBase(object):
     def execute(self):
@@ -453,9 +456,9 @@ class ProcessorBase(object):
         tile_quality_flags = self.get_output_path("status_flags_{}.tif", tile.id)
 
         step_args = ["otbcli", "QualityFlagsExtractor", self.args.buildfolder,
-                        "-mission", self.args.mission,
-                        "-out", format_otb_filename(tile_quality_flags, compression='DEFLATE'),
-                        "-pixsize", self.args.pixsize]
+                     "-mission", self.args.mission,
+                     "-out", format_otb_filename(tile_quality_flags, compression='DEFLATE'),
+                     "-pixsize", self.args.pixsize]
         step_args += ["-il"] + tile.descriptors
 
         run_step(Step("QualityFlags_" + str(tile.id), step_args))
@@ -545,11 +548,11 @@ class ProcessorBase(object):
         print("Reference raster for tile:", tile_reference_raster)
 
         run_step(Step("Rasterize mask",
-                            ["otbcli_Rasterization",
-                            "-in", tile_mask,
-                            "-im", tile_reference_raster,
-                            "-out", format_otb_filename(stratum_tile_mask, compression='DEFLATE'), "uint8",
-                            "-mode", "binary"]))
+                      ["otbcli_Rasterization",
+                       "-in", tile_mask,
+                       "-im", tile_reference_raster,
+                       "-out", format_otb_filename(stratum_tile_mask, compression='DEFLATE'), "uint8",
+                       "-mode", "binary"]))
 
     def get_output_path(self, fmt, *args):
         return os.path.join(self.args.outdir, fmt.format(*args))
