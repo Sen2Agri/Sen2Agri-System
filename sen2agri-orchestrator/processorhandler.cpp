@@ -250,7 +250,9 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
         if(endSummerSeasonDate < startSummerSeasonDate) {
             startSummerSeasonDate.addYears(-1);
         }
-        if(currentDate >= startSummerSeasonDate && currentDate <= endSummerSeasonDate) {
+        // we allow maximum 1 month after the end of season (in case of composite, for example,
+        // we have scheduled date after end of season)
+        if(currentDate >= startSummerSeasonDate && currentDate <= endSummerSeasonDate.addMonths(1)) {
             startTime = QDateTime(startSummerSeasonDate);
             endTime = QDateTime(endSummerSeasonDate);
             return true;
@@ -262,7 +264,7 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
             startWinterSeasonDate.addYears(-1);
         }
 
-        if(currentDate >= startWinterSeasonDate && currentDate <= endWinterSeasonDate) {
+        if(currentDate >= startWinterSeasonDate && currentDate <= endWinterSeasonDate.addMonths(1)) {
             startTime = QDateTime(startWinterSeasonDate);
             endTime = QDateTime(endWinterSeasonDate);
             return true;
@@ -282,7 +284,7 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
             defStartSummerSeasonDate.addYears(-1);
         }
 
-        if(currentDate >= defStartSummerSeasonDate && currentDate <= defEndSummerSeasonDate) {
+        if(currentDate >= defStartSummerSeasonDate && currentDate <= defEndSummerSeasonDate.addMonths(1)) {
             startTime = QDateTime(defStartSummerSeasonDate);
             endTime = QDateTime(defEndSummerSeasonDate);
             return true;
@@ -294,7 +296,7 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
             defStartWinterSeasonDate.addYears(-1);
         }
 
-        if(currentDate >= defStartWinterSeasonDate && currentDate <= defEndWinterSeasonDate) {
+        if(currentDate >= defStartWinterSeasonDate && currentDate <= defEndWinterSeasonDate.addMonths(1)) {
             startTime = QDateTime(defStartWinterSeasonDate);
             endTime = QDateTime(defEndWinterSeasonDate);
             return true;
