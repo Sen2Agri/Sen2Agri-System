@@ -188,7 +188,7 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsToGenModel(std::map<QString, QString
                 bvSamplesFile = globalSampleFile;
             }
             QStringList ProSailSimulatorArgs = GetProSailSimulatorArgs(curXml, bvSamplesFile, rsrCfgFile, simuReflsFile, anglesFile, configParameters);
-            QStringList TrainingDataGeneratorArgs = GetTrainingDataGeneratorArgs(curXml, generatedSampleFile, simuReflsFile, trainingFile);
+            QStringList TrainingDataGeneratorArgs = GetTrainingDataGeneratorArgs(curXml, bvSamplesFile, simuReflsFile, trainingFile);
             QStringList InverseModelLearningArgs = GetInverseModelLearningArgs(trainingFile, curXml, modelFile, errEstModelFile, modelsFolder, configParameters);
 
             steps.append(bvInputVariableGenerationTask.CreateStep("BVInputVariableGeneration", BVInputVariableGenerationArgs));
