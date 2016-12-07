@@ -99,6 +99,8 @@ def copy_common_gipp_file(working_dir, gipp_base_dir, gipp_sat_dir, gipp_sat_pre
                     handler_tile_gipp_file.write(line)
         except EnvironmentError:
             return False, "Could not transform / copy the common GIPP tile file {} to {} ".format(common_gipp_file, tile_gipp_file)
+    else:
+        return False, "Could not find common gip tile id {}".format(common_tile_id)
     return True, "Copied {} to {}".format(common_gipp_file, tile_gipp_file)
 
 
@@ -157,6 +159,7 @@ def maccs_launcher(demmaccs_context):
     if len(tile_id) == 0:
         log(demmaccs_context.output, "Could not get the tile id from DEM file {}".format(demmaccs_context.dem_hdr_file), "demmaccs.log")
         return ""
+
     tile_log_filename = "demmaccs_{}.log".format(tile_id)
     working_dir = "{}/{}".format(demmaccs_context.base_working_dir, tile_id)
     maccs_working_dir = "{}/maccs_{}".format(demmaccs_context.output, tile_id)
@@ -255,8 +258,29 @@ def maccs_launcher(demmaccs_context):
     # only the valid files should be moved
     maccs_dbl_dir = glob.glob("{}/*_L2VALD_*.DBL.DIR".format(maccs_working_dir))
     maccs_hdr_file = glob.glob("{}/*_L2VALD_*.HDR".format(maccs_working_dir))
+    maccs_report_file = glob.glob("{}/*_L2REPT_*.*".format(maccs_working_dir))
     return_tile_id = ""
     try:
+        # first, move all the report maccs files
+        # these will be saved even if the maccs haven't processed any valid tiles
+        log(demmaccs_context.output, "Searching for report maccs files (REPT) in: {}".format(maccs_working_dir), tile_log_filename)
+        if len(maccs_report_file) >= 1:
+            log(demmaccs_context.output, "Report maccs files (REPT) found in: {} : {}".format(maccs_working_dir, maccs_report_file), tile_log_filename)
+            for maccs_out in maccs_report_file:
+                new_file = "{}/{}".format(demmaccs_context.output, os.path.basename(maccs_out))
+                if os.path.isdir(new_file):
+                    log(demmaccs_context.output, "The directory {} already exists. Trying to delete it in order to move the new created directory by MACCS".format(new_file), tile_log_filename)
+                    shutil.rmtree(new_file)
+                elif os.path.isfile(new_file):
+                    log(demmaccs_context.output, "The file {} already exists. Trying to delete it in order to move the new created file by MACCS".format(new_file), tile_log_filename)
+                    os.remove(new_file)
+                else: #the dest does not exist, so will move it without problems
+                    pass
+                log(demmaccs_context.output, "Moving {} to {}".format(maccs_out, demmaccs_context.output + "/" + os.path.basename(maccs_out)), tile_log_filename)
+                shutil.move(maccs_out, new_file)
+        else:
+            log(demmaccs_context.output, "No report maccs files (REPT) found in: {}.".format(maccs_working_dir), tile_log_filename)
+
         maccs_working_dir_content = glob.glob("{}/*".format(maccs_working_dir))
         log(demmaccs_context.output, "Searching for valid products in MACCS working dir: {}. Following is the content of this dir: {}".format(maccs_working_dir, maccs_working_dir_content), tile_log_filename)
         if len(maccs_dbl_dir) >= 1 and len(maccs_hdr_file) >= 1:
