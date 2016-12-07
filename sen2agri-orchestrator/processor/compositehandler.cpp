@@ -539,10 +539,11 @@ void CompositeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
             QString footPrint = GetProductFormatterFootprint(ctx, event);
             // Insert the product into the database
             QDateTime minDate, maxDate;
+            const QStringList &prodTiles = ProcessorHandlerHelper::GetTileIdsFromHighLevelProduct(productFolder);
             ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prodName, minDate, maxDate);
             ctx.InsertProduct({ ProductType::L3AProductTypeId, event.processorId, event.siteId,
                                 event.jobId, productFolder, maxDate, prodName, quicklook,
-                                footPrint, std::experimental::nullopt, TileIdList() });
+                                footPrint, std::experimental::nullopt, prodTiles });
         } else {
             // mark the job as failed
             ctx.MarkJobFailed(event.jobId);
