@@ -62,7 +62,7 @@ private:
                                              const QString &reprocFlagsFileListFileName, const QStringList &listDates);
     QStringList GetFittedProfileReprocArgs(const QString &allLaiTimeSeriesFileName, const QString &allErrTimeSeriesFileName,
                                            const QString &allMsksTimeSeriesFileName, const QString &fittedTimeSeriesFileName,
-                                           const QStringList &listProducts);
+                                           const QStringList &ildates);
     QStringList GetFittedProfileReprocSplitterArgs(const QString &fittedTimeSeriesFileName, const QString &fittedFileListFileName,
                                                    const QString &fittedFlagsFileListFileName, const QStringList &allXmlsFileName);
 
@@ -85,9 +85,9 @@ private:
     bool GetL2AProductsInterval(const QMap<QString, QStringList> &mapTilesMeta, QDateTime &startDate, QDateTime &endDate);
     QStringList GetL3BProducts(EventProcessingContext &ctx, int siteId);
     QStringList GetL3BProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event);
-/*    QMap<QString, TileTemporalFilesInfo> GetL3BMapTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event,
-                                                        QMap<QString, TileTemporalFilesInfo> mapTiles, QStringList &l3bProductsFiltered, int limitL3BPrdsPerTile);
-*/
+    QMap<QString, TileTemporalFilesInfo> GetL3BMapTiles(EventProcessingContext &ctx,
+                                                                                const QStringList &l3bProducts,
+                                                                                const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles);
     QMap<QString, TileTemporalFilesInfo> GetL3BMapTiles(EventProcessingContext &ctx, const QString &newestL3BProd,
                                                         const QStringList &l3bProducts,
                                                         const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles,
@@ -99,13 +99,23 @@ private:
                          const QString &tileId, const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles,
                          ProcessorHandlerHelper::SatelliteIdType satId, const QDateTime &curPrdMinDate);
     bool HasSufficientProducts(const TileTemporalFilesInfo &tileInfo, const ProcessorHandlerHelper::SatelliteIdType &tileSatId, int limitL3BPrdsPerTile);
+    void SubmitL3BMapTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                           const QMap<QString, TileTemporalFilesInfo> &l3bMapTiles, bool bRemoveTempFiles, bool bNDayReproc, QList<TaskToSubmit> &allTasksList);
     void SubmitEndOfLaiTask(EventProcessingContext &ctx, const JobSubmittedEvent &event, const QList<TaskToSubmit> &allTasksList);
-private:
-//    int m_nTimeSeriesBuilderIdx;
-//    int m_nErrTimeSeriesBuilderIdx;
-//    int m_nLaiMskFlgsTimeSeriesBuilderIdx;
-//    int m_nProfileReprocessingIdx;
-//    int m_nReprocessedProfileSplitterIdx;
+
+    void CreateTasksForNewProducts_New(QList<TaskToSubmit> &outAllTasksList,
+                                   LAIProductFormatterParams &outProdFormatterParams,
+                                   bool bNDayReproc, bool bRemoveTempFiles);
+    NewStepList GetStepsForMultiDateReprocessing_New(std::map<QString, QString> &configParameters, const TileTemporalFilesInfo &tileTemporalFilesInfo,
+                                                 QList<TaskToSubmit> &allTasksList, bool bNDayReproc,
+                                                 LAIProductFormatterParams &productFormatterParams, int tasksStartIdx, bool bRemoveTempFiles);
+
+    QStringList GetProfileReprocessingArgs_New(std::map<QString, QString> configParameters, QStringList &monoDateLaiFileNames, QStringList &errFileNames, QStringList &flgsFileNames,
+                                           const QString &mainImg, const QString &reprocTimeSeriesFileName, const QStringList &listDates);
+    QStringList GetFittedProfileReprocArgs_New(QStringList &monoDateLaiFileNames, QStringList &errFileNames,
+                                           QStringList &flgsFileNames, const QString &mainImg, const QString &reprocTimeSeriesFileName, const QStringList &listDates);
+    QMap<QString, TileTemporalFilesInfo> FilterSecondaryProductTiles(const QMap<QString, TileTemporalFilesInfo> &mapTiles,
+                                 const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles);
 };
 
 #endif // LAIRETRIEVALHANDLERNEW_HPP

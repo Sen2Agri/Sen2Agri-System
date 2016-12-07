@@ -204,6 +204,7 @@ private:
         // the bands are 1 based
         int nNirBandIdx = pHelper->GetRelNirBandIndex()-1;
         int nRedBandIdx = pHelper->GetRelRedBandIndex()-1;
+        int nBlueBandIdx = pHelper->GetRelBlueBandIndex()-1;
 
         //Read all input parameters
         m_imgReader->SetFileName(pHelper->GetImageFileName());
@@ -259,6 +260,9 @@ private:
             //SetParameterOutputImagePixelType("rvi", ImagePixelType_int16);
             SetParameterOutputImage("rvi", getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(1)).GetPointer());
         }
+
+        bool bUseRvi = false;
+        bool bUseBlueBand = false;
         if(bOutFts) {
             // Translate the input image from short reflectance values to float (subunitaire) values
             // translated using the quantification value
@@ -278,7 +282,9 @@ private:
                 // add all bands from the input image
                 int nBandsNo = m_imgReader->GetOutput()->GetNumberOfComponentsPerPixel();
                 for(int i = 0; i<nBandsNo; i++) {
-                    allList->PushBack(getResampledImage(curRes, nOutRes, m_imgInputSplit->GetOutput()->GetNthElement(i)));
+                    if (bUseBlueBand || (i != nBlueBandIdx)) {
+                        allList->PushBack(getResampledImage(curRes, nOutRes, m_imgInputSplit->GetOutput()->GetNthElement(i)));
+                    }
                 }
             } else {
                 // add the RED and NIR bands from the input image
@@ -287,7 +293,9 @@ private:
             }
             // add the bands for NDVI and RVI
             allList->PushBack(getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(0)));
-            allList->PushBack(getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(1)));
+            if(bUseRvi) {
+                allList->PushBack(getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(1)));
+            }
             m_ftsConcat = ImageListToVectorImageFilterType::New();
             m_ftsConcat->SetInput(allList);
             //SetParameterOutputImagePixelType("fts", ImagePixelType_int16);

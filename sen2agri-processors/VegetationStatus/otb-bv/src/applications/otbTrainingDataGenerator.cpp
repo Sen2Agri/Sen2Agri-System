@@ -74,6 +74,10 @@ private:
         SetDefaultParameterInt("redidx", -1);
         MandatoryOff("redidx");
 
+        AddParameter(ParameterType_Int, "blueidx", "The index of the BLUE band in the simulated reflectances file. This is used only with addrefls and is ignored if useallrefls is set.");
+        SetDefaultParameterInt("blueidx", -1);
+        MandatoryOff("blueidx");
+
         AddParameter(ParameterType_Int, "niridx", "The index of the NIR band in the simulated reflectances file. This is used only with addrefls and is ignored if useallrefls is set.");
         SetDefaultParameterInt("niridx", -1);
         MandatoryOff("niridx");
@@ -115,6 +119,7 @@ private:
       std::string simuReflsName = GetParameterString("simureflsfile");
       std::size_t bvIdx = GetParameterInt("bvidx");
       int redIdx = GetParameterInt("redidx");
+      int blueIdx = GetParameterInt("blueidx");
       int nirIdx = GetParameterInt("niridx");
       bool addRefls = (GetParameterInt("addrefls") != 0);
       if(!addRefls && (redIdx < 0 && nirIdx < 0)) {
@@ -134,6 +139,8 @@ private:
               // the bands are 1 based
               if(redIdx == -1)
                 redIdx = pHelper->GetRelRedBandIndex() - 1;
+              if(blueIdx == -1)
+                blueIdx = pHelper->GetRelBlueBandIndex() - 1;
               if(nirIdx == -1)
                 nirIdx = pHelper->GetRelNirBandIndex() - 1;
           }
@@ -196,6 +203,8 @@ private:
               }
           }
 
+          bool bUseRvi = false;
+          bool bUseBlueBand = false;
           if(addRefls) {
               // remove the last 2 values from the array (fAPAR and fCover)
               vectRefls.pop_back();
@@ -206,8 +215,10 @@ private:
                   if(nBandsNo <= 0)
                       nBandsNo = vectRefls.size();
                   for(int i = 0; i<nBandsNo; i++) {
-                      outline += " ";
-                      outline += vectRefls[i];
+                      if (bUseBlueBand || (i != blueIdx)) {
+                          outline += " ";
+                          outline += vectRefls[i];
+                      }
                   }
               } else {
                   // use only RED and NIR
@@ -244,7 +255,10 @@ private:
                       }
                   }
                   std::ostringstream ss;
-                  ss << " " << ndvi << " " << rvi;
+                  ss << " " << ndvi;
+                  if(bUseRvi) {
+                    ss << " " << rvi;
+                  }
                   outline += ss.str();
               }
           }

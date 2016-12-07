@@ -798,6 +798,7 @@ void LaiRetrievalHandlerL3B::SubmitL3CJobForL3BProduct(EventProcessingContext &c
             processorParamsObj["resolution"] = "10";
             processorParamsObj["reproc"] = "1";
             processorParamsObj["inputs_are_l3b"] = "1";
+            processorParamsObj["max_l3b_per_tile"] = "3";
             newJob.parametersJson = jsonToString(processorParamsObj);
 
             ctx.SubmitJob(newJob);
