@@ -233,6 +233,79 @@ QString ProcessorHandler::GetProductFormatterFootprint(EventProcessingContext &c
     return "POLYGON((0.0 0.0, 0.0 0.0, 0.0 0.0, 0.0 0.0, 0.0 0.0))";
 }
 
+bool IsInSeason(const QDate &startSeasonDate, const QDate &endSeasonDate, const QDate &currentDate, QDateTime &startTime, QDateTime &endTime)
+{
+    if(startSeasonDate.isValid() && endSeasonDate.isValid()) {
+        // normally this should not happen for summer season but can happen for winter season
+        QDate sSeasonDate = startSeasonDate;
+        if(endSeasonDate < startSeasonDate) {
+            sSeasonDate = startSeasonDate.addYears(-1);
+        }
+        // we allow maximum 1 month after the end of season (in case of composite, for example,
+        // we have scheduled date after end of season)
+        if(currentDate >= sSeasonDate && currentDate <= endSeasonDate.addMonths(1)) {
+            startTime = QDateTime(sSeasonDate);
+            endTime = QDateTime(endSeasonDate);
+            return true;
+        }
+    }
+    return false;
+}
+
+bool GetClosestPreviousSeason(QDate startSummerSeasonDate, QDate endSummerSeasonDate,
+                              QDate startWinterSeasonDate, QDate endWinterSeasonDate,
+                              const QDate &currentDate, QDateTime &startTime, QDateTime &endTime)
+{
+    int summerDaysDiff = -1;
+    if(startSummerSeasonDate.isValid() && endSummerSeasonDate.isValid()) {
+        if(endSummerSeasonDate < startSummerSeasonDate) {
+            startSummerSeasonDate = startSummerSeasonDate.addYears(-1);
+        }
+        // get the previous summer season if it is before the start of the next one
+        if(startSummerSeasonDate > currentDate) {
+            startSummerSeasonDate = startSummerSeasonDate.addYears(-1);
+            endSummerSeasonDate = endSummerSeasonDate.addYears(-1);
+        }
+        // get the days since the end of the prev season
+        summerDaysDiff = endSummerSeasonDate.daysTo(currentDate);
+    }
+    int winterDaysDiff = -1;
+    if(startWinterSeasonDate.isValid() && endWinterSeasonDate.isValid()) {
+        if(endWinterSeasonDate < startWinterSeasonDate) {
+            startWinterSeasonDate = startWinterSeasonDate.addYears(-1);
+        }
+        // get the previous winter season if it is before the start of the next one
+        if (startWinterSeasonDate > currentDate) {
+            startWinterSeasonDate = startWinterSeasonDate.addYears(-1);
+            endWinterSeasonDate = endWinterSeasonDate.addYears(-1);
+        }
+        // get the days since the end of the prev season
+        winterDaysDiff = endWinterSeasonDate.daysTo(currentDate);
+    }
+    //get the closest summer or winter season
+    if(summerDaysDiff != -1 && winterDaysDiff != -1) {
+        if(summerDaysDiff <= winterDaysDiff) {
+            startTime = QDateTime(startSummerSeasonDate);
+            endTime = QDateTime(endSummerSeasonDate);
+            return true;
+        } else {
+            startTime = QDateTime(startWinterSeasonDate);
+            endTime = QDateTime(endWinterSeasonDate);
+            return true;
+        }
+    } else if(summerDaysDiff != -1) {
+        startTime = QDateTime(startSummerSeasonDate);
+        endTime = QDateTime(endSummerSeasonDate);
+        return true;
+    } else if(summerDaysDiff != -1) {
+        startTime = QDateTime(startWinterSeasonDate);
+        endTime = QDateTime(endWinterSeasonDate);
+        return true;
+    }
+
+    return false;
+}
+
 bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,
                                               QDateTime &startTime, QDateTime &endTime,
                                               const QDateTime &executionDate,
@@ -241,67 +314,65 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     int curYear = currentDate.year();
 
     ConfigurationParameterValueMap seasonCfgValues = ctx.GetConfigurationParameters("downloader.", siteId, requestOverrideCfgValues);
-    QDate startSummerSeasonDate = QDate::fromString(seasonCfgValues["downloader.summer-season.start"].value, "MMdd").addYears(curYear-1900);
-    QDate endSummerSeasonDate = QDate::fromString(seasonCfgValues["downloader.summer-season.end"].value, "MMdd").addYears(curYear-1900);
-    QDate startWinterSeasonDate = QDate::fromString(seasonCfgValues["downloader.winter-season.start"].value, "MMdd").addYears(curYear-1900);
-    QDate endWinterSeasonDate = QDate::fromString(seasonCfgValues["downloader.winter-season.end"].value, "MMdd").addYears(curYear-1900);
-    if(startSummerSeasonDate.isValid() && endSummerSeasonDate.isValid()) {
-        // normally this should not happen for summer season but can happen for winter season
-        if(endSummerSeasonDate < startSummerSeasonDate) {
-            startSummerSeasonDate.addYears(-1);
-        }
-        // we allow maximum 1 month after the end of season (in case of composite, for example,
-        // we have scheduled date after end of season)
-        if(currentDate >= startSummerSeasonDate && currentDate <= endSummerSeasonDate.addMonths(1)) {
-            startTime = QDateTime(startSummerSeasonDate);
-            endTime = QDateTime(endSummerSeasonDate);
-            return true;
-        }
-    }
-    if(startWinterSeasonDate.isValid() && endWinterSeasonDate.isValid()) {
-        // this can happen for winter season
-        if(endWinterSeasonDate < startWinterSeasonDate) {
-            startWinterSeasonDate.addYears(-1);
-        }
-
-        if(currentDate >= startWinterSeasonDate && currentDate <= endWinterSeasonDate.addMonths(1)) {
-            startTime = QDateTime(startWinterSeasonDate);
-            endTime = QDateTime(endWinterSeasonDate);
-            return true;
-        }
+    QString startSeasonDateStr = seasonCfgValues["downloader.summer-season.start"].value;
+    QString endSeasonDateStr = seasonCfgValues["downloader.summer-season.end"].value;
+    if(startSeasonDateStr == "0229") {
+        startSeasonDateStr = "0228";
     }
 
+    QDate startSummerSeasonDate = QDate::fromString(startSeasonDateStr, "MMdd").addYears(curYear-1900);
+    QDate endSummerSeasonDate = QDate::fromString(endSeasonDateStr, "MMdd").addYears(curYear-1900);
+    if(IsInSeason(startSummerSeasonDate, endSummerSeasonDate, currentDate, startTime, endTime)) {
+        return true;
+    }
+    startSeasonDateStr = seasonCfgValues["downloader.winter-season.start"].value;
+    endSeasonDateStr = seasonCfgValues["downloader.winter-season.end"].value;
+    if(startSeasonDateStr == "0229") {
+        startSeasonDateStr = "0228";
+    }
+
+    QDate startWinterSeasonDate = QDate::fromString(startSeasonDateStr, "MMdd").addYears(curYear-1900);
+    QDate endWinterSeasonDate = QDate::fromString(endSeasonDateStr, "MMdd").addYears(curYear-1900);
+    if(IsInSeason(startWinterSeasonDate, endWinterSeasonDate, currentDate, startTime, endTime)) {
+        return true;
+    }
+    // get the closest winter or summer previous season
+//    if(GetClosestPreviousSeason(startSummerSeasonDate, endSummerSeasonDate, startWinterSeasonDate, endWinterSeasonDate,
+//                                currentDate, startTime, endTime)) {
+//        return true;
+//    }
+
+/*
+    // USING DEFAULT VALUES LEAD TO CONFUSING RESULTS
     // check the default values
     seasonCfgValues = ctx.GetConfigurationParameters("downloader.", -1, requestOverrideCfgValues);
-    QDate defStartSummerSeasonDate = QDate::fromString(seasonCfgValues["downloader.summer-season.start"].value, "MMdd").addYears(curYear-1900);
-    QDate defEndSummerSeasonDate = QDate::fromString(seasonCfgValues["downloader.summer-season.end"].value, "MMdd").addYears(curYear-1900);
-    QDate defStartWinterSeasonDate = QDate::fromString(seasonCfgValues["downloader.winter-season.start"].value, "MMdd").addYears(curYear-1900);
-    QDate defEndWinterSeasonDate = QDate::fromString(seasonCfgValues["downloader.winter-season.end"].value, "MMdd").addYears(curYear-1900);
-
-    if(defStartSummerSeasonDate.isValid() && defEndSummerSeasonDate.isValid()) {
-        // normally this should not happen for summer season but can happen for winter season
-        if(defEndSummerSeasonDate < defStartSummerSeasonDate) {
-            defStartSummerSeasonDate.addYears(-1);
-        }
-
-        if(currentDate >= defStartSummerSeasonDate && currentDate <= defEndSummerSeasonDate.addMonths(1)) {
-            startTime = QDateTime(defStartSummerSeasonDate);
-            endTime = QDateTime(defEndSummerSeasonDate);
-            return true;
-        }
+    startSummerSeasonDateStr = seasonCfgValues["downloader.summer-season.start"].value;
+    endSummerSeasonDateStr = seasonCfgValues["downloader.summer-season.end"].value;
+    if(startSummerSeasonDate == "0229") {
+        startSummerSeasonDate = "0228";
     }
-    if(defStartWinterSeasonDate.isValid() && defEndWinterSeasonDate.isValid()) {
-        // this can happen for winter season
-        if(defEndWinterSeasonDate < defStartWinterSeasonDate) {
-            defStartWinterSeasonDate.addYears(-1);
-        }
 
-        if(currentDate >= defStartWinterSeasonDate && currentDate <= defEndWinterSeasonDate.addMonths(1)) {
-            startTime = QDateTime(defStartWinterSeasonDate);
-            endTime = QDateTime(defEndWinterSeasonDate);
-            return true;
-        }
+    QDate defStartSummerSeasonDate = QDate::fromString(startSummerSeasonDateStr, "MMdd").addYears(curYear-1900);
+    QDate defEndSummerSeasonDate = QDate::fromString(endSummerSeasonDateStr, "MMdd").addYears(curYear-1900);
+    if(IsInSeason(defStartSummerSeasonDate, defEndSummerSeasonDate, currentDate, startTime, endTime)) {
+        return true;
     }
+    startSummerSeasonDateStr = seasonCfgValues["downloader.winter-season.start"].value;
+    endSummerSeasonDateStr = seasonCfgValues["downloader.winter-season.end"].value;
+    if(startSummerSeasonDate == "0229") {
+        startSummerSeasonDate = "0228";
+    }
+    QDate defStartWinterSeasonDate = QDate::fromString(startSummerSeasonDateStr, "MMdd").addYears(curYear-1900);
+    QDate defEndWinterSeasonDate = QDate::fromString(endSummerSeasonDateStr, "MMdd").addYears(curYear-1900);
+    if(IsInSeason(defStartWinterSeasonDate, defEndWinterSeasonDate, currentDate, startTime, endTime)) {
+        return true;
+    }
+    // get the closest winter or summer previous season
+    if(GetClosestPreviousSeason(defStartSummerSeasonDate, defEndSummerSeasonDate, defStartWinterSeasonDate, defEndWinterSeasonDate,
+                                currentDate, startTime, endTime)) {
+        return true;
+    }
+*/
     return false;
 }
 
@@ -315,11 +386,14 @@ QStringList ProcessorHandler::GetL2AInputProducts(EventProcessingContext &ctx,
     if(inputProducts.size() == 0) {
         const auto &startDate = QDateTime::fromString(parameters["date_start"].toString(), "yyyyMMdd");
         const auto &endDateStart = QDateTime::fromString(parameters["date_end"].toString(), "yyyyMMdd");
-        // we consider the end of the end date day
-        const auto endDate = endDateStart.addSecs(SECONDS_IN_DAY-1);
-        ProductList productsList = ctx.GetProducts(event.siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
-        for(const auto &product: productsList) {
-            listProducts.append(product.fullPath);
+        if(startDate.isValid() && endDateStart.isValid()) {
+            // we consider the end of the end date day
+            const auto endDate = endDateStart.addSecs(SECONDS_IN_DAY-1);
+            ProductList productsList = ctx.GetProducts(event.siteId, (int)ProductType::L2AProductTypeId,
+                                                       startDate, endDate);
+            for(const auto &product: productsList) {
+                listProducts.append(product.fullPath);
+            }
         }
     } else {
         for (const auto &inputProduct : inputProducts) {
