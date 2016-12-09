@@ -52,6 +52,25 @@ begin
             LANGUAGE plpgsql
             STABLE;
 
+            -- b60935d8d4e456b82d2799500254316f97010449
+            -- skipped, no functional changes
+
+            raise notice 'applying 0a7b69dc67cbc32db347ff6e2be0cc3688ef5df1';
+            if not exists (select * from config_metadata where key = 'processor.l3b.lai.link_l3c_to_l3b') then
+                raise notice 'INSERT INTO config_metadata VALUES (''processor.l3b.lai.link_l3c_to_l3b'', ''Trigger an L3C product creation after L3B product creation'', ''int'', true, 4);';
+                INSERT INTO config_metadata VALUES ('processor.l3b.lai.link_l3c_to_l3b', 'Trigger an L3C product creation after L3B product creation', 'int', true, 4);
+
+                raise notice 'INSERT INTO config(key, site_id, value, last_updated) VALUES (''processor.l3b.lai.link_l3c_to_l3b'', NULL, ''0'', ''2016-02-29 14:08:07.963143+02'');';
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.link_l3c_to_l3b', NULL, '0', '2016-02-29 14:08:07.963143+02');
+            end if;
+            if not exists (select * from config_metadata where key = 'processor.l3b.lai.global_bv_samples_file') then
+                raise notice 'INSERT INTO config_metadata VALUES (''processor.l3b.lai.global_bv_samples_file'', ''Common LAI BV sample distribution file'', ''file'', true, 4);';
+                INSERT INTO config_metadata VALUES ('processor.l3b.lai.global_bv_samples_file', 'Common LAI BV sample distribution file', 'file', true, 4);
+
+                raise notice 'INSERT INTO config(key, site_id, value, last_updated) VALUES (''processor.l3b.lai.global_bv_samples_file'', NULL, ''/usr/share/sen2agri/LaiCommonBVDistributionSamples.txt'', ''2016-02-29 14:08:07.963143+02'');';
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.global_bv_samples_file', NULL, '/usr/share/sen2agri/LaiCommonBVDistributionSamples.txt', '2016-02-29 14:08:07.963143+02');
+            end if;
+
             raise notice 'update meta set version = ''1.4.1'';';
             update meta set version = '1.4.1';
         end if;
