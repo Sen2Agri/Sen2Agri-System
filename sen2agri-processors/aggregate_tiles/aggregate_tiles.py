@@ -278,7 +278,7 @@ def create_processing_list_upon_sufix(initialList):
 
       #search if projection scale exists (yy) in last part of
       #filename and extract it (last part ex: V20130206_20130206_Txxxxx_yy.TIF )
-      pattern = re.compile("_([0-9]+)\.\w+$")
+      pattern = re.compile("_([0-9]+)M\.\w+$")
       result_pat_scale=pattern.search(file_name_parts[1])
 
       if result_pat_suff and result_pat_scale:
