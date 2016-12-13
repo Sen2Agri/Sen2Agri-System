@@ -329,9 +329,9 @@ def process_DTM(context):
             missing_tiles.append(tile)
 
     if missing_tiles:
-        print("The following SRTM tiles are missing: {}. Please provide them in the SRTM directory ({}).".format(
+        print("The following SRTM tiles are missing: {}. Please provide them in the SRTM directory ({}). Will try to continue, but unreliable results".format(
             [os.path.basename(tile) for tile in missing_tiles], context.srtm_directory))
-        return False
+#        return False
 
     run_command(["gdalbuildvrt", "-q",
                  context.dem_vrt] + dtm_tiles)
