@@ -1774,8 +1774,13 @@ private:
           int nbTupples = tileAndFileName.size() / 2;
           for(int i = 0; i < nbTupples; i++) {
               retList.push_back(tileAndFileName[i*2]);
-              std::vector<std::string> filesList = GetFileListFromFile(tileAndFileName[i*2+1]);
-              retList.insert(std::end(retList), std::begin(filesList), std::end(filesList));
+              const std::vector<std::string> &filesList = GetFileListFromFile(tileAndFileName[i*2+1]);
+              if(filesList.size() > 0) {
+                  retList.insert(std::end(retList), std::begin(filesList), std::end(filesList));
+              } else {
+                  // remove the previous tile id if we don't have no file
+                  retList.pop_back();
+              }
           }
       } else {
           itkExceptionMacro("Invalid usage. You should provide a tile name and a file name containing file paths");
