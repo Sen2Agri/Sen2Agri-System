@@ -68,7 +68,7 @@ def connect_earthexplorer_proxy(proxy_info,usgs):
      urllib2.install_opener(opener)
      log(general_log_path, "Opener installed", general_log_filename)
      # deal with csrftoken required by USGS as of 7-20-2016
-     soup = BeautifulSoup(urllib2.urlopen("https://ers.cr.usgs.gov/login").read())
+     soup = BeautifulSoup(urllib2.urlopen("https://ers.cr.usgs.gov").read(), "lxml")
      log(general_log_path, "Soup created", general_log_filename)
      token = soup.find('input', {'name': 'csrf_token'})
      log(general_log_path, "token = {}".format(token), general_log_filename)
@@ -76,7 +76,7 @@ def connect_earthexplorer_proxy(proxy_info,usgs):
      params = urllib.urlencode(dict(username=usgs['account'], password=usgs['passwd'], csrf_token=token['value']))
      log(general_log_path, "params = {}".format(params), general_log_filename)
      # utilisation
-     f = opener.open('https://ers.cr.usgs.gov/login', params)
+     f = opener.open('https://ers.cr.usgs.gov', params)
      log(general_log_path, "Link opened", general_log_filename)
      data = f.read()
      log(general_log_path, "Data read", general_log_filename)
@@ -101,7 +101,7 @@ def connect_earthexplorer_no_proxy(usgs):
      opener = urllib2.build_opener(cookies)
      urllib2.install_opener(opener)
      # deal with csrftoken required by USGS as of 7-20-2016
-     soup = BeautifulSoup(urllib2.urlopen("https://ers.cr.usgs.gov/login").read())
+     soup = BeautifulSoup(urllib2.urlopen("https://ers.cr.usgs.gov").read(), "lxml")
      token = soup.find('input', {'name': 'csrf_token'})
      params = urllib.urlencode(dict(username=usgs['account'],password= usgs['passwd'], csrf_token=token['value']))
      request = urllib2.Request("https://ers.cr.usgs.gov/login", params, headers={})
@@ -406,7 +406,7 @@ def landsat_download(aoiContext):
                                          nom_prod = product + tile + date_asc + station + version
                                          tgzfile = os.path.join(aoiContext.writeDir, nom_prod + '.tgz')
                                          lsdestdir = os.path.join(aoiContext.writeDir, nom_prod)
-                                         url = "http://earthexplorer.usgs.gov/download/{}/{}/STANDARD/EE".format(remoteDir,nom_prod)
+                                         url = "https://earthexplorer.usgs.gov/download/{}/{}/STANDARD/EE".format(remoteDir,nom_prod)
 
                                          if aoiContext.fileExists(nom_prod):
                                              log(aoiContext.writeDir, "File {} found in history so it's already downloaded".format(nom_prod), general_log_filename)
