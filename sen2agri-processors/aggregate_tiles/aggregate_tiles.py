@@ -59,6 +59,7 @@ COMPOSITE_MAP_PATH = "/usr/share/sen2agri/composite.map"
 CROP_MASK_MAP_PATH = "/usr/share/sen2agri/crop-mask.lut"
 CROP_TYPE_MAP_PATH = "/usr/share/sen2agri/crop-type.lut"
 
+gFilesToRemove = []
 #---------------------------------------------------------------
 #max number of Channels in Channel List for otb Quicklook application
 CONST_NB_BANDS_QUIKLOOL_LIMIT = "4"
@@ -420,17 +421,17 @@ def collect_image_resolution_name(fullFileName):
 
     return tuple_entry
 #----------------------------------------------------------------
-def resolution_mismatch_found(context):
+def resolution_mismatch_found(filesList):
    isMismatch = False
-   for a, b in itertools.combinations(context.post_process_list, 2):
+   for a, b in itertools.combinations(filesList, 2):
       if cmp(a[0], b[0]):
          isMismatch = True
          break
    return isMismatch
 #----------------------------------------------------------------
-def resize_resolution_to_referece_val(context, width, height, dataFolder):
+def resize_resolution_to_referece_val(filesList, width, height, dataFolder):
    #inspect the processing list
-   for item in context.post_process_list:
+   for item in filesList:
       if cmp(item[1], width) or cmp(item[2], height):
          #compute input file name to be resized
          inpFileName = os.path.join(dataFolder, item[3])
@@ -452,18 +453,22 @@ def resize_resolution_to_referece_val(context, width, height, dataFolder):
          #rename output file as the input file before resize
          os.rename(outFileName, inpFileName)
 #----------------------------------------------------------------
-def concatenate_mosaic_files(context, listOfImages):
+def concatenate_mosaic_files(outFileName, listOfImages):
    #perform concatenation
    run_command([get_otb_launcher(),
                 "ConcatenateImages",
                 "-progress", "false",
                 "-il"] + listOfImages + [
-                "-out", context.post_process_out_filename +"?gdal:co:COMPRESS=DEFLATE"])
+                "-out", outFileName +"?gdal:co:COMPRESS=DEFLATE"])
 #----------------------------------------------------------------
-def perform_images_concatenation(context, listOfFiles, dataFolder):
+def perform_images_concatenation(listOfFiles, dataFolder, keepBsStatusInd):
+   global gFilesToRemove
+   
    #build intermediary dictionnary
    tmp_data_dictionary = create_processing_list_upon_sufix_post_processing(listOfFiles)
 
+   print("perform_images_concatenation: tmp_data_dictionary: {}".format(tmp_data_dictionary))
+   
    #create a list of tupples to store files upon scale resolution: 10,20,..
    list_img_by_scale = list()
    for key, fileList in tmp_data_dictionary.iteritems():
@@ -482,55 +487,71 @@ def perform_images_concatenation(context, listOfFiles, dataFolder):
    #sort the list in order to provide concatenation files in right sequence (stating with lowest scale , then upon same suffix)
    list_img_by_scale.sort()
 
-   #create final  output name of legacy file containing all concatenated files from LEGACY_DATA/IMG_DATA
+   #create final  output name of legacy file containing all concatenated files from LEGACY_DATA/IMG_DATA or grouped files from LEGACY_DATA/QI_DATA
    #get first file from the provided list: at this stage of processing all the files from the list
    #have the correct format naming as per PSD but still have biosferical suffix when product type is L3A or L3B
+   print("list_img_by_scale: {}".format(list_img_by_scale))
    file_name = os.path.basename( (list_img_by_scale[0])[2] )
 
    #build here file name by stripping unwanted suffix from the file name
-   file_tmp = format_file_name_output(file_name) + ".TIF"
+   file_tmp = format_file_name_output(file_name, keepBsStatusInd) + ".TIF"
 
    #store full file name into context variable
-   context.post_process_out_filename = os.path.join(dataFolder, file_tmp)
+   retFileName = os.path.join(dataFolder, file_tmp)
 
    #concatenate files into one single mosaic image
-   concatenate_mosaic_files(context, [f[2] for f in list_img_by_scale])
+   concatenate_mosaic_files(retFileName, [f[2] for f in list_img_by_scale])
 
    #remove files which were inputfor concatenation - keeping the final output name
    for fileName in list_img_by_scale:
-      os.remove(fileName[2])
+      gFilesToRemove.append(fileName[2])
+   #  os.remove(fileName[2])
+   
+   return retFileName
+   
 #----------------------------------------------------------------
-def format_file_name_output(fileName):
+def format_file_name_output(fileName, keepBsStatusInd):
 
-   #split file name before DATE Time Period:_Vyyyymmdd_YYYYMMDD or _Ayyyymmdd_YYYYMMDD
-   file_name_parts = fileName.split(context.field_separator)
+    if keepBsStatusInd:
+        if fileName.endswith("_10.TIF") :
+            fileName = fileName[:-len("_10.TIF")]
+        elif fileName.endswith("_20.TIF") :
+            fileName = fileName[:-len("_20.TIF")]
+        elif fileName.endswith("_10M.TIF"):
+            fileName = fileName[:-len("_10M.TIF")]
+        elif fileName.endswith("_20M.TIF"):
+            fileName = fileName[:-len("_20M.TIF")]
+        file_tmp = fileName
+    else :
+       #split file name before DATE Time Period:_Vyyyymmdd_YYYYMMDD or _Ayyyymmdd_YYYYMMDD
+       file_name_parts = fileName.split(context.field_separator)
 
-   #extract needed date parts to build the output name for the file
-   #from 20150728_none_SRFL_10.TIF it extracts 20150728
-   #from 20150728_20150602_SRFL_20.TIF it extracts [20150728, 20150602]
-   pattern = re.compile("([\d]{8}T[\d]{6}(?:[A-Z])?)")
-   resultList=pattern.findall(file_name_parts[1])
-   if len(resultList) == 0:
-      pattern = re.compile("([\d]{8}(?:[A-Z])?)")
-      #list of matches
-      resultList=pattern.findall(file_name_parts[1])
+       #extract needed date parts to build the output name for the file
+       #from 20150728_none_SRFL_10.TIF it extracts 20150728
+       #from 20150728_20150602_SRFL_20.TIF it extracts [20150728, 20150602]
+       pattern = re.compile("([\d]{8}T[\d]{6}(?:[A-Z])?)")
+       resultList=pattern.findall(file_name_parts[1])
+       if len(resultList) == 0:
+          pattern = re.compile("([\d]{8}(?:[A-Z])?)")
+          #list of matches
+          resultList=pattern.findall(file_name_parts[1])
 
-   datePart = ""
-   #concatenate list elements
-   if len(resultList) == 1:
-      #append the separator _ after getting the only elem in the list
-      datePart = datePart + resultList[-1]
-   else:
-      #concatenate elem list with the separator _
-      datePart = '_'.join(resultList)
+       datePart = ""
+       #concatenate list elements
+       if len(resultList) == 1:
+          #append the separator _ after getting the only elem in the list
+          datePart = datePart + resultList[-1]
+       else:
+          #concatenate elem list with the separator _
+          datePart = '_'.join(resultList)
 
-   #build here full file name without extension
-   file_tmp = file_name_parts[0] + context.field_separator + datePart
+       #build here full file name without extension
+       file_tmp = file_name_parts[0] + context.field_separator + datePart
 
-   #return the computed name of the file without extension
-   return file_tmp
+       #return the computed name of the file without extension
+    return file_tmp
 #----------------------------------------------------------------
-def post_process_mosaic_images(context, dataFolder):
+def post_process_mosaic_images(context, dataFolder, isImgDataFolder):
 
    #obtain mosaic files
    list_file_paths=glob.glob(os.path.join(dataFolder, '*.TIF'))
@@ -539,44 +560,81 @@ def post_process_mosaic_images(context, dataFolder):
    if len(list_file_paths) == 0:
       print("No post processing needed ")
    elif len(list_file_paths) == 1:
-      print("Format file name to match documentation naming")
-      file_name = os.path.basename(list_file_paths[0])
-
-      #format file name
-      legacy_final_out_name = format_file_name_output(file_name)
-      new_file_name = os.path.join(dataFolder, legacy_final_out_name + ".TIF")
-
-      #update field in dict for final out name for mosaic file
-      context.post_process_out_filename = new_file_name
-
-      #rename the only one file found in directory with the computed new name (biosferical suffix discarded)
-      os.rename(''.join(list_file_paths), new_file_name)
+      if isImgDataFolder == True:
+         print("Format file name to match documentation naming")
+         file_name = os.path.basename(list_file_paths[0])
+         
+         #format file name
+         legacy_final_out_name = format_file_name_output(file_name, False)
+         new_file_name = os.path.join(dataFolder, legacy_final_out_name + ".TIF")
+         
+         #update field in dict for final out name for mosaic file
+         context.post_process_out_filename = new_file_name
+         
+         #rename the only one file found in directory with the computed new name (biosferical suffix discarded)
+         os.rename(''.join(list_file_paths), new_file_name)
    else:
-      #perform resolution adjust after creating mosaic files in order to
-      #bring all mosaic files to same resolution for being able to concatenate them
-      #get resolution of each file and save it
-      for idx, fullFileName in enumerate(list_file_paths):
-         context.post_process_list.append(collect_image_resolution_name(fullFileName))
+      if isImgDataFolder == True:
+         #store full file name into context variable
+         print("before images_concatenation: list_file_paths: {}".format(list_file_paths))
+         context.post_process_out_filename, context.post_process_list = images_concatenation(list_file_paths, dataFolder, False)
+         print("images_concatenation: post_process_out_filename: {} post_process_list: {}".format(context.post_process_out_filename, context.post_process_list))
+      else :
+         # group the files having the same name but different resolutions
+         word_dict = dict()
+         for idx, fullFileName in enumerate(list_file_paths):
+            file_name = os.path.basename(fullFileName)
+            print("Checking file {}".format(fullFileName))
+            print("File short name {}".format(file_name))
+            if file_name.endswith("_10.TIF") or file_name.endswith("_20.TIF") :
+                #extract the text before this suffixes
+                dictKey = file_name[:-len("_10.TIF")]
+                if not (dictKey in word_dict) :
+                    print("Dict key not present {}".format(dictKey))
+                    word_dict[dictKey] = set() 
+                else :
+                    print("Dict key present {}".format(dictKey))
+                    
+                print("Adding for key {} the file {}".format(dictKey, fullFileName))
+                word_dict[dictKey].add(fullFileName)
+                
+         # now iterate the dictionary for the found keys
+         for key in word_dict:
+                print("Dictionary: Key: {} Values: {}".format(key, word_dict[key]))
+                dictKeyVals = word_dict[key]
+                images_concatenation(dictKeyVals, dataFolder, True)
+                
+def images_concatenation (fullFileNames, dataFolder, keepBsStatusInd) :
+    #perform resolution adjust after creating mosaic files in order to
+    #bring all mosaic files to same resolution for being able to concatenate them
+    #get resolution of each file and save it
+    processedList = []
+    for idx, fullFileName in enumerate(fullFileNames):
+        processedList.append(collect_image_resolution_name(fullFileName))
 
-      #sort the list in order to obtain the smallest resolution  wich will be referece for
-      #all further files resize operations
-      context.post_process_list.sort()
+    #sort the list in order to obtain the smallest resolution  wich will be referece for
+    #all further files resize operations
+    processedList.sort()
 
-      #detemine if resolution mismatch exists in aggregate files from LEGACY_DATA/IMG_DATA
-      if resolution_mismatch_found(context):
-         #get first element from the sorted list and extract resolution
-         #this resolution will be reference resolution for further resize operations
-         xSize = (context.post_process_list[0])[1]
-         ySize = (context.post_process_list[0])[2]
+    #detemine if resolution mismatch exists in aggregate files from LEGACY_DATA/IMG_DATA
+    if resolution_mismatch_found(processedList):
+        #get first element from the sorted list and extract resolution
+        #this resolution will be reference resolution for further resize operations
+        xSize = (processedList[0])[1]
+        ySize = (processedList[0])[2]
 
-         #uniformize the resolutions of the post procesed files to the smallest resolution
-         resize_resolution_to_referece_val(context, xSize, ySize, dataFolder)
+        #uniformize the resolutions of the post procesed files to the smallest resolution
+        resize_resolution_to_referece_val(processedList, xSize, ySize, dataFolder)
 
-      #concatenate files in order to obtain final aggregation file
-      perform_images_concatenation(context, list_file_paths, dataFolder)
+    #concatenate files in order to obtain final aggregation file
+    #store full file name into context variable
+    retFileName = perform_images_concatenation(fullFileNames, dataFolder, keepBsStatusInd)
+    return retFileName, processedList
+    
 #----------------------------------------------------------------
 def perform_tiles_aggreagtion(context):
-
+    global gFilesToRemove
+    
     #build dictionnary with files containing or not patterns at the end of the file (SLAIF,SLAIR,SRFL,etc)
     context.img_data_dic = create_processing_list_upon_sufix(context.img_data_out_list)
     #build dictionnary with files contain or not patterns the end of the file (MFLG, MDAT and SWGT,etc)
@@ -611,7 +669,8 @@ def perform_tiles_aggreagtion(context):
 
        #remove previous generated files during reprojection and rescale - no more needed
        for fileName in context.img_data_out_list:
-          os.remove(fileName)
+          gFilesToRemove.append(fileName)
+       #  os.remove(fileName)
 
        #clear list
        del context.img_data_out_list[:]
@@ -632,7 +691,8 @@ def perform_tiles_aggreagtion(context):
 
        #remove previous generated files during reprojection and rescale - no more needed
        for fileName in context.qi_data_out_list:
-          os.remove(fileName)
+          gFilesToRemove.append(fileName)
+       #   os.remove(fileName)
 
        #clear list
        del context.qi_data_out_list[:]
@@ -1162,7 +1222,7 @@ def create_mosaic_quicklook(context):
    #remove rezidual files generated by otb application QuickLook (aux)
    list_file_paths=glob.glob(os.path.join(context.prodFolderName, context.destRootFolder,'*.aux*'))
    for file in list_file_paths:
-        os.remove(file)
+      os.remove(file)
 
 def get_product_processing_level(context):
    #get metatdata xml product file residing in PRODUCT folder
@@ -1205,7 +1265,8 @@ perform_tiles_aggreagtion(context)
 #call post process function for folder LEGACY_DATA/IMG_DATA
 #to concatenate produced mosaic files having biosferical suffix into a single final aggragate image
 print("--------->Post Process Mosaic files")
-post_process_mosaic_images(context,os.path.join(context.prodFolderName, context.destRootFolder, "IMG_DATA"))
+post_process_mosaic_images(context,os.path.join(context.prodFolderName, context.destRootFolder, "IMG_DATA"), True)
+post_process_mosaic_images(context,os.path.join(context.prodFolderName, context.destRootFolder, "QI_DATA"), False)
 
 #call metadata create file in order to generate the XML
 print("--------->XML metadata creation")
@@ -1214,8 +1275,13 @@ create_xml_mosaic_metadata(context)
 #call generate quicklook file in order to generate preview of the mosaic file
 print("--------->QUICKLOOK generation")
 create_mosaic_quicklook(context)
-print("--------->END...")
 
+print("--------->Removing temporary files")
+for fileName in gFilesToRemove :
+   print("   Removing temporary file {}".format(fileName))
+   os.remove(fileName)
+   
+print("--------->END...")
 #execution time
 execTimeSec = datetime.datetime.now() - startTime
 hours, remainder = divmod(execTimeSec.seconds, 3600)
