@@ -19,6 +19,7 @@
 #include "ogr_geometry.h"
 #include "boost/filesystem/path.hpp"
 #include "boost/filesystem/operations.hpp"
+#include <boost/algorithm/string/predicate.hpp>
 #include "boost/progress.hpp"
 #include <iostream>
 
@@ -1396,6 +1397,9 @@ private:
       std::string rasterCateg;
 
       for (rasterInfo &rasterFileEl : m_rasterInfoList) {
+          if(rasterFileEl.strTileID != tileInfoEl.strTileID) {
+              continue;
+          }
           bool bAddResolutionToSuffix = false;
           int expectedBandsNo = 1;
           std::string suffix = TIF_EXTENSION;
@@ -1788,8 +1792,14 @@ private:
       return retList;
   }
   std::vector<std::string> GetFileListFromFile(const std::string &fileName) {
+      std::vector<std::string> retList;
+      // if we have actually a TIF file, just return it
+      if (boost::algorithm::ends_with(fileName, ".TIF")) {
+          retList.push_back(fileName);
+          return retList;
+      }
+
         std::ifstream file;
-        std::vector<std::string> retList;
         file.open(fileName);
         if (!file.is_open()) {
             return retList;
