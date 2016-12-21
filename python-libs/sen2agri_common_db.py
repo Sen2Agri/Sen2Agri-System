@@ -272,8 +272,20 @@ def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearAr
     yearArray.append(currentYear)
     startSeasonMonth = int(startSeason[0:2])
     startSeasonDay = int(startSeason[2:4])
+    print("StartSeason {}".format(startSeason))
+    print("endSeason {}".format(endSeason))
+    # check if we have also the year
+    startSeasonYear = -1
+    endSeasonYear = -1
     endSeasonMonth = int(endSeason[0:2])
     endSeasonDay = int(endSeason[2:4])
+    if len(endSeason) == 8 : 
+        endSeasonYear = int(endSeason[4:8])
+    elif len(endSeason) == 6 :
+        endSeasonYear = int(endSeason[4:6]) + 2000
+    startSeasonYear = endSeasonYear
+    print("Extracted years: start {} end {}".format(startSeasonYear, endSeasonYear))
+        
     if startSeasonMonth < 1 or startSeasonMonth > 12 or startSeasonDay < 1 or startSeasonDay > 31 or endSeasonMonth < 1 or endSeasonMonth > 12 or endSeasonDay < 1 or endSeasonDay > 31:
         return False
     #check if the season comprises 2 consecutive years (e.q. from october to march next year)
@@ -283,10 +295,22 @@ def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearAr
         else:
             if currentMonth >= 1:
                 yearArray[0] = currentYear - 1
+        # if we have the year specified and the start and end seasons are greater
+        # then subtract 1 from start year
+        if startSeasonYear != -1 :
+            startSeasonYear = startSeasonYear - 1
     else:
         if currentMonth < startSeasonMonth:
             yearArray[0] = currentYear - 1
             yearArray[1] = currentYear - 1
+    
+    # Disregard the computed years and replace the years in the array if we have valid years in the dates
+    print("Extracted years2: start {} end {}".format(startSeasonYear, endSeasonYear))
+    if ((startSeasonYear != -1)):
+        yearArray[0] = startSeasonYear
+        yearArray[1] = endSeasonYear
+        print("set years: start {} end {}".format(yearArray[0], yearArray[1]))
+        return True   # To check if is not OK, if no, comment the line
     
     currentDate = datetime.date.today()
     endSeasonYearToCheck = int(yearArray[1])
@@ -299,6 +323,8 @@ def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearAr
         endSeasonDayToCheck = 28
     if currentDate < datetime.date(int(yearArray[0]), int(startSeasonMonth), int(startSeasonDay)) or currentDate > datetime.date(endSeasonYearToCheck, endSeasonMonthToCheck, endSeasonDayToCheck):
         return False
+    print("start year {}".format(yearArray[0]))
+    print("end year {}".format(yearArray[1]))
     return True
 
 
