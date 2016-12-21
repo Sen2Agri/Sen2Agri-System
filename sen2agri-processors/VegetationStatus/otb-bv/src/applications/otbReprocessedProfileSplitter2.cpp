@@ -19,6 +19,8 @@
 #include "otbVectorImage.h"
 #include "otbMultiToMonoChannelExtractROI.h"
 
+#include "otbImageListToVectorImageFilter.h"
+
 #include <vector>
 #include "MetadataHelperFactory.h"
 #include "GlobalDefs.h"
@@ -58,6 +60,10 @@ public:
                         InternalImageType::PixelType,
                         ShortImageType::PixelType> > FloatToShortTransFilterType;
 
+    typedef otb::ImageList<ShortImageType>                                       ImgListType;
+    typedef otb::VectorImage<ShortPixelType, 2>                                          ImageType;
+    typedef otb::ImageListToVectorImageFilter<ImgListType, ImageType>           ImageListToVectorImageFilterType;
+
 private:
     void DoInit()
     {
@@ -80,6 +86,11 @@ private:
 
         AddParameter(ParameterType_OutputFilename, "outrlist", "File containing the list of all raster files produced.");
         AddParameter(ParameterType_OutputFilename, "outflist", "File containing the list of all flag files produced.");
+
+        AddParameter(ParameterType_Int, "grprasters", "Specifies if rasters and flags should be grouped in distinct files.");
+        MandatoryOff("grprasters");
+        SetDefaultParameterInt("grprasters", 1);
+
         AddParameter(ParameterType_Int, "compress", "Specifies if output files should be compressed or not.");
         MandatoryOff("compress");
         SetDefaultParameterInt("compress", 0);
@@ -103,6 +114,7 @@ private:
         }
 
         bool bUseCompression = (GetParameterInt("compress") != 0);
+        bool bGroupRasters = (GetParameterInt("grprasters") != 0);
 
         std::string strOutRasterFilesList = GetParameterString("outrlist");
         std::ofstream rasterFilesListFile;
@@ -152,6 +164,8 @@ private:
 
         int nTotalBandsHalf = nTotalBands/2;
         bool bIsRaster;
+        std::string groupRastersFileName;
+        std::string groupFlagsFileName;
         for(int i = 0; i < nTotalBands; i++) {
             std::ostringstream fileNameStream;
 
@@ -166,10 +180,10 @@ private:
             std::ostringstream osswriter;
             bIsRaster = (i < nTotalBandsHalf);
             if(bIsRaster) {
-                fileNameStream << strOutPrefix << "_" << curAcquisitionDate << "_img.tif";
+                fileNameStream << strOutPrefix << "_" << curAcquisitionDate << (bGroupRasters ? "_grp" : "") << "_img.tif";
                 osswriter<< "writer (Image for date "<< i << " : " << curAcquisitionDate << ")";
             } else {
-                fileNameStream << strOutPrefix << "_" << curAcquisitionDate << "_flags.tif";
+                fileNameStream << strOutPrefix << "_" << curAcquisitionDate << (bGroupRasters ? "_grp" : "") << "_flags.tif";
                 osswriter<< "writer (Flags for date "<< i << " : " << curAcquisitionDate << ")";
             }
             // we might have also compression and we do not want that in the name file
@@ -178,38 +192,67 @@ private:
             if(bUseCompression) {
                 fileNameStream << "?gdal:co:COMPRESS=DEFLATE";
             }
-            std::string fileName = fileNameStream.str();
-
-            // Create an output parameter to write the current output image
-            OutputImageParameter::Pointer paramOut = OutputImageParameter::New();
+            const std::string &fileName = fileNameStream.str();
             // Set the channel to extract
             m_Filter->SetChannel(i+1);
 
-            // Set the filename of the current output image
-            paramOut->SetFileName(fileName);
             FloatToShortTransFilterType::Pointer floatToShortFunctor = FloatToShortTransFilterType::New();
             floatToShortFunctor->SetInput(m_Filter->GetOutput());
             if(bIsRaster) {
                 // we have here the already quantified values that need no other quantification
                 floatToShortFunctor->GetFunctor().Initialize(1, 0);
-                paramOut->SetPixelType(ImagePixelType_int16);
             } else {
                 // we need no quantification value, just convert to byte
                 floatToShortFunctor->GetFunctor().Initialize(1, 0);
-                paramOut->SetPixelType(ImagePixelType_uint8);
             }
             m_floatToShortFunctors.push_back(floatToShortFunctor);
-            paramOut->SetValue(floatToShortFunctor->GetOutput());
-            // Add the current level to be written
-            paramOut->InitializeWriters();
-            AddProcess(paramOut->GetWriter(), osswriter.str());
-            paramOut->Write();
 
-            if(bIsRaster) {
-                rasterFilesListFile << simpleFileName << std::endl;
+            if(bGroupRasters) {
+                if(bIsRaster) {
+                    if(groupRastersFileName.length() == 0) {
+                        groupRastersFileName = fileName;
+                        rasterFilesListFile << simpleFileName << std::endl;
+                        m_RastersList = ImgListType::New();
+                    }
+                    m_RastersList->PushBack(floatToShortFunctor->GetOutput());
+
+                } else {
+                    if(groupFlagsFileName.length() == 0) {
+                        groupFlagsFileName = fileName;
+                        flagsFilesListFile << simpleFileName << std::endl;
+                        m_FlagsList = ImgListType::New();
+                    }
+                    m_FlagsList->PushBack(floatToShortFunctor->GetOutput());
+                }
+
             } else {
-                flagsFilesListFile << simpleFileName << std::endl;
+                // Create an output parameter to write the current output image
+                OutputImageParameter::Pointer paramOut = OutputImageParameter::New();
+                if(bIsRaster) {
+                    // we have here the already quantified values that need no other quantification
+                    paramOut->SetPixelType(ImagePixelType_int16);
+                } else {
+                    // we need no quantification value, just convert to byte
+                    paramOut->SetPixelType(ImagePixelType_uint8);
+                }
+                paramOut->SetValue(floatToShortFunctor->GetOutput());
+                // Set the filename of the current output image
+                paramOut->SetFileName(fileName);
+                // Add the current level to be written
+                paramOut->InitializeWriters();
+                AddProcess(paramOut->GetWriter(), osswriter.str());
+                paramOut->Write();
+
+                if(bIsRaster) {
+                    rasterFilesListFile << simpleFileName << std::endl;
+                } else {
+                    flagsFilesListFile << simpleFileName << std::endl;
+                }
             }
+        }
+        if(bGroupRasters) {
+            writeGroupedImg(groupRastersFileName, "writer (rasters grouped)", true);
+            writeGroupedImg(groupFlagsFileName, "writer (flags grouped)", false);
         }
 
         rasterFilesListFile.close();
@@ -218,9 +261,42 @@ private:
         return;
     }
 
+    void writeGroupedImg(const std:: string &fileName, const std:: string &descr, bool bIsRaster) {
+        // Create an output parameter to write the current output image
+        OutputImageParameter::Pointer paramOut = OutputImageParameter::New();
+        ImageType::Pointer img;
+        if(bIsRaster) {
+            m_RastersConcat = ImageListToVectorImageFilterType::New();
+            m_RastersConcat->SetInput(m_RastersList);
+            img = m_RastersConcat->GetOutput();
+
+            // we have here the already quantified values that need no other quantification
+            paramOut->SetPixelType(ImagePixelType_int16);
+        } else {
+            m_FlagsConcat = ImageListToVectorImageFilterType::New();
+            m_FlagsConcat->SetInput(m_FlagsList);
+            img = m_FlagsConcat->GetOutput();
+
+            // we need no quantification value, just convert to byte
+            paramOut->SetPixelType(ImagePixelType_uint8);
+        }
+        paramOut->SetValue(img);
+        // Set the filename of the current output image
+        paramOut->SetFileName(fileName);
+        // Add the current level to be written
+        paramOut->InitializeWriters();
+        AddProcess(paramOut->GetWriter(), descr);
+        paramOut->Write();
+    }
+
     ReaderType::Pointer m_reader;
     FilterType::Pointer        m_Filter;
     std::vector<FloatToShortTransFilterType::Pointer>  m_floatToShortFunctors;
+
+    ImageListToVectorImageFilterType::Pointer m_RastersConcat;
+    ImageListToVectorImageFilterType::Pointer m_FlagsConcat;
+    ImgListType::Pointer m_RastersList;
+    ImgListType::Pointer m_FlagsList;
 };
 
 }
