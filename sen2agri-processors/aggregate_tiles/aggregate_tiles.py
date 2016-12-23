@@ -479,11 +479,13 @@ def perform_images_concatenation(listOfFiles, dataFolder, keepBsStatusInd):
          else:
             #no split needed (the key is "bisofericalStatusIndicator" -> key: SLAIR)
             scale_projection = ""
+            print("perform_images_concatenation: No key found!")
 
          #add entry to list as a tupple : ("20","SLAIR_20","fileList") or ("","SLAIR","fileList")
          tuple_entry = str(scale_projection), str(key), ''.join(fileList)
          list_img_by_scale.append(tuple_entry)
-
+      else:
+         print("perform_images_concatenation: No key found!")
    #sort the list in order to provide concatenation files in right sequence (stating with lowest scale , then upon same suffix)
    list_img_by_scale.sort()
 
@@ -504,8 +506,8 @@ def perform_images_concatenation(listOfFiles, dataFolder, keepBsStatusInd):
 
    #remove files which were inputfor concatenation - keeping the final output name
    for fileName in list_img_by_scale:
-      gFilesToRemove.append(fileName[2])
-   #  os.remove(fileName[2])
+      #gFilesToRemove.append(fileName[2])
+      os.remove(fileName[2])
    
    return retFileName
    
@@ -669,8 +671,10 @@ def perform_tiles_aggreagtion(context):
 
        #remove previous generated files during reprojection and rescale - no more needed
        for fileName in context.img_data_out_list:
-          gFilesToRemove.append(fileName)
-       #  os.remove(fileName)
+          if context.level == "L3A" :
+             gFilesToRemove.append(fileName)
+          else :
+             os.remove(fileName)
 
        #clear list
        del context.img_data_out_list[:]
@@ -691,8 +695,8 @@ def perform_tiles_aggreagtion(context):
 
        #remove previous generated files during reprojection and rescale - no more needed
        for fileName in context.qi_data_out_list:
-          gFilesToRemove.append(fileName)
-       #   os.remove(fileName)
+          #gFilesToRemove.append(fileName)
+          os.remove(fileName)
 
        #clear list
        del context.qi_data_out_list[:]
