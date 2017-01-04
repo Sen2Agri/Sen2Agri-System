@@ -905,7 +905,6 @@ protected:
             resampler->SetOutputProjectionRef(td.m_projection);
             resampler->SetInputKeywordList(image->GetImageKeywordlist());
             resampler->SetInterpolator(interpolator);
-            resampler->SetOutputParametersFromImage(image);
             resampler->SetOutputSpacing(outputSpacing);
             resampler->SetDisplacementFieldSpacing(outputSpacing * 10);
             resampler->SetOutputOrigin(td.m_imageOrigin);
