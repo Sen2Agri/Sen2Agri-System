@@ -403,23 +403,23 @@ def process_DTM(context):
                  context.aspect_r1])
 
     if context.slope_r2:
-        run_command(["gdal_translate", "-q",
+        run_command(["gdalwarp", "-q",
                      "-r", "cubic",
                      "-tr", "20", "20",
                      context.slope_r1, context.slope_r2])
 
     if context.aspect_r2:
-        run_command(["gdal_translate", "-q",
+        run_command(["gdalwarp", "-q",
                      "-r", "cubic",
                      "-tr", "20", "20",
                      context.aspect_r1, context.aspect_r2])
 
-    run_command(["gdal_translate", "-q",
+    run_command(["gdalwarp", "-q",
                  "-r", "cubic",
                  "-tr", "240", "240",
                  context.slope_r1, context.slope_coarse])
 
-    run_command(["gdal_translate", "-q",
+    run_command(["gdalwarp", "-q",
                  "-r", "cubic",
                  "-tr", "240", "240",
                  context.aspect_r1, context.aspect_coarse])
