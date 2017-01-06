@@ -2,7 +2,7 @@
 
 systemctl stop sen2agri-executor sen2agri-orchestrator sen2agri-http-listener sen2agri-sentinel-downloader sen2agri-landsat-downloader sen2agri-demmaccs sen2agri-sentinel-downloader.timer sen2agri-landsat-downloader.timer sen2agri-demmaccs.timer sen2agri-monitor-agent
 
-yum -y install python-beautifulsoup4
+yum -y install python-beautifulsoup4 python-enum34
 
 rpm -Uvh --force ../rpm_binaries/*.rpm
 
