@@ -33,6 +33,8 @@ protected:
     QString GetProductFormatterProductName(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterQuicklook(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterFootprint(EventProcessingContext &ctx, const TaskFinishedEvent &event);
+    QDate GetSeasonDate(const QString &seasonDateStr, const QDateTime &executionDate);
+    void EnsureStartSeasonLessThanEndSeasonDate(QDate &startSeasonDate, QDate &endSeasonDate);
     bool GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,  QDateTime &startTime, QDateTime &endTime, const QDateTime &executionDate,
                                 const ConfigurationParameterValueMap &requestOverrideCfgValues);
     QStringList GetL2AInputProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event);

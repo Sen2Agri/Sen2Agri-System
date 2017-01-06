@@ -306,12 +306,39 @@ bool GetClosestPreviousSeason(QDate startSummerSeasonDate, QDate endSummerSeason
     return false;
 }
 
+QDate ProcessorHandler::GetSeasonDate(const QString &seasonDateStr, const QDateTime &executionDate)
+{
+    QDate currentDate = executionDate.date();
+    int curYear = currentDate.year();
+
+    QDate seasonDate = QDate::fromString(seasonDateStr, "MMddyyyy");
+    if(seasonDate.isValid()) {
+        return seasonDate;
+    }
+    seasonDate = QDate::fromString(seasonDateStr, "MMddyy");
+    if(seasonDate.isValid()) {
+        // this date is relative to 1900
+        seasonDate = seasonDate.addYears(100);
+        return seasonDate;
+    }
+
+    return QDate::fromString(seasonDateStr, "MMdd").addYears(curYear-1900);
+}
+
+void ProcessorHandler::EnsureStartSeasonLessThanEndSeasonDate(QDate &startSeasonDate, QDate &endSeasonDate)
+{
+    // we are using as reference the end of season as the start of season might be returned without year
+    // due to the MACCS initialization
+    while(startSeasonDate > endSeasonDate) {
+        startSeasonDate = startSeasonDate.addYears(-1);
+    }
+}
+
 bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,
                                               QDateTime &startTime, QDateTime &endTime,
                                               const QDateTime &executionDate,
                                               const ConfigurationParameterValueMap &requestOverrideCfgValues) {
-    QDate currentDate = executionDate.date();//QDate::currentDate();
-    int curYear = currentDate.year();
+    QDate currentDate = executionDate.date();
 
     ConfigurationParameterValueMap seasonCfgValues = ctx.GetConfigurationParameters("downloader.", siteId, requestOverrideCfgValues);
     QString startSeasonDateStr = seasonCfgValues["downloader.summer-season.start"].value;
@@ -320,8 +347,9 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
         startSeasonDateStr = "0228";
     }
 
-    QDate startSummerSeasonDate = QDate::fromString(startSeasonDateStr, "MMdd").addYears(curYear-1900);
-    QDate endSummerSeasonDate = QDate::fromString(endSeasonDateStr, "MMdd").addYears(curYear-1900);
+    QDate startSummerSeasonDate = GetSeasonDate(startSeasonDateStr, executionDate);
+    QDate endSummerSeasonDate = GetSeasonDate(endSeasonDateStr, executionDate);
+    EnsureStartSeasonLessThanEndSeasonDate(startSummerSeasonDate, endSummerSeasonDate);
     if(IsInSeason(startSummerSeasonDate, endSummerSeasonDate, currentDate, startTime, endTime)) {
         return true;
     }
@@ -331,8 +359,9 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
         startSeasonDateStr = "0228";
     }
 
-    QDate startWinterSeasonDate = QDate::fromString(startSeasonDateStr, "MMdd").addYears(curYear-1900);
-    QDate endWinterSeasonDate = QDate::fromString(endSeasonDateStr, "MMdd").addYears(curYear-1900);
+    QDate startWinterSeasonDate = GetSeasonDate(startSeasonDateStr, executionDate);
+    QDate endWinterSeasonDate = GetSeasonDate(endSeasonDateStr, executionDate);
+    EnsureStartSeasonLessThanEndSeasonDate(startWinterSeasonDate, endWinterSeasonDate);
     if(IsInSeason(startWinterSeasonDate, endWinterSeasonDate, currentDate, startTime, endTime)) {
         return true;
     }
