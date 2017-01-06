@@ -245,7 +245,13 @@ private:
 //    m_GatherValuesFilter->Update();
     for (unsigned int i = 0; i < pixelSize; i++)
       {
-      means[i] = m_StreamingStatisticsImageFilterList->GetNthElement(i)->GetMean();
+      PixelType mean = m_StreamingStatisticsImageFilterList->GetNthElement(i)->GetMean();
+      if (std::isnan(mean))
+        {
+        otbAppLogCRITICAL("Found NaN band mean value for band" << i);
+        mean = 0;
+        }
+      means[i] = mean;
       }
 
     otbAppLogINFO("Band means: " << means);
