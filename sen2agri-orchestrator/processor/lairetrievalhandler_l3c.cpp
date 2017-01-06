@@ -822,8 +822,8 @@ void LaiRetrievalHandlerL3C::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
 
     bool bRemoveTempFiles = NeedRemoveJobFolder(ctx, event.jobId, "l3b");
-
-    int limitL3BPrdsPerTile = GetIntParameterValue(parameters, "max_l3b_per_tile", -1);
+    int limitL3BPrdsPerTileDefVal = (bNDayReproc ? 3 : -1);
+    int limitL3BPrdsPerTile = GetIntParameterValue(parameters, "max_l3b_per_tile", limitL3BPrdsPerTileDefVal);
     // get the list of the L3B products from the event
     const QStringList &listL3BProducts = GetL3BProducts(ctx, event);
 
