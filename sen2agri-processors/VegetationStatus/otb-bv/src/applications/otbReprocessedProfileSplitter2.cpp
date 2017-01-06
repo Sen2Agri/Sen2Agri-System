@@ -157,11 +157,6 @@ private:
             strOutPrefix = inImgStr.substr(0, pos);
         }
 
-        // Set the extract filter input image
-        m_Filter = FilterType::New();
-        m_Filter->SetInput(m_reader->GetOutput());
-
-
         int nTotalBandsHalf = nTotalBands/2;
         bool bIsRaster;
         std::string groupRastersFileName;
@@ -193,18 +188,20 @@ private:
                 fileNameStream << "?gdal:co:COMPRESS=DEFLATE";
             }
             const std::string &fileName = fileNameStream.str();
+
+            // Set the extract filter input image
+            // normally, if grouping is not needed, we could use a single bands extractor.
+            // But for grouping, we need a band extractor for each band otherwise the last band will be written
+            // in all extracted bands
+            FilterType::Pointer bandsExtractor = FilterType::New();
+            bandsExtractor->SetInput(m_reader->GetOutput());
             // Set the channel to extract
-            m_Filter->SetChannel(i+1);
+            bandsExtractor->SetChannel(i+1);
+            m_bandsExtractors.push_back(bandsExtractor);
 
             FloatToShortTransFilterType::Pointer floatToShortFunctor = FloatToShortTransFilterType::New();
-            floatToShortFunctor->SetInput(m_Filter->GetOutput());
-            if(bIsRaster) {
-                // we have here the already quantified values that need no other quantification
-                floatToShortFunctor->GetFunctor().Initialize(1, 0);
-            } else {
-                // we need no quantification value, just convert to byte
-                floatToShortFunctor->GetFunctor().Initialize(1, 0);
-            }
+            floatToShortFunctor->SetInput(bandsExtractor->GetOutput());
+            floatToShortFunctor->GetFunctor().Initialize(1, 0);
             m_floatToShortFunctors.push_back(floatToShortFunctor);
 
             if(bGroupRasters) {
@@ -290,7 +287,8 @@ private:
     }
 
     ReaderType::Pointer m_reader;
-    FilterType::Pointer        m_Filter;
+    //FilterType::Pointer        m_Filter;
+    std::vector<FilterType::Pointer> m_bandsExtractors;
     std::vector<FloatToShortTransFilterType::Pointer>  m_floatToShortFunctors;
 
     ImageListToVectorImageFilterType::Pointer m_RastersConcat;
