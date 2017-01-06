@@ -114,27 +114,30 @@ QStringList CropTypeHandlerNew::GetCropTypeTaskArgs(EventProcessingContext &ctx,
                                  "-outdir", outputDir,
                                  "-targetfolder", targetFolder,
                                  "-outprops", outPropsPath};
-    QStringList satFiles;
-    // first add the products for the primary satellite
+
+    // normally, we can use only one list by we want (not necessary) to have the
+    // secondary satellite tiles after the main satellite tiles
+    QStringList tilePrimarySatFiles;
+    QStringList tileSecondarySatFiles;
     for(auto tileId : mapTiles.keys())
     {
-        QStringList tilePrimarySatFiles;
-        QStringList tileSecondarySatFiles;
-
-        // We know that we have for each tile only one satellite type
+        // get the temporal infos for the current tile
         const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
         for(const ProcessorHandlerHelper::InfoTileFile &fileInfo: listTemporalTiles.temporalTilesFileInfos) {
            if(fileInfo.satId == listTemporalTiles.primarySatelliteId) {
-               tilePrimarySatFiles.append(fileInfo.file);
+               if(!tilePrimarySatFiles.contains(fileInfo.file)) {
+                   tilePrimarySatFiles.append(fileInfo.file);
+               }
            } else {
-               tileSecondarySatFiles.append(fileInfo.file);
+               if(!tileSecondarySatFiles.contains(fileInfo.file)) {
+                    tileSecondarySatFiles.append(fileInfo.file);
+               }
            }
         }
-        satFiles.append(tilePrimarySatFiles);
-        satFiles.append(tileSecondarySatFiles);
     }
     cropTypeArgs += "-input";
-    cropTypeArgs += satFiles;
+    cropTypeArgs += tilePrimarySatFiles;
+    cropTypeArgs += tileSecondarySatFiles;
 
     if(cfg.cropMask.length() > 0) {
         cropTypeArgs += "-maskprod";
