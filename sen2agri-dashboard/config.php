@@ -91,7 +91,7 @@
 						</div>
 					</div>
 					<!-- end L3A -->
-					
+
 					<!-- start L3B LAI -->
 					<div class="panel panel-default">
 						<div class="panel-heading">
@@ -132,7 +132,7 @@
 												</select>
 												<span class="help-block">Resolution of the output image (in meters).</span>
 											</div>
-											
+
 											<div class="subgroup lai">
 												<label class="control-label">Generate LAI mono-dates:</label>
 												<div class="form-group form-group-sm">
@@ -151,7 +151,7 @@
 													<span class="help-block">(Performe reprocessing at the end of the season)</span>
 												</div>
 											</div>
-											
+
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="bwr">Backward window:</label>
 												<input type="number" class="form-control" id="bwr" name="bwr" value="2">
@@ -175,7 +175,7 @@
 						</div>
 					</div>
 					<!-- end L3B LAI -->
-					
+
 					<!-- start L3B NDVI -->
 					<div class="panel panel-default">
 						<div class="panel-heading">
@@ -224,7 +224,7 @@
 						</div>
 					</div>
 					<!-- end L3B NDVI -->
-					
+
 					<!-- start L4A with in-situ -->
 					<div class="panel panel-default">
 						<div class="panel-heading">
@@ -276,15 +276,6 @@
 												<span class="help-block">Resolution of the output image (in meters).</span>
 											</div>
 											<div class="form-group form-group-sm hidden">
-												<label class="control-label" for="mission">Mission:</label>
-												<select class="form-control" id="mission" name="mission">
-													<option value="SENTINEL" selected="selected">SENTINEL</option>
-                                                    <option value="SPOT">SPOT</option>
-													<option value="LANDSAT">LANDSAT</option>
-												</select>
-												<span class="help-block">The main mission for the time series.</span>
-											</div>
-											<div class="form-group form-group-sm hidden">
 												<label class="control-label" for="field">Field:</label>
 												<input type="text" class="form-control" id="field" name="field" value="CROP">
 												<span class="help-block">Header of the column containing the class label.</span>
@@ -293,13 +284,6 @@
 												<label class="control-label" for="ratio">Ratio:</label>
 												<input type="number" min="0" step="0.01" class="form-control" id="ratio" name="ratio" value="0.75">
 												<span class="help-block">The ratio between the validation and training polygons.</span>
-											</div>
-											<div class="form-group form-group-sm hidden">
-												<label for="trm">The temporal resampling mode:</label>
-												<select class="form-control" id="trm" name="trm">
-													<option value="resample" selected="selected">RESAMPLE</option>
-													<option value="gapfill">GAPFILL</option>
-												</select>
 											</div>
 											<div class="form-group form-group-sm hidden">
 												<label class="control-label" for="radius">Radius:</label>
@@ -351,7 +335,7 @@
 												<input type="number" min="0" step="0.01" class="form-control" id="alpha" name="alpha" value="0.01">
 												<span class="help-block">The parameter alpha used by the mahalanobis function.</span>
 											</div>
-											
+
 											<div class="subgroup advanced">
 												<label class="control-label">Segmentation parameters:</label>
 												<div class="form-group form-group-sm">
@@ -359,13 +343,13 @@
 													<input type="number" min="0" step="1" class="form-control" id="spatialr" name="spatialr" value="10">
 													<span class="help-block">The spatial radius of the neighbourhood used for segmentation.</span>
 												</div>
-												<div class="form-group form-group-sm">													
+												<div class="form-group form-group-sm">
 													<label class="control-label" for="minsize">Minimum size of a region:</label>
 													<input type="number" min="0" step="1" class="form-control" id="minsize" name="minsize" value="10">
 													<span class="help-block">Minimum size of a region (in pixel unit) in segmentation.</span>
 												</div>
 											</div>
-											
+
 											<div class="subgroup advanced">
 												<label class="control-label">Clasifier parameters:</label>
 												<div class="form-group form-group-sm hidden">
@@ -406,7 +390,7 @@
 						</div>
 					</div>
 					<!-- end L4A with in-situ -->
-					
+
 					<!-- start L4A w/o in-situ -->
 					<div class="panel panel-default">
 						<div class="panel-heading">
@@ -458,15 +442,6 @@
 												<span class="help-block">Resolution of the output image (in meters).</span>
 											</div>
 											<div class="form-group form-group-sm hidden">
-												<label class="control-label" for="mission">Mission:</label>
-												<select class="form-control" id="mission" name="mission">
-													<option value="SENTINEL" selected="selected">SENTINEL</option>
-                                                    <option value="SPOT">SPOT</option>
-													<option value="LANDSAT">LANDSAT</option>
-												</select>
-												<span class="help-block">The main mission for the time series.</span>
-											</div>
-											<div class="form-group form-group-sm hidden">
 												<label class="control-label" for="field">Field:</label>
 												<input type="text" class="form-control" id="field" name="field" value="CROP">
 												<span class="help-block">Header of the column containing the class label.</span>
@@ -475,13 +450,6 @@
 												<label class="control-label" for="ratio">Ratio:</label>
 												<input type="number" min="0" step="0.01" class="form-control" id="ratio" name="ratio" value="0.75">
 												<span class="help-block">The ratio between the validation and training polygons.</span>
-											</div>
-											<div class="form-group form-group-sm hidden">
-												<label for="trm">The temporal resampling mode:</label>
-												<select class="form-control" id="trm" name="trm">
-													<option value="resample">RESAMPLE</option>
-													<option value="gapfill" selected="selected">GAPFILL</option>
-												</select>
 											</div>
 											<div class="form-group form-group-sm hidden">
 												<label class="control-label" for="radius">Radius:</label>
@@ -523,7 +491,7 @@
 												<input type="number" min="0" step="0.01" class="form-control" id="ranger" name="ranger" value="0.65">
 												<span class="help-block">The range radius (expressed in radiometry unit).</span>
 											</div>
-											
+
 											<div class="form-group form-group-sm advanced">
 												<label class="control-label" for="eroderad">Erosion radius:</label>
 												<input type="number" min="0" step="1" class="form-control" id="eroderad" name="eroderad" value="1">
@@ -534,7 +502,7 @@
 												<input type="number" min="0" step="0.01" class="form-control" id="alpha" name="alpha" value="0.01">
 												<span class="help-block">The parameter alpha used by the mahalanobis function.</span>
 											</div>
-											
+
 											<div class="subgroup advanced">
 												<label class="control-label">Segmentation parameters:</label>
 												<div class="form-group form-group-sm">
@@ -548,7 +516,7 @@
 													<span class="help-block">Minimum size of a region (in pixel unit) in segmentation.</span>
 												</div>
 											</div>
-											
+
 											<div class="subgroup advanced">
 												<label class="control-label">Clasifier parameters:</label>
 												<div class="form-group form-group-sm hidden">
@@ -580,7 +548,7 @@
 													<span class="help-block">The minimum number of pixels in an area where for an equal number of crop and nocrop samples the crop decision is taken.</span>
 												</div>
 											</div>
-											
+
 											<input type="submit" name="l4a_wo" value="Submit">
 										</div>
 									</div>
@@ -589,7 +557,7 @@
 						</div>
 					</div>
 					<!-- end L4A w/o in-situ -->
-					
+
 					<!-- start L4B -->
 					<div class="panel panel-default">
 						<div class="panel-heading">
@@ -645,35 +613,19 @@
 												</select>
 												<span class="help-block">Resolution of the output image (in meters).</span>
 											</div>
-											<div class="form-group form-group-sm hidden">
-												<label class="control-label" for="mission">Main mission:</label>
-												<select class="form-control" id="mission" name="mission">
-													<option value="SENTINEL" selected="selected">SENTINEL</option>
-                                                    <option value="LANDSAT">LANDSAT</option>
-													<option value="SPOT">SPOT</option>                                                    
-												</select>
-												<span class="help-block">The main mission for the time series.</span>
-											</div>
 											<div class="form-group form-group-sm">
 												<label class="control-label" for="ratio">Ratio:</label>
 												<input type="number" min="0" step="0.01" class="form-control" id="ratio" name="ratio" value="0.75">
 												<span class="help-block">The ratio between the validation and training polygons.</span>
 											</div>
 											<div class="form-group form-group-sm advanced">
-												<label for="trm">The temporal resampling mode:</label>
-												<select class="form-control" id="trm" name="trm">
-													<option value="resample">RESAMPLE</option>
-													<option value="gapfill" selected="selected">GAPFILL</option>
-												</select>
-											</div>
-											<div class="form-group form-group-sm advanced">
 												<label class="control-label" for="rseed">Random seed:</label>
 												<input type="number" min="0" step="1" class="form-control" id="rseed" name="rseed" value="0">
 												<span class="help-block">The random seed used for training.</span>
 											</div>
-											
+
 											<div class="subgroup advanced">
-												<label class="control-label">Clasifier parameters:</label>											
+												<label class="control-label">Clasifier parameters:</label>
 												<div class="form-group form-group-sm hidden">
 													<label for="classifier">Classifier:</label>
 													<select class="form-control" id="classifier" name="classifier">
@@ -698,7 +650,7 @@
 													<span class="help-block">Minimum number of samples in each node used by the classifier.</span>
 												</div>
 											</div>
-											
+
 											<input type="submit" name="l4b" value="Submit">
 										</div>
 									</div>
@@ -707,9 +659,9 @@
 						</div>
 					</div>
 					<!-- end L4B -->
-					
+
 				</div>
-				
+
 			</div>
 			<div class="clearing">&nbsp;</div>
 		</div>
@@ -771,35 +723,35 @@
 	//$("#l3aform").validate();
 	var l2a_proc_id;
 	var l4a_proc_id;
-	
+
 	function open_dialog(message) {
-		$("#dialog-message #dialog-content").text(message); 
+		$("#dialog-message #dialog-content").text(message);
 		$("#dialog-message").dialog("open");
 	};
 	function open_dialog_error(message) {
-		$("#dialog-error #dialog-content").text(message); 
+		$("#dialog-error #dialog-content").text(message);
 		$("#dialog-error").dialog("open");
 	};
 	function reset_form(form_name) {
 		$("#"+form_name)[0].reset();
 		$("#"+form_name+" #inputFiles").find('option').remove().end();
 	};
-	
+
 	$(document).ready(function() {
 		// hide all advanced parameters
 		$('.advanced').addClass("hidden");
-		
+
 		// load sites
 		get_all_sites();
 		get_processor_id('l2a', 'l2a_proc_id');
 		get_processor_id('l4a', 'l4a_proc_id');
-		
+
 		// initialize date picker
 		$("#synthDate").datepicker({
 			dateFormat: "yymmdd",
 			onSelect: function() { $(this).keyup(); } // force validation after selection
 		});
-		
+
 		// initialize dialogs
 		$("#dialog-message").dialog({
 			width: '400px',
@@ -813,7 +765,7 @@
 			modal: true,
 			buttons: { Ok: function() { $(this).dialog("close"); } }
 		}).parent().children(".ui-dialog-titlebar").addClass('ui-state-error');
-		
+
 		<?php
 		// Check if this is a redirect from a FORM being submitted
 		if (isset($_SESSION['processor'])) {
@@ -827,7 +779,7 @@
 			unset($_SESSION['message']);
 		}
 		?>
-		
+
 		// validate l3aform form on keyup and submit
 					$("#l3aform").validate({
 						rules: {
@@ -863,7 +815,7 @@
 							label.remove();
 						},
 					});
-					
+
 		// validate l3b LAI form form on keyup and submit
 					$("#l3b_laiform").validate({
 						rules : {
@@ -899,7 +851,7 @@
 							label.remove();
 						},
 					});
-					
+
 		// validate l3b NVDI(pheno) form form on keyup and submit
 					$("#l3b_nvdiform").validate({
 						rules: {
@@ -931,7 +883,7 @@
 							label.remove();
 						},
 					});
-					
+
 		// validate l4aform with in-situ form on keyup and submit
 					$("#l4aform").validate({
 						rules : {
@@ -992,7 +944,7 @@
 							label.remove();
 						},
 					});
-					
+
 		// validate l4bform form on keyup and submit
 					$("#l4bform") .validate( {
 						rules : {
@@ -1016,7 +968,7 @@
 								url: $(form).attr('action'),
 								type: $(form).attr('method'),
 								data: new FormData(form),
-								success: function(response) { }     
+								success: function(response) { }
 							});
 						},
 						// set this class to error-labels to indicate valid fields
