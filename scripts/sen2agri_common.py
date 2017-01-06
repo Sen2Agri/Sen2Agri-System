@@ -2,6 +2,8 @@
 
 from __future__ import print_function
 
+from collections import defaultdict
+from enum import Enum
 from osgeo import ogr, osr
 import gdal
 import os
@@ -118,24 +120,35 @@ def get_reference_raster(product):
             return files[0]
 
 
-def get_tileid(product):
+class Mission(Enum):
+    SENTINEL = 1
+    SPOT = 2
+    LANDSAT = 3
+
+
+def get_tile_id(product):
     file = os.path.basename(product)
     m = re.match("SPOT.+_([a-z0-9]+)\\.xml", file, re.IGNORECASE)
     if m:
-        return m.group(1)
+        return (Mission.SPOT, m.group(1))
+
     m = re.match(".+_L8_(\d{3})_(\d{3}).hdr", file, re.IGNORECASE)
     if m:
-        return m.group(1) + m.group(2)
+        return (Mission.LANDSAT, m.group(1) + m.group(2))
     m = re.match("L8_.+_(\d{6})_\d{8}.HDR", file, re.IGNORECASE)
     if m:
-        return m.group(1)
+        return (Mission.LANDSAT, m.group(1))
+
     m = re.match(
         "S2[a-z0-9]_[a-z0-9]+_[a-z0-9]+_[a-z0-9]+_([a-z0-9]+)_.+\\.HDR", file, re.IGNORECASE)
     if m:
-        return m.group(1)
+        return (Mission.SENTINEL, m.group(1))
+
+    return None
 
 
 class Stratum(object):
+
     def __init__(self, id, extent):
         self.id = id
         self.extent = extent
@@ -143,12 +156,13 @@ class Stratum(object):
 
 
 class Tile(object):
-    def __init__(self, id, descriptors):
+
+    def __init__(self, id, footprint, footprint_wgs84, projection, descriptors):
         self.id = id
         self.descriptors = descriptors
-        self.footprint = None
-        self.footprint_wgs84 = None
-        self.projection = None
+        self.footprint = footprint
+        self.footprint_wgs84 = footprint_wgs84
+        self.projection = projection
         self.strata = []
 
 
@@ -366,13 +380,6 @@ def save_to_shp(file_name, geom, out_srs=None):
     out_layer.CreateFeature(feature)
 
 
-def get_tileid_for_descriptors(descriptors):
-    for d in descriptors:
-        tileid = get_tileid(d)
-        if tileid:
-            return tileid
-
-
 def format_otb_filename(file, compression=None):
     if compression is not None:
         file += "?gdal:co:COMPRESS=" + compression
@@ -380,6 +387,7 @@ def format_otb_filename(file, compression=None):
 
 
 class ProcessorBase(object):
+
     def execute(self):
         start_time = datetime.datetime.now()
         try:
@@ -480,25 +488,51 @@ class ProcessorBase(object):
         pass
 
     def load_tiles(self):
-        if not self.args.prodspertile:
-            self.args.prodspertile = [len(self.args.input)]
-        else:
-            psum = sum(self.args.prodspertile)
-            if psum != len(self.args.input):
-                print("The number of input products ({}) doesn't match the total tile count ({})".format(
-                    len(self.args.input), psum))
+        main_mission = None
+        mission_products = defaultdict(lambda: defaultdict(list))
+        for product in self.args.input:
+            (mission, tile_id) = get_tile_id(product)
+            if mission is None:
+                raise Exception("Unable to determine product type", product)
 
-        start = 0
+            mission_products[mission][tile_id].append(product)
+            if main_mission is None:
+                main_mission = mission
+            elif main_mission.value > mission.value:
+                main_mission = mission
+
+        self.args.mission = main_mission.name
+        print("Main mission: {}".format(self.args.mission))
+
         self.tiles = []
-        for idx, t in enumerate(self.args.prodspertile):
-            end = start + t
-            descriptors = self.args.input[start:end]
-            id = get_tileid_for_descriptors(descriptors)
-            self.tiles.append(Tile(id, descriptors))
-            start += t
+        for (tile_id, products) in mission_products[main_mission].iteritems():
+            raster = get_reference_raster(products[0])
+            (tile_footprint, tile_footprint_wgs84,
+             tile_projection) = get_raster_footprint(raster)
+
+            tile = Tile(tile_id, tile_footprint, tile_footprint_wgs84,
+                        tile_projection, list(products))
+
+            self.tiles.append(tile)
+
+        for (mission, mission_tiles) in mission_products.iteritems():
+            if mission != main_mission:
+                for (tile_id, products) in mission_tiles.iteritems():
+                    raster = get_reference_raster(products[0])
+                    (_, tile_footprint_wgs84, _) = get_raster_footprint(raster)
+
+                    for main_tile in self.tiles:
+                        intersection = tile_footprint_wgs84.Intersection(
+                            main_tile.footprint_wgs84)
+                        if intersection.GetArea() > 0:
+                            print("Tile {} intersects main tile {}".format(
+                                tile_id, main_tile.id))
+
+                            main_tile.descriptors += products
+
+        self.tiles.sort(key=lambda t: t.id)
 
         print("Tiles:", len(self.tiles))
-
         for tile in self.tiles:
             print(tile.id, len(tile.descriptors))
 
@@ -513,7 +547,6 @@ class ProcessorBase(object):
 
         self.site_footprint_wgs84 = ogr.Geometry(ogr.wkbPolygon)
         for tile in self.tiles:
-            (tile.footprint, tile.footprint_wgs84, tile.projection) = get_raster_footprint(get_reference_raster(tile.descriptors[0]))
             self.site_footprint_wgs84 = self.site_footprint_wgs84.Union(tile.footprint_wgs84)
 
         if not self.single_stratum:
@@ -528,7 +561,7 @@ class ProcessorBase(object):
                         tile.strata.append(stratum)
                         stratum.tiles.append(tile)
 
-                print("Strata for tile {}: {}".format(tile.id, map(lambda x: x.id, tile.strata)))
+                print("Strata for tile {}: {}".format(tile.id, map(lambda s: s.id, tile.strata)))
         else:
             stratum = Stratum(0, self.site_footprint_wgs84)
             stratum.tiles = self.tiles

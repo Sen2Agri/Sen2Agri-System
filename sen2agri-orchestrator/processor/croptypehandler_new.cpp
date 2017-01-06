@@ -115,8 +115,6 @@ QStringList CropTypeHandlerNew::GetCropTypeTaskArgs(EventProcessingContext &ctx,
                                  "-targetfolder", targetFolder,
                                  "-outprops", outPropsPath};
     QStringList satFiles;
-    QStringList satTileNumbers;
-    QString mission;
     // first add the products for the primary satellite
     for(auto tileId : mapTiles.keys())
     {
@@ -126,10 +124,6 @@ QStringList CropTypeHandlerNew::GetCropTypeTaskArgs(EventProcessingContext &ctx,
         // We know that we have for each tile only one satellite type
         const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
         for(const ProcessorHandlerHelper::InfoTileFile &fileInfo: listTemporalTiles.temporalTilesFileInfos) {
-            if(mission.length() == 0) {
-                mission = ProcessorHandlerHelper::GetMissionNamePrefixFromSatelliteId(listTemporalTiles.primarySatelliteId);
-            }
-
            if(fileInfo.satId == listTemporalTiles.primarySatelliteId) {
                tilePrimarySatFiles.append(fileInfo.file);
            } else {
@@ -138,16 +132,9 @@ QStringList CropTypeHandlerNew::GetCropTypeTaskArgs(EventProcessingContext &ctx,
         }
         satFiles.append(tilePrimarySatFiles);
         satFiles.append(tileSecondarySatFiles);
-        satTileNumbers.append(QString::number(listTemporalTiles.temporalTilesFileInfos.size()));
     }
     cropTypeArgs += "-input";
     cropTypeArgs += satFiles;
-
-    cropTypeArgs += "-prodspertile";
-    cropTypeArgs += satTileNumbers;
-
-    cropTypeArgs += "-mission";
-    cropTypeArgs += mission;
 
     if(cfg.cropMask.length() > 0) {
         cropTypeArgs += "-maskprod";

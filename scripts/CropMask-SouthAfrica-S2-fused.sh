@@ -6,7 +6,6 @@ source ./set_build_folder.sh
 ./CropMaskFused.py \
     -refp /mnt/data/south_africa_medium/SA_FRST_LC_SM_2016_repaired.shp \
     -outdir /mnt/data/south_africa_medium/South-Africa-medium-mask \
-    -mission SENTINEL \
     -rseed 0 \
     -input \
     /mnt/data/l2a/south-africa/S2A_OPER_PRD_MSIL2A_PDMC_20160101T181945_R035_V20160101T083037_20160101T083037.SAFE/S2A_OPER_SSC_L2VALD_35JMJ____20160101.HDR \
@@ -213,5 +212,4 @@ source ./set_build_folder.sh
     /mnt/data/l2a/south-africa/S2A_OPER_PRD_MSIL2A_PDMC_20160427T130803_R135_V20160427T081514_20160427T081514.SAFE/S2A_OPER_SSC_L2VALD_36JTR____20160427.HDR \
     /mnt/data/l2a/south-africa/S2A_OPER_PRD_MSIL2A_PDMC_20160504T214803_R092_V20160504T080523_20160504T080523.SAFE/S2A_OPER_SSC_L2VALD_36JTR____20160504.HDR \
     /mnt/data/l2a/south-africa/S2A_OPER_PRD_MSIL2A_PDMC_20160514T135447_R092_V20160514T080633_20160514T080633.SAFE/S2A_OPER_SSC_L2VALD_36JTR____20160514.HDR \
-    -prodspertile 18 18 12 16 19 17 7 5 6 15 13 16 14 14 14 \
     -buildfolder "$BUILD_FOLDER"

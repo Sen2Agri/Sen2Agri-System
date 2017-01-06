@@ -13,19 +13,16 @@ from sen2agri_common import ProcessorBase, Step, split_features, run_step, forma
 
 
 class CropTypeProcessor(ProcessorBase):
+
     def create_context(self):
         parser = argparse.ArgumentParser(description='Crop Type Processor')
 
-        parser.add_argument('-mission', help='The main mission for the series',
-                            required=False, default='SPOT')
         parser.add_argument('-refp', help='The reference polygons',
                             required=True, metavar='reference_polygons')
         parser.add_argument('-ratio', help='The ratio between the validation and training polygons (default 0.75)',
                             required=False, metavar='sample_ratio', default=0.75)
         parser.add_argument('-input', help='The list of products descriptors',
                             required=True, metavar='product_descriptor', nargs='+')
-        parser.add_argument('-prodspertile', help='Number of products for each tile',
-                            type=int, nargs='+')
         parser.add_argument('-trm', help='The temporal resampling mode (default resample)',
                             choices=['resample', 'gapfill'], required=False, default='resample')
         parser.add_argument('-classifier', help='The classifier (rf or svm) used for training (default rf)',
@@ -206,10 +203,10 @@ class CropTypeProcessor(ProcessorBase):
         step_args = ["otbcli", "CropTypeImageClassifier", self.args.buildfolder,
                      "-mission", self.args.mission,
                      "-pixsize", self.args.pixsize,
-                     "-indays"] + days + [
                      "-bv", -10000,
                      "-nodatalabel", -10000,
-                     "-out", tile_crop_type_map_uncompressed]
+                     "-out", tile_crop_type_map_uncompressed,
+                     "-indays"] + days
         if self.args.red_edge:
             step_args += ["-rededge", "true"]
         step_args += ["-model"] + models
@@ -469,13 +466,13 @@ class CropTypeProcessor(ProcessorBase):
             )
 
         parameters = E.Parameters(
-                E.MainMission(self.args.mission),
-                E.PixelSize(str(self.args.pixsize)),
-                E.SampleRatio(str(self.args.ratio)),
-                E.Classifier(self.args.classifier),
-                E.Seed(str(self.args.rseed)),
-                E.IncludeRedEdge(str(self.args.red_edge))
-            )
+            E.MainMission(self.args.mission),
+            E.PixelSize(str(self.args.pixsize)),
+            E.SampleRatio(str(self.args.ratio)),
+            E.Classifier(self.args.classifier),
+            E.Seed(str(self.args.rseed)),
+            E.IncludeRedEdge(str(self.args.red_edge))
+        )
 
         if self.args.lut is not None:
             parameters.append(

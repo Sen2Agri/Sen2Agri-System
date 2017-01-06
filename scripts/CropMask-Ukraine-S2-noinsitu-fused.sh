@@ -3,7 +3,6 @@
 source set_build_folder.sh
 
 ./CropMaskFused.py \
-    -mission SENTINEL \
     -refr /mnt/archive/reference_data/ESACCI-LC-L4-LCCS-Map-300m-P5Y-2010-v1.6.1.tif \
     -rseed 0 \
     -outdir /mnt/archive/ukraine/l4a-noinsitu/ \
@@ -101,5 +100,4 @@ source set_build_folder.sh
     /mnt/archive/maccs_def_old/ukraine/l2a/S2A_OPER_PRD_MSIL2A_PDMC_20160827T194030_R007_V20160826T085602_20160826T090349.SAFE/S2A_OPER_SSC_L2VALD_36UVV____20160826.HDR \
     /mnt/archive/maccs_def_old/ukraine/l2a/S2A_OPER_PRD_MSIL2A_PDMC_20160903T215723_R107_V20160902T085012_20160902T085015.SAFE/S2A_OPER_SSC_L2VALD_36UVV____20160902.HDR \
     /mnt/archive/maccs_def_old/ukraine/l2a/S2A_OPER_PRD_MSIL2A_PDMC_20160907T101858_R007_V20160905T090022_20160905T090017.SAFE/S2A_OPER_SSC_L2VALD_36UVV____20160905.HDR \
-    -prodspertile 18 29 21 24 \
     -buildfolder "$BUILD_FOLDER" # -mode validate

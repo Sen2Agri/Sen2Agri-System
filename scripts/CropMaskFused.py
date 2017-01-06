@@ -12,11 +12,10 @@ from sen2agri_common import ProcessorBase, Step, split_features, run_step, forma
 
 
 class CropMaskProcessor(ProcessorBase):
+
     def create_context(self):
         parser = argparse.ArgumentParser(description='Crop Mask Processor')
 
-        parser.add_argument('-mission', help='The main mission for the series',
-                            required=False, default='SPOT')
         group = parser.add_mutually_exclusive_group()
         group.add_argument('-refp', help='The reference polygons',
                            required=False, metavar='reference_polygons')
@@ -26,8 +25,6 @@ class CropMaskProcessor(ProcessorBase):
                             required=False, metavar='sample_ratio', default=0.75)
         parser.add_argument('-input', help='The list of products descriptors',
                             required=True, metavar='product_descriptor', nargs='+')
-        parser.add_argument('-prodspertile', help='Number of products for each tile',
-                            type=int, nargs='+')
         parser.add_argument('-trm', help='The temporal resampling mode (default resample)',
                             choices=['resample', 'gapfill'], required=False, default='resample')
         parser.add_argument('-classifier', help='The classifier (rf or svm) used for training (default rf)',
@@ -294,11 +291,11 @@ class CropMaskProcessor(ProcessorBase):
             step_args = ["otbcli", "CropMaskImageClassifier", self.args.buildfolder,
                          "-mission", self.args.mission,
                          "-pixsize", self.args.pixsize,
-                         "-indays"] + days + [
                          "-bv", -10000,
                          "-nodatalabel", -10000,
                          "-bm", "true" if self.args.bm else "false",
-                         "-out", tile_crop_mask_uncompressed]
+                         "-out", tile_crop_mask_uncompressed,
+                         "-indays"] + days
             step_args += ["-model"] + models
             step_args += ["-il"] + tile.descriptors
             if self.args.classifier == "svm":
