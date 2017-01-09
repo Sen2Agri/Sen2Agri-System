@@ -1,9 +1,8 @@
 #include <stdio.h>
-#include <syslog.h>
 
 #include "logger.hpp"
 
-void Logger::initialize() { openlog(NULL, LOG_CONS | LOG_PID, LOG_DAEMON); }
+void Logger::initialize() { }
 
 void Logger::debug(const QString &str) { debug(str.toLocal8Bit().constData()); }
 
@@ -18,31 +17,26 @@ void Logger::fatal(const QString &str) { fatal(str.toLocal8Bit().constData()); }
 void Logger::debug(const char *str)
 {
     fprintf(stderr, "%s\n", str);
-    syslog(LOG_DEBUG, "%s", str);
 }
 
 void Logger::info(const char *str)
 {
     fprintf(stderr, "%s\n", str);
-    syslog(LOG_INFO, "%s", str);
 }
 
 void Logger::warn(const char *str)
 {
     fprintf(stderr, "%s\n", str);
-    syslog(LOG_WARNING, "%s", str);
 }
 
 void Logger::error(const char *str)
 {
     fprintf(stderr, "%s\n", str);
-    syslog(LOG_ERR, "%s", str);
 }
 
 void Logger::fatal(const char *str)
 {
     fprintf(stderr, "%s\n", str);
-    syslog(LOG_CRIT, "%s", str);
 }
 
 void Logger::installMessageHandler() { qInstallMessageHandler(&Logger::messageHandler); }
