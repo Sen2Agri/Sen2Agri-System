@@ -53,7 +53,9 @@ def prettify(elem):
 
 
 def getMonoDateProductFiles(productMeta, siteId, tileId, inLaiMonoDir, useIntermediateFiles):
-    fileName = os.path.basename(productMeta)
+    fileName = os.path.splitext(os.path.basename(productMeta))[0]
+    print("Filename: {}".format(fileName))
+    
     #fileName = productMeta
     if fileName.startswith('S2') :
         dateIdx = 8
@@ -63,6 +65,7 @@ def getMonoDateProductFiles(productMeta, siteId, tileId, inLaiMonoDir, useInterm
         dateIdx = 3
     words = fileName.split('_')
     productDate =  words[dateIdx]
+    print("Product date: {}".format(productDate))
     
     if useIntermediateFiles :
         laiImgPattern = inLaiMonoDir + '/*_' + productDate + "_*_LAI_img.tif"
@@ -79,16 +82,21 @@ def getMonoDateProductFiles(productMeta, siteId, tileId, inLaiMonoDir, useInterm
         laiErrDateImg = laiErrImgsFiles[-1]
         laiMsksDateImg = msksFiles[-1]
     else :
-        monodateFolderPattern = inLaiMonoDir + '/S2AGRI_L3B_PRD_S' + siteId + "_*_A" + productDate
-        #print("monodateFolderPattern: {}".format(monodateFolderPattern))
+        monodateFolderPattern = inLaiMonoDir + '/S2AGRI_L3B_PRD_S' + siteId + "_*_A" + productDate + "*"
+        print("monodateFolderPattern: {}".format(monodateFolderPattern))
         
         monodateFolders = glob.glob(monodateFolderPattern)
         if (len(monodateFolders) == 0):
+            print ("No monodate products found!!!")
             return ("", "", "")
         
         #for monodateFolder in monodateFolders:
-        #    print("Existing monodates folders: {}".format(monodateFolder))
+        #    print("Existing monodates folders: {}".format(monodateFolder))            
+
         monodateFolder = monodateFolders[-1]
+        # Get exactly the product date as it can be either _AyyyyMMdd or _AyyyyMMddTHHmmSS
+        productDate  = monodateFolder.split("_A",1)[1]
+        print("Product date: {}".format(productDate))
         laiMonoDateImg = monodateFolder + "/TILES/S2AGRI_L3B_A" + productDate + "_T" + tileId + \
                         "/IMG_DATA/S2AGRI_L3B_SLAIMONO_A" +productDate+"_T" + tileId + ".TIF"
         laiErrDateImg = monodateFolder + "/TILES/S2AGRI_L3B_A" + productDate + "_T" + tileId + \

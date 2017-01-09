@@ -1703,7 +1703,7 @@ private:
       /* the source is a SPOT file */
       //nothing to load????
       // we use the acquisition date instead of processing date
-      std::string acqDateTime = metadata->Header.DateProd;
+      std::string acqDateTime = metadata->Header.DatePdv;
       std::string::size_type pos = acqDateTime.find('.');
       // remove the milliseconds part of the acquisition date/time
       acqDateTime = (pos != std::string::npos) ? acqDateTime.substr(0, pos) : acqDateTime;
