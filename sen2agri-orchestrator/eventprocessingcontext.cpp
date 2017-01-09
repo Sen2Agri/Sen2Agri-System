@@ -188,10 +188,10 @@ ProductList EventProcessingContext::GetProducts(int siteId, int productTypeId, c
     return persistenceManager.GetProducts(siteId, productTypeId, startDate, endDate);
 }
 
-ProductList EventProcessingContext::GetProductsForTile(const QString &tileId, ProductType productType,
+ProductList EventProcessingContext::GetProductsForTile(int siteId, const QString &tileId, ProductType productType,
                                                        int tileSatelliteId, int targetSatelliteId)
 {
-    return persistenceManager.GetProductsForTile(tileId, productType, tileSatelliteId, targetSatelliteId);
+    return persistenceManager.GetProductsForTile(siteId, tileId, productType, tileSatelliteId, targetSatelliteId);
 }
 
 TileList EventProcessingContext::GetSiteTiles(int siteId, int satelliteId)

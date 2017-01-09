@@ -120,7 +120,7 @@ void CropMaskHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                     toStdString());
     }
 
-    QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.jobId, listProducts,
+    QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.siteId, event.jobId, listProducts,
                                                                ProductType::L2AProductTypeId);
     QList<CropMaskProductFormatterParams> listParams;
 

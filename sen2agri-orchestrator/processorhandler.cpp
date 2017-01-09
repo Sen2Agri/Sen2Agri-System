@@ -497,7 +497,7 @@ bool ProcessorHandler::GetParameterValueAsInt(const QJsonObject &parameters, con
 }
 
 QMap<QString, TileTemporalFilesInfo> ProcessorHandler::GroupTiles(
-        EventProcessingContext &ctx, int jobId,
+        EventProcessingContext &ctx, int siteId, int jobId,
         const QStringList &listAllProductsTiles, ProductType productType)
 {
     // perform a first iteration to see the satellites IDs in all tiles
@@ -525,7 +525,7 @@ QMap<QString, TileTemporalFilesInfo> ProcessorHandler::GroupTiles(
         for(ProcessorHandlerHelper::SatelliteIdType satId: satIds) {
             // if is a secondary satellite id, then get the tiles from the database
             if(isPrimarySatIdInfo && (info.primarySatelliteId != satId)) {
-                ProductList satSecProds = ctx.GetProductsForTile(info.tileId, productType, primarySatId, satId);
+                ProductList satSecProds = ctx.GetProductsForTile(siteId, info.tileId, productType, primarySatId, satId);
                 // get the metadata tiles for all found products intersecting the current tile
                 QStringList listProductsTiles;
                 for(const Product &prod: satSecProds) {

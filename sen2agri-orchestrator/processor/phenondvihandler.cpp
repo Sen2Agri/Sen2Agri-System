@@ -99,7 +99,7 @@ void PhenoNdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                     toStdString());
     }
 
-    QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.jobId, listProducts, ProductType::L2AProductTypeId);
+    QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.siteId, event.jobId, listProducts, ProductType::L2AProductTypeId);
     QList<PhenoProductFormatterParams> listParams;
 
     TaskToSubmit productFormatterTask{"product-formatter", {}};

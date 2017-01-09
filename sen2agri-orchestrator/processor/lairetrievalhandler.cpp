@@ -967,13 +967,13 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     QList<LAIGlobalExecutionInfos> allLaiGlobalExecInfos;
     // Create a map containing for each tile Id the list of the temporal file infos
     // NOTE: This map contains only the determined primary satellite tiles
-    QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.jobId, listTilesMetaFiles,
+    QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.siteId, event.jobId, listTilesMetaFiles,
                                                                ProductType::L2AProductTypeId);
 
     //TODO: if the missing tiles are only from the secondary satellite ID (we have in the map tiles 2 satellites),
     //      this will produce later an error as it will consider the secondary satellite as primary and will keep their TileIds
     //      THIS Should be updated to receive the primary satellite ID
-    QMap<QString, TileTemporalFilesInfo> mapMissingL3BTiles = GroupTiles(ctx, event.jobId, missingL3BInputsTiles,
+    QMap<QString, TileTemporalFilesInfo> mapMissingL3BTiles = GroupTiles(ctx, event.siteId, event.jobId, missingL3BInputsTiles,
                                                                          ProductType::L2AProductTypeId);
     for(auto tileId : mapTiles.keys())
     {

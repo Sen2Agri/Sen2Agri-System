@@ -67,7 +67,7 @@ public:
     int InsertProduct(const NewProduct &product);
     ProductList GetProducts(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate);
     Product GetProduct(const QString &productName);
-    ProductList GetProductsForTile(const QString &tileId, ProductType productType, int satelliteId, int targetSatelliteId);
+    ProductList GetProductsForTile(int siteId, const QString &tileId, ProductType productType, int satelliteId, int targetSatelliteId);
     TileList GetSiteTiles(int siteId, int satelliteId);
     TileList GetIntersectingTiles(Satellite satellite, const QString &tileId);
 
