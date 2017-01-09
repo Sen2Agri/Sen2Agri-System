@@ -426,7 +426,7 @@ QStringList ProcessorHandler::GetL2AInputProducts(EventProcessingContext &ctx,
         }
     } else {
         for (const auto &inputProduct : inputProducts) {
-            listProducts.append(ctx.GetProductAbsolutePath(inputProduct.toString()));
+            listProducts.append(ctx.GetProductAbsolutePath(event.siteId, inputProduct.toString()));
         }
     }
 
@@ -440,7 +440,7 @@ QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &c
     const QStringList &listProducts = GetL2AInputProducts(ctx, event);
     // for each product, get the valid tiles
     for(const QString &inPrd: listProducts) {
-        QStringList tilesMetaFiles = ctx.findProductFiles(inPrd);
+        QStringList tilesMetaFiles = ctx.findProductFiles(event.siteId, inPrd);
         QStringList listValidTilesMetaFiles;
         for(const QString &tileMetaFile: tilesMetaFiles) {
             if(ProcessorHandlerHelper::IsValidL2AMetadataFileName(tileMetaFile)) {
@@ -497,7 +497,7 @@ bool ProcessorHandler::GetParameterValueAsInt(const QJsonObject &parameters, con
 }
 
 QMap<QString, TileTemporalFilesInfo> ProcessorHandler::GroupTiles(
-        EventProcessingContext &ctx, int jobId,
+        EventProcessingContext &ctx, int siteId, int jobId,
         const QStringList &listAllProductsTiles, ProductType productType)
 {
     // perform a first iteration to see the satellites IDs in all tiles
@@ -525,11 +525,11 @@ QMap<QString, TileTemporalFilesInfo> ProcessorHandler::GroupTiles(
         for(ProcessorHandlerHelper::SatelliteIdType satId: satIds) {
             // if is a secondary satellite id, then get the tiles from the database
             if(isPrimarySatIdInfo && (info.primarySatelliteId != satId)) {
-                ProductList satSecProds = ctx.GetProductsForTile(info.tileId, productType, primarySatId, satId);
+                ProductList satSecProds = ctx.GetProductsForTile(siteId, info.tileId, productType, primarySatId, satId);
                 // get the metadata tiles for all found products intersecting the current tile
                 QStringList listProductsTiles;
                 for(const Product &prod: satSecProds) {
-                    listProductsTiles.append(ctx.findProductFiles(prod.fullPath));
+                    listProductsTiles.append(ctx.findProductFiles(siteId, prod.fullPath));
                 }
 
                 // add the intersecting products for this satellite id to the current info

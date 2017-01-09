@@ -188,10 +188,10 @@ ProductList EventProcessingContext::GetProducts(int siteId, int productTypeId, c
     return persistenceManager.GetProducts(siteId, productTypeId, startDate, endDate);
 }
 
-ProductList EventProcessingContext::GetProductsForTile(const QString &tileId, ProductType productType,
+ProductList EventProcessingContext::GetProductsForTile(int siteId, const QString &tileId, ProductType productType,
                                                        int tileSatelliteId, int targetSatelliteId)
 {
-    return persistenceManager.GetProductsForTile(tileId, productType, tileSatelliteId, targetSatelliteId);
+    return persistenceManager.GetProductsForTile(siteId, tileId, productType, tileSatelliteId, targetSatelliteId);
 }
 
 TileList EventProcessingContext::GetSiteTiles(int siteId, int satelliteId)
@@ -204,25 +204,25 @@ TileList EventProcessingContext::GetIntersectingTiles(Satellite satellite, const
     return persistenceManager.GetIntersectingTiles(satellite, tileId);
 }
 
-QString EventProcessingContext::GetProductAbsolutePath(const QString &path) {
+QString EventProcessingContext::GetProductAbsolutePath(int siteId, const QString &path) {
     QFileInfo fileInfo(path);
     QString absPath = path;
     if(!fileInfo.isAbsolute()) {
         // if we have the product name, we need to get the product path from the database
-        Product product = persistenceManager.GetProduct(path);
+        Product product = persistenceManager.GetProduct(siteId, path);
         absPath = product.fullPath;
     }
     return absPath;
 }
 
-QStringList EventProcessingContext::findProductFiles(const QString &path)
+QStringList EventProcessingContext::findProductFiles(int siteId, const QString &path)
 {
     QStringList result;
     QFileInfo fileInfo(path);
     QString absPath = path;
     if(!fileInfo.isAbsolute()) {
         // if we have the product name, we need to get the product path from the database
-        Product product = persistenceManager.GetProduct(path);
+        Product product = persistenceManager.GetProduct(siteId, path);
         absPath = product.fullPath;
     }
     for (const auto &file : QDir(absPath).entryList({ "*.HDR", "*.xml" }, QDir::Files)) {

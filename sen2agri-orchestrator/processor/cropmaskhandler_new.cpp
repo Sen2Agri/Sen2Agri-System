@@ -133,7 +133,7 @@ NewStepList CropMaskHandlerNew::CreateSteps(EventProcessingContext &ctx, const J
 QStringList CropMaskHandlerNew::GetCropTypeTaskArgs(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                           const CropMaskJobConfig &cfg, const QStringList &listProducts, TaskToSubmit &cropMaskTask) {
 
-    QMap<QString, TileTemporalFilesInfo>  mapTiles = GroupTiles(ctx, event.jobId, listProducts,
+    QMap<QString, TileTemporalFilesInfo>  mapTiles = GroupTiles(ctx, event.siteId, event.jobId, listProducts,
                                                                 ProductType::L2AProductTypeId);
 
     const auto &outputDir = cropMaskTask.GetFilePath("");

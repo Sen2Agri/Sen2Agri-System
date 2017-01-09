@@ -876,14 +876,15 @@ ProductList PersistenceManagerDBProvider::GetProducts(int siteId,
     });
 }
 
-Product PersistenceManagerDBProvider::GetProduct(const QString &productName)
+Product PersistenceManagerDBProvider::GetProduct(int siteId, const QString &productName)
 {
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(
         __func__, [&] {
             auto query = db.prepareQuery(QStringLiteral("select * from sp_get_product_by_name("
-                                                        ":productName)"));
+                                                        ":siteId, :productName)"));
+            query.bindValue(QStringLiteral(":siteId"), siteId);
             query.bindValue(QStringLiteral(":productName"), productName);
             query.setForwardOnly(true);
             if (!query.exec()) {
@@ -911,7 +912,7 @@ Product PersistenceManagerDBProvider::GetProduct(const QString &productName)
         });
 }
 
-ProductList PersistenceManagerDBProvider::GetProductsForTile(const QString &tileId, ProductType productType,
+ProductList PersistenceManagerDBProvider::GetProductsForTile(int siteId, const QString &tileId, ProductType productType,
                                                              int satelliteId, int targetSatelliteId)
 {
     auto db = getDatabase();
@@ -919,7 +920,8 @@ ProductList PersistenceManagerDBProvider::GetProductsForTile(const QString &tile
     return provider.handleTransactionRetry(
         __func__, [&] {
             auto query = db.prepareQuery(QStringLiteral("select * from sp_get_products_for_tile("
-                                                        ":tileId, :productType, :satelliteId, :targeSatelliteId)"));
+                                                        ":siteId, :tileId, :productType, :satelliteId, :targeSatelliteId)"));
+            query.bindValue(QStringLiteral(":siteId"), siteId);
             query.bindValue(QStringLiteral(":tileId"), tileId);
             query.bindValue(QStringLiteral(":productType"), static_cast<int>(productType));
             query.bindValue(QStringLiteral(":satelliteId"), satelliteId);

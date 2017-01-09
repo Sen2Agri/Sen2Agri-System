@@ -481,7 +481,7 @@ void CompositeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     GetJobConfig(ctx, event, cfg);
 
     int resolution = cfg.resolution;
-    QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.jobId, listProducts,
+    QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.siteId, event.jobId, listProducts,
                                                                ProductType::L2AProductTypeId);
     //ProcessorHandlerHelper::TrimLeftSecondarySatellite(listProducts, mapTiles);
 

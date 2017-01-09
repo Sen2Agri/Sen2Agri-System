@@ -94,7 +94,7 @@ NewStepList CropTypeHandlerNew::CreateSteps(EventProcessingContext &ctx, const J
 QStringList CropTypeHandlerNew::GetCropTypeTaskArgs(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                     const CropTypeJobConfig &cfg, const QStringList &listProducts, TaskToSubmit &cropTypeTask) {
 
-    QMap<QString, TileTemporalFilesInfo>  mapTiles = GroupTiles(ctx, event.jobId, listProducts,
+    QMap<QString, TileTemporalFilesInfo>  mapTiles = GroupTiles(ctx, event.siteId, event.jobId, listProducts,
                                                                 ProductType::L2AProductTypeId);
 
     const auto &outputDir = cropTypeTask.GetFilePath("");
@@ -141,7 +141,7 @@ QStringList CropTypeHandlerNew::GetCropTypeTaskArgs(EventProcessingContext &ctx,
 
     if(cfg.cropMask.length() > 0) {
         cropTypeArgs += "-maskprod";
-        cropTypeArgs += ctx.GetProductAbsolutePath(cfg.cropMask);
+        cropTypeArgs += ctx.GetProductAbsolutePath(event.siteId, cfg.cropMask);
     }
 
     if(cfg.strataShp.length() > 0) {

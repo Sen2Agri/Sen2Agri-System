@@ -469,7 +469,7 @@ QStringList LaiRetrievalHandlerL3C::GetL3BProducts(EventProcessingContext &ctx, 
         // fill the l3bMapTiles from the input L3B products
         const auto &inputProducts = parameters["input_products"].toArray();
         for (const auto &inputProduct : inputProducts) {
-            const QString &prodAbsPath = ctx.GetProductAbsolutePath(inputProduct.toString());
+            const QString &prodAbsPath = ctx.GetProductAbsolutePath(event.siteId, inputProduct.toString());
             if(!filteredL3bProductList.contains(prodAbsPath)) {
                 filteredL3bProductList.append(prodAbsPath);
             }
