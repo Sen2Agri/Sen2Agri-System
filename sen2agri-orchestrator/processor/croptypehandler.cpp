@@ -479,7 +479,7 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     }
 
     QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.siteId, event.jobId, listProducts, ProductType::L2AProductTypeId);
-    QString cropMaskAbsolutePath = ctx.GetProductAbsolutePath(cfg.cropMask);
+    QString cropMaskAbsolutePath = ctx.GetProductAbsolutePath(event.siteId, cfg.cropMask);
     QMap<QString, QString> mapCropMasks;
     if (QFileInfo(cropMaskAbsolutePath).isDir()) {
         mapCropMasks = ProcessorHandlerHelper::GetHigLevelProductFiles(cropMaskAbsolutePath, "CM", false);

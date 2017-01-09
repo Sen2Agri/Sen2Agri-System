@@ -876,14 +876,15 @@ ProductList PersistenceManagerDBProvider::GetProducts(int siteId,
     });
 }
 
-Product PersistenceManagerDBProvider::GetProduct(const QString &productName)
+Product PersistenceManagerDBProvider::GetProduct(int siteId, const QString &productName)
 {
     auto db = getDatabase();
 
     return provider.handleTransactionRetry(
         __func__, [&] {
             auto query = db.prepareQuery(QStringLiteral("select * from sp_get_product_by_name("
-                                                        ":productName)"));
+                                                        ":siteId, :productName)"));
+            query.bindValue(QStringLiteral(":siteId"), siteId);
             query.bindValue(QStringLiteral(":productName"), productName);
             query.setForwardOnly(true);
             if (!query.exec()) {

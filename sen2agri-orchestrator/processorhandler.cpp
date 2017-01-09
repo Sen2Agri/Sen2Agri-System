@@ -426,7 +426,7 @@ QStringList ProcessorHandler::GetL2AInputProducts(EventProcessingContext &ctx,
         }
     } else {
         for (const auto &inputProduct : inputProducts) {
-            listProducts.append(ctx.GetProductAbsolutePath(inputProduct.toString()));
+            listProducts.append(ctx.GetProductAbsolutePath(event.siteId, inputProduct.toString()));
         }
     }
 
@@ -440,7 +440,7 @@ QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &c
     const QStringList &listProducts = GetL2AInputProducts(ctx, event);
     // for each product, get the valid tiles
     for(const QString &inPrd: listProducts) {
-        QStringList tilesMetaFiles = ctx.findProductFiles(inPrd);
+        QStringList tilesMetaFiles = ctx.findProductFiles(event.siteId, inPrd);
         QStringList listValidTilesMetaFiles;
         for(const QString &tileMetaFile: tilesMetaFiles) {
             if(ProcessorHandlerHelper::IsValidL2AMetadataFileName(tileMetaFile)) {
@@ -529,7 +529,7 @@ QMap<QString, TileTemporalFilesInfo> ProcessorHandler::GroupTiles(
                 // get the metadata tiles for all found products intersecting the current tile
                 QStringList listProductsTiles;
                 for(const Product &prod: satSecProds) {
-                    listProductsTiles.append(ctx.findProductFiles(prod.fullPath));
+                    listProductsTiles.append(ctx.findProductFiles(siteId, prod.fullPath));
                 }
 
                 // add the intersecting products for this satellite id to the current info

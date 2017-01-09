@@ -141,7 +141,7 @@ QStringList CropTypeHandlerNew::GetCropTypeTaskArgs(EventProcessingContext &ctx,
 
     if(cfg.cropMask.length() > 0) {
         cropTypeArgs += "-maskprod";
-        cropTypeArgs += ctx.GetProductAbsolutePath(cfg.cropMask);
+        cropTypeArgs += ctx.GetProductAbsolutePath(event.siteId, cfg.cropMask);
     }
 
     if(cfg.strataShp.length() > 0) {
