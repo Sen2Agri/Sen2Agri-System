@@ -12,6 +12,7 @@ import glob
 import re
 import sys
 import pipes
+import resource
 import subprocess
 import traceback
 import datetime
@@ -80,6 +81,18 @@ def executeStep(name, *args, **kwargs):
             print(name + " done at " + str(endTime) + ". Duration: " + str(endTime - startTime))
             break
 # end executeStep
+
+
+def increase_limits():
+    try:
+        nofiles = resource.getrlimit(resource.RLIMIT_NOFILE)
+        if nofiles[0] < nofiles[1]:
+            print("Increasing NOFILE soft limit from {} to {}".format(nofiles[0], nofiles[1]))
+            resource.setrlimit(resource.RLIMIT_NOFILE, (nofiles[1], nofiles[1]))
+        else:
+            print("NOFILE limit is set to {}".format(nofiles[0]))
+    except:
+        traceback.print_exc()
 
 
 class Step(object):
@@ -390,6 +403,9 @@ class ProcessorBase(object):
 
     def execute(self):
         start_time = datetime.datetime.now()
+
+        increase_limits()
+
         try:
             exit_status = 0
             exit_requested = False
