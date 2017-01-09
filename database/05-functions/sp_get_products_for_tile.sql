@@ -1,4 +1,4 @@
-CREATE OR REPLACE FUNCTION sp_get_products_for_tile(_site_id site.id%TYPE, tile_id CHARACTER VARYING, _product_type_id SMALLINT, _satellite_id satellite.id%TYPE, _out_satellite_id satellite.id%TYPE)
+CREATE OR REPLACE FUNCTION sp_get_products_for_tile(_site_id site.id%TYPE, _tile_id CHARACTER VARYING, _product_type_id SMALLINT, _satellite_id satellite.id%TYPE, _out_satellite_id satellite.id%TYPE)
 RETURNS TABLE (
     full_path product.full_path%TYPE,
     product_date product.created_timestamp%TYPE
