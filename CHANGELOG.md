@@ -1,5 +1,36 @@
 # Change Log
 
+## [1.4.1] - 2016-01-??
+### Added
+### Changed
+ - The multi-tile Crop Mask and Crop Type processors no longer have the `-mission` and `-prodspertile` arguments. These are now automatically deduced, and L8 tiles no longer have to be duplicated in the input list.
+ - The installer (but not the upgrade script) now changes `upload_max_filesize` in `/etc/php.ini` from `2M` to `40M`
+ - The installer (but not the upgrade script) now sets `max_input_vars` in `/etc/php.ini` to `10000`
+ - The crop mask no data filling step now replaces `NaN` values with `0` to avoid possible issues later when computing statistics
+
+### Fixed
+ - The automated and custom jobs no longer use tiles from a different site if two sites contain the same tile
+ - Landsat8 reprojection is now performed correctly
+
+### Known issues
+- The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented
+- SNAP adapters need to be updated
+- The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
+- With multiple input tiles, the training pixel sampling for crop type and crop mask products can be skewed if the training classes are not uniformly distributed
+- The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
+- The SAFE formatting application sometimes outputs unusable (e.g. black) previews
+- The SAFE and L2A product previews are not gamma-corrected and can be too dark
+- The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
+- The crop type and mask training step sometimes crashes while loading the OpenCV models
+- MACCS and quicklook generation sometimes crash or hang
+- The NDVI no data filling step is inefficient
+- The product formatting and tile aggregation steps are inefficient
+- Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
+- The trimming step of the Crop Mask processor still uses a large amount of memory
+- The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
+- The dashboard previews don't match their bounds rectangle because of projection mismatch
+- The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
+
 ## [1.4] - 2016-11-17
 ### Added
 - Multi-tile implementation of the unsupervised Crop Mask processor, which should be more precise, faster and use less temporary disk space
