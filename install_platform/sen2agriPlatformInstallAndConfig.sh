@@ -434,17 +434,17 @@ function install_and_config_webserver()
    #install apache
    yum -y install httpd
 
+   #install php
+   yum -y install php php-mysql
+
+   sed -i -e 's/; max_input_vars.*/max_input_vars = 10000/' /etc/php.ini
+   sed -i -e 's/upload_max_filesize.*/upload_max_filesize = 40M/' /etc/php.ini
+
    #start service apache
    systemctl start httpd.service
 
    #enable service apache
    systemctl enable httpd.service
-
-   #install php
-   yum -y install php php-mysql
-
-   #restart service apache
-   systemctl restart httpd.service
 
    ##install Sen2Agri Website
    yum -y install ../rpm_binaries/sen2agri-website-*.centos7.x86_64.rpm
