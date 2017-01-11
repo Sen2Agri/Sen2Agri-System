@@ -3,10 +3,13 @@
 ## [1.4.1] - 2016-01-??
 ### Added
 ### Changed
- - The multi-tile Crop Mask and Crop Type processors no longer have the `-mission` and `-prodspertile` arguments. These are now automatically deduced, and L8 tiles no longer have to be duplicated in the input list.
+ - The crop mask and crop type processors no longer have the `-mission` and `-prodspertile` arguments
+ - L8 products no longer have to be duplicated for the crop mask and crop type processors
  - The installer (but not the upgrade script) now changes `upload_max_filesize` in `/etc/php.ini` from `2M` to `40M`
  - The installer (but not the upgrade script) now sets `max_input_vars` in `/etc/php.ini` to `10000`
  - The crop mask no data filling step now replaces `NaN` values with `0` to avoid possible issues later when computing statistics
+ - The crop mask and crop type processors nor increase the soft `RLIMIT_NOFILE` limit to the hard one
+ - The SNAP adapters have been updated
 
 ### Fixed
  - The automated and custom jobs no longer use tiles from a different site if two sites contain the same tile
@@ -14,7 +17,6 @@
 
 ### Known issues
 - The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented
-- SNAP adapters need to be updated
 - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
 - With multiple input tiles, the training pixel sampling for crop type and crop mask products can be skewed if the training classes are not uniformly distributed
 - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
