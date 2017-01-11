@@ -12,7 +12,7 @@
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>$SCRIPT_PATH/CropType.py</mainToolFileLocation>
+  <mainToolFileLocation>$SCRIPT_PATH/CropTypeFused.py</mainToolFileLocation>
   <workingDir>$WORKING_DIR_PATH</workingDir>
   <template>
     <file>CropTypeProcessor-template.vm</file>
@@ -62,18 +62,6 @@
       <parameterType>RegularParameter</parameterType>
     </parameter>
     <parameter>
-      <name>samplingRate</name>
-      <dataType>java.lang.Integer</dataType>
-      <defaultValue>5</defaultValue>
-      <description>The sampling rate for the temporal series, in days</description>
-      <label>Sampling Rate</label>
-      <unit>day</unit>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-    </parameter>
-    <parameter>
       <name>randomSeed</name>
       <dataType>java.lang.Integer</dataType>
       <defaultValue>0</defaultValue>
@@ -85,29 +73,9 @@
       <parameterType>RegularParameter</parameterType>
     </parameter>
     <parameter>
-      <name>cropMask</name>
-      <dataType>java.io.File</dataType>
-      <defaultValue>/</defaultValue>
-      <description>The crop mask</description>
-      <label>Crop Mask</label>
-      <valueSet/>
-      <notNull>true</notNull>
-      <notEmpty>true</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-    </parameter>
-    <parameter>
-      <name>inputFiles</name>
-      <dataType>[Ljava.io.File;</dataType>
-      <description>The list of products descriptors</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-    </parameter>
-    <parameter>
       <name>pixelSize</name>
       <dataType>java.lang.Integer</dataType>
-      <defaultValue>20</defaultValue>
+      <defaultValue>10</defaultValue>
       <description>The size, in meters, of a pixel (default 10)</description>
       <label>Pixel Size</label>
       <unit>m</unit>
@@ -122,26 +90,33 @@
       <parameterType>RegularParameter</parameterType>
     </parameter>
     <parameter>
-      <name>t0</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>20130206</defaultValue>
-      <description>Start date</description>
-      <label>Start Date</label>
+      <name>inputFiles</name>
+      <dataType>[Ljava.io.File;</dataType>
+      <description>List of input files</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
     </parameter>
     <parameter>
-      <name>tend</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>20130616</defaultValue>
-      <description>End date</description>
-      <label>End Date</label>
+      <name>strataShapefile</name>
+      <dataType>java.io.File</dataType>
+      <defaultValue>/</defaultValue>
+      <description>Shapefile with polygons for the strata.</description>
       <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>
+    </parameter>
+    <parameter>
+      <name>outputDir</name>
+      <dataType>java.io.File</dataType>
+      <defaultValue>/mnt/archive/temp</defaultValue>
+      <description>Output directory</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>FolderParameter</parameterType>
     </parameter>
   </parameters>
   <source>package</source>

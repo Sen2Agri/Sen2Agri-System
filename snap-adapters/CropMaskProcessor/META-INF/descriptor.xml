@@ -12,7 +12,7 @@
   <menuLocation>Menu/Tools/External Tools</menuLocation>
   <preprocessTool>false</preprocessTool>
   <writeForProcessing>false</writeForProcessing>
-  <mainToolFileLocation>$SCRIPT_PATH/CropMask.py</mainToolFileLocation>
+  <mainToolFileLocation>$SCRIPT_PATH/CropMaskFused.py</mainToolFileLocation>
   <workingDir>$WORKING_DIR_PATH</workingDir>
   <template>
     <file>CropMaskProcessor-template.vm</file>
@@ -52,7 +52,7 @@
       <parameterType>RegularParameter</parameterType>
     </parameter>
     <parameter>
-      <name>refPolygons</name>
+      <name>referencePolygons</name>
       <dataType>java.io.File</dataType>
       <defaultValue>/</defaultValue>
       <description>The reference polygons</description>
@@ -100,7 +100,7 @@
       <parameterType>RegularParameter</parameterType>
     </parameter>
     <parameter>
-      <name>outDir</name>
+      <name>outputDir</name>
       <dataType>java.io.File</dataType>
       <defaultValue>/mnt/archive/temp</defaultValue>
       <description>Output folder</description>
@@ -109,6 +109,59 @@
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>FolderParameter</parameterType>
+    </parameter>
+    <parameter>
+      <name>mission</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>SPOT</defaultValue>
+      <description>The main mission for the series</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+    </parameter>
+    <parameter>
+      <name>productsPerTile</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue></defaultValue>
+      <description>Number of products for each tile</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+    </parameter>
+    <parameter>
+      <name>strataShapefiles</name>
+      <dataType>java.io.File</dataType>
+      <defaultValue>/</defaultValue>
+      <description>Shapefiles with polygons for the strata. Locations delimited by comma.</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+    </parameter>
+    <parameter>
+      <name>skipSegmentation</name>
+      <dataType>java.lang.String</dataType>
+      <defaultValue>False</defaultValue>
+      <description>Skip the segmentation step, creating the product with just the raw mask (default false)</description>
+      <valueSet>
+        <string>True</string>
+        <string>False</string>
+      </valueSet>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+    </parameter>
+    <parameter>
+      <name>referenceRaster</name>
+      <dataType>java.io.File</dataType>
+      <defaultValue>/</defaultValue>
+      <description>The reference raster</description>
+      <valueSet/>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
     </parameter>
   </parameters>
   <source>package</source>

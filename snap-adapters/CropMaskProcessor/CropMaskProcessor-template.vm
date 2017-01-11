@@ -1,10 +1,25 @@
+-mission
+$mission
+#if ($referencePolygons == "/")
+-refr
+$referenceRaster
+#else
 -refp
-$refPolygons
+$referencePolygons
+#end
 -input
 $inputFiles
+-prodspertile
+$productsPerTile
 -rseed
 $randomSeed
 -pixsize
 $pixelSize
 -outdir
-$WORKING_DIR_PATH
+$outputDir
+#if ($strataShapefiles != "/")
+-strata
+$strataShapefiles
+#end
+-skip-segmentation
+$skipSegmentation

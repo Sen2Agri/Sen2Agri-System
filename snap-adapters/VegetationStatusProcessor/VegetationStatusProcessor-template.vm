@@ -5,9 +5,7 @@ $resolution
 --outdir
 $WORKING_DIR_PATH
 --rsrcfg
-/usr/share/sen2agri/rsr_cfg.txt
---modelsfolder
-$modelsFolder
+$RSRConfigFile
 --generatemodel
 $generateModel
 --generatemonodate

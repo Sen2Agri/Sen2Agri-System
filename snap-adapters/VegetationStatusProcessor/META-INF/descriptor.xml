@@ -75,18 +75,6 @@
       <parameterType>RegularParameter</parameterType>
     </parameter>
     <parameter>
-      <name>modelsFolder</name>
-      <dataType>java.io.File</dataType>
-      <defaultValue>/</defaultValue>
-      <description>The folder where the models are located</description>
-      <label>Models Folder</label>
-      <unit></unit>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>FolderParameter</parameterType>
-    </parameter>
-    <parameter>
       <name>generateModel</name>
       <dataType>java.lang.String</dataType>
       <defaultValue>YES</defaultValue>
@@ -139,6 +127,16 @@
         <string>YES</string>
         <string>NO</string>
       </valueSet>
+      <notNull>false</notNull>
+      <notEmpty>false</notEmpty>
+      <parameterType>RegularParameter</parameterType>
+    </parameter>
+    <parameter>
+      <name>RSRConfigFile</name>
+      <dataType>java.io.File</dataType>
+      <defaultValue>/usr/share/sen2agri/rsr_cfg.txt</defaultValue>
+      <description>The RSR Configuration file for each missin</description>
+      <valueSet/>
       <notNull>false</notNull>
       <notEmpty>false</notEmpty>
       <parameterType>RegularParameter</parameterType>

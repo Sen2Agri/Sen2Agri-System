@@ -10,5 +10,7 @@ $processNumber
 $gipDirectory.AbsolutePath
 --maccs-launcher
 $MACCSLauncher.AbsolutePath
+--delete-temp
+False
 $inputProductDir.AbsolutePath
 $outDir.AbsolutePath

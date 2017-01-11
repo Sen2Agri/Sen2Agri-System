@@ -111,7 +111,7 @@
         <string>bands_mapping_L8.txt</string>
         <string>bands_mapping_s2_L8.txt</string>
         <string>bands_mapping_s2.txt</string>
-        <string>bands_mapping_Spot4_L8.txt /usr/share/sen2agri/bands_mapping_spot4.txt</string>
+        <string>bands_mapping_Spot4_L8.txt</string>
         <string>bands_mapping_Spot5_L8.txt </string>
         <string>bands_mapping_spot5.txt</string>
       </valueSet>

@@ -1,14 +1,14 @@
--ref
+-refp
 $referencePolygons.AbsolutePath
 -input
 $inputFiles
--rate
-$samplingRate
 -rseed
 $randomSeed
 -pixsize
 $pixelSize
--mask
-$cropMask
 -outdir
-$WORKING_DIR_PATH
+$outputDir
+#if ($strataShapefile != "/")
+-strata
+$strataShapefile
+#end

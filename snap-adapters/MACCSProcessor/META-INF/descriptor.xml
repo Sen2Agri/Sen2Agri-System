@@ -20,7 +20,7 @@
   <variables>
     <variable>
       <key>WORKING_DIR_PATH</key>
-      <value>/mnt/archive/temp_maccs</value>
+      <value>/mnt/archive/temp/maccs_temp/</value>
       <isShared>false</isShared>
     </variable>
     <variable>
@@ -103,7 +103,7 @@
       <name>inputProductDir</name>
       <alias>L1C Path</alias>
       <dataType>java.io.File</dataType>
-      <defaultValue>/mnt/archive</defaultValue>
+      <defaultValue>/mnt/archive/dwn_def/s2/default/morocco_new/S2A_MSIL1C_20161206T112442_N0204_R037_T29RNQ_20161206T112747.SAFE</defaultValue>
       <description>Path to L1C input products</description>
       <valueSet/>
       <notNull>false</notNull>
@@ -114,7 +114,7 @@
       <name>outDir</name>
       <alias>Output Path</alias>
       <dataType>java.io.File</dataType>
-      <defaultValue>/mnt/archive/temp_maccs</defaultValue>
+      <defaultValue>/mnt/archive/temp/maccs_temp/temp_maccs</defaultValue>
       <description>Output location</description>
       <valueSet/>
       <notNull>false</notNull>
