@@ -168,15 +168,29 @@ class Stratum(object):
         self.tiles = []
 
 
+class Descriptor(object):
+
+    def __init__(self, path, mission):
+        self.path = path
+        self.mission = mission
+
+
 class Tile(object):
 
-    def __init__(self, id, footprint, footprint_wgs84, projection, descriptors):
+    def __init__(self, id, footprint, footprint_wgs84, projection, descriptors, reference_raster):
         self.id = id
-        self.descriptors = descriptors
         self.footprint = footprint
         self.footprint_wgs84 = footprint_wgs84
         self.projection = projection
+        self.descriptors = descriptors
+        self.reference_raster = reference_raster
         self.strata = []
+
+    def get_descriptor_paths(self):
+        return map(lambda d: d.path, self.descriptors)
+
+    def get_mission_descriptor_paths(self, mission):
+        return [d.path for d in self.descriptors if d.mission == mission]
 
 
 def load_lut(lut):
@@ -399,6 +413,10 @@ def format_otb_filename(file, compression=None):
     return file
 
 
+def build_descriptor_list(mission, products):
+    return map(lambda p: Descriptor(p, mission), products)
+
+
 class ProcessorBase(object):
 
     def execute(self):
@@ -480,10 +498,10 @@ class ProcessorBase(object):
         tile_quality_flags = self.get_output_path("status_flags_{}.tif", tile.id)
 
         step_args = ["otbcli", "QualityFlagsExtractor", self.args.buildfolder,
-                     "-mission", self.args.mission,
+                     "-mission", self.args.mission.name,
                      "-out", format_otb_filename(tile_quality_flags, compression='DEFLATE'),
                      "-pixsize", self.args.pixsize]
-        step_args += ["-il"] + tile.descriptors
+        step_args += ["-il"] + tile.get_descriptor_paths()
 
         run_step(Step("QualityFlags_" + str(tile.id), step_args))
 
@@ -517,8 +535,8 @@ class ProcessorBase(object):
             elif main_mission.value > mission.value:
                 main_mission = mission
 
-        self.args.mission = main_mission.name
-        print("Main mission: {}".format(self.args.mission))
+        self.args.mission = main_mission
+        print("Main mission: {}".format(main_mission.name))
 
         self.tiles = []
         for (tile_id, products) in mission_products[main_mission].iteritems():
@@ -527,7 +545,7 @@ class ProcessorBase(object):
              tile_projection) = get_raster_footprint(raster)
 
             tile = Tile(tile_id, tile_footprint, tile_footprint_wgs84,
-                        tile_projection, list(products))
+                        tile_projection, build_descriptor_list(main_mission, products), raster)
 
             self.tiles.append(tile)
 
@@ -544,7 +562,7 @@ class ProcessorBase(object):
                             print("Tile {} intersects main tile {}".format(
                                 tile_id, main_tile.id))
 
-                            main_tile.descriptors += products
+                            main_tile.descriptors += build_descriptor_list(mission, products)
 
         self.tiles.sort(key=lambda t: t.id)
 
@@ -593,13 +611,12 @@ class ProcessorBase(object):
 
         save_to_shp(tile_mask, classification_mask)
 
-        tile_reference_raster = get_reference_raster(tile.descriptors[0])
-        print("Reference raster for tile:", tile_reference_raster)
+        print("Reference raster for tile:", tile.reference_raster)
 
         run_step(Step("Rasterize mask",
                       ["otbcli_Rasterization",
                        "-in", tile_mask,
-                       "-im", tile_reference_raster,
+                       "-im", tile.reference_raster,
                        "-out", format_otb_filename(stratum_tile_mask, compression='DEFLATE'), "uint8",
                        "-mode", "binary"]))
 

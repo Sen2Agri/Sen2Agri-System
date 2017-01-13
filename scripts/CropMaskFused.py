@@ -8,7 +8,7 @@ import shutil
 import argparse
 from lxml import etree
 from lxml.builder import E
-from sen2agri_common import ProcessorBase, Step, split_features, run_step, format_otb_filename, get_reference_raster
+from sen2agri_common import ProcessorBase, Step, split_features, run_step, format_otb_filename
 
 
 class CropMaskProcessor(ProcessorBase):
@@ -61,6 +61,8 @@ class CropMaskProcessor(ProcessorBase):
         parser.add_argument('-ranger', help='The range radius defining the radius (expressed in radiometry unit) in the multispectral space (default 0.65)', required=False, default=0.65)
         parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) for segmentation (default 10)', required=False, default=10)
         parser.add_argument('-minarea', help="The minium number of pixel in an area where, for an equal number of crop and nocrop samples, the crop decision is taken (default 20)", required=False, default=20)
+        parser.add_argument('-main-mission-segmentation', help='Only use main mission products for the segmentation',
+                            required=False, default=False, action='store_true')
 
         parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)",
                             default=False, action='store_true')
@@ -113,11 +115,11 @@ class CropMaskProcessor(ProcessorBase):
                                                  "-out", tile_reference_eroded]))
 
             run_step(Step("SpectralFeatures_" + tile.id, ["otbcli", "SpectralFeaturesExtraction", self.args.buildfolder,
-                                                          "-mission", self.args.mission,
+                                                          "-mission", self.args.mission.name,
                                                           "-pixsize", self.args.pixsize,
                                                           "-lambda", self.args.lmbd,
                                                           "-out", tile_spectral_features,
-                                                          "-il"] + tile.descriptors))
+                                                          "-il"] + tile.get_descriptor_paths()))
 
             run_step(Step("Trimming_" + tile.id, ["otbcli", "Trimming", self.args.buildfolder,
                                                   "-alpha", self.args.alpha,
@@ -143,7 +145,7 @@ class CropMaskProcessor(ProcessorBase):
             area_descriptors = []
             area_prodpertile = []
             for tile in stratum.tiles:
-                area_descriptors += tile.descriptors
+                area_descriptors += tile.get_descriptor_paths()
                 area_prodpertile.append(len(tile.descriptors))
 
             run_step(Step("SampleSelection", ["otbcli", "SampleSelection", self.args.buildfolder,
@@ -154,7 +156,7 @@ class CropMaskProcessor(ProcessorBase):
                                               "-tp", area_training_polygons,
                                               "-vp", area_validation_polygons]))
             step_args = ["otbcli", "CropMaskTrainImagesClassifier", self.args.buildfolder,
-                         "-mission", self.args.mission,
+                         "-mission", self.args.mission.name,
                          "-nodatalabel", -10000,
                          "-pixsize", self.args.pixsize,
                          "-outdays", area_days,
@@ -282,14 +284,14 @@ class CropMaskProcessor(ProcessorBase):
                            "-mode", "attribute",
                            "-mode.attribute.field", "ID",
                            "-in", self.args.strata,
-                           "-im", get_reference_raster(tile.descriptors[0]),
+                           "-im", tile.reference_raster,
                            "-out", format_otb_filename(tile_model_mask, compression='DEFLATE'), "uint8"]))
 
         tile_crop_mask_uncompressed = self.get_output_path("crop_mask_map_{}_uncompressed.tif", tile.id)
 
         if self.args.refp is not None:
             step_args = ["otbcli", "CropMaskImageClassifier", self.args.buildfolder,
-                         "-mission", self.args.mission,
+                         "-mission", self.args.mission.name,
                          "-pixsize", self.args.pixsize,
                          "-bv", -10000,
                          "-nodatalabel", -10000,
@@ -297,7 +299,7 @@ class CropMaskProcessor(ProcessorBase):
                          "-out", tile_crop_mask_uncompressed,
                          "-indays"] + days
             step_args += ["-model"] + models
-            step_args += ["-il"] + tile.descriptors
+            step_args += ["-il"] + tile.get_descriptor_paths()
             if self.args.classifier == "svm":
                 step_args += ["-imstat"] + statistics
             if not self.single_stratum:
@@ -344,12 +346,17 @@ class CropMaskProcessor(ProcessorBase):
         tile_ndvi_filled = self.get_output_path("ndvi-filled-{}.tif", tile.id)
         tile_pca = self.get_output_path("pca-{}.tif", tile.id)
 
+        if self.args.main_mission_segmentation:
+            tile_descriptors = tile.get_mission_descriptor_paths(self.args.mission)
+        else:
+            tile_descriptors = tile.get_descriptor_paths()
+
         step_args = ["otbcli", "NDVISeries", self.args.buildfolder,
-                     "-mission", self.args.mission,
+                     "-mission", self.args.mission.name,
                      "-pixsize", self.args.pixsize,
                      "-mode", "gapfill",
                      "-out", tile_ndvi]
-        step_args += ["-il"] + tile.descriptors
+        step_args += ["-il"] + tile_descriptors
         step_args += ["-sp"] + self.args.sp
 
         run_step(Step("NDVI Series " + tile.id, step_args))
@@ -619,7 +626,7 @@ class CropMaskProcessor(ProcessorBase):
         tiles = E.Tiles()
         for tile in self.tiles:
             inputs = E.Inputs()
-            for descriptor in tile.descriptors:
+            for descriptor in tile.get_descriptor_paths():
                 inputs.append(
                     E.Input(os.path.splitext(os.path.basename(descriptor))[0])
                 )
@@ -654,7 +661,7 @@ class CropMaskProcessor(ProcessorBase):
         metadata.append(tiles)
 
         parameters = E.Parameters(
-            E.MainMission(self.args.mission),
+            E.MainMission(self.args.mission.name),
             E.PixelSize(str(self.args.pixsize)),
             E.SampleRatio(str(self.args.ratio)),
             E.Classifier(self.args.classifier),

@@ -9,7 +9,7 @@ import argparse
 import re
 from lxml import etree
 from lxml.builder import E
-from sen2agri_common import ProcessorBase, Step, split_features, run_step, format_otb_filename, get_reference_raster
+from sen2agri_common import ProcessorBase, Step, split_features, run_step, format_otb_filename
 
 
 class CropTypeProcessor(ProcessorBase):
@@ -132,7 +132,7 @@ class CropTypeProcessor(ProcessorBase):
         area_descriptors = []
         area_prodpertile = []
         for tile in stratum.tiles:
-            area_descriptors += tile.descriptors
+            area_descriptors += tile.get_descriptor_paths()
             area_prodpertile.append(len(tile.descriptors))
 
         run_step(Step("SampleSelection", ["otbcli", "SampleSelection", self.args.buildfolder,
@@ -142,7 +142,7 @@ class CropTypeProcessor(ProcessorBase):
                                           "-tp", area_training_polygons,
                                           "-vp", area_validation_polygons]))
         step_args = ["otbcli", "CropTypeTrainImagesClassifier", self.args.buildfolder,
-                     "-mission", self.args.mission,
+                     "-mission", self.args.mission.name,
                      "-nodatalabel", -10000,
                      "-pixsize", self.args.pixsize,
                      "-outdays", area_days,
@@ -195,13 +195,13 @@ class CropTypeProcessor(ProcessorBase):
                            "-mode", "attribute",
                            "-mode.attribute.field", "ID",
                            "-in", self.args.strata,
-                           "-im", get_reference_raster(tile.descriptors[0]),
+                           "-im", tile.reference_raster,
                            "-out", format_otb_filename(tile_model_mask, compression='DEFLATE'), "uint8"]))
 
         tile_crop_type_map_uncompressed = self.get_output_path("crop_type_map_{}_uncompressed.tif", tile.id)
 
         step_args = ["otbcli", "CropTypeImageClassifier", self.args.buildfolder,
-                     "-mission", self.args.mission,
+                     "-mission", self.args.mission.name,
                      "-pixsize", self.args.pixsize,
                      "-bv", -10000,
                      "-nodatalabel", -10000,
@@ -210,7 +210,7 @@ class CropTypeProcessor(ProcessorBase):
         if self.args.red_edge:
             step_args += ["-rededge", "true"]
         step_args += ["-model"] + models
-        step_args += ["-il"] + tile.descriptors
+        step_args += ["-il"] + tile.get_descriptor_paths()
         if self.args.classifier == "svm":
             step_args += ["-imstat"] + statistics
 
@@ -422,7 +422,7 @@ class CropTypeProcessor(ProcessorBase):
         tiles = E.Tiles()
         for tile in self.tiles:
             inputs = E.Inputs()
-            for descriptor in tile.descriptors:
+            for descriptor in tile.get_descriptor_paths():
                 inputs.append(
                     E.Input(os.path.splitext(os.path.basename(descriptor))[0])
                 )
@@ -466,7 +466,7 @@ class CropTypeProcessor(ProcessorBase):
             )
 
         parameters = E.Parameters(
-            E.MainMission(self.args.mission),
+            E.MainMission(self.args.mission.name),
             E.PixelSize(str(self.args.pixsize)),
             E.SampleRatio(str(self.args.ratio)),
             E.Classifier(self.args.classifier),
