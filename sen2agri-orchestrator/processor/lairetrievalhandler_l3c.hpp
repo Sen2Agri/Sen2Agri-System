@@ -35,6 +35,8 @@ class LaiRetrievalHandlerL3C : public ProcessorHandler
         LAIProductFormatterParams prodFormatParams;
     } LAIGlobalExecutionInfos;
 
+    typedef enum {LAI_RASTER_ADD_INFO_IDX=0, LAI_ERR_RASTER_ADD_INFO_IDX=1, LAI_FLG_RASTER_ADD_INFO_IDX=2} LAI_RASTER_ADDITIONAL_INFO_IDX;
+
 private:
     void HandleJobSubmittedImpl(EventProcessingContext &ctx,
                                 const JobSubmittedEvent &event) override;
@@ -48,7 +50,7 @@ private:
                             const TileTemporalFilesInfo &tileTemporalFilesInfo, LAIGlobalExecutionInfos &outGlobalExecInfos, bool bRemoveTempFiles);
 
     void WriteExecutionInfosFile(const QString &executionInfosPath,
-                                std::map<QString, QString> &configParameters,
+                                std::map<QString, QString> &configParameters, const QMap<QString, TileTemporalFilesInfo> &l3bMapTiles,
                                 const QStringList &listProducts, bool bIsReproc);
 
     // Arguments getters
@@ -70,7 +72,7 @@ private:
                                                const QStringList &products, const QStringList &tileIdsList, const QStringList &ndviList,
                                                const QStringList &laiList, const QStringList &laiErrList, const QStringList &laiFlgsList);
     QStringList GetReprocProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx,
-                                        const JobSubmittedEvent &event,
+                                        const JobSubmittedEvent &event, const QMap<QString, TileTemporalFilesInfo> &l3bMapTiles,
                                         const QStringList &listProducts, const QList<LAIProductFormatterParams> &productParams, bool isFitted);
 
     NewStepList GetStepsForMultiDateReprocessing(std::map<QString, QString> &configParameters, const TileTemporalFilesInfo &tileTemporalFilesInfo,
@@ -81,6 +83,7 @@ private:
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
     bool IsNDayReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
     bool IsFittedReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
+    bool IsReprocessingCompact(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
 
     bool GetL2AProductsInterval(const QMap<QString, QStringList> &mapTilesMeta, QDateTime &startDate, QDateTime &endDate);
     QStringList GetL3BProducts(EventProcessingContext &ctx, int siteId);
@@ -116,6 +119,7 @@ private:
                                            QStringList &flgsFileNames, const QString &mainImg, const QString &reprocTimeSeriesFileName, const QStringList &listDates);
     QMap<QString, TileTemporalFilesInfo> FilterSecondaryProductTiles(const QMap<QString, TileTemporalFilesInfo> &mapTiles,
                                  const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles);
+    QStringList GetL3BProductRasterFiles(const TileTemporalFilesInfo &tileTemporalFilesInfo, LAI_RASTER_ADDITIONAL_INFO_IDX idx);
 };
 
 #endif // LAIRETRIEVALHANDLERNEW_HPP

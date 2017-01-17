@@ -295,10 +295,13 @@ private:
     SetDefaultParameterInt("genall", 0);
 
     // Profile reprocessing splitter parameters
-    AddParameter(ParameterType_OutputFilename, "outrlist", "File containing the list of all raster files produced.");
-    MandatoryOff("outrlist");
-    AddParameter(ParameterType_OutputFilename, "outflist", "File containing the list of all flag files produced.");
-    MandatoryOff("outflist");
+    // TODO: These 2 parameters are not working and should be removed.
+    //      The split induce large execution times so it is not an improvement
+    //       Instead, ReprocessedProfileSplitter2 should be used
+//    AddParameter(ParameterType_OutputFilename, "outrlist", "File containing the list of all raster files produced.");
+//    MandatoryOff("outrlist");
+//    AddParameter(ParameterType_OutputFilename, "outflist", "File containing the list of all flag files produced.");
+//    MandatoryOff("outflist");
     AddParameter(ParameterType_Int, "compress", "Specifies if output files should be compressed or not.");
     MandatoryOff("compress");
     SetDefaultParameterInt("compress", 0);
@@ -426,9 +429,14 @@ private:
           m_profileReprocessingFilter->GetOutput()->SetNumberOfComponentsPerPixel(nTotalBands);
       }
 
-      DoProfileReprocessingOutput(datesList, nTotalBands);
+      //DoProfileReprocessingOutput(datesList, nTotalBands);
+      SetParameterOutputImage("opf", m_profileReprocessingFilter->GetOutput());
 }
 
+/*
+  // TODO: This function could be remove as using outrlist and outflist (the splitting) induce
+  //       large execution times and is not efficient.
+  //       Instead, ReprocessedProfileSplitter2 should be used
   void DoProfileReprocessingOutput(const std::vector<std::string> &datesList, int nTotalBands) {
       m_profileReprocessingFilter->GetOutput()->UpdateOutputInformation();
 
@@ -529,7 +537,7 @@ private:
           SetParameterOutputImage("opf", m_profileReprocessingFilter->GetOutput());
       }
   }
-
+*/
 
   ImageType::Pointer GetTimeSeriesImage(const std::vector<std::string> &imgsList, bool bIsFlgTimeSeries) {
 
@@ -570,6 +578,7 @@ private:
       bandsConcat->SetInput(allBandsList);
       bandsConcat->UpdateOutputInformation();
       m_bandsConcatteners->PushBack(bandsConcat);
+      bandsConcat->GetOutput()->UpdateOutputInformation();
 
       return bandsConcat->GetOutput();
   }

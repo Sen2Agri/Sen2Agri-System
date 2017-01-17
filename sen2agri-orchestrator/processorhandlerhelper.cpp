@@ -394,14 +394,15 @@ QString ProcessorHandlerHelper::GetHighLevelProductIppFile(const QString &produc
     return "";
 }
 
-QString ProcessorHandlerHelper::GetSourceL2AFromHighLevelProductIppFile(const QString &productDir) {
+QString ProcessorHandlerHelper::GetSourceL2AFromHighLevelProductIppFile(const QString &productDir, const QString &tileFilter) {
     const QString ippXmlFile = GetHighLevelProductIppFile(productDir);
     if(ippXmlFile.length() == 0) {
         // incomplete product
         return "";
     }
-    const QString startTag("<XML_0>");
-    const QString endTag("</XML_0>");
+    const QString startTag((tileFilter.length() == 0) ? "<XML_0>" : "<XML_");
+    const QString endTag  ((tileFilter.length() == 0) ? "</XML_0>" : "</XML_");
+    bool bFullTag = (tileFilter.length() == 0);
     QFile inputFile(ippXmlFile);
     if (inputFile.open(QIODevice::ReadOnly))
     {
@@ -413,8 +414,26 @@ QString ProcessorHandlerHelper::GetSourceL2AFromHighLevelProductIppFile(const QS
            if(startTagIdx >= 0) {
                int endTagIdx = line.indexOf(endTag);
                if(endTagIdx > startTagIdx) {
-                   int startIdx = startTagIdx + startTag.length();
-                   return line.mid(startIdx, endTagIdx - startIdx);
+                   if ((tileFilter.length() == 0) || (line.indexOf(tileFilter) >= 0))
+                   {
+                       int startIdx;
+                       if (bFullTag)
+                       {
+                            startIdx = startTagIdx + startTag.length();
+
+                       } else {
+                           // we need to search for the closing of xml i.e the ">" character
+                           int closingBracketIdx = line.indexOf('>', startTagIdx);
+                           if(closingBracketIdx > startTagIdx)
+                           {
+                               startIdx = closingBracketIdx+1;
+                           }
+                       }
+                       // check for the new values of startIdx
+                       if(endTagIdx > startIdx) {
+                            return line.mid(startIdx, endTagIdx - startIdx);
+                       }
+                   }
                }
            }
        }

@@ -66,7 +66,7 @@ public:
     static QMap<QString, QString> GetHigLevelProductFiles(const QString &productDir, const QString &fileIdentif, bool isQiData=false);
     static QMap<QString, QString> GetHighLevelProductTilesDirs(const QString &productDir);
     static QString GetHighLevelProductIppFile(const QString &productDir);
-    static QString GetSourceL2AFromHighLevelProductIppFile(const QString &productDir);
+    static QString GetSourceL2AFromHighLevelProductIppFile(const QString &productDir, const QString &tileFilter = "");
     static bool HighLevelPrdHasL2aSource(const QString &highLevelPrd, const QString &l2aPrd);
     static QMap<QString, QStringList> GroupHighLevelProductTiles(const QStringList &listAllProductFolders);
 
