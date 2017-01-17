@@ -90,6 +90,18 @@ private:
         SetDefaultParameterInt("useallrefls", 1);
         MandatoryOff("useallrefls");
 
+        AddParameter(ParameterType_Int, "usendvi", "Add NDVI band for the training data.");
+        MandatoryOff("usendvi");
+        SetDefaultParameterInt("usendvi", 0);
+
+        AddParameter(ParameterType_Int, "uservi", "Add RVI band for the training data.");
+        MandatoryOff("uservi");
+        SetDefaultParameterInt("uservi", 0);
+
+        AddParameter(ParameterType_Int, "useblue", "Use blue band for the training data.");
+        MandatoryOff("useblue");
+        SetDefaultParameterInt("useblue", 0);
+
         AddParameter(ParameterType_InputFilename, "xml",
                      "Input XML file of a product that will be used to get the red and nir band indexes if redidx or niridx are not specified.");
         SetParameterDescription( "xml", "Input XML file of a product." );
@@ -115,6 +127,10 @@ private:
   }
   void DoExecute()
   {
+      bool bUseRvi = false;
+      bool bUseNdvi = false;
+      bool bUseBlueBand = false;
+
       std::string bvFileName = GetParameterString("biovarsfile");
       std::string simuReflsName = GetParameterString("simureflsfile");
       std::size_t bvIdx = GetParameterInt("bvidx");
@@ -125,6 +141,22 @@ private:
       if(!addRefls && (redIdx < 0 && nirIdx < 0)) {
           itkGenericExceptionMacro(<< "You should either set addrefls to 1 OR set the redidx and niridx to valid values");
       }
+
+      if(HasValue("usendvi")) {
+          bUseNdvi = (GetParameterInt("usendvi") != 0);
+      }
+      if(HasValue("uservi")) {
+          bUseRvi = (GetParameterInt("uservi") != 0);
+      }
+      if(HasValue("useblue")) {
+          bUseBlueBand = (GetParameterInt("useblue") != 0);
+      }
+      std::cout << "=================================" << std::endl;
+      std::cout << "addndvi : " << bUseNdvi           << std::endl;
+      std::cout << "addrvi : " << bUseRvi             << std::endl;
+      std::cout << "addblue : " << bUseBlueBand       << std::endl;
+      std::cout << "=================================" << std::endl;
+
       std::string outFileName = GetParameterString("outtrainfile");
       bool bUseAllReflectanceBands = (GetParameterInt("useallrefls") != 0);
 
@@ -203,8 +235,6 @@ private:
               }
           }
 
-          bool bUseRvi = false;
-          bool bUseBlueBand = false;
           if(addRefls) {
               // remove the last 2 values from the array (fAPAR and fCover)
               vectRefls.pop_back();
@@ -255,7 +285,9 @@ private:
                       }
                   }
                   std::ostringstream ss;
-                  ss << " " << ndvi;
+                  if(bUseNdvi) {
+                    ss << " " << ndvi;
+                  }
                   if(bUseRvi) {
                     ss << " " << rvi;
                   }

@@ -169,6 +169,18 @@ private:
         MandatoryOff("addallrefls");
         SetDefaultParameterInt("addallrefls", 1);
 
+        AddParameter(ParameterType_Int, "addndvi", "Add NDVI band for the features output.");
+        MandatoryOff("addndvi");
+        SetDefaultParameterInt("addndvi", 0);
+
+        AddParameter(ParameterType_Int, "addrvi", "Add RVI band for the features output.");
+        MandatoryOff("addrvi");
+        SetDefaultParameterInt("addrvi", 0);
+
+        AddParameter(ParameterType_Int, "addblue", "Add blue band for the features output.");
+        MandatoryOff("addblue");
+        SetDefaultParameterInt("addblue", 0);
+
         SetDocExampleParameterValue("xml", "data.xml");
         SetDocExampleParameterValue("ndvi", "ndvi.tif");
         SetDocExampleParameterValue("rvi", "rvi.tif");
@@ -181,6 +193,9 @@ private:
   void DoExecute()
   {
         bool bUseAllBands = true;
+        bool bUseNdvi = false;
+        bool bUseRvi = false;
+        bool bUseBlueBand = false;
         m_imgReader = ReaderType::New();
 
         std::string inMetadataXml = GetParameterString("xml");
@@ -197,6 +212,22 @@ private:
         if(HasValue("addallrefls")) {
             bUseAllBands = (GetParameterInt("addallrefls") != 0);
         }
+        if(HasValue("addndvi")) {
+            bUseNdvi = (GetParameterInt("addndvi") != 0);
+        }
+        if(HasValue("addrvi")) {
+            bUseRvi = (GetParameterInt("addrvi") != 0);
+        }
+        if(HasValue("addblue")) {
+            bUseBlueBand = (GetParameterInt("addblue") != 0);
+        }
+        std::cout << "=================================" << std::endl;
+        std::cout << "addallrefls : " << bUseAllBands   << std::endl;
+        std::cout << "addndvi : " << bUseNdvi           << std::endl;
+        std::cout << "addrvi : " << bUseRvi             << std::endl;
+        std::cout << "addblue : " << bUseBlueBand       << std::endl;
+        std::cout << "=================================" << std::endl;
+
         auto factory = MetadataHelperFactory::New();
         // we are interested only in the 10m resolution as here we have the RED and NIR
         auto pHelper = factory->GetMetadataHelper(inMetadataXml, 10);
@@ -261,8 +292,6 @@ private:
             SetParameterOutputImage("rvi", getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(1)).GetPointer());
         }
 
-        bool bUseRvi = false;
-        bool bUseBlueBand = false;
         if(bOutFts) {
             // Translate the input image from short reflectance values to float (subunitaire) values
             // translated using the quantification value
@@ -292,7 +321,9 @@ private:
                 allList->PushBack(getResampledImage(curRes, nOutRes, m_imgInputSplit->GetOutput()->GetNthElement(nNirBandIdx)));
             }
             // add the bands for NDVI and RVI
-            allList->PushBack(getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(0)));
+            if(bUseNdvi) {
+                allList->PushBack(getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(0)));
+            }
             if(bUseRvi) {
                 allList->PushBack(getResampledImage(curRes, nOutRes, m_imgSplit->GetOutput()->GetNthElement(1)));
             }

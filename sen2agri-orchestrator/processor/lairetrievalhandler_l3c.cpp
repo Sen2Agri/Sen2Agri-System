@@ -923,7 +923,7 @@ void LaiRetrievalHandlerL3C::HandleTaskFinishedImpl(EventProcessingContext &ctx,
 QStringList LaiRetrievalHandlerL3C::GetTimeSeriesBuilderArgs(const QStringList &monoDateLaiFileNames,
                                                              const QString &allLaiTimeSeriesFileName, const QString &mainImg) {
     QStringList timeSeriesBuilderArgs = { "TimeSeriesBuilder",
-      "-out", "\"" + allLaiTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE\"",
+      "-out", "\"" + allLaiTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES\"",
       "-main", mainImg,
       "-il"
     };
@@ -935,7 +935,7 @@ QStringList LaiRetrievalHandlerL3C::GetTimeSeriesBuilderArgs(const QStringList &
 QStringList LaiRetrievalHandlerL3C::GetErrTimeSeriesBuilderArgs(const QStringList &monoDateErrLaiFileNames,
                                                                 const QString &allErrTimeSeriesFileName, const QString &mainImg) {
     QStringList timeSeriesBuilderArgs = { "TimeSeriesBuilder",
-      "-out", "\"" + allErrTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE\"",
+      "-out", "\"" + allErrTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES\"",
       "-main", mainImg,
       "-il"
     };
@@ -967,7 +967,7 @@ QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs(std::map<QString,
           "-lai", allLaiTimeSeriesFileName,
           "-err", allErrTimeSeriesFileName,
           "-msks", allMsksTimeSeriesFileName,
-          "-opf", reprocTimeSeriesFileName,
+          "-opf", "\"" + reprocTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES\"",
           "-algo", "local",
           "-algo.local.bwr", localWindowBwr,
           "-algo.local.fwr", localWindowFwr,
@@ -985,8 +985,7 @@ QStringList LaiRetrievalHandlerL3C::GetProfileReprocessingArgs_New(std::map<QStr
 
     QStringList profileReprocessingArgs = { "ProfileReprocessing",
           "-main", mainImg,
-          "-opf", "\"" + reprocTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE\"",
-          "-compress", "1",
+          "-opf", "\"" + reprocTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES\"",
           "-algo", "local",
           "-algo.local.bwr", localWindowBwr,
           "-algo.local.fwr", localWindowFwr
@@ -1004,8 +1003,7 @@ QStringList LaiRetrievalHandlerL3C::GetFittedProfileReprocArgs_New(QStringList &
                                                                    const QString &mainImg, const QString &reprocTimeSeriesFileName, const QStringList &listDates) {
     QStringList profileReprocessingArgs = { "ProfileReprocessing",
           "-main", mainImg,
-          "-opf", "\"" + reprocTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE\"",
-          "-compress", "1",
+          "-opf", "\"" + reprocTimeSeriesFileName+"?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES\"",
           "-genall", "1",
           "-algo", "fit"
     };
