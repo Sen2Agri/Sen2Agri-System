@@ -19,7 +19,7 @@
 #include "otbVectorImageToImageListFilter.h"
 #include "otbStreamingStatisticsImageFilter.h"
 #include "otbImageList.h"
-
+#include "otbStreamingStatisticsVectorImageFilterEx.h"
 
 template<class TInputImage, class TOutputImage = TInputImage>
 class ITK_EXPORT FillNoDataImageFilter

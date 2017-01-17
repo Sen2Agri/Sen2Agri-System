@@ -31,7 +31,7 @@
 namespace otb
 {
 
-/** \class PersistentStreamingStatisticsVectorImageFilter
+/** \class PersistentStreamingStatisticsVectorImageFilterEx
  * \brief Compute covariance & correlation of a large image using streaming
  *
  *  This filter persists its temporary data. It means that if you Update it n times on n different
@@ -50,12 +50,12 @@ namespace otb
  * \ingroup OTBStatistics
  */
 template<class TInputImage, class TPrecision >
-class ITK_EXPORT PersistentStreamingStatisticsVectorImageFilter :
+class ITK_EXPORT PersistentStreamingStatisticsVectorImageFilterEx :
   public PersistentImageFilter<TInputImage, TInputImage>
 {
 public:
   /** Standard Self typedef */
-  typedef PersistentStreamingStatisticsVectorImageFilter           Self;
+  typedef PersistentStreamingStatisticsVectorImageFilterEx           Self;
   typedef PersistentImageFilter<TInputImage, TInputImage> Superclass;
   typedef itk::SmartPointer<Self>                         Pointer;
   typedef itk::SmartPointer<const Self>                   ConstPointer;
@@ -64,7 +64,7 @@ public:
   itkNewMacro(Self);
 
   /** Runtime information support. */
-  itkTypeMacro(PersistentStreamingStatisticsVectorImageFilter, PersistentImageFilter);
+  itkTypeMacro(PersistentStreamingStatisticsVectorImageFilterEx, PersistentImageFilter);
 
   /** Image related typedefs. */
   typedef TInputImage                           ImageType;
@@ -203,9 +203,9 @@ public:
   itkGetMacro(UseUnbiasedEstimator, bool);
 
 protected:
-  PersistentStreamingStatisticsVectorImageFilter();
+  PersistentStreamingStatisticsVectorImageFilterEx();
 
-  ~PersistentStreamingStatisticsVectorImageFilter() ITK_OVERRIDE {}
+  ~PersistentStreamingStatisticsVectorImageFilterEx() ITK_OVERRIDE {}
 
   /** Pass the input through unmodified. Do this by Grafting in the
    *  AllocateOutputs method.
@@ -220,7 +220,7 @@ protected:
   void  ThreadedGenerateData(const RegionType& outputRegionForThread, itk::ThreadIdType threadId) ITK_OVERRIDE;
 
 private:
-  PersistentStreamingStatisticsVectorImageFilter(const Self &); //purposely not implemented
+  PersistentStreamingStatisticsVectorImageFilterEx(const Self &); //purposely not implemented
   void operator =(const Self&); //purposely not implemented
 
   bool m_EnableMinMax;
@@ -245,7 +245,7 @@ private:
   std::vector<unsigned int>  m_IgnoredInfinitePixelCount;
   std::vector<unsigned int>  m_IgnoredUserPixelCount;
 
-}; // end of class PersistentStreamingStatisticsVectorImageFilter
+}; // end of class PersistentStreamingStatisticsVectorImageFilterEx
 
 /**===========================================================================*/
 
@@ -253,14 +253,14 @@ private:
  * \brief This class streams the whole input image through the PersistentStatisticsImageFilter.
  *
  * This way, it allows computing the first and second order global statistics of this image. It calls the
- * Reset() method of the PersistentStreamingStatisticsVectorImageFilter before streaming the image and the
- * Synthetize() method of the PersistentStreamingStatisticsVectorImageFilter after having streamed the image
+ * Reset() method of the PersistentStreamingStatisticsVectorImageFilterEx before streaming the image and the
+ * Synthetize() method of the PersistentStreamingStatisticsVectorImageFilterEx after having streamed the image
  * to compute the statistics. The accessor on the results are wrapping the accessors of the
- * internal PersistentStreamingStatisticsVectorImageFilter.
+ * internal PersistentStreamingStatisticsVectorImageFilterEx.
  * By default infinite values are ignored, use IgnoreInfiniteValues accessor to consider
  * infinite values in the computation.
  *
- * \sa PersistentStreamingStatisticsVectorImageFilter
+ * \sa PersistentStreamingStatisticsVectorImageFilterEx
  * \sa PersistentImageFilter
  * \sa PersistentFilterStreamingDecorator
  * \sa StreamingImageVirtualWriter
@@ -272,14 +272,14 @@ private:
  */
 
 template<class TInputImage, class TPrecision = typename itk::NumericTraits<typename TInputImage::InternalPixelType>::RealType>
-class ITK_EXPORT StreamingStatisticsVectorImageFilter :
-  public PersistentFilterStreamingDecorator<PersistentStreamingStatisticsVectorImageFilter<TInputImage, TPrecision> >
+class ITK_EXPORT StreamingStatisticsVectorImageFilterEx :
+  public PersistentFilterStreamingDecorator<PersistentStreamingStatisticsVectorImageFilterEx<TInputImage, TPrecision> >
 {
 public:
   /** Standard Self typedef */
-  typedef StreamingStatisticsVectorImageFilter Self;
+  typedef StreamingStatisticsVectorImageFilterEx Self;
   typedef PersistentFilterStreamingDecorator
-  <PersistentStreamingStatisticsVectorImageFilter<TInputImage, TPrecision> > Superclass;
+  <PersistentStreamingStatisticsVectorImageFilterEx<TInputImage, TPrecision> > Superclass;
   typedef itk::SmartPointer<Self>       Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
 
@@ -287,7 +287,7 @@ public:
   itkNewMacro(Self);
 
   /** Creation through object factory macro */
-  itkTypeMacro(StreamingStatisticsVectorImageFilter, PersistentFilterStreamingDecorator);
+  itkTypeMacro(StreamingStatisticsVectorImageFilterEx, PersistentFilterStreamingDecorator);
 
   typedef TInputImage                                 InputImageType;
   typedef typename Superclass::FilterType             StatFilterType;
@@ -462,13 +462,13 @@ public:
 
 protected:
   /** Constructor */
-  StreamingStatisticsVectorImageFilter() {}
+  StreamingStatisticsVectorImageFilterEx() {}
 
   /** Destructor */
-  ~StreamingStatisticsVectorImageFilter() ITK_OVERRIDE {}
+  ~StreamingStatisticsVectorImageFilterEx() ITK_OVERRIDE {}
 
 private:
-  StreamingStatisticsVectorImageFilter(const Self &); //purposely not implemented
+  StreamingStatisticsVectorImageFilterEx(const Self &); //purposely not implemented
   void operator =(const Self&); //purposely not implemented
 
 };
@@ -476,7 +476,7 @@ private:
 } // end namespace otb
 
 #ifndef OTB_MANUAL_INSTANTIATION
-#include "otbStreamingStatisticsVectorImageFilter.txx"
+#include "otbStreamingStatisticsVectorImageFilterEx.txx"
 #endif
 
 #endif
