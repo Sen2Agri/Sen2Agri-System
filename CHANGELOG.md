@@ -3,13 +3,14 @@
 ## [1.4.1] - 2016-01-??
 ### Added
 ### Changed
- - The crop mask and crop type processors no longer have the `-mission` and `-prodspertile` arguments
- - L8 products no longer have to be duplicated for the crop mask and crop type processors
+ - The crop mask and crop type processors no longer have the `-mission` and `-prodspertile` arguments [Forge #151877]
+ - L8 products no longer have to be duplicated for the crop mask and crop type processors [Forge #151877]
  - The installer (but not the upgrade script) now changes `upload_max_filesize` in `/etc/php.ini` from `2M` to `40M`
  - The installer (but not the upgrade script) now sets `max_input_vars` in `/etc/php.ini` to `10000`
  - The crop mask no data filling step now replaces `NaN` values with `0` to avoid possible issues later when computing statistics
  - The crop mask and crop type processors nor increase the soft `RLIMIT_NOFILE` limit to the hard one
  - The SNAP adapters have been updated
+ - The daemons no longer log messages twice [Forge #150734]
 
 ### Fixed
  - The automated and custom jobs no longer use tiles from a different site if two sites contain the same tile
@@ -35,7 +36,7 @@
 
 ## [1.4] - 2016-11-17
 ### Added
-- Multi-tile implementation of the unsupervised Crop Mask processor, which should be more precise, faster and use less temporary disk space
+- Multi-tile implementation of the unsupervised Crop Mask processor, which should be more precise, faster and use less temporary disk space [Forge #150414]
 - Crop mask and crop type products now include a QGIS style file
 - The crop type processor can optionally use the Sentinel-2 red edge bands via the `-red-edge` argument
 - The Sentinel-2 downloader is now compatible with the upcoming product format changes
@@ -46,7 +47,7 @@
 - Classification is no longer perform the classification on tile regions that are outside of a strata. Previously, the strata covering the most of the tile was used.
 - Strata intersecting a small region of a tile are now classified accordingly. Previously, pixels in those region used the strata covering most of the tile.
 - Crop mask and crop type try to use a system-wide LUT when they are running as a local install and another LUT is not found
-- The unsupervised crop mask processor now considers CCI-LC class 10 as crop instead of the previous rule ("11 or 20 or even 10, but only if there is no pixel with class 11")
+- The unsupervised crop mask processor now considers CCI-LC class 10 as crop instead of the previous rule ("11 or 20 or even 10, but only if there is no pixel with class 11") [Forge #150434]
 - Improved reprojection accuracy of crop mask reference map
 - The crop mask and crop type processors now reproject the input images if they are not in the same SRS as the images from the main sensor
 - The packaged OTB version no longer performs file existence checks before opening images
@@ -54,14 +55,14 @@
 ### Fixed
 - Crop mask and crop type no longer crash when the LUT is not found
 - The larger temporary files are now removed by the crop mask and crop type processors unless -keepfiles is used
-- The RPM package version numbers are now correct
+- The RPM package version numbers are now correct [Forge #150393]
 - The RPM packages correctly preserve the configuration files changed by the administrator
 - 20m composite products are now generated
 - The LEGACY_DATA mosaic now uses nearest-neighbour resampling for L4A and L4B product
 - The LEGACY_DATA mosaic now uses tile consensus projection or `EPSG:4326` instead of picking the majority one
 - The LEGACY_DATA mosaic of L4A products is no longer made from both segmented and raw masks
 - Quality flags extraction no longer gives wrong results when Landsat 8 products in a different projection are used
-- The L3A, L3B, L3C and quality flags extraction step of the L4A and L4B processors no longer crash when input products are in the current directory
+- The L3A, L3B, L3C and quality flags extraction step of the L4A and L4B processors no longer crash when input products are in the current directory [Forge #150394]
 - Fixed misleading `demmaccs.py` command line help message (positional arguments placed after optional arguments taking multiple values)
 - Improved startup ordering between sen2agri-executor, SLURM and Postgres
 
@@ -87,7 +88,7 @@
 ## [1.3.1] - 2016-10-10
 ### Added
 - A change log
-- Multi-tile implementations of the Crop Type and supervised Crop Mask processors which should be faster and use less temporary disk space. The new executables are called `CropTypeFused.py` and `CropMaskFused.py`.
+- Multi-tile implementations of the Crop Type and supervised Crop Mask processors which should be faster and use less temporary disk space. The new executables are called `CropTypeFused.py` and `CropMaskFused.py`. [Forge #150414]
 - The processors mentioned above support classification over multiple strata in a single site
 - The processors mentioned above now create a parameters file (`IPP`) even when run in the manual mode. Note that the XML schema has changed from previous versions.
 - Upgrading from `1.3` to `1.3.1` is now possible by running the `update.sh` script. Upgrading from previous versions is not supported. Upgrading directly from `1.3` will not be possible in future versions.
@@ -137,9 +138,9 @@
 - The L4A and L4B products don't contain a QGIS style file
 - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels. It should expect a binary map.
 - The SAFE and L2A product previews are not gamma-corrected and can be too dark
-- The version number of the RPM packages is incorrect
+- The version number of the RPM packages is incorrect [Forge #150393]
 - The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented in the manual
-- The L3A, L3B, L3C processors and the quality flags extraction step of the L4A and L4B processors fail when one of the input product paths contains no directory separator. A workaround is to place a `./` before the product file.
+- The L3A, L3B, L3C processors and the quality flags extraction step of the L4A and L4B processors fail when one of the input product paths contains no directory separator. A workaround is to place a `./` before the product file. [Forge #150394]
 - The dashboard previews don't match their bounds rectangle because of WGS 84 / Web Mercator projection mismatch
 - The `demmaccs.py` command line help message contains positional arguments (`input` and `output`) placed immediately after optional arguments taking multiple values (`--prev-l2a-tiles` and `--prev-l2a-products-paths`). This can prove troublesome for unsuspecting users. The workaround is to put a `--` or a different optional argument before the positional arguments
 - For LAI the model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
