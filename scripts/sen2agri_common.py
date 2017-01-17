@@ -422,8 +422,6 @@ class ProcessorBase(object):
     def execute(self):
         start_time = datetime.datetime.now()
 
-        increase_limits()
-
         try:
             exit_status = 0
             exit_requested = False
@@ -435,6 +433,8 @@ class ProcessorBase(object):
 
             metadata = self.build_metadata()
             metadata.write(metadata_file, xml_declaration=True, encoding='UTF-8', pretty_print=True)
+
+            increase_limits()
 
             if self.args.mode is None or self.args.mode == 'prepare-site':
                 self.prepare_site()
