@@ -19,9 +19,7 @@
 : ${GDAL_URL:="http://download.osgeo.org/gdal"}
 
 ### DEPENDENCIES FOR GENERATED RPM PACKAGES
-: ${PLATFORM_INSTALL_DEP:="-d "boost" -d "curl" -d "expat" -d "fftw" -d "gdal" -d "geos" -d "libgeotiff" -d "libjpeg-turbo" -d "libsvm" -d "muParser" \
--d "opencv" -d "openjpeg2" -d "openjpeg2-tools" -d "pcre" -d "libpng" -d "proj" -d "proj-epsg" -d "python" -d "qt" -d "sqlite" -d "swig" -d "libtiff" -d "tinyxml" \
--d "qt5-qtbase" -d "qt5-qtbase-postgresql" -d "qt-x11" -d "gsl""}
+PLATFORM_INSTALL_DEP=(-d boost -d curl -d expat -d fftw -d 'gdal = 1.11.4' -d geos -d "libgeotiff = 1.4" -d libjpeg-turbo -d libsvm -d muParser -d opencv -d openjpeg2 -d openjpeg2-tools -d pcre -d libpng -d proj -d proj-epsg -d python -d qt -d sqlite -d swig -d libtiff -d tinyxml -d qt5-qtbase -d qt5-qtbase-postgresql -d qt-x11 -d gsl)
 : ${PLATFORM_INSTALL_CIFS_DEP:="-d "cifs-utils""}
 
 ### CONFIG PATHS FOR SCRIPT
@@ -113,7 +111,9 @@ function build_OTB_RPM_Package()
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_otb
 
    ## build the packages specifying installing dependencies
-   fpm -s dir -t rpm -n otb -v ${OTB_VERSION} -C ${OTB_INSTALL_PATH}/ ${PLATFORM_INSTALL_DEP} ${PLATFORM_INSTALL_CIFS_DEP} \
+   echo fpm -s dir -t rpm -n otb -v ${OTB_VERSION} -C ${OTB_INSTALL_PATH}/ "${PLATFORM_INSTALL_DEP[@]}" ${PLATFORM_INSTALL_CIFS_DEP} \
+   --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_otb -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/otb-VERSION.centos7.ARCH.rpm usr
+   fpm -s dir -t rpm -n otb -v ${OTB_VERSION} -C ${OTB_INSTALL_PATH}/ "${PLATFORM_INSTALL_DEP[@]}" ${PLATFORM_INSTALL_CIFS_DEP} \
    --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_otb -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/otb-VERSION.centos7.ARCH.rpm usr
 
    #remove temporary dir
@@ -145,7 +145,7 @@ function build_GDAL_RPM_Package()
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_gdal
 
    ##    ## build the packages specifying installing dependencies
-   fpm -s dir -t rpm -n gdal-local -v ${GDAL_VERSION} ${PLATFORM_INSTALL_DEP} ${PLATFORM_INSTALL_CIFS_DEP} -C ${GDAL_INSTALL_PATH} \
+   fpm -s dir -t rpm -n gdal-local -v ${GDAL_VERSION} "${PLATFORM_INSTALL_DEP[@]}" ${PLATFORM_INSTALL_CIFS_DEP} -C ${GDAL_INSTALL_PATH} \
    -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/gdal-local-VERSION.centos7.ARCH.rpm --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_gdal usr
 
    #remove temporary dir
