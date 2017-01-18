@@ -242,8 +242,8 @@ private:
   bool m_IgnoreInfiniteValues;
   bool m_IgnoreUserDefinedValue;
   InternalPixelType m_UserIgnoredValue;
-  std::vector<unsigned int>  m_IgnoredInfinitePixelCount;
-  std::vector<unsigned int>  m_IgnoredUserPixelCount;
+  std::vector<itk::VariableLengthVector<unsigned int>>  m_IgnoredInfinitePixelCount;
+  std::vector<itk::VariableLengthVector<unsigned int>>  m_IgnoredUserPixelCount;
 
 }; // end of class PersistentStreamingStatisticsVectorImageFilterEx
 

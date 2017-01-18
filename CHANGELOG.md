@@ -11,6 +11,7 @@
  - The crop mask and crop type processors nor increase the soft `RLIMIT_NOFILE` limit to the hard one
  - The SNAP adapters have been updated
  - The daemons no longer log messages twice [Forge #150734]
+ - The NDVI no data filling step is now around 20x faster
 
 ### Fixed
  - The automated and custom jobs no longer use tiles from a different site if two sites contain the same tile
@@ -26,7 +27,6 @@
 - The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
 - The crop type and mask training step sometimes crashes while loading the OpenCV models
 - MACCS and quicklook generation sometimes crash or hang
-- The NDVI no data filling step is inefficient
 - The product formatting and tile aggregation steps are inefficient
 - Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
 - The trimming step of the Crop Mask processor still uses a large amount of memory

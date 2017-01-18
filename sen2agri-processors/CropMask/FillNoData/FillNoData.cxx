@@ -17,7 +17,6 @@
 #include "otbWrapperApplicationFactory.h"
 
 #include "otbVectorImageToImageListFilter.h"
-#include "otbStreamingStatisticsImageFilter.h"
 #include "otbImageList.h"
 #include "otbStreamingStatisticsVectorImageFilterEx.h"
 
@@ -111,59 +110,16 @@ private:
   InputPixelType            m_ReplacementValues;
 };
 
-template<class TValue>
-class ITK_EXPORT GatherValuesFilter
-  : public itk::ProcessObject
-{
-public:
-  typedef GatherValuesFilter                                  Self;
-  typedef itk::ProcessObject                                  Superclass;
-  typedef itk::SmartPointer<Self>                             Pointer;
-  typedef itk::SmartPointer<const Self>                       ConstPointer;
-
-  itkNewMacro(Self)
-
-  itkTypeMacro(GatherValuesFilter, ProcessObject)
-
-  /** Template related typedefs */
-  typedef TValue ValueType;
-  typedef std::vector<ValueType>                              OutputType;
-  typedef itk::SimpleDataObjectDecorator<ValueType>           InputObjectType;
-  typedef itk::SimpleDataObjectDecorator<OutputType>          OutputObjectType;
-
-  GatherValuesFilter()
-  {
-    SetNumberOfIndexedOutputs(1);
-    this->SetPrimaryOutput(OutputObjectType::New());
-  }
-
-  void AddInput(itk::DataObject *input)
-  {
-    Superclass::ProcessObject::AddInput(input);
-  }
-
-  void GenerateData()
-  {
-    typename OutputObjectType::Pointer output = static_cast<OutputObjectType *>(this->GetPrimaryOutput());
-    for (int i = 0; i < this->GetNumberOfIndexedInputs(); i++)
-      {
-      output->Get().push_back(static_cast<InputObjectType *>(this->GetInput(i))->Get());
-      }
-  }
-};
-
 typedef float                                PixelType;
 typedef otb::VectorImage<PixelType>          ImageType;
 typedef ImageType::PixelType                 PixelValueType;
 typedef otb::Image<PixelType>                InternalImageType;
 
-typedef otb::ImageList<InternalImageType>                           ImageListType;
-typedef otb::VectorImageToImageListFilter<ImageType, ImageListType> VectorImageToImageListFilterType;
-typedef otb::StreamingStatisticsImageFilter<InternalImageType>      StreamingStatisticsImageFilterType;
-typedef otb::ObjectList<StreamingStatisticsImageFilterType>         StreamingStatisticsImageFilterListType;
+typedef otb::ImageList<InternalImageType>                               ImageListType;
+typedef otb::VectorImageToImageListFilter<ImageType, ImageListType>     VectorImageToImageListFilterType;
+typedef otb::StreamingStatisticsVectorImageFilterEx<ImageType>          StreamingStatisticsVectorImageFilterType;
 
-typedef FillNoDataImageFilter<ImageType>                            FillNoDataImageFilterType;
-typedef GatherValuesFilter<PixelType>                               GatherValuesFilterType;
+typedef FillNoDataImageFilter<ImageType>                                FillNoDataImageFilterType;
 
 typedef InternalImageType::SizeType          ReferenceSizeType;
 typedef InternalImageType::SizeValueType     ReferenceSizeValueType;
@@ -218,42 +174,31 @@ private:
   void DoExecute()
   {
     ImageType::Pointer inputImage = GetParameterFloatVectorImage("in");
+    inputImage->UpdateOutputInformation();
 
-    m_VectorImageToImageListFilter = VectorImageToImageListFilterType::New();
-    m_VectorImageToImageListFilter->SetInput(inputImage);
-    m_VectorImageToImageListFilter->GetOutput()->UpdateOutputInformation();
-
-    m_StreamingStatisticsImageFilterList = StreamingStatisticsImageFilterListType::New();
-    unsigned int pixelSize = m_VectorImageToImageListFilter->GetOutput()->Size();
     int noDataValue = GetParameterInt("bv");
 
-    m_GatherValuesFilter = GatherValuesFilterType::New();
+    StreamingStatisticsVectorImageFilterType::Pointer streamingStatisticsVectorImageFilter = StreamingStatisticsVectorImageFilterType::New();
 
+    unsigned int pixelSize = inputImage->GetVectorLength();
     PixelValueType means(pixelSize);
+
+    streamingStatisticsVectorImageFilter->SetInput(inputImage);
+    streamingStatisticsVectorImageFilter->SetIgnoreUserDefinedValue(true);
+    streamingStatisticsVectorImageFilter->SetUserIgnoredValue(noDataValue);
+    streamingStatisticsVectorImageFilter->SetEnableSecondOrderStats(false);
+    streamingStatisticsVectorImageFilter->SetEnableMinMax(false);
+    streamingStatisticsVectorImageFilter->Update();
+
+    means = streamingStatisticsVectorImageFilter->GetMean();
     for (unsigned int i = 0; i < pixelSize; i++)
       {
-      StreamingStatisticsImageFilterType::Pointer statisticsFilter = StreamingStatisticsImageFilterType::New();
-      statisticsFilter->SetInput(m_VectorImageToImageListFilter->GetOutput()->GetNthElement(i));
-      statisticsFilter->SetIgnoreUserDefinedValue(true);
-      statisticsFilter->SetUserIgnoredValue(noDataValue);
-      m_StreamingStatisticsImageFilterList->PushBack(statisticsFilter);
-
-      statisticsFilter->Update();
-      m_GatherValuesFilter->AddInput(statisticsFilter->GetMeanOutput());
-      }
-
-//    m_GatherValuesFilter->Update();
-    for (unsigned int i = 0; i < pixelSize; i++)
-      {
-      PixelType mean = m_StreamingStatisticsImageFilterList->GetNthElement(i)->GetMean();
-      if (std::isnan(mean))
+      if (std::isnan(means[i]))
         {
         otbAppLogCRITICAL("Found NaN band mean value for band" << i);
-        mean = 0;
+        means[i] = 0;
         }
-      means[i] = mean;
       }
-
     otbAppLogINFO("Band means: " << means);
 
     m_FillNoDataImageFilter = FillNoDataImageFilterType::New();
@@ -264,10 +209,7 @@ private:
     SetParameterOutputImage("out", m_FillNoDataImageFilter->GetOutput());
   }
 
-  VectorImageToImageListFilterType::Pointer                 m_VectorImageToImageListFilter;
-  StreamingStatisticsImageFilterListType::Pointer           m_StreamingStatisticsImageFilterList;
   FillNoDataImageFilterType::Pointer                        m_FillNoDataImageFilter;
-  GatherValuesFilterType::Pointer                           m_GatherValuesFilter;
 };
 }
 }
