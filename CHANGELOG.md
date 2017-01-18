@@ -8,7 +8,7 @@
  - The installer (but not the upgrade script) now changes `upload_max_filesize` in `/etc/php.ini` from `2M` to `40M`
  - The installer (but not the upgrade script) now sets `max_input_vars` in `/etc/php.ini` to `10000`
  - The crop mask no data filling step now replaces `NaN` values with `0` to avoid possible issues later when computing statistics
- - The crop mask and crop type processors nor increase the soft `RLIMIT_NOFILE` limit to the hard one
+ - The crop mask and crop type processors now increase the soft `RLIMIT_NOFILE` limit to the hard one
  - The SNAP adapters have been updated
  - The daemons no longer log messages twice [Forge #150734]
  - The NDVI no data filling step is now around 20x faster
