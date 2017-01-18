@@ -19,7 +19,7 @@
 : ${GDAL_URL:="http://download.osgeo.org/gdal"}
 
 ### DEPENDENCIES FOR GENERATED RPM PACKAGES
-PLATFORM_INSTALL_DEP=(-d boost -d curl -d expat -d fftw -d 'gdal = 1.11.4' -d geos -d "libgeotiff = 1.4" -d libjpeg-turbo -d libsvm -d muParser -d opencv -d openjpeg2 -d openjpeg2-tools -d pcre -d libpng -d proj -d proj-epsg -d python -d qt -d sqlite -d swig -d libtiff -d tinyxml -d qt5-qtbase -d qt5-qtbase-postgresql -d qt-x11 -d gsl)
+PLATFORM_INSTALL_DEP=(-d boost -d curl -d expat -d fftw -d 'gdal = 1.11.4' -d geos -d "libgeotiff = 1.4.0" -d libjpeg-turbo -d libsvm -d muParser -d opencv -d openjpeg2 -d openjpeg2-tools -d pcre -d libpng -d proj -d proj-epsg -d python -d qt -d sqlite -d swig -d libtiff -d tinyxml -d qt5-qtbase -d qt5-qtbase-postgresql -d qt-x11 -d gsl)
 : ${PLATFORM_INSTALL_CIFS_DEP:="-d "cifs-utils""}
 
 ### CONFIG PATHS FOR SCRIPT
@@ -32,7 +32,9 @@ PLATFORM_INSTALL_DEP=(-d boost -d curl -d expat -d fftw -d 'gdal = 1.11.4' -d ge
 : ${WORKING_DIR_RPM:=${PLATFORM_NAME_DIR}/${RPM_DIR}}
 : ${WORKING_DIR_BUILD:=${PLATFORM_NAME_DIR}/${BUILD_DIR}}
 : ${GDAL_VERSION:="2.0.1"}
+GDAL_ITERATION=2
 : ${OTB_VERSION:="5.0"}
+OTB_ITERATION=2
 : ${GDAL_INSTALL_PATH:="${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/gdal-install"}
 : ${OTB_INSTALL_PATH:="${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/otb-install"}
 ################################################################################################
@@ -111,10 +113,8 @@ function build_OTB_RPM_Package()
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_otb
 
    ## build the packages specifying installing dependencies
-   echo fpm -s dir -t rpm -n otb -v ${OTB_VERSION} -C ${OTB_INSTALL_PATH}/ "${PLATFORM_INSTALL_DEP[@]}" ${PLATFORM_INSTALL_CIFS_DEP} \
-   --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_otb -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/otb-VERSION.centos7.ARCH.rpm usr
-   fpm -s dir -t rpm -n otb -v ${OTB_VERSION} -C ${OTB_INSTALL_PATH}/ "${PLATFORM_INSTALL_DEP[@]}" ${PLATFORM_INSTALL_CIFS_DEP} \
-   --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_otb -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/otb-VERSION.centos7.ARCH.rpm usr
+   fpm -s dir -t rpm -n otb -v ${OTB_VERSION} --iteration $OTB_ITERATION -C ${OTB_INSTALL_PATH}/ "${PLATFORM_INSTALL_DEP[@]}" ${PLATFORM_INSTALL_CIFS_DEP} \
+   --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_otb -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/otb-VERSION-ITERATION.centos7.ARCH.rpm usr
 
    #remove temporary dir
    rm -rf ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_otb
@@ -129,7 +129,7 @@ function compile_GDAL_package()
    cd ${DEFAULT_DIR}/${WORKING_DIR_BUILD} && { curl -O ${GDAL_URL}/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz ; cd -; }
 
    ## Decompress the archieve
-   tar -zxvf ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/gdal-${GDAL_VERSION}.tar.gz -C ${DEFAULT_DIR}/${WORKING_DIR_BUILD}
+   tar -zxf ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/gdal-${GDAL_VERSION}.tar.gz -C ${DEFAULT_DIR}/${WORKING_DIR_BUILD}
    cd ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/gdal-${GDAL_VERSION}
 
    ## Configure, compile and install
@@ -145,8 +145,8 @@ function build_GDAL_RPM_Package()
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_gdal
 
    ##    ## build the packages specifying installing dependencies
-   fpm -s dir -t rpm -n gdal-local -v ${GDAL_VERSION} "${PLATFORM_INSTALL_DEP[@]}" ${PLATFORM_INSTALL_CIFS_DEP} -C ${GDAL_INSTALL_PATH} \
-   -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/gdal-local-VERSION.centos7.ARCH.rpm --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_gdal usr
+   fpm -s dir -t rpm -n gdal-local -v ${GDAL_VERSION} --iteration $GDAL_ITERATION "${PLATFORM_INSTALL_DEP[@]}" ${PLATFORM_INSTALL_CIFS_DEP} -C ${GDAL_INSTALL_PATH} \
+   -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/gdal-local-VERSION-ITERATION.centos7.ARCH.rpm --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_gdal usr
 
    #remove temporary dir
    rm -rf ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_gdal
