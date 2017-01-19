@@ -366,7 +366,6 @@ function install_and_config_postgresql()
 {
    #------------INSTALL AND START------------#
    #install PostgreSQL
-   yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.2-x86_64/pgdg-centos94-9.4-2.noarch.rpm
    yum -y install postgresql94-server
 
    #initialize the database in PGDATA
@@ -736,6 +735,7 @@ disable_firewall
 
 ##install EPEL for packages dependencies installation
 yum -y install epel-release
+yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.2-x86_64/pgdg-centos94-9.4-2.noarch.rpm
 
 install_maccs
 

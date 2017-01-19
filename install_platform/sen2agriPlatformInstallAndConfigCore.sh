@@ -32,6 +32,7 @@ function install_RPMs()
    ##########################################################
    ##install EPEL for packages dependencies installation
    yum -y install epel-release
+   yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.2-x86_64/pgdg-centos94-9.4-2.noarch.rpm
 
    ##install cifs-utils package
    yum -y install cifs-utils
