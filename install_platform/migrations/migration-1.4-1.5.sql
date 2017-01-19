@@ -6,7 +6,7 @@ begin
 
     if exists (select * from information_schema.tables where table_schema = 'public' and table_name = 'meta') then
         if exists (select * from meta where version = '1.4') then
-            raise notice 'upgrading from 1.4 to 1.4.1';
+            raise notice 'upgrading from 1.4 to 1.5';
 
             raise notice 'applying b37a2c5133daf54b44043e9476224d4b9539bdd8';
             raise notice 'CREATE OR REPLACE FUNCTION sp_get_intersecting_tiles(INTEGER, TEXT) [...];';
@@ -126,8 +126,8 @@ begin
             LANGUAGE plpgsql
             STABLE;
 
-            raise notice 'update meta set version = ''1.4.1'';';
-            update meta set version = '1.4.1';
+            raise notice 'update meta set version = ''1.5'';';
+            update meta set version = '1.5';
         end if;
     end if;
 
