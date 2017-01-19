@@ -62,7 +62,7 @@ class CropMaskProcessor(ProcessorBase):
         parser.add_argument('-minsize', help='Minimum size of a region (in pixel unit) for segmentation (default 10)', required=False, default=10)
         parser.add_argument('-minarea', help="The minium number of pixel in an area where, for an equal number of crop and nocrop samples, the crop decision is taken (default 20)", required=False, default=20)
         parser.add_argument('-main-mission-segmentation', help='Only use main mission products for the segmentation',
-                            required=False, default=False, action='store_true')
+                            required=False, type=bool, default=True)
 
         parser.add_argument('-keepfiles', help="Keep all intermediate files (default false)",
                             default=False, action='store_true')
