@@ -38,10 +38,10 @@ function install_RPMs()
    yum -y install cifs-utils
 
    ##install Orfeo ToolBox
-   yum -y install ../rpm_binaries/otb-5.0.centos7.x86_64.rpm
+   yum -y install ../rpm_binaries/otb-*.rpm
 
    ##install GDAL library
-   yum -y install ../rpm_binaries/gdal-local-2.0.1.centos7.x86_64.rpm
+   yum -y install ../rpm_binaries/gdal-local-*.rpm
 
    ##install Sen2Agri Processors
    yum -y install ${SEN2AGRI_PROCESSORS_RPM}
