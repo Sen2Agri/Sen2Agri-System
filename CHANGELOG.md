@@ -2,9 +2,13 @@
 
 ## [1.5.0] - 2016-01-20
 ### Added
+ - Added script for cancelling all scheduled jobs
+ - Added support for year in season date (not well tested yet and also not implemented yet in UI)
+ - Added support for the new S2 format
 ### Changed
  - The crop mask and crop type processors no longer have the `-mission` and `-prodspertile` arguments [Forge #151877]
  - L8 products no longer have to be duplicated for the crop mask and crop type processors [Forge #151877]
+ - Only main mission input products are used for the crop mask segmentation step, improving accuracy of the result
  - The installer (but not the upgrade script) now changes `upload_max_filesize` in `/etc/php.ini` from `2M` to `40M`
  - The installer (but not the upgrade script) now sets `max_input_vars` in `/etc/php.ini` to `10000`
  - The crop mask no data filling step now replaces `NaN` values with `0` to avoid possible issues later when computing statistics
@@ -12,12 +16,13 @@
  - The SNAP adapters have been updated
  - The daemons no longer log messages twice [Forge #150734]
  - The NDVI no data filling step is now around 20x faster
- - Added script for cancelling all scheduled jobs
- - Added support for year in season date (not well tested yet and also not implemented yet in UI)
+ - The crop mask products contain a crop/no crop "legend" in the MTD XML file [Forge #150419]
+ - The "NODATA" special value is no longer duplicated in the MTD XML file
+ - The crop mask and crop type processors now process multiple tiles in parallel (`-max-parallelism`) with fewer threads per tile (`-tile-threads-hint`), improving performance on large systems
  - Change in IPP file in LAI multi date format to have source hdr files but also source L3B files
  - Added flags to ignore vegetation indices in LAI Mono date model creation.
- - Change for LANDSAT8 page evolutions (Error 503 during download)  
- - Changed the LAI Fitted for providing bands for all dates 
+ - Change for LANDSAT8 page evolutions (Error 503 during download)
+ - Changed the LAI Fitted for providing bands for all dates
 
 ### Fixed
  - The automated and custom jobs no longer use tiles from a different site if two sites contain the same tile
@@ -41,6 +46,7 @@
 - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
 - The dashboard previews don't match their bounds rectangle because of projection mismatch
 - The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
+- The mosaics of the L4B products are wrong when `-include-raw-mask` is used
 
 ## [1.4] - 2016-11-17
 ### Added
@@ -68,7 +74,7 @@
 - 20m composite products are now generated
 - The LEGACY_DATA mosaic now uses nearest-neighbour resampling for L4A and L4B product
 - The LEGACY_DATA mosaic now uses tile consensus projection or `EPSG:4326` instead of picking the majority one
-- The LEGACY_DATA mosaic of L4A products is no longer made from both segmented and raw masks
+- The LEGACY_DATA mosaic of L4A products is no longer made from both segmented and raw masks [Forge #150432]
 - Quality flags extraction no longer gives wrong results when Landsat 8 products in a different projection are used
 - The L3A, L3B, L3C and quality flags extraction step of the L4A and L4B processors no longer crash when input products are in the current directory [Forge #150394]
 - Fixed misleading `demmaccs.py` command line help message (positional arguments placed after optional arguments taking multiple values)

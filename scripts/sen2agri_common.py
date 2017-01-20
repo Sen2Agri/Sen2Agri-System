@@ -16,6 +16,7 @@ import resource
 import subprocess
 import traceback
 import datetime
+import multiprocessing.dummy
 
 # name:      The name of the step as it will be dispayed on screen
 # args:      The external process that must be invoked and it arguments
@@ -83,7 +84,7 @@ def executeStep(name, *args, **kwargs):
 # end executeStep
 
 
-def increase_limits():
+def increase_rlimits():
     try:
         nofiles = resource.getrlimit(resource.RLIMIT_NOFILE)
         if nofiles[0] < nofiles[1]:
@@ -434,7 +435,31 @@ class ProcessorBase(object):
             metadata = self.build_metadata()
             metadata.write(metadata_file, xml_declaration=True, encoding='UTF-8', pretty_print=True)
 
-            increase_limits()
+            increase_rlimits()
+
+            tile_threads = self.args.tile_threads_hint
+
+            if self.args.max_parallelism is None:
+                # note that this doesn't take CPU affinity (/proc/self/cpuset) into account
+                parallelism = multiprocessing.cpu_count() / tile_threads
+                if parallelism == 0:
+                    parallelism = 1
+            else:
+                parallelism = self.args.max_parallelism
+
+            if parallelism > len(self.tiles):
+                parallelism = len(self.tiles)
+
+            # we had some issues with OTB being unable to open images when this is too high
+            # it wasn't related to the open fd limit
+            if parallelism > 1:
+                train_parallelism = 2
+            else:
+                train_parallelism = 1
+
+            print("Processing {} tiles at once".format(parallelism))
+            print("Using {} threads for each tile".format(tile_threads))
+            os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(tile_threads)
 
             if self.args.mode is None or self.args.mode == 'prepare-site':
                 self.prepare_site()
@@ -444,24 +469,21 @@ class ProcessorBase(object):
                     self.prepare_tile(tile)
 
             if self.args.mode is None or self.args.mode == 'train':
-                for stratum in self.strata:
-                    if self.args.stratum_filter and stratum.id not in self.args.stratum_filter:
-                        print("Skipping training for stratum {} due to stratum filter".format(stratum.id))
-                        continue
-
-                    print("Building model for stratum:", stratum.id)
-                    self.train_stratum(stratum)
+                pool = multiprocessing.dummy.Pool(train_parallelism)
+                pool.map(self.internal_train_stratum, self.strata)
+                pool.close()
+                pool.join()
 
             if self.args.mode is None or self.args.mode == 'classify':
-                for tile in self.tiles:
-                    if self.args.tile_filter and tile.id not in self.args.tile_filter:
-                        print("Skipping classification for tile {} due to tile filter".format(tile.id))
-                        continue
-
-                    print("Performing classification for tile:", tile.id)
-                    self.classify_tile(tile)
+                pool = multiprocessing.dummy.Pool(parallelism)
+                pool.map(self.internal_classify_tile, self.tiles)
+                pool.close()
+                pool.join()
 
             if self.args.mode is None or self.args.mode == 'postprocess-tiles':
+                # the NDVI extraction step has the same scalability issues as the classification
+                # but the mean-shift smoothing seems to do better
+                os.environ.pop("ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS")
                 for tile in self.tiles:
                     if self.args.tile_filter and tile.id not in self.args.tile_filter:
                         print("Skipping post-processing for tile {} due to tile filter".format(tile.id))
@@ -469,15 +491,14 @@ class ProcessorBase(object):
 
                     self.postprocess_tile(tile)
 
+                os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(tile_threads)
                 if self.args.skip_quality_flags:
                     print("Skipping quality flags extraction")
                 else:
-                    for tile in self.tiles:
-                        if self.args.tile_filter and tile.id not in self.args.tile_filter:
-                            print("Skipping quality flags extraction for tile {} due to tile filter".format(tile.id))
-                            continue
-
-                        self.compute_quality_flags(tile)
+                    pool = multiprocessing.dummy.Pool(parallelism)
+                    pool.map(self.compute_quality_flags, self.tiles)
+                    pool.close()
+                    pool.join()
 
             if self.args.mode is None or self.args.mode == 'validate':
                 self.validate(context)
@@ -494,7 +515,27 @@ class ProcessorBase(object):
 
             sys.exit(exit_status)
 
+    def internal_train_stratum(self, stratum):
+        if self.args.stratum_filter and stratum.id not in self.args.stratum_filter:
+            print("Skipping training for stratum {} due to stratum filter".format(stratum.id))
+            return
+
+        print("Building model for stratum:", stratum.id)
+        self.train_stratum(stratum)
+
+    def internal_classify_tile(self, tile):
+        if self.args.tile_filter and tile.id not in self.args.tile_filter:
+            print("Skipping classification for tile {} due to tile filter".format(tile.id))
+            return
+
+        print("Performing classification for tile:", tile.id)
+        self.classify_tile(tile)
+
     def compute_quality_flags(self, tile):
+        if self.args.tile_filter and tile.id not in self.args.tile_filter:
+            print("Skipping quality flags extraction for tile {} due to tile filter".format(tile.id))
+            return
+
         tile_quality_flags = self.get_output_path("status_flags_{}.tif", tile.id)
 
         step_args = ["otbcli", "QualityFlagsExtractor", self.args.buildfolder,
