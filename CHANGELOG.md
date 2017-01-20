@@ -1,6 +1,6 @@
 # Change Log
 
-## [1.4.1] - 2016-01-??
+## [1.5.0] - 2016-01-20
 ### Added
 ### Changed
  - The crop mask and crop type processors no longer have the `-mission` and `-prodspertile` arguments [Forge #151877]
@@ -12,10 +12,18 @@
  - The SNAP adapters have been updated
  - The daemons no longer log messages twice [Forge #150734]
  - The NDVI no data filling step is now around 20x faster
+ - Added script for cancelling all scheduled jobs
+ - Added support for year in season date (not well tested yet and also not implemented yet in UI)
+ - Change in IPP file in LAI multi date format to have source hdr files but also source L3B files
+ - Added flags to ignore vegetation indices in LAI Mono date model creation.
+ - Change for LANDSAT8 page evolutions (Error 503 during download)  
+ - Changed the LAI Fitted for providing bands for all dates 
 
 ### Fixed
  - The automated and custom jobs no longer use tiles from a different site if two sites contain the same tile
  - Landsat8 reprojection is now performed correctly
+ - Correction in L3A aggregate tiles in order to have both 10M and 20M bands (not only 20m bands)
+ - Correction for missing srtm files in demmaccs
 
 ### Known issues
 - The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented
