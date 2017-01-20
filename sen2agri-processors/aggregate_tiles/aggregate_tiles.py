@@ -463,12 +463,12 @@ def concatenate_mosaic_files(outFileName, listOfImages):
 #----------------------------------------------------------------
 def perform_images_concatenation(listOfFiles, dataFolder, keepBsStatusInd):
    global gFilesToRemove
-   
+
    #build intermediary dictionnary
    tmp_data_dictionary = create_processing_list_upon_sufix_post_processing(listOfFiles)
 
    print("perform_images_concatenation: tmp_data_dictionary: {}".format(tmp_data_dictionary))
-   
+
    #create a list of tupples to store files upon scale resolution: 10,20,..
    list_img_by_scale = list()
    for key, fileList in tmp_data_dictionary.iteritems():
@@ -508,9 +508,9 @@ def perform_images_concatenation(listOfFiles, dataFolder, keepBsStatusInd):
    for fileName in list_img_by_scale:
       #gFilesToRemove.append(fileName[2])
       os.remove(fileName[2])
-   
+
    return retFileName
-   
+
 #----------------------------------------------------------------
 def format_file_name_output(fileName, keepBsStatusInd):
 
@@ -565,14 +565,14 @@ def post_process_mosaic_images(context, dataFolder, isImgDataFolder):
       if isImgDataFolder == True:
          print("Format file name to match documentation naming")
          file_name = os.path.basename(list_file_paths[0])
-         
+
          #format file name
          legacy_final_out_name = format_file_name_output(file_name, False)
          new_file_name = os.path.join(dataFolder, legacy_final_out_name + ".TIF")
-         
+
          #update field in dict for final out name for mosaic file
          context.post_process_out_filename = new_file_name
-         
+
          #rename the only one file found in directory with the computed new name (biosferical suffix discarded)
          os.rename(''.join(list_file_paths), new_file_name)
    else:
@@ -593,19 +593,19 @@ def post_process_mosaic_images(context, dataFolder, isImgDataFolder):
                 dictKey = file_name[:-len("_10.TIF")]
                 if not (dictKey in word_dict) :
                     print("Dict key not present {}".format(dictKey))
-                    word_dict[dictKey] = set() 
+                    word_dict[dictKey] = set()
                 else :
                     print("Dict key present {}".format(dictKey))
-                    
+
                 print("Adding for key {} the file {}".format(dictKey, fullFileName))
                 word_dict[dictKey].add(fullFileName)
-                
+
          # now iterate the dictionary for the found keys
          for key in word_dict:
                 print("Dictionary: Key: {} Values: {}".format(key, word_dict[key]))
                 dictKeyVals = word_dict[key]
                 images_concatenation(dictKeyVals, dataFolder, True)
-                
+
 def images_concatenation (fullFileNames, dataFolder, keepBsStatusInd) :
     #perform resolution adjust after creating mosaic files in order to
     #bring all mosaic files to same resolution for being able to concatenate them
@@ -632,11 +632,11 @@ def images_concatenation (fullFileNames, dataFolder, keepBsStatusInd) :
     #store full file name into context variable
     retFileName = perform_images_concatenation(fullFileNames, dataFolder, keepBsStatusInd)
     return retFileName, processedList
-    
+
 #----------------------------------------------------------------
 def perform_tiles_aggreagtion(context):
     global gFilesToRemove
-    
+
     #build dictionnary with files containing or not patterns at the end of the file (SLAIF,SLAIR,SRFL,etc)
     context.img_data_dic = create_processing_list_upon_sufix(context.img_data_out_list)
     #build dictionnary with files contain or not patterns the end of the file (MFLG, MDAT and SWGT,etc)
@@ -657,10 +657,9 @@ def perform_tiles_aggreagtion(context):
 
        for keyIMGSuffix in context.img_data_dic:
           if context.level == 'L4A':
-            files = []
-            for img in context.img_data_dic[keyIMGSuffix]:
-                if "_CM_" in img:
-                    files.append(img)
+              files = [img in context.img_data_dic[keyIMGSuffix] if "_CM_" in img]
+          elif context.level == 'L4B':
+              files = [img in context.img_data_dic[keyIMGSuffix] if "_CT_" in img]
           else:
               files = context.img_data_dic[keyIMGSuffix]
 
@@ -1284,7 +1283,7 @@ print("--------->Removing temporary files")
 for fileName in gFilesToRemove :
    print("   Removing temporary file {}".format(fileName))
    os.remove(fileName)
-   
+
 print("--------->END...")
 #execution time
 execTimeSec = datetime.datetime.now() - startTime

@@ -19,6 +19,7 @@
  - The crop mask products contain a crop/no crop "legend" in the MTD XML file [Forge #150419]
  - The "NODATA" special value is no longer duplicated in the MTD XML file
  - The crop mask and crop type processors now process multiple tiles in parallel (`-max-parallelism`) with fewer threads per tile (`-tile-threads-hint`), improving performance on large systems
+ - The mosaics of the L4B products are better when `-include-raw-mask` is used
  - Change in IPP file in LAI multi date format to have source hdr files but also source L3B files
  - Added flags to ignore vegetation indices in LAI Mono date model creation.
  - Change for LANDSAT8 page evolutions (Error 503 during download)
@@ -46,7 +47,6 @@
 - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
 - The dashboard previews don't match their bounds rectangle because of projection mismatch
 - The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
-- The mosaics of the L4B products are wrong when `-include-raw-mask` is used
 
 ## [1.4] - 2016-11-17
 ### Added
