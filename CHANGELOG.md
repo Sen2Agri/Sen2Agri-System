@@ -5,6 +5,7 @@
  - Added script for cancelling all scheduled jobs
  - Added support for year in season date (not well tested yet and also not implemented yet in UI)
  - Added support for the new S2 format
+
 ### Changed
  - The crop mask and crop type processors no longer have the `-mission` and `-prodspertile` arguments [Forge #151877]
  - L8 products no longer have to be duplicated for the crop mask and crop type processors [Forge #151877]
@@ -20,6 +21,7 @@
  - The "NODATA" special value is no longer duplicated in the MTD XML file
  - The crop mask and crop type processors now process multiple tiles in parallel (`-max-parallelism`) with fewer threads per tile (`-tile-threads-hint`), improving performance on large systems
  - The mosaics of the L4B products are better when `-include-raw-mask` is used
+ - The `sen2agri-app` package now includes a `systemd` override to increase the `RLIMIT_NOFILE` for SLURM jobs
  - Change in IPP file in LAI multi date format to have source hdr files but also source L3B files
  - Added flags to ignore vegetation indices in LAI Mono date model creation.
  - Change for LANDSAT8 page evolutions (Error 503 during download)
