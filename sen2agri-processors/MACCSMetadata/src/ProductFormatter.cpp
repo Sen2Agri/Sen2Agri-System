@@ -1293,14 +1293,20 @@ private:
 
       //???? TODO
       SpecialValues specialValue;
-      specialValue.SpecialValueIndex = "1";
-      specialValue.SpecialValueText = "NOTVALID";
-      m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
-
       specialValue.SpecialValueIndex = NO_DATA_VALUE;
       specialValue.SpecialValueText = "NODATA";
-      m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
+      m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.push_back(specialValue);
 
+      if (m_strProductLevel == "L4A")
+      {
+          specialValue.SpecialValueIndex = "0";
+          specialValue.SpecialValueText = "NO CROP";
+          m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.push_back(specialValue);
+
+          specialValue.SpecialValueIndex = "1";
+          specialValue.SpecialValueText = "CROP";
+          m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.push_back(specialValue);
+      }
 
       m_productMetadata.QualityIndicatorsInfo.CloudCoverage = "";
 
@@ -1679,11 +1685,6 @@ private:
   void FillMetadataInfoForLandsat(std::unique_ptr<MACCSFileMetadata> &metadata)
   {
       /* the source is a HDR file */
-
-    SpecialValues specialValue;
-    specialValue.SpecialValueText = "NODATA";
-    specialValue.SpecialValueIndex = metadata->ImageInformation.NoDataValue;
-    m_productMetadata.GeneralInfo.ProductImageCharacteristics.SpecialValuesList.emplace_back(specialValue);
 
     std::string acqDateTime = metadata->ProductInformation.AcquisitionDateTime;
     // Remove the eventual UTC= from the prefix of the date
