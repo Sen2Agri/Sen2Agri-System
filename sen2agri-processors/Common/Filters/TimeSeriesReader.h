@@ -906,7 +906,7 @@ protected:
             resampler->SetInputKeywordList(image->GetImageKeywordlist());
             resampler->SetInterpolator(interpolator);
             resampler->SetOutputSpacing(outputSpacing);
-            resampler->SetDisplacementFieldSpacing(outputSpacing * 10);
+            resampler->SetDisplacementFieldSpacing(outputSpacing * 20);
             resampler->SetOutputOrigin(td.m_imageOrigin);
             resampler->SetOutputSize(recomputedSize);
             resampler->SetEdgePaddingValue(edgePixel);

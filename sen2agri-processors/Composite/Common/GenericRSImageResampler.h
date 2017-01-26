@@ -122,6 +122,7 @@ public:
          OutputSpacing[1] = std::round(spacing[1] * scale[1]);
 
          resampler->SetOutputSpacing(OutputSpacing);
+         resampler->SetDisplacementFieldSpacing(OutputSpacing[0] * 20);
          resampler->SetOutputOrigin(origin);
 
          // Evaluate size
