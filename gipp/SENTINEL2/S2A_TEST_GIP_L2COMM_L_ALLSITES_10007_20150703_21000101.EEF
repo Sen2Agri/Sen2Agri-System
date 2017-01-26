@@ -72,7 +72,7 @@
 		<Bands_Definition>
 			<Thematic_Definition>
 				<!-- Blue band code identifier -->
-				<Blue_Band_Code>B2</Blue_Band_Code>
+				<Blue_Band_Code>B1</Blue_Band_Code>
 				<!-- Green band code identifier -->
 				<Green_Band_Code>B3</Green_Band_Code>
 				<!-- Red band code identifier -->
@@ -124,7 +124,7 @@
 			<Water_Vapor_Band_Code>B8A</Water_Vapor_Band_Code>
 			<!-- Water vapor Band 2 code identifier that corresponds to the 910 or 940nm spectral band -->
 			<Water_Vapor_Reference_Band_Code>B9</Water_Vapor_Reference_Band_Code>
-			<!-- Ozone amount value at the center of the image (used if Use_Ozone_Amount set to true) unit: cm.atm = jacobson 
+			<!-- Ozone amount value at the center of the image (used if Use_Ozone_Amount set to true) unit: cm.atm = jacobson
                  note: 1 jacobson = 1000 dobson. 1 kg[O3]/m2 = 46698 dobson -->
 			<Ozone_Amount_Default_Value>0.300</Ozone_Amount_Default_Value>
 			<!-- Water amount value (used if Use_Water_Amount set to true) -->
@@ -268,7 +268,7 @@
 			<!-- Multi spectral method -->
 			<Multi_Spectral_Method>
 				<!-- AOT Band code identifier used to estimate MS AOT (blue and red bands) -->
-				<MS_AOT_Band_Code>B2 B4</MS_AOT_Band_Code>
+				<MS_AOT_Band_Code>B1 B4</MS_AOT_Band_Code>
 				<!-- Red Band code identifier used to estimate MS AOT -->
 				<MS_AOT_Red_Band_Code>B4</MS_AOT_Red_Band_Code>
 				<!-- First band for NDVI computing -->
@@ -292,7 +292,7 @@
 			<!-- Multi temporal method -->
 			<Multi_Temporal_Method>
 				<!-- Band code identifier used to estimate MT AOT -->
-				<MT_AOT_Band_Code>B2</MT_AOT_Band_Code>
+				<MT_AOT_Band_Code>B1</MT_AOT_Band_Code>
 				<!-- Band used for the relative variation of reflectance between date D and D-1 (spec: band_var)-->
 				<Var_Band_Code>B8A</Var_Band_Code>
 				<!-- Maximum relative variation in the "band var" channel -->
@@ -346,7 +346,7 @@
 			<!-- Value to increment the distance within neighbours if the standard deviation is not sufficient -->
 			<Increment_N_Distance>2</Increment_N_Distance>
 			<!-- Band code identifier used to estimate the maximum AOT with the Dark pixel method -->
-			<Dark_Band_Code>B2</Dark_Band_Code>
+			<Dark_Band_Code>B1</Dark_Band_Code>
 			<!-- Structuring element for the opening AOT retrieved by the inversion radius -->
 			<SE_Valid_AOT_Radius>1</SE_Valid_AOT_Radius>
 			<!-- SE Water and snow masks dilatation radius -->
