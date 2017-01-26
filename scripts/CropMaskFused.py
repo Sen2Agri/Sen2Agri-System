@@ -73,7 +73,7 @@ class CropMaskProcessor(ProcessorBase):
         parser.add_argument(
             '-strata', help='Shapefiles with polygons for the strata')
         parser.add_argument('-mode', help='The execution mode',
-                            required=False, choices=['prepare-site', 'train', 'classify', 'postprocess-tiles', 'validate'], default=None)
+                            required=False, choices=['prepare-site', 'train', 'classify', 'postprocess-tiles', 'compute-quality-flags', 'validate'], default=None)
         parser.add_argument('-stratum-filter', help='The list of strata to use in training and classification',
                             required=False, type=int, nargs='+', default=None)
         parser.add_argument('-tile-filter', help='The list of tiles to apply the classification to',

@@ -481,22 +481,17 @@ class ProcessorBase(object):
                 pool.join()
 
             if self.args.mode is None or self.args.mode == 'postprocess-tiles':
-                # the NDVI extraction step has the same scalability issues as the classification
-                # but the mean-shift smoothing seems to do better
-                os.environ.pop("ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS")
-                for tile in self.tiles:
-                    if self.args.tile_filter and tile.id not in self.args.tile_filter:
-                        print("Skipping post-processing for tile {} due to tile filter".format(tile.id))
-                        continue
+                pool = multiprocessing.dummy.Pool(parallelism)
+                pool.map(self.internal_postprocess_tile, self.tiles)
+                pool.close()
+                pool.join()
 
-                    self.postprocess_tile(tile)
-
-                os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(tile_threads)
+            if self.args.mode is None or self.args.mode == 'compute-quality-flags':
                 if self.args.skip_quality_flags:
                     print("Skipping quality flags extraction")
                 else:
                     pool = multiprocessing.dummy.Pool(parallelism)
-                    pool.map(self.compute_quality_flags, self.tiles)
+                    pool.map(self.internal_compute_quality_flags, self.tiles)
                     pool.close()
                     pool.join()
 
@@ -531,11 +526,23 @@ class ProcessorBase(object):
         print("Performing classification for tile:", tile.id)
         self.classify_tile(tile)
 
-    def compute_quality_flags(self, tile):
+    def internal_postprocess_tile(self, tile):
+        if self.args.tile_filter and tile.id not in self.args.tile_filter:
+            print("Skipping post-processing for tile {} due to tile filter".format(tile.id))
+            return
+
+        print("Performing post-processing for tile:", tile.id)
+        self.postprocess_tile(tile)
+
+    def internal_compute_quality_flags(self, tile):
         if self.args.tile_filter and tile.id not in self.args.tile_filter:
             print("Skipping quality flags extraction for tile {} due to tile filter".format(tile.id))
             return
 
+        print("Computing quality flags for tile:", tile.id)
+        self.compute_quality_flags(tile)
+
+    def compute_quality_flags(self, tile):
         tile_quality_flags = self.get_output_path("status_flags_{}.tif", tile.id)
 
         step_args = ["otbcli", "QualityFlagsExtractor", self.args.buildfolder,
