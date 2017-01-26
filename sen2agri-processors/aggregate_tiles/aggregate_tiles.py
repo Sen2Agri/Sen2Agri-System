@@ -657,9 +657,9 @@ def perform_tiles_aggreagtion(context):
 
        for keyIMGSuffix in context.img_data_dic:
           if context.level == 'L4A':
-              files = [img in context.img_data_dic[keyIMGSuffix] if "_CM_" in img]
+              files = [img for img in context.img_data_dic[keyIMGSuffix] if "_CM_" in img]
           elif context.level == 'L4B':
-              files = [img in context.img_data_dic[keyIMGSuffix] if "_CT_" in img]
+              files = [img for img in context.img_data_dic[keyIMGSuffix] if "_CT_" in img]
           else:
               files = context.img_data_dic[keyIMGSuffix]
 
