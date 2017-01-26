@@ -20,8 +20,6 @@
  - The crop mask products contain a crop/no crop "legend" in the MTD XML file [Forge #150419]
  - The "NODATA" special value is no longer duplicated in the MTD XML file
  - The crop mask and crop type processors now process multiple tiles in parallel (`-max-parallelism`) with fewer threads per tile (`-tile-threads-hint`), improving performance on large systems
- - Improved performance of the quality flags extraction step when Landsat8 inputs are present
- - Increased reprojection resampler grid spacing to 200 m
  - The mosaics of the L4B products are better when `-include-raw-mask` is used
  - The `sen2agri-app` package now includes a `systemd` override to increase the `RLIMIT_NOFILE` for SLURM jobs
  - Change in IPP file in LAI multi date format to have source hdr files but also source L3B files
