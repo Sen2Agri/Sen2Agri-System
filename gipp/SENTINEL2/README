@@ -1,0 +1,44 @@
+############################################################################################################
+#                                                                                                          #
+#                                ooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooooo         #
+#                             o                                                                            #
+#                          o                                                                               #
+#                        o                                                                                 #
+#                      o                                                                                   #
+#                     o       ooooooo       ooooooo    o         o      oo                                 #
+#    o              o       o        o     o       o   o         o     o   o                               #
+#      o           o       o          o   o         o  o         o    o      o                             #
+#        o        o       o           o   o         o  o         o    o        o                           #
+#         o      o        o      oooo     o         o  o         o   o           o                         #
+#          o    o          o              o         o  o         o   o           o                         #
+#           o  o            o             o         o  o o      o   o          o                           #
+#            oo              oooooooo    o         o   o  oooooo   o      oooo                             #
+#                                                     o                                                    #
+#                                                     o                                                    #
+#                                                    o                            o                        #
+#                                                    o            o      oooo     o   o      oooo          #
+#                                                   o             o         o    o    o         o          #
+#                                                   o            o       ooo     o   o       ooo           #
+#                                                               o       o       o   o          o           #
+#                                                               ooooo   oooo    o   ooooo  oooo            #
+#                                                                              o                           #
+#                                                                                                          #
+############################################################################################################
+#                                                                                                          #
+# Author: CS Systemes d'Information  (France)                                                              #
+#                                                                                                          #
+############################################################################################################
+# HISTORIQUE                                                                                               #
+#                                                                                                          #
+# VERSION : 4-0-0 : DM : LAIG-DM-MAC-613-CNES : 19 decembre 2013 : Création du plug-in Spot4           #
+#                                                                                                          #
+# FIN-HISTORIQUE                                                                                           #
+#                                                                                                          #
+# $Id: CMakeLists.txt 4046 2012-04-12 16:57:32Z tfeuvrie $
+#                                                                                                          #
+############################################################################################################
+
+This directory contains examples data (Gipps, etc.) for MACCS users.
+
+
+   

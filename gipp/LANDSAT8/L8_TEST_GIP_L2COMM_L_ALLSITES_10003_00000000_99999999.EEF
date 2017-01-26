@@ -1,0 +1,399 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="DISPLAY/display.xsl"?>
+<Earth_Explorer_File xmlns="http://eop-cfi.esa.int/CFI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="L2COMM_File_Type" schema_version="0.40" xsi:schemaLocation="http://eop-cfi.esa.int/CFI D:\Utilisateurs\petruccib\Documents\PROJETS\MACCS\99-Envois_Utilisateurs\20161123-S2Agri-GIPP\Schemas-L8\GIP_L2COMM_L2Commons.xsd">
+	<Earth_Explorer_Header>
+		<Fixed_Header>
+			<File_Name>L8_TEST_GIP_L2COMM_L_ALLSITES_00003_00000000_99999999</File_Name>
+			<File_Description>L2CommonParameters</File_Description>
+			<Notes/>
+			<Mission>LANDSAT_8</Mission>
+			<File_Class>TEST</File_Class>
+			<File_Type>GIP_L2COMM</File_Type>
+			<Validity_Period>
+				<Validity_Start>UTC=0000-00-00T00:00:00</Validity_Start>
+				<Validity_Stop>UTC=9999-99-99T99:99:99</Validity_Stop>
+			</Validity_Period>
+			<File_Version>0003</File_Version>
+			<Source>
+				<System>MACCS</System>
+				<Creator>CNES_tool</Creator>
+				<Creator_Version>1.0</Creator_Version>
+				<Creation_Date>UTC=2016-11-23T17:38:44</Creation_Date>
+			</Source>
+		</Fixed_Header>
+		<Variable_Header>
+			<Main_Product_Header>
+				<List_of_Consumers count="0"/>
+				<List_of_Extensions count="0"/>
+			</Main_Product_Header>
+			<Specific_Product_Header>
+				<Instance_Id>
+					<Applicability_NickName_Type>L_LIST</Applicability_NickName_Type>
+					<Applicability_NickName>ALLSITES</Applicability_NickName>
+					<Serial_Key>00001</Serial_Key>
+					<Validity_Period>
+						<Validity_Start>UTC=0000-00-00T00:00:00</Validity_Start>
+						<Validity_Stop>UTC=9999-99-99T99:99:99</Validity_Stop>
+					</Validity_Period>
+				</Instance_Id>
+				<List_of_Applicable_SiteDefinition_Ids count="0"/>
+			</Specific_Product_Header>
+		</Variable_Header>
+	</Earth_Explorer_Header>
+	<Data_Block>
+		<Common_Parameters>
+			<!-- No data value -->
+			<No_Data>-10000</No_Data>
+			<!-- Maximum percentage of NoData pixels for the product to be considered as valid -->
+			<TOA_Quantification_Value>0.001</TOA_Quantification_Value>
+			<Max_No_Data_Percentage>99</Max_No_Data_Percentage>
+			<!-- Maximum percentage of cloudy pixels for the product to be considered as valid (in percentage) -->
+			<Max_Cloud_Percentage>90</Max_Cloud_Percentage>
+			<!-- Type of interpolator used in the LUT manipulation -->
+			<LUT_Interpolation>LINEAR</LUT_Interpolation>
+			<!-- Minimum value of the cosine of incidence angle (to avoid to normalise reflectances with negative values or close to infinite values) -->
+			<!-- This parameter is used in Snow Masking and Slope Correction -->
+			<Slope_Min_Cos_I>0.20</Slope_Min_Cos_I>
+			<!-- L2/L3 specifics products configuration values -->
+			<VAP_Configuration_Values>
+				<!--VAP quantification value -->
+				<VAP_Quantification_Value>0.050</VAP_Quantification_Value>
+				<!--VAP Nodata value (in [0;255]) -->
+				<VAP_No_Data_Value>0</VAP_No_Data_Value>
+			</VAP_Configuration_Values>
+			<AOT_Configuration_Values>
+				<!--AOT quantification value -->
+				<AOT_Quantification_Value>0.005</AOT_Quantification_Value>
+				<!--AOT Nodata value (in [0;255]) -->
+				<AOT_No_Data_Value>0</AOT_No_Data_Value>
+			</AOT_Configuration_Values>
+		</Common_Parameters>
+		<Bands_Definition>
+			<Thematic_Definition>
+				<!-- Blue band code identifier -->
+				<Blue_Band_Code>B2</Blue_Band_Code>
+				<!-- Green band code identifier -->
+				<Green_Band_Code>B3</Green_Band_Code>
+				<!-- Red band code identifier -->
+				<Red_Band_Code>B4</Red_Band_Code>
+				<!-- Near Infra Red band code identifier -->
+				<NIR_Band_Code>B5</NIR_Band_Code>
+				<!--  SWIR band code identifier -->
+				<SWIR1_Band_Code>B6</SWIR1_Band_Code>
+				<!--Band code identifier that corresponds to the 2.2µm spectral band -->
+				<Band_2200_Code>B7</Band_2200_Code>
+				<!-- Band code identifier used for the red channel of the quick look -->
+				<Quicklook_Red_Band_Code>B4</Quicklook_Red_Band_Code>
+				<!-- Band code identifier used for the green channel of the quick look -->
+				<Quicklook_Green_Band_Code>B3</Quicklook_Green_Band_Code>
+				<!-- Band code identifier used for the blue channel of the quick look -->
+				<Quicklook_Blue_Band_Code>B2</Quicklook_Blue_Band_Code>
+			</Thematic_Definition>
+		</Bands_Definition>
+		<Quicklook_Refl_Variation>
+			<!-- Minimum reflectance value in the red channel takes in care for the quick look rescaling -->
+			<Min_Ref_Red_Band>0.000</Min_Ref_Red_Band>
+			<!-- Maximum reflectance value in the red channel takes in care for the quick look rescaling -->
+			<Max_Ref_Red_Band>0.250</Max_Ref_Red_Band>
+			<!-- Minimum reflectance value in the greeb channel takes in care for the quick look rescaling -->
+			<Min_Ref_Green_Band>0.000</Min_Ref_Green_Band>
+			<!-- Maximum reflectance value in the green channel takes in care for the quick look rescaling -->
+			<Max_Ref_Green_Band>0.250</Max_Ref_Green_Band>
+			<!-- Minimum reflectance value in the blue channel takes in care for the quick look rescaling -->
+			<Min_Ref_Blue_Band>0.000</Min_Ref_Blue_Band>
+			<!-- Maximum reflectance value in the blue channel takes in care for the quick look rescaling -->
+			<Max_Ref_Blue_Band>0.250</Max_Ref_Blue_Band>
+		</Quicklook_Refl_Variation>
+		<Subsampling>
+			<!-- Threshold to consider a L2 resolution pixel as saturated -->
+			<Saturation_Threshold>0.900</Saturation_Threshold>
+			<!-- Threshold to consider a L2 coarse resolution image as saturated -->
+			<Saturation_Threshold_Sub>0.900</Saturation_Threshold_Sub>
+		</Subsampling>
+		<DTM_Processing>
+			<!--Spectral bands used in the DTM processing -->
+			<DTM_Viewing_Direction_Band_Code>B2</DTM_Viewing_Direction_Band_Code>
+			<!-- Euclidean distance beyong which a pixel is declared as hidden (in meter) -->
+			<Distance_Threshold>240.00</Distance_Threshold>
+		</DTM_Processing>
+		<Atmospheric_Absorption_Correction>
+			<!-- Ozone amount value at the center of the image (used if Use_Ozone_Amount set to true) unit: cm.atm = jacobson 
+                 note: 1 jacobson = 1000 dobson. 1 kg[O3]/m2 = 46698 dobson -->
+			<Ozone_Amount_Default_Value>0.300</Ozone_Amount_Default_Value>
+			<!-- Water amount value (used if Use_Water_Amount set to true) -->
+			<Water_Amount_Default_Value>2.0</Water_Amount_Default_Value>
+		</Atmospheric_Absorption_Correction>
+		<Rayleigh_Correction>
+			<!-- Default value of AOT for the Rayleigh correction -->
+			<Rayleigh_Correction_Default_AOT>0.05</Rayleigh_Correction_Default_AOT>
+		</Rayleigh_Correction>
+		<Geometric_Flags>
+			<!-- Maximum angular distance to sunglint under which a viewing direction is declared close to sunglint (in degree) -->
+			<Sun_Glint_Threshold unit="deg">30</Sun_Glint_Threshold>
+			<!-- Maximum angular distance to hotspot under which a viewing direction is declared close to hotspot (in degree) -->
+			<Hot_Spot_Threshold unit="deg">5</Hot_Spot_Threshold>
+		</Geometric_Flags>
+		<Cirrus_Mask>
+			<!-- Band code identifier that corresponds to the 1.38µm spectral band -->
+			<Cirrus_Band_Code>B9</Cirrus_Band_Code>
+			<!--  Minimum percentage of cirrus clouds within the image to raise the cirrus flag -->
+			<Min_Percent_Mask_Cirrus>100</Min_Percent_Mask_Cirrus>
+			<!-- Offset for reflectance threshold to detect a cirrus -->
+			<Cirrus_Mask_Threshold_Offset>0.015</Cirrus_Mask_Threshold_Offset>
+			<!-- Gain for reflectance threshold to detect a cirrus -->
+			<Cirrus_Mask_Threshold_Gain>0.00002</Cirrus_Mask_Threshold_Gain>
+		</Cirrus_Mask>
+		<Snow_Masking>
+			<!--  Structuring element for dilatation of the snow mask -->
+			<SE_Snow_Radius>1</SE_Snow_Radius>
+			<!--  Threshold on surface reflectance in the blue band -->
+			<NDSI_Threshold>0.4</NDSI_Threshold>
+			<!--  Threshold on the resd band surface reflectance absolute value -->
+			<Red_Reflectance_Threshold>0.12</Red_Reflectance_Threshold>
+			<!--  Threshold on the SWIR1 band surface reflectance absolute value -->
+			<SWIR1_Reflectance_Threshold>0.16</SWIR1_Reflectance_Threshold>
+			<!-- Boolean that indicates if the water mask has to be used -->
+			<Use_Water_Mask>true</Use_Water_Mask>
+		</Snow_Masking>
+		<Cloud_Masking>
+			<!-- Option to refine the cloud altitude instead of trust the stereoscopic altitude -->
+			<Refinement_Option>true</Refinement_Option>
+			<!-- Ratio of pixels above which the number of pixels in a cloud which have a good correlation is considered significant (in percentage) -->
+			<Discarded_Pixels_Ratio_Min>20</Discarded_Pixels_Ratio_Min>
+			<!-- Band used for absolute thresholding of reflectance over water zones (SWIR when available, NIR otherwise) -->
+			<Reflectance_Water_Band_Code>B7</Reflectance_Water_Band_Code>
+			<!-- Band code identifier used for the correlation to avoid false cloud detection -->
+			<Correl_Band_Code>B2</Correl_Band_Code>
+			<!-- Band code identifier used for the shadow detection -->
+			<Shadow_Band_Code>B4</Shadow_Band_Code>
+			<!-- Threshold on surface reflectance in the blue band -->
+			<Reflectance_Threshold>0.25</Reflectance_Threshold>
+			<!-- Threshold of correlation between images of date D and D-1 -->
+			<Correl_Threshold>80</Correl_Threshold>
+			<!-- Radius of the input masks (water and snow) dilatation -->
+			<SE_Input_Masks_Radius>1</SE_Input_Masks_Radius>
+			<!-- Threshold on surface reflectance in the Refl_water_band band for pixels declared water (if sunglint_flag is False) -->
+			<Water_Reflectance_Threshold>0.08</Water_Reflectance_Threshold>
+			<!-- Threshold on surface reflectance in the Refl_water_band band for pixels declared water (if sunglint_flag is True) -->
+			<Water_Sunglint_Reflectance_Threshold>0.25</Water_Sunglint_Reflectance_Threshold>
+			<!-- Minimum Threshold on surface reflectance variation with time in the blue band -->
+			<Min_Threshold_Var_Blue>0.025</Min_Threshold_Var_Blue>
+			<!-- Maximum Threshold on surface reflectance variation with time in the blue band -->
+			<Max_Threshold_Var_Blue>0.070</Max_Threshold_Var_Blue>
+			<!-- Difference between the threshold used for the initial variation detection step and the one used for the extension step -->
+			<Delta_Threshold>0.005</Delta_Threshold>
+			<!-- Time delay after which Refl_Variation_Threshold is doubled (in days) -->
+			<Cloud_Forgetting_Duration>30</Cloud_Forgetting_Duration>
+			<!-- Default altitude attributed to cloud pixels, if stereoscopy has not detected any cloud (in meter) -->
+			<Default_Altitude>500</Default_Altitude>
+			<!-- Maximum cloud altitude, to find the zone where clouds outside the image could cast shadows (in meter) -->
+			<Max_Cloud_Altitude>8000</Max_Cloud_Altitude>
+			<!-- Maximum number of images in the stack -->
+			<Number_Of_Stack_Images>10</Number_Of_Stack_Images>
+			<!-- Parameter for comparison of relative variations in the blue and in the NIR -->
+			<K_NIR_Blue>1.20</K_NIR_Blue>
+			<!-- Parameter for comparison of variations in the blue and in the red -->
+			<K_Red_Blue>1.50</K_Red_Blue>
+			<!-- Radius of the correlation window -->
+			<N_Correl>3</N_Correl>
+			<!-- Minimum number of pixels to take correlation into account -->
+			<Min_Pixel_Correl>15</Min_Pixel_Correl>
+			<!-- Minimum altitude excursion around the altitude obtained via stereoscopy, to refine the altitude value (in meter) -->
+			<Delta_H_Min>0</Delta_H_Min>
+			<!-- Maximum altitude excursion around the altitude obtained via stereoscopy, to refine the altitude value (in meter) -->
+			<Delta_H_Max>8000</Delta_H_Max>
+			<!-- Step altitude excursion, to refine the altitude value (in meter) -->
+			<Delta_H_Step>250</Delta_H_Step>
+			<!-- Shadow/Cloud ratio used for clouds having less than shadowCloudRatioPixNb pixels
+                 This ratio allows to calculate the maximum number of pixels for a given shadow (relatively to a cloud label) -->
+			<Shadow_Cloud_Ratio_Max>1.</Shadow_Cloud_Ratio_Max>
+			<!-- Shadow/Cloud ratio used for clouds having more pixels than shadowCloudRatioPixNb pixels
+                 This ratio allows to calculate the maximum number of pixels for a given shadow (relatively to a cloud label) -->
+			<Shadow_Cloud_Ratio_Min>0.5</Shadow_Cloud_Ratio_Min>
+			<!-- Threshold on the number of pixels to use either shadowCloudRatioMax or shadowCloudRatioMin -->
+			<Shadow_Cloud_Ratio_Pix_Nb>10</Shadow_Cloud_Ratio_Pix_Nb>
+			<!-- Maximum value for the darkening threshold used to determine shadows zones (by projection) -->
+			<Proj_Shad_Darkening_Max>0.8</Proj_Shad_Darkening_Max>
+			<!-- Minimum percentile value used to determine the threshold for projected shadows -->
+			<Darkening_Min_Percentile>10</Darkening_Min_Percentile>
+			<!-- Multiplicative coefficient of the cloud cover percentage used for the determination of darkening threshold -->
+			<Cloud_Cover_Mult_Factor>2.</Cloud_Cover_Mult_Factor>
+			<!-- Maximum value for the darkening threshold used to determine shadows zones (in the “radiometric” zone) -->
+			<Shad_Var_Darkening_Max>0.3</Shad_Var_Darkening_Max>
+			<!-- Percentile used to determine the darkening threshold for the shadows (located in the “radiometric zone”) -->
+			<Shad_Var_Percentile>40</Shad_Var_Percentile>
+			<!-- Minimum ratio of pixels (at the shadow label level) that have to be already declared as shadow (shadvar) in the previous cloud mask in order to discard the detection -->
+			<Shad_Var_Composite_Label_Ratio>0.8</Shad_Var_Composite_Label_Ratio>
+			<!-- Radius of the structuring element for cloud dilation -->
+			<SE_Cloud_Radius>1</SE_Cloud_Radius>
+		</Cloud_Masking>
+		<Water_Masking>
+			<!-- Number of possible water masks necessary to create the water mask of date D, ie. number of masks available in the PWA and TWA masks -->
+			<Water_Mask_Number>10</Water_Mask_Number>
+			<!-- NDVI threshold below which a pixel is probably covered by water -->
+			<Water_NDVI_Threshold>0.010</Water_NDVI_Threshold>
+			<!-- The reflectance of pixels with low enough NDVI has to be below this threshold to be regarded as possibly covered by water -->
+			<Water_Red_Reflectance_Threshold>0.05</Water_Red_Reflectance_Threshold>
+			<!-- No water can be detected for pixels for which the DEM slope is above this threshold -->
+			<Water_Slope_Threshold>0.15</Water_Slope_Threshold>
+			<!-- Reflectance threshold used if a water pixel is observed in sunglint conditions (where its reflectance will vary quickly with time) -->
+			<Water_Reflectance_Variation_Threshold>0.040</Water_Reflectance_Variation_Threshold>
+			<!-- Maximum reflectance for which the variation threshold is used -->
+			<Maximum_Sunglint_Reflectance>0.120</Maximum_Sunglint_Reflectance>
+			<!-- Minimum percent of tested times to declare a pixel as water -->
+			<Min_Percent_Possible_Water>50</Min_Percent_Possible_Water>
+			<!-- Standard deviation of the Gaussian filter applied to the SRTM Water mask (in pixel) -->
+			<SRTM_Sigma_Smoothing>10</SRTM_Sigma_Smoothing>
+			<!-- If a pixel is declared as water by SRTM, it brings a certain percentage of the amount necessary to declare a pixel a water -->
+			<SRTM_Percent>51</SRTM_Percent>
+		</Water_Masking>
+		<Rain_Flag>
+			<!-- Band code identifier used for the water masking -->
+			<Water_Band_Code>B7</Water_Band_Code>
+			<!-- Reflectance decrease threshold -->
+			<Reflectance_Decrease_Threshold>0.045</Reflectance_Decrease_Threshold>
+		</Rain_Flag>
+		<AOT_Estimation>
+			<!--  AOT Method : MULTITEMPORAL (MT), MULTISPECTRAL (MS), SPECTROTEMPORAL (ST)-->
+			<AOT_Method>SPECTROTEMPORAL</AOT_Method>
+			<!-- Multi spectral method -->
+			<Multi_Spectral_Method>
+				<!-- AOT Band code identifier used to estimate MS AOT (blue and red bands) -->
+				<MS_AOT_Band_Code>B2 B4</MS_AOT_Band_Code>
+				<!-- Red Band code identifier used to estimate MS AOT -->
+				<MS_AOT_Red_Band_Code>B4</MS_AOT_Red_Band_Code>
+				<!-- First band for NDVI computing -->
+				<NDVI_AOT_Band1_Code>B5</NDVI_AOT_Band1_Code>
+				<!-- Second band for NDVI computing -->
+				<NDVI_AOT_Band2_Code>B4</NDVI_AOT_Band2_Code>
+				<!-- Thresholds used to select pixels in the MS AOT method -->
+				<NDVI_Threshold>0.3</NDVI_Threshold>
+				<Red_TOA_Threshold>0.2</Red_TOA_Threshold>
+				<!-- Slope of the MS linear relationship between the red and the blue reflectance. -->
+				<MS_Slope>0.45</MS_Slope>
+				<!-- Y intercept of the MS linear relationship between the red and the blue reflectance. -->
+				<MS_YIntercept>0.00</MS_YIntercept>
+				<!-- Slope for the multi spectral weight that depends on NDVI -->
+				<NDVI_Slope>0.7</NDVI_Slope>
+				<!-- Y Intercept for the multi spectral weight that depends on NDVI -->
+				<NDVI_YIntercept>0.3</NDVI_YIntercept>
+				<!-- Weight for the MS inversion equation -->
+				<W_MS>2.</W_MS>
+			</Multi_Spectral_Method>
+			<!-- Multi temporal method -->
+			<Multi_Temporal_Method>
+				<!-- Band code identifier used to estimate MT AOT -->
+				<MT_AOT_Band_Code>B2</MT_AOT_Band_Code>
+				<!-- Band used for the relative variation of reflectance between date D and D-1 (spec: band_var)-->
+				<Var_Band_Code>B5</Var_Band_Code>
+				<!-- Maximum relative variation in the "band var" channel -->
+				<Relative_Var_Max>0.075</Relative_Var_Max>
+				<!-- Weight for the equation 2. This weight depends on the differences between the TOA reflectances of day D and D1 -->
+				<W_MT_equation2>2.</W_MT_equation2>
+				<!-- Channel for calculating the stdev within the neighborhood -->
+				<Stdev_Band_Code>B7</Stdev_Band_Code>
+				<!-- Minimum standard deviation of reflectances within neighborhood to perform the inversion -->
+				<Stdev_Min>0.02</Stdev_Min>
+				<!-- Usual standard deviation of TOA reflectances due to landscape change or instrumental noise -->
+				<!-- It is used to normalise the weight of the first term of the cost function -->
+				<Std_Noise>0.001</Std_Noise>
+				<!-- Initialization value for AOT(D-1) in vector [AOT(D-1), AOT(D)] -->
+				<AOT_initial_Dm1>0.1</AOT_initial_Dm1>
+				<!-- First AOT value used to determine TOA reflectance thresholds -->
+				<First_AOT>0.</First_AOT>
+				<!-- Second AOT value used to determine TOA reflectance thresholds -->
+				<Second_AOT>0.4</Second_AOT>
+				<!-- Minimum TOA reflectance value used to determine TOA reflectance thresholds -->
+				<TOA_Reflectance_Min>0.</TOA_Reflectance_Min>
+				<!-- Maximum TOA reflectance value used to determine TOA reflectance thresholds -->
+				<TOA_Reflectance_Max>1.</TOA_Reflectance_Max>
+				<!-- TOA reflectance step value used to determine TOA reflectance thresholds -->
+				<TOA_Reflectance_Step>0.01</TOA_Reflectance_Step>
+				<!-- Difference threshold between surface reflectances obtained for distant AOT values -->
+				<Min_Difference_Thresholds_Calculation>0.01</Min_Difference_Thresholds_Calculation>
+			</Multi_Temporal_Method>
+			<!-- Spectro temporal method -->
+			<Spectro_Temporal_Method>
+				<!--  Numerator coefficient used to compute the weight of the MT equations in the ST method -->
+				<A_Coefficient>1200</A_Coefficient>
+				<!--  Denominator coefficient used to compute the weight of the MT equations in the ST method -->
+				<B_Coefficient>800</B_Coefficient>
+				<!--  Threshold ont he equation 1 weight coefficient in the ST method -->
+				<MT_Weight_Threshold>10</MT_Weight_Threshold>
+			</Spectro_Temporal_Method>
+			<!-- Maximum age for reflectances in the composite image. If the age of the pixel is greater than 60 (TBC) days, The pixel is not used to estimate AOT -->
+			<AOT_Max_Age>60</AOT_Max_Age>
+			<!-- Used AOT value if AOT cannot be estimated -->
+			<Default_AOT>0.10</Default_AOT>
+			<!-- Number of L2 coarse resolution pixel between each estimate AOT -->
+			<!-- AOT_resolution= L2_coarse_resolution * Step_AOT -->
+			<Step_AOT>3</Step_AOT>
+			<!-- Minimum sampling interval within a neighborhood -->
+			<Sampling_Interval_Min>2</Sampling_Interval_Min>
+			<!-- Maximum sampling interval within a neighborhood -->
+			<Sampling_Interval_Max>8</Sampling_Interval_Max>
+			<!-- Minimum number of valid pixels within a neighborhood to perform AOT inversion -->
+			<N_Pix_Min>20</N_Pix_Min>
+			<!-- Value to increment the distance within neighbours if the standard deviation is not sufficient -->
+			<Increment_N_Distance>2</Increment_N_Distance>
+			<!-- Band code identifier used to estimate the maximum AOT with the Dark pixel method -->
+			<Dark_Band_Code>B2</Dark_Band_Code>
+			<!-- Structuring element for the opening AOT retrieved by the inversion radius -->
+			<SE_Valid_AOT_Radius>1</SE_Valid_AOT_Radius>
+			<!-- SE Water and snow masks dilatation radius -->
+			<SE_Mask_Dilatation_Radius>1</SE_Mask_Dilatation_Radius>
+			<!-- Neighborhood size : Half_Window_Size parameter in spec -->
+			<Half_Window_Size>3</Half_Window_Size>
+			<!-- Weight for the AOT maximal value equation -->
+			<W_dark>10</W_dark>
+			<!-- Weight for the equations to control the AOT to stay between the bounds of the LUT -->
+			<W_bounds>1000000000</W_bounds>
+			<!-- Minimum value for the AOT. AOT_min must be greater that the first index of the list of AOT -->
+			<AOT_min>0.01</AOT_min>
+			<!-- Levenberg Marquardt optimization function value tolerance -->
+			<F_Tolerance>0.00001</F_Tolerance>
+			<!-- Levenberg Marquardt optimization gradient tolerance -->
+			<G_Tolerance>0.00001</G_Tolerance>
+			<!-- Levenberg Marquardt optimization search space tolerance -->
+			<X_Tolerance>0.00001</X_Tolerance>
+			<!-- Levenberg Marquardt optimization step -->
+			<Epsilon_Function>0.00001</Epsilon_Function>
+			<!-- Levenberg Marquardt optimization maximum number of iteration -->
+			<Max_Iterations>500</Max_Iterations>
+			<!-- Initialization value for AOT(D) in vector [AOT(D-1), AOT(D)] -->
+			<AOT_initial_D>0.1</AOT_initial_D>
+			<!-- Initial width of the window used to fill AOT gaps : window_filling_width_init -->
+			<Init_Window_Radius>2</Init_Window_Radius>
+			<!-- Maximum width of the window used to fill AOT gaps -->
+			<Max_Window_Radius>16</Max_Window_Radius>
+			<!-- Std value for gap filling smoothing -->
+			<Sigma_Smoothing_AOT>2</Sigma_Smoothing_AOT>
+		</AOT_Estimation>
+		<Composite>
+			<!-- Threshold on AOT. In case of a high AOT, the composite image is not updated with the new surface reflectance -->
+			<Max_AOT>0.500</Max_AOT>
+			<!-- Std max under which the std of the AOT image is not taking into account in the calculation of the high AOT threshold -->
+			<Minimum_High_AOT_Std>0.1</Minimum_High_AOT_Std>
+			<!-- Maximum age for reflectance in the composite image -->
+			<Max_Age>90</Max_Age>
+			<!-- Structuring element radius for dilatation of AOT_labels -->
+			<SE_AOT_Radius>1</SE_AOT_Radius>
+			<!-- Coefficient for the threshold to detect high AOT -->
+			<Coef_Sigma_AOT>1</Coef_Sigma_AOT>
+			<!-- Index of the digit that corresponds to the all cloud masks in the multi channel image cloud mask -->
+			<All_Clouds_Band>1</All_Clouds_Band>
+		</Composite>
+		<Environment_Correction>
+			<!-- option to apply the environment correction -->
+			<Env_Corr_Option>true</Env_Corr_Option>
+			<!-- Convolution radius -->
+			<Env_Corr_Radius>10</Env_Corr_Radius>
+		</Environment_Correction>
+		<Slope_Correction>
+			<!-- Minimum value of the cosine of exitence angle (to avoid a negative BRDF factor) -->
+			<Min_Cos_E>0.10</Min_Cos_E>
+			<!-- Minimum the cosine ratio value -->
+			<Min_Cos_Ratio>0.20</Min_Cos_Ratio>
+		</Slope_Correction>
+	</Data_Block>
+</Earth_Explorer_File>
