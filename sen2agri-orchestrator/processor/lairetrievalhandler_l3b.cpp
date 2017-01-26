@@ -715,15 +715,22 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
     bool success = GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, qScheduledDate, requestOverrideCfgValues);
     // if cannot get the season dates
     if(!success) {
+        Logger::debug(QStringLiteral("Scheduler L3B: Error getting season start dates for site %1 for scheduled date %2!")
+                      .arg(siteId)
+                      .arg(qScheduledDate.toString()));
         return params;
     }
 
     QDateTime limitDate = seasonEndDate.addMonths(2);
     if(qScheduledDate > limitDate) {
+        Logger::debug(QStringLiteral("Scheduler L3B: Error scheduled date %1 greater than the limit date %2 for site %3!")
+                      .arg(qScheduledDate.toString())
+                      .arg(limitDate.toString())
+                      .arg(siteId));
         return params;
     }
     if(!seasonStartDate.isValid()) {
-        Logger::error(QStringLiteral("Season start date for site ID %1 is invalid in the database!")
+        Logger::error(QStringLiteral("Scheduler L3B: Season start date for site ID %1 is invalid in the database!")
                       .arg(siteId));
         return params;
     }

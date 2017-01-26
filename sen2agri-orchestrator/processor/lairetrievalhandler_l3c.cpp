@@ -1189,16 +1189,23 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3C::GetProcessingDefinitionImpl
     bool success = GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, qScheduledDate, requestOverrideCfgValues);
     // if cannot get the season dates
     if(!success) {
+        Logger::debug(QStringLiteral("Scheduler L3C/L3D: Error getting season start dates for site %1 for scheduled date %2!")
+                      .arg(siteId)
+                      .arg(qScheduledDate.toString()));
         return params;
     }
 
-    Logger::debug(QStringLiteral("Scheduler: season dates for site ID %1: start date %2, end date %3")
+    Logger::debug(QStringLiteral("Scheduler L3C/L3D: season dates for site ID %1: start date %2, end date %3")
                   .arg(siteId)
                   .arg(seasonStartDate.toString())
                   .arg(seasonEndDate.toString()));
 
     QDateTime limitDate = seasonEndDate.addMonths(2);
     if(qScheduledDate > limitDate) {
+        Logger::debug(QStringLiteral("Scheduler L3C: Error scheduled date %1 greater than the limit date %2 for site %3!")
+                      .arg(qScheduledDate.toString())
+                      .arg(limitDate.toString())
+                      .arg(siteId));
         return params;
     }
     if(!seasonStartDate.isValid()) {

@@ -306,11 +306,12 @@ bool GetClosestPreviousSeason(QDate startSummerSeasonDate, QDate endSummerSeason
     return false;
 }
 
-QDate ProcessorHandler::GetSeasonDate(const QString &seasonDateStr, const QDateTime &executionDate)
+QDate ProcessorHandler::GetSeasonDate(const QString &seasonDateStr, const QDateTime &executionDate, bool &bDateHasYear)
 {
     QDate currentDate = executionDate.date();
     int curYear = currentDate.year();
 
+    bDateHasYear = true;
     QDate seasonDate = QDate::fromString(seasonDateStr, "MMddyyyy");
     if(seasonDate.isValid()) {
         return seasonDate;
@@ -322,15 +323,48 @@ QDate ProcessorHandler::GetSeasonDate(const QString &seasonDateStr, const QDateT
         return seasonDate;
     }
 
+    bDateHasYear = false;
     return QDate::fromString(seasonDateStr, "MMdd").addYears(curYear-1900);
 }
 
-void ProcessorHandler::EnsureStartSeasonLessThanEndSeasonDate(QDate &startSeasonDate, QDate &endSeasonDate)
+void ProcessorHandler::EnsureStartSeasonLessThanEndSeasonDate(QDate &startSeasonDate, QDate &endSeasonDate, const QDateTime &executionDate,
+                                                              bool bStartDateHadYear, bool bEndDateHadYear)
 {
     // we are using as reference the end of season as the start of season might be returned without year
     // due to the MACCS initialization
-    while(startSeasonDate > endSeasonDate) {
-        startSeasonDate = startSeasonDate.addYears(-1);
+    if (bStartDateHadYear) {
+        if(!bEndDateHadYear) {
+            // we compute the end date after the start date
+            while(startSeasonDate > endSeasonDate) {
+                endSeasonDate = endSeasonDate.addYears(1);
+            }
+        }
+        // TODO: here we should check that there is no more than 9 months between them
+    } else if (bEndDateHadYear) {
+        while(startSeasonDate > endSeasonDate) {
+            startSeasonDate = startSeasonDate.addYears(-1);
+        }
+        // TODO: here we should check that there is no more than 9 months between them
+    } else {
+        // none of them had year. In this case, we compute according to the execution date
+        QDate currentDate = executionDate.date();
+        // correct the start/end season dates
+        while(startSeasonDate > endSeasonDate) {
+            startSeasonDate = startSeasonDate.addYears(-1);
+        }
+        // now try to match the execution date in the interval
+        if (startSeasonDate > currentDate) {
+            while(startSeasonDate > currentDate) {
+                startSeasonDate = startSeasonDate.addYears(-1);
+                endSeasonDate = endSeasonDate.addYears(-1);
+            }
+        }
+        if (endSeasonDate < currentDate) {
+            while (endSeasonDate < currentDate) {
+                startSeasonDate = startSeasonDate.addYears(1);
+                endSeasonDate = endSeasonDate.addYears(1);
+            }
+        }
     }
 }
 
@@ -346,10 +380,11 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
     if(startSeasonDateStr == "0229") {
         startSeasonDateStr = "0228";
     }
-
-    QDate startSummerSeasonDate = GetSeasonDate(startSeasonDateStr, executionDate);
-    QDate endSummerSeasonDate = GetSeasonDate(endSeasonDateStr, executionDate);
-    EnsureStartSeasonLessThanEndSeasonDate(startSummerSeasonDate, endSummerSeasonDate);
+    bool startDateHasYear;
+    bool endDateHasYear;
+    QDate startSummerSeasonDate = GetSeasonDate(startSeasonDateStr, executionDate, startDateHasYear);
+    QDate endSummerSeasonDate = GetSeasonDate(endSeasonDateStr, executionDate, endDateHasYear);
+    EnsureStartSeasonLessThanEndSeasonDate(startSummerSeasonDate, endSummerSeasonDate, executionDate, startDateHasYear, endDateHasYear);
     if(IsInSeason(startSummerSeasonDate, endSummerSeasonDate, currentDate, startTime, endTime)) {
         return true;
     }
@@ -359,12 +394,22 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
         startSeasonDateStr = "0228";
     }
 
-    QDate startWinterSeasonDate = GetSeasonDate(startSeasonDateStr, executionDate);
-    QDate endWinterSeasonDate = GetSeasonDate(endSeasonDateStr, executionDate);
-    EnsureStartSeasonLessThanEndSeasonDate(startWinterSeasonDate, endWinterSeasonDate);
+    QDate startWinterSeasonDate = GetSeasonDate(startSeasonDateStr, executionDate, startDateHasYear);
+    QDate endWinterSeasonDate = GetSeasonDate(endSeasonDateStr, executionDate, endDateHasYear);
+    EnsureStartSeasonLessThanEndSeasonDate(startWinterSeasonDate, endWinterSeasonDate, executionDate, startDateHasYear, endDateHasYear);
     if(IsInSeason(startWinterSeasonDate, endWinterSeasonDate, currentDate, startTime, endTime)) {
         return true;
     }
+
+    Logger::debug(QStringLiteral("GetSeasonStartEndDates: Error getting season start dates for site %1 for date %2: "
+                                 "SummerStart: %3, SummerEnd: %4, WinterStart: %5, WinterEnd: %6!")
+                  .arg(siteId)
+                  .arg(executionDate.toString())
+                  .arg(startSummerSeasonDate.toString())
+                  .arg(endSummerSeasonDate.toString())
+                  .arg(startWinterSeasonDate.toString())
+                  .arg(endWinterSeasonDate.toString()));
+
     // get the closest winter or summer previous season
 //    if(GetClosestPreviousSeason(startSummerSeasonDate, endSummerSeasonDate, startWinterSeasonDate, endWinterSeasonDate,
 //                                currentDate, startTime, endTime)) {
