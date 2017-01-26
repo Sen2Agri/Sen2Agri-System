@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="DISPLAY/display.xsl"?>
+<Earth_Explorer_Header xsi:type="RFDIRT_File_Type" schema_version="1.00" xmlns="http://eop-cfi.esa.int/CFI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://eop-cfi.esa.int/CFI D:\Utilisateurs\petruccib\Desktop\Livraison-S2-Agri\LANDSAT8\Schemas\GIP_L2DIRT_L2LutOfDirectTransmission.xsd">
+	<Fixed_Header>
+		<File_Name>L8_TEST_GIP_L2DIRT_L_CONTINEN_00001_00000000_99999999</File_Name>
+		<File_Description>L2LutOfDirectTransmission</File_Description>
+		<Notes>String</Notes>
+		<Mission>LANDSAT_8</Mission>
+		<File_Class>TEST</File_Class>
+		<File_Type>GIP_L2DIRT</File_Type>
+		<Validity_Period>
+			<Validity_Start>UTC=0000-00-00T00:00:00</Validity_Start>
+			<Validity_Stop>UTC=9999-99-99T99:99:99</Validity_Stop>
+		</Validity_Period>
+		<File_Version>0001</File_Version>
+		<Source>
+			<System>MACCS</System>
+			<Creator>CNES_tool</Creator>
+			<Creator_Version>1.0</Creator_Version>
+			<Creation_Date>UTC=2007-10-02T10:54:44</Creation_Date>
+		</Source>
+	</Fixed_Header>
+	<Variable_Header>
+		<Main_Product_Header>
+			<List_of_Consumers count="0">
+                                </List_of_Consumers>
+			<List_of_Extensions count="0">
+                                </List_of_Extensions>
+		</Main_Product_Header>
+		<Specific_Product_Header>
+			<Instance_Id>
+				<Applicability_NickName_Type>L_LIST</Applicability_NickName_Type>
+				<Applicability_NickName>NOTNAMED</Applicability_NickName>
+				<Serial_Key>00001</Serial_Key>
+				<Validity_Period>
+					<Validity_Start>UTC=0000-00-00T00:00:00</Validity_Start>
+					<Validity_Stop>UTC=9999-99-99T99:99:99</Validity_Stop>
+				</Validity_Period>
+			</Instance_Id>
+			<DBL_Organization>
+				<List_of_Packaged_DBL_Files count="8">
+					<Packaged_DBL_File sn="1">
+						<Relative_File_Path>L8_TEST_GIP_L2DIRT_L_CONTINEN_00001_00000000_99999999.DBL.DIR/Tdir_V51_LANDSAT8_zerodeux_prop_0.00_bande_443</Relative_File_Path>
+						<File_Definition>lut_inv</File_Definition>
+					</Packaged_DBL_File>
+					<Packaged_DBL_File sn="2">
+						<Relative_File_Path>L8_TEST_GIP_L2DIRT_L_CONTINEN_00001_00000000_99999999.DBL.DIR/Tdir_V51_LANDSAT8_zerodeux_prop_0.00_bande_482</Relative_File_Path>
+						<File_Definition>lut_inv</File_Definition>
+					</Packaged_DBL_File>
+					<Packaged_DBL_File sn="3">
+						<Relative_File_Path>L8_TEST_GIP_L2DIRT_L_CONTINEN_00001_00000000_99999999.DBL.DIR/Tdir_V51_LANDSAT8_zerodeux_prop_0.00_bande_561</Relative_File_Path>
+						<File_Definition>lut_inv</File_Definition>
+					</Packaged_DBL_File>
+					<Packaged_DBL_File sn="4">
+						<Relative_File_Path>L8_TEST_GIP_L2DIRT_L_CONTINEN_00001_00000000_99999999.DBL.DIR/Tdir_V51_LANDSAT8_zerodeux_prop_0.00_bande_654</Relative_File_Path>
+						<File_Definition>lut_inv</File_Definition>
+					</Packaged_DBL_File>
+					<Packaged_DBL_File sn="5">
+						<Relative_File_Path>L8_TEST_GIP_L2DIRT_L_CONTINEN_00001_00000000_99999999.DBL.DIR/Tdir_V51_LANDSAT8_zerodeux_prop_0.00_bande_865</Relative_File_Path>
+						<File_Definition>lut_inv</File_Definition>
+					</Packaged_DBL_File>
+					<Packaged_DBL_File sn="6">
+						<Relative_File_Path>L8_TEST_GIP_L2DIRT_L_CONTINEN_00001_00000000_99999999.DBL.DIR/Tdir_V51_LANDSAT8_zerodeux_prop_0.00_bande_1373</Relative_File_Path>
+						<File_Definition>lut_inv</File_Definition>
+					</Packaged_DBL_File>
+					<Packaged_DBL_File sn="7">
+						<Relative_File_Path>L8_TEST_GIP_L2DIRT_L_CONTINEN_00001_00000000_99999999.DBL.DIR/Tdir_V51_LANDSAT8_zerodeux_prop_0.00_bande_1608</Relative_File_Path>
+						<File_Definition>lut_inv</File_Definition>
+					</Packaged_DBL_File>
+					<Packaged_DBL_File sn="8">
+						<Relative_File_Path>L8_TEST_GIP_L2DIRT_L_CONTINEN_00001_00000000_99999999.DBL.DIR/Tdir_V51_LANDSAT8_zerodeux_prop_0.00_bande_2195</Relative_File_Path>
+						<File_Definition>lut_inv</File_Definition>
+					</Packaged_DBL_File>
+				</List_of_Packaged_DBL_Files>
+			</DBL_Organization>
+			<List_of_Applicable_SiteDefinition_Ids count="0"/>
+			<LUT_Indexes>
+				<Zenithal_Angle_Indexes>0.0 7.0 14.0 21.0 28.0 35.0 42.0 49.0 56.0 63.0 70.0</Zenithal_Angle_Indexes>
+				<Altitude_Indexes>0 1000 2000 3000</Altitude_Indexes>
+				<AOT_Indexes>0.0 0.0625 0.125 0.1875 0.25 0.3125 0.375 0.4375 0.5 0.5625 0.625 0.6875 0.75 0.8125 0.875 0.9375 1.0 1.0625 1.125 1.1875 1.25 1.3125 1.375 1.4375 1.5</AOT_Indexes>
+			</LUT_Indexes>
+		</Specific_Product_Header>
+	</Variable_Header>
+</Earth_Explorer_Header>
