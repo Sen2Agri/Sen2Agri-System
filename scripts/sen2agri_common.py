@@ -465,8 +465,10 @@ class ProcessorBase(object):
                 self.prepare_site()
 
             if self.args.mode is None or self.args.mode == 'prepare-tiles':
-                for tile in self.tiles:
-                    self.prepare_tile(tile)
+                pool = multiprocessing.dummy.Pool(parallelism)
+                pool.map(self.internal_prepare_tile, self.tiles)
+                pool.close()
+                pool.join()
 
             if self.args.mode is None or self.args.mode == 'train':
                 pool = multiprocessing.dummy.Pool(train_parallelism)
@@ -509,6 +511,14 @@ class ProcessorBase(object):
                 print("Processor finished in", str(end_time - start_time))
 
             sys.exit(exit_status)
+
+    def internal_prepare_tile(self, tile):
+        if self.args.tile_filter and tile.id not in self.args.tile_filter:
+            print("Skipping tile preparation for tile {} due to tile filter".format(tile.id))
+            return
+
+        print("Performing tile preparation for tile:", tile.id)
+        self.prepare_tile(tile)
 
     def internal_train_stratum(self, stratum):
         if self.args.stratum_filter and stratum.id not in self.args.stratum_filter:
