@@ -20,18 +20,20 @@
  - The crop mask products contain a crop/no crop "legend" in the MTD XML file [Forge #150419]
  - The "NODATA" special value is no longer duplicated in the MTD XML file
  - The crop mask and crop type processors now process multiple tiles in parallel (`-max-parallelism`) with fewer threads per tile (`-tile-threads-hint`), improving performance on large systems
+ - Improved performance of the quality flags extraction step when Landsat8 inputs are present
+ - Increased reprojection resampler grid spacing to 200 m
  - The mosaics of the L4B products are better when `-include-raw-mask` is used
  - The `sen2agri-app` package now includes a `systemd` override to increase the `RLIMIT_NOFILE` for SLURM jobs
  - Change in IPP file in LAI multi date format to have source hdr files but also source L3B files
  - Added flags to ignore vegetation indices in LAI Mono date model creation.
  - Change for LANDSAT8 page evolutions (Error 503 during download)
  - Changed the LAI Fitted for providing bands for all dates
+ - DEM creation no longer fails when SRTM tiles are missing
 
 ### Fixed
  - The automated and custom jobs no longer use tiles from a different site if two sites contain the same tile
  - Landsat8 reprojection is now performed correctly
  - Correction in L3A aggregate tiles in order to have both 10M and 20M bands (not only 20m bands)
- - Correction for missing srtm files in demmaccs
 
 ### Known issues
 - The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented
