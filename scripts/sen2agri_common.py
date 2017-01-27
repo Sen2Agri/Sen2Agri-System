@@ -654,6 +654,14 @@ class ProcessorBase(object):
                         stratum.tiles.append(tile)
 
                 print("Strata for tile {}: {}".format(tile.id, map(lambda s: s.id, tile.strata)))
+
+            if self.args.stratum_filter is not None:
+                filtered_strata = self.get_output_path("filtered-strata.shp")
+
+                run_step(Step("Filter strata",
+                              ["ogr2ogr",
+                               "-where", "id in ({})".format(", ".join(map(str, self.args.stratum_filter))),
+                               filtered_strata, self.args.strata]))
         else:
             stratum = Stratum(0, self.site_footprint_wgs84)
             stratum.tiles = self.tiles
