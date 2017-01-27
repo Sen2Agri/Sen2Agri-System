@@ -59,4 +59,4 @@ END IF;
 
 END;
 $BODY$
-  LANGUAGE plpgsql
+  LANGUAGE plpgsql;
