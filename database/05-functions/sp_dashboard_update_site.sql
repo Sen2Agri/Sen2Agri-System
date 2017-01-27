@@ -33,22 +33,22 @@ END IF;
 IF _winter_season_start IS NOT NULL THEN
     _parameters := _parameters || json_build_object('key', 'downloader.winter-season.start',
                                                     'site_id', _id,
-                                                    'value', NULLIF(to_char(_winter_season_start :: date, 'MMddYYYY'), ''));
+                                                    'value', NULLIF(to_char(nullif(_winter_season_start, '') :: date, 'MMddYYYY'), ''));
 END IF;
 IF _winter_season_end IS NOT NULL THEN
     _parameters := _parameters || json_build_object('key', 'downloader.winter-season.end',
                                                     'site_id', _id,
-                                                    'value', NULLIF(to_char(_winter_season_end :: date, 'MMddYYYY'), ''));
+                                                    'value', NULLIF(to_char(nullif(_winter_season_end, '') :: date, 'MMddYYYY'), ''));
 END IF;
 IF _summer_season_start IS NOT NULL THEN
     _parameters := _parameters || json_build_object('key', 'downloader.summer-season.start',
                                                     'site_id', _id,
-                                                    'value', NULLIF(to_char(_summer_season_start :: date, 'MMddYYYY'), ''));
+                                                    'value', NULLIF(to_char(nullif(_summer_season_start, '') :: date, 'MMddYYYY'), ''));
 END IF;
 IF _summer_season_end IS NOT NULL THEN
     _parameters := _parameters || json_build_object('key', 'downloader.summer-season.end',
                                                     'site_id', _id,
-                                                    'value', NULLIF(to_char(_summer_season_end :: date, 'MMddYYYY'), ''));
+                                                    'value', NULLIF(to_char(nullif(_summer_season_end, '') :: date, 'MMddYYYY'), ''));
 END IF;
 
 if array_length(_parameters, 1) > 0 THEN
