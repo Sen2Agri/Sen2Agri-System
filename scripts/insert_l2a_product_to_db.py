@@ -115,6 +115,11 @@ def get_product_info(product_name):
             if m != None:
                 sat_id = SENTINEL2_SATELLITE_ID
                 acquisition_date = m.group(1)
+            else:
+                # Check if it is the new S2 L2A format 
+                m = re.match("S2[A-B]_MSI.+_(\d{8}T\d{6})_\w+.SAFE", product_name)
+                sat_id = SENTINEL2_SATELLITE_ID
+                acquisition_date = m.group(1)
         elif product_name.startswith("LC8"):
             m = re.match("LC8\d{6}(\d{7})[A-Z]{3}\d{2}", product_name)
             if m != None:
@@ -138,6 +143,14 @@ def get_product_info(product_name):
 
     return sat_id and (sat_id, acquisition_date)
 
+def get_product_orbit_id(product_name):
+    print("Product name is: {}".format(product_name))
+    orbit_id = re.search(r"_R(\d{3})_", product_name)
+    print("OrbitId is: {}".format(orbit_id))
+    if orbit_id == None : 
+        return 0
+    return int(orbit_id.group(1))
+    
 def insert_product(product_dir) :
     l2a_processed_tiles = []
     wkt = []
@@ -183,10 +196,14 @@ def insert_product(product_dir) :
 
     wkt = get_envelope(wgs84_extent_list)
 
+    orbit_id = 0
     if len(wkt) == 0:
         log(product_dir, "Could not create the footprint", general_log_filename)
     else:
         sat_id, acquisition_date = get_product_info(product_name)
+        if args.processor_name == "l2a" :
+            if satellite_id == SENTINEL2_SATELLITE_ID:
+                orbit_id = get_product_orbit_id(product_name)
         if args.start_date is not None and acquisition_date < args.start_date:
             log(product_dir, "Skipping product before acquisition date filter", general_log_filename)
             return
@@ -226,7 +243,7 @@ def insert_product(product_dir) :
     if(site_id == ''):
         sys.exit('Cannot find in the database the provided site name!!!')
 
-    l2a_db.set_processed_product(processor_id, product_type_id, site_id, l2a_processed_tiles, product_dir, os.path.basename(product_dir[:len(product_dir) - 1]), wkt, sat_id, acquisition_date, 0, mosaic_img)
+    l2a_db.set_processed_product(processor_id, product_type_id, site_id, l2a_processed_tiles, product_dir, os.path.basename(product_dir[:len(product_dir) - 1]), wkt, sat_id, acquisition_date, orbit_id, mosaic_img)
 
 ###########################################################################
 class Config(object):
