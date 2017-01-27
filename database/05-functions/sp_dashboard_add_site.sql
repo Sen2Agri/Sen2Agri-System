@@ -30,24 +30,24 @@ BEGIN
 	RETURNING id INTO return_id;
 
 	IF (_winter_season_start <> '' AND _winter_season_start IS NOT NULL) THEN
+        startDateW := _winter_season_start :: date;
+        endDateW := _winter_season_end :: date;
 		INSERT INTO config (key, site_id, value)
-			VALUES ('downloader.winter-season.start', return_id, _winter_season_start);
-		startDateW := to_date(CAST(date_part('year', CURRENT_TIMESTAMP) as character varying)||'-'||left(_winter_season_start, 2)||'-'||right(_winter_season_start, 2), 'YYYY-MM-DD');
+			VALUES ('downloader.winter-season.start', return_id, to_char(startDateW, 'MMddYYYY'));
 		INSERT INTO config (key, site_id, value)
-			VALUES ('downloader.winter-season.end', return_id, _winter_season_end);
-		endDateW := to_date(CAST(date_part('year', CURRENT_TIMESTAMP) as character varying)||'-'||left(_winter_season_end, 2)||'-'||right(_winter_season_end, 2), 'YYYY-MM-DD');
+            VALUES ('downloader.winter-season.end', return_id, to_char(endDateW, 'MMddYYYY'));
 	END IF;
 
 	IF (_summer_season_start <> '' AND _summer_season_start IS NOT NULL) THEN
+        startDateS := _summer_season_start :: date;
+        endDateS := _summer_season_end :: date;
 		INSERT INTO config (key, site_id, value)
-			VALUES ('downloader.summer-season.start', return_id, _summer_season_start);
-		startDateS := to_date(CAST(date_part('year', CURRENT_TIMESTAMP) as character varying)||'-'||left(_summer_season_start, 2)||'-'||right(_summer_season_start, 2), 'YYYY-MM-DD');
+			VALUES ('downloader.summer-season.start', return_id, to_char(startDateS, 'MMddYYYY'));
 		INSERT INTO config (key, site_id, value)
-			VALUES ('downloader.summer-season.end', return_id, _summer_season_end);
-		endDateS := to_date(CAST(date_part('year', CURRENT_TIMESTAMP) as character varying)||'-'||left(_summer_season_end, 2)||'-'||right(_summer_season_end, 2), 'YYYY-MM-DD');
+            VALUES ('downloader.summer-season.end', return_id, to_char(endDateS, 'MMddYYYY'));
 	END IF;
-	startDateW := COALESCE(startDateW, to_date(CAST(date_part('year', CURRENT_TIMESTAMP) as TEXT)||'-01-01', 'YYYY-MM-DD'));
-	startDateS := COALESCE(startDateS, to_date(CAST(date_part('year', CURRENT_TIMESTAMP) as TEXT)||'-06-01', 'YYYY-MM-DD'));
+
+    -- what?
 	startDate := CASE WHEN abs(CURRENT_DATE - startDateW) < abs(startDateS - CURRENT_DATE) THEN startDateW ELSE startDateS END;
 	IF (startDate = startDateS) THEN
 		endDate = endDateS;
