@@ -465,7 +465,8 @@ class ProcessorBase(object):
                 self.prepare_site()
 
             if self.args.mode is None or self.args.mode == 'prepare-tiles':
-                pool = multiprocessing.dummy.Pool(parallelism)
+                # use a lower value here since the trimming step is not quite memory-friendly
+                pool = multiprocessing.dummy.Pool(2)
                 pool.map(self.internal_prepare_tile, self.tiles)
                 pool.close()
                 pool.join()
