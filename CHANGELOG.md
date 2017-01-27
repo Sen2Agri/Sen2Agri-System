@@ -5,6 +5,7 @@
  - Added script for cancelling all scheduled jobs
  - Added support for year in season date (not well tested yet and also not implemented yet in UI)
  - Added support for the new S2 format
+ - A script to clear all running jobs is now available in the source package [Forge #151691]
 
 ### Changed
  - The crop mask and crop type processors no longer have the `-mission` and `-prodspertile` arguments [Forge #151877]
@@ -24,7 +25,7 @@
  - The `sen2agri-app` package now includes a `systemd` override to increase the `RLIMIT_NOFILE` for SLURM jobs
  - Change in IPP file in LAI multi date format to have source hdr files but also source L3B files
  - Added flags to ignore vegetation indices in LAI Mono date model creation.
- - Change for LANDSAT8 page evolutions (Error 503 during download)
+ - Change for LANDSAT8 page evolutions (Error 503 during download) [Forge #151541]
  - Changed the LAI Fitted for providing bands for all dates
  - DEM creation no longer fails when SRTM tiles are missing
 
@@ -58,7 +59,7 @@
 - The Sentinel-2 downloader is now compatible with the upcoming product format changes
 
 ### Changed
-- The crop mask segmentation is now performed on a "nodata-filled" version of the NDVI series. No data pixels are replaced with band averages.
+- The crop mask segmentation is now performed on a "nodata-filled" version of the NDVI series. No data pixels are replaced with band averages. [Forge #150425]
 - The multi-tile crop mask and crop type classification is now faster for tiles that are intersected by multiple strata
 - Classification is no longer perform the classification on tile regions that are outside of a strata. Previously, the strata covering the most of the tile was used.
 - Strata intersecting a small region of a tile are now classified accordingly. Previously, pixels in those region used the strata covering most of the tile.
@@ -108,7 +109,7 @@
 - The processors mentioned above support classification over multiple strata in a single site
 - The processors mentioned above now create a parameters file (`IPP`) even when run in the manual mode. Note that the XML schema has changed from previous versions.
 - Upgrading from `1.3` to `1.3.1` is now possible by running the `update.sh` script. Upgrading from previous versions is not supported. Upgrading directly from `1.3` will not be possible in future versions.
-- The SAFE formatting application now accepts the desired output SRS. This is not available when running the processors.
+- The SAFE formatting application now accepts the desired output SRS. This is not available when running the processors. [Forge #150440]
 - A script to insert L2A products into the database (`insert_l2a_product_to_db.py`)
 - New keys in the database config for the QOS names for each processor used to limit the number of jobs of a processor to be executed at a given moment of time in Slurm
 - Added removal of temporary files also during the execution of jobs for Composite and LAI (and not only at the end)
