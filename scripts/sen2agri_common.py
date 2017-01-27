@@ -439,9 +439,10 @@ class ProcessorBase(object):
 
             tile_threads = self.args.tile_threads_hint
 
+            num_cpus = multiprocessing.cpu_count()
             if self.args.max_parallelism is None:
                 # note that this doesn't take CPU affinity (/proc/self/cpuset) into account
-                parallelism = multiprocessing.cpu_count() / tile_threads
+                parallelism = num_cpus / tile_threads
                 if parallelism == 0:
                     parallelism = 1
             else:
@@ -449,6 +450,10 @@ class ProcessorBase(object):
 
             if parallelism > len(self.tiles):
                 parallelism = len(self.tiles)
+
+            adj_threads = num_cpus / parallelism
+            if adj_threads > tile_threads:
+                tile_threads = adj_threads
 
             # we had some issues with OTB being unable to open images when this is too high
             # it wasn't related to the open fd limit
