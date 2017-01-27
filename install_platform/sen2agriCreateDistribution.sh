@@ -93,6 +93,8 @@ function prepare_distribution()
    #copy adapters *.nbm found at sent2agri/snap-adapters/ into subfolder created install_script/adapters
    cp -f ${SOURCES_DIR_PATH}/snap-adapters/*.nbm ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/install_script/adapters
 
+   cp -rf ${SOURCES_DIR_PATH}/gipp ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/
+   cp -f ${SOURCES_DIR_PATH}/CHANGELOG.md ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/docs
 }
 
 ###########################################################
