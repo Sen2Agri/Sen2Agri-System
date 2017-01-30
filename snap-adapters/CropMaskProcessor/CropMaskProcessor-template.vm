@@ -1,5 +1,3 @@
--mission
-$mission
 #if ($referencePolygons == "/")
 -refr
 $referenceRaster
@@ -9,8 +7,6 @@ $referencePolygons
 #end
 -input
 $inputFiles
--prodspertile
-$productsPerTile
 -rseed
 $randomSeed
 -pixsize
@@ -21,5 +17,6 @@ $outputDir
 -strata
 $strataShapefiles
 #end
+#if ($skipSegmentation == "True")
 -skip-segmentation
-$skipSegmentation
+#end
