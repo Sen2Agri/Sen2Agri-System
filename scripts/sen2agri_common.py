@@ -655,7 +655,7 @@ class ProcessorBase(object):
 
             for tile in self.tiles:
                 for stratum in self.strata:
-                    if stratum.extent.Intersection(tile.footprint_wgs84).Area() > 0:
+                    if stratum.extent.Intersection(tile.footprint_wgs84).Area() > 0 and (self.args.stratum_filter is None or stratum.id in self.args.stratum_filter):
                         tile.strata.append(stratum)
                         stratum.tiles.append(tile)
 
