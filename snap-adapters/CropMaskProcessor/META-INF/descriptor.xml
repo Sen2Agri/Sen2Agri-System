@@ -111,26 +111,6 @@
       <parameterType>FolderParameter</parameterType>
     </parameter>
     <parameter>
-      <name>mission</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue>SPOT</defaultValue>
-      <description>The main mission for the series</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-    </parameter>
-    <parameter>
-      <name>productsPerTile</name>
-      <dataType>java.lang.String</dataType>
-      <defaultValue></defaultValue>
-      <description>Number of products for each tile</description>
-      <valueSet/>
-      <notNull>false</notNull>
-      <notEmpty>false</notEmpty>
-      <parameterType>RegularParameter</parameterType>
-    </parameter>
-    <parameter>
       <name>strataShapefiles</name>
       <dataType>java.io.File</dataType>
       <defaultValue>/</defaultValue>
