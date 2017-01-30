@@ -141,12 +141,12 @@ p#subtitle {
 
 #menu ul {
     list-style: none;
-	padding-top: 10px;
+	padding-top: 15px;
 }
 
 #menu ul li {
     cursor: default;
-    display: inline-flex;
+    display: inline-block;
     font: 22px/40px "Roboto Condensed", Arial, Helvetica, sans-serif;
     text-transform: lowercase;
 }
@@ -155,22 +155,21 @@ p#subtitle {
     text-decoration: none;
     text-shadow: 0px -1px 0px #607725;
     color: #FFFFFF;
-	cursor: pointer;
-	padding: 5px 25px 7px 25px;
-	border-radius: 10px 10px 0px 0px;
+    cursor: pointer;
+    padding: 11px 25px 12px 25px;
+    border-radius: 10px 10px 0px 0px;
 }
 
 #menu ul.activemenu li.selected a {
 	color: #739631;
-	background-color: #f8f7eb;
-	text-shadow: 0px 0px 0px #607725;
-	border-radius: 20px 20px 0px 0px;
+    background-color: #f8f7eb;
+    text-shadow: 0px 0px 0px #607725;
+    border-radius: 20px 20px 0px 0px;
 }
 
 #menu ul.activemenu li:not(.selected) a:hover {
 	color: yellow;
 	background-color: #AACA6B;
-	padding-bottom: 5px;
 }
 
 #menu ul.activemenu li:not(.selected) a:active {
