@@ -484,7 +484,7 @@ function install_RPMs()
    ##########################################################
 
    ##install a couple of packages
-   yum -y install cifs-utils gdal-python python-psycopg2 python-enum34 gd
+   yum -y install cifs-utils gdal-python python-psycopg2 gd
 
    ##install Orfeo ToolBox
    yum -y install ../rpm_binaries/otb-*.rpm

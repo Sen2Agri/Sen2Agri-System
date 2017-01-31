@@ -3,7 +3,6 @@
 from __future__ import print_function
 
 from collections import defaultdict
-from enum import Enum
 from osgeo import ogr, osr
 import gdal
 import os
@@ -134,10 +133,17 @@ def get_reference_raster(product):
             return files[0]
 
 
-class Mission(Enum):
-    SENTINEL = 1
-    SPOT = 2
-    LANDSAT = 3
+class Mission(object):
+
+    def __init__(self, value, name):
+        self.value = value
+        self.name = name
+
+
+class Mission(object):
+    SENTINEL = Mission(1, "SENTINEL")
+    SPOT = Mission(2, "SPOT")
+    LANDSAT = Mission(3, "LANDSAT")
 
 
 def get_tile_id(product):
