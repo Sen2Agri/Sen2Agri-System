@@ -75,7 +75,6 @@ function build_SEN2AGRI_processors_RPM_Package()
 
    ##build RPM package
    fpm -s dir -t rpm -n sen2agri-processors -v ${PROC_VERSION} -C ${PROC_INSTALL_PATH}/ ${PLATFORM_INSTALL_OTHER_DEP} \
-       -d python-enum34 \
        --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_processors -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/sen2agri-processors-VERSION.centos7.ARCH.rpm \
        usr etc
 
