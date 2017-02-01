@@ -6,12 +6,13 @@
  - Added support for year in season date (not well tested yet and also not implemented yet in UI)
  - Added support for the new S2 format
  - A script to clear all running jobs is now available in the source package [Forge #151691]
+ - The multi-tile implementations of the crop mask and crop type processors have been documented in the user manual [Forge #150462]
 
 ### Changed
  - The crop mask and crop type processors no longer have the `-mission` and `-prodspertile` arguments [Forge #151877]
  - L8 products no longer have to be duplicated for the crop mask and crop type processors [Forge #151877]
  - Only main mission input products are used for the crop mask segmentation step, improving accuracy of the result
- - The installer (but not the upgrade script) now changes `upload_max_filesize` in `/etc/php.ini` from `2M` to `40M`
+ - The installer (but not the upgrade script) now changes `upload_max_filesize` in `/etc/php.ini` from `2M` to `40M` [Forge #151750]
  - The installer (but not the upgrade script) now sets `max_input_vars` in `/etc/php.ini` to `10000`
  - The crop mask no data filling step now replaces `NaN` values with `0` to avoid possible issues later when computing statistics
  - The crop mask and crop type processors now increase the soft `RLIMIT_NOFILE` limit to the hard one
@@ -31,11 +32,10 @@
 
 ### Fixed
  - The automated and custom jobs no longer use tiles from a different site if two sites contain the same tile
- - Landsat8 reprojection is now performed correctly
+ - Landsat8 reprojection is now performed correctly [Forge #150398]
  - Correction in L3A aggregate tiles in order to have both 10M and 20M bands (not only 20m bands)
 
 ### Known issues
-- The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented
 - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
 - With multiple input tiles, the training pixel sampling for crop type and crop mask products can be skewed if the training classes are not uniformly distributed
 - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
@@ -54,7 +54,7 @@
 ## [1.4] - 2016-11-17
 ### Added
 - Multi-tile implementation of the unsupervised Crop Mask processor, which should be more precise, faster and use less temporary disk space [Forge #150414]
-- Crop mask and crop type products now include a QGIS style file
+- Crop mask and crop type products now include a QGIS style file [Forge #150435]
 - The crop type processor can optionally use the Sentinel-2 red edge bands via the `-red-edge` argument
 - The Sentinel-2 downloader is now compatible with the upcoming product format changes
 
@@ -66,7 +66,7 @@
 - Crop mask and crop type try to use a system-wide LUT when they are running as a local install and another LUT is not found
 - The unsupervised crop mask processor now considers CCI-LC class 10 as crop instead of the previous rule ("11 or 20 or even 10, but only if there is no pixel with class 11") [Forge #150434]
 - Improved reprojection accuracy of crop mask reference map
-- The crop mask and crop type processors now reproject the input images if they are not in the same SRS as the images from the main sensor
+- The crop mask and crop type processors now reproject the input images if they are not in the same SRS as the images from the main sensor [Forge #150398]
 - The packaged OTB version no longer performs file existence checks before opening images
 
 ### Fixed
@@ -74,7 +74,7 @@
 - The larger temporary files are now removed by the crop mask and crop type processors unless -keepfiles is used
 - The RPM package version numbers are now correct [Forge #150393]
 - The RPM packages correctly preserve the configuration files changed by the administrator
-- 20m composite products are now generated
+- 20m composite products are now generated [Forge #150874]
 - The LEGACY_DATA mosaic now uses nearest-neighbour resampling for L4A and L4B product
 - The LEGACY_DATA mosaic now uses tile consensus projection or `EPSG:4326` instead of picking the majority one
 - The LEGACY_DATA mosaic of L4A products is no longer made from both segmented and raw masks [Forge #150432]
@@ -84,7 +84,7 @@
 - Improved startup ordering between sen2agri-executor, SLURM and Postgres
 
 ### Known issues
-- The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented
+- The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented [Forge #150462]
 - SNAP adapters need to be updated
 - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
 - With multiple input tiles, the training pixel sampling for crop type and crop mask products can be skewed if the training classes are not uniformly distributed
@@ -152,11 +152,11 @@
 - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges when some tiles need to be reprojected.
 - The SAFE formatting application sometimes outputs unusable previews
 - The SAFE formatting application uses bilinear resampling for the crop type and crop mask mosaics. It should use nearest-neighbour instead.
-- The L4A and L4B products don't contain a QGIS style file
+- The L4A and L4B products don't contain a QGIS style file [Forge #150435]
 - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels. It should expect a binary map.
 - The SAFE and L2A product previews are not gamma-corrected and can be too dark
 - The version number of the RPM packages is incorrect [Forge #150393]
-- The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented in the manual
+- The multi-tile implementations of the Crop Mask and Crop Type processors are not yet documented in the manual [Forge #150462]
 - The L3A, L3B, L3C processors and the quality flags extraction step of the L4A and L4B processors fail when one of the input product paths contains no directory separator. A workaround is to place a `./` before the product file. [Forge #150394]
 - The dashboard previews don't match their bounds rectangle because of WGS 84 / Web Mercator projection mismatch
 - The `demmaccs.py` command line help message contains positional arguments (`input` and `output`) placed immediately after optional arguments taking multiple values (`--prev-l2a-tiles` and `--prev-l2a-products-paths`). This can prove troublesome for unsuspecting users. The workaround is to put a `--` or a different optional argument before the positional arguments
