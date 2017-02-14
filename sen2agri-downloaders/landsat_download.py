@@ -47,7 +47,7 @@ def connect_earthexplorer_proxy(proxy_info,usgs):
      cookies = urllib2.HTTPCookieProcessor()
      proxy_support = None
      print("http://%(host)s:%(port)s" % proxy_info)
-     if len(proxy_info) == 2: 
+     if len(proxy_info) == 2:
           proxy_support = urllib2.ProxyHandler({"http" : "http://%(host)s:%(port)s" % proxy_info,
                                                 "https" : "https://%(host)s:%(port)s" % proxy_info})
      elif len(proxy_info) == 4:
@@ -76,7 +76,7 @@ def connect_earthexplorer_proxy(proxy_info,usgs):
      params = urllib.urlencode(dict(username=usgs['account'], password=usgs['passwd'], csrf_token=token['value']))
      log(general_log_path, "params = {}".format(params), general_log_filename)
      # utilisation
-     f = opener.open('https://ers.cr.usgs.gov', params)
+     f = opener.open('https://ers.cr.usgs.gov/login', params)
      log(general_log_path, "Link opened", general_log_filename)
      data = f.read()
      log(general_log_path, "Data read", general_log_filename)
@@ -167,7 +167,7 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
         log(aoiContext.writeDir, "downloadChunks:File {} already downloaded, returning true".format(fullFilename), general_log_filename)
         return True
 
-    # insert the product name into the downloader_history                                              
+    # insert the product name into the downloader_history
     if not db.upsertLandsatProductHistory(aoiContext.siteId, prod_name, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, prod_date, abs_prod_path, aoiContext.maxRetries):
          log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADING for {}".format(prod_name), general_log_filename)
          return False
@@ -202,7 +202,7 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
        else:
             log(aoiContext.writeDir, "HTTP Error for file {0}. Error code: {1}. Url: {2}".format(nom_fic, e.code, url), general_log_filename)
        return False
-  
+
   except urllib2.URLError, e:
        log(aoiContext.writeDir, "URL Error for file {0} . Reason: {1}. Url: {2}".format(nom_fic, e.reason,url), general_log_filename)
        return False
@@ -349,7 +349,7 @@ def landsat_download(aoiContext):
                   log(general_log_path, "Proxy information erroneous in {} file, second line. It should have the following format: host port [user pass] ".format(aoiContext.remoteSiteCredentials), general_log_filename)
                   f.close()
                   return
-             log(general_log_path, "Proxy info: {}".format(proxy), general_log_filename)        
+             log(general_log_path, "Proxy info: {}".format(proxy), general_log_filename)
         f.close()
      except :
         log(general_log_path, "Error raised when reading the landsat 8 password file {} ".format(usgsFile), general_log_filename)
@@ -396,7 +396,7 @@ def landsat_download(aoiContext):
               return
          curr_date=next_overpass(start_date, int(path), product)
 
-         while (curr_date < end_date and curr_date <= datetime.datetime.now()):             
+         while (curr_date < end_date and curr_date <= datetime.datetime.now()):
              date_asc=curr_date.strftime("%Y%j")
 
              log(aoiContext.writeDir, "Searching for images on (julian date): {}...".format(date_asc), general_log_filename)
@@ -414,14 +414,14 @@ def landsat_download(aoiContext):
                                                  log(aoiContext.writeDir, "Trying to decompress {}. If an error will be raised, means that the archived tgz file was phisically erased (manually or automatically) ".format(nom_prod), general_log_filename)
                                                  unzipimage(nom_prod, aoiContext.writeDir)
                                              continue
-                                      
+
                                          # get the date by transforming it from doy to date
                                          year = date_asc[0:4]
                                          days = date_asc[4:]
                                          prod_date = (datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(days))).strftime("%Y%m%dT000000")
                                          if downloadChunks(url, nom_prod, prod_date, lsdestdir, aoiContext, db):
-                                              downloaded_ids.append(nom_prod)                                              
+                                              downloaded_ids.append(nom_prod)
          if len(downloaded_ids) > 0:
               log(aoiContext.writeDir, "Downloaded product: {}".format(downloaded_ids), general_log_filename)
-         else: 
+         else:
               log(aoiContext.writeDir, "No product has been downloaded ", general_log_filename)
