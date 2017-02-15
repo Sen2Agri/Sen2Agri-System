@@ -3,8 +3,8 @@
 -- DROP FUNCTION sp_get_dashboard_products(smallint, smallint);
 
 CREATE OR REPLACE FUNCTION sp_get_dashboard_products(
-    site_id smallint DEFAULT NULL::smallint,
-    processor_id smallint DEFAULT NULL::smallint)
+    _site_id smallint DEFAULT NULL::smallint,
+    _processor_id smallint DEFAULT NULL::smallint)
   RETURNS TABLE (
 --     id product.id%type,
 --     satellite_id product.satellite_id%type,
@@ -21,6 +21,14 @@ CREATE OR REPLACE FUNCTION sp_get_dashboard_products(
     json json
 ) AS
 $BODY$
+DECLARE summer_season_start_str text;
+DECLARE summer_season_end_str text;
+DECLARE winter_season_start_str text;
+DECLARE winter_season_end_str text;
+DECLARE summer_season_start date;
+DECLARE summer_season_end date;
+DECLARE winter_season_start date;
+DECLARE winter_season_end date;
 DECLARE q text;
 BEGIN
     q := $sql$
@@ -36,9 +44,9 @@ BEGIN
             SELECT
                 P.id,
                 P.satellite_id,
-                P.name, 
+                P.name,
                 PT.name,
-                PT.description,            
+                PT.description,
                 PR.name,
                 S.name,
                 P.full_path,
@@ -54,6 +62,37 @@ BEGIN
     $sql$;
     IF $1 IS NOT NULL THEN
         q := q || 'AND P.site_id = $1';
+
+        summer_season_start_str := (select config.value from config where config.site_id = _site_id and "key" = 'downloader.summer-season.start');
+        summer_season_end_str := (select config.value from config where config.site_id = _site_id and "key" = 'downloader.summer-season.end');
+        winter_season_start_str := (select config.value from config where config.site_id = _site_id and "key" = 'downloader.winter-season.start');
+        winter_season_end_str := (select config.value from config where config.site_id = _site_id and "key" = 'downloader.winter-season.end');
+
+        if length(summer_season_start_str) = 8 and length(summer_season_end_str) = 8 then
+            summer_season_start_str := right(summer_season_start_str, 4) || left(summer_season_start_str, 4);
+            summer_season_end_str := right(summer_season_end_str, 4) || left(summer_season_end_str, 4);
+            summer_season_start := summer_season_start_str :: date;
+            summer_season_end := summer_season_end_str :: date;
+        end if;
+
+        if length(winter_season_start_str) = 8 and length(winter_season_end_str) = 8 then
+            winter_season_start_str := right(winter_season_start_str, 4) || left(winter_season_start_str, 4);
+            winter_season_end_str := right(winter_season_end_str, 4) || left(winter_season_end_str, 4);
+            winter_season_start := winter_season_start_str :: date;
+            winter_season_end := winter_season_end_str :: date;
+        end if;
+
+        if summer_season_start is not null and summer_season_end is not null or
+           winter_season_start is not null and winter_season_end is not null then
+            q := q || 'AND (FALSE';
+            if summer_season_start is not null and summer_season_end is not null then
+                q := q || ' OR P.created_timestamp BETWEEN $3 AND $4';
+            end if;
+            if winter_season_start is not null and winter_season_end is not null then
+                q := q || ' OR P.created_timestamp BETWEEN $5 AND $6';
+            end if;
+            q := q || ')';
+        end if;
     END IF;
     IF $2 IS NOT NULL THEN
         q := q || 'AND P.product_type_id = $2';
@@ -70,7 +109,7 @@ BEGIN
 
     RETURN QUERY
     EXECUTE q
-    USING $1, $2;
+    USING _site_id, _processor_id, summer_season_start, summer_season_end, winter_season_start, winter_season_end;
 END
 $BODY$
   LANGUAGE plpgsql STABLE
