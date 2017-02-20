@@ -22,6 +22,8 @@ install(FILES lai.map
 install(FILES TestScripts/rsr_cfg.txt
               otb-bv/data/landsat8_7b.rsr
               otb-bv/data/Sentinel2_10m.rsr
+              otb-bv/data/Sentinel2_10m_real.rsr
+              otb-bv/data/Sentinel2_10m_theoretical.rsr
               otb-bv/data/spot4hrvir1.rsr
               otb-bv/data/spot5hrg1.rsr
         DESTINATION usr/share/sen2agri/)

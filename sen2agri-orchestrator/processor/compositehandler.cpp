@@ -745,14 +745,20 @@ ProcessorJobDefinitionParams CompositeHandler::GetProcessingDefinitionImpl(Sched
     QDateTime seasonEndDate;
     // extract the scheduled date
     QDateTime qScheduledDate = QDateTime::fromTime_t(scheduledDate);
+    Logger::debug(QStringLiteral("Scheduler L3A: Getting season dates for site %1 for scheduled date %2!")
+                  .arg(siteId)
+                  .arg(qScheduledDate.toString()));
     bool success = GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, qScheduledDate, requestOverrideCfgValues);
     // if cannot get the season dates
     if(!success) {
-        Logger::debug(QStringLiteral("Scheduler L3A: Error getting season start dates for site %1 for scheduled date %2!")
-                      .arg(siteId)
-                      .arg(qScheduledDate.toString()));
+//        Logger::debug(QStringLiteral("Scheduler L3A: Error getting season start dates for site %1 for scheduled date %2!")
+//                      .arg(siteId)
+//                      .arg(qScheduledDate.toString()));
         return params;
     }
+    Logger::debug(QStringLiteral("Scheduler L3A: Extracted season dates: Start: %1, End: %2!")
+                  .arg(seasonStartDate.toString())
+                  .arg(seasonEndDate.toString()));
     QDateTime limitDate = seasonEndDate.addMonths(2);
     if(qScheduledDate > limitDate) {
         Logger::debug(QStringLiteral("Scheduler L3A: Error scheduled date %1 greater than the limit date %2 for site %3!")

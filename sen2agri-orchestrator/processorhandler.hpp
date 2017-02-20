@@ -37,6 +37,9 @@ protected:
     void EnsureStartSeasonLessThanEndSeasonDate(QDate &startSeasonDate, QDate &endSeasonDate, const QDateTime &executionDate, bool bStartDateHadYear, bool bEndDateHadYear);
     bool GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,  QDateTime &startTime, QDateTime &endTime, const QDateTime &executionDate,
                                 const ConfigurationParameterValueMap &requestOverrideCfgValues);
+    bool GetSeasonStartEndDates(const ConfigurationParameterValueMap &seasonCfgValues, int siteId,
+                                QDateTime &startTime, QDateTime &endTime, const QString &keyStart, const QString &keyEnd,
+                                const QDateTime &executionDate);
     QStringList GetL2AInputProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event);
     QStringList GetL2AInputProductsTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                     QMap<QString, QStringList> &mapProductToTilesMetaFiles);

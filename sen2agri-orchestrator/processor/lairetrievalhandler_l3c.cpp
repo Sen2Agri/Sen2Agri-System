@@ -127,6 +127,30 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(std::map<QS
     QString mainLaiImg;
     QString mainLaiErrImg;
     QString mainMsksImg;
+    QStringList listDates;
+
+    for(const ProcessorHandlerHelper::InfoTileFile &fileInfo: tileTemporalFilesInfo.temporalTilesFileInfos) {
+        const QString &laiFileName = fileInfo.additionalFiles[LAI_RASTER_ADD_INFO_IDX];
+        const QString &errFileName = fileInfo.additionalFiles[LAI_ERR_RASTER_ADD_INFO_IDX];
+        const QString &mskFileName = fileInfo.additionalFiles[LAI_FLG_RASTER_ADD_INFO_IDX];
+
+        // ensure that we have all files and we will have the same size for all lists
+        if (laiFileName.size() > 0 && errFileName.size() > 0 && mskFileName.size() > 0) {
+            quantifiedLaiFileNames2.append(laiFileName);
+            quantifiedErrLaiFileNames2.append(errFileName);
+            monoDateMskFlagsLaiFileNames2.append(mskFileName);
+            listDates.append(fileInfo.acquisitionDate);
+
+            if(fileInfo.satId == tileTemporalFilesInfo.primarySatelliteId) {
+                if(mainLaiImg.length() == 0) {
+                    mainLaiImg = laiFileName;
+                    mainLaiErrImg = errFileName;
+                    mainMsksImg = mskFileName;
+                }
+            }
+        }
+    }
+/*
     for(int i = 0; i< tileTemporalFilesInfo.temporalTilesFileInfos.size(); i++) {
         quantifiedLaiFileNames2.append(tileTemporalFilesInfo.temporalTilesFileInfos[i].additionalFiles[LAI_RASTER_ADD_INFO_IDX]);
         quantifiedErrLaiFileNames2.append(tileTemporalFilesInfo.temporalTilesFileInfos[i].additionalFiles[LAI_ERR_RASTER_ADD_INFO_IDX]);
@@ -140,7 +164,7 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(std::map<QS
             }
         }
     }
-
+*/
     int curTaskIdx = tasksStartIdx;
     TaskToSubmit &imgTimeSeriesBuilderTask = allTasksList[curTaskIdx++];
     TaskToSubmit &errTimeSeriesBuilderTask = allTasksList[curTaskIdx++];
@@ -158,7 +182,7 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(std::map<QS
     steps.append(errTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", errTimeSeriesBuilderArgs));
     steps.append(mskFlagsTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", mskFlagsTimeSeriesBuilderArgs));
 
-    const QStringList &listDates = ProcessorHandlerHelper::GetTemporalTileAcquisitionDates(tileTemporalFilesInfo);
+//    const QStringList &listDates = ProcessorHandlerHelper::GetTemporalTileAcquisitionDates(tileTemporalFilesInfo);
 
     TaskToSubmit &profileReprocTask = allTasksList[curTaskIdx++];
     TaskToSubmit &profileReprocSplitTask = allTasksList[curTaskIdx++];
@@ -676,8 +700,9 @@ bool LaiRetrievalHandlerL3C::AddTileFileInfo(EventProcessingContext &ctx, TileTe
                         const QString &newTileDir = mapL3BTiles[tileL3bPrd];
                         // this should not happen but is better to check
                         if(newTileDir.length() > 0) {
-                            AddTileFileInfo(temporalTileInfo, l3bPrd, newTileDir, l3bPrdSatId, curPrdMinDate);
-                            bAdded = true;
+                            if (AddTileFileInfo(temporalTileInfo, l3bPrd, newTileDir, l3bPrdSatId, curPrdMinDate)) {
+                                bAdded = true;
+                            }
                         }
                     }
                 }
@@ -704,16 +729,21 @@ bool LaiRetrievalHandlerL3C::AddTileFileInfo(TileTemporalFilesInfo &temporalTile
         // Set the file to the tile dir
         l3bTileInfo.file = ProcessorHandlerHelper::GetSourceL2AFromHighLevelProductIppFile(l3bProdDir, temporalTileInfo.tileId);
         l3bTileInfo.acquisitionDate = curPrdMinDate.toString("yyyyMMdd");
-        l3bTileInfo.additionalFiles.append(ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileDir, "SLAIMONO"));
-        l3bTileInfo.additionalFiles.append(ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileDir, "MLAIERR", true));
-        l3bTileInfo.additionalFiles.append(ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileDir, "MMONODFLG", true));
-        // add the sat id to the list of unique sat ids
-        if(!temporalTileInfo.uniqueSatteliteIds.contains(l3bTileInfo.satId)) {
-             temporalTileInfo.uniqueSatteliteIds.append(l3bTileInfo.satId);
+        const QString &laiFileName = ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileDir, "SLAIMONO");
+        const QString &errFileName = ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileDir, "MLAIERR", true);
+        const QString &mskFileName = ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileDir, "MMONODFLG", true);
+        if (laiFileName.size() > 0 && errFileName.size() > 0 && mskFileName.size() > 0) {
+            l3bTileInfo.additionalFiles.append(laiFileName);
+            l3bTileInfo.additionalFiles.append(errFileName);
+            l3bTileInfo.additionalFiles.append(mskFileName);
+            // add the sat id to the list of unique sat ids
+            if(!temporalTileInfo.uniqueSatteliteIds.contains(l3bTileInfo.satId)) {
+                 temporalTileInfo.uniqueSatteliteIds.append(l3bTileInfo.satId);
+            }
+            //add it to the temporal tile files info
+            temporalTileInfo.temporalTilesFileInfos.append(l3bTileInfo);
+            return true;
         }
-        //add it to the temporal tile files info
-        temporalTileInfo.temporalTilesFileInfos.append(l3bTileInfo);
-        return true;
     }
     return false;
 }
