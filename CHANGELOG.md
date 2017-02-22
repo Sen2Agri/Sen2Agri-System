@@ -34,10 +34,10 @@
  - The automated and custom jobs no longer use tiles from a different site if two sites contain the same tile
  - Landsat8 reprojection is now performed correctly [Forge #150398]
  - Correction in L3A aggregate tiles in order to have both 10M and 20M bands (not only 20m bands)
+ - Improved training pixel sampling in crop mask and crop type processors
 
 ### Known issues
 - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
-- With multiple input tiles, the training pixel sampling for crop type and crop mask products can be skewed if the training classes are not uniformly distributed
 - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
 - The SAFE formatting application sometimes outputs unusable (e.g. black) previews
 - The SAFE and L2A product previews are not gamma-corrected and can be too dark
