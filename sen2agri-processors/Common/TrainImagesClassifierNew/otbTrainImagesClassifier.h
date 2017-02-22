@@ -38,7 +38,7 @@
 //Image
 #include "otbVectorImage.h"
 #include "otbVectorData.h"
-#include "otbListSampleGenerator.h"
+#include "otbListSampleGeneratorEx.h"
 #include "otbListSampleGeneratorRaster.h"
 
 // ListSample
@@ -114,7 +114,7 @@ public:
   typedef itk::VariableLengthVector<InternalPixelType> MeasurementType;
 
   // SampleList manipulation
-  typedef otb::ListSampleGenerator<FloatVectorImageType, VectorDataType> ListSampleGeneratorType;
+  typedef otb::ListSampleGeneratorEx<FloatVectorImageType, VectorDataType> ListSampleGeneratorType;
   typedef otb::ListSampleGeneratorRaster<FloatVectorImageType, Int32ImageType> ListSampleGeneratorRasterType;
 
   typedef ListSampleGeneratorType::ListSampleType ListSampleType;
@@ -205,8 +205,6 @@ private:
   void Classify(ListSampleType::Pointer validationListSample, LabelListSampleType::Pointer predictedList);
 
   void DoExecute();
-
-  VectorDataReprojectionType::Pointer vdreproj;
 };
 
 }

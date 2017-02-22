@@ -202,7 +202,7 @@ ListSampleGeneratorRaster<TImage, TRaster>
 
   // Gather some information about the relative size of the classes
   // We would like to have the same number of samples per class
-  this->GenerateClassStatistics();
+//  this->GenerateClassStatistics();
 
   this->ComputeClassSelectionProbability();
 
@@ -316,8 +316,8 @@ ListSampleGeneratorRaster<TImage, TRaster>
     }
 
   // Go through the classes size to find the smallest one
-  double minSize = itk::NumericTraits<double>::max();
-  for (std::map<ClassLabelType, double>::const_iterator itmap = m_ClassesSize.begin();
+  int minSize = itk::NumericTraits<int>::max();
+  for (ClassesSizeType::const_iterator itmap = m_ClassesSize.begin();
         itmap != m_ClassesSize.end();
         ++itmap)
     {
@@ -344,27 +344,28 @@ ListSampleGeneratorRaster<TImage, TRaster>
       }
     }
   // Compute the probability selection for each class
-  for (std::map<ClassLabelType, double>::const_iterator itmap = m_ClassesSize.begin();
+  for (ClassesSizeType::const_iterator itmap = m_ClassesSize.begin();
        itmap != m_ClassesSize.end();
        ++itmap)
     {
-    m_ClassesProbTraining[itmap->first] = minSizeTraining / itmap->second;
-    m_ClassesProbValidation[itmap->first] = minSizeValidation / itmap->second;
+    double count = static_cast<double>(itmap->second);
+    m_ClassesProbTraining[itmap->first] = minSizeTraining / count;
+    m_ClassesProbValidation[itmap->first] = minSizeValidation / count;
     if(!m_BoundByMin)
       {
-      long int maxSizeT = (itmap->second)*(1.0 - m_ValidationTrainingProportion);
-      long int maxSizeV = (itmap->second)*m_ValidationTrainingProportion;
+      long int maxSizeT = count*(1.0 - m_ValidationTrainingProportion);
+      long int maxSizeV = count*m_ValidationTrainingProportion;
       maxSizeT = (m_MaxTrainingSize == -1)?maxSizeT:m_MaxTrainingSize;
       maxSizeV = (m_MaxValidationSize == -1)?maxSizeV:m_MaxValidationSize;
     
       //not enough samples to respect the bounds
       if(maxSizeT+maxSizeV > itmap->second)
         {
-        maxSizeT = (itmap->second)*(1.0 - m_ValidationTrainingProportion);
-        maxSizeV = (itmap->second)*m_ValidationTrainingProportion;
+        maxSizeT = count*(1.0 - m_ValidationTrainingProportion);
+        maxSizeV = count*m_ValidationTrainingProportion;
         }
-      m_ClassesProbTraining[itmap->first] = maxSizeT/(itmap->second);
-      m_ClassesProbValidation[itmap->first] = maxSizeV/(itmap->second);
+      m_ClassesProbTraining[itmap->first] = maxSizeT/count;
+      m_ClassesProbValidation[itmap->first] = maxSizeV/count;
       }
     }
 }
@@ -384,7 +385,7 @@ ListSampleGeneratorRaster<TImage, TRaster>
     }
   else
     {
-    for (std::map<ClassLabelType, double>::const_iterator itmap = m_ClassesSize.begin();
+    for (ClassesSizeType::const_iterator itmap = m_ClassesSize.begin();
          itmap != m_ClassesSize.end(); ++itmap)
       {
       os << indent << itmap->first << ": " << itmap->second << "\n";

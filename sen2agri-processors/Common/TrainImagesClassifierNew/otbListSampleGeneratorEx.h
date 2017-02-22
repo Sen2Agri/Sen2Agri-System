@@ -1,19 +1,4 @@
 /*=========================================================================
-  *
-  * Program:      Sen2agri-Processors
-  * Language:     C++
-  * Copyright:    2015-2016, CS Romania, office@c-s.ro
-  * See COPYRIGHT file for details.
-  *
-  * Unless required by applicable law or agreed to in writing, software
-  * distributed under the License is distributed on an "AS IS" BASIS,
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
-  * limitations under the License.
-
- =========================================================================*/
- 
-/*=========================================================================
 
   Program:   ORFEO Toolbox
   Language:  C++
@@ -31,19 +16,18 @@
 
 =========================================================================*/
 
-#ifndef __otbListSampleGeneratorRaster_h
-#define __otbListSampleGeneratorRaster_h
+#ifndef __otbListSampleGeneratorEx_h
+#define __otbListSampleGeneratorEx_h
 
 #include "itkProcessObject.h"
 #include "itkListSample.h"
 #include "itkPreOrderTreeIterator.h"
 #include "itkMersenneTwisterRandomVariateGenerator.h"
-#include "otbStreamingManager.h"
 
 namespace otb
 {
-/** \class ListSampleGeneratorRaster
- *  \brief Produces a ListSample from a VectorImage and a Raster
+/** \class ListSampleGeneratorEx
+ *  \brief Produces a ListSample from a VectorImage and a VectorData
  *
  *  This filter produces two ListSample for learning and validation of
  *  learning algorithms. The repartition between the learning and validation
@@ -53,26 +37,28 @@ namespace otb
  *  The size of the training and validation ListSample can be limited using the
  *  SetMaxTrainingSize() and SetMaxValidationSize() methods.
  *
- *  The Raster contins only one band and the value of the pixel represents the class.
+ *  Classes are specified by the VectorData with a metadata identified by
+ *  a specific key. This key can be provided by the SetClassKey() method
+ *  (using "Class" as a default key).
  *
- *  The input Raster is supposed to be fully contained within the image extent
+ *  The input VectorData is supposed to be fully contained within the image extent
  *
  *
  * \ingroup OTBStatistics
  */
-template <class TImage, class TRaster>
-class ITK_EXPORT ListSampleGeneratorRaster :
+template <class TImage, class TVectorData>
+class ITK_EXPORT ListSampleGeneratorEx :
   public itk::ProcessObject
 {
 public:
   /** Standard class typedefs */
-  typedef ListSampleGeneratorRaster     Self;
+  typedef ListSampleGeneratorEx           Self;
   typedef itk::ProcessObject            Superclass;
   typedef itk::SmartPointer<Self>       Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
 
   /** Run-time type information (and related methods). */
-  itkTypeMacro(ListSampleGeneratorRaster, itk::ProcessObject);
+  itkTypeMacro(ListSampleGeneratorEx, itk::ProcessObject);
 
   /** Method for creation through the object factory. */
   itkNewMacro(Self);
@@ -81,19 +67,9 @@ public:
   typedef typename ImageType::Pointer      ImagePointerType;
   typedef typename ImageType::IndexType    ImageIndexType;
   typedef typename ImageType::RegionType   ImageRegionType;
-  typedef TRaster                          RasterType;
-  typedef typename RasterType::Pointer     RasterPointerType;
-  typedef typename RasterType::SizeType    RasterSizeType;
-  typedef typename RasterType::PixelType   RasterPixelType;
-
-  typedef typename RasterType::IndexType   RasterIndexType;
-  typedef typename RasterType::RegionType  RasterRegionType;
+  typedef TVectorData                      VectorDataType;
+  typedef typename VectorDataType::Pointer VectorDataPointerType;
   typedef itk::ProcessObject::DataObjectPointerArraySizeType DataObjectPointerArraySizeType;
-
-  /** Streaming manager base class pointer */
-  typedef StreamingManager<ImageType>            StreamingManagerType;
-  typedef typename StreamingManagerType::Pointer StreamingManagerPointerType;
-
 
   /** List to store the pixel values */
   typedef typename ImageType::PixelType           SampleType;
@@ -111,10 +87,11 @@ public:
   void SetInput(const ImageType *);
   const ImageType * GetInput() const;
 
-  /** Connects the raster for which the sample list is going to be extracted
-   */
-  void SetInputRaster(const RasterType *);
-  const RasterType * GetInputRaster() const;
+  /** Connects the vector data for which the sample list is going to be extracted
+   * if this is the only input vector data, both the training and validation samples
+   * come from it */
+  void SetInputVectorData(const VectorDataType *);
+  const VectorDataType * GetInputVectorData() const;
 
   // Build the outputs
   typedef itk::DataObject::Pointer DataObjectPointer;
@@ -126,19 +103,19 @@ public:
   /** Accessors */
   itkGetConstMacro(MaxTrainingSize, long int);
   itkSetMacro(MaxTrainingSize, long int);
+  itkGetConstMacro(PolygonEdgeInclusion, bool);
+  itkSetMacro(PolygonEdgeInclusion, bool);
   itkGetConstMacro(MaxValidationSize, long int);
   itkSetMacro(MaxValidationSize, long int);
   itkGetConstMacro(ValidationTrainingProportion, double);
   itkSetClampMacro(ValidationTrainingProportion, double, 0.0, 1.0);
   itkGetConstMacro(BoundByMin, bool);
   itkSetMacro(BoundByMin, bool);
-  itkGetConstMacro(NoDataLabel, RasterPixelType);
-  itkSetMacro(NoDataLabel, RasterPixelType);
 
   itkGetConstMacro(NumberOfClasses, unsigned short);
   typedef std::map<ClassLabelType, int> SampleNumberType;
 
-  typedef std::map<ClassLabelType, int> ClassesSizeType;
+  typedef std::map<ClassLabelType, double> ClassesSizeType;
 
   SampleNumberType GetClassesSamplesNumberTraining(void) const
   {
@@ -150,6 +127,8 @@ public:
     return m_ClassesSamplesNumberValidation;
   }
 
+  itkGetStringMacro(ClassKey);
+  itkSetStringMacro(ClassKey);
   itkGetConstMacro(ClassMinSize, double);
 
   /** Returns the Training ListSample as a data object */
@@ -179,8 +158,8 @@ public:
   void GenerateClassStatistics();
 
 protected:
-  ListSampleGeneratorRaster();
-  virtual ~ListSampleGeneratorRaster() {}
+  ListSampleGeneratorEx();
+  virtual ~ListSampleGeneratorEx() {}
   void PrintSelf(std::ostream& os, itk::Indent indent) const;
 
   /** Triggers the Computation of the sample list */
@@ -189,12 +168,22 @@ protected:
   virtual void GenerateInputRequestedRegion(void);
 
 private:
-  ListSampleGeneratorRaster(const Self &); //purposely not implemented
+  ListSampleGeneratorEx(const Self &); //purposely not implemented
   void operator =(const Self&); //purposely not implemented
 
+  typedef typename VectorDataType::DataNodeType         DataNodeType;
+  typedef typename DataNodeType::PolygonType            PolygonType;
+  typedef typename DataNodeType::PolygonPointerType     PolygonPointerType;
+  typedef typename DataNodeType::PolygonListType        PolygonListType;
+  typedef typename DataNodeType::PolygonListPointerType PolygonListPointerType;
+  typedef itk::PreOrderTreeIterator<typename VectorDataType::DataTreeType> TreeIteratorType;
 
   void ComputeClassSelectionProbability();
 
+  // Crop the polygon wrt the image largest region,
+  // and return the resulting size in pixel units
+  // This does not handle interior rings
+  double GetPolygonAreaInPixelsUnits(DataNodeType* polygonDataNode, ImageType* image);
 
   long int m_MaxTrainingSize; // number of training samples (-1 = no limit)
   long int m_MaxValidationSize; // number of validation samples (-1 = no limit)
@@ -202,26 +191,27 @@ private:
                                            // (0.0 = all training, 1.0 = all validation)
 
   bool m_BoundByMin; //Bound the number of samples by the class having the fewer
-  RasterPixelType m_NoDataLabel; // The value of the NoData pixel from the Raster
+  bool           m_PolygonEdgeInclusion; // if true take into consideration pixel which are on polygon edge
+                                           //  useful, when dealing with small polygon area (1 or two pixels)
+                                           // false by default
   unsigned short m_NumberOfClasses;
+  std::string    m_ClassKey;
   double         m_ClassMinSize;
 
   ClassesSizeType m_ClassesSize;
-  std::map<ClassLabelType, double> m_ClassesProbTraining;
-  std::map<ClassLabelType, double> m_ClassesProbValidation;
+  ClassesSizeType m_ClassesProbTraining;
+  ClassesSizeType m_ClassesProbValidation;
 
   std::map<ClassLabelType, int> m_ClassesSamplesNumberTraining; //Just a counter
   std::map<ClassLabelType, int> m_ClassesSamplesNumberValidation; //Just a counter
 
   typedef itk::Statistics::MersenneTwisterRandomVariateGenerator RandomGeneratorType;
   RandomGeneratorType::Pointer m_RandomGenerator;
-
-  StreamingManagerPointerType m_StreamingManager;
 };
 } // end of namespace otb
 
 #ifndef OTB_MANUAL_INSTANTIATION
-#include "otbListSampleGeneratorRaster.txx"
+#include "otbListSampleGeneratorEx.txx"
 #endif
 
 #endif

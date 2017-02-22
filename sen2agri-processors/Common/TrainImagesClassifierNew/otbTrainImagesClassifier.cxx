@@ -279,6 +279,19 @@ void TrainImagesClassifier::DoExecute()
     //Iterate over all input images
 
     FloatVectorImageListType* imageList = GetParameterImageList("io.il");
+    auto sampleMt = GetParameterInt("sample.mt");
+    auto sampleMv = GetParameterInt("sample.mv");
+    if (sampleMt != -1)
+    {
+        sampleMt *= imageList->Size();
+    }
+    if (sampleMv != -1)
+    {
+        sampleMv *= imageList->Size();
+    }
+
+    std::map<int, int> classPixels;
+
     if (this->HasValue("io.vd")) {
         VectorDataType::Pointer vectorData = GetParameterVectorData("io.vd");
         // read the Vectordata
@@ -289,13 +302,64 @@ void TrainImagesClassifier::DoExecute()
         //Iterate over all input images
         otbAppLogINFO("Number of inputs " << imageList->Size() << std::endl);
         std::cerr << "Number of inputs " << imageList->Size() << std::endl;
+        ListSampleGeneratorType::ClassesSizeType classesSize;
+        // Setup the DEM Handler
+        otb::Wrapper::ElevationParametersHandler::SetupDEMHandlerFromElevationParameters(this, "elev");
+
+        std::cerr << "Computing class counts" << std::endl;
+
+        typedef otb::ObjectList<VectorDataReprojectionType> VectorDataReprojectionListType;
+        typedef otb::ObjectList<typename VectorDataReprojectionType::OutputVectorDataType> VectorDataListType;
+        VectorDataReprojectionListType::Pointer vectorDataReprojectionList = VectorDataReprojectionListType::New();
+        VectorDataListType::Pointer vectorDataList = VectorDataListType::New();
+        for (unsigned int imgIndex = 0; imgIndex < imageList->Size(); ++imgIndex)
+        {
+            FloatVectorImageType::Pointer image = imageList->GetNthElement(imgIndex);
+            image->UpdateOutputInformation();
+
+            VectorDataReprojectionType::Pointer vdreproj = VectorDataReprojectionType::New();
+            vectorDataReprojectionList->PushBack(vdreproj);
+
+            vdreproj->SetInputImage(image);
+            vdreproj->SetInput(vectorData);
+            vdreproj->SetUseOutputSpacingAndOriginFromImage(false);
+            vdreproj->Update();
+
+            vectorDataList->PushBack(vdreproj->GetOutput());
+            ListSampleGeneratorType::Pointer sampleGenerator = ListSampleGeneratorType::New();
+            sampleGenerator->SetInput(image);
+            sampleGenerator->SetInputVectorData(vectorDataList->GetNthElement(imgIndex));
+
+            sampleGenerator->SetClassKey(GetParameterString("sample.vfn"));
+            sampleGenerator->SetMaxTrainingSize(sampleMt);
+            sampleGenerator->SetMaxValidationSize(sampleMv);
+            sampleGenerator->SetValidationTrainingProportion(GetParameterFloat("sample.vtr"));
+            sampleGenerator->SetBoundByMin(GetParameterInt("sample.bm")!=0);
+
+            // take pixel located on polygon edge into consideration
+            if (IsParameterEnabled("sample.edg"))
+            {
+                sampleGenerator->SetPolygonEdgeInclusion(true);
+            }
+
+            sampleGenerator->GenerateClassStatistics();
+
+            for (const auto &entry : sampleGenerator->GetClassesSize()) {
+                classesSize[entry.first] += entry.second;
+            }
+        }
+
+        for (const auto &entry : classesSize) {
+            std::cerr << entry.first << ' ' << entry.second << '\n';
+        }
+        std::cerr << std::endl;
+
         for (unsigned int imgIndex = 0; imgIndex < imageList->Size(); ++imgIndex)
         {
             try {
                 otbAppLogINFO("Processing input " << imgIndex << std::endl);
                 std::cerr << "Processing input " << imgIndex << std::endl;
                 FloatVectorImageType::Pointer image = imageList->GetNthElement(imgIndex);
-                image->UpdateOutputInformation();
 
                 if (imgIndex == 0)
                 {
@@ -303,27 +367,19 @@ void TrainImagesClassifier::DoExecute()
                 }
 
 
-                vdreproj = VectorDataReprojectionType::New();
-                vdreproj->SetInputImage(image);
-                vdreproj->SetInput(vectorData);
-                vdreproj->SetUseOutputSpacingAndOriginFromImage(false);
-
-                // Setup the DEM Handler
-                otb::Wrapper::ElevationParametersHandler::SetupDEMHandlerFromElevationParameters(this, "elev");
-
-                vdreproj->Update();
-
                 //Sample list generator
                 ListSampleGeneratorType::Pointer sampleGenerator = ListSampleGeneratorType::New();
 
                 sampleGenerator->SetInput(image);
-                sampleGenerator->SetInputVectorData(vdreproj->GetOutput());
+                sampleGenerator->SetInputVectorData(vectorDataList->GetNthElement(imgIndex));
 
                 sampleGenerator->SetClassKey(GetParameterString("sample.vfn"));
-                sampleGenerator->SetMaxTrainingSize(GetParameterInt("sample.mt"));
-                sampleGenerator->SetMaxValidationSize(GetParameterInt("sample.mv"));
+
+                sampleGenerator->SetMaxTrainingSize(sampleMt);
+                sampleGenerator->SetMaxValidationSize(sampleMv);
                 sampleGenerator->SetValidationTrainingProportion(GetParameterFloat("sample.vtr"));
                 sampleGenerator->SetBoundByMin(GetParameterInt("sample.bm")!=0);
+                sampleGenerator->SetClassesSize(classesSize);
 
                 // take pixel located on polygon edge into consideration
                 if (IsParameterEnabled("sample.edg"))
@@ -332,6 +388,12 @@ void TrainImagesClassifier::DoExecute()
                 }
 
                 sampleGenerator->Update();
+
+                for (const auto &entry : sampleGenerator->GetClassesSamplesNumberTraining()) {
+                    std::cerr << "Tile pixels of class " << entry.first << ": " << entry.second << '\n';
+                    classPixels[entry.first] += entry.second;
+                }
+
                 std::cerr << "Training samples: " << sampleGenerator->GetTrainingListSample()->Size() << '\n';
                 std::cerr << "Validation samples: " << sampleGenerator->GetValidationListSample()->Size() << '\n';
 
@@ -362,6 +424,55 @@ void TrainImagesClassifier::DoExecute()
         typedef ImageFileReader<Int32ImageType> ImageReaderType;
         ImageReaderType::Pointer firstReader = ImageReaderType::New();
         firstReader->SetFileName(referenceRasters[0]);
+        firstReader->UpdateOutputInformation();
+
+        std::cerr << "Computing class counts" << std::endl;
+
+        ListSampleGeneratorRasterType::ClassesSizeType classesSize;
+
+        for (unsigned int imgIndex = 0; imgIndex < imageList->Size(); ++imgIndex)
+        {
+            FloatVectorImageType::Pointer image = imageList->GetNthElement(imgIndex);
+            image->UpdateOutputInformation();
+
+            ImageReaderType::Pointer reader;
+            Int32ImageType::Pointer raster;
+            if (imgIndex == 0 || referenceRasters.size() == 1) {
+                raster = firstReader->GetOutput();
+            } else {
+                reader = ImageReaderType::New();
+                reader->SetFileName(referenceRasters[imgIndex]);
+                reader->UpdateOutputInformation();
+                raster = reader->GetOutput();
+            }
+
+            raster->SetRequestedRegionToLargestPossibleRegion();
+            raster->PropagateRequestedRegion();
+            raster->UpdateOutputData();
+
+            //Sample list generator
+            ListSampleGeneratorRasterType::Pointer sampleGenerator = ListSampleGeneratorRasterType::New();
+
+            sampleGenerator->SetInput(image);
+            sampleGenerator->SetInputRaster(raster);
+
+            sampleGenerator->SetNoDataLabel(GetParameterInt("nodatalabel"));
+            sampleGenerator->SetMaxTrainingSize(sampleMt);
+            sampleGenerator->SetMaxValidationSize(sampleMv);
+            sampleGenerator->SetValidationTrainingProportion(GetParameterFloat("sample.vtr"));
+            sampleGenerator->SetBoundByMin(GetParameterInt("sample.bm")!=0);
+
+            sampleGenerator->GenerateClassStatistics();
+
+            for (const auto &entry : sampleGenerator->GetClassesSize()) {
+                classesSize[entry.first] += entry.second;
+            }
+        }
+
+        for (const auto &entry : classesSize) {
+            std::cerr << entry.first << ' ' << entry.second << '\n';
+        }
+        std::cerr << std::endl;
 
         //Iterate over all input images
         for (unsigned int imgIndex = 0; imgIndex < imageList->Size(); ++imgIndex)
@@ -393,11 +504,17 @@ void TrainImagesClassifier::DoExecute()
             sampleGenerator->SetInputRaster(raster);
 
             sampleGenerator->SetNoDataLabel(GetParameterInt("nodatalabel"));
-            sampleGenerator->SetMaxTrainingSize(GetParameterInt("sample.mt"));
-            sampleGenerator->SetMaxValidationSize(GetParameterInt("sample.mv"));
+            sampleGenerator->SetMaxTrainingSize(sampleMt);
+            sampleGenerator->SetMaxValidationSize(sampleMv);
             sampleGenerator->SetValidationTrainingProportion(GetParameterFloat("sample.vtr"));
             sampleGenerator->SetBoundByMin(GetParameterInt("sample.bm")!=0);
+            sampleGenerator->SetClassesSize(classesSize);
             sampleGenerator->Update();
+
+            for (const auto &entry : sampleGenerator->GetClassesSamplesNumberTraining()) {
+                std::cerr << "Tile pixels of class " << entry.first << ": " << entry.second << '\n';
+                classPixels[entry.first] += entry.second;
+            }
 
             std::cerr << "Training samples: " << sampleGenerator->GetTrainingListSample()->Size() << '\n';
             std::cerr << "Validation samples: " << sampleGenerator->GetValidationListSample()->Size() << '\n';
@@ -417,6 +534,10 @@ void TrainImagesClassifier::DoExecute()
     concatenateTrainingLabels->Update();
     concatenateValidationSamples->Update();
     concatenateValidationLabels->Update();
+
+    for (const auto &entry : classPixels) {
+        std::cerr << "Total pixels of class " << entry.first << ": " << entry.second << '\n';
+    }
 
     std::cerr << "Total training samples: " << concatenateTrainingSamples->GetOutput()->Size() << '\n';
     std::cerr << "Total validation samples: " << concatenateValidationSamples->GetOutput()->Size() << '\n';
