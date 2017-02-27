@@ -526,6 +526,7 @@ QStringList LaiRetrievalHandlerL3C::GetL3BProducts(EventProcessingContext &ctx, 
 
     QStringList filteredL3bProductList;
     if(inputsAreL3b) {
+        Logger::debug(QStringLiteral("Inputs are L3B for job %1").arg(event.jobId));
         // fill the l3bMapTiles from the input L3B products
         const auto &inputProducts = parameters["input_products"].toArray();
         for (const auto &inputProduct : inputProducts) {
@@ -535,6 +536,7 @@ QStringList LaiRetrievalHandlerL3C::GetL3BProducts(EventProcessingContext &ctx, 
             }
         }
     } else {
+        Logger::debug(QStringLiteral("Inputs are L2A for job %1").arg(event.jobId));
         QMap<QString, QStringList> inputProductToTilesMap;
         QStringList listTilesMetaFiles = GetL2AInputProductsTiles(ctx, event, inputProductToTilesMap);
 
@@ -608,6 +610,10 @@ QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(Even
 {
     QMap<QString, TileTemporalFilesInfo> retL3bMapTiles;
     const QStringList &listNewestL3BProdTiles = ProcessorHandlerHelper::GetTileIdsFromHighLevelProduct(newestL3BProd);
+    if (listNewestL3BProdTiles.size() == 0) {
+        Logger::debug(QStringLiteral("No tiles ID found for product %1").arg(newestL3BProd));
+        return retL3bMapTiles;
+    }
 
     QDateTime minDate, maxDate;
     ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(newestL3BProd, minDate, maxDate);
@@ -621,6 +627,7 @@ QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(Even
             tileSatId = GetSatIdForTile(siteTiles, tileId);
             // ignore tiles for which the satellite id cannot be determined
             if(tileSatId == ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN) {
+                Logger::debug(QStringLiteral("The satellite ID cannot be extracted for tileId %1 (nb. site tiles is %2)").arg(tileId).arg(siteTiles.size()));
                 continue;
             }
         }
@@ -637,6 +644,7 @@ QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(Even
 
             // add the tile infos to the map
             retL3bMapTiles[tileId] = newTileInfos;
+            Logger::debug(QStringLiteral("Added tile id %1 from product %2").arg(tileId).arg(newestL3BProd));
         }
         TileTemporalFilesInfo &tileInfo = retL3bMapTiles[tileId];
         // NOTE: we assume the products are sorted ascending
@@ -659,6 +667,7 @@ QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(Even
             AddTileFileInfo(ctx, tileInfo, l3bPrd, tileId, siteTiles, tileSatId, curPrdMinDate);
         }
 
+        Logger::debug(QStringLiteral("Using for tile %1 a number of %2 tiles").arg(tileId).arg(tileInfo.temporalTilesFileInfos.size()));
         if(tileInfo.temporalTilesFileInfos.size() > 0) {
              // update the primary satellite information
              tileInfo.primarySatelliteId = ProcessorHandlerHelper::GetPrimarySatelliteId(tileInfo.uniqueSatteliteIds);
@@ -892,6 +901,11 @@ void LaiRetrievalHandlerL3C::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     int limitL3BPrdsPerTile = GetIntParameterValue(parameters, "max_l3b_per_tile", limitL3BPrdsPerTileDefVal);
     // get the list of the L3B products from the event
     const QStringList &listL3BProducts = GetL3BProducts(ctx, event);
+    if (listL3BProducts.size() == 0) {
+        ctx.MarkJobFailed(event.jobId);
+        throw std::runtime_error(
+            QStringLiteral("No L3B products were found for the given event").toStdString());
+    }
 
     const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles = GetSiteTiles(ctx, event.siteId);
 
@@ -902,6 +916,11 @@ void LaiRetrievalHandlerL3C::HandleJobSubmittedImpl(EventProcessingContext &ctx,
         const QStringList &allL3BProductsList = GetL3BProducts(ctx, event.siteId);
         for(const QString &l3bProd: listL3BProducts) {
             const QMap<QString, TileTemporalFilesInfo> &l3bMapTiles = GetL3BMapTiles(ctx, l3bProd, allL3BProductsList, siteTiles, limitL3BPrdsPerTile);
+            if (l3bMapTiles.size() == 0) {
+                ctx.MarkJobFailed(event.jobId);
+                throw std::runtime_error(
+                    QStringLiteral("No L3B products were found for the given event").toStdString());
+            }
             SubmitL3BMapTiles(ctx, event, l3bMapTiles, bRemoveTempFiles, bNDayReproc, allTasksList);
         }
     } else {
