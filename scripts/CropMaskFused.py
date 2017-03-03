@@ -290,16 +290,11 @@ class CropMaskProcessor(ProcessorBase):
         if not self.single_stratum:
             tile_model_mask = self.get_output_path("model-mask-{}.tif", tile.id)
 
-            if self.args.stratum_filter is not None:
-                strata_file = self.get_output_path("filtered-strata.shp")
-            else:
-                strata_file = self.args.strata
-
             run_step(Step("Rasterize model mask",
                           ["otbcli_Rasterization",
                            "-mode", "attribute",
                            "-mode.attribute.field", "ID",
-                           "-in", strata_file,
+                           "-in", self.args.filtered_strata,
                            "-im", tile.reference_raster,
                            "-out", format_otb_filename(tile_model_mask, compression='DEFLATE'), "uint8"]))
 
