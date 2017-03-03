@@ -93,11 +93,10 @@ class CropMaskProcessor(ProcessorBase):
 
         self.args.tmpfolder = self.args.outdir
 
-    def prepare_tile(self, tile):
+    def prepare_tile_high_par(self, tile):
         if self.args.refr is not None:
             tile_reference = self.get_output_path("reference-{}.tif", tile.id)
             tile_reference_eroded = self.get_output_path("reference-eroded-{}.tif", tile.id)
-            tile_reference_trimmed = self.get_output_path("reference-trimmed-{}.tif", tile.id)
             tile_spectral_features = self.get_output_path("spectral-features-{}.tif", tile.id)
 
             ring = tile.footprint.GetGeometryRef(0)
@@ -122,6 +121,12 @@ class CropMaskProcessor(ProcessorBase):
                                                           "-lambda", self.args.lmbd,
                                                           "-out", tile_spectral_features,
                                                           "-il"] + tile.get_descriptor_paths()))
+
+    def prepare_tile_low_par(self, tile):
+        if self.args.refr is not None:
+            tile_reference_eroded = self.get_output_path("reference-eroded-{}.tif", tile.id)
+            tile_spectral_features = self.get_output_path("spectral-features-{}.tif", tile.id)
+            tile_reference_trimmed = self.get_output_path("reference-trimmed-{}.tif", tile.id)
 
             run_step(Step("Trimming_" + tile.id, ["otbcli", "Trimming", self.args.buildfolder,
                                                   "-alpha", self.args.alpha,

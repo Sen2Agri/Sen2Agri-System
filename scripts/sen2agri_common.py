@@ -461,13 +461,6 @@ class ProcessorBase(object):
             if adj_threads > tile_threads:
                 tile_threads = adj_threads
 
-            # we had some issues with OTB being unable to open images when this is too high
-            # it wasn't related to the open fd limit
-            if parallelism > 1:
-                train_parallelism = 2
-            else:
-                train_parallelism = 1
-
             print("Processing {} tiles at once".format(parallelism))
             print("Using {} threads for each tile".format(tile_threads))
             os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(tile_threads)
@@ -476,14 +469,20 @@ class ProcessorBase(object):
                 self.prepare_site()
 
             if self.args.mode is None or self.args.mode == 'prepare-tiles':
-                # use a lower value here since the trimming step is not quite memory-friendly
-                pool = multiprocessing.dummy.Pool(2)
-                pool.map(self.internal_prepare_tile, self.tiles)
+                pool = multiprocessing.dummy.Pool(parallelism)
+                pool.map(self.internal_prepare_tile_high_par, self.tiles)
+                pool.close()
+                pool.join()
+
+                # HACK: the high/low-parallelism split is only because the trimming
+                #       step is not quite memory-friendly
+                pool = multiprocessing.dummy.Pool(2 if parallelism > 1 else 1)
+                pool.map(self.internal_prepare_tile_low_par, self.tiles)
                 pool.close()
                 pool.join()
 
             if self.args.mode is None or self.args.mode == 'train':
-                pool = multiprocessing.dummy.Pool(train_parallelism)
+                pool = multiprocessing.dummy.Pool(parallelism)
                 pool.map(self.internal_train_stratum, self.strata)
                 pool.close()
                 pool.join()
@@ -524,13 +523,21 @@ class ProcessorBase(object):
 
             sys.exit(exit_status)
 
-    def internal_prepare_tile(self, tile):
+    def internal_prepare_tile_high_par(self, tile):
         if self.args.tile_filter and tile.id not in self.args.tile_filter:
-            print("Skipping tile preparation for tile {} due to tile filter".format(tile.id))
+            print("Skipping tile preparation (1/2) for tile {} due to tile filter".format(tile.id))
             return
 
-        print("Performing tile preparation for tile:", tile.id)
-        self.prepare_tile(tile)
+        print("Performing tile preparation (1/2) for tile:", tile.id)
+        self.prepare_tile_high_par(tile)
+
+    def internal_prepare_tile_low_par(self, tile):
+        if self.args.tile_filter and tile.id not in self.args.tile_filter:
+            print("Skipping tile preparation (2/2) for tile {} due to tile filter".format(tile.id))
+            return
+
+        print("Performing tile preparation (2/2) for tile:", tile.id)
+        self.prepare_tile_low_par(tile)
 
     def internal_train_stratum(self, stratum):
         if self.args.stratum_filter and stratum.id not in self.args.stratum_filter:
@@ -585,7 +592,10 @@ class ProcessorBase(object):
                 for entry in lut:
                     f.write("{},{},{},{},255,{}\n".format(*entry))
 
-    def prepare_tile(self, tile):
+    def prepare_tile_high_par(self, tile):
+        pass
+
+    def prepare_tile_low_par(self, tile):
         pass
 
     def postprocess_tile(self, tile):
