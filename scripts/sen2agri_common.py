@@ -664,7 +664,17 @@ class ProcessorBase(object):
             self.site_footprint_wgs84 = self.site_footprint_wgs84.Union(tile.footprint_wgs84)
 
         if not self.single_stratum:
-            self.strata = load_strata(self.args.strata, self.site_footprint_wgs84)
+            if self.args.stratum_filter is not None:
+                self.args.filtered_strata = self.get_output_path("filtered-strata.shp")
+
+                run_step(Step("Filter strata",
+                              ["ogr2ogr",
+                               "-where", "id in ({})".format(", ".join(map(str, self.args.stratum_filter))),
+                               self.args.filtered_strata, self.args.strata]))
+            else:
+                self.args.filtered_strata = self.args.strata
+
+            self.strata = load_strata(self.args.filtered_strata, self.site_footprint_wgs84)
             if len(self.strata) == 0:
                 print("No training data found inside any of the strata, exiting")
                 sys.exit(1)
@@ -677,13 +687,6 @@ class ProcessorBase(object):
 
                 print("Strata for tile {}: {}".format(tile.id, map(lambda s: s.id, tile.strata)))
 
-            if self.args.stratum_filter is not None:
-                filtered_strata = self.get_output_path("filtered-strata.shp")
-
-                run_step(Step("Filter strata",
-                              ["ogr2ogr",
-                               "-where", "id in ({})".format(", ".join(map(str, self.args.stratum_filter))),
-                               filtered_strata, self.args.strata]))
         else:
             stratum = Stratum(0, self.site_footprint_wgs84)
             stratum.tiles = self.tiles
