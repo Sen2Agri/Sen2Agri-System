@@ -352,6 +352,9 @@ class CropMaskProcessor(ProcessorBase):
             return
 
         tile_crop_mask = self.get_tile_classification_output(tile)
+        if not os.path.exists(tile_crop_mask):
+            print("Skipping post-processing for tile {} due to missing raw mask".format(tile.id))
+            return
 
         tile_ndvi = self.get_output_path("ndvi-{}.tif", tile.id)
         tile_ndvi_filled = self.get_output_path("ndvi-filled-{}.tif", tile.id)
