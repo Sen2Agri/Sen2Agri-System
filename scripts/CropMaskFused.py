@@ -79,6 +79,7 @@ class CropMaskProcessor(ProcessorBase):
         parser.add_argument('-tile-filter', help='The list of tiles to apply the classification to',
                             required=False, nargs='+', default=None)
         parser.add_argument('-skip-segmentation', help="Skip the segmentation step, creating the product with just the raw mask (default false)", default=False, action='store_true')
+        parser.add_argument('-reuse-segmentation', help="Reuse the segmentation output if present on disk (default false)", default=False, action='store_true')
         parser.add_argument('-skip-quality-flags', help="Skip quality flags extraction, (default false)", default=False, action='store_true')
         parser.add_argument('-max-parallelism', help="Number of tiles to process in parallel", required=False, type=int)
         parser.add_argument('-tile-threads-hint', help="Number of threads to use for a single tile (default 2)", required=False, type=int, default=2)
@@ -359,6 +360,28 @@ class CropMaskProcessor(ProcessorBase):
         tile_ndvi = self.get_output_path("ndvi-{}.tif", tile.id)
         tile_ndvi_filled = self.get_output_path("ndvi-filled-{}.tif", tile.id)
         tile_pca = self.get_output_path("pca-{}.tif", tile.id)
+        tile_smoothed = self.get_output_path("smoothed-{}.tif", tile.id)
+        tile_smoothed_spatial = self.get_output_path("smoothed-spatial-{}.tif", tile.id)
+        tile_segmentation = self.get_output_path("segmentation-{}.tif", tile.id)
+        tile_segmentation_merged = self.get_output_path("segmentation-merged-{}.tif", tile.id)
+        tile_segmented = self.get_output_path("crop-mask-segmented-{}.tif", tile.id)
+
+        if not self.args.reuse_segmentation:
+            needs_segmentation_merged = True
+            needs_segmentation = True
+            needs_tile_smoothed = True
+            needs_tile_smoothed_spatial = True
+            needs_pca = True
+            needs_ndvi_filled = True
+            needs_ndvi = True
+        else:
+            needs_segmentation_merged = not os.path.exists(tile_segmentation_merged)
+            needs_segmentation = needs_segmentation_merged and not os.path.exists(tile_segmentation)
+            needs_tile_smoothed = needs_segmentation and not os.path.exists(tile_smoothed)
+            needs_tile_smoothed_spatial = needs_segmentation and not os.path.exists(tile_smoothed_spatial)
+            needs_pca = (needs_tile_smoothed or needs_tile_smoothed_spatial) and not os.path.exists(tile_pca)
+            needs_ndvi_filled = needs_pca and not os.path.exists(tile_ndvi_filled)
+            needs_ndvi = needs_ndvi and not os.path.exists(tile_ndvi)
 
         if self.args.main_mission_segmentation:
             tile_descriptors = tile.get_mission_descriptor_paths(self.args.mission)
@@ -373,14 +396,20 @@ class CropMaskProcessor(ProcessorBase):
         step_args += ["-il"] + tile_descriptors
         step_args += ["-sp"] + self.args.sp
 
-        run_step(Step("NDVI Series " + tile.id, step_args))
+        if not needs_ndvi:
+            print("Skipping NDVI extraction for tile {}".format(tile.id))
+        else:
+            run_step(Step("NDVI Series " + tile.id, step_args))
 
         step_args = ["otbcli", "FillNoData", self.args.buildfolder,
                      "-in", tile_ndvi,
                      "-bv", -10000,
                      "-out", tile_ndvi_filled]
 
-        run_step(Step("FillNoData " + tile.id, step_args))
+        if not needs_ndvi_filled:
+            print("Skipping NDVI no data filling for tile {}".format(tile.id))
+        else:
+            run_step(Step("FillNoData " + tile.id, step_args))
 
         if not self.args.keepfiles:
             os.remove(tile_ndvi)
@@ -391,16 +420,13 @@ class CropMaskProcessor(ProcessorBase):
                      "-in", tile_ndvi_filled,
                      "-out", tile_pca]
 
-        run_step(Step("NDVI PCA " + tile.id, step_args))
+        if not needs_pca:
+            print("Skipping PCA for tile {}".format(tile.id))
+        else:
+            run_step(Step("NDVI PCA " + tile.id, step_args))
 
         if not self.args.keepfiles:
             os.remove(tile_ndvi_filled)
-
-        tile_smoothed = self.get_output_path("smoothed-{}.tif", tile.id)
-        tile_smoothed_spatial = self.get_output_path("smoothed-spatial-{}.tif", tile.id)
-        tile_segmentation = self.get_output_path("segmentation-{}.tif", tile.id)
-        tile_segmentation_merged = self.get_output_path("segmentation-merged-{}.tif", tile.id)
-        tile_segmented = self.get_output_path("crop-mask-segmented-{}.tif", tile.id)
 
         step_args = ["otbcli_MeanShiftSmoothing",
                      "-in", tile_pca,
@@ -410,7 +436,11 @@ class CropMaskProcessor(ProcessorBase):
                      "-maxiter", 20,
                      "-fout", tile_smoothed,
                      "-foutpos", tile_smoothed_spatial]
-        run_step(Step("Mean-Shift Smoothing " + tile.id, step_args))
+
+        if not needs_tile_smoothed and not needs_tile_smoothed_spatial:
+            print("Skipping mean-shift smoothing for tile {}".format(tile.id))
+        else:
+            run_step(Step("Mean-Shift Smoothing " + tile.id, step_args))
 
         if not self.args.keepfiles:
             os.remove(tile_pca)
@@ -425,7 +455,11 @@ class CropMaskProcessor(ProcessorBase):
                      "-tilesizey", 1024,
                      "-tmpdir", self.args.tmpfolder,
                      "-out", format_otb_filename(tile_segmentation, compression='DEFLATE'), "uint32"]
-        run_step(Step("Segmentation " + tile.id, step_args))
+
+        if not needs_segmentation:
+            print("Skipping segmentation for tile {}".format(tile.id))
+        else:
+            run_step(Step("Segmentation " + tile.id, step_args))
 
         step_args = ["otbcli_LSMSSmallRegionsMerging",
                      "-in", tile_smoothed,
@@ -434,7 +468,11 @@ class CropMaskProcessor(ProcessorBase):
                      "-tilesizex", 1024,
                      "-tilesizey", 1024,
                      "-out", format_otb_filename(tile_segmentation_merged, compression='DEFLATE'), "uint32"]
-        run_step(Step("Small region merging " + tile.id, step_args))
+
+        if not needs_segmentation_merged:
+            print("Skipping small regions merging for tile {}".format(tile.id))
+        else:
+            run_step(Step("Small regions merging " + tile.id, step_args))
 
         if not self.args.keepfiles:
             os.remove(tile_smoothed)
@@ -450,7 +488,7 @@ class CropMaskProcessor(ProcessorBase):
                      "-rout", format_otb_filename(tile_segmented, compression='DEFLATE')]
         run_step(Step("Majority voting " + tile.id, step_args))
 
-        if not self.args.keepfiles:
+        if not self.args.keepfiles and not self.args.reuse_segmentation:
             os.remove(tile_segmentation_merged)
 
     def get_tile_crop_mask(self, tile):
