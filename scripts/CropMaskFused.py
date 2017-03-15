@@ -381,7 +381,7 @@ class CropMaskProcessor(ProcessorBase):
             needs_tile_smoothed_spatial = needs_segmentation and not os.path.exists(tile_smoothed_spatial)
             needs_pca = (needs_tile_smoothed or needs_tile_smoothed_spatial) and not os.path.exists(tile_pca)
             needs_ndvi_filled = needs_pca and not os.path.exists(tile_ndvi_filled)
-            needs_ndvi = needs_ndvi and not os.path.exists(tile_ndvi)
+            needs_ndvi = needs_ndvi_filled and not os.path.exists(tile_ndvi)
 
         if self.args.main_mission_segmentation:
             tile_descriptors = tile.get_mission_descriptor_paths(self.args.mission)
