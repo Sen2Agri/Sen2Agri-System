@@ -264,6 +264,8 @@ begin
             LANGUAGE plpgsql;
 
             raise notice 'applying b0041d66fde28b7b78a22db57bde3d99d4885576';
+            raise notice 'DROP FUNCTION sp_get_dashboard_products(smallint,smallint);';
+            DROP FUNCTION sp_get_dashboard_products(smallint,smallint);
             raise notice 'CREATE OR REPLACE FUNCTION sp_get_dashboard_products(smallint, smallint) [...];';
             CREATE OR REPLACE FUNCTION sp_get_dashboard_products(
                 _site_id smallint DEFAULT NULL::smallint,
