@@ -463,6 +463,7 @@ class ProcessorBase(object):
 
             print("Processing {} tiles at once".format(parallelism))
             print("Using {} threads for each tile".format(tile_threads))
+            os.environ["ITK_USE_THREADPOOL"] = str(1)
             os.environ["ITK_GLOBAL_DEFAULT_NUMBER_OF_THREADS"] = str(tile_threads)
 
             if self.args.mode is None or self.args.mode == 'prepare-site':
