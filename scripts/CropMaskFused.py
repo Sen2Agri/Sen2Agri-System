@@ -411,8 +411,8 @@ class CropMaskProcessor(ProcessorBase):
         else:
             run_step(Step("FillNoData " + tile.id, step_args))
 
-        if not self.args.keepfiles:
-            os.remove(tile_ndvi)
+            if not self.args.keepfiles:
+                os.remove(tile_ndvi)
 
         step_args = ["otbcli_DimensionalityReduction",
                      "-method", "pca",
@@ -425,8 +425,8 @@ class CropMaskProcessor(ProcessorBase):
         else:
             run_step(Step("NDVI PCA " + tile.id, step_args))
 
-        if not self.args.keepfiles:
-            os.remove(tile_ndvi_filled)
+            if not self.args.keepfiles:
+                os.remove(tile_ndvi_filled)
 
         step_args = ["otbcli_MeanShiftSmoothing",
                      "-in", tile_pca,
@@ -442,8 +442,8 @@ class CropMaskProcessor(ProcessorBase):
         else:
             run_step(Step("Mean-Shift Smoothing " + tile.id, step_args))
 
-        if not self.args.keepfiles:
-            os.remove(tile_pca)
+            if not self.args.keepfiles:
+                os.remove(tile_pca)
 
         step_args = ["otbcli_LSMSSegmentation",
                      "-in", tile_smoothed,
@@ -474,10 +474,10 @@ class CropMaskProcessor(ProcessorBase):
         else:
             run_step(Step("Small regions merging " + tile.id, step_args))
 
-        if not self.args.keepfiles:
-            os.remove(tile_smoothed)
-            os.remove(tile_smoothed_spatial)
-            os.remove(tile_segmentation)
+            if not self.args.keepfiles:
+                os.remove(tile_smoothed)
+                os.remove(tile_smoothed_spatial)
+                os.remove(tile_segmentation)
 
         step_args = ["otbcli", "MajorityVoting", self.args.buildfolder,
                      "-nodatasegvalue", 0,
