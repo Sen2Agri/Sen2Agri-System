@@ -68,7 +68,7 @@ def connect_earthexplorer_proxy(proxy_info,usgs):
      urllib2.install_opener(opener)
      log(general_log_path, "Opener installed", general_log_filename)
      # deal with csrftoken required by USGS as of 7-20-2016
-     soup = BeautifulSoup(urllib2.urlopen("https://ers.cr.usgs.gov").read(), "lxml")
+     soup = BeautifulSoup(urllib2.urlopen("https://ers.cr.usgs.gov", timeout=100).read(), "lxml")
      log(general_log_path, "Soup created", general_log_filename)
      token = soup.find('input', {'name': 'csrf_token'})
      log(general_log_path, "token = {}".format(token), general_log_filename)
@@ -101,11 +101,11 @@ def connect_earthexplorer_no_proxy(usgs):
      opener = urllib2.build_opener(cookies)
      urllib2.install_opener(opener)
      # deal with csrftoken required by USGS as of 7-20-2016
-     soup = BeautifulSoup(urllib2.urlopen("https://ers.cr.usgs.gov").read(), "lxml")
+     soup = BeautifulSoup(urllib2.urlopen("https://ers.cr.usgs.gov", timeout=100).read(), "lxml")
      token = soup.find('input', {'name': 'csrf_token'})
      params = urllib.urlencode(dict(username=usgs['account'],password= usgs['passwd'], csrf_token=token['value']))
      request = urllib2.Request("https://ers.cr.usgs.gov/login", params, headers={})
-     f = urllib2.urlopen(request)
+     f = urllib2.urlopen(request, timeout=100)
 
      data = f.read()
      f.close()
