@@ -587,7 +587,7 @@
 												<select multiple class="form-control" id="inputFiles" name="inputFiles[]" size="7"></select>
 												<span class="help-block">The list of products descriptors (xml files).</span>
 											</div>
-											<div class="form-group form-group-sm required">
+											<div class="form-group form-group-sm">
 												<label class="control-label" for="cropMask">Crop masks:</label>
 												<select class="form-control" id="cropMask" name="cropMask"></select>
 												<span class="help-block">The list of crop mask products.</span>
@@ -950,7 +950,6 @@
 						rules : {
 							siteId: 		{ required: true },
 							'inputFiles[]': { required: true },
-							cropMask:		{ required: true },
 							refp:			{ required: true },
 						},
 						highlight: function(element, errorClass) {
