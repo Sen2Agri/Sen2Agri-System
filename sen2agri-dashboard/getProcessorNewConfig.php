@@ -476,9 +476,11 @@ elseif (isset ( $_POST ['l4b'] )) {
 	if ($polygons_file) {
 		$params = array (	"resolution"         => $resolution,
 							"input_products"     => $input_products,
-							"crop_mask"          => $crop_mask,
 							"reference_polygons" => $polygons_file
-						);
+                        );
+        if (!empty($crop_mask)) {
+            $params["crop_mask"] = $crop_mask;
+        }
 		$json_param = json_encode( array_filter($params), JSON_UNESCAPED_SLASHES );
 
 		// set job name and description and save job
