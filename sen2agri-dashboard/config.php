@@ -905,7 +905,9 @@
 							$.ajax({
 								url: $(form).attr('action'),
 								type: $(form).attr('method'),
-								data: new FormData(form),
+                                data: new FormData(form),
+                                processData: false,
+                                contentType: false,
 								success: function(response) { }
 							});
 						},
@@ -936,6 +938,8 @@
 								url: $(form).attr('action'),
 								type: $(form).attr('method'),
 								data: new FormData(form),
+                                processData: false,
+                                contentType: false,
 								success: function(response) { }
 							});
 						},
@@ -967,6 +971,8 @@
 								url: $(form).attr('action'),
 								type: $(form).attr('method'),
 								data: new FormData(form),
+                                processData: false,
+                                contentType: false,
 								success: function(response) { }
 							});
 						},
