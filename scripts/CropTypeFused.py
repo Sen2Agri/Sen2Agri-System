@@ -498,5 +498,6 @@ class CropTypeProcessor(ProcessorBase):
 
         return etree.ElementTree(metadata)
 
+
 processor = CropTypeProcessor()
 processor.execute()
