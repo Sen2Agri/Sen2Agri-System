@@ -345,6 +345,7 @@ class CropTypeProcessor(ProcessorBase):
                      "-baseline", "01.00",
                      "-siteid", self.args.siteid,
                      "-gipp", self.get_metadata_file(),
+                     "-isd", self.get_in_situ_data_file(),
                      "-processor", "croptype"]
 
         if self.args.lut is not None:

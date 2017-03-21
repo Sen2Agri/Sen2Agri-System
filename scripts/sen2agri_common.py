@@ -10,6 +10,7 @@ import os.path
 import glob
 import re
 import sys
+import zipfile
 import pipes
 import resource
 import subprocess
@@ -510,6 +511,9 @@ class ProcessorBase(object):
                     pool.join()
 
             if self.args.mode is None or self.args.mode == 'validate':
+                if self.args.refp is not None:
+                    self.create_in_situ_archive()
+
                 self.validate(context)
         except SystemExit:
             exit_requested = True
@@ -712,6 +716,18 @@ class ProcessorBase(object):
                        "-out", format_otb_filename(stratum_tile_mask, compression='DEFLATE'), "uint8",
                        "-mode", "binary"]))
 
+    def create_in_situ_archive(self):
+        with zipfile.ZipFile(self.get_in_situ_data_file(), 'w', zipfile.ZIP_DEFLATED) as archive:
+            for stratum in self.strata:
+                area_training_polygons = self.get_output_path("training_polygons-{}.shp", stratum.id)
+                area_validation_polygons = self.get_output_path("validation_polygons-{}.shp", stratum.id)
+
+                for ext in ['.shp', '.shx', '.dbf', '.prj']:
+                    file = os.path.splitext(area_training_polygons)[0] + ext
+                    archive.write(file, os.path.basename(file))
+                    file = os.path.splitext(area_validation_polygons)[0] + ext
+                    archive.write(file, os.path.basename(file))
+
     def get_output_path(self, fmt, *args):
         return os.path.join(self.args.outdir, fmt.format(*args))
 
@@ -720,3 +736,6 @@ class ProcessorBase(object):
 
     def get_metadata_file(self):
         return self.get_output_path("metadata.xml")
+
+    def get_in_situ_data_file(self):
+        return self.get_output_path("polygons.zip")

@@ -600,6 +600,9 @@ class CropMaskProcessor(ProcessorBase):
                      "-gipp", self.get_metadata_file(),
                      "-processor", "cropmask"]
 
+        if self.args.refp is not None:
+            step_args += ["-isd", self.get_in_situ_data_file()]
+
         if self.args.lut is not None:
             qgis_lut = self.get_output_path("qgis-color-map.txt")
 
