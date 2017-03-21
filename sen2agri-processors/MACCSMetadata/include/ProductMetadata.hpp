@@ -21,6 +21,7 @@ struct AuxList
 {
     std::string ProductLevel;
     std::string GIPP;
+    std::string ISD;
 };
 
 struct QueryOptionsContent
@@ -88,9 +89,15 @@ struct GIPPInfo
     std::string GIPPVersion;
 };
 
+struct ISDInfo
+{
+    std::string ISDFileName;
+};
+
 struct AuxiliaryDataInfoMetadata
 {
     std::vector<GIPPInfo> GIPPList;
+    std::vector<ISDInfo> ISDList;
 };
 
 struct TechnicalQualityAssessmentMetadata
