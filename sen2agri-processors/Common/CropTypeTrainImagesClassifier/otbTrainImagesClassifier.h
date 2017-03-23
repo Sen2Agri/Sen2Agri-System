@@ -55,10 +55,6 @@
 #include "otbMultiChannelExtractROI.h"
 #include "otbStreamingResampleImageFilter.h"
 
-#include "../Filters/otbCropTypeFeatureExtractionFilter.h"
-#include "../Filters/otbTemporalResamplingFilter.h"
-#include "../Filters/otbTemporalMergingFilter.h"
-
 #include "../Filters/otbSpotMaskFilter.h"
 #include "../Filters/otbSentinelMaskFilter.h"
 
@@ -138,7 +134,6 @@ private:
 
   SpotMaskFilterListType::Pointer                   m_SpotMaskFilters;
   SentinelMaskFilterListType::Pointer               m_SentinelMaskFilters;
-  CropTypeFeatureExtractionFilterListType::Pointer  m_FeatureExtrators;
   ImageListType::Pointer                            m_InputImages;
 };
 

@@ -39,13 +39,11 @@
 
 #include "ComputeNDVIFilter.h"
 #include "otbTemporalResamplingFilter.h"
-#include "otbTemporalMergingFilter.h"
 
 #include "otbSpotMaskFilter.h"
 #include "otbSentinelMaskFilter.h"
 
 #include "TimeSeriesReader.h"
-#include "TemporalMerging.hxx"
 #include "CropMaskFeaturesSupervised.hxx"
 
 #include <string>
