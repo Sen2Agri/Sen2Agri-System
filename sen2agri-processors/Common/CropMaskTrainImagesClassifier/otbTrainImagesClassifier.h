@@ -56,7 +56,6 @@
 #include "otbStreamingResampleImageFilter.h"
 
 #include "../Filters/otbTemporalResamplingFilter.h"
-#include "../Filters/otbTemporalMergingFilter.h"
 
 #include "../Filters/otbSpotMaskFilter.h"
 #include "../Filters/otbSentinelMaskFilter.h"

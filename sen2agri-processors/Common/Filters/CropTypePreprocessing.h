@@ -38,7 +38,6 @@
 
 #include "otbCropTypeFeatureExtractionFilter.h"
 #include "otbTemporalResamplingFilter.h"
-#include "otbTemporalMergingFilter.h"
 
 #include "otbSpotMaskFilter.h"
 #include "otbSentinelMaskFilter.h"
