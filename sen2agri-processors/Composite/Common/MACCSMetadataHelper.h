@@ -179,6 +179,7 @@ public:
     virtual float GetAotQuantificationValue();
     virtual float GetAotNoDataValue();
     virtual int GetAotBandIndex();
+    virtual int GetResolutionForAbsoluteBandIndex(int nAbsBandIdx);
 
 protected:
     virtual bool DoLoadMetadata();

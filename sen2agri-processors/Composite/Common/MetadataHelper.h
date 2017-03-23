@@ -117,6 +117,10 @@ public:
     virtual MetadataHelperAngles GetDetailedSolarAngles() { return m_detailedSolarAngles; }
     virtual std::vector<MetadataHelperViewingAnglesGrid> GetDetailedViewingAngles() { return m_detailedViewingAngles; }
 
+    // PRODUCT API
+    virtual std::vector<int> GetProductResolutions() { return m_vectResolutions; }
+    virtual int GetResolutionForAbsoluteBandIndex(int nAbsBandIdx) = 0;
+
     // BANDS HANDLING API
     virtual int GetTotalBandsNo() { return m_nTotalBandsNo; }
     virtual int GetBandsNoForCurrentResolution() { return m_nBandsNoForCurRes; }
@@ -177,6 +181,7 @@ protected:
     std::string m_inputMetadataFileName;
     int m_nResolution;
     std::string m_DirName;
+    std::vector<int> m_vectResolutions;
 };
 
 #endif // METADATAHELPER_H
