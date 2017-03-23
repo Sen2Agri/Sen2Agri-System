@@ -434,13 +434,15 @@ Product::Product(int productId,
                  ProductType productTypeId,
                  int siteId,
                  QString fullPath,
-                 QDateTime created)
+                 QDateTime created,
+                 QDateTime inserted)
     : productId(productId),
       processorId(processorId),
       productTypeId(productTypeId),
       siteId(siteId),
       fullPath(std::move(fullPath)),
-      created(std::move(created))
+      created(std::move(created)),
+      inserted(std::move(inserted))
 {
 }
 
@@ -454,7 +456,7 @@ QDBusArgument &operator<<(QDBusArgument &argument, const Product &product)
 {
     argument.beginStructure();
     argument << product.productId << product.processorId << product.productTypeId << product.siteId
-             << product.fullPath << product.created;
+             << product.fullPath << product.created << product.inserted;
     argument.endStructure();
 
     return argument;
@@ -464,7 +466,7 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, Product &product)
 {
     argument.beginStructure();
     argument >> product.productId >> product.processorId >> product.productTypeId >>
-        product.siteId >> product.fullPath >> product.created;
+        product.siteId >> product.fullPath >> product.created >> product.inserted;
     argument.endStructure();
 
     return argument;
