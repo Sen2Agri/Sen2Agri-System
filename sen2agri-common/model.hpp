@@ -236,6 +236,7 @@ public:
     int siteId;
     QString fullPath;
     QDateTime created;
+    QDateTime inserted;
 
     Product();
     Product(int productId,
@@ -243,7 +244,8 @@ public:
             ProductType productTypeId,
             int siteId,
             QString fullPath,
-            QDateTime created);
+            QDateTime created,
+            QDateTime inserted);
 
     static void registerMetaTypes();
 };
