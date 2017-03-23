@@ -16,6 +16,8 @@ public:
     QString GetSiteShortName(int siteId);
     QString GetProcessorShortName(int processorId);
 
+    SeasonList GetSiteSeasons(int siteId);
+
 private:
     PersistenceManagerDBProvider &persistenceManager;
 };

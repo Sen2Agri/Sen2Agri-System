@@ -94,4 +94,6 @@ public:
     void UpdateScheduledTasksStatus( std::vector<ScheduledTaskStatus>& taskList);
 
     void InsertScheduledTask( ScheduledTask& task);
+
+    SeasonList GetSiteSeasons(int siteId);
 };

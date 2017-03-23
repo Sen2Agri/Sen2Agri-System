@@ -73,4 +73,7 @@ QString SchedulingContext::GetSiteName(int siteId)
     return persistenceManager.GetSiteName(siteId);
 }
 
-
+SeasonList SchedulingContext::GetSiteSeasons(int siteId)
+{
+    return persistenceManager.GetSiteSeasons(siteId);
+}

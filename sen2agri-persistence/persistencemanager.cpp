@@ -1619,6 +1619,42 @@ SiteList PersistenceManagerDBProvider::GetSiteDescriptions()
     });
 }
 
+SeasonList PersistenceManagerDBProvider::GetSiteSeasons(int siteId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        SeasonList result;
+
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_seasons(:siteId)"));
+        query.bindValue(QStringLiteral("siteId"), siteId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto idCol = dataRecord.indexOf(QStringLiteral("id"));
+        auto siteIdCol = dataRecord.indexOf(QStringLiteral("site_id"));
+        auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
+        auto startDateCol = dataRecord.indexOf(QStringLiteral("start_date"));
+        auto endDateCol = dataRecord.indexOf(QStringLiteral("end_date"));
+        auto enabledCol = dataRecord.indexOf(QStringLiteral("enabled"));
+
+        while (query.next()) {
+            result.append({ query.value(idCol).toInt(),
+                            query.value(siteIdCol).toInt(),
+                            query.value(nameCol).toString(),
+                            query.value(startDateCol).toDate(),
+                            query.value(endDateCol).toDate(),
+                            query.value(enabledCol).toBool() });
+        }
+
+        return result;
+    });
+}
+
 QString PersistenceManagerDBProvider::GetProcessorShortName(int processorId)
 {
     ProcessorDescriptionList listProcDescr = GetProcessorDescriptions();

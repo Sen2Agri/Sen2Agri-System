@@ -40,6 +40,8 @@ public:
     QString GetSiteShortName(int siteId);
     QString GetSiteName(int siteId);
 
+    SeasonList GetSiteSeasons(int siteId);
+
     UnprocessedEventList GetNewEvents();
     void MarkEventProcessingStarted(int eventId);
     void MarkEventProcessingComplete(int eventId);
