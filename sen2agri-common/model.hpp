@@ -3,6 +3,7 @@
 #include <QString>
 #include <QDBusArgument>
 #include <QMetaType>
+#include <QDate>
 #include <QDateTime>
 
 #include <optional.hpp>
@@ -973,3 +974,19 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ProcessorJobDefinitionP
 const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorJobDefinitionParams &job);
 
 //** END for orchestartor API
+
+class Season
+{
+public:
+    int seasonId;
+    int siteId;
+    QString name;
+    QDate startDate;
+    QDate endDate;
+    bool enabled;
+
+    Season();
+    Season(int seasonId, int siteId, QString name, QDate startDate, QDate endDate, bool enabled);
+};
+
+typedef QList<Season> SeasonList;

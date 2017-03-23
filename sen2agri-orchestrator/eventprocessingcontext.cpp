@@ -254,3 +254,8 @@ QString EventProcessingContext::GetSiteName(int siteId)
 {
     return persistenceManager.GetSiteName(siteId);
 }
+
+SeasonList EventProcessingContext::GetSiteSeasons(int siteId)
+{
+    return persistenceManager.GetSiteSeasons(siteId);
+}

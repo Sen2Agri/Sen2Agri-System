@@ -1758,3 +1758,13 @@ const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorJobDefin
 
     return argument;
 }
+
+Season::Season()
+    : seasonId(), siteId(), enabled()
+{
+}
+
+Season::Season(int seasonId, int siteId, QString name, QDate startDate, QDate endDate, bool enabled)
+    : seasonId(seasonId), siteId(siteId), name(move(name)), startDate(move(startDate)), endDate(move(endDate)), enabled(enabled)
+{
+}
