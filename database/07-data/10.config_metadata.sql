@@ -105,6 +105,7 @@ INSERT INTO config_metadata VALUES ('executor.module.path.lai-prosail-simulator'
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-training-data-generator', 'Training data generator', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-inverse-model-learning', 'Inverse model learning', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.rsrcfgfile', 'L3B RSR file configuration for ProsailSimulator', 'file', true, 4);
+INSERT INTO config_metadata VALUES ('processor.l3b.lai.laibandscfgfile', 'Configuration of the bands to be used for LAI', 'file', true, 4);
 INSERT INTO config_metadata VALUES ('archiver.archive_path', 'Archive Path', 'string', false, 7);
 INSERT INTO config_metadata VALUES ('executor.module.path.dimensionality-reduction', 'Dimensionality reduction', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.mean-shift-smoothing', 'Mean shift smoothing', 'file', true, 8);
