@@ -1312,6 +1312,7 @@ std::vector<ScheduledTask> PersistenceManagerDBProvider::GetScheduledTasks()
         auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
         auto processorIdCol = dataRecord.indexOf(QStringLiteral("processor_id"));
         auto siteIdCol = dataRecord.indexOf(QStringLiteral("site_id"));
+        auto seasonIdCol = dataRecord.indexOf(QStringLiteral("season_id"));
         auto processorParamsCol = dataRecord.indexOf(QStringLiteral("processor_params"));
 
         auto repeatTypeCol = dataRecord.indexOf(QStringLiteral("repeat_type"));
@@ -1351,6 +1352,7 @@ std::vector<ScheduledTask> PersistenceManagerDBProvider::GetScheduledTasks()
                 query.value(nameCol).toString(),
                 query.value(processorIdCol).toInt(),
                 query.value(siteIdCol).toInt(),
+                query.value(seasonIdCol).toInt(),
                 query.value(processorParamsCol).toString(),
                 query.value(repeatTypeCol).toInt(),
                 query.value(repeatAfterDaysCol).toInt(),
@@ -1640,6 +1642,7 @@ SeasonList PersistenceManagerDBProvider::GetSiteSeasons(int siteId)
         auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
         auto startDateCol = dataRecord.indexOf(QStringLiteral("start_date"));
         auto endDateCol = dataRecord.indexOf(QStringLiteral("end_date"));
+        auto midDateCol = dataRecord.indexOf(QStringLiteral("mid_date"));
         auto enabledCol = dataRecord.indexOf(QStringLiteral("enabled"));
 
         while (query.next()) {
@@ -1648,6 +1651,7 @@ SeasonList PersistenceManagerDBProvider::GetSiteSeasons(int siteId)
                             query.value(nameCol).toString(),
                             query.value(startDateCol).toDate(),
                             query.value(endDateCol).toDate(),
+                            query.value(midDateCol).toDate(),
                             query.value(enabledCol).toBool() });
         }
 

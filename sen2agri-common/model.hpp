@@ -908,6 +908,7 @@ struct ScheduledTask
                   QString tn,
                   int pi,
                   int si,
+                  int seasonId,
                   QString pp,
                   int rt,
                   int rad,
@@ -924,6 +925,7 @@ struct ScheduledTask
     QString taskName;
     int processorId;
     int siteId;
+    int seasonId;
     QString processorParameters;
 
     int repeatType;       /*once, cyclic, on_date*/
@@ -983,10 +985,11 @@ public:
     QString name;
     QDate startDate;
     QDate endDate;
+    QDate midDate;
     bool enabled;
 
     Season();
-    Season(int seasonId, int siteId, QString name, QDate startDate, QDate endDate, bool enabled);
+    Season(int seasonId, int siteId, QString name, QDate startDate, QDate endDate, QDate midDate, bool enabled);
 };
 
 typedef QList<Season> SeasonList;

@@ -1681,6 +1681,7 @@ ScheduledTask::ScheduledTask(int ti,
                              QString tn,
                              int pi,
                              int si,
+                             int seasonId,
                              QString pp,
                              int rt,
                              int rad,
@@ -1693,6 +1694,7 @@ ScheduledTask::ScheduledTask(int ti,
       taskName(tn),
       processorId(pi),
       siteId(si),
+      seasonId(seasonId),
       processorParameters(pp),
       repeatType(rt),
       repeatAfterDays(rad),
@@ -1764,7 +1766,7 @@ Season::Season()
 {
 }
 
-Season::Season(int seasonId, int siteId, QString name, QDate startDate, QDate endDate, bool enabled)
-    : seasonId(seasonId), siteId(siteId), name(move(name)), startDate(move(startDate)), endDate(move(endDate)), enabled(enabled)
+Season::Season(int seasonId, int siteId, QString name, QDate startDate, QDate endDate, QDate midDate, bool enabled)
+    : seasonId(seasonId), siteId(siteId), name(move(name)), startDate(move(startDate)), endDate(move(endDate)), midDate(move(midDate)), enabled(enabled)
 {
 }
