@@ -4,12 +4,13 @@
 // Submited add new job; insert job in database with id $schedule_id
 if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] == 'Save') {
 	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-		
+
 	$job_name = $_REQUEST ['jobname'];
 	$processorId = $_REQUEST ['processorId'];
-	$site_id = $_REQUEST ['sitename'];
+    $site_id = $_REQUEST ['sitename'];
+    $season_id = $_REQUEST ['seasonId']; // TODO nicu
 	$schedule_type = $_REQUEST ['schedule_add'];
-	
+
 	$startdate="";
 	if ($schedule_type == '0') {
 		$repeatafter = "0";
@@ -27,11 +28,11 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 
 	$pg_date = date ( 'Y-m-d H:i:s', strtotime ( $startdate ) );
 
-	
+
 	$retry_seconds = 60;
 	$priority = 1;
 	$processor_params=null;
-		
+
 	if($processorId == '3'){
 	$processor_params = json_encode ( array (
 			"general_params" => array (
@@ -43,7 +44,8 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 		$res = pg_query_params ( $db, "SELECT sp_insert_scheduled_task($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)", array (
 			$job_name,
 			$processorId,
-			$site_id,
+            $site_id,
+            $season_id,
 			$schedule_type,
 			$repeatafter,
 			$oneverydate,
@@ -58,12 +60,12 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 // Submited edit job; update job with id $schedule_id in database
 if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 'Save') {
 	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-		
+
 	$schedule_id = $_REQUEST ['scheduledID'];
 	$schedule_type = $_REQUEST ['schedule'];
 	$startdate = $_REQUEST ['startdate'];
 	$processorId = $_REQUEST ['processor'];
-	
+
 	$processor_params = null;
 	if($processorId == '3'){
 		$processor_params = json_encode ( array (
@@ -74,7 +76,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 
 
 	$pg_date = date ( 'Y-m-d H:i:s', strtotime ( $startdate ) );
-		
+
 	if ($schedule_type == '0') {
 		$repeatafter = "0";
 		$oneverydate = "0";
@@ -88,7 +90,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 		$oneverydate = $_REQUEST ['oneverydate'];
 		$startdate = $_REQUEST ['startdate'];
 	}
-	
+
 	//update scheduled task
 	$res = pg_query_params ( $db, "SELECT sp_dashboard_update_scheduled_task($1,$2,$3,$4,$5,$6)", array (
 			$schedule_id,
@@ -139,10 +141,10 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 									<table class="table full_width default_panel_style"></table>
 								</div>
 							</div>
-			
+
 						</div>
 					</div>
-					
+
 					<!-- L3A Processor ----------------------------------------------------------------------------------------------------------------------- -->
 					<div id="tab_l3a">
 						<a href="#tab_l3a">L3A Processor</a>
@@ -201,13 +203,13 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 									<?php
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
 										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '2') {
-											
+
 											add_new_scheduled_jobs_layout ( 2 );
 											//echo $_SESSION['proc_id'];
 										}
 									}
 									?>
-										
+
 									<?php update_scheduled_jobs_layout(2);?>
 									</div>
 								</div>
@@ -272,17 +274,17 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 									<div class="panel panel-default panel_scheduled_job">
 										<!-- l3b lai processor_id = 3 -->
 									<?php
-									
+
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
 										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '3') {
-											
+
 											add_new_scheduled_jobs_layout_LAI ( 3 );
 										}
 									}
 									?>
-										
+
 									<?php update_scheduled_jobs_layout_LAI(3);?>
-									
+
 									</div>
 								</div>
 							</div>
@@ -347,17 +349,17 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 									<div class="panel panel-default panel_scheduled_job">
 										<!-- l3e pheno NDVI processor_id = 4 -->
 									<?php
-									
+
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
 										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '4') {
-											
+
 											add_new_scheduled_jobs_layout ( 4 );
 										}
 									}
 									?>
-										
+
 									<?php update_scheduled_jobs_layout(4);?>
-									
+
 									</div>
 								</div>
 							</div>
@@ -428,12 +430,12 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 									<?php
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
 										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '5') {
-											
+
 											add_new_scheduled_jobs_layout ( 5 );
 										}
 									}
 									?>
-										
+
 									<?php update_scheduled_jobs_layout(5);?>
 									</div>
 								</div>
@@ -506,17 +508,17 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 
 										<!-- l4b processor_id = 6 -->
 									<?php
-									
+
 									if (isset ( $_REQUEST ['schedule_add'] ) && isset ( $_REQUEST ['processorId'] )) {
 										if ($_REQUEST ['schedule_add'] == 'Add Job' && $_REQUEST ['processorId'] == '6') {
-											
+
 											add_new_scheduled_jobs_layout ( 6 );
 										}
 									}
 									?>
-										
+
 									<?php update_scheduled_jobs_layout(6);?>
-									
+
 									</div>
 								</div>
 							</div>
@@ -558,7 +560,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 				document.getElementById("div_oneverydate"+param).style.display = "none";
 				document.getElementById("div_repeatafter"+param).style.display = "none";
 				document.getElementById("div_startdate"+param).style.display = "inline-block";
-				
+
 			} else if (selectedValue == "1") {
 				document.getElementById("div_oneverydate"+param).style.display = "none";
 				document.getElementById("div_startdate"+param).style.display = "inline-block";
@@ -606,7 +608,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 	function activateButton(x){
 		document.getElementById("schedule_submit"+x).disabled = false;
 		}
-	
+
 	function checkMin(y){
 		var val = document.getElementById("repeatafter"+y).value;
 		if( val < 1){
@@ -617,7 +619,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 			document.getElementById("schedule_submit"+y).disabled = false;
 		}
 		}
-	
+
 	function setMin(x){
 		var val = document.getElementById("oneverydate"+x).value;
 		if(val<1 ||val>31){
@@ -639,11 +641,11 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 				 dateFormat: "yy-mm-dd",
 				 //minDate: 0
 					  });
-	
+
 			<?php //if (isset ( $_REQUEST ['schedule_saveJob'] )){
 				if(isset( $_SESSION['proc_id'])){
 			?>
-			 
+
 				$("#jobform").validate({
 					rules : {
 						jobname: { required: true,pattern: "[a-zA-Z]{1}[a-zA-Z0-9_]*" },
@@ -667,19 +669,19 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 							url: $(form).attr('action'),
 							type: $(form).attr('method'),
 							data: $(form).serialize(),
-							success: function(response) { 
+							success: function(response) {
 								alert("Job successfully saved.");
 								window.location.href = "dashboard.php";
-						
-								}     
+
+								}
 						});
 					},
 					success : function(label) {
 						label.remove();
 					}
-					});  
+					});
 				<?php	unset($_SESSION['proc_id']);}	?>
-				
+
 		});
 </script>
 <!--end Jquery datepicker -->
