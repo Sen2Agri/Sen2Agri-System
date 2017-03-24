@@ -35,7 +35,7 @@ function select_option() {
 				</div>
 			</div>
 			<!-- End Select Site -->
-			
+
 			<!-------------- Download statistics ---------------->
 			<div class="panel panel-default config for-table">
 				<div class="panel-heading"><h4 class="panel-title"><span>Download statistics</span></h4></div>
@@ -55,7 +55,7 @@ function select_option() {
 					</table>
 				</div>
 			</div>
-			
+
 			<!-------------- Current processing details ---------------->
 			<div class="panel panel-default config for-table">
 				<div class="panel-heading"><h4 class="panel-title"><span>Current downloads</span></h4></div>
@@ -74,7 +74,7 @@ function select_option() {
 					</table>
 				</div>
 			</div>
-			
+
 			<!-------------- Job history ---------------->
 			<div class="panel panel-default config for-table">
 				<div class="panel-heading"><h4 class="panel-title"><span>Jobs history</span></h4></div>
@@ -90,7 +90,7 @@ function select_option() {
 						<ul class="pages"></ul>
 						<div class="gotobox hidden" id="gotobox">
 							<div class="uparrow"></div>
-							<div class="text">Go to page:</div> 
+							<div class="text">Go to page:</div>
 							<input type="text" maxlength="3" name="gotobox-input" id="gotobox-input" value=""/>
 							<a href="javascript:;" class="smbutton-go smbutton-green" onclick='pagingGoTo();'>Go</a>&nbsp;
 						</div>
@@ -104,6 +104,7 @@ function select_option() {
 								<th>Site</th>
 								<th>Status</th>
 								<th>Start type</th>
+								<th>Output</th>
 							</tr>
 						</thead>
 						<tbody id="refresh_jobs">
@@ -119,7 +120,7 @@ function select_option() {
 <script type="text/javascript">
 	var timer1;
 	var timer2;
-	
+
 	function siteInfo() {
 		var id = $('select[name=site_select] option:selected').val();
 		$.ajax({
@@ -133,13 +134,13 @@ function select_option() {
 			}
 		});
 	}
-	
+
 	function siteInfoCurrent() {
 		var id = $('select[name=site_select] option:selected').val();
 		$.ajax({
 			type: "post",
 			url: "getHistoryDownloadsCurrent.php",
-			data:  {'siteID_selected' : id}, 
+			data:  {'siteID_selected' : id},
 			success: function(result) {
 				$("#refresh_downloading").html(result);
 				// Schedule the next request
@@ -148,14 +149,14 @@ function select_option() {
 			}
 		});
 	}
-	
+
 	function siteJobs(page_no) {
 		var id = $('select[name=site_select] option:selected').val();
 		var rows_per_page = $('select[name=rows_per_page] option:selected').val();
 		$.ajax({
 			type: "post",
 			url:  "getHistoryJobs.php",
-			data:  { 'siteID_selected': id, 'page': page_no, 'rows_per_page': rows_per_page }, 
+			data:  { 'siteID_selected': id, 'page': page_no, 'rows_per_page': rows_per_page },
 			success: function(result) {
 				// refresh pagination: set count & redraw
 				var count_rows = result.substring(4, result.indexOf("-"+"->"));
@@ -165,7 +166,7 @@ function select_option() {
 			}
 		});
 	}
-	
+
 	$( document ).ready(function() {
 		siteInfo();
 		siteInfoCurrent();
