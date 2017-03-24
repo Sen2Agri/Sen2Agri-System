@@ -112,6 +112,7 @@ public:
     virtual int GetRelativeBandIndex(unsigned int nAbsBandIdx) { return nAbsBandIdx; }
 
     virtual MetadataHelper::SingleBandShortImageType::Pointer GetMasksImage(MasksFlagType nMaskFlags, bool binarizeResult);
+    virtual int GetResolutionForAbsoluteBandIndex(int nAbsBandIdx);
 
 protected:
     virtual bool DoLoadMetadata();

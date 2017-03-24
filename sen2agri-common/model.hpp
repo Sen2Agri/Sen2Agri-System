@@ -3,6 +3,7 @@
 #include <QString>
 #include <QDBusArgument>
 #include <QMetaType>
+#include <QDate>
 #include <QDateTime>
 
 #include <optional.hpp>
@@ -236,6 +237,7 @@ public:
     int siteId;
     QString fullPath;
     QDateTime created;
+    QDateTime inserted;
 
     Product();
     Product(int productId,
@@ -243,7 +245,8 @@ public:
             ProductType productTypeId,
             int siteId,
             QString fullPath,
-            QDateTime created);
+            QDateTime created,
+            QDateTime inserted);
 
     static void registerMetaTypes();
 };
@@ -971,3 +974,19 @@ QDBusArgument &operator<<(QDBusArgument &argument, const ProcessorJobDefinitionP
 const QDBusArgument &operator>>(const QDBusArgument &argument, ProcessorJobDefinitionParams &job);
 
 //** END for orchestartor API
+
+class Season
+{
+public:
+    int seasonId;
+    int siteId;
+    QString name;
+    QDate startDate;
+    QDate endDate;
+    bool enabled;
+
+    Season();
+    Season(int seasonId, int siteId, QString name, QDate startDate, QDate endDate, bool enabled);
+};
+
+typedef QList<Season> SeasonList;

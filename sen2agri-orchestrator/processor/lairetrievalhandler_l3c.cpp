@@ -1325,8 +1325,7 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3C::GetProcessingDefinitionImpl
         }
     }
 
-    ProductList productList = ctx.GetProducts(siteId, (int)ProductType::L3BProductTypeId, startDate, endDate);
-    //params.productList = productList; // NOT USED ANYMORE - USING ONLY S2 products
+    ProductList productList = ctx.GetProductsByInsertedTime(siteId, (int)ProductType::L3BProductTypeId, startDate, endDate);
     // we consider only Sentinel 2 products in generating final L3C/L3D products
     for(const Product &prd: productList) {
         const QString &l2aPrdHdrPath = ProcessorHandlerHelper::GetSourceL2AFromHighLevelProductIppFile(prd.fullPath);

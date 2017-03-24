@@ -55,7 +55,8 @@ XElement Format(const AuxList &AuxListContent)
 {
     XElement AuxListEl("Aux_List", XAttribute("productLevel", AuxListContent.ProductLevel),
                       XElement("aux",
-                              XElement("GIPP", AuxListContent.GIPP)));
+                              XElement("GIPP", AuxListContent.GIPP),
+                              XElement("ISD", AuxListContent.ISD)));
 
     return AuxListEl;
 }
@@ -204,6 +205,18 @@ XElement Format(const std::vector<GIPPInfo> &GIPPInfoList)
     return addEl;
 }
 
+XElement Format(const std::vector<ISDInfo> &ISDInfoList)
+{
+    XElement addEl("ISD_List");
+
+    for (const auto &ISDInfoEl : ISDInfoList) {
+        addEl.Append(XElement("ISD_FILENAME",
+                              XText(ISDInfoEl.ISDFileName)));
+    }
+
+    return addEl;
+}
+
 XElement Format(const TechnicalQualityAssessmentMetadata &TechnicalQualityAss)
 {
 
@@ -268,7 +281,8 @@ XDocument ProductMetadataWriter::CreateProductMetadataXml(const ProductFileMetad
     root.Append(
         XElement(
            "Auxiliary_Data_Info",
-            Format(metadata.AuxiliaryDataInfo.GIPPList)));
+            Format(metadata.AuxiliaryDataInfo.GIPPList),
+            Format(metadata.AuxiliaryDataInfo.ISDList)));
 
     root.Append(
         XElement(

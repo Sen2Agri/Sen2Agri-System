@@ -42,6 +42,7 @@
 #include "otbBVUtil.h"
 #include "otbProSailSimulatorFunctor.h"
 #include "MetadataHelperFactory.h"
+#include "CommonFunctions.h"
 
 namespace otb
 {
@@ -231,41 +232,7 @@ private:
 
         if(HasValue("rsrcfg")) {
             std::string rsrCfgFile = GetParameterString("rsrcfg");
-            std::ifstream  data(rsrCfgFile);
-            if(data.is_open()) {
-                otbAppLogINFO("Using rsrcfg file: " << rsrCfgFile << "\n");
-                productMissionName = pHelper->GetMissionName();
-                productInstrumentName = pHelper->GetInstrumentName();
-                otbAppLogINFO("Product mission is " << productMissionName << "\n");
-                otbAppLogINFO("Product instrument is " << productInstrumentName << "\n");
-                std::string line;
-                while(std::getline(data,line)) {
-                    otbAppLogINFO("Checking rsrcfg line: " << line << "\n");
-                    size_t lastindex = line.find_last_of("=");
-                    if((lastindex != std::string::npos) && (lastindex != (line.length()-1))) {
-                        std::string keyStr = line.substr(0, lastindex);
-                        std::string cfgRsrFileName = line.substr(lastindex+1);
-                        std::string missionName = keyStr;   // by default, mission name is the key
-                        std::string sensorInstrument;
-
-                        size_t diezIndex = keyStr.find_last_of("#");
-                        // Check if actually we have MISSION#INSTRUMENT
-                        if((diezIndex != std::string::npos) && (diezIndex != (keyStr.length()-1))) {
-                            missionName = keyStr.substr(0, diezIndex);
-                            sensorInstrument = keyStr.substr(diezIndex+1);
-                        }
-
-                        if((productMissionName == missionName) &&
-                                ((sensorInstrument == "") || (productInstrumentName == sensorInstrument))) {
-                            otbAppLogINFO("Found configured rsr file!"<< "\n");
-                            rsrFileName = cfgRsrFileName;
-                            break;
-                        }
-                    }
-                }
-            } else {
-                itkGenericExceptionMacro(<< "Could not open RSR configuration file " << rsrCfgFile);
-            }
+            rsrFileName = getValueFromMissionsCfgFile(rsrCfgFile, pHelper->GetMissionName(), pHelper->GetInstrumentName());
         }
     }
     if(std::isnan(m_SolarZenith) || std::isnan(m_SensorZenith) || std::isnan(m_Azimuth)) {
@@ -278,14 +245,6 @@ private:
         itkGenericExceptionMacro(<< "Please provide the rsrcfg or rsrfile. "
                                     "If you provided rsrcfg file, be sure that you provided the xml parameter "
                                     "and have configured the mission " << productMissionName << " and instrument " << productInstrumentName);
-    }
-
-    boost::filesystem::path rsrFilePath(rsrFileName);
-    if (rsrFilePath.is_relative()) {
-        boost::filesystem::path rsrCfgPath(GetParameterString("rsrcfg"));
-        rsrCfgPath.remove_filename();
-        rsrFilePath = rsrCfgPath / rsrFilePath;
-        rsrFileName = rsrFilePath.string();
     }
 
     //The first 2 columns of the rsr file correspond to the wavelenght and the solar radiation

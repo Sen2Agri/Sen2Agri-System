@@ -28,6 +28,7 @@ Spot4MetadataHelper::Spot4MetadataHelper()
     m_bHasGlobalMeanAngles = true;
     m_bHasBandMeanAngles = false;
     m_bHasDetailedAngles = false;
+    m_vectResolutions.push_back(20);
 }
 
 std::string Spot4MetadataHelper::GetBandName(unsigned int nIdx, bool bRelativeIdx)
@@ -38,6 +39,12 @@ std::string Spot4MetadataHelper::GetBandName(unsigned int nIdx, bool bRelativeId
         itkExceptionMacro("Invalid band index requested: " << nIdx << ". Maximum is " << m_nBandsNoForCurRes);
     }
     return m_metadata->Radiometry.Bands[nIdx];
+}
+
+int Spot4MetadataHelper::GetResolutionForAbsoluteBandIndex(int nAbsBandIdx)
+{
+    UNUSED(nAbsBandIdx);
+    return m_vectResolutions[0];
 }
 
 bool Spot4MetadataHelper::DoLoadMetadata()

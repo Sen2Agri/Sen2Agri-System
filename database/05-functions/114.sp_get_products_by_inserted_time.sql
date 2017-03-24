@@ -1,14 +1,14 @@
--- Function: sp_get_products(smallint, smallint, timestamp with time zone, timestamp with time zone)
+-- Function: sp_get_products_by_inserted_time(smallint, smallint, timestamp with time zone, timestamp with time zone)
 
--- DROP FUNCTION sp_get_products(smallint, smallint, timestamp with time zone, timestamp with time zone);
+-- DROP FUNCTION sp_get_products_by_inserted_time(smallint, smallint, timestamp with time zone, timestamp with time zone);
 
-CREATE OR REPLACE FUNCTION sp_get_products(
+CREATE OR REPLACE FUNCTION sp_get_products_by_inserted_time(
     IN site_id smallint DEFAULT NULL::smallint,
     IN product_type_id smallint DEFAULT NULL::smallint,
     IN start_time timestamp with time zone DEFAULT NULL::timestamp with time zone,
     IN end_time timestamp with time zone DEFAULT NULL::timestamp with time zone)
   RETURNS TABLE("ProductId" integer, "Product" character varying, "ProductType" character varying, "ProductTypeId" smallint, "Processor" character varying, 
-                "ProcessorId" smallint, "Site" character varying, "SiteId" smallint, full_path character varying,
+                "ProcessorId" smallint, "Site" character varying, "SiteId" smallint, full_path character varying, 
                 quicklook_image character varying, footprint polygon, created_timestamp timestamp with time zone, inserted_timestamp timestamp with time zone) AS
 $BODY$
 DECLARE q text;
@@ -51,11 +51,11 @@ BEGIN
     END IF;
     IF $3 IS NOT NULL THEN
         q := q || $sql$
-            AND P.created_timestamp >= $3$sql$;
+            AND P.inserted_timestamp >= $3$sql$;
     END IF;
     IF $4 IS NOT NULL THEN
         q := q || $sql$
-            AND P.created_timestamp <= $4$sql$;
+            AND P.inserted_timestamp <= $4$sql$;
     END IF;
     q := q || $SQL$
         ORDER BY S.row, PT.row, P.name;$SQL$;

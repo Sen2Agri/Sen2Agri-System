@@ -12,6 +12,11 @@ ProductList SchedulingContext::GetProducts(int siteId, int productTypeId, const 
     return persistenceManager.GetProducts(siteId, productTypeId, startDate, endDate);
 }
 
+ProductList SchedulingContext::GetProductsByInsertedTime(int siteId, int productTypeId, const QDateTime &startDate, const QDateTime &endDate)
+{
+    return persistenceManager.GetProductsByInsertedTime(siteId, productTypeId, startDate, endDate);
+}
+
 ConfigurationParameterValueMap SchedulingContext::GetConfigurationParameters(const QString &prefix, int siteId,
                                                                              const ConfigurationParameterValueMap &overrideValues)
 {
@@ -68,4 +73,7 @@ QString SchedulingContext::GetSiteName(int siteId)
     return persistenceManager.GetSiteName(siteId);
 }
 
-
+SeasonList SchedulingContext::GetSiteSeasons(int siteId)
+{
+    return persistenceManager.GetSiteSeasons(siteId);
+}
