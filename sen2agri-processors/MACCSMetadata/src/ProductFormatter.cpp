@@ -74,6 +74,7 @@
 #define METADATA_CATEG "MTD"
 //#define MASK_CATEG "MSK"
 #define PARAMETER_CATEG "IPP"
+#define INSITU_CATEG "ISD"
 #define LUT_CATEG       "LUT"
 #define QUALITY_CATEG "QLT"
 #define NO_DATA_VALUE "-10000"
@@ -338,6 +339,9 @@ private:
         AddParameter(ParameterType_InputFilenameList, "gipp", "The GIPP files");
         MandatoryOff("gipp");
 
+        AddParameter(ParameterType_InputFilenameList, "isd", "In-situ data");
+        MandatoryOff("isd");
+
         AddParameter(ParameterType_String, "lut", "The LUT file");
         MandatoryOff("lut");
 
@@ -391,6 +395,9 @@ private:
 
       // Get GIPP file list
       m_GIPPList = this->GetParameterStringList("gipp");
+
+      // Get ISD file list
+      m_ISDList = this->GetParameterStringList("isd");
 
       //read .xml or .HDR files to fill the metadata structures
       // Get the list of input files
@@ -562,6 +569,7 @@ private:
               TransferAndRenameLUTFile(GetParameterString("lutqgis"));
           }
           TransferAndRenameGIPPFiles();          
+          TransferAndRenameISDFiles();
           const std::string strProductFileName = BuildFileName(METADATA_CATEG, "", ".xml");
           generateProductMetadataFile(strMainFolderFullPath + "/" + strProductFileName);
           bool bAgSuccess = ExecuteAgregateTiles(strMainFolderFullPath, this->GetParameterInt("aggregatescale"));
@@ -1249,11 +1257,19 @@ private:
 
       if(m_GIPPList.empty())
       {
-          m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AuxListContent.GIPP = " NO";
+          m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AuxListContent.GIPP = "NO";
       }
       else
       {
-          m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AuxListContent.GIPP = " YES";
+          m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AuxListContent.GIPP = "YES";
+      }
+      if(m_ISDList.empty())
+      {
+          m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AuxListContent.ISD = "NO";
+      }
+      else
+      {
+          m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AuxListContent.ISD = "YES";
       }
       m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.ProductFormat = "SAFE";
       m_productMetadata.GeneralInfo.ProductInfo.QueryOptions.AggregationFlag = true;
@@ -1549,6 +1565,36 @@ private:
     }
   }
 
+  void TransferAndRenameISDFiles()
+  {
+      std::string strNewISDFileName;
+      ISDInfo ISDEl;
+
+
+      for (const auto &isdFileEl : m_ISDList) {
+
+          strNewISDFileName = ReplaceString(strNewISDFileName, MAIN_FOLDER_CATEG, INSITU_CATEG);
+          boost::filesystem::path p(isdFileEl);
+          if(m_GIPPList.size() > 1)
+          {
+              strNewISDFileName = BuildFileName(INSITU_CATEG, "", "_" + p.stem().string() + p.extension().string());
+          }
+          else
+          {
+              strNewISDFileName = BuildFileName(INSITU_CATEG, "", p.extension().string());
+          }
+
+          //std::cout << "strNewGIPPFileName = " << strNewGIPPFileName << std::endl;
+
+          ISDEl.ISDFileName = strNewISDFileName;
+          m_productMetadata.AuxiliaryDataInfo.ISDList.emplace_back(ISDEl);
+
+           //std::cout << "destGIPP = " << m_strDestRoot + "/" + m_strProductDirectoryName + "/" + AUX_DATA_FOLDER_NAME + "/" + strNewGIPPFileName << std::endl;
+
+          //files are copied to AUX_DATA
+          CopyFile(m_strDestRoot + "/" + m_strProductDirectoryName + "/" + AUX_DATA_FOLDER_NAME + "/" + strNewISDFileName, isdFileEl);
+    }
+  }
   void TransferAndRenameQualityFiles(const tileInfo &tileInfoEl)
   {
       std::string strNewQualityFileName;
@@ -1980,6 +2026,7 @@ private:
   std::string m_strSiteId;
   std::vector<previewInfo> m_previewList;
   std::vector<std::string> m_GIPPList;
+  std::vector<std::string> m_ISDList;
   std::vector<qualityInfo> m_qualityList;
   std::vector<tileInfo> m_tileIDList;
 

@@ -396,7 +396,9 @@ void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath
         executionInfosFile << "<?xml version=\"1.0\" ?>" << std::endl;
         executionInfosFile << "<metadata>" << std::endl;
         executionInfosFile << "  <General>" << std::endl;
-        executionInfosFile << "    <bands_mapping_file>" << cfg.bandsMapping.toStdString()
+        int resolution = 10;
+        QString bandsMapping = DeductBandsMappingFile(listProducts, cfg.bandsMapping, resolution);
+        executionInfosFile << "    <bands_mapping_file>" << bandsMapping.toStdString()
                            << "</bands_mapping_file>" << std::endl;
         executionInfosFile << "    <scattering_coefficients_10M_file>" << cfg.scatCoeffs10M.toStdString()
                            << "</scattering_coefficients_10M_file>" << std::endl;

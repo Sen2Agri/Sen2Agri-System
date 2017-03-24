@@ -862,6 +862,7 @@ ProductList PersistenceManagerDBProvider::GetProducts(int siteId,
         auto siteIdCol = dataRecord.indexOf(QStringLiteral("SiteId"));
         auto fullPathCol = dataRecord.indexOf(QStringLiteral("full_path"));
         auto creationDateCol = dataRecord.indexOf(QStringLiteral("created_timestamp"));
+        auto insertionDateCol = dataRecord.indexOf(QStringLiteral("inserted_timestamp"));
 
         ProductList result;
         while (query.next()) {
@@ -869,12 +870,60 @@ ProductList PersistenceManagerDBProvider::GetProducts(int siteId,
                             static_cast<ProductType>(query.value(productTypeIdCol).toInt()),
                             query.value(siteIdCol).toInt(), query.value(fullPathCol).toString(),
                             QDateTime().fromString(query.value(creationDateCol).toString(),
+                                                   Qt::ISODate),
+                            QDateTime().fromString(query.value(insertionDateCol).toString(),
+                                                   Qt::ISODate)});
+        }
+
+        return result;
+    });
+}
+
+ProductList PersistenceManagerDBProvider::GetProductsByInsertedTime(int siteId,
+                                                      int productTypeId,
+                                                      const QDateTime &startDate,
+                                                      const QDateTime &endDate)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        auto query =
+            db.prepareQuery(QStringLiteral("select * from sp_get_products_by_inserted_time("
+                                           ":siteId, :productTypeId, :startDate, :endDate)"));
+        query.bindValue(QStringLiteral(":siteId"), siteId);
+        query.bindValue(QStringLiteral(":productTypeId"), productTypeId);
+        query.bindValue(QStringLiteral(":startDate"), startDate);
+        query.bindValue(QStringLiteral(":endDate"), endDate);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto productIdCol = dataRecord.indexOf(QStringLiteral("ProductId"));
+        auto processorIdCol = dataRecord.indexOf(QStringLiteral("ProcessorId"));
+        auto productTypeIdCol = dataRecord.indexOf(QStringLiteral("ProductTypeId"));
+        auto siteIdCol = dataRecord.indexOf(QStringLiteral("SiteId"));
+        auto fullPathCol = dataRecord.indexOf(QStringLiteral("full_path"));
+        auto creationDateCol = dataRecord.indexOf(QStringLiteral("created_timestamp"));
+        auto insertionDateCol = dataRecord.indexOf(QStringLiteral("inserted_timestamp"));
+
+        ProductList result;
+        while (query.next()) {
+            result.append({ query.value(productIdCol).toInt(), query.value(processorIdCol).toInt(),
+                            static_cast<ProductType>(query.value(productTypeIdCol).toInt()),
+                            query.value(siteIdCol).toInt(), query.value(fullPathCol).toString(),
+                            QDateTime().fromString(query.value(creationDateCol).toString(),
+                                                   Qt::ISODate),
+                            QDateTime().fromString(query.value(insertionDateCol).toString(),
                                                    Qt::ISODate) });
         }
 
         return result;
     });
 }
+
 
 Product PersistenceManagerDBProvider::GetProduct(int siteId, const QString &productName)
 {
@@ -898,6 +947,7 @@ Product PersistenceManagerDBProvider::GetProduct(int siteId, const QString &prod
             auto siteIdCol = dataRecord.indexOf(QStringLiteral("site_id"));
             auto fullPathCol = dataRecord.indexOf(QStringLiteral("full_path"));
             auto creationDateCol = dataRecord.indexOf(QStringLiteral("created_timestamp"));
+            auto insertionDateCol = dataRecord.indexOf(QStringLiteral("inserted_timestamp"));
 
             Product result;
             while (query.next()) {
@@ -905,6 +955,8 @@ Product PersistenceManagerDBProvider::GetProduct(int siteId, const QString &prod
                            static_cast<ProductType>(query.value(productTypeIdCol).toInt()),
                            query.value(siteIdCol).toInt(), query.value(fullPathCol).toString(),
                            QDateTime().fromString(query.value(creationDateCol).toString(),
+                                                  Qt::ISODate),
+                           QDateTime().fromString(query.value(insertionDateCol).toString(),
                                                   Qt::ISODate) };
             }
 
@@ -1563,6 +1615,42 @@ SiteList PersistenceManagerDBProvider::GetSiteDescriptions()
             result.append({ query.value(idCol).toInt(), query.value(nameCol).toString(),
                             query.value(shortNameCol).toString() });
         }
+        return result;
+    });
+}
+
+SeasonList PersistenceManagerDBProvider::GetSiteSeasons(int siteId)
+{
+    auto db = getDatabase();
+
+    return provider.handleTransactionRetry(__func__, [&] {
+        SeasonList result;
+
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_seasons(:siteId)"));
+        query.bindValue(QStringLiteral("siteId"), siteId);
+
+        query.setForwardOnly(true);
+        if (!query.exec()) {
+            throw_query_error(db, query);
+        }
+
+        auto dataRecord = query.record();
+        auto idCol = dataRecord.indexOf(QStringLiteral("id"));
+        auto siteIdCol = dataRecord.indexOf(QStringLiteral("site_id"));
+        auto nameCol = dataRecord.indexOf(QStringLiteral("name"));
+        auto startDateCol = dataRecord.indexOf(QStringLiteral("start_date"));
+        auto endDateCol = dataRecord.indexOf(QStringLiteral("end_date"));
+        auto enabledCol = dataRecord.indexOf(QStringLiteral("enabled"));
+
+        while (query.next()) {
+            result.append({ query.value(idCol).toInt(),
+                            query.value(siteIdCol).toInt(),
+                            query.value(nameCol).toString(),
+                            query.value(startDateCol).toDate(),
+                            query.value(endDateCol).toDate(),
+                            query.value(enabledCol).toBool() });
+        }
+
         return result;
     });
 }

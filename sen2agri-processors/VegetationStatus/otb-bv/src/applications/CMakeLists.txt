@@ -40,12 +40,22 @@ otb_create_application(
   NAME           TrainingDataGenerator
   SOURCES        otbTrainingDataGenerator.cpp
   LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
-  
+
+otb_create_application(
+  NAME           TrainingDataGeneratorNew
+  SOURCES        otbTrainingDataGeneratorNew.cpp CommonFunctions.h
+  LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
+
 otb_create_application(
   NAME           NdviRviExtraction2
   SOURCES        otbNdviRviExtraction2.cpp
   LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
-  
+
+otb_create_application(
+  NAME           NdviRviExtractionNew
+  SOURCES        otbNdviRviExtractionNew.cpp CommonFunctions.h
+  LINK_LIBRARIES MACCSMetadata MetadataHelper ${OTB_LIBRARIES})
+
 otb_create_application(
   NAME           TimeSeriesBuilder
   SOURCES        otbTimeSeriesBuilder.cpp
@@ -76,7 +86,9 @@ install(TARGETS otbapp_BVInversion DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_BVImageInversion DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_ProfileReprocessing DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_TrainingDataGenerator DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_TrainingDataGeneratorNew DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_NdviRviExtraction2 DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_NdviRviExtractionNew DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_TimeSeriesBuilder DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_GetLaiRetrievalModel DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_ReprocessedProfileSplitter2 DESTINATION usr/lib/otb/applications/)

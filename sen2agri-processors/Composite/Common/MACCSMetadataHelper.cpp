@@ -63,6 +63,23 @@ int MACCSMetadataHelper::GetRelativeBandIndex(unsigned int nAbsBandIdx)
     return getBandIndex(m_specificImgMetadata->ImageInformation.Bands, bandName);
 }
 
+int MACCSMetadataHelper::GetResolutionForAbsoluteBandIndex(int nAbsBandIdx)
+{
+    if(m_missionType == LANDSAT) {
+        return m_vectResolutions[0];
+    }
+    // In the case of S2 we need to compute the relative index
+    int bandIdx = 1;
+    for(const MACCSBandResolution& maccsBandResolution: m_metadata->ProductInformation.BandResolutions) {
+        if (bandIdx == nAbsBandIdx) {
+            return std::stoi(maccsBandResolution.Resolution);
+        }
+        bandIdx++;
+    }
+    itkExceptionMacro("Invalid absolute band index requested: " << nAbsBandIdx);
+
+}
+
 float MACCSMetadataHelper::GetAotQuantificationValue()
 {
     if(!m_specificAotMetadata) {
@@ -140,6 +157,8 @@ void MACCSMetadataHelper::UpdateValuesForLandsat()
     m_missionType = LANDSAT;
     m_nTotalBandsNo = m_metadata->ImageInformation.Bands.size();
     m_nBandsNoForCurRes = m_nTotalBandsNo;
+    // Add the resolution of 30 m
+    m_vectResolutions.push_back(30);
     // we have the same values for relative and absolute bands indexes as we have only one raster
     m_nAbsRedBandIndex = m_nRelRedBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B4");
     m_nAbsBlueBandIndex = m_nRelBlueBandIndex = getBandIndex(m_metadata->ImageInformation.Bands, "B2");
@@ -171,6 +190,10 @@ void MACCSMetadataHelper::UpdateValuesForSentinel()
     if(m_nResolution != 10 && m_nResolution != 20) {
         itkExceptionMacro("Accepted resolutions for Sentinel mission are 10 or 20 only!");
     }
+    // Add the resolution of 10 and 20m but do not add 60m resolution as it is not supported
+    m_vectResolutions.push_back(10);
+    m_vectResolutions.push_back(20);
+
     m_missionType = S2;
     m_nTotalBandsNo = 10;
     m_nBandsNoForCurRes = ((m_nResolution == 10) ? 4 : 6);

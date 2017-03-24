@@ -758,7 +758,6 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
     QDateTime startDate = seasonStartDate;
     QDateTime endDate = qScheduledDate;
 
-
     int productionInterval = mapCfg["processor.l3b.production_interval"].value.toInt();
     startDate = endDate.addDays(-productionInterval);
     // Use only the products after the configured start season date
@@ -766,7 +765,9 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
         startDate = seasonStartDate;
     }
 
-    params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
+    params.productList = ctx.GetProductsByInsertedTime(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
+    // TODO: Maybe we should perform also a filtering by the creation date, to be inside the season to avoid creation for the
+    // products that are outside the season
     // Normally, we need at least 1 product available in order to be able to create a L3B product
     // but if we do not return here, the schedule block waiting for products (that might never happen)
     bool waitForAvailProcInputs = (mapCfg["processor.l3b.sched_wait_proc_inputs"].value.toInt() != 0);
