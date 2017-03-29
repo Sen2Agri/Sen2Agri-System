@@ -4,6 +4,7 @@
   name character varying NOT NULL,
   processor_id smallint NOT NULL,
   site_id smallint NOT NULL,
+  season_id smallint not null,
   processor_params character varying,
 
   repeat_type smallint,
