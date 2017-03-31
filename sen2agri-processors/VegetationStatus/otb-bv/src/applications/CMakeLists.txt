@@ -20,6 +20,10 @@ OTB_CREATE_APPLICATION(NAME           ProSailSimulator
   SOURCES        otbProSailSimulator.cxx
   LINK_LIBRARIES MACCSMetadata;MetadataHelper;${OTB_LIBRARIES};OTBBVUtil)
 
+OTB_CREATE_APPLICATION(NAME           ProSailSimulatorNew
+  SOURCES        otbProSailSimulatorNew.cxx
+  LINK_LIBRARIES MACCSMetadata;MetadataHelper;${OTB_LIBRARIES};OTBBVUtil)
+
 OTB_CREATE_APPLICATION(NAME           InverseModelLearning
   SOURCES        otbInverseModelLearning.cxx
   LINK_LIBRARIES MACCSMetadata;MetadataHelper;${OTB_LIBRARIES};OTBBVUtil;gsl;gslcblas)
@@ -81,6 +85,7 @@ target_link_libraries(testSimus ${OTB_LIBRARIES} OTBBVUtil gsl gslcblas)
 
 install(TARGETS otbapp_BVInputVariableGeneration DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_ProSailSimulator DESTINATION usr/lib/otb/applications/)
+install(TARGETS otbapp_ProSailSimulatorNew DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_InverseModelLearning DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_BVInversion DESTINATION usr/lib/otb/applications/)
 install(TARGETS otbapp_BVImageInversion DESTINATION usr/lib/otb/applications/)

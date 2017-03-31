@@ -26,6 +26,7 @@ namespace otb
         std::vector<int> bandsIdxs;
         bool bUseNdvi;
         bool bUseRvi;
+        std::vector<int> rsrColumnFilterIdxs;
     } LAIBandsConfigInfos;
 
     std::vector<std::string> split(std::string str, char delimiter) {
@@ -44,15 +45,17 @@ namespace otb
     {
       std::ifstream bandCfgFile;
       bool bHasBandsKey = false;
-      LAIBandsConfigInfos infos = {{}, false, false};
+      LAIBandsConfigInfos infos = {{}, false, false, {}};
       try {
           bandCfgFile.open(fileName.c_str());
           std::string cfgLine;
           while ( std::getline(bandCfgFile, cfgLine))
           {
-              // skip empty lines:
-              if (cfgLine.empty())
+              boost::trim(cfgLine);
+              // skip empty or comment lines
+              if (cfgLine.empty() || cfgLine[0] == '#') {
                   continue;
+              }
               std::vector<std::string> keyValVect = split(cfgLine, '=');
               if (keyValVect.size() == 2) {
                   std::string key = keyValVect[0];
@@ -82,6 +85,20 @@ namespace otb
                       if (boost::iequals(value, "true") || boost::iequals(value, "yes") || (value == "1")) {
                           infos.bUseRvi = true;
                       }
+                  } else if (key == "RSR_COLS_FILTER") {
+                      std::vector<std::string> rsrColsIdxsVect = split(value, ',');
+                      for (size_t i = 0; i < rsrColsIdxsVect.size(); i++) {
+                          try {
+                              int nValIdx = std::stoi(rsrColsIdxsVect[i]);
+                              if(std::find(infos.rsrColumnFilterIdxs.begin(), infos.rsrColumnFilterIdxs.end(), nValIdx) != infos.rsrColumnFilterIdxs.end()) {
+                                  std::cout << "WARNING: RSR_COLS_FILTER contains twice the value " << nValIdx << std::endl;
+                              } else {
+                                  infos.rsrColumnFilterIdxs.push_back(nValIdx);
+                              }
+                          } catch (...) {
+                              std::cout << "WARNING: Invalid band index found in RSR_COLS_FILTER key! Ignored!" << std::endl;
+                          }
+                      }
                   }
               }
           }
@@ -92,14 +109,33 @@ namespace otb
       // if LAI_BANDS is missing or file completely missing/not loaded, then initialize the bands with the default values
       // The bands will not be initialized if explicitly the key is empty
       if (!bHasBandsKey) {
-          //The blue band (B2) will not be used due to residual atmospheric eects. B8 will not be used because of its
+          //The blue band (B2) will not be used due to residual atmospheric efects. B8 will not be used because of its
           //overlap with B7 anb B8a. Therefore, B3, B4, B5, B6, B7, B8a, B11 and B12 will be used.
           // B8A has actually the index 9, B11->index 12 and B12 -> Index 13
+          std::cout << "No RSR columns specified. Using default ones ..." << std::endl;
           static const int arr[] = {3, 4, 5, 6, 7, 9, 12, 13};
           infos.bandsIdxs = std::vector<int> (arr, arr + sizeof(arr) / sizeof(arr[0]) );
       }
       // also sort the array of bands
       std::sort (infos.bandsIdxs.begin(), infos.bandsIdxs.end());
+      std::sort (infos.rsrColumnFilterIdxs.begin(), infos.rsrColumnFilterIdxs.end());
+
+      // print the indexes
+      std::cout << "======================" << std::endl;
+      std::cout << "Add NDVI:" << infos.bUseNdvi << std::endl;
+      std::cout << "Add RVI:" << infos.bUseRvi << std::endl;
+      std::cout << "Loaded bands indexes:" << std::endl;
+      for(size_t i = 0; i < infos.bandsIdxs.size(); i++) {
+          std::cout << " " << infos.bandsIdxs[i] << std::endl;
+      }
+      std::cout << " " << std::endl;
+      std::cout << "Using RSR bands indexes:" << std::endl;
+      for(size_t i = 0; i < infos.rsrColumnFilterIdxs.size(); i++) {
+          std::cout << " " << infos.rsrColumnFilterIdxs[i] << std::endl;
+      }
+      std::cout << " " << std::endl;
+      std::cout << "======================" << std::endl;
+
       return infos;
     }
 
@@ -113,6 +149,11 @@ namespace otb
             std::cout << "Product instrument is " << productInstrumentName << std::endl;
             std::string line;
             while(std::getline(data,line)) {
+                boost::trim(line);
+                // skip empty or comment lines
+                if (line.empty() || line[0] == '#') {
+                    continue;
+                }
                 std::cout << "Checking line: " << line << std::endl;
                 size_t lastindex = line.find_last_of("=");
                 if((lastindex != std::string::npos) && (lastindex != (line.length()-1))) {

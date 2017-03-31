@@ -161,6 +161,9 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsToGenModel(std::map<QString, QString
     const auto &modelsFolder = configParameters["processor.l3b.lai.modelsfolder"];
     const auto &rsrCfgFile = configParameters["processor.l3b.lai.rsrcfgfile"];
     const auto &globalSampleFile = configParameters["processor.l3b.lai.global_bv_samples_file"];
+    bool useLaiBandsCfg = ((configParameters["processor.l3b.lai.use_lai_bands_cfg"]).toInt() != 0);
+    const auto &laiCfgFile = configParameters["processor.l3b.lai.laibandscfgfile"];
+
     // in allTasksList we might have tasks from other products. We start from the first task of the current product
     int curIdx = tasksStartIdx;
     for(int i = 0; i<listPrdTiles.size(); i++) {
@@ -180,20 +183,32 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsToGenModel(std::map<QString, QString
             const auto & modelFile = inverseModelLearningTask.GetFilePath("out_model.txt");
             const auto & errEstModelFile = inverseModelLearningTask.GetFilePath("out_err_est_model.txt");
 
-
-            QStringList BVInputVariableGenerationArgs = GetBVInputVariableGenerationArgs(configParameters, generatedSampleFile);
+            const QStringList &BVInputVariableGenerationArgs = GetBVInputVariableGenerationArgs(configParameters, generatedSampleFile);
             QString bvSamplesFile = generatedSampleFile;
             // if configured a global samples file, then use it instead of the current generated one
             if(globalSampleFile != "") {
                 bvSamplesFile = globalSampleFile;
             }
-            QStringList ProSailSimulatorArgs = GetProSailSimulatorArgs(curXml, bvSamplesFile, rsrCfgFile, simuReflsFile, anglesFile, configParameters);
-            QStringList TrainingDataGeneratorArgs = GetTrainingDataGeneratorArgs(curXml, bvSamplesFile, simuReflsFile, trainingFile);
-            QStringList InverseModelLearningArgs = GetInverseModelLearningArgs(trainingFile, curXml, modelFile, errEstModelFile, modelsFolder, configParameters);
-
+            const QStringList &InverseModelLearningArgs = GetInverseModelLearningArgs(trainingFile, curXml, modelFile, errEstModelFile, modelsFolder, configParameters);
             steps.append(bvInputVariableGenerationTask.CreateStep("BVInputVariableGeneration", BVInputVariableGenerationArgs));
-            steps.append(prosailSimulatorTask.CreateStep("ProSailSimulator", ProSailSimulatorArgs));
-            steps.append(trainingDataGeneratorTask.CreateStep("TrainingDataGenerator", TrainingDataGeneratorArgs));
+
+            // Use the new configurable version or the old one
+            if (useLaiBandsCfg) {
+                const QStringList &ProSailSimulatorArgs = GetProSailSimulatorNewArgs(curXml, bvSamplesFile, rsrCfgFile, simuReflsFile,
+                                                                                     anglesFile, configParameters, laiCfgFile);
+                steps.append(prosailSimulatorTask.CreateStep("ProSailSimulatorNew", ProSailSimulatorArgs));
+
+                const QStringList &TrainingDataGeneratorArgs = GetTrainingDataGeneratorNewArgs(curXml, bvSamplesFile, simuReflsFile,
+                                                                                               trainingFile, laiCfgFile);
+                steps.append(trainingDataGeneratorTask.CreateStep("TrainingDataGeneratorNew", TrainingDataGeneratorArgs));
+            } else {
+                const QStringList &ProSailSimulatorArgs = GetProSailSimulatorArgs(curXml, bvSamplesFile, rsrCfgFile, simuReflsFile, anglesFile, configParameters);
+                steps.append(prosailSimulatorTask.CreateStep("ProSailSimulator", ProSailSimulatorArgs));
+
+                const QStringList &TrainingDataGeneratorArgs = GetTrainingDataGeneratorArgs(curXml, bvSamplesFile, simuReflsFile, trainingFile);
+                steps.append(trainingDataGeneratorTask.CreateStep("TrainingDataGenerator", TrainingDataGeneratorArgs));
+            }
+
             steps.append(inverseModelLearningTask.CreateStep("InverseModelLearning", InverseModelLearningArgs));
             curIdx += MODEL_GEN_TASKS_PER_PRODUCT;
         }
@@ -210,6 +225,8 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
     NewStepList steps;
     const QJsonObject &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
     std::map<QString, QString> configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l3b.");
+    bool useLaiBandsCfg = ((configParameters["processor.l3b.lai.use_lai_bands_cfg"]).toInt() != 0);
+    const auto &laiCfgFile = configParameters["processor.l3b.lai.laibandscfgfile"];
 
     // Get the resolution value
     int resolution = 0;
@@ -256,13 +273,21 @@ NewStepList LaiRetrievalHandlerL3B::GetStepsForMonodateLai(EventProcessingContex
         QStringList genMonoDateMskFagsArgs = GetMonoDateMskFlagsArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
                                                                      "\"" + monoDateMskFlgsResFileName+"?gdal:co:COMPRESS=DEFLATE\"",
                                                                      resolutionStr);
-        QStringList ndviRviExtractionArgs = GetNdviRviExtractionArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
-                                                                     ftsFile, "\"" + singleNdviFile+"?gdal:co:COMPRESS=DEFLATE\"",
-                                                                     resolutionStr);
 
         // add these steps to the steps list to be submitted
         steps.append(genMonoDateMskFagsTask.CreateStep("GenerateLaiMonoDateMaskFlags", genMonoDateMskFagsArgs));
-        steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtraction2", ndviRviExtractionArgs));
+
+        if (useLaiBandsCfg) {
+            const QStringList &ndviRviExtractionArgs = GetNdviRviExtractionNewArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
+                                                                         ftsFile, "\"" + singleNdviFile+"?gdal:co:COMPRESS=DEFLATE\"",
+                                                                         resolutionStr, laiCfgFile);
+            steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtractionNew", ndviRviExtractionArgs));
+        } else {
+            const QStringList &ndviRviExtractionArgs = GetNdviRviExtractionArgs(prdTileInfo.tileFile, monoDateMskFlgsFileName,
+                                                                         ftsFile, "\"" + singleNdviFile+"?gdal:co:COMPRESS=DEFLATE\"",
+                                                                         resolutionStr);
+            steps.append(ndviRviExtractorTask.CreateStep("NdviRviExtraction2", ndviRviExtractionArgs));
+        }
 
         QStringList bvImageInvArgs = GetBvImageInvArgs(ftsFile, monoDateMskFlgsResFileName, prdTileInfo.tileFile, modelsFolder, monoDateLaiFileName);
         QStringList bvErrImageInvArgs = GetBvErrImageInvArgs(ftsFile, monoDateMskFlgsResFileName, prdTileInfo.tileFile, modelsFolder, monoDateErrFileName);
@@ -502,6 +527,18 @@ QStringList LaiRetrievalHandlerL3B::GetCompressImgArgs(const QString &inFile, co
            };
 }
 
+QStringList LaiRetrievalHandlerL3B::GetNdviRviExtractionNewArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile,
+                                                          const QString &ndviFile, const QString &resolution, const QString &laiBandsCfg) {
+    return { "NdviRviExtractionNew",
+           "-xml", inputProduct,
+           "-msks", msksFlagsFile,
+           "-ndvi", ndviFile,
+           "-fts", ftsFile,
+           "-outres", resolution,
+           "-laicfgs", laiBandsCfg
+    };
+}
+
 QStringList LaiRetrievalHandlerL3B::GetNdviRviExtractionArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile,
                                                           const QString &ndviFile, const QString &resolution) {
     return { "NdviRviExtraction2",
@@ -628,16 +665,43 @@ QStringList LaiRetrievalHandlerL3B::GetBVInputVariableGenerationArgs(std::map<QS
     };
 }
 
-QStringList LaiRetrievalHandlerL3B::GetProSailSimulatorArgs(const QString &product, const QString &bvFileName, const QString &rsrCfgFileName,
-                                                         const QString &outSimuReflsFile, const QString &outAngles, std::map<QString, QString> &configParameters) {
-    QString noiseVar = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.noisevar", DEFAULT_NOISE_VAR);
-    return { "ProSailSimulator",
+QStringList LaiRetrievalHandlerL3B::GetProSailSimulatorNewArgs(const QString &product, const QString &bvFileName, const QString &rsrCfgFileName,
+                                                         const QString &outSimuReflsFile, const QString &outAngles,
+                                                         std::map<QString, QString> &configParameters, const QString &laiBandsCfg) {
+    //QString noiseVar = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.noisevar", DEFAULT_NOISE_VAR);
+    return { "ProSailSimulatorNew",
                 "-xml", product,
                 "-bvfile", bvFileName,
                 "-rsrcfg", rsrCfgFileName,
                 "-out", outSimuReflsFile,
                 "-outangles", outAngles,
-                "-noisevar", noiseVar
+                "-laicfgs", laiBandsCfg
+//                "-noisevar", noiseVar
+    };
+}
+
+QStringList LaiRetrievalHandlerL3B::GetProSailSimulatorArgs(const QString &product, const QString &bvFileName, const QString &rsrCfgFileName,
+                                                         const QString &outSimuReflsFile, const QString &outAngles, std::map<QString, QString> &configParameters) {
+    //QString noiseVar = GetDefaultCfgVal(configParameters, "processor.l3b.lai.models.noisevar", DEFAULT_NOISE_VAR);
+    return { "ProSailSimulator",
+                "-xml", product,
+                "-bvfile", bvFileName,
+                "-rsrcfg", rsrCfgFileName,
+                "-out", outSimuReflsFile,
+                "-outangles", outAngles
+//                "-noisevar", noiseVar
+    };
+}
+
+QStringList LaiRetrievalHandlerL3B::GetTrainingDataGeneratorNewArgs(const QString &product, const QString &biovarsFile,
+                                                              const QString &simuReflsFile, const QString &outTrainingFile,
+                                                              const QString &laiBandsCfg) {
+    return { "TrainingDataGeneratorNew",
+                "-xml", product,
+                "-biovarsfile", biovarsFile,
+                "-simureflsfile", simuReflsFile,
+                "-outtrainfile", outTrainingFile,
+                "-laicfgs", laiBandsCfg
     };
 }
 
