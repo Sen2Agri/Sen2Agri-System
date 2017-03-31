@@ -138,7 +138,7 @@ public:
   itkGetConstMacro(NumberOfClasses, unsigned short);
   typedef std::map<ClassLabelType, int> SampleNumberType;
 
-  typedef std::map<ClassLabelType, int> ClassesSizeType;
+  typedef std::map<ClassLabelType, size_t> ClassesSizeType;
 
   SampleNumberType GetClassesSamplesNumberTraining(void) const
   {
