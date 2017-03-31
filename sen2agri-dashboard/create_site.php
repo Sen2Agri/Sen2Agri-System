@@ -465,19 +465,19 @@ if (!(empty($_SESSION ['siteId']))) {
 							$summerEnd = "";
 							$winterStart = "";
 							$winterEnd = "";
-							
+
 							function seasonStartEnd($start, $stop) {
 								$currentYear     = date ( 'Y' );
 								$currentMonth    = date ( 'm' );
-								
+
 								$startSeasonYear = (count($start) == 4) ? (int)($start[2] . $start[3]) : $currentYear;
 								$startSeasonMonth = $start[0];
 								$startSeasonDay   = $start[1];
-								
+
 								$endSeasonYear   = (count($stop)  == 4) ? (int)($stop[2]  . $stop[3])  : $currentYear;
 								$endSeasonMonth   = $stop[0];
 								$endSeasonDay     = $stop[1];
-								
+
 								//check if the season comprises 2 consecutive years (e.q. from october to march next year)
 								$startDt = strtotime($startSeasonYear . '-' . $startSeasonMonth . '-' . $startSeasonDay . ' 00:00:00');
 								$endDt   = strtotime($endSeasonYear   . '-' . $endSeasonMonth   . '-' . $endSeasonDay   . ' 00:00:00');
@@ -496,11 +496,11 @@ if (!(empty($_SESSION ['siteId']))) {
 										// inconsistent season start/stop dates
 									}
 								}
-								
+
 								return array( $startSeasonYear . "-" . $startSeasonMonth . "-" . $startSeasonDay,
 											  $endSeasonYear   . "-" . $endSeasonMonth   . "-" . $endSeasonDay );
 							}
-							
+
 							$sql_select = "";
 							$result = "";
 							$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
@@ -525,7 +525,7 @@ if (!(empty($_SESSION ['siteId']))) {
 
 								$summer1 = "";
 								$summer2 = "";
-								
+
 								if ((strlen($summerStart) == 4 || strlen($summerStart) ==  8) &&
 									(strlen($summerEnd) == 4 || strlen($summerEnd) == 8)) {
 									$summerDate1 = str_split( $summerStart, 2 ) ;
@@ -708,7 +708,7 @@ $(document).ready( function() {
 	// validate add site form
 	$("#siteform").validate({
 		rules: {
-			sitename:{ required: true, pattern: "[A-Z]{1}[a-zA-Z_ ]*" },
+			sitename:{ required: true, pattern: "[A-Z]{1}[\\w ]*" },
 			startseason_winter : "required",
 			endseason_winter: "required",
 			startseason_summer: "required",
@@ -716,7 +716,7 @@ $(document).ready( function() {
 			zip_fileAdd: "required"
 		},
 		messages: {
-			sitename: { pattern : "First letter must be uppercase.Letters,space and underscore are allowed" }
+			sitename: { pattern : "First letter must be uppercase. Letters, digits, spaces and underscores are allowed" }
 		},
 		highlight: function(element, errorClass) {
 			$(element).parent().addClass("has-error");
