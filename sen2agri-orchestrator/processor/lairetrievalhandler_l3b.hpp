@@ -34,6 +34,8 @@ private:
     // Arguments getters
     QStringList GetCutImgArgs(const QString &shapePath, const QString &inFile, const QString &outFile);
     QStringList GetCompressImgArgs(const QString &inFile, const QString &outFile);
+    QStringList GetNdviRviExtractionNewArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile,
+                                            const QString &ndviFile, const QString &resolution, const QString &laiBandsCfg);
     QStringList GetNdviRviExtractionArgs(const QString &inputProduct, const QString &msksFlagsFile, const QString &ftsFile, const QString &ndviFile, const QString &resolution);
     QStringList GetBvImageInvArgs(const QString &ftsFile, const QString &msksFlagsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateLaiFileName);
     QStringList GetBvErrImageInvArgs(const QString &ftsFile, const QString &msksFlagsFile, const QString &xmlFile, const QString &modelsFolder, const QString &monoDateErrFileName);
@@ -47,8 +49,14 @@ private:
     NewStepList GetStepsToGenModel(std::map<QString, QString> &configParameters,
                                    const QList<TileInfos> &listPrdTiles, QList<TaskToSubmit> &allTasksList, int tasksStartIdx, bool bForceGenModels);
     QStringList GetBVInputVariableGenerationArgs(std::map<QString, QString> &configParameters, const QString &strGenSampleFile);
+    QStringList GetProSailSimulatorNewArgs(const QString &product, const QString &bvFileName, const QString &rsrCfgFileName,
+                                       const QString &outSimuReflsFile, const QString &outAngles, std::map<QString, QString> &configParameters,
+                                       const QString &laiBandsCfg);
     QStringList GetProSailSimulatorArgs(const QString &product, const QString &bvFileName, const QString &rsrCfgFileName,
                                        const QString &outSimuReflsFile, const QString &outAngles, std::map<QString, QString> &configParameters);
+    QStringList GetTrainingDataGeneratorNewArgs(const QString &product, const QString &biovarsFile,
+                                                const QString &simuReflsFile, const QString &outTrainingFile,
+                                                const QString &laiBandsCfg);
     QStringList GetTrainingDataGeneratorArgs(const QString &product, const QString &biovarsFile,
                                              const QString &simuReflsFile, const QString &outTrainingFile);
     QStringList GetInverseModelLearningArgs(const QString &trainingFile, const QString &product, const QString &anglesFile,

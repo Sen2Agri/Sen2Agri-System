@@ -353,14 +353,18 @@ private:
                 // The relative band index is 1 based value so we must extract the 0 based one
                 int relBandIdx = pResHelper->GetRelativeBandIndex(bandIdx) - 1;
                 VectorImageToImageListType::Pointer imgInputSplit = m_imgInputSplittersMap.at(curBandRes);
+                std::cout << "Adding band with id: " << bandIdx << ", res: " <<  curBandRes
+                          << ", relative band idx: " << relBandIdx  << std::endl;
                 allList->PushBack(getResampledImage(curBandRes, nOutRes, imgInputSplit->GetOutput()->GetNthElement(relBandIdx)));
             }
 
             // add the bands for NDVI and RVI
             if(laiCfg.bUseNdvi) {
+                std::cout << "Adding NDVI band ..." << std::endl;
                 allList->PushBack(getResampledImage(nCurRes, nOutRes, m_ndviRviImgSplit->GetOutput()->GetNthElement(0)));
             }
             if(laiCfg.bUseRvi) {
+                std::cout << "Adding RVI band ..." << std::endl;
                 allList->PushBack(getResampledImage(nCurRes, nOutRes, m_ndviRviImgSplit->GetOutput()->GetNthElement(1)));
             }
             m_ftsConcat = ImageListToVectorImageFilterType::New();
