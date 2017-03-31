@@ -4,8 +4,7 @@ create or replace function sp_insert_season(
     _start_date season.start_date%type,
     _end_date season.end_date%type,
     _mid_date season.mid_date%type,
-    _enabled season.enabled%type,
-    _insert_default_tasks boolean default true
+    _enabled season.enabled%type
 )
 returns season.id%type as
 $$
@@ -28,10 +27,6 @@ begin
     )
     returning season.id
     into _season_id;
-
-    if _insert_default_tasks then
-        perform sp_insert_default_scheduled_tasks(_site_id, _season_id);
-    end if;
 
     return _season_id;
 end;
