@@ -1,6 +1,20 @@
 # Change Log
 
-## [1.5.0] - 2016-01-20
+## [1.6.0] - 2017-04-XX
+### Added
+ - The possibility to select the input bands when creating the LAI monodate products, including 20M bands and possibility to use or not NDVI and RVI.
+
+### Changed
+ - In the LAI scheduled jobs now are taken into account the insertion dates instead of product creation date.
+ 
+### Fixed
+ - Changed the advanced mode for processors parameters in the sen2agri-config configuration.
+ - In IPP file name for L3A is not inserted the used bands_mapping and not the one from the DB.
+ 
+### Known issues
+ - 
+
+## [1.5.0] - 2017-01-20
 ### Added
  - Added script for cancelling all scheduled jobs
  - Added support for year in season date (not well tested yet and also not implemented yet in UI)
