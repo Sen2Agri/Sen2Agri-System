@@ -6,7 +6,7 @@ VALUES
 INSERT INTO product_type
 (id, name, description)
 VALUES
-(1, 'l2a','L2A Atmosferic corrections');
+(1, 'l2a','L2A Atmospheric correction');
 
 INSERT INTO product_type
 (id, name, description)
