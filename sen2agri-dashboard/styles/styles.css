@@ -560,20 +560,50 @@ input.right {
 /* SITES related styles --------------------------------------------- */
 div.create-site .panel-heading{margin-top:-10px}
 div.create-site table.table{margin:0px}
-div.create-site table.table tr:first-child th{font-weight:700}
+div.create-site table.table tr th{font-weight:700}
 div.create-site table.table tr:first-child th:last-child{text-align:center}
 div.create-site table.table th{background-color:#E9E9E9;border:0px solid transparent;text-align:left;font-weight:400;padding:2px 8px;}
 div.create-site table.table tr.editing{background-color:#8BB245;color:white;}
 div.create-site table.table tr:hover{background-color:#E7F3D0;}
-div.create-site table.table td{font-size:12px;line-height:0.9;text-align:left;padding:3px 8px;}
+div.create-site table.table td{font-size:12px;text-align:left;padding:2px 4px;}
+div.create-site table.table th.seasons,
+div.create-site table.table td.seasons,
 div.create-site table.table td:last-child{text-align:center;}
 div.create-site table.table tr td a{cursor:pointer;color:#009C00;font-size:1.1em;font-weight:700;cursor:pointer;text-decoration:underline;}
 div.create-site table.table tr td a:hover{color:#5CB85C;}
 div.create-site table.table tr.editing td a{color:white;}
+
+div.create-site table.table input[type="checkbox"]{margin:0;height:12px;display:none}
 div.create-site .bootstrap-switch.bootstrap-switch-mini span{padding:0px;font-size:10px;}
 
+div.create-site table.subtable{width:100%;max-width:100%}
+div.create-site table.subtable th{width:20%;font-size:0.8em;text-align:center;padding:2px 4px}
+div.create-site table.subtable {width:100%;max-width:100%}
+div.create-site table.subtable td{width:20%;text-align:center}
+div.create-site table.subtable th:first-child,
+div.create-site table.subtable td:first-child{text-align:left}
+
+div#site-seasons{text-align:center;width:104%}
+div#site-seasons img{border:0}
+div#site-seasons .icon{border:1px solid transparent;border-radius:5px;width:22px;height:18px;padding:0;background-position:50% 50%;background-repeat:no-repeat;background-color:transparent}
+div#site-seasons .icon:hover{border-color:#7eaf50}
+div#site-seasons input{padding:0;border-radius: 0;box-shadow:none;-webkit-box-shadow:none}
+div#site-seasons input[name="edit"]{background-image: url(../images/edit.png)}
+div#site-seasons input[name="save"]{background-image: url(../images/save.png)}
+div#site-seasons input[name="remove"]{background-image: url(../images/delete.png)}
+div#site-seasons input[name="add"]{background-image: url(../images/add.png)}
+div#site-seasons input[name="cancel"]{background-image: url(../images/cancel.png)}
+div#site-seasons div#server-response{color:red}
+
+div.add-edit-site table.edit {width:100%;border-width:1px 1px 0 1px;border-style:solid;border-color:#cccccc;border-radius:3px;border-collapse: separate !important;}
+div.add-edit-site table.edit th{line-height:2.5em;background-color:#eeeeee}
+div.add-edit-site table.edit th,
+div.add-edit-site table.edit td{text-align:center;border:0;padding:2px;border-bottom:1px solid #cccccc}
+div.add-edit-site table.edit th.action{min-width:82px}
+div.add-edit-site table.edit td input{text-align:center}
+div.add-edit-site table.edit td input[type="checkbox"]{width:auto;display:inline;height:auto}
+
 div.add-edit-site form {
-	width: 500px;
 	font: 14px Arial, Helvetica, sans-serif;
 	margin: 15px;
 }
