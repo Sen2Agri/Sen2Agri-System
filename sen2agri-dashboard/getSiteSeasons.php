@@ -70,7 +70,7 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 					<td><input class="form-control" type="text" name="season_end" data-save="" disabled></td>
 					<td><input class="form-control" type="checkbox" name="season_enabled" data-save="f" disabled></td>
 					<td>
-						<input name="add" class="icon" type="button" title="Save season">
+						<input name="add" class="icon" type="button" title="Add season">
 						<input name="save" class="icon hidden" type="button" title="Save season">
 						<input name="cancel" class="icon hidden" type="button" title="Cancel">
 					</td>
@@ -79,6 +79,9 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 		</table>
 		<div id="server-response"></div>
 		<script>
+		function refreshDialogPosition() {
+			$("#div_editsite").dialog("option", "position", {my: "center", at: "center", of: window});
+		}
 		function replace_add_table_line() {
 			var td_line =
 			'<input name="edit" class="icon" type="button" title="Edit season">' +
@@ -104,6 +107,7 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 			$('#seasons>tbody>tr:last-child').after(tr_line);
 			set_button_actions();
 			set_datepicker();
+			refreshDialogPosition();
 		}
 		function set_button_actions() {
 			$("#seasons input[name='edit']").unbind( "click" );
@@ -224,6 +228,7 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 							if (data.match("^SUCCESS: removed")) {
 								$(parent).remove();
 								$("#server-response").html("");
+								refreshDialogPosition();
 							} else {
 								$("#server-response").html(data);
 							}
@@ -252,6 +257,7 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 		
 		set_button_actions();
 		set_datepicker();
+		refreshDialogPosition();
 		</script>
 <?php
 	}
