@@ -100,18 +100,6 @@ function uploadReferencePolygons($zipFile, $siteId, $timestamp) {
 	return array ( "polygons_file" => $shp_file, "result" => $shp_msg, "message" => $zip_msg );
 }
 
-function dayMonthYear($param) {
-	// keep only month and day(0230)
-	$date = date ( 'Ymd', strtotime ( $param ) );
-	return $date;
-}
-
-function dayMonth($param) {
-	// keep only month and day(0230)
-	$date = date ( 'md', strtotime ( $param ) );
-	return $date;
-}
-
 // processing add site
 if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site') {
 	// first character to uppercase.
@@ -455,11 +443,11 @@ $(document).ready( function() {
 	// validate add site form
 	$("#siteform").validate({
 		rules: {
-			sitename:{ required: true, pattern: "[A-Z]{1}[a-zA-Z_ ]*" },
+			sitename:{ required: true, pattern: "[A-Z]{1}[\\w ]*" },
 			zip_fileAdd: "required"
 		},
 		messages: {
-			sitename: { pattern : "First letter must be uppercase.Letters,space and underscore are allowed" }
+			sitename: { pattern : "First letter must be uppercase. Letters, digits, spaces and underscores are allowed" }
 		},
 		highlight: function(element, errorClass) {
 			$(element).parent().addClass("has-error");
@@ -617,18 +605,10 @@ function resetEditAdd(formName) {
 		var validator = $("#siteform_edit").validate();
 		validator.resetForm();
 		$("#siteform_edit")[0].reset();
-	}
-	$( ".create-site tr").removeClass("editing");
-}
-
-// Abort add/edit site event
-function abortEditAdd(abort){
-	if (abort == 'add') {
-		$("#div_addsite").dialog("close");
-	} else if (abort == 'edit') {
+		
+		// refresh corresponding seasons
 		var season_count = $("#div_editsite #seasons>tbody>tr").length - 1;
 		var site_id = $("#div_editsite").data("id");
-		$("#div_editsite").dialog("close");
 		if (season_count > 0) {
 			$("table.table tr[data-id='" + site_id + "'] td.seasons").data("count", season_count);
 			$("table.table tr[data-id='" + site_id + "'] td.seasons").attr("data-count", season_count);
@@ -639,6 +619,16 @@ function abortEditAdd(abort){
 			$("table.table tr[data-id='" + site_id + "'] td.seasons").html("-");
 		}
 		$("#div_editsite").removeData("id");
+	}
+	$( ".create-site tr").removeClass("editing");
+}
+
+// Abort add/edit site event
+function abortEditAdd(abort){
+	if (abort == 'add') {
+		$("#div_addsite").dialog("close");
+	} else if (abort == 'edit') {
+		$("#div_editsite").dialog("close");
 	}
 }
 </script>
