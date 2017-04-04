@@ -1,21 +1,33 @@
-CREATE OR REPLACE FUNCTION sp_get_dashboard_sites_seasons(IN _site_id smallint DEFAULT NULL::smallint)
-  RETURNS TABLE(id smallint, name character varying, short_name character varying, summer_season_start text, summer_season_end text, winter_season_start text, winter_season_end text, enabled boolean) AS
+CREATE OR REPLACE FUNCTION sp_get_dashboard_sites_seasons(_site_id smallint DEFAULT NULL::smallint)
+  RETURNS TABLE(
+    site_id site.id%type,
+    site_name site.name%type,
+    site_short_name site.short_name%type,
+    site_enabled site.enabled%type,
+    season_id season.id%type,
+    season_name season.name%type,
+    season_start_date season.start_date%type,
+    season_end_date season.end_date%type,
+    season_mid_date season.mid_date%type,
+    season_enabled season.enabled%type
+) AS
 $BODY$
 BEGIN
     return query
         select site.id,
                site.name,
                site.short_name,
-               max(case config.key when 'downloader.summer-season.start' then config.value end) as summer_season_start,
-               max(case config.key when 'downloader.summer-season.end' then config.value end) as summer_season_end,
-               max(case config.key when 'downloader.winter-season.start' then config.value end) as winter_season_start,
-               max(case config.key when 'downloader.winter-season.end' then config.value end) as winter_season_start,
-               site.enabled
+               site.enabled,
+               season.id,
+               season.name,
+               season.start_date,
+               season.end_date,
+               season.mid_date,
+               season.enabled
         from site
-        left outer join config on config.site_id = site.id
+        left outer join season on season.site_id = site.id
         where _site_id is null or site.id = _site_id
-        group by site.id
-        order by site.id;
+        order by site.id, season.id;
 END
 $BODY$
   LANGUAGE plpgsql STABLE;

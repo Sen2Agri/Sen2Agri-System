@@ -110,9 +110,6 @@ private:
   }
   void DoExecute()
   {
-      bool bUseRvi = false;
-      bool bUseNdvi = false;
-
       std::string bvFileName = GetParameterString("biovarsfile");
       std::string simuReflsName = GetParameterString("simureflsfile");
       std::size_t bvIdx = GetParameterInt("bvidx");
@@ -129,9 +126,9 @@ private:
           auto pHelper = factory->GetMetadataHelper(inMetadataXml);
           // the bands are 1 based
           if(redIdx == -1)
-            redIdx = pHelper->GetRelRedBandIndex() - 1;
+            redIdx = pHelper->GetAbsRedBandIndex();
           if(nirIdx == -1)
-            nirIdx = pHelper->GetRelNirBandIndex() - 1;
+            nirIdx = pHelper->GetAbsNirBandIndex();
 
           // Load the LAI bands configuration file from laicfgs
           if(HasValue("laicfgs")) {
@@ -148,7 +145,26 @@ private:
           laiCfgFile = GetParameterString("laicfg");
       }
       // Load the LAI bands configuration file
-      LAIBandsConfigInfos laiCfg = loadLaiBandsConfigFile(laiCfgFile);
+      const LAIBandsConfigInfos &laiCfg = loadLaiBandsConfigFile(laiCfgFile);
+      // if we use NDVI or RVI we will need to have the bands for RED and NIR in the list of bands
+      // for which we simulate the reflectances. The other applications will also need to handle this
+      // Otherwise, the model will be created with the wrong number of bands
+      std::vector<int> rsrColumnsFilterIndexes = laiCfg.rsrColumnFilterIdxs;
+      if (laiCfg.bUseNdvi || laiCfg.bUseRvi) {
+          // if RED band not present in the list, then add it
+          if(std::find(rsrColumnsFilterIndexes.begin(), rsrColumnsFilterIndexes.end(), redIdx) == rsrColumnsFilterIndexes.end()) {
+              rsrColumnsFilterIndexes.push_back(redIdx);
+              otbAppLogINFO("Added missing RED BAND index: " << redIdx);
+          }
+          // if NIR band not present in the list, then add it
+          if(std::find(rsrColumnsFilterIndexes.begin(), rsrColumnsFilterIndexes.end(), nirIdx) == rsrColumnsFilterIndexes.end()) {
+              rsrColumnsFilterIndexes.push_back(nirIdx);
+              otbAppLogINFO("Added missing NIR BAND index: " << nirIdx);
+          }
+          // Sort again the array
+          std::sort (rsrColumnsFilterIndexes.begin(), rsrColumnsFilterIndexes.end());
+      }
+
 
       std::cout << "=================================" << std::endl;
       std::cout << "addndvi : " << laiCfg.bUseNdvi           << std::endl;
@@ -160,6 +176,7 @@ private:
       std::cout << std::endl;
       std::cout << "=================================" << std::endl;
 
+      printRsrBands(rsrColumnsFilterIndexes);
 
 
       try
@@ -223,43 +240,114 @@ private:
           vectRefls.pop_back();
           vectRefls.pop_back();
 
+          size_t nbFileReflBands = vectRefls.size();
+          const std::vector<int> &bandsIndexes = CheckAndTranslateBandIndexes(rsrColumnsFilterIndexes, vectRefls, laiCfg);
+
           // we use all the bands for the sensor
-          for(size_t i = 0; i<vectRefls.size(); i++) {
+          for(size_t i = 0; i<nbFileReflBands; i++) {
               // check if the current band is configured
-              if(std::find(laiCfg.bandsIdxs.begin(), laiCfg.bandsIdxs.end(), i+1) != laiCfg.bandsIdxs.end()) {
+              if(std::find(bandsIndexes.begin(), bandsIndexes.end(), i+1) != bandsIndexes.end()) {
                   outline += " ";
                   outline += vectRefls[i];
               }
           }
 
-          // add NDVI and RVI values
-          if(redIdx >= 0 && nirIdx >= 0) {
-              if(redIdx < (int)vectRefls.size() && nirIdx < (int)vectRefls.size()) {
-                  float fRedVal = std::stof(vectRefls[redIdx]);
-                  float fNirVal = std::stof(vectRefls[nirIdx]);
-                  float ndvi = (fNirVal-fRedVal)/(fNirVal+fRedVal+epsilon);
-                  float  rvi = fNirVal/(fRedVal+epsilon);
-                  // normalize value for RVI
-                  if(rvi < 0.000001 || std::isnan(rvi)) {
-                      rvi = 0;
-                  } else {
-                      if(rvi > 30 || std::isinf(rvi)) {
-                          rvi = 30;
+          if (laiCfg.bUseNdvi || laiCfg.bUseRvi) {
+              // add NDVI and RVI values
+              if(redIdx >= 0 && nirIdx >= 0) {
+                  int relRedBandIdx = getBandIndexInRsrVect(rsrColumnsFilterIndexes, redIdx);
+                  int relNirBandIdx = getBandIndexInRsrVect(rsrColumnsFilterIndexes, nirIdx);
+                  if(relRedBandIdx >=0 && relNirBandIdx >= 0) {
+                      float fRedVal = std::stof(vectRefls[relRedBandIdx]);
+                      float fNirVal = std::stof(vectRefls[relNirBandIdx]);
+                      float ndvi = (fNirVal-fRedVal)/(fNirVal+fRedVal+epsilon);
+                      float  rvi = fNirVal/(fRedVal+epsilon);
+                      // normalize value for RVI
+                      if(rvi < 0.000001 || std::isnan(rvi)) {
+                          rvi = 0;
+                      } else {
+                          if(rvi > 30 || std::isinf(rvi)) {
+                              rvi = 30;
+                          }
                       }
+                      std::ostringstream ss;
+                      if(laiCfg.bUseNdvi) {
+                        ss << " " << ndvi;
+                      }
+                      if(laiCfg.bUseRvi) {
+                        ss << " " << rvi;
+                      }
+                      outline += ss.str();
+                  } else {
+                      itkGenericExceptionMacro(<< "RED or NIR relative bands indexes cannot be determined!");
                   }
-                  std::ostringstream ss;
-                  if(bUseNdvi) {
-                    ss << " " << ndvi;
-                  }
-                  if(bUseRvi) {
-                    ss << " " << rvi;
-                  }
-                  outline += ss.str();
+              } else {
+                  itkGenericExceptionMacro(<< "Requested use of RVI or NDVI but RED or NIR band is not available!");
               }
           }
           m_TrainingFile << outline << std::endl;
       }
   }
+
+  std::vector<int> CheckAndTranslateBandIndexes(const std::vector<int> &rsrColumnsFilterIndexes,
+                                                const std::vector<std::string> &vectRefls,
+                                                const LAIBandsConfigInfos &laiCfg) {
+      size_t nbFileReflBands = vectRefls.size();
+      std::vector<int> bandsIndexes;
+      // check if a filter on the RSR bands was made or we have all RSR bands
+      if (rsrColumnsFilterIndexes.size() > 0) {
+          // validations of the RSR bands
+          if (vectRefls.size() != rsrColumnsFilterIndexes.size()) {
+              itkGenericExceptionMacro(<< "Invalid bands number. Different from the number defined in RSR_COLS_FILTER ("
+                                       << vectRefls.size() << " != " << rsrColumnsFilterIndexes.size() << ")");
+          }
+          // Translate the bands indexes to the correct values
+          // first check that the LAI bands indexes are within the rsr columns indexes
+          for (size_t i = 0; i<laiCfg.bandsIdxs.size(); i++) {
+              int bandIdx = getBandIndexInRsrVect(rsrColumnsFilterIndexes, laiCfg.bandsIdxs[i]);
+              if (bandIdx == -1) {
+                  itkGenericExceptionMacro(<< "Incorrect config in LAI config. Band index " << laiCfg.bandsIdxs[i] << " is not in the defined RSR indexes");
+              } else {
+                  // add the found index in the vector as the translated index of the band but 1 based
+                  bandsIndexes.push_back(bandIdx+1);
+              }
+          }
+
+      } else {
+          // check that the indexes are smaller than the number of bands
+          for (size_t i = 0; i<laiCfg.bandsIdxs.size(); i++) {
+              if((laiCfg.bandsIdxs[i]-1) >= (int)nbFileReflBands) {
+                  itkGenericExceptionMacro(<< "Index in LAI config " << laiCfg.bandsIdxs[i] << " higher than the number of valid reflectance bands " << nbFileReflBands);
+              }
+          }
+          bandsIndexes = laiCfg.bandsIdxs;
+      }
+
+      return bandsIndexes;
+  }
+
+  int getBandIndexInRsrVect(const std::vector<int> &rsrColumnsFilterIndexes, int absBandIdx) {
+      std::ptrdiff_t pos = std::find(rsrColumnsFilterIndexes.begin(), rsrColumnsFilterIndexes.end(), absBandIdx) -
+              rsrColumnsFilterIndexes.begin();
+      if(pos >= (std::ptrdiff_t)rsrColumnsFilterIndexes.size()) {
+          return -1;
+      } else {
+          // return the found index
+          return pos;
+      }
+  }
+
+  void printRsrBands(const std::vector<int> &rsrColumnsFilterIndexes) {
+      std::stringstream ss;
+      ss << "RSR bands indexes used:" << std::endl;
+      for(size_t i = 0; i< rsrColumnsFilterIndexes.size(); ++i) {
+        ss << i<< " " << rsrColumnsFilterIndexes[i] << std::endl;
+      }
+      ss << std::endl;
+
+      otbAppLogINFO(""<<ss.str());
+  }
+
 
   // the input file
   std::ifstream m_SampleFile;

@@ -121,6 +121,7 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('demmaccs.gips-pat
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.modelsfolder', NULL, '/mnt/archive/L3B_GeneratedModels/', '2016-02-16 11:54:47.123972+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.rsrcfgfile', NULL, '/usr/share/sen2agri/rsr_cfg.txt', '2016-02-16 11:54:47.223904+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.laibandscfgfile', NULL, '/usr/share/sen2agri/Lai_Bands_Cfgs.cfg', '2016-02-16 11:54:47.223904+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.use_lai_bands_cfg', NULL, '1', '2016-02-16 11:54:47.223904+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.compute-image-statistics', NULL, '/usr/bin/otbcli_ComputeImagesStatistics', '2016-02-23 12:29:52.586902+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.features-with-insitu', NULL, '/usr/bin/otbcli', '2016-02-22 20:52:43.310276+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.dimensionality-reduction', NULL, 'otbcli_DimensionalityReduction', '2016-02-22 22:39:08.262715+02');
@@ -141,7 +142,7 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.p
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.train-images-classifier-new', NULL, '/usr/bin/otbcli', '2016-02-23 12:29:52.829897+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-mask-features-with-insitu', NULL, '/usr/local/bin/otbcli', '2016-02-24 19:07:08.416696+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3a.synth_date_sched_offset', NULL, '30', '2016-02-25 09:00:47.212845+02');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3a.half_synthesis', NULL, '15', '2016-02-25 09:00:57.21868+02');
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3a.half_synthesis', NULL, '25', '2016-02-25 09:00:57.21868+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.training-samples-number', NULL, '40000', '2016-03-10 11:40:44.732473+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.temporal_resampling_mode', NULL, 'resample', '2016-03-10 18:40:21.140908+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.generate_models', NULL, '1', '2016-02-29 12:03:08.445828+02');
@@ -190,3 +191,5 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.processo
 
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-mask-fused', NULL, 'CropMaskFused.py', '2015-12-17 14:25:14.193131+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.crop-type-fused', NULL, 'CropTypeFused.py', '2015-12-17 14:25:14.193131+02');
+
+INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-end-of-job', NULL, 'true', '2016-01-12 14:56:57.501918+02');
