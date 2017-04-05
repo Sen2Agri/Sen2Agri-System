@@ -41,10 +41,13 @@ import psycopg2.errorcodes
 import optparse
 import signal
 
+from datetime import date
+from dateutil.relativedelta import relativedelta
+
 FAKE_COMMAND = 0
 DEBUG = True
 
-DOWNLOADER_NUMBER_OF_CONFIG_PARAMS_FROM_DB = int(7)
+DOWNLOADER_NUMBER_OF_CONFIG_PARAMS_FROM_DB = int(4)
 SENTINEL2_SATELLITE_ID = int(1)
 LANDSAT8_SATELLITE_ID = int(2)
 FILES_IN_LANDSAT_L1_PRODUCT = int(13)
@@ -262,70 +265,70 @@ def get_product_info(product_name):
     return sat_id and (sat_id, acquisition_date)
 
 
-def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearArray):
-#, logDir, logFileName):
-    currentYear = datetime.date.today().year
-    currentMonth = datetime.date.today().month
-    #log(logDir, "{} | {}".format(startSeason, endSeason), logFileName)
-    del yearArray[:]
-    yearArray.append(currentYear)
-    yearArray.append(currentYear)
-    startSeasonMonth = int(startSeason[0:2])
-    startSeasonDay = int(startSeason[2:4])
-    print("StartSeason {}".format(startSeason))
-    print("endSeason {}".format(endSeason))
-    # check if we have also the year
-    startSeasonYear = -1
-    endSeasonYear = -1
-    endSeasonMonth = int(endSeason[0:2])
-    endSeasonDay = int(endSeason[2:4])
-    if len(endSeason) == 8 : 
-        endSeasonYear = int(endSeason[4:8])
-    elif len(endSeason) == 6 :
-        endSeasonYear = int(endSeason[4:6]) + 2000
-    startSeasonYear = endSeasonYear
-    print("Extracted years: start {} end {}".format(startSeasonYear, endSeasonYear))
-        
-    if startSeasonMonth < 1 or startSeasonMonth > 12 or startSeasonDay < 1 or startSeasonDay > 31 or endSeasonMonth < 1 or endSeasonMonth > 12 or endSeasonDay < 1 or endSeasonDay > 31:
-        return False
-    #check if the season comprises 2 consecutive years (e.q. from october to march next year)
-    if startSeasonMonth > endSeasonMonth:
-        if currentMonth >= startSeasonMonth and currentMonth <= 12:
-            yearArray[1] = currentYear + 1
-        else:
-            if currentMonth >= 1:
-                yearArray[0] = currentYear - 1
-        # if we have the year specified and the start and end seasons are greater
-        # then subtract 1 from start year
-        if startSeasonYear != -1 :
-            startSeasonYear = startSeasonYear - 1
-    else:
-        if currentMonth < startSeasonMonth:
-            yearArray[0] = currentYear - 1
-            yearArray[1] = currentYear - 1
-    
-    # Disregard the computed years and replace the years in the array if we have valid years in the dates
-    print("Extracted years2: start {} end {}".format(startSeasonYear, endSeasonYear))
-    if ((startSeasonYear != -1)):
-        yearArray[0] = startSeasonYear
-        yearArray[1] = endSeasonYear
-        print("set years: start {} end {}".format(yearArray[0], yearArray[1]))
-        return True   # To check if is not OK, if no, comment the line
-    
-    currentDate = datetime.date.today()
-    endSeasonYearToCheck = int(yearArray[1])
-    endSeasonMonthToCheck = int(endSeasonMonth) + numberOfMonthsAfterEndSeason
-    if endSeasonMonthToCheck > 12:
-        endSeasonMonthToCheck -= 12
-        endSeasonYearToCheck += 1
-    endSeasonDayToCheck = int(endSeasonDay)
-    if endSeasonDayToCheck > 30:
-        endSeasonDayToCheck = 28
-    if currentDate < datetime.date(int(yearArray[0]), int(startSeasonMonth), int(startSeasonDay)) or currentDate > datetime.date(endSeasonYearToCheck, endSeasonMonthToCheck, endSeasonDayToCheck):
-        return False
-    print("start year {}".format(yearArray[0]))
-    print("end year {}".format(yearArray[1]))
-    return True
+#def check_if_season(startSeason, endSeason, numberOfMonthsAfterEndSeason, yearArray):
+##, logDir, logFileName):
+#    currentYear = datetime.date.today().year
+#    currentMonth = datetime.date.today().month
+#    #log(logDir, "{} | {}".format(startSeason, endSeason), logFileName)
+#    del yearArray[:]
+#    yearArray.append(currentYear)
+#    yearArray.append(currentYear)
+#    startSeasonMonth = int(startSeason[0:2])
+#    startSeasonDay = int(startSeason[2:4])
+#    print("StartSeason {}".format(startSeason))
+#    print("endSeason {}".format(endSeason))
+#    # check if we have also the year
+#    startSeasonYear = -1
+#    endSeasonYear = -1
+#    endSeasonMonth = int(endSeason[0:2])
+#    endSeasonDay = int(endSeason[2:4])
+#    if len(endSeason) == 8 : 
+#        endSeasonYear = int(endSeason[4:8])
+#    elif len(endSeason) == 6 :
+#        endSeasonYear = int(endSeason[4:6]) + 2000
+#    startSeasonYear = endSeasonYear
+#    print("Extracted years: start {} end {}".format(startSeasonYear, endSeasonYear))
+#        
+#    if startSeasonMonth < 1 or startSeasonMonth > 12 or startSeasonDay < 1 or startSeasonDay > 31 or endSeasonMonth < 1 or endSeasonMonth > 12 or endSeasonDay < 1 or endSeasonDay > 31:
+#        return False
+#    #check if the season comprises 2 consecutive years (e.q. from october to march next year)
+#    if startSeasonMonth > endSeasonMonth:
+#        if currentMonth >= startSeasonMonth and currentMonth <= 12:
+#            yearArray[1] = currentYear + 1
+#        else:
+#            if currentMonth >= 1:
+#                yearArray[0] = currentYear - 1
+#        # if we have the year specified and the start and end seasons are greater
+#        # then subtract 1 from start year
+#        if startSeasonYear != -1 :
+#            startSeasonYear = startSeasonYear - 1
+#    else:
+#        if currentMonth < startSeasonMonth:
+#            yearArray[0] = currentYear - 1
+#            yearArray[1] = currentYear - 1
+#    
+#    # Disregard the computed years and replace the years in the array if we have valid years in the dates
+#    print("Extracted years2: start {} end {}".format(startSeasonYear, endSeasonYear))
+#    if ((startSeasonYear != -1)):
+#        yearArray[0] = startSeasonYear
+#        yearArray[1] = endSeasonYear
+#        print("set years: start {} end {}".format(yearArray[0], yearArray[1]))
+#        return True   # To check if is not OK, if no, comment the line
+#    
+#    currentDate = datetime.date.today()
+#    endSeasonYearToCheck = int(yearArray[1])
+#    endSeasonMonthToCheck = int(endSeasonMonth) + numberOfMonthsAfterEndSeason
+#    if endSeasonMonthToCheck > 12:
+#        endSeasonMonthToCheck -= 12
+#        endSeasonYearToCheck += 1
+#    endSeasonDayToCheck = int(endSeasonDay)
+#    if endSeasonDayToCheck > 30:
+#        endSeasonDayToCheck = 28
+#    if currentDate < datetime.date(int(yearArray[0]), int(startSeasonMonth), int(startSeasonDay)) or currentDate > datetime.date(endSeasonYearToCheck, endSeasonMonthToCheck, endSeasonDayToCheck):
+#        return False
+#    print("start year {}".format(yearArray[0]))
+#    print("end year {}".format(yearArray[1]))
+#    return True
 
 
 def landsat_crop_to_cutline(landsat_product_path, working_dir):
@@ -487,6 +490,47 @@ class Config(object):
 
 
 ###########################################################################
+class SeasonInfo(object):
+    def __init__(self):
+        
+        self.seasonName = ""
+        self.seasonId = int(0)
+        
+        self.startSeasonMonth = int(0)
+        self.startSeasonDay = int(0)
+        self.endSeasonMonth = int(0)
+        self.endSeasonDay = int(0)
+        self.startSeasonYear = int(0)
+        self.endSeasonYear = int(0)
+
+        self.startSeasonDate = datetime.datetime(2016, 01, 01, 00, 00, 00)
+        self.endSeasonDate = datetime.datetime(2016, 01, 01, 00, 00, 00)
+
+        self.startSeasonDateStr = ""
+        self.endSeasonDateStr = ""
+        
+        self.startOfSeasonOffset = int(0)
+        
+    def setStartSeasonDate(self, startSeasonDate):
+        self.startSeasonDate = startSeasonDate + relativedelta(months=-self.startOfSeasonOffset)
+        self.startSeasonDateStr = self.startSeasonDate.strftime("%Y-%m-%d")
+        #parsedDate = datetime.datetime.strptime(startSeasonDate, "%Y-%m-%d" )
+        self.startSeasonDay = self.startSeasonDate.day
+        self.startSeasonMonth = self.startSeasonDate.month
+        self.startSeasonYear = self.startSeasonDate.year
+        
+    def setEndSeasonDate(self, endSeasonDate):
+        self.endSeasonDate = endSeasonDate
+        self.endSeasonDateStr = self.endSeasonDate.strftime("%Y-%m-%d")
+        #parsedDate = datetime.datetime.strptime(endSeasonDate, "%Y-%m-%d" )
+        self.endSeasonDay = self.endSeasonDate.day
+        self.endSeasonMonth = self.endSeasonDate.month
+        self.endSeasonYear = self.endSeasonDate.year
+    
+    def setStartSeasonOffset(self, startOfSeasonOffset):
+        self.startOfSeasonOffset = int(startOfSeasonOffset)
+        self.setStartSeasonDate(self.startSeasonDate)
+        
 class AOIContext(object):
     def __init__(self):
         # the following info will be fed up from database
@@ -494,12 +538,14 @@ class AOIContext(object):
         self.siteName = ""
         self.polygon = []
 
-        self.startSeasonMonth = int(0)
-        self.startSeasonDay = int(0)
-        self.endSeasonMonth = int(0)
-        self.endSeasonDay = int(0)
-        self.startSeasonYear = int(0)
-        self.endSeasonYear = int(0)
+        #self.startSeasonMonth = int(0)
+        #self.startSeasonDay = int(0)
+        #self.endSeasonMonth = int(0)
+        #self.endSeasonDay = int(0)
+        #self.startSeasonYear = int(0)
+        #self.endSeasonYear = int(0)
+        
+        self.aoiSeasonInfos = []
 
         self.maxCloudCoverage = int(100)
         self.maxRetries = int(3)
@@ -531,43 +577,48 @@ class AOIContext(object):
         if len(configParams) != DOWNLOADER_NUMBER_OF_CONFIG_PARAMS_FROM_DB:
             return False
         
-        startSummerSeason = configParams[0]
-        endSummerSeason = configParams[1]
-        startWinterSeason = configParams[2]
-        endWinterSeason = configParams[3]
-        self.maxCloudCoverage = int(configParams[4])
-        self.maxRetries = int(configParams[5])
-        self.writeDir = configParams[6]
+#        startSummerSeason = configParams[0]
+#        endSummerSeason = configParams[1]
+#        startWinterSeason = configParams[2]
+#        endWinterSeason = configParams[3]
+
+        # Apply the season offset if defined for each season in the site
+        for seasonInfo in self.aoiSeasonInfos:
+            seasonInfo.setStartSeasonOffset(configParams[0])
+            
+        self.maxCloudCoverage = int(configParams[1])
+        self.maxRetries = int(configParams[2])
+        self.writeDir = configParams[3]
         #print("Seasons: summer:{}-{} / winter:{}-{}".format(startSummerSeason, endSummerSeason, startWinterSeason, endWinterSeason))
         # first position is the startSeasonYear, the second is the endPositionYear
-        currentYearArray = []
-        if forced_season:
-            check_if_season(startSummerSeason, endSummerSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray)
-            self.startSeasonMonth = int(startSummerSeason[0:2])
-            self.startSeasonDay = int(startSummerSeason[2:4])
-            self.endSeasonMonth = int(endSummerSeason[0:2])
-            self.endSeasonDay = int(endSummerSeason[2:4])
-        else:
-            if startSummerSeason != "null" and endSummerSeason != "null" and check_if_season(startSummerSeason, endSummerSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray):
-                self.startSeasonMonth = int(startSummerSeason[0:2])
-                self.startSeasonDay = int(startSummerSeason[2:4])
-                self.endSeasonMonth = int(endSummerSeason[0:2])
-                self.endSeasonDay = int(endSummerSeason[2:4])
-            elif startWinterSeason != "null" and endWinterSeason != "null" and check_if_season(startWinterSeason, endWinterSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray):
-                self.startSeasonMonth = int(startWinterSeason[0:2])
-                self.startSeasonDay = int(startWinterSeason[2:4])
-                self.endSeasonMonth = int(endWinterSeason[0:2])
-                self.endSeasonDay = int(endWinterSeason[2:4])
-            else:            
-                print("Out of season ! No request will be made for {}".format(self.siteName))
-                sys.stdout.flush()
-                return False
-        if len(currentYearArray) == 0:
-            print("Something went wrong in check_if_season function")
-            sys.stdout.flush()
-            return False
-        self.startSeasonYear = currentYearArray[0]
-        self.endSeasonYear = currentYearArray[1]
+#        currentYearArray = []
+#        if forced_season:
+#            check_if_season(startSummerSeason, endSummerSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray)
+#            self.startSeasonMonth = int(startSummerSeason[0:2])
+#            self.startSeasonDay = int(startSummerSeason[2:4])
+#            self.endSeasonMonth = int(endSummerSeason[0:2])
+#            self.endSeasonDay = int(endSummerSeason[2:4])
+#        else:
+#            if startSummerSeason != "null" and endSummerSeason != "null" and check_if_season(startSummerSeason, endSummerSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray):
+#                self.startSeasonMonth = int(startSummerSeason[0:2])
+#                self.startSeasonDay = int(startSummerSeason[2:4])
+#                self.endSeasonMonth = int(endSummerSeason[0:2])
+#                self.endSeasonDay = int(endSummerSeason[2:4])
+#            elif startWinterSeason != "null" and endWinterSeason != "null" and check_if_season(startWinterSeason, endWinterSeason, MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED, currentYearArray):
+#                self.startSeasonMonth = int(startWinterSeason[0:2])
+#                self.startSeasonDay = int(startWinterSeason[2:4])
+#                self.endSeasonMonth = int(endWinterSeason[0:2])
+#                self.endSeasonDay = int(endWinterSeason[2:4])
+#            else:            
+#                print("Out of season ! No request will be made for {}".format(self.siteName))
+#                sys.stdout.flush()
+#                return False
+#        if len(currentYearArray) == 0:
+#            print("Something went wrong in check_if_season function")
+#            sys.stdout.flush()
+#            return False
+#        self.startSeasonYear = currentYearArray[0]
+#        self.endSeasonYear = currentYearArray[1]
 
         return True
 
@@ -602,8 +653,17 @@ class AOIContext(object):
         print("SiteID  : {}".format(self.siteId))
         print("SiteName: {}".format(self.siteName))
         print("Polygon : {}".format(self.polygon))
-        print("startS  : {}-{}-{}".format(self.startSeasonYear, self.startSeasonMonth, self.startSeasonDay))
-        print("endS    : {}-{}-{}".format(self.endSeasonYear, self.endSeasonMonth, self.endSeasonDay))
+        
+        print("Number of Seasons : {}".format(len(self.aoiSeasonInfos)))
+        i = 0
+        for seasonInfo in self.aoiSeasonInfos:
+            print("Season Idx  : {}".format(i))
+            print("Season Name : {}".format(seasonInfo.seasonName))
+            print("Season Id   : {}".format(seasonInfo.seasonId))
+            print("startS      : {}-{}-{}".format(seasonInfo.startSeasonYear, seasonInfo.startSeasonMonth, seasonInfo.startSeasonDay))
+            print("endS        : {}-{}-{}".format(seasonInfo.endSeasonYear, seasonInfo.endSeasonMonth, seasonInfo.endSeasonDay))
+            i += 1
+            
         print("CloudCov: {}".format(self.maxCloudCoverage))
         print("general configuration: ")
         if self.configObj != None:
@@ -668,7 +728,128 @@ class AOIInfo(object):
             self.conn.close()
             self.isConnected = False
 
-    def getAOI(self, satelliteId, site_id = -1, start_date = "", end_date = ""):
+#    def getAOI(self, satelliteId, site_id = -1, start_date = "", end_date = ""):
+#        writeDirSatelliteName = ""
+#        if satelliteId == SENTINEL2_SATELLITE_ID:
+#            writeDirSatelliteName = "s2."
+#        elif satelliteId == LANDSAT8_SATELLITE_ID:
+#            writeDirSatelliteName = "l8."
+#        else:
+#            return False
+#        if not self.databaseConnect():
+#            return False
+#        try:
+#            #self.cursor.execute("select *,st_astext(geog) from site")
+#            self.cursor.execute("select * from sp_downloader_get_sites()")
+#            rows = self.cursor.fetchall()
+#        except:
+#            self.databaseDisconnect()
+#            return []
+#        # retArray will be a list of AOIContext
+#        retArray = []
+#        for row in rows:
+#            if len(row) == 4 and row[3] != None:
+#                # retry in case of disconnection
+#                if not self.databaseConnect():
+#                    return False
+#                if site_id > 0 and site_id != int(row[0]):
+#                    continue
+#                currentAOI = AOIContext()
+#                currentAOI.siteId = int(row[0])
+#                currentAOI.siteName = row[2]
+#                currentAOI.polygon = row[3]
+#                
+#                baseQuery = "select * from sp_get_parameters(\'downloader."
+#                whereQuery = "where \"site_id\"="
+#                suffixArray = ["summer-season.start\')", "summer-season.end\')", "winter-season.start\')", "winter-season.end\')", "max-cloud-coverage\')", "{}max-retries')".format(writeDirSatelliteName), "{}write-dir\')".format(writeDirSatelliteName)]
+#                dbHandler = True
+#                idx = 0
+#                configArray = []
+#                for suffix in suffixArray:
+#                    baseQuerySite = "{}{}".format(baseQuery, suffix)
+#                    query = "{} {} {}".format(baseQuerySite, whereQuery, currentAOI.siteId)
+#                    #print("query with where={}".format(query))
+#                    baseQuerySite += " where \"site_id\" is null"
+#                    try:
+#                        self.cursor.execute(query)                        
+#                        if self.cursor.rowcount <= 0:
+#                            if idx <= 3:
+#                                configArray.append("null")
+#                            else:
+#                                self.cursor.execute(baseQuerySite)
+#                                if self.cursor.rowcount <= 0:
+#                                    print("Could not get even the default value for downloader.{}".format(suffix))
+#                                    dbHandler = False
+#                                    break
+#                                if self.cursor.rowcount != 1:
+#                                    print("More than 1 result from the db for downloader.{}".format(suffix))
+#                                    dbHandler = False
+#                                    break
+#                                result = self.cursor.fetchall()
+#                                #print("result={}".format(result))
+#                                configArray.append(result[0][2])
+#                        else:
+#                            result = self.cursor.fetchall()
+#                            #print("result={}".format(result))
+#                            configArray.append(result[0][2])
+#                        idx += 1
+#                    except Exception, e:
+#                        print("exception in query for downloader.{}:".format(suffix))
+#                        print("{}".format(e))
+#                        self.databaseDisconnect()
+#                        dbHandler = False
+#                        break
+#                if dbHandler:
+#                    if not configArray[-1].endswith("/"):
+#                        configArray[-1] += "/"
+#                    configArray[-1] += currentAOI.siteName
+#                    forced_season = False
+#                    if len(start_date) > 0 and len(end_date) > 0:
+#                        configArray[0] = start_date
+#                        configArray[1] = end_date
+#                        configArray[2] = "null"
+#                        configArray[3] = "null"
+#                        if site_id > 0:
+#                            # the offline_l1_handler app is calling this function with site_id set to -1, so don't print this message for it
+#                            print("Forcing manuall download for time interval: {} - {}".format(start_date, end_date))
+#                            sys.stdout.flush()
+#                        forced_season = True
+#                    if not currentAOI.setConfigParams(configArray, forced_season):
+#                        print("OUT OF THE SEASON")
+#                        sys.stdout.flush()
+#                        continue
+#                    try:
+#                        self.cursor.execute("""select \"product_name\" from downloader_history where satellite_id = %(sat_id)s :: smallint and
+#                                                                       site_id = %(site_id)s :: smallint and
+#                                                                       (status_id != %(status_failed)s ::smallint and status_id != %(status_downloading)s ::smallint) """, {
+#                                                                           "sat_id" : satelliteId,
+#                                                                           "site_id" : currentAOI.siteId,
+#                                                                           "status_failed" : DATABASE_DOWNLOADER_STATUS_FAILED_VALUE,
+#                                                                           "status_downloading" : DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE
+#                                                                       })
+#                        if self.cursor.rowcount > 0:
+#                            result = self.cursor.fetchall()
+#                            for res in result:
+#                                if len(res) == 1:
+#                                    currentAOI.appendHistoryFile(res[0])
+#                        self.cursor.execute("select * from sp_get_site_tiles({} :: smallint, {})".format(currentAOI.siteId, satelliteId))
+#                        if self.cursor.rowcount > 0:
+#                            result = self.cursor.fetchall()
+#                            for res in result:
+#                                if len(res) == 1:
+#                                    currentAOI.appendTile(res[0])
+#                    except Exception, e:
+#                        print("exception = {}".format(e))
+#                        print("Error in getting the downloaded files")
+#                        dbHandler = False
+#                        self.databaseDisconnect()
+#                if dbHandler:
+#                    retArray.append(currentAOI)
+#
+#        self.databaseDisconnect()
+#        return retArray
+
+    def getAOINew(self, satelliteId, site_id = -1, start_date = "", end_date = ""):
         writeDirSatelliteName = ""
         if satelliteId == SENTINEL2_SATELLITE_ID:
             writeDirSatelliteName = "s2."
@@ -699,11 +880,57 @@ class AOIInfo(object):
                 currentAOI.siteName = row[2]
                 currentAOI.polygon = row[3]
                 
+                dbHandler = True
+                forced_season = False
+                # First check if we neeed to override the current seasons for this site and use instead the specified start and end dates
+                if len(start_date) > 0 and len(end_date) > 0:
+                    # Force only one season with the specified dates
+                    currentSeasonInfo = SeasonInfo()
+                    currentSeasonInfo.seasonName = "forced_season"
+                    currentSeasonInfo.setStartSeasonDate(start_date)
+                    currentSeasonInfo.setEndSeasonDate(end_date)
+                    currentAOI.aoiSeasonInfos.append(currentSeasonInfo)
+                    if site_id > 0:
+                        # the offline_l1_handler app is calling this function with site_id set to -1, so don't print this message for it
+                        print("Forcing manuall download for time interval: {} - {}".format(start_date, end_date))
+                        sys.stdout.flush()
+                    forced_season = True
+                else :
+                    # Otherwise, read the seasons for the site from the DB 
+                    siteSeasonsQuery = "select * from sp_get_site_seasons({} :: smallint) where enabled = true".format(currentAOI.siteId)
+                    try:
+                        self.cursor.execute(siteSeasonsQuery)
+                        print("Executing seasons query for site name {} returned a number of = {} rows".format(currentAOI.siteName, self.cursor.rowcount))
+                        if self.cursor.rowcount > 0:
+                            siteSeasonsRows = self.cursor.fetchall()
+                            print("SiteSeasons={}".format(siteSeasonsRows))
+                            for siteSeasonRow in siteSeasonsRows:
+                                if len(siteSeasonRow) != 7:
+                                    continue
+                                currentSeasonInfo = SeasonInfo()
+                                currentSeasonInfo.seasonId = int(siteSeasonRow[0])
+                                currentSeasonInfo.seasonName = siteSeasonRow[2]
+                                # set the start season date
+                                currentSeasonInfo.setStartSeasonDate(siteSeasonRow[3])
+                                # set the end season date
+                                currentSeasonInfo.setEndSeasonDate(siteSeasonRow[4])
+                                currentAOI.aoiSeasonInfos.append(currentSeasonInfo)
+                    except Exception, e:
+                        print("exception in query for seasons for query {}:".format(siteSeasonsQuery))
+                        print("{}".format(e))
+                        self.databaseDisconnect()
+                        dbHandler = False
+                        break
+                
+                # If no seasons defined, there is no need to continue
+                if (len(currentAOI.aoiSeasonInfos) == 0 ) :
+                    print("No active seasons defined for site name {}. It will be ignored!".format(currentAOI.siteName))
+                    continue 
+                    
+                # Now get the downloader parameters from the config table (the max cloud coverage, the max retries and write directories for each satellite)
                 baseQuery = "select * from sp_get_parameters(\'downloader."
                 whereQuery = "where \"site_id\"="
-                suffixArray = ["summer-season.start\')", "summer-season.end\')", "winter-season.start\')", "winter-season.end\')", "max-cloud-coverage\')", "{}max-retries')".format(writeDirSatelliteName), "{}write-dir\')".format(writeDirSatelliteName)]
-                dbHandler = True
-                idx = 0
+                suffixArray = ["start.offset\')", "max-cloud-coverage\')", "{}max-retries')".format(writeDirSatelliteName), "{}write-dir\')".format(writeDirSatelliteName)]
                 configArray = []
                 for suffix in suffixArray:
                     baseQuerySite = "{}{}".format(baseQuery, suffix)
@@ -713,26 +940,22 @@ class AOIInfo(object):
                     try:
                         self.cursor.execute(query)                        
                         if self.cursor.rowcount <= 0:
-                            if idx <= 3:
-                                configArray.append("null")
-                            else:
-                                self.cursor.execute(baseQuerySite)
-                                if self.cursor.rowcount <= 0:
-                                    print("Could not get even the default value for downloader.{}".format(suffix))
-                                    dbHandler = False
-                                    break
-                                if self.cursor.rowcount != 1:
-                                    print("More than 1 result from the db for downloader.{}".format(suffix))
-                                    dbHandler = False
-                                    break
-                                result = self.cursor.fetchall()
-                                #print("result={}".format(result))
-                                configArray.append(result[0][2])
+                            self.cursor.execute(baseQuerySite)
+                            if self.cursor.rowcount <= 0:
+                                print("Could not get even the default value for downloader.{}".format(suffix))
+                                dbHandler = False
+                                break
+                            if self.cursor.rowcount != 1:
+                                print("More than 1 result from the db for downloader.{}".format(suffix))
+                                dbHandler = False
+                                break
+                            result = self.cursor.fetchall()
+                            #print("result={}".format(result))
+                            configArray.append(result[0][2])
                         else:
                             result = self.cursor.fetchall()
                             #print("result={}".format(result))
                             configArray.append(result[0][2])
-                        idx += 1
                     except Exception, e:
                         print("exception in query for downloader.{}:".format(suffix))
                         print("{}".format(e))
@@ -743,18 +966,7 @@ class AOIInfo(object):
                     if not configArray[-1].endswith("/"):
                         configArray[-1] += "/"
                     configArray[-1] += currentAOI.siteName
-                    forced_season = False
-                    if len(start_date) > 0 and len(end_date) > 0:
-                        configArray[0] = start_date
-                        configArray[1] = end_date
-                        configArray[2] = "null"
-                        configArray[3] = "null"
-                        if site_id > 0:
-                            # the offline_l1_handler app is calling this function with site_id set to -1, so don't print this message for it
-                            print("Forcing manuall download for time interval: {} - {}".format(start_date, end_date))
-                            sys.stdout.flush()
-                        forced_season = True
-                    if not currentAOI.setConfigParams(configArray, forced_season):
+                    if not currentAOI.setConfigParams(configArray):
                         print("OUT OF THE SEASON")
                         sys.stdout.flush()
                         continue
@@ -788,7 +1000,7 @@ class AOIInfo(object):
 
         self.databaseDisconnect()
         return retArray
-
+        
     def upsertProductHistory(self, siteId, satelliteId, productName, status, productDate, fullPath, orbit_id, maxRetries):
         if not self.databaseConnect():
             print("upsertProductHistory could not connect to DB")
@@ -918,7 +1130,7 @@ class SentinelAOIInfo(AOIInfo):
         AOIInfo.__init__(self, serverIP, databaseName, user, password, logFile)
 
     def getSentinelAOI(self, site_id = -1, start_date = "", end_date = ""):
-        return self.getAOI(SENTINEL2_SATELLITE_ID, site_id, start_date, end_date)
+        return self.getAOINew(SENTINEL2_SATELLITE_ID, site_id, start_date, end_date)
 
     #def updateSentinelHistory(self, siteId, productName, productDate, fullPath):
     #    return self.updateHistory(siteId, SENTINEL2_SATELLITE_ID, productName, productDate, fullPath)
@@ -933,7 +1145,7 @@ class LandsatAOIInfo(AOIInfo):
         AOIInfo.__init__(self, serverIP, databaseName, user, password, logFile)
 
     def getLandsatAOI(self, site_id = -1, start_date = "", end_date = ""):
-        return self.getAOI(LANDSAT8_SATELLITE_ID, site_id, start_date, end_date)
+        return self.getAOINew(LANDSAT8_SATELLITE_ID, site_id, start_date, end_date)
 
     #def updateLandsatHistory(self, siteId, productName, productDate, fullPath):
     #    return self.updateHistory(siteId, LANDSAT8_SATELLITE_ID, productName, productDate, fullPat)h

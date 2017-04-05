@@ -322,6 +322,12 @@ def check_cloud_limit(imagepath,limit):
 #signal.signal(signal.SIGINT, signal_handler)
 
 def landsat_download(aoiContext):
+    # Iterate site seasons and download the files for each of them
+    for seasonInfo in aoiContext.aoiSeasonInfos:
+        log(general_log_path, "Performing download for season start: {} end: {}".format(seasonInfo.startSeasonDate, seasonInfo.endSeasonDate), general_log_filename)
+        landsat_download_season(aoiContext, seasonInfo)
+
+def landsat_download_season(aoiContext, seasonInfo):
      global general_log_filename
      global general_log_path
      print("START")
@@ -357,8 +363,8 @@ def landsat_download(aoiContext):
 
      db = LandsatAOIInfo(aoiContext.configObj.host, aoiContext.configObj.database, aoiContext.configObj.user, aoiContext.configObj.password)
 
-     start_date = datetime.datetime(aoiContext.startSeasonYear, aoiContext.startSeasonMonth, aoiContext.startSeasonDay)
-     end_date   = datetime.datetime(aoiContext.endSeasonYear, aoiContext.endSeasonMonth, aoiContext.endSeasonDay)
+     start_date = datetime.datetime(seasonInfo.startSeasonYear, seasonInfo.startSeasonMonth, seasonInfo.startSeasonDay)
+     end_date   = datetime.datetime(seasonInfo.endSeasonYear, seasonInfo.endSeasonMonth, seasonInfo.endSeasonDay)
      log(general_log_path, "Number of tiles found {}".format(len(aoiContext.aoiTiles)), general_log_filename)
      if len(aoiContext.aoiTiles) == 0:
           log(general_log_path, "No tiles, nothing to do, exit".format(len(aoiContext.aoiTiles)), general_log_filename)
@@ -420,6 +426,8 @@ def landsat_download(aoiContext):
                                          days = date_asc[4:]
                                          prod_date = (datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(days))).strftime("%Y%m%dT000000")
                                          if downloadChunks(url, nom_prod, prod_date, lsdestdir, aoiContext, db):
+                                              # if the file successfully downloaded, append it also to the history files list
+                                              aoiContext.appendHistoryFile(nom_prod)
                                               downloaded_ids.append(nom_prod)
          if len(downloaded_ids) > 0:
               log(aoiContext.writeDir, "Downloaded product: {}".format(downloaded_ids), general_log_filename)
