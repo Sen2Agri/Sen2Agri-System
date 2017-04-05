@@ -177,6 +177,12 @@ def get_s2obj_from_file(aoiContext, xml, account, passwd, proxy):
 #signal.signal(signal.SIGINT, signal_handler)
 
 def sentinel_download(aoiContext):
+    # Iterate site seasons and download the files for each of them
+    for seasonInfo in aoiContext.aoiSeasonInfos:
+        log(aoiContext.writeDir, "Performing download for season start: {} end: {}".format(seasonInfo.startSeasonDate, seasonInfo.endSeasonDate), general_log_filename)
+        sentinel_download_season(aoiContext, seasonInfo)
+
+def sentinel_download_season(aoiContext, seasonInfo):
     global g_exit_flag
     global general_log_filename
     global download
@@ -227,14 +233,14 @@ def sentinel_download(aoiContext):
         auth = ["--user",account, "--password", passwd]
 
         query_geom = 'footprint:"Intersects({})"'.format(polygon)
-        queryResultsFilename = aoiContext.writeDir + "/" + str(aoiContext.siteName) + "_query_results_{}.xml".format(index)
+        queryResultsFilename = aoiContext.writeDir + "/" + str(aoiContext.siteName) + "_query_results_{}_{}.xml".format(seasonInfo.seasonName, index)
         index += 1
         print("queryResultsFilename = {}".format(queryResultsFilename))
         search_output = ["--output-document", queryResultsFilename]
         query = "{} filename:S2A*".format(query_geom)
 
-        start_date=str(aoiContext.startSeasonYear)+"-"+str(aoiContext.startSeasonMonth)+"-"+str(aoiContext.startSeasonDay)+"T00:00:00.000Z"
-        end_date=str(aoiContext.endSeasonYear)+"-"+str(aoiContext.endSeasonMonth)+"-"+str(aoiContext.endSeasonDay)+"T23:59:50.000Z"
+        start_date=str(seasonInfo.startSeasonYear)+"-"+str(seasonInfo.startSeasonMonth)+"-"+str(seasonInfo.startSeasonDay)+"T00:00:00.000Z"
+        end_date=str(seasonInfo.endSeasonYear)+"-"+str(seasonInfo.endSeasonMonth)+"-"+str(seasonInfo.endSeasonDay)+"T23:59:50.000Z"
 
         query_date = " beginPosition:[{} TO {}]".format(start_date, end_date)
         query = "{}{}".format(query, query_date)
@@ -284,7 +290,7 @@ def sentinel_download(aoiContext):
                             startIndex = curPage*100
                             print("StartIndex: {}".format(startIndex))
                             newQuery = query + "&rows=100&start=" + str(startIndex)
-                            queryResultsFilename = aoiContext.writeDir + "/" + str(aoiContext.siteName) + "_query_results_all_{}.xml".format(index)
+                            queryResultsFilename = aoiContext.writeDir + "/" + str(aoiContext.siteName) + "_query_results_all_{}_{}.xml".format(seasonInfo.seasonName, index)
                             index += 1                        
                             print("queryResultsFilename = {}".format(queryResultsFilename))
                             search_output = ["--output-document", queryResultsFilename]
@@ -325,7 +331,9 @@ def sentinel_download(aoiContext):
         if g_exit_flag:
             return
         if download:
-            product_download(s2Obj, aoiContext, db)
+            if product_download(s2Obj, aoiContext, db) :
+                # if the file successfully downloaded, append it also to the history files list
+                aoiContext.appendHistoryFile(s2Obj.filename)
             print("Finished to download product: {}".format(s2Obj.productname))
     log(aoiContext.writeDir, "Total products: {}".format(len(s2Objs)), general_log_filename)
         
