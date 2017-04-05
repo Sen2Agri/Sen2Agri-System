@@ -212,7 +212,8 @@ if (not args.enable):
     sys.exit("Please provide the enable flag using -e or --enable. Available options: (True/true/False/false)")
 
 enableDownload = False
-if (args.enable == "True") or (args.enable == "true"):
+enableStr = str(args.enable).lower()
+if (args.enable == "true") or (args.enable == "yes") or (args.enable == "y") or (args.enable == "t") or (args.enable == "1"):
     enableDownload = True
 
 tilesList = []
