@@ -115,9 +115,11 @@ QString SchedulerApp::GetTaskParametersJson(const ScheduledTask &task) {
     QJsonObject jsonObj;
     QJsonObject genParamsObj;
     QJsonObject cfgParamsObj;
+    genParamsObj["task_id"] = QString::number(task.taskId);
     genParamsObj["task_name"] = task.taskName;
     genParamsObj["task_description"] = "";
     genParamsObj["task_type"] = "scheduled";
+    genParamsObj["site_season_id"] = QString::number(task.seasonId);
 
     const auto &doc = QJsonDocument::fromJson(task.processorParameters.toUtf8());
     if (doc.isObject()) {

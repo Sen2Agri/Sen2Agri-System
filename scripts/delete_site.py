@@ -53,6 +53,13 @@ def get_bool_value(value):
         
 def delete_product_files(location):
     print("Deleting products from location {} ...".format(location))
+    try:
+        if os.path.isdir(location) :
+            shutil.rmtree(location)
+        else :
+            print("The folder {} does not exists. Ignored ...".format(location))
+    except:
+        print("Could NOT delete the folder {}".format(location))
     
 def get_products_folder(configKey, siteName, processor) :
     configVal = l2a_db.get_config_key(configKey)
@@ -219,8 +226,8 @@ class L2AInfo(object):
             return False
         try:
             print("Executing SQL command: {}".format(cmd))
-            #self.cursor.execute(cmd)
-            #self.conn.commit()
+            self.cursor.execute(cmd)
+            self.conn.commit()
         except Exception, e:
             print("Database update query failed: {}".format(e))
             self.database_disconnect()
@@ -281,8 +288,7 @@ args = parser.parse_args()
 
 config = Config()
 if not config.loadConfig(args.config):
-    log(general_log_path, "Could not load the config from configuration file", general_log_filename)
-    sys.exit(-1)
+    sys.exit("Could not load the config from configuration file {}".format(args.config))
 
 l2a_db = L2AInfo(config.host, config.database, config.user, config.password)
 

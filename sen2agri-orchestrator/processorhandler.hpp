@@ -33,13 +33,18 @@ protected:
     QString GetProductFormatterProductName(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterQuicklook(EventProcessingContext &ctx, const TaskFinishedEvent &event);
     QString GetProductFormatterFootprint(EventProcessingContext &ctx, const TaskFinishedEvent &event);
-    QDate GetSeasonDate(const QString &seasonDateStr, const QDateTime &executionDate, bool &bDateHasYear);
+    //QDate GetSeasonDate(const QString &seasonDateStr, const QDateTime &executionDate, bool &bDateHasYear);
     void EnsureStartSeasonLessThanEndSeasonDate(QDate &startSeasonDate, QDate &endSeasonDate, const QDateTime &executionDate, bool bStartDateHadYear, bool bEndDateHadYear);
-    bool GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,  QDateTime &startTime, QDateTime &endTime, const QDateTime &executionDate,
+/*    bool GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,  QDateTime &startTime, QDateTime &endTime, const QDateTime &executionDate,
                                 const ConfigurationParameterValueMap &requestOverrideCfgValues);
     bool GetSeasonStartEndDates(const ConfigurationParameterValueMap &seasonCfgValues, int siteId,
                                 QDateTime &startTime, QDateTime &endTime, const QString &keyStart, const QString &keyEnd,
                                 const QDateTime &executionDate);
+*/
+    bool GetSeasonStartEndDates(SchedulingContext &ctx, int siteId,
+                                   QDateTime &startTime, QDateTime &endTime,
+                                   const QDateTime &executionDate,
+                                   const ConfigurationParameterValueMap &requestOverrideCfgValues);
     QStringList GetL2AInputProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event);
     QStringList GetL2AInputProductsTiles(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                     QMap<QString, QStringList> &mapProductToTilesMetaFiles);
