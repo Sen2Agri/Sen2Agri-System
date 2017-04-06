@@ -28,6 +28,9 @@ bool ProcessorWrapper::Initialize(QStringList &listParams)
     bool bProcParam = false;
     QString strSrvIpAddr;
     QString strPortNo;
+    QString strSendRetriesNo;
+    QString strTimeoutBetweenRetries;
+    QString strExecutesLocal;
 
     m_listProcParams.clear();
     for (QStringList::iterator it = listParams.begin(); it != listParams.end(); ++it) {
@@ -63,6 +66,12 @@ bool ProcessorWrapper::Initialize(QStringList &listParams)
                     strSrvIpAddr = strVal;
                 } else if (strKey == "SRV_PORT_NO") {
                     strPortNo = strVal;
+                } else if (strKey == "WRP_SEND_RETRIES_NO") {
+                    strSendRetriesNo = strVal;
+                } else if (strKey == "WRP_TIMEOUT_BETWEEN_RETRIES") {
+                    strTimeoutBetweenRetries = strVal;
+                } else if (strKey == "WRP_EXECUTES_LOCAL") {
+                    strExecutesLocal = strVal;
                 }
             } else if (curParam == "PROC_PARAMS") {
                 bProcParam = true;
@@ -72,14 +81,16 @@ bool ProcessorWrapper::Initialize(QStringList &listParams)
 
     if (!strSrvIpAddr.isNull() && !strSrvIpAddr.isEmpty() && !strPortNo.isNull() &&
         !strPortNo.isEmpty()) {
-        int nPortNo = strPortNo.toInt();
-        if (nPortNo > 0) {
-            m_pClient = new SimpleTcpInfosClient();
-            m_pClient->Initialize(strSrvIpAddr, nPortNo);
-        } else {
-            Logger::fatal("Error during initialization: No valid server port was received!");
-            return false;
+        bool bOk = false;
+        int nPortNo = strPortNo.toInt(&bOk);
+        if (!bOk || nPortNo <= 0) {
+            Logger::error("Error during initialization: No valid server port was received. The default value 7777 will be used!");
+            nPortNo = 7777;
         }
+        m_pClient = new SimpleTcpInfosClient();
+        m_pClient->Initialize(strSrvIpAddr, nPortNo);
+        m_pClient->SetRetryParameters(strSendRetriesNo, strTimeoutBetweenRetries);
+        m_pClient->SetExecutesLocallyFlag(strExecutesLocal);
     } else {
         Logger::fatal("Error during initialization: No valid server configuration was received!");
         return false;

@@ -174,6 +174,9 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
     QString str;
     QString strIpVal;
     QString strPortVal;
+    QString strWrpSendRetriesNoVal;
+    QString strWrpTimeoutBetweenRetriesVal;
+    QString strWrpExecutesLocalVal;
     QString strJobName;
     QList<ExecutionStep>::const_iterator stepIt;
     int i = 0;
@@ -188,6 +191,12 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
     ConfigurationMgr::GetInstance()->GetValue(str, strIpVal);
     str = QString("SRV_PORT_NO");
     ConfigurationMgr::GetInstance()->GetValue(str, strPortVal);
+    str = QString("WRP_SEND_RETRIES_NO");
+    ConfigurationMgr::GetInstance()->GetValue(str, strWrpSendRetriesNoVal, "60");
+    str = QString("WRP_TIMEOUT_BETWEEN_RETRIES");
+    ConfigurationMgr::GetInstance()->GetValue(str, strWrpTimeoutBetweenRetriesVal, "1000");
+    str = QString("WRP_EXECUTES_LOCAL");
+    ConfigurationMgr::GetInstance()->GetValue(str, strWrpExecutesLocalVal, "1");
 
     QList<ExecutionStep> &execSteps = pReqParams->GetExecutionSteps();
     for (stepIt = execSteps.begin(); stepIt != execSteps.end(); stepIt++) {
@@ -222,6 +231,14 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
         listParams.append(strParam);
         strParam = QString("%1=%2").arg("SRV_PORT_NO", strPortVal);
         listParams.push_back(strParam);
+
+        strParam = QString("%1=%2").arg("WRP_SEND_RETRIES_NO", strWrpSendRetriesNoVal);
+        listParams.push_back(strParam);
+        strParam = QString("%1=%2").arg("WRP_TIMEOUT_BETWEEN_RETRIES", strWrpTimeoutBetweenRetriesVal);
+        listParams.push_back(strParam);
+        strParam = QString("%1=%2").arg("WRP_EXECUTES_LOCAL", strWrpExecutesLocalVal);
+        listParams.push_back(strParam);
+
         strParam = QString("%1=%2").arg("JOB_NAME", strJobName);
         listParams.push_back(strParam);
 

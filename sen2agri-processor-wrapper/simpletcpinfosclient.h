@@ -15,4 +15,7 @@ class SimpleTcpInfosClient : public AbstractExecInfosProtClient
 public:
     bool Initialize(const QString &strIpAddr, int nPortNo);
     bool SendMessage(const QString &strMsg);
+
+private:
+    bool SendMessage(const QString &strHostAddr, const QString &strMsg);
 };
