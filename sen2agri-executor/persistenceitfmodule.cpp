@@ -55,17 +55,11 @@ bool PersistenceItfModule::MarkStepFinished(int taskId,
 
 void PersistenceItfModule::RequestConfiguration()
 {
-    try
-    {
-        const auto &keys = clientInterface.GetConfigurationParameters("executor.");
-        SaveMainConfigKeys(keys);
-        // SaveProcessorsConfigKeys(keys);
-        emit OnConfigurationReceived();
-    }
-    catch (const std::exception &e)
-    {
-        qDebug() << e.what();
-    }
+    // Do not catch any exception as without configuration the executor is useles
+    const auto &keys = clientInterface.GetConfigurationParameters("executor.");
+    SaveMainConfigKeys(keys);
+    // SaveProcessorsConfigKeys(keys);
+    emit OnConfigurationReceived();
 }
 
 QString PersistenceItfModule::GetExecutorQos(int processorId) {
@@ -99,6 +93,18 @@ void PersistenceItfModule::SaveMainConfigKeys(const ConfigurationParameterValueL
         }
         if (p.key == "executor.wrapper-path") {
             QString strKey("PROCESSOR_WRAPPER_PATH");
+            ConfigurationMgr::GetInstance()->SetValue(strKey, p.value);
+        }
+        if (p.key == "executor.wrp-send-retries-no") {
+            QString strKey("WRP_SEND_RETRIES_NO");
+            ConfigurationMgr::GetInstance()->SetValue(strKey, p.value);
+        }
+        if (p.key == "executor.wrp-timeout-between-retries") {
+            QString strKey("WRP_TIMEOUT_BETWEEN_RETRIES");
+            ConfigurationMgr::GetInstance()->SetValue(strKey, p.value);
+        }
+        if (p.key == "executor.wrp-executes-local") {
+            QString strKey("WRP_EXECUTES_LOCAL");
             ConfigurationMgr::GetInstance()->SetValue(strKey, p.value);
         }
     }
