@@ -44,6 +44,9 @@ INSERT INTO config_metadata VALUES ('executor.wrapper-path', 'Processor Wrapper 
 INSERT INTO config_metadata VALUES ('monitor-agent.scan-interval', 'Measurement Interval (s)', 'int', true, 13);
 INSERT INTO config_metadata VALUES ('executor.listen-ip', 'Executor IP Address', 'string', true, 8);
 INSERT INTO config_metadata VALUES ('executor.listen-port', 'Executor Port', 'int', true, 8);
+INSERT INTO config_metadata VALUES ('executor.wrp-send-retries-no', 'Number of wrapper retries to connect to executor when TCP error', 'int', true, 8);
+INSERT INTO config_metadata VALUES ('executor.wrp-timeout-between-retries', 'Timeout between wrapper retries to executor when TCP error', 'int', true, 8);
+INSERT INTO config_metadata VALUES ('executor.wrp-executes-local', 'Execution of wrappers are only local', 'int', true, 8);
 INSERT INTO config_metadata VALUES ('executor.shapes_dir', 'Tiles shapes directory', 'directory', true, 8);
 INSERT INTO config_metadata VALUES ('archiver.max_age.l2a', 'L2A Product Max Age (days)', 'int', false, 7);
 INSERT INTO config_metadata VALUES ('archiver.max_age.l3a', 'L3A Product Max Age (days)', 'int', false, 7);
@@ -130,7 +133,7 @@ INSERT INTO config_metadata VALUES ('demmaccs.srtm-path', 'path where the srtm f
 INSERT INTO config_metadata VALUES ('demmaccs.swbd-path', 'path where the swbd files are to be found', 'string', false, 16);
 INSERT INTO config_metadata VALUES ('demmaccs.maccs-launcher', 'launcher for maccs within the keeping unit', 'string', false, 16);
 INSERT INTO config_metadata VALUES ('demmaccs.working-dir', 'working directory for demmaccs', 'string', false, 16);
-INSERT INTO config_metadata VALUES ('processor.l4a.reference_data_dir', 'CropMask folder where insitu data are checked', 'file', false, 5);
+INSERT INTO config_metadata VALUES ('processor.l4a.reference_data_dir', 'CropMask folder where insitu data are checked', 'string', false, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.mission', 'The main mission for the time series', 'string', false, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.temporal_resampling_mode', 'The temporal resampling mode choices=[resample, gapfill]', 'string', false, 5);
 INSERT INTO config_metadata VALUES ('downloader.s2.write-dir', 'Write directory for Sentinel2', 'string', false, 15);
