@@ -16,6 +16,10 @@ begin
     inner join site on site.id = season.site_id
     where season.id = _season_id;
 
+    if not found then
+        raise exception 'Invalid season id %', _season_id;
+    end if;
+
     select site_id,
            name,
            start_date,
@@ -86,6 +90,11 @@ begin
                     1 :: smallint,
                     '{}' :: json);
     end if;
+
+    if _processor_id is not null and _processor_id not in (2, 3, 5, 6) then
+        raise exception 'No default jobs defined for processor id %', _processor_id;
+    end if;
+
 end;
 $$
     language plpgsql volatile;
