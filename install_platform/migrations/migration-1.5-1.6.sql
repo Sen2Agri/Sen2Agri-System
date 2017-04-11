@@ -830,6 +830,28 @@ begin
             raise notice '%', _statement;
             execute _statement;
 
+            raise notice 'applying b8780dbde6d7baaed9a530b7c7b7ce7acb766bf5';
+            _statement := $str$
+                create or replace function sp_get_season_scheduled_processors(
+                    _season_id season.id%type
+                )
+                returns table (
+                    processor_id processor.id%type
+                ) as
+                $$
+                begin
+                    return query
+                        select distinct
+                            scheduled_task.processor_id
+                        from scheduled_task
+                        where scheduled_task.season_id = _season_id;
+                end;
+                $$
+                    language plpgsql stable;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+
             _statement := 'update meta set version = ''1.6'';';
             raise notice '%', _statement;
             execute _statement;
