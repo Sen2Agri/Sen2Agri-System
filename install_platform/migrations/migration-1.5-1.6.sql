@@ -830,21 +830,29 @@ begin
             raise notice '%', _statement;
             execute _statement;
 
-            raise notice 'applying b8780dbde6d7baaed9a530b7c7b7ce7acb766bf5';
+            raise notice 'applying 9c43cfbf7ad569e76e97e275cd1c2ead0e43605f';
             _statement := $str$
                 create or replace function sp_get_season_scheduled_processors(
                     _season_id season.id%type
                 )
                 returns table (
-                    processor_id processor.id%type
+                    processor_id processor.id%type,
+                    processor_name processor.name%type,
+                    processor_short_name processor.short_name%type
                 ) as
                 $$
                 begin
                     return query
-                        select distinct
-                            scheduled_task.processor_id
-                        from scheduled_task
-                        where scheduled_task.season_id = _season_id;
+                        select
+                            processor.id,
+                            processor.name,
+                            processor.short_name
+                        from processor
+                        where exists(select *
+                                    from scheduled_task
+                                    where scheduled_task.season_id = _season_id
+                                    and scheduled_task.processor_id = processor.id)
+                        order by processor.short_name;
                 end;
                 $$
                     language plpgsql stable;
