@@ -99,8 +99,6 @@ INSERT INTO config_metadata VALUES ('processor.l3b.reprocess', 'Specifies if N-D
 INSERT INTO config_metadata VALUES ('processor.l3b.fitted', 'Specifies if fitting reprocessing (end of season) should be performed for LAI', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.production_interval', 'The backward processing interval from the scheduled date for L3B products', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.reproc_production_interval', 'The backward processing interval from the scheduled date for L3C products', 'int', false, 4);
-INSERT INTO config_metadata VALUES ('downloader.summer-season.start', 'Summer Season Start', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.summer-season.end', 'Summer Season End', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('downloader.start.offset', 'Season start offset in months', 'int', false, 15);
 INSERT INTO config_metadata VALUES ('site.upload-path', 'Upload path', 'string', false, 17);
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-bv-input-variable-generation', 'BV input variables generator', 'file', true, 8);
@@ -140,11 +138,9 @@ INSERT INTO config_metadata VALUES ('downloader.s2.write-dir', 'Write directory 
 INSERT INTO config_metadata VALUES ('processor.l4a.random_seed', 'The random seed used for training', 'float', false, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.window', 'The window expressed in number of records used for the temporal features extraction', 'int', false, 5);
 INSERT INTO config_metadata VALUES ('downloader.l8.write-dir', 'Write directory for Landsat8', 'string', false, 15);
-INSERT INTO config_metadata VALUES ('downloader.winter-season.end', 'Winter Season End', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('processor.l4a.smoothing-lambda', 'The lambda parameter used in data smoothing', 'float', false, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.nbcomp', 'The number of components used by dimensionality reduction', 'int', false, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.segmentation-spatial-radius', 'The spatial radius of the neighborhood used for segmentation', 'int', false, 5);
-INSERT INTO config_metadata VALUES ('downloader.winter-season.start', 'Winter Season Start', 'string', false, 15);
 INSERT INTO config_metadata VALUES ('processor.l4a.range-radius', 'The range radius defining the radius (expressed in radiometry unit) in the multispectral space', 'float', false, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.segmentation-minsize', 'Minimum size of a region (in pixel unit) in segmentation.', 'int', false, 5);
 INSERT INTO config_metadata VALUES ('processor.l4a.erode-radius', 'The radius used for erosion', 'int', false, 5);
