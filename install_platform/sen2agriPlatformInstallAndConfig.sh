@@ -772,9 +772,14 @@ install_downloaders_demmacs
 #-----------------------------------------------------------#
 ####  START ORCHESTRATOR SERVICES                       #####
 #-----------------------------------------------------------#
-systemctl enable --now sen2agri-orchestrator
-systemctl enable --now sen2agri-scheduler
-systemctl enable --now sen2agri-http-listener
+systemctl enable sen2agri-orchestrator
+systemctl start sen2agri-orchestrator
+systemctl enable sen2agri-scheduler
+systemctl start sen2agri-scheduler
+systemctl enable sen2agri-http-listener
+systemctl start sen2agri-http-listener
+systemctl enable sen2agri-monitor-agent
+systemctl start sen2agri-monitor-agent
 
 echo "Please edit the following files to set up your USGS and SciHub credentials:"
 echo "/usr/share/sen2agri/sen2agri-downloaders/usgs.txt"

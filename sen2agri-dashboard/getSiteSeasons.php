@@ -7,25 +7,27 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 	$result = pg_query_params ( $db, "SELECT * FROM sp_get_site_seasons($1)", array ($_REQUEST['siteId']) ) or die ( "Could not execute." );
 	
 	// get list of seasons to be displayed on the main page
-	if ($_REQUEST["action"] == "get") { ?>
-		<table class='subtable'>
-		<?php
-		while ( $row = pg_fetch_row ( $result ) ) {
-			$seasonName     = $row[2];
-			$seasonStart    = $row[3];
-			$seasonEnd      = $row[4];
-			$seasonMid      = $row[5];
-			$season_enabled = $row[6] == "t" ? true : false;
-			?>
-			<tr>
-				<td><?= $seasonName  ?></td>
-				<td><?= $seasonStart ?></td>
-				<td><?= $seasonMid   ?></td>
-				<td><?= $seasonEnd   ?></td>
-				<td><input class="form-control" type="checkbox" name="season_enabled"<?= ($season_enabled ? " checked" : "" ) ?>></td>
-			</tr>
+	if ($_REQUEST["action"] == "get") {
+		if (pg_num_rows($result) > 0) { ?>
+			<table class='subtable'>
+			<?php
+			while ( $row = pg_fetch_row ( $result ) ) {
+				$seasonName     = $row[2];
+				$seasonStart    = $row[3];
+				$seasonEnd      = $row[4];
+				$seasonMid      = $row[5];
+				$season_enabled = $row[6] == "t" ? true : false;
+				?>
+				<tr>
+					<td><?= $seasonName  ?></td>
+					<td><?= $seasonStart ?></td>
+					<td><?= $seasonMid   ?></td>
+					<td><?= $seasonEnd   ?></td>
+					<td><input class="form-control" type="checkbox" name="season_enabled"<?= ($season_enabled ? " checked" : "" ) ?>></td>
+				</tr>
+			<?php } ?>
+			</table>
 		<?php } ?>
-		</table>
 <?php // get list of seasons for edit purposes
 	} elseif ($_REQUEST["action"] == "edit") { ?>
 		<table class="edit" id="seasons">
@@ -113,7 +115,15 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 			$("#seasons input[name='edit']").unbind( "click" );
 			$("#seasons input[name='edit']").click(function() {
 				var parent = $(this).parent().parent();
-				$(parent).find("td>input.form-control").prop("disabled", false);
+				
+				// enable all season controls
+				$(parent).find("td input.form-control").prop("disabled", false);
+				
+				// enable bootstrapSwitch for season_enabled
+				var boots = $(parent).find("input[name='season_enabled']");
+				$(boots).bootstrapSwitch('disabled',false);
+				
+				// show/hide action buttons
 				$(this).addClass("hidden");
 				$(parent).find("input[name='remove']").addClass("hidden");
 				$(parent).find("input[name='save']").removeClass("hidden");
@@ -122,7 +132,15 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 			$("#seasons input[name='add']").unbind( "click" );
 			$("#seasons input[name='add']").click(function() {
 				var parent = $(this).parent().parent();
-				$(parent).find("td>input.form-control").prop("disabled", false);
+				
+				// enable all season controls
+				$(parent).find("td input.form-control").prop("disabled", false);
+				
+				// enable bootstrapSwitch for season_enabled
+				var boots = $(parent).find("input[name='season_enabled']");
+				$(boots).bootstrapSwitch('disabled',false);
+				
+				// show/hide action buttons
 				$(this).addClass("hidden");
 				$(parent).find("input[name='save']").removeClass("hidden");
 				$(parent).find("input[name='cancel']").removeClass("hidden");
@@ -131,38 +149,56 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 			$("#seasons input[name='cancel']").click(function() {
 				var parent = $(this).parent().parent();
 				if ($(parent).data("id") == 0) {
-					// cancel add new season
-					$(parent).find("td>input[type='checkbox']").prop("checked",false);
-					$(parent).find("td>input.form-control").prop("disabled", true);
+				// *** cancel add new season ***
+					// disable all season controls
+					$(parent).find("td input.form-control").prop("disabled", true);
+					
+					// uncheck bootstrapSwitch for season_enabled and then disable it
+					var boots = $(parent).find("input[name='season_enabled']");
+					$(boots).bootstrapSwitch('state', false);
+					$(boots).bootstrapSwitch('disabled', true);
+					
+					// show/hide action buttons
 					$(parent).find("input[name='save']").addClass("hidden");
 					$(parent).find("input[name='add']").removeClass("hidden");
 				} else {
-					// cancel update season
-					$($(parent).find("td>input.form-control")).each(function() {
+				// *** cancel update season ***
+					$($(parent).find("td input.form-control")).each(function() {
 						if($(this).attr("type") == "checkbox") {
-							$(this).prop("checked", ($(this).data("save") == "t"));
+							// restore previous state of bootstrapSwitch for season_enabled and then disable it
+							$(this).bootstrapSwitch('state', $(this).data("save") == "t");
+							$(this).bootstrapSwitch('disabled', true);
 						} else {
+							// restore previous value for season control
 							$(this).val($(this).data("save"));
 						}
+						// disable season control
 						$(this).prop("disabled", true);
 					});
+					
+					// show/hide action buttons
 					$(parent).find("input[name='save']").addClass("hidden");
 					$(parent).find("input[name='edit']").removeClass("hidden");
 					$(parent).find("input[name='remove']").removeClass("hidden");
 				}
+				// hide cancel action button
 				$(this).addClass("hidden");
+				
 				$("#server-response").html("");
 			});
 			$("#seasons input[name='save']").unbind( "click" );
 			$("#seasons input[name='save']").click(function() {
+				// read season "form" data
 				var parent         = $(this).parent().parent();
 				var site_id        = <?= $_REQUEST['siteId'] ?>;
 				var season_id      = $(parent).data("id");
-				var season_name    = $(parent).find("td>input[name='season_name']").val();
-				var season_start   = $(parent).find("td>input[name='season_start']").val();
-				var season_mid     = $(parent).find("td>input[name='season_mid']").val();
-				var season_end     = $(parent).find("td>input[name='season_end']").val();
-				var season_enabled = $(parent).find("td>input[name='season_enabled']").prop("checked") ? "t" : "f";
+				var season_name    = $(parent).find("td input[name='season_name']").val();
+				var season_start   = $(parent).find("td input[name='season_start']").val();
+				var season_mid     = $(parent).find("td input[name='season_mid']").val();
+				var season_end     = $(parent).find("td input[name='season_end']").val();
+				var season_enabled = $(parent).find("td input[name='season_enabled']").bootstrapSwitch("state") ? "t" : "f";
+				
+				// save season to database
 				$.ajax({
 					url: "manageSiteSeason.php",
 					type: "get",
@@ -179,28 +215,36 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 					dataType: "html",
 					success: function(data) {
 						if (data.match("^SUCCESS")) {
+							// show/hide action buttons
 							$(parent).find("input[name='save']").addClass("hidden");
 							$(parent).find("input[name='cancel']").addClass("hidden");
 							$(parent).find("input[name='edit']").removeClass("hidden");
 							$(parent).find("input[name='remove']").removeClass("hidden");
-							$(parent).find("td>input.form-control").each(function() {
+							
+							$(parent).find("td input.form-control").each(function() {
 								if($(this).attr("type") == "checkbox") {
-									var chk = $(this).prop("checked") ? "t" : "f";
+									// save new state of bootstrapSwitch for season_enabled and then disable it
+									var chk = $(this).bootstrapSwitch("state") ? "t" : "f";
 									$(this).attr("data-save", chk);
 									$(this).data("save", chk);
+									$(this).bootstrapSwitch('disabled', true);
 								} else {
+									// save new values for season controls
 									var sav = $(this).val();
 									$(this).attr("data-save", sav);
 									$(this).data("save", sav);
 								}
+								// disable season control
 								$(this).prop("disabled", true);
 							});
 							if (data.match("^SUCCESS: added")) {
+								// create new "add line" after new season was added
 								var new_season_id = data.substr(15);
 								$(parent).attr("data-id", new_season_id);
 								$(parent).data("id", new_season_id);
 								replace_add_table_line();
 							}
+							
 							$("#server-response").html("");
 						} else {
 							$("#server-response").html(data);
@@ -239,13 +283,22 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 					});
 				}
 			});
+			// set bootstrapSwitch for all season_enabled controls
+			$("#site-seasons").find("input[name='season_enabled']").bootstrapSwitch({
+				size: "mini",
+				onColor: "success",
+				offColor: "default",
+				disabled: true,
+				handleWidth: 25
+			});
 		}
 		function set_datepicker() {
 			$("input[name='season_start']").datepicker({dateFormat: "yy-mm-dd"});
 			$("input[name='season_mid']").datepicker({dateFormat: "yy-mm-dd"});
 			$("input[name='season_end']").datepicker({dateFormat: "yy-mm-dd"});
 		}
-		
+
+/*
 		// onChange event for start datepickers for add site form
 		$("#startseason_winter").on('change dp.change', function() {
 			var date1 = $('#startseason_winter').datepicker('getDate');
@@ -254,7 +307,7 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 				$('#endseason_winter').datepicker('setDate', date1);
 			}
 		});
-		
+*/
 		set_button_actions();
 		set_datepicker();
 		refreshDialogPosition();

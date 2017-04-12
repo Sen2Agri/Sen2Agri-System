@@ -112,15 +112,11 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
 	
 	function insertSiteSeason($site, $coord, $wint_start, $wint_end, $summ_star, $summ_end, $enbl) {
 		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-		$sql = "SELECT sp_dashboard_add_site($1,$2,$3,$4,$5,$6,$7)";
+		$sql = "SELECT sp_dashboard_add_site($1,$2,$3)";
 		$res = pg_prepare ( $db, "my_query", $sql );
 		$res = pg_execute ( $db, "my_query", array (
 				$site,
 				$coord,
-				$wint_start,
-				$wint_end,
-				$summ_star,
-				$summ_end,
 				$enbl
 		) ) or die ( "An error occurred." );
 	}
@@ -139,7 +135,7 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
 	} else {
 		$_SESSION['status'] =  "NOK"; $_SESSION['message'] = $message;  $_SESSION['result'] = $coord_geog;
 	}
-
+	
 	// Prevent adding site when refreshing page
 	die(Header("Location: {$_SERVER['PHP_SELF']}"));
 }
@@ -165,14 +161,10 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 	
 	function updateSiteSeason($id, $short_name, $coord, $wint_start, $wint_end, $summ_star, $summ_end, $enbl) {
 		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-		$res = pg_query_params ( $db, "SELECT sp_dashboard_update_site($1,$2,$3,$4,$5,$6,$7,$8)", array (
+		$res = pg_query_params ( $db, "SELECT sp_dashboard_update_site($1,$2,$3,$4)", array (
 				$id,
 				$short_name,
 				$coord,
-				$wint_start,
-				$wint_end,
-				$summ_star,
-				$summ_end,
 				$enbl
 		) ) or die ( "An error occurred." );
 	}
@@ -214,18 +206,14 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 			<!-- Start code for adding site---------- -->
 			<div class="panel panel-default create-site">
 				<div class="panel-body">
-<?php
-if (!(empty($_SESSION ['siteId']))) {
-	// not admin ?>
-					<div class="panel-heading row">Seasons site details</div>
-<?php
-} else {
-	// admin ?>
-					<div class="panel-heading row">
-						<input name="addsite" type="button" class="add-edit-btn" value="Create new site" onclick="formAddSite()" style="width: 200px">
-					</div>
-<?php
-} ?>
+					<?php
+					if (!(empty($_SESSION ['siteId']))) {
+						// not admin ?>
+						<div class="panel-heading row">Seasons site details</div>
+					<?php } else {
+						// admin ?>
+						<div class="panel-heading row"><input name="addsite" type="button" class="add-edit-btn" value="Create new site" onclick="formAddSite()" style="width: 200px"></div>
+					<?php } ?>
 					<!---------------------------  form  add site ------------------------>
 					<div class="add-edit-site" id="div_addsite" style="display: none;">
 						<form enctype="multipart/form-data" id="siteform" action="create_site.php" method="post">
@@ -342,10 +330,10 @@ if (!(empty($_SESSION ['siteId']))) {
 						$result = "";
 						$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 						if (empty($_SESSION['siteId'])) {
-							$sql_select = "SELECT * FROM sp_get_dashboard_sites_seasons(null)";
+							$sql_select = "SELECT * FROM sp_get_sites(null)";
 							$result = pg_query_params ( $db, $sql_select, array () ) or die ( "Could not execute." );
 						} else {
-							$sql_select = "SELECT * FROM sp_get_dashboard_sites_seasons($1)";
+							$sql_select = "SELECT * FROM sp_get_sites($1)";
 							$result = pg_query_params ( $db, $sql_select, array($_SESSION['siteId']) ) or die ( "Could not execute." );
 						}
 						while ( $row = pg_fetch_row ( $result ) ) {
@@ -353,21 +341,18 @@ if (!(empty($_SESSION ['siteId']))) {
 							$siteName      = $row[1];
 							$shortName     = $row[2];
 							$site_enabled  =($row[3] == "t") ? true : false;
-							$seasons_count = $row[4];
 							?>
 							<tr data-id="<?= $siteId ?>">
 								<td><?= $siteName ?></td>
 								<td><?= $shortName ?></td>
-								<td class="seasons" data-count="<?= $seasons_count ?>">
-								<td class="link">
-									<a onclick='formEditSite(<?= $siteId ?>,"<?= $siteName ?>","<?= $shortName ?>",<?= $site_enabled ? "true" : "false" ?>)'>Edit</a>
-								</td>
+								<td class="seasons"></td>
+								<td class="link"><a onclick='formEditSite(<?= $siteId ?>,"<?= $siteName ?>","<?= $shortName ?>",<?= $site_enabled ? "true" : "false" ?>)'>Edit</a></td>
 								<td><input type="checkbox" name="enabled-checkbox"<?= $site_enabled ? "checked" : "" ?>></td>
 							</tr>
 						<?php } ?>
 						</tbody>
 					</table>
-					<!------ list sites ------->
+					<!------------------------------ end list sites ------------------------------>
 				</div>
 			</div>
 			<!-- End code for adding site---------- -->
@@ -389,8 +374,10 @@ if (!(empty($_SESSION ['siteId']))) {
 
 <script type="text/javascript">
 $(document).ready( function() {
-	// get all sites seasons
-	getSiteSeasons(0);
+	// get all site seasons
+	$("table.table td.seasons").each(function() {
+		getSiteSeasons($(this).parent().data("id"));
+	});
 	
 	// create dialog for add site form
 	$("#div_addsite").dialog({
@@ -523,18 +510,18 @@ $(document).ready( function() {
 });
 
 function getSiteSeasons(site_id) {
-	var collection = (site_id > 0) ? "table.table tr[data-id='" + site_id + "'] td.seasons" : "table.table td.seasons";
+	var collection = "table.table tr[data-id='" + site_id + "'] td.seasons";
 	$(collection).each(function() {
 		var season = this;
-		if ($(season).data("count") > 0) {
-			$.ajax({
-				url: "getSiteSeasons.php",
-				type: "get",
-				cache: false,
-				crosDomain: true,
-				data:  { "siteId": $(season).parent().data("id"), "action": "get" },
-				dataType: "html",
-				success: function(data) {
+		$.ajax({
+			url: "getSiteSeasons.php",
+			type: "get",
+			cache: false,
+			crosDomain: true,
+			data: { "siteId": $(season).parent().data("id"), "action": "get" },
+			dataType: "html",
+			success: function(data) {
+				if (data.length > 0) {
 					$(season).html(data);
 					$(season).find("input[name='season_enabled']").bootstrapSwitch({
 						size: "mini",
@@ -543,15 +530,14 @@ function getSiteSeasons(site_id) {
 						disabled: true,
 						handleWidth: 25
 					});
-				},
-				error: function (responseData, textStatus, errorThrown) {
-					console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+				} else {
+					$(season).html("-");
 				}
-			});	
-		} else {
-			var data = "-";
-			$(season).html(data);
-		}
+			},
+			error: function (responseData, textStatus, errorThrown) {
+				console.log("Response: " + responseData + "   Status: " + textStatus + "   Error: " + errorThrown);
+			}
+		});	
 	});
 }
 
@@ -606,18 +592,9 @@ function resetEditAdd(formName) {
 		validator.resetForm();
 		$("#siteform_edit")[0].reset();
 		
-		// refresh corresponding seasons
-		var season_count = $("#div_editsite #seasons>tbody>tr").length - 1;
+		// refresh seasons for edited/added site
 		var site_id = $("#div_editsite").data("id");
-		if (season_count > 0) {
-			$("table.table tr[data-id='" + site_id + "'] td.seasons").data("count", season_count);
-			$("table.table tr[data-id='" + site_id + "'] td.seasons").attr("data-count", season_count);
-			getSiteSeasons(site_id);
-		} else {
-			$("table.table tr[data-id='" + site_id + "'] td.seasons").removeData("count");
-			$("table.table tr[data-id='" + site_id + "'] td.seasons").removeAttr("data-count");
-			$("table.table tr[data-id='" + site_id + "'] td.seasons").html("-");
-		}
+		getSiteSeasons(site_id);
 		$("#div_editsite").removeData("id");
 	}
 	$( ".create-site tr").removeClass("editing");
