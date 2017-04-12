@@ -392,7 +392,7 @@ $(document).ready( function() {
 	// create dialog for edit site form
 	$("#div_editsite").dialog({
 		title: "Edit Site",
-		width: '660px',
+		width: '700px',
 		autoOpen: false,
 		modal: true,
 		resizable: false,

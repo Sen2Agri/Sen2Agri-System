@@ -2,10 +2,11 @@
 	session_start();
 	require_once('ConfigParams.php');
 	
-	function saveSiteSeason($id, $site_id, $name, $start, $middle, $end, $enabled) {
-		$ret = ""; 
+	function saveSiteSeason($id, $site_id, $name, $start, $middle, $end, $enabled, $processors) {
+		$ret = "";
 		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 		if ($id == 0) {
+			// save new season
 			$result = pg_query_params ($db, "SELECT sp_insert_season($1,$2,$3,$4,$5,$6)",
 									array(	$site_id,
 											$name,
@@ -15,11 +16,18 @@
 											$enabled )
 			) or die ("An error occurred.");
 			if($result !== FALSE) {
-				$ret = "SUCCESS: added " . pg_fetch_result($result, 0, 0);
+				$new_id = pg_fetch_result($result, 0, 0);
+				// start default scheduled tasks
+				foreach ($processors as $proc_id) {
+					$result = pg_query_params ($db, "SELECT sp_insert_default_scheduled_tasks($1,$2)", array($new_id, $proc_id)) or die ("An error occurred.");
+				}
+				$ret = "SUCCESS: added " . $new_id;
 			} else {
 				$ret =  "ERROR: The season was not added.";
 			}
+			
 		} else {
+			// update existing season
 			$result = pg_query_params ($db, "SELECT sp_update_season($1,$2,$3,$4,$5,$6,$7)",
 									array(	$id,
 											$site_id,
@@ -48,7 +56,8 @@
 			$season_mid     = $_REQUEST["seasonMiddle"];
 			$season_end     = $_REQUEST["seasonEnd"];
 			$season_enabled = $_REQUEST["seasonEnabled"];
-			$ret = saveSiteSeason($season_id, $site_id, $season_name, $season_start, $season_mid, $season_end, $season_enabled);
+			$processors     = $_REQUEST["activeProcessors"];
+			$ret = saveSiteSeason($season_id, $site_id, $season_name, $season_start, $season_mid, $season_end, $season_enabled, $processors);
 		} elseif ($_REQUEST["action"] == "remove") {
 			$ret = removeSiteSeason($season_id);
 		}

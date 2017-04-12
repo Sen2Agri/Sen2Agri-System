@@ -599,9 +599,22 @@ div.add-edit-site table.edit {width:100%;border-width:1px 1px 0 1px;border-style
 div.add-edit-site table.edit th{line-height:2.5em;background-color:#eeeeee}
 div.add-edit-site table.edit th,
 div.add-edit-site table.edit td{text-align:center;border:0;padding:2px;border-bottom:1px solid #cccccc}
-div.add-edit-site table.edit th.action{min-width:82px}
+div.add-edit-site table.edit tr:last-child td{vertical-align:top}
+div.add-edit-site table.edit tr:last-child td>div{margin-top:1px}
+div.add-edit-site table.edit th{padding:5px;line-height:1em}
+div.add-edit-site table.edit th.action{min-width:60px}
 div.add-edit-site table.edit td input{text-align:center}
-div.add-edit-site table.edit td input[type="checkbox"]{width:auto;display:inline;height:auto}
+div.add-edit-site table.edit td input[type="checkbox"]{width:auto;display:inline;height:auto;cursor:default}
+div.add-edit-site table.edit td div.proc{position:relative;min-height:22px}
+div.add-edit-site table.edit td div.proc h2{font-family:Arial;font-size:0.8em;color:#0058ff;padding-top:5px;margin:0}
+div.add-edit-site table.edit td div.proc div{display:none;position:absolute;left:0;top:0;padding:5px;min-width:70px;text-align:left;z-index:998}
+div.add-edit-site table.edit td div.proc input{margin:0}
+div.add-edit-site table.edit td div.proc label{font-weight:400;display:block}
+div.add-edit-site table.edit td div.proc span{display:block;white-space:nowrap;font-size:0.8em;color:#285e80;font-size:0.85em;line-height:1.2em}
+div.add-edit-site table.edit tr:not(:last-child) div.proc:hover h2{display:none}
+div.add-edit-site table.edit tr:not(:last-child) div.proc:hover div{display:block;background-color:#ddf0fb;border:1px solid #9fbcce;z-index:999}
+div.add-edit-site table.edit tr:last-child td div.proc h2{display:none}
+div.add-edit-site table.edit tr:last-child td div.proc div{display:block;position:relative}
 
 div.add-edit-site form {
 	font: 14px Arial, Helvetica, sans-serif;
