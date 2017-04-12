@@ -624,6 +624,242 @@ begin
             raise notice '%', _statement;
             execute _statement;
 
+            raise notice 'applying 557e5a8594689c5c6c3e4b2c98d134ade818c749';
+            _statement = 'DROP FUNCTION sp_dashboard_add_site(character varying, character varying, character varying, character varying, character varying, character varying, boolean);';
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement := $str$
+                CREATE OR REPLACE FUNCTION sp_dashboard_add_site(
+                    _name character varying,
+                    _geog character varying,
+                    _enabled boolean)
+                RETURNS smallint AS
+                $BODY$
+                DECLARE _short_name smallint;
+                DECLARE return_id smallint;
+                BEGIN
+
+                    _short_name := lower(_name);
+                    _short_name := regexp_replace(_short_name, '\W+', '_', 'g');
+                    _short_name := regexp_replace(_short_name, '_+', '_', 'g');
+                    _short_name := regexp_replace(_short_name, '^_', '');
+                    _short_name := regexp_replace(_short_name, '_$', '');
+
+                    INSERT INTO site (name, short_name, geog, enabled)
+                        VALUES (_name, _short_name, ST_Multi(ST_Force2D(ST_GeometryFromText(_geog))) :: geography, _enabled)
+                    RETURNING id INTO return_id;
+
+                    RETURN return_id;
+                END;
+                $BODY$
+                LANGUAGE plpgsql VOLATILE;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement = 'DROP FUNCTION sp_dashboard_update_site(smallint, character varying, character varying, character varying, character varying, character varying, character varying, boolean)';
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement := $str$
+                CREATE OR REPLACE FUNCTION sp_dashboard_update_site(
+                    _id smallint,
+                    _short_name character varying,
+                    _geog character varying,
+                    _enabled boolean)
+                RETURNS void AS
+                $BODY$
+                BEGIN
+
+                IF NULLIF(_short_name, '') IS NOT NULL THEN
+                    UPDATE site
+                    SET short_name = _short_name
+                    WHERE id = _id;
+                END IF;
+
+                IF _enabled IS NOT NULL THEN
+                    UPDATE site
+                    SET enabled = _enabled
+                    WHERE id = _id;
+                END IF;
+
+                IF NULLIF(_geog, '') IS NOT NULL THEN
+                    UPDATE site
+                    SET geog = ST_Multi(ST_Force2D(ST_GeometryFromText(_geog)))
+                    WHERE id = _id;
+                END IF;
+
+                END;
+                $BODY$
+                LANGUAGE plpgsql;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement = 'DROP FUNCTION sp_get_dashboard_sites_seasons(smallint);';
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement = 'DROP FUNCTION sp_get_sites(_siteid smallint);';
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement := $str$
+                CREATE OR REPLACE FUNCTION sp_get_sites(IN _site_id smallint DEFAULT NULL::smallint)
+                RETURNS TABLE(id smallint, name character varying, short_name character varying, enabled boolean) AS
+                $BODY$
+                BEGIN
+                RETURN QUERY
+                        SELECT site.id,
+                            site.name,
+                            site.short_name,
+                            site.enabled
+                        FROM site
+                        WHERE _site_id IS NULL OR site.id = _site_id
+                        ORDER BY site.name;
+                END
+                $BODY$
+                LANGUAGE plpgsql;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement := $str$
+                create or replace function sp_insert_default_scheduled_tasks(
+                    _season_id season.id%type,
+                    _processor_id processor.id%type default null
+                )
+                returns void as
+                $$
+                declare _site_id site.id%type;
+                declare _site_name site.short_name%type;
+                declare _season_name season.name%type;
+                declare _start_date season.start_date%type;
+                declare _mid_date season.start_date%type;
+                begin
+                    select site.short_name
+                    into _site_name
+                    from season
+                    inner join site on site.id = season.site_id
+                    where season.id = _season_id;
+
+                    if not found then
+                        raise exception 'Invalid season id %', _season_id;
+                    end if;
+
+                    select site_id,
+                        name,
+                        start_date,
+                        mid_date
+                    into _site_id,
+                        _season_name,
+                        _start_date,
+                        _mid_date
+                    from season
+                    where id = _season_id;
+
+                    if _processor_id is null or _processor_id = 2 then
+                        perform sp_insert_scheduled_task(
+                                    _site_name || '_' || _season_name || '_L3A' :: character varying,
+                                    2,
+                                    _site_id :: int,
+                                    _season_id :: int,
+                                    2::smallint,
+                                    0::smallint,
+                                    31::smallint,
+                                    cast((select date_trunc('month', _start_date) + interval '1 month' - interval '1 day') as character varying),
+                                    60,
+                                    1 :: smallint,
+                                    '{}' :: json);
+                    end if;
+
+                    if _processor_id is null or _processor_id = 3 then
+                        perform sp_insert_scheduled_task(
+                                    _site_name || '_' || _season_name || '_L3B' :: character varying,
+                                    3,
+                                    _site_id :: int,
+                                    _season_id :: int,
+                                    1::smallint,
+                                    10::smallint,
+                                    0::smallint,
+                                    cast((_start_date + 10) as character varying),
+                                    60,
+                                    1 :: smallint,
+                                    '{"general_params":{"product_type":"L3B"}}' :: json);
+                    end if;
+
+                    if _processor_id is null or _processor_id = 5 then
+                        perform sp_insert_scheduled_task(
+                                    _site_name || '_' || _season_name || '_L4A' :: character varying,
+                                    5,
+                                    _site_id :: int,
+                                    _season_id :: int,
+                                    2::smallint,
+                                    0::smallint,
+                                    31::smallint,
+                                    cast(_mid_date as character varying),
+                                    60,
+                                    1 :: smallint,
+                                    '{}' :: json);
+                    end if;
+
+                    if _processor_id is null or _processor_id = 6 then
+                        perform sp_insert_scheduled_task(
+                                    _site_name || '_' || _season_name || '_L4B' :: character varying,
+                                    6,
+                                    _site_id :: int,
+                                    _season_id :: int,
+                                    2::smallint,
+                                    0::smallint,
+                                    31::smallint,
+                                    cast(_mid_date as character varying),
+                                    60,
+                                    1 :: smallint,
+                                    '{}' :: json);
+                    end if;
+
+                    if _processor_id is not null and _processor_id not in (2, 3, 5, 6) then
+                        raise exception 'No default jobs defined for processor id %', _processor_id;
+                    end if;
+
+                end;
+                $$
+                    language plpgsql volatile;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+
+            raise notice 'applying 9c43cfbf7ad569e76e97e275cd1c2ead0e43605f';
+            _statement := $str$
+                create or replace function sp_get_season_scheduled_processors(
+                    _season_id season.id%type
+                )
+                returns table (
+                    processor_id processor.id%type,
+                    processor_name processor.name%type,
+                    processor_short_name processor.short_name%type
+                ) as
+                $$
+                begin
+                    return query
+                        select
+                            processor.id,
+                            processor.name,
+                            processor.short_name
+                        from processor
+                        where exists(select *
+                                    from scheduled_task
+                                    where scheduled_task.season_id = _season_id
+                                    and scheduled_task.processor_id = processor.id)
+                        order by processor.short_name;
+                end;
+                $$
+                    language plpgsql stable;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+
             _statement := 'update meta set version = ''1.6'';';
             raise notice '%', _statement;
             execute _statement;
