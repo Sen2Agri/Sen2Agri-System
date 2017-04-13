@@ -135,10 +135,10 @@ class Sen2AgriCtl(object):
             '-d', '--synthesis-date',
             required=True, help="The synthesis date (YYYYMMDD)")
         parser_composite.add_argument(
-            '-h', '--half-synthesis',
+            '-s', '--half-synthesis',
             required=False, help="Half synthesis interval in days")
         parser_composite.add_argument(
-            '--resolution', type=int, required=False, help="resolution in m")
+            '-res', '--resolution', type=int, required=False, help="resolution in m")
         parser_composite.add_argument(
             '-p', '--parameter', action='append', nargs=2,
             metavar=('KEY', 'VALUE'), help="override configuration parameter")
