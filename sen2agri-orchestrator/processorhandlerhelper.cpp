@@ -887,3 +887,16 @@ void ProcessorHandlerHelper::TrimLeftSecondarySatellite(QStringList &productsLis
     }
 }
 
+ProcessorHandlerHelper::SatelliteIdType ProcessorHandlerHelper::ConvertSatelliteType(Satellite satId)
+{
+    switch (satId)
+    {
+        case Satellite::Sentinel2:
+            return SATELLITE_ID_TYPE_S2;
+        case Satellite::Landsat8:
+            return SATELLITE_ID_TYPE_L8;
+        default:
+            return SATELLITE_ID_TYPE_UNKNOWN;
+    }
+}
+
