@@ -1628,7 +1628,7 @@ SeasonList PersistenceManagerDBProvider::GetSiteSeasons(int siteId)
     return provider.handleTransactionRetry(__func__, [&] {
         SeasonList result;
 
-        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_seasons(:siteId)"));
+        auto query = db.prepareQuery(QStringLiteral("select * from sp_get_site_seasons(:siteId)"));
         query.bindValue(QStringLiteral("siteId"), siteId);
 
         query.setForwardOnly(true);
