@@ -93,6 +93,7 @@ public:
     static void SortTemporalTileInfoFiles(TileTemporalFilesInfo &temporalTileInfo);
     static void TrimLeftSecondarySatellite(QStringList &productsList);
     static void TrimLeftSecondarySatellite(QStringList &productsList, QMap<QString, TileTemporalFilesInfo> mapTiles);
+    static SatelliteIdType ConvertSatelliteType(Satellite satId);
 
 private:
     static QMap<QString, L2MetaTileNameInfos> m_mapSensorL2ATileMetaFileInfos;
