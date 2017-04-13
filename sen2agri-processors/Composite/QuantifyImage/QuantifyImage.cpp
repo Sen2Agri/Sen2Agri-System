@@ -70,7 +70,7 @@ private:
         MandatoryOff("qval");
 
         AddParameter(ParameterType_Int, "nodata", "The no data value to be used");
-        SetDefaultParameterInt("nodata", 0);
+        SetDefaultParameterInt("nodata", NO_DATA_VALUE);
         MandatoryOff("nodata");
     }
 

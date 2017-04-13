@@ -214,11 +214,6 @@ public:
 
     typedef otb::MultiToMonoChannelExtractROI<InputImageType::InternalPixelType,
                                               InternalImageType::InternalPixelType> SplitterFilterType;
-    typedef itk::UnaryFunctorImageFilter<InternalImageType,ShortImageType,
-                    FloatToShortTranslationFunctor<
-                        InternalImageType::PixelType,
-                        ShortImageType::PixelType> > FloatToShortTransFilterType;
-
   /** Standard macro */
   itkNewMacro(Self);
 
@@ -407,6 +402,12 @@ private:
 
       bool bGenerateAll = (GetParameterInt("genall") != 0);
 
+      // compute the real BWR according to the dates
+//      size_t realBwr = computeRealBwr(bwr, inDates);
+//      if(realBwr > bwr) {
+//          bwr = realBwr;
+//      }
+
       //instantiate a functor with the regressor and pass it to the
       //unary functor image filter pass also the normalization values
       m_profileReprocessingFilter = FilterType::New();
@@ -432,112 +433,6 @@ private:
       //DoProfileReprocessingOutput(datesList, nTotalBands);
       SetParameterOutputImage("opf", m_profileReprocessingFilter->GetOutput());
 }
-
-/*
-  // TODO: This function could be remove as using outrlist and outflist (the splitting) induce
-  //       large execution times and is not efficient.
-  //       Instead, ReprocessedProfileSplitter2 should be used
-  void DoProfileReprocessingOutput(const std::vector<std::string> &datesList, int nTotalBands) {
-      m_profileReprocessingFilter->GetOutput()->UpdateOutputInformation();
-
-      const std::string &outPfFile = GetParameterString("opf");
-      if(HasValue("outrlist") && HasValue("outflist")) {
-          DisableParameter("opf");
-
-          bool bUseCompression = (GetParameterInt("compress") != 0);
-
-          std::string strOutRasterFilesList = GetParameterString("outrlist");
-          std::ofstream rasterFilesListFile;
-          std::string strOutFlagsFilesList = GetParameterString("outflist");
-          std::ofstream flagsFilesListFile;
-          try {
-              rasterFilesListFile.open(strOutRasterFilesList.c_str(), std::ofstream::out);
-              flagsFilesListFile.open(strOutFlagsFilesList.c_str(), std::ofstream::out);
-          } catch(...) {
-              itkGenericExceptionMacro(<< "Could not open file " << strOutRasterFilesList);
-          }
-
-          std::string strOutPrefix = outPfFile;
-          size_t pos = outPfFile.find_last_of(".");
-          if (pos != std::string::npos) {
-              strOutPrefix = outPfFile.substr(0, pos);
-          }
-
-          // Set the extract filter input image
-          m_Filter = SplitterFilterType::New();
-          m_Filter->SetInput(m_profileReprocessingFilter->GetOutput());
-
-
-          int nTotalBandsHalf = nTotalBands/2;
-          bool bIsRaster;
-          for(int i = 0; i < nTotalBands; i++) {
-              std::ostringstream fileNameStream;
-
-              std::string curAcquisitionDate = datesList[(i < nTotalBandsHalf) ? i : (i-nTotalBandsHalf)];
-              // if we did not generated all dates, we have only 2 bands and we consider
-              // the last XML in the list
-              if(nTotalBands == 2) {
-                  curAcquisitionDate = datesList[datesList.size()-1];
-              }
-
-              // writer label
-              std::ostringstream osswriter;
-              bIsRaster = (i < nTotalBandsHalf);
-              if(bIsRaster) {
-                  fileNameStream << strOutPrefix << "_" << curAcquisitionDate << "_img.tif";
-                  osswriter<< "writer (Image for date "<< i << " : " << curAcquisitionDate << ")";
-              } else {
-                  fileNameStream << strOutPrefix << "_" << curAcquisitionDate << "_flags.tif";
-                  osswriter<< "writer (Flags for date "<< i << " : " << curAcquisitionDate << ")";
-              }
-              // we might have also compression and we do not want that in the name file
-              // to be saved into the produced files list file
-              std::string simpleFileName = fileNameStream.str();
-              if(bUseCompression) {
-                  fileNameStream << "?gdal:co:COMPRESS=DEFLATE";
-              }
-              std::string fileName = fileNameStream.str();
-
-              // Create an output parameter to write the current output image
-              OutputImageParameter::Pointer paramOut = OutputImageParameter::New();
-              // Set the channel to extract
-              m_Filter->SetChannel(i+1);
-
-              // Set the filename of the current output image
-              paramOut->SetFileName(fileName);
-              FloatToShortTransFilterType::Pointer floatToShortFunctor = FloatToShortTransFilterType::New();
-              floatToShortFunctor->SetInput(m_Filter->GetOutput());
-              if(bIsRaster) {
-                  // we have here the already quantified values that need no other quantification
-                  floatToShortFunctor->GetFunctor().Initialize(1, 0);
-                  paramOut->SetPixelType(ImagePixelType_int16);
-              } else {
-                  // we need no quantification value, just convert to byte
-                  floatToShortFunctor->GetFunctor().Initialize(1, 0);
-                  paramOut->SetPixelType(ImagePixelType_uint8);
-              }
-              m_floatToShortFunctors.push_back(floatToShortFunctor);
-              paramOut->SetValue(floatToShortFunctor->GetOutput());
-              // Add the current level to be written
-              paramOut->InitializeWriters();
-              AddProcess(paramOut->GetWriter(), osswriter.str());
-              paramOut->Write();
-
-              if(bIsRaster) {
-                  rasterFilesListFile << simpleFileName << std::endl;
-              } else {
-                  flagsFilesListFile << simpleFileName << std::endl;
-              }
-          }
-
-          rasterFilesListFile.close();
-          flagsFilesListFile.close();
-      } else {
-          // otherwise just write to OPF
-          SetParameterOutputImage("opf", m_profileReprocessingFilter->GetOutput());
-      }
-  }
-*/
 
   ImageType::Pointer GetTimeSeriesImage(const std::vector<std::string> &imgsList, bool bIsFlgTimeSeries) {
 
@@ -687,6 +582,26 @@ private:
       m_GenericRSImageResampler.SetOutputProjection(m_strPrMissionImgProjRef);
   }
 
+  // dynamically compute the bwr in order to use a BWR as dates and not as images
+  int computeRealBwr(size_t bwr, const VectorType &inDates)
+  {
+      size_t newBwr = 1;
+      size_t realBwr = 0;
+      for (size_t i = 1; i<inDates.size(); i++) {
+          if (realBwr == bwr+1) {
+              newBwr--;
+              break;
+          }
+          if (inDates[i] != inDates[i - 1] ||
+              (i == inDates.size() - 1)) {
+              realBwr++;
+          }
+          newBwr++;
+      }
+
+      return (newBwr - 1);
+  }
+
   // Profile reprocessing variables
   FilterType::Pointer m_profileReprocessingFilter;
   FunctorType m_functor;
@@ -712,7 +627,6 @@ private:
 
   // Profile reprocessing splitter variables
   SplitterFilterType::Pointer        m_Filter;
-  std::vector<FloatToShortTransFilterType::Pointer>  m_floatToShortFunctors;
 };
 }
 }

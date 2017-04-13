@@ -180,7 +180,7 @@ public:
         }
     }
     if(cnt < nbInputVariables) {
-        pix[0] = 0;
+        pix[0] = NO_DATA_VALUE;
     } else {
         OutputSampleType outputValue = m_Model->Predict(inputValue);
         pix[0] = outputValue[0];
@@ -197,7 +197,7 @@ public:
       if(maskPix[0] != IMG_FLG_LAND) {
           OutputPixelType pix{};
           pix.SetSize(1);
-          pix[0] = 0;
+          pix[0] = NO_DATA_VALUE;
           return pix;
       }
       return (*this)(in_pix);
