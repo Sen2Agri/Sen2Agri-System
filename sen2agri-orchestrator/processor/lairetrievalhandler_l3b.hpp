@@ -50,7 +50,7 @@ private:
                                    const QList<TileInfos> &listPrdTiles, QList<TaskToSubmit> &allTasksList, int tasksStartIdx, bool bForceGenModels);
     QStringList GetBVInputVariableGenerationArgs(std::map<QString, QString> &configParameters, const QString &strGenSampleFile);
     QStringList GetProSailSimulatorNewArgs(const QString &product, const QString &bvFileName, const QString &rsrCfgFileName,
-                                       const QString &outSimuReflsFile, const QString &outAngles, std::map<QString, QString> &configParameters,
+                                       const QString &outSimuReflsFile, const QString &outAngles,
                                        const QString &laiBandsCfg);
     QStringList GetProSailSimulatorArgs(const QString &product, const QString &bvFileName, const QString &rsrCfgFileName,
                                        const QString &outSimuReflsFile, const QString &outAngles, std::map<QString, QString> &configParameters);
