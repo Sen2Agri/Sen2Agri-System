@@ -583,7 +583,7 @@ void CompositeHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmitt
     if(cfg.synthalf.length() == 0) {
         cfg.synthalf = configParameters["processor.l3a.half_synthesis"];
         if(cfg.synthalf.length() == 0) {
-            cfg.synthalf = "15";
+            cfg.synthalf = "25";
         }
     }
     cfg.lutPath = configParameters["processor.l3a.lut_path"];
