@@ -201,7 +201,7 @@ private:
 
             FloatToShortTransFilterType::Pointer floatToShortFunctor = FloatToShortTransFilterType::New();
             floatToShortFunctor->SetInput(bandsExtractor->GetOutput());
-            floatToShortFunctor->GetFunctor().Initialize(1, 0);
+            floatToShortFunctor->GetFunctor().Initialize(1, NO_DATA_VALUE, true);
             m_floatToShortFunctors.push_back(floatToShortFunctor);
 
             if(bGroupRasters) {

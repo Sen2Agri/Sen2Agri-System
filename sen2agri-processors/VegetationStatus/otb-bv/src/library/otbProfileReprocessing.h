@@ -50,10 +50,11 @@ T compute_weight(T delta, T err)
 
 bool IsValidLandValue(float fValue, float fMskValue)
 {
-    if (fValue < NO_DATA_EPSILON) {
+    if(fMskValue != IMG_FLG_LAND) {
         return false;
     }
-    if(fMskValue != IMG_FLG_LAND) {
+
+    if (fValue < NO_DATA_EPSILON) {
         return false;
     }
     return true;
@@ -168,11 +169,12 @@ fit_csdm_2(const VectorType &dts, const VectorType &ts, const VectorType &ets, c
 
     int validDatesCnt = 0;
     for(size_t i=0; i<nbDates; i++) {
-        result[i] = tmpres[i];
         if(IsValidLandValue(profile_vec[i], msks[i])) {
+            result[i] = tmpres[i];
             result_flag[i] = ++validDatesCnt;
         } else {
             // use the last know processed value, if it exists
+            result[i] = NO_DATA_VALUE;
             result_flag[i] = 0;
         }
         //result_flag[i] = validDatesCnt;
@@ -211,8 +213,8 @@ smooth_time_series_local_window_with_error(const VectorType &dts,
                                            const VectorType &ts,
                                            const VectorType &ets,
                                            const VectorType &msks,
-                                           size_t bwd_radius = 1,
-                                           size_t fwd_radius = 1)
+                                           size_t bwd_radius = 2,
+                                           size_t fwd_radius = 0)
 {
 
     /**
@@ -263,6 +265,7 @@ smooth_time_series_local_window_with_error(const VectorType &dts,
         while(win_last!=last)
         {
             // we set something for the current date only if we have land
+            // Normally, we don't need to handle the NO_DATA values here as we should not have LAND and value NO_DATA
             if(*mski == IMG_FLG_LAND) {
                 auto current_d = d_win_first;
                 auto current_e = e_win_first;
@@ -276,6 +279,7 @@ smooth_time_series_local_window_with_error(const VectorType &dts,
                 while(current_d != past_it)
                 {
                     // If the mask flag is LAND, we process the value
+                    // Normally, we don't need to handle the NO_DATA values here as we should not have LAND and value NO_DATA
                     if(*current_msk == IMG_FLG_LAND) {
                         auto cw = compute_weight(fabs(*current_d-*dti),fabs(*current_e));
                         sum_weights += cw;

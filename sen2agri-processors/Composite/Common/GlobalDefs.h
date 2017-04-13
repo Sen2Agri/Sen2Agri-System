@@ -108,15 +108,15 @@ class FloatToShortTranslationFunctor
 public:
     FloatToShortTranslationFunctor() {}
     ~FloatToShortTranslationFunctor() {}
-    void Initialize(float fQuantificationVal, float fNoDataVal = 0, bool bSetNegValsToZero = false) {
+    void Initialize(float fQuantificationVal, float fNoDataVal = 0, bool bSetNegValsToNoData = false) {
         m_fQuantifVal = fQuantificationVal;
         m_fNoDataVal = fNoDataVal;
-        m_bSetNegValsToZero = bSetNegValsToZero;
+        m_bSetNegValsToNoData = bSetNegValsToNoData;
   }
 
   bool operator!=( const FloatToShortTranslationFunctor &a) const
   {
-      return ((this->m_fQuantifVal != a.m_fQuantifVal) || (this->m_fNoDataVal != a.m_fNoDataVal) || (this->m_bSetNegValsToZero != a.bSetNegValsToZero));
+      return ((this->m_fQuantifVal != a.m_fQuantifVal) || (this->m_fNoDataVal != a.m_fNoDataVal) || (this->m_bSetNegValsToNoData != a.bSetNegValsToZero));
   }
   bool operator==( const FloatToShortTranslationFunctor & other ) const
   {
@@ -130,14 +130,26 @@ public:
 
   inline TOutput HandleMultiSizeInput(const TInput & A, std::true_type)
   {
+      bool bRetComputed = false;
       TOutput ret(A.Size());
       for(int i = 0; i<A.Size(); i++) {
+           // if close to NO_DATA, set the result to no_data
            if(fabs(A[i] - m_fNoDataVal) < NO_DATA_EPSILON) {
                ret[i] = m_fNoDataVal;
            } else {
-                if(m_bSetNegValsToZero && (A[i] < 0)) {
-                    ret[i] = 0;
-                } else {
+                bRetComputed = false;
+                if(m_bSetNegValsToNoData) {
+                    // If negative but still close to 0, set the value to 0
+                    if(fabs(A[i]) < EPSILON) {
+                        ret[i] = 0;
+                        bRetComputed = true;
+                    } else if (A[i] < 0){
+                        // Otherwise if negative, set the value to NO_DATA
+                        ret[i] = m_fNoDataVal;
+                        bRetComputed = true;
+                    }
+                }
+                if (!bRetComputed) {
                     ret[i] = static_cast< unsigned short >(A[i] * m_fQuantifVal);
                 }
            }
@@ -151,7 +163,7 @@ public:
       if(fabs(A - m_fNoDataVal) < NO_DATA_EPSILON) {
         ret = m_fNoDataVal;
       } else {
-          if(m_bSetNegValsToZero && (A < 0)) {
+          if(m_bSetNegValsToNoData && (A < 0)) {
               ret = 0;
           } else {
               ret = static_cast< unsigned short >(A * m_fQuantifVal);
@@ -163,7 +175,7 @@ public:
 private:
   int m_fQuantifVal;
   int m_fNoDataVal;
-  bool m_bSetNegValsToZero;
+  bool m_bSetNegValsToNoData;
 };
 
 

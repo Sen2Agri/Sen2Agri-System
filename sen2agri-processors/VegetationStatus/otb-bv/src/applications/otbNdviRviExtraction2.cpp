@@ -278,7 +278,7 @@ private:
             m_floatToShortFunctor = FloatToShortTransFilterType::New();
             // quantify the image using the default factor and considering 0 as NO_DATA but
             // also setting all values less than 0 to 0
-            m_floatToShortFunctor->GetFunctor().Initialize(DEFAULT_QUANTIFICATION_VALUE, 0, true);
+            m_floatToShortFunctor->GetFunctor().Initialize(DEFAULT_QUANTIFICATION_VALUE, NO_DATA_VALUE, true);
             m_floatToShortFunctor->SetInput(getResampledImage(curRes, nOutRes,
                                   m_imgSplit->GetOutput()->GetNthElement(0)).GetPointer());
             m_floatToShortFunctor->GetOutput()->SetNumberOfComponentsPerPixel(1);

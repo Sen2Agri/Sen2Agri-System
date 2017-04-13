@@ -66,19 +66,19 @@ public:
       TOutput ret(2);
       double redVal = A[m_nRedBandIdx];
       double nirVal = A[m_nNirBandIdx];
-      if((fabs(redVal - NO_DATA_VALUE) < 0.000001) || (fabs(nirVal - NO_DATA_VALUE) < 0.000001)) {
+      if((fabs(redVal - NO_DATA_VALUE) < NO_DATA_EPSILON) || (fabs(nirVal - NO_DATA_VALUE) < NO_DATA_EPSILON)) {
           // if one of the values is no data, then we set the NDVI and RVI to 0
-          ret[0] = 0;
-          ret[1] = 0;
+          ret[0] = NO_DATA_VALUE;
+          ret[1] = NO_DATA_VALUE;
       } else {
-        if(fabs(redVal + nirVal) < 0.000001) {
+        if(fabs(redVal + nirVal) < EPSILON) {
             ret[0] = 0;
         } else {
             ret[0] = (nirVal - redVal)/(nirVal+redVal);
         }
         ret[1] = nirVal/redVal;
         // we limit the RVI to a maximum value of 30
-        if(ret[1] < 0.000001 || std::isnan(ret[1])) {
+        if(ret[1] < EPSILON || std::isnan(ret[1])) {
             ret[1] = 0;
         } else {
             if(ret[1] > 30 || std::isinf(ret[1])) {
@@ -94,8 +94,8 @@ public:
   {
         TOutput ret = (*this)(A);
         if(B[0] != IMG_FLG_LAND) {
-            ret[0] = 0;
-            ret[1] = 0;
+            ret[0] = NO_DATA_VALUE;
+            ret[1] = NO_DATA_VALUE;
         }
         return ret;
   }
@@ -291,7 +291,7 @@ private:
             m_floatToShortNdviFunctor = FloatToShortTransFilterType::New();
             // quantify the image using the default factor and considering 0 as NO_DATA but
             // also setting all values less than 0 to 0
-            m_floatToShortNdviFunctor->GetFunctor().Initialize(DEFAULT_QUANTIFICATION_VALUE, 0, true);
+            m_floatToShortNdviFunctor->GetFunctor().Initialize(DEFAULT_QUANTIFICATION_VALUE, NO_DATA_VALUE, true);
             m_floatToShortNdviFunctor->SetInput(getResampledImage(nCurRes, nOutRes,
                                 m_ndviRviImgSplit->GetOutput()->GetNthElement(0)).GetPointer());
             m_floatToShortNdviFunctor->GetOutput()->SetNumberOfComponentsPerPixel(1);
