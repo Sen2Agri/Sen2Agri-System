@@ -494,14 +494,15 @@ bool LaiRetrievalHandlerL3C::GetL2AProductsInterval(const QMap<QString, QStringL
  */
 //TODO: This function should receive the Product and QList<Product> instead of just product path as these can be got from DB
 //      The Product contains already the tiles, the full path and the acquisition date so can be avoided parsing files
-QStringList LaiRetrievalHandlerL3C::GetL3BProducts(EventProcessingContext &ctx, int siteId)
+QStringList LaiRetrievalHandlerL3C::GetL3BProductsSinceStartOfSeason(EventProcessingContext &ctx, int siteId, const QStringList &listExistingPrds)
 {
     // extract the start and end dates
-    QDateTime currentDateTime = QDateTime::currentDateTime();
-    // Get all products from the last year (this might be needed in LAI FITTED)
-    QDateTime startDateTime = currentDateTime.addMonths(-12);
+    const QDate &startSeasonDate = GetSiteFirstSeasonStartDate(ctx, siteId);
+    const QDateTime &startDateTime = QDateTime(startSeasonDate);
+    const QDateTime &lastPrdsTime = GetL3BLastAcqDate(listExistingPrds);
 
-    const ProductList &prdsList = ctx.GetProducts(siteId, (int)ProductType::L3BProductTypeId, startDateTime, currentDateTime);
+    // Get all products since the start of the first season
+    const ProductList &prdsList = ctx.GetProducts(siteId, (int)ProductType::L3BProductTypeId, startDateTime, lastPrdsTime);
     QStringList retList;
     for(const Product &prd: prdsList) {
         retList.append(prd.fullPath);
@@ -709,7 +710,7 @@ bool LaiRetrievalHandlerL3C::AddTileFileInfo(EventProcessingContext &ctx, TileTe
                         const QString &newTileDir = mapL3BTiles[tileL3bPrd];
                         // this should not happen but is better to check
                         if(newTileDir.length() > 0) {
-                            if (AddTileFileInfo(temporalTileInfo, l3bPrd, newTileDir, l3bPrdSatId, curPrdMinDate)) {
+                            if (AddTileFileInfo(temporalTileInfo, l3bPrd, newTileDir, l3bPrdSatId, curPrdMinDate, &intersectingTile)) {
                                 bAdded = true;
                             }
                         }
@@ -727,16 +728,22 @@ bool LaiRetrievalHandlerL3C::AddTileFileInfo(EventProcessingContext &ctx, TileTe
 }
 
 bool LaiRetrievalHandlerL3C::AddTileFileInfo(TileTemporalFilesInfo &temporalTileInfo, const QString &l3bProdDir, const QString &l3bTileDir,
-                                             ProcessorHandlerHelper::SatelliteIdType satId, const QDateTime &curPrdMinDate)
+                                             ProcessorHandlerHelper::SatelliteIdType satId, const QDateTime &curPrdMinDate,
+                                             const Tile *pIntersectingTile)
 {
     if(l3bTileDir.length() > 0) {
         // fill the empty gaps for these lists
         ProcessorHandlerHelper::InfoTileFile l3bTileInfo;
         //update the sat id
-        l3bTileInfo.satId = satId;
         // update the files
         // Set the file to the tile dir
-        l3bTileInfo.file = ProcessorHandlerHelper::GetSourceL2AFromHighLevelProductIppFile(l3bProdDir, temporalTileInfo.tileId);
+        if (pIntersectingTile) {
+            l3bTileInfo.satId = ProcessorHandlerHelper::ConvertSatelliteType(pIntersectingTile->satellite);
+            l3bTileInfo.file = ProcessorHandlerHelper::GetSourceL2AFromHighLevelProductIppFile(l3bProdDir, pIntersectingTile->tileId);
+        } else {
+            l3bTileInfo.satId = satId;
+            l3bTileInfo.file = ProcessorHandlerHelper::GetSourceL2AFromHighLevelProductIppFile(l3bProdDir, temporalTileInfo.tileId);
+        }
         l3bTileInfo.acquisitionDate = curPrdMinDate.toString("yyyyMMdd");
         const QString &laiFileName = ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileDir, "SLAIMONO");
         const QString &errFileName = ProcessorHandlerHelper::GetHigLevelProductTileFile(l3bTileDir, "MLAIERR", true);
@@ -750,7 +757,8 @@ bool LaiRetrievalHandlerL3C::AddTileFileInfo(TileTemporalFilesInfo &temporalTile
                  temporalTileInfo.uniqueSatteliteIds.append(l3bTileInfo.satId);
             }
             //add it to the temporal tile files info
-            temporalTileInfo.temporalTilesFileInfos.append(l3bTileInfo);
+            // NOTE: We add in front of the list in order to keep the list sorted ascending
+            temporalTileInfo.temporalTilesFileInfos.prepend(l3bTileInfo);
             return true;
         }
     }
@@ -793,7 +801,7 @@ void LaiRetrievalHandlerL3C::SubmitEndOfLaiTask(EventProcessingContext &ctx,
     }
     // we add a task in order to wait for all product formatter to finish.
     // This will allow us to mark the job as finished and to remove the job folder
-    TaskToSubmit endOfJobDummyTask{"lai-reproc-end-of-job", {}};
+    TaskToSubmit endOfJobDummyTask{"lai-end-of-job", {}};
     endOfJobDummyTask.parentTasks.append(prdFormatterTasksListRef);
     SubmitTasks(ctx, event.jobId, {endOfJobDummyTask});
     ctx.SubmitSteps({endOfJobDummyTask.CreateStep("EndOfLAIDummy", QStringList())});
@@ -913,7 +921,7 @@ void LaiRetrievalHandlerL3C::HandleJobSubmittedImpl(EventProcessingContext &ctx,
     QList<TaskToSubmit> allTasksList;
     if(bNDayReproc) {
         // get all the L3B products to be used for extraction of previous products
-        const QStringList &allL3BProductsList = GetL3BProducts(ctx, event.siteId);
+        const QStringList &allL3BProductsList = GetL3BProductsSinceStartOfSeason(ctx, event.siteId, listL3BProducts);
         for(const QString &l3bProd: listL3BProducts) {
             const QMap<QString, TileTemporalFilesInfo> &l3bMapTiles = GetL3BMapTiles(ctx, l3bProd, allL3BProductsList, siteTiles, limitL3BPrdsPerTile);
             if (l3bMapTiles.size() == 0) {
@@ -936,7 +944,7 @@ void LaiRetrievalHandlerL3C::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
     bool isReprocPf = false, isFittedPf = false;
-    if (event.module == "lai-reproc-end-of-job") {
+    if (event.module == "lai-end-of-job") {
         ctx.MarkJobFinished(event.jobId);
         // Now remove the job folder containing temporary files
         RemoveJobFolder(ctx, event.jobId, "l3b");
@@ -1223,6 +1231,30 @@ QStringList LaiRetrievalHandlerL3C::GetL3BProductRasterFiles(const TileTemporalF
         retList.append(tileTemporalFilesInfo.temporalTilesFileInfos[i].additionalFiles[idx]);
     }
     return retList;
+}
+
+QDate LaiRetrievalHandlerL3C::GetSiteFirstSeasonStartDate(EventProcessingContext &ctx,int siteId)
+{
+    const SeasonList &seasons = ctx.GetSiteSeasons(siteId);
+    if (seasons.size() > 0) {
+        return seasons[0].startDate;
+    }
+    return QDate();
+}
+
+QDateTime LaiRetrievalHandlerL3C::GetL3BLastAcqDate(const QStringList &listL3bPrds)
+{
+    QDateTime curDate = QDateTime();
+    for (const QString &prd: listL3bPrds) {
+        QDateTime minDate;
+        QDateTime maxDate;
+        if (ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(prd, minDate, maxDate)) {
+            if (!curDate.isValid() || (curDate.isValid() && curDate < maxDate)) {
+                curDate = maxDate;
+            }
+        }
+    }
+    return curDate;
 }
 
 ProcessorJobDefinitionParams LaiRetrievalHandlerL3C::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,

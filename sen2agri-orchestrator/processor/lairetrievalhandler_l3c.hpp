@@ -79,6 +79,8 @@ private:
                                                  QList<TaskToSubmit> &allTasksList, bool bNDayReproc, bool bFittedReproc,
                                                  LAIProductFormatterParams &productFormatterParams, int tasksStartIdx, bool bRemoveTempFiles);
 
+    QDate GetSiteFirstSeasonStartDate(EventProcessingContext &ctx,int siteId);
+    QDateTime GetL3BLastAcqDate(const QStringList &listL3bPrds);
     ProcessorJobDefinitionParams GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues) override;
     bool IsNDayReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
@@ -86,7 +88,7 @@ private:
     bool IsReprocessingCompact(const QJsonObject &parameters, std::map<QString, QString> &configParameters);
 
     bool GetL2AProductsInterval(const QMap<QString, QStringList> &mapTilesMeta, QDateTime &startDate, QDateTime &endDate);
-    QStringList GetL3BProducts(EventProcessingContext &ctx, int siteId);
+    QStringList GetL3BProductsSinceStartOfSeason(EventProcessingContext &ctx, int siteId, const QStringList &listExistingPrds);
     QStringList GetL3BProducts(EventProcessingContext &ctx, const JobSubmittedEvent &event);
     QMap<QString, TileTemporalFilesInfo> GetL3BMapTiles(EventProcessingContext &ctx,
                                                                                 const QStringList &l3bProducts,
@@ -97,7 +99,8 @@ private:
                                                         int limitL3BPrdsPerTile);
     int GetIntParameterValue(const QJsonObject &parameters, const QString &key, int defVal);
     bool AddTileFileInfo(TileTemporalFilesInfo &temporalTileInfo, const QString &l3bProdDir,
-                         const QString &l3bTileDir, ProcessorHandlerHelper::SatelliteIdType satId, const QDateTime &curPrdMinDate);
+                         const QString &l3bTileDir, ProcessorHandlerHelper::SatelliteIdType satId, const QDateTime &curPrdMinDate,
+                         const Tile *pIntersectingTile = 0);
     bool AddTileFileInfo(EventProcessingContext &ctx, TileTemporalFilesInfo &temporalTileInfo, const QString &l3bPrd,
                          const QString &tileId, const QMap<ProcessorHandlerHelper::SatelliteIdType, TileList> &siteTiles,
                          ProcessorHandlerHelper::SatelliteIdType satId, const QDateTime &curPrdMinDate);
