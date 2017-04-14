@@ -21,7 +21,7 @@ if (isset($_SESSION['siteId'])) {
 				<li><a href="create_site.php">Sites</a></li>
 				<li><a href="main.php">Products</a></li>
 				<li><a href="system.php">System Overview</a></li>
-				<li><a href="dashboard.php#tab_l2a">Dashboard</a></li>
+				<li><a href="dashboard.php">Dashboard</a></li>
 				<li><a href="config.php">Custom Jobs</a></li>
 				<li><a href="monitoring.php">Monitoring</a></li>
 				<li class="logout"><a href="logout.php">Logout</a></li>

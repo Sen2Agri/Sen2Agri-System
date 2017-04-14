@@ -116,8 +116,7 @@ div#pnl_current_jobs table td:nth-child(2):nth-last-child(1)
 }
 
 div.panel table.default_panel_style th, div.panel table.default_panel_style td
-	{
-	/*padding: 13px 5px;*/
+{
 	text-align: left;
 }
 
@@ -182,8 +181,7 @@ div.panel table.server_resources_table tr td:nth-child(3) {
 	width: 70%;
 }
 
-div.panel table.server_resources_table div.server_resources_table_graph
-	{
+div.panel table.server_resources_table div.server_resources_table_graph {
 	display: inline-block;
 	height: 90%;
 	min-height: 65px;
@@ -233,48 +231,48 @@ div.full_width {
 }
 
 div.panel_resources_and_output_container {
-	height: 50%;
-	/*height: 100%;*/
+	height: 40%;
 	width: 50%;
 	float: left;
 }
 
 div.panel_resources_container {
-	height: 50%;
+	height: 70%;
 	width: 100%;
-}
-
-div.panel_resources {
-	height: 98%;
-	width: 100%;
-	overflow: auto;
-	bottom: 2%;
 }
 
 div.panel_output_container {
-	height: 50%;
+	height: 30%;
 	width: 100%;
 }
-
-div.panel_output {
-	height: 100%;
+div.panel_resources, div.panel_output {
+	height: 98%;
 	width: 100%;
 	overflow: auto;
-	margin-bottom: 0px;
+	margin: 0;
 }
 
 div.panel_configuration_container {
-	height: 50%;
-	/* height: 100%;*/
+	height: 40%;
 	width: 50%;
 	float: left;
 }
+
+div#tab_control>div>a.active,
+div#tab_control>div:target>a{background-color:#dbecb9;padding:6px}
+div#tab_control>div:target>div{z-index:999}
+div#tab_control>div>div{padding:10px}
+div#tab_control div.dash_panel div.panel {border-radius:0}
+div#tab_control div.panel-heading{background-color:#dbecb9;background-image:none}
+div#tab_control div.dash_panel{font-family:Arial,Helvetica,sans-serif}
+div#tab_control div.dash_panel tr>th{line-height:1em;padding:5px 0px 5px 10%}
+div#tab_control div.dash_panel tr>td{line-height:1em;padding:5px 0;font-size:0.9em}
 
 /*added for  scheduled tasks*/
 div.panel_scheduled_container {
 	clear: both;
 	margin-top: 4px; 
-	height: 48%;
+	height: 60%;
 	width: 100%;
 	float: left;
 }
@@ -282,7 +280,7 @@ div.panel_scheduled_container {
 div.panel_scheduled {
 	height: 100%;
 	width: 100%;
-	overflow: hidden;
+	overflow-y: scroll;
 	margin-bottom: 0px;
 }
 
@@ -291,6 +289,8 @@ div.panel_scheduled_job {
 	width: 100%;
 	overflow: auto;
 	margin-bottom: 0px;
+	border:0;
+	border-radius:0;
 }
 
 div.panel_job_container {
@@ -509,8 +509,7 @@ div.pop_up #close_button {
 
 .schedule_format{
 	font-weight:200;
-	padding-left: 4px;
-	/*padding-right: 10px;*/
+	padding: 3px;
 }
 
 input.right {
@@ -612,7 +611,8 @@ div.add-edit-site table.edit td div.proc input{margin:0}
 div.add-edit-site table.edit td div.proc label{font-weight:400;display:block}
 div.add-edit-site table.edit td div.proc span{display:block;white-space:nowrap;font-size:0.8em;color:#285e80;font-size:0.85em;line-height:1.2em}
 div.add-edit-site table.edit tr:not(:last-child) div.proc:hover h2{display:none}
-div.add-edit-site table.edit tr:not(:last-child) div.proc:hover div{display:block;background-color:#ddf0fb;border:1px solid #9fbcce;z-index:999}
+div.add-edit-site table.edit tr:not(:last-child) div.proc:hover div{display:block;background-color:white;border:1px solid #cccccc;z-index:999}
+div.add-edit-site table.edit tr:not(:last-child) div.proc:hover div input{display:none}
 div.add-edit-site table.edit tr:last-child td div.proc h2{display:none}
 div.add-edit-site table.edit tr:last-child td div.proc div{display:block;position:relative}
 
@@ -639,8 +639,8 @@ div.add-edit-site .submit-buttons input.add-edit-btn {
 }
 
 input.add-edit-btn,
-.config input[type="submit"]
- {
+.config input[type="submit"] {
+	font-family:Arial,Helvetica,sans-serif;
 	border: 0px solid transparent;
 	outline: 0px solid transparent;
 	padding: 10px;
@@ -650,8 +650,8 @@ input.add-edit-btn,
 	font-size: 1.1em;
 	font-weight: 400;
 }
-input.add-edit-btn:hover,
-.config input[type="submit"]:hover {
+input.add-edit-btn:not(:disabled):hover,
+.config input[type="submit"]:not(:disabled):hover {
 	background-color: #99BF52;
 	color: yellow;
 }
@@ -660,7 +660,34 @@ input.add-edit-btn:active,
 	background-color: #7EAF50;
 	color:yellow;
 }
+input.add-edit-btn:disabled{
+	background-color: #cccccc;
+}
 /* End SITES related styles --------------------------------------------- */
+
+/* Dashboard Scheduled Jobs --------------------------------------------- */
+.schedule-table{display:table;width:98%;margin:1%;border:1px solid #dddddd}
+.schedule-table.add-button{border:0}
+.schedule-table.add-button .button{width:200px;font-size:1.3em}
+.schedule-header{display:table-row}
+.schedule-header span{display:table-cell;font-size:1.2em;font-weight:700;line-height:2em;height:40px;vertical-align:middle;background-color:#E9E9E9;padding:3px}
+.schedule-row{display:table-row}
+.schedule-row span{display:table-cell;padding:2px;border-top:1px solid #dddddd}
+.schedule-row input,
+.schedule-row select{border:1px solid #cdcdcd}
+.schedule-row select{padding:2px}
+.schedule-row select[name="schedule"],
+.schedule-row select[name="schedule_add"]{width:100px}
+.schedule-row select[name="product_add"]{width:80px}
+.schedule-row input[type="number"]{width:30px;text-align:center}
+.schedule-row input[type="submit"]{padding:4px 20px;border:0}
+.schedule-row:nth-of-type(odd) {background-color: #f9f9f9}
+.schedule-row:hover{background-color:#E7F3D0}
+.schedule-row .error {display:block;text-align:left}
+.shedule-row-add{height:45px;background-color: #bce893  !important;}
+.shedule-row-add span{padding-top:10px}
+/* End SITES related styles --------------------------------------------- */
+
 
 .panel {
 	position: relative;
