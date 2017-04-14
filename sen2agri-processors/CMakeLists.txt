@@ -31,6 +31,7 @@ install(FILES ../scripts/sen2agri_common.py
 
 install(FILES ../scripts/insert_l2a_product_to_db.py
               ../scripts/delete_site.py
+              ../sen2agri-ctl/sen2agri-ctl.py
               ../scripts/filter_site_download_tiles.py
         DESTINATION usr/bin/
 	    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
