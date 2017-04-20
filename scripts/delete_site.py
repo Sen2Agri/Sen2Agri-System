@@ -241,7 +241,6 @@ class L2AInfo(object):
     
     def delete_site_from_db(self, siteId):
         # deleting from site, site tiles and config
-        self.executeSqlDeleteCmd("delete from site where (id = {})".format(siteId))
         self.executeSqlDeleteCmd("delete from site_tiles where (site_id = {})".format(siteId))
         self.executeSqlDeleteCmd("delete from config where (site_id = {})".format(siteId))
 
@@ -270,6 +269,9 @@ class L2AInfo(object):
         
         #deleting also from season table (supported only from version 1.6)
         self.executeSqlDeleteCmd("delete from season where (site_id = {})".format(siteId), True)
+
+        # now delete the actually the site 
+        self.executeSqlDeleteCmd("delete from site where (id = {})".format(siteId))
 
         return True
     
