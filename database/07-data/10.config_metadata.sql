@@ -88,7 +88,7 @@ INSERT INTO config_metadata VALUES ('executor.module.path.pheno-ndvi-metrics-spl
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-mono-date-mask-flags', 'Extracts the mask flags for the monodate LAI', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-msk-flags-time-series-builder', 'Builds a raster with all masks from the time series', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.files-remover', 'Removes the given files (ex. cleanup of intermediate files)', 'file', false, 8);
-INSERT INTO config_metadata VALUES ('processor.l3b.lai.modelsfolder', 'Folder where the models are located', 'file', false, 4);
+INSERT INTO config_metadata VALUES ('processor.l3b.lai.modelsfolder', 'Folder where the models are located', 'directory', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.lut_path', 'L3B LUT file path', 'file', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.link_l3c_to_l3b', 'Trigger an L3C product creation after L3B product creation', 'int', false, 4);
 INSERT INTO config_metadata VALUES ('processor.l3b.lai.global_bv_samples_file', 'Common LAI BV sample distribution file', 'file', false, 4);
