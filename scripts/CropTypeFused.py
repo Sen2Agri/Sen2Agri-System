@@ -9,7 +9,7 @@ import argparse
 import re
 from lxml import etree
 from lxml.builder import E
-from sen2agri_common import ProcessorBase, Step, split_features, run_step, format_otb_filename
+from sen2agri_common import ProcessorBase, Step, split_features, run_step, format_otb_filename, prepare_lut, save_lut
 
 
 class CropTypeProcessor(ProcessorBase):
@@ -121,6 +121,13 @@ class CropTypeProcessor(ProcessorBase):
         for tile in self.tiles:
             if tile.crop_mask is not None:
                 print("Crop mask for tile {}: {}".format(tile.id, tile.crop_mask))
+
+    def prepare_site(self):
+        if self.args.lut is not None:
+            qgis_lut = self.get_output_path("qgis-color-map.txt")
+
+            lut = prepare_lut(self.args.refp, self.args.lut)
+            save_lut(lut, qgis_lut)
 
     def train_stratum(self, stratum):
         features_shapefile = self.get_output_path("features-{}.shp", stratum.id)

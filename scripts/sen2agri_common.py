@@ -213,9 +213,82 @@ def load_lut(lut):
                 blue = m.group(4)
                 label = m.group(5)
 
-                r.append((value, red, green, blue, label))
+                r.append((int(value), int(red), int(green), int(blue), label))
     return r
 
+def save_lut(lut, file):
+    with open(file, 'w') as f:
+        f.write("INTERPOLATION:EXACT\n")
+        for entry in lut:
+            f.write("{},{},{},{},255,{}\n".format(*entry))
+
+def prepare_lut(data, lut):
+    default_lut = load_lut(lut)
+    if data is None:
+        return default_lut
+
+    default_lut_map = {}
+    for entry in default_lut:
+        if entry[0] != 0:
+            default_lut_map[entry[0]] = entry[1:5]
+
+    driver = ogr.GetDriverByName('ESRI Shapefile')
+
+    data_ds = ogr.Open(data, 0)
+    if data_ds is None:
+        raise Exception("Could not open feature dataset", data)
+
+    data_layer = data_ds.GetLayer()
+    data_layer_def = data_layer.GetLayerDefn()
+    data_srs = data_layer.GetSpatialRef()
+
+    in_codes = {}
+    for feature in data_layer:
+        crop = feature.GetField("CROP")
+        code = feature.GetField("CODE")
+        lc = feature.GetField("LC")
+
+        if crop == 1:
+            in_codes[code] = lc
+
+    lut_entries = []
+    e = default_lut_map.pop(-10000, None)
+    if e is not None:
+        lut_entries.append((-10000,) + e)
+    else:
+        lut_entries.append((-10000, 255, 255, 255, "No crop/No data"))
+
+    available_colors = []
+    for code, lc in in_codes.iteritems():
+        e = default_lut_map.pop(code, None)
+        if e is not None:
+            entry = (code, e[0], e[1], e[2], lc)
+            lut_entries.append(entry)
+            available_colors.append((entry[0], entry[1:]))
+
+    for entry in lut_entries:
+        in_codes.pop(entry[0], None)
+
+    available_colors.sort(key=lambda e: e[0])
+    palette_idx = len(available_colors)
+
+    unused_colors = default_lut_map.items()
+    unused_colors.sort(key=lambda e: e[0])
+    available_colors.extend(unused_colors)
+
+    remaining_codes = in_codes.items()
+    remaining_codes.sort(key=lambda e: e[0])
+
+    for code, lc in remaining_codes:
+        _, e = available_colors[palette_idx]
+        palette_idx += 1
+        if palette_idx == len(available_colors):
+            palette_idx = 0
+
+        lut_entries.append((code,) + e[0:3] + (lc, ))
+
+    lut_entries.sort(key=lambda e: e[0])
+    return lut_entries
 
 def split_features(stratum, data, out_folder):
     driver = ogr.GetDriverByName('ESRI Shapefile')
@@ -591,11 +664,8 @@ class ProcessorBase(object):
         if self.args.lut is not None:
             qgis_lut = self.get_output_path("qgis-color-map.txt")
 
-            lut = load_lut(self.args.lut)
-            with open(qgis_lut, 'w') as f:
-                f.write("INTERPOLATION:EXACT\n")
-                for entry in lut:
-                    f.write("{},{},{},{},255,{}\n".format(*entry))
+            lut = prepare_lut(self.args.refp, self.args.lut)
+            save_lut(lut, qgis_lut)
 
     def prepare_tile_high_par(self, tile):
         pass
