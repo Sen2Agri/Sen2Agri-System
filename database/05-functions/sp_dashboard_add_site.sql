@@ -4,7 +4,7 @@ CREATE OR REPLACE FUNCTION sp_dashboard_add_site(
     _enabled boolean)
   RETURNS smallint AS
 $BODY$
-DECLARE _short_name smallint;
+DECLARE _short_name character varying;
 DECLARE return_id smallint;
 BEGIN
 
