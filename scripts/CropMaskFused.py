@@ -8,7 +8,7 @@ import shutil
 import argparse
 from lxml import etree
 from lxml.builder import E
-from sen2agri_common import ProcessorBase, Step, split_features, run_step, format_otb_filename
+from sen2agri_common import ProcessorBase, Step, split_features, run_step, format_otb_filename, prepare_lut, save_lut
 
 
 class CropMaskProcessor(ProcessorBase):
@@ -93,6 +93,13 @@ class CropMaskProcessor(ProcessorBase):
         self.args.lut = self.get_lut_path()
 
         self.args.tmpfolder = self.args.outdir
+
+    def prepare_site(self):
+        if self.args.lut is not None:
+            qgis_lut = self.get_output_path("qgis-color-map.txt")
+
+            lut = prepare_lut(None, self.args.lut)
+            save_lut(lut, qgis_lut)
 
     def prepare_tile_high_par(self, tile):
         if self.args.refr is not None:
