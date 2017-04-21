@@ -1111,4 +1111,4 @@ begin
 end;
 $migration$;
 
-rollback;
+commit;
