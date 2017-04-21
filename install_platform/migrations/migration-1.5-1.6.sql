@@ -9,6 +9,178 @@ begin
         if exists (select * from meta where version = '1.5') then
             raise notice 'upgrading from 1.5 to 1.6';
 
+            if not exists (select * from config_metadata where key = 'executor.wrp-send-retries-no') then
+                _statement := $str$
+                INSERT INTO config_metadata VALUES ('executor.wrp-send-retries-no', 'Number of wrapper retries to connect to executor when TCP error', 'int', true, 8);
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            if not exists (select * from config where key = 'executor.wrp-send-retries-no' and site_id is null) then
+                _statement := $str$
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.wrp-send-retries-no', NULL, '3600', '2015-06-03 17:03:39.541136+03');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            
+            if not exists (select * from config_metadata where key = 'executor.wrp-timeout-between-retries') then
+                _statement := $str$
+                INSERT INTO config_metadata VALUES ('executor.wrp-timeout-between-retries', 'Timeout between wrapper retries to executor when TCP error', 'int', true, 8);
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            if not exists (select * from config where key = 'executor.wrp-timeout-between-retries' and site_id is null) then
+                _statement := $str$
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.wrp-timeout-between-retries', NULL, '1000', '2015-06-03 17:03:39.541136+03');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+
+            if not exists (select * from config_metadata where key = 'executor.wrp-executes-local') then
+                _statement := $str$
+                INSERT INTO config_metadata VALUES ('executor.wrp-executes-local', 'Execution of wrappers are only local', 'int', true, 8);
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            if not exists (select * from config where key = 'executor.wrp-executes-local' and site_id is null) then
+                _statement := $str$
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.wrp-executes-local', NULL, '1', '2015-06-03 17:03:39.541136+03');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+
+            if not exists (select * from config_metadata where key = 'processor.l3b.lai.laibandscfgfile') then
+                _statement := $str$
+                INSERT INTO config_metadata VALUES ('processor.l3b.lai.laibandscfgfile', 'Configuration of the bands to be used for LAI', 'file', false, 4);
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            if not exists (select * from config where key = 'processor.l3b.lai.laibandscfgfile' and site_id is null) then
+                _statement := $str$
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.lai.laibandscfgfile', NULL, '/usr/share/sen2agri/Lai_Bands_Cfgs.cfg', '2016-02-16 11:54:47.223904+02');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+
+            if not exists (select * from config_metadata where key = 'executor.module.path.lai-end-of-job') then
+                _statement := $str$
+                INSERT INTO config_metadata VALUES ('executor.module.path.lai-end-of-job', 'End of LAI monodate job', 'file', true, 8);
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            if not exists (select * from config where key = 'executor.module.path.lai-end-of-job' and site_id is null) then
+                _statement := $str$
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.lai-end-of-job', NULL, 'true', '2016-01-12 14:56:57.501918+02');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+
+            if exists (select * from config where key = 'processor.l3a.half_synthesis' and site_id is null) then
+                _statement := $str$
+                UPDATE config SET VALUE = 25 where key = 'processor.l3a.half_synthesis' and site_id is null;
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+
+            _statement := $str$
+            UPDATE config_metadata SET is_advanced = false where key IN (
+                'processor.l3a.weight.aot.minweight', 
+                'processor.l3a.weight.aot.maxweight', 
+                'processor.l3a.weight.cloud.coarseresolution', 
+                'general.scratch-path',
+                'general.scratch-path.l3a', 
+                'general.scratch-path.l3b_lai', 'general.scratch-path.l3e_pheno', 
+                'general.scratch-path.l4a',
+                'general.scratch-path.l4b', 'monitor-agent.disk-path', 
+                'processor.l3a.weight.aot.maxaot', 'processor.l3a.weight.cloud.sigmasmall', 
+                'processor.l3a.weight.cloud.sigmalarge',
+                'processor.l3a.weight.total.weightdatemin', 
+                'processor.l3b.lai.localwnd.bwr',
+                'processor.l3a.bandsmapping',
+                'processor.l3a.preproc.scatcoeffs_10m', 
+                'processor.l3a.preproc.scatcoeffs_20m',
+                'processor.l3a.lut_path',
+                'processor.l4a.lut_path',
+                'processor.l4b.lut_path', 
+                'processor.l3b.lai.localwnd.fwr',
+                'processor.l3b.lai.modelsfolder',
+                'processor.l3b.lai.lut_path', 
+                'processor.l3b.lai.global_bv_samples_file', 
+                'processor.l3b.generate_models',
+                'processor.l3b.mono_date_lai', 
+                'processor.l3b.reprocess',
+                'processor.l3b.fitted', 
+                'processor.l3b.production_interval', 
+                'processor.l3b.reproc_production_interval', 
+                'site.upload-path',
+                'processor.l3b.lai.rsrcfgfile', 
+                'processor.l3a.synth_date_sched_offset',
+                'processor.l3a.half_synthesis', 
+                'processor.l3a.generate_20m_s2_resolution', 
+                'processor.l4a.reference_data_dir', 
+                'processor.l4a.mission',
+                'processor.l4a.temporal_resampling_mode',
+                'processor.l4a.random_seed',
+                'processor.l4a.window',
+                'processor.l4a.smoothing-lambda',
+                'processor.l4a.nbcomp', 
+                'processor.l4a.segmentation-spatial-radius', 
+                'processor.l4a.range-radius',
+                'processor.l4a.segmentation-minsize',
+                'processor.l4a.erode-radius',
+                'processor.l4a.mahalanobis-alpha', 
+                'processor.l4a.min-area',
+                'processor.l4a.classifier.field',
+                'processor.l4a.classifier.rf.nbtrees',
+                'processor.l4a.classifier.rf.max', 
+                'processor.l4a.classifier.rf.min',
+                'processor.l4a.sample-ratio',
+                'processor.l4a.training-samples-number',
+                'processor.l4a.classifier.svm.k',
+                'processor.l4a.classifier.svm.opt',
+                'processor.l4a.reference-map',
+                'processor.l4a.classifier', 
+                'executor.processor.l3a.keep_job_folders',
+                'executor.processor.l3b.keep_job_folders',
+                'executor.processor.l3e.keep_job_folders',
+                'executor.processor.l4a.keep_job_folders',
+                'executor.processor.l4b.keep_job_folders',
+                'processor.l3a.sched_wait_proc_inputs', 
+                'processor.l3b.sched_wait_proc_inputs',
+                'processor.l3e.sched_wait_proc_inputs',
+                'processor.l4a.sched_wait_proc_inputs',
+                'processor.l4b.sched_wait_proc_inputs');
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+
+            
+            if exists (select * from config_metadata where key = 'processor.l4a.reference_data_dir') then
+                _statement := $str$
+                UPDATE config_metadata SET type = 'directory' where key = 'processor.l4a.reference_data_dir';
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            
+            if exists (select * from config_metadata where key = 'processor.l3b.lai.modelsfolder') then
+                _statement := $str$
+                UPDATE config_metadata SET type = 'directory' where key = 'processor.l3b.lai.modelsfolder';
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            
             raise notice 'applying 6dcf61d719759725c24af10079c19ce71f76fe09';
             _statement := $str$create table season(
                 id smallserial not null primary key,
@@ -939,4 +1111,4 @@ begin
 end;
 $migration$;
 
-commit;
+rollback;
