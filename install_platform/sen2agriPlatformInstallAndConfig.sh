@@ -452,7 +452,7 @@ function install_and_config_webserver()
 function install_downloaders_demmacs()
 {
    ##install prerequisites for Downloaders
-   yum -y install wget python-lxml bzip2 python-beautifulsoup4 java-1.8.0-openjdk
+   yum -y install wget python-lxml bzip2 python-beautifulsoup4 python-dateutil java-1.8.0-openjdk
 
    ##install Sen2Agri Downloaders  & Demmacs
    yum -y install ../rpm_binaries/sen2agri-downloaders-demmaccs-*.centos7.x86_64.rpm
