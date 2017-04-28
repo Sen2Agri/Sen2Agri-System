@@ -69,7 +69,7 @@ public:
         m_FeatureExtractors = CropTypeFeatureExtractionFilterListType::New();
     }
 
-    otb::Wrapper::FloatVectorImageType * GetOutput(const std::map<std::string, std::vector<int> > &sensorOutDays)
+    otb::Wrapper::FloatVectorImageType * GetOutput(const std::vector<MissionDays> &sensorOutDays)
     {
         auto temporalResampler = TemporalResamplingFilterType::New();
         auto featureExtractor = CropTypeFeatureExtractionFilterType::New();
@@ -77,23 +77,22 @@ public:
         m_TemporalResamplers->PushBack(temporalResampler);
         m_FeatureExtractors->PushBack(featureExtractor);
 
-        // Also build the image dates structures
         otb::SensorDataCollection sdCollection;
-        std::string lastMission = "";
-        for (const ImageDescriptor& id : m_Descriptors) {
-            if (id.mission != lastMission) {
-                otb::SensorData sd;
-                sd.sensorName = id.mission;
-                sd.outDates = sensorOutDays.find(id.mission)->second;
-                sd.bandCount = id.bands.size();
-                sdCollection.push_back(sd);
-                lastMission = id.mission;
+        for (const auto &e : sensorOutDays) {
+            otb::SensorData sd;
+
+            sd.sensorName = e.mission;
+            sd.outDates = e.days;
+            sd.bandCount = this->getBandCount(e.mission);
+
+            for (const ImageDescriptor& id : m_Descriptors) {
+                if (id.mission == e.mission) {
+                    int inDay = getDaysFromEpoch(id.aquisitionDate);
+                    sd.inDates.push_back(inDay);
+                }
             }
 
-            auto &sd = sdCollection.back();
-            int inDay = getDaysFromEpoch(id.aquisitionDate);
-
-            sd.inDates.push_back(inDay);
+            sdCollection.emplace_back(sd);
         }
 
         // Set the temporal resampling / gap filling filter

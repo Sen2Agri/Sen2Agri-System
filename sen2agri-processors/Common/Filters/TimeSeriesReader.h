@@ -44,6 +44,7 @@
 #include "../Filters/otbSentinelMaskFilter.h"
 
 #include <string>
+#include <map>
 
 #include <boost/filesystem.hpp>
 
@@ -919,11 +920,42 @@ protected:
     inline std::string formatSPOT4Date(const std::string& date) {
         return date.substr(0,4) + date.substr(5,2) + date.substr(8,2);
     }
+
+    int getBandCount(const std::string &sensor) {
+        if (sensor == "SENTINEL") {
+            if (GetIncludeRedEdge()) {
+                return 8;
+            } else {
+                return 4;
+            }
+        } else if (sensor == "SPOT" || sensor == "LANDSAT") {
+            return 4;
+        }
+        itkGenericExceptionMacro("Unknown sensor " << sensor);
+    }
+};
+
+struct MissionDays
+{
+    std::string mission;
+    std::vector<int> days;
+};
+
+struct SensorPreferences
+{
+    std::string mission;
+    int priority;
+    int samplingRate;
 };
 
 template<typename TTimeSeriesReaderList>
-std::map<std::string, std::vector<int>> getOutputDays(TTimeSeriesReaderList preprocessors, bool resample, const std::map<std::string, int> &sp)
+std::vector<MissionDays> getOutputDays(TTimeSeriesReaderList preprocessors, bool resample, const std::vector<SensorPreferences> &sp)
 {
+    std::map<std::string, SensorPreferences> spMap;
+    for (const auto &e : sp) {
+        spMap[e.mission] = e;
+    }
+
     std::map<std::string, std::set<int> >    sensorInDays;
     std::map<std::string, std::vector<int> > sensorOutDays;
 
@@ -938,11 +970,11 @@ std::map<std::string, std::vector<int>> getOutputDays(TTimeSeriesReaderList prep
     for (const auto& sensor : sensorInDays) {
         std::vector<int> outDates;
         if (resample) {
-            auto it = sp.find(sensor.first);
-            if (it == sp.end()) {
+            auto it = spMap.find(sensor.first);
+            if (it == spMap.end()) {
                 itkGenericExceptionMacro("Sampling rate required for sensor " << sensor.first);
             }
-            auto rate = it->second;
+            auto rate = it->second.samplingRate;
 
             auto last = *sensor.second.rbegin();
             for (int date = *sensor.second.begin(); date <= last; date += rate) {
@@ -954,27 +986,61 @@ std::map<std::string, std::vector<int>> getOutputDays(TTimeSeriesReaderList prep
         sensorOutDays[sensor.first] = outDates;
     }
 
-    return sensorOutDays;
+    std::vector<MissionDays> res;
+    for (const auto &e : sensorOutDays) {
+        res.emplace_back(MissionDays{std::move(e.first), std::move(e.second)});
+    }
+    std::sort(std::begin(res), std::end(res), [&](const MissionDays &e1, const MissionDays &e2) {
+        return spMap[e1.mission].priority < spMap[e2.mission].priority;
+    });
+    return res;
 }
 
-void writeOutputDays(const std::map<std::string, std::vector<int>> &days, const std::string &file)
+void writeOutputDays(const std::vector<MissionDays> &days, const std::string &file)
 {
     std::ofstream f(file);
-    for (const auto &p : days) {
-        for (auto d : p.second) {
-            f << p.first << ' ' << d << '\n';
+    for (const auto &e : days) {
+        for (auto d : e.days) {
+            f << e.mission << ' ' << d << '\n';
         }
     }
 }
 
-const std::map<std::string, std::vector<int>> readOutputDays(const std::string &file)
+std::vector<SensorPreferences> parseSensorPreferences(const std::vector<std::string> &sp)
 {
-    std::map<std::string, std::vector<int>> days;
+    auto n = sp.size();
+
+    std::vector<SensorPreferences> res;
+    res.reserve(n / 2);
+
+    for (size_t i = 0; i < n; i += 2) {
+        const auto sensor = sp[i];
+        const auto rateStr = sp[i + 1];
+        auto rate = std::stoi(rateStr);
+        res.emplace_back(SensorPreferences{sensor, static_cast<int>(i / 2), rate});
+    }
+
+    std::cout << "Sampling rates by sensor:\n";
+    for (const auto &sensor : res) {
+        std::cout << sensor.mission << ": " << sensor.samplingRate << '\n';
+    }
+
+    return res;
+}
+
+const std::vector<MissionDays> readOutputDays(const std::string &file)
+{
     std::ifstream f(file);
+    std::string last_mission;
     std::string mission;
     int day;
+    std::vector<MissionDays> res;
     while (f >> mission >> day) {
-        days[mission].emplace_back(day);
+        if (mission != last_mission) {
+            res.emplace_back(MissionDays{mission, std::vector<int>()});
+            last_mission = mission;
+        }
+        res.back().days.emplace_back(day);
     }
-    return days;
+    return res;
 }
