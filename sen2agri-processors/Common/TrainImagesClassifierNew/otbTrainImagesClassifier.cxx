@@ -312,10 +312,14 @@ void TrainImagesClassifier::DoExecute()
         typedef otb::ObjectList<typename VectorDataReprojectionType::OutputVectorDataType> VectorDataListType;
         VectorDataReprojectionListType::Pointer vectorDataReprojectionList = VectorDataReprojectionListType::New();
         VectorDataListType::Pointer vectorDataList = VectorDataListType::New();
+        typedef otb::ObjectList<ListSampleGeneratorType> ListSampleGeneratorListType;
+        ListSampleGeneratorListType::Pointer listSampleGenerators = ListSampleGeneratorListType::New();
         for (unsigned int imgIndex = 0; imgIndex < imageList->Size(); ++imgIndex)
         {
             FloatVectorImageType::Pointer image = imageList->GetNthElement(imgIndex);
             image->UpdateOutputInformation();
+
+            std::cerr << "Image " << imgIndex << " vector length " << image->GetNumberOfComponentsPerPixel() << std::endl;
 
             VectorDataReprojectionType::Pointer vdreproj = VectorDataReprojectionType::New();
             vectorDataReprojectionList->PushBack(vdreproj);
@@ -366,9 +370,12 @@ void TrainImagesClassifier::DoExecute()
                     nbBands = image->GetNumberOfComponentsPerPixel();
                 }
 
+                std::cerr << "Image " << imgIndex << " vector length " << image->GetNumberOfComponentsPerPixel() << std::endl;
+
 
                 //Sample list generator
                 ListSampleGeneratorType::Pointer sampleGenerator = ListSampleGeneratorType::New();
+                listSampleGenerators->PushBack(sampleGenerator);
 
                 sampleGenerator->SetInput(image);
                 sampleGenerator->SetInputVectorData(vectorDataList->GetNthElement(imgIndex));
@@ -429,6 +436,8 @@ void TrainImagesClassifier::DoExecute()
         std::cerr << "Computing class counts" << std::endl;
 
         ListSampleGeneratorRasterType::ClassesSizeType classesSize;
+        typedef otb::ObjectList<ListSampleGeneratorRasterType> ListSampleGeneratorRasterListType;
+        ListSampleGeneratorRasterListType::Pointer listSampleGeneratorsRaster = ListSampleGeneratorRasterListType::New();
 
         for (unsigned int imgIndex = 0; imgIndex < imageList->Size(); ++imgIndex)
         {
@@ -452,6 +461,7 @@ void TrainImagesClassifier::DoExecute()
 
             //Sample list generator
             ListSampleGeneratorRasterType::Pointer sampleGenerator = ListSampleGeneratorRasterType::New();
+            listSampleGeneratorsRaster->PushBack(sampleGenerator);
 
             sampleGenerator->SetInput(image);
             sampleGenerator->SetInputRaster(raster);

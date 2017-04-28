@@ -70,8 +70,13 @@ public:
         m_ComputeNDVIFilter = ComputeNDVIFilterType::New();
     }
 
-    otb::Wrapper::FloatVectorImageType * GetOutput(const std::map<std::string, std::vector<int> > &sensorOutDays)
+    otb::Wrapper::FloatVectorImageType * GetOutput(const std::vector<MissionDays> &sensorOutDays)
     {
+        std::map<std::string, std::vector<int> > dayMap;
+        for (const auto &e : sensorOutDays) {
+            dayMap[e.mission] = e.days;
+        }
+
         // Also build the image dates structures
         otb::SensorDataCollection sdCollection;
         std::string lastMission = "";
@@ -79,8 +84,8 @@ public:
             if (id.mission != lastMission) {
                 otb::SensorData sd;
                 sd.sensorName = id.mission;
-                sd.outDates = sensorOutDays.find(id.mission)->second;
-                sd.bandCount = id.bands.size();
+                sd.outDates = dayMap.find(id.mission)->second;
+                sd.bandCount = this->getBandCount(id.mission);
                 sdCollection.push_back(sd);
                 lastMission = id.mission;
             }

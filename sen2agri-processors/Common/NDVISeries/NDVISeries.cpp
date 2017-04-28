@@ -228,23 +228,10 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoExecute()
   {
-      std::map<std::string, int> sp;
+      std::vector<SensorPreferences> sp;
       if (HasValue("sp")) {
           const auto &spValues = GetParameterStringList("sp");
-          auto n = spValues.size();
-          if (n % 2) {
-              itkExceptionMacro("Parameter 'sp' must be a list of string and number pairs.");
-          }
-
-          for (size_t i = 0; i < n; i += 2) {
-              const auto sensor = spValues[i];
-              const auto rateStr = spValues[i + 1];
-              auto rate = std::stoi(rateStr);
-              if (rate <= 0) {
-                  itkExceptionMacro("Invalid sampling rate " << rateStr << " for sensor " << sensor)
-              }
-              sp[sensor] = rate;
-          }
+          sp = parseSensorPreferences(spValues);
       }
 
       // Get the list of input files
