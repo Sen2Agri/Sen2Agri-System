@@ -27,6 +27,8 @@ class CropTypeProcessor(ProcessorBase):
                             choices=['resample', 'gapfill'], required=False, default='resample')
         parser.add_argument('-classifier', help='The classifier (rf or svm) used for training (default rf)',
                             required=False, metavar='classifier', choices=['rf', 'svm'], default='rf')
+        parser.add_argument('-nbtrsample', help='The number of samples included in the training set (default 10000)',
+                            required=False, metavar='nbtrsample', default=10000)
         parser.add_argument('-rseed', help='The random seed used for training (default 0)',
                             required=False, metavar='random_seed', default=0)
         parser.add_argument('-mask', help='The crop mask for each tile',
@@ -164,7 +166,7 @@ class CropTypeProcessor(ProcessorBase):
                      "-sample.bm", 0,
                      "-io.confmatout", area_confmatout,
                      "-io.out", area_model,
-                     "-sample.mt", -1,
+                     "-sample.mt", self.args.nbtrsample,
                      "-sample.mv", 10,
                      "-sample.vfn", "CODE",
                      "-sample.vtr", 0.01,
