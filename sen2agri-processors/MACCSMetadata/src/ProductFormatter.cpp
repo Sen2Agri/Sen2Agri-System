@@ -1908,7 +1908,14 @@ private:
   }
 
   std::string BuildProductDirectoryName() {
-      std::string strCreationDate = currentDateTimeFormattted("%Y%m%dT%H%M%S");
+      std::string strCreationDate;
+      // in the case of L3B we add also the creation time as we might have 2 L3B from S2 and L8 from the same day
+      // that cannot be mixed in the same product.
+      if(m_strProductLevel.compare("L3B") == 0) {
+        strCreationDate = currentDateTimeFormattted("%Y%m%dT%H%M%S");
+      } else {
+        strCreationDate = currentDateTimeFormattted("%Y%m%d");
+      }
       return BuildFileName(MAIN_FOLDER_CATEG, "", "", m_strTimePeriod, m_strSiteId, strCreationDate);
   }
 
