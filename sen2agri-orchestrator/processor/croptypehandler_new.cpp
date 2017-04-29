@@ -272,7 +272,7 @@ ProcessorJobDefinitionParams CropTypeHandlerNew::GetProcessingDefinitionImpl(Sch
     QString strataShapeFile;
     // if none of the reference files were found, cannot run the CropMask
     if(!ProcessorHandlerHelper::GetCropReferenceFile(refDir, shapeFile, referenceRasterFile, strataShapeFile)) {
-        Logger::debug(QStringLiteral("Scheduler CropType: Error no shapefile or reference files found for site %1!")
+        Logger::debug(QStringLiteral("Scheduler CropType: Error no shapefile found for site %1!")
                       .arg(siteId));
         return params;
     }

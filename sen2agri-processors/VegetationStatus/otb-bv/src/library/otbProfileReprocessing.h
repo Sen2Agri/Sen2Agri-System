@@ -37,6 +37,7 @@ using PrecisionType = double;
 using VectorType = std::vector<PrecisionType>;
 constexpr PrecisionType invalid_value{0};
 constexpr PrecisionType not_processed_value{1};
+constexpr PrecisionType ResidueVal = 1.5 * DEFAULT_QUANTIFICATION_VALUE;
 
 namespace otb
 {
@@ -350,6 +351,15 @@ smooth_time_series_local_window_with_error(const VectorType &dts,
             ++dti;
             ++win_msk_first;
             ++mski;
+        }
+    }
+    // check if the residue between the computed value and the original value is
+    // greater than 1.5 then set the value to NO_DATA
+    for (size_t i = 0; i<result.size(); i++) {
+        if (result_flag[i] != invalid_value) {
+            if (abs(result[i] - ts[i]) > ResidueVal) {
+                result[i] = ts[i];
+            }
         }
     }
     return std::make_pair(result,result_flag);

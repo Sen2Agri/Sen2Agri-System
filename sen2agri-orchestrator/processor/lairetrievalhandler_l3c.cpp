@@ -35,6 +35,11 @@ bool compareL3BProductDates(const QString& path1,const QString& path2)
     return (minDate1 < minDate2);
 }
 
+bool compareInfoTileFiles(const ProcessorHandlerHelper::InfoTileFile& infoTile1,const ProcessorHandlerHelper::InfoTileFile& infoTile2)
+{
+    return infoTile1.acquisitionDate < infoTile2.acquisitionDate;
+}
+
 
 void LaiRetrievalHandlerL3C::CreateTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
                                                     LAIProductFormatterParams &outProdFormatterParams,
@@ -572,8 +577,8 @@ QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(Even
 {
     QMap<QString, TileTemporalFilesInfo> retL3bMapTiles;
     for(const QString &l3bProd: l3bProducts) {
-        QDateTime minDate, maxDate;
-        ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(l3bProd, minDate, maxDate);
+//        QDateTime minDate, maxDate;
+//        ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(l3bProd, minDate, maxDate);
         const QMap<QString, QString> &mapL3BTiles = ProcessorHandlerHelper::GetHighLevelProductTilesDirs(l3bProd);
         for(const auto &tileId : mapL3BTiles.keys()) {
 
@@ -587,8 +592,12 @@ QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(Even
                 retL3bMapTiles[tileId] = newTileInfos;
             }
             TileTemporalFilesInfo &tileInfo = retL3bMapTiles[tileId];
-            // Fill the tile information for the current tile from the current product
-            AddTileFileInfo(ctx, tileInfo, l3bProd, tileId, siteTiles, tileSatId, minDate);
+            for(const QString &curL3bPrd: l3bProducts) {
+                QDateTime minDate, maxDate;
+                ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(curL3bPrd, minDate, maxDate);
+                // Fill the tile information for the current tile from the current product
+                AddTileFileInfo(ctx, tileInfo, curL3bPrd, tileId, siteTiles, tileSatId, minDate);
+            }
             if(tileInfo.temporalTilesFileInfos.size() > 0) {
                  // update the primary satellite information
                  tileInfo.primarySatelliteId = ProcessorHandlerHelper::GetPrimarySatelliteId(tileInfo.uniqueSatteliteIds);
@@ -597,9 +606,9 @@ QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(Even
     }
     // if primary and secondary satellites, then keep only the tiles from primary satellite
     // as we don't want to have in the resulted product combined primary and secondary satellites tiles
-    return retL3bMapTiles;
+    //return retL3bMapTiles;
     // NOT NEEDED ANYMORE - filtering done in scheduled part
-    //return FilterSecondaryProductTiles(retL3bMapTiles, siteTiles);
+    return FilterSecondaryProductTiles(retL3bMapTiles, siteTiles);
 }
 
 //TODO: This function should receive the Product and QList<Product> instead of just product path as these can be got from DB
@@ -758,8 +767,12 @@ bool LaiRetrievalHandlerL3C::AddTileFileInfo(TileTemporalFilesInfo &temporalTile
             }
             //add it to the temporal tile files info
             // NOTE: We add in front of the list in order to keep the list sorted ascending
-            temporalTileInfo.temporalTilesFileInfos.prepend(l3bTileInfo);
-            return true;
+            if (!temporalTileInfo.temporalTilesFileInfos.contains(l3bTileInfo)) {
+                temporalTileInfo.temporalTilesFileInfos.prepend(l3bTileInfo);
+                // sort also the list ascending just to be sure
+                qSort(temporalTileInfo.temporalTilesFileInfos.begin(), temporalTileInfo.temporalTilesFileInfos.end(), compareInfoTileFiles);
+                return true;
+            }
         }
     }
     return false;
@@ -1356,8 +1369,13 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3C::GetProcessingDefinitionImpl
                           .arg(startDate.toString()));
         }
     }
+    ProductList productList;
+    if (generateReprocess) {
+        productList = ctx.GetProductsByInsertedTime(siteId, (int)ProductType::L3BProductTypeId, startDate, endDate);
+    } else {
+        productList = ctx.GetProducts(siteId, (int)ProductType::L3BProductTypeId, startDate, endDate);
+    }
 
-    ProductList productList = ctx.GetProductsByInsertedTime(siteId, (int)ProductType::L3BProductTypeId, startDate, endDate);
     // we consider only Sentinel 2 products in generating final L3C/L3D products
     for(const Product &prd: productList) {
         const QString &l2aPrdHdrPath = ProcessorHandlerHelper::GetSourceL2AFromHighLevelProductIppFile(prd.fullPath);
