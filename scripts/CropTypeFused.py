@@ -71,7 +71,9 @@ class CropTypeProcessor(ProcessorBase):
         parser.add_argument('-tile-filter', help='The list of tiles to apply the classification to',
                             required=False, nargs='+', default=None)
         parser.add_argument('-skip-quality-flags', help="Skip quality flags extraction, (default false)", default=False, action='store_true')
-        parser.add_argument('-include-raw-mask', help="Include the unmasked crop type map even when a crop mask was used, (default false)", default=False, action='store_true')
+        parser.add_argument('-include-raw-map', help="Include the unmasked crop type map even when a crop mask was used (default true)", required=False, dest='include_raw_map', action='store_true')
+        parser.add_argument('-no-include-raw-map', help="Don't include the unmasked crop type map when a crop mask was used", required=False, dest='include_raw_map', action='store_false')
+        parser.set_defaults(include_raw_map=True)
         parser.add_argument('-max-parallelism', help="Number of tiles to process in parallel", required=False, type=int)
         parser.add_argument('-tile-threads-hint', help="Number of threads to use for a single tile, except for the segmentation step (default 2)", required=False, type=int, default=2)
         self.args = parser.parse_args()
@@ -379,7 +381,7 @@ class CropTypeProcessor(ProcessorBase):
             step_args.append("TILE_" + tile.id)
             step_args.append(tile_crop_map)
 
-        if has_mask and self.args.include_raw_mask:
+        if has_mask and self.args.include_raw_map:
             step_args.append("-processor.croptype.rawfile")
             for tile in self.tiles:
                 if tile.crop_mask is not None:
