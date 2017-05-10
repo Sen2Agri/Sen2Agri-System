@@ -23,7 +23,7 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            
+
             if not exists (select * from config_metadata where key = 'executor.wrp-timeout-between-retries') then
                 _statement := $str$
                 INSERT INTO config_metadata VALUES ('executor.wrp-timeout-between-retries', 'Timeout between wrapper retries to executor when TCP error', 'int', true, 8);
@@ -94,68 +94,68 @@ begin
 
             _statement := $str$
             UPDATE config_metadata SET is_advanced = false where key IN (
-                'processor.l3a.weight.aot.minweight', 
-                'processor.l3a.weight.aot.maxweight', 
-                'processor.l3a.weight.cloud.coarseresolution', 
+                'processor.l3a.weight.aot.minweight',
+                'processor.l3a.weight.aot.maxweight',
+                'processor.l3a.weight.cloud.coarseresolution',
                 'general.scratch-path',
-                'general.scratch-path.l3a', 
-                'general.scratch-path.l3b_lai', 'general.scratch-path.l3e_pheno', 
+                'general.scratch-path.l3a',
+                'general.scratch-path.l3b_lai', 'general.scratch-path.l3e_pheno',
                 'general.scratch-path.l4a',
-                'general.scratch-path.l4b', 'monitor-agent.disk-path', 
-                'processor.l3a.weight.aot.maxaot', 'processor.l3a.weight.cloud.sigmasmall', 
+                'general.scratch-path.l4b', 'monitor-agent.disk-path',
+                'processor.l3a.weight.aot.maxaot', 'processor.l3a.weight.cloud.sigmasmall',
                 'processor.l3a.weight.cloud.sigmalarge',
-                'processor.l3a.weight.total.weightdatemin', 
+                'processor.l3a.weight.total.weightdatemin',
                 'processor.l3b.lai.localwnd.bwr',
                 'processor.l3a.bandsmapping',
-                'processor.l3a.preproc.scatcoeffs_10m', 
+                'processor.l3a.preproc.scatcoeffs_10m',
                 'processor.l3a.preproc.scatcoeffs_20m',
                 'processor.l3a.lut_path',
                 'processor.l4a.lut_path',
-                'processor.l4b.lut_path', 
+                'processor.l4b.lut_path',
                 'processor.l3b.lai.localwnd.fwr',
                 'processor.l3b.lai.modelsfolder',
-                'processor.l3b.lai.lut_path', 
-                'processor.l3b.lai.global_bv_samples_file', 
+                'processor.l3b.lai.lut_path',
+                'processor.l3b.lai.global_bv_samples_file',
                 'processor.l3b.generate_models',
-                'processor.l3b.mono_date_lai', 
+                'processor.l3b.mono_date_lai',
                 'processor.l3b.reprocess',
-                'processor.l3b.fitted', 
-                'processor.l3b.production_interval', 
-                'processor.l3b.reproc_production_interval', 
+                'processor.l3b.fitted',
+                'processor.l3b.production_interval',
+                'processor.l3b.reproc_production_interval',
                 'site.upload-path',
-                'processor.l3b.lai.rsrcfgfile', 
+                'processor.l3b.lai.rsrcfgfile',
                 'processor.l3a.synth_date_sched_offset',
-                'processor.l3a.half_synthesis', 
-                'processor.l3a.generate_20m_s2_resolution', 
-                'processor.l4a.reference_data_dir', 
+                'processor.l3a.half_synthesis',
+                'processor.l3a.generate_20m_s2_resolution',
+                'processor.l4a.reference_data_dir',
                 'processor.l4a.mission',
                 'processor.l4a.temporal_resampling_mode',
                 'processor.l4a.random_seed',
                 'processor.l4a.window',
                 'processor.l4a.smoothing-lambda',
-                'processor.l4a.nbcomp', 
-                'processor.l4a.segmentation-spatial-radius', 
+                'processor.l4a.nbcomp',
+                'processor.l4a.segmentation-spatial-radius',
                 'processor.l4a.range-radius',
                 'processor.l4a.segmentation-minsize',
                 'processor.l4a.erode-radius',
-                'processor.l4a.mahalanobis-alpha', 
+                'processor.l4a.mahalanobis-alpha',
                 'processor.l4a.min-area',
                 'processor.l4a.classifier.field',
                 'processor.l4a.classifier.rf.nbtrees',
-                'processor.l4a.classifier.rf.max', 
+                'processor.l4a.classifier.rf.max',
                 'processor.l4a.classifier.rf.min',
                 'processor.l4a.sample-ratio',
                 'processor.l4a.training-samples-number',
                 'processor.l4a.classifier.svm.k',
                 'processor.l4a.classifier.svm.opt',
                 'processor.l4a.reference-map',
-                'processor.l4a.classifier', 
+                'processor.l4a.classifier',
                 'executor.processor.l3a.keep_job_folders',
                 'executor.processor.l3b.keep_job_folders',
                 'executor.processor.l3e.keep_job_folders',
                 'executor.processor.l4a.keep_job_folders',
                 'executor.processor.l4b.keep_job_folders',
-                'processor.l3a.sched_wait_proc_inputs', 
+                'processor.l3a.sched_wait_proc_inputs',
                 'processor.l3b.sched_wait_proc_inputs',
                 'processor.l3e.sched_wait_proc_inputs',
                 'processor.l4a.sched_wait_proc_inputs',
@@ -164,7 +164,7 @@ begin
             raise notice '%', _statement;
             execute _statement;
 
-            
+
             if exists (select * from config_metadata where key = 'processor.l4a.reference_data_dir') then
                 _statement := $str$
                 UPDATE config_metadata SET type = 'directory' where key = 'processor.l4a.reference_data_dir';
@@ -172,7 +172,7 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            
+
             if exists (select * from config_metadata where key = 'processor.l3b.lai.modelsfolder') then
                 _statement := $str$
                 UPDATE config_metadata SET type = 'directory' where key = 'processor.l3b.lai.modelsfolder';
@@ -180,9 +180,9 @@ begin
                 raise notice '%', _statement;
                 execute _statement;
             end if;
-            
+
             raise notice 'applying 6dcf61d719759725c24af10079c19ce71f76fe09';
-            _statement := $str$create table season(
+            _statement := $str$create table if not exists season(
                 id smallserial not null primary key,
                 site_id smallserial not null,
                 name text not null,
@@ -197,7 +197,11 @@ begin
 
             _statement := 'alter table scheduled_task add column season_id smallint null;';
             raise notice '%', _statement;
-            execute _statement;
+            begin
+                execute _statement;
+            exception
+                when duplicate_column then
+            end;
 
             _statement = 'DROP FUNCTION sp_get_scheduled_tasks()';
             raise notice '%', _statement;
@@ -263,7 +267,7 @@ begin
             raise notice '%', _statement;
             execute _statement;
 
-            _statement := 'DROP FUNCTION sp_insert_scheduled_task(character varying, integer, integer, smallint, smallint, smallint, character varying, integer, smallint, json);';
+            _statement := 'DROP FUNCTION IF EXISTS sp_insert_scheduled_task(character varying, integer, integer, smallint, smallint, smallint, character varying, integer, smallint, json);';
             raise notice '%', _statement;
             execute _statement;
 
@@ -405,47 +409,7 @@ begin
             raise notice '%', _statement;
             execute _statement;
 
-            _statement := 'DROP FUNCTION sp_get_dashboard_sites_seasons(smallint);';
-            raise notice '%', _statement;
-            execute _statement;
-
-            _statement := $str$
-                CREATE OR REPLACE FUNCTION sp_get_dashboard_sites_seasons(_site_id smallint DEFAULT NULL::smallint)
-                RETURNS TABLE(
-                    site_id site.id%type,
-                    site_name site.name%type,
-                    site_short_name site.short_name%type,
-                    site_enabled site.enabled%type,
-                    season_id season.id%type,
-                    season_name season.name%type,
-                    season_start_date season.start_date%type,
-                    season_end_date season.end_date%type,
-                    season_mid_date season.mid_date%type,
-                    season_enabled season.enabled%type
-                ) AS
-                $BODY$
-                BEGIN
-                    return query
-                        select site.id,
-                            site.name,
-                            site.short_name,
-                            site.enabled,
-                            season.id,
-                            season.name,
-                            season.start_date,
-                            season.end_date,
-                            season.mid_date,
-                            season.enabled
-                        from site
-                        left outer join season on season.site_id = site.id
-                        where _site_id is null or site.id = _site_id
-                        order by site.id, season.id;
-                END
-                $BODY$
-                LANGUAGE plpgsql STABLE;
-                ALTER FUNCTION sp_get_dashboard_sites_seasons(smallint)
-                OWNER TO admin;
-            $str$;
+            _statement := 'DROP FUNCTION IF EXISTS sp_get_dashboard_sites_seasons(smallint);';
             raise notice '%', _statement;
             execute _statement;
 
@@ -666,7 +630,10 @@ begin
 
             _statement := 'create index ix_season_site_id on season(site_id);';
             raise notice '%', _statement;
-            execute _statement;
+            begin
+                execute _statement;
+            exception when duplicate_table then
+            end;
 
             _statement := 'delete from scheduled_task_status where task_id not in (select id from scheduled_task);';
             raise notice '%', _statement;
@@ -674,15 +641,24 @@ begin
 
             _statement := 'alter table scheduled_task add constraint fk_scheduled_task_season foreign key(season_id) references season(id) on delete cascade;';
             raise notice '%', _statement;
-            execute _statement;
+            begin
+                execute _statement;
+            exception when duplicate_object then
+            end;
 
             _statement := 'alter table scheduled_task_status add constraint fk_scheduled_task_status_scheduled_task foreign key(task_id) references scheduled_task(id) on delete cascade;';
             raise notice '%', _statement;
-            execute _statement;
+            begin
+                execute _statement;
+            exception when duplicate_object then
+            end;
 
             _statement := 'alter table season add constraint fk_season_site foreign key(site_id) references site(id);';
             raise notice '%', _statement;
-            execute _statement;
+            begin
+                execute _statement;
+            exception when duplicate_object then
+            end;
 
             do $$
             declare _site_id smallint;
@@ -797,7 +773,7 @@ begin
             execute _statement;
 
             raise notice 'applying 557e5a8594689c5c6c3e4b2c98d134ade818c749';
-            _statement = 'DROP FUNCTION sp_dashboard_add_site(character varying, character varying, character varying, character varying, character varying, character varying, boolean);';
+            _statement = 'DROP FUNCTION IF EXISTS sp_dashboard_add_site(character varying, character varying, character varying, character varying, character varying, character varying, boolean);';
             raise notice '%', _statement;
             execute _statement;
 
@@ -830,7 +806,7 @@ begin
             raise notice '%', _statement;
             execute _statement;
 
-            _statement = 'DROP FUNCTION sp_dashboard_update_site(smallint, character varying, character varying, character varying, character varying, character varying, character varying, boolean)';
+            _statement = 'DROP FUNCTION IF EXISTS sp_dashboard_update_site(smallint, character varying, character varying, character varying, character varying, character varying, character varying, boolean)';
             raise notice '%', _statement;
             execute _statement;
 
@@ -866,10 +842,6 @@ begin
                 $BODY$
                 LANGUAGE plpgsql;
             $str$;
-            raise notice '%', _statement;
-            execute _statement;
-
-            _statement = 'DROP FUNCTION sp_get_dashboard_sites_seasons(smallint);';
             raise notice '%', _statement;
             execute _statement;
 
@@ -1038,8 +1010,8 @@ begin
                     IN product_type_id smallint DEFAULT NULL::smallint,
                     IN start_time timestamp with time zone DEFAULT NULL::timestamp with time zone,
                     IN end_time timestamp with time zone DEFAULT NULL::timestamp with time zone)
-                  RETURNS TABLE("ProductId" integer, "Product" character varying, "ProductType" character varying, "ProductTypeId" smallint, "Processor" character varying, 
-                                "ProcessorId" smallint, "Site" character varying, "SiteId" smallint, full_path character varying, 
+                  RETURNS TABLE("ProductId" integer, "Product" character varying, "ProductType" character varying, "ProductTypeId" smallint, "Processor" character varying,
+                                "ProcessorId" smallint, "Site" character varying, "SiteId" smallint, full_path character varying,
                                 quicklook_image character varying, footprint polygon, created_timestamp timestamp with time zone, inserted_timestamp timestamp with time zone) AS
                 $BODY$
                 DECLARE q text;
@@ -1097,6 +1069,81 @@ begin
                 END
                 $BODY$
                   LANGUAGE plpgsql STABLE;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement := $str$
+                CREATE OR REPLACE FUNCTION sp_get_dashboard_products(
+                    _site_id smallint DEFAULT NULL::smallint,
+                    _processor_id smallint DEFAULT NULL::smallint)
+                RETURNS TABLE (
+                    json json
+                ) AS
+                $BODY$
+                DECLARE q text;
+                BEGIN
+                    q := $sql$
+                        WITH site_names(id, name, geog, row) AS (
+                                select id, name, st_astext(geog), row_number() over (order by name)
+                                from site
+                            ),
+                            product_type_names(id, name, description, row) AS (
+                                select id, name, description, row_number() over (order by description)
+                                from product_type
+                            ),
+                            data(id, satellite_id, product,product_type,product_type_description,processor,site,full_path,quicklook_image,footprint,created_timestamp, site_coord) AS (
+                            SELECT
+                                P.id,
+                                P.satellite_id,
+                                P.name,
+                                PT.name,
+                                PT.description,
+                                PR.name,
+                                S.name,
+                                P.full_path,
+                                P.quicklook_image,
+                                P.footprint,
+                                P.created_timestamp,
+                                S.geog
+                            FROM product P
+                                JOIN product_type_names PT ON P.product_type_id = PT.id
+                                JOIN processor PR ON P.processor_id = PR.id
+                                JOIN site_names S ON P.site_id = S.id
+                            WHERE TRUE -- COALESCE(P.is_archived, FALSE) = FALSE
+                    $sql$;
+                    IF $1 IS NOT NULL THEN
+                        q := q || $sql$
+                                AND P.site_id = $1
+                                AND EXISTS (
+                                    SELECT * FROM season WHERE season.site_id = $1 AND P.created_timestamp BETWEEN season.start_date AND season.end_date
+                                )
+                        $sql$;
+                    END IF;
+                    IF $2 IS NOT NULL THEN
+                        q := q || $sql$
+                                AND P.product_type_id = $2
+                        $sql$;
+                    END IF;
+
+                    q := q || $sql$
+                            ORDER BY S.row, PT.row, P.name
+                        )
+                --         select * from data;
+                        SELECT array_to_json(array_agg(row_to_json(data)), true) FROM data;
+                    $sql$;
+
+                --     raise notice '%', q;
+
+                    RETURN QUERY
+                    EXECUTE q
+                    USING _site_id, _processor_id;
+                END
+                $BODY$
+                LANGUAGE plpgsql STABLE
+                COST 100;
+                ALTER FUNCTION sp_get_dashboard_products(smallint, smallint)
+                OWNER TO admin;
             $str$;
             raise notice '%', _statement;
             execute _statement;
