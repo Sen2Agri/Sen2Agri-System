@@ -8,15 +8,18 @@
 
 ### Changed
  - In the LAI scheduled jobs now are taken into account the insertion dates instead of product creation date.
- 
+ - Limited the crop type processor to `10000` samples / tile
+ - The crop type and supervised crop mask processors now include the in-situ data in the output product
+
 ### Fixed
  - Changed the advanced mode for processors parameters in the sen2agri-config configuration.
  - In IPP file name for L3A is not inserted the used bands_mapping and not the one from the DB.
  - The missing L8 HDR from the L3C/L3D IPP file
- - Corrected he dates order in the creation of L3C/L3D products. 
- 
+ - Corrected the date order in the creation of L3C/L3D products.
+ - Fixed a crash in the crop type processor when one of the tiles was missing Landsat 8 data
+
 ### Known issues
- - 
+ -
 
 ## [1.5.0] - 2017-01-20
 ### Added
