@@ -1073,6 +1073,7 @@ begin
             raise notice '%', _statement;
             execute _statement;
 
+            raise notice 'applying b86e74775959e41ea3ec3b2b89bb166d4564f539';
             _statement := $str$
                 CREATE OR REPLACE FUNCTION sp_get_dashboard_products(
                     _site_id smallint DEFAULT NULL::smallint,
@@ -1144,6 +1145,34 @@ begin
                 COST 100;
                 ALTER FUNCTION sp_get_dashboard_products(smallint, smallint)
                 OWNER TO admin;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+
+            raise notice 'applying ab1ac800a88bd6e7ff9357b7e837232013330224';
+            _statement := $str$
+                CREATE OR REPLACE FUNCTION sp_downloader_get_sites()
+                RETURNS TABLE (
+                    id site.id%TYPE,
+                    name site.name%TYPE,
+                    short_name site.short_name%TYPE,
+                    geog text[]
+                )
+                AS $$
+                BEGIN
+                    RETURN QUERY
+                        SELECT site.id,
+                            site.name,
+                            site.short_name,
+                            (SELECT array_agg(ST_AsText(ST_MakeValid(ST_SnapToGrid(polys.geog, 0.001))))
+                                FROM (
+                                    SELECT (ST_Dump(site.geog :: geometry)).geom AS geog
+                                ) polys)
+                        FROM site
+                    WHERE site.enabled;
+                END
+                $$
+                LANGUAGE plpgsql STABLE;
             $str$;
             raise notice '%', _statement;
             execute _statement;
