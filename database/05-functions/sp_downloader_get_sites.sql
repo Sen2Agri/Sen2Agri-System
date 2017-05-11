@@ -1,5 +1,4 @@
-CREATE OR REPLACE FUNCTION sp_downloader_get_sites(
-)
+CREATE OR REPLACE FUNCTION sp_downloader_get_sites()
 RETURNS TABLE (
     id site.id%TYPE,
     name site.name%TYPE,
@@ -12,12 +11,12 @@ BEGIN
         SELECT site.id,
                site.name,
                site.short_name,
-               (SELECT array_agg(polys.geog)
+               (SELECT array_agg(ST_AsText(ST_MakeValid(ST_SnapToGrid(polys.geog, 0.001))))
                 FROM (
-                    SELECT ST_AsText((ST_Dump(site.geog :: geometry)).geom :: geography) AS geog
-                ) polys) AS geog
+                    SELECT (ST_Dump(site.geog :: geometry)).geom AS geog
+                ) polys)
         FROM site
-	WHERE enabled;
+	WHERE site.enabled;
 END
 $$
 LANGUAGE plpgsql STABLE;
