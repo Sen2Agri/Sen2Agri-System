@@ -615,3 +615,18 @@ ProcessorHandlerHelper::SatelliteIdType ProcessorHandler::GetSatIdForTile(const 
     }
     return ProcessorHandlerHelper::SATELLITE_ID_TYPE_UNKNOWN;
 }
+/*
+ProductList GetInsertedOrCreatedProducts(int siteId, const ProductType &productType, const QDateTime &startDate, const QDateTime &endDate,
+                                         const QDateTime &seasonStartDate, const QDateTime &seasonEndDate)
+{
+    ProductList retList;
+    const ProductList &prdsInserted = ctx.GetProductsByInsertedTime(siteId, (int)productType, startDate, endDate);
+    QDateTime endOfPrdsDate = seasonEndDate.addDays(1);
+    for (const Product &prd: prdsInserted) {
+        if (prd.created >= seasonStartDate && prd.created <=endOfPrds) {
+
+        }
+    }
+    const ProductList &prdsCreated = ctx.GetProducts(siteId, (int)productType, startDate, endDate);
+}
+*/

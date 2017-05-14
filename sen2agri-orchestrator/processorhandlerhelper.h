@@ -31,11 +31,26 @@ public:
         QString tileNamePattern;
     } L2MetaTileNameInfos;
 
-    typedef struct {
+    typedef struct InfoTileFile {
         QString file;
         SatelliteIdType satId;
         QString acquisitionDate;
         QStringList additionalFiles;
+        inline bool operator==(const InfoTileFile& rhs) {
+            if(satId != rhs.satId) {
+                return false;
+            }
+            if(acquisitionDate != rhs.acquisitionDate) {
+                return false;
+            }
+            if(file != rhs.file) {
+                return false;
+            }
+            if(additionalFiles.size() > 0 && rhs.additionalFiles.size() > 0 && additionalFiles[0] != rhs.additionalFiles[0]) {
+                return false;
+            }
+            return true;
+        }
     } InfoTileFile;
 
     typedef struct {
