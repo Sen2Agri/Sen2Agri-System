@@ -677,6 +677,11 @@ begin
                     select id from site
                 loop
                     raise notice '%', _site_id;
+
+                    if exists(select * from season where season.site_id = _site_id) then
+                        continue;
+                    end if;
+
                     _summer_start := substr((select value from config where config.site_id = _site_id and key = 'downloader.summer-season.start') || '2016', 1, 8);
                     _summer_end := substr((select value from config where config.site_id = _site_id and key = 'downloader.summer-season.end') || '2016', 1, 8);
                     _winter_start := substr((select value from config where config.site_id = _site_id and key = 'downloader.winter-season.start') || '2016', 1, 8);
