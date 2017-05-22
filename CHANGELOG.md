@@ -1,6 +1,6 @@
 # Change Log
 
-## [1.6.0] - 2017-04-XX
+## [1.6.0] - 2017-05-XX
 ### Added
  - The possibility to select the input bands when creating the LAI monodate products, including 20M bands and possibility to use or not NDVI and RVI.
  - Scripts for deleting a site and for filtering a site tiles
@@ -19,7 +19,20 @@
  - Fixed a crash in the crop type processor when one of the tiles was missing Landsat 8 data
 
 ### Known issues
- -
+- The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
+- The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
+- The SAFE formatting application sometimes outputs unusable (e.g. black) previews
+- The SAFE and L2A product previews are not gamma-corrected and can be too dark
+- The SAFE validation step eagerly flags products with a tile having a low-variance band as invalid (`NOTV`)
+- The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
+- The crop type and mask training step sometimes crashes while loading the OpenCV models
+- MACCS and quicklook generation sometimes crash or hang: https://github.com/InsightSoftwareConsortium/ITK/commit/d68c1c0f23fea97ab782c185095b4ef3259cec68
+- The product formatting and tile aggregation steps are inefficient
+- Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
+- The trimming step of the Crop Mask processor still uses a large amount of memory
+- The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
+- The dashboard previews don't match their bounds rectangle because of projection mismatch
+- The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
 
 ## [1.5.0] - 2017-01-20
 ### Added
