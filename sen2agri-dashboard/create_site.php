@@ -104,13 +104,9 @@ function uploadReferencePolygons($zipFile, $siteId, $timestamp) {
 if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site') {
 	// first character to uppercase.
 	$site_name = ucfirst ( $_REQUEST ['sitename'] );
-	$site_enabled = empty($_REQUEST ['add_enabled']) ? "0" : "1";
-	$winter_start = "";
-	$winter_end = "";
-	$summer_start = "";
-	$summer_end = "";
+	$site_enabled = "0"; // empty($_REQUEST ['add_enabled']) ? "0" : "1";
 	
-	function insertSiteSeason($site, $coord, $wint_start, $wint_end, $summ_star, $summ_end, $enbl) {
+	function insertSite($site, $coord, $enbl) {
 		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
 		$sql = "SELECT sp_dashboard_add_site($1,$2,$3)";
 		$res = pg_prepare ( $db, "my_query", $sql );
@@ -130,7 +126,7 @@ if (isset ( $_REQUEST ['add_site'] ) && $_REQUEST ['add_site'] == 'Save New Site
 	$coord_geog = $upload ['result'];
 	$message = $upload ['message'];
 	if ($polygons_file) {
-		insertSiteSeason ( $site_name, $coord_geog, $winter_start, $winter_end, $summer_start, $summer_end, $site_enabled );
+		insertSite($site_name, $coord_geog, $site_enabled);
 		$_SESSION['status'] =  "OK"; $_SESSION['message'] = "Your site has been successfully added!";
 	} else {
 		$_SESSION['status'] =  "NOK"; $_SESSION['message'] = $message;  $_SESSION['result'] = $coord_geog;
@@ -145,10 +141,6 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 	$site_id      = $_REQUEST ['edit_siteid'];
 	$shortname    = $_REQUEST ['shortname'];
 	$site_enabled = empty($_REQUEST ['edit_enabled']) ? "0" : "1";
-	$winter_start = "";
-	$winter_end = "";
-	$summer_start = "";
-	$summer_end = "";
 	
 	function polygonFileSelected($name) {
 		foreach($_FILES as $key => $val){
@@ -159,12 +151,10 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 		return false;
 	}
 	
-	function updateSiteSeason($id, $short_name, $coord, $wint_start, $wint_end, $summ_star, $summ_end, $enbl) {
+	function updateSite($id, $enbl) {
 		$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-		$res = pg_query_params ( $db, "SELECT sp_dashboard_update_site($1,$2,$3,$4)", array (
+		$res = pg_query_params ( $db, "SELECT sp_dashboard_update_site($1,$2)", array (
 				$id,
-				$short_name,
-				$coord,
 				$enbl
 		) ) or die ( "An error occurred." );
 	}
@@ -173,9 +163,10 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 	$time_stamp = date_timestamp_get($date);
 	
 	// upload polygons if zip file selected
-	$shape_file = null;
 	$status     = "OK";
 	$message    = "";
+	/*
+	$shape_file = null;
 	if (polygonFileSelected("zip_fileEdit")) {
 		$upload        = uploadReferencePolygons("zip_fileEdit", $site_id, $time_stamp);
 		$polygons_file = $upload ['polygons_file'];
@@ -191,8 +182,10 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 	} else {
 		$message = "Your site has been successfully modified!";
 	}
+	*/
 	if ($status == "OK") {
-		updateSiteSeason($site_id, $shortname, $shape_file, $winter_start, $winter_end, $summer_start, $summer_end, $site_enabled);
+		updateSite($site_id, $site_enabled);
+		$message = "Your site has been successfully modified!";
 	}
 	$_SESSION['status'] =  $status; $_SESSION['message'] = $message;
 	
@@ -241,14 +234,6 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 									</div>
 								</div>
 							</div>
-							<div class="row">
-								<div class="col-md-1">
-									<div class="form-group form-group-sm">
-										<label class="control-label" for="add_enabled">Enable site:</label>
-										<input type="checkbox" id="add_enabled" name="add_enabled" checked>
-									</div>
-								</div>
-							</div>
 							<div class="submit-buttons">
 								<input class="add-edit-btn" name="add_site" type="submit" value="Save New Site">
 								<input class="add-edit-btn" name="abort_add" type="button" value="Abort" onclick="abortEditAdd('add')">
@@ -272,24 +257,8 @@ if (isset ( $_REQUEST ['edit_site'] ) && $_REQUEST ['edit_site'] == 'Save Site')
 							<div class="row">
 								<div class="col-md-1">
 									<div class="form-group form-group-sm">
-										<label class="control-label" for="shortname">Short name:</label>
-										<input type="text" class="form-control" id="shortname" name="shortname" value="">
-									</div>
-								</div>
-							</div>
-							<div class="row">
-								<div class="col-md-1">
-									<div class="form-group form-group-sm">
 										<label class="control-label">List of Seasons</label>
 										<div id="site-seasons"><img src="./images/loader.gif" width="64px" height="64px"></div>
-									</div>
-								</div>
-							</div>
-							<div class="row">
-								<div class="col-md-1">
-									<div class="form-group form-group-sm">
-										<label class="control-label" for="zip_fileEdit">Upload site shape file:</label>
-										<input type="file" class="form-control" id="zip_fileEdit" name="zip_fileEdit">
 									</div>
 								</div>
 							</div>
