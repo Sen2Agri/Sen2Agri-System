@@ -56,7 +56,7 @@
 			$season_mid     = $_REQUEST["seasonMiddle"];
 			$season_end     = $_REQUEST["seasonEnd"];
 			$season_enabled = $_REQUEST["seasonEnabled"];
-			$processors     = $_REQUEST["activeProcessors"];
+			$processors     = !empty($_REQUEST["activeProcessors"]) ? $_REQUEST["activeProcessors"] : array();
 			$ret = saveSiteSeason($season_id, $site_id, $season_name, $season_start, $season_mid, $season_end, $season_enabled, $processors);
 		} elseif ($_REQUEST["action"] == "remove") {
 			$ret = removeSiteSeason($season_id);

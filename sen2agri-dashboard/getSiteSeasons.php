@@ -340,9 +340,9 @@ if (isset($_REQUEST["action"]) && isset($_REQUEST["siteId"])) {
 			});
 		}
 		function set_datepicker() {
-			$("input[name='season_start']").datepicker({dateFormat: "yy-mm-dd"});
-			$("input[name='season_mid']").datepicker({dateFormat: "yy-mm-dd"});
-			$("input[name='season_end']").datepicker({dateFormat: "yy-mm-dd"});
+			$("table.edit input[name='season_start']").datepicker({dateFormat: "yy-mm-dd"});
+			$("table.edit input[name='season_mid']").datepicker({dateFormat: "yy-mm-dd"});
+			$("table.edit input[name='season_end']").datepicker({dateFormat: "yy-mm-dd"});
 		}
 
 /*
