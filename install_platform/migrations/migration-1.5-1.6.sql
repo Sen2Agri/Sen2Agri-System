@@ -203,7 +203,7 @@ begin
                 when duplicate_column then
             end;
 
-            _statement = 'DROP FUNCTION sp_get_scheduled_tasks()';
+            _statement = 'DROP FUNCTION IF EXISTS sp_get_scheduled_tasks()';
             raise notice '%', _statement;
             execute _statement;
 
@@ -367,7 +367,7 @@ begin
             raise notice '%', _statement;
             execute _statement;
 
-            _statement := 'DROP FUNCTION sp_get_dashboard_processor_scheduled_task(smallint);';
+            _statement := 'DROP FUNCTION IF EXISTS sp_get_dashboard_processor_scheduled_task(smallint);';
             raise notice '%', _statement;
             execute _statement;
 
@@ -850,7 +850,7 @@ begin
             raise notice '%', _statement;
             execute _statement;
 
-            _statement = 'DROP FUNCTION sp_get_sites(_siteid smallint);';
+            _statement = 'DROP FUNCTION IF EXISTS sp_get_sites(_siteid smallint);';
             raise notice '%', _statement;
             execute _statement;
 
@@ -1178,6 +1178,35 @@ begin
                 END
                 $$
                 LANGUAGE plpgsql STABLE;
+            $str$;
+            raise notice '%', _statement;
+            execute _statement;
+
+            raise notice 'applying 9855e500f18feeca8f0bcaad5d33058a174bc99a';
+            _statement := 'DROP FUNCTION IF EXISTS sp_dashboard_update_site(smallint, character varying, character varying, boolean);';
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement := $str$
+                CREATE OR REPLACE FUNCTION sp_dashboard_update_site(
+                    _id smallint,
+                    _enabled boolean)
+                RETURNS void AS
+                $BODY$
+                BEGIN
+
+                IF _enabled IS NOT NULL THEN
+                    UPDATE site
+                    SET enabled = _enabled AND EXISTS(
+                                    SELECT *
+                                    FROM season
+                                    WHERE season.site_id = _id AND season.enabled)
+                    WHERE id = _id;
+                END IF;
+
+                END;
+                $BODY$
+                LANGUAGE plpgsql;
             $str$;
             raise notice '%', _statement;
             execute _statement;
