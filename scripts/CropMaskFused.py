@@ -35,6 +35,11 @@ class CropMaskProcessor(ProcessorBase):
                             required=False, metavar='random_seed', default=0)
         parser.add_argument('-pixsize', help='The size, in meters, of a pixel (default 10)',
                             required=False, metavar='pixsize', default=10)
+        parser.add_argument('-red-edge', help='Include Sentinel-2 vegetation red edge bands',
+                            required=False, dest='red_edge', action='store_true')
+        parser.add_argument('-no-red-edge', help='Don\'t include Sentinel-2 vegetation red edge bands',
+                            required=False, dest='red_edge', action='store_false')
+        parser.set_defaults(red_edge=True)
         parser.add_argument('-sp', help='Per-sensor sampling rates (default SENTINEL 10 SPOT 5 LANDSAT 16)',
                             required=False, nargs='+', default=["SENTINEL", "10", "SPOT", "5", "LANDSAT", "16"])
 

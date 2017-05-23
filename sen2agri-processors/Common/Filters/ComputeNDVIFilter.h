@@ -35,8 +35,8 @@ public:
       PixelType result(numImages);
 
       for (int imgIndex = 0; imgIndex < numImages; imgIndex++) {
-          int b2 = pixel[4 * imgIndex + 1];
-          int b3 = pixel[4 * imgIndex + 2];
+          PixelValueType b2 = pixel[4 * imgIndex + 1];
+          PixelValueType b3 = pixel[4 * imgIndex + 2];
 
           if (b2 != NODATA && b3 != NODATA) {
               result[imgIndex] = (std::abs(b3+b2)<0.000001) ? 0 : static_cast<PixelValueType>(b3-b2)/(b3+b2);

@@ -192,6 +192,9 @@ private:
     AddParameter(ParameterType_String, "mission", "The main raster series that will be used. By default SPOT is used");
     MandatoryOff("mission");
 
+    AddParameter(ParameterType_Empty, "rededge", "Include Sentinel-2 vegetation red edge bands");
+    MandatoryOff("rededge");
+
     AddParameter(ParameterType_Int, "window", "The number of dates in the temporal window");
     SetDefaultParameterInt("window", 2);
 
@@ -277,6 +280,9 @@ private:
       m_Preprocessor = CropMaskPreprocessing::New();
       m_Preprocessor->SetPixelSize(pixSize);
       m_Preprocessor->SetMission(mission);
+      if (GetParameterEmpty("rededge")) {
+          m_Preprocessor->SetIncludeRedEdge(true);
+      }
 
       m_Preprocessor->SetBM(bm);
       m_Preprocessor->SetW(window);

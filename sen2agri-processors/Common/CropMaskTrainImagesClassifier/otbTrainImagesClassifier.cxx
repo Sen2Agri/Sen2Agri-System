@@ -126,6 +126,9 @@ void CropMaskTrainImagesClassifier::DoInit()
   AddParameter(ParameterType_String, "mission", "The main raster series that will be used. By default SPOT is used");
   MandatoryOff("mission");
 
+  AddParameter(ParameterType_Empty, "rededge", "Include Sentinel-2 vegetation red edge bands");
+  MandatoryOff("rededge");
+
   //LBU
 
   // Elevation
@@ -275,6 +278,9 @@ void CropMaskTrainImagesClassifier::DoExecute()
       preprocessors->PushBack(preprocessor);
       preprocessor->SetPixelSize(pixSize);
       preprocessor->SetMission(mission);
+      if (GetParameterEmpty("rededge")) {
+          preprocessor->SetIncludeRedEdge(true);
+      }
 
       preprocessor->SetBM(bm);
       preprocessor->SetW(window);
