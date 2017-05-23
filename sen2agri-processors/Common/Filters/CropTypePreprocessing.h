@@ -67,6 +67,7 @@ public:
     {
         m_TemporalResamplers = TemporalResamplingFilterListType::New();
         m_FeatureExtractors = CropTypeFeatureExtractionFilterListType::New();
+        m_IsRedEdgePrimary = true;
     }
 
     otb::Wrapper::FloatVectorImageType * GetOutput(const std::vector<MissionDays> &sensorOutDays)

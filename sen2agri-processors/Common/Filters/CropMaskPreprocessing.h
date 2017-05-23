@@ -35,8 +35,10 @@
 
 // Filters
 #include "otbMultiChannelExtractROI.h"
+#include "otbConcatenateVectorImagesFilter.h"
 
 #include "CropMaskFeaturesSupervised.hxx"
+#include "CropMaskSupervisedRedEdgeFeaturesFilter.h"
 #include "otbTemporalResamplingFilter.h"
 #include "otbTemporalMergingFilter.h"
 
@@ -64,6 +66,9 @@ typedef TemporalMergingFunctor<ImageType::PixelType, MaskType::PixelType>       
 typedef otb::BinaryFunctorImageFilterWithNBands<ImageType, MaskType, ImageType,
         TemporalMergingFunctorType>                                             TemporalMergingFilterType;
 typedef otb::ObjectList<TemporalMergingFilterType>                              TemporalMergingFilterListType;
+
+typedef CropMaskSupervisedRedEdgeFeaturesFilter<ImageType>          RedEdgeFeaturesFilterType;
+typedef otb::ConcatenateVectorImagesFilter<ImageType>               ConcatenateImagesFilterType;
 
 class CropMaskPreprocessing : public TimeSeriesReader
 {
@@ -134,6 +139,38 @@ public:
         // The output days will be updated later
         temporalResampler->SetInputData(sdCollection);
 
+        if (m_IncludeRedEdge) {
+            auto redEdgeTemporalResampler = TemporalResamplingFilterType::New();
+            m_TemporalResamplers->PushBack(temporalResampler);
+            temporalResampler->SetInputRaster(m_RedEdgeBandConcat->GetOutput());
+            temporalResampler->SetInputMask(m_RedEdgeMaskConcat->GetOutput());
+
+            otb::SensorDataCollection redEdgeSdCollection;
+            for (const auto &e : sensorOutDays) {
+                if (e.mission == SENTINEL) {
+                    otb::SensorData sd;
+
+                    sd.sensorName = e.mission;
+                    sd.outDates = e.days;
+                    sd.bandCount = 6;
+
+                    for (const ImageDescriptor& id : m_Descriptors) {
+                        if (id.mission == e.mission) {
+                            int inDay = getDaysFromEpoch(id.aquisitionDate);
+                            sd.inDates.push_back(inDay);
+                        }
+                    }
+
+                    sdCollection.emplace_back(sd);
+                }
+            }
+
+            redEdgeTemporalResampler->SetInputData(redEdgeSdCollection);
+
+            m_RedEdgeFeaturesFilter = RedEdgeFeaturesFilterType::New();
+            m_RedEdgeFeaturesFilter->SetInput(redEdgeTemporalResampler->GetOutput());
+        }
+
         std::vector<ImageInfo> imgInfos;
         int priority = 10;
         int index = 0;
@@ -173,6 +210,7 @@ public:
         temporalMerger->SetInput1(temporalResampler->GetOutput());
         temporalMerger->SetInput2(m_MaskConcat->GetOutput());
 
+        otb::Wrapper::FloatVectorImageType *output;
         if (m_BM) {
             auto featureExtractorBM = FeatureExtractorBMFilterType::New();
             m_FeatureExtractorsBM->PushBack(featureExtractorBM);
@@ -185,7 +223,7 @@ public:
 
             featureExtractorBM->SetInput(temporalMerger->GetOutput());
 
-            return featureExtractorBM->GetOutput();
+            output = featureExtractorBM->GetOutput();
         } else {
             auto featureExtractor = FeatureExtractorFilterType::New();
             m_FeatureExtractors->PushBack(featureExtractor);
@@ -198,8 +236,20 @@ public:
 
             featureExtractor->SetInput(temporalMerger->GetOutput());
 
-            return featureExtractor->GetOutput();
+            output = featureExtractor->GetOutput();
         }
+
+        if (!m_IncludeRedEdge) {
+            return output;
+        } else {
+            m_ConcatenateImagesFilter = ConcatenateImagesFilterType::New();
+            m_ConcatenateImagesFilter->PushBackInput(output);
+            m_ConcatenateImagesFilter->PushBackInput(m_RedEdgeFeaturesFilter->GetOutput());
+
+            output = m_ConcatenateImagesFilter->GetOutput();
+        }
+
+        return output;
     }
 
 private:
@@ -207,7 +257,8 @@ private:
     TemporalMergingFilterListType::Pointer            m_TemporalMergers;
     FeatureExtractorFilterListType::Pointer           m_FeatureExtractors;
     FeatureExtractorBMFilterListType::Pointer         m_FeatureExtractorsBM;
-
+    RedEdgeFeaturesFilterType::Pointer                m_RedEdgeFeaturesFilter;
+    ConcatenateImagesFilterType::Pointer              m_ConcatenateImagesFilter;
     int m_W;
     PixelValueType m_Delta;
     PixelValueType m_TSoil;
