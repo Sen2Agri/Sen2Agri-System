@@ -13,7 +13,7 @@ BEGIN
 			JOIN job_start_type ST ON J.start_type_id = ST.id
 			JOIN activity_status AST ON J.status_id = AST.id
 		WHERE   $1 IS NULL OR site_id = _siteid
-	ORDER BY J.end_timestamp DESC
+	ORDER BY J.submit_timestamp DESC
 	OFFSET ($2 - 1) * _rows_per_page LIMIT _rows_per_page;
 END
 $BODY$
