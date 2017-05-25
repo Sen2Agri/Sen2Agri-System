@@ -292,7 +292,7 @@
 											</div>
 											<div class="form-group form-group-sm hidden">
 												<label class="control-label" for="nbtrsample">Training set samples:</label>
-												<input type="number" min="0" step="1" class="form-control" id="nbtrsample" name="nbtrsample" value="4000">
+												<input type="number" min="0" step="1" class="form-control" id="nbtrsample" name="nbtrsample" value="40000">
 												<span class="help-block">The number of samples included in the training set.</span>
 											</div>
 											<div class="form-group form-group-sm advanced">
@@ -458,7 +458,7 @@
 											</div>
 											<div class="form-group form-group-sm advanced">
 												<label class="control-label" for="nbtrsample">Training set samples:</label>
-												<input type="number" min="0" step="1" class="form-control" id="nbtrsample" name="nbtrsample" value="4000">
+												<input type="number" min="0" step="1" class="form-control" id="nbtrsample" name="nbtrsample" value="40000">
 												<span class="help-block">The number of samples included in the training set.</span>
 											</div>
 											<div class="form-group form-group-sm advanced">
