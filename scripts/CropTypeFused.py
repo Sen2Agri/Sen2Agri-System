@@ -472,7 +472,10 @@ class CropTypeProcessor(ProcessorBase):
 
         metadata.append(tiles)
 
-        classifier = E.Classifier()
+        classifier = E.Classifier(
+            E.TrainingSamplesPerTile(str(self.args.nbtrsample))
+        )
+
         if self.args.classifier == 'rf':
             classifier.append(
                 E.RF(

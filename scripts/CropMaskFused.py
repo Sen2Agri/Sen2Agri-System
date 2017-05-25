@@ -732,7 +732,8 @@ class CropMaskProcessor(ProcessorBase):
             E.PixelSize(str(self.args.pixsize)),
             E.SampleRatio(str(self.args.ratio)),
             E.Classifier(self.args.classifier),
-            E.Seed(str(self.args.rseed))
+            E.Seed(str(self.args.rseed)),
+            E.IncludeRedEdge(str(self.args.red_edge))
         )
 
         if self.args.lut is not None:
