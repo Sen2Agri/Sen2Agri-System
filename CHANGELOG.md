@@ -5,14 +5,15 @@
  - The possibility to select the input bands when creating the LAI monodate products, including 20M bands and possibility to use or not NDVI and RVI.
  - Scripts for deleting a site and for filtering a site tiles
  - Multiple seasons in the UI
- - The website can now display the command line of a processor and its output
+ - The website monitoring page can now display the command line of a job and its output
+ - The supervised crop mask processor can now use (optionally, on by default) features derived from the red edge bands
 
 ### Changed
  - In the LAI scheduled jobs now are taken into account the insertion dates instead of product creation date.
- - Limited the crop type processor training to `10000` samples / tile
+ - Limited the crop type processor training to `10 000` samples / tile
  - The crop type and supervised crop mask processors now include the in-situ data in the output product
  - The short name and extent of sites can no longer be updated from the website
- - The website monitoring page now sorts jobs by submission time
+ - The website monitoring page now sorts jobs by submission time instead of end time
 
 ### Fixed
  - Changed the advanced mode for processors parameters in the sen2agri-config configuration.
@@ -20,6 +21,7 @@
  - The missing L8 HDR from the L3C/L3D IPP file
  - Corrected the date order in the creation of L3C/L3D products.
  - Fixed a crash in the crop type processor when one of the tiles was missing Landsat 8 data
+ - Website custom L4A jobs use a value of `40 000` training samples / tile instead of `4 000` to match the processor default
 
 ### Known issues
 - The processor output page is unstyled
