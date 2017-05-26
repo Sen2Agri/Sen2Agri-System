@@ -193,6 +193,8 @@ class CropMaskProcessor(ProcessorBase):
                          "-window", self.args.window,
                          "-bm", "true" if self.args.bm else "false",
                          "-classifier", self.args.classifier]
+            if self.args.red_edge:
+                step_args += ["-rededge", "true"]
             step_args += ["-sp"] + self.args.sp
             step_args += ["-prodpertile"] + area_prodpertile
             step_args += ["-il"] + area_descriptors
@@ -322,6 +324,8 @@ class CropMaskProcessor(ProcessorBase):
                          "-bm", "true" if self.args.bm else "false",
                          "-out", tile_crop_mask_uncompressed,
                          "-indays"] + days
+            if self.args.red_edge:
+                step_args += ["-rededge", "true"]
             step_args += ["-model"] + models
             step_args += ["-il"] + tile.get_descriptor_paths()
             if self.args.classifier == "svm":
