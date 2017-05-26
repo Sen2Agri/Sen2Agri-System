@@ -140,10 +140,13 @@ public:
         temporalResampler->SetInputData(sdCollection);
 
         if (m_IncludeRedEdge) {
+            m_RedEdgeBandConcat->UpdateOutputInformation();
+            m_RedEdgeMaskConcat->UpdateOutputInformation();
+
             auto redEdgeTemporalResampler = TemporalResamplingFilterType::New();
-            m_TemporalResamplers->PushBack(temporalResampler);
-            temporalResampler->SetInputRaster(m_RedEdgeBandConcat->GetOutput());
-            temporalResampler->SetInputMask(m_RedEdgeMaskConcat->GetOutput());
+            m_TemporalResamplers->PushBack(redEdgeTemporalResampler);
+            redEdgeTemporalResampler->SetInputRaster(m_RedEdgeBandConcat->GetOutput());
+            redEdgeTemporalResampler->SetInputMask(m_RedEdgeMaskConcat->GetOutput());
 
             otb::SensorDataCollection redEdgeSdCollection;
             for (const auto &e : sensorOutDays) {
@@ -161,7 +164,7 @@ public:
                         }
                     }
 
-                    sdCollection.emplace_back(sd);
+                    redEdgeSdCollection.emplace_back(sd);
                 }
             }
 
