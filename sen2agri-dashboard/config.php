@@ -83,6 +83,7 @@
 												<label class="control-label" for="weightdatemin">Minimum weight at edge of the synthesis time window:</label>
 												<input type="number" min="0" class="form-control" id="weightdatemin" name="weightdatemin" value="0.5">
 											</div>
+											<input name="proc_div" type="hidden" value="l3a">
 											<input name="l3a" type="submit" value="Submit">
 										</div>
 									</div>
@@ -167,6 +168,7 @@
 												<input type="number" min="0" max="1" step="1" class="form-control" id="genmodel" name="genmodel" value="1">
 												<span class="help-block">Specifies if the models should be generated or not [0/1]</span>
 											</div>
+											<input name="proc_div" type="hidden" value="l3b">
 											<input type="submit" name="l3b_lai" value="Submit">
 										</div>
 									</div>
@@ -216,6 +218,7 @@
 												</select>
 												<span class="help-block">Resolution of the output image (in meters).</span>
 											</div>
+											<input name="proc_div" type="hidden" value="l3b_nvdi">
 											<input type="submit" name="l3e_pheno" value="Submit">
 										</div>
 									</div>
@@ -381,7 +384,7 @@
 													<span class="help-block">The minimum number of pixels in an area where for an equal number of crop and nocrop samples the crop decision is taken.</span>
 												</div>
 											</div>
-
+											<input name="proc_div" type="hidden" value="l4a">
 											<input type="submit" name="l4a" value="Submit">
 										</div>
 									</div>
@@ -548,7 +551,7 @@
 													<span class="help-block">The minimum number of pixels in an area where for an equal number of crop and nocrop samples the crop decision is taken.</span>
 												</div>
 											</div>
-
+											<input name="proc_div" type="hidden" value="l4a_wo">
 											<input type="submit" name="l4a_wo" value="Submit">
 										</div>
 									</div>
@@ -650,7 +653,7 @@
 													<span class="help-block">Minimum number of samples in each node used by the classifier.</span>
 												</div>
 											</div>
-
+											<input name="proc_div" type="hidden" value="l4b">
 											<input type="submit" name="l4b" value="Submit">
 										</div>
 									</div>
@@ -673,6 +676,13 @@
 
 <!-- Diablog message -->
 <div id="dialog-message" title="Submit successful">
+	<p>
+		<span class="ui-icon ui-icon-circle-check" style="float:left; margin:0 7px 50px 0;"></span>
+		<span id="dialog-content"></span>
+	</p>
+</div>
+<!-- Diablog wait -->
+<div id="dialog-wait" title="Processing request">
 	<p>
 		<span class="ui-icon ui-icon-circle-check" style="float:left; margin:0 7px 50px 0;"></span>
 		<span id="dialog-content"></span>
@@ -728,6 +738,10 @@
 		$("#dialog-message #dialog-content").text(message);
 		$("#dialog-message").dialog("open");
 	};
+	function open_dialog_wait(message) {
+		$("#dialog-wait #dialog-content").text(message);
+		$("#dialog-wait").dialog("open");
+	};
 	function open_dialog_error(message) {
 		$("#dialog-error #dialog-content").text(message);
 		$("#dialog-error").dialog("open");
@@ -759,6 +773,12 @@
 			modal: true,
 			buttons: { Ok: function() { $(this).dialog("close"); } }
 		});
+		$("#dialog-wait").dialog({
+			width: '400px',
+			autoOpen: false,
+			modal: true,
+			buttons: { }
+		});
 		$("#dialog-error").dialog({
 			width: '400px',
 			autoOpen: false,
@@ -766,15 +786,30 @@
 			buttons: { Ok: function() { $(this).dialog("close"); } }
 		}).parent().children(".ui-dialog-titlebar").addClass('ui-state-error');
 
+		$("input[type='submit']").click(function() {
+			var form_valid = false;
+			switch ($(this).attr('name')) {
+				case "l3a":       form_valid = $("#l3aform").valid();      break;
+				case "l3b_lai":   form_valid = $("#l3b_laiform").valid();  break;
+				case "l3e_pheno": form_valid = $("#l3b_nvdiform").valid(); break;
+				case "l4a":       form_valid = $("#l4aform").valid();      break;
+				case "l4a_wo":    form_valid = $("#l4a_woform").valid();   break;
+				case "l4b":       form_valid = $("#l4bform").valid();      break;
+			}
+			if (form_valid) {
+				open_dialog_wait("Please wait, your request is being processed!");
+			}
+		});
+		
 		<?php
 		// Check if this is a redirect from a FORM being submitted
 		if (isset($_SESSION['processor'])) {
-			if (($_SESSION['processor'] == 'l4a') || ($_SESSION['processor'] == 'l4a_wo') || ($_SESSION['processor'] == 'l4b')) {
-				echo "$('#" . $_SESSION['processor'] . "').collapse('show');";
-				echo "$('#" . $_SESSION['processor'] . " #siteId').trigger('focus');";
-				echo ($_SESSION['status'] === "OK" ? "open_dialog('" : "open_dialog_error('").$_SESSION['message']."')";
-			}
+			echo "$('#" . $_SESSION['proc_div'] . "').collapse('show');";
+			echo "$('#" . $_SESSION['proc_div'] . " #siteId').trigger('focus');";
+			echo ($_SESSION['status'] === "OK" ? "open_dialog('" : "open_dialog_error('").$_SESSION['message']."')";
+			
 			unset($_SESSION['processor']);
+			unset($_SESSION['proc_div']);
 			unset($_SESSION['status']);
 			unset($_SESSION['message']);
 		}
@@ -798,17 +833,6 @@
 						},
 						errorPlacement: function(error, element) {
 							error.appendTo(element.parent());
-						},
-						submitHandler: function(form) {
-							$.ajax({
-								url: $(form).attr('action'),
-								type: $(form).attr('method'),
-								data: $(form).serialize(),
-								success: function(response) {
-									open_dialog("Your job has been successfully submitted!");
-									reset_form("l3aform");
-								}
-							 });
 						},
 						// set this class to error-labels to indicate valid fields
 						success: function(label) {
@@ -835,17 +859,6 @@
 						errorPlacement: function(error, element) {
 							error.appendTo(element.parent());
 						},
-						submitHandler: function(form) {
-							$.ajax({
-								url: $(form).attr('action'),
-								type: $(form).attr('method'),
-								data: $(form).serialize(),
-								success: function(response) {
-									open_dialog("Your job has been successfully submitted!");
-									reset_form("l3b_laiform");
-								}
-							});
-						},
 						// set this class to error-labels to indicate valid fields
 						success: function(label) {
 							label.remove();
@@ -866,17 +879,6 @@
 						},
 						errorPlacement: function(error, element) {
 							error.appendTo(element.parent());
-						},
-						submitHandler: function(form) {
-							$.ajax({
-								url: $(form).attr('action'),
-								type: $(form).attr('method'),
-								data: $(form).serialize(),
-								success: function(response) {
-									open_dialog("Your job has been successfully submitted!");
-									reset_form("l3b_nvdiform");
-								}
-							});
 						},
 						// set this class to error-labels to indicate valid fields
 						success: function(label) {
@@ -900,17 +902,6 @@
 						errorPlacement: function(error, element) {
 							error.appendTo(element.parent());
 						},
-						// specifying a submitHandler prevents the default submit, good for the demo
-						submitHandler :function(form) {
-							$.ajax({
-								url: $(form).attr('action'),
-								type: $(form).attr('method'),
-                                data: new FormData(form),
-                                processData: false,
-                                contentType: false,
-								success: function(response) { }
-							});
-						},
 						// set this class to error-labels to indicate valid fields
 						success : function(label) {
 							label.remove();
@@ -931,17 +922,6 @@
 						},
 						errorPlacement: function(error, element) {
 							error.appendTo(element.parent());
-						},
-						// specifying a submitHandler prevents the default submit, good for the demo
-						submitHandler :function(form) {
-							$.ajax({
-								url: $(form).attr('action'),
-								type: $(form).attr('method'),
-								data: new FormData(form),
-                                processData: false,
-                                contentType: false,
-								success: function(response) { }
-							});
 						},
 						// set this class to error-labels to indicate valid fields
 						success : function(label) {
@@ -964,17 +944,6 @@
 						},
 						errorPlacement: function(error, element) {
 							error.appendTo(element.parent());
-						},
-						// specifying a submitHandler prevents the default submit, good for the demo
-						submitHandler :function(form) {
-							$.ajax({
-								url: $(form).attr('action'),
-								type: $(form).attr('method'),
-								data: new FormData(form),
-                                processData: false,
-                                contentType: false,
-								success: function(response) { }
-							});
 						},
 						// set this class to error-labels to indicate valid fields
 						success : function(label) {
