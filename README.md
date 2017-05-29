@@ -87,4 +87,3 @@ Retrieve the source code (not available online) and place it in the `sen2agri` d
     qmake-qt5 ../sen2agri
     make
     sudo make install
-
