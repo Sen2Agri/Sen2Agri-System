@@ -4,6 +4,7 @@ require_once ("ConfigParams.php");
 
 function redirect_page($processor_short_name, $status, $message) {
 	$_SESSION['processor'] = $processor_short_name;
+	$_SESSION['proc_div']  = isset($_POST ['proc_div']) ? $_POST ['proc_div'] : "foo";
 	$_SESSION['status']    = $status;
 	$_SESSION['message']   = $message;
 
@@ -226,6 +227,7 @@ if (isset ( $_POST ['l3a'] )) {
 	$name = "l3a_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for ".$processor_short_name;
 	insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
+	redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
 } /* -------------------------------------------------------l3b_lai------------------------------------------------------ */
 elseif (isset ( $_POST ['l3b_lai'] )) {
 	$processor_short_name = "l3b_lai";
@@ -277,6 +279,7 @@ elseif (isset ( $_POST ['l3b_lai'] )) {
 	$name = "l3b_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for ".$processor_short_name;
 	insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
+	redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
 } /* -------------------------------------------------------l3e_pheno------------------------------------------------------ */
 elseif (isset ( $_POST ['l3e_pheno'] )) {
 	$processor_short_name = "l3e_pheno";
@@ -301,6 +304,7 @@ elseif (isset ( $_POST ['l3e_pheno'] )) {
 	$name = "l3e_pheno_processor" . date ( "m.d.y" );
 	$description = "generated new configuration from site for ".$processor_short_name;
 	insertjob ( $name, $description, $processor_short_name, $siteId, 2, $json_param, $json_config );
+	redirect_page($processor_short_name, "OK", "Your job has been successfully submitted!");
 } /* -------------------------------------------------------l4a------------------------------------------------------ */
 elseif (isset ( $_POST ['l4a'] ) || isset ( $_POST ['l4a_wo'] )) {
 	$processor_short_name = "l4a";
