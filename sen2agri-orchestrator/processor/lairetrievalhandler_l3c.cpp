@@ -1380,7 +1380,10 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3C::GetProcessingDefinitionImpl
     for(const Product &prd: productList) {
         const QString &l2aPrdHdrPath = ProcessorHandlerHelper::GetSourceL2AFromHighLevelProductIppFile(prd.fullPath);
         ProcessorHandlerHelper::SatelliteIdType satId = ProcessorHandlerHelper::GetL2ASatelliteFromTile(l2aPrdHdrPath);
-        if(satId == ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2) {
+        // in the case of L3C we filter here to have only the S2 products.
+        // This is not the case for L3D where we send all products and we filter during job processing
+        if((satId == ProcessorHandlerHelper::SATELLITE_ID_TYPE_S2) ||
+           generateFitted) {
             params.productList.append(prd);
             Logger::debug(QStringLiteral("Scheduler: Using S2 product %1!")
                           .arg(prd.fullPath));
