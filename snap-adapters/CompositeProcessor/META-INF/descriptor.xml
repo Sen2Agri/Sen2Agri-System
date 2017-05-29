@@ -3,7 +3,7 @@
   <operatorClass>org.esa.snap.core.gpf.operators.tooladapter.ToolAdapterOp</operatorClass>
   <alias>CompositeProcessor</alias>
   <label>Composite Processor</label>
-  <version>1.3</version>
+  <version>1.6</version>
   <description>Sen2Agri L3A Composite Processor</description>
   <authors>Ramona Manda, Cosmin Cara</authors>
   <copyright>(C)2016 Sen2Agri Consortium</copyright>
@@ -26,15 +26,6 @@
       <value>/usr/bin</value>
       <isShared>false</isShared>
     </variable>
-    <osvariable>
-      <key>PYTHON_BIN</key>
-      <value>/bin/python2.7</value>
-      <isShared>false</isShared>
-      <windows>python.exe</windows>
-      <linux>/bin/python2.7</linux>
-      <macosx>/bin/python2.7</macosx>
-      <isTransient>false</isTransient>
-    </osvariable>
     <variable>
       <key>WORKING_DIR_PATH</key>
       <value>/mnt/archive/temp</value>

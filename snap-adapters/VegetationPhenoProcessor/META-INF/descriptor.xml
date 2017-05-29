@@ -3,7 +3,7 @@
   <operatorClass>org.esa.snap.core.gpf.operators.tooladapter.ToolAdapterOp</operatorClass>
   <alias>VegetationPhenoProcessor</alias>
   <label>Vegetation Phenology Processor</label>
-  <version>1.3</version>
+  <version>1.6</version>
   <description>Sen2Agri Vegetation Phenology Processor</description>
   <authors>Ramona Manda, Cosmin Cara</authors>
   <copyright>(C)2016 Sen2Agri Consortium</copyright>
@@ -20,15 +20,6 @@
   <progressPattern>(?:.+): (\d{1,3})% (?:.+)</progressPattern>
   <errorPattern>ERROR: (.+)</errorPattern>
   <variables>
-    <osvariable>
-      <key>PYTHON_BIN</key>
-      <value>/bin/python2.7</value>
-      <isShared>false</isShared>
-      <windows>python.exe</windows>
-      <linux>/bin/python2.7</linux>
-      <macosx>/bin/python2.7</macosx>
-      <isTransient>false</isTransient>
-    </osvariable>
     <variable>
       <key>WORKING_DIR_PATH</key>
       <value>/mnt/archive/temp</value>
