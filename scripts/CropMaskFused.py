@@ -115,7 +115,7 @@ class CropMaskProcessor(ProcessorBase):
             ring = tile.footprint.GetGeometryRef(0)
             ll, ur = ring.GetPoint(3), ring.GetPoint(1)
 
-            run_step(Step("PrepareReference_" + tile.id, ["gdalwarp",
+            run_step(Step("PrepareReference_" + tile.id, ["gdalwarp", "-q",
                                                           "-dstnodata", 0,
                                                           "-t_srs", tile.projection,
                                                           "-te", ll[0], ll[1], ur[0], ur[1],
