@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 #include "otbOGRIOHelper.h"
@@ -20,7 +20,6 @@
 #include "boost/filesystem/path.hpp"
 #include "boost/filesystem/operations.hpp"
 #include <boost/algorithm/string/predicate.hpp>
-#include "boost/progress.hpp"
 #include <iostream>
 
 #include <time.h>
@@ -568,7 +567,7 @@ private:
           if (HasValue("lutqgis")) {
               TransferAndRenameLUTFile(GetParameterString("lutqgis"));
           }
-          TransferAndRenameGIPPFiles();          
+          TransferAndRenameGIPPFiles();
           TransferAndRenameISDFiles();
           const std::string strProductFileName = BuildFileName(METADATA_CATEG, "", ".xml");
           generateProductMetadataFile(strMainFolderFullPath + "/" + strProductFileName);
@@ -910,7 +909,7 @@ private:
       return extent;
   }
 
-  bool generateRgbFromLut(const std::string &rasterFullFilePath, const std::string &ourRasterFullFilePath, 
+  bool generateRgbFromLut(const std::string &rasterFullFilePath, const std::string &ourRasterFullFilePath,
                           const std::string &lutMap, bool bIsRgbImg, bool bIsRangeMapFile)
   {
       std::vector<const char *> args;
@@ -930,7 +929,7 @@ private:
       args.emplace_back("-isrange");
       std::string strIsRangeMapFile = std::to_string(bIsRangeMapFile);
       args.emplace_back(strIsRangeMapFile.c_str());
-      
+
       return ExecuteExternalProgram("otbApplicationLauncherCommandLine", args);
   }
 
@@ -1649,7 +1648,7 @@ private:
             bUseLut = true;
             if(m_strProductLevel == "L4A" || m_strProductLevel == "L4B") {
                 bIsRangeMapFile = false;
-            }            
+            }
       }
 
       //std::cout << "ChannelNo = " << iChannelNo << std::endl;
@@ -1671,7 +1670,7 @@ private:
                  bool bQuicklookGenerated = false;
                  if(bUseLut) {
                      std::string outL3BRgbPreviewFile = previewFileEl.strPreviewFileName + "_RGB.tif";
-                     if(!generateRgbFromLut(previewFileEl.strPreviewFileName, outL3BRgbPreviewFile, m_strLutFile, 
+                     if(!generateRgbFromLut(previewFileEl.strPreviewFileName, outL3BRgbPreviewFile, m_strLutFile,
                                             bIsRgbImg, bIsRangeMapFile)) {
                          otbAppLogWARNING("Error creating RGB file from LUT " << strTilePreviewFullPath);
                      } else {
