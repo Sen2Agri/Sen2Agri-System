@@ -407,9 +407,9 @@ private:
       const std::string &strMaxAcquisitionDate = *std::max_element(std::begin(m_acquisitionDatesList), std::end(m_acquisitionDatesList));
       if(m_strTimePeriod.empty()) {
           m_bDynamicallyTimePeriod = true;
+          const std::string &minAcqDate = getDateFromAquisitionDateTime(strMinAcquisitionDate);
+          const std::string &maxAcqDate = getDateFromAquisitionDateTime(strMaxAcquisitionDate);
           if(LevelHasAcquisitionTime()) {
-              const std::string &minAcqDate = getDateFromAquisitionDateTime(strMinAcquisitionDate);
-              const std::string &maxAcqDate = getDateFromAquisitionDateTime(strMaxAcquisitionDate);
               if(minAcqDate != maxAcqDate) {
                     itkGenericExceptionMacro(<< "You should have the same date for all tiles in the il parameter as this product has Aquisition time: " << m_strProductLevel);
               }
@@ -417,7 +417,7 @@ private:
               m_strTimePeriod = strMaxAcquisitionDate;
           } else {
               // we have an interval
-              m_strTimePeriod = strMinAcquisitionDate + "_" + strMaxAcquisitionDate;
+              m_strTimePeriod = minAcqDate + "_" + maxAcqDate;
           }
       }
 
@@ -1908,14 +1908,7 @@ private:
   }
 
   std::string BuildProductDirectoryName() {
-      std::string strCreationDate;
-      // in the case of L3B we add also the creation time as we might have 2 L3B from S2 and L8 from the same day
-      // that cannot be mixed in the same product.
-      if(m_strProductLevel.compare("L3B") == 0) {
-        strCreationDate = currentDateTimeFormattted("%Y%m%dT%H%M%S");
-      } else {
-        strCreationDate = currentDateTimeFormattted("%Y%m%d");
-      }
+      const std::string &strCreationDate = currentDateTimeFormattted("%Y%m%dT%H%M%S");
       return BuildFileName(MAIN_FOLDER_CATEG, "", "", m_strTimePeriod, m_strSiteId, strCreationDate);
   }
 
