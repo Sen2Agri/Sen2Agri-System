@@ -118,9 +118,9 @@ def product_download(s2Obj, aoiContext, db):
 
         if not db.upsertSentinelProductHistory(aoiContext.siteId, s2Obj.filename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, s2Obj.product_date_as_string, abs_filename, s2Obj.orbit_id, aoiContext.maxRetries):
             log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADING for {}".format(s2Obj.filename), general_log_filename)
-            return False        
+            return False
         if run_command(cmd_dwn, aoiContext.writeDir, general_log_filename) != 0:
-            #get the product name and check the no_of_retries. 
+            #get the product name and check the no_of_retries.
             #if it's greater than aoiContext.maxRetries, update the product name status with ABORTED (4)
             #else update the product name in the downloader_history with status FAILED (3) and increment the no_of_retries
             #this logic is performed by db.upsertSentinelProductHistory
@@ -169,11 +169,11 @@ def get_s2obj_from_file(aoiContext, xml, account, passwd, proxy):
             log(aoiContext.writeDir, "Something went wrong with the filename: filename:{} | cloud percentage:{} | product date: {} | orbit id: {}".format(filename, cloud, product_date, orbit_id), general_log_filename)
             continue
 
-        ret_s2Objs.append(Sentinel2Obj(filename, link, product_date.group(1), cloud, orbit_id.group(1), account, passwd, proxy))  
-    
+        ret_s2Objs.append(Sentinel2Obj(filename, link, product_date.group(1), cloud, orbit_id.group(1), account, passwd, proxy))
+
     return ret_s2Objs
-    
-    
+
+
 #signal.signal(signal.SIGINT, signal_handler)
 
 def sentinel_download(aoiContext):
@@ -200,18 +200,18 @@ def sentinel_download_season(aoiContext, seasonInfo):
         if passwd.endswith('\n'):
             passwd=passwd[:-1]
         proxy_line = f.readline().strip('\n\t\r ')
-        if(len(proxy_line) > 0):            
-            log(general_log_path, "Found proxy info: {}".format(proxy_line), general_log_filename)        
-            proxy_info = proxy_line.split(' ')            
+        if(len(proxy_line) > 0):
+            log(general_log_path, "Found proxy info: {}".format(proxy_line), general_log_filename)
+            proxy_info = proxy_line.split(' ')
             if len(proxy_info) == 2:
                 proxy={'host':proxy_info[0], 'port':proxy_info[1]}
             elif len(proxy_info) == 4:
                 proxy={'host':proxy_info[0],'port':proxy_info[1],'user':proxy_info[2],'pass':proxy_info[3]}
             else:
-                log(general_log_path, "Proxy information erroneous in {} file, second line. It should have the following format: host port [user pass] ".format(aoiContext.remoteSiteCredentials), general_log_filename)        
+                log(general_log_path, "Proxy information erroneous in {} file, second line. It should have the following format: host port [user pass] ".format(aoiContext.remoteSiteCredentials), general_log_filename)
                 f.close()
                 return
-            log(general_log_path, "Proxy info: {}".format(proxy), general_log_filename)        
+            log(general_log_path, "Proxy info: {}".format(proxy), general_log_filename)
         f.close()
     except :
         log(aoiContext.writeDir, "Error raised when reading the sentinel 2 apihub password file {} ".format(str(apihubFile)), general_log_filename)
@@ -237,14 +237,14 @@ def sentinel_download_season(aoiContext, seasonInfo):
         index += 1
         print("queryResultsFilename = {}".format(queryResultsFilename))
         search_output = ["--output-document", queryResultsFilename]
-        query = "{} filename:S2A*".format(query_geom)
+        query = "{} filename:S2A* productType:S2MSI1C".format(query_geom)
 
         start_date=str(seasonInfo.startSeasonYear)+"-"+str(seasonInfo.startSeasonMonth)+"-"+str(seasonInfo.startSeasonDay)+"T00:00:00.000Z"
         end_date=str(seasonInfo.endSeasonYear)+"-"+str(seasonInfo.endSeasonMonth)+"-"+str(seasonInfo.endSeasonDay)+"T23:59:50.000Z"
 
         query_date = " beginPosition:[{} TO {}]".format(start_date, end_date)
         query = "{}{}".format(query, query_date)
-        
+
         wget_command = wg + auth + search_output
         wget_command_proxy = []
         if len(proxy) >= 2:
@@ -284,14 +284,14 @@ def sentinel_download_season(aoiContext, seasonInfo):
                     remainderRes = totalRes % 100
                     print("Total results: {}".format(totalRes))
                     print("Pages: {}".format(pages))
-                    for count in range(0,pages): 
+                    for count in range(0,pages):
                         if (count < (pages - 1)) or remainderRes > 0 :
                             curPage = count + 1
                             startIndex = curPage*100
                             print("StartIndex: {}".format(startIndex))
                             newQuery = query + "&rows=100&start=" + str(startIndex)
                             queryResultsFilename = aoiContext.writeDir + "/" + str(aoiContext.siteName) + "_query_results_all_{}_{}.xml".format(seasonInfo.seasonName, index)
-                            index += 1                        
+                            index += 1
                             print("queryResultsFilename = {}".format(queryResultsFilename))
                             search_output = ["--output-document", queryResultsFilename]
                             wget_command = wg + auth + wget_command_proxy + search_output + [url_search+newQuery]
@@ -310,7 +310,7 @@ def sentinel_download_season(aoiContext, seasonInfo):
                     log(aoiContext.writeDir, "Exception: it was expected for the word in position 5 (starting from 0) to be an int. It ain't. The checked string is: {}".format(subtitle), general_log_filename)
                     log(aoiContext.writeDir, "Could not get the catalog output (exception for re-pagination) for {}".format(query_geom), general_log_filename)
                     return
-    
+
     #sort the products using product date
     s2Objs.sort()
     log(aoiContext.writeDir, "Total products: {}".format(len(s2Objs)), general_log_filename)
@@ -336,4 +336,4 @@ def sentinel_download_season(aoiContext, seasonInfo):
                 aoiContext.appendHistoryFile(s2Obj.filename)
             print("Finished to download product: {}".format(s2Obj.productname))
     log(aoiContext.writeDir, "Total products: {}".format(len(s2Objs)), general_log_filename)
-        
+
