@@ -1,15 +1,14 @@
-<?php
-	require_once("ConfigParams.php");
-
+<?php include "master.php";?>
+<div id="main">
+	<div id="main2">
+		<div id="main3">
+<?php			
 	if (!isset($_REQUEST['jobId'])) {
         http_response_code(400);
         exit();
     }
-
-    // require('master.php');
 ?>
-<!DOCTYPE html>
-<html>
+
 <style>
     .copy-link {
         cursor: pointer;
@@ -18,7 +17,6 @@
         display: none;
     }
 </style>
-<body>
 <?php
     $db = pg_connect(ConfigParams::$CONN_STRING)
             or die ("Could not connect");
@@ -58,8 +56,10 @@
         '</table>';
 
     echo $output;
-    // require('ms_foot.php');
 ?>
+		</div>
+	</div>
+</div>
 <script>
     function loadHandler() {
         document.getElementById("log").addEventListener("click", function (e) {
@@ -88,5 +88,4 @@
         document.addEventListener("DOMContentLoaded", loadHandler);
     }
 </script>
-</body>
-</html>
+<?php include "ms_foot.php"; ?>

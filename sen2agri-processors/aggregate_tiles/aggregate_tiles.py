@@ -109,7 +109,7 @@ def process_mosaic_images(interpolName, listOfImages, imgAggregatedName, type=No
 def image_reproject_and_rescale(reprojIsNecesary, targetSrs, rescaleIsNecesary, targetSizeX, targetSizeY, resampleMethod, inpFile, outFile ):
    if reprojIsNecesary and rescaleIsNecesary:
       #perform both reprojection and rescale
-      run_command(["gdalwarp",
+      run_command(["gdalwarp", "-q",
                  "-overwrite",
                  "-of", "GTiff",
                  "-t_srs", "ESRI::" + str(targetSrs),
@@ -120,7 +120,7 @@ def image_reproject_and_rescale(reprojIsNecesary, targetSrs, rescaleIsNecesary, 
       print("[.....]->Both reprojection and rescale on:" + inpFile)
    elif reprojIsNecesary:
       #perform just reprojection
-      run_command(["gdalwarp",
+      run_command(["gdalwarp", "-q",
                  "-overwrite",
                  "-of", "GTiff",
                  "-t_srs", "ESRI::" + str(targetSrs),
@@ -129,7 +129,7 @@ def image_reproject_and_rescale(reprojIsNecesary, targetSrs, rescaleIsNecesary, 
       print("[.....]->Just reprojection on:" + inpFile)
    elif rescaleIsNecesary:
       #perform just  rescale
-      run_command(["gdalwarp",
+      run_command(["gdalwarp", "-q",
                  "-overwrite",
                  "-of", "GTiff",
                  "-t_srs", "ESRI::" + str(targetSrs),
@@ -441,7 +441,7 @@ def resize_resolution_to_referece_val(filesList, width, height, dataFolder):
          outFileName = os.path.join(dataFolder, compFileName)
 
          #perform resize opeartion with GDAL
-         run_command(["gdalwarp",
+         run_command(["gdalwarp", "-q",
                        "-of", "GTiff",
                        "-ts",  str(width), str(height),
                        inpFileName,

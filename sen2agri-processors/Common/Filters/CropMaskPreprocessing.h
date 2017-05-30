@@ -139,6 +139,7 @@ public:
         // The output days will be updated later
         temporalResampler->SetInputData(sdCollection);
 
+        bool hasRedEdge = false;
         if (m_IncludeRedEdge) {
             m_RedEdgeBandConcat->UpdateOutputInformation();
             m_RedEdgeMaskConcat->UpdateOutputInformation();
@@ -172,6 +173,8 @@ public:
 
             m_RedEdgeFeaturesFilter = RedEdgeFeaturesFilterType::New();
             m_RedEdgeFeaturesFilter->SetInput(redEdgeTemporalResampler->GetOutput());
+
+            hasRedEdge = !redEdgeSdCollection.empty();
         }
 
         std::vector<ImageInfo> imgInfos;
@@ -242,7 +245,7 @@ public:
             output = featureExtractor->GetOutput();
         }
 
-        if (!m_IncludeRedEdge) {
+        if (!m_IncludeRedEdge || !hasRedEdge) {
             return output;
         } else {
             m_ConcatenateImagesFilter = ConcatenateImagesFilterType::New();
