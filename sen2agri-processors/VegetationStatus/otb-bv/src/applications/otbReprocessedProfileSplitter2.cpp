@@ -185,7 +185,7 @@ private:
             // to be saved into the produced files list file
             std::string simpleFileName = fileNameStream.str();
             if(bUseCompression) {
-                fileNameStream << "?gdal:co:COMPRESS=DEFLATE";
+                fileNameStream << "?gdal:co:COMPRESS=DEFLATE&gdal:co:BIGTIFF=YES";
             }
             const std::string &fileName = fileNameStream.str();
 
