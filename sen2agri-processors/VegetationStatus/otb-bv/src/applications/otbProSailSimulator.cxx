@@ -187,9 +187,6 @@ private:
 
     m_Azimuth = GetParameterFloat("azimuth");
     m_SolarZenith = GetParameterFloat("solarzenith");
-    m_SolarZenith_Fapar = m_SolarZenith;
-    if(IsParameterEnabled("solarzenithf"))
-      m_SolarZenith_Fapar = GetParameterFloat("solarzenithf");
     m_SensorZenith = GetParameterFloat("sensorzenith");
     std::string rsrFileName;
     if(HasValue("rsrfile")) {
@@ -235,6 +232,13 @@ private:
             rsrFileName = getValueFromMissionsCfgFile(rsrCfgFile, pHelper->GetMissionName(), pHelper->GetInstrumentName());
         }
     }
+
+    // initialize the solar zenith Fapar, if not set, with the solar zenith
+    m_SolarZenith_Fapar = m_SolarZenith;
+    if(IsParameterEnabled("solarzenithf")) {
+      m_SolarZenith_Fapar = GetParameterFloat("solarzenithf");
+    }
+
     if(std::isnan(m_SolarZenith) || std::isnan(m_SensorZenith) || std::isnan(m_Azimuth)) {
         itkGenericExceptionMacro(<< "Please provide all angles or a valid XML file!");
     }
