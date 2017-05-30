@@ -115,7 +115,7 @@ class CropMaskProcessor(ProcessorBase):
             ring = tile.footprint.GetGeometryRef(0)
             ll, ur = ring.GetPoint(3), ring.GetPoint(1)
 
-            run_step(Step("PrepareReference_" + tile.id, ["gdalwarp",
+            run_step(Step("PrepareReference_" + tile.id, ["gdalwarp", "-q",
                                                           "-dstnodata", 0,
                                                           "-t_srs", tile.projection,
                                                           "-te", ll[0], ll[1], ur[0], ur[1],
@@ -124,11 +124,13 @@ class CropMaskProcessor(ProcessorBase):
                                                           self.args.refr,
                                                           tile_reference]))
             run_step(Step("Erosion_" + tile.id, ["otbcli", "Erosion", self.args.buildfolder,
+                                                 "-progress", "false",
                                                  "-radius", self.args.eroderad,
                                                  "-in", tile_reference,
                                                  "-out", tile_reference_eroded]))
 
             run_step(Step("SpectralFeatures_" + tile.id, ["otbcli", "SpectralFeaturesExtraction", self.args.buildfolder,
+                                                          "-progress", "false",
                                                           "-mission", self.args.mission.name,
                                                           "-pixsize", self.args.pixsize,
                                                           "-lambda", self.args.lmbd,
@@ -142,6 +144,7 @@ class CropMaskProcessor(ProcessorBase):
             tile_reference_trimmed = self.get_output_path("reference-trimmed-{}.tif", tile.id)
 
             run_step(Step("Trimming_" + tile.id, ["otbcli", "Trimming", self.args.buildfolder,
+                                                  "-progress", "false",
                                                   "-alpha", self.args.alpha,
                                                   "-nbsamples", 0,
                                                   "-seed", self.args.rseed,
@@ -176,6 +179,7 @@ class CropMaskProcessor(ProcessorBase):
                                               "-tp", area_training_polygons,
                                               "-vp", area_validation_polygons]))
             step_args = ["otbcli", "CropMaskTrainImagesClassifier", self.args.buildfolder,
+                         "-progress", "false",
                          "-mission", self.args.mission.name,
                          "-nodatalabel", -10000,
                          "-pixsize", self.args.pixsize,
@@ -218,6 +222,7 @@ class CropMaskProcessor(ProcessorBase):
                 stratum_tile_mask = self.get_stratum_tile_mask(stratum, tile)
 
                 step_args = ["otbcli_BandMath",
+                             "-progress", "false",
                              "-exp", "im1b1 > 0 ? im2b1 : -10000",
                              "-il", stratum_tile_mask, tile_reference_trimmed,
                              "-out", format_otb_filename(tile_stratum_reference_trimmed, compression='DEFLATE'), "int16"]
@@ -236,6 +241,7 @@ class CropMaskProcessor(ProcessorBase):
                     stratum_tile_mask = self.get_stratum_tile_mask(stratum, tile)
 
                     step_args = ["otbcli_BandMath",
+                                 "-progress", "false",
                                  "-exp", "im1b1 > 0 ? im2b1 : -10000",
                                  "-il", stratum_tile_mask, tile_spectral_features,
                                  "-out", format_otb_filename(tile_stratum_spectral_features, compression='DEFLATE'), "int16"]
@@ -307,6 +313,7 @@ class CropMaskProcessor(ProcessorBase):
 
             run_step(Step("Rasterize model mask",
                           ["otbcli_Rasterization",
+                           "-progress", "false",
                            "-mode", "attribute",
                            "-mode.attribute.field", "ID",
                            "-in", self.args.filtered_strata,
@@ -317,6 +324,7 @@ class CropMaskProcessor(ProcessorBase):
 
         if self.args.refp is not None:
             step_args = ["otbcli", "CropMaskImageClassifier", self.args.buildfolder,
+                         "-progress", "false",
                          "-mission", self.args.mission.name,
                          "-pixsize", self.args.pixsize,
                          "-bv", -10000,
@@ -337,6 +345,7 @@ class CropMaskProcessor(ProcessorBase):
             tile_spectral_features = self.get_output_path("spectral-features-{}.tif", tile.id)
 
             step_args = ["otbcli", "MultiModelImageClassifier", self.args.buildfolder,
+                         "-progress", "false",
                          "-in", tile_spectral_features,
                          "-out", tile_crop_mask_uncompressed]
             step_args += ["-model"] + models
@@ -357,6 +366,7 @@ class CropMaskProcessor(ProcessorBase):
 
         tile_crop_mask_map = self.get_tile_classification_output(tile)
         step_args = ["otbcli_Convert",
+                     "-progress", "false",
                      "-in", tile_crop_mask_uncompressed,
                      "-out", format_otb_filename(tile_crop_mask_map, compression='DEFLATE'), "int16"]
         run_step(Step("Compression_{}".format(tile.id), step_args))
@@ -405,6 +415,7 @@ class CropMaskProcessor(ProcessorBase):
             tile_descriptors = tile.get_descriptor_paths()
 
         step_args = ["otbcli", "NDVISeries", self.args.buildfolder,
+                     "-progress", "false",
                      "-mission", self.args.mission.name,
                      "-pixsize", self.args.pixsize,
                      "-mode", "gapfill",
@@ -418,6 +429,7 @@ class CropMaskProcessor(ProcessorBase):
             run_step(Step("NDVI Series " + tile.id, step_args))
 
         step_args = ["otbcli", "FillNoData", self.args.buildfolder,
+                     "-progress", "false",
                      "-in", tile_ndvi,
                      "-bv", -10000,
                      "-out", tile_ndvi_filled]
@@ -431,6 +443,7 @@ class CropMaskProcessor(ProcessorBase):
                 os.remove(tile_ndvi)
 
         step_args = ["otbcli_DimensionalityReduction",
+                     "-progress", "false",
                      "-method", "pca",
                      "-nbcomp", self.args.nbcomp,
                      "-in", tile_ndvi_filled,
@@ -445,6 +458,7 @@ class CropMaskProcessor(ProcessorBase):
                 os.remove(tile_ndvi_filled)
 
         step_args = ["otbcli_MeanShiftSmoothing",
+                     "-progress", "false",
                      "-in", tile_pca,
                      "-modesearch", 0,
                      "-spatialr", self.args.spatialr,
@@ -462,6 +476,7 @@ class CropMaskProcessor(ProcessorBase):
                 os.remove(tile_pca)
 
         step_args = ["otbcli_LSMSSegmentation",
+                     "-progress", "false",
                      "-in", tile_smoothed,
                      "-inpos", tile_smoothed_spatial,
                      "-spatialr", self.args.spatialr,
@@ -478,6 +493,7 @@ class CropMaskProcessor(ProcessorBase):
             run_step(Step("Segmentation " + tile.id, step_args))
 
         step_args = ["otbcli_LSMSSmallRegionsMerging",
+                     "-progress", "false",
                      "-in", tile_smoothed,
                      "-inseg", tile_segmentation,
                      "-minsize", self.args.minsize,
@@ -496,6 +512,7 @@ class CropMaskProcessor(ProcessorBase):
                 os.remove(tile_segmentation)
 
         step_args = ["otbcli", "MajorityVoting", self.args.buildfolder,
+                     "-progress", "false",
                      "-nodatasegvalue", 0,
                      "-nodataclassifvalue", "-10000",
                      "-minarea", self.args.minarea,

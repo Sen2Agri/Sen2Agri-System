@@ -653,6 +653,7 @@ class ProcessorBase(object):
         tile_quality_flags = self.get_output_path("status_flags_{}.tif", tile.id)
 
         step_args = ["otbcli", "QualityFlagsExtractor", self.args.buildfolder,
+                     "-progress", "false",
                      "-mission", self.args.mission.name,
                      "-out", format_otb_filename(tile_quality_flags, compression='DEFLATE'),
                      "-pixsize", self.args.pixsize]
@@ -781,6 +782,7 @@ class ProcessorBase(object):
 
         run_step(Step("Rasterize mask",
                       ["otbcli_Rasterization",
+                       "-progress", "false",
                        "-in", tile_mask,
                        "-im", tile.reference_raster,
                        "-out", format_otb_filename(stratum_tile_mask, compression='DEFLATE'), "uint8",

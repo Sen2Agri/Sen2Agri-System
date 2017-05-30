@@ -3,7 +3,7 @@
   <operatorClass>org.esa.snap.core.gpf.operators.tooladapter.ToolAdapterOp</operatorClass>
   <alias>MACCSProcessor</alias>
   <label>MACCS Processor</label>
-  <version>1.3</version>
+  <version>1.6</version>
   <description>MACCS Processor for L2A</description>
   <authors>Ramona Manda, Cosmin Cara</authors>
   <copyright>(C)2016 Sen2Agri Consortium</copyright>
@@ -20,7 +20,7 @@
   <variables>
     <variable>
       <key>WORKING_DIR_PATH</key>
-      <value>/mnt/archive/temp/maccs_temp/</value>
+      <value>/mnt/archive/temp/</value>
       <isShared>false</isShared>
     </variable>
     <variable>

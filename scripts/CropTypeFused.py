@@ -212,6 +212,7 @@ class CropTypeProcessor(ProcessorBase):
 
             run_step(Step("Rasterize model mask",
                           ["otbcli_Rasterization",
+                           "-progress", "false",
                            "-mode", "attribute",
                            "-mode.attribute.field", "ID",
                            "-in", self.args.filtered_strata,
@@ -221,6 +222,7 @@ class CropTypeProcessor(ProcessorBase):
         tile_crop_type_map_uncompressed = self.get_output_path("crop_type_map_{}_uncompressed.tif", tile.id)
 
         step_args = ["otbcli", "CropTypeImageClassifier", self.args.buildfolder,
+                     "-progress", "false",
                      "-mission", self.args.mission.name,
                      "-pixsize", self.args.pixsize,
                      "-bv", -10000,
@@ -245,6 +247,7 @@ class CropTypeProcessor(ProcessorBase):
 
         tile_crop_type_map = self.get_tile_classification_output(tile)
         step_args = ["otbcli_Convert",
+                     "-progress", "false",
                      "-in", tile_crop_type_map_uncompressed,
                      "-out", format_otb_filename(tile_crop_type_map, compression='DEFLATE'), "int16"]
         run_step(Step("Compression_{}".format(tile.id), step_args))
@@ -258,6 +261,7 @@ class CropTypeProcessor(ProcessorBase):
             tile_crop_map_masked = self.get_output_path("crop_type_map_masked_{}.tif", tile.id)
 
             step_args = ["otbcli_BandMath",
+                         "-progress", "false",
                          "-exp", "im2b1 == 0 ? 0 : im1b1",
                          "-il", tile_crop_map, tile.crop_mask,
                          "-out", format_otb_filename(tile_crop_map_masked, compression='DEFLATE'), "int16"]
