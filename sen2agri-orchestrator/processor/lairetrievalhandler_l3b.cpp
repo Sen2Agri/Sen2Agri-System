@@ -831,7 +831,14 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
         startDate = seasonStartDate;
     }
 
-    params.productList = ctx.GetProductsByInsertedTime(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
+    const QDateTime &curDateTime = QDateTime::currentDateTime();
+    if (curDateTime > seasonEndDate) {
+        // processing of a past season, that was already finished
+        params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
+    } else {
+        // processing of a season in progress, we get the products inserted in the last interval since the last scheduling
+        params.productList = ctx.GetProductsByInsertedTime(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
+    }
     // TODO: Maybe we should perform also a filtering by the creation date, to be inside the season to avoid creation for the
     // products that are outside the season
     // Normally, we need at least 1 product available in order to be able to create a L3B product
