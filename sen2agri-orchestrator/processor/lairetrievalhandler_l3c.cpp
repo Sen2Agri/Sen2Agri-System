@@ -1371,7 +1371,14 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3C::GetProcessingDefinitionImpl
     }
     ProductList productList;
     if (generateReprocess) {
-        productList = ctx.GetProductsByInsertedTime(siteId, (int)ProductType::L3BProductTypeId, startDate, endDate);
+        const QDateTime &curDateTime = QDateTime::currentDateTime();
+        if (curDateTime > seasonEndDate) {
+            // processing of a past season, that was already finished
+            productList = ctx.GetProducts(siteId, (int)ProductType::L3BProductTypeId, startDate, endDate);
+        } else {
+            // processing of a season in progress, we get the products inserted in the last interval since the last scheduling
+            productList = ctx.GetProductsByInsertedTime(siteId, (int)ProductType::L3BProductTypeId, startDate, endDate);
+        }
     } else {
         productList = ctx.GetProducts(siteId, (int)ProductType::L3BProductTypeId, startDate, endDate);
     }
