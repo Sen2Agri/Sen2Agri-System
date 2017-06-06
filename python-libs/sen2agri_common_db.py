@@ -1058,7 +1058,7 @@ class AOIInfo(object):
                 status == DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE or \
                 status == DATABASE_DOWNLOADER_STATUS_ABORTED_VALUE:
                     self.cursor.execute("""UPDATE downloader_history SET status_id = %(status_id)s :: smallint 
-                                        WHERE id = %(l1c_id)s :: smallint """, 
+                                        WHERE id = %(l1c_id)s :: integer """, 
                                         {
                                             "status_id" : status,
                                             "l1c_id" : db_l1c_id
@@ -1079,7 +1079,7 @@ class AOIInfo(object):
                         if db_product_timestamp_to_check <= now:
                             db_no_of_retries += 1
                     self.cursor.execute("""UPDATE downloader_history SET status_id = %(status_id)s :: smallint , no_of_retries = %(no_of_retries)s :: smallint
-                                        WHERE id = %(l1c_id)s :: smallint """, 
+                                        WHERE id = %(l1c_id)s :: integer """, 
                                         {
                                             "status_id" : status,
                                             "no_of_retries" : db_no_of_retries,
@@ -1333,7 +1333,7 @@ class L1CInfo(object):
         if not self.database_connect():
             return False
         try:
-            self.cursor.execute("""update downloader_history set status_id = %(status_id)s :: smallint where id=%(l1c_id)s :: smallint """,
+            self.cursor.execute("""update downloader_history set status_id = %(status_id)s :: smallint where id=%(l1c_id)s :: integer """,
                                 {
                                     "status_id" : DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE, 
                                     "l1c_id" : l1c_id
