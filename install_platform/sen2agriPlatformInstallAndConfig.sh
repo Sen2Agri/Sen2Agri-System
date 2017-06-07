@@ -31,17 +31,11 @@
 : ${SLURM_ACC_NAME:="slurm"}
 : ${MUNGE_ACC_NAME:="munge"}
 #-----------------------------------------------------------------------------------------#
-: ${SLURM_MACHINE_HOSTNAME:="$(sed -e 's/[[:space:]]*$//' <<<$(hostname -s))"}
 : ${SLURM_CONF_PATH:="/etc/slurm"}
-: ${SLURM_USER_NAME:="slurm"}
-: ${SLURM_USER_PASS:="sen2agri"}
 : ${SLURM_CLUSTER_NAME:="sen2agri"}
 : ${SLURM_MACHINE_NOCPUS:=$(cat /proc/cpuinfo | grep processor | wc -l)}
 : ${SLURM_CONFIG:="slurm.conf"}
 : ${SLURM_CONFIG_DB:="slurmdbd.conf"}
-: ${SLURM_PARTITION_NAME_DEF:="sen2agri"}
-: ${SLURM_PARTITION_NAME_HI:="sen2agriHi"}
-: ${SLURM_PARTITION_PRIORITY_HI:="2"}
 : ${SLURM_QOS_LIST:="qosMaccs,qosComposite,qosCropMask,qosCropType,qosPheno,qosLai"}
 #----------------SLURM MYSQL DATABASE CREATION---------------------------------------------#
 MYSQL_DB_CREATION="create database slurm_acct_db;create user slurm@localhost;
@@ -56,44 +50,12 @@ MYSQL_CMD=${MYSQL_DB_CREATION}${MYSQL_DB_ACCESS_GRANT}
 function parse_and_update_slurm_conf_file()
 {
    ####################################
-   ####  slurm.conf
-   ####################################
-   ##update field ControlMachine
-   sed -ri "s|ControlMachine=.+|ControlMachine=${SLURM_MACHINE_HOSTNAME}|g" $(find ./ -name ${SLURM_CONFIG})
-
-   ##update COMPUTE NODES INFO
-   sed -ri "s|NodeName=.+|NodeName=${SLURM_MACHINE_HOSTNAME} CPUs=${SLURM_MACHINE_NOCPUS} State=UNKNOWN|g" $(find ./ -name ${SLURM_CONFIG})
-
-   ##update field ClusterName
-   sed -ri "s|ClusterName=.+|ClusterName=${SLURM_CLUSTER_NAME}|g" $(find ./ -name ${SLURM_CONFIG})
-
-   ##update PARTITION CONFIGURATION INFO
-   ## delete existing PARTITIONS NAMES
-   sed -i "/PartitionName/d" $(find ./ -name ${SLURM_CONFIG})
-
-   ##create new PARTITION - default one
-   sed -i "\$aPartitionName=${SLURM_PARTITION_NAME_DEF} Nodes=${SLURM_MACHINE_HOSTNAME} Default=YES MaxTime=INFINITE State=UP Shared=FORCE:1" $(find ./ -name ${SLURM_CONFIG})
-
-   ##create new PARTITION - hi prio one
-   sed -i "\$aPartitionName=${SLURM_PARTITION_NAME_HI} Nodes=${SLURM_MACHINE_HOSTNAME} Default=NO Priority=${SLURM_PARTITION_PRIORITY_HI} MaxTime=INFINITE State=UP" $(find ./ -name ${SLURM_CONFIG})
-
-   ####################################
-   ####  slurmdbd.conf
-   ####################################
-   ##update DbdAddr INFO
-   sed -ri "s|DbdAddr=.+|DbdAddr=${SLURM_MACHINE_HOSTNAME}|g" $(find ./ -name ${SLURM_CONFIG_DB})
-
-   ##update DbdHost INFO
-   sed -ri "s|DbdHost=.+|DbdHost=${SLURM_MACHINE_HOSTNAME}|g" $(find ./ -name ${SLURM_CONFIG_DB})
-
-   ##update StoragePass INFO
-   sed -ri "s|StoragePass=.+|StoragePass=${SLURM_USER_PASS}|g" $(find ./ -name ${SLURM_CONFIG_DB})
-
-   ####################################
    ####  copy conf files to /etc/slurm
    ####################################
    cp $(find ./ -name ${SLURM_CONFIG}) ${SLURM_CONF_PATH}
    cp $(find ./ -name ${SLURM_CONFIG_DB}) ${SLURM_CONF_PATH}
+
+   sed -ri "s|CPUs=.+|CPUs=${SLURM_MACHINE_NOCPUS}|g" /etc/slurm/slurm.conf
 }
 #-----------------------------------------------------------#
 function create_slurm_data_base()
