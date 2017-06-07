@@ -1,6 +1,6 @@
 # Change Log
 
-## [1.6.0] - 2017-05-XX
+## [1.6.0] - 2017-06-08
 ### Added
  - The possibility to select the input bands when creating the LAI monodate products, including 20M bands and possibility to use or not NDVI and RVI.
  - Scripts for deleting a site and for filtering a site tiles
@@ -14,6 +14,8 @@
  - The crop type and supervised crop mask processors now include the in-situ data in the output product
  - The short name and extent of sites can no longer be updated from the website
  - The website monitoring page now sorts jobs by submission time instead of end time
+ - The installer now sets `executor.listen-ip` to `127.0.0.1` and the SLURM node name to `localhost`
+ - The binaries were recompiled for `GEOS 1.5`
 
 ### Fixed
  - Changed the advanced mode for processors parameters in the sen2agri-config configuration.
@@ -24,7 +26,6 @@
  - Website custom L4A jobs use a value of `40 000` training samples / tile instead of `4 000` to match the processor default
 
 ### Known issues
-- The processor output page is unstyled
 - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
 - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
 - The SAFE formatting application sometimes outputs unusable (e.g. black) previews
@@ -39,6 +40,7 @@
 - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
 - The dashboard previews don't match their bounds rectangle because of projection mismatch
 - The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
+- The website has display issues on Safari
 
 ## [1.5.0] - 2017-01-20
 ### Added
