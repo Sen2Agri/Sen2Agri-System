@@ -16,6 +16,7 @@
  - The website monitoring page now sorts jobs by submission time instead of end time
  - The installer now sets `executor.listen-ip` to `127.0.0.1` and the SLURM node name to `localhost`
  - The binaries were recompiled for `GEOS 1.5`
+ - Increased crop mask and crop type tile thread hint from `2` to `5` to reduce the risk of out-of-memory conditions
 
 ### Fixed
  - Changed the advanced mode for processors parameters in the sen2agri-config configuration.
