@@ -6,7 +6,7 @@ begin
     raise notice 'running migrations';
 
     if exists (select * from information_schema.tables where table_schema = 'public' and table_name = 'meta') then
-        if exists (select * from meta where version = '1.5') then
+        if exists (select * from meta where version in ('1.5', '1.4.1')) then
             raise notice 'upgrading from 1.5 to 1.6';
 
             if not exists (select * from config_metadata where key = 'executor.wrp-send-retries-no') then
