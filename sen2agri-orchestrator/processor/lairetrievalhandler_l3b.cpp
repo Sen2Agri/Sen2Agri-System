@@ -831,8 +831,15 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3B::GetProcessingDefinitionImpl
         startDate = seasonStartDate;
     }
 
+    bool bOnceExecution = false;
+    if(requestOverrideCfgValues.contains("task_repeat_type")) {
+        const ConfigurationParameterValue &repeatType = requestOverrideCfgValues["task_repeat_type"];
+        if (repeatType.value == "0") {
+            bOnceExecution = true;
+        }
+    }
     const QDateTime &curDateTime = QDateTime::currentDateTime();
-    if (curDateTime > seasonEndDate) {
+    if ((curDateTime > seasonEndDate) || bOnceExecution) {
         // processing of a past season, that was already finished
         params.productList = ctx.GetProducts(siteId, (int)ProductType::L2AProductTypeId, startDate, endDate);
     } else {

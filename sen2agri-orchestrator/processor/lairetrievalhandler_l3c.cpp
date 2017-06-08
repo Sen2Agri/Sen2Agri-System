@@ -1371,8 +1371,15 @@ ProcessorJobDefinitionParams LaiRetrievalHandlerL3C::GetProcessingDefinitionImpl
     }
     ProductList productList;
     if (generateReprocess) {
+        bool bOnceExecution = false;
+        if(requestOverrideCfgValues.contains("task_repeat_type")) {
+            const ConfigurationParameterValue &repeatType = requestOverrideCfgValues["task_repeat_type"];
+            if (repeatType.value == "0") {
+                bOnceExecution = true;
+            }
+        }
         const QDateTime &curDateTime = QDateTime::currentDateTime();
-        if (curDateTime > seasonEndDate) {
+        if (curDateTime > seasonEndDate || bOnceExecution) {
             // processing of a past season, that was already finished
             productList = ctx.GetProducts(siteId, (int)ProductType::L3BProductTypeId, startDate, endDate);
         } else {
