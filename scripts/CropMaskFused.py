@@ -87,7 +87,7 @@ class CropMaskProcessor(ProcessorBase):
         parser.add_argument('-reuse-segmentation', help="Reuse the segmentation output if present on disk (default false)", default=False, action='store_true')
         parser.add_argument('-skip-quality-flags', help="Skip quality flags extraction, (default false)", default=False, action='store_true')
         parser.add_argument('-max-parallelism', help="Number of tiles to process in parallel", required=False, type=int)
-        parser.add_argument('-tile-threads-hint', help="Number of threads to use for a single tile (default 2)", required=False, type=int, default=2)
+        parser.add_argument('-tile-threads-hint', help="Number of threads to use for a single tile (default 5)", required=False, type=int, default=5)
         self.args = parser.parse_args()
 
         if self.args.refp is None and self.args.refr is None:
