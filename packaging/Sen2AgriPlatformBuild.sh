@@ -32,9 +32,9 @@ PLATFORM_INSTALL_DEP=(-d boost -d curl -d expat -d fftw -d 'gdal = 1.11.4' -d ge
 : ${WORKING_DIR_RPM:=${PLATFORM_NAME_DIR}/${RPM_DIR}}
 : ${WORKING_DIR_BUILD:=${PLATFORM_NAME_DIR}/${BUILD_DIR}}
 : ${GDAL_VERSION:="2.0.1"}
-GDAL_ITERATION=2
+GDAL_ITERATION=3
 : ${OTB_VERSION:="5.0"}
-OTB_ITERATION=2
+OTB_ITERATION=3
 : ${GDAL_INSTALL_PATH:="${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/gdal-install"}
 : ${OTB_INSTALL_PATH:="${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/otb-install"}
 ################################################################################################
