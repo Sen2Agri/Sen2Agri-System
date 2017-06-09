@@ -1080,6 +1080,10 @@ begin
             execute _statement;
 
             raise notice 'applying b86e74775959e41ea3ec3b2b89bb166d4564f539';
+            _statement := 'DROP FUNCTION IF EXISTS sp_get_dashboard_products(smallint, smallint);';
+            raise notice '%', _statement;
+            execute _statement;
+
             _statement := $str$
                 CREATE OR REPLACE FUNCTION sp_get_dashboard_products(
                     _site_id smallint DEFAULT NULL::smallint,
