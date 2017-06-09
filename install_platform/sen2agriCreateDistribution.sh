@@ -95,6 +95,7 @@ function prepare_distribution()
 
    cp -rf ${SOURCES_DIR_PATH}/gipp ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/
    cp -f ${SOURCES_DIR_PATH}/CHANGELOG.md ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}/docs
+   cp -rf ${SOURCES_DIR_PATH}/licenses ${DEFAULT_PATH}/${DEFAULT_INSTALL_DIR}
 }
 
 ###########################################################
