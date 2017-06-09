@@ -5,6 +5,8 @@ systemctl stop sen2agri-scheduler sen2agri-executor sen2agri-orchestrator sen2ag
 yum -y install python-dateutil
 yum -y install ../rpm_binaries/*.rpm
 
+ldconfig
+
 cat migrations/migration-1.3-1.3.1.sql | su -l postgres -c "psql sen2agri"
 cat migrations/migration-1.3.1-1.4.sql | su -l postgres -c "psql sen2agri"
 cat migrations/migration-1.4-1.5.sql | su -l postgres -c "psql sen2agri"
