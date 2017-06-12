@@ -81,6 +81,9 @@ public:
     itkNewMacro(Self)
     itkTypeMacro(CropMaskPreprocessing, TimeSeriesReader)
 
+    itkSetMacro(IncludeRedEdge, bool)
+    itkGetMacro(IncludeRedEdge, bool)
+
     itkSetMacro(W, int)
     itkGetMacro(W, int)
 
@@ -94,11 +97,63 @@ public:
     itkGetMacro(BM, bool)
 
     CropMaskPreprocessing()
+        : m_IncludeRedEdge()
     {
         m_TemporalResamplers = TemporalResamplingFilterListType::New();
         m_TemporalMergers = TemporalMergingFilterListType::New();
         m_FeatureExtractors = FeatureExtractorFilterListType::New();
         m_FeatureExtractorsBM = FeatureExtractorBMFilterListType::New();
+    }
+
+    void getSentinelRedEdgeBands(const MACCSFileMetadata &meta,
+                          const TileData &td,
+                          ImageDescriptor &descriptor,
+                          Int16ImageReaderType::Pointer reader1,
+                          Int16ImageReaderType::Pointer reader2) override
+    {
+        if (!m_IncludeRedEdge) {
+            return;
+        }
+
+        auto b4Band = descriptor.bands[1];
+        auto b8Band = descriptor.bands[2];
+
+        ExtractChannelFilterType::Pointer channelExtractor;
+
+        int b2Index = getBandIndex(meta.ImageInformation.Resolutions[0].Bands, "B2");
+        channelExtractor = ExtractChannelFilterType::New();
+        channelExtractor->SetInput(reader1->GetOutput());
+        channelExtractor->SetIndex(b2Index - 1);
+        m_Filters->PushBack(channelExtractor);
+        auto b2Band = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+
+        int b5Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B5");
+        channelExtractor = ExtractChannelFilterType::New();
+        channelExtractor->SetInput(reader2->GetOutput());
+        channelExtractor->SetIndex(b5Index - 1);
+        m_Filters->PushBack(channelExtractor);
+        auto b5Band = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+
+        int b6Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B6");
+        channelExtractor = ExtractChannelFilterType::New();
+        channelExtractor->SetInput(reader2->GetOutput());
+        channelExtractor->SetIndex(b6Index - 1);
+        m_Filters->PushBack(channelExtractor);
+        auto b6Band = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+
+        int b7Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B7");
+        channelExtractor = ExtractChannelFilterType::New();
+        channelExtractor->SetInput(reader2->GetOutput());
+        channelExtractor->SetIndex(b7Index - 1);
+        m_Filters->PushBack(channelExtractor);
+        auto b7Band = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+
+        descriptor.redEdgeBands.push_back(b2Band);
+        descriptor.redEdgeBands.push_back(b4Band);
+        descriptor.redEdgeBands.push_back(b5Band);
+        descriptor.redEdgeBands.push_back(b6Band);
+        descriptor.redEdgeBands.push_back(b7Band);
+        descriptor.redEdgeBands.push_back(b8Band);
     }
 
     otb::Wrapper::FloatVectorImageType * GetOutput(const std::vector<MissionDays> &sensorOutDays)
@@ -259,16 +314,18 @@ public:
     }
 
 private:
+    bool m_IncludeRedEdge;
+    int m_W;
+    PixelValueType m_Delta;
+    PixelValueType m_TSoil;
+    bool m_BM;
+
     TemporalResamplingFilterListType::Pointer         m_TemporalResamplers;
     TemporalMergingFilterListType::Pointer            m_TemporalMergers;
     FeatureExtractorFilterListType::Pointer           m_FeatureExtractors;
     FeatureExtractorBMFilterListType::Pointer         m_FeatureExtractorsBM;
     RedEdgeFeaturesFilterType::Pointer                m_RedEdgeFeaturesFilter;
     ConcatenateImagesFilterType::Pointer              m_ConcatenateImagesFilter;
-    int m_W;
-    PixelValueType m_Delta;
-    PixelValueType m_TSoil;
-    bool m_BM;
 };
 
 typedef otb::ObjectList<CropMaskPreprocessing>        CropMaskPreprocessingList;

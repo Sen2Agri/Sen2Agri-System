@@ -2,8 +2,9 @@ otb_create_application(
     NAME           CropTypeStatistics
     SOURCES        CropTypeStatistics.cxx
                  ../Filters/CropTypePreprocessing.h
-                 ../Filters/TimeSeriesReader.h
-  LINK_LIBRARIES ${OTB_LIBRARIES} MACCSMetadata)
+    LINK_LIBRARIES ${OTB_LIBRARIES}
+                   MACCSMetadata
+                   TimeSeriesReader)
 
 include_directories(../OTBExtensions)
 

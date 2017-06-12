@@ -7,7 +7,9 @@ otb_create_application(
                  ../Filters/ComputeNDVIFilter.h
                  ../Filters/CropMaskSupervisedRedEdgeFeaturesFilter.h
                  ../Filters/TemporalMerging.hxx
-  LINK_LIBRARIES ${OTB_LIBRARIES} MACCSMetadata)
+  LINK_LIBRARIES ${OTB_LIBRARIES}
+                 MACCSMetadata
+                 TimeSeriesReader)
 
 if(BUILD_TESTING)
   add_subdirectory(test)
