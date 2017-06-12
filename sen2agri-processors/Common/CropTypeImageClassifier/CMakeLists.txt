@@ -7,13 +7,10 @@ otb_create_application(
                  ../Filters/otbTemporalResamplingFilter.txx
                  ../Filters/otbTemporalMergingFilter.h
                  ../Filters/otbTemporalMergingFilter.txx
-                 ../Filters/otbSpotMaskFilter.h
-                 ../Filters/otbSpotMaskFilter.txx
-                 ../Filters/otbSentinelMaskFilter.h
-                 ../Filters/otbSentinelMaskFilter.txx
                  ../Filters/CropTypePreprocessing.h
-                 ../Filters/TimeSeriesReader.h
-  LINK_LIBRARIES ${OTB_LIBRARIES} MACCSMetadata)
+  LINK_LIBRARIES ${OTB_LIBRARIES}
+                 MACCSMetadata
+                 TimeSeriesReader)
 
 if(BUILD_TESTING)
   add_subdirectory(test)

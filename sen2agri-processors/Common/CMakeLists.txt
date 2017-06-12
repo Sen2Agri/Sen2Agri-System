@@ -1,3 +1,4 @@
+add_subdirectory(TimeSeriesReader)
 add_subdirectory(OTBExtensions)
 add_subdirectory(XMLStatistics)
 add_subdirectory(TrainImagesClassifierNew)

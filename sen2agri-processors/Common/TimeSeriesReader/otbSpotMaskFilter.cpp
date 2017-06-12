@@ -15,9 +15,6 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#ifndef __otbSpotMaskFilter_txx
-#define __otbSpotMaskFilter_txx
-
 #include "otbSpotMaskFilter.h"
 
 namespace otb
@@ -85,4 +82,3 @@ SpotMaskFilter
   Superclass::PrintSelf(os, indent);
 }
 } // end namespace otb
-#endif

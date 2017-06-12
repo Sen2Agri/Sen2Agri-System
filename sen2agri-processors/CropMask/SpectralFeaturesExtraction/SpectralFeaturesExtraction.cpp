@@ -73,8 +73,11 @@ public:
     itkNewMacro(Self)
     itkTypeMacro(SpectralFeaturesPreprocessing, TimeSeriesReader)
 
+    itkSetMacro(IncludeRedEdge, bool)
+    itkGetMacro(IncludeRedEdge, bool)
+
     SpectralFeaturesPreprocessing()
-        : m_Bands(4), m_Lambda(2.0)
+        : m_IncludeRedEdge(), m_Bands(4), m_Lambda(2.0)
     {
         m_FloatImageList = FloatImageListType::New();
         m_UInt8ImageList = UInt8ImageListType::New();
@@ -82,6 +85,52 @@ public:
         m_MaskConcat = ConcatenateUInt8ImagesFilterType::New();
         m_DataSmoothingFilter = DataSmoothingFilterType::New();
         m_SpectralFeaturesFilter = CropMaskSpectralFeaturesFilterType::New();
+    }
+
+    void getSentinelRedEdgeBands(const MACCSFileMetadata &meta,
+                          const TileData &td,
+                          ImageDescriptor &descriptor,
+                          Int16ImageReaderType::Pointer,
+                          Int16ImageReaderType::Pointer reader2) override
+    {
+        if (!m_IncludeRedEdge) {
+            return;
+        }
+
+        ExtractChannelFilterType::Pointer channelExtractor;
+
+        int b5Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B5");
+        channelExtractor = ExtractChannelFilterType::New();
+        channelExtractor->SetInput(reader2->GetOutput());
+        channelExtractor->SetIndex(b5Index - 1);
+        m_Filters->PushBack(channelExtractor);
+        auto b5Band = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+
+        int b6Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B6");
+        channelExtractor = ExtractChannelFilterType::New();
+        channelExtractor->SetInput(reader2->GetOutput());
+        channelExtractor->SetIndex(b6Index - 1);
+        m_Filters->PushBack(channelExtractor);
+        auto b6Band = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+
+        int b7Index = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B7");
+        channelExtractor = ExtractChannelFilterType::New();
+        channelExtractor->SetInput(reader2->GetOutput());
+        channelExtractor->SetIndex(b7Index - 1);
+        m_Filters->PushBack(channelExtractor);
+        auto b7Band = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+
+        int b8aIndex = getBandIndex(meta.ImageInformation.Resolutions[1].Bands, "B8A");
+        channelExtractor = ExtractChannelFilterType::New();
+        channelExtractor->SetInput(reader2->GetOutput());
+        channelExtractor->SetIndex(b8aIndex - 1);
+        m_Filters->PushBack(channelExtractor);
+        auto b8aBand = getResampledBand<FloatImageType>(channelExtractor->GetOutput(), td, false);
+
+        descriptor.redEdgeBands.push_back(b5Band);
+        descriptor.redEdgeBands.push_back(b6Band);
+        descriptor.redEdgeBands.push_back(b7Band);
+        descriptor.redEdgeBands.push_back(b8aBand);
     }
 
     otb::Wrapper::FloatVectorImageType * GetOutput()
@@ -168,6 +217,10 @@ public:
     }
 
 private:
+    bool                                              m_IncludeRedEdge;
+    int                                               m_Bands;
+    double                                            m_Lambda;
+
     FloatImageListType::Pointer                       m_FloatImageList;
     UInt8ImageListType::Pointer                       m_UInt8ImageList;
     ConcatenateFloatImagesFilterType::Pointer         m_BandsConcat;
@@ -175,8 +228,6 @@ private:
     DataSmoothingFilterType::Pointer                  m_DataSmoothingFilter;
     CropMaskSpectralFeaturesFilterType::Pointer       m_SpectralFeaturesFilter;
 
-    int                                               m_Bands;
-    double                                            m_Lambda;
 };
 
 namespace otb

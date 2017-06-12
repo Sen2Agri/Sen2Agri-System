@@ -68,9 +68,6 @@
 #include "otbMultiChannelExtractROI.h"
 #include "../Filters/otbTemporalResamplingFilter.h"
 
-#include "../Filters/otbSpotMaskFilter.h"
-#include "../Filters/otbSentinelMaskFilter.h"
-
 #include "../Filters/CropMaskNDVIPreprocessing.h"
 
 namespace otb
