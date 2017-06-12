@@ -3,6 +3,7 @@
 systemctl stop sen2agri-scheduler sen2agri-executor sen2agri-orchestrator sen2agri-http-listener sen2agri-sentinel-downloader sen2agri-landsat-downloader sen2agri-demmaccs sen2agri-sentinel-downloader.timer sen2agri-landsat-downloader.timer sen2agri-demmaccs.timer sen2agri-monitor-agent
 
 yum -y install python-dateutil
+yum -y update postgis2_94 geos
 yum -y install ../rpm_binaries/*.rpm
 
 ldconfig

@@ -19,7 +19,7 @@
 : ${GDAL_URL:="http://download.osgeo.org/gdal"}
 
 ### DEPENDENCIES FOR GENERATED RPM PACKAGES
-PLATFORM_INSTALL_DEP=(-d boost -d curl -d expat -d fftw -d 'gdal = 1.11.4' -d geos -d "libgeotiff = 1.4.0" -d libjpeg-turbo -d libsvm -d muParser -d opencv -d openjpeg2 -d openjpeg2-tools -d pcre -d libpng -d proj -d proj-epsg -d python -d qt -d sqlite -d swig -d libtiff -d tinyxml -d qt5-qtbase -d qt5-qtbase-postgresql -d qt-x11 -d gsl)
+PLATFORM_INSTALL_DEP=(-d boost -d curl -d expat -d fftw -d 'gdal = 1.11.4' -d 'geos = 3.5.0' -d "libgeotiff = 1.4.0" -d libjpeg-turbo -d libsvm -d muParser -d opencv -d openjpeg2 -d openjpeg2-tools -d pcre -d libpng -d proj -d proj-epsg -d python -d swig -d libtiff -d tinyxml -d qt5-qtbase -d qt5-qtbase-postgresql -d qt-x11 -d gsl)
 : ${PLATFORM_INSTALL_CIFS_DEP:="-d "cifs-utils""}
 
 ### CONFIG PATHS FOR SCRIPT
