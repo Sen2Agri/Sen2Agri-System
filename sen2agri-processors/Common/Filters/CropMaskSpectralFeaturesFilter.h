@@ -5,7 +5,6 @@
 
 typedef float PixelValueType;
 typedef otb::VectorImage<PixelValueType, 2> ImageType;
-typedef otb::Wrapper::UInt8VectorImageType MaskImageType;
 
 #define MAXNDVISLOPE 0
 #define MINNDVISLOPE 1
@@ -18,27 +17,36 @@ template <typename PixelType>
 class FeaturesNoInsituFunctor
 {
 public:
-    FeaturesNoInsituFunctor() : m_bpi(4), m_id()
-    {
-    }
-    FeaturesNoInsituFunctor(int bpi, std::vector<int> id)
-        : m_bpi(bpi), m_id(id)
+    FeaturesNoInsituFunctor()
+        : m_IncludeRedEdge()
     {
     }
 
-    PixelType operator()(const PixelType &ts) const
+    void SetIncludeRedEdge(bool includeRedEdge)
+    {
+        this->m_IncludeRedEdge = includeRedEdge;
+    }
+
+    bool GetIncludeRedEdge() const
+    {
+        return this->m_IncludeRedEdge;
+    }
+
+    PixelType operator()(const PixelType &ts, const PixelType &rets) const
     {
         // compute the number of input image
         int numImages = m_id.size();
+        auto bands = ts.Size() / numImages;
+        auto outputBands = m_IncludeRedEdge ? 8 : 4;
 
         PixelType ndvi(numImages);
 
         auto ok = false;
         for (int imgIndex = 0; imgIndex < numImages; imgIndex++) {
-            int b1 = ts[4 * imgIndex];
-            int b2 = ts[4 * imgIndex + 1];
-            int b3 = ts[4 * imgIndex + 2];
-            int b4 = ts[4 * imgIndex + 3];
+            int b1 = ts[bands * imgIndex];
+            int b2 = ts[bands * imgIndex + 1];
+            int b3 = ts[bands * imgIndex + 2];
+            int b4 = ts[bands * imgIndex + 3];
 
             if (b1 != -10000 && b2 != -10000 && b3 != -10000 && b4 != -10000) {
                 ok = true;
@@ -50,7 +58,7 @@ public:
         }
 
         // Create the output pixel
-        PixelType result(INDEXSIZE * m_bpi);
+        PixelType result(INDEXSIZE * outputBands);
 
         if (!ok) {
             result.Fill(static_cast<PixelValueType>(-10000));
@@ -97,33 +105,34 @@ public:
                 minNDVI = ndvi[i];
                 index[MINNDVI] = i;
             }
-            if (maxRed < ts[i * m_bpi + 1]) {
-                maxRed = ts[i * m_bpi + 1];
+            if (maxRed < ts[i * bands + 1]) {
+                maxRed = ts[i * bands + 1];
                 index[MAXRED] = i;
             }
         }
 
         for (int i = 0; i < INDEXSIZE; i++) {
-            for (int j = 0; j < m_bpi; j++) {
-                result[i * m_bpi + j] = (index[i] == -1 ? -10000 : ts[index[i] * m_bpi + j]);
+            for (int j = 0; j < 4; j++) {
+                result[i * outputBands + j] = (index[i] == -1 ? -10000 : ts[index[i] * 4 + j]);
+            }
+            if (m_IncludeRedEdge) {
+                for (int j = 0; j < 4; j++) {
+                    result[i * outputBands + 4 + j] = (index[i] == -1 ? -10000 : rets[index[i] * 4 + j]);
+                }
             }
         }
 
         return result;
     }
+
+    bool operator==(const FeaturesNoInsituFunctor &other) const
+    {
+        return this->m_IncludeRedEdge == other.m_IncludeRedEdge && this->m_id == other.m_id;
+    }
+
     bool operator!=(const FeaturesNoInsituFunctor a) const
     {
-        return this->m_bpi != a.m_bpi || this->m_id != a.m_id;
-    }
-
-    bool operator==(const FeaturesNoInsituFunctor a) const
-    {
-        return !(*this != a);
-    }
-
-    void SetBands(int bands)
-    {
-        this->m_bpi = bands;
+        return !(*this == a);
     }
 
     void SetInputDates(std::vector<int> inputDates)
@@ -132,21 +141,34 @@ public:
     }
 
 protected:
-    // the number of bands per image in the input and output raster
-    int m_bpi;
     // the days from epoch corresponding to the input series raster
     std::vector<int> m_id;
+    bool m_IncludeRedEdge;
 };
 
-/** Unary functor image filter which produces a vector image with a
-* number of bands different from the input images */
-template <typename TFunctor>
+// Output bands:
+// Without red edge bands:
+// max NDVI slope B1..B4
+// min NDVI slope B1..B4
+// max NDVI B1..B4
+// min NDVI B1..B4
+// max red B1..B4
+// min red B1..B4
+// Otherwise:
+// max NDVI slope B1..B8
+// and so on
+#define MAXNDVISLOPE 0
+#define MINNDVISLOPE 1
+#define MAXNDVI 2
+#define MINNDVI 3
+#define MAXRED 4
+
 class ITK_EXPORT CropMaskSpectralFeaturesFilter
-    : public itk::UnaryFunctorImageFilter<ImageType, ImageType, TFunctor>
+    : public itk::BinaryFunctorImageFilter<ImageType, ImageType, ImageType, FeaturesNoInsituFunctor<ImageType::PixelType>>
 {
 public:
     typedef CropMaskSpectralFeaturesFilter Self;
-    typedef itk::UnaryFunctorImageFilter<ImageType, ImageType, TFunctor> Superclass;
+    typedef itk::BinaryFunctorImageFilter<ImageType, ImageType, ImageType, FeaturesNoInsituFunctor<ImageType::PixelType>> Superclass;
     typedef itk::SmartPointer<Self> Pointer;
     typedef itk::SmartPointer<const Self> ConstPointer;
 
@@ -156,20 +178,29 @@ public:
     /** Macro defining the type*/
     itkTypeMacro(CropMaskSpectralFeaturesFilter, SuperClass)
 
-protected:
-    CropMaskSpectralFeaturesFilter()
+    void SetIncludeRedEdge(bool includeRedEdge)
     {
+        this->GetFunctor().SetIncludeRedEdge(includeRedEdge);
+        this->Modified();
     }
 
-    virtual ~CropMaskSpectralFeaturesFilter()
+    bool GetIncludeRedEdge() const
     {
+        return this->GetFunctor().GetIncludeRedEdge();
     }
+
+protected:
+    CropMaskSpectralFeaturesFilter() { }
 
     void GenerateOutputInformation()
     {
         Superclass::GenerateOutputInformation();
 
-        this->GetOutput()->SetNumberOfComponentsPerPixel(5 * 4);
+        if (GetIncludeRedEdge()) {
+            this->GetOutput()->SetNumberOfComponentsPerPixel(INDEXSIZE * 8);
+        } else {
+            this->GetOutput()->SetNumberOfComponentsPerPixel(INDEXSIZE * 4);
+        }
     }
 
 private:

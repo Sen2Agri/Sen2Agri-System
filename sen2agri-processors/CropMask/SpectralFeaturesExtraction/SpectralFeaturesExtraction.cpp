@@ -59,8 +59,7 @@ typedef otb::ImageFileReader<ImageType> ReaderType;
 typedef DataSmoothingFunctor<ImageType::PixelType, MaskImageType::PixelType> DataSmoothingFunctorType;
 typedef itk::BinaryFunctorImageFilter<ImageType, MaskImageType, ImageType, DataSmoothingFunctorType> DataSmoothingFilterType;
 
-typedef FeaturesNoInsituFunctor<ImageType::PixelType>                   FeaturesNoInsituFunctorType;
-typedef CropMaskSpectralFeaturesFilter<FeaturesNoInsituFunctorType>     CropMaskSpectralFeaturesFilterType;
+typedef CropMaskSpectralFeaturesFilter                                  CropMaskSpectralFeaturesFilterType;
 
 class SpectralFeaturesPreprocessing : public TimeSeriesReader
 {
@@ -77,7 +76,7 @@ public:
     itkGetMacro(IncludeRedEdge, bool)
 
     SpectralFeaturesPreprocessing()
-        : m_IncludeRedEdge(), m_Bands(4), m_Lambda(2.0)
+        : m_IncludeRedEdge(), m_Lambda(2.0)
     {
         m_FloatImageList = FloatImageListType::New();
         m_UInt8ImageList = UInt8ImageListType::New();
@@ -139,6 +138,7 @@ public:
         otb::SensorDataCollection sdCollection;
         int index = 0;
         std::string lastMission = "";
+        size_t bands = 0;
         for (const ImageDescriptor& id : m_Descriptors) {
             if (id.mission != lastMission) {
                 otb::SensorData sd;
@@ -158,6 +158,11 @@ public:
                 m_FloatImageList->PushBack(b);
             }
             m_UInt8ImageList->PushBack(id.mask);
+
+            if (index == 0) {
+                bands = id.bands.size();
+            }
+
             index++;
         }
         m_BandsConcat->SetInput(m_FloatImageList);
@@ -187,7 +192,42 @@ public:
             }
         }
 
-        m_DataSmoothingFilter->GetFunctor().SetBands(m_Bands);
+        bool hasRedEdge = false;
+        if (m_IncludeRedEdge) {
+            m_RedEdgeBandConcat->UpdateOutputInformation();
+            m_RedEdgeMaskConcat->UpdateOutputInformation();
+
+            m_RedEdgeDataSmoothingFilter = DataSmoothingFilterType::New();
+
+            std::vector<ImageInfo> reImgInfos;
+            index = 0;
+            size_t reBands = 0;
+            for (const ImageDescriptor& id : m_Descriptors) {
+                if (id.mission == SENTINEL) {
+                    if (!index) {
+                        reBands = id.redEdgeBands.size();
+                    }
+
+                    reImgInfos.emplace_back(ImageInfo { index++, getDaysFromEpoch(id.aquisitionDate), 0 });
+                }
+            }
+
+            m_RedEdgeDataSmoothingFilter->GetFunctor().SetBands(reBands);
+            m_RedEdgeDataSmoothingFilter->GetFunctor().SetLambda(m_Lambda);
+            m_RedEdgeDataSmoothingFilter->GetFunctor().SetOutputDates(od);
+            m_RedEdgeDataSmoothingFilter->GetFunctor().SetInputImageInfo(reImgInfos);
+
+            m_RedEdgeDataSmoothingFilter->SetInput1(m_RedEdgeBandConcat->GetOutput());
+            m_RedEdgeDataSmoothingFilter->SetInput2(m_RedEdgeMaskConcat->GetOutput());
+
+            m_RedEdgeDataSmoothingFilter->UpdateOutputInformation();
+            m_RedEdgeDataSmoothingFilter->GetOutput()->SetNumberOfComponentsPerPixel(od.size() * reBands);
+
+            hasRedEdge = !reImgInfos.empty();
+        }
+
+
+        m_DataSmoothingFilter->GetFunctor().SetBands(bands);
         m_DataSmoothingFilter->GetFunctor().SetLambda(m_Lambda);
         m_DataSmoothingFilter->GetFunctor().SetOutputDates(od);
         m_DataSmoothingFilter->GetFunctor().SetInputImageInfo(imgInfos);
@@ -196,19 +236,20 @@ public:
         m_DataSmoothingFilter->SetInput2(m_MaskConcat->GetOutput());
 
         m_DataSmoothingFilter->UpdateOutputInformation();
-        m_DataSmoothingFilter->GetOutput()->SetNumberOfComponentsPerPixel(od.size() * m_Bands);
+        m_DataSmoothingFilter->GetOutput()->SetNumberOfComponentsPerPixel(od.size() * bands);
 
-        m_SpectralFeaturesFilter->GetFunctor().SetBands(m_Bands);
         m_SpectralFeaturesFilter->GetFunctor().SetInputDates(od);
+        m_SpectralFeaturesFilter->SetInput1(m_DataSmoothingFilter->GetOutput());
 
-        m_SpectralFeaturesFilter->SetInput(m_DataSmoothingFilter->GetOutput());
+        if (hasRedEdge) {
+            m_SpectralFeaturesFilter->SetIncludeRedEdge(true);
+            m_SpectralFeaturesFilter->SetInput2(m_RedEdgeDataSmoothingFilter->GetOutput());
+        } else {
+            // The second input won't be accessed, but we still have to set it to something
+            m_SpectralFeaturesFilter->SetInput2(m_DataSmoothingFilter->GetOutput());
+        }
 
         return m_SpectralFeaturesFilter->GetOutput();
-    }
-
-    void SetBands(int bands)
-    {
-        m_Bands = bands;
     }
 
     void SetLambda(double lambda)
@@ -218,7 +259,6 @@ public:
 
 private:
     bool                                              m_IncludeRedEdge;
-    int                                               m_Bands;
     double                                            m_Lambda;
 
     FloatImageListType::Pointer                       m_FloatImageList;
@@ -226,6 +266,7 @@ private:
     ConcatenateFloatImagesFilterType::Pointer         m_BandsConcat;
     ConcatenateUInt8ImagesFilterType::Pointer         m_MaskConcat;
     DataSmoothingFilterType::Pointer                  m_DataSmoothingFilter;
+    DataSmoothingFilterType::Pointer                  m_RedEdgeDataSmoothingFilter;
     CropMaskSpectralFeaturesFilterType::Pointer       m_SpectralFeaturesFilter;
 
 };
@@ -346,7 +387,10 @@ private:
         AddParameter(ParameterType_String, "mission", "The main raster series that will be used. By default SPOT is used");
         MandatoryOff("mission");
 
-        AddParameter(ParameterType_Float, "lambda", "Smoothing parameter of the Whitaker function");
+        AddParameter(ParameterType_Float, "lambda", "Smoothing parameter of the Whittaker function");
+
+        AddParameter(ParameterType_Empty, "rededge", "Include Sentinel-2 vegetation red edge bands");
+        MandatoryOff("rededge");
 
         SetDefaultParameterFloat("lambda", 2);
 
@@ -407,13 +451,14 @@ private:
         m_Preprocessor = SpectralFeaturesPreprocessing::New();
         m_Preprocessor->SetPixelSize(pixSize);
         m_Preprocessor->SetMission(mission);
+        if (GetParameterEmpty("rededge")) {
+            m_Preprocessor->SetIncludeRedEdge(true);
+        }
+        m_Preprocessor->SetLambda(lambda);
 
         // compute the desired size of the processed rasters
         m_Preprocessor->updateRequiredImageSize(descriptors, 0, descriptors.size(), td);
         m_Preprocessor->Build(descriptors.begin(), descriptors.end(), td);
-
-        m_Preprocessor->SetBands(4);
-        m_Preprocessor->SetLambda(lambda);
 
         SetParameterOutputImage("out", m_Preprocessor->GetOutput());
     }
