@@ -34,8 +34,8 @@ if not os.path.exists(out_s2_l2a_path):
     os.makedirs(out_s2_l2a_path)
 
 if args.s2_tiles:
-    s2_product_re = re.compile("^S2A_OPER.*.SAFE$")
-    s2_tile_re = re.compile("^S2A_OPER_SSC_L2VALD_" + "|".join(args.s2_tiles))
+    s2_product_re = re.compile("^S2(?:A|B)_OPER.*.SAFE$")
+    s2_tile_re = re.compile("^S2(?:A|B)_OPER_SSC_L2VALD_" + "|".join(args.s2_tiles))
     for product in os.listdir(args.input):
         if s2_product_re.search(product):
             product_path = os.path.join(args.input, product)
@@ -51,7 +51,7 @@ if args.s2_tiles:
                     if not os.path.exists(destination_path):
                         os.symlink(source_path, destination_path)
 
-    s2_product_re = re.compile("S2A_MSIL2A.*T{}".format("|".join(args.s2_tiles)))
+    s2_product_re = re.compile("S2(?:A|B)_MSIL2A.*T{}".format("|".join(args.s2_tiles)))
     for product in os.listdir(args.input):
         if s2_product_re.search(product):
             source_path = os.path.join(args.input, product)
