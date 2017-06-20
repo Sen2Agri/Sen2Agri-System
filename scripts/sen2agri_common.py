@@ -96,6 +96,21 @@ def increase_rlimits():
         traceback.print_exc()
 
 
+def expand_file_list(files):
+    def expand(acc, file):
+        if not file.startswith('@'):
+            acc.append(file)
+        else:
+            with open(file[1:], 'r') as f:
+                for line in f:
+                    expand(acc, line.rstrip("\n"))
+
+    result = []
+    for file in files:
+        expand(result, file)
+    return result
+
+
 class Step(object):
 
     def __init__(self, name, arguments, out_file=None, retry=False):
@@ -216,11 +231,13 @@ def load_lut(lut):
                 r.append((int(value), int(red), int(green), int(blue), label))
     return r
 
+
 def save_lut(lut, file):
     with open(file, 'w') as f:
         f.write("INTERPOLATION:EXACT\n")
         for entry in lut:
             f.write("{},{},{},{},255,{}\n".format(*entry))
+
 
 def prepare_lut(data, lut):
     default_lut = load_lut(lut)
@@ -289,6 +306,7 @@ def prepare_lut(data, lut):
 
     lut_entries.sort(key=lambda e: e[0])
     return lut_entries
+
 
 def split_features(stratum, data, out_folder):
     driver = ogr.GetDriverByName('ESRI Shapefile')
@@ -678,6 +696,8 @@ class ProcessorBase(object):
         pass
 
     def load_tiles(self):
+        self.args.input = expand_file_list(self.args.input)
+
         main_mission = None
         mission_products = defaultdict(lambda: defaultdict(list))
         for product in self.args.input:
