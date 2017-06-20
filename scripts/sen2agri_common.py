@@ -97,17 +97,19 @@ def increase_rlimits():
 
 
 def expand_file_list(files):
-    def expand(acc, file):
-        if not file.startswith('@'):
-            acc.append(file)
-        else:
-            with open(file[1:], 'r') as f:
+    def expand(acc, file, dir):
+        if file.startswith("@"):
+            file_name = os.path.join(dir, file[1:])
+            file_dir = os.path.dirname(file_name)
+            with open(file_name, 'r') as f:
                 for line in f:
-                    expand(acc, line.rstrip("\n"))
+                    expand(acc, line.rstrip("\n"), file_dir)
+        else:
+            acc.append(file)
 
     result = []
     for file in files:
-        expand(result, file)
+        expand(result, file, ".")
     return result
 
 
