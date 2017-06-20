@@ -126,7 +126,7 @@ def get_landsat_dir_info(name):
 
 
 def get_sentinel2_dir_info(name):
-    m = re.match("S2A\w+_(\d{8}T\d{6})\w+.SAFE", name)
+    m = re.match("S2\w+_(\d{8}T\d{6})\w+.SAFE", name)
 
     return m and ('S2', m.group(1))
 
