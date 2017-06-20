@@ -406,8 +406,14 @@ struct SensorPreferences
     int samplingRate;
 };
 
+enum class TemporalResamplingMode {
+    GapFill,
+    Resample,
+    GapFillMainMission,
+};
+
 template<typename TTimeSeriesReaderList>
-std::vector<MissionDays> getOutputDays(TTimeSeriesReaderList preprocessors, bool resample, const std::vector<SensorPreferences> &sp)
+std::vector<MissionDays> getOutputDays(TTimeSeriesReaderList preprocessors, TemporalResamplingMode resamplingMode, const std::string &mainMission, const std::vector<SensorPreferences> &sp)
 {
     std::map<std::string, SensorPreferences> spMap;
     for (const auto &e : sp) {
@@ -424,10 +430,16 @@ std::vector<MissionDays> getOutputDays(TTimeSeriesReaderList preprocessors, bool
         }
     }
 
+    std::vector<int> mainMissionDays;
+    if (resamplingMode == TemporalResamplingMode::GapFillMainMission) {
+        const auto &days = sensorInDays[mainMission];
+        mainMissionDays.assign(days.begin(), days.end());
+    }
+
     // loop through the sensors to determinte the output dates
     for (const auto& sensor : sensorInDays) {
         std::vector<int> outDates;
-        if (resample) {
+        if (resamplingMode == TemporalResamplingMode::Resample) {
             auto it = spMap.find(sensor.first);
             if (it == spMap.end()) {
                 itkGenericExceptionMacro("Sampling rate required for sensor " << sensor.first);
@@ -438,10 +450,12 @@ std::vector<MissionDays> getOutputDays(TTimeSeriesReaderList preprocessors, bool
             for (int date = *sensor.second.begin(); date <= last; date += rate) {
                 outDates.emplace_back(date);
             }
-        } else {
-            outDates.insert(outDates.end(), sensor.second.begin(), sensor.second.end());
+        } else if (resamplingMode == TemporalResamplingMode::GapFill) {
+            outDates.assign(sensor.second.begin(), sensor.second.end());
+        } else if (resamplingMode == TemporalResamplingMode::GapFillMainMission) {
+            outDates = mainMissionDays;
         }
-        sensorOutDays[sensor.first] = outDates;
+        sensorOutDays[sensor.first] = std::move(outDates);
     }
 
     std::vector<MissionDays> res;
