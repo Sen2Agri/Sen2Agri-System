@@ -107,6 +107,7 @@ void CropTypeTrainImagesClassifier::DoInit()
   SetParameterDescription("mode", "Specifies the choice of output dates (default: resample)");
   AddChoice("mode.resample", "Specifies the temporal resampling mode");
   AddChoice("mode.gapfill", "Specifies the gapfilling mode");
+  AddChoice("mode.gapfillmain", "Specifies the gapfilling mode, but only use non-main series products to fill in the main one");
   SetParameterString("mode", "resample");
 
   AddParameter(ParameterType_Float, "pixsize", "The size of a pixel, in meters");
@@ -203,7 +204,14 @@ void CropTypeTrainImagesClassifier::DoExecute()
 {
   GetLogger()->Debug("Entering DoExecute\n");
 
-  bool resample = GetParameterString("mode") == "resample";
+  TemporalResamplingMode resamplingMode = TemporalResamplingMode::Resample;
+  const auto &modeStr = GetParameterString("mode");
+  if (modeStr == "gapfill") {
+      resamplingMode = TemporalResamplingMode::GapFill;
+  } else if (modeStr == "gapfillmain") {
+      resamplingMode = TemporalResamplingMode::GapFillMainMission;
+  }
+
   std::vector<SensorPreferences> sp;
   if (HasValue("sp")) {
       const auto &spValues = GetParameterStringList("sp");
@@ -280,7 +288,7 @@ void CropTypeTrainImagesClassifier::DoExecute()
     startIndex = endIndex;
   }
 
-  const auto &sensorOutDays = getOutputDays(preprocessors, resample, sp);
+  const auto &sensorOutDays = getOutputDays(preprocessors, resamplingMode, mission, sp);
 
   writeOutputDays(sensorOutDays, GetParameterString("outdays"));
 

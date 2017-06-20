@@ -429,6 +429,11 @@ class CropMaskProcessor(ProcessorBase):
         step_args += ["-il"] + tile_descriptors
         step_args += ["-sp"] + self.args.sp
 
+        # if self.args.main_mission_segmentation:
+        #     step_args += ["-mode", "gapfillmain"]
+        # else:
+        #     step_args += ["-mode", "gapfill"]
+
         if not needs_ndvi:
             print("Skipping NDVI extraction for tile {}".format(tile.id))
         else:

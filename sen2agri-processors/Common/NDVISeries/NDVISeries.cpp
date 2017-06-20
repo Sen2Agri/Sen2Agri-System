@@ -180,6 +180,7 @@ private:
     SetParameterDescription("mode", "Specifies the choice of output dates (default: resample)");
     AddChoice("mode.resample", "Specifies the temporal resampling mode");
     AddChoice("mode.gapfill", "Specifies the gapfilling mode");
+    AddChoice("mode.gapfillmain", "Specifies the gapfilling mode, but only use non-main series products to fill in the main one");
     SetParameterString("mode", "resample");
 
     AddParameter(ParameterType_Float, "pixsize", "The size of a pixel, in meters");
@@ -247,7 +248,13 @@ private:
           mission = this->GetParameterString("mission");
       }
 
-      bool resample = GetParameterString("mode") == "resample";
+      TemporalResamplingMode resamplingMode = TemporalResamplingMode::Resample;
+      const auto &modeStr = GetParameterString("mode");
+      if (modeStr == "gapfill") {
+          resamplingMode = TemporalResamplingMode::GapFill;
+      } else if (modeStr == "gapfillmain") {
+          resamplingMode = TemporalResamplingMode::GapFillMainMission;
+      }
 
       TileData td;
 
@@ -261,7 +268,7 @@ private:
 
       auto preprocessors = CropMaskNDVIPreprocessingList::New();
       preprocessors->PushBack(m_Preprocessor);
-      const auto &sensorOutDays = getOutputDays(preprocessors, resample, sp);
+      const auto &sensorOutDays = getOutputDays(preprocessors, resamplingMode, mission, sp);
 
       auto output = m_Preprocessor->GetOutput(sensorOutDays);
 
