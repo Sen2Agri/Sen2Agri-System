@@ -106,8 +106,8 @@ def get_dtm_tiles(points):
 
 
 def get_landsat_tile_id(image):
-    m = re.match("[A-Z][A-Z]\d(\d{6})\d{4}\d{3}[A-Z]{3}\d{2}_B\d{1,2}\.TIF", image)
-    return m and ('L8', m.group(1))
+    m = re.match("[A-Z][A-Z]\d(\d{6})\d{4}\d{3}[A-Z]{3}\d{2}_B\d{1,2}\.TIF|[A-Z][A-Z]\d\d_[A-Z0-9]{4}_(\d{6})_\d{8}_\d{8}_\d{2}_[A-Z0-9]{2}_\w\d{1,2}\.TIF", image)
+    return m and ('L8', m.group(1) or m.group(2))
 
 
 def get_sentinel2_tile_id(image):
@@ -121,8 +121,8 @@ def get_tile_id(image):
 
 
 def get_landsat_dir_info(name):
-    m = re.match("[A-Z][A-Z]\d\d{6}(\d{4}\d{3})[A-Z]{3}\d{2}", name)
-    return m and ('L8', m.group(1))
+    m = re.match("[A-Z][A-Z]\d\d{6}(\d{4}\d{3})[A-Z]{3}\d{2}|[A-Z][A-Z]\d\d_[A-Z0-9]{4}_\d{6}_(\d{8})_\d{8}_\d{2}_[A-Z0-9]{2}", name)
+    return m and ('L8', m.group(1) or m.group(2))
 
 
 def get_sentinel2_dir_info(name):
@@ -232,48 +232,34 @@ def create_context(args):
                  tile_id=tile_id,
                  dem_vrt=os.path.join(temp_directory, "dem.vrt"),
                  dem_nodata=os.path.join(temp_directory, "dem.tif"),
-                 dem_coarse=os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
-                     "ALC")),
+                 dem_coarse=os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ALC")),
                  slope_degrees=os.path.join(temp_directory, "slope_degrees.tif"),
                  aspect_degrees=os.path.join(temp_directory, "aspect_degrees.tif"),
-                 slope_coarse=os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
-                     "SLC")),
-                 aspect_coarse=os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
-                     "ASC")),
+                 slope_coarse=os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "SLC")),
+                 aspect_coarse=os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ASC")),
                  wb=os.path.join(temp_directory, "wb.shp"),
-                 wb_reprojected=os.path.join(
-                     temp_directory, "wb_reprojected.shp"),
-                 water_mask=os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
-                     "MSK")),
+                 wb_reprojected=os.path.join(temp_directory, "wb_reprojected.shp"),
+                 water_mask=os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "MSK")),
                  size_x=size_x, size_y=size_y,
                  spacing_x=spacing_x, spacing_y=spacing_y,
                  extent=extent, wgs84_extent=wgs84_extent,
                  epsg_code=epsg_code)
 
         if mode == 'L8':
-            d['dem_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
-                "ALT"))
-            d['slope_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
-                "SLP"))
-            d['aspect_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
-                "ASP"))
+            d['dem_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ALT"))
+            d['slope_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "SLP"))
+            d['aspect_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ASP"))
 
             d['dem_r2'] = None
             d['slope_r2'] = None
             d['aspect_r2'] = None
         else:
-            d['dem_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
-                "ALT_R1"))
-            d['dem_r2'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
-                "ALT_R2"))
-            d['slope_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
-                "SLP_R1"))
-            d['slope_r2'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
-                "SLP_R2"))
-            d['aspect_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
-                "ASP_R1"))
-            d['aspect_r2'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id,
-                "ASP_R2"))
+            d['dem_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ALT_R1"))
+            d['dem_r2'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ALT_R2"))
+            d['slope_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "SLP_R1"))
+            d['slope_r2'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "SLP_R2"))
+            d['aspect_r1'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ASP_R1"))
+            d['aspect_r2'] = os.path.join(image_directory, format_filename(mode, image_directory, tile_id, "ASP_R2"))
 
         context_array.append(Context(**d))
     return context_array
@@ -309,12 +295,8 @@ def create_metadata(context):
                             *files,
                             count=str(len(files)))))))
 
-def process_DTM(context):
-    if abs(context.spacing_x) > abs(context.spacing_y):
-        grid_spacing = abs(context.spacing_x)
-    else:
-        grid_spacing = abs(context.spacing_y)
 
+def process_DTM(context):
     dtm_tiles = get_dtm_tiles([context.wgs84_extent[0][0],
                                context.wgs84_extent[0][1],
                                context.wgs84_extent[2][0],
@@ -426,6 +408,7 @@ def process_DTM(context):
 
     return True
 
+
 def process_WB(context):
     run_command(["otbcli",
                  "DownloadSWBDTiles",
@@ -480,12 +463,14 @@ def process_context(context):
     with open(context.metadata_file, 'w') as f:
         lxml.etree.ElementTree(metadata).write(f, pretty_print=True)
 
-    if process_DTM(context) == False:
+    if not process_DTM(context):
         return
     process_WB(context)
 
-    files = [context.swbd_list, context.dem_vrt, context.dem_nodata, context.slope_degrees,
-            context.aspect_degrees, context.wb, context.wb_reprojected]
+    files = [context.swbd_list,
+             context.dem_vrt, context.dem_nodata,
+             context.slope_degrees, context.aspect_degrees,
+             context.wb, context.wb_reprojected]
 
     for file in [context.wb, context.wb_reprojected]:
         for extension in [".shx", ".prj", ".dbf"]:
@@ -519,6 +504,7 @@ def parse_arguments():
     args = parser.parse_args()
 
     return int(args.processes_number), create_context(args)
+
 
 proc_number, contexts = parse_arguments()
 
