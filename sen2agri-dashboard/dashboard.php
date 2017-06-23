@@ -12,13 +12,13 @@ if (isset($_REQUEST['schedule_add']) && isset($_REQUEST['processorId'])) {
 // Submited add new job; insert job in database with id $schedule_id
 if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] == 'Save') {
 	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-	
+
 	$job_name      = $_REQUEST ['jobname'];
 	$processorId   = $_REQUEST ['processorId'];
     $site_id       = $_REQUEST ['sitename'];
     $season_id     = $_REQUEST ['seasonname'];
 	$schedule_type = $_REQUEST ['schedule_add'];
-	
+
 	$startdate="";
 	if ($schedule_type == '0') {
 		$repeatafter = "0";
@@ -33,13 +33,13 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 		$oneverydate = $_REQUEST ['oneverydate'];
 		$startdate = $_REQUEST ['startdate'];
 	}
-	
+
 	$pg_date = date ( 'Y-m-d H:i:s', strtotime ( $startdate ) );
-	
+
 	$retry_seconds = 60;
 	$priority = 1;
 	$processor_params = null;
-	
+
 	if($processorId == '3'){
 	$processor_params = json_encode ( array (
 			"general_params" => array (
@@ -60,7 +60,7 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 			$priority,
 			$processor_params
 	) )or die ( "An error occurred." );
-	
+
 	ob_clean();
 	echo "SUCCESS: Added new job for processor " . $processorId;
 	exit;
@@ -69,12 +69,12 @@ if (isset ( $_REQUEST ['schedule_saveJob'] ) && $_REQUEST ['schedule_saveJob'] =
 // Submited edit job; update job with id $schedule_id in database
 if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 'Save') {
 	$db = pg_connect ( ConfigParams::$CONN_STRING ) or die ( "Could not connect" );
-	
+
 	$schedule_id = $_REQUEST ['scheduledID'];
 	$schedule_type = $_REQUEST ['schedule'];
 	$startdate = $_REQUEST ['startdate'];
 	$processorId = $_REQUEST ['processorId'];
-	
+
 	$processor_params = null;
 	if($processorId == '3'){
 		$processor_params = json_encode ( array (
@@ -82,9 +82,9 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 						"product_type" => $_REQUEST['product']))
 				);
 	}
-	
+
 	$pg_date = date ( 'Y-m-d H:i:s', strtotime ( $startdate ) );
-	
+
 	if ($schedule_type == '0') {
 		$repeatafter = "0";
 		$oneverydate = "0";
@@ -98,7 +98,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 		$oneverydate = $_REQUEST ['oneverydate'];
 		$startdate = $_REQUEST ['startdate'];
 	}
-	
+
 	//update scheduled task
 	$res = pg_query_params ( $db, "SELECT sp_dashboard_update_scheduled_task($1,$2,$3,$4,$5,$6)", array (
 			$schedule_id,
@@ -108,7 +108,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 			$pg_date,
 			$processor_params
 	) )or die ( "An error occurred." );
-	
+
 	$active_proc = $processorId + 0;
 }
 ?>
@@ -420,70 +420,87 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 <script src="libraries/jquery-validate/additional-methods.min.js"></script>
 
 <script>
-	function selectedSchedule(param) {
-		switch ($("#schedule"+param).val()) {
+	function selectedSchedule(event, param) {
+		var target = event.target;
+		var row = target.parentElement.parentElement;
+		var div_startdate = row.getElementsByClassName("div_startdate")[0];
+		var div_repeatnever = row.getElementsByClassName("div_repeatnever")[0];
+		var div_repeatafter = row.getElementsByClassName("div_repeatafter")[0];
+		var div_oneverydate = row.getElementsByClassName("div_oneverydate")[0];
+		var div_startdatefoo = row.getElementsByClassName("div_startdatefoo")[0];
+
+		switch (target.value) {
 			case "0":
-				$("#div_repeatnever"+param).removeClass("hidden");
-				$("#div_repeatafter"+param).addClass("hidden");
-				$("#div_oneverydate"+param).addClass("hidden");
+				div_repeatnever.classList.remove("hidden");
+				div_repeatafter.classList.add("hidden");
+				div_oneverydate.classList.add("hidden");
 				break;
 			case "1":
-				$("#div_repeatnever"+param).addClass("hidden");
-				$("#div_repeatafter"+param).removeClass("hidden");
-				$("#div_oneverydate"+param).addClass("hidden");
+				div_repeatnever.classList.add("hidden");
+				div_repeatafter.classList.remove("hidden");
+				div_oneverydate.classList.add("hidden");
 				break;
 			case "2":
-				$("#div_repeatnever"+param).addClass("hidden");
-				$("#div_repeatafter"+param).addClass("hidden");
-				$("#div_oneverydate"+param).removeClass("hidden");
+				div_repeatnever.classList.add("hidden");
+				div_repeatafter.classList.add("hidden");
+				div_oneverydate.classList.remove("hidden");
 				break;
 			default:
-				$("#div_repeatnever"+param).removeClass("hidden");
-				$("#div_repeatafter"+param).addClass("hidden");
-				$("#div_oneverydate"+param).addClass("hidden");
+				div_repeatnever.classList.remove("hidden");
+				div_repeatafter.classList.add("hidden");
+				div_oneverydate.classList.add("hidden");
 				break;
 		}
 	}
-	function selectedScheduleAdd(param) {
-		switch ($("#schedule_add"+param).val()) {
+	function selectedScheduleAdd(event, param) {
+		var target = event.target;
+		var row = target.parentElement.parentElement;
+		var div_startdate = row.getElementsByClassName("div_startdate")[0];
+		var div_repeatnever = row.getElementsByClassName("div_repeatnever")[0];
+		var div_repeatafter = row.getElementsByClassName("div_repeatafter")[0];
+		var div_oneverydate = row.getElementsByClassName("div_oneverydate")[0];
+		var div_startdatefoo = row.getElementsByClassName("div_startdatefoo")[0];
+		var div_repeatfoo = row.getElementsByClassName("div_repeatfoo")[0];
+
+		switch (target.value) {
 			case "0":
-				$("#div_startdate"+param).removeClass("hidden");
-				$("#div_repeatnever"+param).removeClass("hidden");
-				
-				$("#div_repeatafter"+param).addClass("hidden");
-				$("#div_oneverydate"+param).addClass("hidden");
-				
-				$("#div_startdatefoo"+param).addClass("hidden");
-				$("#div_repeatfoo"+param).addClass("hidden");
+				div_startdate.classList.remove("hidden");
+				div_repeatnever.classList.remove("hidden");
+
+				div_repeatafter.classList.add("hidden");
+				div_oneverydate.classList.add("hidden");
+
+				div_startdatefoo.classList.add("hidden");
+				div_repeatfoo.classList.add("hidden");
 				break;
 			case "1":
-				$("#div_startdate"+param).removeClass("hidden");
-				$("#div_repeatafter"+param).removeClass("hidden");
-				
-				$("#div_repeatnever"+param).addClass("hidden");
-				$("#div_oneverydate"+param).addClass("hidden");
-				
-				$("#div_startdatefoo"+param).addClass("hidden");
-				$("#div_repeatfoo"+param).addClass("hidden");
+				div_startdate.classList.remove("hidden");
+				div_repeatafter.classList.remove("hidden");
+
+				div_repeatnever.classList.add("hidden");
+				div_oneverydate.classList.add("hidden");
+
+				div_startdatefoo.classList.add("hidden");
+				div_repeatfoo.classList.add("hidden");
 				break;
 			case "2":
-				$("#div_startdate"+param).removeClass("hidden");
-				$("#div_oneverydate"+param).removeClass("hidden");
-				
-				$("#div_repeatnever"+param).addClass("hidden");
-				$("#div_repeatafter"+param).addClass("hidden");
-				
-				$("#div_startdatefoo"+param).addClass("hidden");
-				$("#div_repeatfoo"+param).addClass("hidden");
+				div_startdate.classList.remove("hidden");
+				div_oneverydate.classList.remove("hidden");
+
+				div_repeatnever.classList.add("hidden");
+				div_repeatafter.classList.add("hidden");
+
+				div_startdatefoo.classList.add("hidden");
+				div_repeatfoo.classList.add("hidden");
 				break;
 			default:
-				$("#div_startdatefoo"+param).removeClass("hidden");
-				$("#div_repeatfoo"+param).removeClass("hidden");
-				
-				$("#div_repeatnever"+param).addClass("hidden");
-				$("#div_repeatafter"+param).addClass("hidden");
-				$("#div_oneverydate"+param).addClass("hidden");
-				$("#div_startdate"+param).addClass("hidden");
+				div_startdatefoo.classList.remove("hidden");
+				div_repeatfoo.classList.remove("hidden");
+
+				div_repeatnever.classList.add("hidden");
+				div_repeatafter.classList.add("hidden");
+				div_oneverydate.classList.add("hidden");
+				div_startdate.classList.add("hidden");
 				break;
 		}
 	}
@@ -531,11 +548,11 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 			// display current tab content and hide all other tabs
 			$('.tabControl>div>div').css("z-index", "-1");
 			$(this).parent().find(">div").css("z-index", "999");
-            
+
 			return false;
 		});
 		// END tab control
-		
+
 		$( ".startdate" ).datepicker({
 			dateFormat: "yy-mm-dd"
 		});
