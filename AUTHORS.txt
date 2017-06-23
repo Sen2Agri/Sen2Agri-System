@@ -1,0 +1,23 @@
+Sentinel-2 for Agriculture system has been developped by:
+=========================================================
+
+Marcela ARIAS (Université Toulouse III  Paul Sabatier)
+Lucian BARBULESCU (CS Romania)
+Nicolas BELLEMANS (Université catholique de Louvain)
+Sophie BONTEMPS (Université catholique de Louvain)
+Aurélien BRICIER (CS systémes d'information)
+Cosmin CARA (CS Romania)
+Gérard DEDIEU (Université Toulouse III  Paul Sabatier)
+Pierre DEFOURNY (Université catholique de Louvain)
+Alex GROSU (CS Romania)
+Olivier HAGOLLE (Université Toulouse III  Paul Sabatier)
+Jordi INGLADA (Université Toulouse III  Paul Sabatier)
+Alexia MONDOT (CS systémes d'information)
+David MORIN (Université Toulouse III  Paul Sabatier)
+Laurențiu NICOLA (CS Romania)
+Mickael SAVINAUD (CS systémes d'information)
+Guadalupe SEPULCRE SANTO (Université catholique de Louvain)
+Nicu STANCIOI (CS Romania)
+Benjamin TARDY (Université Toulouse III  Paul Sabatier)
+Cosmin UDROIU (CS Romania)
+Silvia VALERO (Université Toulouse III  Paul Sabatier)
