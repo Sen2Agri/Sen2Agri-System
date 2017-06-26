@@ -285,6 +285,12 @@ bool RessourceManagerItf::HandleStartProcessor(RequestParamsSubmitSteps *pReqPar
             return false;
         }
         QStringList sbatchParams;
+        // Set the job nane of the batch the same as the inner job runs
+        // this is useful to have the task name in slurm something we can use instead of the
+        // default usage of the name of the batch script
+        sbatchParams.push_back(SRUN_JOB_NAME_PARAM);
+        sbatchParams.push_back(strJobName);
+
         //sbatchParams.push_back(QString(" <<EOF\n#!/bin/sh\nsrun %1\nEOF").arg(paramsStr));
         if(!strQos.isEmpty()) {
             sbatchParams.push_back(SRUN_QOS_PARAM);
