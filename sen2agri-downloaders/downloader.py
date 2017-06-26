@@ -59,8 +59,8 @@ else:
                 help="The location from where the product should be donwloaded: scihub or amazon", default=None)
 
     #for landsat only
-    parser.add_option("--dir", dest="dir", action="store", type="string", \
-                    help="Dir number where files  are stored at USGS",default=None)
+    parser.add_option("--dirs", dest="dirs", action="store", type="string", \
+                    help="Comma separated remote dir numbers where files  are stored at USGS",default=None)
     parser.add_option("--station", dest="station", action="store", type="string", \
                     help="Station acronym (3 letters) of the receiving station from where the file is downloaded",default=None)
 
@@ -104,7 +104,7 @@ else:
         database = LandsatAOIInfo(config.host, config.database, config.user, config.password)
         sites_aoi_database = database.getLandsatAOI(manual_site_to_dwn, manual_start_date, manual_end_date)
         for aoi in sites_aoi_database:
-            aoi.setLandsatDirNumber(options.dir)
+            aoi.setLandsatDirNumbers(options.dirs)
             aoi.setLandsatStation(options.station)
     else:
         log(general_log_path, "Unkown remote host. Has to be 's2' or 'l8'. The received input is {}".format(options.remote_host), general_log_filename)

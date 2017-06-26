@@ -74,6 +74,10 @@ def get_previous_l2a_tiles_paths(satellite_id, l1c_product_path, l1c_date, l1c_o
         tile = re.search(r"LC8(\d{6})\d{7}[A-Z]{3}", l1c_product_path)
         if tile is not None:
             l1c_tiles.append(tile.group(1))
+        else :
+            tile = re.search(r"LC08_L1[a-zA-Z]{2}_(\d{6})_\d{8}_\d{8}_\d{2}_[a-zA-Z0-9]{2}", l1c_product_path)
+            if tile is not None:
+                l1c_tiles.append(tile.group(1))
     else:
         print("Unkown satellite id :{}".format(satellite_id))
         return [] and ([], [])
@@ -114,6 +118,8 @@ def launch_demmaccs(l1c_context):
             l2a_basename = l2a_basename.replace("L1C", "L2A")
         elif l2a_basename.startswith("LC8"):
             l2a_basename += "_L2A"
+        elif l2a_basename.startswith("LC08"):
+            l2a_basename = l2a_basename.replace("L1TP", "L2A")
         else:
             log(general_log_path, "The L1C product name is bad: {}".format(l2a_basename), general_log_filename)
             continue
