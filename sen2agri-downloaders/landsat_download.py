@@ -135,13 +135,31 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
   print("aoiContext.writeDir: {}".format(aoiContext.writeDir))
   print("nom_fic: {}".format(nom_fic))
   print("prod_date: {}".format(prod_date))
-  print("abs_prod_path: {}".format(abs_prod_path))
+  #print("abs_prod_path: {}".format(abs_prod_path))
   print("INFO STOP")
 
   log(aoiContext.writeDir, "Trying to download {0}".format(nom_fic), general_log_filename)
   try:
     req = urllib2.urlopen(url, timeout=100)
     print("request performed for URL: {}".format(url))
+    #print("request INFO: {}".format(req.info()))
+    
+    localName = nom_fic
+    if req.info().has_key('Content-Disposition'):
+        # If the response has Content-Disposition, we take file name from it
+        localName = req.info()['Content-Disposition'].split('filename=')[1]
+        if localName[0] == '"' or localName[0] == "'":
+            localName = localName[1:-1]
+    
+    nom_fic = localName
+    if nom_fic.endswith('.tgz'):
+        prod_name = nom_fic[:-4]
+    elif nom_fic.endswith('.tar.gz'):
+        prod_name = nom_fic[:-7]
+    print("Downloading FileName is: {}. Product name is: {}".format(nom_fic, prod_name))
+    abs_prod_path = os.path.join(aoiContext.writeDir, prod_name)
+    print("abs_prod_path recomputed is: {}".format(abs_prod_path))
+    
     #taille du fichier
     if (req.info().gettype()=='text/html'):
       log(aoiContext.writeDir, 'Error: the file has a html format for '.format(nom_fic), general_log_filename)
@@ -214,7 +232,9 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
          log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADING for {}".format(prod_name), general_log_filename)
          return False
     return False
-  if unzipimage(prod_name, aoiContext.writeDir):
+  # Change the absolute product date to the real one
+  unzipSuccess, abs_prod_path = unzipimage(prod_name, aoiContext.writeDir)
+  if unzipSuccess:
        #apply north-south correction for all bands
        landsat_tif_files = glob.glob("{}/*_B*.TIF".format(abs_prod_path))
        base_path = os.path.dirname(os.path.abspath(__file__)) + "/../"
@@ -270,21 +290,36 @@ def next_overpass(date1,path,sat):
 def unzipimage(tgzfile, outputdir):
     success = False
     global general_log_filename
-    if (os.path.exists(outputdir+'/'+tgzfile+'.tgz')):
+    tarFileExists = False
+    tgzFileName = tgzfile
+    targetDir = outputdir+'/'+tgzfile
+    if (not tgzfile.endswith('.tgz')) and (not tgzfile.endswith('.tar.gz')) :
+        if (os.path.exists(outputdir+'/'+tgzfile+'.tgz')) : 
+            tgzFileName = tgzfile+'.tgz'
+            tarFileExists = True
+        elif (os.path.exists(outputdir+'/'+tgzfile+'.tar.gz')) : 
+            tgzFileName = tgzfile+'.tar.gz'
+            tarFileExists = True
+    else :
+        if (os.path.exists(outputdir+'/'+tgzfile)) : 
+            tarFileExists = True
+    
+    if tarFileExists:
         log(outputdir,  "decompressing...", general_log_filename)
+        fullTgzFilePath = outputdir+'/'+tgzFileName
         try:
             if sys.platform.startswith('linux'):
-                subprocess.call('mkdir '+ outputdir+'/'+tgzfile, shell=True)   #Unix
-                subprocess.call('tar zxvf '+outputdir+'/'+tgzfile+'.tgz -C '+ outputdir+'/'+tgzfile, shell=True)   #Unix
+                subprocess.call('mkdir '+ targetDir, shell=True)   #Unix
+                subprocess.call('tar zxvf '+fullTgzFilePath+' -C '+ targetDir, shell=True)   #Unix
             elif sys.platform.startswith('win'):
-                subprocess.call('tartool '+outputdir+'/'+tgzfile+'.tgz '+ outputdir+'/'+tgzfile, shell=True)  #W32
+                subprocess.call('tartool '+fullTgzFilePath+' '+ targetDir, shell=True)  #W32
             success = True
-            os.remove(outputdir+'/'+tgzfile+'.tgz')
-            log(outputdir,  "decompress succeded. removing the .tgz file {}.tgz".format(outputdir+'/'+tgzfile), general_log_filename)
+            os.remove(fullTgzFilePath)
+            log(outputdir,  "decompress succeded. removing the file {}".format(fullTgzFilePath), general_log_filename)
         except TypeError:
-            log(outputdir, "Failed to unzip {}".format(tgzfile), general_log_filename)
+            log(outputdir, "Failed to unzip {}".format(tgzFileName), general_log_filename)
             os.remove(outputdir)
-    return success
+    return success, targetDir
 
 #############################"Read image metadata
 def read_cloudcover_in_metadata(image_path):
@@ -376,12 +411,17 @@ def landsat_download_season(aoiContext, seasonInfo):
              continue
 
          product="LC8"
-         remoteDir='4923'
+         remoteDirsStr='12864, 4923'
          stations=['LGN']
          if aoiContext.landsatStation !=None:
              stations = [aoiContext.landsatStation]
-         if aoiContext.landsatDirNumber !=None:
-             remoteDir = aoiContext.landsatDirNumber
+         if aoiContext.landsatDirNumbers !=None:
+             remoteDirsStr = aoiContext.landsatDirNumbers
+
+         remoteDirsUnstriped=remoteDirsStr.split(',')
+         remoteDirs = []
+         for remoteDirStr in remoteDirsUnstriped:
+             remoteDirs.append(remoteDirStr.strip())
 
          path=tile[0:3]
          row=tile[3:6]
@@ -412,7 +452,6 @@ def landsat_download_season(aoiContext, seasonInfo):
                                          nom_prod = product + tile + date_asc + station + version
                                          tgzfile = os.path.join(aoiContext.writeDir, nom_prod + '.tgz')
                                          lsdestdir = os.path.join(aoiContext.writeDir, nom_prod)
-                                         url = "https://earthexplorer.usgs.gov/download/{}/{}/STANDARD/EE".format(remoteDir,nom_prod)
 
                                          if aoiContext.fileExists(nom_prod):
                                              log(aoiContext.writeDir, "File {} found in history so it's already downloaded".format(nom_prod), general_log_filename)
@@ -425,10 +464,13 @@ def landsat_download_season(aoiContext, seasonInfo):
                                          year = date_asc[0:4]
                                          days = date_asc[4:]
                                          prod_date = (datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(days))).strftime("%Y%m%dT000000")
-                                         if downloadChunks(url, nom_prod, prod_date, lsdestdir, aoiContext, db):
-                                              # if the file successfully downloaded, append it also to the history files list
-                                              aoiContext.appendHistoryFile(nom_prod)
-                                              downloaded_ids.append(nom_prod)
+                                         for remoteDir in remoteDirs :
+                                             url = "https://earthexplorer.usgs.gov/download/{}/{}/STANDARD/EE".format(remoteDir,nom_prod)
+                                             if downloadChunks(url, nom_prod, prod_date, lsdestdir, aoiContext, db):
+                                                  # if the file successfully downloaded, append it also to the history files list
+                                                  aoiContext.appendHistoryFile(nom_prod)
+                                                  downloaded_ids.append(nom_prod)
+                                                  break
          if len(downloaded_ids) > 0:
               log(aoiContext.writeDir, "Downloaded product: {}".format(downloaded_ids), general_log_filename)
          else:

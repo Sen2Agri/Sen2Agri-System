@@ -257,11 +257,17 @@ def get_product_info(product_name):
         if m != None:
             sat_id = SENTINEL2_SATELLITE_ID
             acquisition_date = m.group(1)
-    elif product_name.startswith("LC8"):
+    elif product_name.startswith("LC8") or product_name.startswith("LC08"):
         m = re.match("LC8\d{6}(\d{7})[A-Z]{3}\d{2}", product_name)
         if m != None:
-            sat_id = LANDSAT8_SATELLITE_ID
             acquisition_date = datetime.datetime.strptime("{} {}".format(m.group(1)[0:4],m.group(1)[4:]), '%Y %j').strftime("%Y%m%dT%H%M%S")
+        else :
+            m = re.match("LC08_[A-Z0-9]+_\d{6}_(\d{8})_\d{8}_\d{2}_[A-Z0-9]{2}", product_name)
+            if m != None:
+                acquisition_date = datetime.datetime.strptime("{} {} {}".format(m.group(1)[0:4],m.group(1)[4:6], m.group(1)[6:]), '%Y %m %d').strftime("%Y%m%dT%H%M%S")
+        if m != None:
+            sat_id = LANDSAT8_SATELLITE_ID
+            
     return sat_id and (sat_id, acquisition_date)
 
 
@@ -333,11 +339,11 @@ def get_product_info(product_name):
 
 def landsat_crop_to_cutline(landsat_product_path, working_dir):
     product_name = os.path.basename(landsat_product_path[:len(landsat_product_path) - 1]) if landsat_product_path.endswith("/") else os.path.basename(landsat_product_path)
-    tile = re.match("LC8(\w{6})\w+", product_name)
+    tile = re.match("LC8(\w{6})\w+|[A-Z][A-Z]\d\d_[A-Z0-9]+_(\d{6})_\d{8}_\d{8}_\d{2}_[A-Z0-9]{2}", product_name)
     if tile is None:
         return "", "Couldn't get the tile id for the LANDSAT product {} found here {}. Imposible to process the alignment, exit".format(product_name, landsat_product_path)
 
-    tile_id = tile.group(1)
+    tile_id = (tile.group(1) or tile.group(2))
     alignment_directory = "{}/{}_alignment".format(working_dir, tile_id)
     aligned_landsat_directory_path = "{}/{}".format(alignment_directory, product_name)
     if not create_recursive_dirs(alignment_directory):
@@ -353,7 +359,7 @@ def landsat_crop_to_cutline(landsat_product_path, working_dir):
     tmp_shape_file = ""
     for landsat_file in landsat_files:
         landsat_file_basename = os.path.basename(landsat_file[:len(landsat_file) - 1]) if landsat_file.endswith("/") else os.path.basename(landsat_file)
-        band = re.match("LC8\w{13}[A-Z]{3}\w{2}_B1.TIF", landsat_file_basename)
+        band = re.match("LC8\w{13}[A-Z]{3}\w{2}_B1.TIF|[A-Z][A-Z]\d\d_[A-Z0-9]+_\d{6}_\d{8}_\d{8}_\d{2}_[A-Z0-9]{2}_B1\.TIF", landsat_file_basename)
         if band is not None:
             # the filename for the first output tile is created only (not accessed)
             first_tile_file_path = "{}/{}".format(aligned_landsat_directory_path, landsat_file_basename)
@@ -371,7 +377,7 @@ def landsat_crop_to_cutline(landsat_product_path, working_dir):
     for landsat_file in landsat_files:
         landsat_file_basename = os.path.basename(landsat_file[:len(landsat_file) - 1]) if landsat_file.endswith("/") else os.path.basename(landsat_file)
         print("landsat_file_basename = {}".format(landsat_file_basename))
-        band = re.match("LC8\w{13}[A-Z]{3}\w{2}_B\w+.TIF", landsat_file_basename)
+        band = re.match("LC8\w{13}[A-Z]{3}\w{2}_B\w+.TIF|[A-Z][A-Z]\d\d_[A-Z0-9]+_\d{6}_\d{8}_\d{8}_\d{2}_[A-Z0-9]{2}_B\w+\.TIF", landsat_file_basename)
         if band is not None:            
             output_file = "{}/{}".format(aligned_landsat_directory_path, landsat_file_basename)
             run_command(["gdalwarp", "-overwrite", "-crop_to_cutline", "-cutline", tmp_shape_file, landsat_file, output_file])
@@ -381,7 +387,7 @@ def landsat_crop_to_cutline(landsat_product_path, working_dir):
 
     for landsat_file in landsat_files:
         landsat_file_basename = os.path.basename(landsat_file[:len(landsat_file) - 1]) if landsat_file.endswith("/") else os.path.basename(landsat_file)
-	metadata = re.match("LC8\w{13}[A-Z]{3}\w{2}_MTL.txt", landsat_file_basename)
+	metadata = re.match("LC8\w{13}[A-Z]{3}\w{2}_MTL.txt|[A-Z][A-Z]\d\d_[A-Z0-9]+_\d{6}_\d{8}_\d{8}_\d{2}_[A-Z0-9]{2}_MTL\.txt", landsat_file_basename)
 	if metadata is not None:
 	    output_metadata_file = "{}/{}".format(aligned_landsat_directory_path, landsat_file_basename)
 	    print(output_metadata_file)
@@ -560,7 +566,7 @@ class AOIContext(object):
         self.sentinelLocation = ""
         #ed of sentinel satellite only
         #landsat only
-        self.landsatDirNumber = None
+        self.landsatDirNumbers = None
         self.landsatStation = None
         #end of landsat only
 
@@ -643,8 +649,8 @@ class AOIContext(object):
     def setSentinelLocation(self, location):
         self.sentinelLocation = location
         
-    def setLandsatDirNumber(self, dir_number):
-        self.landsatDirNumber = dir_number
+    def setLandsatDirNumbers(self, dir_numbers):
+        self.landsatDirNumbers = dir_numbers
 
     def setLandsatStation(self, station):
         self.landsatStation = station
@@ -676,10 +682,10 @@ class AOIContext(object):
         else:
             print("proxy      : None")
         print("sentinelLocation: {}".format(self.sentinelLocation))
-        if self.landsatDirNumber != None:
-            print("landsatDirNumber: {}".format(self.landsatDirNumber))
+        if self.landsatDirNumbers != None:
+            print("landsatDirNumbers: {}".format(self.landsatDirNumbers))
         else:
-            print("landsatDirNumber: None")
+            print("landsatDirNumbers: None")
         if self.landsatStation != None:
             print("landsatStation: {}".format(self.landsatStation))
         else:
