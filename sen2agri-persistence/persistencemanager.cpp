@@ -1629,7 +1629,7 @@ SeasonList PersistenceManagerDBProvider::GetSiteSeasons(int siteId)
         SeasonList result;
 
         auto query = db.prepareQuery(QStringLiteral("select * from sp_get_site_seasons(:siteId)"));
-        query.bindValue(QStringLiteral("siteId"), siteId);
+        query.bindValue(QStringLiteral(":siteId"), siteId);
 
         query.setForwardOnly(true);
         if (!query.exec()) {
