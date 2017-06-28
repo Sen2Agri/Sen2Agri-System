@@ -40,29 +40,29 @@ general_log_filename = "landsat_download.log"
 MONTHS_FOR_REQUESTING_AFTER_SEASON_FINSIHED = int(1)
 DEBUG = True
 
+def get_url_opener(proxy_info):
+    cookies = urllib2.HTTPCookieProcessor()
+    if proxy_info is None or len(proxy_info) < 2:
+        proxy_support = None
+    elif len(proxy_info) == 2:
+        proxy_support = urllib2.ProxyHandler({"http": "http://%(host)s:%(port)s" % proxy_info,
+                                              "https": "https://%(host)s:%(port)s" % proxy_info})
+    elif len(proxy_info) == 4:
+        proxy_support = urllib2.ProxyHandler({"http": "http://%(user)s:%(pass)s@%(host)s:%(port)s" % proxy_info,
+                                              "https": "https://%(user)s:%(pass)s@%(host)s:%(port)s" % proxy_info})
+
+    if proxy_support is None:
+        return urllib2.build_opener(cookies)
+    else:
+        log(general_log_path, "Connected through proxy", general_log_filename)
+        return urllib2.build_opener(cookies, proxy_support)
+
 #############################"Connection to Earth explorer with proxy
 
-def connect_earthexplorer_proxy(proxy_info,usgs):
-     log(general_log_path, "Establishing connection to Earthexplorer using a proxy...", general_log_filename)
-     cookies = urllib2.HTTPCookieProcessor()
-     proxy_support = None
-     print("http://%(host)s:%(port)s" % proxy_info)
-     if len(proxy_info) == 2:
-          proxy_support = urllib2.ProxyHandler({"http" : "http://%(host)s:%(port)s" % proxy_info,
-                                                "https" : "https://%(host)s:%(port)s" % proxy_info})
-     elif len(proxy_info) == 4:
-          proxy_support = urllib2.ProxyHandler({"http" : "http://%(user)s:%(pass)s@%(host)s:%(port)s" % proxy_info,
-                                                "https" : "https://%(user)s:%(pass)s@%(host)s:%(port)s" % proxy_info})
-     else:
-          log(general_log_path, "Proxy information erroneous, check credential file.", general_log_filename)
-          return False
+def connect_earthexplorer(proxy_info, usgs):
+     log(general_log_path, "Establishing connection to EarthExplorer...", general_log_filename)
 
-     log(general_log_path, "proxy_support = {}".format(proxy_support), general_log_filename)
-     if proxy_support == None:
-          log(general_log_path, "Could not create proxy object.", general_log_filename)
-          return False
-     opener = urllib2.build_opener(proxy_support, cookies)
-     log(general_log_path, "opener = {}".format(opener), general_log_filename)
+     opener = get_url_opener(proxy_info)
 
      # installation
      urllib2.install_opener(opener)
@@ -83,37 +83,10 @@ def connect_earthexplorer_proxy(proxy_info,usgs):
      f.close()
      log(general_log_path, "Link closed", general_log_filename)
 
-     if data.find('You must sign in as a registered user to download data or place orders for USGS EROS products') > 0 :
-        print "Authentification failed"
-        return False
-     log(general_log_path, "Connected through proxy", general_log_filename)
-     return True
-
-
-#############################"Connection to Earth explorer without proxy
-
-def connect_earthexplorer_no_proxy(usgs):
-     global general_log_path
-     global general_log_filename
-     cookies = urllib2.HTTPCookieProcessor()
-     # mkmitchel (https://github.com/mkmitchell) solved the token issue
-     log(general_log_path, "Establishing connection to Earthexplorer...", general_log_filename)
-     opener = urllib2.build_opener(cookies)
-     urllib2.install_opener(opener)
-     # deal with csrftoken required by USGS as of 7-20-2016
-     soup = BeautifulSoup(urllib2.urlopen("https://ers.cr.usgs.gov", timeout=100).read(), "lxml")
-     token = soup.find('input', {'name': 'csrf_token'})
-     params = urllib.urlencode(dict(username=usgs['account'],password= usgs['passwd'], csrf_token=token['value']))
-     request = urllib2.Request("https://ers.cr.usgs.gov/login", params, headers={})
-     f = urllib2.urlopen(request, timeout=100)
-
-     data = f.read()
-     f.close()
      if data.find("You must sign in as a registered user to download data or place orders for USGS EROS products") > 0 or\
         data.find("Invalid username/password") > 0:
-          log(general_log_path, "Authentification failed ! Check the usgs.txt file and fill the first line with a correct 'username password'", general_log_filename)
-          return False
-     log(general_log_path, "Connected", general_log_filename)
+        print "Authentification failed"
+        return False
      return True
 
 #############################
@@ -143,14 +116,14 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
     req = urllib2.urlopen(url, timeout=100)
     print("request performed for URL: {}".format(url))
     #print("request INFO: {}".format(req.info()))
-    
+
     localName = nom_fic
     if req.info().has_key('Content-Disposition'):
         # If the response has Content-Disposition, we take file name from it
         localName = req.info()['Content-Disposition'].split('filename=')[1]
         if localName[0] == '"' or localName[0] == "'":
             localName = localName[1:-1]
-    
+
     nom_fic = localName
     if nom_fic.endswith('.tgz'):
         prod_name = nom_fic[:-4]
@@ -159,7 +132,7 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
     print("Downloading FileName is: {}. Product name is: {}".format(nom_fic, prod_name))
     abs_prod_path = os.path.join(aoiContext.writeDir, prod_name)
     print("abs_prod_path recomputed is: {}".format(abs_prod_path))
-    
+
     #taille du fichier
     if (req.info().gettype()=='text/html'):
       log(aoiContext.writeDir, 'Error: the file has a html format for '.format(nom_fic), general_log_filename)
@@ -294,16 +267,16 @@ def unzipimage(tgzfile, outputdir):
     tgzFileName = tgzfile
     targetDir = outputdir+'/'+tgzfile
     if (not tgzfile.endswith('.tgz')) and (not tgzfile.endswith('.tar.gz')) :
-        if (os.path.exists(outputdir+'/'+tgzfile+'.tgz')) : 
+        if (os.path.exists(outputdir+'/'+tgzfile+'.tgz')) :
             tgzFileName = tgzfile+'.tgz'
             tarFileExists = True
-        elif (os.path.exists(outputdir+'/'+tgzfile+'.tar.gz')) : 
+        elif (os.path.exists(outputdir+'/'+tgzfile+'.tar.gz')) :
             tgzFileName = tgzfile+'.tar.gz'
             tarFileExists = True
     else :
-        if (os.path.exists(outputdir+'/'+tgzfile)) : 
+        if (os.path.exists(outputdir+'/'+tgzfile)) :
             tarFileExists = True
-    
+
     if tarFileExists:
         log(outputdir,  "decompressing...", general_log_filename)
         fullTgzFilePath = outputdir+'/'+tgzFileName
@@ -430,10 +403,7 @@ def landsat_download_season(aoiContext, seasonInfo):
          downloaded_ids = []
          connection = False
          try:
-             if len(proxy) >= 2:
-                  connection = connect_earthexplorer_proxy(proxy,usgs)
-             else:
-                  connection = connect_earthexplorer_no_proxy(usgs)
+              connection = connect_earthexplorer(proxy, usgs)
          except Exception, e:
               traceback.print_exc()
               log(aoiContext.writeDir, "Exception caught when trying to connect at USGS server: {}".format(e), general_log_filename)
