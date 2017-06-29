@@ -1,3 +1,6 @@
+
+You can find the compiled binaries of the system at http://www.esa-sen2agri.org/resources/software/.
+
 # Prerequisites
 
     yum install epel-release
