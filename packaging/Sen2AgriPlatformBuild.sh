@@ -14,7 +14,7 @@
 ################################################################################################
 ###########################CONFIG PART###########################################################
 ### URLs FOR RETRIEVING SOURCES PACKAGES
-: ${OTB_URL:="https://github.com/GrayShade/OTB.git"}
+: ${OTB_URL:="https://github.com/Sen2Agri/OTB.git"}
 : ${OTB_MOSAIC_URL:="https://github.com/remicres/otb-mosaic.git"}
 : ${GDAL_URL:="http://download.osgeo.org/gdal"}
 
