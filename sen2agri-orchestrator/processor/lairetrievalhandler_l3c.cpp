@@ -155,21 +155,6 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(std::map<QS
             }
         }
     }
-/*
-    for(int i = 0; i< tileTemporalFilesInfo.temporalTilesFileInfos.size(); i++) {
-        quantifiedLaiFileNames2.append(tileTemporalFilesInfo.temporalTilesFileInfos[i].additionalFiles[LAI_RASTER_ADD_INFO_IDX]);
-        quantifiedErrLaiFileNames2.append(tileTemporalFilesInfo.temporalTilesFileInfos[i].additionalFiles[LAI_ERR_RASTER_ADD_INFO_IDX]);
-        monoDateMskFlagsLaiFileNames2.append(tileTemporalFilesInfo.temporalTilesFileInfos[i].additionalFiles[LAI_FLG_RASTER_ADD_INFO_IDX]);
-
-        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId == tileTemporalFilesInfo.primarySatelliteId) {
-            if(mainLaiImg.length() == 0) {
-                mainLaiImg = tileTemporalFilesInfo.temporalTilesFileInfos[i].additionalFiles[LAI_RASTER_ADD_INFO_IDX];
-                mainLaiErrImg = tileTemporalFilesInfo.temporalTilesFileInfos[i].additionalFiles[LAI_ERR_RASTER_ADD_INFO_IDX];
-                mainMsksImg = tileTemporalFilesInfo.temporalTilesFileInfos[i].additionalFiles[LAI_FLG_RASTER_ADD_INFO_IDX];
-            }
-        }
-    }
-*/
     int curTaskIdx = tasksStartIdx;
     TaskToSubmit &imgTimeSeriesBuilderTask = allTasksList[curTaskIdx++];
     TaskToSubmit &errTimeSeriesBuilderTask = allTasksList[curTaskIdx++];
@@ -186,8 +171,6 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing(std::map<QS
     steps.append(imgTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", timeSeriesBuilderArgs));
     steps.append(errTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", errTimeSeriesBuilderArgs));
     steps.append(mskFlagsTimeSeriesBuilderTask.CreateStep("TimeSeriesBuilder", mskFlagsTimeSeriesBuilderArgs));
-
-//    const QStringList &listDates = ProcessorHandlerHelper::GetTemporalTileAcquisitionDates(tileTemporalFilesInfo);
 
     TaskToSubmit &profileReprocTask = allTasksList[curTaskIdx++];
     TaskToSubmit &profileReprocSplitTask = allTasksList[curTaskIdx++];
@@ -348,9 +331,6 @@ NewStepList LaiRetrievalHandlerL3C::GetStepsForMultiDateReprocessing_New(std::ma
 
     return steps;
 }
-
-
-
 
 void LaiRetrievalHandlerL3C::HandleNewTilesList(EventProcessingContext &ctx, const JobSubmittedEvent &event,
                                              const TileTemporalFilesInfo &tileTemporalFilesInfo,
@@ -607,7 +587,6 @@ QMap<QString, TileTemporalFilesInfo> LaiRetrievalHandlerL3C::GetL3BMapTiles(Even
     // if primary and secondary satellites, then keep only the tiles from primary satellite
     // as we don't want to have in the resulted product combined primary and secondary satellites tiles
     //return retL3bMapTiles;
-    // NOT NEEDED ANYMORE - filtering done in scheduled part
     return FilterSecondaryProductTiles(retL3bMapTiles, siteTiles);
 }
 
