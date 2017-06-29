@@ -1,7 +1,11 @@
 
-You can find the compiled binaries of the system at http://www.esa-sen2agri.org/resources/software/.
+# Binaries Packages
 
-# Prerequisites
+You can download the binaries of the system for CentOS-7 [here](http://www.esa-sen2agri.org/resources/software). You can find also more informations about ths system.
+If you have question, remark or issue, you can use the [forum](http://www.esa-sen2agri.org/forum/).
+
+# Compile from source
+## Prerequisites
 
     yum install epel-release
     yum install git gcc gcc-c++ cmake boost-devel curl-devel expat-devel fftw-devel gdal-devel geos-devel libgeotiff-devel libjpeg-turbo-devel libsvm-devel muParser-devel opencv-devel openjpeg2-devel openjpeg2-tools pcre-devel libpng-devel proj-devel python-devel qt-devel sqlite-devel swig libtiff-devel tinyxml-devel qt5-qtbase-devel qt5-qtbase-postgresql gsl-devel qt-x11
@@ -10,7 +14,7 @@ You can find the compiled binaries of the system at http://www.esa-sen2agri.org/
 
     ln -s /usr/lib64/libproj.so.0 /usr/lib64/libproj.so
 
-# Compiling OTB
+## Compiling OTB
 
     git clone --depth=1 https://github.com/GrayShade/OTB.git # fixes-5.0 branch
     mkdir OTB-BUILD
@@ -57,12 +61,12 @@ Press `c`, `e`, `c`. Ignore the OpenThreads warning. Press `e`, `g` (generate an
 
     sudo make
 
-# Adding OTB to the loader path
+## Adding OTB to the loader path
 
     echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
     sudo ldconfig
 
-# Compiling GDAL 2.0
+## Compiling GDAL 2.0
 
 Some processors use the GDAL tools, which are significantly faster in version 2.0. We'll install that in `/usr/local`.
 
@@ -73,7 +77,7 @@ Some processors use the GDAL tools, which are significantly faster in version 2.
     make
     sudo make install
 
-# Compiling the processors
+## Compiling the processors
 
 Retrieve the source code (not available online) and place it in the `sen2agri` directory.
 
@@ -83,7 +87,7 @@ Retrieve the source code (not available online) and place it in the `sen2agri` d
     make
     sudo make install
 
-# Compiling the rest of the system
+## Compiling the rest of the system
 
     mkdir sen2agri-build
     cd sen2agri-build
