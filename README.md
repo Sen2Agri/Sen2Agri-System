@@ -2,7 +2,7 @@
 # Binaries Packages
 
 You can download the binaries of the system for CentOS-7 [here](http://www.esa-sen2agri.org/resources/software). You can find also more informations about ths system.
-If you have question, remark or issue, you can use the [forum](http://www.esa-sen2agri.org/forum/).
+If you have question, remark or issue, you can use the [forum](http://www.esa-sen2agri.org/forum/). If you want support and informations about the project, please register to the website. 
 
 # Compile from source
 ## Prerequisites
