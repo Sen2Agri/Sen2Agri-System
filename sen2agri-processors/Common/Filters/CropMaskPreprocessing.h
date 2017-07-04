@@ -68,7 +68,10 @@ typedef otb::BinaryFunctorImageFilterWithNBands<ImageType, MaskType, ImageType,
 typedef otb::ObjectList<TemporalMergingFilterType>                              TemporalMergingFilterListType;
 
 typedef CropMaskSupervisedRedEdgeFeaturesFilter<ImageType>          RedEdgeFeaturesFilterType;
+typedef otb::ObjectList<RedEdgeFeaturesFilterType>                  RedEdgeFeaturesFilterListType;
+
 typedef otb::ConcatenateVectorImagesFilter<ImageType>               ConcatenateImagesFilterType;
+typedef otb::ObjectList<ConcatenateImagesFilterType>                ConcatenateImagesFilterListType;
 
 class CropMaskPreprocessing : public TimeSeriesReader
 {
@@ -103,6 +106,8 @@ public:
         m_TemporalMergers = TemporalMergingFilterListType::New();
         m_FeatureExtractors = FeatureExtractorFilterListType::New();
         m_FeatureExtractorsBM = FeatureExtractorBMFilterListType::New();
+        m_RedEdgeFeaturesFilters = RedEdgeFeaturesFilterListType::New();
+        m_ConcatenateImagesFilters = ConcatenateImagesFilterListType::New();
     }
 
     void getSentinelRedEdgeBands(const MACCSFileMetadata &meta,
@@ -194,15 +199,17 @@ public:
         // The output days will be updated later
         temporalResampler->SetInputData(sdCollection);
 
-        bool hasRedEdge = false;
+        RedEdgeFeaturesFilterType::Pointer redEdgeFeaturesFilter;
+
         if (m_IncludeRedEdge) {
             m_RedEdgeBandConcat->UpdateOutputInformation();
             m_RedEdgeMaskConcat->UpdateOutputInformation();
 
             auto redEdgeTemporalResampler = TemporalResamplingFilterType::New();
-            m_TemporalResamplers->PushBack(redEdgeTemporalResampler);
             redEdgeTemporalResampler->SetInputRaster(m_RedEdgeBandConcat->GetOutput());
             redEdgeTemporalResampler->SetInputMask(m_RedEdgeMaskConcat->GetOutput());
+
+            m_TemporalResamplers->PushBack(redEdgeTemporalResampler);
 
             otb::SensorDataCollection redEdgeSdCollection;
             for (const auto &e : sensorOutDays) {
@@ -226,10 +233,13 @@ public:
 
             redEdgeTemporalResampler->SetInputData(redEdgeSdCollection);
 
-            m_RedEdgeFeaturesFilter = RedEdgeFeaturesFilterType::New();
-            m_RedEdgeFeaturesFilter->SetInput(redEdgeTemporalResampler->GetOutput());
 
-            hasRedEdge = !redEdgeSdCollection.empty();
+            if (!redEdgeSdCollection.empty()) {
+                redEdgeFeaturesFilter = RedEdgeFeaturesFilterType::New();
+                redEdgeFeaturesFilter->SetInput(redEdgeTemporalResampler->GetOutput());
+
+                m_RedEdgeFeaturesFilters->PushBack(redEdgeFeaturesFilter);
+            }
         }
 
         std::vector<ImageInfo> imgInfos;
@@ -274,40 +284,39 @@ public:
         otb::Wrapper::FloatVectorImageType *output;
         if (m_BM) {
             auto featureExtractorBM = FeatureExtractorBMFilterType::New();
-            m_FeatureExtractorsBM->PushBack(featureExtractorBM);
-
             featureExtractorBM->GetFunctor().m_W = m_W;
             featureExtractorBM->GetFunctor().m_Delta = m_Delta;
             featureExtractorBM->GetFunctor().m_TSoil = m_TSoil;
             featureExtractorBM->GetFunctor().id = od;
             featureExtractorBM->SetNumberOfOutputBands(26);
-
             featureExtractorBM->SetInput(temporalMerger->GetOutput());
+            m_FeatureExtractorsBM->PushBack(featureExtractorBM);
 
             output = featureExtractorBM->GetOutput();
         } else {
             auto featureExtractor = FeatureExtractorFilterType::New();
-            m_FeatureExtractors->PushBack(featureExtractor);
-
             featureExtractor->GetFunctor().m_W = m_W;
             featureExtractor->GetFunctor().m_Delta = m_Delta;
             featureExtractor->GetFunctor().m_TSoil = m_TSoil;
             featureExtractor->GetFunctor().id = od;
             featureExtractor->SetNumberOfOutputBands(27);
-
             featureExtractor->SetInput(temporalMerger->GetOutput());
+
+            m_FeatureExtractors->PushBack(featureExtractor);
 
             output = featureExtractor->GetOutput();
         }
 
-        if (!m_IncludeRedEdge || !hasRedEdge) {
+        if (!m_IncludeRedEdge || !redEdgeFeaturesFilter) {
             return output;
         } else {
-            m_ConcatenateImagesFilter = ConcatenateImagesFilterType::New();
-            m_ConcatenateImagesFilter->PushBackInput(output);
-            m_ConcatenateImagesFilter->PushBackInput(m_RedEdgeFeaturesFilter->GetOutput());
+            auto concatenateImagesFilter = ConcatenateImagesFilterType::New();
+            concatenateImagesFilter->PushBackInput(output);
+            concatenateImagesFilter->PushBackInput(redEdgeFeaturesFilter->GetOutput());
 
-            output = m_ConcatenateImagesFilter->GetOutput();
+            m_ConcatenateImagesFilters->PushBack(concatenateImagesFilter);
+
+            output = concatenateImagesFilter->GetOutput();
         }
 
         return output;
@@ -324,8 +333,8 @@ private:
     TemporalMergingFilterListType::Pointer            m_TemporalMergers;
     FeatureExtractorFilterListType::Pointer           m_FeatureExtractors;
     FeatureExtractorBMFilterListType::Pointer         m_FeatureExtractorsBM;
-    RedEdgeFeaturesFilterType::Pointer                m_RedEdgeFeaturesFilter;
-    ConcatenateImagesFilterType::Pointer              m_ConcatenateImagesFilter;
+    RedEdgeFeaturesFilterListType::Pointer            m_RedEdgeFeaturesFilters;
+    ConcatenateImagesFilterListType::Pointer          m_ConcatenateImagesFilters;
 };
 
 typedef otb::ObjectList<CropMaskPreprocessing>        CropMaskPreprocessingList;
