@@ -119,11 +119,11 @@ def launch_demmaccs(l1c_context):
         elif l2a_basename.startswith("LC8"):
             l2a_basename += "_L2A"
         elif l2a_basename.startswith("LC08"):
-            if l2a_basename.find("_L1TP_") :
+            if l2a_basename.find("_L1TP_") > 0 :
                 l2a_basename = l2a_basename.replace("_L1TP_", "_L2A_")
-            elif l2a_basename.find("_L1GS_") :
+            elif l2a_basename.find("_L1GS_") > 0 :
                 l2a_basename = l2a_basename.replace("_L1GS_", "_L2A_")
-            elif l2a_basename.find("_L1GT_") :
+            elif l2a_basename.find("_L1GT_") > 0 :
                 l2a_basename = l2a_basename.replace("_L1GT_", "_L2A_")
             else:
                 log(general_log_path, "The L1C product name is bad - L2A cannot be filled: {}".format(l2a_basename), general_log_filename)
