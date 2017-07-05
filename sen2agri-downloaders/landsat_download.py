@@ -183,14 +183,16 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
             while True:
                 chunk = req.read(CHUNK)
                 downloaded += len(chunk)
-                done = int(50 * downloaded / total_size)
-                sys.stdout.write('\r[{1}{2}]{0:3.0f}% {3}ps'
-                                 .format(math.floor((float(downloaded)
-                                                     / total_size) * 100),
-                                         '=' * done,
-                                         ' ' * (50 - done),
-                                         sizeof_fmt((downloaded // (time.clock() - start)) / 8)))
-                sys.stdout.flush()
+                duration = time.clock() - start
+                if sys.stdout.isatty() and duration > 0:
+                    done = int(50 * downloaded / total_size)
+                    sys.stdout.write('\r[{1}{2}]{0:3.0f}% {3}ps'
+                                     .format(math.floor((float(downloaded)
+                                                         / total_size) * 100),
+                                             '=' * done,
+                                             ' ' * (50 - done),
+                                             sizeof_fmt((downloaded // (time.clock() - start)) / 8)))
+                    sys.stdout.flush()
                 if not chunk:
                     break
                 fp.write(chunk)
