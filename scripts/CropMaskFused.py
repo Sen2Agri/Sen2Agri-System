@@ -409,18 +409,19 @@ class CropMaskProcessor(ProcessorBase):
             needs_ndvi_filled = needs_pca and not os.path.exists(tile_ndvi_filled)
             needs_ndvi = needs_ndvi_filled and not os.path.exists(tile_ndvi)
 
+        if self.args.main_mission_segmentation:
+            tile_descriptors = tile.get_mission_descriptor_paths(self.args.mission)
+        else:
+            tile_descriptors = tile.get_descriptor_paths()
+
         step_args = ["otbcli", "NDVISeries", self.args.buildfolder,
                      "-progress", "false",
                      "-mission", self.args.mission.name,
                      "-pixsize", self.args.pixsize,
+                     "-mode", "gapfill",
                      "-out", tile_ndvi]
-        step_args += ["-il"] + tile.get_descriptor_paths()
+        step_args += ["-il"] + tile_descriptors
         step_args += ["-sp"] + self.args.sp
-
-        if self.args.main_mission_segmentation:
-            step_args += ["-mode", "gapfillmain"]
-        else:
-            step_args += ["-mode", "gapfill"]
 
         if not needs_ndvi:
             print("Skipping NDVI extraction for tile {}".format(tile.id))
@@ -809,7 +810,6 @@ class CropMaskProcessor(ProcessorBase):
         )
 
         return etree.ElementTree(metadata)
-
 
 processor = CropMaskProcessor()
 processor.execute()
