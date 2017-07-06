@@ -15,6 +15,7 @@ BEGIN
                product.created_timestamp "date"
         FROM product
         WHERE product.site_id = _site_id
+          AND product.product_type_id = 1   -- only L2A
           AND product.satellite_id = _satellite_id
           AND product.created_timestamp < _l1c_date
           AND product.tiles @> ARRAY[_tile_id]
