@@ -48,38 +48,14 @@
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 
+#include "otbPCAImageFilter.h"
 #include "otbVectorImage.h"
-#include "otbVectorData.h"
 
-#include "otbImage.h"
+typedef float                                PixelValueType;
+typedef otb::VectorImage<PixelValueType, 2>  ImageType;
 
-#include "otbVectorDataFileReader.h"
-#include "otbImageFileReader.h"
-
-//UsingOPENCV
-# include "otbRandomForestsMachineLearningModel.h"
-
-#include "ShpFileSampleGeneratorFast.hpp"
-#include "ListSampleClassStatistics.hpp"
-
-typedef short                                 PixelValueType;
-typedef otb::VectorImage<PixelValueType, 2>   ImageType;
-typedef otb::VectorData<double, 2>            VectorDataType;
-
-
-typedef otb::ImageFileReader<ImageType>             ReaderType;
-typedef otb::VectorDataFileReader<VectorDataType>   ShapeReaderType;
-
-typedef int ClassLabelType;
-typedef typename ImageType::PixelType SampleType;
-typedef itk::Statistics::ListSample<SampleType> ListSampleType;
-typedef itk::FixedArray<ClassLabelType, 1> LabelType; //note could be templated by an std:::string
-typedef itk::Statistics::ListSample<LabelType> ListLabelType;
-
-typedef itk::FixedArray<unsigned int, 2>  CoordinateType; //note could be templated by an std:::string
-typedef itk::Statistics::ListSample<CoordinateType> CoordinateList;
-
-typedef otb::RandomForestsMachineLearningModel<PixelValueType, ClassLabelType> RandomForestType;
+typedef otb::ImageFileReader<ImageType>                                     ReaderType;
+typedef otb::PCAImageFilter< ImageType, ImageType, otb::Transform::FORWARD> PCAFilterType;
 
 //  Software Guide : EndCodeSnippet
 
@@ -104,7 +80,7 @@ namespace Wrapper
 //  Software Guide : EndLatex
 
 //  Software Guide : BeginCodeSnippet
-class RandomForestTraining : public Application
+class PrincipalComponentAnalysis : public Application
 //  Software Guide : EndCodeSnippet
 {
 public:
@@ -113,7 +89,7 @@ public:
   // Software Guide : EndLatex
 
   //  Software Guide : BeginCodeSnippet
-  typedef RandomForestTraining Self;
+  typedef PrincipalComponentAnalysis Self;
   typedef Application Superclass;
   typedef itk::SmartPointer<Self> Pointer;
   typedef itk::SmartPointer<const Self> ConstPointer;
@@ -125,10 +101,7 @@ public:
 
   //  Software Guide : BeginCodeSnippet
   itkNewMacro(Self)
-;
-
   itkTypeMacro(PrincipalComponentAnalysis, otb::Application)
-;
   //  Software Guide : EndCodeSnippet
 
 
@@ -155,10 +128,10 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-      SetName("RandomForestTraining");
+      SetName("PrincipalComponentAnalysis");
       SetDescription("The feature extraction step produces the relevant features for the classication.");
 
-      SetDocName("RandomForestTraining");
+      SetDocName("PrincipalComponentAnalysis");
       SetDocLongDescription("The feature extraction step produces the relevant features for the classication. The features are computed"
                             "for each date of the resampled and gaplled time series and concatenated together into a single multi-channel"
                             "image file. The selected features are the surface reflectances, the NDVI, the NDWI and the brightness.");
@@ -187,33 +160,16 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-    AddParameter(ParameterType_InputImage, "fvi", "The feature vector image");
-    AddParameter(ParameterType_InputVectorData, "shp", "The training polygons.");
+    AddParameter(ParameterType_InputImage, "ndvi", "The NDVI time series");
+    AddParameter(ParameterType_Int, "nc", "The number of required components.");
 
-    AddParameter(ParameterType_Int, "seed", "The seed used for random selection");
-    SetDefaultParameterInt("seed", std::time(0));
-    MandatoryOff("seed");
+    AddParameter(ParameterType_OutputImage, "out", "Vector image containing the principal component images");
 
-    AddParameter(ParameterType_Int, "nbsamples", "The maximum number of training samples.");
-    SetDefaultParameterInt("nbsamples", 1000);
-    SetMinimumParameterIntValue("nbsamples",1000);
-    SetMinimumParameterIntValue("nbsamples",5000);
-    MandatoryOff("nbsamples");
+    AddRAMParameter();
 
-    AddParameter(ParameterType_Int, "rfnbtrees", "The maximum number of random trees");
-    SetDefaultParameterInt("rfnbtrees", 100);
-    MandatoryOff("rfnbtrees");
-
-    AddParameter(ParameterType_Int, "rfmin", "The minimum number of samples in each node");
-    SetDefaultParameterInt("rfmin", 5);
-    MandatoryOff("rfmin");
-
-    AddParameter(ParameterType_Int, "rfmax", "The maximum number of samples in each node");
-    SetDefaultParameterInt("rfmax", 25);
-    MandatoryOff("rfmax");
-
-
-    AddParameter(ParameterType_String, "out", "The output model.");
+    SetDefaultParameterInt("nc", 6);
+    SetMinimumParameterIntValue("nc",1);
+    SetMaximumParameterIntValue("nc",6);
 
      //  Software Guide : EndCodeSnippet
 
@@ -223,11 +179,9 @@ private:
     // Software Guide : EndLatex
 
     //  Software Guide : BeginCodeSnippet
-    SetDocExampleParameterValue("fvi", "fvi.tif");
-    SetDocExampleParameterValue("shp", "shape.shp");
-    SetDocExampleParameterValue("seed", "0");
-    SetDocExampleParameterValue("nbsamples", "1000");
-    SetDocExampleParameterValue("out", "model.txt");
+    SetDocExampleParameterValue("ndvi", "ndvi.tif");
+    SetDocExampleParameterValue("nc", "6");
+    SetDocExampleParameterValue("out", "pca.tif");
     //  Software Guide : EndCodeSnippet
   }
 
@@ -239,8 +193,8 @@ private:
   void DoUpdateParameters()
   {
 
-      m_imgReader = ReaderType::New();
-      m_shpReader = ShapeReaderType::New();
+      m_ndviReader = ReaderType::New();
+      m_pcaFilter = PCAFilterType::New();
   }
   //  Software Guide : EndCodeSnippet
 
@@ -252,84 +206,23 @@ private:
   //  Software Guide :BeginCodeSnippet
   void DoExecute()
   {
-      // Get the paremeters
-      unsigned int seed = (unsigned int)GetParameterInt("seed");
-      unsigned int nbsamples = (unsigned int)GetParameterInt("nbsamples");
-      int rfnbtrees = GetParameterInt("rfnbtrees");
-      int rfmin = GetParameterInt("rfmin");
-      int rfmax = GetParameterInt("rfmax");
+      // Get the number of components
+      int nc = GetParameterInt("nc");
 
-      m_imgReader->SetFileName(GetParameterString("fvi"));
-      m_imgReader->GetOutput()->UpdateOutputInformation();
+      //Read the input file
+      m_ndviReader->SetFileName(GetParameterString("ndvi"));
+      m_ndviReader->UpdateOutputInformation();
 
+      m_pcaFilter->SetNumberOfPrincipalComponentsRequired(nc);
+      m_pcaFilter->SetInput(m_ndviReader->GetOutput());
 
-      m_shpReader->SetFileName( GetParameterString("shp"));
-      m_shpReader->Update( );
+      SetParameterOutputImage("out", m_pcaFilter->GetOutput());
 
-      ShpFileSampleGeneratorFast<ImageType, VectorDataType>::Pointer  SampleGenerator;
-      SampleGenerator = ShpFileSampleGeneratorFast<ImageType, VectorDataType>::New();
-      SampleGenerator->SetInputImage(m_imgReader->GetOutput());
-      SampleGenerator->SetInputVectorData(m_shpReader->GetOutput());
-
-      SampleGenerator->SetSeed(seed);
-
-      SampleGenerator->SetLimitationofMaximumTrainingSamples(nbsamples);
-
-      SampleGenerator->GenerateClassStatistics( );
-
-      std::cout<<" Class stats are computed " << std::endl;
-
-      SampleGenerator->GenerateSampleLists( );
-
-      std::cout<<" Split is performed " << std::endl;
-
-      auto NbClasses = SampleGenerator->GetNumberOfClasses();
-
-      std::cout<<" The NbClasses is  " << NbClasses << std::endl;
-
-      SampleGenerator->PrintInformation( );
-
-      ListSampleType::Pointer trainingListSample   = SampleGenerator->GetTrainingListSample();
-      ListLabelType::Pointer  trainingListLabelCrop    = SampleGenerator->GetTrainingListLabelCrop();
-      ListSampleType::Pointer validationListSample = SampleGenerator->GetValidationListSample();
-      ListLabelType::Pointer  validationListLabel  = SampleGenerator->GetValidationListLabel();
-      ListLabelType::Pointer  validationListLabelCrop  = SampleGenerator->GetValidationListLabelCrop();
-
-      ListSampleClassStatistics ListStatistics(trainingListLabelCrop,trainingListSample,m_imgReader->GetOutput()->GetNumberOfComponentsPerPixel());
-      ListStatistics.writeResultsMean("./mean_file" );
-      ListStatistics.writeResultsVariance("./variance_file");
-
-      CoordinateList::Pointer TrainingCoordinates = SampleGenerator->GetTrainingCoordinatesList();
-      CoordinateList::Pointer ValidationCoordinates = SampleGenerator->GetValidationCoordinatesList();
-
-      std::cout<<" Nb Samples for training is  " <<  trainingListSample->Size() << std::endl;
-
-      std::cout<<" Nb Samples for testing is  " <<  validationListSample->Size() << std::endl;
-
-
-
-        RandomForestType::Pointer classifier = RandomForestType::New();
-        classifier->SetInputListSample(trainingListSample);
-        classifier->SetTargetListSample( trainingListLabelCrop );
-        classifier->SetMaxDepth(rfmax);
-        classifier->SetMinSampleCount(rfmin);
-        classifier->SetRegressionAccuracy(0.);
-        classifier->SetMaxNumberOfCategories(10);
-        classifier->SetMaxNumberOfVariables(0);
-        classifier->SetMaxNumberOfTrees(rfnbtrees);
-        classifier->SetForestAccuracy(0.01);
-        classifier->SetCalculateVariableImportance(true);
-        std::cout << "STARTING LEARNING"  <<std::endl;
-
-        classifier->Train();
-        std::cout << "LEARNING DONE"  <<std::endl;
-        classifier->Save(GetParameterString("out"));
   }
   //  Software Guide :EndCodeSnippet
 
-  ReaderType::Pointer                     m_imgReader;
-  ShapeReaderType::Pointer                m_shpReader;
-
+  ReaderType::Pointer                     m_ndviReader;
+  PCAFilterType::Pointer                  m_pcaFilter;
 };
 }
 }
@@ -338,7 +231,7 @@ private:
 // Finally \code{OTB\_APPLICATION\_EXPORT} is called.
 // Software Guide : EndLatex
 //  Software Guide :BeginCodeSnippet
-OTB_APPLICATION_EXPORT(otb::Wrapper::RandomForestTraining)
+OTB_APPLICATION_EXPORT(otb::Wrapper::PrincipalComponentAnalysis)
 //  Software Guide :EndCodeSnippet
 
 
