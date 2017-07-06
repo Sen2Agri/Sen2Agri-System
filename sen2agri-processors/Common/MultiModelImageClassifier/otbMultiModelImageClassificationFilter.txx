@@ -86,9 +86,6 @@ MultiModelImageClassificationFilter<TInputImage, TOutputImage, TMaskImage>
   // Progress reporting
   itk::ProgressReporter progress(this, threadId, outputRegionForThread.GetNumberOfPixels());
 
-  typename InputImageType::RegionType inputRegionForThread;
-  this->CallCopyOutputRegionToInputRegion(inputRegionForThread, outputRegionForThread);
-
   // Define iterators
   typedef itk::ImageRegionConstIterator<InputImageType> InputIteratorType;
   typedef itk::ImageRegionConstIterator<MaskImageType>  MaskIteratorType;
@@ -117,13 +114,12 @@ MultiModelImageClassificationFilter<TInputImage, TOutputImage, TMaskImage>
         idx = i;
       }
 
-    InputIteratorType it(const_cast<InputImageType *>(this->GetInput(idx)), inputRegionForThread);
+    InputIteratorType it(const_cast<InputImageType *>(this->GetInput(idx)), outputRegionForThread);
     it.GoToBegin();
 
     inputIts.push_back(it);
     }
 
-//  InputIteratorType inIt(inputPtr, outputRegionForThread);
   OutputIteratorType outIt(outputPtr, outputRegionForThread);
 
   // Eventually iterate on masks

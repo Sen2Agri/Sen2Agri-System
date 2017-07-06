@@ -129,13 +129,17 @@ class CropMaskProcessor(ProcessorBase):
                                                  "-in", tile_reference,
                                                  "-out", tile_reference_eroded]))
 
-            run_step(Step("SpectralFeatures_" + tile.id, ["otbcli", "SpectralFeaturesExtraction", self.args.buildfolder,
-                                                          "-progress", "false",
-                                                          "-mission", self.args.mission.name,
-                                                          "-pixsize", self.args.pixsize,
-                                                          "-lambda", self.args.lmbd,
-                                                          "-out", tile_spectral_features,
-                                                          "-il"] + tile.get_descriptor_paths()))
+            step_args = ["otbcli", "SpectralFeaturesExtraction", self.args.buildfolder,
+                                   "-progress", "false",
+                                   "-mission", self.args.mission.name,
+                                   "-pixsize", self.args.pixsize,
+                                   "-lambda", self.args.lmbd,
+                                   "-out", tile_spectral_features]
+            if self.args.red_edge:
+                step_args += ["-rededge", "true"]
+            step_args += ["-il"] + tile.get_descriptor_paths()
+
+            run_step(Step("SpectralFeatures_" + tile.id, step_args))
 
     def prepare_tile_low_par(self, tile):
         if self.args.refr is not None:
@@ -143,14 +147,16 @@ class CropMaskProcessor(ProcessorBase):
             tile_spectral_features = self.get_output_path("spectral-features-{}.tif", tile.id)
             tile_reference_trimmed = self.get_output_path("reference-trimmed-{}.tif", tile.id)
 
-            run_step(Step("Trimming_" + tile.id, ["otbcli", "Trimming", self.args.buildfolder,
-                                                  "-progress", "false",
-                                                  "-alpha", self.args.alpha,
-                                                  "-nbsamples", 0,
-                                                  "-seed", self.args.rseed,
-                                                  "-feat", tile_spectral_features,
-                                                  "-ref", tile_reference_eroded,
-                                                  "-out", tile_reference_trimmed]))
+            step_args = ["otbcli", "Trimming", self.args.buildfolder,
+                                   "-progress", "false",
+                                   "-alpha", self.args.alpha,
+                                   "-nbsamples", 0,
+                                   "-seed", self.args.rseed,
+                                   "-feat", tile_spectral_features,
+                                   "-ref", tile_reference_eroded,
+                                   "-out", tile_reference_trimmed]
+
+            run_step(Step("Trimming_" + tile.id, step_args))
 
     def train_stratum(self, stratum):
         area_model = self.get_output_path("model-{}.txt", stratum.id)
@@ -409,18 +415,24 @@ class CropMaskProcessor(ProcessorBase):
             needs_ndvi_filled = needs_pca and not os.path.exists(tile_ndvi_filled)
             needs_ndvi = needs_ndvi_filled and not os.path.exists(tile_ndvi)
 
+        if self.args.main_mission_segmentation:
+            tile_descriptors = tile.get_mission_descriptor_paths(self.args.mission)
+        else:
+            tile_descriptors = tile.get_descriptor_paths()
+
         step_args = ["otbcli", "NDVISeries", self.args.buildfolder,
                      "-progress", "false",
                      "-mission", self.args.mission.name,
                      "-pixsize", self.args.pixsize,
+                     "-mode", "gapfill",
                      "-out", tile_ndvi]
-        step_args += ["-il"] + tile.get_descriptor_paths()
+        step_args += ["-il"] + tile_descriptors
         step_args += ["-sp"] + self.args.sp
 
-        if self.args.main_mission_segmentation:
-            step_args += ["-mode", "gapfillmain"]
-        else:
-            step_args += ["-mode", "gapfill"]
+        # if self.args.main_mission_segmentation:
+        #     step_args += ["-mode", "gapfillmain"]
+        # else:
+        #     step_args += ["-mode", "gapfill"]
 
         if not needs_ndvi:
             print("Skipping NDVI extraction for tile {}".format(tile.id))
@@ -809,7 +821,6 @@ class CropMaskProcessor(ProcessorBase):
         )
 
         return etree.ElementTree(metadata)
-
 
 processor = CropMaskProcessor()
 processor.execute()

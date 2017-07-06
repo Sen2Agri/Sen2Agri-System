@@ -55,8 +55,8 @@
 #include "otbMultiChannelExtractROI.h"
 #include "otbStreamingResampleImageFilter.h"
 
-#include "../Filters/otbSpotMaskFilter.h"
-#include "../Filters/otbSentinelMaskFilter.h"
+#include "otbSpotMaskFilter.h"
+#include "otbSentinelMaskFilter.h"
 
 typedef otb::VectorImage<float, 2>                                 ImageType;
 typedef otb::ObjectList<ImageType>                                 ImageListType;

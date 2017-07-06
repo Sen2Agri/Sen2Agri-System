@@ -15,9 +15,6 @@
      PURPOSE.  See the above copyright notices for more information.
 
 =========================================================================*/
-#ifndef __otbSentinelMaskFilter_txx
-#define __otbSentinelMaskFilter_txx
-
 #include "otbSentinelMaskFilter.h"
 
 namespace otb
@@ -78,4 +75,3 @@ SentinelMaskFilter
   Superclass::PrintSelf(os, indent);
 }
 } // end namespace otb
-#endif

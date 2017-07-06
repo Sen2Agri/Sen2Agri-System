@@ -125,10 +125,8 @@ public:
 
   //  Software Guide : BeginCodeSnippet
   itkNewMacro(Self)
-;
 
   itkTypeMacro(Trimming, otb::Application)
-;
   //  Software Guide : EndCodeSnippet
 
 
@@ -261,15 +259,19 @@ private:
       m_FeaturesReader->UpdateOutputInformation();
 
       bool needExtract = false;
-      if (m_FeaturesReader->GetOutput()->GetNumberOfComponentsPerPixel() != 5) {
+
+      int comp = m_FeaturesReader->GetOutput()->GetNumberOfComponentsPerPixel();
+      if (comp != 5) {
           // Extract only the Green, Red and NIR bands at max NDVI and the Red and NIR bands at min NDVI
-          // Those are the bands 9, 10, 11, 14 and 15 from the initial image
           m_BandsExtractor->SetInput(m_FeaturesReader->GetOutput());
-          m_BandsExtractor->SetChannel(9);
-          m_BandsExtractor->SetChannel(10);
-          m_BandsExtractor->SetChannel(11);
-          m_BandsExtractor->SetChannel(14);
-          m_BandsExtractor->SetChannel(15);
+
+          int inBands = comp == 20 ? 4 : 8;
+          m_BandsExtractor->SetChannel(2 * inBands + 1);
+          m_BandsExtractor->SetChannel(2 * inBands + 2);
+          m_BandsExtractor->SetChannel(2 * inBands + 3);
+          m_BandsExtractor->SetChannel(3 * inBands + 2);
+          m_BandsExtractor->SetChannel(3 * inBands + 3);
+
           needExtract = true;
       }
 
