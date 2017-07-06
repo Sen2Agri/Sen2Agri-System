@@ -99,9 +99,7 @@ private:
 
   AddParameter(ParameterType_Choice,"ref","Ground truth");
   SetParameterDescription("ref","Choice of ground truth format");
-
   AddChoice("ref.raster","Ground truth as a raster image");
-
   AddChoice("ref.vector","Ground truth as a vector data file");
 
   AddParameter(ParameterType_InputImageList,"ref.raster.in","Input reference images");

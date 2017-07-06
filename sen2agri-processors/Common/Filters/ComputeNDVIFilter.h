@@ -38,11 +38,18 @@ public:
           PixelValueType b2 = pixel[4 * imgIndex + 1];
           PixelValueType b3 = pixel[4 * imgIndex + 2];
 
-          if (b2 != NODATA && b3 != NODATA) {
-              result[imgIndex] = (std::abs(b3+b2)<0.000001) ? 0 : static_cast<PixelValueType>(b3-b2)/(b3+b2);
-          } else {
+          if (b2 < -1.0f || b3 < -1.0f) {
               result[imgIndex] = NODATA;
-        }
+          } else {
+              if (b2 < 0.0f) {
+                  b2 = 0.0f;
+              }
+              if (b3 < 0.0f) {
+                  b3 = 0.0f;
+              }
+              const float eps = 0.000001;
+              result[imgIndex] = (std::abs(b3+b2) < eps) ? 0 : static_cast<PixelValueType>(b3-b2)/(b3+b2);
+          }
       }
 
       return result;

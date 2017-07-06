@@ -2,8 +2,9 @@ otb_create_application(
     NAME           CropMaskStatistics
     SOURCES        CropMaskStatistics.cxx
                  ../Filters/CropMaskPreprocessing.h
-                 ../Filters/TimeSeriesReader.h
-  LINK_LIBRARIES ${OTB_LIBRARIES} MACCSMetadata)
+    LINK_LIBRARIES ${OTB_LIBRARIES}
+                   MACCSMetadata
+                   TimeSeriesReader)
 
 include_directories(../OTBExtensions)
 

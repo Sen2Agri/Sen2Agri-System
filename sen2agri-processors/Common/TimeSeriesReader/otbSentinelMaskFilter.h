@@ -111,7 +111,4 @@ private:
 
 };
 } // end namespace otb
-#ifndef OTB_MANUAL_INSTANTIATION
-#include "otbSentinelMaskFilter.txx"
-#endif
 #endif

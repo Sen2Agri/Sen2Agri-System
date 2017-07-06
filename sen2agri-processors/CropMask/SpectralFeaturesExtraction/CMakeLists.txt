@@ -3,7 +3,9 @@ otb_create_application(
     SOURCES        SpectralFeaturesExtraction.cpp
                    ../../Common/Filters/DataSmoothingFilter.h
                    ../../Common/Filters/CropMaskSpectralFeaturesFilter.h
-    LINK_LIBRARIES ${OTB_LIBRARIES} MACCSMetadata)
+    LINK_LIBRARIES ${OTB_LIBRARIES}
+                   MACCSMetadata
+                   TimeSeriesReader)
 
 include_directories(../../Common/OTBExtensions)
 include_directories(../../Common/Filters)
