@@ -125,10 +125,7 @@ public:
 
   //  Software Guide : BeginCodeSnippet
   itkNewMacro(Self)
-;
-
-  itkTypeMacro(PrincipalComponentAnalysis, otb::Application)
-;
+  itkTypeMacro(RandomForestTraining, otb::Application)
   //  Software Guide : EndCodeSnippet
 
 

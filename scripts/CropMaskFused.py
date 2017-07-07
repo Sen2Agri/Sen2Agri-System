@@ -390,7 +390,6 @@ class CropMaskProcessor(ProcessorBase):
             return
 
         tile_ndvi = self.get_output_path("ndvi-{}.tif", tile.id)
-        tile_ndvi_filled = self.get_output_path("ndvi-filled-{}.tif", tile.id)
         tile_pca = self.get_output_path("pca-{}.tif", tile.id)
         tile_smoothed = self.get_output_path("smoothed-{}.tif", tile.id)
         tile_smoothed_spatial = self.get_output_path("smoothed-spatial-{}.tif", tile.id)
@@ -404,7 +403,6 @@ class CropMaskProcessor(ProcessorBase):
             needs_tile_smoothed = True
             needs_tile_smoothed_spatial = True
             needs_pca = True
-            needs_ndvi_filled = True
             needs_ndvi = True
         else:
             needs_segmentation_merged = not os.path.exists(tile_segmentation_merged)
@@ -412,8 +410,7 @@ class CropMaskProcessor(ProcessorBase):
             needs_tile_smoothed = needs_segmentation and not os.path.exists(tile_smoothed)
             needs_tile_smoothed_spatial = needs_segmentation and not os.path.exists(tile_smoothed_spatial)
             needs_pca = (needs_tile_smoothed or needs_tile_smoothed_spatial) and not os.path.exists(tile_pca)
-            needs_ndvi_filled = needs_pca and not os.path.exists(tile_ndvi_filled)
-            needs_ndvi = needs_ndvi_filled and not os.path.exists(tile_ndvi)
+            needs_ndvi = needs_pca and not os.path.exists(tile_ndvi)
 
         if self.args.main_mission_segmentation:
             tile_descriptors = tile.get_mission_descriptor_paths(self.args.mission)
@@ -439,25 +436,11 @@ class CropMaskProcessor(ProcessorBase):
         else:
             run_step(Step("NDVI Series " + tile.id, step_args))
 
-        step_args = ["otbcli", "FillNoData", self.args.buildfolder,
+        step_args = ["otbcli", "PrincipalComponentAnalysis", self.args.buildfolder,
                      "-progress", "false",
-                     "-in", tile_ndvi,
-                     "-bv", -10000,
-                     "-out", tile_ndvi_filled]
-
-        if not needs_ndvi_filled:
-            print("Skipping NDVI no data filling for tile {}".format(tile.id))
-        else:
-            run_step(Step("FillNoData " + tile.id, step_args))
-
-            if not self.args.keepfiles:
-                os.remove(tile_ndvi)
-
-        step_args = ["otbcli_DimensionalityReduction",
-                     "-progress", "false",
-                     "-method", "pca",
                      "-nbcomp", self.args.nbcomp,
-                     "-in", tile_ndvi_filled,
+                     "-bv", -10000,
+                     "-in", tile_ndvi,
                      "-out", tile_pca]
 
         if not needs_pca:
@@ -466,7 +449,7 @@ class CropMaskProcessor(ProcessorBase):
             run_step(Step("NDVI PCA " + tile.id, step_args))
 
             if not self.args.keepfiles:
-                os.remove(tile_ndvi_filled)
+                os.remove(tile_ndvi)
 
         step_args = ["otbcli_MeanShiftSmoothing",
                      "-progress", "false",
