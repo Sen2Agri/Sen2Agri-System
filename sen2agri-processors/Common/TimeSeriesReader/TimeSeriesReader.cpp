@@ -182,7 +182,7 @@ void TimeSeriesReader::updateRequiredImageSize(const std::vector<std::string>& d
             }
 
         } else {
-          itkExceptionMacro("Unable to read metadata from " << desc);
+            itkExceptionMacro("Unable to read metadata from " << desc);
         }
     }
 }
@@ -534,7 +534,7 @@ otb::Wrapper::UInt8ImageType::Pointer TimeSeriesReader::getLandsatMask(const MAC
     auto maskReaderQuality = getUInt8VectorImageReader(maskFileQuality);
     maskReaderQuality->GetOutput()->UpdateOutputInformation();
 
-     // Get the cloud mask
+    // Get the cloud mask
     std::string maskFileCloud = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_CLD");
     auto maskReaderCloud = getUInt8ImageReader(maskFileCloud);
 
@@ -551,15 +551,15 @@ otb::Wrapper::UInt8ImageType::Pointer TimeSeriesReader::getLandsatMask(const MAC
 }
 
 void TimeSeriesReader::getSentinelBands(const MACCSFileMetadata &meta,
-                      const boost::filesystem::path &rootFolder,
-                      const TileData &td,
-                      ImageDescriptor &descriptor)
+                                        const boost::filesystem::path &rootFolder,
+                                        const TileData &td,
+                                        ImageDescriptor &descriptor)
 {
     // Return the bands associated with a SENTINEL product
     // get the bands
     // Extract the first 3 bands form the first file.
     std::string imageFile1 =
-        getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE_R1");
+            getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE_R1");
     auto reader1 = getInt16ImageReader(imageFile1);
     reader1->GetOutput()->UpdateOutputInformation();
 
@@ -580,7 +580,7 @@ void TimeSeriesReader::getSentinelBands(const MACCSFileMetadata &meta,
 
     // Extract the last band form the second file.
     std::string imageFile2 =
-        getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE_R2");
+            getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE_R2");
     auto reader2 = getInt16ImageReader(imageFile2);
     reader2->GetOutput()->UpdateOutputInformation();
 
@@ -606,10 +606,10 @@ void TimeSeriesReader::getSentinelBands(const MACCSFileMetadata &meta,
 }
 
 void TimeSeriesReader::getSentinelRedEdgeBands(const MACCSFileMetadata &,
-                      const TileData &,
-                      ImageDescriptor &,
-                      Int16ImageReaderType::Pointer,
-                      Int16ImageReaderType::Pointer)
+                                               const TileData &,
+                                               ImageDescriptor &,
+                                               Int16ImageReaderType::Pointer,
+                                               Int16ImageReaderType::Pointer)
 {
 }
 
@@ -622,7 +622,7 @@ otb::Wrapper::UInt8ImageType::Pointer TimeSeriesReader::getSentinelMask(const MA
     auto maskReaderQuality = getUInt8VectorImageReader(maskFileQuality);
     maskReaderQuality->GetOutput()->UpdateOutputInformation();
 
-     // Get the cloud mask
+    // Get the cloud mask
     std::string maskFileCloud = getMACCSMaskFileName(rootFolder, meta.ProductOrganization.AnnexFiles, "_CLD_R1");
     auto maskReaderCloud = getUInt8ImageReader(maskFileCloud);
 

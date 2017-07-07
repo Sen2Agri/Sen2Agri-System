@@ -76,6 +76,76 @@ public:
         m_ComputeNDVIFilter = ComputeNDVIFilterType::New();
     }
 
+    void getSpotBands(const SPOT4Metadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor) override {
+        const auto &imageFile = rootFolder / meta.Files.OrthoSurfCorrPente;
+        auto reader = getFloatVectorImageReader(imageFile.string());
+        reader->GetOutput()->UpdateOutputInformation();
+
+        auto resampledBands = getResampledBand<FloatVectorImageType>(reader->GetOutput(), td, false);
+
+        auto channelExtractor1 = ExtractFloatChannelFilterType::New();
+        channelExtractor1->SetInput(resampledBands);
+        channelExtractor1->SetIndex(1);
+        m_Filters->PushBack(channelExtractor1);
+
+        auto channelExtractor2 = ExtractFloatChannelFilterType::New();
+        channelExtractor2->SetInput(resampledBands);
+        channelExtractor2->SetIndex(2);
+        m_Filters->PushBack(channelExtractor2);
+
+        descriptor.bands.push_back(channelExtractor1->GetOutput());
+        descriptor.bands.push_back(channelExtractor2->GetOutput());
+    }
+
+    void getLandsatBands(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor) override {
+        std::string imageFile = getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE");
+        auto reader = getFloatVectorImageReader(imageFile);
+        reader->GetOutput()->UpdateOutputInformation();
+
+        auto resampledBands = getResampledBand<FloatVectorImageType>(reader->GetOutput(), td, false);
+
+        auto channelExtractor1 = ExtractFloatChannelFilterType::New();
+        channelExtractor1->SetInput(resampledBands);
+        channelExtractor1->SetIndex(3);
+        m_Filters->PushBack(channelExtractor1);
+
+        auto channelExtractor2 = ExtractFloatChannelFilterType::New();
+        channelExtractor2->SetInput(resampledBands);
+        channelExtractor2->SetIndex(4);
+        m_Filters->PushBack(channelExtractor2);
+
+        descriptor.bands.push_back(channelExtractor1->GetOutput());
+        descriptor.bands.push_back(channelExtractor2->GetOutput());
+    }
+
+    void getSentinelBands(const MACCSFileMetadata &meta,
+                          const boost::filesystem::path &rootFolder,
+                          const TileData &td,
+                          ImageDescriptor &descriptor) override
+    {
+        std::string imageFile =
+            getMACCSRasterFileName(rootFolder, meta.ProductOrganization.ImageFiles, "_FRE_R1");
+        auto reader = getInt16ImageReader(imageFile);
+        reader->GetOutput()->UpdateOutputInformation();
+
+        auto channelExtractor1 = ExtractChannelFilterType::New();
+        channelExtractor1->SetInput(reader->GetOutput());
+        channelExtractor1->SetIndex(2);
+        m_ChannelExtractors->PushBack(channelExtractor1);
+
+        auto channelExtractor2 = ExtractChannelFilterType::New();
+        channelExtractor2->SetInput(reader->GetOutput());
+        channelExtractor2->SetIndex(3);
+        m_ChannelExtractors->PushBack(channelExtractor2);
+
+        // Return the concatenation result
+        auto b4Band = getResampledBand<FloatImageType>(channelExtractor1->GetOutput(), td, false);
+        auto b8Band = getResampledBand<FloatImageType>(channelExtractor2->GetOutput(), td, false);
+
+        descriptor.bands.push_back(b4Band);
+        descriptor.bands.push_back(b8Band);
+    }
+
     otb::Wrapper::FloatVectorImageType * GetOutput(const std::vector<MissionDays> &sensorOutDays)
     {
 #if 0
@@ -168,7 +238,7 @@ public:
                 otb::SensorData sd;
                 sd.sensorName = id.mission;
                 sd.outDates = dayMap.find(id.mission)->second;
-                sd.bandCount = this->getBandCount(id.mission);
+                sd.bandCount = 2;
                 sdCollection.push_back(sd);
                 lastMission = id.mission;
             }
