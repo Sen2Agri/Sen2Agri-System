@@ -12,7 +12,7 @@
   * limitations under the License.
 
  =========================================================================*/
- 
+
 /*=========================================================================
 
   Program:   ORFEO Toolbox
@@ -31,208 +31,207 @@
 
 =========================================================================*/
 
-
-//  Software Guide : BeginCommandLineArgs
-//    INPUTS: {reference polygons}, {sample ratio}
-//    OUTPUTS: {training polygons}, {validation_polygons}
-//  Software Guide : EndCommandLineArgs
-
-
-//  Software Guide : BeginLatex
-// The sample selection consists in splitting the reference data into 2 disjoint sets, the training set and the validation set.
-// These sets are composed of polygons, not individual pixels.
-//
-//  Software Guide : EndLatex
-
-//  Software Guide : BeginCodeSnippet
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 
 #include "otbPCAImageFilter.h"
 #include "otbVectorImage.h"
+#include "otbStreamingStatisticsVectorImageFilterEx.h"
+
+template<class TInputImage, class TOutputImage = TInputImage>
+class ITK_EXPORT FillNoDataImageFilter
+        : public itk::ImageToImageFilter<TInputImage, TOutputImage>
+{
+public:
+    typedef FillNoDataImageFilter                               Self;
+    typedef itk::ImageToImageFilter<TInputImage, TOutputImage>  Superclass;
+    typedef itk::SmartPointer<Self>                             Pointer;
+    typedef itk::SmartPointer<const Self>                       ConstPointer;
+
+    itkNewMacro(Self)
+
+    itkTypeMacro(FillNoDataImageFilter, ImageToImageFilter)
+
+    /** Template related typedefs */
+    typedef TInputImage InputImageType;
+    typedef TOutputImage OutputImageType;
+
+    typedef typename InputImageType::Pointer  InputImagePointerType;
+    typedef typename OutputImageType::Pointer OutputImagePointerType;
+
+    typedef typename InputImageType::PixelType         InputPixelType;
+
+    typedef typename OutputImageType::PixelType         OutputPixelType;
+    typedef typename OutputImageType::InternalPixelType OutputInternalPixelType;
+    typedef typename OutputImageType::RegionType        OutputImageRegionType;
+
+    /** ImageDimension constant */
+    itkStaticConstMacro(OutputImageDimension, unsigned int, TOutputImage::ImageDimension);
+
+    itkSetMacro(NoDataValue, int)
+    itkGetMacro(NoDataValue, int)
+
+    itkSetMacro(ReplacementValues, InputPixelType)
+    itkGetMacro(ReplacementValues, InputPixelType)
+
+    protected:
+        FillNoDataImageFilter()
+    {
+        this->SetNumberOfRequiredInputs(1);
+    }
+
+    virtual ~FillNoDataImageFilter()
+    {
+    }
+
+    virtual void ThreadedGenerateData(const OutputImageRegionType& outputRegionForThread, itk::ThreadIdType threadId)
+    {
+        OutputImagePointerType output = this->GetOutput();
+
+        itk::ProgressReporter progress(this, threadId, outputRegionForThread.GetNumberOfPixels());
+
+        typename InputImageType::RegionType inputRegionForThread;
+        this->CallCopyOutputRegionToInputRegion(inputRegionForThread, outputRegionForThread);
+
+        typedef itk::ImageRegionIterator<InputImageType>  InputIteratorType;
+        typedef itk::ImageRegionIterator<OutputImageType> OutputIteratorType;
+
+        InputIteratorType inputIt(const_cast<InputImageType *>(this->GetInput()), inputRegionForThread);
+        OutputIteratorType outputIt(output, outputRegionForThread);
+
+        typename OutputImageType::PixelType outputPixel(output->GetVectorLength());
+
+        outputIt.GoToBegin();
+        while (!outputIt.IsAtEnd())
+        {
+            outputPixel = inputIt.Get();
+            for (int i = 0; i < outputPixel.Size(); i++)
+            {
+                if (outputPixel[i] == m_NoDataValue)
+                {
+                    outputPixel[i] = m_ReplacementValues[i];
+                }
+            }
+            outputIt.Set(outputPixel);
+
+            ++inputIt;
+            ++outputIt;
+            progress.CompletedPixel();
+        }
+    }
+
+private:
+    FillNoDataImageFilter(const Self &); //purposely not implemented
+    void operator =(const Self&); //purposely not implemented
+
+    int                       m_NoDataValue;
+    InputPixelType            m_ReplacementValues;
+};
 
 typedef float                                PixelValueType;
 typedef otb::VectorImage<PixelValueType, 2>  ImageType;
 
-typedef otb::ImageFileReader<ImageType>                                     ReaderType;
-typedef otb::PCAImageFilter< ImageType, ImageType, otb::Transform::FORWARD> PCAFilterType;
-
-//  Software Guide : EndCodeSnippet
+typedef otb::PCAImageFilter<ImageType, ImageType, otb::Transform::FORWARD>  PCAFilterType;
+typedef otb::StreamingStatisticsVectorImageFilterEx<ImageType>              StreamingStatisticsVectorImageFilterType;
+typedef FillNoDataImageFilter<ImageType>                                    FillNoDataImageFilterType;
 
 namespace otb
 {
 
-//  Software Guide : BeginLatex
-//  Application class is defined in Wrapper namespace.
-//
-//  Software Guide : EndLatex
-
-//  Software Guide : BeginCodeSnippet
 namespace Wrapper
 {
-//  Software Guide : EndCodeSnippet
 
-
-//  Software Guide : BeginLatex
-//
-//  SampleSelection class is derived from Application class.
-//
-//  Software Guide : EndLatex
-
-//  Software Guide : BeginCodeSnippet
 class PrincipalComponentAnalysis : public Application
-//  Software Guide : EndCodeSnippet
 {
 public:
-  //  Software Guide : BeginLatex
-  // The \code{ITK} public types for the class, the superclass and smart pointers.
-  // Software Guide : EndLatex
+    typedef PrincipalComponentAnalysis Self;
+    typedef Application Superclass;
+    typedef itk::SmartPointer<Self> Pointer;
+    typedef itk::SmartPointer<const Self> ConstPointer;
 
-  //  Software Guide : BeginCodeSnippet
-  typedef PrincipalComponentAnalysis Self;
-  typedef Application Superclass;
-  typedef itk::SmartPointer<Self> Pointer;
-  typedef itk::SmartPointer<const Self> ConstPointer;
-  // Software Guide : EndCodeSnippet
+    itkNewMacro(Self)
+    itkTypeMacro(PrincipalComponentAnalysis, otb::Application)
 
-  //  Software Guide : BeginLatex
-  //  Invoke the macros necessary to respect ITK object factory mechanisms.
-  //  Software Guide : EndLatex
+    private:
+        void DoInit()
+    {
+        SetName("PrincipalComponentAnalysis");
+        SetDescription("Performs Principal Component Analysis on the input image.");
 
-  //  Software Guide : BeginCodeSnippet
-  itkNewMacro(Self)
-  itkTypeMacro(PrincipalComponentAnalysis, otb::Application)
-  //  Software Guide : EndCodeSnippet
+        SetDocName("PrincipalComponentAnalysis");
+        SetDocLongDescription("Performs PCA on an image. Has support for ignoring a background value.");
+        SetDocLimitations("None");
+        SetDocAuthors("LN");
+        SetDocSeeAlso(" ");
 
+        AddDocTag(Tags::Vector);
 
-private:
+        AddParameter(ParameterType_InputImage, "in", "Input Image");
+        AddParameter(ParameterType_Int, "bv", "Background Value");
+        MandatoryOff("bv");
+        AddParameter(ParameterType_Int, "nbcomp", "Number of Components");
+        AddParameter(ParameterType_OutputImage, "out", "Output Image");
 
-  //  Software Guide : BeginLatex
-  //  \code{DoInit()} method contains class information and description, parameter set up, and example values.
-  //  Software Guide : EndLatex
+        AddRAMParameter();
 
-  void DoInit()
-  {
+        SetDefaultParameterInt("nbcomp", 0);
 
-    // Software Guide : BeginLatex
-    // Application name and description are set using following methods :
-    // \begin{description}
-    // \item[\code{SetName()}] Name of the application.
-    // \item[\code{SetDescription()}] Set the short description of the class.
-    // \item[\code{SetDocName()}] Set long name of the application (that can be displayed \dots).
-    // \item[\code{SetDocLongDescription()}] This methods is used to describe the class.
-    // \item[\code{SetDocLimitations()}] Set known limitations (threading, invalid pixel type \dots) or bugs.
-    // \item[\code{SetDocAuthors()}] Set the application Authors. Author List. Format : "John Doe, Winnie the Pooh" \dots
-    // \item[\code{SetDocSeeAlso()}] If the application is related to one another, it can be mentioned.
-    // \end{description}
-    // Software Guide : EndLatex
+        SetDocExampleParameterValue("in", "cupriteSubHsi.tif");
+        SetDocExampleParameterValue("out", "pca.tif");
+    }
 
-    //  Software Guide : BeginCodeSnippet
-      SetName("PrincipalComponentAnalysis");
-      SetDescription("The feature extraction step produces the relevant features for the classication.");
+    void DoUpdateParameters()
+    {
+        m_pcaFilter = PCAFilterType::New();
+        m_fillNoDataImageFilter = FillNoDataImageFilterType::New();
+    }
 
-      SetDocName("PrincipalComponentAnalysis");
-      SetDocLongDescription("The feature extraction step produces the relevant features for the classication. The features are computed"
-                            "for each date of the resampled and gaplled time series and concatenated together into a single multi-channel"
-                            "image file. The selected features are the surface reflectances, the NDVI, the NDWI and the brightness.");
-      SetDocLimitations("None");
-      SetDocAuthors("LBU");
-      SetDocSeeAlso(" ");
-    //  Software Guide : EndCodeSnippet
+    void DoExecute()
+    {
+        int nbcomp = GetParameterInt("nbcomp");
+        int noDataValue = GetParameterInt("bv");
 
+        ImageType::Pointer inputImage = GetParameterFloatVectorImage("in");
 
-    // Software Guide : BeginLatex
-    // \code{AddDocTag()} method categorize the application using relevant tags.
-    // \code{Code/ApplicationEngine/otbWrapperTags.h} contains some predefined tags defined in \code{Tags} namespace.
-    // Software Guide : EndLatex
+        m_pcaFilter->SetNumberOfPrincipalComponentsRequired(nbcomp);
 
-    //  Software Guide : BeginCodeSnippet
-    AddDocTag(Tags::Vector);
-    //  Software Guide : EndCodeSnippet
+        if (HasValue("bv")) {
+            StreamingStatisticsVectorImageFilterType::Pointer streamingStatisticsVectorImageFilter = StreamingStatisticsVectorImageFilterType::New();
+            streamingStatisticsVectorImageFilter->SetInput(inputImage);
+            streamingStatisticsVectorImageFilter->SetIgnoreUserDefinedValue(true);
+            streamingStatisticsVectorImageFilter->SetUserIgnoredValue(noDataValue);
+            streamingStatisticsVectorImageFilter->SetEnableSecondOrderStats(false);
+            streamingStatisticsVectorImageFilter->SetEnableMinMax(false);
+            streamingStatisticsVectorImageFilter->Update();
 
-    // Software Guide : BeginLatex
-    // The input parameters:
-    // - ref: Vector file containing reference data
-    // - ratio: Ratio between the number of training and validation polygons per class (dafault: 0.75)
-    // The output parameters:
-    // - tp: Vector file containing reference data for training
-    // - vp: Vector file containing reference data for validation
-    // Software Guide : EndLatex
+            StreamingStatisticsVectorImageFilterType::RealPixelType means = streamingStatisticsVectorImageFilter->GetMean();
+            for (unsigned int i = 0; i < means.Size(); i++)
+            {
+                if (std::isnan(means[i]))
+                {
+                    otbAppLogCRITICAL("Found NaN band mean value for band" << i);
+                    means[i] = 0;
+                }
+            }
+            otbAppLogINFO("Band means: " << means);
 
-    //  Software Guide : BeginCodeSnippet
-    AddParameter(ParameterType_InputImage, "ndvi", "The NDVI time series");
-    AddParameter(ParameterType_Int, "nc", "The number of required components.");
+            m_fillNoDataImageFilter = FillNoDataImageFilterType::New();
+            m_fillNoDataImageFilter->SetInput(inputImage);
+            m_fillNoDataImageFilter->SetNoDataValue(noDataValue);
+            m_fillNoDataImageFilter->SetReplacementValues(means);
 
-    AddParameter(ParameterType_OutputImage, "out", "Vector image containing the principal component images");
+            m_pcaFilter->SetInput(m_fillNoDataImageFilter->GetOutput());
+        } else {
+            m_pcaFilter->SetInput(inputImage);
+        }
 
-    AddRAMParameter();
+        SetParameterOutputImage("out", m_pcaFilter->GetOutput());
+    }
 
-    SetDefaultParameterInt("nc", 6);
-    SetMinimumParameterIntValue("nc",1);
-    SetMaximumParameterIntValue("nc",6);
-
-     //  Software Guide : EndCodeSnippet
-
-    // Software Guide : BeginLatex
-    // An example commandline is automatically generated. Method \code{SetDocExampleParameterValue()} is
-    // used to set parameters. Dataset should be located in  \code{OTB-Data/Examples} directory.
-    // Software Guide : EndLatex
-
-    //  Software Guide : BeginCodeSnippet
-    SetDocExampleParameterValue("ndvi", "ndvi.tif");
-    SetDocExampleParameterValue("nc", "6");
-    SetDocExampleParameterValue("out", "pca.tif");
-    //  Software Guide : EndCodeSnippet
-  }
-
-  // Software Guide : BeginLatex
-  // \code{DoUpdateParameters()} is called as soon as a parameter value change. Section \ref{sec:appDoUpdateParameters}
-  // gives a complete description of this method.
-  // Software Guide : EndLatex
-  //  Software Guide :BeginCodeSnippet
-  void DoUpdateParameters()
-  {
-
-      m_ndviReader = ReaderType::New();
-      m_pcaFilter = PCAFilterType::New();
-  }
-  //  Software Guide : EndCodeSnippet
-
-  // Software Guide : BeginLatex
-  // The algorithm consists in a random sampling without replacement of the polygons of each class with
-  // probability p = sample_ratio value for the training set and
-  // 1 - p for the validation set.
-  // Software Guide : EndLatex
-  //  Software Guide :BeginCodeSnippet
-  void DoExecute()
-  {
-      // Get the number of components
-      int nc = GetParameterInt("nc");
-
-      //Read the input file
-      m_ndviReader->SetFileName(GetParameterString("ndvi"));
-      m_ndviReader->UpdateOutputInformation();
-
-      m_pcaFilter->SetNumberOfPrincipalComponentsRequired(nc);
-      m_pcaFilter->SetInput(m_ndviReader->GetOutput());
-
-      SetParameterOutputImage("out", m_pcaFilter->GetOutput());
-
-  }
-  //  Software Guide :EndCodeSnippet
-
-  ReaderType::Pointer                     m_ndviReader;
-  PCAFilterType::Pointer                  m_pcaFilter;
+    PCAFilterType::Pointer                  m_pcaFilter;
+    FillNoDataImageFilterType::Pointer      m_fillNoDataImageFilter;
 };
 }
 }
 
-// Software Guide : BeginLatex
-// Finally \code{OTB\_APPLICATION\_EXPORT} is called.
-// Software Guide : EndLatex
-//  Software Guide :BeginCodeSnippet
 OTB_APPLICATION_EXPORT(otb::Wrapper::PrincipalComponentAnalysis)
-//  Software Guide :EndCodeSnippet
-
-
-
