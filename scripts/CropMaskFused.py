@@ -508,11 +508,11 @@ class CropMaskProcessor(ProcessorBase):
         step_args = ["otbcli", "MajorityVoting", self.args.buildfolder,
                      "-progress", "false",
                      "-nodatasegvalue", 0,
-                     "-nodataclassifvalue", "-10000",
+                     "-nodataclassifvalue", -10000,
                      "-minarea", self.args.minarea,
                      "-inclass", tile_crop_mask,
                      "-inseg", tile_segmentation_merged,
-                     "-rout", format_otb_filename(tile_segmented, compression='DEFLATE')]
+                     "-rout", format_otb_filename(tile_segmented, compression='DEFLATE'), "int16"]
         run_step(Step("Majority voting " + tile.id, step_args))
 
         if not self.args.keepfiles and not self.args.reuse_segmentation:
