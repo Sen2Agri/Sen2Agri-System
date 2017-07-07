@@ -93,11 +93,11 @@ typedef otb::SentinelMaskFilter                             SentinelMaskFilterTy
 typedef otb::ObjectList<SentinelMaskFilterType>             SentinelMaskFilterListType;
 
 typedef itk::VectorIndexSelectionCastImageFilter<
-            otb::Wrapper::Int16VectorImageType, otb::Wrapper::FloatImageType>        ExtractChannelFilterType;
+otb::Wrapper::Int16VectorImageType, otb::Wrapper::FloatImageType>        ExtractChannelFilterType;
 typedef otb::ObjectList<ExtractChannelFilterType>                                    ExtractChannelListType;
 
 typedef itk::VectorIndexSelectionCastImageFilter<
-            otb::Wrapper::FloatVectorImageType, otb::Wrapper::FloatImageType>        ExtractFloatChannelFilterType;
+otb::Wrapper::FloatVectorImageType, otb::Wrapper::FloatImageType>        ExtractFloatChannelFilterType;
 
 typedef otb::ImageListToVectorImageFilter<otb::ImageList<otb::Wrapper::FloatImageType>, otb::Wrapper::FloatVectorImageType>       ConcatenateFloatImagesFilterType;
 typedef otb::ObjectList<ConcatenateFloatImagesFilterType>                                                                         ConcatenateFloatImagesFilterListType;
@@ -246,15 +246,15 @@ protected:
     // Return the path to a file for which the name end in the ending
     std::string getMACCSMaskFileName(const boost::filesystem::path &rootFolder, const std::vector<MACCSAnnexInformation>& maskFiles, const std::string& ending);
 
-    void getSpotBands(const SPOT4Metadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor);
+    virtual void getSpotBands(const SPOT4Metadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor);
     otb::Wrapper::UInt8ImageType::Pointer getSpotMask(const SPOT4Metadata& meta, const boost::filesystem::path &rootFolder, const TileData& td);
-    void getLandsatBands(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor);
+    virtual void getLandsatBands(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td, ImageDescriptor &descriptor);
     otb::Wrapper::UInt8ImageType::Pointer getLandsatMask(const MACCSFileMetadata& meta, const boost::filesystem::path &rootFolder, const TileData& td);
 
-    void getSentinelBands(const MACCSFileMetadata &meta,
-                          const boost::filesystem::path &rootFolder,
-                          const TileData &td,
-                          ImageDescriptor &descriptor);
+    virtual void getSentinelBands(const MACCSFileMetadata &meta,
+                                  const boost::filesystem::path &rootFolder,
+                                  const TileData &td,
+                                  ImageDescriptor &descriptor);
     virtual void getSentinelRedEdgeBands(const MACCSFileMetadata &meta,
                                          const TileData &td,
                                          ImageDescriptor &descriptor,
