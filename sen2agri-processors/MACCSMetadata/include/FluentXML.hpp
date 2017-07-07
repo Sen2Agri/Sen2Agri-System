@@ -1,6 +1,6 @@
 #pragma once
 
-#include "otb_tinyxml.h"
+#include <otb_tinyxml.h>
 
 #include <ostream>
 #include <memory>
