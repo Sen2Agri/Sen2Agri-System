@@ -24,6 +24,7 @@
 
 #include <time.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -365,8 +366,12 @@ private:
   void DoUpdateParameters()
   {
   }
+
   void DoExecute()
   {
+      // The Quicklook OTB app spawns thousands of threads, try to avoid that
+      setenv("ITK_USE_THREADPOOL", "1", 0);
+
       // by default, we expect a "timeperiod" parameter
       m_bDynamicallyTimePeriod = false;
 
