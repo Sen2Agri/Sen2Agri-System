@@ -130,7 +130,8 @@ def get_product_info(product_name):
         m = re.match("\w+(_A|_V)(\w+)", product_name)
         if m != None:
             acquisition_date = m.group(2)
-            words = acquisition_date.split('_')
+            original_words = acquisition_date.split('_')
+            words = [word for word in original_words if not "NOTV" in word ]
             if len(words) == 1 :
                 acquisition_date = words[0]
             else :
@@ -138,8 +139,9 @@ def get_product_info(product_name):
                     acquisition_date = words[1]
                 else:
                     acquisition_date = ""
-            if acquisition_date != "" :
-                acquisition_date = acquisition_date + "T000000"
+            if (acquisition_date != "") :
+                if (not "T" in acquisition_date) :
+                    acquisition_date = acquisition_date + "T000000"
 
     return sat_id and (sat_id, acquisition_date)
 
