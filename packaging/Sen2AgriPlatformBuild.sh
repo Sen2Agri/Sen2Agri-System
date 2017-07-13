@@ -57,11 +57,6 @@ function compile_OTB_package()
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}-BUILD
    cd ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}-BUILD
 
-   ##REPLACE LIB LINKS before launching config
-   sudo ln -s /usr/bin/opj2_decompress /usr/bin/opj_decompress
-   sudo ln -s /usr/bin/opj2_compress /usr/bin/opj_compress
-   sudo ln -s /usr/bin/opj2_dump /usr/bin/opj_dump
-
    ##configure OTB
    cmake ../OTB-${OTB_VERSION}/SuperBuild \
 	 -DCMAKE_INSTALL_PREFIX=${OTB_INSTALL_PATH}/usr \
