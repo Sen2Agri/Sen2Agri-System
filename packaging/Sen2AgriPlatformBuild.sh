@@ -37,6 +37,7 @@ GDAL_ITERATION=3
 OTB_ITERATION=3
 : ${GDAL_INSTALL_PATH:="${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/gdal-install"}
 : ${OTB_INSTALL_PATH:="${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/otb-install"}
+NUM_CPUS=$(grep -c "^processor" /proc/cpuinfo)
 ################################################################################################
 #-----------------------------------------------------------#
 function compile_OTB_package()
@@ -95,7 +96,7 @@ function compile_OTB_package()
 	 -DUSE_SYSTEM_ZLIB=ON
 
    ## compile OTB
-   make -j12
+   make -j$NUM_CPUS
 }
 #-----------------------------------------------------------#
 function build_OTB_RPM_Package()
@@ -130,7 +131,7 @@ function compile_GDAL_package()
 
    ## Configure, compile and install
    ./configure
-   make -j12
+   make -j$NUM_CPUS
    make
    make install DESTDIR=${GDAL_INSTALL_PATH}
 }
