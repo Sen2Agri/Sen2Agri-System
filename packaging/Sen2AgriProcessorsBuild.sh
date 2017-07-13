@@ -56,7 +56,7 @@ function compile_SEN2AGRI_processors()
    cmake ${SOURCES_DIR_PATH}/sen2agri-processors -DCMAKE_INSTALL_PREFIX=${PROC_INSTALL_PATH} -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
    ##compile
-   make -j12
+   make -j$(grep -c "^processor" /proc/cpuinfo)
 
    ##install
    make install
