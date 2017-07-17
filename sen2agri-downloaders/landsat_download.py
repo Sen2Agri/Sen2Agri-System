@@ -141,15 +141,17 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
             prod_name = nom_fic[:-4]
         elif nom_fic.endswith('.tar.gz'):
             prod_name = nom_fic[:-7]
-                
-        if prod_name.endswith('_T2') or prod_name.endswith('_RT') :
-            log(aoiContext.writeDir, 'Ignoring product with name {} as it is not Tier 1...'.format(prod_name), general_log_filename)
-            print("Ignoring product with name {} as it is not Tier 1...".format(prod_name))
-            return False
 
         print("Downloading FileName is: {}. Product name is: {}".format(nom_fic, prod_name))
         abs_prod_path = os.path.join(aoiContext.writeDir, prod_name)
         print("abs_prod_path recomputed is: {}".format(abs_prod_path))
+            
+        if prod_name.endswith('_T2') or prod_name.endswith('_RT') :
+            log(aoiContext.writeDir, 'Ignoring product with name {} as it is not Tier 1...'.format(prod_name), general_log_filename)
+            print("Ignoring product with name {} as it is not Tier 1...".format(prod_name))
+            if not db.upsertLandsatProductHistory(aoiContext.siteId, prod_name, DATABASE_DOWNLOADER_STATUS_FAILED_VALUE, prod_date, abs_prod_path, aoiContext.maxRetries):
+                log(aoiContext.writeDir, "Couldn't upsert into database with status FAILED for {}".format(prod_name), general_log_filename)
+            return False
 
         # taille du fichier
         if (req.info().gettype() == 'text/html'):
