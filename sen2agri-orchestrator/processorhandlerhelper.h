@@ -61,6 +61,7 @@ public:
         SatelliteIdType primarySatelliteId;
         QString shapePath;
         QString projectionPath;
+        QMap<SatelliteIdType, TileList> satIntersectingTiles;
     } TileTemporalFilesInfo;
 
 
