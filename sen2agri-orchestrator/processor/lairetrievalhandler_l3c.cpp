@@ -688,7 +688,14 @@ bool LaiRetrievalHandlerL3C::AddTileFileInfo(EventProcessingContext &ctx, TileTe
         // otherwise, if secondary satellite, then use only products of its own type (with the same tile)
         if(primarySatId == satId) {
             // get the tiles for satellite l3bPrdSatId that intersect tileId
-            const TileList &allIntersectingTiles = ctx.GetIntersectingTiles(static_cast<Satellite>(satId), tileId);
+            auto it = temporalTileInfo.satIntersectingTiles.find(satId);
+            const TileList &allIntersectingTiles = (it != temporalTileInfo.satIntersectingTiles.end()) ?
+                (it.value()) :
+                (ctx.GetIntersectingTiles(static_cast<Satellite>(satId), tileId));
+            // set also the intersecting tiles in the temporalTileInfo
+            if (it == temporalTileInfo.satIntersectingTiles.end()) {
+                temporalTileInfo.satIntersectingTiles[satId] = allIntersectingTiles;
+            }
 
             bool bAdded = false;
             // filter and add the secondary satellite tiles

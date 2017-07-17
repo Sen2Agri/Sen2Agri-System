@@ -247,7 +247,16 @@ bool IsInSeason(const QDate &startSeasonDate, const QDate &endSeasonDate, const 
             startTime = QDateTime(sSeasonDate);
             endTime = QDateTime(endSeasonDate);
             return true;
+        } else {
+            Logger::debug(QStringLiteral("IsInSeason: Date not in season (start = %1, end = %2, current=%3)")
+                          .arg(sSeasonDate.toString())
+                          .arg(endSeasonDate.toString())
+                          .arg(currentDate.toString()));
         }
+    } else {
+        Logger::error(QStringLiteral("IsInSeason: Invalid season start or end date (start = %1, end = %2)")
+                      .arg(startSeasonDate.toString())
+                      .arg(endSeasonDate.toString()));
     }
     return false;
 }
@@ -418,6 +427,8 @@ bool ProcessorHandler::GetSeasonStartEndDates(SchedulingContext &ctx, int siteId
                     return true;
                 }
             }
+        } else {
+            Logger::error(QStringLiteral("GetSeasonStartEndDates: Invalid site_season_id = %1").arg(seasonIdStr));
         }
     }
     // If somehow the site season id is not set, then get the first season that contains the scheduled time
@@ -465,7 +476,7 @@ QStringList ProcessorHandler::GetL2AInputProductsTiles(EventProcessingContext &c
     const QStringList &listProducts = GetL2AInputProducts(ctx, event);
     // for each product, get the valid tiles
     for(const QString &inPrd: listProducts) {
-        QStringList tilesMetaFiles = ctx.findProductFiles(event.siteId, inPrd);
+        const QStringList &tilesMetaFiles = ctx.findProductFiles(event.siteId, inPrd);
         QStringList listValidTilesMetaFiles;
         for(const QString &tileMetaFile: tilesMetaFiles) {
             if(ProcessorHandlerHelper::IsValidL2AMetadataFileName(tileMetaFile)) {
