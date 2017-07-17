@@ -37,29 +37,29 @@ GDAL_ITERATION=3
 OTB_ITERATION=3
 : ${GDAL_INSTALL_PATH:="${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/gdal-install"}
 : ${OTB_INSTALL_PATH:="${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/otb-install"}
+NUM_CPUS=$(grep -c "^processor" /proc/cpuinfo)
 ################################################################################################
 #-----------------------------------------------------------#
 function compile_OTB_package()
 {
    ##download OTB
-   git clone --depth=1 ${OTB_URL} ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}
+   curl -LO https://github.com/Sen2Agri/OTB/archive/fixes-5.0.zip
+   rm -rf OTB-fixes-5.0 ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}
+   unzip fixes-5.0.zip
+   rm fixes-5.0.zip
+   mv OTB-fixes-5.0 ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}
 
    ##download MOSAIC
-   git clone ${OTB_MOSAIC_URL} ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-MOSAIC
-   cd ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-MOSAIC
-   git checkout c741a7bf7dbe790727b6698635f50ebe4108a454
-
-   ##copy MOSAIC into OTB/Modules/Remote
-   mv ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-MOSAIC ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}/Modules/Remote
+   local OTB_MOSAIC_SHA=c741a7bf7dbe790727b6698635f50ebe4108a454
+   curl -LO https://github.com/remicres/otb-mosaic/archive/${OTB_MOSAIC_SHA}.zip
+   rm -rf otb-mosaic-${OTB_MOSAIC_SHA} ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}/Modules/Remote/OTB-MOSAIC
+   unzip ${OTB_MOSAIC_SHA}.zip
+   rm ${OTB_MOSAIC_SHA}.zip
+   mv otb-mosaic-${OTB_MOSAIC_SHA} ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}/Modules/Remote/OTB-MOSAIC
 
    ## go into OTB build dir
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}-BUILD
    cd ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/OTB-${OTB_VERSION}-BUILD
-
-   ##REPLACE LIB LINKS before launching config
-   sudo ln -s /usr/bin/opj2_decompress /usr/bin/opj_decompress
-   sudo ln -s /usr/bin/opj2_compress /usr/bin/opj_compress
-   sudo ln -s /usr/bin/opj2_dump /usr/bin/opj_dump
 
    ##configure OTB
    cmake ../OTB-${OTB_VERSION}/SuperBuild \
@@ -95,7 +95,7 @@ function compile_OTB_package()
 	 -DUSE_SYSTEM_ZLIB=ON
 
    ## compile OTB
-   make -j12
+   make -j$NUM_CPUS
 }
 #-----------------------------------------------------------#
 function build_OTB_RPM_Package()
@@ -130,7 +130,7 @@ function compile_GDAL_package()
 
    ## Configure, compile and install
    ./configure
-   make -j12
+   make -j$NUM_CPUS
    make
    make install DESTDIR=${GDAL_INSTALL_PATH}
 }

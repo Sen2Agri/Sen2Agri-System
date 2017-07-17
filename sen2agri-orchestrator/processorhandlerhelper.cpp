@@ -427,6 +427,8 @@ QString ProcessorHandlerHelper::GetSourceL2AFromHighLevelProductIppFile(const QS
                            if(closingBracketIdx > startTagIdx)
                            {
                                startIdx = closingBracketIdx+1;
+                           } else {
+                               continue;
                            }
                        }
                        // check for the new values of startIdx

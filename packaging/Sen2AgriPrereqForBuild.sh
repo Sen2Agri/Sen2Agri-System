@@ -17,6 +17,17 @@ function install_PLATFORM_DEP_package()
 {
    yum -y install ${PLATFORM_BUILD_EPEL_DEP}
    yum -y install ${PLATFORM_BUILD_DEP}
+
+   # FindOpenJPEG.cmake really wants these, even if disabled in OTB
+   if [ ! -f /usr/bin/opj2_decompress ]; then
+       ln -s /usr/bin/opj2_decompress /usr/bin/opj_decompress
+   fi
+   if [ ! -f /usr/bin/opj2_compress ]; then
+       ln -s /usr/bin/opj2_compress /usr/bin/opj_compress
+   fi
+   if [ ! -f /usr/bin/opj2_dump ]; then
+       ln -s /usr/bin/opj2_dump /usr/bin/opj_dump
+   fi
 }
 #-----------------------------------------------------------#
 function install_FPMTool_package()
