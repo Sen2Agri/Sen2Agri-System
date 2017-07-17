@@ -11,9 +11,6 @@
 ##     - RPM GENERATION FOR COMPILED SEN2AGRI PROCESSORS
 ##     - RPM GENERATION FOR DEMMACCS AND DOWNLOADERS
 ###########################CONFIG PART###########################################################
-### URLs FOR RETRIEVING SOURCES PACKAGES
-: ${SEN2AGRI_URL:="git@192.168.60.52:/srv/git/sen2agri.git"}
-
 ### DEPENDENCIES FOR GENERATED RPM PACKAGES
 : ${PLATFORM_INSTALL_OTHER_DEP:="-d otb -d gdal-python"}
 
@@ -56,7 +53,7 @@ function compile_SEN2AGRI_processors()
    cmake ${SOURCES_DIR_PATH}/sen2agri-processors -DCMAKE_INSTALL_PREFIX=${PROC_INSTALL_PATH} -DCMAKE_BUILD_TYPE=RelWithDebInfo
 
    ##compile
-   make -j12
+   make -j$(grep -c "^processor" /proc/cpuinfo)
 
    ##install
    make install
