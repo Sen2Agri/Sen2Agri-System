@@ -237,7 +237,7 @@ def sentinel_download_season(aoiContext, seasonInfo):
         index += 1
         print("queryResultsFilename = {}".format(queryResultsFilename))
         search_output = ["--output-document", queryResultsFilename]
-        query = "{} filename:S2A* productType:S2MSI1C".format(query_geom)
+        query = "{} productType:S2MSI1C".format(query_geom)
 
         start_date=str(seasonInfo.startSeasonYear)+"-"+str(seasonInfo.startSeasonMonth)+"-"+str(seasonInfo.startSeasonDay)+"T00:00:00.000Z"
         end_date=str(seasonInfo.endSeasonYear)+"-"+str(seasonInfo.endSeasonMonth)+"-"+str(seasonInfo.endSeasonDay)+"T23:59:50.000Z"
