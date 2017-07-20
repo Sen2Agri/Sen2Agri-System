@@ -538,7 +538,7 @@ function check_paths()
 
     out=($(stat -c "%a %U" /mnt/upload))
     if [ "${out[0]}" != "777" ] && [ "${out[1]}" != "apache" ]; then
-        read -p "/mnt/upload should be writable by sen2agri-service. Continue? (y/n) "
+        read -p "/mnt/upload should be writable by apache. Continue? (y/n) "
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             echo "Exiting now"
             exit 1
