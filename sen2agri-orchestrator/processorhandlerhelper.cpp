@@ -294,7 +294,17 @@ bool ProcessorHandlerHelper::IsValidHighLevelProduct(const QString &path) {
 }
 
 bool ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(const QString &productName, QDateTime &minDate, QDateTime &maxDate) {
-    QStringList pieces = productName.split("_");
+    QString prodName = productName.trimmed();
+    // remove any / at the end of the product name
+    if(prodName.endsWith('/')) {
+        prodName.chop( 1 );
+    }
+    // if the name is actually the full path, then keep only the last part to avoid interpreting
+    // incorrectly other elements in path
+    const QStringList &els = prodName.split( "/" );
+    prodName = els.value( els.length() - 1 );
+
+    QStringList pieces = prodName.split("_");
     for (int i = 0; i < pieces.size(); i++) {
         const QString &piece = pieces[i];
         if(piece.length() == 0) // is it possible?
@@ -303,6 +313,7 @@ bool ProcessorHandlerHelper::GetHigLevelProductAcqDatesFromName(const QString &p
         bool bIsAcquisition = (piece[0] == 'A');
         if(bIsInterval || bIsAcquisition) {
             QString timeFormat("yyyyMMdd");
+            // Remove the A or V from the name
             QString trimmedPiece = piece.right(piece.size()-1);
             // check if the date is in formate yyyyMMddTHHmmss (ISO 8601)
             if(trimmedPiece.length() == 15 && trimmedPiece[8] == 'T') {
