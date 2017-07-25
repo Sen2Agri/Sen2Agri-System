@@ -21,6 +21,7 @@ import psycopg2
 import psycopg2.errorcodes
 import optparse
 from osgeo import ogr
+from subprocess import Popen, PIPE
 
 SENTINEL2_SATELLITE_ID = int(1)
 LANDSAT8_SATELLITE_ID = int(2)
@@ -54,19 +55,47 @@ def get_bool_value(value):
 def delete_jobs(job_ids) :
     # cleanup the database
     l2a_db.delete_jobs(job_ids)
+    cancel_slurm_tasks_for_jobs(job_ids)
 
 def cancel_jobs(job_ids) :
     # cleanup the database
     l2a_db.cancel_jobs(job_ids)
+    cancel_slurm_tasks_for_jobs(job_ids)
 
 def pause_jobs(job_ids) :
     # cleanup the database
     l2a_db.pause_jobs(job_ids)
+    cancel_slurm_tasks_for_jobs(job_ids)
 
 def resume_jobs(job_ids) :
     # cleanup the database
     l2a_db.resume_jobs(job_ids)
     
+def cancel_slurm_tasks_for_jobs(job_ids) :
+    jobsStr = ','.join(map(str, jobIds))
+    print("JOBS1: {}".format(jobsStr))
+    rows = l2a_db.executeSqlSelectCmdAllFields("select name,task_id from step where task_id in (select id from task where job_id in ({}))".format(jobsStr))
+    if len(rows) == 0 :
+        print("No step found in the database for the jobs {}".format(jobsStr))
+        return 
+    process = Popen(["sacct", "--parsable"], stdout=PIPE)
+    (output, err) = process.communicate()
+    exit_code = process.wait()
+#    print("Exit Code: {}".format(output))
+    for sacctLine in output.split('\n') :
+        if any(x in sacctLine for x in ['|PENDING|', '|RUNNING|']):
+            #print("Task is running or pending {}: ".format(sacctLine))
+            for sacctField in sacctLine.split('|'):
+                for item in rows :
+                    subStr = "TSKID_" + str(item[1]) + "_STEPNAME_" + item[0]
+                    if sacctField.find(subStr) >= 0 :
+                        #print("SubStr: {} found in sacct line {}. Cancelling the task ....".format(sacctField, sacctLine))
+                        print("Cancelling the task {}".format(sacctField))
+                        process = Popen(["scancel", "-n", sacctField], stdout=PIPE)
+                        (output, err) = process.communicate()
+                        exit_code = process.wait()
+                
+        
 ###########################################################################
 class Config(object):
     def __init__(self):
@@ -190,6 +219,19 @@ class L2AInfo(object):
             return ""
         self.database_disconnect()
         return [item[0] for item in rows]
+
+    def executeSqlSelectCmdAllFields(self, cmd):
+        if not self.database_connect():
+            return ""
+        try:
+            self.cursor.execute(cmd)
+            rows = self.cursor.fetchall()
+        except:
+            print("Unable to execute command {}".format(cmd))
+            self.database_disconnect()
+            return ""
+        self.database_disconnect()
+        return rows
         
     
     def executeSqlDeleteCmd(self, cmd, disconnectOnExit=False):
@@ -292,6 +334,9 @@ elif args.operation == "pause" :
 elif args.operation == "resume" : 
     print("Resuming jobs: {}".format(jobIds))
     resume_jobs(jobIds)
+elif args.operation == "stop_slurm_tasks" :     
+    print("Stopping slurm tasks for : {}".format(jobIds))
+    cancel_slurm_tasks_for_jobs(jobIds)
 else:
     sys.exit("lease provide the operation -o or --operation with one of the values: delete, cancel, pause or resume!")
 
