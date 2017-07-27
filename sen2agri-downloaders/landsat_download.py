@@ -115,6 +115,8 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
      inspired by http://josh.gourneau.com
     """
     nom_fic = prod_name + ".tgz"
+    # the name in the old format LC817000....
+    old_prod_name = prod_name
     print("INFO START")
     print("url: {}".format(url))
     print("aoiContext.writeDir: {}".format(aoiContext.writeDir))
@@ -123,7 +125,7 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
     #print("abs_prod_path: {}".format(abs_prod_path))
     print("INFO STOP")
 
-    log(aoiContext.writeDir, "Trying to download {0}".format(nom_fic), general_log_filename)
+    log(aoiContext.writeDir, "Trying to download {0}".format(prod_name), general_log_filename)
     try:
         req = urllib2.urlopen(url, timeout=100)
         print("request performed for URL: {}".format(url))
@@ -173,11 +175,16 @@ def downloadChunks(url, prod_name, prod_date, abs_prod_path, aoiContext, db):
         log(aoiContext.writeDir, "The filename {} has a total size of {}".format(nom_fic, total_size), general_log_filename)
 
         total_size_fmt = sizeof_fmt(total_size)
-        fullFilename = aoiContext.writeDir + '/' + nom_fic
-        if os.path.isfile(fullFilename) and os.stat(fullFilename).st_size == total_size:
-            log(aoiContext.writeDir, "downloadChunks:File {} already downloaded, returning true".format(fullFilename), general_log_filename)
-            return True
+        fullFilename = aoiContext.writeDir + '/' + prod_name
+        fullFilenameOld = aoiContext.writeDir + '/' + old_prod_name
+        log(aoiContext.writeDir, "Checking new file name {} having old file name {}".format(fullFilename, fullFilenameOld), general_log_filename)
 
+        # if we have in the database the old format name or the new one and in the same time we have the folder on disk, do not download it anymore
+        if (aoiContext.fileExists(prod_name) or ((old_prod_name != prod_name) and aoiContext.fileExists(old_prod_name))) :
+            if os.path.isdir(fullFilename) or os.path.isdir(fullFilenameOld):
+                #log(aoiContext.writeDir, "downloadChunks: File {} or {} found in history so it's already downloaded, returning true".format(prod_name, old_prod_name), general_log_filename)
+                return True
+            
         # insert the product name into the downloader_history
         if not db.upsertLandsatProductHistory(aoiContext.siteId, prod_name, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, prod_date, abs_prod_path, aoiContext.maxRetries):
             log(aoiContext.writeDir, "Couldn't upsert into database with status DOWNLOADING for {}".format(prod_name), general_log_filename)
@@ -450,27 +457,35 @@ def landsat_download_season(aoiContext, seasonInfo):
             for station in stations:
                 for version in ['00', '01', '02']:
                     nom_prod = product + tile + date_asc + station + version
-                    tgzfile = os.path.join(aoiContext.writeDir, nom_prod + '.tgz')
                     lsdestdir = os.path.join(aoiContext.writeDir, nom_prod)
 
                     if aoiContext.fileExists(nom_prod):
                         log(aoiContext.writeDir, "File {} found in history so it's already downloaded".format(nom_prod), general_log_filename)
                         if not os.path.exists(lsdestdir):
-                            log(aoiContext.writeDir, "Trying to decompress {}. If an error will be raised, means that the archived tgz file was phisically erased (manually or automatically) ".format(nom_prod), general_log_filename)
-                            unzipimage(nom_prod, aoiContext.writeDir)
-                        continue
+                            log(aoiContext.writeDir, "Trying to decompress {}. If an error will be raised, means that the archived tgz/tar.gz file was phisically erased (manually or automatically) ".format(nom_prod), general_log_filename)
+                            unzipSuccess, abs_prod_path = unzipimage(nom_prod, aoiContext.writeDir)
+                            if unzipSuccess : 
+                                break       # avoid downloading other version of the product if the current one was successful
+                            continue
+                        else :
+                            break   # avoid downloading other version of the product if the current one was successful
 
                     # get the date by transforming it from doy to date
                     year = date_asc[0:4]
                     days = date_asc[4:]
                     prod_date = (datetime.datetime(int(year), 1, 1) + datetime.timedelta(int(days))).strftime("%Y%m%dT000000")
+                    downloadSuccessful = False
                     for remoteDir in remoteDirs:
                         url = "https://earthexplorer.usgs.gov/download/{}/{}/STANDARD/EE".format(remoteDir, nom_prod)
                         if downloadChunks(url, nom_prod, prod_date, lsdestdir, aoiContext, db):
                             # if the file successfully downloaded, append it also to the history files list
                             aoiContext.appendHistoryFile(nom_prod)
                             downloaded_ids.append(nom_prod)
+                            downloadSuccessful = True
                             break
+                    # if successfully downloaded a product, then do not try the next version
+                    if downloadSuccessful == True :
+                        break
         if len(downloaded_ids) > 0:
             log(aoiContext.writeDir, "Downloaded product: {}".format(downloaded_ids), general_log_filename)
         else:
