@@ -6,7 +6,7 @@ It was developed through the Sentinel-2 for Agriculture project, which has been 
 
 ![ESA](http://www.esa.int/esalogo/images/downloads/Logo_Solid/Office_presentation/08_logo_solid_dark_blue.bmp)
 
-<img src="http://www.esa.int/esalogo/images/downloads/Logo_Solid/Office_presentation/08_logo_solid_dark_blue.bmp" alt"ESA" style="width: 100px;"/>
+<img src="http://www.esa.int/esalogo/images/downloads/Logo_Solid/Office_presentation/08_logo_solid_dark_blue.bmp" alt="ESA" style="width: 100px;"/>
 
 
 ## Binaries Packages
