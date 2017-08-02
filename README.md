@@ -1,8 +1,13 @@
-# ![logo](http://www.esa-sen2agri.org/wp-content/uploads/2017/03/sen2agri-logo-small.png) Sentinel-2 For Agriculture
+# ![logo](http://www.esa-sen2agri.org/wp-content/uploads/2017/03/sen2agri-logo-small.png) Sentinel-2 For Agriculture System
 
 The Sentinel-2 for Agriculture system is designed to automatically generate key products for agriculture monitoring, based on Sentinel-2 and Landsat-8 data (cloud-free surface reflectance composite, dynamic cropland mask, cultivated crop type map and vegetation indicators describing the vegetative development of crops).
  
-It was developed through the Sentinel-2 for Agriculture project, which has been funded by the ![ESA](http://www.esa.int/esalogo/images/downloads/Logo_Solid/Office_presentation/08_logo_solid_dark_blue.bmp =100x) European Space Agency ([DUE program](http://due.esrin.esa.int/)).
+It was developed through the Sentinel-2 for Agriculture project, which has been funded by the  European Space Agency ([DUE program](http://due.esrin.esa.int/)).
+
+![ESA](http://www.esa.int/esalogo/images/downloads/Logo_Solid/Office_presentation/08_logo_solid_dark_blue.bmp)
+
+<img src="http://www.esa.int/esalogo/images/downloads/Logo_Solid/Office_presentation/08_logo_solid_dark_blue.bmp" alt"ESA" style="width: 100px;"/>
+
 
 ## Binaries Packages
 
