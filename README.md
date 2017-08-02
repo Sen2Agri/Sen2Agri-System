@@ -1,96 +1,26 @@
+# ![logo](http://www.esa-sen2agri.org/wp-content/uploads/2017/03/sen2agri-logo-small.png) Sentinel-2 For Agriculture
 
-# Binaries Packages
+The Sentinel-2 for Agriculture system is designed to automatically generate key products for agriculture monitoring, based on Sentinel-2 and Landsat-8 data (cloud-free surface reflectance composite, dynamic cropland mask, cultivated crop type map and vegetation indicators describing the vegetative development of crops).
+ 
+It was developed through the Sentinel-2 for Agriculture project, which has been funded by the ![ESA](http://www.esa.int/esalogo/images/downloads/Logo_Solid/Office_presentation/08_logo_solid_dark_blue.bmp) European Space Agency ([DUE program](http://due.esrin.esa.int/) .
 
-You can download the binaries of the system for CentOS-7 [here](http://www.esa-sen2agri.org/resources/software). You can find also more informations about ths system.
-If you have question, remark or issue, you can use the [forum](http://www.esa-sen2agri.org/forum/). If you want support and informations about the project, please register to the website. 
+## Binaries Packages
 
-# Compile from source
-## Prerequisites
+You can download the binaries of the system for CentOS-7 [here](http://www.esa-sen2agri.org/resources/software). 
 
-    yum install epel-release
-    yum install git gcc gcc-c++ cmake boost-devel curl-devel expat-devel fftw-devel gdal-devel geos-devel libgeotiff-devel libjpeg-turbo-devel libsvm-devel muParser-devel opencv-devel openjpeg2-devel openjpeg2-tools pcre-devel libpng-devel proj-devel python-devel qt-devel sqlite-devel swig libtiff-devel tinyxml-devel qt5-qtbase-devel qt5-qtbase-postgresql gsl-devel qt-x11
-    yum install boost curl expat fftw gdal geos libgeotiff libjpeg-turbo libsvm muParser opencv openjpeg2 openjpeg2-tools pcre libpng proj python qt sqlite swig libtiff tinyxml qt5-qtbase qt5-qtbase-postgresql qt-x11 gsl
-    yum install cifs-utils
+## Documentation
 
-    ln -s /usr/lib64/libproj.so.0 /usr/lib64/libproj.so
+You can find also more informations about ths system [here](http://www.esa-sen2agri.org/resources/technical-documents).
 
-## Compiling OTB
+## Join the community
 
-    git clone --depth=1 https://github.com/GrayShade/OTB.git # fixes-5.0 branch
-    mkdir OTB-BUILD
-    cd OTB-BUILD
-    ccmake ../OTB/SuperBuild
+If you need help, want to share our experience or report issue, you can use the [forum](http://www.esa-sen2agri.org/forum/). If you want support and informations about the project, please register to the website. 
 
-Press `c` (configure), ignore the warnings, press `e` (exit the warning screen), `t` (toggle advanced mode). Change:
+## Contributing
 
-    CMAKE_BUILD_TYPE        RelWithDebInfo
+Please submit pull request to this repository. We are strongly interessted by new contributions.
 
-    BUILD_TESTING           OFF
+## License
 
-    OTB_USE_MUPARSERX       OFF
-    OTB_WRAP_PYTHON         ON
+Please see the license and the Copyright directory for legal issues on the use of the software.
 
-    USE_SYSTEM_BOOST        ON
-    USE_SYSTEM_CURL         ON
-    USE_SYSTEM_EXPAT        ON
-    USE_SYSTEM_FFTW         ON
-    USE_SYSTEM_GDAL         ON
-    USE_SYSTEM_GEOS         ON
-    USE_SYSTEM_GEOTIFF      ON
-    USE_SYSTEM_ITK          OFF
-    USE_SYSTEM_JPEG         ON
-    USE_SYSTEM_LIBKML       OFF
-    USE_SYSTEM_LIBSVM       ON
-    USE_SYSTEM_MUPARSER     ON
-    USE_SYSTEM_MUPARSERX    ON
-    USE_SYSTEM_OPENCV       ON
-    USE_SYSTEM_OPENJPEG     ON
-    USE_SYSTEM_OPENTHREADS  OFF
-    USE_SYSTEM_OSSIM        OFF
-    USE_SYSTEM_PCRE         ON
-    USE_SYSTEM_PNG          ON
-    USE_SYSTEM_PROJ         ON
-    USE_SYSTEM_QT4          ON
-    USE_SYSTEM_SQLITE       ON
-    USE_SYSTEM_SWIG         ON
-    USE_SYSTEM_TIFF         ON
-    USE_SYSTEM_TINYXML      ON
-    USE_SYSTEM_ZLIB         ON
-
-Press `c`, `e`, `c`. Ignore the OpenThreads warning. Press `e`, `g` (generate and exit).
-
-    sudo make
-
-## Adding OTB to the loader path
-
-    echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
-    sudo ldconfig
-
-## Compiling GDAL 2.0
-
-Some processors use the GDAL tools, which are significantly faster in version 2.0. We'll install that in `/usr/local`.
-
-    curl -O http://download.osgeo.org/gdal/2.0.1/gdal-2.0.1.tar.gz
-    tar zxvf gdal-2.0.1.tar.gz
-    cd gdal-2.0.1
-    ./configure
-    make
-    sudo make install
-
-## Compiling the processors
-
-Retrieve the source code (not available online) and place it in the `sen2agri` directory.
-
-    mkdir sen2agri-processors-build
-    cd sen2agri-processors-build
-    cmake ../sen2agri/sen2agri-processors -DCMAKE_BUILD_TYPE=RelWithDebInfo
-    make
-    sudo make install
-
-## Compiling the rest of the system
-
-    mkdir sen2agri-build
-    cd sen2agri-build
-    qmake-qt5 ../sen2agri
-    make
-    sudo make install
