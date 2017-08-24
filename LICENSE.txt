@@ -107,9 +107,9 @@ External executables are also needed for a proper execution of this program. The
 executables are not part of this program and have to be used according to their own
 license.
 
-External executables are (license are given for information purpose only) :
+External executables are (license are given for information purpose only):
 Apache				Apache License 2.0		https://httpd.apache.org/
-awsdownload			?						https://github.com/kraftek/awsdownload
+awsdownload			Apache License 2.0						https://github.com/kraftek/awsdownload
 cURL				MIT/X derivative		https://curl.haxx.se/
 Expect				Public Domain			http://expect.sourceforge.net/
 MACCS				?
