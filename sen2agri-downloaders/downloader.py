@@ -17,9 +17,17 @@ _____________________________________________________________________________
 
 """
 
-import glob,os,sys,math,urllib2,urllib,time,math,shutil
+import glob
+import os
+import sys
+import math
+import urllib2
+import urllib
+import time
+import math
+import shutil
 import subprocess
-
+import dateutil.parser
 import datetime
 import csv
 import signal
@@ -34,7 +42,7 @@ from multiprocessing import Pool
 
 if len(sys.argv) == 1:
     prog = os.path.basename(sys.argv[0])
-    print '      '+sys.argv[0]+' [options]'
+    print '      ' + sys.argv[0] + ' [options]'
     print "     Help : ", prog, " --help"
     print "        or : ", prog, " -h"
     sys.exit(-1)
@@ -42,39 +50,39 @@ else:
     usage = "usage: %prog [options] "
     parser = OptionParser(usage=usage)
 
-    parser.add_option("-r", "--remote-host", dest="remote_host", action="store", type="string", \
+    parser.add_option("-r", "--remote-host", dest="remote_host", action="store",
                       help="Type of the downloader. Can be s2 or l8")
 
-    parser.add_option("-s", "--site-credentials", dest="site_credentials", action="store",type="string", \
-                        help="File with credentials for the server")
+    parser.add_option("-s", "--site-credentials", dest="site_credentials", action="store",
+                      help="File with credentials for the server")
 
-    parser.add_option("-p","--proxy-passwd", dest="proxy", action="store", type="string", \
-                        help="Proxy account and password file",default=None)
+    parser.add_option("-p", "--proxy-passwd", dest="proxy", action="store",
+                      help="Proxy account and password file", default=None)
 
-    parser.add_option("-c","--config", dest="config", action="store",type="string",  \
-                          help="File with credentials for the database",default="/etc/sen2agri/sen2agri.conf")
+    parser.add_option("-c", "--config", dest="config", action="store",
+                      help="File with credentials for the database", default="/etc/sen2agri/sen2agri.conf")
 
     # for sentinel only
-    parser.add_option("-l","--location", dest="location", action="store",type="string", \
-                help="The location from where the product should be donwloaded: scihub, amazon or local", default=None)
-    parser.add_option("-i","--localindir", dest="localindir", action="store",type="string", \
-                help="The input L1C products directory if the location is set to local", default=None)
+    parser.add_option("-l", "--location", dest="location", action="store",
+                      help="The location from where the product should be downloaded: scihub, amazon or local", default=None)
+    parser.add_option("-i", "--localindir", dest="localindir", action="store",
+                      help="The input L1C products directory if the location is set to local", default=None)
 
-    #for landsat only
-    parser.add_option("--dirs", dest="dirs", action="store", type="string", \
-                    help="Comma separated remote dir numbers where files  are stored at USGS",default=None)
-    parser.add_option("--station", dest="station", action="store", type="string", \
-                    help="Station acronym (3 letters) of the receiving station from where the file is downloaded",default=None)
+    # for landsat only
+    parser.add_option("--dirs", dest="dirs", action="store",
+                      help="Comma separated remote dir numbers where files  are stored at USGS", default=None)
+    parser.add_option("--station", dest="station", action="store",
+                      help="Station acronym (3 letters) of the receiving station from where the file is downloaded", default=None)
 
-    #manually launch for a site and a period
-    parser.add_option("--site-to-dwn", dest="site_to_dwn", action="store", type="string", \
-                    help="ID site from db",default=None)
-    parser.add_option("--start-date", dest="start_date", action="store", type="string", \
-                    help="Start date of the wanted time interval",default=None)
-    parser.add_option("--end-date", dest="end_date", action="store", type="string", \
-                    help="Start date of the wanted time interval",default=None)
+    # manually launch for a site and a period
+    parser.add_option("--site-to-dwn", dest="site_to_dwn", action="store",
+                      help="ID site from db", default=None)
+    parser.add_option("--start-date", dest="start_date", action="store",
+                      help="Start date of the wanted time interval", default=None)
+    parser.add_option("--end-date", dest="end_date", action="store",
+                      help="Start date of the wanted time interval", default=None)
+
     (options, args) = parser.parse_args()
-
 
     general_log_filename = "downloader.log"
     general_log_path = "/tmp/"
@@ -83,22 +91,22 @@ else:
         log(general_log_path, "Could not load the config file", general_log_filename)
         sys.exit(-1)
     manual_site_to_dwn = -1
-    manual_start_date = ""
-    manual_end_date = ""
+    manual_start_date = None
+    manual_end_date = None
     if options.site_to_dwn is not None:
         manual_site_to_dwn = int(options.site_to_dwn)
     if options.start_date is not None:
         parser.check_required("--end-date")
-        manual_start_date = options.start_date
+        manual_start_date = dateutil.parser.parse(options.start_date)
     if options.end_date is not None:
         parser.check_required("--start-date")
-        manual_end_date = options.end_date
+        manual_end_date = dateutil.parser.parse(options.end_date)
 
     database = None
     sites_aoi_database = []
     if options.remote_host == "s2":
         parser.check_required("-l")
-        if options.location == "local" :
+        if options.location == "local":
             parser.check_required("-i")
         database = SentinelAOIInfo(config.host, config.database, config.user, config.password)
         sites_aoi_database = database.getSentinelAOI(manual_site_to_dwn, manual_start_date, manual_end_date)
@@ -118,7 +126,7 @@ else:
     if len(sites_aoi_database) <= 0:
         log(general_log_path, "No information regarding sites", general_log_filename)
         sys.exit(0)
-    
+
     print("LEN = {} ------------------------".format(len(sites_aoi_database)))
     for aoiContext in sites_aoi_database:
         if not create_recursive_dirs(aoiContext.writeDir):
@@ -126,20 +134,20 @@ else:
             sys.exit(-1)
         aoiContext.setConfigObj(config)
         aoiContext.setRemoteSiteCredentials(options.site_credentials)
-        aoiContext.setProxy(options.proxy)    
+        aoiContext.setProxy(options.proxy)
         aoiContext.printInfo()
         print("------------------------")
 
     p = Pool(len(sites_aoi_database))
-    if options.remote_host == "s2":        
+    if options.remote_host == "s2":
         p.map(sentinel_download, sites_aoi_database)
-        #used only in debug mode
-        #for site in sites_aoi_database:
+        # used only in debug mode
+        # for site in sites_aoi_database:
         #    sentinel_download(site)
     else:
         p.map(landsat_download, sites_aoi_database)
-        #used only in debug mode
-        #for site in sites_aoi_database:
+        # used only in debug mode
+        # for site in sites_aoi_database:
         #    landsat_download(site)
     print("downloader exit !")
 
@@ -149,8 +157,8 @@ else:
     original_sigint_handler = signal.signal(signal.SIGINT, signal.SIG_IGN)
     p = Pool(len(sites_aoi_database))
     signal.signal(signal.SIGINT, original_sigint_handler)
-    try:        
-        if options.remote_host == "s2":        
+    try:
+        if options.remote_host == "s2":
             res = p.map_async(sentinel_download, sites_aoi_database)
         else:
             res = p.map_async(landsat_download, sites_aoi_database)
@@ -163,6 +171,3 @@ else:
         p.join()
 
 '''
-
-
-
