@@ -56,10 +56,8 @@ if not config.loadConfig(options.config):
 sentinel_aoi_context = None
 landsat_aoi_context = None
 
-date_past = datetime.datetime.now() - datetime.timedelta(days=1)
-fake_season_start = "{0:02d}{1:02d}".format(date_past.month, date_past.day)
-date_future = datetime.datetime.now() + datetime.timedelta(days=1)
-fake_season_end = "{0:02d}{1:02d}".format(date_future.month, date_future.day)
+fake_season_start = datetime.datetime.now() - datetime.timedelta(days=1)
+fake_season_end = datetime.datetime.now() + datetime.timedelta(days=1)
 
 # Sentinel2 information from DB
 sentinel_db_info = SentinelAOIInfo(config.host, config.database, config.user, config.password)
@@ -98,7 +96,7 @@ for l1 in l1_list:
             write_dir = sentinel_aoi_context.writeDir
             #get the orbit
             orbit_id_search = re.search(r"_R(\d{3})_", l1_basename)
-            if orbit_id_search == None:                
+            if orbit_id_search == None:
                 log(write_dir, "Could not take the orbit id from {}. Continue...".format(l1_basename), general_log_filename)
                 continue
             orbit_id = orbit_id_search.group(1)
@@ -129,7 +127,7 @@ for l1 in l1_list:
         #if sat_id == SENTINEL2_SATELLITE_ID:
         #    if not sentinel_db_info.upsertSentinelProductHistory(sentinel_aoi_context.siteId, l1_basename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, acquisition_date, new_dir, orbit_id, sentinel_aoi_context.maxRetries):
         #        log(write_dir, "Couldn't upsert into database with status DOWNLOADED for {}. Continue...".format(new_dir), general_log_filename)
-        #        continue    
+        #        continue
         #elif sat_id == LANDSAT8_SATELLITE_ID:
         #    if not landsat_db_info.upsertLandsatProductHistory(landsat_aoi_context.siteId, l1_basename, DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE, acquisition_date, new_dir, landsat_aoi_context.maxRetries):
         #        log(write_dir, "Couldn't upsert into database with status DOWNLOADED for {}".format(new_dir), general_log_filename)
@@ -137,7 +135,7 @@ for l1 in l1_list:
         #else:
         #    #impossible to happen, but for the sake of flow
         #    log(write_dir, "Unknown satellite id {} found for {}. Continue...".format(sat_id, l1), general_log_filename)
-        #    continue    
+        #    continue
 
         # phisically copy the l1 product
         log(write_dir, "Copying {} to {}".format(l1, new_dir), general_log_filename)
@@ -152,7 +150,7 @@ for l1 in l1_list:
                 if not sentinel_db_info.upsertSentinelProductHistory(sentinel_aoi_context.siteId, l1_basename, DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE, acquisition_date, new_dir, int(orbit_id), sentinel_aoi_context.maxRetries):
                     log(write_dir, "Couldn't upsert into database with status DOWNLOADED for {}".format(new_dir), general_log_filename)
                     continue
-            elif sat_id == LANDSAT8_SATELLITE_ID: 
+            elif sat_id == LANDSAT8_SATELLITE_ID:
                 if not landsat_db_info.upsertLandsatProductHistory(landsat_aoi_context.siteId, l1_basename, DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE, acquisition_date, new_dir, landsat_aoi_context.maxRetries):
                     log(write_dir, "Couldn't upsert into database with status DOWNLOADED for {}".format(new_dir), general_log_filename)
                     continue
@@ -161,5 +159,5 @@ for l1 in l1_list:
                 log(write_dir, "Unknown satellite id {} found for {}. Continue...".format(sat_id, l1), general_log_filename)
                 continue
             log(write_dir, "Database downloader_history table updated with status DOWNLOADED for {}".format(new_dir), general_log_filename)
-                
-            
+
+
