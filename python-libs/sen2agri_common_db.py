@@ -78,7 +78,7 @@ g_exit_flag = False
 
 def log(location, info, log_filename = ""):
     try:
-        if DEBUG:        
+        if DEBUG:
             print("{}:[{}]:{}".format(str(datetime.datetime.now()), os.getpid(), str(info)))
             sys.stdout.flush()
         if len(location) > 0 and len(log_filename) > 0:
@@ -87,7 +87,7 @@ def log(location, info, log_filename = ""):
             log.write("{}:[{}]:{}\n".format(str(datetime.datetime.now()), os.getpid(), str(info)))
             log.close()
     except:
-        print("Could NOT write inside the log file {}".format(logfile))     
+        print("Could NOT write inside the log file {}".format(logfile))
 
 def manage_log_file(location, log_filename):
     try:
@@ -127,14 +127,14 @@ def manage_log_file(location, log_filename):
                     print("Log file {} removed".format(previous_log_files[oldest_idx]))
                 else:
                     break
-                #the main 'if'  can be replaced by 'while', and the following line should 
+                #the main 'if'  can be replaced by 'while', and the following line should
                 #be uncommented. be aware though...it can lead to infinite loop (probably not, but never say never again
                 previous_log_files = glob.glob("{}*.log_20*".format(location if location.endswith("/") else location + "/"))
     except Exception, e:
         print("Error in manage_log_file: exception {} !".format(e))
-                              
-        
-    
+
+
+
 
 def run_command(cmd_array, log_path = "", log_filename = ""):
     start = time.time()
@@ -153,7 +153,7 @@ def init_worker():
     signal.signal(signal.SIGINT, signal.SIG_IGN)
 
 def signal_handler(signal, frame):
-    global g_exit_flag    
+    global g_exit_flag
     g_exit_flag = True
     print("SIGINT caught! {}".format(g_exit_flag))
     #sys.exit(0)
@@ -203,7 +203,7 @@ def get_footprint(image_filename):
     wgs84_extent = ReprojectCoords(extent, source_srs, target_srs)
     return (wgs84_extent, extent)
 
-        
+
 def create_recursive_dirs(dir_name):
     try:
         #create recursive dir
@@ -226,7 +226,7 @@ def create_recursive_dirs(dir_name):
 
 def remove_dir(directory):
     try:
-        shutil.rmtree(directory)        
+        shutil.rmtree(directory)
     except:
         return False
     return True
@@ -267,7 +267,7 @@ def get_product_info(product_name):
                 acquisition_date = datetime.datetime.strptime("{} {} {}".format(m.group(1)[0:4],m.group(1)[4:6], m.group(1)[6:]), '%Y %m %d').strftime("%Y%m%dT%H%M%S")
         if m != None:
             sat_id = LANDSAT8_SATELLITE_ID
-            
+
     return sat_id and (sat_id, acquisition_date)
 
 
@@ -288,13 +288,13 @@ def get_product_info(product_name):
 #    endSeasonYear = -1
 #    endSeasonMonth = int(endSeason[0:2])
 #    endSeasonDay = int(endSeason[2:4])
-#    if len(endSeason) == 8 : 
+#    if len(endSeason) == 8 :
 #        endSeasonYear = int(endSeason[4:8])
 #    elif len(endSeason) == 6 :
 #        endSeasonYear = int(endSeason[4:6]) + 2000
 #    startSeasonYear = endSeasonYear
 #    print("Extracted years: start {} end {}".format(startSeasonYear, endSeasonYear))
-#        
+#
 #    if startSeasonMonth < 1 or startSeasonMonth > 12 or startSeasonDay < 1 or startSeasonDay > 31 or endSeasonMonth < 1 or endSeasonMonth > 12 or endSeasonDay < 1 or endSeasonDay > 31:
 #        return False
 #    #check if the season comprises 2 consecutive years (e.q. from october to march next year)
@@ -312,7 +312,7 @@ def get_product_info(product_name):
 #        if currentMonth < startSeasonMonth:
 #            yearArray[0] = currentYear - 1
 #            yearArray[1] = currentYear - 1
-#    
+#
 #    # Disregard the computed years and replace the years in the array if we have valid years in the dates
 #    print("Extracted years2: start {} end {}".format(startSeasonYear, endSeasonYear))
 #    if ((startSeasonYear != -1)):
@@ -320,7 +320,7 @@ def get_product_info(product_name):
 #        yearArray[1] = endSeasonYear
 #        print("set years: start {} end {}".format(yearArray[0], yearArray[1]))
 #        return True   # To check if is not OK, if no, comment the line
-#    
+#
 #    currentDate = datetime.date.today()
 #    endSeasonYearToCheck = int(yearArray[1])
 #    endSeasonMonthToCheck = int(endSeasonMonth) + numberOfMonthsAfterEndSeason
@@ -368,7 +368,7 @@ def landsat_crop_to_cutline(landsat_product_path, working_dir):
             tmp_shape_file = "{}/tmp.shp".format(alignment_directory)
             print("tmp = {}".format(tmp_shape_file))
             #TODO: handle errors !!!!
-            run_command(["ogr2ogr", "-t_srs", out, "-where", "PR={}".format(tile_id), "-overwrite", tmp_shape_file, "/usr/share/sen2agri/wrs2_descending/wrs2_descending.shp"])    
+            run_command(["ogr2ogr", "-t_srs", out, "-where", "PR={}".format(tile_id), "-overwrite", tmp_shape_file, "/usr/share/sen2agri/wrs2_descending/wrs2_descending.shp"])
             break
     if not first_tile_file_path :
 	return "", "Unable to find B1 in output product"
@@ -378,7 +378,7 @@ def landsat_crop_to_cutline(landsat_product_path, working_dir):
         landsat_file_basename = os.path.basename(landsat_file[:len(landsat_file) - 1]) if landsat_file.endswith("/") else os.path.basename(landsat_file)
         print("landsat_file_basename = {}".format(landsat_file_basename))
         band = re.match("LC8\w{13}[A-Z]{3}\w{2}_B\w+.TIF|[A-Z][A-Z]\d\d_[A-Z0-9]+_\d{6}_\d{8}_\d{8}_\d{2}_[A-Z0-9]{2}_B\w+\.TIF", landsat_file_basename)
-        if band is not None:            
+        if band is not None:
             output_file = "{}/{}".format(aligned_landsat_directory_path, landsat_file_basename)
             run_command(["gdalwarp", "-overwrite", "-crop_to_cutline", "-cutline", tmp_shape_file, landsat_file, output_file])
             processed_files_counter += 1
@@ -413,7 +413,7 @@ def landsat_crop_to_cutline(landsat_product_path, working_dir):
 		        if "CORNER_LR_PROJECTION_Y_PRODUCT" in line:
 		    	    line = "    CORNER_LR_PROJECTION_Y_PRODUCT = " + str(shape_env_points[2][1]) + "\n"
 		        # latlong coordinates
-		        
+
 		        if "CORNER_UL_LAT_PRODUCT" in line:
 		    	    line = "    CORNER_UL_LAT_PRODUCT = " + str(shape_env_points_wgs84[0][0]) + "\n"
 		        if "CORNER_UL_LON_PRODUCT" in line:
@@ -430,7 +430,7 @@ def landsat_crop_to_cutline(landsat_product_path, working_dir):
 		    	    line = "    CORNER_LR_LAT_PRODUCT = " + str(shape_env_points_wgs84[2][0]) + "\n"
 		        if "CORNER_LR_LON_PRODUCT" in line:
 		    	    line = "    CORNER_LR_LON_PRODUCT = " + str(shape_env_points_wgs84[2][1]) + "\n"
-		        
+
 		        modified_metadata.write(line)
 	    except EnvironmentError:
 	        return "", "Could not open the landsat metadata file for alignment or could not create the output file: Input = {} | Output = {}".format(landsat_file, output_metadata_file)
@@ -498,10 +498,10 @@ class Config(object):
 ###########################################################################
 class SeasonInfo(object):
     def __init__(self):
-        
+
         self.seasonName = ""
         self.seasonId = int(0)
-        
+
         self.startSeasonMonth = int(0)
         self.startSeasonDay = int(0)
         self.endSeasonMonth = int(0)
@@ -514,9 +514,9 @@ class SeasonInfo(object):
 
         self.startSeasonDateStr = ""
         self.endSeasonDateStr = ""
-        
+
         self.startOfSeasonOffset = int(0)
-        
+
     def setStartSeasonDate(self, startSeasonDate):
         self.startSeasonDate = startSeasonDate + relativedelta(months=-self.startOfSeasonOffset)
         self.startSeasonDateStr = self.startSeasonDate.strftime("%Y-%m-%d")
@@ -524,7 +524,7 @@ class SeasonInfo(object):
         self.startSeasonDay = self.startSeasonDate.day
         self.startSeasonMonth = self.startSeasonDate.month
         self.startSeasonYear = self.startSeasonDate.year
-        
+
     def setEndSeasonDate(self, endSeasonDate):
         self.endSeasonDate = endSeasonDate
         self.endSeasonDateStr = self.endSeasonDate.strftime("%Y-%m-%d")
@@ -532,11 +532,11 @@ class SeasonInfo(object):
         self.endSeasonDay = self.endSeasonDate.day
         self.endSeasonMonth = self.endSeasonDate.month
         self.endSeasonYear = self.endSeasonDate.year
-    
+
     def setStartSeasonOffset(self, startOfSeasonOffset):
         self.startOfSeasonOffset = int(startOfSeasonOffset)
         self.setStartSeasonDate(self.startSeasonDate)
-        
+
 class AOIContext(object):
     def __init__(self):
         # the following info will be fed up from database
@@ -550,7 +550,7 @@ class AOIContext(object):
         #self.endSeasonDay = int(0)
         #self.startSeasonYear = int(0)
         #self.endSeasonYear = int(0)
-        
+
         self.aoiSeasonInfos = []
 
         self.maxCloudCoverage = int(100)
@@ -562,7 +562,7 @@ class AOIContext(object):
         self.configObj = None
         self.remoteSiteCredentials = ""
         self.proxy = None
-        #sentinel satellite only 
+        #sentinel satellite only
         self.sentinelLocation = ""
         #ed of sentinel satellite only
         #landsat only
@@ -582,7 +582,7 @@ class AOIContext(object):
     def setConfigParams(self, configParams, forced_season = False):
         if len(configParams) != DOWNLOADER_NUMBER_OF_CONFIG_PARAMS_FROM_DB:
             return False
-        
+
 #        startSummerSeason = configParams[0]
 #        endSummerSeason = configParams[1]
 #        startWinterSeason = configParams[2]
@@ -591,7 +591,7 @@ class AOIContext(object):
         # Apply the season offset if defined for each season in the site
         for seasonInfo in self.aoiSeasonInfos:
             seasonInfo.setStartSeasonOffset(configParams[0])
-            
+
         self.maxCloudCoverage = int(configParams[1])
         self.maxRetries = int(configParams[2])
         self.writeDir = configParams[3]
@@ -615,7 +615,7 @@ class AOIContext(object):
 #                self.startSeasonDay = int(startWinterSeason[2:4])
 #                self.endSeasonMonth = int(endWinterSeason[0:2])
 #                self.endSeasonDay = int(endWinterSeason[2:4])
-#            else:            
+#            else:
 #                print("Out of season ! No request will be made for {}".format(self.siteName))
 #                sys.stdout.flush()
 #                return False
@@ -648,7 +648,7 @@ class AOIContext(object):
 
     def setSentinelLocation(self, location):
         self.sentinelLocation = location
-        
+
     def setLandsatDirNumbers(self, dir_numbers):
         self.landsatDirNumbers = dir_numbers
 
@@ -659,7 +659,7 @@ class AOIContext(object):
         print("SiteID  : {}".format(self.siteId))
         print("SiteName: {}".format(self.siteName))
         print("Polygon : {}".format(self.polygon))
-        
+
         print("Number of Seasons : {}".format(len(self.aoiSeasonInfos)))
         i = 0
         for seasonInfo in self.aoiSeasonInfos:
@@ -669,7 +669,7 @@ class AOIContext(object):
             print("startS      : {}-{}-{}".format(seasonInfo.startSeasonYear, seasonInfo.startSeasonMonth, seasonInfo.startSeasonDay))
             print("endS        : {}-{}-{}".format(seasonInfo.endSeasonYear, seasonInfo.endSeasonMonth, seasonInfo.endSeasonDay))
             i += 1
-            
+
         print("CloudCov: {}".format(self.maxCloudCoverage))
         print("general configuration: ")
         if self.configObj != None:
@@ -764,7 +764,7 @@ class AOIInfo(object):
 #                currentAOI.siteId = int(row[0])
 #                currentAOI.siteName = row[2]
 #                currentAOI.polygon = row[3]
-#                
+#
 #                baseQuery = "select * from sp_get_parameters(\'downloader."
 #                whereQuery = "where \"site_id\"="
 #                suffixArray = ["summer-season.start\')", "summer-season.end\')", "winter-season.start\')", "winter-season.end\')", "max-cloud-coverage\')", "{}max-retries')".format(writeDirSatelliteName), "{}write-dir\')".format(writeDirSatelliteName)]
@@ -777,7 +777,7 @@ class AOIInfo(object):
 #                    #print("query with where={}".format(query))
 #                    baseQuerySite += " where \"site_id\" is null"
 #                    try:
-#                        self.cursor.execute(query)                        
+#                        self.cursor.execute(query)
 #                        if self.cursor.rowcount <= 0:
 #                            if idx <= 3:
 #                                configArray.append("null")
@@ -855,7 +855,7 @@ class AOIInfo(object):
 #        self.databaseDisconnect()
 #        return retArray
 
-    def getAOINew(self, satelliteId, site_id = -1, start_date = "", end_date = ""):
+    def getAOINew(self, satelliteId, site_id, start_date, end_date):
         writeDirSatelliteName = ""
         if satelliteId == SENTINEL2_SATELLITE_ID:
             writeDirSatelliteName = "s2."
@@ -885,11 +885,11 @@ class AOIInfo(object):
                 currentAOI.siteId = int(row[0])
                 currentAOI.siteName = row[2]
                 currentAOI.polygon = row[3]
-                
+
                 dbHandler = True
                 forced_season = False
                 # First check if we neeed to override the current seasons for this site and use instead the specified start and end dates
-                if len(start_date) > 0 and len(end_date) > 0:
+                if start_date is not None and end_date is not None:
                     # Force only one season with the specified dates
                     currentSeasonInfo = SeasonInfo()
                     currentSeasonInfo.seasonName = "forced_season"
@@ -898,11 +898,11 @@ class AOIInfo(object):
                     currentAOI.aoiSeasonInfos.append(currentSeasonInfo)
                     if site_id > 0:
                         # the offline_l1_handler app is calling this function with site_id set to -1, so don't print this message for it
-                        print("Forcing manuall download for time interval: {} - {}".format(start_date, end_date))
+                        print("Forcing manual download for time interval: {} - {}".format(start_date, end_date))
                         sys.stdout.flush()
                     forced_season = True
                 else :
-                    # Otherwise, read the seasons for the site from the DB 
+                    # Otherwise, read the seasons for the site from the DB
                     siteSeasonsQuery = "select * from sp_get_site_seasons({} :: smallint) where enabled = true".format(currentAOI.siteId)
                     try:
                         self.cursor.execute(siteSeasonsQuery)
@@ -927,12 +927,12 @@ class AOIInfo(object):
                         self.databaseDisconnect()
                         dbHandler = False
                         break
-                
+
                 # If no seasons defined, there is no need to continue
                 if (len(currentAOI.aoiSeasonInfos) == 0 ) :
                     print("No active seasons defined for site name {}. It will be ignored!".format(currentAOI.siteName))
-                    continue 
-                    
+                    continue
+
                 # Now get the downloader parameters from the config table (the max cloud coverage, the max retries and write directories for each satellite)
                 baseQuery = "select * from sp_get_parameters(\'downloader."
                 whereQuery = "where \"site_id\"="
@@ -944,7 +944,7 @@ class AOIInfo(object):
                     #print("query with where={}".format(query))
                     baseQuerySite += " where \"site_id\" is null"
                     try:
-                        self.cursor.execute(query)                        
+                        self.cursor.execute(query)
                         if self.cursor.rowcount <= 0:
                             self.cursor.execute(baseQuerySite)
                             if self.cursor.rowcount <= 0:
@@ -1006,19 +1006,19 @@ class AOIInfo(object):
 
         self.databaseDisconnect()
         return retArray
-        
+
     def upsertProductHistory(self, siteId, satelliteId, productName, status, productDate, fullPath, orbit_id, maxRetries):
         if not self.databaseConnect():
             print("upsertProductHistory could not connect to DB")
             return False
         try:
             #see if the record does already exist in db
-            self.cursor.execute("""SELECT id, status_id, no_of_retries, created_timestamp FROM downloader_history 
+            self.cursor.execute("""SELECT id, status_id, no_of_retries, created_timestamp FROM downloader_history
                                 WHERE site_id = %(site_id)s and
                                 satellite_id = %(satellite_id)s and
-                                product_name = %(product_name)s""", 
+                                product_name = %(product_name)s""",
                                 {
-                                    "site_id" : siteId, 
+                                    "site_id" : siteId,
                                     "satellite_id" : satelliteId,
                                     "product_name" : productName
                                 })
@@ -1030,18 +1030,18 @@ class AOIInfo(object):
             if len(rows) == 0:
                 #if it doesn't exist, simply insert it with the provided info
                 self.cursor.execute("""INSERT INTO downloader_history (site_id, satellite_id, product_name, full_path, status_id, no_of_retries, product_date, orbit_id) VALUES (
-                                    %(site_id)s :: smallint, 
+                                    %(site_id)s :: smallint,
                                     %(satellite_id)s :: smallint,
-                                    %(product_name)s, 
+                                    %(product_name)s,
                                     %(full_path)s,
                                     %(status_id)s :: smallint,
                                     %(no_of_retries)s :: smallint,
                                     %(product_date)s :: timestamp,
-                                    %(orbit_id)s :: integer)""", 
+                                    %(orbit_id)s :: integer)""",
                                     {
-                                        "site_id" : siteId, 
-                                        "satellite_id" : satelliteId, 
-                                        "product_name" : productName, 
+                                        "site_id" : siteId,
+                                        "satellite_id" : satelliteId,
+                                        "product_name" : productName,
                                         "full_path" : fullPath,
                                         "status_id" : status,
                                         "no_of_retries" : 1,
@@ -1063,13 +1063,13 @@ class AOIInfo(object):
                 status == DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE or \
                 status == DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE or \
                 status == DATABASE_DOWNLOADER_STATUS_ABORTED_VALUE:
-                    self.cursor.execute("""UPDATE downloader_history SET status_id = %(status_id)s :: smallint 
-                                        WHERE id = %(l1c_id)s :: integer """, 
+                    self.cursor.execute("""UPDATE downloader_history SET status_id = %(status_id)s :: smallint
+                                        WHERE id = %(l1c_id)s :: integer """,
                                         {
                                             "status_id" : status,
                                             "l1c_id" : db_l1c_id
                                         })
-                #if the failed status is provided , update it in the table if the no_of_retries 
+                #if the failed status is provided , update it in the table if the no_of_retries
                 #does not exceed maxRetries, otherwise set the status as aborted and forget about it
                 elif status == DATABASE_DOWNLOADER_STATUS_FAILED_VALUE:
                     if db_no_of_retries >= maxRetries:
@@ -1077,7 +1077,7 @@ class AOIInfo(object):
                     else:
                         #no of retries means a certain amount of time (TIME_INTERVAL_RETRY hours for example) used for trying to download the product
                         #after this amount of time passed, the number of retries will be incremented
-                        #note: db_created_timestamp is an 'python offset-naive datetime' (this is how PG returns) 
+                        #note: db_created_timestamp is an 'python offset-naive datetime' (this is how PG returns)
                         #so it should be converted to 'python offset-aware datetime'
                         #only in this way the datetime can be added with TIME_INTERVAL_RETRY * no_of_retries hours. this is done through '.replace(tzinfo=None)'
                         db_product_timestamp_to_check = (db_created_timestamp + datetime.timedelta(hours=(db_no_of_retries * TIME_INTERVAL_RETRY))).replace(tzinfo=None)
@@ -1085,7 +1085,7 @@ class AOIInfo(object):
                         if db_product_timestamp_to_check <= now:
                             db_no_of_retries += 1
                     self.cursor.execute("""UPDATE downloader_history SET status_id = %(status_id)s :: smallint , no_of_retries = %(no_of_retries)s :: smallint
-                                        WHERE id = %(l1c_id)s :: integer """, 
+                                        WHERE id = %(l1c_id)s :: integer """,
                                         {
                                             "status_id" : status,
                                             "no_of_retries" : db_no_of_retries,
@@ -1110,14 +1110,14 @@ class AOIInfo(object):
         try:
             print("UPDATING: insert into downloader_history (\"site_id\", \"satellite_id\", \"product_name\", \"product_date\", \"full_path\") VALUES ({}, {}, '{}', '{}', '{}')".format(siteId, satelliteId, productName, productDate, fullPath))
             self.cursor.execute("""insert into downloader_history (site_id, satellite_id, product_name, product_date, full_path) VALUES (
-                                    %(site_id)s :: smallint, 
-                                    %(satellite_id)s :: smallint, 
-                                    %(product_name)s, 
+                                    %(site_id)s :: smallint,
+                                    %(satellite_id)s :: smallint,
+                                    %(product_name)s,
                                     %(product_date)s :: timestamp,
                                     %(full_path)s)""", {
-                                        "site_id" : siteId, 
-                                        "satellite_id" : satelliteId, 
-                                        "product_name" : productName, 
+                                        "site_id" : siteId,
+                                        "satellite_id" : satelliteId,
+                                        "product_name" : productName,
                                         "product_date": productDate,
                                         "full_path" : fullPath
                                     })
@@ -1135,7 +1135,7 @@ class SentinelAOIInfo(AOIInfo):
     def __init__(self, serverIP, databaseName, user, password, logFile=None):
         AOIInfo.__init__(self, serverIP, databaseName, user, password, logFile)
 
-    def getSentinelAOI(self, site_id = -1, start_date = "", end_date = ""):
+    def getSentinelAOI(self, site_id, start_date, end_date):
         return self.getAOINew(SENTINEL2_SATELLITE_ID, site_id, start_date, end_date)
 
     #def updateSentinelHistory(self, siteId, productName, productDate, fullPath):
@@ -1150,7 +1150,7 @@ class LandsatAOIInfo(AOIInfo):
     def __init__(self, serverIP, databaseName, user, password, logFile=None):
         AOIInfo.__init__(self, serverIP, databaseName, user, password, logFile)
 
-    def getLandsatAOI(self, site_id = -1, start_date = "", end_date = ""):
+    def getLandsatAOI(self, site_id, start_date, end_date):
         return self.getAOINew(LANDSAT8_SATELLITE_ID, site_id, start_date, end_date)
 
     #def updateLandsatHistory(self, siteId, productName, productDate, fullPath):
@@ -1234,14 +1234,14 @@ class L1CInfo(object):
                 swbd_path = row[2]
             elif row[0] == DATABASE_DEMMACCS_MACCS_IP_ADDRESS:
                 #optional, may not exist in DB
-                maccs_ip_address = row[2] 
+                maccs_ip_address = row[2]
             elif row[0] == DATABASE_DEMMACCS_MACCS_LAUNCHER:
                 maccs_launcher = row[2]
             elif row[0] == DATABASE_DEMMACCS_WORKING_DIR:
                 working_dir = row[2]
 
         self.database_disconnect()
-        if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_launcher) == 0 or len(working_dir) == 0:     
+        if len(output_path) == 0 or len(gips_path) == 0 or len(srtm_path) == 0 or len(swbd_path) == 0 or len(maccs_launcher) == 0 or len(working_dir) == 0:
             return None
 
         return DEMMACCSConfig(output_path, gips_path, srtm_path, swbd_path, maccs_ip_address, maccs_launcher, working_dir)
@@ -1278,11 +1278,11 @@ class L1CInfo(object):
                 return []
             retArray = []
             for satellite_id in satellite_ids:
-                for site_id in site_ids:          
-                    self.cursor.execute("""SELECT id, site_id, satellite_id, full_path, product_date, orbit_id FROM downloader_history WHERE 
-                                        satellite_id = %(satellite_id)s :: smallint and 
+                for site_id in site_ids:
+                    self.cursor.execute("""SELECT id, site_id, satellite_id, full_path, product_date, orbit_id FROM downloader_history WHERE
+                                        satellite_id = %(satellite_id)s :: smallint and
                                         site_id = %(site_id)s  :: smallint and
-                                        status_id = %(status_id)s :: smallint ORDER BY product_date ASC""", 
+                                        status_id = %(status_id)s :: smallint ORDER BY product_date ASC""",
                                         {
                                             "satellite_id" : satellite_id[0],
                                             "status_id" : DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE,
@@ -1303,7 +1303,7 @@ class L1CInfo(object):
         path = ""
         try:
             self.cursor.execute("""SELECT path FROM sp_get_last_l2a_product(%(site_id)s :: smallint,
-                                                                            %(tile_id)s, 
+                                                                            %(tile_id)s,
                                                                             %(satellite_id)s :: smallint,
                                                                             %(l1c_orbit_id)s :: integer,
                                                                             %(l1c_date)s :: timestamp)""",
@@ -1312,9 +1312,9 @@ class L1CInfo(object):
                                     "tile_id" : tile_id,
                                     "satellite_id" : satellite_id,
                                     "l1c_orbit_id" : l1c_orbit_id,
-                                    "l1c_date" : l1c_date.strftime("%Y%m%dT%H%M%S")                                    
-                                })            
-            rows = self.cursor.fetchall()            
+                                    "l1c_date" : l1c_date.strftime("%Y%m%dT%H%M%S")
+                                })
+            rows = self.cursor.fetchall()
             if len(rows) == 1:
                 path = rows[0][0]
         except:
@@ -1341,17 +1341,17 @@ class L1CInfo(object):
         try:
             self.cursor.execute("""update downloader_history set status_id = %(status_id)s :: smallint where id=%(l1c_id)s :: integer """,
                                 {
-                                    "status_id" : DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE, 
+                                    "status_id" : DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE,
                                     "l1c_id" : l1c_id
                                 })
             self.conn.commit()
             if len(l2a_processed_tiles) > 0:
                 #normally , sp_insert_product should upsert the record
                 self.cursor.execute("""select * from sp_insert_product(%(product_type_id)s :: smallint,
-                               %(processor_id)s :: smallint, 
-                               %(satellite_id)s :: smallint, 
-                               %(site_id)s :: smallint, 
-                               %(job_id)s :: smallint, 
+                               %(processor_id)s :: smallint,
+                               %(satellite_id)s :: smallint,
+                               %(site_id)s :: smallint,
+                               %(job_id)s :: smallint,
                                %(full_path)s :: character varying,
                                %(created_timestamp)s :: timestamp,
                                %(name)s :: character varying,
@@ -1369,13 +1369,13 @@ class L1CInfo(object):
                                     "created_timestamp" : acquisition_date,
                                     "name" : product_name,
                                     "quicklook_image" : "mosaic.jpg",
-                                    "footprint" : footprint, 
+                                    "footprint" : footprint,
                                     "orbit_id" : orbit_id,
-                                    "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']' 
+                                    "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']'
                                 })
                 self.conn.commit()
         except Exception, e:
-            print("Database update query failed: {}".format(e))            
+            print("Database update query failed: {}".format(e))
             self.database_disconnect()
             return False
         self.database_disconnect()
