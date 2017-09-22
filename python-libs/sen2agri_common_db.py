@@ -69,6 +69,7 @@ DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE = int(2)
 DATABASE_DOWNLOADER_STATUS_FAILED_VALUE = int(3)
 DATABASE_DOWNLOADER_STATUS_ABORTED_VALUE = int(4)
 DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE = int(5)
+DATABASE_DOWNLOADER_STATUS_PROCESSING_ERR_VALUE = int(6)
 
 TIME_INTERVAL_RETRY = int(8) #hours
 MAX_LOG_FILE_SIZE = int(419430400) #bytes -> 400 MB
@@ -1067,6 +1068,7 @@ class AOIInfo(object):
                 if status == DATABASE_DOWNLOADER_STATUS_DOWNLOADING_VALUE or \
                 status == DATABASE_DOWNLOADER_STATUS_DOWNLOADED_VALUE or \
                 status == DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE or \
+                status == DATABASE_DOWNLOADER_STATUS_PROCESSING_ERR_VALUE or \
                 status == DATABASE_DOWNLOADER_STATUS_ABORTED_VALUE:
                     self.cursor.execute("""UPDATE downloader_history SET status_id = %(status_id)s :: smallint 
                                         WHERE id = %(l1c_id)s :: integer """, 
@@ -1344,9 +1346,12 @@ class L1CInfo(object):
         if not self.database_connect():
             return False
         try:
+            processingStatusValue = DATABASE_DOWNLOADER_STATUS_PROCESSING_ERR_VALUE
+            if len(l2a_processed_tiles) > 0:
+                processingStatusValue = DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE
             self.cursor.execute("""update downloader_history set status_id = %(status_id)s :: smallint where id=%(l1c_id)s :: integer """,
                                 {
-                                    "status_id" : DATABASE_DOWNLOADER_STATUS_PROCESSED_VALUE, 
+                                    "status_id" : processingStatusValue, 
                                     "l1c_id" : l1c_id
                                 })
             self.conn.commit()
