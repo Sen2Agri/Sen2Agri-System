@@ -56,7 +56,9 @@ else:
 
     # for sentinel only
     parser.add_option("-l","--location", dest="location", action="store",type="string", \
-                help="The location from where the product should be donwloaded: scihub or amazon", default=None)
+                help="The location from where the product should be donwloaded: scihub, amazon or local", default=None)
+    parser.add_option("-i","--localindir", dest="localindir", action="store",type="string", \
+                help="The input L1C products directory if the location is set to local", default=None)
 
     #for landsat only
     parser.add_option("--dirs", dest="dirs", action="store", type="string", \
@@ -96,10 +98,13 @@ else:
     sites_aoi_database = []
     if options.remote_host == "s2":
         parser.check_required("-l")
+        if options.location == "local" :
+            parser.check_required("-i")
         database = SentinelAOIInfo(config.host, config.database, config.user, config.password)
         sites_aoi_database = database.getSentinelAOI(manual_site_to_dwn, manual_start_date, manual_end_date)
         for aoi in sites_aoi_database:
             aoi.setSentinelLocation(options.location)
+            aoi.setLocalInDir(options.localindir)
     elif options.remote_host == "l8":
         database = LandsatAOIInfo(config.host, config.database, config.user, config.password)
         sites_aoi_database = database.getLandsatAOI(manual_site_to_dwn, manual_start_date, manual_end_date)

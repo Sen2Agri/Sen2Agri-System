@@ -564,6 +564,7 @@ class AOIContext(object):
         self.proxy = None
         #sentinel satellite only 
         self.sentinelLocation = ""
+        self.localInDir = ""
         #ed of sentinel satellite only
         #landsat only
         self.landsatDirNumbers = None
@@ -648,6 +649,9 @@ class AOIContext(object):
 
     def setSentinelLocation(self, location):
         self.sentinelLocation = location
+
+    def setLocalInDir(self, localindir):
+        self.localInDir = localindir
         
     def setLandsatDirNumbers(self, dir_numbers):
         self.landsatDirNumbers = dir_numbers
@@ -682,6 +686,7 @@ class AOIContext(object):
         else:
             print("proxy      : None")
         print("sentinelLocation: {}".format(self.sentinelLocation))
+        print("localInDir: {}".format(self.localInDir))
         if self.landsatDirNumbers != None:
             print("landsatDirNumbers: {}".format(self.landsatDirNumbers))
         else:
