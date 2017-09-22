@@ -114,7 +114,7 @@ def product_download(s2Obj, aoiContext, db):
             cmd_dwn += ["--store", "AWS"]
         elif aoiContext.sentinelLocation == "local":
             #cmd_dwn += ["--mode", "SYMLINK"]
-            cmd_dwn += ["--in", "/eodata/Sentinel-2/MSI/L1C", "--store", "LOCAL", "--mode", "SYMLINK"]
+            cmd_dwn += ["--in", aoiContext.localInDir, "--store", "LOCAL", "--mode", "SYMLINK"]
         else:
             log(aoiContext.writeDir, "product_download: The location is not an expected one (scihub or amazon) for product {}".format(s2Obj.filename), general_log_filename)
             return False
