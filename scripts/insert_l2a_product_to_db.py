@@ -13,7 +13,8 @@ import os
 from os.path import isfile, isdir, join
 import glob
 import sys
-import time, datetime
+import time
+import datetime
 from time import gmtime, strftime
 import pipes
 import shutil
@@ -29,7 +30,8 @@ general_log_filename = "log.log"
 
 DEBUG = 1
 
-def log(location, info, log_filename = None):
+
+def log(location, info, log_filename=None):
     if log_filename == None:
         log_filename = "log.txt"
     try:
@@ -39,11 +41,12 @@ def log(location, info, log_filename = None):
             print("{}:{}".format(str(datetime.datetime.now()), str(info)))
             sys.stdout.flush()
         log = open(logfile, 'a')
-        log.write("{}:{}\n".format(str(datetime.datetime.now()),str(info)))
+        log.write("{}:{}\n".format(str(datetime.datetime.now()), str(info)))
         log.close()
     except:
         print("Could NOT write inside the log file {}".format(logfile))
         sys.stdout.flush()
+
 
 def GetExtent(gt, cols, rows):
     ext = []
@@ -67,6 +70,7 @@ def ReprojectCoords(coords, src_srs, tgt_srs):
         trans_coords.append([x, y])
     return trans_coords
 
+
 def get_footprint(image_filename):
     dataset = gdal.Open(image_filename, gdal.gdalconst.GA_ReadOnly)
 
@@ -89,6 +93,7 @@ def get_footprint(image_filename):
     wgs84_extent = ReprojectCoords(extent, source_srs, target_srs)
     return wgs84_extent
 
+
 def get_envelope(footprints):
     geomCol = ogr.Geometry(ogr.wkbGeometryCollection)
 
@@ -101,59 +106,69 @@ def get_envelope(footprints):
             geomCol.AddGeometry(point)
 
         #poly = ogr.Geometry(ogr.wkbPolygon)
-        #poly
+        # poly
 
     hull = geomCol.ConvexHull()
     return hull.ExportToWkt()
 
+
 def get_product_info(product_name):
     acquisition_date = None
     sat_id = UNKNOWN_SATELLITE_ID
-    if args.processor_name == "l2a" :
+    if args.processor_name == "l2a":
         if product_name.startswith("S2"):
-            m = re.match("\w+_V(\d{8}T\d{6})_\w+.SAFE", product_name)
-            if m != None:
+            m = re.match(r"\w+_V(\d{8}T\d{6})_\w+.SAFE", product_name)
+            if m is not None:
                 sat_id = SENTINEL2_SATELLITE_ID
                 acquisition_date = m.group(1)
             else:
-                # Check if it is the new S2 L2A format 
-                m = re.match("S2[A-B]_MSI.+_(\d{8}T\d{6})_\w+.SAFE", product_name)
+                # Check if it is the new S2 L2A format
+                m = re.match(r"S2[A-B]_MSI.+_(\d{8}T\d{6})_\w+.SAFE", product_name)
                 sat_id = SENTINEL2_SATELLITE_ID
                 acquisition_date = m.group(1)
-        elif product_name.startswith("LC8"):
-            m = re.match("LC8\d{6}(\d{7})[A-Z]{3}\d{2}", product_name)
-            if m != None:
+        else:
+            m = re.match(r"LC8\d{6}(\d{7})[A-Z]{3}\d{2}", product_name)
+            if m is not None:
                 sat_id = LANDSAT8_SATELLITE_ID
-                acquisition_date = datetime.datetime.strptime("{} {}".format(m.group(1)[0:4],m.group(1)[4:]), '%Y %j').strftime("%Y%m%dT%H%M%S")
+                acquisition_date = datetime.datetime.strptime("{} {}".format(m.group(1)[0:4], m.group(1)[4:]), '%Y %j').strftime("%Y%m%dT%H%M%S")
                 print("Acquisition date: {}".format(acquisition_date))
-    else :
-        m = re.match("\w+(_A|_V)(\w+)", product_name)
+            else:
+                print(product_name)
+                m = re.match(r"LC08_L2A_\d{6}_(\d{8})_\d{8}_\d{2}_(?:T1|T2|RT)", product_name)
+                if m is not None:
+                    sat_id = LANDSAT8_SATELLITE_ID
+                    acquisition_date = datetime.datetime.strptime(m.group(1), '%Y%m%d').strftime("%Y%m%dT%H%M%S")
+                    print("Acquisition date: {}".format(acquisition_date))
+    else:
+        m = re.match(r"\w+(_A|_V)(\w+)", product_name)
         if m != None:
             acquisition_date = m.group(2)
             original_words = acquisition_date.split('_')
-            words = [word for word in original_words if not "NOTV" in word ]
-            if len(words) == 1 :
+            words = [word for word in original_words if "NOTV" not in word]
+            if len(words) == 1:
                 acquisition_date = words[0]
-            else :
+            else:
                 if len(words) == 2:
                     acquisition_date = words[1]
                 else:
                     acquisition_date = ""
-            if (acquisition_date != "") :
-                if (not "T" in acquisition_date) :
+            if (acquisition_date != ""):
+                if (not "T" in acquisition_date):
                     acquisition_date = acquisition_date + "T000000"
 
     return sat_id and (sat_id, acquisition_date)
+
 
 def get_product_orbit_id(product_name):
     print("Product name is: {}".format(product_name))
     orbit_id = re.search(r"_R(\d{3})_", product_name)
     print("OrbitId is: {}".format(orbit_id))
-    if orbit_id == None : 
+    if orbit_id == None:
         return 0
     return int(orbit_id.group(1))
-    
-def insert_product(product_dir) :
+
+
+def insert_product(product_dir):
     l2a_processed_tiles = []
     wkt = []
     sat_id = 0
@@ -167,22 +182,22 @@ def insert_product(product_dir) :
     product_name = os.path.basename(product_dir[:len(product_dir) - 1]) if product_dir.endswith("/") else os.path.basename(product_dir)
     print("Product dir is: {}".format(product_name))
     wgs84_extent_list = []
-    if args.processor_name == "l2a" :
+    if args.processor_name == "l2a":
         if product_name.startswith("S2"):
             satellite_id = SENTINEL2_SATELLITE_ID
-        else :
+        else:
             satellite_id = LANDSAT8_SATELLITE_ID
         tiles_dir_list = (glob.glob("{}*.DBL.DIR".format(product_dir)))
         log(product_dir, "Creating common footprint for tiles: DBL.DIR List: {}".format(tiles_dir_list), general_log_filename)
         for tile_dir in tiles_dir_list:
             if satellite_id == SENTINEL2_SATELLITE_ID:
                 tile_img = (glob.glob("{}/*_FRE_R1.DBL.TIF".format(tile_dir)))
-            else: #satellite_id is LANDSAT8_SATELLITE_ID:
+            else:  # satellite_id is LANDSAT8_SATELLITE_ID:
                 tile_img = (glob.glob("{}/*_FRE.DBL.TIF".format(tile_dir)))
 
             if len(tile_img) > 0:
                 wgs84_extent_list.append(get_footprint(tile_img[0]))
-    else :
+    else:
         if product_name.startswith("S2AGRI_"):
             mosaic_files_list = (glob.glob("{}*_PVI_*.jpg".format(product_dir)))
             if len(mosaic_files_list) > 0:
@@ -203,7 +218,7 @@ def insert_product(product_dir) :
         log(product_dir, "Could not create the footprint", general_log_filename)
     else:
         sat_id, acquisition_date = get_product_info(product_name)
-        if args.processor_name == "l2a" :
+        if args.processor_name == "l2a":
             if satellite_id == SENTINEL2_SATELLITE_ID:
                 orbit_id = get_product_orbit_id(product_name)
         if args.start_date is not None and acquisition_date < args.start_date:
@@ -212,10 +227,10 @@ def insert_product(product_dir) :
         if args.end_date is not None and acquisition_date > args.end_date:
             log(product_dir, "Skipping product after acquisition date filter", general_log_filename)
             return
-        if args.processor_name == "l2a" :
+        if args.processor_name == "l2a":
             if sat_id > 0 and acquisition_date != None:
-                #check for MACCS tiles output. If none was processed, only the record from
-                #product table will be updated. No l2a product will be added into product table
+                # check for MACCS tiles output. If none was processed, only the record from
+                # product table will be updated. No l2a product will be added into product table
                 for tile_dbl_dir in tiles_dir_list:
                     tile = None
                     print("tile_dbl_dir {}".format(tile_dbl_dir))
@@ -227,8 +242,8 @@ def insert_product(product_dir) :
                         l2a_processed_tiles.append(tile.group(1))
                 log(product_dir, "Processed tiles: {}  to path: {}".format(l2a_processed_tiles, product_dir), general_log_filename)
             else:
-                log(product_dir,"Could not get the acquisition date from the product name {}".format(product_dir), general_log_filename)
-        else :
+                log(product_dir, "Could not get the acquisition date from the product name {}".format(product_dir), general_log_filename)
+        else:
             for tile_dbl_dir in tiles_dir_list:
                 tile = re.search("\w+_T(\w+)", tile_dbl_dir)
                 if tile is not None and not tile.group(1) in l2a_processed_tiles:
@@ -248,12 +263,16 @@ def insert_product(product_dir) :
     l2a_db.set_processed_product(processor_id, product_type_id, site_id, l2a_processed_tiles, product_dir, os.path.basename(product_dir[:len(product_dir) - 1]), wkt, sat_id, acquisition_date, orbit_id, mosaic_img)
 
 ###########################################################################
+
+
 class Config(object):
+
     def __init__(self):
         self.host = ""
         self.database = ""
         self.user = ""
         self.password = ""
+
     def loadConfig(self, configFile):
         try:
             with open(configFile, 'r') as config:
@@ -287,13 +306,16 @@ class Config(object):
         return True
 
 ###########################################################################
+
+
 class L2AInfo(object):
+
     def __init__(self, server_ip, database_name, user, password, log_file=None):
         self.server_ip = server_ip
         self.database_name = database_name
         self.user = user
         self.password = password
-        self.is_connected = False;
+        self.is_connected = False
         self.log_file = log_file
 
     def database_connect(self):
@@ -397,21 +419,21 @@ class L2AInfo(object):
         return rows[0][0]
 
     def set_processed_product(self, processor_id, product_type_id, site_id, l2a_processed_tiles, full_path, product_name, footprint, sat_id, acquisition_date, orbit_id, mosaic_img):
-        #input params:
-        #product type by default is 1
-        #processor id
-        #site id
-        #job id has to be NULL
-        #full path is the whole path to the product including the name
-        #created timestamp NULL
-        #name product (basename from the full path)
-        #quicklook image has to be NULL
-        #footprint
+        # input params:
+        # product type by default is 1
+        # processor id
+        # site id
+        # job id has to be NULL
+        # full path is the whole path to the product including the name
+        # created timestamp NULL
+        # name product (basename from the full path)
+        # quicklook image has to be NULL
+        # footprint
         if not self.database_connect():
             return False
         try:
             if len(l2a_processed_tiles) > 0:
-                #normally , sp_insert_product should upsert the record
+                # normally , sp_insert_product should upsert the record
                 self.cursor.execute("""select * from sp_insert_product(%(product_type_id)s :: smallint,
                                %(processor_id)s :: smallint,
                                %(satellite_id)s :: smallint,
@@ -424,20 +446,20 @@ class L2AInfo(object):
                                %(footprint)s,
                                %(orbit_id)s :: integer,
                                %(tiles)s :: json)""",
-                                {
-                                    "product_type_id" : product_type_id,
-                                    "processor_id" : processor_id,
-                                    "satellite_id" : sat_id,
-                                    "site_id" : site_id,
-                                    "job_id" : None,
-                                    "full_path" : full_path,
-                                    "created_timestamp" : acquisition_date,
-                                    "name" : product_name,
-                                    "quicklook_image" : mosaic_img,
-                                    "footprint" : footprint,
-                                    "orbit_id" : orbit_id,
-                                    "tiles" : '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']'
-                                })
+                                    {
+                                        "product_type_id": product_type_id,
+                                        "processor_id": processor_id,
+                                        "satellite_id": sat_id,
+                                        "site_id": site_id,
+                                        "job_id": None,
+                                        "full_path": full_path,
+                                        "created_timestamp": acquisition_date,
+                                        "name": product_name,
+                                        "quicklook_image": mosaic_img,
+                                        "footprint": footprint,
+                                        "orbit_id": orbit_id,
+                                        "tiles": '[' + ', '.join(['"' + t + '"' for t in l2a_processed_tiles]) + ']'
+                                    })
                 self.conn.commit()
         except Exception, e:
             print("Database update query failed: {}".format(e))
@@ -481,14 +503,12 @@ if not root_dir.endswith(os.path.sep):
     root_dir += os.path.sep
 #print("Provided dir {} (using {})".format(args.dir, root_dir))
 
-if args.multi :
+if args.multi:
     for name in os.listdir(root_dir):
         subdir_path = os.path.join(root_dir, name)
-        if os.path.isdir(subdir_path) :
+        if os.path.isdir(subdir_path):
             print("Inserting multi product: {}".format(str(subdir_path)))
             insert_product(subdir_path)
-else :
+else:
     print("Inserting single product: {}".format(root_dir))
     insert_product(root_dir)
-
-
