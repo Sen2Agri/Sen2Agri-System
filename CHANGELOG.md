@@ -1,15 +1,16 @@
 # Change Log
 
-## [1.6.2] - TBD
+## [1.7.0] - TBD
 ### Added
  - The unsupervised crop mask processor can now use (optionally, on by default) the red edge bands
+ - Added support to `sen2agri-downloader` for ingesting data from a local archive
 
 ### Changed
  - Products in the `RT` and `T2` Landsat 8 collections are no longer downloaded
  - Changed the crop mask post-filtering to ignore negative reflectance values
  - Reduced the CPU usage of the crop mask post-filtering NDVI extraction step by 20%, and the wall clock time by 15% when running with 4 threads
  - Reduced the CPU and disk usage by merging the crop mask post-filtering no data filling and PCA steps; CPU usage went down by 27% and disk usage by about 20 GB for a single tile
- - The Landsat 8 downloader no longer keep a download status line if it's not writing to a TTY
+ - The Landsat 8 downloader no longer prints a status line if the standard output is not a TTY
 
 ### Fixed
  - Fixed an issue that made the crop mask post-filtering output invalid rasters when both Sentinel-2 and Landsat 8 products were used for post-filtering; this was disabled by default
@@ -17,6 +18,8 @@
  - Fixed an issue that caused the supervised crop mask processor to crash on tiles spanned by multiple strata
  - Fixed an issue that sometimes caused MACCS to be passed an L3C product instead of the previous L2A one
  - Fixed a potential division by zero in the Landsat 8 downloader
+ - Fixed new L8 support in `insert_l2a_product_to_db.py`
+ - Fixed crash `offline_l1_handler.py` related to season dates that include years
 
 ### Known issues
  - The training/validation polygon splitting step of the Crop Type and supervised Crop Mask processors can lose polygons
