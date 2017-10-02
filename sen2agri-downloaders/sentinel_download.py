@@ -113,8 +113,7 @@ def product_download(s2Obj, aoiContext, db):
         elif aoiContext.sentinelLocation == "amazon":
             cmd_dwn += ["--store", "AWS"]
         elif aoiContext.sentinelLocation == "local":
-            #cmd_dwn += ["--mode", "SYMLINK"]
-            cmd_dwn += ["--in", aoiContext.localInDir, "--store", "LOCAL", "--mode", "SYMLINK"]
+            cmd_dwn += ["--in", aoiContext.localInDir, "--store", "LOCAL", "--mode", "FILTERED_SYMLINK"]
         else:
             log(aoiContext.writeDir, "product_download: The location is not an expected one (scihub or amazon) for product {}".format(s2Obj.filename), general_log_filename)
             return False
@@ -148,7 +147,6 @@ def get_s2obj_from_file(aoiContext, xml, account, passwd, proxy):
     ret_s2Objs = []
     products = xml.getElementsByTagName("entry")
     for prod in products:
-        ident = prod.getElementsByTagName("id")[0].firstChild.data
         link = prod.getElementsByTagName("link")[0].attributes.items()[0][1]
         filename = ""
         cloud = float(200)
@@ -306,9 +304,13 @@ def sentinel_download_season(aoiContext, seasonInfo):
                             if not os.path.isfile(queryResultsFilename):
                                 log(aoiContext.writeDir, "Could not find the catalog output {} for {}".format(queryResultsFilename, aoiContext.siteName), general_log_filename)
                                 return
-                            xml=minidom.parse(queryResultsFilename)
-                            retS2Objs = get_s2obj_from_file(aoiContext, xml, account, passwd, proxy)
-                            s2Objs.extend(retS2Objs)
+                            try :
+                                xml=minidom.parse(queryResultsFilename)
+                                retS2Objs = get_s2obj_from_file(aoiContext, xml, account, passwd, proxy)
+                                s2Objs.extend(retS2Objs)
+                            except Exception:
+                                print("Could not parse xml for page {} with starting index {}".format(curPage, startIndex))
+                                log(aoiContext.writeDir, "Could not parse xml for page {} with starting index {}".format(curPage, startIndex), general_log_filename)
                 except ValueError:
                     log(aoiContext.writeDir, "Exception: it was expected for the word in position 5 (starting from 0) to be an int. It ain't. The checked string is: {}".format(subtitle), general_log_filename)
                     log(aoiContext.writeDir, "Could not get the catalog output (exception for re-pagination) for {}".format(query_geom), general_log_filename)
