@@ -56,4 +56,4 @@ RUN groupadd -g $gid $group && \
     useradd -u $uid -g $gid -G wheel $user && \
     echo "%wheel        ALL=(ALL)       NOPASSWD: ALL" > /etc/sudoers.d/wheel
 
-COPY build-sen2agri.sh /
+COPY entry.sh /
