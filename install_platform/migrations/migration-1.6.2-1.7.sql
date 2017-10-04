@@ -20,6 +20,20 @@ begin
                 INSERT INTO downloader_status VALUES (6, 'processing_failed');
             end if;
 
+            raise notice 'applying a69a58c95e13befb36d260dd454a09a36f183cbe';
+            _statement := 'delete from config where key = ''executor.module.path.ogr2ogr''';
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement := 'delete from config where key = ''crop-mask-features-with-insitu''';
+            raise notice '%', _statement;
+            execute _statement;
+
+            raise notice 'applying 3e18b6c40b38be4686f50f1430ea23f760cf2421';
+            _statement := 'delete from config where key = ''executor.module.path.gdalwarp''';
+            raise notice '%', _statement;
+            execute _statement;
+
             _statement := 'update meta set version = ''1.7'';';
             raise notice '%', _statement;
             execute _statement;
