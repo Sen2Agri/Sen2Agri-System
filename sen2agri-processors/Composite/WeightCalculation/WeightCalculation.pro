@@ -31,19 +31,19 @@ SOURCES += \
     ../Common/MetadataHelperFactory.cpp \
     ../Common/MACCSMetadataHelper.cpp
 
-INCLUDEPATH += -I /usr/include -I /usr/local/include -I /usr/local/include/OTB-5.0 -I /usr/local/include/ITK-4.7 -I TotalWeight -I WeightAOT -I WeightOnClouds -I ../../MACCSMetadata/include
+INCLUDEPATH += -I /usr/include -I /usr/include/OTB-5.0 -I /usr/include/ITK-4.11 -I TotalWeight -I WeightAOT -I WeightOnClouds -I ../../MACCSMetadata/include
 
 
 LIBS += -L/usr/lib/x86_64-linux-gnu/ -ltinyxml  \
-        -L/usr/local/lib -lfftw3f -lfftw3f_threads -lfftw3 -lfftw3_threads -lgdal -lgeos_c -lgeos -lgeotiff -lITKBiasCorrection-4.7 \
-        -lITKCommon-4.7 -litkdouble-conversion-4.7 -lITKFFT-4.7 \
-        -lITKIOImageBase-4.7 -lITKKLMRegionGrowing-4.7 -lITKLabelMap-4.7 \
-        -lITKMesh-4.7 -lITKMetaIO-4.7 -litkNetlibSlatec-4.7 -lITKOptimizers-4.7 \
-        -lITKOptimizersv4-4.7 -lITKPath-4.7 -lITKPolynomials-4.7                \
-        -lITKQuadEdgeMesh-4.7 -lITKSpatialObjects-4.7 -lITKStatistics-4.7       \
-        -litksys-4.7 -litkv3p_lsqr-4.7 -litkv3p_netlib-4.7 -litkvcl-4.7         \
-        -litkvnl-4.7 -litkvnl_algo-4.7 -lITKVNLInstantiation-4.7                \
-        -lITKWatersheds-4.7 -ljpeg -lkmlbase -lkmlconvenience -lkmldom -lkmlengine -lkmlregionator -lkmlxsd -llibsvm -lminizip -lmuparser       \
+        -lfftw3f -lfftw3f_threads -lfftw3 -lfftw3_threads -lgdal -lgeos_c -lgeos -lgeotiff -lITKBiasCorrection-4.11 \
+        -lITKCommon-4.11 -litkdouble-conversion-4.11 -lITKFFT-4.11 \
+        -lITKIOImageBase-4.11 -lITKKLMRegionGrowing-4.11 -lITKLabelMap-4.11 \
+        -lITKMesh-4.11 -lITKMetaIO-4.11 -litkNetlibSlatec-4.11 -lITKOptimizers-4.11 \
+        -lITKOptimizersv4-4.11 -lITKPath-4.11 -lITKPolynomials-4.11                \
+        -lITKQuadEdgeMesh-4.11 -lITKSpatialObjects-4.11 -lITKStatistics-4.11       \
+        -litksys-4.11 -litkv3p_lsqr-4.11 -litkv3p_netlib-4.11 -litkvcl-4.11         \
+        -litkvnl-4.11 -litkvnl_algo-4.11 -lITKVNLInstantiation-4.11                \
+        -lITKWatersheds-4.11 -ljpeg -lkmlbase -lkmlconvenience -lkmldom -lkmlengine -lkmlregionator -lkmlxsd -llibsvm -lminizip -lmuparser       \
         -lmuparserx -lopencv_core -lopencv_ml -lopenjp2 -lOpenThreads -lossim       \
         -lotb6S-5.0 -lOTBApplicationEngine-5.0 -lOTBCarto-5.0                       \
         -lOTBCommandLine-5.0 -lOTBCommandLineParser-5.0 -lOTBCommon-5.0             \
