@@ -2,25 +2,21 @@
 #set -x #echo on
 
 ##
-## SCRIPT: BUILD SEN2AGRI PLATFORM OTB AND GDAL TOOLS
+## SCRIPT: BUILD SEN2AGRI OTB
 ##
 ##
 ## SCRIPT STEPS
 ##     - CREATE DIR TREE: Sen2AgriPlatform/install, Sen2AgriPlatform/build and Sen2AgriPlatform/rpm_binaries
 ##     - RETRIEVE COMPILE AND INSTALL OTB APP
 ##     - RPM GENERATION FOR COMPILED OTB APP
-##     - RETRIEVE COMPILE AND INSTALL GDAL APP
-##     - RPM GENERATION FOR COMPILED GDAL APP
 ################################################################################################
 ###########################CONFIG PART###########################################################
 ### URLs FOR RETRIEVING SOURCES PACKAGES
 : ${OTB_URL:="https://github.com/Sen2Agri/OTB.git"}
 : ${OTB_MOSAIC_URL:="https://github.com/remicres/otb-mosaic.git"}
-: ${GDAL_URL:="http://download.osgeo.org/gdal"}
 
 ### DEPENDENCIES FOR GENERATED RPM PACKAGES
 PLATFORM_INSTALL_DEP=(-d boost -d curl -d expat -d fftw -d gdal -d geos -d libgeotiff -d libjpeg-turbo -d libsvm -d muParser -d opencv -d openjpeg2 -d openjpeg2-tools -d pcre -d libpng -d proj -d proj-epsg -d python -d swig -d libtiff -d tinyxml -d qt5-qtbase -d qt5-qtbase-postgresql -d qt-x11 -d gsl)
-: ${PLATFORM_INSTALL_CIFS_DEP:="-d "cifs-utils""}
 
 ### CONFIG PATHS FOR SCRIPT
 : ${DEFAULT_DIR:=$(pwd)}
@@ -31,11 +27,8 @@ PLATFORM_INSTALL_DEP=(-d boost -d curl -d expat -d fftw -d gdal -d geos -d libge
 : ${WORKING_DIR_INSTALL:=${PLATFORM_NAME_DIR}/${INSTALL_DIR}}
 : ${WORKING_DIR_RPM:=${PLATFORM_NAME_DIR}/${RPM_DIR}}
 : ${WORKING_DIR_BUILD:=${PLATFORM_NAME_DIR}/${BUILD_DIR}}
-: ${GDAL_VERSION:="2.0.1"}
-GDAL_ITERATION=3
 : ${OTB_VERSION:="5.0"}
 OTB_ITERATION=3
-: ${GDAL_INSTALL_PATH:="${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/gdal-install"}
 : ${OTB_INSTALL_PATH:="${DEFAULT_DIR}/${WORKING_DIR_INSTALL}/otb-install"}
 NUM_CPUS=$(grep -c "^processor" /proc/cpuinfo)
 ################################################################################################
@@ -109,50 +102,18 @@ function build_OTB_RPM_Package()
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_otb
 
    ## build the packages specifying installing dependencies
-   fpm -s dir -t rpm -n otb -v ${OTB_VERSION} --iteration $OTB_ITERATION -C ${OTB_INSTALL_PATH}/ "${PLATFORM_INSTALL_DEP[@]}" ${PLATFORM_INSTALL_CIFS_DEP} \
+   fpm -s dir -t rpm -n otb -v ${OTB_VERSION} --iteration $OTB_ITERATION -C ${OTB_INSTALL_PATH}/ "${PLATFORM_INSTALL_DEP[@]}" \
    --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_otb -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/otb-VERSION-ITERATION.centos7.ARCH.rpm usr
 
    #remove temporary dir
    rm -rf ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_otb
 }
 #-----------------------------------------------------------#
-function compile_GDAL_package()
-{
-   ## Compiling GDAL 2.0
-
-   #Some processors use the GDAL tools, which are significantly faster in version 2.0. We'll install that in `/usr/local`.
-
-   cd ${DEFAULT_DIR}/${WORKING_DIR_BUILD} && { curl -O ${GDAL_URL}/${GDAL_VERSION}/gdal-${GDAL_VERSION}.tar.gz ; cd -; }
-
-   ## Decompress the archieve
-   tar -zxf ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/gdal-${GDAL_VERSION}.tar.gz -C ${DEFAULT_DIR}/${WORKING_DIR_BUILD}
-   cd ${DEFAULT_DIR}/${WORKING_DIR_BUILD}/gdal-${GDAL_VERSION}
-
-   ## Configure, compile and install
-   ./configure
-   make -j$NUM_CPUS
-   make
-   make install DESTDIR=${GDAL_INSTALL_PATH}
-}
-#-----------------------------------------------------------#
-function build_GDAL_RPM_Package()
-{
-   ## create a temp working dir
-   mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_gdal
-
-   ##    ## build the packages specifying installing dependencies
-   fpm -s dir -t rpm -n gdal-local -v ${GDAL_VERSION} --iteration $GDAL_ITERATION "${PLATFORM_INSTALL_DEP[@]}" ${PLATFORM_INSTALL_CIFS_DEP} -C ${GDAL_INSTALL_PATH} \
-   -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/gdal-local-VERSION-ITERATION.centos7.ARCH.rpm --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_gdal usr
-
-   #remove temporary dir
-   rm -rf ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_gdal
-
-}
-#-----------------------------------------------------------#
 function build_dir_tree()
 {
    ##set PATH env variable to /usr/bin to avoid
    # cmake finding /lib/cmake before /usr/lib/cmake
+   # also include /usr/local/bin for fpm
    PATH="/usr/bin:/usr/local/bin"
 
    ##go to default dir
@@ -186,7 +147,7 @@ function build_dir_tree()
 }
 
 ###########################################################
-##### PREPARE ENVIRONEMENT FOR BUILDING OTB AND GDAL  ###
+##### PREPARE ENVIRONEMENT FOR BUILDING OTB ###
 ###########################################################
 
 ##create folder tree: build, install and rpm
@@ -200,11 +161,3 @@ compile_OTB_package
 
 ##create RPM package
 build_OTB_RPM_Package
-###########################################################
-#####  GDAL build, install and RPM generation         #####
-###########################################################
-##retrieve GDAL sources compile and install
-compile_GDAL_package
-
-##create RPM package
-build_GDAL_RPM_Package

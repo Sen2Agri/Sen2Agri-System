@@ -33,12 +33,12 @@ function show_menu(){
     ENTER_LINE=`echo "\033[33m"`
     echo -e "${MENU}*********************************************${NORMAL}"
     echo -e "${MENU}**${NUMBER} 1)${MENU} Install BUILD PREREQUISITES ${NORMAL}"
-    echo -e "${MENU}**${NUMBER} 2)${MENU} BUILD Sen2AgriPlatform : OTB and GDAL ${NORMAL}"
+    echo -e "${MENU}**${NUMBER} 2)${MENU} BUILD Sen2AgriPlatform : OTB ${NORMAL}"
     echo -e "${MENU}**${NUMBER} 3)${MENU} BUILD Sen2AgriProcessors, Downloaders and Demmaccs ${NORMAL}"
     echo -e "${MENU}**${NUMBER} 4)${MENU} BUILD Sen2AgriApplication ${NORMAL}"
     echo -e "${MENU}**${NUMBER} 5)${MENU} BUILD Sen2AgriWebsite ${NORMAL}"
     echo -e "${MENU}**${NUMBER} 6)${MENU} BUILD Selective: Enter list of options (ex: platform, processors, website, app)  ${NORMAL}"
-    echo -e "${MENU}**${NUMBER} 7)${MENU} BUILD Sen2Agri All Components (no OTB, GDAL)  ${NORMAL}"
+    echo -e "${MENU}**${NUMBER} 7)${MENU} BUILD Sen2Agri All Components (no OTB)  ${NORMAL}"
     echo -e "${MENU}*********************************************${NORMAL}"
     echo -e "${ENTER_LINE}Please enter a menu option and enter or ${RED_TEXT}enter to exit. ${NORMAL}"
     read opt
@@ -76,7 +76,7 @@ while [ opt != '' ]
 
         2) clear;
            option_picked "Option 2 Picked";
-           echo "====BUILD Sen2AgriPlatform : OTB and GDAL===="
+           echo "====BUILD Sen2AgriPlatform : OTB ===="
            #get script path
            script_path=$(dirname $0);
 
@@ -204,7 +204,7 @@ while [ opt != '' ]
 
         7) clear;
            option_picked "Option 7 Picked";
-           echo "====BUILD Sen2Agri ALL COMPONENTS (no OTB, GDAL)====";
+           echo "====BUILD Sen2Agri ALL COMPONENTS (no OTB)====";
 
            #get script path
            script_path=$(dirname $0);
