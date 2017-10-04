@@ -33,7 +33,6 @@ SOURCES += main.cpp \
     tasktosubmit.cpp \
     processor/compositehandler.cpp \
     processor/lairetrievalhandler.cpp \
-    processor/lairetrievalhandler_new.cpp \
     processor/lairetrievalhandler_l3b.cpp \
     processor/lairetrievalhandler_l3c.cpp \
     processor/maccshdrmeananglesreader.cpp \
@@ -52,7 +51,6 @@ HEADERS += \
     tasktosubmit.hpp \
     processor/compositehandler.hpp \
     processor/lairetrievalhandler.hpp \
-    processor/lairetrievalhandler_new.hpp \
     processor/lairetrievalhandler_l3b.hpp \
     processor/lairetrievalhandler_l3c.hpp \
     processor/maccshdrmeananglesreader.hpp \
