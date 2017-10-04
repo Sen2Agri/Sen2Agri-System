@@ -13,7 +13,6 @@
 ###########################CONFIG PART###########################################################
 ### DEPENDENCIES FOR GENERATED RPM PACKAGES
 : ${PLATFORM_INSTALL_DEP:="-d "qt5-qtbase" -d "qt5-qtbase-gui" -d "qt5-qtbase-postgresql" -d "qt-x11""}
-: ${PLATFORM_INSTALL_OTHER_DEP:="-d "cifs-utils""}
 
 ### CONFIG PATHS FOR SCRIPT
 : ${DEFAULT_DIR:=$(pwd)}
@@ -63,7 +62,7 @@ function build_SEN2AGRI_app_RPM_Package()
    mkdir -p ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_app
 
    ##build RPM package
-   fpm -s dir -t rpm -n sen2agri-app -C ${APP_INSTALL_PATH}/ ${PLATFORM_INSTALL_DEP} ${PLATFORM_INSTALL_OTHER_DEP} \
+   fpm -s dir -t rpm -n sen2agri-app -C ${APP_INSTALL_PATH}/ ${PLATFORM_INSTALL_DEP} \
        -v $VERSION \
        --workdir ${DEFAULT_DIR}/${WORKING_DIR_RPM}/tmp_app \
        --config-files etc \

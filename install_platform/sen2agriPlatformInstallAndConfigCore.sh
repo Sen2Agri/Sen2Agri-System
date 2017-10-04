@@ -6,7 +6,7 @@
 ##
 ##
 ## SCRIPT STEPS
-##     - INSTALL OTB, GDAL, SEN2AGRI PROCESSORS
+##     - INSTALL OTB, SEN2AGRI PROCESSORS
 ################################################################################################
 ## SCRIPT USAGE:
 ##
@@ -28,25 +28,18 @@ function create_system_account()
 function install_RPMs()
 {
    ##########################################################
-   ####  OTB, GDAL, SEN2AGRI-PROCESSORS, SEN2AGRI-SERVICES
+   ####  OTB, SEN2AGRI-PROCESSORS, SEN2AGRI-SERVICES
    ##########################################################
    ##install EPEL for packages dependencies installation
    yum -y install epel-release
    yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.3-x86_64/pgdg-centos94-9.4-3.noarch.rpm
 
-   ##install cifs-utils package
-   yum -y install cifs-utils
-
    ##install Orfeo ToolBox
    yum -y install ../rpm_binaries/otb-*.rpm
-
-   ##install GDAL library
-   yum -y install ../rpm_binaries/gdal-local-*.rpm
 
    ##install Sen2Agri Processors
    yum -y install ${SEN2AGRI_PROCESSORS_RPM}
 
-   echo /usr/local/lib > /etc/ld.so.conf.d/local.conf
    ln -s /usr/lib64/libproj.so.0 /usr/lib64/libproj.so
    ldconfig
 }
@@ -55,7 +48,7 @@ function install_RPMs()
 ###########################################################
 
 #-----------------------------------------------------------#
-####  OTB, GDAL, SEN2AGRI PROCESsORS INSTALL  & CONFIG ######
+####  OTB, SEN2AGRI PROCESsORS INSTALL  & CONFIG ######
 #-----------------------------------------------------------#
 ## install binaries
 install_RPMs

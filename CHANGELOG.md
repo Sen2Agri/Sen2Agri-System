@@ -13,6 +13,7 @@
  - Reduced the CPU usage of the crop mask post-filtering NDVI extraction step by 20%, and the wall clock time by 15% when running with 4 threads
  - Reduced the CPU and disk usage by merging the crop mask post-filtering no data filling and PCA steps; CPU usage went down by 27% and disk usage by about 20 GB for a single tile
  - The Landsat 8 downloader no longer prints a status line if the standard output is not a TTY
+ - Dropped local GDAL install and `cifs-utils` dependency
 
 ### Fixed
  - Fixed an issue that made the crop mask post-filtering output invalid rasters when both Sentinel-2 and Landsat 8 products were used for post-filtering; this was disabled by default

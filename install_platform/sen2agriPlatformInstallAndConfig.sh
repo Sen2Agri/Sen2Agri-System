@@ -6,7 +6,7 @@
 ##
 ##
 ## SCRIPT STEPS
-##     - INSTALL OTB, GDAL, SEN2AGRI PROCESSORS AND SEN2AGRI SERVICE
+##     - INSTALL OTB, SEN2AGRI PROCESSORS AND SEN2AGRI SERVICE
 ##     - INSTALL SLURM
 ##     - CONFIGURE SLURM
 ##         - PARSE AND UPDATE SLURM.CONF FILE AND SLURMDB.CONF FILE
@@ -417,7 +417,6 @@ function install_downloaders_demmacs()
    ##install Sen2Agri Downloaders  & Demmacs
    yum -y install ../rpm_binaries/sen2agri-downloaders-demmaccs-*.centos7.x86_64.rpm
 
-   echo /usr/local/lib | sudo tee /etc/ld.so.conf.d/local.conf
    ldconfig
 
    #reload daemon to update it with new services
@@ -440,22 +439,18 @@ function install_downloaders_demmacs()
 function install_RPMs()
 {
    ##########################################################
-   ####  OTB, GDAL, SEN2AGRI-PROCESSORS, SEN2AGRI-SERVICES
+   ####  OTB, SEN2AGRI-PROCESSORS, SEN2AGRI-SERVICES
    ##########################################################
 
    ##install a couple of packages
-   yum -y install cifs-utils gdal-python python-psycopg2 gd
+   yum -y install gdal-python python-psycopg2 gd
 
    ##install Orfeo ToolBox
    yum -y install ../rpm_binaries/otb-*.rpm
 
-   ##install GDAL library
-   yum -y install ../rpm_binaries/gdal-local-*.rpm
-
    ##install Sen2Agri Processors
    yum -y install ../rpm_binaries/sen2agri-processors-*.centos7.x86_64.rpm
 
-   echo /usr/local/lib > /etc/ld.so.conf.d/local.conf
    ln -s /usr/lib64/libproj.so.0 /usr/lib64/libproj.so
    ldconfig
 
@@ -700,7 +695,7 @@ yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.3-x86_64/pgdg-ce
 install_maccs
 
 #-----------------------------------------------------------#
-####  OTB, GDAL, SEN2AGRI, SLURM INSTALL  & CONFIG     ######
+####  OTB, SEN2AGRI, SLURM INSTALL  & CONFIG     ######
 #-----------------------------------------------------------#
 ## install binaries
 install_RPMs
