@@ -4,9 +4,10 @@ from __future__ import print_function
 import argparse
 import gdal
 from gdalconst import GA_Update
+import re
 import osr
-import ogr
 import sys
+
 
 # adapted from http://gis.stackexchange.com/a/20306
 def wkt2epsg(wkt, epsg='/usr/share/proj/epsg', forceProj4=False):
@@ -16,7 +17,7 @@ def wkt2epsg(wkt, epsg='/usr/share/proj/epsg', forceProj4=False):
     ---------
 
     wkt: WKT definition
-    epsg: the proj.4 epsg file (defaults to '/usr/local/share/proj/epsg')
+    epsg: the proj.4 epsg file (defaults to '/usr/share/proj/epsg')
     forceProj4: whether to perform brute force proj4 epsg file check (last resort)
 
     Returns: EPSG code
@@ -36,7 +37,7 @@ def wkt2epsg(wkt, epsg='/usr/share/proj/epsg', forceProj4=False):
     an = p_in.GetAuthorityName(cstype)
     ac = p_in.GetAuthorityCode(cstype)
     if an is not None and ac is not None:  # return the EPSG code
-        return '{}:{}'.format( \
+        return '{}:{}'.format(
             p_in.GetAuthorityName(cstype), p_in.GetAuthorityCode(cstype))
     else:  # try brute force approach by grokking proj epsg definition file
         p_out = p_in.ExportToProj4()
@@ -56,6 +57,7 @@ def wkt2epsg(wkt, epsg='/usr/share/proj/epsg', forceProj4=False):
                 return None
         else:
             return None
+
 
 def fix_file(input, args):
     print("Processing {}".format(input))
@@ -109,6 +111,7 @@ def fix_file(input, args):
         print("Changing GeoTransform to {}".format(gt))
     ds.SetGeoTransform(gt)
 
+
 def main():
     parser = argparse.ArgumentParser(description="Fixes rasters with negative coordinates in WGS 84 / UTM zones")
     parser.add_argument('-v', '--verbose', action='store_true', help="verbose output")
@@ -119,6 +122,7 @@ def main():
     for input in args.input:
         fix_file(input, args)
     return 0
+
 
 if __name__ == '__main__':
     sys.exit(main())
