@@ -46,7 +46,6 @@ INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.cla
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.classifier', NULL, 'rf', '2016-03-10 18:29:07.926989+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.sample-ratio', NULL, '0.75', '2016-03-10 11:34:53.889769+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.dummy-module', NULL, '/usr/bin/cp', '2015-07-10 11:16:14.384866+03');
-INSERT INTO config(key, site_id, value, last_updated) VALUES ('executor.module.path.gdalwarp', NULL, '/usr/local/bin/gdalwarp', '2015-09-07 16:49:53.576478+03');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.classifier.svm.k', NULL, 'rbf', '2016-03-10 11:50:39.844696+02');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4a.reference-map', NULL, '/mnt/archive/reference_data/ESACCI-LC-L4-LCCS-Map-300m-P5Y-2010-v1.6.1.tif', '2016-07-13 14:41:00');
 INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l4b.classifier.field', NULL, 'CODE', '2016-03-10 18:29:16.079704+02');
