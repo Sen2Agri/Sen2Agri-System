@@ -27,7 +27,7 @@ void Simulator::HandleSendExecuteProcessor()
         NewExecutorStep step;
         step.taskId = (++m_nLastTaskId);
         step.stepName = QString("StepName_%1_%2").arg(QString::number(m_nLastTaskId), QString::number(i+1));
-        step.processorPath = "/usr/local/bin/otbcli";
+        step.processorPath = "/usr/bin/otbcli";
         StepArgument stepArg;
         stepArg.value = QString("MaskHandler");
         step.arguments.append(stepArg);
