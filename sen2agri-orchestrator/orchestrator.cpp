@@ -11,7 +11,6 @@
 #include "processor/croptypehandler.hpp"
 #include "processor/compositehandler.hpp"
 #include "processor/lairetrievalhandler.hpp"
-#include "processor/lairetrievalhandler_new.hpp"
 #include "processor/phenondvihandler.hpp"
 #include "json_conversions.hpp"
 #include "schedulingcontext.h"
@@ -28,7 +27,7 @@ std::map<int, std::unique_ptr<ProcessorHandler>> & GetHandlersMap(PersistenceMan
         } else if(procDescr.shortName == "l3a") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<CompositeHandler>());
         } else if(procDescr.shortName == "l3b_lai") {
-            handlersMap.emplace(procDescr.processorId, std::make_unique<LaiRetrievalHandlerNew>());
+            handlersMap.emplace(procDescr.processorId, std::make_unique<LaiRetrievalHandler>());
         } else if(procDescr.shortName == "l3e_pheno") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<PhenoNdviHandler>());
         } else if(procDescr.shortName == "l4a") {
