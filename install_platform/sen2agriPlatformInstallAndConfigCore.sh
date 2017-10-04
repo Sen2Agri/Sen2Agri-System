@@ -16,7 +16,7 @@
 ################################################################################################
 : ${SYS_ACC_NAME:="sen2agri-service"}
 #-----------------------SEN2AGRI RPMS------------------------------------------------------#
-SEN2AGRI_CUR_VER="1.4"
+SEN2AGRI_CUR_VER="1.7"
 SEN2AGRI_PROCESSORS_RPM="../rpm_binaries/sen2agri-processors-${SEN2AGRI_CUR_VER}.centos7.x86_64.rpm"
 #-----------------------------------------------------------------------------------------#
 function create_system_account()
@@ -32,7 +32,7 @@ function install_RPMs()
    ##########################################################
    ##install EPEL for packages dependencies installation
    yum -y install epel-release
-   yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.2-x86_64/pgdg-centos94-9.4-2.noarch.rpm
+   yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.3-x86_64/pgdg-centos94-9.4-3.noarch.rpm
 
    ##install cifs-utils package
    yum -y install cifs-utils

@@ -337,7 +337,7 @@ function install_and_config_postgresql()
    yum -y install postgresql94-contrib
 
    #install PostGIS
-   yum -y install postgis2_94
+   yum -y install postgis22_94
 
    #start service Postgresql and enable to start at boot
    systemctl enable postgresql-9.4.service
@@ -695,7 +695,7 @@ disable_firewall
 
 ##install EPEL for packages dependencies installation
 yum -y install epel-release
-yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.2-x86_64/pgdg-centos94-9.4-2.noarch.rpm
+yum -y localinstall http://yum.postgresql.org/9.4/redhat/rhel-7.3-x86_64/pgdg-centos94-9.4-3.noarch.rpm
 
 install_maccs
 
