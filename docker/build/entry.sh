@@ -10,15 +10,12 @@ rm -rf Sen2AgriRPM/sen2agri-app-*.rpm \
        Sen2AgriRPM/sen2agri-processors-*.rpm \
        Sen2AgriRPM/sen2agri-website-*.rpm \
 
-if ! ls Sen2AgriRPM/otb-*.rpm 2>&1 >/dev/null || ! ls Sen2AgriRPM/gdal-local-*.rpm 2>&1 >/dev/null
+if ! ls Sen2AgriRPM/otb-*.rpm 2>&1 >/dev/null
 then
-    echo rm -rf Sen2AgriRPM/gdal-local-*.rpm \
-           Sen2AgriRPM/otb-*.rpm
-    echo ./Sen2AgriPlatformBuild.sh
+    ./Sen2AgriPlatformBuild.sh
 fi
 
-sudo yum -y install Sen2AgriRPM/gdal-local-*.rpm \
-                    Sen2AgriRPM/otb-*.rpm
+sudo yum -y install Sen2AgriRPM/otb-*.rpm
 
 ./Sen2AgriProcessorsBuild.sh
 ./Sen2AgriAppBuild.sh
