@@ -7,71 +7,9 @@
 #include "processorhandlerhelper.h"
 #include "logger.hpp"
 
-QList<std::reference_wrapper<TaskToSubmit>> CropTypeHandler::CreateMaskTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
-                                                QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList)
-{
-    outAllTasksList.append(TaskToSubmit{ "quality-flags-extractor", {}} );
-    outAllTasksList.append(TaskToSubmit{ "bands-extractor", {}} );
-    outAllTasksList.append(TaskToSubmit{ "ogr2ogr", {outAllTasksList[1]}} );
-    outAllTasksList.append(TaskToSubmit{ "ogr2ogr", {outAllTasksList[2]}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[3]}} );
-    outAllTasksList.append(TaskToSubmit{ "sample-selection", {outAllTasksList[4]}} );
-    outAllTasksList.append(TaskToSubmit{ "temporal-resampling", {outAllTasksList[5]}} );
-    outAllTasksList.append(TaskToSubmit{ "feature-extraction", {outAllTasksList[6]}} );
-    outAllTasksList.append(TaskToSubmit{ "compute-images-statistics", {outAllTasksList[7]}} );
-    outAllTasksList.append(TaskToSubmit{ "train-images-classifier", {outAllTasksList[5],
-                                                                     outAllTasksList[8]}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[9]}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[10]}} );
-    outAllTasksList.append(TaskToSubmit{ "image-classifier", {outAllTasksList[11]}} );
-    outAllTasksList.append(TaskToSubmit{ "otbcli_BandMath", {outAllTasksList[12]}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[13]}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[14]}} );
-    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[15]}} );
-    outAllTasksList.append(TaskToSubmit{ "xml-statistics", {outAllTasksList[16]}} );
-
-    // product formatter needs completion of xml-statistics
-    outProdFormatterParentsList.append(outAllTasksList[17]);
-
-    QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
-    for(TaskToSubmit &task: outAllTasksList) {
-        allTasksListRef.append(task);
-    }
-    return allTasksListRef;
-}
-
-QList<std::reference_wrapper<TaskToSubmit>> CropTypeHandler::CreateNoMaskTasksForNewProducts(QList<TaskToSubmit> &outAllTasksList,
-                                                QList<std::reference_wrapper<const TaskToSubmit>> &outProdFormatterParentsList)
-{
-    outAllTasksList.append(TaskToSubmit{ "quality-flags-extractor", {}} );
-    outAllTasksList.append(TaskToSubmit{ "bands-extractor", {}} );
-    outAllTasksList.append(TaskToSubmit{ "ogr2ogr", {outAllTasksList[1]}} );
-    outAllTasksList.append(TaskToSubmit{ "ogr2ogr", {outAllTasksList[2]}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[3]}} );
-    outAllTasksList.append(TaskToSubmit{ "sample-selection", {outAllTasksList[4]}} );
-    outAllTasksList.append(TaskToSubmit{ "temporal-resampling", {outAllTasksList[5]}} );
-    outAllTasksList.append(TaskToSubmit{ "feature-extraction", {outAllTasksList[6]}} );
-    outAllTasksList.append(TaskToSubmit{ "compute-images-statistics", {outAllTasksList[7]}} );
-    outAllTasksList.append(TaskToSubmit{ "train-images-classifier", {outAllTasksList[5],
-                                                                     outAllTasksList[8]}} );
-    outAllTasksList.append(TaskToSubmit{ "image-classifier", {outAllTasksList[9]}} );
-    outAllTasksList.append(TaskToSubmit{ "gdalwarp", {outAllTasksList[10]}} );
-    outAllTasksList.append(TaskToSubmit{ "compute-confusion-matrix", {outAllTasksList[11]}} );
-    outAllTasksList.append(TaskToSubmit{ "xml-statistics", {outAllTasksList[12]}} );
-
-    // product formatter needs completion of xml-statistics
-    outProdFormatterParentsList.append(outAllTasksList[13]);
-
-    QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
-    for(TaskToSubmit &task: outAllTasksList) {
-        allTasksListRef.append(task);
-    }
-    return allTasksListRef;
-}
-
-
 void CropTypeHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmittedEvent &event,CropTypeJobConfig &cfg) {
     auto configParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4b.");
+    auto l4aConfigParameters = ctx.GetJobConfigurationParameters(event.jobId, "processor.l4a.reference_data_dir");
     auto resourceParameters = ctx.GetJobConfigurationParameters(event.jobId, "resources.working-mem");
     const auto &parameters = QJsonDocument::fromJson(event.parametersJson.toUtf8()).object();
 
@@ -84,11 +22,25 @@ void CropTypeHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmitte
     }
 
     cfg.referencePolygons = parameters["reference_polygons"].toString();
+    cfg.strataShp = parameters["strata_shape"].toString();
+    // if the strata is not set by the user, try to take it from the database
+    if(cfg.strataShp.size() == 0) {
+        QString siteName = ctx.GetSiteShortName(event.siteId);
+        // Get the reference dir
+        QString refDir = l4aConfigParameters["processor.l4a.reference_data_dir"];
+        refDir = refDir.replace("{site}", siteName);
+        QString strataFile;
+        if(ProcessorHandlerHelper::GetStrataFile(refDir, strataFile) &&
+                QFile::exists(strataFile)) {
+            cfg.strataShp = strataFile;
+        }
+    }
+
     // get the crop mask
     cfg.cropMask = parameters["crop_mask"].toString();
 
-    cfg.lutPath = configParameters["processor.l4b.lut_path"];
     cfg.appsMem = resourceParameters["resources.working-mem"];
+    cfg.lutPath = configParameters["processor.l4b.lut_path"];
 
     cfg.randomSeed = configParameters["processor.l4b.random_seed"];
     if(cfg.randomSeed.isEmpty())  cfg.randomSeed = "0";
@@ -118,327 +70,91 @@ void CropTypeHandler::GetJobConfig(EventProcessingContext &ctx,const JobSubmitte
     cfg.classifierSvmOptimize = configParameters["processor.l4b.classifier.svm.opt"];
 }
 
-void CropTypeHandler::HandleNewTilesList(EventProcessingContext &ctx,
-                                         const CropTypeJobConfig &cfg, const TileTemporalFilesInfo &tileTemporalFilesInfo,
-                                         const QString &cropMask, CropTypeGlobalExecutionInfos &globalExecInfos)
-{
-    bool bHasCropMask = !cropMask.isEmpty();
+QList<std::reference_wrapper<TaskToSubmit>> CropTypeHandler::CreateTasks(QList<TaskToSubmit> &outAllTasksList) {
+    outAllTasksList.append(TaskToSubmit{ "crop-type-fused", {}} );
 
     QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef;
-    QList<std::reference_wrapper<const TaskToSubmit>> &prodFormParTsksList = globalExecInfos.prodFormatParams.parentsTasksRef;
-    if(bHasCropMask) {
-        allTasksListRef = CreateMaskTasksForNewProducts(globalExecInfos.allTasksList, prodFormParTsksList);
-        SubmitTasks(ctx, cfg.jobId, allTasksListRef);
-        HandleMaskTilesList(ctx, cfg, tileTemporalFilesInfo, cropMask, globalExecInfos);
-    } else {
-        allTasksListRef = CreateNoMaskTasksForNewProducts(globalExecInfos.allTasksList, prodFormParTsksList);
-        SubmitTasks(ctx, cfg.jobId, allTasksListRef);
-        HandleNoMaskTilesList(ctx, cfg, tileTemporalFilesInfo, globalExecInfos);
+    for(TaskToSubmit &task: outAllTasksList) {
+        allTasksListRef.append(task);
     }
+    return allTasksListRef;
 }
 
-
-void CropTypeHandler::HandleMaskTilesList(EventProcessingContext &ctx,
-                                         const CropTypeJobConfig &cfg, const TileTemporalFilesInfo &tileTemporalFilesInfo,
-                                         const QString &cropMask, CropTypeGlobalExecutionInfos &globalExecInfos)
-{
-    QStringList listProducts = ProcessorHandlerHelper::GetTemporalTileFiles(tileTemporalFilesInfo);
-    auto mission = ProcessorHandlerHelper::GetMissionNamePrefixFromSatelliteId(tileTemporalFilesInfo.primarySatelliteId);
-    const auto &resolutionStr = QString::number(cfg.resolution);
-
-    QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
-
+NewStepList CropTypeHandler::CreateSteps(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+            QList<TaskToSubmit> &allTasksList, const CropTypeJobConfig &cfg, const QStringList &listProducts) {
     int curTaskIdx = 0;
-    TaskToSubmit &qualityFlagsExtractorTask = allTasksList[curTaskIdx++];
-    TaskToSubmit &bandsExtractor = allTasksList[curTaskIdx++];
-    TaskToSubmit &reprojectPolys = allTasksList[curTaskIdx++];
-    TaskToSubmit &clipPolys = allTasksList[curTaskIdx++];
-    TaskToSubmit &clipRaster = allTasksList[curTaskIdx++];
-    TaskToSubmit &sampleSelection = allTasksList[curTaskIdx++];
-    TaskToSubmit &temporalResampling = allTasksList[curTaskIdx++];
-    TaskToSubmit &featureExtraction = allTasksList[curTaskIdx++];
-    TaskToSubmit &computeImagesStatistics = allTasksList[curTaskIdx++];
-    TaskToSubmit &trainImagesClassifier = allTasksList[curTaskIdx++];
-    TaskToSubmit &reprojectCropMask = allTasksList[curTaskIdx++];
-    TaskToSubmit &cropCropMask = allTasksList[curTaskIdx++];
-    TaskToSubmit &imageClassifier = allTasksList[curTaskIdx++];
-    TaskToSubmit &bandMathMasking = allTasksList[curTaskIdx++];
-    TaskToSubmit &clipCropTypeNoMask = allTasksList[curTaskIdx++];
-    TaskToSubmit &clipCropType = allTasksList[curTaskIdx++];
-    TaskToSubmit &computeConfusionMatrix = allTasksList[curTaskIdx++];
-    TaskToSubmit &xmlMetrics = allTasksList[curTaskIdx++];
+    NewStepList allSteps;
+    TaskToSubmit &cropTypeTask = allTasksList[curTaskIdx++];
 
-    SubmitTasks(ctx, cfg.jobId,
-                    { qualityFlagsExtractorTask, bandsExtractor, reprojectPolys, clipPolys, clipRaster, sampleSelection, temporalResampling,
-                      featureExtraction, computeImagesStatistics, trainImagesClassifier,
-                      reprojectCropMask, cropCropMask, imageClassifier, bandMathMasking, clipCropTypeNoMask, clipCropType, computeConfusionMatrix, xmlMetrics });
-
-    const auto &trainingPolys = sampleSelection.GetFilePath("training_polygons.shp");
-    const auto &validationPolys = sampleSelection.GetFilePath("validation_polygons.shp");
-    const auto &lut = sampleSelection.GetFilePath("lut.txt");
-    const auto &rawtocr = bandsExtractor.GetFilePath("rawtocr.tif");
-    const auto &rawmask = bandsExtractor.GetFilePath("rawmask.tif");
-    const auto &dates = bandsExtractor.GetFilePath("dates.txt");
-    const auto &shape = bandsExtractor.GetFilePath("shape.shp");
-    const auto &statusFlags = qualityFlagsExtractorTask.GetFilePath("statusFlags.tif");
-    const auto &shapeEsriPrj = bandsExtractor.GetFilePath("shape_esri.prj");
-
-    const auto &refPolysReprojected = reprojectPolys.GetFilePath("reference_polygons_reproject.shp");
-    const auto &refPolysClipped = clipPolys.GetFilePath("reference_clip.shp");
-    const auto &tocr = clipRaster.GetFilePath("tocr.tif");
-    const auto &mask = clipRaster.GetFilePath("mask.tif");
-    const auto &rtocr = temporalResampling.GetFilePath("rtocr.tif");
-    const auto &feFts = featureExtraction.GetFilePath("fts.tif");
-    const auto &statistics = computeImagesStatistics.GetFilePath("statistics.xml");
-    const auto &model = trainImagesClassifier.GetFilePath("model.txt");
-    const auto &confusionMatrix = trainImagesClassifier.GetFilePath("confusion-matrix.csv");
-
-    const auto &reprojectedCropMaskFile = reprojectCropMask.GetFilePath("reprojected_crop_mask.tif");
-    const auto &croppedCropMaskFile = cropCropMask.GetFilePath("cropped_crop_mask.tif");
-
-    const auto &cropTypeMapUncut = imageClassifier.GetFilePath("crop_type_map_uncut.tif");
-    const auto &cropTypeMapNoMaskUncut = imageClassifier.GetFilePath("crop_type_map_nomask_uncut.tif");
-
-    const auto &cropTypeMapMaskUncompressed = clipCropType.GetFilePath("crop_type_map_mask_uncompressed.tif");
-    const auto &cropTypeMapNoMaskUncompressed = clipCropType.GetFilePath("crop_type_map_nomask_uncompressed.tif");
-
-    const auto &confusionMatrixValidation = computeConfusionMatrix.GetFilePath("confusion-matrix-validation.csv");
-    const auto &qualityMetrics = computeConfusionMatrix.GetFilePath("quality_metrics.txt");
-    const auto &xmlValidationMetrics = xmlMetrics.GetFilePath("validation-metrics.xml");
-
-    QStringList qualityFlagsExtractorArgs = { "QualityFlagsExtractor",
-                                              "-out", "\"" + statusFlags+"?gdal:co:COMPRESS=DEFLATE\"",
-                                              "-mission", mission};
-    QStringList bandsExtractorArgs = { "BandsExtractor", "-out", rawtocr,  "-mask", rawmask,
-                                       "-outdate", dates,  "-shape", shape, "-mission", mission };
-    if (cfg.resolution) {
-        qualityFlagsExtractorArgs.append("-pixsize");
-        qualityFlagsExtractorArgs.append(resolutionStr);
-        bandsExtractorArgs.append("-pixsize");
-        bandsExtractorArgs.append(resolutionStr);
-    }
-    qualityFlagsExtractorArgs.append("-il");
-    qualityFlagsExtractorArgs += listProducts;
-    bandsExtractorArgs.append("-il");
-    bandsExtractorArgs += listProducts;
-
-    QStringList trainImagesClassifierArgs = {
-        "-io.il",      feFts,       "-io.vd",      trainingPolys, "-io.imstat",     statistics,
-        "-rand",       cfg.randomSeed,  "-sample.bm",  "0",           "-io.confmatout", confusionMatrix,
-        "-io.out",     model,       "-sample.mt",  "-1",          "-sample.mv",     "-1",
-        "-sample.vtr", "0.1",       "-sample.vfn", cfg.fieldName,        "-classifier",    cfg.classifier };
-
-    if (cfg.classifier == "rf") {
-        trainImagesClassifierArgs.append("-classifier.rf.nbtrees");
-        trainImagesClassifierArgs.append(cfg.classifierRfNbTrees);
-        trainImagesClassifierArgs.append("-classifier.rf.min");
-        trainImagesClassifierArgs.append(cfg.classifierRfMinSamples);
-        trainImagesClassifierArgs.append("-classifier.rf.max");
-        trainImagesClassifierArgs.append(cfg.classifierRfMaxDepth);
-    } else {
-        trainImagesClassifierArgs.append("-classifier.svm.k");
-        trainImagesClassifierArgs.append(cfg.classifierSvmKernel);
-        trainImagesClassifierArgs.append("-classifier.svm.opt");
-        trainImagesClassifierArgs.append(cfg.classifierSvmOptimize);
-    }
-
-    globalExecInfos.allStepsList = {
-        qualityFlagsExtractorTask.CreateStep("QualityFlagsExtractor", qualityFlagsExtractorArgs),
-        bandsExtractor.CreateStep("BandsExtractor", bandsExtractorArgs),
-        reprojectPolys.CreateStep(
-            "ReprojectPolys", { "-t_srs", shapeEsriPrj, "-overwrite", refPolysReprojected, cfg.referencePolygons }),
-        clipPolys.CreateStep("ClipPolys",
-                             { "-clipsrc", shape, refPolysClipped, refPolysReprojected }),
-        clipRaster.CreateStep("ClipRasterImage",
-                              { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
-                                "-crop_to_cutline", "-multi", "-wm", cfg.appsMem, rawtocr, tocr }),
-        clipRaster.CreateStep("ClipRasterMask",
-                              { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
-                                "-crop_to_cutline", "-multi", "-wm", cfg.appsMem, rawmask, mask }),
-        sampleSelection.CreateStep("SampleSelection", { "SampleSelection", "-ref", refPolysClipped,
-                                                        "-ratio", cfg.sampleRatio, "-lut", lut, "-tp",
-                                                        trainingPolys, "-vp", validationPolys,
-                                                        "-seed", cfg.randomSeed}),
-        temporalResampling.CreateStep("TemporalResampling",
-                                      { "TemporalResampling", "-tocr", tocr, "-mask", mask, "-ind",
-                                        dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16",
-                                        "-rtocr", rtocr, "-mode", cfg.temporalResamplingMode}),
-        featureExtraction.CreateStep("FeatureExtraction",
-                                     { "FeatureExtraction", "-rtocr", rtocr, "-fts", feFts }),
-
-        computeImagesStatistics.CreateStep("ComputeImagesStatistics",
-                                           { "-il", feFts, "-out", statistics }),
-        reprojectCropMask.CreateStep("ReprojectCropMask", {"-multi", "-wm", cfg.appsMem,
-                                             "-dstnodata", "0", "-overwrite", "-t_srs", shapeEsriPrj, cropMask, reprojectedCropMaskFile}),
-        cropCropMask.CreateStep("CroppedCropMask", {"-multi", "-wm", cfg.appsMem,  "-dstnodata", "0",
-                                             "-overwrite", "-tr", resolutionStr, resolutionStr,"-cutline", shape,
-                                              "-crop_to_cutline",reprojectedCropMaskFile, croppedCropMaskFile}),
-        trainImagesClassifier.CreateStep("TrainImagesClassifier", trainImagesClassifierArgs),
-
-        imageClassifier.CreateStep("ImageClassifier", { "-in",    feFts, "-imstat", statistics,
-                                                        "-model", model, "-out",    cropTypeMapNoMaskUncut}),
-        bandMathMasking.CreateStep("BandMathMasking", {"BandMath", "-il", croppedCropMaskFile, cropTypeMapNoMaskUncut, "-out", cropTypeMapUncut +
-                                                       "?gdal:co:COMPRESS=DEFLATE", "-exp", "\"im1b1 == 1 ? im2b1 : 0\""}),
-        clipCropTypeNoMask.CreateStep("ClipCropTypeMapNoMask", {"-dstnodata", "\"-10000\"", "-co", "COMPRESS=LZW", "-ot", "int16", "-overwrite", "-cutline", shape,
-                                                                "-crop_to_cutline", cropTypeMapNoMaskUncut, cropTypeMapNoMaskUncompressed}),
-        clipCropType.CreateStep("ClipCropTypeMap", { "-dstnodata", "\"-10000\"", "-co", "COMPRESS=LZW", "-ot", "int16", "-overwrite", "-cutline", shape,
-                                  "-crop_to_cutline", cropTypeMapUncut, cropTypeMapMaskUncompressed }),
-        computeConfusionMatrix.CreateStep("ComputeConfusionMatrix",
-                                          { "-in", cropTypeMapMaskUncompressed, "-out",
-                                            confusionMatrixValidation, "-ref", "vector",
-                                            "-ref.vector.in", validationPolys, "-ref.vector.field",
-                                            cfg.fieldName, "-nodatalabel", "-10000" }),
-        xmlMetrics.CreateStep("XMLMetrics", { "XMLStatistics", "-confmat",
-                                              confusionMatrixValidation, "-quality", qualityMetrics,
-                                              "-root", "CropType", "-out", xmlValidationMetrics })
-    };
-    CropTypeProductFormatterParams &productFormatterParams = globalExecInfos.prodFormatParams;
-    productFormatterParams.cropTypeMap = cropTypeMapMaskUncompressed;
-    productFormatterParams.rawCropTypeMap = cropTypeMapNoMaskUncompressed;
-    productFormatterParams.xmlValidationMetrics = xmlValidationMetrics;
-    productFormatterParams.statusFlags = statusFlags;
+    QStringList corpTypeArgs = GetCropTypeTaskArgs(ctx, event, cfg, listProducts, cropTypeTask);
+    allSteps.append(cropTypeTask.CreateStep("CropTypeFused", corpTypeArgs));
+    return allSteps;
 }
 
+QStringList CropTypeHandler::GetCropTypeTaskArgs(EventProcessingContext &ctx, const JobSubmittedEvent &event,
+                    const CropTypeJobConfig &cfg, const QStringList &listProducts, TaskToSubmit &cropTypeTask) {
 
-void CropTypeHandler::HandleNoMaskTilesList(EventProcessingContext &ctx,
-                                         const CropTypeJobConfig &cfg, const TileTemporalFilesInfo &tileTemporalFilesInfo, CropTypeGlobalExecutionInfos &globalExecInfos)
-{
-    QStringList listProducts = ProcessorHandlerHelper::GetTemporalTileFiles(tileTemporalFilesInfo);
-    auto mission = ProcessorHandlerHelper::GetMissionNamePrefixFromSatelliteId(tileTemporalFilesInfo.primarySatelliteId);
-    const auto &resolutionStr = QString::number(cfg.resolution);
-    QList<TaskToSubmit> &allTasksList = globalExecInfos.allTasksList;
+    QMap<QString, TileTemporalFilesInfo>  mapTiles = GroupTiles(ctx, event.siteId, event.jobId, listProducts,
+                                                                ProductType::L2AProductTypeId);
 
-    int curTaskIdx = 0;
-    TaskToSubmit &qualityFlagsExtractorTask = allTasksList[curTaskIdx++];
-    TaskToSubmit &bandsExtractor = allTasksList[curTaskIdx++];
-    TaskToSubmit &reprojectPolys = allTasksList[curTaskIdx++];
-    TaskToSubmit &clipPolys = allTasksList[curTaskIdx++];
-    TaskToSubmit &clipRaster = allTasksList[curTaskIdx++];
-    TaskToSubmit &sampleSelection = allTasksList[curTaskIdx++];
-    TaskToSubmit &temporalResampling = allTasksList[curTaskIdx++];
-    TaskToSubmit &featureExtraction = allTasksList[curTaskIdx++];
-    TaskToSubmit &computeImagesStatistics = allTasksList[curTaskIdx++];
-    TaskToSubmit &trainImagesClassifier = allTasksList[curTaskIdx++];
-    TaskToSubmit &imageClassifier = allTasksList[curTaskIdx++];
-    TaskToSubmit &clipCropType = allTasksList[curTaskIdx++];
-    TaskToSubmit &computeConfusionMatrix = allTasksList[curTaskIdx++];
-    TaskToSubmit &xmlMetrics = allTasksList[curTaskIdx++];
+    const auto &outputDir = cropTypeTask.GetFilePath("");
+    const auto &outPropsPath = cropTypeTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
 
-    SubmitTasks(ctx, cfg.jobId,
-                    { qualityFlagsExtractorTask, bandsExtractor, reprojectPolys, clipPolys, clipRaster, sampleSelection, temporalResampling,
-                      featureExtraction, computeImagesStatistics, trainImagesClassifier,
-                      imageClassifier, clipCropType, computeConfusionMatrix, xmlMetrics });
+    const auto &targetFolder = GetFinalProductFolder(ctx, cfg.jobId, cfg.siteId);
+    QStringList cropTypeArgs = { "-refp", cfg.referencePolygons,
+                                 "-ratio", cfg.sampleRatio,
+                                 //"-trm", cfg.temporalResamplingMode,
+                                 "-classifier", cfg.classifier,
+                                 "-rseed", cfg.randomSeed,
+                                 "-pixsize", QString::number(cfg.resolution),
+                                 "-rfnbtrees", cfg.classifierRfNbTrees,
+                                 "-rfmax", cfg.classifierRfMaxDepth,
+                                 "-rfmin", cfg.classifierRfMinSamples,
+                                 "-siteid", QString::number(cfg.siteId),
+                                 "-outdir", outputDir,
+                                 "-targetfolder", targetFolder,
+                                 "-outprops", outPropsPath};
 
-    const auto &trainingPolys = sampleSelection.GetFilePath("training_polygons.shp");
-    const auto &validationPolys = sampleSelection.GetFilePath("validation_polygons.shp");
-    const auto &lut = sampleSelection.GetFilePath("lut.txt");
-    const auto &rawtocr = bandsExtractor.GetFilePath("rawtocr.tif");
-    const auto &rawmask = bandsExtractor.GetFilePath("rawmask.tif");
-    const auto &dates = bandsExtractor.GetFilePath("dates.txt");
-    const auto &shape = bandsExtractor.GetFilePath("shape.shp");
-    const auto &statusFlags = qualityFlagsExtractorTask.GetFilePath("statusFlags.tif");
-    const auto &shapeEsriPrj = bandsExtractor.GetFilePath("shape_esri.prj");
-
-    const auto &refPolysReprojected = reprojectPolys.GetFilePath("reference_polygons_reproject.shp");
-    const auto &refPolysClipped = clipPolys.GetFilePath("reference_clip.shp");
-    const auto &tocr = clipRaster.GetFilePath("tocr.tif");
-    const auto &mask = clipRaster.GetFilePath("mask.tif");
-    const auto &rtocr = temporalResampling.GetFilePath("rtocr.tif");
-    const auto &feFts = featureExtraction.GetFilePath("fts.tif");
-    const auto &statistics = computeImagesStatistics.GetFilePath("statistics.xml");
-    const auto &model = trainImagesClassifier.GetFilePath("model.txt");
-    const auto &confusionMatrix = trainImagesClassifier.GetFilePath("confusion-matrix.csv");
-
-    const auto &cropTypeMapNoMaskUncut = imageClassifier.GetFilePath("crop_type_map_nomask_uncut.tif");
-    const auto &cropTypeMapNoMaskUncompressed = clipCropType.GetFilePath("crop_type_map_nomask_uncompressed.tif");
-
-    const auto &confusionMatrixValidation = computeConfusionMatrix.GetFilePath("confusion-matrix-validation.csv");
-    const auto &qualityMetrics = computeConfusionMatrix.GetFilePath("quality_metrics.txt");
-    const auto &xmlValidationMetrics = xmlMetrics.GetFilePath("validation-metrics.xml");
-
-    QStringList qualityFlagsExtractorArgs = { "QualityFlagsExtractor",
-                                              "-out", "\"" + statusFlags+"?gdal:co:COMPRESS=DEFLATE\"",
-                                              "-mission", mission};
-    QStringList bandsExtractorArgs = { "BandsExtractor", "-out", rawtocr,  "-mask", rawmask,
-                                       "-outdate", dates,  "-shape", shape, "-mission", mission };
-    if (cfg.resolution) {
-        qualityFlagsExtractorArgs.append("-pixsize");
-        qualityFlagsExtractorArgs.append(resolutionStr);
-        bandsExtractorArgs.append("-pixsize");
-        bandsExtractorArgs.append(resolutionStr);
+    // normally, we can use only one list by we want (not necessary) to have the
+    // secondary satellite tiles after the main satellite tiles
+    QStringList tilePrimarySatFiles;
+    QStringList tileSecondarySatFiles;
+    for(auto tileId : mapTiles.keys())
+    {
+        // get the temporal infos for the current tile
+        const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
+        for(const ProcessorHandlerHelper::InfoTileFile &fileInfo: listTemporalTiles.temporalTilesFileInfos) {
+           if(fileInfo.satId == listTemporalTiles.primarySatelliteId) {
+               if(!tilePrimarySatFiles.contains(fileInfo.file)) {
+                   tilePrimarySatFiles.append(fileInfo.file);
+               }
+           } else {
+               if(!tileSecondarySatFiles.contains(fileInfo.file)) {
+                    tileSecondarySatFiles.append(fileInfo.file);
+               }
+           }
+        }
     }
-    qualityFlagsExtractorArgs.append("-il");
-    qualityFlagsExtractorArgs += listProducts;
-    bandsExtractorArgs.append("-il");
-    bandsExtractorArgs += listProducts;
+    cropTypeArgs += "-input";
+    cropTypeArgs += tilePrimarySatFiles;
+    cropTypeArgs += tileSecondarySatFiles;
 
-    QStringList trainImagesClassifierArgs = {
-        "-io.il",      feFts,       "-io.vd",      trainingPolys, "-io.imstat",     statistics,
-        "-rand",       cfg.randomSeed,  "-sample.bm",  "0",           "-io.confmatout", confusionMatrix,
-        "-io.out",     model,       "-sample.mt",  "-1",          "-sample.mv",     "-1",
-        "-sample.vtr", "0.1",       "-sample.vfn", cfg.fieldName,        "-classifier",    cfg.classifier };
-
-    if (cfg.classifier == "rf") {
-        trainImagesClassifierArgs.append("-classifier.rf.nbtrees");
-        trainImagesClassifierArgs.append(cfg.classifierRfNbTrees);
-        trainImagesClassifierArgs.append("-classifier.rf.min");
-        trainImagesClassifierArgs.append(cfg.classifierRfMinSamples);
-        trainImagesClassifierArgs.append("-classifier.rf.max");
-        trainImagesClassifierArgs.append(cfg.classifierRfMaxDepth);
-    } else {
-        trainImagesClassifierArgs.append("-classifier.svm.k");
-        trainImagesClassifierArgs.append(cfg.classifierSvmKernel);
-        trainImagesClassifierArgs.append("-classifier.svm.opt");
-        trainImagesClassifierArgs.append(cfg.classifierSvmOptimize);
+    if(cfg.cropMask.length() > 0) {
+        cropTypeArgs += "-maskprod";
+        cropTypeArgs += ctx.GetProductAbsolutePath(event.siteId, cfg.cropMask);
     }
 
-    globalExecInfos.allStepsList = {
-        qualityFlagsExtractorTask.CreateStep("QualityFlagsExtractor", qualityFlagsExtractorArgs),
-        bandsExtractor.CreateStep("BandsExtractor", bandsExtractorArgs),
-        reprojectPolys.CreateStep(
-            "ReprojectPolys", { "-t_srs", shapeEsriPrj, "-overwrite", refPolysReprojected, cfg.referencePolygons }),
-        clipPolys.CreateStep("ClipPolys",
-                             { "-clipsrc", shape, refPolysClipped, refPolysReprojected }),
-        clipRaster.CreateStep("ClipRasterImage",
-                              { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
-                                "-crop_to_cutline", "-multi", "-wm", cfg.appsMem, rawtocr, tocr }),
-        clipRaster.CreateStep("ClipRasterMask",
-                              { "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape,
-                                "-crop_to_cutline", "-multi", "-wm", cfg.appsMem, rawmask, mask }),
-        sampleSelection.CreateStep("SampleSelection", { "SampleSelection", "-ref", refPolysClipped,
-                                                        "-ratio", cfg.sampleRatio, "-lut", lut, "-tp",
-                                                        trainingPolys, "-vp", validationPolys,
-                                                        "-seed", cfg.randomSeed}),
-        temporalResampling.CreateStep("TemporalResampling",
-                                      { "TemporalResampling", "-tocr", tocr, "-mask", mask, "-ind",
-                                        dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16",
-                                        "-rtocr", rtocr, "-mode", cfg.temporalResamplingMode}),
-        featureExtraction.CreateStep("FeatureExtraction",
-                                     { "FeatureExtraction", "-rtocr", rtocr, "-fts", feFts }),
+    if(cfg.strataShp.length() > 0) {
+        cropTypeArgs += "-strata";
+        cropTypeArgs += cfg.strataShp;
+    }
 
-        computeImagesStatistics.CreateStep("ComputeImagesStatistics",
-                                           { "-il", feFts, "-out", statistics }),
-        trainImagesClassifier.CreateStep("TrainImagesClassifier", trainImagesClassifierArgs),
+    if(cfg.lutPath.size() > 0) {
+        cropTypeArgs += "-lut";
+        cropTypeArgs += cfg.lutPath;
+    }
 
-        imageClassifier.CreateStep("ImageClassifier", { "-in",    feFts, "-imstat", statistics,
-                                                        "-model", model, "-out",    cropTypeMapNoMaskUncut }),
-        clipCropType.CreateStep("ClipCropTypeMap",
-                                { "-dstnodata", "\"-10000\"", "-co", "COMPRESS=LZW", "-ot", "int16", "-overwrite", "-cutline", shape,
-                                  "-crop_to_cutline", cropTypeMapNoMaskUncut, cropTypeMapNoMaskUncompressed }),
-        computeConfusionMatrix.CreateStep("ComputeConfusionMatrix",
-                                          { "-in", cropTypeMapNoMaskUncompressed, "-out",
-                                            confusionMatrixValidation, "-ref", "vector",
-                                            "-ref.vector.in", validationPolys, "-ref.vector.field",
-                                            cfg.fieldName, "-nodatalabel", "-10000" }),
-        xmlMetrics.CreateStep("XMLMetrics", { "XMLStatistics", "-confmat",
-                                              confusionMatrixValidation, "-quality", qualityMetrics,
-                                              "-root", "CropType", "-out", xmlValidationMetrics })
-    };
-
-    CropTypeProductFormatterParams &productFormatterParams = globalExecInfos.prodFormatParams;
-    productFormatterParams.cropTypeMap = cropTypeMapNoMaskUncompressed;
-    productFormatterParams.xmlValidationMetrics = xmlValidationMetrics;
-    productFormatterParams.statusFlags = statusFlags;
+    return cropTypeArgs;
 }
 
 
@@ -478,52 +194,10 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
         }
     }
 
-    QMap<QString, TileTemporalFilesInfo> mapTiles = GroupTiles(ctx, event.siteId, event.jobId, listProducts, ProductType::L2AProductTypeId);
-    QString cropMaskAbsolutePath = ctx.GetProductAbsolutePath(event.siteId, cfg.cropMask);
-    QMap<QString, QString> mapCropMasks;
-    if (QFileInfo(cropMaskAbsolutePath).isDir()) {
-        mapCropMasks = ProcessorHandlerHelper::GetHigLevelProductFiles(cropMaskAbsolutePath, "CM", false);
-    } else {
-        // we have only one file for all tiles - but in this case we should have only one tile
-        if(mapTiles.size() != 1){
-            ctx.MarkJobFailed(event.jobId);
-            throw std::runtime_error(
-                QStringLiteral("An input CropMask is needed for each tile").
-                        toStdString());
-        }
-        for(const auto &e : mapTiles.keys()) {
-            mapCropMasks[e] = cropMaskAbsolutePath;
-        }
-    }
-
-    QList<CropTypeProductFormatterParams> listParams;
-
-    TaskToSubmit productFormatterTask{"product-formatter", {}};
-    NewStepList allSteps;
-    //container for all task
     QList<TaskToSubmit> allTasksList;
-    QList<CropTypeGlobalExecutionInfos> listCropTypeInfos;
-    for(auto tileId : mapTiles.keys())
-    {
-       const TileTemporalFilesInfo &listTemporalTiles = mapTiles.value(tileId);
-       QString cropMask = mapCropMasks.value(tileId);
-       listCropTypeInfos.append(CropTypeGlobalExecutionInfos());
-       CropTypeGlobalExecutionInfos &infos = listCropTypeInfos[listCropTypeInfos.size()-1];
-       infos.prodFormatParams.tileId = GetProductFormatterTile(tileId);
-       HandleNewTilesList(ctx, cfg, listTemporalTiles, cropMask, infos);
-       listParams.append(infos.prodFormatParams);
-       productFormatterTask.parentTasks += infos.prodFormatParams.parentsTasksRef;
-       allTasksList.append(infos.allTasksList);
-       allSteps.append(infos.allStepsList);
-    }
-
-    SubmitTasks(ctx, event.jobId, {productFormatterTask});
-
-    // finally format the product
-    QStringList productFormatterArgs = GetProductFormatterArgs(productFormatterTask, ctx, cfg, listProducts, listParams);
-
-    // add these steps to the steps list to be submitted
-    allSteps.append(productFormatterTask.CreateStep("ProductFormatter", productFormatterArgs));
+    QList<std::reference_wrapper<TaskToSubmit>> allTasksListRef = CreateTasks(allTasksList);
+    SubmitTasks(ctx, cfg.jobId, allTasksListRef);
+    NewStepList allSteps = CreateSteps(ctx, event, allTasksList, cfg, listProducts);
     ctx.SubmitSteps(allSteps);
 }
 
@@ -531,60 +205,11 @@ void CropTypeHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
-    if (event.module == "bands-extractor") {
-        // get the value for -t_srs as
-        //        # ogr2ogr Reproject insitu data (Step 10)
-        //        with open(shape_proj, 'r') as file:
-        //                shape_wkt = "ESRI::" + file.read()
-        const auto &shapePrjPath =
-            ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) + "shape.prj";
-        const auto &shapePrjEsriPath =
-            ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) + "shape_esri.prj";
-
-        QFile outFile(shapePrjEsriPath);
-        if (!outFile.open(QIODevice::WriteOnly)) {
-            throw std::runtime_error(QStringLiteral("Unable to open %1: %2")
-                                         .arg(shapePrjEsriPath)
-                                         .arg(outFile.errorString())
-                                         .toStdString());
-        }
-
-        QFile inFile(shapePrjPath);
-        if (!inFile.open(QIODevice::ReadOnly | QIODevice::Text))
-        {
-            throw std::runtime_error(QStringLiteral("Unable to open %1: %2")
-                                         .arg(shapePrjPath)
-                                         .arg(outFile.errorString())
-                                         .toStdString());
-        }
-        QTextStream inStream(&inFile);
-        QTextStream outStream(&outFile);
-        outStream << "ESRI::" << inStream.readAll();
-
-    }
-    if (event.module == "compute-confusion-matrix") {
-        const auto &outputs = ctx.GetTaskConsoleOutputs(event.taskId);
-
-        const auto &qualityMetrics =
-            ctx.GetOutputPath(event.jobId, event.taskId, event.module, processorDescr.shortName) + "quality_metrics.txt";
-
-        QFile file(qualityMetrics);
-        if (!file.open(QIODevice::WriteOnly)) {
-            throw std::runtime_error(QStringLiteral("Unable to open %1: %2")
-                                         .arg(qualityMetrics)
-                                         .arg(file.errorString())
-                                         .toStdString());
-        }
-
-        QTextStream s(&file);
-        s << outputs[0].stdOutText;
-    }
-    if (event.module == "product-formatter") {
-        ctx.MarkJobFinished(event.jobId);
-
+    if (event.module == "crop-type-fused") {
         QString prodName = GetProductFormatterProductName(ctx, event);
         QString productFolder = GetFinalProductFolder(ctx, event.jobId, event.siteId) + "/" + prodName;
         if(prodName != "" && ProcessorHandlerHelper::IsValidHighLevelProduct(productFolder)) {
+            ctx.MarkJobFinished(event.jobId);
             QString quicklook = GetProductFormatterQuicklook(ctx, event);
             QString footPrint = GetProductFormatterFootprint(ctx, event);
             // Insert the product into the database
@@ -594,113 +219,14 @@ void CropTypeHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                 event.jobId, productFolder, maxDate, prodName, quicklook,
                                 footPrint, std::experimental::nullopt, TileIdList() });
 
-            // Now remove the job folder containing temporary files
-            RemoveJobFolder(ctx, event.jobId, "l4b");
         } else {
+            ctx.MarkJobFailed(event.jobId);
             Logger::error(QStringLiteral("Cannot insert into database the product with name %1 and folder %2").arg(prodName).arg(productFolder));
         }
+        // Now remove the job folder containing temporary files
+        RemoveJobFolder(ctx, event.jobId, "l4b");
     }
 }
-
-void CropTypeHandler::WriteExecutionInfosFile(const QString &executionInfosPath,
-                                               const CropTypeJobConfig &cfg,
-                                               const QStringList &listProducts) {
-    std::ofstream executionInfosFile;
-    try
-    {
-        executionInfosFile.open(executionInfosPath.toStdString().c_str(), std::ofstream::out);
-        executionInfosFile << "<?xml version=\"1.0\" ?>" << std::endl;
-        executionInfosFile << "<metadata>" << std::endl;
-        executionInfosFile << "  <General>" << std::endl;
-        executionInfosFile << "  </General>" << std::endl;
-
-        // Get the parameters from the configuration
-        executionInfosFile << "  <Parameters>" << std::endl;
-
-
-        executionInfosFile << "    <reference_polygons>"                << cfg.referencePolygons.toStdString()        <<          "</reference_polygons>" << std::endl;
-        executionInfosFile << "    <random_seed>"                       << cfg.randomSeed.toStdString()               <<          "</random_seed>" << std::endl;
-        executionInfosFile << "    <sample-ratio>"                      << cfg.sampleRatio.toStdString()              <<          "</sample-ratio>" << std::endl;
-        executionInfosFile << "    <temporal_resampling_mode>"          << cfg.temporalResamplingMode.toStdString()   <<          "</temporal_resampling_mode>" << std::endl;
-        executionInfosFile << "    <classifier>"                        << cfg.classifier.toStdString()               <<          "</classifier>" << std::endl;
-        executionInfosFile << "    <classifier.field>"                  << cfg.fieldName.toStdString()                <<          "</classifier.field>" << std::endl;
-        executionInfosFile << "    <classifier.rf.nbtrees>"             << cfg.classifierRfNbTrees.toStdString()      <<          "</classifier.rf.nbtrees>" << std::endl;
-        executionInfosFile << "    <classifier.rf.min>"                 << cfg.classifierRfMinSamples.toStdString()   <<          "</classifier.rf.min>" << std::endl;
-        executionInfosFile << "    <classifier.rf.max>"                 << cfg.classifierRfMaxDepth.toStdString()     <<          "</classifier.rf.max>" << std::endl;
-        executionInfosFile << "    <classifier.svm.k>"                  << cfg.classifierSvmKernel.toStdString()      <<          "</classifier.svm.k>" << std::endl;
-        executionInfosFile << "    <classifier.svm.opt>"                << cfg.classifierSvmOptimize.toStdString()    <<          "</classifier.svm.opt>" << std::endl;
-        executionInfosFile << "    <lut_map>"                           << cfg.lutPath.toStdString()                  <<          "</lut_map>" << std::endl;
-
-        executionInfosFile << "  </Parameters>" << std::endl;
-        executionInfosFile << "  <XML_files>" << std::endl;
-        for (int i = 0; i<listProducts.size(); i++) {
-            executionInfosFile << "    <XML_" << std::to_string(i) << ">" << listProducts[i].toStdString()
-                               << "</XML_" << std::to_string(i) << ">" << std::endl;
-        }
-        executionInfosFile << "  </XML_files>" << std::endl;
-        executionInfosFile << "</metadata>" << std::endl;
-        executionInfosFile.close();
-    }
-    catch(...)
-    {
-
-    }
-}
-
-QStringList CropTypeHandler::GetProductFormatterArgs(TaskToSubmit &productFormatterTask, EventProcessingContext &ctx, const CropTypeJobConfig &cfg,
-                                    const QStringList &listProducts, const QList<CropTypeProductFormatterParams> &productParams) {
-    const auto &outPropsPath = productFormatterTask.GetFilePath(PRODUCT_FORMATTER_OUT_PROPS_FILE);
-    const auto &executionInfosPath = productFormatterTask.GetFilePath("executionInfos.xml");
-    WriteExecutionInfosFile(executionInfosPath, cfg, listProducts);
-
-    const auto &targetFolder = GetFinalProductFolder(ctx, cfg.jobId, cfg.siteId);
-    QStringList productFormatterArgs = { "ProductFormatter",
-                                         "-destroot", targetFolder,
-                                         "-fileclass", "OPER",
-                                         "-level", "L4B",
-                                         "-baseline", "01.00",
-                                         "-siteid", QString::number(cfg.siteId),
-                                         "-processor", "croptype",
-                                         "-gipp", executionInfosPath,
-                                         "-outprops", outPropsPath};
-    productFormatterArgs += "-il";
-    productFormatterArgs += listProducts;
-
-    productFormatterArgs += "-processor.croptype.file";
-    for(const CropTypeProductFormatterParams &params: productParams) {
-        productFormatterArgs += GetProductFormatterTile(params.tileId);
-        productFormatterArgs += params.cropTypeMap;
-    }
-
-    // if has map, then add also the raw crop type
-    if(cfg.cropMask.size() != 0) {
-        productFormatterArgs += "-processor.croptype.rawfile";
-        for(const CropTypeProductFormatterParams &params: productParams) {
-            productFormatterArgs += GetProductFormatterTile(params.tileId);
-            productFormatterArgs += params.rawCropTypeMap;
-        }
-    }
-
-    productFormatterArgs += "-processor.croptype.quality";
-    for(const CropTypeProductFormatterParams &params: productParams) {
-        productFormatterArgs += GetProductFormatterTile(params.tileId);
-        productFormatterArgs += params.xmlValidationMetrics;
-    }
-
-    productFormatterArgs += "-processor.croptype.flags";
-    for(const CropTypeProductFormatterParams &params: productParams) {
-        productFormatterArgs += GetProductFormatterTile(params.tileId);
-        productFormatterArgs += params.statusFlags;
-    }
-
-    if(cfg.lutPath.size() > 0) {
-        productFormatterArgs += "-lut";
-        productFormatterArgs += cfg.lutPath;
-    }
-
-    return productFormatterArgs;
-}
-
 
 ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                 const ConfigurationParameterValueMap &requestOverrideCfgValues)
@@ -712,9 +238,21 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
     QDateTime seasonEndDate;
     // extract the scheduled date
     QDateTime qScheduledDate = QDateTime::fromTime_t(scheduledDate);
-    GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, qScheduledDate, requestOverrideCfgValues);
+    bool success = GetSeasonStartEndDates(ctx, siteId, seasonStartDate, seasonEndDate, qScheduledDate, requestOverrideCfgValues);
+    // if cannot get the season dates
+    if(!success) {
+        Logger::debug(QStringLiteral("Scheduler CropType: Error getting season start dates for site %1 for scheduled date %2!")
+                      .arg(siteId)
+                      .arg(qScheduledDate.toString()));
+        return params;
+    }
+
     QDateTime limitDate = seasonEndDate.addMonths(2);
     if(qScheduledDate > limitDate) {
+        Logger::debug(QStringLiteral("Scheduler CropType: Error scheduled date %1 greater than the limit date %2 for site %3!")
+                      .arg(qScheduledDate.toString())
+                      .arg(limitDate.toString())
+                      .arg(siteId));
         return params;
     }
 
@@ -731,13 +269,19 @@ ProcessorJobDefinitionParams CropTypeHandler::GetProcessingDefinitionImpl(Schedu
 
     QString shapeFile;
     QString referenceRasterFile;
+    QString strataShapeFile;
     // if none of the reference files were found, cannot run the CropMask
-    if(!ProcessorHandlerHelper::GetCropReferenceFile(refDir, shapeFile, referenceRasterFile)) {
+    if(!ProcessorHandlerHelper::GetCropReferenceFile(refDir, shapeFile, referenceRasterFile, strataShapeFile)) {
+        Logger::debug(QStringLiteral("Scheduler CropType: Error no shapefile found for site %1!")
+                      .arg(siteId));
         return params;
     }
     QString refStr = "\"reference_polygons\": \"\"";
     if(!shapeFile.isEmpty()) {
         refStr = "\"reference_polygons\": \"" + shapeFile + "\"";
+    }
+    if(!strataShapeFile.isEmpty()) {
+        refStr.append(", \"strata_shape\": \"" + strataShapeFile + "\"");
     }
 
     QString cropMaskFolder;

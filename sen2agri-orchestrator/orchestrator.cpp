@@ -7,8 +7,8 @@
 #include "configuration.hpp"
 
 #include "make_unique.hpp"
-#include "processor/cropmaskhandler_new.hpp"
-#include "processor/croptypehandler_new.hpp"
+#include "processor/cropmaskhandler.hpp"
+#include "processor/croptypehandler.hpp"
 #include "processor/compositehandler.hpp"
 #include "processor/lairetrievalhandler.hpp"
 #include "processor/lairetrievalhandler_new.hpp"
@@ -32,9 +32,9 @@ std::map<int, std::unique_ptr<ProcessorHandler>> & GetHandlersMap(PersistenceMan
         } else if(procDescr.shortName == "l3e_pheno") {
             handlersMap.emplace(procDescr.processorId, std::make_unique<PhenoNdviHandler>());
         } else if(procDescr.shortName == "l4a") {
-            handlersMap.emplace(procDescr.processorId, std::make_unique<CropMaskHandlerNew>());
+            handlersMap.emplace(procDescr.processorId, std::make_unique<CropMaskHandler>());
         } else if(procDescr.shortName == "l4b") {
-            handlersMap.emplace(procDescr.processorId, std::make_unique<CropTypeHandlerNew>());
+            handlersMap.emplace(procDescr.processorId, std::make_unique<CropTypeHandler>());
         } else {
             bAdded = false;
             throw std::runtime_error(

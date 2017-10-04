@@ -30,8 +30,6 @@ SOURCES += main.cpp \
     processorhandler.cpp \
     processor/croptypehandler.cpp \
     processor/cropmaskhandler.cpp \
-    processor/croptypehandler_new.cpp \
-    processor/cropmaskhandler_new.cpp \
     tasktosubmit.cpp \
     processor/compositehandler.cpp \
     processor/lairetrievalhandler.cpp \
@@ -51,8 +49,6 @@ HEADERS += \
     processorhandler.hpp \
     processor/croptypehandler.hpp \
     processor/cropmaskhandler.hpp \
-    processor/croptypehandler_new.hpp \
-    processor/cropmaskhandler_new.hpp \
     tasktosubmit.hpp \
     processor/compositehandler.hpp \
     processor/lairetrievalhandler.hpp \
