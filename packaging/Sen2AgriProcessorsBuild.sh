@@ -160,6 +160,7 @@ function build_dir_tree()
 {
    ##set PATH env variable to /usr/bin to avoid
    # cmake finding /lib/cmake before /usr/lib/cmake
+   # also include /usr/local/bin for fpm
    PATH="/usr/bin:/usr/local/bin"
 
    ##go to default dir
