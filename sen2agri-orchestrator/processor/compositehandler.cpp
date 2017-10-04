@@ -27,16 +27,6 @@ void CompositeHandler::CreateTasksForNewProducts(const CompositeJobConfig &cfg, 
         outAllTasksList.append(TaskToSubmit{ "composite-mask-handler", {} });
         outAllTasksList.append(TaskToSubmit{ "composite-preprocessing", {} });
 
-        // if it is a secondary satellite, then we must cut the masks and the image with
-        // gdalwarp according to the primary satellite shape
-/*        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
-            outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
-            outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
-            outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
-            outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
-            outAllTasksList.append(TaskToSubmit{ "gdalwarp", {} });
-        }
-*/
         outAllTasksList.append(TaskToSubmit{ "composite-weight-aot", {} });
         outAllTasksList.append(TaskToSubmit{ "composite-weight-on-clouds", {} });
         outAllTasksList.append(TaskToSubmit{ "composite-total-weight", {} });
@@ -69,55 +59,20 @@ void CompositeHandler::CreateTasksForNewProducts(const CompositeJobConfig &cfg, 
         outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
         nCurTaskIdx++;
 
-        // check if we need to cut (according to primary shape) the product components if we have secondary satellite product
-/*        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
-            // launch in parallel all the cutting gdalwarp tasks
-            int prevTaskId = nCurTaskIdx-1;
-            int imgCutIdx = nCurTaskIdx++;
-            outAllTasksList[imgCutIdx].parentTasks.append(outAllTasksList[prevTaskId]);
-            int aotCutIdx = nCurTaskIdx++;
-            outAllTasksList[aotCutIdx].parentTasks.append(outAllTasksList[prevTaskId]);
-            int cldCutIdx = nCurTaskIdx++;
-            outAllTasksList[cldCutIdx].parentTasks.append(outAllTasksList[prevTaskId]);
-            int watCutIdx = nCurTaskIdx++;
-            outAllTasksList[watCutIdx].parentTasks.append(outAllTasksList[prevTaskId]);
-            int snowCutIdx = nCurTaskIdx++;
-            outAllTasksList[snowCutIdx].parentTasks.append(outAllTasksList[prevTaskId]);
+        // weigh-aot -> composite-preprocessing
+        outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+        nCurTaskIdx++;
+        // weigh-on-clouds -> composite-preprocessing
+        outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-2]);
+        nCurTaskIdx++;
+        // total-weight -> weigh-aot and weigh-on-clouds
+        outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+        outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-2]);
+        nCurTaskIdx++;
+        // update-synthesis -> total-weight
+        outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
+        nCurTaskIdx++;
 
-            // weigh-aot -> composite-cut-aot
-            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[aotCutIdx]);
-            nCurTaskIdx++;
-            // weigh-on-clouds -> composite-cut-clouds
-            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[cldCutIdx]);
-            nCurTaskIdx++;
-
-            // total-weight -> weigh-aot and weigh-on-clouds
-            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
-            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-2]);
-            nCurTaskIdx++;
-
-            // update-synthesis -> total-weight & composite-cut-img & composite-cut-snow & composite-cut-wat
-            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
-            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[imgCutIdx]);
-            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[watCutIdx]);
-            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[snowCutIdx]);
-            nCurTaskIdx++;
-        } else {
-*/            // this is the case when we need to do no cutting (we are either primary satellite or we have only one satellite)
-            // weigh-aot -> composite-preprocessing
-            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
-            nCurTaskIdx++;
-            // weigh-on-clouds -> composite-preprocessing
-            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-2]);
-            nCurTaskIdx++;
-            // total-weight -> weigh-aot and weigh-on-clouds
-            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
-            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-2]);
-            nCurTaskIdx++;
-            // update-synthesis -> total-weight
-            outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
-            nCurTaskIdx++;
-//        }
         // composite-splitter -> update-synthesis
         outAllTasksList[nCurTaskIdx].parentTasks.append(outAllTasksList[nCurTaskIdx-1]);
         nCurTaskIdx++;
@@ -219,49 +174,6 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
         }
         steps.append(compositePreprocessing.CreateStep("CompositePreprocessing", compositePreprocessingArgs));
 
-/*        if(tileTemporalFilesInfo.temporalTilesFileInfos[i].satId != tileTemporalFilesInfo.primarySatelliteId) {
-            TaskToSubmit &cutImgTask = allTasksList[nCurTaskIdx++];
-            SubmitTasks(ctx, cfg.jobId, {cutImgTask});
-
-            const auto &cutImgFile = cutImgTask.GetFilePath("img_res_bands_clipped.tif");
-            QStringList gdalWarpArgs = GetGdalWarpArgs(outResImgBands, cutImgFile, "-10000", "2048", shapePath, resolutionStr);
-            steps.append(cutImgTask.CreateStep("gdalwarp-img", gdalWarpArgs));
-            outResImgBands = cutImgFile;
-            cleanupTemporaryFilesList.append(cutImgFile);
-
-            TaskToSubmit &cutAotTask = allTasksList[nCurTaskIdx++];
-            SubmitTasks(ctx, cfg.jobId, {cutAotTask});
-            const auto &cutAotFile = cutAotTask.GetFilePath("aot_res_clipped.tif");
-            QStringList gdalWarpAotArgs = GetGdalWarpArgs(aotResImg, cutAotFile, "-10000", "2048", shapePath, resolutionStr);
-            steps.append(cutAotTask.CreateStep("gdalwarp-aot", gdalWarpAotArgs));
-            aotResImg = cutAotFile;
-            cleanupTemporaryFilesList.append(cutAotFile);
-
-            TaskToSubmit &cutCldTask = allTasksList[nCurTaskIdx++];
-            SubmitTasks(ctx, cfg.jobId, {cutCldTask});
-            const auto &cutCldFile = cutCldTask.GetFilePath("cld_res_clipped.tif");
-            QStringList gdalWarpCldArgs = GetGdalWarpArgs(cldResImg, cutCldFile, "-10000", "2048", shapePath, resolutionStr);
-            steps.append(cutCldTask.CreateStep("gdalwarp-cld", gdalWarpCldArgs));
-            cldResImg = cutCldFile;
-            cleanupTemporaryFilesList.append(cutCldFile);
-
-            TaskToSubmit &cutWatTask = allTasksList[nCurTaskIdx++];
-            SubmitTasks(ctx, cfg.jobId, {cutWatTask});
-            const auto &cutWatFile = cutWatTask.GetFilePath("water_res_clipped.tif");
-            QStringList gdalWarpWatArgs = GetGdalWarpArgs(waterResImg, cutWatFile, "-10000", "2048", shapePath, resolutionStr);
-            steps.append(cutWatTask.CreateStep("gdalwarp-wat", gdalWarpWatArgs));
-            waterResImg = cutWatFile;
-            cleanupTemporaryFilesList.append(cutWatFile);
-
-            TaskToSubmit &cutSnowTask = allTasksList[nCurTaskIdx++];
-            SubmitTasks(ctx, cfg.jobId, {cutSnowTask});
-            const auto &cutSnowFile = cutSnowTask.GetFilePath("snow_res_clipped.tif");
-            QStringList gdalWarpSnowArgs = GetGdalWarpArgs(snowResImg, cutSnowFile, "-10000", "2048", shapePath, resolutionStr);
-            steps.append(cutSnowTask.CreateStep("gdalwarp-snow", gdalWarpSnowArgs));
-            snowResImg = cutSnowFile;
-            cleanupTemporaryFilesList.append(cutSnowFile);
-        }
-*/
         TaskToSubmit &weightAot = allTasksList[nCurTaskIdx++];
         SubmitTasks(ctx, cfg.jobId, {weightAot});
         TaskToSubmit &weightOnClouds = allTasksList[nCurTaskIdx++];
@@ -371,20 +283,6 @@ void CompositeHandler::HandleNewTilesList(EventProcessingContext &ctx,
     productFormatterParams.prevL3AProdDates = prevL3AProdDates;
     productFormatterParams.prevL3ARgbFile = prevL3ARgbFile;
 }
-
-QStringList CompositeHandler::GetGdalWarpArgs(const QString &inImg, const QString &outImg, const QString &dtsNoData,
-                                             const QString &gdalwarpMem, const QString &shape, const QString &resolutionStr) {
-    QStringList retList = { "-dstnodata", dtsNoData, "-overwrite", "-cutline", shape,
-             "-multi", "-wm", gdalwarpMem, "-crop_to_cutline", inImg, outImg };
-    if(!resolutionStr.isEmpty()) {
-        retList.append("-tr");
-        retList.append(resolutionStr);
-        retList.append(resolutionStr);
-    }
-
-    return retList;
-}
-
 
 void CompositeHandler::WriteExecutionInfosFile(const QString &executionInfosPath,
                                                const CompositeJobConfig &cfg,

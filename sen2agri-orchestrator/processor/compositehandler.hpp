@@ -76,8 +76,6 @@ private:
     QStringList GetMissionsFromBandsMapping(const QString &bandsMappingFile);
     QString DeductBandsMappingFile(const QStringList &listProducts, const QString &bandsMappingFile, int &resolution);
 
-    QStringList GetGdalWarpArgs(const QString &inImg, const QString &outImg, const QString &dtsNoData,
-                                const QString &gdalwarpMem, const QString &shape, const QString &resolutionStr);
     void GetJobConfig(EventProcessingContext &ctx,const JobSubmittedEvent &event,CompositeJobConfig &cfg);
 };
 
