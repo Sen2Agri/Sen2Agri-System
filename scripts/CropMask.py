@@ -11,69 +11,69 @@ from sen2agri_common import executeStep
 
 
 def inSituDataAvailable() :
-	#Features when insitu data is available (Step 6 or 7 or 8)
-	executeStep("FeaturesWithInsitu", "otbcli", "FeaturesWithInsitu", buildFolder,"-ndvi",ndvi,"-ndwi",ndwi,"-brightness",brightness,"-dates",outdays,"-window", window,"-bm", "true", "-out",features, skip=fromstep>6, rmfiles=[] if keepfiles else [ndwi, brightness])
+    #Features when insitu data is available (Step 6 or 7 or 8)
+    executeStep("FeaturesWithInsitu", "otbcli", "FeaturesWithInsitu", buildFolder,"-ndvi",ndvi,"-ndwi",ndwi,"-brightness",brightness,"-dates",outdays,"-window", window,"-bm", "true", "-out",features, skip=fromstep>6, rmfiles=[] if keepfiles else [ndwi, brightness])
 
-	# Image Statistics (Step 9)
-	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", features,"-out",statistics, skip=fromstep>9)
+    # Image Statistics (Step 9)
+    executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", features,"-out",statistics, skip=fromstep>9)
 
-        # ogr2ogr Reproject insitu data (Step 10)
-        with open(shape_proj, 'r') as file:
-            shape_wkt = "ESRI::" + file.read()
+    # ogr2ogr Reproject insitu data (Step 10)
+    with open(shape_proj, 'r') as file:
+        shape_wkt = "ESRI::" + file.read()
 
-	executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-t_srs", shape_wkt,"-progress","-overwrite",reference_polygons_reproject, reference_polygons, skip=fromstep>10)
+    executeStep("ogr2ogr", "ogr2ogr", "-t_srs", shape_wkt,"-progress","-overwrite",reference_polygons_reproject, reference_polygons, skip=fromstep>10)
 
-	# ogr2ogr Crop insitu data (Step 11)
-	executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-clipsrc", shape,"-progress","-overwrite",reference_polygons_clip, reference_polygons_reproject, skip=fromstep>11)
+    # ogr2ogr Crop insitu data (Step 11)
+    executeStep("ogr2ogr", "ogr2ogr", "-clipsrc", shape,"-progress","-overwrite",reference_polygons_clip, reference_polygons_reproject, skip=fromstep>11)
 
-	# Sample Selection (Step 12)
-	executeStep("SampleSelection", "otbcli","SampleSelection", buildFolder, "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons,"-nofilter","true", skip=fromstep>12)
+    # Sample Selection (Step 12)
+    executeStep("SampleSelection", "otbcli","SampleSelection", buildFolder, "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons,"-nofilter","true", skip=fromstep>12)
 
-	#Train Image Classifier (Step 13)
-	executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il",
+    #Train Image Classifier (Step 13)
+    executeStep("TrainImagesClassifier", "otbcli_TrainImagesClassifier", "-io.il",
                 features,"-io.vd",training_polygons,"-io.imstat", statistics, "-rand", random_seed,
                 "-sample.bm", "0", "-sample.vtr", "0.5", "-io.confmatout",
                 confmatout,"-io.out",model,"-sample.mt", "4000","-sample.mv","-1","-sample.vfn","CROP","-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>13)
-	#Image Classifier (Step 14)
-	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", features,"-imstat",statistics,"-model", model, "-out", raw_crop_mask_uncompressed, skip=fromstep>14, rmfiles=[] if keepfiles else [features])
+    #Image Classifier (Step 14)
+    executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", features,"-imstat",statistics,"-model", model, "-out", raw_crop_mask_uncompressed, skip=fromstep>14, rmfiles=[] if keepfiles else [features])
 
-	return;
+    return;
 #end inSituDataAvailable
 
 def noInSituDataAvailable() :
-	global validation_polygons
+    global validation_polygons
 
-	#Data Smoothing for Reflectances (Step 16)
-	executeStep("DataSmoothing for Reflectances", "otbcli", "DataSmoothing", buildFolder,"-ts", tocr, "-mask", mask, "-dates", dates, "-lambda", lmbd, "-sts",rtocr_smooth, "-outdays", outdays_smooth, skip=fromstep>16, rmfiles=[] if keepfiles else [rtocr])
+    #Data Smoothing for Reflectances (Step 16)
+    executeStep("DataSmoothing for Reflectances", "otbcli", "DataSmoothing", buildFolder,"-ts", tocr, "-mask", mask, "-dates", dates, "-lambda", lmbd, "-sts",rtocr_smooth, "-outdays", outdays_smooth, skip=fromstep>16, rmfiles=[] if keepfiles else [rtocr])
 
-	#Features when no insitu data is available (Step 17)
-	executeStep("FeaturesWithoutInsitu", "otbcli", "FeaturesWithoutInsitu", buildFolder, "-ts", rtocr_smooth, "-dates", outdays_smooth , "-sf", spectral_features, skip=fromstep>17, rmfiles=[] if keepfiles else [rtocr_smooth])
+    #Features when no insitu data is available (Step 17)
+    executeStep("FeaturesWithoutInsitu", "otbcli", "FeaturesWithoutInsitu", buildFolder, "-ts", rtocr_smooth, "-dates", outdays_smooth , "-sf", spectral_features, skip=fromstep>17, rmfiles=[] if keepfiles else [rtocr_smooth])
 
-	# Image Statistics (Step 18)
-	executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", spectral_features, "-out", statistics_noinsitu, skip=fromstep>18)
+    # Image Statistics (Step 18)
+    executeStep("ComputeImagesStatistics", "otbcli_ComputeImagesStatistics", "-il", spectral_features, "-out", statistics_noinsitu, skip=fromstep>18)
 
-	# Reference Map preparation (Step 19 and 20)
-        with open(shape_proj, 'r') as file:
-            shape_wkt = "ESRI::" + file.read()
+    # Reference Map preparation (Step 19 and 20)
+    with open(shape_proj, 'r') as file:
+        shape_wkt = "ESRI::" + file.read()
 
-	executeStep("gdalwarp for cropping Reference map", "/usr/local/bin/gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shape, "-crop_to_cutline", reference, cropped_reference, skip=fromstep>19)
-	executeStep("gdalwarp for reprojecting Reference map", "/usr/local/bin/gdalwarp", "-dstnodata", "0", "-overwrite", "-t_srs", shape_wkt, cropped_reference, reprojected_reference, skip=fromstep>19, rmfiles=[] if keepfiles else [cropped_reference])
-	executeStep("gdalwarp for resampling Reference map", "/usr/local/bin/gdalwarp", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_reference, crop_reference, skip=fromstep>20, rmfiles=[] if keepfiles else [reprojected_reference])
+    executeStep("gdalwarp for cropping Reference map", "gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shape, "-crop_to_cutline", reference, cropped_reference, skip=fromstep>19)
+    executeStep("gdalwarp for reprojecting Reference map", "gdalwarp", "-dstnodata", "0", "-overwrite", "-t_srs", shape_wkt, cropped_reference, reprojected_reference, skip=fromstep>19, rmfiles=[] if keepfiles else [cropped_reference])
+    executeStep("gdalwarp for resampling Reference map", "gdalwarp", "-dstnodata", "0", "-overwrite", "-tr", pixsize, pixsize, "-cutline", shape, "-crop_to_cutline", reprojected_reference, crop_reference, skip=fromstep>20, rmfiles=[] if keepfiles else [reprojected_reference])
 
-	# Erosion (Step 21)
-	executeStep("Erosion", "otbcli", "Erosion", buildFolder,"-in", crop_reference, "-out", eroded_reference, "-radius", erode_radius, skip=fromstep>21, rmfiles=[] if keepfiles else [crop_reference])
+    # Erosion (Step 21)
+    executeStep("Erosion", "otbcli", "Erosion", buildFolder,"-in", crop_reference, "-out", eroded_reference, "-radius", erode_radius, skip=fromstep>21, rmfiles=[] if keepfiles else [crop_reference])
 
 
-	# Trimming (Step 22)
-	executeStep("Trimming", "otbcli", "Trimming", buildFolder,"-feat", spectral_features, "-ref", eroded_reference, "-out", trimmed_reference_raster, "-alpha", alpha, "-nbsamples", "0", "-seed", random_seed, skip=fromstep>22, rmfiles=[] if keepfiles else [eroded_reference])
+    # Trimming (Step 22)
+    executeStep("Trimming", "otbcli", "Trimming", buildFolder,"-feat", spectral_features, "-ref", eroded_reference, "-out", trimmed_reference_raster, "-alpha", alpha, "-nbsamples", "0", "-seed", random_seed, skip=fromstep>22, rmfiles=[] if keepfiles else [eroded_reference])
 
-	#Train Image Classifier (Step 23)
-	executeStep("TrainImagesClassifierNew", "otbcli", "TrainImagesClassifierNew", buildFolder, "-io.il", spectral_features,"-io.rs",trimmed_reference_raster,"-nodatalabel", "-10000", "-io.imstat", statistics_noinsitu, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","4000","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>23)
+    #Train Image Classifier (Step 23)
+    executeStep("TrainImagesClassifierNew", "otbcli", "TrainImagesClassifierNew", buildFolder, "-io.il", spectral_features,"-io.rs",trimmed_reference_raster,"-nodatalabel", "-10000", "-io.imstat", statistics_noinsitu, "-rand", random_seed, "-sample.bm", "0", "-io.confmatout", confmatout,"-io.out",model,"-sample.mt", nbtrsample,"-sample.mv","4000","-sample.vtr",sample_ratio,"-classifier","rf", "-classifier.rf.nbtrees",rfnbtrees,"-classifier.rf.min",rfmin,"-classifier.rf.max",rfmax, skip=fromstep>23)
 
-	#Image Classifier (Step 24)
-	executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", spectral_features,"-imstat",statistics_noinsitu,"-model", model, "-out", raw_crop_mask_uncompressed, skip=fromstep>24, rmfiles=[] if keepfiles else [spectral_features])
+    #Image Classifier (Step 24)
+    executeStep("ImageClassifier", "otbcli_ImageClassifier", "-in", spectral_features,"-imstat",statistics_noinsitu,"-model", model, "-out", raw_crop_mask_uncompressed, skip=fromstep>24, rmfiles=[] if keepfiles else [spectral_features])
 
-	return
+    return
 #end noInSituDataAvailable
 
 
@@ -228,9 +228,9 @@ try:
     executeStep("BandsExtractor", "otbcli", "BandsExtractor", buildFolder,"-mission",mission,"-out",rawtocr,"-mask",rawmask, "-outdate", dates, "-shape", shape, "-pixsize", pixsize,"-merge", "false", "-il", *indesc, skip=fromstep>1)
 
 # gdalwarp (Step 2 and 3)
-    executeStep("gdalwarp for reflectances", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawtocr, tocr, skip=fromstep>2, rmfiles=[] if keepfiles else [rawtocr])
+    executeStep("gdalwarp for reflectances", "gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawtocr, tocr, skip=fromstep>2, rmfiles=[] if keepfiles else [rawtocr])
 
-    executeStep("gdalwarp for masks", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawmask, mask, skip=fromstep>3, rmfiles=[] if keepfiles else [rawmask])
+    executeStep("gdalwarp for masks", "gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawmask, mask, skip=fromstep>3, rmfiles=[] if keepfiles else [rawmask])
 
 # Select either inSitu or noInSitu branches
     if reference_polygons != "" :
@@ -248,7 +248,7 @@ try:
 
             rndvi=ndvi
     else:
-	    # Temporal Resampling (Step 5)
+        # Temporal Resampling (Step 5)
             executeStep("TemporalResampling", "otbcli", "TemporalResampling",
                     buildFolder, "-tocr", tocr, "-mask",
                     mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16",

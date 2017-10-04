@@ -118,9 +118,9 @@ try:
     executeStep("BandsExtractor", "otbcli", "BandsExtractor", buildFolder,"-mission",mission,"-out",rawtocr,"-mask",rawmask,"-outdate", dates, "-shape", shape, "-pixsize", pixsize, "-il", *indesc, skip=fromstep>1)
 
 # gdalwarp (Step 2 and 3)
-    executeStep("gdalwarp for reflectances", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawtocr, tocr, skip=fromstep>2, rmfiles=[] if keepfiles else [rawtocr])
+    executeStep("gdalwarp for reflectances", "gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawtocr, tocr, skip=fromstep>2, rmfiles=[] if keepfiles else [rawtocr])
 
-    executeStep("gdalwarp for masks", "/usr/local/bin/gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawmask, mask, skip=fromstep>3, rmfiles=[] if keepfiles else [rawmask])
+    executeStep("gdalwarp for masks", "gdalwarp", "-multi", "-wm", "2048", "-dstnodata", "\"-10000\"", "-overwrite", "-cutline", shape, "-crop_to_cutline", rawmask, mask, skip=fromstep>3, rmfiles=[] if keepfiles else [rawmask])
 
 # Temporal Resampling (Step 4)
     executeStep("TemporalResampling", "otbcli", "TemporalResampling", buildFolder, "-tocr", tocr, "-mask", mask, "-ind", dates, "-sp", "SENTINEL", "5", "SPOT", "5", "LANDSAT", "16", "-rtocr", rtocr, "-mode", trm, skip=fromstep>4, rmfiles=[] if keepfiles else [tocr, mask])
@@ -132,10 +132,10 @@ try:
     with open(shape_proj, 'r') as file:
         shape_wkt = "ESRI::" + file.read()
 
-    executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-t_srs", shape_wkt, "-progress", "-overwrite",reference_polygons_reproject, reference_polygons, skip=fromstep>6)
+    executeStep("ogr2ogr", "ogr2ogr", "-t_srs", shape_wkt, "-progress", "-overwrite",reference_polygons_reproject, reference_polygons, skip=fromstep>6)
 
 # ogr2ogr Crop insitu data (Step 7)
-    executeStep("ogr2ogr", "/usr/local/bin/ogr2ogr", "-clipsrc", shape, "-progress", "-overwrite",reference_polygons_clip, reference_polygons_reproject, skip=fromstep>7)
+    executeStep("ogr2ogr", "ogr2ogr", "-clipsrc", shape, "-progress", "-overwrite",reference_polygons_clip, reference_polygons_reproject, skip=fromstep>7)
 
 # Sample Selection (Step 8)
     executeStep("SampleSelection", "otbcli","SampleSelection", buildFolder, "-ref",reference_polygons_clip,"-ratio", sample_ratio, "-seed", random_seed, "-tp", training_polygons, "-vp", validation_polygons, "-lut", lut, skip=fromstep>8)
