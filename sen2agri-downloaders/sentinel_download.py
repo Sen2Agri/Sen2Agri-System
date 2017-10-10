@@ -65,7 +65,7 @@ class Sentinel2Obj(object):
             self.productname = filename[:safeStringPos]
         self.product_date_as_string = product_date_as_string
         self.product_date = datetime.datetime.strptime(self.product_date_as_string, "%Y%m%dT%H%M%S")
-        self.cloud = float(cloud)
+        self.cloud = cloud
         self.orbit_id = int(orbit_id)
         self.user = user
         self.password = passwd
@@ -93,7 +93,7 @@ def product_download(s2Obj, aoiContext, db):
         return False
     log(aoiContext.writeDir, "Downloading from {} ".format(aoiContext.sentinelLocation), general_log_filename)
     abs_filename = "{}/{}".format(aoiContext.writeDir, s2Obj.filename)
-    if float(s2Obj.cloud) < float(aoiContext.maxCloudCoverage) and len(aoiContext.aoiTiles) > 0:
+    if (s2Obj.cloud is None or s2Obj.cloud < float(aoiContext.maxCloudCoverage)) and len(aoiContext.aoiTiles) > 0:
         cmd_dwn = ["java", "-jar", os.path.dirname(os.path.abspath(__file__)) + "/ProductDownload.jar", "--user", s2Obj.user, "--password", s2Obj.password]
         if len(s2Obj.proxy) >= 2:
             cmd_dwn += ["--proxy.type", "http", "--proxy.host", s2Obj.proxy['host'], "--proxy.port", s2Obj.proxy['port']]
@@ -149,7 +149,7 @@ def get_s2obj_from_file(aoiContext, xml, account, passwd, proxy):
     for prod in products:
         link = prod.getElementsByTagName("link")[0].attributes.items()[0][1]
         filename = ""
-        cloud = float(200)
+        cloud = None
         product_date = None
         for node in prod.getElementsByTagName("str"):
             (name,value)=node.attributes.items()[0]
@@ -166,9 +166,11 @@ def get_s2obj_from_file(aoiContext, xml, account, passwd, proxy):
         if product_date == None:
             product_date = re.search(r"_MSIL1C_(\d{8}T\d{6})_", filename)
         orbit_id = re.search(r"_R(\d{3})_", filename)
-        if len(filename) == 0 or cloud > 100 or product_date == None or orbit_id == None:
-            log(aoiContext.writeDir, "Something went wrong with the filename: filename:{} | cloud percentage:{} | product date: {} | orbit id: {}".format(filename, cloud, product_date, orbit_id), general_log_filename)
+        if len(filename) == 0 or product_date is None or orbit_id is None:
+            log(aoiContext.writeDir, "Something went wrong with the filename: filename:{} | product date: {} | orbit id: {}".format(filename, product_date, orbit_id), general_log_filename)
             continue
+        if cloud is None:
+            log(aoiContext.writeDir, "Cloud coverage percentage is missing for product {}".format(filename), general_log_filename)
 
         ret_s2Objs.append(Sentinel2Obj(filename, link, product_date.group(1), cloud, orbit_id.group(1), account, passwd, proxy))
 
