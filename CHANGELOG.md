@@ -4,6 +4,7 @@
 ### Added
  - The unsupervised crop mask processor can now use (optionally, on by default) the red edge bands
  - Added support to `sen2agri-downloader` for ingesting data from a local archive
+ - The should now download and process Sentinel-2 B products
  - Added a new flag for L1C products processing in order to determine if the product was handled OK or not by MACCS.
  - Support in the Sentinel2 downloader in order to use local store for the L1C products.
 
@@ -14,6 +15,7 @@
  - Reduced the CPU and disk usage by merging the crop mask post-filtering no data filling and PCA steps; CPU usage went down by 27% and disk usage by about 20 GB for a single tile
  - The Landsat 8 downloader no longer prints a status line if the standard output is not a TTY
  - Dropped local GDAL install and `cifs-utils` dependency
+ - The Sentinel-2 downloader now accepts products that are missing a cloud coverage value, as SciHub seems to no longer return it
 
 ### Fixed
  - Fixed an issue that made the crop mask post-filtering output invalid rasters when both Sentinel-2 and Landsat 8 products were used for post-filtering; this was disabled by default
