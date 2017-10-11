@@ -4,7 +4,7 @@
 ### Added
  - The unsupervised crop mask processor can now use (optionally, on by default) the red edge bands
  - Added support to `sen2agri-downloader` for ingesting data from a local archive
- - The should now download and process Sentinel-2 B products
+ - The system should now download and process Sentinel-2 B products
  - Added a new flag for L1C products processing in order to determine if the product was handled OK or not by MACCS.
  - Support in the Sentinel2 downloader in order to use local store for the L1C products.
 
