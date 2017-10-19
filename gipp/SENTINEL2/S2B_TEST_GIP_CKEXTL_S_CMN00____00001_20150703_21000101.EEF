@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="DISPLAY/display.xsl"?>
+<Earth_Explorer_File xsi:type="CKEXTL_File_Type" schema_version="1.00" xmlns="http://eop-cfi.esa.int/CFI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://eop-cfi.esa.int/CFI D:\Utilisateurs\petruccib\Desktop\Livraison-S2-Agri\SENTINEL2\Schemas\GIP_CKEXTL_ExtractTool.xsd">
+	<Earth_Explorer_Header>
+		<Fixed_Header>
+			<File_Name>S2B_TEST_GIP_CKEXTL_S_CMN00____00001_20150703_21000101</File_Name>
+			<File_Description>ExtractTool</File_Description>
+			<Notes/>
+			<Mission>SENTINEL-2B</Mission>
+			<File_Class>TEST</File_Class>
+			<File_Type>GIP_CKEXTL</File_Type>
+			<Validity_Period>
+				<Validity_Start>UTC=2015-07-03T00:00:00</Validity_Start>
+				<Validity_Stop>UTC=2100-01-01T00:00:00</Validity_Stop>
+			</Validity_Period>
+			<File_Version>0001</File_Version>
+			<Source>
+				<System>MACCS</System>
+				<Creator>CNES_tool</Creator>
+				<Creator_Version>1.0</Creator_Version>
+				<Creation_Date>UTC=2015-07-30T11:36:00</Creation_Date>
+			</Source>
+		</Fixed_Header>
+		<Variable_Header>
+			<Main_Product_Header>
+				<List_of_Consumers count="0">
+                                </List_of_Consumers>
+				<List_of_Extensions count="0">
+                                </List_of_Extensions>
+			</Main_Product_Header>
+			<Specific_Product_Header>
+				<Instance_Id>
+					<Applicability_NickName_Type>S_SITE</Applicability_NickName_Type>
+					<Applicability_NickName>CMN00___</Applicability_NickName>
+					<Serial_Key>00001</Serial_Key>
+					<Validity_Period>
+						<Validity_Start>UTC=2015-07-03T00:00:00</Validity_Start>
+						<Validity_Stop>UTC=2100-01-01T00:00:00</Validity_Stop>
+					</Validity_Period>
+				</Instance_Id>
+				<List_of_Applicable_SiteDefinition_Ids count="0"/>
+			</Specific_Product_Header>
+		</Variable_Header>
+	</Earth_Explorer_Header>
+	<Data_Block>
+		<!-- Compute extract points: Enable or Disable processing -->
+		<Compute_Extract_Points>false</Compute_Extract_Points>
+		<Common_EX_Parameters>
+			<Nb_Points>3</Nb_Points>
+			<!-- List of FreeName of the central pixel -->
+			<List_of_Free_Name>FIRST SECOND THIRD</List_of_Free_Name>
+			<List_of_Pixel_Lin_Id>5000 5200 500</List_of_Pixel_Lin_Id>
+			<List_of_Pixel_Col_Id>3000 7200 780</List_of_Pixel_Col_Id>
+			<Radius>2</Radius>
+		</Common_EX_Parameters>
+		<L2_EX_Parameters>
+			<Water_Vapor_Radius>2</Water_Vapor_Radius>
+			<AOT_Vapor_Radius>1</AOT_Vapor_Radius>
+		</L2_EX_Parameters>
+	</Data_Block>
+</Earth_Explorer_File>
