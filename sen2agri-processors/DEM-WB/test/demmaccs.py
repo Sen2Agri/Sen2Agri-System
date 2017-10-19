@@ -82,14 +82,25 @@ def get_prev_l2a_tile_path(tile_id, prev_l2a_product_path):
     return tile_files
 
 
-def copy_common_gipp_file(working_dir, gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, tile_id, common_tile_id):
+def copy_common_gipp_file(working_dir, gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, full_gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, tile_id, common_tile_id):
     #take the common one
     tmp_tile_gipp = glob.glob("{}/{}/{}*{}_S_{}{}*.EEF".format(gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, common_tile_id))
+    print ("copy_common_gipp_file: found the following files {}".format(tmp_tile_gipp))
     #if found, copy it (not sym link it)
-    if len(tmp_tile_gipp) == 1:
+    if len(tmp_tile_gipp) > 0:
         common_gipp_file = tmp_tile_gipp[0];
         basename_tile_gipp_file = os.path.basename(common_gipp_file[:len(common_gipp_file) - 1]) if common_gipp_file.endswith("/") else os.path.basename(common_gipp_file)
         basename_tile_gipp_file = basename_tile_gipp_file.replace(common_tile_id, tile_id)
+        
+        for cmn_gipp_file_tmp in tmp_tile_gipp :
+            tmpFile1 = os.path.basename(cmn_gipp_file_tmp[:len(cmn_gipp_file_tmp) - 1]) if cmn_gipp_file_tmp.endswith("/") else os.path.basename(cmn_gipp_file_tmp)
+            tmpFile1 = tmpFile1.replace(common_tile_id, tile_id)
+            if tmpFile1.startswith(full_gipp_sat_prefix) :
+                print ("Selecting the file {}".format(tmpFile1))
+                common_gipp_file = cmn_gipp_file_tmp
+                basename_tile_gipp_file = tmpFile1
+                break
+            
         try:
             tile_gipp_file = "{}/{}".format(working_dir, basename_tile_gipp_file)
             with open(common_gipp_file, 'r') as handler_common_gipp_file, open(tile_gipp_file, 'w') as handler_tile_gipp_file:
@@ -137,6 +148,16 @@ def maccs_launcher(demmaccs_context):
     gipp_tile_prefix = ""
     if sat_id == SENTINEL2_SATELLITE_ID:
         gipp_sat_prefix = "S2"
+        full_gipp_sat_prefix = gipp_sat_prefix
+        m = re.match("(S2[A-D])_\w+_V\d{8}T\d{6}_\w+.SAFE", product_name)
+        # check if the new convention naming aplies
+        if m == None:
+            m = re.match("(S2[A-D])_\w+_\d{8}T\d{6}_\w+.SAFE", product_name)
+        if m != None:
+            full_gipp_sat_prefix = m.group(1)
+        
+        print ("full_gipp_sat_prefix is {}".format(full_gipp_sat_prefix))
+        
         common_tile_id = "CMN00"
         #no prefix for sentinel
         gipp_tile_prefix = ""
@@ -146,6 +167,7 @@ def maccs_launcher(demmaccs_context):
             tile_id = tile.group(1)
     elif sat_id == LANDSAT8_SATELLITE_ID:
         gipp_sat_prefix = "L8"
+        full_gipp_sat_prefix = "L8" 
         common_tile_id = "CMN000"
         gipp_tile_prefix = "EU"
         gipp_sat_dir = "LANDSAT8"
@@ -176,7 +198,11 @@ def maccs_launcher(demmaccs_context):
         log(demmaccs_context.output, "Could not create sym links for {}".format(demmaccs_context.input), tile_log_filename)
         return ""
 
-    common_gipps = glob.glob("{}/{}/{}*_L_*.*".format(demmaccs_context.gipp_base_dir, gipp_sat_dir, gipp_sat_prefix))
+    common_gipps = glob.glob("{}/{}/{}*_L_*.*".format(demmaccs_context.gipp_base_dir, gipp_sat_dir, full_gipp_sat_prefix))
+    if len(common_gipps) == 0:
+        common_gipps = glob.glob("{}/{}/{}*_L_*.*".format(demmaccs_context.gipp_base_dir, gipp_sat_dir, gipp_sat_prefix))
+    
+    print ("common_gipps is {}".format(common_gipps))
     if not create_sym_links(common_gipps, working_dir, demmaccs_context.output, tile_log_filename):
         log(demmaccs_context.output, "Symbolic links for GIPP files could not be created in the output directory", tile_log_filename)
         return ""
@@ -185,15 +211,19 @@ def maccs_launcher(demmaccs_context):
 
     for gipp_tile_type in gipp_tile_types:
         #search for the specific gipp tile file. if it will not be found, the common one (if exists) will be used
-        tmp_tile_gipp = glob.glob("{}/{}/{}*{}_S_{}{}*.EEF".format(demmaccs_context.gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, tile_id))
-        if len(tmp_tile_gipp) == 1:
+        tmp_tile_gipp = glob.glob("{}/{}/{}*{}_S_{}{}*.EEF".format(demmaccs_context.gipp_base_dir, gipp_sat_dir, full_gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, tile_id))
+        if len(tmp_tile_gipp) == 0:
+            tmp_tile_gipp = glob.glob("{}/{}/{}*{}_S_{}{}*.EEF".format(demmaccs_context.gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, tile_id))
+        
+        print ("tmp_tile_gipp is {}".format(tmp_tile_gipp))
+        if len(tmp_tile_gipp) > 0:
             if not create_sym_links(tmp_tile_gipp, working_dir, demmaccs_context.output, tile_log_filename):
                 log(demmaccs_context.output, "Symbolic links for tile id {} GIPP files could not be created in the output directory".format(tile_id), tile_log_filename)
                 return ""
         else:
             #search for the gipp common tile file
             log(demmaccs_context.output, "Symbolic link {} for tile id {} GIPP file could not be found. Searching for the common one ".format(gipp_tile_type, tile_id), tile_log_filename)
-            ret, log_gipp = copy_common_gipp_file(working_dir, demmaccs_context.gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, tile_id, common_tile_id)
+            ret, log_gipp = copy_common_gipp_file(working_dir, demmaccs_context.gipp_base_dir, gipp_sat_dir, gipp_sat_prefix, full_gipp_sat_prefix, gipp_tile_type, gipp_tile_prefix, tile_id, common_tile_id)
             if len(log_gipp) > 0:
                 log(demmaccs_context.output, log_gipp, tile_log_filename)
             if not ret:
