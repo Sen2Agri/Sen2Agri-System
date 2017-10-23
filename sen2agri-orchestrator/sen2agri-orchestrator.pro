@@ -38,7 +38,8 @@ SOURCES += main.cpp \
     processor/maccshdrmeananglesreader.cpp \
     processor/phenondvihandler.cpp \
     processorhandlerhelper.cpp \
-    schedulingcontext.cpp
+    schedulingcontext.cpp \
+    processor/ndvihandler.cpp
 
 HEADERS += \
     pch.hpp \
@@ -56,7 +57,8 @@ HEADERS += \
     processor/maccshdrmeananglesreader.hpp \
     processor/phenondvihandler.hpp \
     processorhandlerhelper.h \
-    schedulingcontext.h
+    schedulingcontext.h \
+    processor/ndvihandler.hpp
 
 DISTFILES += \
     ../dbus-interfaces/org.esa.sen2agri.orchestrator.xml \

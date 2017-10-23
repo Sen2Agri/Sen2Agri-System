@@ -20,6 +20,7 @@
 
 void LaiRetrievalHandler::SetProcessorDescription(const ProcessorDescription &procDescr) {
     this->processorDescr = procDescr;
+    m_ndviHandler.SetProcessorDescription(procDescr);
     m_l3bHandler.SetProcessorDescription(procDescr);
     m_l3cHandler.SetProcessorDescription(procDescr);
 }
@@ -40,7 +41,11 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
                            " LAI N-reprocessing or LAI Fitted)").toStdString());
     }
     if(bMonoDateLai) {
-        m_l3bHandler.HandleJobSubmitted(ctx, event);
+        if (IsGenNdviMonoDateOnly(configParameters)) {
+            m_ndviHandler.HandleJobSubmitted(ctx, event);
+        } else {
+            m_l3bHandler.HandleJobSubmitted(ctx, event);
+        }
     } else if(bNDayReproc || bFittedReproc) {
         m_l3cHandler.HandleJobSubmitted(ctx, event);
     }
@@ -49,6 +54,7 @@ void LaiRetrievalHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 void LaiRetrievalHandler::HandleTaskFinishedImpl(EventProcessingContext &ctx,
                                              const TaskFinishedEvent &event)
 {
+    this->m_ndviHandler.HandleTaskFinished(ctx, event);
     this->m_l3bHandler.HandleTaskFinished(ctx, event);
     this->m_l3cHandler.HandleTaskFinished(ctx, event);
 }
@@ -58,11 +64,16 @@ ProcessorJobDefinitionParams LaiRetrievalHandler::GetProcessingDefinitionImpl(Sc
 {
     ProcessorJobDefinitionParams params;
     params.isValid = false;
+    std::map<QString, QString> configParameters = ctx.GetConfigurationParameterValues("processor.l3b.");
 
     if(requestOverrideCfgValues.contains("product_type")) {
         const ConfigurationParameterValue &productType = requestOverrideCfgValues["product_type"];
         if(productType.value == "L3B") {
-            return this->m_l3bHandler.GetProcessingDefinition(ctx, siteId, scheduledDate, requestOverrideCfgValues);
+            if (IsGenNdviMonoDateOnly(configParameters)) {
+                return this->m_ndviHandler.GetProcessingDefinition(ctx, siteId, scheduledDate, requestOverrideCfgValues);
+            } else {
+                return this->m_l3bHandler.GetProcessingDefinition(ctx, siteId, scheduledDate, requestOverrideCfgValues);
+            }
         } else if(productType.value == "L3C" || productType.value == "L3D") {
             return this->m_l3cHandler.GetProcessingDefinition(ctx, siteId, scheduledDate, requestOverrideCfgValues);
         }
@@ -83,6 +94,10 @@ bool LaiRetrievalHandler::IsGenMonoDate(const QJsonObject &parameters, std::map<
         bMonoDateLai = ((configParameters["processor.l3b.mono_date_lai"]).toInt() != 0);
     }
     return bMonoDateLai;
+}
+
+bool LaiRetrievalHandler::IsGenNdviMonoDateOnly(std::map<QString, QString> &configParameters) {
+    return ((configParameters["processor.l3b.mono_date_ndvi_only"]).toInt() != 0);
 }
 
 bool LaiRetrievalHandler::IsNDayReproc(const QJsonObject &parameters, std::map<QString, QString> &configParameters) {
