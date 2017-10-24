@@ -67,7 +67,7 @@ class TotalWeightComputation
 {
 public:
     typedef otb::Wrapper::FloatImageType ImageType;
-    typedef enum {S2A, S2B, L8, UNKNOWN} SensorType;
+    typedef enum {S2, L8, UNKNOWN} SensorType;
     typedef itk::BinaryFunctorImageFilter< ImageType, ImageType, ImageType,
                               Functor::TotalWeightCalculationFunctor<ImageType::PixelType> > FilterType;
     typedef otb::ImageFileReader<ImageType> ReaderType;

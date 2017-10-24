@@ -47,19 +47,23 @@ public:
     std::vector<BandMappingConfig> GetBandMappingConfigs(int nRes);
     std::vector<BandConfig> GetBands(int nRes, const std::string &missionName);
     void AddBandsCfgMapping (const BandMappingConfig& bandsMappingCfg);
-    void AddMission(std::string &mission);
+    void AddMission(const std::string &mission);
     unsigned int GetMissionsNo();
-    std::string GetMasterMissionName();
     bool IsConfiguredMission(const std::string &missionName);
+    bool IsMasterMission(const std::string &missionName) const;
 
     std::vector<int> GetAbsoluteBandIndexes(int res, const std::string &missionName, bool bIgnoreMissing = true);
+    std::vector<int> GetMasterBandsPresence(int nRes, int &outNbValidBands);
     /* This function does not returns the indexes from the file but the valid indexes in
      * sequencial ascending order and -1 if missing band */
     std::vector<int> GetBandsPresence(int nRes, const std::string &missionName, int &outNbValidBands);
     int GetMasterBandIndex(const std::string &missionName, int nRes, int nSensorBandIdx);
     int GetIndexInPresenceArray(int nRes, const std::string &missionName, int absIdx);
+    int GetIndexInMasterPresenceArray(int nRes, int absIdx);
 
 private:
+    std::string GetMasterMissionName();
+    bool IsMatchingMission(const std::string &missionName, const std::string &missionRegex) const;
     std::vector<std::string> m_missionNames;
     // we know that the first band is always the master band
     std::vector<BandMappingConfig> m_bandsCfgMapping;

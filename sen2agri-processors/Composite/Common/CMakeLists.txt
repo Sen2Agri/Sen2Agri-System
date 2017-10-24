@@ -1,3 +1,5 @@
+find_package(Boost REQUIRED COMPONENTS filesystem regex)
+
 set(MetadataHelper_HEADERS
     MACCSMetadataHelper.h
     MetadataHelperFactory.h
@@ -18,6 +20,7 @@ set(MetadataHelper_SOURCES
 
 add_library(MetadataHelper SHARED ${MetadataHelper_HEADERS} ${MetadataHelper_SOURCES})
 target_link_libraries(MetadataHelper
+    "${Boost_LIBRARIES}"
     "${OTBCommon_LIBRARIES}"
     "${OTBITK_LIBRARIES}" MACCSMetadata)
 
