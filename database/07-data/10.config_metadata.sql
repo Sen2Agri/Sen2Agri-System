@@ -190,3 +190,7 @@ INSERT INTO config_metadata VALUES ('executor.module.path.crop-mask-fused', 'Cro
 INSERT INTO config_metadata VALUES ('executor.module.path.crop-type-fused', 'Crop type script with stratification', 'file', true, 8);
 
 INSERT INTO config_metadata VALUES ('executor.module.path.lai-end-of-job', 'End of LAI monodate job', 'file', true, 8);
+
+INSERT INTO config_metadata VALUES ('processor.l3b.mono_date_ndvi_only', 'L3B processor will generate only NDVI', 'int', false, 4);
+INSERT INTO config_metadata VALUES ('processor.l3b.ndvi.tiles_filter', 'L3B NDVI only processor tiles filter', 'string', false, 4);
+

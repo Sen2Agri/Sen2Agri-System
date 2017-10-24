@@ -33,6 +33,37 @@ begin
             _statement := 'delete from config where key = ''executor.module.path.gdalwarp''';
             raise notice '%', _statement;
             execute _statement;
+            
+            if not exists (select * from config_metadata where key = 'processor.l3b.mono_date_ndvi_only') then
+                _statement := $str$
+                INSERT INTO config_metadata VALUES ('processor.l3b.mono_date_ndvi_only', 'L3B processor will generate only NDVI', 'int', false, 4);
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            if not exists (select * from config where key = 'processor.l3b.mono_date_ndvi_only' and site_id is null) then
+                _statement := $str$
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.mono_date_ndvi_only', NULL, '0', '2017-10-24 14:56:57.501918+02');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            
+            if not exists (select * from config_metadata where key = 'processor.l3b.ndvi.tiles_filter') then
+                _statement := $str$
+                INSERT INTO config_metadata VALUES ('processor.l3b.ndvi.tiles_filter', 'L3B NDVI only processor tiles filter', 'string', false, 4);
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            if not exists (select * from config where key = 'processor.l3b.ndvi.tiles_filter' and site_id is null) then
+                _statement := $str$
+                INSERT INTO config(key, site_id, value, last_updated) VALUES ('processor.l3b.ndvi.tiles_filter', NULL, '', '2017-10-24 14:56:57.501918+02');
+                $str$;
+                raise notice '%', _statement;
+                execute _statement;
+            end if;
+            
 
             _statement := 'update meta set version = ''1.7'';';
             raise notice '%', _statement;
