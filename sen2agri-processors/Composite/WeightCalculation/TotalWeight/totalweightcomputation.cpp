@@ -25,10 +25,8 @@ TotalWeightComputation::TotalWeightComputation()
 
 void TotalWeightComputation::SetMissionName(std::string &missionName)
 {
-    if(missionName == "SENTINEL-2A") {
-        m_sensorType = S2A;
-    } else if(missionName == "SENTINEL-2B") {
-        m_sensorType = S2B;
+    if(missionName.find("SENTINEL-2") == 0)  {
+        m_sensorType = S2;
     } else {
         m_sensorType = L8;
     }
@@ -94,12 +92,9 @@ void TotalWeightComputation::ComputeWeightOnSensor()
 {
     if(m_fWeightOnSensor == -1) {
         switch(m_sensorType){
-            case S2A:
+            case S2:
                 m_fWeightOnSensor = 1;
                 break;
-            case S2B:
-                m_fWeightOnSensor = 1;
-            break;
             case L8:
             default:
                 m_fWeightOnSensor = 0.33;

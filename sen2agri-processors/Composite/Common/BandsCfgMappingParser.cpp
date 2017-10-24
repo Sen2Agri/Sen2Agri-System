@@ -18,6 +18,7 @@
 #include <sstream>
 #include <itkMacro.h>
 #include <algorithm>    // std::sort
+#include <boost/regex.hpp>
 
 /********************************************************************
  *
@@ -73,7 +74,7 @@ std::vector<BandConfig> BandsMappingConfig::GetBands(int nRes, const std::string
     std::vector<BandConfig> retBands;
     int nMissionIdx = -1;
     for(unsigned int i = 0; i<m_missionNames.size(); i++) {
-        if(m_missionNames[i] == missionName) {
+        if(IsMatchingMission(missionName, m_missionNames[i]) ) {
             nMissionIdx = i;
             break;
         }
@@ -93,7 +94,7 @@ void BandsMappingConfig::AddBandsCfgMapping (const BandMappingConfig& bandsMappi
     std::sort (m_bandsCfgMapping.begin(), m_bandsCfgMapping.end());
 }
 
-void BandsMappingConfig::AddMission(std::string &mission) {
+void BandsMappingConfig::AddMission(const std::string &mission) {
     // TODO: Check that the mission does not already exists
     m_missionNames.push_back(mission);
 }
@@ -102,13 +103,17 @@ unsigned int BandsMappingConfig::GetMissionsNo() {
     return m_missionNames.size();
 }
 
+bool BandsMappingConfig::IsMasterMission(const std::string &missionName) const {
+    return IsMatchingMission(missionName, m_missionNames[0]);
+}
+
 std::string BandsMappingConfig::GetMasterMissionName() {
     return m_missionNames[0];
 }
 
 bool BandsMappingConfig::IsConfiguredMission(const std::string &missionName) {
-    for(unsigned int i = 0; i<m_missionNames.size(); i++) {
-        if(m_missionNames[i] == missionName) {
+    for(const std::string &mission: m_missionNames) {
+        if(IsMatchingMission(missionName, mission)) {
             return true;
         }
     }
@@ -141,6 +146,10 @@ std::vector<int> BandsMappingConfig::GetAbsoluteBandIndexes(int res, const std::
     return retIndexes;
 }
 
+std::vector<int> BandsMappingConfig::GetMasterBandsPresence(int nRes, int &outNbValidBands) {
+    return GetBandsPresence(nRes, GetMasterMissionName(), outNbValidBands);
+}
+
 /* This function does not returns the indexes from the file but the valid indexes in
  * sequencial ascending order and -1 if missing band */
 std::vector<int> BandsMappingConfig::GetBandsPresence(int nRes, const std::string &missionName, int &outNbValidBands) {
@@ -148,9 +157,9 @@ std::vector<int> BandsMappingConfig::GetBandsPresence(int nRes, const std::strin
         itkExceptionMacro("Mission " + missionName + " is not configured for composition!");
     }
 
-    std::string masterMissionName = GetMasterMissionName();
-    std::vector<BandConfig> masterBandsCfg = GetBands(nRes, masterMissionName);
-    std::vector<BandConfig> bandsCfg = GetBands(nRes, missionName);
+    const std::string &masterMissionName = GetMasterMissionName();
+    const std::vector<BandConfig> &masterBandsCfg = GetBands(nRes, masterMissionName);
+    const std::vector<BandConfig> &bandsCfg = GetBands(nRes, missionName);
     if((bandsCfg.size() <= 0) || (masterBandsCfg.size() != bandsCfg.size())) {
         itkExceptionMacro("Invalid bands size configuration for resolution " << nRes << " and mission " << missionName);
     }
@@ -185,6 +194,11 @@ int BandsMappingConfig::GetMasterBandIndex(const std::string &missionName, int n
     return -1;
 }
 
+int BandsMappingConfig::GetIndexInMasterPresenceArray(int nRes, int absIdx)
+{
+    return GetIndexInPresenceArray(nRes, GetMasterMissionName(), absIdx);
+}
+
 int BandsMappingConfig::GetIndexInPresenceArray(int nRes, const std::string &missionName, int absIdx)
 {
     int nbValidBands;
@@ -203,6 +217,20 @@ int BandsMappingConfig::GetIndexInPresenceArray(int nRes, const std::string &mis
         }
     }
     return -1;
+}
+
+bool BandsMappingConfig::IsMatchingMission(const std::string &missionName, const std::string &missionRegex) const {
+    if (missionName == missionRegex) {
+        return true;
+    }
+    try {
+        boost::regex re(missionRegex);
+        return boost::regex_match(missionName, re);
+    } catch (boost::regex_error& e) {
+        std::cerr << "Invalid regular expression found in bands mapping file for " << missionRegex <<
+                          ". The exception was \"" << e.what() << "\"";
+        throw e;
+    }
 }
 
 /********************************************************************

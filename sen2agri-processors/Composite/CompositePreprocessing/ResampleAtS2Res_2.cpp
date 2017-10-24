@@ -66,7 +66,7 @@ void ResampleAtS2Res2::DoExecute()
 
     std::string missionName = m_pMetadataHelper->GetMissionName();
     BandsMappingConfig bandsMappingCfg = m_bandsCfgMappingParser.GetBandsMappingCfg();
-    std::vector<int> vectIdxs = bandsMappingCfg.GetAbsoluteBandIndexes(m_nRes, missionName);
+    const std::vector<int> &vectIdxs = bandsMappingCfg.GetAbsoluteBandIndexes(m_nRes, missionName);
     for(unsigned int i = 0; i<vectIdxs.size(); i++) {
         int nRelBandIdx = m_pMetadataHelper->GetRelativeBandIndex(vectIdxs[i]);
         m_ImageList->PushBack(m_ResampledBandsExtractor.ExtractImgResampledBand(img, nRelBandIdx, Interpolator_Linear, curRes, m_nRes));
@@ -162,9 +162,9 @@ bool ResampleAtS2Res2::ExtractResampledMasksImages()
 
 void ResampleAtS2Res2::CreateMasterInfoFile() {
     if(m_masterInfoFile != "") {
-        BandsMappingConfig bandsMappingCfg = m_bandsCfgMappingParser.GetBandsMappingCfg();
+        const BandsMappingConfig &bandsMappingCfg = m_bandsCfgMappingParser.GetBandsMappingCfg();
         std::string curMissionName = m_pMetadataHelper->GetMissionName();
-        if(bandsMappingCfg.GetMasterMissionName() == curMissionName) {
+        if(bandsMappingCfg.IsMasterMission(curMissionName)) {
             try {
               std::ofstream outFile(m_masterInfoFile);
               outFile << curMissionName << std::endl;
@@ -185,7 +185,7 @@ void ResampleAtS2Res2::ExtractPrimaryMissionInfos() {
         std::string missionName = m_pPrimaryMissionMetadataHelper->GetMissionName();
         std::string curMissionName = m_pMetadataHelper->GetMissionName();
         // only if the primary mission is the primary mission and is a different mission than the current one
-        if((missionName != curMissionName) && (bandsMappingCfg.GetMasterMissionName() == missionName))
+        if((missionName != curMissionName) && bandsMappingCfg.IsMasterMission(missionName))
         {
             std::string imageFile = m_pPrimaryMissionMetadataHelper->GetImageFileName();
             ImageReaderType::Pointer reader = ImageReaderType::New();

@@ -116,8 +116,7 @@ private:
         int nExtractedBandsNo = 0;
         // create an array of bands presences with the same size as the master band size
         // and having the presences of Master band
-        std::string masterMissionName = bandsMappingCfg.GetMasterMissionName();
-        std::vector<int> bandsPresenceVect = bandsMappingCfg.GetBandsPresence(resolution, masterMissionName, nExtractedBandsNo);
+        const std::vector<int> &bandsPresenceVect = bandsMappingCfg.GetMasterBandsPresence(resolution, nExtractedBandsNo);
 
         otbAppLogINFO( << "Resolution: " << resolution << std::endl );
 
@@ -276,10 +275,9 @@ private:
             return false;
         }
         // now convert the absolute indexes into relative indexes to our raster type
-        std::string masterMissionName = bandsMappingCfg.GetMasterMissionName();
-        redIdx = bandsMappingCfg.GetIndexInPresenceArray(resolution, masterMissionName, nMasterRedIdx);
-        greenIdx = bandsMappingCfg.GetIndexInPresenceArray(resolution, masterMissionName, nMasterGreenIdx);
-        blueIdx = bandsMappingCfg.GetIndexInPresenceArray(resolution, masterMissionName, nMasterBlueIdx);
+        redIdx = bandsMappingCfg.GetIndexInMasterPresenceArray(resolution, nMasterRedIdx);
+        greenIdx = bandsMappingCfg.GetIndexInMasterPresenceArray(resolution, nMasterGreenIdx);
+        blueIdx = bandsMappingCfg.GetIndexInMasterPresenceArray(resolution, nMasterBlueIdx);
 
         // these indexes are 0 based
         if(redIdx < 0 ||  greenIdx < 0 || blueIdx < 0) {
