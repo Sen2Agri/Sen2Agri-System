@@ -237,14 +237,17 @@ void NdviHandler::HandleJobSubmittedImpl(EventProcessingContext &ctx,
 
     //container for all task
     QList<TaskToSubmit> allTasksList;
+    const QSet<QString> &tilesFilter = GetTilesFilter(parameters, configParameters);
     for(const auto &key : dateGroupedInputProductToTilesMap.keys()) {
         const QStringList &prdTilesList = dateGroupedInputProductToTilesMap[key];
         // create structures providing the models for each tile
         QList<TileInfos> tilesInfosList;
         for(const QString &prdTile: prdTilesList) {
-            TileInfos tileInfo;
-            tileInfo.tileFile = prdTile;
-            tilesInfosList.append(tileInfo);
+            if (FilterTile(tilesFilter, prdTile)) {
+                TileInfos tileInfo;
+                tileInfo.tileFile = prdTile;
+                tilesInfosList.append(tileInfo);
+            }
         }
         HandleProduct(ctx, event, tilesInfosList, allTasksList);
     }
@@ -409,6 +412,38 @@ bool NdviHandler::IsGenMonoDate(const QJsonObject &parameters, std::map<QString,
     return bMonoDateNdvi && ((configParameters["processor.l3b.mono_date_ndvi_only"]).toInt() != 0);
 }
 
+QSet<QString> NdviHandler::GetTilesFilter(const QJsonObject &parameters, std::map<QString, QString> &configParameters)
+{
+    QString strTilesFilter;
+    if(parameters.contains("tiles_filter")) {
+        const auto &value = parameters["tiles_filter"];
+        if(value.isString()) {
+            strTilesFilter = value.toString();
+        }
+    }
+    if (strTilesFilter.isEmpty()) {
+        strTilesFilter = configParameters["processor.l3b.ndvi.tiles_filter"];
+    }
+    QSet<QString> retSet;
+    // accept any of these separators
+    const QStringList &tilesList = strTilesFilter.split(',');
+    for (const QString &strTile: tilesList) {
+        const QString &strTrimmedTile = strTile.trimmed();
+        if(!strTrimmedTile.isEmpty()) {
+            retSet.insert(strTrimmedTile);
+        }
+    }
+
+    return retSet;
+}
+
+bool NdviHandler::FilterTile(const QSet<QString> &tilesSet, const QString &prdTileFile)
+{
+    ProcessorHandlerHelper::SatelliteIdType satId;
+    const QString &tileId = ProcessorHandlerHelper::GetTileId(prdTileFile, satId);
+    return (tilesSet.empty() || tilesSet.contains(tileId));
+}
+
 ProcessorJobDefinitionParams NdviHandler::GetProcessingDefinitionImpl(SchedulingContext &ctx, int siteId, int scheduledDate,
                                                           const ConfigurationParameterValueMap &requestOverrideCfgValues)
 {
@@ -510,4 +545,5 @@ ProcessorJobDefinitionParams NdviHandler::GetProcessingDefinitionImpl(Scheduling
 
     return params;
 }
+
 
