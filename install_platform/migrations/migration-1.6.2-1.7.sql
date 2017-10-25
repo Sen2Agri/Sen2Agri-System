@@ -25,12 +25,24 @@ begin
             raise notice '%', _statement;
             execute _statement;
 
+            _statement := 'delete from config_metadata where key = ''executor.module.path.ogr2ogr''';
+            raise notice '%', _statement;
+            execute _statement;
+            
             _statement := 'delete from config where key = ''crop-mask-features-with-insitu''';
             raise notice '%', _statement;
             execute _statement;
 
+            _statement := 'delete from config_metadata where key = ''crop-mask-features-with-insitu''';
+            raise notice '%', _statement;
+            execute _statement;
+            
             raise notice 'applying 3e18b6c40b38be4686f50f1430ea23f760cf2421';
             _statement := 'delete from config where key = ''executor.module.path.gdalwarp''';
+            raise notice '%', _statement;
+            execute _statement;
+
+            _statement := 'delete from config_metadata where key = ''executor.module.path.gdalwarp''';
             raise notice '%', _statement;
             execute _statement;
             
