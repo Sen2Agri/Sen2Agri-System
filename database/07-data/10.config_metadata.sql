@@ -11,7 +11,6 @@ INSERT INTO config_metadata VALUES ('http-listener.listen-port', 'Dashboard List
 INSERT INTO config_metadata VALUES ('executor.module.path.image-classifier', 'Image Classifier Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.compute-confusion-matrix', 'Compute Confusion Matrix Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('processor.l3a.weight.aot.maxweight', 'Maximum weight depending on AOT', 'float', false, 3);
-INSERT INTO config_metadata VALUES ('executor.module.path.ogr2ogr', 'ogr2ogr Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.random-selection', 'Random Selection Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.temporal-features', 'Temporal Features Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.statistic-features', 'Statistic Features Path', 'file', true, 8);
@@ -21,7 +20,6 @@ INSERT INTO config_metadata VALUES ('executor.processor.l3b.name', 'L3B Processo
 INSERT INTO config_metadata VALUES ('executor.processor.l4a.name', 'L4A Processor Name', 'string', true, 8);
 INSERT INTO config_metadata VALUES ('executor.module.path.concatenate-images', 'Concatenate Images Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('executor.processor.l4b.name', 'L4B Processor Name', 'string', true, 8);
-INSERT INTO config_metadata VALUES ('executor.module.path.gdalwarp', 'gdalwarp Path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('processor.l3a.weight.cloud.coarseresolution', 'Coarse resolution for quicker convolution', 'int', false, 3);
 INSERT INTO config_metadata VALUES ('executor.module.path.dummy-module', 'Dummy module path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('resources.working-mem', 'OTB applications working memory (MB)', 'int', true, 14);
@@ -123,7 +121,6 @@ INSERT INTO config_metadata VALUES ('executor.module.path.trimming', 'Trimming',
 INSERT INTO config_metadata VALUES ('executor.module.path.train-images-classifier-new', 'TrainImagesClassifierNew', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('demmaccs.output-path', 'path for l2a products', 'string', false, 16);
 INSERT INTO config_metadata VALUES ('demmaccs.gips-path', 'path where the gips files are to be found', 'string', false, 16);
-INSERT INTO config_metadata VALUES ('executor.module.path.crop-mask-features-with-insitu', 'CropMask features with insitu path', 'file', true, 8);
 INSERT INTO config_metadata VALUES ('processor.l3a.synth_date_sched_offset', 'Difference in days between the scheduled and the synthesis date', 'int', false, 3);
 INSERT INTO config_metadata VALUES ('processor.l3a.half_synthesis', 'Half synthesis interval in days', 'int', false, 3);
 INSERT INTO config_metadata VALUES ('processor.l3a.generate_20m_s2_resolution', 'Specifies if composite for S2 20M resolution should be generated', 'int', false, 3);
