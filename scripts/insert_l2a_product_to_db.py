@@ -123,7 +123,7 @@ def get_product_info(product_name):
                 acquisition_date = m.group(1)
             else:
                 # Check if it is the new S2 L2A format
-                m = re.match(r"S2[A-B]_MSI.+_(\d{8}T\d{6})_\w+.SAFE", product_name)
+                m = re.match(r"S2[A-D]_MSI.+_(\d{8}T\d{6})_\w+.SAFE", product_name)
                 sat_id = SENTINEL2_SATELLITE_ID
                 acquisition_date = m.group(1)
         else:
