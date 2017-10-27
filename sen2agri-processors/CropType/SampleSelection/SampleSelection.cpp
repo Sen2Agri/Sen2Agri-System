@@ -13,114 +13,36 @@
 
  =========================================================================*/
 
-/*=========================================================================
-
-  Program:   ORFEO Toolbox
-  Language:  C++
-  Date:      $Date$
-  Version:   $Revision$
-
-
-  Copyright (c) Centre National d'Etudes Spatiales. All rights reserved.
-  See OTBCopyright.txt for details.
-
-
-     This software is distributed WITHOUT ANY WARRANTY; without even
-     the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
-     PURPOSE.  See the above copyright notices for more information.
-
-=========================================================================*/
-
-//  Software Guide : BeginCommandLineArgs
 //    INPUTS: {reference polygons}, {sample ratio}
 //    OUTPUTS: {training polygons}, {validation_polygons}
-//  Software Guide : EndCommandLineArgs
 
-//  Software Guide : BeginLatex
 // The sample selection consists in splitting the reference data into 2 disjoint sets, the training
 // set and the validation set.
 // These sets are composed of polygons, not individual pixels.
-//
-//  Software Guide : EndLatex
 
-//  Software Guide : BeginCodeSnippet
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 #include "otbOGRDataSourceToLabelImageFilter.h"
-//  Software Guide : EndCodeSnippet
 
 namespace otb
 {
 
-//  Software Guide : BeginLatex
-//  Application class is defined in Wrapper namespace.
-//
-//  Software Guide : EndLatex
-
-//  Software Guide : BeginCodeSnippet
 namespace Wrapper
 {
-//  Software Guide : EndCodeSnippet
-
-//  Software Guide : BeginLatex
-//
-//  SampleSelection class is derived from Application class.
-//
-//  Software Guide : EndLatex
-
-//  Software Guide : BeginCodeSnippet
 class SampleSelection : public Application
-//  Software Guide : EndCodeSnippet
 {
 public:
-    //  Software Guide : BeginLatex
-    // The \code{ITK} public types for the class, the superclass and smart pointers.
-    // Software Guide : EndLatex
-
-    //  Software Guide : BeginCodeSnippet
     typedef SampleSelection Self;
     typedef Application Superclass;
     typedef itk::SmartPointer<Self> Pointer;
     typedef itk::SmartPointer<const Self> ConstPointer;
-    // Software Guide : EndCodeSnippet
 
-    //  Software Guide : BeginLatex
-    //  Invoke the macros necessary to respect ITK object factory mechanisms.
-    //  Software Guide : EndLatex
-
-    //  Software Guide : BeginCodeSnippet
     itkNewMacro(Self);
-
     itkTypeMacro(SampleSelection, otb::Application);
-    //  Software Guide : EndCodeSnippet
 
 private:
-    //  Software Guide : BeginLatex
-    //  \code{DoInit()} method contains class information and description, parameter set up, and
-    // example values.
-    //  Software Guide : EndLatex
-
     void DoInit()
     {
-
-        // Software Guide : BeginLatex
-        // Application name and description are set using following methods :
-        // \begin{description}
-        // \item[\code{SetName()}] Name of the application.
-        // \item[\code{SetDescription()}] Set the short description of the class.
-        // \item[\code{SetDocName()}] Set long name of the application (that can be displayed
-        // \dots).
-        // \item[\code{SetDocLongDescription()}] This methods is used to describe the class.
-        // \item[\code{SetDocLimitations()}] Set known limitations (threading, invalid pixel type
-        // \dots) or bugs.
-        // \item[\code{SetDocAuthors()}] Set the application Authors. Author List. Format : "John
-        // Doe, Winnie the Pooh" \dots
-        // \item[\code{SetDocSeeAlso()}] If the application is related to one another, it can be
-        // mentioned.
-        // \end{description}
-        // Software Guide : EndLatex
-
-        //  Software Guide : BeginCodeSnippet
         SetName("SampleSelection");
         SetDescription("Split the reference data into 2 disjoint sets, the training set and the "
                        "validation set.");
@@ -133,19 +55,9 @@ private:
         SetDocLimitations("None");
         SetDocAuthors("LBU");
         SetDocSeeAlso(" ");
-        //  Software Guide : EndCodeSnippet
 
-        // Software Guide : BeginLatex
-        // \code{AddDocTag()} method categorize the application using relevant tags.
-        // \code{Code/ApplicationEngine/otbWrapperTags.h} contains some predefined tags defined in
-        // \code{Tags} namespace.
-        // Software Guide : EndLatex
-
-        //  Software Guide : BeginCodeSnippet
         AddDocTag(Tags::Vector);
-        //  Software Guide : EndCodeSnippet
 
-        // Software Guide : BeginLatex
         // The input parameters:
         // - ref: Vector file containing reference data
         // - ratio: Ratio between the number of training and validation polygons per class (dafault:
@@ -153,9 +65,7 @@ private:
         // The output parameters:
         // - tp: Vector file containing reference data for training
         // - vp: Vector file containing reference data for validation
-        // Software Guide : EndLatex
 
-        //  Software Guide : BeginCodeSnippet
         AddParameter(ParameterType_InputFilename, "ref", "Reference Polygons");
         AddParameter(ParameterType_Float, "ratio", "Sample Ratio");
         AddParameter(ParameterType_Int, "seed", "Seed for the random number generation");
@@ -166,45 +76,24 @@ private:
         AddParameter(ParameterType_OutputFilename, "tp", "Training Polygons");
         AddParameter(ParameterType_OutputFilename, "vp", "Validation Polygons");
 
-        // Set default value for parameters
         SetDefaultParameterFloat("ratio", 0.75);
         SetDefaultParameterInt("seed", std::time(0));
-        //  Software Guide : EndCodeSnippet
 
-        // Software Guide : BeginLatex
-        // An example commandline is automatically generated. Method
-        // \code{SetDocExampleParameterValue()} is
-        // used to set parameters. Dataset should be located in  \code{OTB-Data/Examples} directory.
-        // Software Guide : EndLatex
-
-        //  Software Guide : BeginCodeSnippet
         SetDocExampleParameterValue("ref", "reference_polygons.shp");
         SetDocExampleParameterValue("ratio", "0.75");
         SetDocExampleParameterValue("seed", "0");
         SetDocExampleParameterValue("tp", "training_polygons.shp");
         SetDocExampleParameterValue("vp", "validation_polygons.shp");
-        //  Software Guide : EndCodeSnippet
     }
 
-    // Software Guide : BeginLatex
-    // \code{DoUpdateParameters()} is called as soon as a parameter value change. Section
-    // \ref{sec:appDoUpdateParameters}
-    // gives a complete description of this method.
-    // Software Guide : EndLatex
-    //  Software Guide :BeginCodeSnippet
     void DoUpdateParameters()
     {
-        // Nothing to do.
     }
-    //  Software Guide : EndCodeSnippet
 
-    // Software Guide : BeginLatex
     // The algorithm consists in a random sampling without replacement of the polygons of each class
     // with
     // probability p = sample_ratio value for the training set and
     // 1 - p for the validation set.
-    // Software Guide : EndLatex
-    //  Software Guide :BeginCodeSnippet
     void DoExecute()
     {
         // Internal variables for accessing the files
@@ -246,8 +135,6 @@ private:
             }
         }
 
-        int featureCount = sourceLayer.GetFeatureCount(true);
-
         // read all features from the source field and add them to the multimap
         for (ogr::Feature &feature : sourceLayer) {
             if (!filter || feature.ogr().GetFieldAsInteger("CROP")) {
@@ -271,9 +158,6 @@ private:
             tpLayer.CreateField(fieldDefn);
             vpLayer.CreateField(fieldDefn);
         }
-
-        OGRFeatureDefn &tpLayerDefn = tpLayer.GetLayerDefn();
-        OGRFeatureDefn &vpLayerDefn = vpLayer.GetLayerDefn();
 
         int lastcode = -1;
         int featTrainingTarget = 0;
@@ -311,44 +195,18 @@ private:
             float random = (float)std::rand() / (float)RAND_MAX;
 
             // select the target file for this feature
-            if ((random <= ratio && featTrainingCount < featTrainingTarget) ||
-                featValidationCount == featValidationTarget) {
-                ogr::Feature feat(tpLayerDefn);
-                // Add field values from input Layer
-                for (int i = 0; i < tpLayerDefn.GetFieldCount(); i++) {
-                    OGRFieldDefn *fieldDefn = tpLayerDefn.GetFieldDefn(i);
-                    feat.ogr().SetField(fieldDefn->GetNameRef(), f.ogr().GetRawFieldRef(i));
-                }
-
-                // Set the geometry
-                auto geom = f.GetGeometry();
-
-                if (geom) {
-                    feat.SetGeometry(geom->clone());
-                    tpLayer.CreateFeature(feat);
+            if (f.GetGeometry()) {
+                if ((random <= ratio && featTrainingCount < featTrainingTarget) ||
+                    featValidationCount == featValidationTarget) {
+                    tpLayer.CreateFeature(f.Clone());
                     featTrainingCount++;
                 } else {
-                    otbAppLogWARNING("Feature " << f.ogr().GetFieldAsInteger("ID")
-                                                << " has no associated geometry");
+                    vpLayer.CreateFeature(f.Clone());
+                    featValidationCount++;
                 }
             } else {
-                ogr::Feature feat(vpLayerDefn);
-                // Add field values from input Layer
-                for (int i = 0; i < vpLayerDefn.GetFieldCount(); i++) {
-                    OGRFieldDefn *fieldDefn = vpLayerDefn.GetFieldDefn(i);
-                    feat.ogr().SetField(fieldDefn->GetNameRef(), f.ogr().GetRawFieldRef(i));
-                }
-
-                // Set the geometry
-                auto geom = f.GetGeometry();
-                if (geom) {
-                    feat.SetGeometry(geom->clone());
-                    vpLayer.CreateFeature(feat);
-                    featValidationCount++;
-                } else {
-                    otbAppLogWARNING("Feature " << f.ogr().GetFieldAsInteger("ID")
-                                                << " has no associated geometry");
-                }
+                otbAppLogWARNING("Feature " << f.ogr().GetFieldAsInteger("ID")
+                                            << " has no associated geometry");
             }
         }
 
@@ -361,14 +219,8 @@ private:
                                          << ", training features: " << featTrainingCount
                                          << ", validation features: " << featValidationCount);
     }
-    //  Software Guide :EndCodeSnippet
 };
 }
 }
 
-// Software Guide : BeginLatex
-// Finally \code{OTB\_APPLICATION\_EXPORT} is called.
-// Software Guide : EndLatex
-//  Software Guide :BeginCodeSnippet
 OTB_APPLICATION_EXPORT(otb::Wrapper::SampleSelection)
-//  Software Guide :EndCodeSnippet
