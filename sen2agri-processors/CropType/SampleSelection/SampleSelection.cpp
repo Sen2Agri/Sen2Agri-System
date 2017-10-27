@@ -165,10 +165,6 @@ private:
 
         AddParameter(ParameterType_OutputFilename, "tp", "Training Polygons");
         AddParameter(ParameterType_OutputFilename, "vp", "Validation Polygons");
-        AddParameter(ParameterType_OutputFilename,
-                     "lut",
-                     "The lookup table based on the CODE field. Used only for Crop Type");
-        MandatoryOff("lut");
 
         // Set default value for parameters
         SetDefaultParameterFloat("ratio", 0.75);
@@ -279,22 +275,6 @@ private:
         OGRFeatureDefn &tpLayerDefn = tpLayer.GetLayerDefn();
         OGRFeatureDefn &vpLayerDefn = vpLayer.GetLayerDefn();
 
-        std::ofstream outLUTFile;
-
-        if (HasValue("lut")) {
-            // create the LUT file
-            outLUTFile.open(GetParameterString("lut"));
-            if (!outLUTFile.is_open()) {
-                itkExceptionMacro("Can't open LUT file for writting!");
-            }
-            outLUTFile << "# LUT table for Crop Type " << std::endl;
-
-            // append the lines for -10000 (nodata) and 0 (no crop)
-            outLUTFile << "-10000 245 245 245" << std::endl;
-            outLUTFile << "0 0 0 0" << std::endl;
-        }
-
-        int index = 0;
         int lastcode = -1;
         int featTrainingTarget = 0;
         int featValidationTarget = 0;
@@ -310,11 +290,6 @@ private:
             ogr::Feature &f = it->second;
 
             if (it->first != lastcode) {
-                if (HasValue("lut")) {
-                    // Adda new color to the LUT file
-                    outLUTFile << it->first << " " << colors[index] << std::endl;
-                    index = (index + 1) % 20;
-                }
                 lastcode = it->first;
 
                 // get the number of features with the same code
@@ -347,6 +322,7 @@ private:
 
                 // Set the geometry
                 auto geom = f.GetGeometry();
+
                 if (geom) {
                     feat.SetGeometry(geom->clone());
                     tpLayer.CreateFeature(feat);
@@ -360,7 +336,6 @@ private:
                 // Add field values from input Layer
                 for (int i = 0; i < vpLayerDefn.GetFieldCount(); i++) {
                     OGRFieldDefn *fieldDefn = vpLayerDefn.GetFieldDefn(i);
-
                     feat.ogr().SetField(fieldDefn->GetNameRef(), f.ogr().GetRawFieldRef(i));
                 }
 
@@ -380,11 +355,6 @@ private:
         ogrTp->SyncToDisk();
         ogrVp->SyncToDisk();
 
-        // Write the LUT file
-        if (HasValue("lut")) {
-            outLUTFile.close();
-        }
-
         featTrainingCount = tpLayer.GetFeatureCount(true);
         featValidationCount = vpLayer.GetFeatureCount(true);
         otbAppLogINFO("Total features: " << featTrainingCount + featValidationCount
@@ -392,28 +362,6 @@ private:
                                          << ", validation features: " << featValidationCount);
     }
     //  Software Guide :EndCodeSnippet
-
-    std::string colors[20] = { std::string("255 0 0"),     // Red
-                               std::string("0 255 0"),     // Green
-                               std::string("0 0 255"),     // Blue
-                               std::string("255 255 0"),   // Yellow
-                               std::string("255 0 255"),   // Fucsia
-                               std::string("0 255 255"),   // Cyan
-                               std::string("255 165 0"),   // Orange
-                               std::string("128 0 128"),   // Purple
-                               std::string("51 161 201"),  // Peacock
-                               std::string("189 252 201"), // Mint
-                               std::string("128 0 0"),     // Maroon
-                               std::string("245 222 179"), // Wheat
-                               std::string("142 56 142"),  // sgi beet
-                               std::string("113 113 198"), // sgi slateblue
-                               std::string("125 158 192"), // sgi lightblue
-                               std::string("56 142 142"),  // sgi teal
-                               std::string("113 198 113"), // sgi chartreuse
-                               std::string("142 142 56"),  // sgi olivedrab
-                               std::string("197 193 170"), // sgi brightgray
-                               std::string("198 113 113")  // sgi salmon
-    };
 };
 }
 }
