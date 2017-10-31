@@ -1,5 +1,34 @@
 # Change Log
 
+## [1.8.0] - TBD
+### Added
+ - The L4A/L4B processors use a platform-independent algorithm for the training/validation split. This is a step towards allowing the processor to work on other platforms and give the same results.
+
+### Changed
+ - Breaking change: the L4A and L4B processors now use a different algorithm for the trainig/validation split. Output files will be different from the ones in the previous versions. The accuracy scores will often be lower because poorly-represented classes will now be present in the validation set. They weren't taken into account previously.
+ - The SampleSelection application places all the features in both the training and the validation sets if there are too few of them and one of them would end up empty according to the configured split (e.g. 75% training with only 2 features). This allows taking them into account for validation, although with lower accuracy.
+
+### Fixed
+ - Fixed crash in the SampleSelection application used by the L4 processors when a feature with no geometry is present
+ - The SampleSelection application always puts features in one of the training or validation set. Previously, they were sometimes lost.
+
+### Known issues
+ - The SAFE formatting application sometimes outputs mosaics with black edges around tile edges
+ - The SAFE formatting application sometimes outputs unusable (e.g. black) previews
+ - The SAFE and L2A product previews are not gamma-corrected and can be too dark
+ - The SAFE validation step flags as invalid products with even a single tile having a low-variance band as invalid (`NOTV`)
+ - The crop type and crop mask processors don't perform the normalization step properly when using SVM classification
+ - The crop type and mask training step sometimes crashes while loading the OpenCV models
+ - MACCS can sometimes crash or hang under high load: https://github.com/InsightSoftwareConsortium/ITK/commit/d68c1c0f23fea97ab782c185095b4ef3259cec68
+ - The MACCS launcher script does not process different tiles of the same site in parallel
+ - The product formatting and tile aggregation steps are inefficient
+ - Performance of the multi-tile Crop Type and Crop Mask processors can be poor for tiles with a large number of input products, especially on hardware with a large number of cores
+ - The trimming step of the Crop Mask processor still uses a large amount of memory
+ - The unsupervised Crop Mask processor expects a reference map with the ESA-CCI LC map labels
+ - The dashboard previews don't match their bounds rectangle because of projection mismatch
+ - The LAI model is created for each tile. The SDD and ATBD should be updated if another behaviour is desired and needs to be implemented.
+ - The website has display issues on Safari
+
 ## [1.7.0] - TBD
 ### Added
  - The unsupervised crop mask processor can now use (optionally, on by default) the red edge bands
