@@ -14,7 +14,6 @@
  =========================================================================*/
  
 #include <limits>
-#include <libgen.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem.hpp>
@@ -712,19 +711,6 @@ std::vector<MACCSAnnexInformation> ReadAnnexes(const TiXmlElement *el)
     return result;
 }
 
-std::string dirname(const std::string &path)
-{
-    boost::filesystem::path p(path);
-    p.remove_filename();
-    return p.native();
-}
-
-std::string basename(const std::string &path)
-{
-    boost::filesystem::path p(path);
-    return p.filename().native();
-}
-
 static void FixProductOrganization(MACCSProductOrganization &po)
 {
     auto foundSRE = false;
@@ -757,7 +743,9 @@ static void FixProductOrganization(MACCSProductOrganization &po)
             compareSuffix(file.LogicalName, "_FRE_R1", foundFRE_R1, name) ||
             compareSuffix(file.LogicalName, "_FRE_R2", foundFRE_R2, name)) {
             if (dir.empty()) {
-                dir = dirname(file.FileLocation);
+                boost::filesystem::path p(file.FileLocation);
+                p.remove_filename();
+                dir = p.native();
             }
         }
     }

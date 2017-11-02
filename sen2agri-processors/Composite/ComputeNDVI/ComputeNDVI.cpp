@@ -52,7 +52,6 @@
 
 #include "MACCSMetadataReader.hpp"
 #include <vector>
-#include "libgen.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem.hpp>
 
@@ -212,8 +211,12 @@ private:
     void DoExecute()
     {
         MACCSMetadataReaderType::Pointer maccsMetadataReader = MACCSMetadataReaderType::New();
-        std::string xmlDesc = GetParameterAsString("xml");
-        m_DirName = dirname(xmlDesc);
+        const auto &xmlDesc = GetParameterAsString("xml");
+
+        boost::filesystem::path p(xmlDesc);
+        p.remove_filename();
+
+        m_DirName = p.native();
         m_DirName += '/';
         auto meta = maccsMetadataReader->ReadMetadata(xmlDesc);
         // check if it is a sentinel 2 product, otherwise -> exception

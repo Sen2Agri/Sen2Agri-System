@@ -13,6 +13,8 @@
 
  =========================================================================*/
  
+#include <boost/filesystem.hpp>
+
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 #include "otbMultiToMonoChannelExtractROI.h"
@@ -23,9 +25,6 @@
 #include "otbImageListToVectorImageFilter.h"
 #include "MACCSMetadataReader.hpp"
 #include "SPOT4MetadataReader.hpp"
-
-#include "libgen.h"
-
 //Transform
 #include "itkScalableAffineTransform.h"
 
@@ -170,8 +169,9 @@ private:
 
     void DoExecute()
     {
-        const std::string &tmp = GetParameterAsString("xml");
-        m_DirName = dirname(tmp);
+        boost::filesystem::path p(GetParameterAsString("xml"));
+        p.remove_filename();
+        m_DirName = p.native();
 
         bool allInOne = (GetParameterInt("allinone") != 0);
 

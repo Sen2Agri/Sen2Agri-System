@@ -26,7 +26,6 @@
 #include "itkBinaryFunctorImageFilter.h"
 
 #include <vector>
-#include "libgen.h"
 #include "MetadataHelperFactory.h"
 #include "BandsCfgMappingParser.h"
 

@@ -23,7 +23,6 @@
 #include "otbImageListToVectorImageFilter.h"
 #include "otbWrapperTypes.h"
 #include "DirectionalCorrectionFunctor.h"
-#include "libgen.h"
 #include "otbMultiToMonoChannelExtractROI.h"
 
 #include "itkNumericTraits.h"
