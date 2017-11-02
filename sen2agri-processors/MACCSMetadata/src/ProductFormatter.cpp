@@ -13,20 +13,19 @@
 
  =========================================================================*/
 
+#define BOOST_NO_CXX11_SCOPED_ENUMS
+#include <boost/filesystem.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+
 #include "otbWrapperApplication.h"
 #include "otbWrapperApplicationFactory.h"
 #include "otbOGRIOHelper.h"
 #include "ogr_geometry.h"
-#include "boost/filesystem/path.hpp"
-#include "boost/filesystem/operations.hpp"
-#include <boost/algorithm/string/predicate.hpp>
 #include <iostream>
 
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <sys/wait.h>
 #include <spawn.h>
 #include <fstream>
@@ -635,9 +634,8 @@ private:
   bool TileHasRasters(const tileInfo &tileInfoEl) {
       for (const auto &rasterFileEl : m_rasterInfoList) {
           if(tileInfoEl.strTileID == rasterFileEl.strTileID) {
-              struct stat buf;
-              if (stat(rasterFileEl.strRasterFileName.c_str(), &buf) != -1) {
-                      return true;
+              if (boost::filesystem::exists(rasterFileEl.strRasterFileName)) {
+                  return true;
               }
           }
       }
@@ -1720,13 +1718,9 @@ private:
 
    void CopyFile(const std::string &strDest, const std::string &strSrc)
    {
-       struct stat buf;
-       if (stat(strSrc.c_str(), &buf) != -1) {
-           std::ifstream  src(strSrc, std::ios::binary);
-           std::ofstream  dst(strDest, std::ios::binary);
-
-           dst << src.rdbuf();
-       } else {
+       boost::system::error_code ec;
+       boost::filesystem::copy_file(strSrc, strDest, boost::filesystem::copy_option::overwrite_if_exists, ec);
+       if (ec) {
            otbAppLogWARNING("Error copying file " << strSrc << " to file " << strDest);
        }
    }

@@ -18,8 +18,7 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem.hpp>
-
-#include <sys/stat.h>
+#include <boost/system/error_code.hpp>
 
 MACCSMetadataHelper::MACCSMetadataHelper()
 {
@@ -444,17 +443,16 @@ bool MACCSMetadataHelper::getMACCSImageHdrName(const MACCSFileInformation& fileI
  * @return
  */
 bool MACCSMetadataHelper::CheckFileExistence(std::string &fileName) {
-    struct stat buf;
     bool ret = true;
-    if(stat(fileName.c_str(), &buf) == -1) {
-        // the file does not exists
+    boost::system::error_code ec;
+    if (!boost::filesystem::exists(fileName, ec)) {
         size_t lastindex = fileName.find_last_of(".");
         if((lastindex != std::string::npos) && (lastindex != (fileName.length()-1))) {
             std::string rawname = fileName.substr(0, lastindex);
             std::string ext = fileName.substr(lastindex+1);
             std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
             std::string recomputedName = rawname + "." + ext;
-            if(stat(recomputedName.c_str(), &buf) != -1) {
+            if (boost::filesystem::exists(recomputedName, ec)) {
                 fileName = recomputedName;
             } else {
                 ret = false;
