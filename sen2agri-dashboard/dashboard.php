@@ -2,7 +2,7 @@
 <?php include "dashboardCreatJobs.php"; ?>
 <?php
 
-$active_proc = 1;
+$active_proc = 2;
 if (isset($_REQUEST['schedule_add']) && isset($_REQUEST['processorId'])) {
 	if ($_REQUEST['schedule_add'] == 'Add New Job') {
 		$active_proc = $_REQUEST ['processorId'] + 0;
@@ -119,7 +119,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 			<div id="content" style="width: 100%;">
 				<div id="tab_control" class="tabControl">
 					<!-- L2A Processor ----------------------------------------------------------------------------------------------------------------------- -->
-					<div id="tab_l2a">
+					<!-- <div id="tab_l2a">
 						<a href=""<?= $active_proc ==  1 ? " class='active'" : "" ?>>L2A Processor</a>
 						<div class="panel">
 							<div class="panel_resources_and_output_container dash_panel" id="pnl_l2a_resources_and_output_container">
@@ -144,10 +144,10 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 							</div>
 
 						</div>
-					</div>
+					</div> -->
 					<!-- L3A Processor ----------------------------------------------------------------------------------------------------------------------- -->
 					<div id="tab_l3a">
-						<a href=""<?= $active_proc ==  2 ? " class='active'" : "" ?>>L3A Processor</a>
+						<a href=""<?= $active_proc ==  2 ? " class='active'" : "" ?>>L3A &mdash; Cloud-free Composite</a>
 						<div>
 							<div class="panel_resources_and_output_container dash_panel" id="pnl_l3a_resources_and_output_container">
 								<div class="panel_resources_container" id="pnl_l3a_resources_container">
@@ -197,7 +197,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 					</div>
 					<!-- L3B Processor ----------------------------------------------------------------------------------------------------------------------- -->
 					<div id="tab_l3b">
-						<a href=""<?= $active_proc ==  3 ? " class='active'" : "" ?>>L3B LAI Processor</a>
+						<a href=""<?= $active_proc ==  3 ? " class='active'" : "" ?>>L3B &mdash; LAI</a>
 						<div>
 							<div class="panel_resources_and_output_container dash_panel" id="pnl_l3b_resources_and_output_container">
 								<div class="panel_resources_container"
@@ -248,7 +248,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 					</div>
 					<!-- L3b pheno NDVI Processor ----------------------------------------------------------------------------------------------------------------------- -->
 					<div id="tab_l3e_pheno">
-						<a href=""<?= $active_proc ==  4 ? " class='active'" : "" ?>>L3E Pheno Processor</a>
+						<a href=""<?= $active_proc ==  4 ? " class='active'" : "" ?>>L3E &mdash; Phenology Indices</a>
 						<div>
 							<div class="panel_resources_and_output_container dash_panel" id="pnl_l3e_pheno_resources_and_output_container">
 								<div class="panel_resources_container" id="pnl_l3e_pheno_resources_container">
@@ -298,7 +298,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 					</div>
 					<!-- L4A Processor ----------------------------------------------------------------------------------------------------------------------- -->
 					<div id="tab_l4a">
-						<a href=""<?= $active_proc ==  5 ? " class='active'" : "" ?>>L4A Processor</a>
+						<a href=""<?= $active_proc ==  5 ? " class='active'" : "" ?>>L4A &mdash; Cropland Mask</a>
 						<div>
 							<div class="panel_resources_and_output_container dash_panel" id="pnl_l4a_resources_and_output_container">
 								<div class="panel_resources_container" id="pnl_l4a_resources_container">
@@ -348,7 +348,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 					</div>
 					<!-- L4B Processor ----------------------------------------------------------------------------------------------------------------------- -->
 					<div id="tab_l4b">
-						<a href=""<?= $active_proc ==  6 ? " class='active'" : "" ?>>L4B Processor</a>
+						<a href=""<?= $active_proc ==  6 ? " class='active'" : "" ?>>L4B &mdash; Crop Type Map</a>
 						<div>
 							<div class="panel_resources_and_output_container dash_panel" id="pnl_l4b_resources_and_output_container">
 								<div class="panel_resources_container" id="pnl_l4b_resources_container">
