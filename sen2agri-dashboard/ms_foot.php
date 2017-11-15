@@ -1,14 +1,28 @@
+<?php
+require_once("ConfigParams.php");
+
+function getDatabaseVersion() {
+	$dbconn = pg_connect(ConfigParams::$CONN_STRING) or die ("Could not connect");
+	$rows = pg_query($dbconn, "select version from meta;") or die(pg_last_error());
+	return (pg_numrows($rows) > 0 ? pg_fetch_array($rows, 0)[0] : "");
+}
+
+$version = getDatabaseVersion();
+?>
+
     <div id="bar">
         <div id="bar2">
             <div id="bar3">
                 <div class="clearing" style="height:20px;">&nbsp;</div>
+				<div class='message_footer'>
 <?php
 if (isset($_SESSION['siteId'])) {
 ?>
-				<div class='message_footer'>Logged in as <?php echo(ConfigParams::$USER_NAME); ?></div>
+					Logged in as <?php echo(ConfigParams::$USER_NAME); ?> |
 <?php
 }
 ?>
+				DB version <?php echo($version); ?></div>
 			</div>
         </div>
     </div>
