@@ -197,7 +197,7 @@ if (isset ( $_REQUEST ['schedule_submit'] ) && $_REQUEST ['schedule_submit'] == 
 					</div>
 					<!-- L3B Processor ----------------------------------------------------------------------------------------------------------------------- -->
 					<div id="tab_l3b">
-						<a href=""<?= $active_proc ==  3 ? " class='active'" : "" ?>>L3B &mdash; LAI</a>
+						<a href=""<?= $active_proc ==  3 ? " class='active'" : "" ?>>L3B &mdash; LAI/NDVI</a>
 						<div>
 							<div class="panel_resources_and_output_container dash_panel" id="pnl_l3b_resources_and_output_container">
 								<div class="panel_resources_container"
