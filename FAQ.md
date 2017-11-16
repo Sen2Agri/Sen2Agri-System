@@ -379,6 +379,68 @@ sudo chmod 777 /mnt/upload
 
 The SciHub server (used for searching products) has a request size limit. If the site definition is too complex, its `WKT` representation might be too long. You should try using a simpler polygon.
 
+## The `L4A` and `L4B` processors crash on large sites
+
+The `L4` processors are designed to read the full time series at once, for every Sentinel-2 tile that is processed. Since there can be a relatively large number of products and each of them has multiple files, this means that the processors have to open a lot of files. Unfortunately, Linux systems have very strict (small) limits for the number of open files.
+
+These are the settings that influence this behaviour:
+
+1. System-wide open file limit &mdash; as configured by the `fs.file-max` `sysctl`. This defaults to `13 060 355` in CentOS 7, which should be sufficiently large.
+
+1. Per-user file descriptor limits &mdash; these come in "soft" and "hard" varieties and can be displayed by running `ulimit -n; ulimit -Hn`. The soft limit is applied by default, but processes can raise it up to the value specified by the hard limit. They can be configured in `/etc/security/limits.conf` or by placing a file in `/etc/security/limits.d`. On CentOS 7 the defaults are `1 024` for the soft limit  and `4 096` for the hard one.
+
+1. Per-service file descriptor limit &mdash; as applied by a service manager like `systemd` on CentOS 7. For example, `samba` has a default limit of `16 384` file descriptors. This can be changed by running `systemctl edit smb` and setting the `LimitNOFILE` value in the `Service` section.
+
+1. `SLURM` node daemon file descriptor limit &mdash; similar to the one above, but defaults to `51 200` in `SLURM`.
+
+The first point above should not be a problem for the Sen2Agri system. The Sen2Agri installer mitigates the second point by placing the following file:
+
+```text
+*         hard    nofile      500000
+*         soft    nofile      500000
+```
+
+in `/etc/security/limits.d/50-open-files.conf`.
+
+The third point may apply under specific situations, e.g. when the input products are located on a Samba share. In that case, you should manually configure the server to increase these limits. A sample override file is the following:
+
+```ini
+[Service]
+LimitNOFILE=500000
+```
+
+The `SLURM` limit is configured by a `systemd` override file saved in `/etc/systemd/system/slurmd.service.d/override.conf`, with the following contents:
+
+```ini
+[Service]
+LimitNOFILE=512000
+```
+
+Note that you might have to reboot the system after changing these values.
+
+## Does the Sen2Agri installer change any system settings?
+
+Yes, the installer:
+
+* switches SELinux to the permissive mode. There is no technical reason for that, but it has proven somewhat problematic in the past. A determined administrator should be able to re-enable it and make sure that everything is working.
+* disables the firewall. The main reason for it is that `SLURM` uses dynamic port allocation. The port range can be restricted, but the Sen2Agri system does not ship with configuration for this.
+* increases the open file limits. For more information about this, see [this section](#the-l4a-and-l4b-processors-crash-on-large-sites).
+* switches Transparent HugePages to `madvise` mode, effectively disabling them for applications that do not specifically request it. The reason for this is that we noticed `THP` causing a lot of performance problems. This is done by placing the following file under `/usr/lib/tmpfiles.d`:
+
+```text
+w   /sys/kernel/mm/transparent_hugepage/enabled -   -   -   -   madvise
+```
+
+These settings are reverted after [uninstalling the system](#how-can-i-uninstall-the-sen2agri-system).
+
+## What other system settings might affect performance?
+
+* on HP hardware with the `HP Dynamic Smart Array` software `RAID` controller we've seen poor disk throughput until we changed the system to the `throughput-performance` mode by running `tuned-adm profile throughput-performance`.
+
+* on a dual-socket system we've seen poor performance caused by the automatic `NUMA` balancing feature. It can be disabled by running `echo 0 | sudo tee /proc/sys/kernel/numa_balancing`.
+
+There are, of course, other resources that are better suited to discus Linux performance tuning.
+
 ## How can I reprocess some `L1` products?
 
 The status of `L1` products is stored in the `downloader_history` table. You can check it with the following command:
