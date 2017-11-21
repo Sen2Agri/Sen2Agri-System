@@ -5,4 +5,3 @@ otb_create_application(
 
 include_directories(../../Common/Filters)
 
-install(TARGETS otbapp_FillNoData DESTINATION usr/lib/otb/applications/)

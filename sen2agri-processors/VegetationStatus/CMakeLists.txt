@@ -8,13 +8,12 @@ add_subdirectory(otb-bv/src)
 add_subdirectory(phenotb/src)
 add_subdirectory(temporalgapfilling/src)
 
-install(FILES TestScripts/lai_retrieve_processing.py
-              TestScripts/pheno_processing.py
-        DESTINATION usr/bin/
-	PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-        GROUP_READ GROUP_EXECUTE
-        WORLD_READ WORLD_EXECUTE)
 
+install(PROGRAMS    TestScripts/lai_retrieve_processing.py
+                    TestScripts/lai_retrieve_processing_CS.py
+                    TestScripts/pheno_processing.py
+        DESTINATION bin/)
+#        DESTINATION bin/python)
 install(FILES lai.map
               LaiCommonBVDistributionSamples.txt
         DESTINATION usr/share/sen2agri)

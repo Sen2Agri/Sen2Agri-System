@@ -21,4 +21,3 @@ include_directories(../Filters)
 
 add_dependencies(otbapp_CropTypeImageClassifier OTBExtensions)
 
-install(TARGETS otbapp_CropTypeImageClassifier DESTINATION usr/lib/otb/applications/)
