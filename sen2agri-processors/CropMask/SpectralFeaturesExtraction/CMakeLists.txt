@@ -16,4 +16,3 @@ endif()
 
 add_dependencies(otbapp_SpectralFeaturesExtraction OTBExtensions)
 
-install(TARGETS otbapp_SpectralFeaturesExtraction DESTINATION usr/lib/otb/applications/)

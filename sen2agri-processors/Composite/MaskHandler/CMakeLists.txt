@@ -7,4 +7,3 @@ if(BUILD_TESTING)
   add_subdirectory(test)
 endif()
 
-install(TARGETS otbapp_MaskHandler DESTINATION usr/lib/otb/applications/)

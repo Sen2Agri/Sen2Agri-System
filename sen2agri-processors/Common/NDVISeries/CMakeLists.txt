@@ -20,4 +20,3 @@ include_directories(../OTBExtensions)
 
 add_dependencies(otbapp_NDVISeries OTBExtensions)
 
-install(TARGETS otbapp_NDVISeries DESTINATION usr/lib/otb/applications/)

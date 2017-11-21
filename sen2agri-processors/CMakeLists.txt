@@ -15,6 +15,10 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${PROJECT_BINARY_DIR})
 
 add_definitions(-DVCL_CAN_STATIC_CONST_INIT_FLOAT=0)
 
+if(NOT OTB_INSTALL_APP_DIR)
+  set(OTB_INSTALL_APP_DIR "lib/otb/applications/")
+endif()
+
 add_subdirectory(MACCSMetadata)
 add_subdirectory(Composite)
 add_subdirectory(CropType)
@@ -26,7 +30,7 @@ add_subdirectory(Common)
 add_subdirectory(ContinuousColorMapping)
 #add_subdirectory(AppDimensionalityReduction)
 
-install(FILES ../scripts/sen2agri_common.py
+install(PROGRAMS ../scripts/sen2agri_common.py
               ../scripts/split_shapefile.py
         DESTINATION usr/lib/python2.7/site-packages/)
 
@@ -35,10 +39,7 @@ install(FILES ../scripts/insert_l2a_product_to_db.py
               ../scripts/job_operations.py
               ../sen2agri-ctl/sen2agri-ctl.py
               ../scripts/filter_site_download_tiles.py
-        DESTINATION usr/bin/
-	    PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                    GROUP_READ GROUP_EXECUTE
-                    WORLD_READ WORLD_EXECUTE)
+        DESTINATION bin/)
 
 install(FILES dist/sen2agri-disable-thp.conf
         DESTINATION usr/lib/tmpfiles.d)
