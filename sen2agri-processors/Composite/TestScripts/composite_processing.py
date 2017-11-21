@@ -48,7 +48,7 @@ def prettify(elem):
     rough_string = ET.tostring(elem, 'utf-8')
     reparsed = minidom.parseString(rough_string)
     return reparsed.toprettyxml(indent="  ")
-    
+
 def areMultiMissionFiles(inputFiles) :
     missions = []
     for filePath in inputFiles:
@@ -57,11 +57,11 @@ def areMultiMissionFiles(inputFiles) :
         if len(words) >= 1:
             if (words[0] not in missions):
                 missions.append(words[0])
-    
+
     print("Missions found: {}".format(missions))
-    
+
     return (len(missions) > 1)
-    
+
 def getMasterMissionFilePrefix(bandsMappingFile) :
     masterMissionPrefix = ""
     with open(bandsMappingFile) as f:
@@ -77,7 +77,7 @@ def getMasterMissionFilePrefix(bandsMappingFile) :
         else :
             print("Cannot load master mission from bands mapping {}".format(bandsMappingFile))
             return ""
-    
+
     print("Master mission prefix found: {}".format(masterMissionPrefix))
 
     return masterMissionPrefix
@@ -88,25 +88,25 @@ def getFirstMasterFile(inputFiles, bandsMappingFile) :
         fileName = os.path.basename(filePath)
         words = fileName.split('_')
         if len(words) >= 1:
-            if (words[0].find(masterMissionPrefix) != -1):  
+            if (words[0].find(masterMissionPrefix) != -1):
                 print("First master file found: {}".format(filePath))
                 return filePath
-    
+
     print("No master file was found for bands mapping {}".format(bandsMappingFile))
     return ""
 
 def isMasterMissionFile(inputFile, bandsMappingFile) :
-    masterMissionPrefix = getMasterMissionFilePrefix(bandsMappingFile)    
+    masterMissionPrefix = getMasterMissionFilePrefix(bandsMappingFile)
     fileName = os.path.basename(inputFile)
     words = fileName.split('_')
     if len(words) >= 1:
-        if (words[0].find(masterMissionPrefix) != -1):  
+        if (words[0].find(masterMissionPrefix) != -1):
             print("File {} is master mission file".format(inputFile))
             return True
-    
+
     print("File {} is secondary mission file".format(inputFile))
     return False
-    
+
 
 parser = argparse.ArgumentParser(description='Composite Python processor')
 
@@ -133,6 +133,7 @@ resolution = args.res
 bandsMap = args.bandsmap
 appLocation = args.applocation
 outDir = args.outdir
+
 siteId = "nn"
 multisatelites = areMultiMissionFiles(args.input)
 firstMasterFile = ""
@@ -147,21 +148,12 @@ if args.siteid:
 
 #defintion for filenames
 outSpotMasks = outDir + '/spot_masks.tif'
-
-outUnclippedImgBands = outDir + '/res' + resolution + '.tif'
-outUnclippedCld = outDir + '/cld' + resolution + '.tif'
-outUnclippedWat = outDir + '/wat' + resolution + '.tif'
-outUnclippedSnow = outDir + '/snow' + resolution + '.tif'
-outUnclippedAot = outDir + '/aot' + resolution + '.tif'
-
-outImgBands = outDir + '/res_clipped' + resolution + '.tif'
-outCld = outDir + '/cld_clipped' + resolution + '.tif'
-outWat = outDir + '/wat_clipped' + resolution + '.tif'
-outSnow = outDir + '/snow_clipped' + resolution + '.tif'
-outAot = outDir + '/aot_clipped' + resolution + '.tif'
-
+outImgBands = outDir + '/res' + resolution + '.tif'
+outCld = outDir + '/cld' + resolution + '.tif'
+outWat = outDir + '/wat' + resolution + '.tif'
+outSnow = outDir + '/snow' + resolution + '.tif'
+outAot = outDir + '/aot' + resolution + '.tif'
 masterInfoFile = outDir + 'MasterInfo_#.txt'
-
 outWeightAotFile = outDir + '/WeightAot#.tif'
 outWeightCloudFile = outDir + '/WeightCloud#.tif'
 outTotalWeightFile = outDir + '/WeightTotal#.tif'
@@ -265,7 +257,11 @@ print("Processing started: " + str(datetime.datetime.now()))
 start = time.time()
 for xml in args.input:
 
-    runCmd(["otbcli", "MaskHandler", appLocation, "-xml", xml, "-out", outSpotMasks, "-sentinelres", resolution])
+    runCmd(["otbcli", "MaskHandler",
+            appLocation,
+            "-xml", xml,
+            "-out", outSpotMasks,
+            "-sentinelres", resolution])
 
     counterString = str(i)
     mod=outL3AFile.replace("#", counterString)
@@ -281,49 +277,71 @@ for xml in args.input:
     curMasterInfoFile=masterInfoFile.replace("#", counterString)
 
     if (not multisatelites) or isMasterMissionFile(xml, bandsMap):
-        runCmd(["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outSpotMasks, "-outres", outUnclippedImgBands, "-outcmres", outUnclippedCld, "-outwmres", outUnclippedWat, "-outsmres", outUnclippedSnow, "-outaotres", outUnclippedAot, "-masterinfo", curMasterInfoFile])
+        runCmd(["otbcli", "CompositePreprocessing2",
+                appLocation,
+                "-xml", xml,
+                "-bmap", bandsMap,
+                "-res", resolution] + fullScatCoeffs + [
+                "-msk", outSpotMasks,
+                "-outres", outImgBands,
+                "-outcmres", outCld,
+                "-outwmres", outWat,
+                "-outsmres", outSnow,
+                "-outaotres", outAot,
+                "-masterinfo", curMasterInfoFile])
     else:
-        runCmd(["otbcli", "CompositePreprocessing2", appLocation, "-xml", xml, "-bmap", bandsMap, "-res", resolution] + fullScatCoeffs + ["-msk", outSpotMasks, "-outres", outUnclippedImgBands, "-outcmres", outUnclippedCld, "-outwmres", outUnclippedWat, "-outsmres", outUnclippedSnow, "-outaotres", outUnclippedAot, "-masterinfo", curMasterInfoFile, "-pmxml", firstMasterFile])
-    
-    # if we have a shape file, then we will apply it on all files from preprocessing
-    # else, if we don't have a shape file then 
-    #   Check if it is a master product and create the shape
-    #
-#    unclippedImgs = False
-#    if multisatelites:
-#        if (not os.path.isfile(shapeFile)):
-#            firstMasterFile = getFirstMasterFile(args.input, bandsMap)
-#            if firstMasterFile != "" :
-#                runCmd(["otbcli", "CreateFootprint", appLocation, "-in", firstMasterFile, "-mode", "metadata", "-out", shapeFile])
-#        if os.path.isfile(curMasterInfoFile): 
-#            unclippedImgs = True
-#        else :
-#            if os.path.isfile(shapeFile):
-#                print("Executing GDALWARP for all files ...")
-#                runCmd(["gdalwarp", "-dstnodata", "-10000", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedImgBands, outImgBands])
-#                runCmd(["gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedCld, outCld])
-#                runCmd(["gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedWat, outWat])
-#                runCmd(["gdalwarp", "-dstnodata", "0", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedSnow, outSnow])
-#                runCmd(["gdalwarp", "-dstnodata", "-10000", "-overwrite", "-cutline", shapeFile, "-crop_to_cutline", outUnclippedAot, outAot])
-#            else :
-#                unclippedImgs = True
-#    else:
-#        unclippedImgs = True
-#
-#    if unclippedImgs:
-    outImgBands = outUnclippedImgBands
-    outCld = outUnclippedCld
-    outWat = outUnclippedWat
-    outSnow = outUnclippedSnow
-    outAot = outUnclippedAot
-        
-    runCmd(["otbcli", "WeightAOT", appLocation, "-xml", xml, "-in", outAot, "-waotmin", WEIGHT_AOT_MIN, "-waotmax", WEIGHT_AOT_MAX, "-aotmax", AOT_MAX, "-out", out_w_Aot])
+        runCmd(["otbcli", "CompositePreprocessing2",
+                appLocation,
+               "-xml", xml,
+               "-bmap", bandsMap,
+               "-res", resolution] + fullScatCoeffs + [
+               "-msk", outSpotMasks,
+               "-outres", outImgBands,
+               "-outcmres", outCld,
+               "-outwmres", outWat,
+               "-outsmres", outSnow,
+               "-outaotres", outAot,
+               "-masterinfo", curMasterInfoFile,
+               "-pmxml", firstMasterFile])
 
-    runCmd(["otbcli", "WeightOnClouds", appLocation, "-inxml", xml, "-incldmsk", outCld, "-coarseres", COARSE_RES, "-sigmasmallcld", SIGMA_SMALL_CLD, "-sigmalargecld", SIGMA_LARGE_CLD, "-out", out_w_Cloud])
+    runCmd(["otbcli", "WeightAOT",
+            appLocation,
+            "-xml", xml,
+            "-in", outAot,
+            "-waotmin", WEIGHT_AOT_MIN,
+            "-waotmax", WEIGHT_AOT_MAX,
+            "-aotmax", AOT_MAX,
+            "-out", out_w_Aot])
 
-    runCmd(["otbcli", "TotalWeight", appLocation, "-xml", xml, "-waotfile", out_w_Aot, "-wcldfile", out_w_Cloud, "-l3adate", syntDate, "-halfsynthesis", syntHalf, "-wdatemin", WEIGHT_DATE_MIN, "-out", out_w_Total])
+    runCmd(["otbcli", "WeightOnClouds",
+            appLocation,
+            "-inxml", xml,
+            "-incldmsk", outCld,
+            "-coarseres", COARSE_RES,
+            "-sigmasmallcld", SIGMA_SMALL_CLD,
+            "-sigmalargecld", SIGMA_LARGE_CLD,
+            "-out", out_w_Cloud])
 
-    runCmd(["otbcli", "UpdateSynthesis", appLocation, "-in", outImgBands, "-bmap", bandsMap, "-xml", xml, "-csm", outCld, "-wm", outWat, "-sm", outSnow, "-wl2a", out_w_Total, "-out", mod] + prevL3A)
+    runCmd(["otbcli", "TotalWeight",
+            appLocation,
+            "-xml", xml,
+            "-waotfile", out_w_Aot,
+            "-wcldfile", out_w_Cloud,
+            "-l3adate", syntDate,
+            "-halfsynthesis", syntHalf,
+            "-wdatemin", WEIGHT_DATE_MIN,
+            "-out", out_w_Total])
+
+    runCmd(["otbcli", "UpdateSynthesis",
+            appLocation,
+            "-in", outImgBands,
+            "-bmap", bandsMap,
+            "-xml", xml,
+            "-csm", outCld,
+            "-wm", outWat,
+            "-sm", outSnow,
+            "-wl2a", out_w_Total,
+            "-out", mod] + prevL3A)
 
     tmpOut_w = out_w
     tmpOut_d = out_d
@@ -338,7 +356,16 @@ for xml in args.input:
         tmpOut_f += '?gdal:co:COMPRESS=DEFLATE'
         tmpOut_rgb += '?gdal:co:COMPRESS=DEFLATE'
 
-    runCmd(["otbcli", "CompositeSplitter2", appLocation, "-in", mod, "-xml", xml, "-bmap", bandsMap, "-outweights", tmpOut_w, "-outdates", tmpOut_d, "-outrefls", tmpOut_r, "-outflags", tmpOut_f, "-outrgb", tmpOut_rgb])
+    runCmd(["otbcli", "CompositeSplitter2",
+            appLocation,
+            "-in", mod,
+            "-xml", xml,
+            "-bmap", bandsMap,
+            "-outweights", tmpOut_w,
+            "-outdates", tmpOut_d,
+            "-outrefls", tmpOut_r,
+            "-outflags", tmpOut_f,
+            "-outrgb", tmpOut_rgb])
 
     prevL3A = ["-prevl3aw", out_w, "-prevl3ad", out_d, "-prevl3ar", out_r, "-prevl3af", out_f]
 
@@ -391,13 +418,14 @@ if i == 0:
     exit(1)
 
 i -= 1
-runCmd(["otbcli", "ProductFormatter", appLocation, 
+runCmd(["otbcli", "ProductFormatter",
+    appLocation,
     "-destroot", outDir, 
     "-fileclass", "SVT1", 
     "-level", "L3A", 
     "-timeperiod", syntDate, 
     "-baseline", "01.00", 
-    "-siteid",siteId, 
+    "-siteid", siteId,
     "-processor", "composite", 
     "-processor.composite.refls", tileID, out_r, 
     "-processor.composite.weights", tileID, out_w, 
