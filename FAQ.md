@@ -114,14 +114,12 @@ There is no need to.
     ```
 
     Note that other applications on the system might depend on these packages. Before continuing, please make sure to double-check the list of packages to be removed.
-
 1. Uninstall MACCS
     ```bash
     sudo rm -rf /opt/maccs
     ```
 
     For more information, please consult the MACCS Software User Manual.
-
 1. Optionally, remove the products
     ```bash
     sudo rm -rf /mnt/{archive,scratch,upload}
