@@ -39,6 +39,8 @@ function install_FPMTool_package()
 #-----------------------------------------------------------#
 function prerequisitesInstall()
 {
+   yum -y install https://yum.postgresql.org/9.4/redhat/rhel-7.3-x86_64/pgdg-centos94-9.4-3.noarch.rpm
+
    install_PLATFORM_DEP_package
 
    install_FPMTool_package
