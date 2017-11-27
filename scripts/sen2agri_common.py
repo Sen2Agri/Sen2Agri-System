@@ -141,6 +141,9 @@ def get_reference_raster(product):
         files = glob.glob(os.path.join(directory, "*PENTE*"))
         if files:
             return files[0]
+        else:
+            files = glob.glob(os.path.join(directory, "*"))
+            raise Exception("Unable to find a reference raster for SPOT product", directory, files)
     if extension == ".hdr":
         dir = os.path.join(directory, parts[0] + ".DBL.DIR")
         files = glob.glob(os.path.join(dir, "*_FRE_R1.DBL.TIF"))
@@ -149,6 +152,11 @@ def get_reference_raster(product):
         files = glob.glob(os.path.join(dir, "*_FRE.DBL.TIF"))
         if files:
             return files[0]
+        else:
+            files = glob.glob(os.path.join(directory, "*"))
+            raise Exception("Unable to find a reference raster for MACCS product", dir, files)
+
+    raise Exception("Unable to determine product type", product)
 
 
 class Mission(object):
