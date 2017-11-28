@@ -79,7 +79,7 @@ function upload_reference_polygons($site_id, $timestamp) {
 	$shp_msg = '';
 	$shape_ok = false;
 	if ($shp_file) {
-		exec('scripts/check_shp.py '.$shp_file, $output, $ret);
+		exec('scripts/check_shp.py -f '.$shp_file, $output, $ret);
 
 		if ($ret === FALSE) {
 			$shp_msg = 'Invalid command line';
