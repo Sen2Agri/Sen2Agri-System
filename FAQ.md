@@ -1,10 +1,11 @@
 # Installation and updates
 
-## How can I update the Sen2Agri system?
+## How can I update the Sen2-Agri system?
 
-You should navigate to the installation package directory and run the update script.
+If already have a version of the Sen2-Agri system installed, you can easily upgrade it to a newer version by downloading the new installation package and running the update script. To do so, you should navigate to the installation package directory and start the process:
 
 ```bash
+cd ~/Downloads/Sen2AgriDistribution/install_script
 sudo ./update.sh
 ```
 
@@ -12,7 +13,7 @@ See the [MACCS update section](#how-do-i-install-or-update-maccs) for instructio
 
 ## How do I install or update `MACCS`?
 
-Starting from version 1.6, MACCS is no longer with the Sen2Agri installation files. You will have to download it from the CNES website. Steps are detailed in the Software User Manual (p. 30). Basically, you should:
+Starting from version 1.6, MACCS is no longer with the Sen2-Agri installation files. You will have to download it from the CNES website. Steps are detailed in the Software User Manual (p. 30). Basically, you should:
 
 1. Go to <https://logiciels.cnes.fr/content/maccs?language=en>.
 1. Click on the "Télécharger" or "Download" button in the tab with the same name
@@ -36,39 +37,41 @@ sudo ./install-maccs-cots.sh
 cd ..
 sudo ./install-maccs-5.1.5-centos.7.2.1511.x86_64-release-gcc.TGZ.sh
 
-# if needed, update the MACCS location in the Sen2Agri database
+# if needed, update the MACCS location in the Sen2-Agri database
 sudo -u postgres psql sen2agri -c \
     "update config set value = '/opt/maccs/core/5.1/bin/maccs' \
      where key = 'demmaccs.maccs-launcher';"
 ```
 
-## How do I restart the Sen2Agri services?
+## How do I stop or restart the Sen2-Agri services?
 
-In some specific scenarios (e.g. when updating MACCS) you might want to temporarily stop the Sen2Agri services. You can do this with the following command:
+In some specific scenarios (e.g. when updating MACCS) you might want to temporarily stop the Sen2-Agri services. You can do this with the following command:
 
 ```bash
 sudo systemctl stop \
-    sen2agri-scheduler sen2agri-executor sen2agri-orchestrator sen2agri-http-listener \
-    sen2agri-monitor-agent sen2agri-{sentinel,landsat}-downloader.{service,timer} \
+    sen2agri-monitor-agent sen2agri-scheduler sen2agri-executor \
+    sen2agri-orchestrator sen2agri-http-listener \
+    sen2agri-{sentinel,landsat}-downloader.{service,timer} \
     sen2agri-demmaccs.{service,timer}
 ```
 
-To re-enable them you can use a similar command:
+To restart them you can use a similar command:
 
 ```bash
 sudo systemctl start \
-    sen2agri-scheduler sen2agri-executor sen2agri-orchestrator sen2agri-http-listener \
-    sen2agri-monitor-agent sen2agri-{sentinel,landsat}-downloader.timer \
-    sen2agri-demmaccs.timer
+    sen2agri-monitor-agent sen2agri-scheduler sen2agri-executor \
+    sen2agri-orchestrator sen2agri-http-listener \
+    sen2agri-{sentinel,landsat}-downloader.{service,timer} \
+    sen2agri-demmaccs.{service,timer}
 ```
 
 ## Should I add the server host name to /etc/hosts?
 
 There is no need to.
 
-## How can I uninstall the Sen2Agri system?
+## How can I uninstall the Sen2-Agri system?
 
-1. [Stop the running services](#how-do-i-restart-the-sen2agri-services)
+1. [Stop the running services](#how-do-i-stop-or-restart-the-sen2-agri-services)
 1. Optionally, remove the `PostgreSQL` database
     ```bash
     sudo -u postgres psql -c "drop database sen2agri;"
@@ -78,7 +81,7 @@ There is no need to.
     sudo systemctl stop slurmd slurmctld slurmdbd munge mariadb postgresql-9.4
     sudo systemctl disable slurmd slurmctld slurmdbd munge mariadb postgresql-9.4
     ```
-1. Uninstall the Sen2Agri packages
+1. Uninstall the Sen2-Agri packages
     ```bash
     sudo yum remove \
         sen2agri-processors sen2agri-website sen2agri-downloaders-demmaccs \
@@ -160,16 +163,18 @@ See also the section on [how to check whether the web site is running](#how-can-
 
 ## How can I check that the web site is working?
 
-You can try the following commands:
+You can use the following commands:
 
 ```bash
 # check the web server status
+# if running, it will show up as "active (running)"
 systemctl status httpd
 
 # check that the web server is listening on the HTTP port
 sudo ss -pantl | grep 80
 
-# open the web site in a browser
+# open the site, either by navigating to it in a browser
+# or from the command line, like below:
 xdg-open http://localhost/
 ```
 
@@ -204,11 +209,11 @@ The database connection settings can be found in `/etc/sen2agri/sen2agri.conf`.
 
 # Administration
 
-## How can I delete or cancel a job?
+## How can I delete or cancel a running job?
 
-If you want to stop a running or scheduled job, you first need to find out its identifier. For that, you can use the "Monitoring" tab of the web interface.
+If you want to stop a running job, you first need to find out its identifier. For that, you can use the "Monitoring" tab of the web interface. In this context, a job is only created shortly before it starts running. See [the corresponding section](#how-can-i-cancel-a-scheduled-jobtask) for stopping a scheduled task.
 
-Once you have the `id`, you can use the `job_operations.py` script (not installed by default):
+Once you have the `id`, you can use the `job_operations.py` script:
 
 ```bash
 # display the usage information
@@ -218,27 +223,53 @@ python job_operations.py -j JOB_ID -o cancel
 python job_operations.py -j JOB_ID -o delete
 ```
 
+The difference between the two operations is that `cancel` is supposed to stop the job execution, while `delete` will remove its tracking information from the system.
+
 Note that the job cancellation, pause and resume functionality is experimental and might not work properly.
 
-## Is there a way to import existing products?
+## How can I cancel a scheduled job/task?
 
-If you have Sen2Agri products from a different installation, you can import them into the database using the `insert_l2a_product_to_db.py` script. Note that the script name is misleading, as it will also work for products of a different level.
+This operation is not available in the web interface. You will need to remove the scheduled task directly from the database, like below:
 
-You can use `-m True` to import every product in a specific location. There is no filtering functionality available. If you need to filter the products, you will need to either run the script in the single product mode on each of the ones you want to import, or move the rest of them to another location.
+```bash
+# first find out the scheduled task id
+sudo -u postgres psql sen2agri -c \
+    "select scheduled_task.id, site.name, scheduled_task.name \
+     from scheduled_task \
+     inner join site \
+         on site.id = site_id;"
+
+# then delete it, don't forget to replace [ID] below
+sudo -u postgres psql sen2agri -c \
+    "delete \
+     from scheduled_task \
+     where id = [ID]"
+```
+
+## Is there a way to import existing products into the database?
+
+If you have L2A or higher-level products from a different Sen2-Agri installation, you can import them into the database using the `insert_l2a_product_to_db.py` script. You will be able to associate them to an existing site. Note that the script name is misleading, as it should also work for products of a different level.
+
+You can either import a single product or multiple ones. To import every product in a directory, you should add `-m True` in the command line. Otherwise, the path must point to a single product, as the default is `-m False`.
+
+There is no filtering functionality available. For that you will need to either move them to another location, or run the script in the single product mode on each of them. An example is provided below.
 
 ```bash
 # display the usage information
 insert_l2a_product_to_db.py -h
 
-# import one L2A product
+# import one L2A product to the Sudan site
+# use the short name from the web interface
 insert_l2a_product_to_db.py -s sudan -p l2a -t l2a -d product_path
 
-# import multiple L2As
+# import multiple L2As to the France site
 insert_l2a_product_to_db.py -m True -s france -p l2a -t l2a \
     -d /mnt/old_products/france/l2a
 
-# import only Landsat 8 products
-for p in LC8_*; do insert_l2a_product_to_db.py -s mali -p l2a -t l2a -d ${p}; done
+# import only the Landsat 8 products; their names start with LC8_
+for p in /path/to/l2a/LC8_*; do
+    insert_l2a_product_to_db.py -s mali -p l2a -t l2a -d ${p}
+done
 ```
 
 ## How can I delete a site?
@@ -250,6 +281,7 @@ The web interface doesn't allow the user to delete a site. If you want to remove
 delete_site.py -h
 
 # delete the "Belgium" site, but keep its products
+# use the short name from the web interface
 delete_site.py -s belgium
 
 # delete the "Test Site" site, together with the corresponding products
@@ -260,7 +292,7 @@ You can find the short name of the site in the web interface or by looking at th
 
 ## Is there a way to exclude some tiles from the download?
 
-The Sen2Agri system supports defining a list of Sentinel-2 and Landsat 8 tiles for each site. This is useful because the uploaded shapefile might overlap the edges of tiles outside the area of interest.
+The Sen2-Agri system supports defining a list of Sentinel-2 and Landsat 8 tiles for each site. This is useful because the uploaded shapefile might overlap the edges of tiles outside the area of interest.
 
 This functionality is not exposed in the web site. To use it, you must first add the site normally, but leave it disabled on creation. You still need to set the season dates and use a suitable shapefile.
 
@@ -281,11 +313,16 @@ After running the script you can enable the site in the web interface.
 
 ## Can I move or store the files on a network drive?
 
-The Sen2Agri system doesn't use any advanced filesystem functionality, so the anything can be used for its temporary and output locations.
+The Sen2-Agri system doesn't use any advanced filesystem functionality, so the anything can be used for its temporary and output locations.
 
-The paths can be changed in the database, but if you want to store the files somewhere else, like on a larger drive or network volume, it's probably simpler to either mount the drive on `/mnt/data` and `/mnt/archive`, or replace those with symlinks.
+The paths can be changed in the database, but if you want to store the files somewhere else, like on a larger drive or network volume, it's probably simpler to either mount the drive to `/mnt/archive`, or replace those with symlinks:
 
-If you forgot to do this when installing the system, you should [stop the services](#how-do-i-restart-the-sen2agri-services), replace or re-mount the directories and start the system back up after copying the data.
+```bash
+sudo mv /mnt/archive /mnt/archive_old
+sudo ln -s /mnt/large_disk/sen2agri /mnt/archive
+```
+
+If you forgot to do this when installing the system, you should [stop the services](#how-do-i-stop-or-restart-the-sen2-agri-services), replace or re-mount the directories and start the system back up after copying the data.
 
 ## Can I disable the Landsat 8 download?
 
@@ -307,36 +344,36 @@ sudo systemctl enable sen2agri-landsat-downloader.timer
 
 ## How can I use products from a local `L1C` store like the IPT Cloud platform?
 
-Currently, this can only be done by modifying the downloader command line. You can use the following commands to see and edit the `systemd` downloader units:
+Currently, this can be done by modifying the downloader command line and only works for Sentinel-2 products. You can use the following commands to see and edit the `systemd` downloader unit:
 
 ```bash
-systemctl cat sen2agri-{sentinel,landsat}-downloader
-
+systemctl cat sen2agri-sentinel-downloader
 sudo systemctl edit sen2agri-sentinel-downloader
-sudo systemctl edit sen2agri-landsat-downloader
 ```
 
 In the override file, add a `Service` section with an additional argument in the `ExecStart` clause, e.g.:
 
 ```ini
 [Service]
-ExecStart=/usr/share/sen2agri/sen2agri-downloaders/downloader.py -r s2 -s /usr/share/sen2agri/sen2agri-downloaders/apihub.txt -l local -i /eodata/Sentinel-2/MSI/L1C
+ExecStart=/usr/share/sen2agri/sen2agri-downloaders/downloader.py \
+    -r s2 -s /usr/share/sen2agri/sen2agri-downloaders/apihub.txt \
+    -l local -i /eodata/Sentinel-2/MSI/L1C
 ```
 
 making sure to replace the source path (after `-i`). The path needs to be quoted if it contains spaces or other special characters.
 
-After making the changes you need restart the services:
+After saving the file you need restart the service:
 
 ```bash
-sudo systemctl restart sen2agri-{sentinel,landsat}-downloader
+sudo systemctl restart sen2agri-sentinel-downloader
 ```
 
-To undo these changes, simply remove the override file, reload and restart:
+To undo this, simply remove the override file, reload and restart:
 
 ```bash
-sudo rm -rf /etc/systemd/system/sen2agri-{sentinel,landsat}-downloader.service.d
+sudo rm -rf /etc/systemd/system/sen2agri-sentinel-downloader.service.d
 sudo systemctl daemon-reload
-sudo systemctl restart sen2agri-{sentinel,landsat}-downloader
+sudo systemctl restart sen2agri-sentinel-downloader
 ```
 
 # Other questions
@@ -365,11 +402,20 @@ The system stores its configuration and state in a PostgreSQL database. `SLURM` 
 
 ## Is there an easy way to access the database?
 
-You can use the `pgAdmin` application to connect to the database. To install it, run
+You can use the `pgAdmin` application to connect to the database. `pgAdmin` is a free and open-source graphical user interface administration tool to manage PostgreSQL databases. To install it, run
 
 ```bash
 sudo yum install pgadmin3
 ```
+
+You can then start it from the applications menu or from a terminal, like below:
+
+```bash
+pgadmin &
+disown
+```
+
+Initially, you will need to create a new connection. The host is `localhost` if `pgadmin` is running on the server, or the server name or address otherwise. You should use the default port (`5432`). Use anything for the connection name, `admin` as the user name and the `sen2agri` password. The database is called `sen2agri`.
 
 ## How can I edit files
 
@@ -391,7 +437,7 @@ A lower case `y` will cancel the installation. You should type the upper case le
 
 ## Shapefile uploads don't work
 
-You should check the permissions on the `/mnt/upload` directory. The web server user (commonly `apache`) and the Sen2Agri system user (`sen2agri-service`) need respectively write, and read access.
+You should check the permissions on the `/mnt/upload` directory. The web server user (commonly `apache`) and the Sen2-Agri system user (`sen2agri-service`) need respectively write, and read access.
 
 The easiest way to provide this is to make it world-writable:
 
@@ -421,7 +467,7 @@ These are the settings that influence this behaviour:
 
 1. `SLURM` node daemon file descriptor limit &mdash; similar to the one above, but defaults to `51 200` in `SLURM`.
 
-The first point above should not be a problem for the Sen2Agri system. The Sen2Agri installer mitigates the second point by placing the following file:
+The first point above should not be a problem for the Sen2-Agri system. The installer mitigates the second point by placing the following file:
 
 ```text
 *         hard    nofile      500000
@@ -446,12 +492,12 @@ LimitNOFILE=512000
 
 Note that you might have to reboot the system after changing these values.
 
-## Does the Sen2Agri installer change any system settings?
+## Does the Sen2-Agri installer change any system settings?
 
 Yes, the installer:
 
 * switches SELinux to the permissive mode. There is no technical reason for that, but it has proven somewhat problematic in the past. A determined administrator should be able to re-enable it and make sure that everything is working.
-* disables the firewall. The main reason for it is that `SLURM` uses dynamic port allocation. The port range can be restricted, but the Sen2Agri system does not ship with configuration for this.
+* disables the firewall. The main reason for it is that `SLURM` uses dynamic port allocation. The port range can be restricted, but the Sen2-Agri system does not ship with configuration for this.
 * increases the open file limits. For more information about this, see [this section](#the-l4a-and-l4b-processors-crash-on-large-sites).
 * switches Transparent HugePages to `madvise` mode, effectively disabling them for applications that do not specifically request it. The reason for this is that we noticed `THP` causing a lot of performance problems. This is done by placing the following file under `/usr/lib/tmpfiles.d`:
 
@@ -459,7 +505,7 @@ Yes, the installer:
 w   /sys/kernel/mm/transparent_hugepage/enabled -   -   -   -   madvise
 ```
 
-These settings are reverted after [uninstalling the system](#how-can-i-uninstall-the-sen2agri-system).
+These settings are reverted after [uninstalling the system](#how-can-i-uninstall-the-sen2-agri-system).
 
 ## What other system settings might affect performance?
 
